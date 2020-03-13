@@ -1341,7 +1341,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             if add_time > 2 or add_time < 0:
                 add_time = 0
 
-
             status = BASS_ChannelIsActive(bass_player.channel)
 
             if status == 1:
@@ -1374,7 +1373,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 #     continue
 
             if status == 1 and not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
-                bass_player.update_time()
+                if pctl.playing_state == 3:
+                    pctl.playing_time += add_time
+                    pctl.decode_time += add_time
+                else:
+                    bass_player.update_time()
 
             if pctl.playing_state == 1:
 
@@ -1471,7 +1474,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print(pctl.url)
 
                 BASS_ErrorGetCode()  # Flush old errors
-                bass_player.channel = BASS_StreamCreateURL(pctl.url, 0, 0, None, 0)
+                bass_player.channel = BASS_StreamCreateURL(pctl.url.encode('utf-8'), 0, 0, None, 0)
                 bass_player.decode_channel = bass_player.channel
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:

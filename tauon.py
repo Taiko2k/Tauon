@@ -741,8 +741,6 @@ editline = ""
 #gui.rsp = True
 quick_drag = False
 
-radiobox = False
-radio_field_text = "http://0.0.0.0:8000"
 
 # Playlist Panel
 pl_view_offset = 0
@@ -1252,6 +1250,8 @@ class Prefs:    # Used to hold any kind of settings
         self.rating_playtime_stars = False
 
         self.lyrics_subs = {}
+
+        self.radio_urls = []
 
 
 prefs = Prefs()
@@ -1827,7 +1827,9 @@ class Input:    # Used to keep track of button states (or should be)
         # self.right_click = False
         self.level_2_enter = False
         self.key_return_press = False
+        self.key_tab_press = False
         self.backspace_press = 0
+        
 
         self.media_key = ""
 
@@ -2281,7 +2283,7 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
         self.force_scan = False
 
 
-url_saves = []
+# url_saves = []
 rename_files_previous = ""
 rename_folder_previous = ""
 p_force_queue = []
@@ -2364,7 +2366,7 @@ for t in range(2):
         default_playlist = save[9]
         playlist_playing = save[10]
         # cue_list = save[11]
-        radio_field_text = save[12]
+        # radio_field_text = save[12]
         theme = save[13]
         folder_image_offsets = save[14]
         #lfm_username = save[15]
@@ -2448,8 +2450,8 @@ for t in range(2):
             prefs.end_setting = save[58]
         if save[59] is not None:
             prefs.show_gen = save[59]
-        if save[60] is not None:
-            url_saves = save[60]
+        # if save[60] is not None:
+        #     url_saves = save[60]
         if save[61] is not None:
             prefs.auto_del_zip = save[61]
         if save[62] is not None:
@@ -2612,6 +2614,8 @@ for t in range(2):
             gui.show_ratings = save[140]
         if save[141] is not None:
             gui.show_album_ratings = save[141]
+        if save[142] is not None:
+            prefs.radio_urls = save[142]
 
         state_file.close()
         del save
@@ -3628,7 +3632,7 @@ class PlayerCtl:
         # Misc player control
 
         self.url = ""
-        self.save_urls = url_saves
+        # self.save_urls = url_saves
         self.tag_meta = ""
         self.encoder_pause = 0
 
@@ -3789,6 +3793,10 @@ class PlayerCtl:
     def show_object(self):  # The track to show in the metadata side panel
 
         target_track = None
+
+        if self.playing_state == 3:
+            return radiobox.dummy_track
+
         if 3 > self.playing_state > 0:
             target_track = self.playing_object()
 
@@ -8320,8 +8328,7 @@ sub_lyrics_b = TextBox2()
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
-radio_field = TextBox2()
-radio_field.text = radio_field_text
+
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
@@ -8882,7 +8889,6 @@ class AlbumArt():
                     source_list.append([1, filepath])
 
         except:
-
             pass
 
         if not tr.is_network:
@@ -9073,6 +9079,9 @@ class AlbumArt():
             source_image = io.BytesIO(self.get_embed(track))
         elif url_only or subsource[0] == 2:
             try:
+                if track.file_ext == "RADIO":
+                    print("Radio art not implimented")
+                    return None
 
                 if track.file_ext == "SUB":
                     return subsonic.get_cover(track)
@@ -9080,7 +9089,7 @@ class AlbumArt():
                     response = urllib.request.urlopen(get_network_thumbnail_url(track))
                     source_image = io.BytesIO(response.read())
             except:
-                #raise
+                # raise
                 print("IMAGE NETWORK LOAD ERROR")
 
         else:
@@ -9300,13 +9309,16 @@ class AlbumArt():
                             if s > 20:  # 200 ms
                                 break
 
-                        if self.downloaded_image and self.downloaded_track == track:
-                            source_image = self.downloaded_image
-                        else:
-                            return 0
+                        if self.downloaded_track != track:
+                            return
+
+                        assert self.downloaded_image
+                        source_image = self.downloaded_image
+
 
                 except:
                     print("IMAGE NETWORK LOAD ERROR")
+                    raise
 
             else:
                 source_image = open(source[offset][1], 'rb')
@@ -11061,8 +11073,6 @@ class SubLyricsBox:
 
         ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Substitute Lyric Search"), colours.grey(230), 213)
 
-        global key_tab_press
-
         y += round(35 * gui.scale)
         x += round(23 * gui.scale)
 
@@ -11078,9 +11088,9 @@ class SubLyricsBox:
         rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
         fields.add(rect1)
         ddt.rect(rect1, [40, 40, 40, 255], True)
-        if (coll(rect1) and input.mouse_click) or (key_tab_press and self.active_field == 2):
+        if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 2):
             self.active_field = 1
-            key_tab_press = False
+            input.key_tab_press = False
 
         sub_lyrics_a.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 1, width=rect1[2] - 8 * gui.scale)
 
@@ -11097,15 +11107,14 @@ class SubLyricsBox:
         xx += round(6 * gui.scale)
         rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
         fields.add(rect1)
-        if (coll(rect1) and input.mouse_click) or (key_tab_press and self.active_field == 1):
+        if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 1):
             self.active_field = 2
         ddt.rect(rect1, [40, 40, 40, 255], True)
         sub_lyrics_b.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 2, width=rect1[2] - 8 * gui.scale)
 
 
-
-
 sub_lyrics_box = SubLyricsBox()
+
 
 
 def toggle_repeat():
@@ -17014,8 +17023,7 @@ def activate_info_box():
 
 
 def activate_radio_box():
-    global radiobox
-    radiobox = True
+    radiobox.active = True
 
 
 add_icon.xoff = 3
@@ -17025,7 +17033,7 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
-x_menu.add(_("Open Stream…"), activate_radio_box, show_test=bass_test)
+x_menu.add(_("Internet Radio…"), activate_radio_box)#, show_test=bass_test)
 
 tauon.switch_playlist = switch_playlist
 auto_dl = t_autodownload.AutoDownload(tauon)
@@ -18562,7 +18570,7 @@ class SearchOverlay:
 
             # Activate search overlay on key presses
             if input_text != "" and gui.layer_focus == 0 and \
-                    not key_ctrl_down and not radiobox and not rename_track_box.active and \
+                    not key_ctrl_down and not radiobox.active and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active:
 
@@ -26176,7 +26184,7 @@ class StandardPlaylist:
                     if click_title and mouse_position[1] < window_size[1] - gui.panelBY:
 
                         # Add folder to queue if middle click
-                        if middle_click:
+                        if middle_click and is_level_zero():
                             if key_ctrl_down:  # Add as ungrouped tracks
                                 i = track_position
                                 parent = pctl.g(default_playlist[i]).parent_folder_path
@@ -26284,7 +26292,7 @@ class StandardPlaylist:
             line_hit = False
             if coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
                 line_over = True
-                if (input.mouse_click or right_click or middle_click):
+                if (input.mouse_click or right_click or (middle_click and is_level_zero())):
                     line_hit = True
                 else:
                     line_hit = False
@@ -27081,7 +27089,7 @@ class ArtBox:
         # Draw picture metadata
         if showc is not None and coll(border) \
                 and rename_track_box.active is False \
-                and radiobox is False \
+                and radiobox.active is False \
                 and pref_box.enabled is False \
                 and gui.rename_playlist_box is False \
                 and gui.message_box is False \
@@ -27265,6 +27273,194 @@ gallery_scroll = ScrollBox()
 tree_view_scroll = ScrollBox()
 
 
+class RadioBox:
+
+    def __init__(self):
+        self.active = False
+        self.radio_field_active = 1
+        self.radio_field = TextBox2()
+        self.radio_field_title = TextBox2()
+
+        self.scroll_position = 0
+        self.scroll = ScrollBox()
+
+        self.dummy_track = TrackClass()
+        self.dummy_track.index = -2
+        self.dummy_track.is_network = True
+        self.dummy_track.art_url_key = "radio"
+        self.dummy_track.file_ext = "RADIO"
+
+    def start(self, item):
+
+        url = item["stream_url"]
+
+        pctl.url = url
+        pctl.playing_state = 0
+        pctl.record_stream = False
+        pctl.playerCommand = "url"
+        pctl.playerCommandReady = True
+        pctl.playing_state = 3
+        pctl.playing_time = 0
+        pctl.decode_time = 0
+        pctl.playing_length = 0
+        pctl.tag_meta = ""
+
+    def render(self):
+
+        w = round(450 * gui.scale)
+        h = round(350 * gui.scale)  # + sh
+        x = int(window_size[0] / 2) - int(w / 2)
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        yy = y
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50),
+                   True)
+        ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+
+        ddt.text_background_colour = colours.sys_background_3
+
+        if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
+            self.active = False
+
+        ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.sys_title, 213)
+
+        yy += round(40 * gui.scale)
+
+        width = round(370 * gui.scale)
+
+        if not self.radio_field_title.text:
+            ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), (90, 90, 90, 255), 312)
+        self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170),
+                                    active=self.radio_field_active == 1,
+                                    width=width, click=gui.level_2_click)
+        rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
+        ddt.rect(rect, colours.grey(50))
+        fields.add(rect)
+        if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 2):
+            self.radio_field_active = 1
+            input.key_tab_press = False
+
+        yy += round(30 * gui.scale)
+
+        if not self.radio_field.text:
+            ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", (90, 90, 90, 255), 312)
+        self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170), active=self.radio_field_active == 2,
+                              width=width, click=gui.level_2_click)
+        rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
+        ddt.rect(rect, colours.grey(50))
+        fields.add(rect)
+        if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 1):
+            self.radio_field_active = 2
+            input.key_tab_press = False
+
+        if draw.button("Save", x + width + round(21 * gui.scale), yy - round(20 * gui.scale), press=gui.level_2_click):
+
+            if not self.radio_field.text:
+                show_message("Enter a stream URL")
+            elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
+                radio = {}
+                radio["title"] = self.radio_field_title.text
+                radio["stream_url"] = self.radio_field.text
+                radio["website_url"] = ""
+                radio["special"] = ""
+                prefs.radio_urls.append(radio)
+                self.radio_field_title.text = ""
+                self.radio_field.text = ""
+            else:
+                show_message("Could not validate URL. Must start with https://")
+
+        yy += round(30 * gui.scale)
+        x += round(12 * gui.scale)
+
+        p = self.scroll_position
+        offset = 0
+        to_delete = None
+
+        while True:
+
+            if p > len(prefs.radio_urls) - 1:
+                break
+
+            xx = x + offset
+
+            item = prefs.radio_urls[p]
+
+            rect = (xx, yy, round(205 * gui.scale), round(35 * gui.scale))
+            fields.add(rect)
+
+            bg = colours.sys_background_3
+
+            if pctl.playing_state == 3 and pctl.url == item["stream_url"]:
+                bg = [25, 25, 25, 255]
+                ddt.rect(rect, bg, True)
+
+
+            if coll(rect):
+                bg = [40, 40, 40, 255]
+                ddt.rect(rect, bg, True)
+
+                if gui.level_2_click:
+                    self.start(item)
+                if middle_click:
+                    to_delete = p
+
+            ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], [200, 200, 200, 255], 212, bg=bg, max_w=rect[2] - 20 * gui.scale)
+            ddt.text((xx + round(5 * gui.scale), yy + round(16 * gui.scale)), item["stream_url"], [200, 200, 200, 255], 312, bg=bg, max_w=rect[2] - 20 * gui.scale)
+
+            if offset == 0:
+                offset = rect[2] + round(10 * gui.scale)
+            else:
+                offset = 0
+                yy += round(40 * gui.scale)
+
+            if yy > y + 200 * gui.scale:
+                break
+
+            p += 1
+
+        if to_delete is not None:
+            del prefs.radio_urls[to_delete]
+
+        yy = (y + h) - round(35 * gui.scale)
+        # y += 30
+        rect = (x, yy, round(50 * gui.scale), round(22 * gui.scale))
+        fields.add(rect)
+
+        if pctl.playing_state == 3 and prefs.backend == 1:
+
+            if coll(rect):
+                if gui.level_2_click:
+                    pctl.playerCommand = 'record'
+                    pctl.playerCommandReady = True
+                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
+                                                                               colours.sys_background_3), True)
+                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(210), 212)
+                ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
+            else:
+                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
+                                                                               colours.sys_background_3), True)
+                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
+                ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
+        else:
+            if coll(rect):
+                if gui.level_2_click:
+                    radiobox.active = False
+                    if prefs.backend == 2:
+                        show_message("Recording is currently unavailable with GStreamer backend")
+                    else:
+                        show_message("A stream needs to be playing first.")
+            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
+                                                                           colours.sys_background_3), True)
+            ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
+            ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
+
+        gui.level_2_click = False
+
+
+radiobox = RadioBox()
+
+
 class RenamePlaylistBox:
 
     def __init__(self):
@@ -27308,7 +27504,7 @@ class RenamePlaylistBox:
             input.mouse_click = True
         gui.level_2_click = False
 
-        if key_tab_press:
+        if input.key_tab_press:
             self.toggle_edit_gen()
 
         text_w = ddt.get_text_w(rename_text_area.text, 315)
@@ -31169,7 +31365,7 @@ class Showcase:
 
                 if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
 
-                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active or radiobox:
+                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active or radiobox.active:
                         self.render_vis()
                     else:
                         gui.draw_vis4_top = True
@@ -32683,7 +32879,7 @@ def save_state():
             default_playlist,
             pctl.playlist_playing_position,
             None,  # Was cue list
-            radio_field.text,
+            "", #radio_field.text,
             theme,
             folder_image_offsets,
             None, # lfm_username,
@@ -32731,7 +32927,7 @@ def save_state():
             prefs.show_gimage,
             prefs.end_setting,
             prefs.show_gen,
-            pctl.save_urls,
+            None, # was old radio urls
             prefs.auto_del_zip,
             gui.level_meter_colour_mode,
             prefs.ui_scale,
@@ -32813,6 +33009,7 @@ def save_state():
             pctl.gen_codes,
             gui.show_ratings,
             gui.show_album_ratings,
+            prefs.radio_urls
         ]
 
 
@@ -32898,7 +33095,7 @@ def is_level_zero(include_menus=True):
     return not gui.rename_folder_box \
             and not track_box \
             and not rename_track_box.active \
-            and not radiobox \
+            and not radiobox.active \
             and not pref_box.enabled \
             and not quick_search_mode \
             and not gui.rename_playlist_box \
@@ -33015,7 +33212,7 @@ while pctl.running:
         key_del = False
         input.backspace_press = 0
         key_backspace_press = False
-        key_tab_press = False
+        input.key_tab_press = False
         key_c_press = False
         key_v_press = False
         #key_f_press = False
@@ -33283,7 +33480,7 @@ while pctl.running:
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
                 input.key_return_press = True
             elif event.key.keysym.sym == SDLK_TAB:
-                key_tab_press = True
+                input.key_tab_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
                 input.backspace_press += 1
                 key_backspace_press = True
@@ -33611,7 +33808,7 @@ while pctl.running:
 
 
         # Disable keys for text cursor control
-        if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox and not pref_box.enabled:
+        if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled:
 
 
             if not quick_search_mode and not search_over.active:
@@ -33671,7 +33868,7 @@ while pctl.running:
                 gui.pl_update = 1
 
 
-        if not quick_search_mode and not pref_box.enabled and not radiobox and not rename_track_box.active \
+        if not quick_search_mode and not pref_box.enabled and not radiobox.active and not rename_track_box.active \
                 and not gui.rename_folder_box \
                 and not gui.rename_playlist_box and not search_over.active and not sub_lyrics_box.active:
 
@@ -33720,7 +33917,7 @@ while pctl.running:
                                              playlist_selected, pl_to_id(pctl.active_playlist_viewing)))
                     queue_timer_set()
 
-        if input.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox):
+        if input.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
             input.key_return_press = False
             input.level_2_enter = True
 
@@ -33872,7 +34069,7 @@ while pctl.running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (sub_lyrics_box.active or radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
+        if input.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
         else:
@@ -33910,7 +34107,7 @@ while pctl.running:
         if right_click:
             level_2_right_click = True
 
-        if right_click and (radiobox or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
+        if right_click and (radiobox.active or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
 
         if mouse_wheel != 0:
@@ -33938,7 +34135,7 @@ while pctl.running:
                 shift_selection.clear()
 
 
-        if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox:
+        if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
 
             if keymaps.test("info-playing"):
                 if playlist_selected < len(default_playlist):
@@ -33951,7 +34148,7 @@ while pctl.running:
                     track_box = True
 
             # These need to be disabled when text fields are active
-            if not search_over.active and not radiobox and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box:
+            if not search_over.active and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box:
                 if keymaps.test("advance"):
                     key_right_press = False
                     pctl.advance()
@@ -34415,7 +34612,7 @@ while pctl.running:
 
             if (coll(rect) or side_drag is True) \
                     and rename_track_box.active is False \
-                    and radiobox is False \
+                    and radiobox.active is False \
                     and gui.rename_playlist_box is False \
                     and gui.message_box is False \
                     and pref_box.enabled is False \
@@ -36006,7 +36203,7 @@ while pctl.running:
 
             if gui.set_mode:
                 if rename_track_box.active is False \
-                        and radiobox is False \
+                        and radiobox.active is False \
                         and gui.rename_playlist_box is False \
                         and gui.message_box is False \
                         and pref_box.enabled is False \
@@ -36496,140 +36693,8 @@ while pctl.running:
             if sub_lyrics_box.active:
                 sub_lyrics_box.render()
 
-            if radiobox:
-
-                s1 = 16 * gui.scale
-                sh = s1 * len(pctl.save_urls)
-
-                w = 450 * gui.scale
-                h = 103 * gui.scale + sh
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
-                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
-
-                ddt.text_background_colour = colours.sys_background_3
-
-                if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
-                    radiobox = False
-
-                ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Open HTTP Audio Stream"), colours.sys_title, 213)
-                #ddt.text_background_colour = colours.sys_background_3
-
-                y1 = y
-                y += 30 * gui.scale
-
-                to_del = None
-
-                for i, item in enumerate(pctl.save_urls):
-                    rect = (x + 13 * gui.scale, y, 380 * gui.scale, s1-1 * gui.scale)
-                    if coll(rect):
-                        if gui.level_2_click:
-                            pass
-
-                    ddt.text((x + 13 * gui.scale, y), item, colours.grey(150), 12, 330 * gui.scale)
-
-                    rect = (x + (17 + 330) * gui.scale, y, 40 * gui.scale, 14 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect):
-                        ddt.rect(rect, [40, 40, 40, 60], True)
-                        if gui.level_2_click:
-                            to_del = i
-
-                    ddt.rect(rect, [50, 50, 50, 75], True)
-                    ddt.text((rect[0] + 20 * gui.scale, rect[1] + -1 * gui.scale, 2), "Del", colours.grey(180), 211)
-
-
-                    rect = (x + (17 + 380) * gui.scale, y, 40 * gui.scale, 14 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect):
-                        ddt.rect(rect, [40, 40, 40, 60], True)
-                        if gui.level_2_click:
-                            radio_field.text = item
-
-
-                    ddt.rect(rect, [50, 50, 50, 75], True)
-                    ddt.text((rect[0] + 20 * gui.scale, rect[1] + -1 * gui.scale, 2), "Sel", colours.grey(180), 211)
-
-
-                    y += s1
-
-                if to_del is not None:
-                    del pctl.save_urls[to_del]
-
-
-                y = y1 + sh
-
-                radio_field.draw(x + 14 * gui.scale, y + 40 * gui.scale, colours.grey_blend_bg3(170), width=380 * gui.scale, click=gui.level_2_click)
-
-                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (380 * gui.scale, 22 * gui.scale), colours.grey(50))
-
-                draw.button("GO", x + (8 + 380 + 10) * gui.scale, y + 38 * gui.scale, 40 * gui.scale)
-
-                if draw.button("Save", x + 337 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
-                    pctl.save_urls.append(radio_field.text)
-
-                if (input.level_2_enter or (
-                            gui.level_2_click and
-                            coll((x + (8 + 380 + 10) *
-                                gui.scale, y + 38 * gui.scale, 40 * gui.scale, 22 * gui.scale)))):
-                    if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
-                        radiobox = False
-                        show_message("Use the Download URL function for Youtube links.")
-                    elif "http://" in radio_field.text or "https://" in radio_field.text \
-                            or "ftp://" in radio_field.text:
-                        print("Start radio")
-                        pctl.url = radio_field.text.encode('utf-8')
-                        pctl.playing_state = 0
-                        pctl.record_stream = False
-                        pctl.playerCommand = "url"
-                        pctl.playerCommandReady = True
-                        pctl.playing_state = 3
-                        pctl.playing_time = 0
-                        pctl.decode_time = 0
-                        pctl.playing_length = 0
-
-                    elif radio_field.text == "":
-                        pass
-                    else:
-                        print("Radio fail")
-                        radiobox = False
-                        gui.update = 1
-                        show_message("Could not validate URL.", "Make sure the URL starts with 'http://' or 'ftp://'.",
-                                     mode='info')
-
-                x -= 230 * gui.scale
-                # y += 30
-                rect = (x + 277 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, 22 * gui.scale)
-                fields.add(rect)
-
-                if pctl.playing_state == 3:
-
-                    if coll(rect):
-                        if gui.level_2_click:
-                            pctl.playerCommand = 'record'
-                            pctl.playerCommandReady = True
-                        ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
-                                                                                      colours.sys_background_3), True)
-                        ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(210), 212)
-                        ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
-                    else:
-                        ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
-                                                                                      colours.sys_background_3), True)
-                        ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
-                        ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
-                else:
-                    if coll(rect):
-                        if gui.level_2_click:
-                            radiobox = False
-                            show_message("A stream needs to be playing first.")
-                    ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
-                                                                                  colours.sys_background_3), True)
-                    ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
-                    ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
-
-                gui.level_2_click = False
+            if radiobox.active:
+                radiobox.render()
 
             if gui.message_box:
                 message_box.render()
@@ -36927,7 +36992,7 @@ while pctl.running:
                     if playlist_selected < 0:
                         playlist_selected = 0
 
-                if input.key_return_press and not pref_box.enabled and not radiobox:
+                if input.key_return_press and not pref_box.enabled and not radiobox.active:
                     gui.pl_update = 1
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
