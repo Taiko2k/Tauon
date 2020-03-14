@@ -3715,6 +3715,19 @@ class PlayerCtl:
         self.decode_time = 0
         self.download_time = 0
 
+        self.radio_meta_on = ""
+        self.radio_meta_timer = Timer()
+        self.radio_scrobble_trip = False
+
+    def radio_progress(self):
+
+        if self.tag_meta:
+            if self.radio_meta_on != self.tag_meta:
+                self.radio_scrobble_trip = False
+                self.radio_meta_timer.set()
+                self.radio_meta_on = self.tag_meta
+                time.sleep(1)
+                print("New radio track")
 
     def update_shuffle_pool(self, pl_id, track_list):
 
@@ -10769,6 +10782,7 @@ def menu_standard_or_grey(bool):
 
 # Create empty area menu
 playlist_menu = Menu(130)
+radio_entry_menu = Menu(110)
 showcase_menu = Menu(125)
 center_info_menu = Menu(125)
 cancel_menu = Menu(100)
@@ -26042,7 +26056,7 @@ class StandardPlaylist:
         # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 and gui.playlist_left < mouse_position[0] < gui.playlist_left + gui.plw \
-                and not (coll(pl_rect)) and not search_over.active:
+                and not (coll(pl_rect)) and not search_over.active and not radiobox.active:
 
             # Set scroll speed
             mx = 4
@@ -27305,6 +27319,9 @@ class RadioBox:
         pctl.playing_length = 0
         pctl.tag_meta = ""
 
+    def delete_radio_entry(self, p):
+        del prefs.radio_urls[p]
+
     def render(self):
 
         w = round(450 * gui.scale)
@@ -27373,7 +27390,16 @@ class RadioBox:
         yy += round(30 * gui.scale)
         x += round(12 * gui.scale)
 
-        p = self.scroll_position
+        self.scroll_position += mouse_wheel * -1
+        self.scroll_position = max(self.scroll_position, 0)
+        self.scroll_position = min(self.scroll_position, len(prefs.radio_urls) // 2 - 4)
+
+        if len(prefs.radio_urls) // 2 > 4:
+            self.scroll_position = self.scroll.draw(x + round(415 * gui.scale), yy, round(15 * gui.scale), round(210 * gui.scale), self.scroll_position, len(prefs.radio_urls) // 2 - 4, True, click=gui.level_2_click)
+
+
+
+        p = self.scroll_position * 2
         offset = 0
         to_delete = None
 
@@ -27386,24 +27412,29 @@ class RadioBox:
 
             item = prefs.radio_urls[p]
 
-            rect = (xx, yy, round(205 * gui.scale), round(35 * gui.scale))
+            rect = (xx, yy, round(200 * gui.scale), round(35 * gui.scale))
             fields.add(rect)
 
             bg = colours.sys_background_3
 
             if pctl.playing_state == 3 and pctl.url == item["stream_url"]:
-                bg = [25, 25, 25, 255]
+                bg = [28, 28, 28, 255]
                 ddt.rect(rect, bg, True)
 
+            if (radio_entry_menu.active and radio_entry_menu.reference == p) or \
+                (not radio_entry_menu.active and coll(rect)):
 
-            if coll(rect):
                 bg = [40, 40, 40, 255]
                 ddt.rect(rect, bg, True)
+
+            if coll(rect):
 
                 if gui.level_2_click:
                     self.start(item)
                 if middle_click:
                     to_delete = p
+                if level_2_right_click:
+                    radio_entry_menu.activate(p)
 
             ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], [200, 200, 200, 255], 212, bg=bg, max_w=rect[2] - 20 * gui.scale)
             ddt.text((xx + round(5 * gui.scale), yy + round(16 * gui.scale)), item["stream_url"], [200, 200, 200, 255], 312, bg=bg, max_w=rect[2] - 20 * gui.scale)
@@ -27414,7 +27445,7 @@ class RadioBox:
                 offset = 0
                 yy += round(40 * gui.scale)
 
-            if yy > y + 200 * gui.scale:
+            if yy > y + 270 * gui.scale:
                 break
 
             p += 1
@@ -27460,6 +27491,7 @@ class RadioBox:
 
 radiobox = RadioBox()
 
+radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True)
 
 class RenamePlaylistBox:
 
