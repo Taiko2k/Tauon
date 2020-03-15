@@ -64,6 +64,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         enc_module = ctypes.CDLL(linux_lib_dir + 'libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
         mix_module = ctypes.CDLL(linux_lib_dir + 'libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
         ogg_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_ogg.dylib', mode=ctypes.RTLD_GLOBAL)
+        #mp3_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_mp3.dylib', mode=ctypes.RTLD_GLOBAL)
         fx_module = ctypes.CDLL(linux_lib_dir + 'libbass_fx.dylib', mode=ctypes.RTLD_GLOBAL)
         function_type = ctypes.CFUNCTYPE
     else:
@@ -72,6 +73,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         mix_module = ctypes.CDLL(linux_lib_dir + 'libbassmix.so', mode=ctypes.RTLD_GLOBAL)
         fx_module = ctypes.CDLL(linux_lib_dir + 'libbass_fx.so', mode=ctypes.RTLD_GLOBAL)
         ogg_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_ogg.so', mode=ctypes.RTLD_GLOBAL)
+        # mp3_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_mp3.so', mode=ctypes.RTLD_GLOBAL)
+        # opus_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_opus.so', mode=ctypes.RTLD_GLOBAL)
 
         function_type = ctypes.CFUNCTYPE
 
@@ -253,6 +256,15 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_Encode_OGG_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
                                           ctypes.c_void_p, ctypes.c_void_p)(
         ('BASS_Encode_OGG_Start', ogg_module))
+
+    # BASS_Encode_MP3_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
+    #                                       ctypes.c_void_p, ctypes.c_void_p)(
+    #     ('BASS_Encode_MP3_Start', mp3_module))
+    #
+    # BASS_Encode_OPUS_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
+    #                                       ctypes.c_void_p, ctypes.c_void_p)(
+    #     ('BASS_Encode_OPUS_Start', opus_module))
+
     BASS_Encode_OGG_StartFile = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong,
                                               ctypes.c_void_p)(
         ('BASS_Encode_OGG_StartFile', ogg_module))
@@ -1396,6 +1408,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             if not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
                 # Trigger track advance once end of track is reached
                 pctl.test_progress()
+                if pctl.playing_state == 3:
+                    pctl.radio_progress()
 
         if pctl.playerCommandReady:
             pctl.playerCommandReady = False
@@ -1651,7 +1665,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 #print(BASS_ErrorGetCode())
 
                 encoder = BASS_Encode_OGG_Start(mhandle, line, 0, None, None)
-                result = BASS_Encode_ServerInit(encoder, port.encode(), 32000, 32000, 2, client_connect, None)
+                result = BASS_Encode_ServerInit(encoder, port.encode(), 64000, 64000, 2, client_connect, None)
 
                 if BASS_ErrorGetCode() == -1:
                     gui.show_message("Server initialisation error.", "Sorry, something isn't working right.", mode="warning")

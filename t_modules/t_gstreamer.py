@@ -141,6 +141,7 @@ def player3(tauon):  # GStreamer
             self.dl_ready = False
             self.temp_path = ""  # Full path + filename
 
+
             # # Broadcasting pipeline ------------
             #
             # # This works, but only for one track, switching tracks seems to be a more complicated process.
@@ -226,6 +227,9 @@ def player3(tauon):  # GStreamer
             # This is the main callback function to be triggered continuously as long as application is running
             if self.play_state == 1:
                 pctl.test_progress()  # This function triggers an advance if we are near end of track
+
+            if self.play_state == 3:
+                pctl.radio_progress()
 
             if pctl.playerCommandReady:
                 pctl.playerCommandReady = False
@@ -398,6 +402,7 @@ def player3(tauon):  # GStreamer
                     # Open URL stream
                     self.playbin.set_property('uri', pctl.url)
                     self.playbin.set_property('volume', pctl.player_volume / 100)
+                    time.sleep(0.1)
                     self.playbin.set_state(Gst.State.PLAYING)
                     self.play_state = 3
                     self.player_timer.hit()

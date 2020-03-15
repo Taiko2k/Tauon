@@ -659,7 +659,6 @@ gall_pl_switch_timer = Timer()
 gall_pl_switch_timer.force_set(999)
 d_click_timer = Timer()
 d_click_timer.force_set(10)
-#gall_render_last_timer = Timer(10)
 lyrics_check_timer = Timer()
 scroll_hide_timer = Timer(100)
 scroll_gallery_hide_timer = Timer(100)
@@ -1271,6 +1270,7 @@ def open_uri(uri):
         switch_playlist(len(pctl.multi_playlist) - 1)
 
     load_order.target = str(urllib.parse.unquote(uri)).replace("file:///", "/").replace("\r", "")
+
     if gui.auto_play_import is False:
         load_order.play = True
         gui.auto_play_import = True
@@ -1291,7 +1291,7 @@ def check_transfer_p():
             arg_queue = []
             i = 0
             for item in r_arg_queue:
-                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item or 'file://' in item:
+                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
                     arg_queue.append(item)
                     i += 1
 
@@ -3728,6 +3728,12 @@ class PlayerCtl:
                 self.radio_meta_on = self.tag_meta
                 time.sleep(1)
                 print("New radio track")
+                radiobox.dummy_track.art_url_key = ""
+                radiobox.dummy_track.title = ""
+                radiobox.dummy_track.album = ""
+
+                album_art_gen.clear_cache()
+
 
     def update_shuffle_pool(self, pl_id, track_list):
 
@@ -9990,6 +9996,91 @@ def prep_gal():
         if folder != pctl.master_library[index].parent_folder_name:
             albums.append([index, 0])
             folder = pctl.master_library[index].parent_folder_name
+
+def load_m3u(path):
+
+    if os.path.isfile(path):
+
+        ids = []
+        urls = {}
+        titles = {}
+
+        f = open(path)
+        lines = f.readlines()
+        f.close()
+
+        for i, line in enumerate(lines):
+            if line.startswith("http"):
+                radio = {}
+                radio["title"] = os.path.splitext(os.path.basename(path))[0]
+                radio["stream_url"] = line
+
+                if i > 0:
+                    line = lines[i - 1]
+                    if "," in line and line.startswith("#EXTINF:"):
+                        radio["title"] = line.split(",", 1)[1].strip()
+
+
+                # Only add if not saved already
+                for item in prefs.radio_urls:
+                    if item["stream_url"] == radio["stream_url"]:
+                        break
+                else:
+                    prefs.radio_urls.append(radio)
+
+                if gui.auto_play_import:
+                    gui.auto_play_import = False
+                    radiobox.start(radio)
+
+def load_pls(path):
+
+    if os.path.isfile(path):
+
+        ids = []
+        urls = {}
+        titles = {}
+
+        f = open(path)
+        lines = f.readlines()
+        f.close()
+
+        for line in lines:
+            if "=" in line and line.startswith("File") and "http" in line:
+                # Get number
+                n = line.split("=")[0][4:]
+                if n.isdigit():
+                    if n not in ids:
+                        ids.append(n)
+                    urls[n] = line.split("=", 1)[1].strip()
+
+            if "=" in line and line.startswith("Title"):
+                # Get number
+                n = line.split("=")[0][5:]
+                if n.isdigit():
+                    if n not in ids:
+                        ids.append(n)
+                    titles[n] = line.split("=", 1)[1].strip()
+
+        for id in ids:
+            if id in urls:
+                radio = {}
+                radio["stream_url"] = urls[id]
+                radio["title"] = os.path.splitext(os.path.basename(path))[0]
+                if id in titles:
+                    radio["title"] = titles[id]
+
+                # Only add if not saved already
+                for item in prefs.radio_urls:
+                    if item["stream_url"] == radio["stream_url"]:
+                        break
+                else:
+                    prefs.radio_urls.append(radio)
+                    if not gui.auto_play_import:
+                        show_message("Radio station imported", mode="done")
+
+                if gui.auto_play_import:
+                    gui.auto_play_import = False
+                    radiobox.start(radio)
 
 
 def load_xspf(path):
@@ -19849,9 +19940,17 @@ def worker1():
             add_from_cue(path)
             return 0
 
-        if len(path) > 4 and os.path.split(path)[1][-5:].lower() == '.xspf':
+        if path.lower().endswith('.xspf'):
             print('found XSPF file at: ' + path)
             load_xspf(path)
+            return 0
+
+        if path.endswith(".m3u"):
+            load_m3u(path)
+            return 0
+
+        if path.endswith(".pls"):
+            load_pls(path)
             return 0
 
         if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
@@ -27301,7 +27400,7 @@ class RadioBox:
         self.dummy_track = TrackClass()
         self.dummy_track.index = -2
         self.dummy_track.is_network = True
-        self.dummy_track.art_url_key = "radio"
+        self.dummy_track.art_url_key = "" #radio"
         self.dummy_track.file_ext = "RADIO"
 
     def start(self, item):
@@ -27380,7 +27479,7 @@ class RadioBox:
                 radio["title"] = self.radio_field_title.text
                 radio["stream_url"] = self.radio_field.text
                 radio["website_url"] = ""
-                radio["special"] = ""
+
                 prefs.radio_urls.append(radio)
                 self.radio_field_title.text = ""
                 self.radio_field.text = ""
@@ -27397,7 +27496,7 @@ class RadioBox:
         if len(prefs.radio_urls) // 2 > 4:
             self.scroll_position = self.scroll.draw(x + round(415 * gui.scale), yy, round(15 * gui.scale), round(210 * gui.scale), self.scroll_position, len(prefs.radio_urls) // 2 - 4, True, click=gui.level_2_click)
 
-
+        self.scroll_position = max(self.scroll_position, 0)
 
         p = self.scroll_position * 2
         offset = 0
@@ -27409,7 +27508,6 @@ class RadioBox:
                 break
 
             xx = x + offset
-
             item = prefs.radio_urls[p]
 
             rect = (xx, yy, round(200 * gui.scale), round(35 * gui.scale))
@@ -34312,7 +34410,7 @@ while pctl.running:
                         loaderCommand = LC_Folder
                     else:
                         loaderCommand = LC_File
-                        if '.xspf' in order.traget:
+                        if order.traget.endswith('.xspf'):
                             to_got = 'xspf'
                             to_get = 0
                         else:
@@ -35565,9 +35663,11 @@ while pctl.running:
                         if not load_orders:
                             loading_in_progress = False
                             tauon.worker_save_state = True
+                            gui.auto_play_import = False
                             album_artist_dict.clear()
                         break
-                gui.auto_play_import = False
+
+
 
             if gui.show_playlist:
 
