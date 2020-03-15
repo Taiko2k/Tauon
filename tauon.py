@@ -1620,6 +1620,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.regen_single = -1
 
         self.tracklist_bg_is_light = False
+        self.clear_image_cache_next = False
 
 
 gui = GuiVar()
@@ -1704,6 +1705,8 @@ class StarStore:
 
     # Returns the track play time
     def get(self, index):
+        if index < 0:
+            return 0
         return self.db.get(self.key(index), (0,))[0]
 
     # Returns the track user rating
@@ -3604,6 +3607,34 @@ def tag_scan(nt):
         return nt
 
 
+def get_radio_art():
+
+    if "radio.plaza.one" in pctl.url:
+        console.print("Fetching plaza art")
+        response = requests.get("https://api.plaza.one/status")
+        if response.status_code == 200:
+            d = json.loads(response.text)
+            if "playback" in d:
+                if "artwork_src" in d["playback"]:
+                    art_url = d["playback"]["artwork_src"]
+                    art_response = requests.get(art_url)
+                    if art_response.status_code == 200:
+                        if pctl.radio_image_bin:
+                            pctl.radio_image_bin.close()
+                            pctl.radio_image_bin = None
+                        pctl.radio_image_bin = io.BytesIO(art_response.content)
+                        pctl.radio_image_bin.seek(0)
+                        radiobox.dummy_track.art_url_key = "ok"
+                if "artist" in d["playback"]:
+                    radiobox.dummy_track.artist = d["playback"]["artist"]
+                if "title" in d["playback"]:
+                    radiobox.dummy_track.title = d["playback"]["title"]
+                if "album" in d["playback"]:
+                    radiobox.dummy_track.album = d["playback"]["album"]
+        else:
+            console.print("plaza.one api error")
+
+
 # Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
 class PlayerCtl:
     # C-PC
@@ -3717,22 +3748,50 @@ class PlayerCtl:
 
         self.radio_meta_on = ""
         self.radio_meta_timer = Timer()
-        self.radio_scrobble_trip = False
+
+        self.radio_scrobble_trip = True
+        self.radio_scrobble_timer = Timer()
+
+        self.radio_image_bin = None
+        self.radio_rate_timer = Timer(20)
+
 
     def radio_progress(self):
 
         if self.tag_meta:
-            if self.radio_meta_on != self.tag_meta:
+
+            if self.radio_rate_timer.get() > 20 and self.radio_meta_on != self.tag_meta:
+                self.radio_rate_timer.set()
                 self.radio_scrobble_trip = False
                 self.radio_meta_timer.set()
                 self.radio_meta_on = self.tag_meta
-                time.sleep(1)
-                print("New radio track")
+
                 radiobox.dummy_track.art_url_key = ""
                 radiobox.dummy_track.title = ""
+                radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
 
-                album_art_gen.clear_cache()
+                if self.tag_meta.count("-") == 1:
+                    artist, title = self.tag_meta.split("-")
+                    radiobox.dummy_track.title = title.strip()
+                    radiobox.dummy_track.artist = artist.strip()
+
+                pctl.radio_image_bin = None
+
+                get_radio_art()
+                gui.clear_image_cache_next = True
+
+                if pctl.mpris:
+                    pctl.mpris.update(force=True)
+
+                lfm_scrobbler.listen_track(radiobox.dummy_track)
+
+                lfm_scrobbler.start_queue()
+
+            if self.radio_scrobble_trip is False and self.radio_scrobble_timer.get() > 45:
+                self.radio_scrobble_trip = True
+                lfm_scrobbler.scrob_full_track(copy.deepcopy(radiobox.dummy_track))
+
 
 
     def update_shuffle_pool(self, pl_id, track_list):
@@ -3833,6 +3892,9 @@ class PlayerCtl:
         return target_track
 
     def playing_object(self):
+
+        if self.playing_state == 3:
+            return radiobox.dummy_track
 
         if len(self.track_queue) > 0:
             return self.master_library[self.track_queue[self.queue_step]]
@@ -5746,6 +5808,9 @@ def love(set=True, track_id=None, no_delay=False):
     if len(pctl.track_queue) < 1:
         return False
 
+    if track_id is not None and track_id < 0:
+        return False
+
     if track_id is None:
         track_id = pctl.track_queue[pctl.queue_step]
 
@@ -5846,7 +5911,7 @@ class LastScrob:
                 if not success:
                     print("Re-queue scrobble")
                     self.queue.append(tr)
-                    time.sleep(30)
+                    time.sleep(10)
                     break
 
             except:
@@ -5900,15 +5965,7 @@ class LastScrob:
             pctl.b_time += add_time
             if pctl.b_time > 20:
                 pctl.b_time = 0
-                if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-                    mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
-                    mini_t.daemon = True
-                    mini_t.start()
-
-                if lb.enable:
-                    mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
-                    mini_t.daemon = True
-                    mini_t.start()
+                self.listen_track(pctl.master_library[self.a_index])
 
         send_full = False
         if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
@@ -5921,10 +5978,27 @@ class LastScrob:
             send_full = True
 
         if send_full:
-            if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())):
-                self.queue.append((pctl.master_library[self.a_index], int(time.time()), "lfm"))
-            if lb.enable:
-                self.queue.append((pctl.master_library[self.a_index], int(time.time()), "lb"))
+            self.scrob_full_track(pctl.master_library[self.a_index])
+
+    def listen_track(self, track_object):
+
+        if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+            mini_t = threading.Thread(target=lastfm.update, args=([track_object]))
+            mini_t.daemon = True
+            mini_t.start()
+
+        if lb.enable:
+            mini_t = threading.Thread(target=lb.listen_playing, args=([track_object]))
+            mini_t.daemon = True
+            mini_t.start()
+
+    def scrob_full_track(self, track_object):
+
+        if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())):
+            self.queue.append((track_object, int(time.time()), "lfm"))
+        if lb.enable:
+            self.queue.append((track_object, int(time.time()), "lb"))
+
 
 lfm_scrobbler = LastScrob()
 
@@ -8627,30 +8701,23 @@ class ThumbTracks:
             # print("NO ART")
             return None
 
-        image_name += "-" + str(source[2])
-        image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+        if track.is_network:
+           # FIX ME
+            return None
+
+        if not track.is_network:
+
+            image_name += "-" + str(source[2])
+            image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
 
-        #t_path = user_directory + "/cache/" + image_name + '.jpg'
-        t_path = os.path.join(cache_directory, image_name + '.jpg')
+            #t_path = user_directory + "/cache/" + image_name + '.jpg'
+            t_path = os.path.join(cache_directory, image_name + '.jpg')
 
-        if os.path.isfile(t_path):
-            return t_path
+            if os.path.isfile(t_path):
+                return t_path
 
-        #print(source[0])
 
-        # if source[0] == 1:
-        # # print('tag')
-        #     source_image = io.BytesIO(album_art_gen.get_embed(track))
-        #
-        # elif source[0] == 2:
-        #     try:
-        #         response = urllib.request.urlopen(get_network_thumbnail_url(track))
-        #         source_image = response
-        #     except:
-        #         print("IMAGE NETWORK LOAD ERROR")
-        # else:
-        #     source_image = open(source[1], 'rb')
         source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
 
         if not os.path.isdir(cache_directory):
@@ -9099,7 +9166,9 @@ class AlbumArt():
         elif url_only or subsource[0] == 2:
             try:
                 if track.file_ext == "RADIO":
-                    print("Radio art not implimented")
+
+                    if pctl.radio_image_bin:
+                        return pctl.radio_image_bin
                     return None
 
                 if track.file_ext == "SUB":
@@ -9275,6 +9344,7 @@ class AlbumArt():
                 gui.theme_temp_current = index
 
         source = self.get_sources(track)
+
         if len(source) == 0:
             return False
 
@@ -9594,9 +9664,10 @@ class AlbumArt():
         for unit in self.image_cache:
             SDL_DestroyTexture(unit.texture)
 
-        self.image_cache = []
-        self.source_cache = {}
+        self.image_cache.clear()
+        self.source_cache.clear()
         self.current_wu = None
+        self.downloaded_track = None
 
 
 
@@ -12067,6 +12138,10 @@ def save_embed_img(track_object):
     folder = track_object.parent_folder_path
     ext = track_object.file_ext
 
+    if track_object.is_network:
+        show_message("Saving network images not implemented")
+        return
+
     try:
         if ext == 'MP3':
             tag = stagger.read_tag(filepath)
@@ -12107,6 +12182,7 @@ def save_embed_img(track_object):
             ext = ".jpg"
 
         target = os.path.join(folder, "embed-" + str(im.height) + "px-" + str(track_object.index) + ext)
+
         if len(pic) > 30:
             with open(target, 'wb') as w:
                 w.write(pic)
@@ -23455,9 +23531,9 @@ class TopPanel:
                     title = tr.filename
                 artist = tr.artist
 
-                if pctl.playing_state == 3:
+                if pctl.playing_state == 3 and not radiobox.dummy_track.title:
                     title = pctl.tag_meta
-                    artist = pctl.url.decode()
+                    artist = pctl.url
 
                 ddt.text_background_colour = colours.top_panel_background
 
@@ -24489,27 +24565,27 @@ class BottomBarType1:
 
         if (input.mouse_click or right_click) and coll((
                     self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
-            if pctl.playing_state == 3:
-                copy_to_clipboard(pctl.tag_meta)
-                show_message(_("Copied text to clipboard"))
-                if input.mouse_click or right_click:
-                    input.mouse_click = False
-                    right_click = False
-            else:
-                if input.mouse_click:
-                    pctl.show_current()
+            # if pctl.playing_state == 3:
+            #     copy_to_clipboard(pctl.tag_meta)
+            #     show_message(_("Copied text to clipboard"))
+            #     if input.mouse_click or right_click:
+            #         input.mouse_click = False
+            #         right_click = False
+            # else:
+            if input.mouse_click and pctl.playing_state != 3:
+                pctl.show_current()
 
-                if pctl.playing_ready() and not fullscreen == 1:
+            if pctl.playing_ready() and not fullscreen == 1:
 
-                    if right_click:
-                        mode_menu.activate()
+                if right_click:
+                    mode_menu.activate()
 
-                    if d_click_timer.get() < 0.3 and input.mouse_click:
-                        set_mini_mode()
-                        gui.update += 1
-                        return
-                    else:
-                        d_click_timer.set()
+                if d_click_timer.get() < 0.3 and input.mouse_click:
+                    set_mini_mode()
+                    gui.update += 1
+                    return
+                else:
+                    d_click_timer.set()
 
         # TIME----------------------
 
@@ -25573,6 +25649,8 @@ class MiniMode2:
             pctl.set_volume()
 
         track = pctl.playing_object()
+        # if pctl.playing_state == 3:
+        #     track = pctl.playing_object()
 
 
         if track is not None:
@@ -27152,9 +27230,7 @@ class ArtBox:
         result = 1
 
         if target_track:  # Only show if song playing or paused
-
             result = album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), side_drag)
-
             showc = album_art_gen.get_info(target_track)
 
         # Draw faint border on album art
@@ -30420,34 +30496,34 @@ class MetaBox:
             text_width = w - 25 * gui.scale
             tr = None
 
-            if pctl.playing_state < 3:
+            #if pctl.playing_state < 3:
 
-                if pctl.playing_state == 0 and prefs.meta_persists_stop:
-                    tr = pctl.master_library[pctl.track_queue[pctl.queue_step]]
-                if pctl.playing_state == 0 and prefs.meta_shows_selected:
+            if pctl.playing_state == 0 and prefs.meta_persists_stop:
+                tr = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+            if pctl.playing_state == 0 and prefs.meta_shows_selected:
 
-                    if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                        tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+                if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
-                if prefs.meta_shows_selected_always:
-                    if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                        tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+            if prefs.meta_shows_selected_always and not pctl.playing_state == 3:
+                if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
-                if tr is None:
-                    tr = pctl.playing_object()
-                if tr is None:
-                    return
+            if tr is None:
+                tr = pctl.playing_object()
+            if tr is None:
+                return
 
-                title = tr.title
-                album = tr.album
-                artist = tr.artist
-                ext = tr.file_ext
-                if tr.lyrics:
-                    ext += ","
-                date = tr.date
-                genre = tr.genre
-            else:
-                title = pctl.tag_meta
+            title = tr.title
+            album = tr.album
+            artist = tr.artist
+            ext = tr.file_ext
+            if tr.lyrics:
+                ext += ","
+            date = tr.date
+            genre = tr.genre
+            # else:
+            #     title = pctl.tag_meta
 
             if h > 58 * gui.scale:
 
@@ -31360,7 +31436,7 @@ class Showcase:
                     force_album_view()
                 return 0
 
-        if pctl.playing_state == 3:
+        if pctl.playing_state == 3 and not radiobox.dummy_track.title:
 
             w = window_size[0] - (x + box) - 30 * gui.scale
             x = int((window_size[0]) / 2)
@@ -31384,8 +31460,12 @@ class Showcase:
                 index = gui.force_showcase_index
                 track = pctl.master_library[index]
             else:
-                index = pctl.track_queue[pctl.queue_step]
-                track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+                if pctl.playing_state == 3:
+                    track = radiobox.dummy_track
+                else:
+                    index = pctl.track_queue[pctl.queue_step]
+                    track = pctl.master_library[index]
 
             if not hide_art:
 
@@ -34091,10 +34171,10 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
             pass
 
-            window_size[0] = int(1280 * gui.scale)
-            window_size[1] = int(720 * gui.scale)
-            SDL_SetWindowSize(t_window, window_size[0], window_size[1])
-            gui.update_layout()
+        # window_size[0] = int(1280 * gui.scale)
+            # window_size[1] = int(720 * gui.scale)
+            # SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+            # gui.update_layout()
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -34698,6 +34778,10 @@ while pctl.running:
         if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
             mouse_position[0] = -300
             mouse_position[1] = -300
+
+        if gui.clear_image_cache_next:
+            gui.clear_image_cache_next = False
+            album_art_gen.clear_cache()
 
         fields.clear()
         gui.cursor_want = 0
@@ -37728,7 +37812,7 @@ while pctl.running:
     #     gui.pl_update = 1
 
     # Update d-bus metadata on Linux
-    if pctl.playing_state == 1 and pctl.mpris is not None:
+    if (pctl.playing_state == 1 or pctl.playing_state == 3) and pctl.mpris is not None:
         pctl.mpris.update_progress()
 
     # GUI time ticker update
