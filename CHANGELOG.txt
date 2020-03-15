@@ -6,10 +6,12 @@ v5.3.2
  - Added reading of pls/m3u files for radios
  - Re-designed "open http stream box"
  - Enabled http stream on GStreamer backend
+ - Enabled scrobbling for internet radio
  - Fixed view jump on queue advance
  - Fixed warning message on visualiser enable
  - Fixed end of tracks being cut off when on repeat
  - Fixed time counter not advancing when playing internet stream
+ - Fixed mini-mode with internet radio
 
 v5.3.1
 

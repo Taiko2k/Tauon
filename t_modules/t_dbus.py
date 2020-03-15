@@ -110,7 +110,7 @@ class Gnome:
 
                         changed = {}
 
-                        if pctl.playing_state == 1:
+                        if pctl.playing_state == 1 or pctl.playing_state == 3:
                             if self.player_properties['PlaybackStatus'] != 'Playing':
                                 self.player_properties['PlaybackStatus'] = 'Playing'
                                 changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
@@ -151,13 +151,25 @@ class Gnome:
                                 i_path = tauon.thumb_tracks.path(track)
                                 if i_path is not None:
                                     d['mpris:artUrl'] = 'file://' + urllib.parse.quote(i_path)
-                            except:
+                            except Exception as e:
+                                print(str(e))
                                 print("Thumbnail error")
 
                             self.update_progress()
 
                             self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                             changed['Metadata'] = self.player_properties['Metadata']
+
+                            if pctl.playing_state == 3 and self.player_properties['CanPause'] is True:
+                                self.player_properties['CanPause'] = False
+                                self.player_properties['CanSeek'] = False
+                                changed['CanPause'] = self.player_properties['CanPause']
+                                changed['CanSeek'] = self.player_properties['CanSeek']
+                            elif pctl.playing_state == 1 and self.player_properties['CanPause'] is False:
+                                self.player_properties['CanPause'] = True
+                                self.player_properties['CanSeek'] = True
+                                changed['CanPause'] = self.player_properties['CanPause']
+                                changed['CanSeek'] = self.player_properties['CanSeek']
 
                         if len(changed) > 0:
                             self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
@@ -292,7 +304,10 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def PlayPause(self):
-                        pctl.play_pause()
+                        if pctl.playing_state == 3:
+                            pctl.stop()  # Stop if playing radio
+                        else:
+                            pctl.play_pause()
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Stop(self):
