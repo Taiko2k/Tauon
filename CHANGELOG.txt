@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v5.3.2
 
+ - Added reading of pls/m3u files for radios
  - Re-designed "open http stream box"
  - Enabled http stream on GStreamer backend
  - Fixed view jump on queue advance
