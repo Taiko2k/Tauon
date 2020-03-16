@@ -15271,11 +15271,11 @@ def del_selected(force_delete=False):
     shift_selection = [playlist_selected]
     gui.pl_update += 1
     refind_playing()
+    tauon.worker_save_state = True
 
 
 def force_del_selected():
     del_selected(force_delete=True)
-
 
 
 def test_show(dummy):
@@ -20340,7 +20340,8 @@ def worker1():
                 not cm_clean_db and \
                 not lastfm.scanning_friends and \
                 not move_in_progress and \
-                (gui.lowered or not window_is_focused()):
+                (gui.lowered or not window_is_focused() or not gui.mouse_in_window):
+
             save_state()
             cue_list.clear()
             tauon.worker_save_state = False
@@ -33253,8 +33254,8 @@ def save_state():
 
 
     pickle.dump(save, open(user_directory + "/state.p.backup", "wb"))
-    if not pctl.running:
-        pickle.dump(save, open(user_directory + "/state.p", "wb"))
+    # if not pctl.running:
+    pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
     save = [
         draw_border,
