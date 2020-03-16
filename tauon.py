@@ -3770,6 +3770,10 @@ class PlayerCtl:
                 radiobox.dummy_track.title = ""
                 radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
+                for radio in prefs.radio_urls:
+                    if radio["stream_url"] == pctl.url:
+                        radiobox.dummy_track.album = radio["title"]
+                radiobox.dummy_track.lyrics = ""
 
                 if self.tag_meta.count("-") == 1:
                     artist, title = self.tag_meta.split("-")
@@ -8448,8 +8452,9 @@ class GallClass:
 
         if len(sources) == 0:
             return False
+
         offset = album_art_gen.get_offset(track_object.fullpath, sources)
-        return sources[offset] + [offset]
+        return sources[offset], offset
 
     def worker_render(self):
 
@@ -8498,7 +8503,7 @@ class GallClass:
 
                 if slow_load:
 
-                    source = self.get_file_source(key[0])
+                    source, c_offset = self.get_file_source(key[0])
 
                     if source is False:
                         order[0] = 0
@@ -8506,7 +8511,7 @@ class GallClass:
                         #del self.queue[0]
                         continue
 
-                    img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(source[2])
+                    img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(c_offset)
 
                     # gall_render_last_timer.set()
 
@@ -8530,8 +8535,6 @@ class GallClass:
                     #     source_image = open(source[1], 'rb')
                     source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
 
-                    del source
-
                 g = io.BytesIO()
                 g.seek(0)
 
@@ -8551,7 +8554,7 @@ class GallClass:
 
                 g.seek(0)
 
-                source_image.close()
+                #source_image.close()
 
                 order = [2, g, None, None]
                 self.gall[key] = order
@@ -8695,28 +8698,21 @@ class ThumbTracks:
         if image_name == "":
             image_name = "noname"
 
-        source = gall_ren.get_file_source(track)
+        source, offset = gall_ren.get_file_source(track)
 
         if source is False:
             # print("NO ART")
             return None
 
-        if track.is_network:
-           # FIX ME
-            return None
-
-        if not track.is_network:
-
-            image_name += "-" + str(source[2])
-            image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+        image_name += "-" + str(offset)
+        image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
 
-            #t_path = user_directory + "/cache/" + image_name + '.jpg'
-            t_path = os.path.join(cache_directory, image_name + '.jpg')
+        #t_path = user_directory + "/cache/" + image_name + '.jpg'
+        t_path = os.path.join(cache_directory, image_name + '.jpg')
 
-            if os.path.isfile(t_path):
-                return t_path
-
+        if os.path.isfile(t_path):
+            return t_path
 
         source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
 
@@ -8734,7 +8730,7 @@ class ThumbTracks:
         im.thumbnail((1000, 1000), Image.ANTIALIAS)
 
         im.save(t_path, 'JPEG')
-        source_image.close()
+        # source_image.close()
 
         return t_path
 
@@ -8858,15 +8854,16 @@ class AlbumArt():
         self.downloaded_image = None
         self.downloaded_track = None
 
+        self.base64cahce = (0, 0, "")
+        self.processing64on = None
 
-    def async_download_network_image(self, track):
+        self.bin_cached = (None, None, None)  # track, subsource, bin
 
-        # print("start network image download")
-        # response = urllib.request.urlopen(get_network_thumbnail_url(track))
-        # #r = requests.get(get_network_thumbnail_url(track))
-        #
-        # self.downloaded_image = io.BytesIO(response.read())
-        self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=None, url_only=True)
+        self.embed_cached = (None, None)
+
+    def async_download_image(self, track, subsource):
+
+        self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=subsource)
         self.downloaded_track = track
         self.download_in_progress = False
         gui.update += 1
@@ -8932,48 +8929,9 @@ class AlbumArt():
 
         # Check for embedded image
         try:
-            if ext == 'MP3':
-
-                tag = stagger.read_tag(filepath)
-
-                try:
-                    tt = tag[APIC][0]
-                except:
-                    tt = tag[PIC][0]
-
-                if len(tt.data) > 30:
-                    source_list.append([1, filepath])
-
-
-            elif ext == 'OGG' or ext == 'OPUS':
-
-                tt = Opus(filepath)
-                tt.read()
-                if tt.has_picture is True and len(tt.picture) > 30:
-                    source_list.append([1, filepath])
-
-
-            elif ext == 'FLAC':
-
-                tt = Flac(filepath)
-                tt.read(True)
-                if tt.has_picture is True and len(tt.picture) > 30:
-                    source_list.append([1, filepath])
-
-            elif ext == 'APE':
-
-                tt = Ape(filepath)
-                tt.read()
-                if tt.has_picture is True and len(tt.picture) > 30:
-                    source_list.append([1, filepath])
-
-            elif ext == 'M4A':
-
-                tt = M4a(filepath)
-                tt.read()
-                if tt.has_picture:
-                    source_list.append([1, filepath])
-
+            pic = self.get_embed(tr)
+            if pic:
+                source_list.append([1, filepath])
         except:
             pass
 
@@ -9116,63 +9074,85 @@ class AlbumArt():
 
     def get_embed(self, track):
 
+        cached = self.embed_cached
+        if cached[0] == track:
+            # print("used cached")
+            return cached[1]
+
         filepath = track.fullpath
+
+        pic = None
 
         if track.file_ext == 'MP3':
 
             tag = stagger.read_tag(filepath)
             try:
-                return tag[APIC][0].data
+                pic = tag[APIC][0].data
             except:
-                return tag[PIC][0].data
-
-
+                try:
+                    pic = tag[PIC][0].data
+                except:
+                    pass
+            if len(pic) < 30:
+                pic = None
 
         elif track.file_ext == 'FLAC':
             tag = Flac(filepath)
             tag.read(True)
-            return tag.picture
+            if tag.has_picture and len(tag.picture) > 30:
+                pic = tag.picture
 
         elif track.file_ext == 'APE':
             tag = Ape(filepath)
             tag.read()
-            return tag.picture
+            if tag.has_picture and len(tag.picture) > 30:
+                pic = tag.picture
 
         elif track.file_ext == 'M4A':
             tag = M4a(filepath)
             tag.read(True)
-            return tag.picture
+            if tag.has_picture and len(tag.picture) > 30:
+                pic = tag.picture
 
         elif track.file_ext == 'OPUS' or track.file_ext == 'OGG':
             tag = Opus(filepath)
             tag.read()
-            a = io.BytesIO(base64.b64decode(tag.picture))
-            a.seek(0)
+            if tag.has_picture and len(tag.picture) > 30:
+                a = io.BytesIO(base64.b64decode(tag.picture))
+                a.seek(0)
+                image = parse_picture_block(a)
+                a.close()
+                pic = image
 
-            image = parse_picture_block(a)
-            a.close()
-            return image
+        self.embed_cached = (track, pic)
+        return pic
 
-    def get_source_raw(self, offset, sources, track, subsource=None, url_only=False):
+
+    def get_source_raw(self, offset, sources, track, subsource=None):
 
         source_image = None
 
-        if not url_only and subsource is None:
+        if subsource is None:
             subsource = sources[offset]
 
-        if not url_only and subsource[0] == 1:
-            # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(track))
-        elif url_only or subsource[0] == 2:
+        cached = self.bin_cached
+        if cached[0] == track and cached[1] == subsource:
+            return cached[2]
+
+        if subsource[0] == 1:
+            # Target is a embedded image\\\
+            pic = self.get_embed(track)
+            assert pic
+            source_image = io.BytesIO(pic)
+
+        elif subsource[0] == 2:
             try:
                 if track.file_ext == "RADIO":
-
                     if pctl.radio_image_bin:
-                        return pctl.radio_image_bin
-                    return None
+                        source_image = pctl.radio_image_bin
 
-                if track.file_ext == "SUB":
-                    return subsonic.get_cover(track)
+                elif track.file_ext == "SUB":
+                    source_image = subsonic.get_cover(track)
                 else:
                     response = urllib.request.urlopen(get_network_thumbnail_url(track))
                     source_image = io.BytesIO(response.read())
@@ -9182,14 +9162,34 @@ class AlbumArt():
 
         else:
             source_image = open(subsource[1], 'rb')
+
+        self.bin_cached = (track, subsource, source_image)
         return source_image
 
     def get_base64(self, track, size):
+
+        # Wait if an identical track is already being processed
+        if self.processing64on == track:
+            t = 0
+            while True:
+                if self.processing64on is None:
+                    break
+                time.sleep(0.05)
+                t += 1
+                if t > 20:
+                    break
+
+        cahced = self.base64cache
+        if track == cahced[0] and size == cahced[1]:
+            return cahced[2]
+
+        self.processing64on = track
 
         filepath = track.fullpath
         sources = self.get_sources(track)
 
         if len(sources) == 0:
+            self.processing64on = None
             return False
 
         offset = self.get_offset(filepath, sources)
@@ -9198,6 +9198,7 @@ class AlbumArt():
         source_image = self.get_source_raw(offset, sources, track)
 
         if source_image is None:
+            self.processing64on = None
             return ""
 
         im = Image.open(source_image)
@@ -9207,6 +9208,9 @@ class AlbumArt():
         buff = io.BytesIO()
         im.save(buff, format="JPEG")
         sss = base64.b64encode(buff.getvalue())
+
+        self.base64cache = (track, size, sss)
+        self.processing64on = None
         return sss
 
 
@@ -9265,7 +9269,7 @@ class AlbumArt():
         im.save(g, 'PNG')
         g.seek(0)
 
-        source_image.close()
+        # source_image.close()
 
         return g
 
@@ -9373,7 +9377,9 @@ class AlbumArt():
             # Get source IO
             if source[offset][0] == 1:
                 # Target is a embedded image
-                source_image = io.BytesIO(self.get_embed(track))
+                #source_image = io.BytesIO(self.get_embed(track))
+                source_image = self.get_source_raw(0, 0, track, source[offset])
+
             elif source[offset][0] == 2:
                 try:
                     close = False
@@ -9386,7 +9392,7 @@ class AlbumArt():
 
                     else:
                         self.download_in_progress = True
-                        shoot_dl = threading.Thread(target=self.async_download_network_image, args=([track]))
+                        shoot_dl = threading.Thread(target=self.async_download_image, args=([track, source[offset]]))
                         shoot_dl.daemon = True
                         shoot_dl.start()
 
@@ -9410,7 +9416,8 @@ class AlbumArt():
                     raise
 
             else:
-                source_image = open(source[offset][1], 'rb')
+                #source_image = open(source[offset][1], 'rb')
+                source_image = self.get_source_raw(0, 0, track, source[offset])
 
             # Generate
             g = io.BytesIO()
@@ -9599,8 +9606,8 @@ class AlbumArt():
             # Clean uo
             SDL_FreeSurface(s_image)
             g.close()
-            if close:
-                source_image.close()
+            # if close:
+            #     source_image.close()
 
             unit = ImageObject()
             unit.index = index
@@ -9669,7 +9676,11 @@ class AlbumArt():
         self.current_wu = None
         self.downloaded_track = None
 
-
+        self.base64cahce = (0, 0, "")
+        self.processing64on = None
+        self.bin_cached = (None, None, None)
+        self.loading_bin = (None, None)
+        self.embed_cached = (None, None)
 
 #from t_modules.t_art_render import AlbumArt
 
@@ -12143,34 +12154,38 @@ def save_embed_img(track_object):
         return
 
     try:
-        if ext == 'MP3':
-            tag = stagger.read_tag(filepath)
-            try:
-                tt = tag[APIC][0]
-            except:
-                try:
-                    tt = tag[PIC][0]
-                except:
-                    show_message("Image save error.", "No embedded album art found in MP3 file", mode='warning')
-                    return
-            pic = tt.data
-
-        elif ext in ('FLAC', 'APE', 'TTA', 'WV'):
-
-            tt = Flac(filepath)
-            tt.read(True)
-            if tt.has_picture is False:
-                show_message("Image save error.", "No embedded album art found in FLAC file", mode='warning')
-                return
-            pic = tt.picture
-
-        elif ext == 'M4A':
-            tt = M4a(filepath)
-            tt.read(True)
-            if tt.has_picture is False:
-                show_message("Image save error.", "No embedded album art found in M4A file", mode='warning')
-                return
-            pic = tt.picture
+        pic = album_art_gen.get_embed(track_object)
+        # if ext == 'MP3':
+        #     tag = stagger.read_tag(filepath)
+        #     try:
+        #         tt = tag[APIC][0]
+        #     except:
+        #         try:
+        #             tt = tag[PIC][0]
+        #         except:
+        #             show_message("Image save error.", "No embedded album art found in MP3 file", mode='warning')
+        #             return
+        #     pic = tt.data
+        #
+        # elif ext in ('FLAC', 'APE', 'TTA', 'WV'):
+        #
+        #     tt = Flac(filepath)
+        #     tt.read(True)
+        #     if tt.has_picture is False:
+        #         show_message("Image save error.", "No embedded album art found in FLAC file", mode='warning')
+        #         return
+        #     pic = tt.picture
+        #
+        # elif ext == 'M4A':
+        #     tt = M4a(filepath)
+        #     tt.read(True)
+        #     if tt.has_picture is False:
+        #         show_message("Image save error.", "No embedded album art found in M4A file", mode='warning')
+        #         return
+        #     pic = tt.picture
+        if not pic:
+            show_message("Image save error.", "No embedded album art found file.", mode='warning')
+            return
 
         source_image = io.BytesIO(pic)
         im = Image.open(source_image)
@@ -13029,7 +13044,6 @@ def delete_playlist(index):
     # Delete the requested playlist
     del pctl.multi_playlist[index]
 
-
     # Re-set the open viewed playlist number by uid
     for i, pl in enumerate(pctl.multi_playlist):
 
@@ -13037,7 +13051,7 @@ def delete_playlist(index):
             pctl.active_playlist_viewing = i
             break
     else:
-        print("Lost the viewed playlist!")
+        # print("Lost the viewed playlist!")
         # Try find the playing playlist and make it the viewed playlist
         for i, pl in enumerate(pctl.multi_playlist):
             if pl[6] == old_playing_id:
@@ -27497,6 +27511,11 @@ class RadioBox:
     def delete_radio_entry(self, p):
         del prefs.radio_urls[p]
 
+    def edit_entry(self, p):
+        radio = prefs.radio_urls[p]
+        self.radio_field_title.text = radio["title"]
+        self.radio_field.text = radio["stream_url"]
+
     def render(self):
 
         w = round(450 * gui.scale)
@@ -27556,7 +27575,13 @@ class RadioBox:
                 radio["stream_url"] = self.radio_field.text
                 radio["website_url"] = ""
 
-                prefs.radio_urls.append(radio)
+                for i, r in enumerate(prefs.radio_urls):
+                    if r["stream_url"] == radio["stream_url"]:
+                        prefs.radio_urls[i] = radio
+                        break
+                else:
+                    prefs.radio_urls.append(radio)
+
                 self.radio_field_title.text = ""
                 self.radio_field.text = ""
             else:
@@ -27665,6 +27690,7 @@ class RadioBox:
 
 radiobox = RadioBox()
 
+radio_entry_menu.add(_("Edit"), radiobox.edit_entry, pass_ref=True)
 radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True)
 
 class RenamePlaylistBox:
@@ -35980,7 +36006,7 @@ while pctl.running:
 
                 #edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
 
-                bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 25 * gui.scale)
+                bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY, gui.plw, 25 * gui.scale, bottom=True)
                 # --------------------------------------------
                 # ALBUM ART
 
@@ -37057,8 +37083,6 @@ while pctl.running:
                     if gui.force_search:
                         search_index = 0
 
-
-
                     if input.backspace_press:
                         search_index = 0
 
@@ -37142,7 +37166,7 @@ while pctl.running:
                     else:
                         search_index = oi
 
-                        edge_playlist.pulse()
+                        edge_playlist2.pulse()
 
                 if input.key_return_press is True and search_index > -1:
                     gui.pl_update = 1
