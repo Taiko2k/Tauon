@@ -344,6 +344,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 4000000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
+    #if os.path.isfile("/usr/lib/libssl.so.1.0.0"):
     #BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.0.0")
 
     #else:
@@ -1504,7 +1505,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 elif bass_error == 44:
                     gui.show_message("Stream error", "Unknown/unsupported codec", mode="warning")
                 elif bass_error == 10:
-                    gui.show_message("Stream error", "SSL/HTTPS support not available", mode="warning")
+                    gui.show_message("Stream error - SSL/HTTPS support not available.", "Try upgrade BASS by going to Audio in Settings and clicking Uninstall then Install.", mode="warning")
                 elif bass_error == -1:
                     gui.show_message("Stream error", "Its a mystery!!", mode="warning")
                 elif bass_error != 0:

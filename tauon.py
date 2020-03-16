@@ -42,8 +42,8 @@ t_id = 'tauonmb'
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
 
-bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.1.0/basslibs64-Apr10.zip"
-bass_archive_checksum = "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867bbe390efa3"  # sha256
+bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
+bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
 
 # Detect platform
 windows_native = False
