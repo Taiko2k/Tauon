@@ -8451,7 +8451,7 @@ class GallClass:
         sources = album_art_gen.get_sources(track_object)
 
         if len(sources) == 0:
-            return False
+            return False, 0
 
         offset = album_art_gen.get_offset(track_object.fullpath, sources)
         return sources[offset], offset
@@ -9473,8 +9473,6 @@ class AlbumArt():
             if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
                 colours.last_album = track.parent_folder_path
 
-
-
                 im.thumbnail((50, 50), Image.ANTIALIAS)
                 pixels = im.getcolors(maxcolors=2500)
                 # print(pixels)
@@ -9681,6 +9679,10 @@ class AlbumArt():
         self.bin_cached = (None, None, None)
         self.loading_bin = (None, None)
         self.embed_cached = (None, None)
+
+        gui.temp_themes.clear()
+        gui.theme_temp_current = -1
+        colours.last_album = ""
 
 #from t_modules.t_art_render import AlbumArt
 
@@ -25736,13 +25738,14 @@ class MiniMode2:
             bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
             ddt.rect(bg_rect, [0, 0, 0, 35], True)
 
-            seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(5 * gui.scale))
-            colour = colours.artist_text
-            if gui.theme_name == "Carbon":
-                colour = colours.bottom_panel_colour
-            if pctl.playing_state != 1:
-                colour = [210, 40, 100, 255]
-            ddt.rect(seek_rect, colour, True)
+            if pctl.playing_length:
+                seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(5 * gui.scale))
+                colour = colours.artist_text
+                if gui.theme_name == "Carbon":
+                    colour = colours.bottom_panel_colour
+                if pctl.playing_state != 1:
+                    colour = [210, 40, 100, 255]
+                ddt.rect(seek_rect, colour, True)
 
 
         # ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
