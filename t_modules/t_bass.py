@@ -1282,25 +1282,33 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print(BASS_ChannelGetTags(handle1,4 ))
 
                 meta = BASS_ChannelGetTags(bass_player.channel, 5)
-                # print(meta)
+
                 if meta is not None:
                     meta = meta.decode('utf-8')
+
+                    for tag in meta.split(";"):
+                        if '=' in tag:
+                            a, b = tag.split('=')
+                            if a == 'StreamTitle':
+                                pctl.tag_meta = b.rstrip("'").lstrip("'")
+                                break
+
                 else:
                     meta = BASS_ChannelGetTags(bass_player.channel, 2)
                     if meta is not None:
-                        if type(meta) is not str:
-                            meta = pctl.tag_meta.decode('utf-8', 'ignore')
-                    else:
-                        meta = ""
 
-                for tag in meta.split(";"):
-                    if '=' in tag:
-                        a, b = tag.split('=')
-                        if a == 'StreamTitle':
-                            pctl.tag_meta = b.rstrip("'").lstrip("'")
-                            break
-                else:
-                    pctl.tag_meta = ""
+                        if type(meta) is not str:
+                            meta = meta.decode()
+                        if '=' in meta:
+                            a, b = meta.split('=')
+                            if a == "title":
+                                pctl.tag_meta = b.strip()
+                            else:
+                                pctl.tag_meta = ""
+                        else:
+                            pctl.tag_meta = ""
+                    else:
+                        pctl.tag_meta = ""
 
                 # print(pctl.tag_meta)
 
@@ -1493,7 +1501,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 bass_player.decode_channel = bass_player.channel
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:
-                    gui.mode=age("Stream error", "Connection timeout", mode="warning")
+                    gui.show_message("Stream error", "Connection timeout", mode="warning")
                 elif bass_error == 32:
                     gui.show_message("Stream error", "No internet connection", mode="warning")
                 elif bass_error == 20:
