@@ -10116,42 +10116,50 @@ def load_m3u(path):
                     gui.auto_play_import = False
                     radiobox.start(radio)
 
-def load_pls(path):
 
-    if os.path.isfile(path):
+def read_pls(lines, path, followed=False):
 
-        ids = []
-        urls = {}
-        titles = {}
+    print(lines)
 
-        f = open(path)
-        lines = f.readlines()
-        f.close()
+    ids = []
+    urls = {}
+    titles = {}
 
-        for line in lines:
-            if "=" in line and line.startswith("File") and "http" in line:
-                # Get number
-                n = line.split("=")[0][4:]
-                if n.isdigit():
-                    if n not in ids:
-                        ids.append(n)
-                    urls[n] = line.split("=", 1)[1].strip()
+    for line in lines:
+        if "=" in line and line.startswith("File") and "http" in line:
+            # Get number
+            n = line.split("=")[0][4:]
+            if n.isdigit():
+                if n not in ids:
+                    ids.append(n)
+                urls[n] = line.split("=", 1)[1].strip()
 
-            if "=" in line and line.startswith("Title"):
-                # Get number
-                n = line.split("=")[0][5:]
-                if n.isdigit():
-                    if n not in ids:
-                        ids.append(n)
-                    titles[n] = line.split("=", 1)[1].strip()
+        if "=" in line and line.startswith("Title"):
+            # Get number
+            n = line.split("=")[0][5:]
+            if n.isdigit():
+                if n not in ids:
+                    ids.append(n)
+                titles[n] = line.split("=", 1)[1].strip()
 
-        for id in ids:
-            if id in urls:
-                radio = {}
-                radio["stream_url"] = urls[id]
-                radio["title"] = os.path.splitext(os.path.basename(path))[0]
-                if id in titles:
-                    radio["title"] = titles[id]
+    for id in ids:
+        if id in urls:
+            radio = {}
+            radio["stream_url"] = urls[id]
+            radio["title"] = os.path.splitext(os.path.basename(path))[0]
+            if id in titles:
+                radio["title"] = titles[id]
+
+            if ".pls" in radio["stream_url"]:
+                if not followed:
+                    try:
+                        print("Download .pls")
+                        response = requests.get(radio["stream_url"], stream=True)
+                        if int(response.headers["Content-length"]) < 2000:
+                            read_pls(response.content.decode().splitlines(), path, followed=True)
+                    except:
+                        print("Failed to retrieve .pls")
+            else:
 
                 # Only add if not saved already
                 for item in prefs.radio_urls:
@@ -10165,6 +10173,17 @@ def load_pls(path):
                 if gui.auto_play_import:
                     gui.auto_play_import = False
                     radiobox.start(radio)
+
+def load_pls(path):
+
+    if os.path.isfile(path):
+
+        f = open(path)
+        lines = f.readlines()
+        read_pls(lines, path)
+        f.close()
+
+
 
 
 def load_xspf(path):
