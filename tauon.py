@@ -3609,12 +3609,36 @@ def tag_scan(nt):
 
 def get_radio_art():
 
-    if "radio.plaza.one" in pctl.url:
+    if "ggdrasilradio" in radiobox.playing_title:
+        url = "https://yggdrasilradio.net/data.php?"
+        response = requests.get(url)
+        if response.status_code == 200:
+            lines = response.content.decode().split("|")
+            if len(lines) > 11 and lines[11]:
+                art_id = lines[11].strip().strip("*")
+                art_url = "https://yggdrasilradio.net/images/albumart/" + art_id
+                art_response = requests.get(art_url)
+                if art_response.status_code == 200:
+                    if pctl.radio_image_bin:
+                        pctl.radio_image_bin.close()
+                        pctl.radio_image_bin = None
+                    pctl.radio_image_bin = io.BytesIO(art_response.content)
+                    pctl.radio_image_bin.seek(0)
+                    radiobox.dummy_track.art_url_key = "ok"
+                    return
+
+    elif "radio.plaza.one" in pctl.url:
         console.print("Fetching plaza art")
         response = requests.get("https://api.plaza.one/status")
         if response.status_code == 200:
             d = json.loads(response.text)
             if "playback" in d:
+                if "artist" in d["playback"]:
+                    radiobox.dummy_track.artist = d["playback"]["artist"]
+                if "title" in d["playback"]:
+                    radiobox.dummy_track.title = d["playback"]["title"]
+                if "album" in d["playback"]:
+                    radiobox.dummy_track.album = d["playback"]["album"]
                 if "artwork_src" in d["playback"]:
                     art_url = d["playback"]["artwork_src"]
                     art_response = requests.get(art_url)
@@ -3625,14 +3649,12 @@ def get_radio_art():
                         pctl.radio_image_bin = io.BytesIO(art_response.content)
                         pctl.radio_image_bin.seek(0)
                         radiobox.dummy_track.art_url_key = "ok"
-                if "artist" in d["playback"]:
-                    radiobox.dummy_track.artist = d["playback"]["artist"]
-                if "title" in d["playback"]:
-                    radiobox.dummy_track.title = d["playback"]["title"]
-                if "album" in d["playback"]:
-                    radiobox.dummy_track.album = d["playback"]["album"]
-        else:
-            console.print("plaza.one api error")
+                        return
+
+    # Failure
+    if pctl.radio_image_bin:
+        pctl.radio_image_bin.close()
+        pctl.radio_image_bin = None
 
 
 # Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
@@ -3782,7 +3804,11 @@ class PlayerCtl:
 
                 pctl.radio_image_bin = None
 
-                get_radio_art()
+                try:
+                    get_radio_art()
+                except:
+                    raise
+                    print("Get art error")
                 gui.clear_image_cache_next = True
 
                 if pctl.mpris:
@@ -7872,9 +7898,6 @@ class TextBox2:
 
         if width > 0 and active:
 
-
-
-
             if click and field_menu.active:
                 # field_menu.click()
                 click = False
@@ -8069,6 +8092,7 @@ class TextBox2:
             width -= round(15 * gui.scale)
             t_len = ddt.get_text_w(self.text, font)
             ddt.text((0, 0), self.text, colour, font)
+            self.offset = 0
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
@@ -9158,7 +9182,8 @@ class AlbumArt():
                     source_image = io.BytesIO(response.read())
             except:
                 # raise
-                print("IMAGE NETWORK LOAD ERROR")
+                pass
+                # print("IMAGE NETWORK LOAD ERROR")
 
         else:
             source_image = open(subsource[1], 'rb')
@@ -9637,8 +9662,8 @@ class AlbumArt():
 
         except Exception as error:
 
-            print("Image processing error: " + str(error))
-            console.print("Image processing error", level=5)
+            # print("Image processing error: " + str(error))
+            console.print("Image load error", level=5)
             console.print("-- Associated track: " + track.fullpath)
             console.print("-- Exception: " + str(error))
 
@@ -17240,6 +17265,8 @@ def activate_info_box():
 
 def activate_radio_box():
     radiobox.active = True
+    radiobox.radio_field.clear()
+    radiobox.radio_field_title.clear()
 
 
 add_icon.xoff = 3
@@ -27515,10 +27542,12 @@ class RadioBox:
         self.dummy_track.is_network = True
         self.dummy_track.art_url_key = "" #radio"
         self.dummy_track.file_ext = "RADIO"
+        self.playing_title = ""
 
     def start(self, item):
 
         url = item["stream_url"]
+        self.playing_title = item["title"]
 
         pctl.url = url
         pctl.playing_state = 0
@@ -27541,8 +27570,8 @@ class RadioBox:
 
     def render(self):
 
-        w = round(450 * gui.scale)
-        h = round(350 * gui.scale)  # + sh
+        w = round(510 * gui.scale)
+        h = round(356 * gui.scale)  # + sh
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
 
@@ -27563,30 +27592,34 @@ class RadioBox:
 
         width = round(370 * gui.scale)
 
+        rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
+        fields.add(rect)
+        if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 2):
+            self.radio_field_active = 1
+            input.key_tab_press = False
         if not self.radio_field_title.text:
             ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), (90, 90, 90, 255), 312)
         self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170),
                                     active=self.radio_field_active == 1,
                                     width=width, click=gui.level_2_click)
-        rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
+
         ddt.rect(rect, colours.grey(50))
-        fields.add(rect)
-        if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 2):
-            self.radio_field_active = 1
-            input.key_tab_press = False
+
 
         yy += round(30 * gui.scale)
 
-        if not self.radio_field.text:
-            ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", (90, 90, 90, 255), 312)
-        self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170), active=self.radio_field_active == 2,
-                              width=width, click=gui.level_2_click)
         rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
         ddt.rect(rect, colours.grey(50))
         fields.add(rect)
         if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 1):
             self.radio_field_active = 2
             input.key_tab_press = False
+
+        if not self.radio_field.text:
+            ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", (90, 90, 90, 255), 312)
+        self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170), active=self.radio_field_active == 2,
+                              width=width, click=gui.level_2_click)
+
 
         if draw.button("Save", x + width + round(21 * gui.scale), yy - round(20 * gui.scale), press=gui.level_2_click):
 
@@ -27611,14 +27644,14 @@ class RadioBox:
                 show_message("Could not validate URL. Must start with https://")
 
         yy += round(30 * gui.scale)
-        x += round(12 * gui.scale)
+        x += round(10 * gui.scale)
 
         self.scroll_position += mouse_wheel * -1
         self.scroll_position = max(self.scroll_position, 0)
-        self.scroll_position = min(self.scroll_position, len(prefs.radio_urls) // 2 - 4)
+        self.scroll_position = min(self.scroll_position, len(prefs.radio_urls) // 2 - 7)
 
-        if len(prefs.radio_urls) // 2 > 4:
-            self.scroll_position = self.scroll.draw(x + round(415 * gui.scale), yy, round(15 * gui.scale), round(210 * gui.scale), self.scroll_position, len(prefs.radio_urls) // 2 - 4, True, click=gui.level_2_click)
+        if len(prefs.radio_urls) // 2 > 9:
+            self.scroll_position = self.scroll.draw((x + w) - round(35 * gui.scale), yy, round(15 * gui.scale), round(210 * gui.scale), self.scroll_position, len(prefs.radio_urls) // 2 - 7, True, click=gui.level_2_click)
 
         self.scroll_position = max(self.scroll_position, 0)
 
@@ -27634,7 +27667,7 @@ class RadioBox:
             xx = x + offset
             item = prefs.radio_urls[p]
 
-            rect = (xx, yy, round(200 * gui.scale), round(35 * gui.scale))
+            rect = (xx, yy, round(233 * gui.scale), round(19 * gui.scale))
             fields.add(rect)
 
             bg = colours.sys_background_3
@@ -27658,16 +27691,18 @@ class RadioBox:
                 if level_2_right_click:
                     radio_entry_menu.activate(p)
 
-            ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], [200, 200, 200, 255], 212, bg=bg, max_w=rect[2] - 20 * gui.scale)
-            ddt.text((xx + round(5 * gui.scale), yy + round(16 * gui.scale)), item["stream_url"], [200, 200, 200, 255], 312, bg=bg, max_w=rect[2] - 20 * gui.scale)
+            if item["title"]:
+                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], [200, 200, 200, 255], 212, bg=bg, max_w=rect[2] - 15 * gui.scale)
+            else:
+                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["stream_url"], [200, 200, 200, 255], 312, bg=bg, max_w=rect[2] - 15 * gui.scale)
 
             if offset == 0:
-                offset = rect[2] + round(10 * gui.scale)
+                offset = rect[2] + round(4 * gui.scale)
             else:
                 offset = 0
-                yy += round(40 * gui.scale)
+                yy += round(22 * gui.scale)
 
-            if yy > y + 270 * gui.scale:
+            if yy > y + 300 * gui.scale:
                 break
 
             p += 1
@@ -27713,7 +27748,7 @@ class RadioBox:
 
 radiobox = RadioBox()
 
-radio_entry_menu.add(_("Edit"), radiobox.edit_entry, pass_ref=True)
+radio_entry_menu.add(_("Rename"), radiobox.edit_entry, pass_ref=True)
 radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True)
 
 class RenamePlaylistBox:
@@ -33186,7 +33221,7 @@ def save_state():
             prefs.show_gimage,
             prefs.end_setting,
             prefs.show_gen,
-            None, # was old radio urls
+            [], # was old radio urls
             prefs.auto_del_zip,
             gui.level_meter_colour_mode,
             prefs.ui_scale,
