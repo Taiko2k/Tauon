@@ -11712,7 +11712,7 @@ def lock_folder_tree_deco():
     if tree_view_box.lock_pl:
         return [colours.menu_text, colours.menu_background, _("Unlock Panel")]
     else:
-        return [colours.menu_text, colours.menu_background, _("Lock Panel to Playlist")]
+        return [colours.menu_text, colours.menu_background, _("Lock Panel")]
 
 folder_tree_stem_menu.add(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon)
 folder_tree_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
@@ -11733,7 +11733,7 @@ folder_tree_stem_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
 
 
 
-folder_tree_stem_menu.add("lock", lock_folder_tree, lock_folder_tree_deco, show_test=test_shift)
+folder_tree_stem_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
 #folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
 
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
@@ -16315,7 +16315,7 @@ folder_tree_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=Tr
 
 folder_tree_menu.br()
 folder_tree_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
-folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco, show_test=test_shift)
+folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
 
 
 def lightning_copy():
@@ -26720,7 +26720,7 @@ class StandardPlaylist:
             if track_position in shift_selection or track_position == playlist_selected:
                 highlight = True
 
-            if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
+            if pctl.playing_state != 3 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
                     default_playlist[track_position]:
                 if track_position == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
                     playing = True
@@ -27548,6 +27548,12 @@ class RadioBox:
 
         url = item["stream_url"]
         self.playing_title = item["title"]
+        self.dummy_track.art_url_key = ""
+        self.dummy_track.title = ""
+        self.dummy_track.artist = ""
+        self.dummy_track.album = ""
+        self.playing_title = ""
+        album_art_gen.clear_cache()
 
         pctl.url = url
         pctl.playing_state = 0
@@ -35388,7 +35394,7 @@ while pctl.running:
 
                                     gui.gallery_scroll_field_left = max(x + album_mode_art_size, window_size[0] - round(50 * gui.scale))
 
-                                if info[0] == 1 and pctl.playing_state != 0:
+                                if info[0] == 1 and 0 < pctl.playing_state < 3:
                                     ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                               colours.gallery_highlight, True)
                                     # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
