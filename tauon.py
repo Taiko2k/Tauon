@@ -3792,9 +3792,6 @@ class PlayerCtl:
                 radiobox.dummy_track.title = ""
                 radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
-                for radio in prefs.radio_urls:
-                    if radio["stream_url"] == pctl.url:
-                        radiobox.dummy_track.album = radio["title"]
                 radiobox.dummy_track.lyrics = ""
 
                 if self.tag_meta.count("-") == 1:
@@ -17524,6 +17521,21 @@ mode_menu.add(_('Mini'), set_mini_mode_A1)
 mode_menu.add(_('Square'), set_mini_mode_B1)
 mode_menu.add(_('Square Large'), set_mini_mode_B2)
 mode_menu.add(_('Micro'), set_mini_mode_D)
+
+
+def copy_bb_metadata():
+    tr = pctl.playing_object()
+    if not tr.title and not tr.artist and pctl.playing_state == 3:
+        return pctl.tag_meta
+    text = f"{tr.artist} - {tr.title}".strip(" -")
+    if text:
+        copy_to_clipboard(text)
+    else:
+        show_message(_("No metadata available to copy"))
+
+mode_menu.br()
+mode_menu.add(_('Copy to Clipboard'), copy_bb_metadata)
+
 extra_menu = Menu(175, show_icons=True)
 
 
@@ -27678,12 +27690,15 @@ class RadioBox:
 
             bg = colours.sys_background_3
 
-            if pctl.playing_state == 3 and pctl.url == item["stream_url"]:
+            playing = pctl.playing_state == 3 and pctl.url == item["stream_url"]
+
+            if playing:
                 bg = [28, 28, 28, 255]
+                bg = [70, 30, 120, 255]
                 ddt.rect(rect, bg, True)
 
             if (radio_entry_menu.active and radio_entry_menu.reference == p) or \
-                (not radio_entry_menu.active and coll(rect)):
+                (not radio_entry_menu.active and coll(rect)) and not playing:
 
                 bg = [40, 40, 40, 255]
                 ddt.rect(rect, bg, True)
@@ -27697,10 +27712,12 @@ class RadioBox:
                 if level_2_right_click:
                     radio_entry_menu.activate(p)
 
+            text_colour = [200, 200, 200, 255]
+
             if item["title"]:
-                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], [200, 200, 200, 255], 212, bg=bg, max_w=rect[2] - 15 * gui.scale)
+                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], text_colour, 212, bg=bg, max_w=rect[2] - 15 * gui.scale)
             else:
-                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["stream_url"], [200, 200, 200, 255], 312, bg=bg, max_w=rect[2] - 15 * gui.scale)
+                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["stream_url"], text_colour, 312, bg=bg, max_w=rect[2] - 15 * gui.scale)
 
             if offset == 0:
                 offset = rect[2] + round(4 * gui.scale)
@@ -31100,7 +31117,6 @@ class ArtistInfoBox:
         self.lock = False
         gui.update = 2
         return ""
-
 
 
 # artist info box def
