@@ -13,6 +13,8 @@ v5.4.0
  - Fixed end of tracks being cut off when on repeat
  - Fixed time counter not advancing when playing internet stream
  - Fixed mini-mode with internet radio
+ - Fixed an issue with pasting tracks using ctrl+v
+ - Fixed not being able to use add to queue shortcut with quick find box open
 
 v5.3.1
 

@@ -34184,54 +34184,61 @@ while pctl.running:
                 gui.pl_update = 1
 
 
-        if not quick_search_mode and not pref_box.enabled and not radiobox.active and not rename_track_box.active \
+        if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
                 and not gui.rename_folder_box \
                 and not gui.rename_playlist_box and not search_over.active and not sub_lyrics_box.active:
 
-            if key_c_press and key_ctrl_down:
-                gui.pl_update = 1
-                s_copy()
+            if quick_search_mode:
+                if keymaps.test("add-to-queue") and pctl.selected_ready():
 
-            if key_x_press and key_ctrl_down:
-                gui.pl_update = 1
-                s_cut()
+                    gui.pl_update += 1
 
-            if key_v_press and key_ctrl_down:
-                gui.pl_update = 1
+                    if gui.album_tab_mode:
+                        add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
+                        queue_timer_set()
+                    else:
+                        pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
+                                                               playlist_selected,
+                                                               pl_to_id(pctl.active_playlist_viewing)))
+                        queue_timer_set()
+            else:
 
-                clip = copy_from_clipboard()
-                if clip:
-                    clip = clip.split("\n")
-                    for i, line in enumerate(clip):
-                        if line.startswith("file://"):
-                            target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
-                            load_order = LoadClass()
-                            load_order.target = target
-                            load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
-                            load_orders.append(copy.deepcopy(load_order))
-                else:
-                    paste()
+                if key_c_press and key_ctrl_down:
+                    gui.pl_update = 1
+                    s_copy()
 
-            if keymaps.test("playpause"):
-                if pctl.playing_state == 0:
-                    pctl.play()
-                else:
-                    pctl.pause()
+                if key_x_press and key_ctrl_down:
+                    gui.pl_update = 1
+                    s_cut()
 
-            if keymaps.test("add-to-queue") and pctl.selected_ready():
+                if key_v_press and key_ctrl_down:
+                    gui.pl_update = 1
 
-                gui.pl_update += 1
+                    clip = copy_from_clipboard()
 
-                if gui.album_tab_mode:
-                    add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
-                    queue_timer_set()
-                else:
-                    # pctl.force_queue.append([default_playlist[playlist_selected],
-                    #                          playlist_selected, pl_to_id(pctl.active_playlist_viewing), 0, 0,
-                    #                          uid_gen()])
-                    pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
-                                             playlist_selected, pl_to_id(pctl.active_playlist_viewing)))
-                    queue_timer_set()
+                    if clip:
+                        found = False
+                        clip = clip.split("\n")
+                        for i, line in enumerate(clip):
+                            if line.startswith("file://"):
+                                target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
+                                load_order = LoadClass()
+                                load_order.target = target
+                                load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+                                load_orders.append(copy.deepcopy(load_order))
+                                found = True
+                        if not found:
+                            paste()
+                    else:
+                        paste()
+
+                if keymaps.test("playpause"):
+                    if pctl.playing_state == 0:
+                        pctl.play()
+                    else:
+                        pctl.pause()
+
+
 
         if input.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
             input.key_return_press = False
