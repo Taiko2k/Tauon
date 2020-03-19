@@ -5,6 +5,7 @@ v5.4.0
 
  - Added reading of pls/m3u files for radios
  - Added "Copy to clipboard" function to bottom panel area menu
+ - Added click column title to sort. Removed menu entries.
  - Re-designed "open http stream box"
  - Enabled http stream on GStreamer backend
  - Enabled scrobbling for internet radio
