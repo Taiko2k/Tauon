@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="19.000015"
+   height="11.999998"
+   viewBox="0 0 5.0270876 3.1749994"
+   version="1.1"
+   id="svg1229"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   sodipodi:docname="sort-up.svg">
+  <defs
+     id="defs1223" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#3d3d3d"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="-46.802368"
+     inkscape:cy="24.0879"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="2560"
+     inkscape:window-height="1016"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata1226">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-98.028122,-82.989879)">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.87676167;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+       id="rect1180-6"
+       width="0.8933605"
+       height="3.573442"
+       x="129.84671"
+       y="9.5174618"
+       transform="matrix(0.70339543,0.71079875,0.70339543,-0.71079875,0,0)"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/sort-up.png"
+       inkscape:export-xdpi="95.999916"
+       inkscape:export-ydpi="95.999916" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.87676167;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+       id="rect1182-7"
+       width="3.573442"
+       height="0.8933605"
+       x="129.84671"
+       y="12.197546"
+       transform="matrix(0.70339543,0.71079875,0.70339543,-0.71079875,0,0)"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/sort-up.png"
+       inkscape:export-xdpi="95.999916"
+       inkscape:export-ydpi="95.999916" />
+  </g>
+</svg>

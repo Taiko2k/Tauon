@@ -1622,6 +1622,13 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.tracklist_bg_is_light = False
         self.clear_image_cache_next = False
 
+        self.column_d_click_timer = Timer(10)
+        self.column_d_click_on = -1
+        self.column_sort_ani_timer = Timer(10)
+        self.column_sort_down_icon = asset_loader("sort-down.png", True)
+        self.column_sort_up_icon = asset_loader("sort-up.png", True)
+        self.column_sort_ani_direction = 1
+        self.column_sort_ani_x = 0
 
 gui = GuiVar()
 
@@ -16846,13 +16853,15 @@ def show_set_bar():
 _("Time")
 _("Filepath")
 
-
-set_menu.add(_("Sort Ascending"), sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
-set_menu.add(_("Sort Decending"), sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
-set_menu.br()
+#
+# set_menu.add(_("Sort Ascending"), sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
+# set_menu.add(_("Sort Decending"), sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
+# set_menu.br()
 set_menu.add(_("Auto Resize"), auto_size_columns)
 set_menu.add(_("Hide bar"), hide_set_bar)
 set_menu_hidden.add(_("Show bar"), show_set_bar)
+set_menu.br()
+set_menu.add("- " + _("Remove This"), sa_remove, pass_ref=True)
 set_menu.br()
 set_menu.add("+ " + _("Artist"), sa_artist)
 set_menu.add("+ " + _("Title"), sa_title)
@@ -16872,8 +16881,7 @@ set_menu.add("+ " + _("Filepath"), sa_file)
 set_menu.add("+ " + _("Starline"), sa_star)
 set_menu.add("+ " + _("Rating"), sa_rating)
 set_menu.add("+ " + _("Loved"), sa_love)
-set_menu.br()
-set_menu.add("- " + _("Remove This"), sa_remove, pass_ref=True)
+
 
 
 def bass_features_deco():
@@ -17165,6 +17173,7 @@ def switch_playlist(number, cycle=False):
 
     gui.pl_update = 1
     search_index = 0
+    gui.column_d_click_on = -1
     gui.search_error = False
     if quick_search_mode:
         gui.force_search = True
@@ -35911,24 +35920,56 @@ while pctl.running:
                         l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
                         fields.add(m_grip)
 
-
                         if coll(l_grip):
                             if mouse_up and gui.set_label_hold != -1:
-                                if h != gui.set_label_hold:
-                                    dest = h
-                                    if dest > gui.set_label_hold:
-                                        dest += 1
-                                    temp = gui.pl_st[gui.set_label_hold]
-                                    gui.pl_st[gui.set_label_hold] = "old"
-                                    gui.pl_st.insert(dest, temp)
-                                    gui.pl_st.remove("old")
+                                if point_distance(mouse_position, gui.set_label_point) < 3 * gui.scale:
+                                    sort_direction = 0
+                                    if h != gui.column_d_click_on or gui.column_d_click_timer.get() > 2.5:
+                                        gui.column_d_click_timer.set()
+                                        gui.column_d_click_on = h
 
-                                    gui.pl_update = 1
+                                        sort_direction = 1
+
+                                        gui.column_sort_ani_direction = 1
+                                        gui.column_sort_ani_x = start + run + item[1]
+
+                                    elif gui.column_d_click_on == h:
+                                        gui.column_d_click_on= -1
+                                        gui.column_d_click_timer.force_set(10)
+
+                                        sort_direction = -1
+
+                                        gui.column_sort_ani_direction = -1
+                                        gui.column_sort_ani_x = start + run + item[1]
+
+                                    if sort_direction:
+
+                                        if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "Time", "Date"}:
+                                            sort_direction *= -1
+
+                                        if sort_direction == 1:
+                                            sort_ass(h)
+                                        else:
+                                            sort_ass(h, True)
+                                        gui.column_sort_ani_timer.set()
+
+                                else:
+                                    gui.column_d_click_on = -1
+                                    if h != gui.set_label_hold:
+                                        dest = h
+                                        if dest > gui.set_label_hold:
+                                            dest += 1
+                                        temp = gui.pl_st[gui.set_label_hold]
+                                        gui.pl_st[gui.set_label_hold] = "old"
+                                        gui.pl_st.insert(dest, temp)
+                                        gui.pl_st.remove("old")
+
+                                        gui.pl_update = 1
+                                        gui.set_label_hold = -1
+                                        # print("MOVE")
+                                        break
+
                                     gui.set_label_hold = -1
-                                    # print("MOVE")
-                                    break
-
-                                gui.set_label_hold = -1
 
                             if input.mouse_click:
                                 gui.set_label_hold = h
@@ -35968,7 +36009,6 @@ while pctl.running:
                             gui.cursor_want = 1
                         if gui.set_hold != -1:
                             gui.cursor_want = 1
-
 
 
                 # heart field test
@@ -36082,8 +36122,23 @@ while pctl.running:
                             heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, [230, 230, 230, 255])
                         else:
                             ddt.text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
+
+
                         run += box[2]
 
+                    t = gui.column_sort_ani_timer.get()
+                    if t < 0.30:
+                        gui.update += 1
+                        x = round(gui.column_sort_ani_x - 22 * gui.scale)
+                        p = t / 0.30
+
+                        if gui.column_sort_ani_direction == 1:
+                            y = top + 8 * p + 3 * gui.scale
+                            gui.column_sort_down_icon.render(x, round(y), [255, 255, 255, 90])
+                        else:
+                            p = 1 - p
+                            y = top + 8 * p + 2 * gui.scale
+                            gui.column_sort_up_icon.render(x, round(y), [255, 255, 255, 90])
 
 
                 # Switch Vis:
@@ -36350,7 +36405,10 @@ while pctl.running:
             if gui.artist_info_panel:
                 top += gui.artist_panel_height
 
-            edge_playlist2.render(gui.playlist_left, top, gui.plw, 25 * gui.scale)
+            edge_top = top
+            if gui.set_bar and gui.set_mode:
+                edge_top += gui.set_height
+            edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
 
             width = 15 * gui.scale
 
