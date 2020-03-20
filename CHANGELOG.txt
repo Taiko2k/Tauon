@@ -17,6 +17,9 @@ v5.4.0
  - Fixed mini-mode with internet radio
  - Fixed an issue with pasting tracks using ctrl+v
  - Fixed not being able to use add to queue shortcut with quick find box open
+ - Fixed clear playlist not resetting view position
+ - Fixed paste menu function not working with external folder paste
+ - Fixed external folder paste not working from some file managers (Nemo)
 
 v5.3.1
 
