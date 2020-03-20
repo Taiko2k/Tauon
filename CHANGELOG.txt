@@ -7,6 +7,7 @@ v5.4.0
  - Added "Copy to clipboard" function to bottom panel area menu
  - Added click column title to sort. Removed menu entries.
  - Re-designed "open http stream box"
+ - Restored drag tab to end duplicate tab function (hold ctrl)
  - Enabled http stream on GStreamer backend
  - Enabled scrobbling for internet radio
  - Fixed view jump on queue advance

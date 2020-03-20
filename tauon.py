@@ -23818,12 +23818,15 @@ class TopPanel:
             fields.add(rect)
 
         if mouse_up and playlist_box.drag and mouse_position[0] > x and mouse_position[1] < self.height:
-            #gen_dupe(playlist_box.drag_on)
 
-            if playlist_box.drag_source == 1:
-                pctl.multi_playlist[playlist_box.drag_on][8] = False
+            if key_ctrl_down:
+                gen_dupe(playlist_box.drag_on)
 
-            move_playlist(playlist_box.drag_on, i)
+            else:
+                if playlist_box.drag_source == 1:
+                    pctl.multi_playlist[playlist_box.drag_on][8] = False
+
+                move_playlist(playlist_box.drag_on, i)
             playlist_box.drag = False
 
         # Need to test length again
@@ -23934,10 +23937,12 @@ class TopPanel:
                 if mouse_up:
                     drop_tracks_to_new_playlist(shift_selection)
 
-
             # Draw end drag tab indicator
             if playlist_box.drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
-                ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255], True)
+                if key_ctrl_down:
+                    ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [255, 190, 0, 255], True)
+                else:
+                    ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255], True)
 
         # -------------
         # Other input
@@ -28414,18 +28419,26 @@ class PlaylistBox:
             # Move tab to end playlist if dragged past end
             if self.drag:
                 if mouse_up:
+                    if key_ctrl_down:
+                        # Duplicate playlist on ctrl
+                        gen_dupe(playlist_box.drag_on)
+                        gui.update += 2
+                        self.drag = False
+                    else:
+                        # If drag from top bar to side panel, make hidden
+                        if self.drag_source == 0:
+                            pctl.multi_playlist[self.drag_on][8] = True
 
-                    # If drag from top bar to side panel, make hidden
-                    if self.drag_source == 0:
-                        pctl.multi_playlist[self.drag_on][8] = True
-
-                    move_playlist(self.drag_on, i)
-                    gui.update += 2
-                    self.drag = False
+                        move_playlist(self.drag_on, i)
+                        gui.update += 2
+                        self.drag = False
                 else:
-                    ddt.rect((tab_start, yy, tab_width, self.indicate_w),
-                             [80, 160, 200, 255], True)
-
+                    if key_ctrl_down:
+                        ddt.rect((tab_start, yy, tab_width, self.indicate_w),
+                                 [255, 190, 0, 255], True)
+                    else:
+                        ddt.rect((tab_start, yy, tab_width, self.indicate_w),
+                                 [80, 160, 200, 255], True)
 
 playlist_box = PlaylistBox()
 
