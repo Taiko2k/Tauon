@@ -12184,14 +12184,17 @@ showcase_menu.add_to_sub(_('Substitute Search...'), 0, show_sub_search, pass_ref
 showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
 showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-# showcase_menu.add_to_sub(_('Split Lines'), 0, split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True, show_test=lyrics_in_side_show)
 showcase_menu.add_to_sub('Toggle art panel', 0, toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show)
-#showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
-#center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+
 
 center_info_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 center_info_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-
+center_info_menu.add_sub("Misc…", 150)
+center_info_menu.add_to_sub(_('Substitute Search...'), 0, show_sub_search, pass_ref=True)
+center_info_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
+center_info_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+center_info_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+center_info_menu.add_to_sub('Toggle art panel', 0, toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show)
 
 def save_embed_img(track_object):
 
@@ -12644,7 +12647,15 @@ def append_here():
 
 def paste_deco():
 
+    active = False
     if len(cargo) > 0:
+        active = True
+    elif SDL_HasClipboardText():
+        text = copy_from_clipboard()
+        if text.startswith("/") or "file://" in text:
+            active = True
+
+    if active:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -12980,6 +12991,8 @@ def clear_playlist(index):
 
     # pctl.playlist_playing = 0
     pctl.multi_playlist[index][3] = 0
+    if index == pctl.active_playlist_viewing:
+        pctl.playlist_view_position = 0
 
     gui.pl_update = 1
 
@@ -13193,7 +13206,7 @@ def re_import2(pl):
 
 
 def s_append(index):
-    paste(playlist=index)
+    paste(playlist_no=index)
 
 
 def append_playlist(index):
@@ -15235,17 +15248,37 @@ def lightning_paste():
     gui.lightning_copy = False
 
 
+def paste(playlist_no=None, track_id=None):
 
-def paste(playlist=None, position=None):
+    clip = copy_from_clipboard()
 
+    found = False
+    if clip:
+        clip = clip.split("\n")
+        for i, line in enumerate(clip):
+            if line.startswith("file://") or line.startswith("/"):
+                target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
+                load_order = LoadClass()
+                load_order.target = target
+                load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
-    if playlist is None:
-        if position is None:
-            transfer(0, (2, 3))
+                if playlist_no is not None:
+                    load_order.playlist = pl_to_id(playlist_no)
+                if track_id is not None:
+                    load_order.playlist_position = r_menu_position
+
+                load_orders.append(copy.deepcopy(load_order))
+                found = True
+
+    if not found:
+
+        if playlist_no is None:
+            if track_id is None:
+                transfer(0, (2, 3))
+            else:
+                transfer(track_id, (2, 2))
         else:
-            transfer(position, (2, 2))
-    else:
-        append_playlist(playlist)
+            append_playlist(playlist_no)
 
     gui.pl_update += 1
     return
@@ -34235,24 +34268,7 @@ while pctl.running:
 
                 if key_v_press and key_ctrl_down:
                     gui.pl_update = 1
-
-                    clip = copy_from_clipboard()
-
-                    if clip:
-                        found = False
-                        clip = clip.split("\n")
-                        for i, line in enumerate(clip):
-                            if line.startswith("file://"):
-                                target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
-                                load_order = LoadClass()
-                                load_order.target = target
-                                load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
-                                load_orders.append(copy.deepcopy(load_order))
-                                found = True
-                        if not found:
-                            paste()
-                    else:
-                        paste()
+                    paste()
 
                 if keymaps.test("playpause"):
                     if pctl.playing_state == 0:
