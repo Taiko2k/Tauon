@@ -27301,7 +27301,7 @@ class StandardPlaylist:
         gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
 
-        if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * len(list_items) < mouse_position[1] < window_size[
+        if (right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * len(list_items) < mouse_position[1] < window_size[
             1] - 55 and width + left > mouse_position[0] > gui.playlist_left + 15):
             playlist_menu.activate()
 
