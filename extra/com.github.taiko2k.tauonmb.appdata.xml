@@ -60,11 +60,11 @@
 
   <releases>
 
-    <release version="5.3.1" date="2020-03-11">
+    <release version="5.4.0" date="2020-03-24">
       <description>
         <ul>
-          <li>Improved smart playlist feature accessibility</li>
-          <li>Added lyric search substitution feature</li>
+          <li>Radio stations can now be saved from PLS/M3U files</li>
+          <li>Various other improvements for streaming internet radio</li>
           <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
