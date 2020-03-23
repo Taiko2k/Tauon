@@ -1496,31 +1496,35 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print(BASS_ErrorGetCode())
                 # print(pctl.url)
 
-                BASS_ErrorGetCode()  # Flush old errors
                 bass_player.channel = BASS_StreamCreateURL(pctl.url.encode('utf-8'), 0, 0, None, 0)
                 bass_player.decode_channel = bass_player.channel
-                bass_error = BASS_ErrorGetCode()
-                if bass_error == 40:
-                    gui.show_message("Stream error", "Connection timeout", mode="warning")
-                elif bass_error == 32:
-                    gui.show_message("Stream error", "No internet connection", mode="warning")
-                elif bass_error == 20:
-                    gui.show_message("Stream error", "Bad URL", mode="warning")
-                elif bass_error == 2:
-                    gui.show_message("Stream error", "Could not open stream", mode="warning")
-                elif bass_error == 41:
-                    gui.show_message("Stream error", "Unknown file format", mode="warning")
-                elif bass_error == 44:
-                    gui.show_message("Stream error", "Unknown/unsupported codec", mode="warning")
-                elif bass_error == 10:
-                    gui.show_message("Stream error - SSL/HTTPS support not available.", "Try upgrade BASS by going to Audio in Settings and clicking Uninstall then Install.", mode="warning")
-                elif bass_error == -1:
-                    gui.show_message("Stream error", "Its a mystery!!", mode="warning")
-                elif bass_error != 0:
-                    gui.show_message("Stream error", "Something went wrong... somewhere", mode="warning")
-                    print("BASS error: ", end="")
-                    print(bass_error)
-                if bass_error == 0:
+
+                if not bass_player.channel:
+                    bass_error = BASS_ErrorGetCode()
+                    if bass_error == 40:
+                        gui.show_message("Stream error", "Connection timeout", mode="warning")
+                    elif bass_error == 32:
+                        gui.show_message("Stream error", "No internet connection", mode="warning")
+                    elif bass_error == 20:
+                        gui.show_message("Stream error", "Bad URL", mode="warning")
+                    elif bass_error == 2:
+                        gui.show_message("Stream error", "Could not open stream", mode="warning")
+                    elif bass_error == 41:
+                        gui.show_message("Stream error", "Unknown file format", mode="warning")
+                    elif bass_error == 44:
+                        gui.show_message("Stream error", "Unknown/unsupported codec", mode="warning")
+                    elif bass_error == 10:
+                        gui.show_message("Stream error - SSL/HTTPS support not available.", "Try upgrade BASS by going to Audio in Settings and clicking Uninstall then Install.", mode="warning")
+                    elif bass_error == -1:
+                        gui.show_message("Stream error", "Its a mystery!!", mode="warning")
+                    elif bass_error != 0:
+                        gui.show_message("Stream error", "Something went wrong... somewhere", mode="warning")
+                        print(f"BASS error: {bass_error}")
+
+                    pctl.playing_status = 0
+                    bass_player.stop()
+
+                else:
                     BASS_ChannelSetAttribute(bass_player.channel, 2, pctl.player_volume / 100)
                     BASS_ChannelPlay(bass_player.channel, True)
 
@@ -1529,9 +1533,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     pctl.playing_time = 0
                     pctl.last_playing_time = 0
                     player_timer.hit()
-                else:
-                    pctl.playing_status = 0
-                    bass_player.stop()
+
 
             if command == 'record':
                 if pctl.playing_state != 3:
