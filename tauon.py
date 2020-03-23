@@ -3805,7 +3805,7 @@ class PlayerCtl:
                 radiobox.dummy_track.album = ""
                 radiobox.dummy_track.lyrics = ""
 
-                if self.tag_meta.count("-") == 1:
+                if self.tag_meta.count("-") == 1 and not ":" in self.tag_meta and not "advert" in self.tag_meta.lower():
                     artist, title = self.tag_meta.split("-")
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
@@ -10231,15 +10231,20 @@ def load_xspf(path):
 
         a = []
         b = {}
+        info = ""
 
         for top in e:
 
+            if top.tag.endswith("info"):
+                info = top.text
             if top.tag.endswith("title"):
                 name = top.text
             if top.tag.endswith("trackList"):
                 for track in top:
                     if track.tag.endswith("track"):
                         for field in track:
+                            print(field.tag)
+                            print(field.text)
                             if 'title' in field.tag and field.text:
                                 b['title'] = field.text
                             if 'location' in field.tag and field.text:
@@ -10257,6 +10262,9 @@ def load_xspf(path):
                                 b['album'] = field.text
                             if 'duration' in field.tag and field.text:
                                 b['duration'] = field.text
+
+                        b["info"] = info
+                        b["name"] = name
                         a.append(copy.deepcopy(b))
                         b = {}
 
@@ -10265,6 +10273,30 @@ def load_xspf(path):
         #tauon.log("-- Error parsing XSPF file")
         console.print("-- Error parsing XSPF file")
         return
+
+    # Extract internet streams first
+    for i in reversed(range(len(a))):
+        item = a[i]
+        if item["location"].startswith("http"):
+            radio = {}
+            radio["stream_url"] = item["location"]
+            radio["title"] = item["name"]
+            if item["info"].startswith("http"):
+                radio["website_url"] = item["info"]
+            # Only add if not saved already
+            for item in prefs.radio_urls:
+                if item["stream_url"] == radio["stream_url"]:
+                    break
+            else:
+                prefs.radio_urls.append(radio)
+
+                if not gui.auto_play_import:
+                    show_message("Radio station imported", mode="done")
+                else:
+                    gui.auto_play_import = False
+                    radiobox.start(radio)
+
+            del a[i]
 
     playlist = []
     missing = 0
@@ -10381,9 +10413,9 @@ def load_xspf(path):
 
 
     #print(playlist)
-
-    pctl.multi_playlist.append(pl_gen(title=name,
-                                      playlist=playlist))
+    if playlist:
+        pctl.multi_playlist.append(pl_gen(title=name,
+                                          playlist=playlist))
     gui.update = 1
 
     # tauon.log("Finished importing XSPF")
@@ -22282,7 +22314,7 @@ class Over:
                 # fields.add(link_rect)
 
                 link_pa2 = draw_linked_text((x + 280 * gui.scale, y - 6 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg3(190), 13)
-                link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
+                link_rect2 = [x + 280 * gui.scale, y - 6 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
 
                 # if coll(link_rect):
@@ -27631,6 +27663,9 @@ class RadioBox:
     def delete_radio_entry(self, p):
         del prefs.radio_urls[p]
 
+    def delete_radio_entry_after(self, p):
+        del prefs.radio_urls[p + 1:]
+
     def edit_entry(self, p):
         radio = prefs.radio_urls[p]
         self.radio_field_title.text = radio["title"]
@@ -27821,29 +27856,30 @@ class RadioBox:
 
 radiobox = RadioBox()
 
-def visit_radio_site_show_test(p):
-    return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
-
-
-# def visit_radio_site_deco(p):
+# def visit_radio_site_show_test(p):
+#     return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
 #
-#     if "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
-#         return [colours.menu_text, colours.menu_background, None]
-#     else:
-#         return [colours.menu_text_disabled, colours.menu_background, None]
+
+def visit_radio_site_deco(p):
+
+    if p < len(prefs.radio_urls) and "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
+        return [colours.menu_text, colours.menu_background, None]
+    else:
+        return [colours.menu_text_disabled, colours.menu_background, None]
 
 
 def visit_radio_site(p):
     if "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
-        webbrowser.open(prefs.radio_urls["website_url"], new=2, autoraise=True)
+        webbrowser.open(prefs.radio_urls[p]["website_url"], new=2, autoraise=True)
 
 def paste_radio_site(p):
     prefs.radio_urls[p]["website_url"] = copy_from_clipboard()
 
 radio_entry_menu.add(_("Paste Website Link"), paste_radio_site, show_test=test_shift, pass_ref=True, pass_ref_deco=True)
-radio_entry_menu.add(_("Visit Website"), visit_radio_site, show_test=visit_radio_site_show_test, pass_ref=True, pass_ref_deco=True)
+radio_entry_menu.add(_("Visit Website"), visit_radio_site, visit_radio_site_deco, pass_ref=True, pass_ref_deco=True)
 radio_entry_menu.add(_("Rename"), radiobox.edit_entry, pass_ref=True)
 radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True)
+radio_entry_menu.add(_("Remove All After"), radiobox.delete_radio_entry_after, pass_ref=True)
 
 class RenamePlaylistBox:
 
