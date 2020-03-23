@@ -1216,7 +1216,7 @@ class Prefs:    # Used to hold any kind of settings
         self.center_gallery_text = False
 
         self.tracklist_y_text_offset = 0
-        self.theme_name = "Sky"
+        self.theme_name = "Turbo"
         self.left_panel_mode = "playlist"
 
         self.folder_tree_codec_colours = False
@@ -3616,7 +3616,7 @@ def tag_scan(nt):
 
 def get_radio_art():
 
-    if "ggdrasilradio" in radiobox.playing_title:
+    if "ggdrasil" in radiobox.playing_title:
         url = "https://yggdrasilradio.net/data.php?"
         response = requests.get(url)
         if response.status_code == 200:
@@ -10125,14 +10125,13 @@ def load_m3u(path):
         for i, line in enumerate(lines):
             if line.startswith("http"):
                 radio = {}
-                radio["title"] = os.path.splitext(os.path.basename(path))[0]
-                radio["stream_url"] = line
+                radio["title"] = os.path.splitext(os.path.basename(path))[0].strip("\r\n").strip()
+                radio["stream_url"] = line.strip("\r\n").strip()
 
                 if i > 0:
                     line = lines[i - 1]
                     if "," in line and line.startswith("#EXTINF:"):
                         radio["title"] = line.split(",", 1)[1].strip()
-
 
                 # Only add if not saved already
                 for item in prefs.radio_urls:
@@ -10148,13 +10147,12 @@ def load_m3u(path):
 
 def read_pls(lines, path, followed=False):
 
-    print(lines)
-
     ids = []
     urls = {}
     titles = {}
 
     for line in lines:
+        line = line.strip("\r\n")
         if "=" in line and line.startswith("File") and "http" in line:
             # Get number
             n = line.split("=")[0][4:]
@@ -27606,12 +27604,13 @@ class RadioBox:
     def start(self, item):
 
         url = item["stream_url"]
+        self.playing_title = ""
         self.playing_title = item["title"]
         self.dummy_track.art_url_key = ""
         self.dummy_track.title = ""
         self.dummy_track.artist = ""
         self.dummy_track.album = ""
-        self.playing_title = ""
+
         album_art_gen.clear_cache()
 
         pctl.url = url
@@ -33968,6 +33967,7 @@ while pctl.running:
                         window_size[1] = max(300, window_size[1])
 
                     update_layout = True
+
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
                 # print("ENTER")
