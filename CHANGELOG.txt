@@ -21,6 +21,7 @@ v5.4.0
  - Fixed paste menu function not working with external folder paste
  - Fixed external folder paste not working from some file managers (Nemo)
  - Fixed playlist paste menu non-activation zone being too large
+ - Fixed showcase view not being restored on app restart
 
 v5.3.1
 

@@ -1630,6 +1630,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.column_sort_ani_direction = 1
         self.column_sort_ani_x = 0
 
+        self.restore_showcase_view = False
+
 gui = GuiVar()
 
 
@@ -2626,6 +2628,8 @@ for t in range(2):
             gui.show_album_ratings = save[141]
         if save[142] is not None:
             prefs.radio_urls = save[142]
+        if save[143] is not None:
+            gui.restore_showcase_view = save[143]
 
         state_file.close()
         del save
@@ -27804,9 +27808,9 @@ class RadioBox:
                 if gui.level_2_click:
                     radiobox.active = False
                     if prefs.backend == 2:
-                        show_message("Recording is currently unavailable with GStreamer backend")
+                        show_message(_("Recording is currently unavailable with the GStreamer backend"))
                     else:
-                        show_message("A stream needs to be playing first.")
+                        show_message(_("A stream needs to be playing first."))
             ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
                                                                            colours.sys_background_3), True)
             ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
@@ -27817,6 +27821,27 @@ class RadioBox:
 
 radiobox = RadioBox()
 
+def visit_radio_site_show_test(p):
+    return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
+
+
+# def visit_radio_site_deco(p):
+#
+#     if "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
+#         return [colours.menu_text, colours.menu_background, None]
+#     else:
+#         return [colours.menu_text_disabled, colours.menu_background, None]
+
+
+def visit_radio_site(p):
+    if "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
+        webbrowser.open(prefs.radio_urls["website_url"], new=2, autoraise=True)
+
+def paste_radio_site(p):
+    prefs.radio_urls[p]["website_url"] = copy_from_clipboard()
+
+radio_entry_menu.add(_("Paste Website Link"), paste_radio_site, show_test=test_shift, pass_ref=True, pass_ref_deco=True)
+radio_entry_menu.add(_("Visit Website"), visit_radio_site, show_test=visit_radio_site_show_test, pass_ref=True, pass_ref_deco=True)
 radio_entry_menu.add(_("Rename"), radiobox.edit_entry, pass_ref=True)
 radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True)
 
@@ -31598,11 +31623,15 @@ class Showcase:
 
         if pctl.playing_state == 3 and not radiobox.dummy_track.title:
 
-            w = window_size[0] - (x + box) - 30 * gui.scale
-            x = int((window_size[0]) / 2)
+            if not pctl.tag_meta:
+                y = int(window_size[1] / 2) - 60 - gui.scale
+                ddt.text((window_size[0] // 2, y, 2), pctl.url, colours.side_bar_line2, 317)
+            else:
+                w = window_size[0] - (x + box) - 30 * gui.scale
+                x = int((window_size[0]) / 2)
 
-            y = int(window_size[1] / 2) - 60 - gui.scale
-            ddt.text((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
+                y = int(window_size[1] / 2) - 60 - gui.scale
+                ddt.text((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
 
         else:
 
@@ -31780,7 +31809,7 @@ class Showcase:
         if gui.vis_4_colour is not None:
             SDL_SetRenderDrawColor(renderer, gui.vis_4_colour[0], gui.vis_4_colour[1], gui.vis_4_colour[2], gui.vis_4_colour[3])
 
-        if (pctl.playing_time < 0.5 and pctl.playing_state == 1) or (pctl.playing_state == 0 and gui.spec4_array.count(0) != len(gui.spec4_array)):
+        if (pctl.playing_time < 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3)) or (pctl.playing_state == 0 and gui.spec4_array.count(0) != len(gui.spec4_array)):
             gui.update = 2
             gui.level_update = True
 
@@ -31789,7 +31818,7 @@ class Showcase:
                 if gui.spec4_array[i] < 0:
                     gui.spec4_array[i] = 0
 
-        if not top and pctl.playing_state == 1:
+        if not top and (pctl.playing_state == 1 or pctl.playing_state == 3):
             gui.update = 2
 
         slide = 0.7
@@ -33379,7 +33408,8 @@ def save_state():
             pctl.gen_codes,
             gui.show_ratings,
             gui.show_album_ratings,
-            prefs.radio_urls
+            prefs.radio_urls,
+            gui.combo_mode,
         ]
 
 
@@ -33551,9 +33581,10 @@ if a01:
             switch_playlist(i)
             break
 
+elif gui.restore_showcase_view:
+    toggle_combo_view(showcase=True)
+
 #switch_playlist(len(pctl.multi_playlist) - 1)
-
-
 
 
 SDL_SetRenderTarget(renderer, None)
@@ -34068,7 +34099,7 @@ while pctl.running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds:  # or mouse_moved:
         power = 1000
 
     if prefs.art_bg and core_timer.get() < 3:
