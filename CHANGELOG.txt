@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.4.1
 
  - Fixed a possible crash if track has lyrics but no album art
+ - Fixed gallery arrow key control
 
 v5.4.0
 

@@ -28221,12 +28221,12 @@ class PlaylistBox:
         delete_pl = None
 
         tab_on = 0
-
-        if key_left_press or key_right_press:
-            if pctl.active_playlist_viewing < self.scroll_on:
-                self.scroll_on = pctl.active_playlist_viewing
-            elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
-                self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
+        # if not gui.album_tab_mode:
+        #     if key_left_press or key_right_press:
+        #         if pctl.active_playlist_viewing < self.scroll_on:
+        #             self.scroll_on = pctl.active_playlist_viewing
+        #         elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
+        #             self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
 
         for i, pl in enumerate(pctl.multi_playlist):
 
@@ -30052,7 +30052,6 @@ class QueueBox:
         if self.right_click_id is not None:
             return True
         return False
-
 
     def right_remove_item(self):
 
@@ -34215,11 +34214,17 @@ while pctl.running:
     if k_input:
 
         if keymaps.test('cycle-playlist-left'):
-            if is_level_zero():
-                cycle_playlist_pinned(1)
+            if gui.album_tab_mode and key_left_press:
+                pass
+            else:
+                if is_level_zero():
+                    cycle_playlist_pinned(1)
         if keymaps.test('cycle-playlist-right'):
-            if is_level_zero():
-                cycle_playlist_pinned(-1)
+            if gui.album_tab_mode and key_right_press:
+                pass
+            else:
+                if is_level_zero():
+                    cycle_playlist_pinned(-1)
 
         if keymaps.test('toggle-console'):
             console.show ^= True
