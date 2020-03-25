@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.4.0"
+n_version = "5.4.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -30478,6 +30478,9 @@ queue_box = QueueBox()
 
 def art_metadata_overlay(right, bottom, showc):
 
+    if not showc:
+        return
+
     padding = 6 * gui.scale
 
     if not key_shift_down:
@@ -32373,7 +32376,6 @@ class DLMon:
                     else:
                         self.watching[path] = size
                         #print("add.")
-
 
                 elif min_age < 60 and os.path.isdir(path) and path not in quick_import_done and "encode-output" not in path:
                     size = get_folder_size(path)
