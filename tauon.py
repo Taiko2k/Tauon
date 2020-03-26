@@ -5236,7 +5236,7 @@ def notify_song(notify_of_end=False, delay=0):
 
         track = pctl.playing_object()
 
-        if not (track.title or track.artist or track.album):
+        if not track or not (track.title or track.artist or track.album):
             return  # only display if we have at least one piece of metadata avaliable
 
         i_path = ""
@@ -5244,6 +5244,7 @@ def notify_song(notify_of_end=False, delay=0):
             if not notify_of_end:
                 i_path = thumb_tracks.path(track)
         except:
+            print(track.fullpath)
             print("Thumbnail error")
 
         top_line = track.title
@@ -9106,10 +9107,10 @@ class AlbumArt():
 
     def get_embed(self, track):
 
-        cached = self.embed_cached
-        if cached[0] == track:
-            # print("used cached")
-            return cached[1]
+        #cached = self.embed_cached
+        #if cached[0] == track:
+        #    # print("used cached")
+        #    return cached[1]
 
         filepath = track.fullpath
 
@@ -9156,7 +9157,7 @@ class AlbumArt():
                 a.close()
                 pic = image
 
-        self.embed_cached = (track, pic)
+        # self.embed_cached = (track, pic)
         return pic
 
 
@@ -9168,8 +9169,9 @@ class AlbumArt():
             subsource = sources[offset]
 
         cached = self.bin_cached
-        if cached[0] == track and cached[1] == subsource:
-            return cached[2]
+
+        #if cached[0] == track and cached[1] == subsource:
+        #    return cached[2]
 
         if subsource[0] == 1:
             # Target is a embedded image\\\
@@ -9196,7 +9198,7 @@ class AlbumArt():
         else:
             source_image = open(subsource[1], 'rb')
 
-        self.bin_cached = (track, subsource, source_image)
+        #self.bin_cached = (track, subsource, source_image)
         return source_image
 
     def get_base64(self, track, size):
@@ -9671,10 +9673,9 @@ class AlbumArt():
         except Exception as error:
 
             # print("Image processing error: " + str(error))
-            console.print("Image load error", level=5)
+            console.print("Image load error")
             console.print("-- Associated track: " + track.fullpath)
             console.print("-- Exception: " + str(error))
-
 
             self.current_wu = None
             del self.source_cache[index][offset]
@@ -9763,12 +9764,19 @@ class StyleOverlay:
             if pctl.playing_ready() and self.min_on_timer.get() > 0:
 
                 track = pctl.playing_object()
+
                 self.window_size = copy.copy(window_size)
                 self.parent_path = track.parent_folder_path
                 self.current_track_id = track.index
                 self.current_track_album = track.album
 
-                self.im = album_art_gen.get_blur_im(track)
+                try:
+                    self.im = album_art_gen.get_blur_im(track)
+                except Exception as e:
+                    print("Blur blackground error")
+                    print(str(e))
+                    print(track.fullpath)
+
                 if self.im is None or self.im is False:
                     if self.a_texture:
                         self.stage = 2
@@ -12059,7 +12067,7 @@ def get_lyric_fire(track_object, silent=False):
 
             except:
                 if not silent:
-                    print("Apiseeds does not appear to have lyrics for this song")
+                    print("Genius does not appear to have lyrics for this song")
                 continue
 
     if not found:
@@ -16521,7 +16529,9 @@ def ser_gen(track_id, get_lyrics=False):
     line = urllib.parse.quote(line)
     line = f"https://genius.com/{line}-lyrics"
 
+
     if get_lyrics:
+
         page = requests.get(line)
         html = BeautifulSoup(page.text, 'html.parser')
         lyrics = html.find('div', class_='lyrics').get_text()

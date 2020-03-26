@@ -60,7 +60,7 @@
 
   <releases>
 
-    <release version="5.4.0" date="2020-03-24">
+    <release version="5.4.1" date="2020-03-26">
       <description>
         <ul>
           <li>Radio stations can now be saved from PLS/M3U files</li>

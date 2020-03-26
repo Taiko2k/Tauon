@@ -5,6 +5,7 @@ v5.4.1
 
  - Fixed a possible crash if track has lyrics but no album art
  - Fixed gallery arrow key control
+ - Fixed an issue where embedded album art sometimes wouldn't load
 
 v5.4.0
 
