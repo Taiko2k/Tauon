@@ -33460,25 +33460,29 @@ def save_state():
         ]
 
 
-    pickle.dump(save, open(user_directory + "/state.p.backup", "wb"))
-    # if not pctl.running:
-    pickle.dump(save, open(user_directory + "/state.p", "wb"))
+    try:
+        pickle.dump(save, open(user_directory + "/state.p.backup", "wb"))
+        # if not pctl.running:
+        pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
-    save = [
-        draw_border,
-        gui.save_size,
-        window_opacity,
-        gui.scale,
-        gui.maximized,
+        save = [
+            draw_border,
+            gui.save_size,
+            window_opacity,
+            gui.scale,
+            gui.maximized,
 
-    ]
+        ]
 
-    pickle.dump(save, open(user_directory + "/window.p", "wb"))
+        pickle.dump(save, open(user_directory + "/window.p", "wb"))
 
-    with open(user_directory + "/lyrics_substitutions.json", 'w') as f:
-        json.dump(prefs.lyrics_subs, f,)
+        with open(user_directory + "/lyrics_substitutions.json", 'w') as f:
+            json.dump(prefs.lyrics_subs, f,)
 
-    save_prefs()
+        save_prefs()
+
+    except PermissionError:
+        show_message("Permission error encountered while writing database", "error")
 
 # SDL_StartTextInput()
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
@@ -38107,7 +38111,10 @@ while pctl.running:
     # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
         print("Auto Save")
-        pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+        try:
+            pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+        except PermissionError:
+            show_message("Permission error encountered while writing database", "error")
         time_last_save = pctl.total_playtime
 
     # Always render at least one frame per minute (to avoid SDL bugs I guess)
