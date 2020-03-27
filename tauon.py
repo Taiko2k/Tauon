@@ -15477,6 +15477,19 @@ def add_to_queue(ref):
     queue_timer_set()
 
 
+def add_selected_to_queue():
+    gui.pl_update += 1
+
+    if gui.album_tab_mode:
+        add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
+        queue_timer_set()
+    else:
+        pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
+                                               playlist_selected,
+                                               pl_to_id(pctl.active_playlist_viewing)))
+        queue_timer_set()
+
+
 def queue_timer_set(plural=False, queue_object=None):
     queue_add_timer.set()
     gui.frame_callback_list.append(TestTimer(2.51))
@@ -34333,17 +34346,8 @@ while pctl.running:
 
             if quick_search_mode:
                 if keymaps.test("add-to-queue") and pctl.selected_ready():
+                    add_selected_to_queue()
 
-                    gui.pl_update += 1
-
-                    if gui.album_tab_mode:
-                        add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
-                        queue_timer_set()
-                    else:
-                        pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
-                                                               playlist_selected,
-                                                               pl_to_id(pctl.active_playlist_viewing)))
-                        queue_timer_set()
             else:
 
                 if key_c_press and key_ctrl_down:
@@ -34682,6 +34686,8 @@ while pctl.running:
             if keymaps.test("global-search"):
                 activate_search_overlay()
 
+            if keymaps.test("add-to-queue") and pctl.selected_ready():
+                add_selected_to_queue()
     # if mouse_position[1] < 1:
     #     mouse_down = False
 
