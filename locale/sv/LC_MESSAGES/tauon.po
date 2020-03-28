@@ -1141,7 +1141,7 @@ msgstr "Använd flikar i toppanelen"
 
 #: tauon.py:22255
 msgid "Auto update generated playlists"
-msgstr "Uppdatera genererade spelningslistor automatiskt"
+msgstr "Uppdatera genererade listor automatiskt"
 
 #: tauon.py:22269
 msgid "Extract archives on import"
@@ -1706,7 +1706,7 @@ msgstr "Samplingsfrekvens"
 
 #: tauon.py:36951 tauon.py:36968
 msgid " of "
-msgstr "av"
+msgstr " av "
 
 #: tauon.py:36953
 msgid "Track"
