@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.4.1"
+n_version = "5.4.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -2892,6 +2892,23 @@ if db_version > 0:
             if len(value) == 2:
                 value.append(0)
                 star_store.db[key] = value
+
+    if db_version <= 39:
+        print("Updating database to version 40")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            f = open(os.path.join(config_directory, "input.txt"), 'r')
+            text = f.read()
+            f.close()
+            lines = text.splitlines()
+            if "l ctrl" not in text.lower():
+                f = open(os.path.join(config_directory, "input.txt"), 'w')
+                for line in lines:
+                    line = line.strip()
+                    if line == "love-selected":
+                        line = "love-selected L Ctrl"
+                    f.write(line + "\n")
+                f.close()
 
 # for key, value in star_store.db.items():
 #     print(value)
@@ -22938,12 +22955,14 @@ class Over:
 
             y += 25 * gui.scale
 
-            ddt.text((x, y + 1 * gui.scale), "Translations", colours.grey(90), 13)
-            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "tyzmodo", colours.grey(220), 13)
-            y += 19 * gui.scale
-            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "brunob", colours.grey(220), 13)
+            ddt.text((x, y), "Translations", colours.grey(90), 13)
+            ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.grey(220), 13)
+            y += 18 * gui.scale
+            ddt.text((x + 120 * gui.scale, y), "brunob", colours.grey(220), 13)
+            y += 18 * gui.scale
+            ddt.text((x + 120 * gui.scale, y), "eson57", colours.grey(220), 13)
 
-        ddt.rect((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
+        ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
         # x = self.box_x + self.w - 100 * gui.scale
         # y = self.box_y + self.h - 35 * gui.scale
@@ -29475,6 +29494,9 @@ class TreeView:
 
         self.scroll_positions[pl_id] = scroll_position
 
+        gui.update_layout()
+        gui.update += 1
+
     def get_pl_id(self):
         if self.lock_pl:
             return self.lock_pl
@@ -29659,6 +29681,7 @@ class TreeView:
 
                 elif mouse_up and self.click_drag_source == item:
                     # Click tree level folder to open/close branch
+
                     if target not in opens:
                         opens.append(target)
                     else:
@@ -29823,6 +29846,8 @@ class TreeView:
 
         self.gen_row(tree, "", opens)
 
+        gui.update_layout()
+        gui.update += 1
 
     def gen_tree(self, pl_id):
         pl_no = id_to_pl(pl_id)
@@ -32924,7 +32949,9 @@ def update_layout_do():
 
     # Auto shrink left side panel --------------
     pl_width = window_size[0]
+    pl_width_a = pl_width
     if gui.rsp:
+        pl_width_a = pl_width - gui.rspw
         pl_width -= gui.rspw - 300 * gui.scale  # More sensitivity for compact with rsp for better visual balancing
 
     if pl_width < 900 * gui.scale:
@@ -32944,6 +32971,19 @@ def update_layout_do():
 
     if prefs.left_panel_mode == "folder view":
         gui.lspw = 260 * gui.scale
+        max_insets = 0
+        for item in tree_view_box.rows:
+            max_insets = max(item[2], max_insets)
+
+        p = (pl_width_a * 0.15) - round(200 * gui.scale)
+        p = min(round(200 * gui.scale), p)
+        if p > 0:
+            gui.lspw += p
+
+        if max_insets > 1:
+            gui.lspw = gui.lspw + round(15 * gui.scale) * max_insets
+
+
     # -----
 
     # Set bg art strength according to setting ----
@@ -33343,7 +33383,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            39,  # Version, used for upgrading
+            40,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size

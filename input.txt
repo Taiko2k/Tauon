@@ -57,7 +57,7 @@ quick-find F Ctrl
 global-search G Ctrl
 add-to-queue Q Ctrl
 love-playing
-love-selected
+love-selected L Ctrl
 
 
 toggle-left-panel ~
