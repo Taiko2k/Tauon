@@ -3,10 +3,10 @@ Changelog-------------------------------------
 
 v5.4.2
 
- - Set love-selected default shortcut to ctrl+l
+ - Added swedish translation
+ - Set love-selected default shortcut as ctrl+l
  - Tweaked folder navigator panel to auto adjust size
  - Fixed add to queue shortcut
-
 
 v5.4.1
 

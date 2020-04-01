@@ -154,6 +154,7 @@ class Gnome:
                             except Exception as e:
                                 print(str(e))
                                 print("Thumbnail error")
+                                print(track.fullpath)
 
                             self.update_progress()
 

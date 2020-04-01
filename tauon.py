@@ -45,6 +45,7 @@ print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
 bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
 bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
 
+
 # Detect platform
 windows_native = False
 macos = False
@@ -562,11 +563,11 @@ import hashlib
 import platform
 import gettext
 import secrets
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape, unescape
 from ctypes import *
-from PyLyrics import *
 from send2trash import send2trash
 from isounidecode import unidecode
 from collections import OrderedDict
@@ -613,6 +614,7 @@ from t_modules.t_tagscan import Wav
 from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
+from t_modules.t_lyrics import *
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -1149,7 +1151,7 @@ class Prefs:    # Used to hold any kind of settings
         self.bg_showcase_only = False
 
         self.lyrics_enables = []
-        self.apsed_ke = "4daMG8Oas53LFqXEaeFh8mA8UNGVg22JdJXCKxpxp8GtLcVJv29d3fAFYucaALk2"
+
         self.fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 
         self.fanart_notify = True
@@ -2909,6 +2911,17 @@ if db_version > 0:
                         line = "love-selected L Ctrl"
                     f.write(line + "\n")
                 f.close()
+
+    if db_version <= 40:
+        print("Updating database to version 41")
+        old = copy.deepcopy(prefs.lyrics_enables)
+        prefs.lyrics_enables.clear()
+        if "apiseeds" in old:
+            prefs.lyrics_enables.append("Apiseeds")
+        if "lyricwiki" in old:
+            prefs.lyrics_enables.append("LyricWiki")
+        if "genius" in old:
+            prefs.lyrics_enables.append("Genius")
 
 # for key, value in star_store.db.items():
 #     print(value)
@@ -12018,77 +12031,28 @@ def get_lyric_fire(track_object, silent=False):
     if s_title in prefs.lyrics_subs:
         s_title = prefs.lyrics_subs[s_title]
 
-    print((s_artist, s_title))
+    console.print(f"Searching for lyrics: {s_artist} - {s_title}", level=1)
 
     found = False
-    for source in prefs.lyrics_enables:
+    for name in prefs.lyrics_enables:
 
-        if source == 'lyricwiki':
+        if name in lyric_sources.keys():
+            func = lyric_sources[name]
 
-            print("Scrape Lyric Wiki...")
             try:
-
-                lyrics = PyLyrics.getLyrics(s_artist, s_title)
-
-                if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
-                    lyrics = "[Instrumental]"
-
-                track_object.lyrics = lyrics
-
-                found = True
-                print("Found")
-                break
-
-            except:
-                if not silent:
-                    print("LyricWiki does not appear to have lyrics for this song")
-                continue
-
-        # if source == ""
-
-        if source == 'apiseeds':
-
-            print("Query Apiseeds...")
-            try:
-
-                point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(s_artist) + \
-                    "/" + urllib.parse.quote(s_title) + "?apikey=" + prefs.apsed_ke
-
-                r = requests.get(point)
-                d = r.json()['result']['track']['text'].replace("\r\n", "\n")
-
-                track_object.lyrics = d
-
-                print("Found")
-                found = True
-                break
-
-            except:
-                if not silent:
-                    print("Apiseeds does not appear to have lyrics for this song")
-                continue
-
-        if source == 'genius':
-
-            print("Scrape Genius...")
-            try:
-                lyrics = ser_gen(track_object.index, get_lyrics=True)
-
+                lyrics = func(s_artist, s_title)
                 if lyrics:
+                    console.print(f"Found lyrics from {name}", level=1)
                     track_object.lyrics = lyrics
-                    print("Found")
                     found = True
                     break
-                else:
-                    continue
+            except Exception as e:
+                console.print(str(e))
 
-            except:
-                if not silent:
-                    print("Genius does not appear to have lyrics for this song")
-                continue
+            if not found:
+                console.print(f"Could not find lyrics from source {name}", level=1)
 
     if not found:
-        print("no lyrics found")
         if not silent:
             show_message(_("No lyrics for this track were found"))
     else:
@@ -16552,35 +16516,9 @@ def ser_gen(track_id, get_lyrics=False):
     if s_title in prefs.lyrics_subs:
         s_title = prefs.lyrics_subs[s_title]
 
-    line = f"{s_artist}-{s_title}"
-    line = line.replace(" ", "-").replace("/", "-")
-    line = line.replace("-&-", "-and-").replace("&", "-and-")
-
-    line = urllib.parse.quote(line)
-    line = f"https://genius.com/{line}-lyrics"
-
-
-    if get_lyrics:
-
-        page = requests.get(line)
-        html = BeautifulSoup(page.text, 'html.parser')
-        lyrics = html.find('div', class_='lyrics').get_text()
-
-        lyrics2 = []
-        for line in lyrics.splitlines():
-            if line.startswith("["):
-                pass
-            else:
-                lyrics2.append(line)
-
-        lyrics = "\n".join(lyrics2)
-        lyrics = lyrics.strip("\n")
-        return lyrics
-
-
-    # line = "https://genius.com/search?q=" + \
-    #        urllib.parse.quote(pctl.master_library[index].artist + " " + pctl.master_library[index].title)
+    line = genius(s_artist, s_title, return_url=True)
     webbrowser.open(line, new=2, autoraise=True)
+
 
 def ser_wiki(index):
     if len(pctl.master_library[index].artist) < 2:
@@ -21433,35 +21371,6 @@ def toggle_auto_lyrics(mode=0):
     prefs.auto_lyrics ^= True
 
 
-def toggle_lyricwiki(mode=0):
-    if mode == 1:
-        return 'lyricwiki' in prefs.lyrics_enables
-
-    if 'lyricwiki' in prefs.lyrics_enables:
-        prefs.lyrics_enables.clear()
-    else:
-        prefs.lyrics_enables.append("lyricwiki")
-
-
-def toggle_apiseeds(mode=0):
-    if mode == 1:
-        return 'apiseeds' in prefs.lyrics_enables
-
-    if 'apiseeds' in prefs.lyrics_enables:
-        prefs.lyrics_enables.clear()
-    else:
-        prefs.lyrics_enables.append("apiseeds")
-
-def toggle_genius_lyrics(mode=0):
-    if mode == 1:
-        return 'genius' in prefs.lyrics_enables
-
-    if 'genius' in prefs.lyrics_enables:
-        prefs.lyrics_enables.clear()
-    else:
-        prefs.lyrics_enables.append("genius")
-
-
 def switch_single(mode=0):
     if mode == 1:
         if prefs.transcode_mode == 'single':
@@ -22191,13 +22100,18 @@ class Over:
         y += 40 * gui.scale
         ddt.text((x, y), _("Sources:"), colours.grey(100), 11)
         y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_apiseeds, _("Apiseeds"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_lyricwiki, _("LyricWiki*"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_genius_lyrics, _("Genius*"))
 
-        y += 30 * gui.scale
+        for name in lyric_sources.keys():
+            enabled = name in prefs.lyrics_enables
+            new = self.toggle_square(x, y, enabled, _(name))
+            y += round(23 * gui.scale)
+            if new != enabled:
+                if enabled:
+                    prefs.lyrics_enables.clear()
+                else:
+                    prefs.lyrics_enables.append(name)
+
+        y += round(6 * gui.scale)
         ddt.text((x + 12 * gui.scale, y), _("*Uses scraping. Enable at your own discretion."),
                  colours.grey_blend_bg(90), 11)
         y += 20 * gui.scale
@@ -33383,7 +33297,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            40,  # Version, used for upgrading
+            41,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size

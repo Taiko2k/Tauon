@@ -30,7 +30,6 @@ import glob
 import locale
 import re
 import math
-# import hashlib
 
 
 # A seconds based timer
