@@ -56,6 +56,8 @@ def genius(artist, title, return_url=False):
 
     line = f"{artist}-{title}"
     line = re.sub("[,._@!#%^*+;'()]", "", line)
+    line = line.replace("]", "")
+    line = line.replace("[", "")
     line = line.replace(" ", "-")
     line = line.replace("/", "-")
     line = line.replace("-&-", "-and-")
