@@ -60,12 +60,10 @@
 
   <releases>
 
-    <release version="5.4.1" date="2020-03-26">
+    <release version="5.4.2" date="2020-04-02">
       <description>
         <ul>
-          <li>Radio stations can now be saved from PLS/M3U files</li>
-          <li>Various other improvements for streaming internet radio</li>
-          <li>Various tweaks and bug fixes</li>
+          <li>Added Swedish translation</li>
         </ul>
       </description>
     </release>

@@ -682,7 +682,7 @@ vis_update = False
 
 d = datetime.date.today()
 a01 = False
-if "--a01" in str(sys.argv) or (d.month == 4 and d.day == 1):
+if "--a01" in str(sys.argv):  # or (d.month == 4 and d.day == 1):
     a01 = True
 
 # GUI Variables -------------------------------------------------------------------------------------------
