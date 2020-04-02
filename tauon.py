@@ -36869,7 +36869,7 @@ while pctl.running:
                     y1 += int(15 * gui.scale)
 
                     if tc.samplerate != 0:
-                        ddt.text((x1, y1), _("Samplerate"), key_colour_off, 212)
+                        ddt.text((x1, y1), _("Samplerate"), key_colour_off, 212, max_w=70*gui.scale)
 
                         line = str(tc.samplerate) + " Hz"
 
@@ -36883,7 +36883,7 @@ while pctl.running:
                     y1 += int(15 * gui.scale)
 
                     if tc.bitrate not in (0, "", "0"):
-                        ddt.text((x1, y1), _("Bitrate"), key_colour_off, 212)
+                        ddt.text((x1, y1), _("Bitrate"), key_colour_off, 212, max_w=70*gui.scale)
                         line = str(tc.bitrate)
                         if tc.file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
@@ -36939,7 +36939,7 @@ while pctl.running:
                     y1 += int(15 * gui.scale)
                     #print(tc.size)
                     if tc.size != 0:
-                        ddt.text((x1, y1), _("File size"), key_colour_off, 212)
+                        ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70*gui.scale)
                         ddt.text((x2, y1), get_filesize_string(tc.size),
                                  value_colour, value_font)
 
@@ -37013,7 +37013,7 @@ while pctl.running:
                         r_menu_index].length != 0:
                         ratio = total / tc.length
 
-                    ddt.text((x1, y1), _("Play count"), key_colour_off, 212)
+                    ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70*gui.scale)
                     ddt.text((x2, y1), str(int(ratio)), value_colour, value_font)
 
                     y1 += int(15 * gui.scale)
@@ -37026,7 +37026,7 @@ while pctl.running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    ddt.text((x1, y1), _("Play time"), key_colour_off, 212)
+                    ddt.text((x1, y1), _("Play time"), key_colour_off, 212, max_w=70*gui.scale)
                     ddt.text((x2, y1), str(line), value_colour, value_font)
 
                     # -------
