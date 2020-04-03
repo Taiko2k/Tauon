@@ -13700,7 +13700,7 @@ def regenerate_playlist(pl, silent=False):
 
             for i in reversed(range(len(playlist))):
                 tr = pctl.g(playlist[i])
-                line = tr.title + tr.artist + tr.album + tr.fullpath + tr.composer + tr.comment
+                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment])
                 if not search_magic(quote.lower(), line.lower()):
                     del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
