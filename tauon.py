@@ -13696,14 +13696,14 @@ def regenerate_playlist(pl, silent=False):
                         del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
-        elif cm.startswith("find\""):
-
-            for i in reversed(range(len(playlist))):
-                tr = pctl.g(playlist[i])
-                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment])
-                if not search_magic(quote.lower(), line.lower()):
-                    del playlist[i]
-            playlist = list(OrderedDict.fromkeys(playlist))
+        # elif cm.startswith("find\""):
+        #
+        #     for i in reversed(range(len(playlist))):
+        #         tr = pctl.g(playlist[i])
+        #         line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment])
+        #         if not search_magic(quote.lower(), line.lower()):
+        #             del playlist[i]
+        #     playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm.startswith("com\""):
             for i in reversed(range(len(playlist))):
@@ -14092,6 +14092,36 @@ def regenerate_playlist(pl, silent=False):
             # for item in search_over.click_artist(found_name, get_list=True, search_lists=selections):
             #     playlist.append(item)
             playlist += search_over.click_artist(found_name, get_list=True, search_lists=selections)
+
+        elif cm.startswith("find\""):
+
+            if not selections:
+                for plist in pctl.multi_playlist:
+                    selections.append(plist[2])
+
+            cooldown = 0
+            dones = {}
+            for selection in selections:
+                for track_id in selection:
+                    if track_id not in dones:
+                        tr = pctl.g(track_id)
+                        line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+
+
+                        if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
+                            line = str(unidecode(line))
+
+                        if search_magic(quote.lower(), line):
+                            playlist.append(track_id)
+
+                        cooldown += 1
+                        if cooldown > 300:
+                            time.sleep(0.005)
+                            cooldown = 0
+
+                        dones[track_id] = None
+
+            playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm.startswith("s\""):
             pl_name = quote
@@ -27969,6 +27999,9 @@ class RenamePlaylistBox:
             ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
             ddt.text((xx2, yy), "Search by file type", hint_colour, hint_font)
             yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "find\"text\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search all metadata", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
             ddt.text((xx, yy), "a", code_colour, code_font)
             ddt.text((xx2, yy), "Add all tracks", hint_colour, hint_font)
 
@@ -27998,9 +28031,8 @@ class RenamePlaylistBox:
             # yy += round(12 * gui.scale)
             # ddt.text((xx, yy), "com\"text\"", code_colour, code_font)
             # ddt.text((xx2, yy), "Search in comment", hint_colour, hint_font)
-            yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "find\"text\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search in metadata", hint_colour, hint_font)
+            #yy += round(12 * gui.scale)
+
 
             xx += round(260 * gui.scale)
             xx2 += round(260 * gui.scale)
@@ -37232,7 +37264,7 @@ while pctl.running:
                     #     line = "last.fm loved tracks from user. Format: /love <username>"
                     # else:
                     line = "Folder filter mode. Enter path segment."
-                    ddt.text((rect[0] + 23 * gui.scale, window_size[1] - 87 * gui.scale), line, colours.grey(80), 312)
+                    ddt.text((rect[0] + 23 * gui.scale, window_size[1] - 87 * gui.scale), line, (220, 220, 220, 100), 312)
                 else:
                     line = "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
                     if len(search_text.text) == 0:
@@ -37270,7 +37302,6 @@ while pctl.running:
                             elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration"\
                                     or search_text.text.lower() == "/len":
                                 gen_sort_len(pctl.active_playlist_viewing)
-
                             else:
 
                                 if search_text.text[-1] == "/":
@@ -37291,10 +37322,8 @@ while pctl.running:
                         else:
                             search_terms = search_text.text.lower().split()
                             for item in default_playlist:
-                                line = pctl.master_library[item].title.lower() + \
-                                       pctl.master_library[item].artist.lower() \
-                                       + pctl.master_library[item].album.lower() + \
-                                       pctl.master_library[item].filename.lower()
+                                tr = pctl.g(item)
+                                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
                                 if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
                                     line = str(unidecode(line))
@@ -37304,6 +37333,7 @@ while pctl.running:
                             if len(playlist) > 0:
                                 pctl.multi_playlist.append(pl_gen(title="Search Results",
                                                                   playlist=copy.deepcopy(playlist)))
+                                pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pctl.active_playlist_viewing][0] + "\" find\"" + search_text.text + "\""
                                 switch_playlist(len(pctl.multi_playlist) - 1)
                         search_text.text = ""
                         quick_search_mode = False
@@ -37328,10 +37358,8 @@ while pctl.running:
                                 search_index = 0
 
                             search_terms = search_text.text.lower().split()
-                            line = pctl.master_library[default_playlist[search_index]].title.lower() + \
-                                pctl.master_library[default_playlist[search_index]].artist.lower() \
-                                + pctl.master_library[default_playlist[search_index]].album.lower() + \
-                                pctl.master_library[default_playlist[search_index]].filename.lower()
+                            tr = pctl.g(default_playlist[search_index])
+                            line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
                             if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
                                 line = str(unidecode(line))
