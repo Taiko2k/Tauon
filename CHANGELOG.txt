@@ -1,6 +1,9 @@
 
 Changelog-------------------------------------
 
+v5.4.3
+ - Added "find" generator code
+
 v5.4.2
 
  - Added swedish translation

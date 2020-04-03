@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.4.2"
+n_version = "5.4.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -13696,11 +13696,19 @@ def regenerate_playlist(pl, silent=False):
                         del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
+        elif cm.startswith("find\""):
+
+            for i in reversed(range(len(playlist))):
+                tr = pctl.g(playlist[i])
+                line = tr.title + tr.artist + tr.album + tr.fullpath + tr.composer + tr.comment
+                if not search_magic(quote.lower(), line.lower()):
+                    del playlist[i]
+            playlist = list(OrderedDict.fromkeys(playlist))
+
         elif cm.startswith("com\""):
-            text = quote
             for i in reversed(range(len(playlist))):
                     tr = pctl.g(playlist[i])
-                    if text not in tr.comment:
+                    if quote not in tr.comment:
                         del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
@@ -27987,9 +27995,12 @@ class RenamePlaylistBox:
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "ly", code_colour, code_font)
             ddt.text((xx2, yy), "Has lyrics", hint_colour, hint_font)
+            # yy += round(12 * gui.scale)
+            # ddt.text((xx, yy), "com\"text\"", code_colour, code_font)
+            # ddt.text((xx2, yy), "Search in comment", hint_colour, hint_font)
             yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "com\"text\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search comment", hint_colour, hint_font)
+            ddt.text((xx, yy), "find\"text\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search in metadata", hint_colour, hint_font)
 
             xx += round(260 * gui.scale)
             xx2 += round(260 * gui.scale)
