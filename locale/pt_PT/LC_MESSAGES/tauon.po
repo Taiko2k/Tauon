@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
 "POT-Creation-Date: 2020-03-24 12:31+1300\n"
-"PO-Revision-Date: 2020-04-02 12:53+0100\n"
-"Last-Translator: Ricardo Simões <xmcorporation@gmail.com>\n"
+"PO-Revision-Date: 2020-04-04 00:57+0100\n"
+"Last-Translator: Ricardo Simões - XM Corporation <xm.corporation@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_PT\n"
 "MIME-Version: 1.0\n"
@@ -1029,7 +1029,7 @@ msgstr "Recarregar"
 
 #: tauon.py:21995 tauon.py:22084
 msgid "Set audio output device"
-msgstr "Definir dispositivo de saída de áudio"
+msgstr "Definir dispositivo de saída áudio"
 
 #: tauon.py:22065
 msgid "Transitions"
@@ -1129,7 +1129,7 @@ msgstr "Preferir rebordo fino"
 
 #: tauon.py:22243
 msgid "Serve webpage for broadcast metadata"
-msgstr "Exibir página da web para metadados de transmissão"
+msgstr "Exibir site para emissão de metadados"
 
 #: tauon.py:22249
 msgid "Enable auto fetch artist data"
@@ -1141,7 +1141,7 @@ msgstr "Usar separadores no painel de topo"
 
 #: tauon.py:22255
 msgid "Auto update generated playlists"
-msgstr "Atualização automática de listas de reprodução geradas"
+msgstr "Auto-atualizar listas de reprodução geradas"
 
 #: tauon.py:22269
 msgid "Extract archives on import"
@@ -1426,7 +1426,7 @@ msgstr "Mostrar corações de gostos"
 
 #: tauon.py:23231
 msgid "Show playtime lines"
-msgstr "Mostrar linhas de tempo de reprodução"
+msgstr "Mostra linhas tempo de rep."
 
 #: tauon.py:23234
 msgid "Show track ratings"
@@ -1513,7 +1513,6 @@ msgid "Repeat Off"
 msgstr "Repetir Desligado"
 
 #: tauon.py:25001
-#, fuzzy
 msgid "Back, RC: Toggle repeat, MC: Revert"
 msgstr "Anterior, RC: Alternar repetir, MC: Reverter"
 
@@ -1716,7 +1715,7 @@ msgstr "Faixa"
 
 #: tauon.py:36961
 msgid "File size"
-msgstr "Tamanho do ficheiro"
+msgstr "Tamanho"
 
 #: tauon.py:36970
 msgid "Disc"
@@ -1724,11 +1723,11 @@ msgstr "Disco"
 
 #: tauon.py:37035
 msgid "Play count"
-msgstr "Contador de reprodução"
+msgstr "Reproduzido"
 
 #: tauon.py:37048
 msgid "Play time"
-msgstr "Tempo de reprodução"
+msgstr "Tempo"
 
 #: tauon.py:37120
 msgid "Folder Modification"
