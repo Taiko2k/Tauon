@@ -18957,7 +18957,7 @@ class SearchOverlay:
 
             # Activate search overlay on key presses
             if input_text != "" and gui.layer_focus == 0 and \
-                not key_shift_down and not key_shiftr_down and not key_lalt and not key_ralt and \
+                 not key_lalt and not key_ralt and \
                     not key_ctrl_down and not radiobox.active and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active:
