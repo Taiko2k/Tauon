@@ -19093,7 +19093,6 @@ class SearchOverlay:
                     break
 
                 item = self.results[p]
-                print(item)
 
                 fade = 1
                 selected = self.on
@@ -19633,7 +19632,6 @@ def worker2():
                             continue
                         else:
                             searched.add(track)
-
 
                         if dia_mode:
                             cache_string = search_dia_string_cache.get(track)
