@@ -1885,14 +1885,17 @@ class KeyMap:
                     continue
 
                 items = p.split()
-                if 1 < len(items) < 4:
+                if 1 < len(items) < 5:
                     function = items[0]
                     key = SDL_GetKeyFromName(items[1].encode())
                     if key == 0:
                         continue
-                    mod = ""
+                    mod = []
+
                     if len(items) > 2:
-                        mod = items[2].lower()
+                        mod.append(items[2].lower())
+                    if len(items) > 3:
+                        mod.append(items[3].lower())
 
                     if function in self.maps:
                         self.maps[function].append((key, mod))
@@ -1908,12 +1911,13 @@ class KeyMap:
 
         for code, mod in self.maps[function]:
 
-            if (mod == "" and not (key_ctrl_down or key_rctrl_down or key_shift_down or key_shiftr_down or key_lalt or key_ralt)) \
-                    or (mod == "ctrl" and (key_ctrl_down or key_rctrl_down)) or \
-                    (mod == "shift" and (key_shift_down or key_shiftr_down)) or \
-                    (mod == "alt" and (key_lalt or key_ralt)):
+            if code in self.hits:
 
-                if code in self.hits:
+                ctrl = (key_ctrl_down or key_rctrl_down) * 1
+                shift = (key_shift_down or key_shiftr_down) * 10
+                alt = (key_lalt or key_ralt) * 100
+
+                if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
                     return True
 
         return False
@@ -1921,9 +1925,6 @@ class KeyMap:
 
 keymaps = KeyMap()
 
-shoot = threading.Thread(target=keymaps.load)
-shoot.daemon = True
-shoot.start()
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
@@ -2958,8 +2959,12 @@ if db_version > 0:
 
             f.close()
 
-# for key, value in star_store.db.items():
-#     print(value)
+
+shoot = threading.Thread(target=keymaps.load)
+shoot.daemon = True
+shoot.start()
+
+
 # Loading Config -----------------
 
 download_directories = []
@@ -18952,6 +18957,7 @@ class SearchOverlay:
 
             # Activate search overlay on key presses
             if input_text != "" and gui.layer_focus == 0 and \
+                not key_shift_down and not key_shiftr_down and not key_lalt and not key_ralt and \
                     not key_ctrl_down and not radiobox.active and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active:
