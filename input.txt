@@ -1,7 +1,7 @@
 # Keybinds for Tauon Music Box
 #
-# The format is FUNCTIONNAME KEYNAME MODIFIER(optional)
-# Modifier can be one of either Shift, Ctrl or Alt.
+# The format is FUNCTIONNAME KEYNAME MODIFIERS(optional)
+# Modifiers can be ONE or TWO of Shift, Ctrl or Alt.
 #
 # Note that modifier, return, direction, ctrl+c/x/v/a/z, escape and delete keys currently have hard coded functions.
 # Note that you should not bind letter/number keys without a modifier as this is used to trigger the search overlay.
@@ -51,6 +51,13 @@ pagedown PageDown
 
 delete-playlist W Ctrl
 rename-playlist R Ctrl
+new-playlist T Ctrl
+
+new-generator-playlist
+edit-generator E Ctrl
+
+search-lyrics-selected
+substitute-search-selected
 
 quick-find \
 quick-find F Ctrl
@@ -58,7 +65,6 @@ global-search G Ctrl
 add-to-queue Q Ctrl
 love-playing
 love-selected L Ctrl
-
 
 toggle-left-panel ~
 toggle-last-left-panel
