@@ -2,7 +2,12 @@
 Changelog-------------------------------------
 
 v5.4.3
+
  - Added "find" generator code
+ - Added function to keymap file new-generator-playlist, edit-generator,
+   search-lyrics-selected and substitute-search-selected
+ - Fixed new-playlist shortcut not being re-bindable
+ - Fixed a possible crash after using "Remove missing tracks"
 
 v5.4.2
 

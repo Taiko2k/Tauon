@@ -2923,6 +2923,41 @@ if db_version > 0:
         if "genius" in old:
             prefs.lyrics_enables.append("Genius")
 
+    if db_version <= 41:
+        print("Updating database to version 42")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            f = open(os.path.join(config_directory, "input.txt"), 'r')
+            text = f.read()
+            f.close()
+            lines = text.splitlines()
+
+            f = open(os.path.join(config_directory, "input.txt"), 'w')
+            for line in lines:
+                line = line.strip()
+                if "rename-playlist" in line:
+
+                    f.write(line + "\n")
+
+                    line = "new-playlist T Ctrl\n"
+                    f.write(line)
+
+                    line = "\nnew-generator-playlist\n"
+                    f.write(line)
+                    if "e ctrl" in text.lower():
+                        line = "edit-generator\n\n"
+                    else:
+                        line = "edit-generator E Ctrl\n\n"
+                    f.write(line)
+
+                    line = "search-lyrics-selected\n"
+                    f.write(line)
+                    line = "substitute-search-selected"
+
+                f.write(line + "\n")
+
+            f.close()
+
 # for key, value in star_store.db.items():
 #     print(value)
 # Loading Config -----------------
@@ -15429,7 +15464,6 @@ def show_in_gal(track, silent=False):
         gallery_select_animate_timer.set()
 
 
-
 # Create track context menu
 track_menu = Menu(195, show_icons=True) #175
 
@@ -17496,7 +17530,6 @@ def reset_missing_flags():
 
 cm_clean_db = False
 
-
 def clean_db():
     global cm_clean_db
     cm_clean_db = True
@@ -17855,6 +17888,9 @@ def locate_artist():
 
 
 def activate_search_overlay():
+    if cm_clean_db:
+        show_message("Please wait for cleaning process to finish")
+        return
     search_over.active = True
     search_over.delay_enter = False
     search_over.search_text.selection = 0
@@ -20543,6 +20579,7 @@ def worker1():
             #old_db = copy.deepcopy(pctl.master_library)
             to_got = 0
             to_get = len(pctl.master_library)
+            search_over.results.clear()
 
             keys = set(pctl.master_library.keys())
             for index in keys:
@@ -20585,6 +20622,7 @@ def worker1():
 
             search_dia_string_cache.clear()
             search_string_cache.clear()
+            search_over.results.clear()
 
             tauon.worker_save_state = True
 
@@ -33343,7 +33381,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            41,  # Version, used for upgrading
+            42,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -33682,7 +33720,7 @@ while pctl.running:
         key_v_press = False
         #key_f_press = False
         key_a_press = False
-        key_t_press = False
+        #key_t_press = False
         key_z_press = False
         key_x_press = False
         key_home_press = False
@@ -33964,8 +34002,8 @@ while pctl.running:
                 key_a_press = True
             elif event.key.keysym.sym == SDLK_c:
                 key_c_press = True
-            elif event.key.keysym.sym == SDLK_t:
-                key_t_press = True
+            # elif event.key.keysym.sym == SDLK_t:
+            #     key_t_press = True
             elif event.key.keysym.sym == SDLK_z:
                 key_z_press = True
             elif event.key.keysym.sym == SDLK_x:
@@ -34508,10 +34546,15 @@ while pctl.running:
 
         ab_click = False
 
-
-
-        if key_t_press and key_ctrl_down:
+        if keymaps.test("new-playlist"):
             new_playlist()
+
+        if keymaps.test("edit-generator"):
+            edit_generator_box(pctl.active_playlist_viewing)
+
+        if keymaps.test("new-generator-playlist"):
+            new_playlist()
+            edit_generator_box(pctl.active_playlist_viewing)
 
         if keymaps.test("delete-playlist"):
             delete_playlist(pctl.active_playlist_viewing)
@@ -34689,6 +34732,18 @@ while pctl.running:
 
             if keymaps.test("love-selected"):
                 select_love()
+
+            if keymaps.test("search-lyrics-selected"):
+                if pctl.selected_ready():
+                    track = pctl.g(default_playlist[playlist_selected])
+                    if track.lyrics:
+                        show_message("Track already has lyrics")
+                    else:
+                        get_lyric_wiki(track)
+
+            if keymaps.test("substitute-search-selected"):
+                if pctl.selected_ready():
+                    show_sub_search(pctl.g(default_playlist[playlist_selected]))
 
             if keymaps.test("global-search"):
                 activate_search_overlay()
