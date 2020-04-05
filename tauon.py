@@ -14107,7 +14107,6 @@ def regenerate_playlist(pl, silent=False):
                         tr = pctl.g(track_id)
                         line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
-
                         if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
                             line = str(unidecode(line))
 
@@ -19094,6 +19093,7 @@ class SearchOverlay:
                     break
 
                 item = self.results[p]
+                print(item)
 
                 fade = 1
                 selected = self.on
@@ -22908,11 +22908,16 @@ class Over:
             y += 25 * gui.scale
 
             ddt.text((x, y), "Translations", colours.grey(90), 13)
+            yy = y
             ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.grey(220), 13)
-            y += 18 * gui.scale
+            y += 19 * gui.scale
             ddt.text((x + 120 * gui.scale, y), "brunob", colours.grey(220), 13)
-            y += 18 * gui.scale
-            ddt.text((x + 120 * gui.scale, y), "eson57", colours.grey(220), 13)
+            y += 19 * gui.scale
+
+            y = yy
+            ddt.text((x + 210 * gui.scale, y), "eson57", colours.grey(220), 13)
+            y += 19 * gui.scale
+            ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.grey(220), 13)
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
@@ -33752,6 +33757,7 @@ while pctl.running:
                     gui.update = True
 
         if event.type == SDL_DROPFILE:
+
             power += 5
             k = 0
 
@@ -34409,7 +34415,13 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-            pass
+
+            console.print("Starting test...", level=2)
+            for playlist in pctl.multi_playlist:
+                for track in playlist[2]:
+                    if track not in pctl.master_library:
+                        console.print("Missing data for track in playlist: " + playlist[0], level=2)
+            console.print("Done", level=2)
 
         # window_size[0] = int(1280 * gui.scale)
             # window_size[1] = int(720 * gui.scale)
