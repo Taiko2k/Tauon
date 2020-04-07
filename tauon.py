@@ -13736,15 +13736,6 @@ def regenerate_playlist(pl, silent=False):
                         del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
-        # elif cm.startswith("find\""):
-        #
-        #     for i in reversed(range(len(playlist))):
-        #         tr = pctl.g(playlist[i])
-        #         line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment])
-        #         if not search_magic(quote.lower(), line.lower()):
-        #             del playlist[i]
-        #     playlist = list(OrderedDict.fromkeys(playlist))
-
         elif cm.startswith("com\""):
             for i in reversed(range(len(playlist))):
                     tr = pctl.g(playlist[i])
@@ -14039,7 +14030,7 @@ def regenerate_playlist(pl, silent=False):
                 playlist = playlist[:int(value)]
 
         # SEARCH FOLDER
-        elif cm.startswith("f\"") and len(cm) > 3:
+        elif cm.startswith("p\"") and len(cm) > 3:
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -14133,7 +14124,28 @@ def regenerate_playlist(pl, silent=False):
             #     playlist.append(item)
             playlist += search_over.click_artist(found_name, get_list=True, search_lists=selections)
 
-        elif cm.startswith("find\""):
+        elif cm.startswith("ff\""):
+
+            for i in reversed(range(len(playlist))):
+                tr = pctl.g(playlist[i])
+                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment])
+                if not search_magic(quote.lower(), line.lower()):
+                    del playlist[i]
+            playlist = list(OrderedDict.fromkeys(playlist))
+
+        elif cm.startswith("fx\""):
+
+            for i in reversed(range(len(playlist))):
+                tr = pctl.g(playlist[i])
+                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+                if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
+                    line = str(unidecode(line))
+
+                if search_magic(quote.lower(), line):
+                    del playlist[i]
+
+
+        elif cm.startswith("find\"") or cm.startswith("f\""):
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -18894,7 +18906,7 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "f\"" + name + "\""
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "p\"" + name + "\""
 
         input.key_return_press = False
 
@@ -28032,22 +28044,25 @@ class RenamePlaylistBox:
             ddt.text((xx2, yy), "Select playlist itself", hint_colour, hint_font)
 
             yy += round(16 * gui.scale)
-            ddt.text((xx0, yy), "Add tracks: (at least 1 required)", title_colour, title_font)
+            ddt.text((xx0, yy), "Add tracks from sources: (at least 1 required)", title_colour, title_font)
             yy += round(14 * gui.scale)
+
+
+            ddt.text((xx, yy), "f\"terms\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Find / Search", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
             ddt.text((xx, yy), "a\"name\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search by artist name", hint_colour, hint_font)
+            ddt.text((xx2, yy), "Search artist name only", hint_colour, hint_font)
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "g\"genre\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search by genre", hint_colour, hint_font)
+            ddt.text((xx2, yy), "Search genre", hint_colour, hint_font)
             yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "r\"text\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search by filepath segment", hint_colour, hint_font)
-            yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search by file type", hint_colour, hint_font)
-            yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "find\"text\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search all metadata", hint_colour, hint_font)
+            ddt.text((xx, yy), "p\"text\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search for filepath segment", hint_colour, hint_font)
+            # yy += round(12 * gui.scale)
+            # ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
+            # ddt.text((xx2, yy), "Search by file type", hint_colour, hint_font)
+
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "a", code_colour, code_font)
             ddt.text((xx2, yy), "Add all tracks", hint_colour, hint_font)
@@ -28075,6 +28090,13 @@ class RenamePlaylistBox:
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "ly", code_colour, code_font)
             ddt.text((xx2, yy), "Has lyrics", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "ff\"terms\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search and keep", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "fx\"terms\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search and exclude", hint_colour, hint_font)
+
             # yy += round(12 * gui.scale)
             # ddt.text((xx, yy), "com\"text\"", code_colour, code_font)
             # ddt.text((xx2, yy), "Search in comment", hint_colour, hint_font)
@@ -37404,7 +37426,7 @@ while pctl.running:
                             if len(playlist) > 0:
                                 pctl.multi_playlist.append(pl_gen(title="Search Results",
                                                                   playlist=copy.deepcopy(playlist)))
-                                pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pctl.active_playlist_viewing][0] + "\" find\"" + search_text.text + "\""
+                                pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pctl.active_playlist_viewing][0] + "\" f\"" + search_text.text + "\""
                                 switch_playlist(len(pctl.multi_playlist) - 1)
                         search_text.text = ""
                         quick_search_mode = False
