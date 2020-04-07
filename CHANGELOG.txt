@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v5.4.3
 
- - Added "find" generator code
+ - Added generator code "f" for find
  - Added function to keymap file new-generator-playlist, edit-generator,
    search-lyrics-selected and substitute-search-selected
+ - Changed folder path generator code from 'f' to 'p'
  - Fixed new-playlist shortcut not being re-bindable
  - Fixed a possible crash after using "Remove missing tracks"
 
