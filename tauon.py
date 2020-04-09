@@ -1179,7 +1179,6 @@ class Prefs:    # Used to hold any kind of settings
         self.left_align_album_artist_title = False
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
-        self.mini_mode_micro_always_show_seek = False
         self.hide_queue = True
         self.show_playlist_list = True
         self.thin_gallery_borders = False
@@ -2924,8 +2923,12 @@ if db_version > 0:
         if "genius" in old:
             prefs.lyrics_enables.append("Genius")
 
+
     if db_version <= 41:
         print("Updating database to version 42")
+
+        for key, value in gen_codes.items():
+            gen_codes[key] = value.replace("f\"", "p\"")
 
         if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
             f = open(os.path.join(config_directory, "input.txt"), 'r')
@@ -3028,7 +3031,6 @@ def save_prefs():
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
-    cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
     cf.update_value("hide-queue-when-empty", prefs.hide_queue)
     cf.update_value("show-playlist-list", prefs.show_playlist_list)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
@@ -3161,7 +3163,6 @@ def load_prefs():
     prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides above setting)")
     prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
-    prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
@@ -7407,6 +7408,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 25, 228)
 
     standard_font = "Noto Sans, ExtraCondensed"
+    ddt.prime_font(standard_font, 10, 413)
     ddt.prime_font(standard_font, 11, 414)
     ddt.prime_font(standard_font, 12, 415)
     ddt.prime_font(standard_font, 13, 416)
@@ -25858,12 +25860,8 @@ class MiniMode2:
             pctl.set_volume()
 
         track = pctl.playing_object()
-        # if pctl.playing_state == 3:
-        #     track = pctl.playing_object()
-
 
         if track is not None:
-
 
             # Render album art
             album_art_gen.display(track, (0, 0), (h, h))
@@ -25885,26 +25883,23 @@ class MiniMode2:
 
             if not line1 and not line2:
 
-                ddt.text((x1 + 15 * gui.scale, 50 * gui.scale), track.filename, colours.grey(150), 315,
+                ddt.text((x1 + 15 * gui.scale, 44 * gui.scale), track.filename, colours.grey(150), 315,
                          window_size[0] - x1 - 30 * gui.scale)
             else:
 
-
-
                 if ddt.get_text_w(line2, 215) > window_size[0] - x1 - 30 * gui.scale:
-                    ddt.text((x1 + 15 * gui.scale, 25 * gui.scale), line2, colours.grey(249), 213,
+                    ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 413,
                              window_size[0] - x1 - 35 * gui.scale)
 
-                    ddt.text((x1 + 15 * gui.scale, 50 * gui.scale), line1, colours.grey(110), 313,
+                    ddt.text((x1 + 15 * gui.scale, 44 * gui.scale), line1, colours.grey(110), 513,
                              window_size[0] - x1 - 35 * gui.scale)
                 else:
 
-                    ddt.text((x1 + 15 * gui.scale, 25 * gui.scale), line2, colours.grey(249), 215,
+                    ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 515,
                              window_size[0] - x1 - 30 * gui.scale)
 
-                    ddt.text((x1 + 15 * gui.scale, 50 * gui.scale), line1, colours.grey(110), 314,
+                    ddt.text((x1 + 15 * gui.scale, 44 * gui.scale), line1, colours.grey(110), 514,
                              window_size[0] - x1 - 30 * gui.scale)
-
 
 
         # Show exit/min buttons when mosue over
@@ -25914,7 +25909,7 @@ class MiniMode2:
             draw_window_tools()
 
         # Seek bar
-        if (mouse_in or prefs.mini_mode_micro_always_show_seek) and pctl.playing_state > 0:
+        if 0 < pctl.playing_state < 3:
 
             hit_rect = h - 5 * gui.scale, h - 12 * gui.scale, w - h + 5 * gui.scale, 13 * gui.scale
 
@@ -25940,10 +25935,6 @@ class MiniMode2:
                     colour = [210, 40, 100, 255]
                 ddt.rect(seek_rect, colour, True)
 
-
-        # ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
-        # if gui.scale == 2:
-        #     ddt.rect_r((1, 1, w - 2, h - 2), colours.mini_mode_border)
 
 mini_mode2 = MiniMode2()
 
@@ -25997,8 +25988,8 @@ def set_mini_mode():
 
     if prefs.mini_mode_mode == 4:
 
-        window_size[0] = int(320 * gui.scale)
-        window_size[1] = int(90 * gui.scale)
+        window_size[0] = int(330 * gui.scale)
+        window_size[1] = int(80 * gui.scale)
 
     if prefs.mini_mode_mode == 5:
 
@@ -28047,18 +28038,20 @@ class RenamePlaylistBox:
             ddt.text((xx0, yy), "Add tracks from sources: (at least 1 required)", title_colour, title_font)
             yy += round(14 * gui.scale)
 
-
-            ddt.text((xx, yy), "f\"terms\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Find / Search", hint_colour, hint_font)
-            yy += round(12 * gui.scale)
             ddt.text((xx, yy), "a\"name\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search artist name only", hint_colour, hint_font)
+            ddt.text((xx2, yy), "Search artist name", hint_colour, hint_font)
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "g\"genre\"", code_colour, code_font)
             ddt.text((xx2, yy), "Search genre", hint_colour, hint_font)
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "p\"text\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search for filepath segment", hint_colour, hint_font)
+            ddt.text((xx2, yy), "Search filepath segment", hint_colour, hint_font)
+
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "f\"terms\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Find / Search", hint_colour, hint_font)
+
+
             # yy += round(12 * gui.scale)
             # ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
             # ddt.text((xx2, yy), "Search by file type", hint_colour, hint_font)
