@@ -1253,6 +1253,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.radio_urls = []
 
+        self.lyric_metadata_panel_top = False
+
 
 prefs = Prefs()
 
@@ -3038,6 +3040,7 @@ def save_prefs():
     cf.update_value("prefer-center-bg", prefs.center_bg)
     cf.update_value("side-panel-style", prefs.side_panel_layout)
     cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
+    cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
     cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
     cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
     cf.update_value("auto-show-playing", prefs.auto_goto_playing)
@@ -3173,6 +3176,7 @@ def load_prefs():
     prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
     prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
+    prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
     prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
     prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title, "Hide title in bottom panel when already shown in side panel")
     prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing, "Show playing track in current playlist on track and playlist change even if not the playing playlist")
@@ -7353,8 +7357,8 @@ class Drawing:
                      bg=bg)
         return click
 
-
 draw = Drawing()
+
 
 if system == "linux":
     standard_font = prefs.linux_font
@@ -11964,6 +11968,20 @@ def toggle_side_art_deco():
 
     return [colour, colours.menu_background, line]
 
+def toggle_lyrics_panel_position_deco():
+    colour = colours.menu_text
+    if prefs.lyric_metadata_panel_top:
+        line = _("Panel Below Lyrics")
+    else:
+        line = _("Panel Above Lyrics")
+
+    if gui.combo_mode or not prefs.show_side_lyrics_art_panel:
+        colour = colours.menu_text_disabled
+
+    return [colour, colours.menu_background, line]
+
+def toggle_lyrics_panel_position():
+    prefs.lyric_metadata_panel_top ^= True
 
 def lyrics_in_side_show(track_object):
 
@@ -12250,6 +12268,7 @@ showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, 
 showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub('Toggle art panel', 0, toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show)
+showcase_menu.add_to_sub('Toggle art position', 0, toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show)
 
 
 center_info_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
@@ -12260,6 +12279,8 @@ center_info_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_dec
 center_info_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 center_info_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 center_info_menu.add_to_sub('Toggle art panel', 0, toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show)
+center_info_menu.add_to_sub('Toggle art position', 0, toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show)
+
 
 def save_embed_img(track_object):
 
@@ -25891,14 +25912,14 @@ class MiniMode2:
                     ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 413,
                              window_size[0] - x1 - 35 * gui.scale)
 
-                    ddt.text((x1 + 15 * gui.scale, 44 * gui.scale), line1, colours.grey(110), 513,
+                    ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 513,
                              window_size[0] - x1 - 35 * gui.scale)
                 else:
 
-                    ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 515,
+                    ddt.text((x1 + 15 * gui.scale, 18 * gui.scale), line2, colours.grey(249), 515,
                              window_size[0] - x1 - 30 * gui.scale)
 
-                    ddt.text((x1 + 15 * gui.scale, 44 * gui.scale), line1, colours.grey(110), 514,
+                    ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 514,
                              window_size[0] - x1 - 30 * gui.scale)
 
 
@@ -25909,6 +25930,9 @@ class MiniMode2:
             draw_window_tools()
 
         # Seek bar
+        bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
+        ddt.rect(bg_rect, [255, 255, 255, 18], True)
+
         if 0 < pctl.playing_state < 3:
 
             hit_rect = h - 5 * gui.scale, h - 12 * gui.scale, w - h + 5 * gui.scale, 13 * gui.scale
@@ -25923,8 +25947,7 @@ class MiniMode2:
                 else:
                     pctl.seek_decimal(p)
 
-            bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
-            ddt.rect(bg_rect, [0, 0, 0, 35], True)
+
 
             if pctl.playing_length:
                 seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(5 * gui.scale))
@@ -30609,7 +30632,7 @@ def art_metadata_overlay(right, bottom, showc):
 
 class MetaBox:
 
-    def l_panel(self, x, y, w, h, track):
+    def l_panel(self, x, y, w, h, track, top_border=True):
 
         if not track:
             return
@@ -30625,14 +30648,25 @@ class MetaBox:
         rect = (x, y, w, h)
 
         ddt.rect(rect, colours.gallery_background, True)
-        ddt.rect((x, y, w, round(2 * gui.scale)), border_colour, True)
+        if top_border:
+            ddt.rect((x, y, w, round(1 * gui.scale)), border_colour, True)
+        else:
+            ddt.rect((x, y + h - round(1 * gui.scale), w, round(1 * gui.scale)), border_colour, True)
 
         ddt.text_background_colour = colours.gallery_background
 
         insert = round(9 * gui.scale)
         border = round(2 * gui.scale)
 
-        art_rect = (x + insert - 2 * gui.scale, y + insert, h - insert * 2 + 1 * gui.scale, h - insert * 2 + 1 * gui.scale)
+        compact_mode = False
+        if w < h * 1.9:
+            compact_mode = True
+
+        art_rect = [x + insert - 2 * gui.scale, y + insert, h - insert * 2 + 1 * gui.scale, h - insert * 2 + 1 * gui.scale]
+
+        if compact_mode:
+            art_rect[0] = x + round(w / 2 - art_rect[2] / 2) - round(1 * gui.scale) # - border
+
         border_rect = (art_rect[0] - border, art_rect[1] - border, art_rect[2] + (border * 2), art_rect[3] + (border * 2))
 
         if (input.mouse_click or right_click) and is_level_zero(False):
@@ -30656,18 +30690,18 @@ class MetaBox:
             showc = album_art_gen.get_info(target_track)
             art_metadata_overlay(art_rect[0] + art_rect[2] + 2 * gui.scale, art_rect[1] + art_rect[3] + 12 * gui.scale, showc)
 
+        if not compact_mode:
+            text_x = border_rect[0] + border_rect[2] + round(10 * gui.scale)
+            max_w = w - (border_rect[2] + 28 * gui.scale)
+            yy = y + 15 * gui.scale
 
-        text_x = border_rect[0] + border_rect[2] + round(10 * gui.scale)
-        max_w = w - (border_rect[2] + 28 * gui.scale)
-        yy = y + 15 * gui.scale
-
-        ddt.text((text_x, yy), track.title, line1_colour, 316, max_w=max_w)
-        yy += 20 * gui.scale
-        ddt.text((text_x, yy), track.artist, line2_colour, 14, max_w=max_w)
-        yy += 30 * gui.scale
-        ddt.text((text_x, yy), track.album, line2_colour, 14, max_w=max_w)
-        yy += 20
-        ddt.text((text_x, yy), track.date, line2_colour, 14, max_w=max_w)
+            ddt.text((text_x, yy), track.title, line1_colour, 316, max_w=max_w)
+            yy += 20 * gui.scale
+            ddt.text((text_x, yy), track.artist, line2_colour, 14, max_w=max_w)
+            yy += 30 * gui.scale
+            ddt.text((text_x, yy), track.album, line2_colour, 14, max_w=max_w)
+            yy += 20
+            ddt.text((text_x, yy), track.date, line2_colour, 14, max_w=max_w)
 
 
     def lyrics(self, x, y, w, h, track):
@@ -36391,19 +36425,30 @@ while pctl.running:
                             l_panel_h = round(200 * gui.scale)
                             l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
                             gui.showing_l_panel = True
-                            timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
-                            meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+
+                            if not prefs.lyric_metadata_panel_top:
+                                timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
+                                meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+                            else:
+                                timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True)
+                                meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track)
                         else:
                             timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
 
-                    elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
+                    elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
 
                         if prefs.show_side_lyrics_art_panel:
                             l_panel_h = round(200 * gui.scale)
                             l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
                             gui.showing_l_panel = True
-                            meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
-                            meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+
+                            if not prefs.lyric_metadata_panel_top:
+                                meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
+                                meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+                            else:
+                                meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY + l_panel_h, gui.rspw, window_size[1] - (gui.panelY + gui.panelBY + l_panel_h), target_track)
+
+                                meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track, top_border=False)
                         else:
                             meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
 
