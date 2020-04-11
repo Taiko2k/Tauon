@@ -25699,14 +25699,14 @@ class MiniMode:
             if w != h or mouse_in_area:
 
                 if not line1 and not line2:
-                    ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, colours.grey(240), 214,
+                    ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, [255, 255, 255, 240], 214,
                              window_size[0] - 30 * gui.scale)
                 else:
 
-                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(100), 514,
+                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, [255, 255, 255, 77], 514,
                              window_size[0] - 30 * gui.scale)
 
-                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, colours.grey(249), 414,
+                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, [255, 255, 255, 240], 414,
                              window_size[0] - 30 * gui.scale)
 
 
@@ -25727,13 +25727,15 @@ class MiniMode:
                     pctl.seek_decimal(seek)
 
                 # Draw progress bar background
-                ddt.rect(seek_r, [55, 55, 55, 255], True)
+                ddt.rect(seek_r, [255, 255, 255, 32], True)
 
                 # Calculate and draw bar foreground
                 progress_w = 0
                 if pctl.playing_length > 1:
                     progress_w = pctl.playing_time * seek_w / pctl.playing_length
                 seek_colour = [210, 210, 210, 255]
+                if gui.theme_name == "Carbon":
+                    seek_colour = colours.bottom_panel_colour
 
                 if pctl.playing_state != 1:
                     seek_colour = [210, 40, 100, 255]
@@ -25908,19 +25910,19 @@ class MiniMode2:
                          window_size[0] - x1 - 30 * gui.scale)
             else:
 
-                if ddt.get_text_w(line2, 215) > window_size[0] - x1 - 30 * gui.scale:
-                    ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 413,
-                             window_size[0] - x1 - 35 * gui.scale)
+                # if ddt.get_text_w(line2, 215) > window_size[0] - x1 - 30 * gui.scale:
+                #     ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 413,
+                #              window_size[0] - x1 - 35 * gui.scale)
+                #
+                #     ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 513,
+                #              window_size[0] - x1 - 35 * gui.scale)
+                # else:
 
-                    ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 513,
-                             window_size[0] - x1 - 35 * gui.scale)
-                else:
+                ddt.text((x1 + 15 * gui.scale, 18 * gui.scale), line2, colours.grey(249), 514,
+                         window_size[0] - x1 - 30 * gui.scale)
 
-                    ddt.text((x1 + 15 * gui.scale, 18 * gui.scale), line2, colours.grey(249), 515,
-                             window_size[0] - x1 - 30 * gui.scale)
-
-                    ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 514,
-                             window_size[0] - x1 - 30 * gui.scale)
+                ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 514,
+                         window_size[0] - x1 - 30 * gui.scale)
 
 
         # Show exit/min buttons when mosue over
