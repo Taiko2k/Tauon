@@ -5285,6 +5285,7 @@ if system == 'linux' and not macos:
         song_notification.set_hint("desktop-entry", value)
 
 
+
 def notify_song_fire(notification, delay, id):
 
     time.sleep(delay)
@@ -5740,6 +5741,7 @@ class LastFMapi:
                 return 0
             else:
                 print("Not sent, incomplete metadata")
+                return 0
         except Exception as e:
 
             console.print("Error connecting to last.fm.", level=3)
@@ -9892,16 +9894,13 @@ class StyleOverlay:
         if self.min_on_timer.get() < 0:
             return
 
-        # if prefs.bg_showcase_only:
-        #     if not gui.combo_mode:
-        #
-        #         if self.a_texture is not None:
-        #                 print("FLUSH")
-        #                 self.flush()
-        #                 self.fade_off_timer.set()
-        #                 self.go_to_sleep = True
-        #
-        #         return
+        if self.stage == 0 and (self.im is None or self.im is False):
+            gui.worker4_releases += 2
+            try:
+                worker4_lock.release()
+            except:
+                pass
+            return
 
         if self.stage == 1:
 
@@ -9955,7 +9954,6 @@ class StyleOverlay:
                         worker4_lock.release()
                     except:
                         pass
-
 
         if prefs.bg_showcase_only:
             if not gui.combo_mode:
@@ -29651,7 +29649,7 @@ class TreeView:
 
             target = item[1] + "/" + item[0]
 
-            inset = item[2] * round(10 * gui.scale)
+            inset = item[2] * round(12 * gui.scale)
             rect = (xx + inset - round(15 * gui.scale), yy, max_w - inset + round(15 * gui.scale), spacing - 1)
             fields.add(rect)
 
@@ -29687,7 +29685,7 @@ class TreeView:
             # Set highlight colours if folder is playing
             if 0 < pctl.playing_state < 3 and playing_track:
                 if playing_track.parent_folder_path == full_folder_path or full_folder_path + "/" in playing_track.fullpath:
-                    text_colour = [255, 255, 255, 170]
+                    text_colour = [255, 255, 255, 225]
                     box_colour = [140, 220, 20, 255]
                     if semilight_mode:
                         text_colour = (255, 255, 255, 255)
@@ -29749,7 +29747,7 @@ class TreeView:
 
                         if track_id is not None:
                             # Single click base folder to locate in playlist
-                            if self.d_click_timer.get() > 0.4 or self.d_click_id != target:
+                            if self.d_click_timer.get() > 0.5 or self.d_click_id != target:
                                 pctl.show_current(select=True, index=track_id, no_switch=True, highlight=True, folder_list=False)
                                 self.d_click_timer.set()
                                 self.d_click_id = target
@@ -29758,13 +29756,12 @@ class TreeView:
                             else:
                                 pctl.jump(track_id)
 
-
                     # Regenerate display rows after clicking
                     self.gen_rows(tree, opens)
 
             # Highlight folder text on mouse over
             if (mouse_in and not mouse_down) or item == self.click_drag_source:
-                text_colour = (255, 255, 255, 230)
+                text_colour = (255, 255, 255, 235)
                 if semilight_mode:
                     text_colour = (255, 255, 255, 255)
                 if light_mode:
@@ -29794,6 +29791,22 @@ class TreeView:
                     ddt.text((xx + inset, yy), item[0], text_label_colour, font, max_w=max_w - inset)
             else:
                 ddt.text((xx + inset, yy), item[0], text_label_colour, font, max_w=max_w - inset)
+
+
+            # Draw inset bars
+            for m in range(item[2] + 1):
+                if m == 0:
+                    continue
+                colour = (255, 255, 255, 20)
+                if semilight_mode:
+                    colour = (255, 255, 255, 30)
+                if light_mode:
+                    colour = (0, 0, 0, 60)
+
+                if i > 0 and self.rows[i - 1][2] == m - 1:  # the top one needs to be slightly lower lower
+                    ddt.rect((x + (12 * m) + 2, yy - round(1 * gui.scale), round(1 * gui.scale), round(17 * gui.scale)), colour, True)
+                else:
+                    ddt.rect((x + (12 * m) + 2, yy - round(5 * gui.scale), round(1 * gui.scale), round(21 * gui.scale)), colour, True)
 
 
             if prefs.folder_tree_codec_colours:
@@ -33035,8 +33048,8 @@ def update_layout_do():
         if p > 0:
             gui.lspw += p
 
-        if max_insets > 1:
-            gui.lspw = gui.lspw + round(15 * gui.scale) * max_insets
+        if gui.lspw < 260 * gui.scale + round(15 * gui.scale) * max_insets:
+            gui.lspw = 260 * gui.scale + round(15 * gui.scale) * max_insets
 
 
     # -----

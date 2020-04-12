@@ -6,12 +6,14 @@ v5.4.3
  - Added Portuguese translation
  - Added generator code "f" for find
  - Added option to place lyrics metadata panel on top
- - Added function to keymap file new-generator-playlist, edit-generator,
+ - Added the following functions to keymap file: new-generator-playlist, edit-generator,
    search-lyrics-selected and substitute-search-selected
  - Changed folder path generator code from 'f' to 'p'
- - Tweaked appearance of mini-mode micro
+ - Tweaked appearance of micro mini-mode
+ - Tweaked appearance of folder navigator
  - Fixed new-playlist shortcut not being re-bindable
  - Fixed a possible crash after using "Remove missing tracks"
+ - Fixed background art not returning after playing a track with no album art (regression)
  - Removed config option "Always show seek bar in mini-mode micro" (now always on)
 
 v5.4.2
