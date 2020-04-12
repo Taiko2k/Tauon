@@ -8071,6 +8071,8 @@ class TextBox2:
 
             width -= round(15 * gui.scale)
             t_len = ddt.get_text_w(self.text, font)
+            if active and editline and editline != input_text:
+                t_len += ddt.get_text_w(editline, font)
             if not click and not self.down_lock:
                 cursor_x = ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
                 if self.cursor_position == 0 or cursor_x < self.offset + round(15 * gui.scale) or cursor_x > self.offset + width:
@@ -8079,6 +8081,7 @@ class TextBox2:
 
                         if cursor_x < self.offset:
                             self.offset = cursor_x - round(15 * gui.scale)
+
                             if self.offset < 0:
                                 self.offset = 0
                     else:
@@ -8183,10 +8186,13 @@ class TextBox2:
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
-
         if active and editline != "" and editline != input_text:
-            ex = ddt.text((x + space + 4, y), editline, [240, 230, 230, 255], font)
-            # ddt.line(x + space + 4, y + 13, x + space + 4 + ex, y + 13, [245, 245, 245, 255])
+            ex = ddt.text((space + 4, 0), editline, [240, 230, 230, 255], font)
+            tw, th = ddt.get_text_wh(editline, font, max_x=2000)
+            ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255], True)
+
+            rect = SDL_Rect(round(x + space + tw + 5 * gui.scale), round(y + th + 4 * gui.scale), 1, 1)
+            SDL_SetTextInputRect(rect)
 
         animate_monitor_timer.set()
 
@@ -8479,6 +8485,7 @@ class TextBox:
             else:
                 ddt.text((x, y), self.text, colour, font)
 
+
             space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
 
             if TextBox.cursor and self.selection == self.cursor_position:
@@ -8521,7 +8528,11 @@ class TextBox:
 
         if active and editline != "" and editline != input_text:
             ex = ddt.text((x + space + 4, y), editline, [240, 230, 230, 255], font)
-            #ddt.line(x + space + 4, y + 13, x + space + 4 + ex, y + 13, [245, 245, 245, 255])
+            tw, th = ddt.get_text_wh(editline, font, max_x=2000)
+            ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255], True)
+
+            rect = SDL_Rect(round(round(x + space + tw + 5 * gui.scale)), round(y + th + 4 * gui.scale), 1, 1)
+            SDL_SetTextInputRect(rect)
 
         animate_monitor_timer.set()
 
@@ -14180,8 +14191,8 @@ def regenerate_playlist(pl, silent=False):
                         tr = pctl.g(track_id)
                         line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
-                        if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
-                            line = str(unidecode(line))
+                        # if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
+                        #     line = str(unidecode(line))
 
                         if search_magic(quote.lower(), line):
                             playlist.append(track_id)
@@ -27767,7 +27778,7 @@ class RadioBox:
         if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 2):
             self.radio_field_active = 1
             input.key_tab_press = False
-        if not self.radio_field_title.text:
+        if not self.radio_field_title.text and not (self.radio_field_active == 1 and editline):
             ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), (90, 90, 90, 255), 312)
         self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170),
                                     active=self.radio_field_active == 1,
@@ -27785,7 +27796,7 @@ class RadioBox:
             self.radio_field_active = 2
             input.key_tab_press = False
 
-        if not self.radio_field.text:
+        if not self.radio_field.text and not (self.radio_field_active == 2 and editline):
             ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", (90, 90, 90, 255), 312)
         self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170), active=self.radio_field_active == 2,
                               width=width, click=gui.level_2_click)
@@ -34521,18 +34532,7 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-
-            console.print("Starting test...", level=2)
-            for playlist in pctl.multi_playlist:
-                for track in playlist[2]:
-                    if track not in pctl.master_library:
-                        console.print("Missing data for track in playlist: " + playlist[0], level=2)
-            console.print("Done", level=2)
-
-        # window_size[0] = int(1280 * gui.scale)
-            # window_size[1] = int(720 * gui.scale)
-            # SDL_SetWindowSize(t_window, window_size[0], window_size[1])
-            # gui.update_layout()
+            pass
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -37471,8 +37471,8 @@ while pctl.running:
                                 tr = pctl.g(item)
                                 line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
-                                if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
-                                    line = str(unidecode(line))
+                                # if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+                                #     line = str(unidecode(line))
 
                                 if all(word in line for word in search_terms):
                                     playlist.append(item)
@@ -37507,8 +37507,8 @@ while pctl.running:
                             tr = pctl.g(default_playlist[search_index])
                             line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
-                            if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
-                                line = str(unidecode(line))
+                            # if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+                            #     line = str(unidecode(line))
 
                             if all(word in line for word in search_terms):
 
