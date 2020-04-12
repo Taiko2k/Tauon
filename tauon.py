@@ -29649,7 +29649,7 @@ class TreeView:
 
             target = item[1] + "/" + item[0]
 
-            inset = item[2] * round(12 * gui.scale)
+            inset = item[2] * round(11 * gui.scale)
             rect = (xx + inset - round(15 * gui.scale), yy, max_w - inset + round(15 * gui.scale), spacing - 1)
             fields.add(rect)
 
@@ -29793,20 +29793,20 @@ class TreeView:
                 ddt.text((xx + inset, yy), item[0], text_label_colour, font, max_w=max_w - inset)
 
 
-            # Draw inset bars
-            for m in range(item[2] + 1):
-                if m == 0:
-                    continue
-                colour = (255, 255, 255, 20)
-                if semilight_mode:
-                    colour = (255, 255, 255, 30)
-                if light_mode:
-                    colour = (0, 0, 0, 60)
-
-                if i > 0 and self.rows[i - 1][2] == m - 1:  # the top one needs to be slightly lower lower
-                    ddt.rect((x + (12 * m) + 2, yy - round(1 * gui.scale), round(1 * gui.scale), round(17 * gui.scale)), colour, True)
-                else:
-                    ddt.rect((x + (12 * m) + 2, yy - round(5 * gui.scale), round(1 * gui.scale), round(21 * gui.scale)), colour, True)
+            # # Draw inset bars
+            # for m in range(item[2] + 1):
+            #     if m == 0:
+            #         continue
+            #     colour = (255, 255, 255, 20)
+            #     if semilight_mode:
+            #         colour = (255, 255, 255, 30)
+            #     if light_mode:
+            #         colour = (0, 0, 0, 60)
+            #
+            #     if i > 0 and self.rows[i - 1][2] == m - 1:  # the top one needs to be slightly lower lower
+            #         ddt.rect((x + (12 * m) + 2, yy - round(1 * gui.scale), round(1 * gui.scale), round(17 * gui.scale)), colour, True)
+            #     else:
+            #         ddt.rect((x + (12 * m) + 2, yy - round(5 * gui.scale), round(1 * gui.scale), round(21 * gui.scale)), colour, True)
 
 
             if prefs.folder_tree_codec_colours:
