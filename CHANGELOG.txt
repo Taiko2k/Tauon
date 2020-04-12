@@ -13,7 +13,8 @@ v5.4.3
  - Tweaked appearance of folder navigator
  - Fixed new-playlist shortcut not being re-bindable
  - Fixed a possible crash after using "Remove missing tracks"
- - Fixed background art not returning after playing a track with no album art (regression)
+ - Fixed background art not returning after playing a track with no album art (regression fix)
+ - Fixed IME input (regression fix + improvement)
  - Removed config option "Always show seek bar in mini-mode micro" (now always on)
 
 v5.4.2
