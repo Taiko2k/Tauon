@@ -7636,10 +7636,7 @@ class TimedLyricsRen:
             return False
 
         direc = track.parent_folder_path
-        name = track.filename.split(".")[0] + ".lrc"
-
-        # if not os.path.isdir(direc):
-        #     return False
+        name = os.path.splitext(track.filename)[0] + ".lrc"
 
         if os.path.isfile(os.path.join(direc, name)):
             f = open(os.path.join(direc, name), 'r')
@@ -29660,7 +29657,7 @@ class TreeView:
 
             target = item[1] + "/" + item[0]
 
-            inset = item[2] * round(11 * gui.scale)
+            inset = item[2] * round(10 * gui.scale)
             rect = (xx + inset - round(15 * gui.scale), yy, max_w - inset + round(15 * gui.scale), spacing - 1)
             fields.add(rect)
 
