@@ -1401,7 +1401,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.set_bar = True
         self.set_mode = False
-        self.set_height = 25 * self.scale
+        self.set_height = round(25 * self.scale)
         self.set_hold = -1
         self.set_label_hold = -1
         self.set_label_point = (0, 0)
@@ -1634,6 +1634,12 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.column_sort_ani_x = 0
 
         self.restore_showcase_view = False
+
+        self.tracklist_center_mode = False
+        self.tracklist_inset_left = 0
+        self.tracklist_inset_width = 0
+        self.tracklist_highlight_width = 0
+        self.tracklist_highlight_left = 0
 
 gui = GuiVar()
 
@@ -1929,7 +1935,10 @@ keymaps = KeyMap()
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
-    wid = gui.plw - 16 * gui.scale
+    wid = gui.plw - round(16 * gui.scale)
+    if gui.tracklist_center_mode:
+        wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+
     total = 0
     for item in gui.pl_st:
         if item[2] is False:
@@ -1948,7 +1957,11 @@ def auto_size_columns():
 
     fixed_n = 0
 
-    total = gui.plw - 16 * gui.scale
+    wid = gui.plw - round(16 * gui.scale)
+    if gui.tracklist_center_mode:
+        wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+
+    total = wid
     for item in gui.pl_st:
 
         if item[2]:
@@ -2138,7 +2151,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.sys_background = self.menu_background
         self.sys_background_2 = self.tab_background
-        self.sys_background_3 = self.top_panel_background
+        self.sys_background_3 = [16, 16, 16, 255]
+
         self.sys_background_4 = self.bottom_panel_colour
         self.message_box_bg = self.sys_background_3
         self.sys_tab_bg = self.tab_background
@@ -16826,58 +16840,59 @@ def sa_remove(h):
         show_message("Cannot remove the only column.")
 
 def sa_artist():
-    gui.pl_st.append(["Artist", 220, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Artist", 220, False])
     gui.update_layout()
 def sa_album_artist():
-    gui.pl_st.append(["Album Artist", 220, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Album Artist", 220, False])
     gui.update_layout()
 def sa_composer():
-    gui.pl_st.append(["Composer", 220, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Composer", 220, False])
     gui.update_layout()
 def sa_title():
-    gui.pl_st.append(["Title", 220, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Title", 220, False])
     gui.update_layout()
 def sa_album():
-    gui.pl_st.append(["Album", 220, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Album", 220, False])
     gui.update_layout()
 def sa_comment():
-    gui.pl_st.append(["Comment", 300, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Comment", 300, False])
     gui.update_layout()
 def sa_track():
-    gui.pl_st.append(["T", 25, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["T", 25, True])
     gui.update_layout()
 def sa_count():
-    gui.pl_st.append(["P", 25, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["P", 25, True])
     gui.update_layout()
 def sa_time():
-    gui.pl_st.append(["Time", 55, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Time", 55, True])
     gui.update_layout()
 def sa_date():
-    gui.pl_st.append(["Date", 55, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Date", 55, True])
     gui.update_layout()
 def sa_genre():
-    gui.pl_st.append(["Genre", 150, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Genre", 150, False])
     gui.update_layout()
 def sa_file():
-    gui.pl_st.append(["Filepath", 350, False])
+    gui.pl_st.insert(set_menu.reference + 1, ["Filepath", 350, False])
     gui.update_layout()
 def sa_codec():
-    gui.pl_st.append(["Codec", 65, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Codec", 65, True])
     gui.update_layout()
 def sa_bitrate():
-    gui.pl_st.append(["Bitrate", 65, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Bitrate", 65, True])
     gui.update_layout()
 def sa_lyrics():
-    gui.pl_st.append(["Lyrics", 50, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Lyrics", 50, True])
     gui.update_layout()
 def sa_star():
-    gui.pl_st.append(["Starline", 80, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Starline", 80, True])
     gui.update_layout()
 def sa_rating():
-    gui.pl_st.append(["Rating", 80, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["Rating", 80, True])
     gui.update_layout()
 def sa_love():
-    gui.pl_st.append(["❤", 25, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["❤", 25, True])
+    #gui.pl_st.append(["❤", 25, True])
     gui.update_layout()
 
 def key_love(index):
@@ -26413,34 +26428,54 @@ class StandardPlaylist:
         left = gui.playlist_left
         width = gui.plw
 
-        center_mode = True
-        if gui.lsp or gui.set_mode or gui.rsp:
-            center_mode = False
+        # center_mode = True
+        # if gui.lsp or gui.rsp:  #gui.set_mode
+        #     center_mode = False
+        #
+        # highlight_left = 0
+        # highlight_width = width
+        #
+        # inset_left = highlight_left + 23 * gui.scale
+        # inset_width = highlight_width - 32 * gui.scale
+        #
+        # if gui.lsp and not gui.rsp:
+        #     inset_width -= 10 * gui.scale
+        #
+        # if gui.lsp:
+        #     inset_left -= 10 * gui.scale
+        #     inset_width += 10 * gui.scale
+        #
+        # if center_mode:
+        #
+        #     if gui.set_mode:
+        #
+        #         highlight_left = int(pow((window_size[0] * 0.004), 2))
+        #         if window_size[0] < 600 * gui.scale:
+        #             highlight_left = 3 * gui.scale
+        #         highlight_width = highlight_width - (highlight_left * 2)
+        #
+        #         inset_left = highlight_left + 18 * gui.scale
+        #         inset_width = highlight_width - 25 * gui.scale
+        #
+        #     else:
+        #
+        #         highlight_left = int(pow((window_size[0] * 0.01), 2))
+        #         if window_size[0] < 600 * gui.scale:
+        #             highlight_left = 3 * gui.scale
+        #         highlight_width = highlight_width - (highlight_left * 2)
+        #
+        #         inset_left = highlight_left + 18 * gui.scale
+        #         inset_width = highlight_width - 25 * gui.scale
 
-        highlight_left = 0
-        highlight_width = width
+        #
+        # if window_size[0] < 600 and gui.lsp:
+        #     inset_width = highlight_width - 18 * gui.scale
 
-        inset_left = highlight_left + 23 * gui.scale
-        inset_width = highlight_width - 32 * gui.scale
-
-        if gui.lsp and not gui.rsp:
-            inset_width -= 10 * gui.scale
-
-        if gui.lsp:
-            inset_left -= 10 * gui.scale
-            inset_width += 10 * gui.scale
-
-        if center_mode:
-            highlight_left = int(pow((window_size[0] * 0.01), 2))
-            if window_size[0] < 600 * gui.scale:
-                highlight_left = 3 * gui.scale
-            highlight_width = highlight_width - (highlight_left * 2)
-
-            inset_left = highlight_left + 18 * gui.scale
-            inset_width = highlight_width - 25 * gui.scale
-
-        if window_size[0] < 600 and gui.lsp:
-            inset_width = highlight_width - 18 * gui.scale
+        highlight_width = gui.tracklist_highlight_width
+        highlight_left = gui.tracklist_highlight_left
+        inset_width = gui.tracklist_inset_width
+        inset_left = gui.tracklist_inset_left
+        center_mode = gui.tracklist_center_mode
 
         w = 0
         gui.row_extra = 0
@@ -27075,22 +27110,6 @@ class StandardPlaylist:
                 ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
 
 
-            # if (input.mouse_click and key_shift_down is False and line_hit or
-            #             playlist_selected == p_track):
-            #
-            #     playlist_selected = p_track
-            #     this_line_selected = True
-            #
-            #     if this_line_playing and colours.lm:
-            #         pass
-            #     else:
-            #         ddt.rect_r(track_box, colours.row_select_highlight, True)
-            #         ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
-
-                # if not key_shift_down:
-                #     shift_selection = [playlist_selected]
-
-
             # Blue drop line
             if drag_highlight: #playlist_hold_position != p_track:
 
@@ -27098,14 +27117,12 @@ class StandardPlaylist:
                     [left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width, 3 * gui.scale],
                     [125, 105, 215, 255], True)
 
-
             # Highlight
             if highlight:
                 ddt.rect_a((left + highlight_left, line_y),
                           (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
 
                 ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
-
 
 
             if not gui.set_mode:
@@ -27118,20 +27135,26 @@ class StandardPlaylist:
                 n_track = tr
                 p_track = track_position
                 this_line_playing = playing
-                # offset_font_extra = 0
-                # if gui.row_font_size > 14:
-                #     offset_font_extra = 8
-                # offset_y_extra = 0
-                # if gui.row_font_size > 13:
-                #     offset_y_extra = 2
-                #     if gui.row_font_size > 14:
-                #         offset_y_extra = 3
+
 
                 start = 18 * gui.scale
-                if gui.lsp:
+
+                if center_mode:
+                    start = inset_left
+
+                elif gui.lsp:
                     start += gui.lspw
+
                 run = start
                 end = start + gui.plw
+
+                if center_mode:
+                    end = highlight_width + start
+
+                # gui.tracklist_center_mode = center_mode
+                # gui.tracklist_inset_left = inset_left - round(20 * gui.scale)
+                # gui.tracklist_inset_width = inset_width + round(20 * gui.scale)
+
 
                 for h, item in enumerate(gui.pl_st):
 
@@ -27363,6 +27386,8 @@ class StandardPlaylist:
 
                             if run + 6 * gui.scale + wid > end:
                                 wid = end - run - 40 * gui.scale
+                                if center_mode:
+                                    wid += 25 * gui.scale
 
                             wid = max(0, wid)
 
@@ -33316,6 +33341,54 @@ def update_layout_do():
 
         gui.pl_update = 1
 
+        # Tracklist sizing ----------------------------------------------------
+        left = gui.playlist_left
+        width = gui.plw
+
+        center_mode = True
+        if gui.lsp or gui.rsp:# or gui.set_mode:
+            center_mode = False
+
+        if gui.set_mode and window_size[0] < 600:
+            center_mode = False
+
+        highlight_left = 0
+        highlight_width = width
+
+        inset_left = highlight_left + 23 * gui.scale
+        inset_width = highlight_width - 32 * gui.scale
+
+        if gui.lsp and not gui.rsp:
+            inset_width -= 10 * gui.scale
+
+        if gui.lsp:
+            inset_left -= 10 * gui.scale
+            inset_width += 10 * gui.scale
+
+        if center_mode:
+            if gui.set_mode:
+                highlight_left = int(pow((window_size[0] * 0.005), 2))
+            else:
+                highlight_left = int(pow((window_size[0] * 0.01), 2))
+
+            if window_size[0] < 600 * gui.scale:
+                highlight_left = 3 * gui.scale
+
+            highlight_width = highlight_width - (highlight_left * 2)
+            inset_left = highlight_left + 18 * gui.scale
+            inset_width = highlight_width - 25 * gui.scale
+
+        if window_size[0] < 600 and gui.lsp:
+            inset_width = highlight_width - 18 * gui.scale
+
+        gui.tracklist_center_mode = center_mode
+        gui.tracklist_inset_left = inset_left
+        gui.tracklist_inset_width = inset_width
+        gui.tracklist_highlight_left = highlight_left
+        gui.tracklist_highlight_width = highlight_width
+
+
+        # --------------------------------------------------------------------
 
         if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
 
@@ -36153,11 +36226,17 @@ while pctl.running:
                     if right_click and coll(rect):
                         set_menu_hidden.activate()
 
+                width = gui.plw
                 if gui.set_bar and gui.set_mode:
                     left = 0
                     if gui.lsp:
                         left = gui.lspw
-                    rect = [left, top, gui.plw, gui.set_height]
+
+                    if gui.tracklist_center_mode:
+                        left = gui.tracklist_inset_left - round(20 * gui.scale)
+                        width = gui.tracklist_inset_width + round(20 * gui.scale)
+
+                    rect = [left, top, width, gui.set_height]
                     start = left + 16 * gui.scale
                     run = 0
                     in_grip = False
@@ -36249,7 +36328,11 @@ while pctl.running:
                                 total = 0
                                 for i in range(len(gui.pl_st) - 1):
                                     total += gui.pl_st[i][1]
-                                gui.pl_st[len(gui.pl_st) - 1][1] = gui.plw - 16 - total
+
+                                wid = gui.plw - round(16 * gui.scale)
+                                if gui.tracklist_center_mode:
+                                    wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+                                gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
 
                         run += item[1]
 
@@ -36298,24 +36381,28 @@ while pctl.running:
                     if gui.lsp:
                         x = gui.lspw
 
-                    rect = [x, top, gui.plw, gui.set_height]
+                    width = gui.plw
+
+                    if gui.tracklist_center_mode:
+                        x = gui.tracklist_highlight_left
+                        width = gui.tracklist_highlight_width
+
+                    rect = [x, top, width, gui.set_height]
 
 
                     c_bar_background = [30, 30, 30, 255]
 
-
-
-                    # if colours.lm:
-                    #     c_bar_background = colours.grey(60)
-
                     if colours.lm:
-                        # c_bar_background = colours.row_playing_highlight
                         c_bar_background = [235, 110, 160, 255]
 
-                    ddt.rect(rect, c_bar_background, True)
+                    if gui.tracklist_center_mode:
+                        ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background, True)
+                    else:
+                        ddt.rect(rect, c_bar_background, True)
 
                     start = x + 16 * gui.scale
-                    c_width = gui.plw - 16 * gui.scale
+                    c_width = width - 16 * gui.scale
+
                     run = 0
 
 
