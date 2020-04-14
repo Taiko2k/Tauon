@@ -33346,7 +33346,7 @@ def update_layout_do():
         width = gui.plw
 
         center_mode = True
-        if gui.lsp or gui.rsp:# or gui.set_mode:
+        if gui.lsp or gui.rsp or gui.set_mode:
             center_mode = False
 
         if gui.set_mode and window_size[0] < 600:
