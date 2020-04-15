@@ -1641,6 +1641,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.tracklist_highlight_width = 0
         self.tracklist_highlight_left = 0
 
+        self.hide_tracklist_in_gallery = False
+
 gui = GuiVar()
 
 
@@ -33120,6 +33122,7 @@ def update_layout_do():
     if w < 750 * gui.scale and album_mode:
         gui.show_playlist = False
 
+
     # Set bio panel size according to setting
     if prefs.bio_large:
         gui.artist_panel_height = 320 * gui.scale
@@ -33311,7 +33314,6 @@ def update_layout_do():
         if gui.rsp:
             gui.plw -= gui.rspw
 
-
         # Shrink side panel if playlist gets too small
         if window_size[0] > 100:
 
@@ -33391,6 +33393,11 @@ def update_layout_do():
         gui.tracklist_highlight_left = highlight_left
         gui.tracklist_highlight_width = highlight_width
 
+        # if album_mode and gui.hide_tracklist_in_gallery:
+        #     gui.show_playlist = False
+        #     gui.rspw = window_size[0] - 46 * gui.scale
+        #     if gui.lsp:
+        #         gui.rspw -= gui.lspw
 
         # --------------------------------------------------------------------
 
@@ -34606,6 +34613,9 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
+            # gui.hide_tracklist_in_gallery ^= True
+            # gui.rspw = gui.pref_gallery_w
+            # gui.update_layout()
             pass
 
         if gui.mode < 3:
