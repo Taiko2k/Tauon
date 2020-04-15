@@ -59,6 +59,8 @@ light-mode
 250,250,250		mode over
 230,230,230		mode on
 
+255,255,255		bottom title
+
 #-Top panel---------
 
 240,240,240		tab active line
