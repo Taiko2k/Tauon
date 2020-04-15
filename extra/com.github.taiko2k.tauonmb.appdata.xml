@@ -60,10 +60,12 @@
 
   <releases>
 
-    <release version="5.4.2" date="2020-04-02">
+    <release version="5.4.3" date="2020-04-16">
       <description>
         <ul>
-          <li>Added Swedish translation</li>
+          <li>Added Portuguese translation</li>
+          <li>Added smart playlist function find</li>
+          <li>Various tweaks and fixes</li>
         </ul>
       </description>
     </release>
