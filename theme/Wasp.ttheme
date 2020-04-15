@@ -57,6 +57,8 @@
 180,180,180		mode over
 160,160,160		mode on
 
+220,220,220		bottom title
+
 #-Top panel---------
 
 245,245,245		tab active line

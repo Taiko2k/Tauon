@@ -2081,8 +2081,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.row_playing_highlight = [255,255,255,4]
         self.row_select_highlight = [255,255,255,5]
 
-        self.side_bar_line1 = self.grey(210)
-        self.side_bar_line2 = self.grey(200)
+        self.side_bar_line1 = self.grey(230)
+        self.side_bar_line2 = self.grey(210)
 
         self.mode_button_off = self.grey(50)
         self.mode_button_over = self.grey(200)
@@ -2141,6 +2141,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.playlist_box_background = self.side_panel_background
 
+        self.bar_title_text = None
+
         #self.post_config()
 
     def post_config(self):
@@ -2163,7 +2165,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         if colour_value(self.toggle_box_on) < 150:
             self.toggle_box_on = [160, 160, 160, 255]
         self.time_sub = alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
-        self.bar_title_text = self.side_bar_line1
+        
+        if self.bar_title_text is None:
+            self.bar_title_text = self.side_bar_line1
 
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
@@ -2191,7 +2195,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.status_text_over = self.grey(40)
         self.status_info_text = [40, 40, 40, 255]
 
-        self.bar_title_text = self.grey(255)
+        # self.bar_title_text = self.grey(255)
         self.vis_bg = [235, 235, 235, 255]
         self.menu_background = [240, 240, 240, 250]
         self.menu_text = self.grey(40)
@@ -35094,6 +35098,8 @@ while pctl.running:
                                     colours.side_bar_line1 = get_colour_from_line(p)
                                 if 'extra info' in p:
                                     colours.side_bar_line2 = get_colour_from_line(p)
+                                if 'bottom title' in p:
+                                    colours.bar_title_text = get_colour_from_line(p)
                                 if 'scroll bar' in p:
                                     colours.scroll_colour = get_colour_from_line(p)
                                 if 'seek bar' in p:

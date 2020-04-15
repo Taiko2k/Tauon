@@ -57,6 +57,8 @@
 255,255,255		mode over
 255,255,255		mode on
 
+255,255,255		bottom title
+
 #-Top panel---------
 
 255,255,255		tab active line

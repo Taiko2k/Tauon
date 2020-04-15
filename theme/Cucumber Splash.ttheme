@@ -37,6 +37,7 @@
 255,255,255,9		playing highlight
 138,138,138,30		select highlight
 142,209,226		gallery highlight
+
 #-Bottom panel------
 
 55,55,55		buttons off
@@ -54,6 +55,8 @@
 50,50,50		mode off
 220,220,220		mode over
 160,160,160		mode on
+
+240,240,240		bottom title
 
 #-Top panel---------
 
