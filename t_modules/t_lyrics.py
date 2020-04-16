@@ -86,7 +86,12 @@ def genius(artist, title, return_url=False):
 
 
 lyric_sources = {
-    "LyricWiki": lyricwiki,
     "Apiseeds": apiseeds,
     "Genius": genius,
+    "LyricWiki": lyricwiki,
+}
+
+uses_scraping = {
+    "LyricWiki",
+    "Genius"
 }

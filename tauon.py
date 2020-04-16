@@ -22280,7 +22280,10 @@ class Over:
 
         for name in lyric_sources.keys():
             enabled = name in prefs.lyrics_enables
-            new = self.toggle_square(x, y, enabled, _(name))
+            title = _(name)
+            if name in uses_scraping:
+                title += "*"
+            new = self.toggle_square(x, y, enabled, title)
             y += round(23 * gui.scale)
             if new != enabled:
                 if enabled:
@@ -30375,7 +30378,7 @@ class QueueBox:
         ddt.rect(box_rect, [18, 18, 18, 255], True)
         ddt.text_background_colour = [18, 18, 18, 255]
 
-        if coll(box_rect) and quick_drag:
+        if coll(box_rect) and quick_drag and not pctl.force_queue:
             ddt.rect(box_rect, [255, 255, 255, 2], True)
             ddt.text_background_colour = alpha_blend([255, 255, 255, 2], ddt.text_background_colour)
 
@@ -35699,6 +35702,7 @@ while pctl.running:
 
                                             playlist_selected = shift_selection[0]
                                             gui.pl_update += 1
+                                            playlist_hold = False
 
                                             reload_albums(True)
                                             tauon.worker_save_state = True
@@ -36862,7 +36866,12 @@ while pctl.running:
                     if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
 
                         queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
-
+                    elif prefs.left_panel_mode == "queue":
+                        text = _("Queue is Empty")
+                        rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+                        ddt.rect(rect, [18, 18, 18, 255], True)
+                        ddt.text_background_colour = [18, 18, 18, 255]
+                        ddt.text((0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2), text, [60, 60, 60, 255], 212)
 
             # ------------------------------------------------
             # Scroll Bar
