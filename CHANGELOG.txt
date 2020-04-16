@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v5.4.4
+
+ - Restored gallery only view (click gallery button twice)
+ - Fixed text with mascot bg in columns view
+
 v5.4.3
 
  - Added Portuguese translation

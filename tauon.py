@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.4.3"
+n_version = "5.4.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -32145,6 +32145,7 @@ class ViewBox:
         self.tracks_img = asset_loader("tracks.png", True)
         self.side_img = asset_loader("tracks+side.png", True)
         self.gallery1_img = asset_loader("gallery1.png", True)
+        self.gallery2_img = asset_loader("gallery2.png", True)
         self.combo_img = asset_loader("combo.png", True)
         self.lyrics_img = asset_loader("lyrics.png", True)
         self.gallery2_img = asset_loader("gallery2.png", True)
@@ -32270,11 +32271,13 @@ class ViewBox:
         if hit is False:
             return album_mode is True and gui.show_playlist is True
 
-        # if album_mode and not gui.combo_mode:
-        #     gui.hide_tracklist_in_gallery ^= True
-        #     gui.rspw = gui.pref_gallery_w
-        #     gui.update_layout()
-        #     return
+        if album_mode and not gui.combo_mode:
+            gui.hide_tracklist_in_gallery ^= True
+            gui.rspw = gui.pref_gallery_w
+            gui.update_layout()
+            x_menu.active = False
+            Menu.active = False
+            return
 
         x_menu.active = False
         Menu.active = False
@@ -32393,7 +32396,11 @@ class ViewBox:
             #high = (.6, .80, .85)
             high = (.0, .25, .0)
 
-        test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery", low=low, high=high)
+        if gui.hide_tracklist_in_gallery:
+            test = self.button(x - round(1 * gui.scale), y, self.gallery2_img, self.gallery1, self.gallery1_colour, "Gallery", low=low,
+                               high=high)
+        else:
+            test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery", low=low, high=high)
         if test is not None:
             func = test
 
