@@ -17301,7 +17301,6 @@ def toggle_album_mode(force_on=False):
     global album_playlist_width
     global old_album_pos
 
-
     gui.gall_tab_enter = False
 
     if album_mode is True:
@@ -26586,7 +26585,7 @@ class StandardPlaylist:
                      colour, 213)
 
             ddt.pretty_rect = None
-            ggt.alpha_bg = False
+            ddt.alpha_bg = False
 
             # line = "Contains " + str(len(default_playlist)) + ' track'
             # if len(default_playlist) > 1:
@@ -33081,7 +33080,7 @@ def update_layout_do():
         pl_width_a = pl_width - gui.rspw
         pl_width -= gui.rspw - 300 * gui.scale  # More sensitivity for compact with rsp for better visual balancing
 
-    if pl_width < 900 * gui.scale:
+    if pl_width < 900 * gui.scale and not gui.hide_tracklist_in_gallery:
         gui.lspw = 180 * gui.scale
 
         if pl_width < 700 * gui.scale:
@@ -33335,7 +33334,7 @@ def update_layout_do():
             gui.plw -= gui.rspw
 
         # Shrink side panel if playlist gets too small
-        if window_size[0] > 100:
+        if window_size[0] > 100 and not gui.hide_tracklist_in_gallery:
 
             if gui.plw < 300:
                 if gui.rsp:
