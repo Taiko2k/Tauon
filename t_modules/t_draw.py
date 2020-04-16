@@ -243,6 +243,8 @@ class TDraw:
         self.text_background_colour = [0, 0, 0, 255]
         #self.pretty_rect = [0, 0, 0, 0]
         self.pretty_rect = None
+        self.real_bg = False
+        self.alpha_bg = False
         self.f_dict = {}
         self.ttc = {}
         self.ttl = []
@@ -379,12 +381,15 @@ class TDraw:
 
     def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
+        #perf.set()
+
         self.was_truncated = False
 
         max_x += 12  # Hack
         max_x = round(max_x)
 
         real_bg = False
+        alpha_bg = self.alpha_bg
 
         x = round(location[0])
         y = round(location[1])
@@ -392,8 +397,6 @@ class TDraw:
         if self.pretty_rect:
 
             w, h = self.get_text_wh(text, font, max_x, wrap)
-
-
             quick_box = [x, y, w, h]
 
             if align == 1:
@@ -406,14 +409,19 @@ class TDraw:
                 # self.rect_r(quick_box, [0, 0, 0, 100], True)
                 # print("PT")
                 # print(text)
-                real_bg = True
+                if self.real_bg:
+                    real_bg = True
+            else:
+                alpha_bg = False
+
+        if alpha_bg:
+            bg = (0, 0, 0, 0)
 
         if max_y is not None:
             max_y = round(max_y)
 
         if len(text) == 0:
             return 0
-
 
         key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
 
@@ -438,7 +446,6 @@ class TDraw:
 
             w, h = self.get_text_wh(text, font, max_x, wrap)
 
-
         if w < 1:
             return 0
 
@@ -460,15 +467,17 @@ class TDraw:
 
             SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
 
-        perf.set()
-
-        surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
-        #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
+        if alpha_bg:
+            surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
+        else:
+            surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
 
         context = cairo.Context(surf)
 
         if self.force_subpixel_text:
             options = context.get_font_options()
+            #options.set_antialias(cairo.ANTIALIAS_NONE)
+            #options.set_antialias(cairo.ANTIALIAS_GRAY)
             options.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
             context.set_font_options(options)
 
@@ -495,10 +504,11 @@ class TDraw:
 
         context.rectangle(0, 0, w, h)
 
-        if not real_bg:
+        if not real_bg and not alpha_bg:
             context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
             # context.set_source_rgba(0, 0, 0, 0)
             context.fill()
+
         context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
 
         if font not in self.f_dict:
@@ -518,16 +528,22 @@ class TDraw:
 
         self.was_truncated = layout.is_ellipsized()
 
-        sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w*4, SDL_PIXELFORMAT_RGB888)
-        #sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_ARGB8888)
+        if alpha_bg:
+            sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, SDL_PIXELFORMAT_ARGB8888)
+        else:
+            sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w * 4, SDL_PIXELFORMAT_RGB888)
 
         # Here the background colour is keyed out allowing lines to overlap slightly
-        if not real_bg:
+        if not real_bg and not alpha_bg:
             ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])
             SDL_SetColorKey(sdl_surface, True, ke)
 
         c = SDL_CreateTextureFromSurface(self.renderer, sdl_surface)
         SDL_FreeSurface(sdl_surface)
+
+        if alpha_bg:
+            blend_mode = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
+            SDL_SetTextureBlendMode(c, blend_mode)
 
         dst = SDL_Rect(round(x), round(y))
         dst.w = round(w)

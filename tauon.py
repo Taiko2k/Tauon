@@ -357,6 +357,7 @@ t_window = SDL_CreateWindow(window_title,
                             window_size[0], window_size[1],
                             flags)
 
+
 err = SDL_GetError()
 if err:
     print(f"SDL window error: {err.decode()}")
@@ -26499,8 +26500,9 @@ class StandardPlaylist:
         if pl_bg:
             x = (left + highlight_width) - (pl_bg.w + round(60 * gui.scale))
             pl_bg.render(x, window_size[1] - gui.panelBY - pl_bg.h)
-            if not gui.set_mode:
-                ddt.pretty_rect = ((left + highlight_width) - (pl_bg.w + 60 * gui.scale), window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+            #if not gui.set_mode:
+            ddt.pretty_rect = ((left + highlight_width) - (pl_bg.w + 60 * gui.scale), window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+            ddt.alpha_bg = True
                 # ddt.rect(ddt.pretty_rect, [255, 0, 0, 100], True)
 
         # Mouse wheel scrolling
@@ -26553,6 +26555,7 @@ class StandardPlaylist:
                 rect = (left + int(width / 2) - 80 * gui.scale, half - 10 * gui.scale,
                         190 * gui.scale, 60 * gui.scale)
                 ddt.pretty_rect = rect
+                ddt.alpha_bg = True
 
             ddt.text((left + int(width / 2) + 10 * gui.scale, half, 2),
                      _("Playlist is empty"), colour, 213, bg=colours.playlist_panel_background)
@@ -26560,6 +26563,7 @@ class StandardPlaylist:
                      _("Drag and drop files to import"), colour, 13, bg=colours.playlist_panel_background)
 
             ddt.pretty_rect = None
+            ddt.alpha_bg = False
 
         # Show notice if at end of playlist
         elif pctl.playlist_view_position > len(default_playlist) - 1:
@@ -26576,11 +26580,13 @@ class StandardPlaylist:
                 rect = (left + int(width / 2) - 60 * gui.scale, half - 5 * gui.scale,
                         140 * gui.scale, 30 * gui.scale)
                 ddt.pretty_rect = rect
+                ddt.alpha_bg = True
 
             ddt.text((left + int(width / 2) + 10 * gui.scale, half, 2), _("End of Playlist"),
                      colour, 213)
 
             ddt.pretty_rect = None
+            ggt.alpha_bg = False
 
             # line = "Contains " + str(len(default_playlist)) + ' track'
             # if len(default_playlist) > 1:
@@ -27397,14 +27403,14 @@ class StandardPlaylist:
 
                             wid = max(0, wid)
 
-                            # Hacky. Places a dark background behind light text for readability over mascot
-                            if pl_bg and gui.set_mode and colour_value(norm_colour) < 400 and not colours.lm:
-                                w, h = ddt.get_text_wh(text, font, wid)
-                                quick_box = [run + round(5 * gui.scale), y + y_off, w + round(2 * gui.scale), h]
-                                if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
-                                    quick_box = (run, ry, item[1], gui.playlist_row_height)
-                                    ddt.rect(quick_box, [0, 0, 0, 40], True)
-                                    ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
+                            # # Hacky. Places a dark background behind light text for readability over mascot
+                            # if pl_bg and gui.set_mode and colour_value(norm_colour) < 400 and not colours.lm:
+                            #     w, h = ddt.get_text_wh(text, font, wid)
+                            #     quick_box = [run + round(5 * gui.scale), y + y_off, w + round(2 * gui.scale), h]
+                            #     if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
+                            #         quick_box = (run, ry, item[1], gui.playlist_row_height)
+                            #         ddt.rect(quick_box, [0, 0, 0, 40], True)
+                            #         ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
 
                             ddt.text((run + 6 * gui.scale, y + y_off),
                                           text,
@@ -27452,6 +27458,7 @@ class StandardPlaylist:
             playlist_hold = False
 
         ddt.pretty_rect = None
+        ddt.alpha_bg = False
 
     def cache_render(self):
 
@@ -32263,6 +32270,12 @@ class ViewBox:
         if hit is False:
             return album_mode is True and gui.show_playlist is True
 
+        # if album_mode and not gui.combo_mode:
+        #     gui.hide_tracklist_in_gallery ^= True
+        #     gui.rspw = gui.pref_gallery_w
+        #     gui.update_layout()
+        #     return
+
         x_menu.active = False
         Menu.active = False
 
@@ -33393,11 +33406,11 @@ def update_layout_do():
         gui.tracklist_highlight_left = highlight_left
         gui.tracklist_highlight_width = highlight_width
 
-        # if album_mode and gui.hide_tracklist_in_gallery:
-        #     gui.show_playlist = False
-        #     gui.rspw = window_size[0] - 46 * gui.scale
-        #     if gui.lsp:
-        #         gui.rspw -= gui.lspw
+        if album_mode and gui.hide_tracklist_in_gallery:
+            gui.show_playlist = False
+            gui.rspw = window_size[0] - 20 * gui.scale
+            if gui.lsp:
+                gui.rspw -= gui.lspw
 
         # --------------------------------------------------------------------
 
@@ -33413,7 +33426,7 @@ def update_layout_do():
 
             SDL_DestroyTexture(gui.tracklist_texture)
             SDL_RenderClear(renderer)
-            gui.tracklist_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+            gui.tracklist_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
                                                       gui.max_window_tex)
 
             SDL_SetRenderTarget(renderer, gui.tracklist_texture)
