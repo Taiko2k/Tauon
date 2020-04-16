@@ -3055,7 +3055,7 @@ def save_prefs():
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
     cf.update_value("hide-queue-when-empty", prefs.hide_queue)
-    cf.update_value("show-playlist-list", prefs.show_playlist_list)
+    #cf.update_value("show-playlist-list", prefs.show_playlist_list)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
     cf.update_value("prefer-center-bg", prefs.center_bg)
@@ -3188,7 +3188,7 @@ def load_prefs():
     prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
-    prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
+    #prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
     prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition (broken setting, is always enabled")
     prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel, "Show art in top panel when window is narrow")
@@ -11180,6 +11180,13 @@ def enable_playlist_list():
     gui.lsp = True
     gui.update_layout()
 
+def enable_queue_panel():
+    if prefs.left_panel_mode != "queue":
+        gui.last_left_panel_mode = prefs.left_panel_mode
+    prefs.left_panel_mode = "queue"
+    gui.lsp = True
+    gui.update_layout()
+
 def enable_folder_list():
     if prefs.left_panel_mode != "folder view":
         gui.last_left_panel_mode = prefs.left_panel_mode
@@ -11187,15 +11194,25 @@ def enable_folder_list():
     gui.lsp = True
     gui.update_layout()
 
+def lsp_menu_test_queue():
+    if not gui.lsp:
+        return False
+    return prefs.left_panel_mode == "queue"
 
-def lsp_menu_test_playlist(_):
-    return not prefs.left_panel_mode == "playlist" or not gui.lsp
+def lsp_menu_test_playlist():
+    if not gui.lsp:
+        return False
+    return prefs.left_panel_mode == "playlist"
 
-def lsp_menu_test_tree(_):
-    return not prefs.left_panel_mode == "folder view" or not gui.lsp
+def lsp_menu_test_tree():
+    if not gui.lsp:
+        return False
+    return prefs.left_panel_mode == "folder view"
 
-def lsp_menu_test_artist(_):
-    return not prefs.left_panel_mode == "artist list" or not gui.lsp
+def lsp_menu_test_artist():
+    if not gui.lsp:
+        return False
+    return prefs.left_panel_mode == "artist list"
 
 def toggle_left_last():
     gui.lsp = True
@@ -11205,11 +11222,13 @@ def toggle_left_last():
         gui.last_left_panel_mode = t
 
 #. Menu entry: A side panel view layout.
-lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, show_test=lsp_menu_test_playlist)
+lsp_menu.add(_("Queue"), enable_queue_panel, disable_test=lsp_menu_test_queue)
+
+lsp_menu.add(_("Unpinned Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist)
 #. Menu entry: Side panel view layout showing a list of artists with thumbnails.
-lsp_menu.add(_("Artist List"), enable_artist_list, show_test=lsp_menu_test_artist)
+lsp_menu.add(_("Artist List"), enable_artist_list, disable_test=lsp_menu_test_artist)
 #. Menu entry: A side panel view layout. Alternative name: Folder Tree.
-lsp_menu.add(_("Folder Navigator"), enable_folder_list, show_test=lsp_menu_test_tree)
+lsp_menu.add(_("Folder Navigator"), enable_folder_list, disable_test=lsp_menu_test_tree)
 
 class RenameTrackBox:
 
@@ -12985,6 +13004,22 @@ def edit_generator_box(index):
 
 
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
+
+
+def pin_playlist_toggle(pl):
+    pctl.multi_playlist[pl][8] ^= True
+
+def pl_pin_deco(pl):
+
+    #if pctl.multi_playlist[pl][8] == True and tab_menu.pos[1] >
+
+    if pctl.multi_playlist[pl][8] == True:
+        return [colours.menu_text, colours.menu_background, _("Pin")]
+    else:
+        return [colours.menu_text, colours.menu_background, _('Unpin')]
+
+tab_menu.add("Pin", pin_playlist_toggle, pl_pin_deco, pass_ref=True, pass_ref_deco=True)
+
 
 
 def pl_lock_deco(pl):
@@ -23890,6 +23925,7 @@ class TopPanel:
                             pctl.multi_playlist[playlist_box.drag_on][8] = True
                         else:
                             pctl.multi_playlist[playlist_box.drag_on][8] = False
+                        gui.update += 1
 
 
         # TAB INPUT PROCESSING
@@ -28312,6 +28348,11 @@ class PlaylistBox:
         if bg_lumi > 0.8:
             dark_mode = True
 
+        if light_mode:
+            indicate_w = round(3 * gui.scale)
+        else:
+            indicate_w = round(2 * gui.scale)
+
         show_scroll = False
         tab_start = x + 10 * gui.scale
 
@@ -28337,19 +28378,14 @@ class PlaylistBox:
             tab_start += 15 * gui.scale
 
 
-        tab_width = w - tab_start - 6 * gui.scale
+        tab_width = w - tab_start # - 0 * gui.scale
 
         # Draw scroll bar
         if show_scroll:
             self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15 * gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
 
-        draw_pin_indicator = prefs.tabs_on_top
+        draw_pin_indicator = False #prefs.tabs_on_top
 
-        # Drawing each tab...
-        yy = y + 5 * gui.scale
-        delete_pl = None
-
-        tab_on = 0
         # if not gui.album_tab_mode:
         #     if key_left_press or key_right_press:
         #         if pctl.active_playlist_viewing < self.scroll_on:
@@ -28357,28 +28393,39 @@ class PlaylistBox:
         #         elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
         #             self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
 
+        # Calculate tabs on top panel
+        tabs_on_top = []
+        if prefs.tabs_on_top:
+            xx = top_panel.start_space_left
+            for i in range(len(pctl.multi_playlist)):
+
+                if i > len(top_panel.tab_text_spaces) - 1:
+                    break
+
+                # Ignore hidden playlist
+                if pctl.multi_playlist[i][8]:
+                    continue
+                # Ignore truncated tabs
+                if xx > top_panel.tabs_right_x:
+                    break
+                xx += top_panel.tab_text_spaces[i] + top_panel.tab_extra_width
+                tabs_on_top.append(i)
+
+        # Process inputs
+        delete_pl = None
+        tab_on = 0
+        yy = y + 5 * gui.scale
         for i, pl in enumerate(pctl.multi_playlist):
 
-            # if yy + self.tab_h > y + h:
-            #     break
             if tab_on >= max_tabs:
                 break
-                #pass
-
             if i < self.scroll_on:
                 continue
 
+            if not pl[8] and i in tabs_on_top:
+                continue
+
             tab_on += 1
-
-            if draw_pin_indicator:
-                if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
-                    if input.mouse_click:
-                        switch_playlist(i)
-                        self.drag_on = i
-                        self.drag = True
-                        self.drag_source = 1
-                        set_drag_source()
-
 
             if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
                 if right_click:
@@ -28439,6 +28486,35 @@ class PlaylistBox:
             if draw_pin_indicator and input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
                 pl[8] ^= True
 
+            yy += self.tab_h + self.gap
+
+        # Draw tabs
+        #delete_pl = None
+        tab_on = 0
+        yy = y + 5 * gui.scale
+        for i, pl in enumerate(pctl.multi_playlist):
+
+            # if yy + self.tab_h > y + h:
+            #     break
+            if tab_on >= max_tabs:
+                break
+            if i < self.scroll_on:
+                continue
+
+            if not pl[8] and i in tabs_on_top:
+                continue
+
+            tab_on += 1
+            # if draw_pin_indicator:
+            #     if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
+            #         if input.mouse_click:
+            #             switch_playlist(i)
+            #             self.drag_on = i
+            #             self.drag = True
+            #             self.drag_source = 1
+            #             set_drag_source()
+
+
             name = pl[0]
             hidden = pl[8]
 
@@ -28490,7 +28566,7 @@ class PlaylistBox:
             real_bg = alpha_blend(bg, colours.playlist_box_background)
 
             # Draw highlight
-            ddt.rect((tab_start, yy - 1 * gui.scale, tab_width, 25 * gui.scale), bg, True)
+            ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, 25 * gui.scale), bg, True)
 
             # Draw title text
             text_start = 10 * gui.scale
@@ -28562,18 +28638,18 @@ class PlaylistBox:
             # Is mouse collided with tab?
             hit = coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1)))
 
-            if not prefs.tabs_on_top:
-                if i == pctl.active_playlist_playing:
+            #if not prefs.tabs_on_top:
+            if i == pctl.active_playlist_playing:
 
-                    indicator_colour = colours.title_playing
-                    if colours.lm:
-                        indicator_colour = colours.seek_bar_fill
+                indicator_colour = colours.title_playing
+                if colours.lm:
+                    indicator_colour = colours.seek_bar_fill
 
-                    ddt.rect((tab_start + 0 - 2 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w),
-                             indicator_colour, True)
+                ddt.rect((tab_start + 0 - 2 * gui.scale, yy - round(1 * gui.scale), indicate_w, self.tab_h),
+                         indicator_colour, True)
 
 
-            # If mouse over...
+            # # If mouse over...
             if hit:
                 # Draw indicator for dragging tracks
                 if quick_drag:
@@ -28628,6 +28704,7 @@ class PlaylistBox:
         # Create new playlist if drag in blank space after tabs
         rect = (x, yy, w - 10 * gui.scale, h - (yy - y))
         fields.add(rect)
+
         if coll(rect):
             if quick_drag:
                 ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255], True)
@@ -33872,6 +33949,11 @@ elif gui.restore_showcase_view:
 
 SDL_SetRenderTarget(renderer, None)
 
+mouse_up = False
+mouse_wheel = 0
+
+top_panel.render()
+
 while pctl.running:
     # bm.get('main')
 
@@ -36771,7 +36853,7 @@ while pctl.running:
                         if preview_queue:
                             pl_box_h = int(round((full * 5 / 6)))
 
-                    if prefs.show_playlist_list:
+                    if not prefs.left_panel_mode == "queue":
 
                         playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
                     else:
