@@ -245,6 +245,7 @@ class TDraw:
         self.pretty_rect = None
         self.real_bg = False
         self.alpha_bg = False
+        self.force_gray = False
         self.f_dict = {}
         self.ttc = {}
         self.ttl = []
@@ -474,7 +475,11 @@ class TDraw:
 
         context = cairo.Context(surf)
 
-        if self.force_subpixel_text:
+        if self.force_gray:
+            options = context.get_font_options()
+            options.set_antialias(cairo.ANTIALIAS_GRAY)
+            context.set_font_options(options)
+        elif self.force_subpixel_text:
             options = context.get_font_options()
             #options.set_antialias(cairo.ANTIALIAS_NONE)
             #options.set_antialias(cairo.ANTIALIAS_GRAY)
