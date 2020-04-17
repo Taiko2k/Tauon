@@ -2,13 +2,18 @@
 Changelog-------------------------------------
 
 v5.4.4
-   - todo folder nav panel auto width in gall only
- - Changed behavior of playlist list to only show unpinned playlists
- - Added queue only left panel type
- - Restored gallery only view (click gallery button twice)
+
+ - Added "queue only" left panel type
+ - Restored "gallery only" view layout (click gallery button twice)
+ - Changed playlist list layout to alt style
+ - Changed playlist lock indicator to pin indicator
  - Fixed text with mascot bg in columns view
- - Fixed lyrics source entires not showing asterisk
+ - Fixed lyrics source entries not showing asterisk
+ - Fixed rendering during view change click
+ - Fixed gallery jumping to top when deleting another playlist
  - Removed config option "show playlist list" (now redundant)
+ - Removed playlist "auto" indicator
+ - Removed playlist pin buttons
 
 v5.4.3
 
