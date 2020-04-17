@@ -875,12 +875,13 @@ def pl_gen(title='Default',
            position=0,
            hide_title=0,
            selected=0,
-           parent=""):
+           parent="",
+           hidden=False):
 
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False, False, parent])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", hidden, False, parent])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -1643,6 +1644,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.tracklist_highlight_left = 0
 
         self.hide_tracklist_in_gallery = False
+
 
 gui = GuiVar()
 
@@ -10574,7 +10576,7 @@ class ToolTip:
 
     def test(self, x, y, text):
 
-        if self.text != text:
+        if self.text != text or x != self.x or y != self.y:
             self.text = text
             #self.timer.set()
             self.a = False
@@ -10729,6 +10731,7 @@ class Menu:
     def __init__(self, width, show_icons=False):
 
         self.active = False
+        self.close_next_frame = False
         self.clicked = False
         self.pos = [0, 0]
         self.vertical_size = round(22 * gui.scale)
@@ -11077,7 +11080,8 @@ class Menu:
                     self.items[to_call][2]()
 
 
-            if self.clicked or key_esc_press:
+            if self.clicked or key_esc_press or self.close_next_frame:
+                self.close_next_frame = False
                 self.active = False
                 self.clicked = False
 
@@ -11224,7 +11228,7 @@ def toggle_left_last():
 #. Menu entry: A side panel view layout.
 lsp_menu.add(_("Queue"), enable_queue_panel, disable_test=lsp_menu_test_queue)
 
-lsp_menu.add(_("Unpinned Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist)
+lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist)
 #. Menu entry: Side panel view layout showing a list of artists with thumbnails.
 lsp_menu.add(_("Artist List"), enable_artist_list, disable_test=lsp_menu_test_artist)
 #. Menu entry: A side panel view layout. Alternative name: Folder Tree.
@@ -13051,7 +13055,8 @@ def lock_colour_callback():
     else:
         return None
 
-lock_icon = MenuIcon(asset_loader('lock.png', True))
+lock_asset = asset_loader('lock.png', True)
+lock_icon = MenuIcon(lock_asset)
 lock_icon.base_asset_mod = asset_loader('unlock.png', True)
 lock_icon.colour = [240, 190, 10, 255]
 lock_icon.colour_callback = lock_colour_callback
@@ -13281,9 +13286,9 @@ def delete_playlist(index):
         playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
         shift_selection = [playlist_selected]
 
-    if album_mode:
-        reload_albums(True)
-        goto_album(pctl.playlist_view_position)
+        if album_mode:
+            reload_albums(True)
+            goto_album(pctl.playlist_view_position)
 
     # Re-set the playing playlist number by uid
     for i, pl in enumerate(pctl.multi_playlist):
@@ -16724,9 +16729,9 @@ def clip_ar_tr(index):
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
 
-def drop_tracks_to_new_playlist(track_list):
+def drop_tracks_to_new_playlist(track_list, hidden=False):
 
-    pl = new_playlist(False)
+    pl = new_playlist(switch=False)
     albums = []
     artists = []
     for item in track_list:
@@ -28318,6 +28323,8 @@ class PlaylistBox:
         self.indicate_w = round(2 * gui.scale)
 
         self.lock_icon = asset_loader('lock-corner.png', True)
+        self.pin_icon = asset_loader('dia-pin.png', True)
+        self.gen_icon = asset_loader('gen-gear.png', True)
 
         #if gui.scale == 1.25:
         self.tab_h = round(25 * gui.scale)
@@ -28356,6 +28363,28 @@ class PlaylistBox:
         else:
             indicate_w = round(2 * gui.scale)
 
+
+        # Calculate tabs on top panel
+        # tabs_on_top = []
+        # tabs_to_show = 0
+
+        # xx = top_panel.start_space_left
+        # for i in range(len(pctl.multi_playlist)):
+        #
+        #     if i > len(top_panel.tab_text_spaces) - 1:
+        #         break
+        #
+        #     # Ignore hidden playlist
+        #     if pctl.multi_playlist[i][8]:
+        #         tabs_to_show += 1
+        #         continue
+        #     # Ignore truncated tabs
+        #     if not xx > top_panel.tabs_right_x and prefs.tabs_on_top:
+        #         xx += top_panel.tab_text_spaces[i] + top_panel.tab_extra_width
+        #         tabs_on_top.append(i)
+        #     else:
+        #         tabs_to_show += 1
+
         show_scroll = False
         tab_start = x + 10 * gui.scale
 
@@ -28371,7 +28400,7 @@ class PlaylistBox:
         if self.scroll_on < 0:
             self.scroll_on = 0
 
-        if len(pctl.multi_playlist) > max_tabs:
+        if len(pctl.multi_playlist) > max_tabs: #tabs_to_show > max_tabs:
             show_scroll = True
         else:
             self.scroll_on = 0
@@ -28380,8 +28409,11 @@ class PlaylistBox:
         if show_scroll:
             tab_start += 15 * gui.scale
 
-
+        if colours.lm:
+            w -= round(6 * gui.scale)
         tab_width = w - tab_start # - 0 * gui.scale
+
+
 
         # Draw scroll bar
         if show_scroll:
@@ -28396,24 +28428,6 @@ class PlaylistBox:
         #         elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
         #             self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
 
-        # Calculate tabs on top panel
-        tabs_on_top = []
-        if prefs.tabs_on_top:
-            xx = top_panel.start_space_left
-            for i in range(len(pctl.multi_playlist)):
-
-                if i > len(top_panel.tab_text_spaces) - 1:
-                    break
-
-                # Ignore hidden playlist
-                if pctl.multi_playlist[i][8]:
-                    continue
-                # Ignore truncated tabs
-                if xx > top_panel.tabs_right_x:
-                    break
-                xx += top_panel.tab_text_spaces[i] + top_panel.tab_extra_width
-                tabs_on_top.append(i)
-
         # Process inputs
         delete_pl = None
         tab_on = 0
@@ -28425,8 +28439,8 @@ class PlaylistBox:
             if i < self.scroll_on:
                 continue
 
-            if not pl[8] and i in tabs_on_top:
-                continue
+            # if not pl[8] and i in tabs_on_top:
+            #     continue
 
             tab_on += 1
 
@@ -28504,8 +28518,8 @@ class PlaylistBox:
             if i < self.scroll_on:
                 continue
 
-            if not pl[8] and i in tabs_on_top:
-                continue
+            # if not pl[8] and i in tabs_on_top:
+            #     continue
 
             tab_on += 1
             # if draw_pin_indicator:
@@ -28578,42 +28592,42 @@ class PlaylistBox:
                 text_start = 32 * gui.scale
 
 
-            text_max_w = tab_width - text_start - 15 * gui.scale
-
-            if not pl[9] and pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
-                cl = [60, 60, 60, 240]
-                if light_mode:
-                    cl = [90, 90, 90, 240]
-
-                c = [240, 240, 240, 255]
-                if light_mode:
-                    c = [240, 240, 240, 255]
-
-                a_rect = ((tab_start + tab_width) - round(35 * gui.scale), yy + round(self.tab_h / 2) - round(7 * gui.scale), round(30 * gui.scale), round(10 * gui.scale))
-
-                ddt.rect(a_rect, cl, True)
-                ddt.text((a_rect[0] + round(2 * gui.scale), a_rect[1] - round(5 * gui.scale)), "AUTO", c, 210, bg=alpha_blend(cl, real_bg))
-                text_max_w -= a_rect[2] + 2 * gui.scale
-
-                fields.add(a_rect)
-                if coll(a_rect):
-                    tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, pctl.gen_codes.get(pl[6]) )
 
 
-            ddt.text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w, bg=real_bg)
+            # if pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
+            #     cl = [60, 60, 60, 240]
+            #     if light_mode:
+            #         cl = [90, 90, 90, 240]
+            #
+            #     c = [240, 240, 240, 255]
+            #     if light_mode:
+            #         c = [240, 240, 240, 255]
+            #
+            #     a_rect = ((tab_start + tab_width) - round(37 * gui.scale), yy + round(self.tab_h / 2) - round(6 * gui.scale), round(30 * gui.scale), round(10 * gui.scale))
+            #
+            #     ddt.rect(a_rect, cl, True)
+            #     ddt.text((a_rect[0] + round(2 * gui.scale), a_rect[1] - round(5 * gui.scale)), "AUTO", c, 210, bg=alpha_blend(cl, real_bg))
+            #     text_max_w -= a_rect[2] + 2 * gui.scale
+            #
+            #     fields.add(a_rect)
+            #     if coll(a_rect):
+            #         tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, pctl.gen_codes.get(pl[6]) )
+            #
+
+
             #
             # print(light_mode)
             # print(dark_mode)
 
             # Set and adjust pin indicator colour for different background brightnesses
-            indicator_colour = [100, 200, 90, 255]
-            if light_mode:
-                indicator_colour = [40, 40, 40, 210]
-
-            if hidden:
-                indicator_colour = [255, 255, 255, 40]
-                if light_mode:
-                    indicator_colour = [40, 40, 40, 60]
+            # indicator_colour = [100, 200, 90, 255]
+            # if light_mode:
+            #     indicator_colour = [40, 40, 40, 210]
+            #
+            # if hidden:
+            #     indicator_colour = [255, 255, 255, 40]
+            #     if light_mode:
+            #         indicator_colour = [40, 40, 40, 60]
                 # if not dark_mode:
                 #     indicator_colour = [40, 40, 40, 60]
                 # if dark_mode:
@@ -28625,11 +28639,72 @@ class PlaylistBox:
             #         indicator_colour = [100, 60, 180, 255]
 
             #else:
+            if not pl[8]:
+                cl = [255, 255, 255, 25]
+
+                if light_mode:
+                    cl = [0, 0, 0, 40]
+
+                xx = tab_start + tab_width - self.lock_icon.w
+                self.lock_icon.render(xx, yy, cl)
 
             # Draw pin indicator/toggle
-            if draw_pin_indicator:
-                ddt.rect((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
+            # if draw_pin_indicator:
+            #     ddt.rect((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
+            # cl = [255, 255, 255, 40]
+            # if light_mode:
+            #     cl = [0, 0, 0, 120]
+            #
+            # indicators_start_x = (tab_start + tab_width) - round(8 * gui.scale)
+            # slide = 0
+            # if colours.lm:
+            #     slide += round(3 * gui.scale)
+            # indicators_start_x -= slide
+            # indicator_run_x = 0
+
+            # if not pl[8]:
+            #     indicator_run_x += self.pin_icon.w
+            #     self.pin_icon.render(indicators_start_x - indicator_run_x, yy + round(5 * gui.scale), cl)
+            #
+            #
+            #     a_rect = (indicators_start_x - indicator_run_x, yy, round(18 * gui.scale), round(18 * gui.scale))
+            #     fields.add(a_rect)
+            #     if coll(a_rect):
+            #         tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, "Playlist is pinned to top panel")
+            #
+            #     indicator_run_x += round(4 * gui.scale)
+            #
+            # if pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
+            #     indicator_run_x += self.gen_icon.w
+            #     self.gen_icon.render(indicators_start_x - indicator_run_x, yy + round(5 * gui.scale), cl)
+            #
+            #     a_rect = (indicators_start_x - indicator_run_x, yy, round(18 * gui.scale), round(18 * gui.scale))
+            #     fields.add(a_rect)
+            #     if coll(a_rect):
+            #         tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, pctl.gen_codes.get(pl[6]) )
+            #
+            #     indicator_run_x += round(4 * gui.scale)
+            #
+            #
+            # if pl[9] and not (key_shift_down and self.drag and hit and i != self.drag_on):
+            #     indicator_run_x += lock_asset.w
+            #     lock_asset.render(indicators_start_x - indicator_run_x, yy + round(5 * gui.scale), cl)
+            #     indicator_run_x += round(5 * gui.scale)
+
+
+            text_max_w = tab_width - text_start - 15 * gui.scale
+            # if indicator_run_x:
+            #     text_max_w = tab_width - (indicator_run_x + text_start + 17 * gui.scale + slide)
+            ddt.text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w,
+                     bg=real_bg)
+            # # Draw lock icon (but not if shift append indicator)
+            # if pl[9] and not (key_shift_down and self.drag and hit and i != self.drag_on):
+            #     cl = [255, 255, 255, 35] # 24
+            #     if light_mode:
+            #         cl = [0, 0, 0, 50]
+            #     #self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+            #     lock_asset.render(tab_start + tab_width - round(19 * gui.scale), yy + 4, cl)
 
             # # Draw indicator playing track from this playlist
             # if i == pctl.active_playlist_playing:
@@ -28669,12 +28744,7 @@ class PlaylistBox:
                             ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), [80, 160, 200, 255], True)
 
 
-            # Draw lock icon (but not if shift append indicator)
-            if pl[9] and not (key_shift_down and self.drag and hit and i != self.drag_on):
-                cl = [255, 255, 255, 24]
-                if light_mode:
-                    cl = [0, 0, 0, 50]
-                self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+
             # elif pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
             #     cl = [120, 50, 220, 230]
             #     if light_mode:
@@ -32326,8 +32396,9 @@ class ViewBox:
         elif not (album_mode is False and \
                    gui.combo_mode is False and \
                    gui.rsp is False):
-            x_menu.active = False
-            Menu.active = False
+            #x_menu.active = False
+            x_menu.close_next_frame = True
+            #Menu.active = False
 
         view_tracks()
 
@@ -32340,26 +32411,29 @@ class ViewBox:
         elif not (album_mode is False and \
                    gui.combo_mode is False and \
                    gui.rsp is True):
-            x_menu.active = False
-            Menu.active = False
+            #x_menu.active = False
+            x_menu.close_next_frame = True
+            #Menu.active = False
 
         view_standard_meta()
 
     def gallery1(self, hit=False):
 
         if hit is False:
-            return album_mode is True and gui.show_playlist is True
+            return album_mode is True #and gui.show_playlist is True
 
         if album_mode and not gui.combo_mode:
             gui.hide_tracklist_in_gallery ^= True
             gui.rspw = gui.pref_gallery_w
             gui.update_layout()
-            x_menu.active = False
-            Menu.active = False
+            #x_menu.active = False
+            x_menu.close_next_frame = True
+            #Menu.active = False
             return
 
-        x_menu.active = False
-        Menu.active = False
+        #x_menu.active = False
+        x_menu.close_next_frame = True
+        #Menu.active = False
 
         force_album_view()
 
@@ -32381,8 +32455,9 @@ class ViewBox:
                 force_album_view()
 
 
-        x_menu.active = False
-        Menu.active = False
+        #x_menu.active = False
+        x_menu.close_next_frame = True
+        #Menu.active = False
 
     # def gallery2(self, hit=False):
     #
@@ -33175,19 +33250,22 @@ def update_layout_do():
         gui.lspw = 220 * gui.scale
         gui.compact_artist_list = False
 
-    if prefs.left_panel_mode == "folder view":
+    if gui.lsp and prefs.left_panel_mode == "folder view":
         gui.lspw = 260 * gui.scale
         max_insets = 0
         for item in tree_view_box.rows:
             max_insets = max(item[2], max_insets)
 
         p = (pl_width_a * 0.15) - round(200 * gui.scale)
+        if gui.hide_tracklist_in_gallery:
+            p = ((window_size[0] - gui.lspw) * 0.15) - round(170 * gui.scale)
+
         p = min(round(200 * gui.scale), p)
         if p > 0:
             gui.lspw += p
-
-        if gui.lspw < 260 * gui.scale + round(15 * gui.scale) * max_insets:
-            gui.lspw = 260 * gui.scale + round(15 * gui.scale) * max_insets
+        if max_insets > 1:
+            if gui.lspw < 260 * gui.scale + round(15 * gui.scale) * max_insets:
+                gui.lspw = 260 * gui.scale + round(15 * gui.scale) * max_insets
 
 
     # -----
@@ -33954,8 +34032,6 @@ SDL_SetRenderTarget(renderer, None)
 
 mouse_up = False
 mouse_wheel = 0
-
-top_panel.render()
 
 while pctl.running:
     # bm.get('main')
