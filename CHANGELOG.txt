@@ -5,6 +5,7 @@ v5.4.4
 
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
+ - Improved "showcase only" background art compositing
  - Changed playlist list layout to alt style
  - Changed playlist lock indicator to pin indicator
  - Fixed text with mascot bg in columns view

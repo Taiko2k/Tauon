@@ -402,6 +402,14 @@ if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
 main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex, max_window_tex)
 main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex, max_window_tex)
 
+overlay_texture_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, 300, 300)
+SDL_SetTextureBlendMode(overlay_texture_texture, SDL_BLENDMODE_BLEND)
+SDL_SetRenderTarget(renderer, overlay_texture_texture)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+SDL_RenderClear(renderer)
+SDL_SetRenderTarget(renderer, None)
+
+
 tracklist_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex, max_window_tex)
 tracklist_texture_rect = SDL_Rect(0, 0, max_window_tex, max_window_tex)
 SDL_SetTextureBlendMode(tracklist_texture, SDL_BLENDMODE_BLEND)
@@ -1725,7 +1733,6 @@ class StarStore:
         else:
             self.db[key] = [value, "", 0]
 
-
     # Returns the track play time
     def get(self, index):
         if index < 0:
@@ -2123,7 +2130,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.status_info_text = [245, 205, 0, 255]
         self.streaming_text = [220, 75, 60, 255]
-        self.lyrics = self.grey(235)
+        self.lyrics = self.grey(245)
 
         self.corner_button = [60, 60, 60, 255]
         self.corner_button_active = [230, 230, 230, 255]
@@ -10050,6 +10057,7 @@ class StyleOverlay:
                 self.a_rect.x = -40
 
             SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+
             SDL_SetTextureAlphaMod(self.a_texture, fade)
             SDL_RenderCopy(renderer, self.a_texture, None, self.a_rect)
 
@@ -25734,7 +25742,6 @@ class MiniMode:
         ddt.rect((0, 0, w, w), (0, 0, 0, 45), True)
         if track is not None:
 
-
             # Render album art
             album_art_gen.display(track, (0, 0), (w, w))
 
@@ -31919,7 +31926,11 @@ class Showcase:
 
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
 
+
+        #ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,255], True)
+
         # album_art_gen.display_blur(pctl.playing_object().index, [200, 200])
+
 
         # ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,100], True)
 
@@ -31949,7 +31960,7 @@ class Showcase:
         t1 = colours.grey(250)
         #gui.vis_4_colour = [140, 110, 200, 255]
         gui.vis_4_colour = None
-
+        light_mode = False
         if colours.lm:
             bbg = colours.vis_colour
             bfg = alpha_blend([255, 255, 255, 60], colours.vis_colour)
@@ -31958,10 +31969,33 @@ class Showcase:
             #gui.vis_4_colour = [40, 40, 40, 255]
 
         if test_lumi(colours.playlist_panel_background) < 0.7:
-
+            light_mode = True
             t1 = colours.grey(30)
             #gui.vis_4_colour = [180, 160, 250, 255]
             gui.vis_4_colour = [40, 40, 40, 255]
+
+        if prefs.bg_showcase_only:
+            style_overlay.display()
+
+            # Draw textured background
+            if not light_mode:
+                rect = SDL_Rect()
+                rect.x = 0
+                rect.y = 0
+                rect.w = 300
+                rect.h = 300
+
+                xx = 0
+                yy = 0
+                while yy < window_size[1]:
+                    xx = 0
+                    while xx < window_size[0]:
+                        rect.x = xx
+                        rect.y = yy
+                        SDL_RenderCopy(renderer, overlay_texture_texture, None, rect)
+                        xx += 300
+                    yy += 300
+
 
         if not a01:
             if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
@@ -31969,6 +32003,11 @@ class Showcase:
                 if gui.lyrics_was_album:
                     force_album_view()
                 return 0
+
+        if prefs.bg_showcase_only:
+            ddt.alpha_bg = True
+
+        #ddt.force_gray = True
 
         if pctl.playing_state == 3 and not radiobox.dummy_track.title:
 
@@ -31985,6 +32024,7 @@ class Showcase:
         else:
 
             if len(pctl.track_queue) < 1:
+                ddt.alpha_bg = False
                 return
 
             # if draw.button("Return", 20, gui.panelY + 5, bg=colours.grey(30)):
@@ -32144,7 +32184,8 @@ class Showcase:
                                   w,
                                   int(window_size[1] - 100 * gui.scale),
                                   0)
-
+        ddt.alpha_bg = False
+        ddt.force_gray = False
 
     def render_vis(self, top=False):
 
@@ -33279,7 +33320,7 @@ def update_layout_do():
         prefs.art_bg_opacity = 10
 
     if prefs.bg_showcase_only:
-        prefs.art_bg_opacity += 8
+        prefs.art_bg_opacity += 21
     # -----
 
     # Adjust for for compact window sizes ----
@@ -34026,6 +34067,24 @@ elif gui.restore_showcase_view:
     toggle_combo_view(showcase=True)
 
 #switch_playlist(len(pctl.multi_playlist) - 1)
+
+SDL_SetRenderTarget(renderer, overlay_texture_texture)
+
+block_size = 3
+
+x = 0
+y = 0
+while y < 300:
+    x = 0
+    while x < 300:
+
+        ddt.rect((x, y, 1, 1), [0, 0, 0, 70], True)
+        ddt.rect((x + 2, y + 0, 1, 1), [0, 0, 0, 70], True)
+        ddt.rect((x + 2, y + 2, 1, 1), [0, 0, 0, 70], True)
+        ddt.rect((x + 0, y + 2, 1, 1), [0, 0, 0, 70], True)
+
+        x += block_size
+    y += block_size
 
 
 SDL_SetRenderTarget(renderer, None)
@@ -37130,7 +37189,7 @@ while pctl.running:
             else:
                 bottom_bar1.render()
 
-            if prefs.art_bg:
+            if prefs.art_bg and not prefs.bg_showcase_only:
                 style_overlay.display()
                 # if key_shift_down:
                 #     ddt.rect_r(gui.seek_bar_rect,
