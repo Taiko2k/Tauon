@@ -28639,7 +28639,7 @@ class PlaylistBox:
             #         indicator_colour = [100, 60, 180, 255]
 
             #else:
-            if not pl[8]:
+            if not pl[8] and prefs.tabs_on_top:
                 cl = [255, 255, 255, 25]
 
                 if light_mode:
