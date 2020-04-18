@@ -2,7 +2,7 @@
 Changelog-------------------------------------
 
 v5.4.4
-  - todo dont exit showcase when changing playlist goto
+
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
  - Improved "showcase only" background art compositing
@@ -13,6 +13,8 @@ v5.4.4
  - Fixed lyrics source entries not showing asterisk
  - Fixed rendering during view change click
  - Fixed gallery jumping to top when deleting another playlist
+ - Fixed a bug where showcase would exit when switching track
+ - Fixed queue panel colours for non-dark themes
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons
