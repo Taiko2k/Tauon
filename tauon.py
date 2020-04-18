@@ -2169,7 +2169,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
         self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
 
-        self.sys_background = self.menu_background
         self.sys_background_2 = self.tab_background
         self.sys_background_3 = [16, 16, 16, 255]
 
@@ -2221,7 +2220,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         if self.menu_background is None and not self.lm:
             self.menu_background = self.bottom_panel_colour
-
+        self.sys_background = self.menu_background
 
 
     def light_mode(self):
@@ -23155,8 +23154,8 @@ class Over:
         ddt.text((x, y), _("Chart Grid Generator"), colours.grey(250), 214)
 
         y += 25 * gui.scale
-        ww = ddt.text((x, y), _("Target playlist:   "), colours.grey(220), 312)
-        ddt.text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.grey(100), 12, 400 * gui.scale)
+        ww = ddt.text((x, y), _("Target playlist:   "), colours.grey_blend_bg(220), 312)
+        ddt.text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.grey_blend_bg(100), 12, 400 * gui.scale)
         #x -= 210 * gui.scale
 
 
@@ -23259,8 +23258,9 @@ class Over:
 
         line = str(count) + " Album chart"
 
-        ddt.text((x + 37 * gui.scale, y, 2), line, [120, 120, 120, 255],
+        ddt.text((x + 37 * gui.scale, y, 2), line, colours.grey_blend_bg(100),
                  12)
+
         if len(dex) < count:
             ddt.text((x + 37 * gui.scale, y + 19 * gui.scale, 2), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
 
