@@ -2161,6 +2161,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.queue_background = None #self.side_panel_background #self.grey(18) # 18
         self.queue_card_background = self.grey(23)
 
+        self.window_frame = [30, 30, 30, 255]
+
         #self.post_config()
 
     def post_config(self):
@@ -7186,8 +7188,8 @@ def draw_window_border():
     elif coll(bottom_rect):
         gui.cursor_want = 11
 
-    colour = [30, 30, 30, 255]
-    colour = [255, 255, 255, 13]
+    colour = colours.window_frame
+
     ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour, True)
     ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour, True)
     ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
@@ -35380,6 +35382,8 @@ while pctl.running:
                                 if 'light-theme-mode' in p:
                                     gui.light_mode = True
                                     print("light mode")
+                                if 'window frame' in p:
+                                    colours.window_frame = get_colour_from_line(p)
                                 if 'gallery highlight' in p:
                                     colours.gallery_highlight = get_colour_from_line(p)
                                 if 'index playing' in p:
