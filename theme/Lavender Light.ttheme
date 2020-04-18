@@ -39,6 +39,12 @@ light-mode
 0,0,0,14		select highlight
 180,140,255,255	gallery highlight
 
+#-Menu-------------
+240,240,240     menu background
+200,200,200     menu highlight
+40,40,40        menu text
+180,180,180     menu disable text
+
 #-Bottom panel------
 
 75,75,75		buttons off

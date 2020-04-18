@@ -9,12 +9,6 @@
 15,15,15		bottom panel
 18,18,18        queue panel
 
-#-Frame--------
-
-21,21,21		sep line
-21,21,21		bb line
-21,21,21		tb line
-
 #-Playlist-------
 
 90,210,210		track line
@@ -38,6 +32,12 @@
 255,255,255,7		playing highlight
 255,255,255,9		select highlight
 200,121,238		gallery highlight
+
+#-Menu-------------
+15,15,15        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
 
 #-Bottom panel------
 
