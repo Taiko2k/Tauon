@@ -10890,9 +10890,9 @@ class Menu:
 
 
                 if colour is None and icon.base_asset_mod:
-                    colour = [50, 50, 50, 255]
-                    if colours.lm:
-                        colour = [160, 160, 160, 255]
+                    colour = colours.menu_icons
+                    # if colours.lm:
+                    #     colour = [160, 160, 160, 255]
                     icon.base_asset_mod.render(x, y, colour)
                     return
 
