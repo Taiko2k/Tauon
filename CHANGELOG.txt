@@ -2,10 +2,11 @@
 Changelog-------------------------------------
 
 v5.4.4
-
+  - todo dont exit showcase when changing playlist goto
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
  - Improved "showcase only" background art compositing
+ - Improved colour blending with custom themes
  - Changed playlist list layout to alt style
  - Changed playlist lock indicator to pin indicator
  - Fixed text with mascot bg in columns view
@@ -15,6 +16,7 @@ v5.4.4
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons
+ - Removed bg art option "always center" (now automatic)
 
 v5.4.3
 
