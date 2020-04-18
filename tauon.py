@@ -2190,6 +2190,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         elif test_lumi(colours.bottom_panel_colour) < 0.8:
             self.time_sub = [255, 255, 255, 135]
 
+        #self.time_sub = self.mode_button_off
+
         if self.bar_title_text is None:
             self.bar_title_text = self.side_bar_line1
 
@@ -2228,6 +2230,10 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         if not self.lm and not self.menu_icons:
             self.menu_icons = [255, 255, 255, 25]
+            # h, l, s = rgb_to_hls(*self.menu_background[:3])
+            # l += 0.128
+            #
+            # self.menu_icons = hls_to_rgb(h, l, s)
 
     def light_mode(self):
 
@@ -25005,7 +25011,7 @@ class BottomBarType1:
                      fonts.bottom_panel_time)
         elif gui.display_time_mode == 2:
 
-            colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+            #colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
 
             x -= 4
             text_time = get_display_time(pctl.playing_time)
