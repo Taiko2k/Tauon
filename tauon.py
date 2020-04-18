@@ -2121,7 +2121,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.vis_colour = self.grey(200)
         self.vis_bg = [0, 0, 0, 255]
 
-        self.menu_background = self.grey(12)
+        self.menu_background = None #self.grey(12)
         self.menu_highlight_background = None
         self.menu_text = [230, 230, 230, 255]
         self.menu_text_disabled = self.grey(50)
@@ -2219,6 +2219,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         if test_lumi(self.queue_background) > 0.8:
             self.queue_card_background = alpha_blend([255, 255, 255, 10], self.queue_background)
 
+        if self.menu_background is None and not self.lm:
+            self.menu_background = self.bottom_panel_colour
 
 
 
@@ -2249,6 +2251,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         #self.menu_text = self.grey(40)
         #self.menu_text_disabled = self.grey(180)
         #self.menu_highlight_background = [200, 200, 200, 250]
+        if self.menu_background is None:
+            self.menu_background = [15, 15, 15, 250]
 
         # self.menu_background = [40, 40, 40, 250]
         # self.menu_text = self.grey(220)
