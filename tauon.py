@@ -1142,8 +1142,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
-        self.art_bg = False
-        self.art_bg_stronger = 1
+        self.art_bg = True
+        self.art_bg_stronger = 2
         self.art_bg_opacity = 10
         self.art_bg_blur = 9
         self.art_bg_always_blur = False
@@ -1158,7 +1158,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.transcode_inplace = False
 
-        self.bg_showcase_only = False
+        self.bg_showcase_only = True
 
         self.lyrics_enables = []
 
@@ -1214,7 +1214,7 @@ class Prefs:    # Used to hold any kind of settings
         self.art_in_top_panel = True
         self.always_art_header = False
 
-        self.center_bg = True
+        #self.center_bg = True
         self.ui_lang = 'auto'
         self.side_panel_layout = 0
         self.use_absolute_track_index = False
@@ -2125,6 +2125,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.menu_highlight_background = None
         self.menu_text = [230, 230, 230, 255]
         self.menu_text_disabled = self.grey(50)
+        self.menu_tab = self.grey(30)
 
         self.gallery_highlight = self.artist_playing
 
@@ -2132,8 +2133,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.streaming_text = [220, 75, 60, 255]
         self.lyrics = self.grey(245)
 
-        self.corner_button = [60, 60, 60, 255]
-        self.corner_button_active = [230, 230, 230, 255]
+        self.corner_button = [255, 255, 255, 50] #[60, 60, 60, 255]
+        self.corner_button_active = [255, 255, 255, 230]#[230, 230, 230, 255]
         self.window_buttons_bg = [0, 0, 0, 50]
         self.window_buttons_bg_over = [80, 80, 80, 120]
 
@@ -2154,6 +2155,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.playlist_box_background = self.side_panel_background
 
         self.bar_title_text = None
+
+        self.corner_icon = [40, 40, 40, 255]
+        self.window_button_off = [50, 50, 50, 200]
 
         #self.post_config()
 
@@ -2176,18 +2180,34 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.toggle_box_on = self.artist_playing
         if colour_value(self.toggle_box_on) < 150:
             self.toggle_box_on = [160, 160, 160, 255]
-        self.time_sub = alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
+        self.time_sub = [255, 255, 255, 80]#alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
+
+        if test_lumi(colours.bottom_panel_colour) < 0.2:
+            self.time_sub = [0, 0, 0, 80]
         
         if self.bar_title_text is None:
             self.bar_title_text = self.side_bar_line1
 
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
-        self.status_text_normal = self.grey(100)
-        self.status_text_over = self.grey(220)
+        self.status_text_normal = alpha_blend([255, 255, 255, 80], colours.top_panel_background) #self.grey(100)
+        self.status_text_over = alpha_blend([255, 255, 255, 220], colours.top_panel_background)#self.grey(220)
 
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
+
+        if test_lumi(colours.bottom_panel_colour) < 0.2:
+            self.corner_icon = [0, 0, 0, 60]
+        elif test_lumi(colours.bottom_panel_colour) < 0.8:
+            self.corner_icon = [40, 40, 40, 255]
+        else:
+            self.corner_icon = [255, 255, 255, 30]
+
+        if test_lumi(colours.bottom_panel_colour) < 0.2:
+            self.corner_icon = [0, 0, 0, 60]
+
+        if not (self.top_panel_background[0] == self.top_panel_background[1] == self.top_panel_background[2]):
+            self.window_button_off = [255, 255, 255, 30]
 
     def light_mode(self):
 
@@ -2200,6 +2220,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_background_3 = self.grey(30)
         self.sys_background_4 = self.grey(19)
         self.toggle_box_on = self.tab_background_active
+        if colour_value(self.tab_background_active) < 250:
+            self.toggle_box_on = [255, 255, 255, 200]
+
         # self.time_sub = [0, 0, 0, 200]
         self.gallery_artist_line = self.grey(40)
         # self.bar_title_text = self.grey(30)
@@ -3067,7 +3090,7 @@ def save_prefs():
     #cf.update_value("show-playlist-list", prefs.show_playlist_list)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
-    cf.update_value("prefer-center-bg", prefs.center_bg)
+    #cf.update_value("prefer-center-bg", prefs.center_bg)
     cf.update_value("side-panel-style", prefs.side_panel_layout)
     cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
     cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
@@ -3203,7 +3226,7 @@ def load_prefs():
     prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel, "Show art in top panel when window is narrow")
     prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
 
-    prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
+    #prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
     prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
     prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
@@ -7048,8 +7071,10 @@ def draw_window_tools():
     global mouse_down
     global drag_mode
 
-    # off_icon_colour = [120, 120, 120, 45]
-    off_icon_colour = [50, 50, 50, 200]
+    if gui.mode == 1:
+        off_icon_colour = colours.window_button_off # [255, 255, 255, 30] #[100, 100, 100, 100]
+    else:
+        off_icon_colour = [120, 120, 120, 45]
 
     if colours.lm:
         off_icon_colour = [180, 180, 180, 200]
@@ -7110,7 +7135,9 @@ def draw_window_tools():
 
 def draw_window_border():
 
-    corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 255])
+
+
+    corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
     corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
     fields.add(corner_rect)
@@ -10051,7 +10078,7 @@ class StyleOverlay:
                 self.hole_punches.append(bb)
 
             # Center image
-            if prefs.center_bg:
+            if window_size[0] < 900 * gui.scale:
                 self.a_rect.x = (window_size[0] // 2) - self.a_rect.w // 2
             else:
                 self.a_rect.x = -40
@@ -10896,7 +10923,7 @@ class Menu:
 
                     # Draw tab
                     ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.break_height),
-                              colours.grey(30), True)
+                              colours.menu_tab, True)
                     y_run += self.break_height
 
                     continue
@@ -10960,7 +10987,7 @@ class Menu:
 
                 # Draw tab
                 ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.h),
-                          colours.grey(30), True)
+                          colours.menu_tab, True)
 
                 # Draw Icon
                 x = 12 * gui.scale
@@ -11073,7 +11100,7 @@ class Menu:
 
                         # Draw tab
                         ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h),
-                                  colours.grey(30), True)
+                                  colours.menu_tab, True)
 
                         # Render the menu outline
                         # ddt.rect_a(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
@@ -21955,7 +21982,7 @@ class Over:
         self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
 
         y += 23 * gui.scale
-        prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
+        #prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
 
         y += 65 * gui.scale
 
@@ -22016,7 +22043,7 @@ class Over:
 
             bar = [x, y, width, base_dis]
 
-            ddt.rect(bar, [40, 40, 40, 255], True)
+            ddt.rect(bar, [255, 255, 255, 20], True)
 
             bar[0] -= 2 * gui.scale
             bar[1] -= 10 * gui.scale
@@ -22158,13 +22185,13 @@ class Over:
                     fields.add(rect)
 
                     if prefs.gst_device == name:
-                        ddt.text((x, y), line, [150, 150, 150, 255], 10)
+                        ddt.text((x, y), line, [255, 255, 255, 120], 10)
                         ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
                     else:
                         if coll(rect):
-                            ddt.text((x, y), line, [150, 150, 150, 255], 10)
+                            ddt.text((x, y), line, [255, 255, 255, 120], 10)
                         else:
-                            ddt.text((x, y), line, [100, 100, 100, 255], 10)
+                            ddt.text((x, y), line, [255, 255, 255, 70], 10)
                     y += 14 * gui.scale
 
             if not prefs.gst_use_custom_output:
@@ -22247,13 +22274,13 @@ class Over:
                 fields.add(rect)
 
                 if pctl.set_device == item[4]: #item[3] > 0:
-                    ddt.text((x, y), line, [150, 150, 150, 255], 10)
+                    ddt.text((x, y), line, [255, 255, 255, 120], 10)
                     ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
                 else:
                     if coll(rect):
-                        ddt.text((x, y), line, [150, 150, 150, 255], 10)
+                        ddt.text((x, y), line, [255, 255, 255, 120], 10)
                     else:
-                        ddt.text((x, y), line, [100, 100, 100, 255], 10)
+                        ddt.text((x, y), line, [255, 255, 255, 70], 10)
                 y += 14 * gui.scale
 
             y = y0 + 245 * gui.scale
@@ -22481,7 +22508,7 @@ class Over:
             y += 60 * gui.scale
             x += 320 * gui.scale
 
-            ddt.text((x, y), _("Show in context menus:"), colours.grey(100), 11)
+            ddt.text((x, y), _("Show in context menus:"), [255, 255, 255, 60], 11)
             y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_wiki, _("Wikipedia search"))
@@ -22842,7 +22869,7 @@ class Over:
 
         y += 20 * gui.scale
 
-        ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.grey(100), 11)
+        ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), [255, 255, 255, 60], 11)
 
         ww = ddt.get_text_w(_("Open output folder"), 211) + 25 * gui.scale
         self.button(x0 + w0 - ww, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
@@ -22999,7 +23026,7 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        ddt.text((x, y + 4 * gui.scale), t_title, colours.grey(233), 216)
+        ddt.text((x, y + 4 * gui.scale), t_title, colours.grey_blend_bg(233), 216)
 
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
@@ -23039,9 +23066,9 @@ class Over:
 
         if self.cred_page == 0:
 
-            ddt.text((x, y - 6 * gui.scale), t_version, colours.grey(90), 313)
+            ddt.text((x, y - 6 * gui.scale), t_version, colours.grey_blend_bg(90), 313)
             y += 20 * gui.scale
-            ddt.text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
+            ddt.text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.grey_blend_bg(195), 13)
             y += 21 * gui.scale
             link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmusicbox", colours.grey_blend_bg3(190), 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
@@ -23057,22 +23084,22 @@ class Over:
 
             y += 15 * gui.scale
 
-            ddt.text((x, y + 1 * gui.scale), "Created by", colours.grey(90), 13)
-            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey(220), 13)
+            ddt.text((x, y + 1 * gui.scale), "Created by", colours.grey_blend_bg(90), 13)
+            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey_blend_bg(220), 13)
 
             y += 25 * gui.scale
 
-            ddt.text((x, y), "Translations", colours.grey(90), 13)
+            ddt.text((x, y), "Translations", colours.grey_blend_bg(90), 13)
             yy = y
-            ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.grey(220), 13)
+            ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.grey_blend_bg(220), 13)
             y += 19 * gui.scale
-            ddt.text((x + 120 * gui.scale, y), "brunob", colours.grey(220), 13)
+            ddt.text((x + 120 * gui.scale, y), "brunob", colours.grey_blend_bg(220), 13)
             y += 19 * gui.scale
 
             y = yy
-            ddt.text((x + 210 * gui.scale, y), "eson57", colours.grey(220), 13)
+            ddt.text((x + 210 * gui.scale, y), "eson57", colours.grey_blend_bg(220), 13)
             y += 19 * gui.scale
-            ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.grey(220), 13)
+            ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.grey_blend_bg(220), 13)
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
@@ -23490,7 +23517,7 @@ class Over:
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
         ddt.rect(rect, [255, 255, 255, 20], True)
-        abg = colours.grey(80)
+        abg = [255, 255, 255, 40]
         if coll(rect):
 
             if self.click:
@@ -23517,7 +23544,7 @@ class Over:
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
         ddt.rect(rect, [255, 255, 255, 20], True)
-        abg = colours.grey(80)
+        abg = [255, 255, 255, 40]
         if coll(rect):
 
             if self.click:
@@ -23661,12 +23688,13 @@ class Over:
                     self.lyrics_panel = False
 
                 if current_tab == self.tab_active:
-                    colour = copy.deepcopy(colours.sys_tab_hl)
-                    ddt.text_background_colour = colour
-                    ddt.rect(box, colour, True)
+                    bg_colour = copy.deepcopy(colours.sys_tab_hl)
+                    ddt.text_background_colour = bg_colour
+                    ddt.rect(box, bg_colour, True)
                 else:
                     ddt.text_background_colour = colours.sys_tab_bg
                     ddt.rect(box, colours.sys_tab_bg, True)
+
 
                 if coll(box2):
                     ddt.rect(box, [255, 255, 255, 10], True)
@@ -23675,7 +23703,7 @@ class Over:
 
                 if current_tab == self.tab_active:
                     ddt.text((box[0] + (tab_width // 2), yy, 2), item[0],
-                             alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
+                             alpha_blend(colours.tab_text_active, ddt.text_background_colour), 213)
                 else:
                     ddt.text((box[0] + (tab_width // 2), yy, 2), item[0],
                              alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
@@ -24955,7 +24983,7 @@ class BottomBarType1:
 
         elif gui.display_time_mode == 3:
 
-            colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+            #colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
 
             track = pctl.playing_object()
             if track and track.index != gui.dtm3_index:
@@ -31924,8 +31952,6 @@ class Showcase:
 
     def render(self):
 
-        ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
-
 
         #ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,255], True)
 
@@ -31974,7 +32000,15 @@ class Showcase:
             #gui.vis_4_colour = [180, 160, 250, 255]
             gui.vis_4_colour = [40, 40, 40, 255]
 
-        if prefs.bg_showcase_only:
+        if prefs.bg_showcase_only and prefs.art_bg and not light_mode:
+            reg = min(colours.playlist_panel_background[0], 22)
+            ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [reg, reg, reg, 255],
+                     True)
+        else:
+            ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
+
+
+        if prefs.bg_showcase_only and prefs.art_bg:
             style_overlay.display()
 
             # Draw textured background
@@ -32004,7 +32038,7 @@ class Showcase:
                     force_album_view()
                 return 0
 
-        if prefs.bg_showcase_only:
+        if prefs.bg_showcase_only and prefs.art_bg:
             ddt.alpha_bg = True
 
         #ddt.force_gray = True
@@ -35383,6 +35417,8 @@ while pctl.running:
                                     colours.menu_text_disabled = get_colour_from_line(p)
                                 if 'menu highlight' in p:
                                     colours.menu_highlight_background = get_colour_from_line(p)
+                                if 'menu border' in p:
+                                    colours.menu_tab = get_colour_from_line(p)
                                 if 'lyrics showcase' in p:
                                     colours.lyrics = get_colour_from_line(p)
                                 if 'bottom panel' in p:
