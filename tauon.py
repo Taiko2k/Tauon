@@ -2158,6 +2158,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.corner_icon = [40, 40, 40, 255]
         self.window_button_off = [50, 50, 50, 200]
+        self.queue_background = None #self.side_panel_background #self.grey(18) # 18
+        self.queue_card_background = self.grey(23)
 
         #self.post_config()
 
@@ -2203,11 +2205,22 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         else:
             self.corner_icon = [255, 255, 255, 30]
 
-        if test_lumi(colours.bottom_panel_colour) < 0.2:
+        if test_lumi(self.bottom_panel_colour) < 0.2:
             self.corner_icon = [0, 0, 0, 60]
 
         if not (self.top_panel_background[0] == self.top_panel_background[1] == self.top_panel_background[2]):
             self.window_button_off = [255, 255, 255, 30]
+
+        #if not (self.side_panel_background[0] == self.side_panel_background[1] == self.side_panel_background[2]):
+        #self.queue_background = self.side_panel_background #
+        if not self.queue_background:
+            self.queue_background = self.side_panel_background
+
+        if test_lumi(self.queue_background) > 0.8:
+            self.queue_card_background = alpha_blend([255, 255, 255, 10], self.queue_background)
+
+
+
 
     def light_mode(self):
 
@@ -4102,7 +4115,6 @@ class PlayerCtl:
 
     def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None, no_switch=False, folder_list=True):
 
-
         # print("show------")
         # print(select)
         # print(playing)
@@ -4193,7 +4205,7 @@ class PlayerCtl:
                 for i, playlist in enumerate(self.multi_playlist):
                     if track_index in playlist[2]:
 
-                        switch_playlist(i)
+                        switch_playlist(i, quiet=True)
                         self.show_current(select, playing, quiet, this_only=True, index=track_index)
                         break
 
@@ -17415,7 +17427,7 @@ def toggle_album_mode(force_on=False):
             goto_album(playlist_selected)
 
 
-def switch_playlist(number, cycle=False):
+def switch_playlist(number, cycle=False, quiet=False):
     global default_playlist
 
     global playlist_selected
@@ -17439,7 +17451,7 @@ def switch_playlist(number, cycle=False):
     # if pl_follow:
     #     pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
 
-    if gui.showcase_mode and gui.combo_mode:
+    if gui.showcase_mode and gui.combo_mode and not quiet:
         view_standard()
 
     pctl.multi_playlist[pctl.active_playlist_viewing][2] = default_playlist
@@ -30221,8 +30233,6 @@ class QueueBox:
         self.scroll_position = 0
         self.right_click_id = None
         self.d_click_ref = None
-        self.bg = [25, 25, 25, 255]
-        self.card_bg = [23, 23, 23, 255]
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
         queue_menu.add(_("Play Now"), self.play_now, show_test=self.queue_remove_show)
@@ -30407,16 +30417,22 @@ class QueueBox:
 
     def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False, draw_album_indicator=True):
 
-        text_colour = [230, 230, 230, 255]
-        bg = self.bg
+        #text_colour = [230, 230, 230, 255]
+        bg = colours.queue_background
 
         # if fq[i][3] == 0:
 
         rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
         if draw_back:
-            ddt.rect(rect, self.card_bg, True)
-            bg = self.card_bg
+            ddt.rect(rect, colours.queue_card_background, True)
+            bg = colours.queue_card_background
+
+        text_colour1 = [255, 255, 255, 70]
+        text_colour2 = [255, 255, 255, 230]
+        if test_lumi(bg) < 0.2:
+            text_colour1 = [0, 0, 0, 130]
+            text_colour2 = [0, 0, 0, 230]
 
         gall_ren.render(track, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
 
@@ -30438,10 +30454,10 @@ class QueueBox:
         if fqo[3] == 0 and not artist_line:
             line2y -= 7 * gui.scale
 
-        ddt.text((rect[0] + (40 * gui.scale), yy - 1 * gui.scale), artist_line, [90, 90, 90, 255], 210,
+        ddt.text((rect[0] + (40 * gui.scale), yy - 1 * gui.scale), artist_line, text_colour1, 210,
                  max_w=rect[2] - 60 * gui.scale, bg=bg)
 
-        ddt.text((rect[0] + (40 * gui.scale), line2y), line, text_colour, 211,
+        ddt.text((rect[0] + (40 * gui.scale), line2y), line, text_colour2, 211,
                  max_w=rect[2] - 60 * gui.scale, bg=bg)
 
         if draw_album_indicator:
@@ -30463,32 +30479,27 @@ class QueueBox:
 
         yy = y
 
-        yy += 4 * gui.scale
+        yy += round(4 * gui.scale)
+
+        sep_colour = alpha_blend([255, 255, 255, 11], colours.queue_background)
 
         if not colours.lm:
-            # Draw top accent
-            # if not pctl.force_queue:
-            #     ddt.rect_r((x, y, w, 5 * gui.scale), colours.side_panel_background, True)
-            #     ddt.rect_r((x, y, w, 3 * gui.scale), [30, 30, 30, 255], True)
-            # else:
-            ddt.rect((x, y, w, 3 * gui.scale), self.bg, True)
-        else:
+            ddt.rect((x, y, w, 3 * gui.scale), sep_colour, True)
+        elif y > gui.panelY + 10 * gui.scale:  # Draw fancy light mode border
             gui.queue_frame_draw = y
 
-        yy += 3 * gui.scale
-
+        yy += round(3 * gui.scale)
 
         box_rect = (x, yy - 3 * gui.scale, w, h)
-
-        ddt.rect(box_rect, [18, 18, 18, 255], True)
-        ddt.text_background_colour = [18, 18, 18, 255]
+        ddt.rect(box_rect, colours.queue_background, True)
+        ddt.text_background_colour = colours.queue_background
 
         if coll(box_rect) and quick_drag and not pctl.force_queue:
             ddt.rect(box_rect, [255, 255, 255, 2], True)
             ddt.text_background_colour = alpha_blend([255, 255, 255, 2], ddt.text_background_colour)
 
         if y < gui.panelY * 2:
-            ddt.rect((x, y - 3 * gui.scale, w, 30 * gui.scale), [18, 18, 18, 255], True)
+            ddt.rect((x, y - 3 * gui.scale, w, 30 * gui.scale), colours.queue_background, True)
 
         if h > 40 * gui.scale:
             if not pctl.force_queue:
@@ -30496,7 +30507,7 @@ class QueueBox:
                     text = _("Add to Queue")
                 else:
                     text = _("Queue")
-                ddt.text((x + (w // 2), y + 15 * gui.scale, 2), text, [60, 60, 60, 255], 212)
+                ddt.text((x + (w // 2), y + 15 * gui.scale, 2), text, [255, 255, 255, 40], 212)
 
         qb_right_click = 0
 
@@ -30509,17 +30520,15 @@ class QueueBox:
             if right_click:
                 qb_right_click = 1
 
-        # Draw background
-        #if not pctl.force_queue:
-        #    ddt.rect_r(box_rect, colours.side_panel_background, True)
-        #else:
 
+        text_colour = [255, 255, 255, 91]
+        if test_lumi(colours.queue_background) < 0.2:
+            text_colour = [0, 0, 0, 200]
 
-        ddt.text_background_colour = [18, 18, 18, 255]
         line = "Up Next:"
         if pctl.force_queue:
             #line = "Queue"
-            ddt.text((x + (10 * gui.scale), yy + 2 * gui.scale), line, [100, 100, 100, 255], 211)
+            ddt.text((x + (10 * gui.scale), yy + 2 * gui.scale), line, text_colour, 211)
 
         yy += 7 * gui.scale
 
@@ -30730,7 +30739,7 @@ class QueueBox:
 
         yy += 15 * gui.scale
         if fq:
-            ddt.rect((x, yy, w, 3 * gui.scale), self.bg, True)
+            ddt.rect((x, yy, w, 3 * gui.scale), sep_colour, True)
         yy += 11 * gui.scale
 
 
@@ -30775,7 +30784,7 @@ class QueueBox:
                 plural = ''
 
             line = str(tracks) + " Track" + plural + " [" + get_hms_time(duration) + "]"
-            ddt.text((x + 12 * gui.scale, yy), line, [100, 100, 100, 255], 11.5, bg=[18, 18, 18, 255])
+            ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
 
 
         if self.dragging:
@@ -32587,7 +32596,7 @@ class ViewBox:
         vr = [x, gui.panelY, self.w, self.h]
         #vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
 
-        border_colour = colours.grey(30)
+        border_colour = colours.menu_tab#colours.grey(30)
         if colours.lm:
             ddt.rect((vr[0], vr[1], vr[2] + round(4 * gui.scale), vr[3]),
                      border_colour, True)
@@ -35330,6 +35339,8 @@ while pctl.running:
                                     colours.album_playing = get_colour_from_line(p)
                                 if 'player background' in p:
                                     colours.top_panel_background = get_colour_from_line(p)
+                                if 'queue panel' in p:
+                                    colours.queue_background = get_colour_from_line(p)
                                 if 'side panel' in p:
                                     colours.side_panel_background = get_colour_from_line(p)
                                     colours.playlist_box_background = colours.side_panel_background
@@ -37040,9 +37051,9 @@ while pctl.running:
                     elif prefs.left_panel_mode == "queue":
                         text = _("Queue is Empty")
                         rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
-                        ddt.rect(rect, [18, 18, 18, 255], True)
-                        ddt.text_background_colour = [18, 18, 18, 255]
-                        ddt.text((0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2), text, [60, 60, 60, 255], 212)
+                        ddt.rect(rect, colours.queue_background, True)
+                        ddt.text_background_colour = colours.queue_background
+                        ddt.text((0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2), text, [255, 255, 255, 40], 212)
 
             # ------------------------------------------------
             # Scroll Bar
@@ -37211,7 +37222,7 @@ while pctl.running:
                 if gui.queue_frame_draw is not None:
                     if gui.lsp:
                         ddt.rect((0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200), True)
-                        ddt.rect((0, gui.queue_frame_draw + 1 * gui.scale, gui.lspw - 5 * gui.scale, 5 * gui.scale), colours.grey(250), True)
+                        ddt.rect((0, gui.queue_frame_draw + 1 * gui.scale, gui.lspw - 5 * gui.scale, 4 * gui.scale), colours.grey(250), True)
 
                     gui.queue_frame_draw = None
 
@@ -38069,11 +38080,11 @@ while pctl.running:
                     queue_add_timer.force_set(10)
                 else:
                     ddt.rect(grow_rect(rect, 2 * gui.scale), colours.grey(60), True)
-                    ddt.rect(rect, queue_box.card_bg, True)
+                    ddt.rect(rect, colours.queue_card_background, True)
 
                     fqo = copy.copy(pctl.force_queue[-1])
 
-                    ddt.text_background_colour = queue_box.card_bg
+                    ddt.text_background_colour = colours.queue_card_background
                     top_text = "Track"
                     if gui.queue_toast_plural:
                         top_text = "Album"
@@ -38104,9 +38115,9 @@ while pctl.running:
                 toast_mode_timer.force_set(10)
             else:
                 ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60), True)
-                ddt.rect(rect, queue_box.card_bg, True)
+                ddt.rect(rect, colours.queue_card_background, True)
 
-                ddt.text_background_colour = queue_box.card_bg
+                ddt.text_background_colour = colours.queue_card_background
                 ddt.text((rect[0] + (rect[2] // 2), rect[1] + 4 * gui.scale, 2), gui.mode_toast_text, colours.grey(230), 313)
 
         # Render Menus-------------------------------
