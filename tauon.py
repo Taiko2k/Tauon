@@ -2185,7 +2185,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         if test_lumi(colours.bottom_panel_colour) < 0.2:
             self.time_sub = [0, 0, 0, 80]
-        
+        elif test_lumi(colours.bottom_panel_colour) < 0.8:
+            self.time_sub = [255, 255, 255, 135]
+
         if self.bar_title_text is None:
             self.bar_title_text = self.side_bar_line1
 
@@ -22184,6 +22186,12 @@ class Over:
             if not prefs.gst_use_custom_output:
                 ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
 
+                self.device_scroll_bar_position -= pref_box.scroll
+                if self.device_scroll_bar_position < 0:
+                    self.device_scroll_bar_position = 0
+                if self.device_scroll_bar_position > len(pctl.gst_devices) - 11 > 11:
+                    self.device_scroll_bar_position = len(pctl.gst_devices) - 11
+
                 if len(pctl.gst_devices) > 13:
                     self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.gst_devices) - 11, click=self.click)
 
@@ -22274,8 +22282,16 @@ class Over:
             ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
+            self.device_scroll_bar_position -= pref_box.scroll
+            if self.device_scroll_bar_position < 0:
+                self.device_scroll_bar_position = 0
+            if self.device_scroll_bar_position > len(pctl.bass_devices) - 11 > 11:
+                self.device_scroll_bar_position = len(pctl.bass_devices) - 11
+
+
             if len(pctl.bass_devices) > 13:
                 self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.bass_devices) - 11, click=self.click)
+
 
             for i, item in enumerate(pctl.bass_devices):
 
@@ -34191,6 +34207,7 @@ while pctl.running:
         key_home_press = False
         key_end_press = False
         mouse_wheel = 0
+        pref_box.scroll = 0
         new_playlist_cooldown = False
         input_text = ''
         input.level_2_enter = False
@@ -35873,8 +35890,6 @@ while pctl.running:
 
                                     # Quick drag and drop
                                     if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
-
-                                        print("DROP")
 
                                         info = get_album_info(album_dex[album_on])
                                         if info[1]:
