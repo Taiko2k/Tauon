@@ -57,9 +57,11 @@
 
 129,145,246		music vis
 
-16,16,16		sep line
-50,50,50		bb line
-50,50,50		tb line
+#-Menu-------------
+18,18,18        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
 
 #-Mini Mode---------
 

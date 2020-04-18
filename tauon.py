@@ -2245,10 +2245,10 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         # self.bar_title_text = self.grey(255)
         self.vis_bg = [235, 235, 235, 255]
-        self.menu_background = [240, 240, 240, 250]
-        self.menu_text = self.grey(40)
-        self.menu_text_disabled = self.grey(180)
-        self.menu_highlight_background = [200, 200, 200, 250]
+        #self.menu_background = [240, 240, 240, 250]
+        #self.menu_text = self.grey(40)
+        #self.menu_text_disabled = self.grey(180)
+        #self.menu_highlight_background = [200, 200, 200, 250]
 
         # self.menu_background = [40, 40, 40, 250]
         # self.menu_text = self.grey(220)
@@ -7390,7 +7390,8 @@ ddt.force_subpixel_text = prefs.force_subpixel_text
 
 class Drawing:
 
-    def button(self, text, x, y, w=None, h=None, font=212, fore_text=None, back_text=None, bg=None, fg=None, press=None, tooltip=""):
+    def button(self, text, x, y, w=None, h=None, font=212, text_highlight_colour=None, text_colour=None,
+               backgound_colour=None, background_highlight_colour=None, press=None, tooltip=""):
 
         if w is None:
             w = ddt.get_text_w(text, font) + 18 * gui.scale
@@ -7400,16 +7401,17 @@ class Drawing:
         rect = (x, y, w, h)
         fields.add(rect)
 
-        if fore_text is None:
-            fore_text = colours.grey(250)
-        if back_text is None:
-            back_text = colours.grey(220)
-        if bg is None:
-            bg = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
-        if fg is None:
-            fg = alpha_blend([255, 255, 255, 20], colours.sys_background_3)
+        if text_highlight_colour is None:
+            text_highlight_colour = colours.grey(250)
+        if text_colour is None:
+            text_colour = colours.grey(220)
+        if backgound_colour is None:
+            backgound_colour = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
+        if background_highlight_colour is None:
+            background_highlight_colour = alpha_blend([255, 255, 255, 20], colours.sys_background_3)
 
         click = False
+
 
         if press is None:
             press = input.mouse_click
@@ -7417,15 +7419,21 @@ class Drawing:
         if coll(rect):
             if tooltip:
                 tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
-            ddt.rect(rect, fg, True)
-            ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, fore_text, font,
-                     bg=fg)
+            ddt.rect(rect, background_highlight_colour, True)
+
+            if background_highlight_colour[3] != 255:
+                background_highlight_colour = None
+
+            ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_highlight_colour, font,
+                     bg=background_highlight_colour)
             if press:
                 click = True
         else:
-            ddt.rect(rect, bg, True)
-            ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, back_text, font,
-                     bg=bg)
+            ddt.rect(rect, backgound_colour, True)
+            if background_highlight_colour[3] != 255:
+                backgound_colour = None
+            ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_colour, font,
+                     bg=backgound_colour)
         return click
 
 draw = Drawing()
@@ -11346,8 +11354,7 @@ class RenameTrackBox:
 
         # if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
         if rename_files.text != prefs.rename_tracks_template and draw.button(_("Default"), x + w - 85 * gui.scale,
-                                                                             y + h - 35 * gui.scale,
-                                                                             70 * gui.scale):
+                                                                             y + h - 35 * gui.scale, 70 * gui.scale):
             rename_files.text = prefs.rename_tracks_template
 
         # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
@@ -11395,7 +11402,7 @@ class RenameTrackBox:
         label = "Write (" + str(len(r_todo)) + ")"
 
         if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale,
-                       fore_text=colours.grey(255), fg=colour_warn,
+                       text_highlight_colour=colours.grey(255), background_highlight_colour=colour_warn,
                        tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
             input.mouse_click = False
             total_todo = len(r_todo)
@@ -31995,7 +32002,7 @@ class Showcase:
         bbt = colours.grey(200)
 
         t1 = colours.grey(250)
-        #gui.vis_4_colour = [140, 110, 200, 255]
+
         gui.vis_4_colour = None
         light_mode = False
         if colours.lm:
@@ -32003,12 +32010,16 @@ class Showcase:
             bfg = alpha_blend([255, 255, 255, 60], colours.vis_colour)
             bft = colours.grey(250)
             bbt = colours.grey(245)
-            #gui.vis_4_colour = [40, 40, 40, 255]
+        elif prefs.art_bg and prefs.bg_showcase_only:
+            bbg = [255, 255, 255, 18]
+            bfg = [255, 255, 255, 30]
+            bft = [255, 255, 255, 250]
+            bbt = [255, 255, 255, 200]
+
 
         if test_lumi(colours.playlist_panel_background) < 0.7:
             light_mode = True
             t1 = colours.grey(30)
-            #gui.vis_4_colour = [180, 160, 250, 255]
             gui.vis_4_colour = [40, 40, 40, 255]
 
         if prefs.bg_showcase_only and prefs.art_bg and not light_mode:
@@ -32043,7 +32054,9 @@ class Showcase:
 
 
         if not a01:
-            if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
+            if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
+                           text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+                           background_highlight_colour=bfg):
                 switch_showcase()
                 if gui.lyrics_was_album:
                     force_album_view()
@@ -32076,7 +32089,8 @@ class Showcase:
             #     pass
 
             if gui.force_showcase_index >= 0:
-                if draw.button(_("Playing"), 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
+                if draw.button(_("Playing"), 25 * gui.scale, gui.panelY + 20 * gui.scale, text_highlight_colour=bft,
+                               text_colour=bbt, backgound_colour=bbg, background_highlight_colour=bfg):
                     gui.force_showcase_index = -1
 
             if gui.force_showcase_index >= 0:
@@ -32134,8 +32148,8 @@ class Showcase:
                     if prefs.prefer_synced_lyrics:
                         line = _("Prefer static")
                     if draw.button(line, 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-                                   bg=bbg, fg=bfg,
-                                   fore_text=bft, back_text=bbt):
+                                   text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+                                   background_highlight_colour=bfg):
                         prefs.prefer_synced_lyrics ^= True
 
                 timed_ready = prefs.prefer_synced_lyrics
@@ -32143,8 +32157,9 @@ class Showcase:
             if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
 
                 if not gc.auto_scroll:
-                    if draw.button(_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale, bg=bbg, fg=bfg,
-                                   fore_text=bft, back_text=bbt):
+                    if draw.button(_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+                                   text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+                                   background_highlight_colour=bfg):
                         gc.auto_scroll = True
 
             elif True and prefs.show_lyrics_showcase and timed_ready:
@@ -35294,7 +35309,7 @@ while pctl.running:
 
     if gui.reload_theme is True:
         gui.light_mode = False
-        gui.draw_frame = False
+
         gui.pl_update = 1
 
         if theme > 25:
@@ -35322,8 +35337,6 @@ while pctl.running:
                                     continue
                                 if "light-mode" in p:
                                     colours.light_mode()
-                                if 'draw-frame' in p:
-                                    gui.draw_frame = True
                                 if 'light-theme-mode' in p:
                                     gui.light_mode = True
                                     print("light mode")
@@ -35436,7 +35449,7 @@ while pctl.running:
                                     colours.lyrics = get_colour_from_line(p)
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
-                                    colours.menu_background = colours.bottom_panel_colour
+                                    #colours.menu_background = colours.bottom_panel_colour
                                 if 'mini bg' in p:
                                     colours.mini_mode_background = get_colour_from_line(p)
                                 if 'mini border' in p:
@@ -35452,6 +35465,8 @@ while pctl.running:
                                 if 'menu bg' in p:
                                     colours.menu_background = get_colour_from_line(p)
                                 if 'playlist box bg' in p:
+                                    colours.playlist_box_background = get_colour_from_line(p)
+                                if 'playlist box background' in p:
                                     colours.playlist_box_background = get_colour_from_line(p)
 
                             colours.post_config()
@@ -36971,10 +36986,10 @@ while pctl.running:
                                   window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
                         draw_sep_hl = False
 
-                # Normal Drawing
-                if gui.rsp and gui.draw_frame:
-                    ddt.line(gui.plw + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
-                              colours.sep_line)
+                # # Normal Drawing
+                # if gui.rsp and True:
+                #     ddt.line(gui.plw + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
+                #               colours.sep_line)
 
 
             # Bottom title position logic
@@ -37683,15 +37698,18 @@ while pctl.running:
 
                 p = ddt.text((x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.grey(230), 213)
 
-                if rename_folder.text != prefs.rename_folder_template and draw.button(_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale,
-                               70 * gui.scale):
+                if rename_folder.text != prefs.rename_folder_template and draw.button(_("Default"),
+                                                                                      x + (300 - 63) * gui.scale,
+                                                                                      y + 11 * gui.scale,
+                                                                                      70 * gui.scale):
                     rename_folder.text = prefs.rename_folder_template
 
                 rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
                 ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
-                if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
+                if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
+                               tooltip="Renames the physical folder based on the template") or input.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
                     gui.rename_folder_box = False
                     input.mouse_click = False
@@ -37701,7 +37719,9 @@ while pctl.running:
                 if key_shift_down:
                     text = _("Delete")
                     tt = "Physically deletes folder from disk"
-                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt, press=mouse_up):
+                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale,
+                               text_highlight_colour=colours.grey(255), background_highlight_colour=[180, 60, 60, 255],
+                               press=mouse_up, tooltip=tt):
                     if key_shift_down:
                         delete_folder(rename_index, True)
                     else:
@@ -37710,13 +37730,15 @@ while pctl.running:
                     input.mouse_click = False
 
                 if move_folder_up(rename_index):
-                    if draw.button(_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder"):
+                    if draw.button(_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
+                                   tooltip="Moves folder up 2 levels and deletes old the containing folder"):
                         move_folder_up(rename_index, True)
                         input.mouse_click = False
 
                 to_clean = clean_folder(rename_index)
                 if to_clean > 0:
-                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
+                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
+                                   80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
                         clean_folder(rename_index, True)
                         input.mouse_click = False
 
