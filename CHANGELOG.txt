@@ -15,6 +15,7 @@ v5.4.4
  - Fixed gallery jumping to top when deleting another playlist
  - Fixed a bug where showcase would exit when switching track
  - Fixed queue panel colours for non-dark themes
+ - Fixed audio device list not accepting mouse scrolling
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons
