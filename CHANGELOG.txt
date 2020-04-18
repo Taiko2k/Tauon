@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v5.4.4
+v5.5.0
 
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
