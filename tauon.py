@@ -1400,7 +1400,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.row_extra = 0
         self.test = False
         self.light_mode = False
-        self.draw_frame = False
 
         self.level_2_click = False
         self.universal_y_text_offset = 0
@@ -2125,6 +2124,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.menu_highlight_background = None
         self.menu_text = [230, 230, 230, 255]
         self.menu_text_disabled = self.grey(50)
+        self.menu_icons = None
         self.menu_tab = self.grey(30)
 
         self.gallery_highlight = self.artist_playing
@@ -2224,6 +2224,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
             self.menu_background = self.bottom_panel_colour
         self.sys_background = self.menu_background
 
+        if not self.lm and not self.menu_icons:
+            self.menu_icons = [255, 255, 255, 25]
 
     def light_mode(self):
 
@@ -2254,6 +2256,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         #self.menu_highlight_background = [200, 200, 200, 250]
         if self.menu_background is None:
             self.menu_background = [15, 15, 15, 250]
+        if not self.menu_icons:
+            self.menu_icons = [0, 0, 0, 40]
 
         # self.menu_background = [40, 40, 40, 250]
         # self.menu_text = self.grey(220)
@@ -7183,6 +7187,7 @@ def draw_window_border():
         gui.cursor_want = 11
 
     colour = [30, 30, 30, 255]
+    colour = [255, 255, 255, 13]
     ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour, True)
     ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour, True)
     ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
@@ -10890,7 +10895,8 @@ class Menu:
                     return
 
                 if colour is None:
-                    colour = [145, 145, 145, 70]
+                    #colour = [145, 145, 145, 70]
+                    colour = colours.menu_icons# [255, 255, 255, 35]
                     #colour = [50, 50, 50, 255]
 
                 icon.asset.render(x, y, colour)
@@ -17880,7 +17886,7 @@ def heart_menu_colour():
     if not (pctl.playing_state == 1 or pctl.playing_state == 2):
         if colours.lm:
             return [255, 150, 180, 255]
-        return [50, 50, 50, 255]
+        return None
     if love(False):
         return [245, 60, 60, 255]
     else:
@@ -32043,9 +32049,10 @@ class Showcase:
             gui.vis_4_colour = [40, 40, 40, 255]
 
         if prefs.bg_showcase_only and prefs.art_bg and not light_mode:
-            reg = min(colours.playlist_panel_background[0], 22)
-            ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [reg, reg, reg, 255],
-                     True)
+            pass
+            # reg = min(colours.playlist_panel_background[0], 22)
+            # ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [reg, reg, reg, 255],
+            #          True)
         else:
             ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
 
@@ -32344,11 +32351,15 @@ class ColourPulse2:
     def get(self, hit, on, off, low_hls, high_hls):
 
         if on:
-            rgb = colorsys.hls_to_rgb(high_hls[0], high_hls[1], high_hls[2])
-            return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+
+            return high_hls
+            # rgb = colorsys.hls_to_rgb(high_hls[0], high_hls[1], high_hls[2])
+            # return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
         if off:
-            rgb = colorsys.hls_to_rgb(low_hls[0], low_hls[1], low_hls[2])
-            return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 70]
+
+            return low_hls
+            # rgb = colorsys.hls_to_rgb(low_hls[0], low_hls[1], low_hls[2])
+            # return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 70]
 
         ani_time = 0.15
 
@@ -32389,14 +32400,16 @@ class ColourPulse2:
                 pro = 1 - (time / ani_time)
                 gui.update = 2
 
-
-        lumi = low_hls[1] + ((high_hls[1] - low_hls[1]) * pro)
-        sat = low_hls[2] + ((high_hls[2] - low_hls[2]) * pro)
-        hue = high_hls[0]
-
-        rgb = colorsys.hls_to_rgb(hue, lumi, sat)
-        alpha = round(pro * 185)
-        return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), alpha + 70]
+        return colour_slide(low_hls, high_hls, pro, 1)
+        # lumi = low_hls[1] + ((high_hls[1] - low_hls[1]) * pro)
+        # sat = low_hls[2] + ((high_hls[2] - low_hls[2]) * pro)
+        # hue = low_hls[0] + ((high_hls[0] - low_hls[0]) * pro)
+        #
+        #
+        # rgb = colorsys.hls_to_rgb(hue, lumi, sat)
+        # alpha = round(pro * 185)
+        #
+        # return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), alpha + 70]
 
 cctest = ColourPulse2()
 
@@ -32647,29 +32660,34 @@ class ViewBox:
         func = None
 
         #low = (0, .15, 0)
-        low = (0, .40, 0)
-        if colours.lm:
-            low = (0, 0.5, 0)
+        #low = (0, .40, 0)
+        #low = rgb_to_hls(*alpha_blend(colours.menu_icons, colours.menu_background)[:3])  # fix me
+        low = alpha_blend(colours.menu_icons, colours.menu_background)
+
+        # if colours.lm:
+        #     low = (0, 0.5, 0)
 
         # ----
-
-        high = (.55, .6, .75)
+        #print(hls_to_rgb(.55, .6, .75))
+        high = [76, 183, 229, 255] #(.55, .6, .75)
         if colours.lm:
             #high = (.55, .75, .75)
-            high = (.0, .25, .0)
+            high = [63, 63, 63, 255]
 
         test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Art", low=low, high=high)
         if test is not None:
             func = test
 
+
+
         # ----
 
         y += 40 * gui.scale
 
-        high = (.6, .6, .75)
+        high = [76, 137, 229, 255] #(.6, .6, .75)
         if colours.lm:
             #high = (.6, .80, .85)
-            high = (.0, .25, .0)
+            high = [63, 63, 63, 255]
 
         if gui.hide_tracklist_in_gallery:
             test = self.button(x - round(1 * gui.scale), y, self.gallery2_img, self.gallery1, self.gallery1_colour, "Gallery", low=low,
@@ -32679,14 +32697,15 @@ class ViewBox:
         if test is not None:
             func = test
 
+
         # ---
 
         y += 40 * gui.scale
 
-        high = (.5, .6, .75)
+        high = [76, 229, 229, 255]
         if colours.lm:
             #high = (.5, .7, .65)
-            high = (.0, .25, .0)
+            high = [63, 63, 63, 255]
 
         test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only", low=low, high=high)
         if test is not None:
@@ -32696,10 +32715,10 @@ class ViewBox:
 
         y += 45 * gui.scale
 
-        high = (.7, .6, .75)
+        high = [107, 76, 229, 255]
         if colours.lm:
             #high = (.7, .75, .75)
-            high = (.0, .25, .0)
+            high = [63, 63, 63, 255]
 
         test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase + Lyrics", low=low, high=high)
         if test is not None:
@@ -32709,10 +32728,10 @@ class ViewBox:
 
         y += 45 * gui.scale
 
-        high = (.14, .6, .75)
+        high = [229, 205, 76, 255]
         if colours.lm:
             #high = (.9, .75, .65)
-            high = (.0, .25, .0)
+            high = [63, 63, 63, 255]
 
         test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False, low=low, high=high)
         if test is not None:
@@ -32722,10 +32741,10 @@ class ViewBox:
 
         y += 41 * gui.scale
 
-        high = (.2, .6, .75)
+        high = [198, 229, 76, 255]
         if colours.lm:
             #high = (.2, .6, .75)
-            high = (.0, .25, .0)
+            high = [63, 63, 63, 255]
 
         if gui.scale == 1.25:
             x-= 1
@@ -35462,6 +35481,8 @@ while pctl.running:
                                     colours.menu_text = get_colour_from_line(p)
                                 if 'menu disable' in p:
                                     colours.menu_text_disabled = get_colour_from_line(p)
+                                if 'menu icons' in p:
+                                    colours.menu_icons = get_colour_from_line(p)
                                 if 'menu highlight' in p:
                                     colours.menu_highlight_background = get_colour_from_line(p)
                                 if 'menu border' in p:
