@@ -47,6 +47,8 @@ def player3(tauon):  # GStreamer
             # This is used to keep track of time between callbacks to progress the seek bar
             self.player_timer = Timer()
 
+            self.loaded_track = None
+
             # This is used to keep note of what state of playing we should be in
             self.play_state = 0  # 0 is stopped, 1 is playing, 2 is paused
 
@@ -276,10 +278,11 @@ def player3(tauon):  # GStreamer
                 url = None
                 if pctl.playerCommand == 'open' and pctl.target_object:
 
+                    track = pctl.target_object
                     # Check if the file exists, mark it as missing if not
-                    if pctl.target_object.is_network:
+                    if track.is_network:
                         try:
-                            url, params = pctl.get_url(pctl.target_object)
+                            url, params = pctl.get_url(track)
                         except:
                             time.sleep(0.1)
                             gui.show_message("Connection error", "Bad login? Server offline?", mode='info')
@@ -289,13 +292,13 @@ def player3(tauon):  # GStreamer
                             return
 
 
-                    elif os.path.isfile(pctl.target_object.fullpath):
+                    elif os.path.isfile(track.fullpath):
                         # File exists so continue
-                        pctl.target_object.found = True
+                        track.found = True
                     else:
                         # File does not exist, trigger an advance
                         pctl.target_object.found = False
-                        tauon.console.print("Missing File: " + pctl.target_object.fullpath, 2)
+                        tauon.console.print("Missing File: " + track.fullpath, 2)
                         pctl.playing_state = 0
                         pctl.jump_time = 0
                         pctl.advance(inplace=True, nolock=True)
@@ -306,7 +309,7 @@ def player3(tauon):  # GStreamer
                     current_time = 0
                     current_duration = 0
 
-                    if pctl.target_object.is_network:
+                    if track.is_network:
 
                         if params:
                             self.url = url + ".view?" + urllib.parse.urlencode(params)
@@ -337,7 +340,7 @@ def player3(tauon):  # GStreamer
                                                   self.url)
                     else:
                         # Play file on disk
-                        self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
+                        self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(track.fullpath)))
                     self._vol.set_property('volume', pctl.player_volume / 100)
                     self.playbin.set_state(Gst.State.PLAYING)
                     if pctl.jump_time == 0:
@@ -356,13 +359,13 @@ def player3(tauon):  # GStreamer
                         t = 0
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
 
-                            time.sleep(0.1)
+                            time.sleep(0.02)
                             t += 1
 
                             if self.playbin.get_state(0).state != Gst.State.PLAYING:
                                 break
 
-                            if t > 50:
+                            if t > 250:
                                 print("Gonna stop waiting...")  # Cant wait forever
                                 break
 
@@ -373,9 +376,16 @@ def player3(tauon):  # GStreamer
                                 GLib.timeout_add(19, self.main_callback)
                                 return
 
+                    add_time = max(min(self.player_timer.hit(), 3), 0)
+                    if self.loaded_track:
+                        star_store.add(self.loaded_track.index, add_time)
+
 
                     pctl.jump_time = 0
                     time.sleep(0.15)
+
+                    self.loaded_track = track
+
                     self.check_duration()
                     self.player_timer.hit()
 
