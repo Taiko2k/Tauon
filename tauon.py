@@ -2127,6 +2127,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.menu_icons = None
         self.menu_tab = self.grey(30)
 
+
         self.gallery_highlight = self.artist_playing
 
         self.status_info_text = [245, 205, 0, 255]
@@ -2163,6 +2164,17 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.window_frame = [30, 30, 30, 255]
 
+        self.track_info_border = self.grey(75)
+        self.sys_background_3 = [16, 16, 16, 255]
+
+        self.sys3_text_key_off = self.grey_blend_bg3(90)
+
+
+        self.sys3_text_value = self.grey_blend_bg3(225)
+
+
+
+
         #self.post_config()
 
     def post_config(self):
@@ -2172,9 +2184,13 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
 
         self.sys_background_2 = self.tab_background
-        self.sys_background_3 = [16, 16, 16, 255]
+
 
         self.sys_background_4 = self.bottom_panel_colour
+
+        if not self.lm:
+            self.sys_background_3 = self.top_panel_background
+
         self.message_box_bg = self.sys_background_3
         self.sys_tab_bg = self.tab_background
         self.sys_tab_hl = self.tab_background_active
@@ -2183,13 +2199,15 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.toggle_box_on = self.artist_playing
         if colour_value(self.toggle_box_on) < 150:
             self.toggle_box_on = [160, 160, 160, 255]
-        self.time_sub = [255, 255, 255, 80]#alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
+        #self.time_sub = [255, 255, 255, 80]#alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
+
+        self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, 0.29, 0)
 
         if test_lumi(colours.bottom_panel_colour) < 0.2:
             self.time_sub = [0, 0, 0, 80]
+            self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, -0.15, -0.3)
         elif test_lumi(colours.bottom_panel_colour) < 0.8:
             self.time_sub = [255, 255, 255, 135]
-
         #self.time_sub = self.mode_button_off
 
         if self.bar_title_text is None:
@@ -2197,8 +2215,16 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
-        self.status_text_normal = alpha_blend([255, 255, 255, 80], colours.top_panel_background) #self.grey(100)
-        self.status_text_over = alpha_blend([255, 255, 255, 220], colours.top_panel_background)#self.grey(220)
+        #self.status_text_normal = alpha_blend([255, 255, 255, 80], self.top_panel_background) #self.grey(100)
+        self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
+
+
+        self.status_text_over = alpha_blend([255, 255, 255, 220], self.top_panel_background)#self.grey(220)
+
+        # print(self.status_text_over)
+        # print(rgb_add_hls(self.top_panel_background, 0, 0.83, 0))
+
+        self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
 
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
@@ -2234,6 +2260,10 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
             # l += 0.128
             #
             # self.menu_icons = hls_to_rgb(h, l, s)
+
+        self.track_info_border = rgb_add_hls(self.sys_background_3, 0, 0.23, 0)
+
+        self.sys3_text_key_off = rgb_add_hls(self.sys_background_3, 0, 0.33, -0.1)
 
     def light_mode(self):
 
@@ -9784,7 +9814,7 @@ class AlbumArt():
                     colours.star_line = [60, 60, 60, 255]
                     colours.row_select_highlight = [0, 0, 0, 30]
                     colours.row_playing_highlight = [0, 0, 0, 20]
-                    colours.gallery_background = hls_mod_add(colours.playlist_panel_background, 0, -0.03, 0)
+                    colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, -0.03, -0.03)
                 else:
                     ce = alpha_blend([255, 255, 255, 160], colours.playlist_panel_background) #[165, 165, 165, 255]
                     colours.index_text = ce
@@ -9795,7 +9825,7 @@ class AlbumArt():
                     colours.star_line = ce #[150, 150, 150, 255]
                     colours.row_select_highlight = [255, 255, 255, 12]
                     colours.row_playing_highlight = [255, 255, 255, 8]
-                    colours.gallery_background = hls_mod_add(colours.playlist_panel_background, 0, 0.03, 0)
+                    colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, 0.03)
 
                 gui.temp_themes[track.album] = copy.deepcopy(colours)
                 gui.theme_temp_current = index
@@ -10949,8 +10979,14 @@ class Menu:
 
             for i in range(len(self.items)):
                 # print(self.items[i])
+
+                # Draw menu break
                 if self.items[i] is None:
 
+                    if is_light(colours.menu_background):
+                        break_colour = rgb_add_hls(colours.menu_background, 0, -0.1, -0.1)
+                    else:
+                        break_colour = rgb_add_hls(colours.menu_background, 0, 0.06, 0)
 
                     rect = (self.pos[0], y_run, self.w, self.break_height - 1)
                     if coll(rect):
@@ -10960,7 +10996,8 @@ class Menu:
                               colours.menu_background, True)
 
                     ddt.rect_a((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
-                              [255, 255, 255, 13], True)
+                              break_colour, True)
+
 
                     # Draw tab
                     ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.break_height),
@@ -11042,11 +11079,23 @@ class Menu:
 
                 # Draw arrow icon for sub menu
                 if self.items[i][1] is True:
-                    colour = [50, 50, 50, 255]
-                    if selected:
-                        colour = [150, 150, 150, 255]
+
+                    if is_light(bg) or colours.lm:
+                        colour = rgb_add_hls(bg, 0, -0.6, -0.1)
+                    else:
+                        colour = rgb_add_hls(bg, 0, 0.1, 0)
+
                     if self.sub_active == self.items[i][2]:
-                        colour = [150, 150, 150, 255]
+                        if is_light(bg) or colours.lm:
+                            colour = rgb_add_hls(bg, 0, -0.8, -0.1)
+                        else:
+                            colour = rgb_add_hls(bg, 0, 0.40, 0)
+
+                    # colour = [50, 50, 50, 255]
+                    # if selected:
+                    #     colour = [150, 150, 150, 255]
+                    # if self.sub_active == self.items[i][2]:
+                    #     colour = [150, 150, 150, 255]
                     self.sub_arrow.asset.render(self.pos[0] + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
                 # Render the items label
@@ -11054,9 +11103,15 @@ class Menu:
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
-                    colo = alpha_blend([255, 255, 255, 50], bg)
+
+                    if is_light(bg) or colours.lm:
+                        hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
+                    else:
+                        hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
+
+                    #colo = alpha_blend([255, 255, 255, 50], bg)
                     ddt.text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
-                             colo, self.font, bg=bg)
+                             hint_colour, self.font, bg=bg)
 
                 y_run += self.h
 
@@ -28621,22 +28676,21 @@ class PlaylistBox:
             #             self.drag_source = 1
             #             set_drag_source()
 
-
             name = pl[0]
             hidden = pl[8]
 
-            semi_light = False
-            if not light_mode and test_lumi(colours.playlist_box_background) < 0.85 and False:
-                semi_light = True
+            # semi_light = False
+            # if not light_mode and test_lumi(colours.playlist_box_background) < 0.85 and False:
+            #     semi_light = True
 
-            bg = [255, 255, 255, 6]
-            if light_mode:
-                bg = [0, 0, 0, 8]
-            if semi_light:
-                bg = [45, 45, 45, 255]
+            # bg = [255, 255, 255, 6]
+            # if light_mode:
+            #     bg = [0, 0, 0, 8]
+            # if semi_light:
+            #     bg = [45, 45, 45, 255]
 
             # Background is insivible by default (for hightlighting if selected)
-            bg = [0,0,0,0]
+            bg = [0, 0, 0, 0]
 
             # Additional highlight reasons
             # if i == pctl.active_playlist_playing and 3 > pctl.playing_state > 0:
@@ -28651,26 +28705,36 @@ class PlaylistBox:
 
             # Highlight if playlist selected (viewing)
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
-                bg = [255, 255, 255, 25]
+                #bg = [255, 255, 255, 25]
 
                 # Adjust highlight for different background brightnesses
-                if dark_mode:
-                    bg = [255, 255, 255, 15]
+                #if dark_mode:
+                    #bg = [255, 255, 255, 15]
+                bg = rgb_add_hls(colours.playlist_box_background, 0, 0.06, 0)
                 if light_mode:
                     bg = [0, 0, 0, 25]
-                if semi_light:
-                    bg = [55, 55, 55, 255]
+                    #bg = rgb_add_hls(colours.playlist_box_background, 0, -0.04, 0)
+                # if semi_light:
+                #     bg = [55, 55, 55, 255]
+                #     bg = rgb_add_hls(colours.playlist_box_background, 0, -0.04, 0)
+                #     print("SEMI")
 
             # Highlight target playlist when tragging tracks over
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
-                bg = [255, 255, 255, 15]
+                #bg = [255, 255, 255, 15]
+                bg = rgb_add_hls(colours.playlist_box_background, 0, 0.04, 0)
                 if light_mode:
                     bg = [0, 0, 0, 16]
-                if semi_light:
-                    bg = [52, 52, 52, 255]
+                # if semi_light:
+                #     bg = [52, 52, 52, 255]
+
+
 
             # Get actual bg from blend for text bg
             real_bg = alpha_blend(bg, colours.playlist_box_background)
+
+            # if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
+            #     bg = rgb_add_hls(colours.playlist_box_background, 0, 0.06, 0)
 
             # Draw highlight
             ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, 25 * gui.scale), bg, True)
@@ -37383,7 +37447,8 @@ while pctl.running:
 
                 # if key_shift_down:
                 #     value_font = 12
-                key_colour_off = colours.grey_blend_bg3(90)
+                key_colour_off = colours.sys3_text_key_off #colours.grey_blend_bg3(90)
+                #key_colour_off = colours.grey_blend_bg3(90)
                 key_colour_on = colours.grey_blend_bg3(240)
                 value_colour = colours.grey_blend_bg3(225)
                 path_colour = colours.grey_blend_bg3(200)
@@ -37394,7 +37459,7 @@ while pctl.running:
                 #     value_colour = colours.grey(50)
                 #     path_colour = colours.grey(70)
 
-                ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
+                ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.track_info_border, True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
                 ddt.text_background_colour = colours.sys_background_3
 

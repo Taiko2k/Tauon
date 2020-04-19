@@ -2,7 +2,10 @@
 Changelog-------------------------------------
 
 v5.5.0
-
+  -todo fix function box colours
+  -todo fix window tools colours
+  -todo add setting to toggle showcase texture
+  -todo fix playtime counter for transitions
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
  - Improved "showcase only" background art compositing
