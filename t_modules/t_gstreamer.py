@@ -380,7 +380,6 @@ def player3(tauon):  # GStreamer
                     if self.loaded_track:
                         star_store.add(self.loaded_track.index, add_time)
 
-
                     pctl.jump_time = 0
                     time.sleep(0.15)
 
