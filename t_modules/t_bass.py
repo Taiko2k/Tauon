@@ -515,6 +515,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.new_handle_for_sync = None
 
             self.dl_ready = False
+            self.loaded_track = None
             self.save_temp = ""
             self.alt = "a"
             self.url = ""
@@ -910,43 +911,35 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 err = BASS_ErrorGetCode()
                 #print(err)
 
-                # print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
-
+                print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
+                #print("TRANSITION")
                 # Try to transition without fade and and on time if possible and permitted
                 if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 3:
 
-                    #print(BASS_ErrorGetCode())
                     # Start sync on end
-                    #print(BASS_ChannelIsActive(self.channel))
-                    #sync = BASS_ChannelSetSync(self.channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync, new_handle)
-                    #print(sync)
-                    # print("Activate sync...")
-                    #print(BASS_ErrorGetCode())
+                    #print("Activate sync...")
                     # print(BASS_ErrorGetCode())
+
 
                     self.new_handle_for_sync = new_handle
                     self.syncing = True
                     br_timer.set()
 
-                    player_timer.set()
+                    if player_timer.get() > 1:
+                        player_timer.set()
+                    #print("start sync")
                     while self.syncing:
-                        time.sleep(0.01)
-
-                        if pctl.finish_transition:
-                            add_time = player_timer.hit()
-                            if add_time > 2 or add_time < 0:
-                                add_time = 0
-                            pctl.playing_time += add_time
-                            #print("progress...")
-                            #print(pctl.playing_time)
-
-                        #print(BASS_ChannelIsActive(self.channel))
+                        time.sleep(0.005)
 
                         if (br_timer.get() > 6 and self.syncing):
                             self.syncing = False
                             print("Sync taking too long!")
                             sync_gapless_transition(None, self.channel, 0, new_handle)
                             break
+
+                    add_time = max(min(player_timer.hit(), 3), 0)
+                    if self.loaded_track:
+                        star_store.add(self.loaded_track.index, add_time)
 
                     # BASS_ChannelStop(self.channel)
                     BASS_StreamFree(self.decode_channel)
@@ -1011,6 +1004,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     self.channel = new_mixer
                     self.decode_channel = new_handle
 
+            self.loaded_track = target_object
 
     bass_player = BASSPlayer()
 

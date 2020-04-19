@@ -19,6 +19,7 @@ v5.5.0
  - Fixed a bug where showcase would exit when switching track
  - Fixed queue panel colours for non-dark themes
  - Fixed audio device list not accepting mouse scrolling
+ - Fixed playtime not counting near end of track
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons

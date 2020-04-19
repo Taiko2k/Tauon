@@ -2204,7 +2204,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, 0.29, 0)
 
         if test_lumi(colours.bottom_panel_colour) < 0.2:
-            self.time_sub = [0, 0, 0, 80]
+            #self.time_sub = [0, 0, 0, 80]
             self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, -0.15, -0.3)
         elif test_lumi(colours.bottom_panel_colour) < 0.8:
             self.time_sub = [255, 255, 255, 135]
@@ -4349,28 +4349,28 @@ class PlayerCtl:
             update_title_do()
 
 
-    def play_target_gapless(self, jump=False):
-        #tm.ready_playback()
-
-        queue_target = len(self.track_queue) - 1
-        self.target_open = pctl.master_library[self.track_queue[queue_target]].fullpath
-        self.target_object = pctl.master_library[self.track_queue[queue_target]]
-        self.start_time_target = pctl.master_library[self.track_queue[queue_target]].start_time
-
-        # dont set self.start_time yet
-        # dont set queue step yet
-
-        # if not gapless:
-        self.playerCommand = 'open'
-        if jump and not prefs.use_jump_crossfade:
-            self.playerSubCommand = 'now'
-        self.playerCommandReady = True
-        # else:
-        #     self.playerCommand = 'gapless'
-        self.playing_state = 1
-        #self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
-        self.last_playing_time = 0
-        self.finish_transition = True
+    # def play_target_gapless(self, jump=False):
+    #     #tm.ready_playback()
+    #
+    #     queue_target = len(self.track_queue) - 1
+    #     self.target_open = pctl.master_library[self.track_queue[queue_target]].fullpath
+    #     self.target_object = pctl.master_library[self.track_queue[queue_target]]
+    #     self.start_time_target = pctl.master_library[self.track_queue[queue_target]].start_time
+    #
+    #     # dont set self.start_time yet
+    #     # dont set queue step yet
+    #
+    #     # if not gapless:
+    #     self.playerCommand = 'open'
+    #     if jump and not prefs.use_jump_crossfade:
+    #         self.playerSubCommand = 'now'
+    #     self.playerCommandReady = True
+    #     # else:
+    #     #     self.playerCommand = 'gapless'
+    #     self.playing_state = 1
+    #     #self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
+    #     self.last_playing_time = 0
+    #     self.finish_transition = True
 
 
     def play_target(self, gapless=False, jump=False):
@@ -4632,7 +4632,7 @@ class PlayerCtl:
             self.playing_time_int = next_round
 
         if not prefs.use_transition_crossfade:
-            gap_extra = 0.9
+            gap_extra = 1.2
         else:
             gap_extra = prefs.cross_fade_time / 1000
 
@@ -27556,11 +27556,11 @@ class StandardPlaylist:
                             ratio = 0
                             total = star_store.get_by_object(n_track)
                             #if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0:
-                            if total > 0 and n_track.length != 0:
+                            if total > 0 and n_track.length > 2:
                                 # total = pctl.star_library[key]
                                 if n_track.length > 15:
                                     total += 2
-                                ratio = total / n_track.length
+                                ratio = total / (n_track.length - 1)
 
                             text = str(str(int(ratio)))
                             if text == "0":
@@ -37723,8 +37723,8 @@ while pctl.running:
                     ratio = 0
 
                     if total > 0 and pctl.master_library[
-                        r_menu_index].length != 0:
-                        ratio = total / tc.length
+                        r_menu_index].length > 1:
+                        ratio = total / (tc.length - 1)
 
                     ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70*gui.scale)
                     ddt.text((x2, y1), str(int(ratio)), value_colour, value_font)
