@@ -280,6 +280,21 @@ class TDraw:
         else:
             SDL_RenderDrawRect(self.renderer, self.sdl_rect)
 
+    def bordered_rect(self, rectangle, fill_colour, outer_colour, border_size):
+
+        self.sdl_rect.x = round(rectangle[0]) - border_size
+        self.sdl_rect.y = round(rectangle[1]) - border_size
+        self.sdl_rect.w = round(rectangle[2]) + border_size + border_size
+        self.sdl_rect.h = round(rectangle[3]) + border_size + border_size
+        SDL_SetRenderDrawColor(self.renderer, outer_colour[0], outer_colour[1], outer_colour[2], outer_colour[3])
+        SDL_RenderFillRect(self.renderer, self.sdl_rect)
+        self.sdl_rect.x = round(rectangle[0])
+        self.sdl_rect.y = round(rectangle[1])
+        self.sdl_rect.w = round(rectangle[2])
+        self.sdl_rect.h = round(rectangle[3])
+        SDL_SetRenderDrawColor(self.renderer, fill_colour[0], fill_colour[1], fill_colour[2], fill_colour[3])
+        SDL_RenderFillRect(self.renderer, self.sdl_rect)
+
     def line(self, x1, y1, x2, y2, colour):
 
         SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
