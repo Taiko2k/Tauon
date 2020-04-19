@@ -2166,6 +2166,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.track_info_border = self.grey(75)
         self.sys_background_3 = [16, 16, 16, 255]
+        self.text_box_border = self.grey(50)
 
         self.sys3_text_key_off = self.grey_blend_bg3(90)
 
@@ -2261,7 +2262,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
             #
             # self.menu_icons = hls_to_rgb(h, l, s)
 
-        self.track_info_border = rgb_add_hls(self.sys_background_3, 0, 0.23, 0)
+        self.track_info_border = rgb_add_hls(self.sys_background_3, 0, 0.17, 0)
+
+        self.text_box_border = rgb_add_hls(self.sys_background_3, 0, 0.1, 0)
 
         self.sys3_text_key_off = rgb_add_hls(self.sys_background_3, 0, 0.33, -0.1)
 
@@ -4882,8 +4885,6 @@ class PlayerCtl:
                         del self.force_queue[0]
                         self.advance(nolock=True)
                         return
-
-
 
                     self.playlist_playing_position = q[1]
                     self.track_queue.append(target_index)
@@ -11396,7 +11397,7 @@ class RenameTrackBox:
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
 
-        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80),
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.track_info_border,
                    True)
         ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
         ddt.text_background_colour = colours.sys_background_3
@@ -11432,10 +11433,10 @@ class RenameTrackBox:
             rename_files.text = prefs.rename_tracks_template
 
         # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-        rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(170), width=300)
+        rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(190), width=300)
         NRN = rename_files.text
 
-        ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+        ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.text_box_border)
 
         afterline = ""
         warn = False
@@ -11450,11 +11451,11 @@ class RenameTrackBox:
             if item == self.target_track_id:
                 afterline = parse_template2(NRN, pctl.master_library[item])
 
-        ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.grey(100), 212)
+        ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.sys3_text_key_off, 212)
         line = trunc_line(pctl.master_library[self.target_track_id].filename, 12, 335)
         ddt.text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
 
-        ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.grey(100), 212)
+        ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.sys3_text_key_off, 212)
         ddt.text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
 
         if (len(NRN) > 3 and len(pctl.master_library[self.target_track_id].filename) > 3 and afterline[-3:].lower() !=
@@ -11586,7 +11587,7 @@ class SubLyricsBox:
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
 
-        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80),
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.track_info_border,
                    True)
         ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
         ddt.text_background_colour = colours.sys_background_3
@@ -11612,17 +11613,17 @@ class SubLyricsBox:
         x += round(23 * gui.scale)
 
         xx = x
-        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.grey(130), 212)
+        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.sys3_text_key_off, 212)
         xx += round(6 * gui.scale)
-        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.grey(90), 312)
+        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.grey(190), 312)
 
         y += round(19 * gui.scale)
         xx = x
-        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.grey(130), 212)
+        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.sys3_text_key_off, 212)
         xx += round(6 * gui.scale)
-        rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
+        rect1 = (xx, y, round(250 * gui.scale), round(17 * gui.scale))
         fields.add(rect1)
-        ddt.rect(rect1, [40, 40, 40, 255], True)
+        ddt.bordered_rect(rect1, colours.sys_background_3, colours.text_box_border, round(1 * gui.scale))
         if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 2):
             self.active_field = 1
             input.key_tab_press = False
@@ -11632,19 +11633,20 @@ class SubLyricsBox:
         y += round(28 * gui.scale)
 
         xx = x
-        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.grey(130), 212)
+        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.sys3_text_key_off, 212)
         xx += round(6 * gui.scale)
-        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.grey(90), 312)
+        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.grey(190), 312)
 
         y += round(19 * gui.scale)
         xx = x
-        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.grey(130), 212)
+        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.sys3_text_key_off, 212)
         xx += round(6 * gui.scale)
         rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
         fields.add(rect1)
         if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 1):
             self.active_field = 2
-        ddt.rect(rect1, [40, 40, 40, 255], True)
+        #ddt.rect(rect1, [40, 40, 40, 255], True)
+        ddt.bordered_rect(rect1, colours.sys_background_3, colours.text_box_border, round(1 * gui.scale))
         sub_lyrics_b.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 2, width=rect1[2] - 8 * gui.scale)
 
 
@@ -19763,7 +19765,7 @@ class MessageBox:
         x, y, w, h = self.get_rect()
 
         ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
-                   colours.grey(55), True)
+                   colours.text_box_border, True)
         ddt.rect_a((x, y), (w, h), colours.message_box_bg, True)
 
         ddt.text_background_colour = colours.message_box_bg
@@ -30535,7 +30537,7 @@ class QueueBox:
             ddt.rect(rect, colours.queue_card_background, True)
             bg = colours.queue_card_background
 
-        text_colour1 = [255, 255, 255, 70]
+        text_colour1 = rgb_add_hls(bg, 0, 0.28, -0.15) #[255, 255, 255, 70]
         text_colour2 = [255, 255, 255, 230]
         if test_lumi(bg) < 0.2:
             text_colour1 = [0, 0, 0, 130]
@@ -30628,7 +30630,8 @@ class QueueBox:
                 qb_right_click = 1
 
 
-        text_colour = [255, 255, 255, 91]
+        #text_colour = [255, 255, 255, 91]
+        text_colour = rgb_add_hls(colours.queue_background, 0, 0.3, -0.15)
         if test_lumi(colours.queue_background) < 0.2:
             text_colour = [0, 0, 0, 200]
 
@@ -37318,7 +37321,7 @@ while pctl.running:
                             per = pctl.playlist_view_position / len(default_playlist)
                             sbp = int((ey - top - sbl) * per) + top + 1
 
-                    bg = [40, 40, 40, 60]
+                    bg = [255, 255, 255, 6]
                     fg = colours.scroll_colour
 
                     if colours.lm:
@@ -37803,7 +37806,7 @@ while pctl.running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.track_info_border, True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 ddt.text_background_colour = colours.sys_background_3
@@ -37821,7 +37824,7 @@ while pctl.running:
 
                 rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
-                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.text_box_border)
 
                 if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
                                tooltip="Renames the physical folder based on the template") or input.level_2_enter:
@@ -37857,18 +37860,18 @@ while pctl.running:
                         clean_folder(rename_index, True)
                         input.mouse_click = False
 
-                ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
+                ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.sys3_text_key_off, 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420 * gui.scale)
-                ddt.text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(200), 211)
+                ddt.text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(220), 211)
 
-                ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
+                ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.sys3_text_key_off, 212)
                 line = pctl.master_library[rename_index].parent_folder_name
-                ddt.text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
+                ddt.text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
 
-                ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
+                ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.sys3_text_key_off, 212)
                 line = parse_template2(rename_folder.text, pctl.master_library[rename_index])
-                ddt.text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
+                ddt.text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
 
 
             if rename_track_box.active:
@@ -38212,13 +38215,13 @@ while pctl.running:
                 if gui.lsp:
                     ww = gui.lspw
 
-                rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 210 * gui.scale, 39 * gui.scale)
+                rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
                 fields.add(rect)
 
                 if coll(rect):
                     queue_add_timer.force_set(10)
                 else:
-                    ddt.rect(grow_rect(rect, 2 * gui.scale), colours.grey(60), True)
+                    ddt.rect(grow_rect(rect, 2 * gui.scale), colours.track_info_border, True)
                     ddt.rect(rect, colours.queue_card_background, True)
 
                     fqo = copy.copy(pctl.force_queue[-1])
@@ -38231,10 +38234,10 @@ while pctl.running:
                     if pctl.force_queue[-1][3] == 1:
                         top_text = "Album"
 
-                    ddt.text((rect[0] + 165 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.grey(80), 11)
-                    ddt.text((rect[0] + 165 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.grey(80), 11)
+                    queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, True, False)
 
-                    queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 150 * gui.scale, 200 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, False, False)
+                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.sys3_text_key_off, 11)
+                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.sys3_text_key_off, 11)
 
 
         t = toast_mode_timer.get()
