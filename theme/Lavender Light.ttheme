@@ -44,6 +44,7 @@ light-mode
 200,200,200     menu highlight
 40,40,40        menu text
 180,180,180     menu disable text
+0,0,0,40        menu icons
 
 #-Bottom panel------
 
