@@ -2159,6 +2159,10 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.queue_background = None #self.side_panel_background #self.grey(18) # 18
         self.queue_card_background = self.grey(23)
 
+        self.column_bar_background = [30, 30, 30, 255]
+        self.column_grip = [255, 255, 255, 14]
+        self.column_bar_text = [240, 240, 240, 255]
+
         self.window_frame = [30, 30, 30, 255]
 
         self.box_background = [16, 16, 16, 255]
@@ -2176,12 +2180,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.box_button_text = self.grey(225)
         self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
         self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
-
-        # self.box_background = [42,32,65, 255]
-        # print("AA")
-        # print(rgb_add_hls(self.box_background, 0, 0.17, 0)) # delete me
-        # print(self.box_text_label)
-
 
 
     def post_config(self):
@@ -2221,9 +2219,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.status_text_over = alpha_blend([255, 255, 255, 220], self.top_panel_background)#self.grey(220)
 
-        # print(self.status_text_over)
-        # print(rgb_add_hls(self.top_panel_background, 0, 0.83, 0))
-
         self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
 
         if self.menu_highlight_background is None:
@@ -2239,8 +2234,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         if test_lumi(self.bottom_panel_colour) < 0.2:
             self.corner_icon = [0, 0, 0, 60]
 
-        #if not (self.side_panel_background[0] == self.side_panel_background[1] == self.side_panel_background[2]):
-        #self.queue_background = self.side_panel_background #
         if not self.queue_background:
             self.queue_background = self.side_panel_background
 
@@ -2255,6 +2248,11 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         if self.window_button_x_on is None:
             self.window_button_x_on = self.artist_playing
+
+        if test_lumi(self.column_bar_background) < 0.4:
+            self.column_bar_text = [40, 40, 40, 200]
+            self.column_grip = [255, 255, 255, 20]
+
 
     def light_mode(self):
 
@@ -22138,7 +22136,7 @@ class Over:
             # y += -19 * gui.scale
 
             #ddt.text((x, y), "Adapted from ")
-            link_pa = draw_linked_text((x, y), _("Adapted from") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
+            link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
             link_activate(x, y, link_pa, click=self.click)
 
     def eq(self, x0, y0, w0, h0):
@@ -35696,7 +35694,8 @@ while pctl.running:
                                     colours.window_button_x_on = get_colour_from_line(p)
                                 if "window button x off" in p:
                                     colours.window_button_x_off = get_colour_from_line(p)
-
+                                if "column bar background" in p:
+                                    colours.column_bar_background = get_colour_from_line(p)
 
 
                             colours.post_config()
@@ -36938,10 +36937,10 @@ while pctl.running:
                     rect = [x, top, width, gui.set_height]
 
 
-                    c_bar_background = [30, 30, 30, 255]
+                    c_bar_background = colours.column_bar_background
 
-                    if colours.lm:
-                        c_bar_background = [235, 110, 160, 255]
+                    # if colours.lm:
+                    #     c_bar_background = [235, 110, 160, 255]
 
                     if gui.tracklist_center_mode:
                         ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background, True)
@@ -36988,7 +36987,7 @@ while pctl.running:
 
 
                         ddt.rect(box, bg, True)
-                        ddt.rect(grip, [255, 255, 255, 14], True)
+                        ddt.rect(grip, colours.column_grip, True)
 
                         line = _(item[0])
                         ddt.text_background_colour = bg
@@ -37006,9 +37005,9 @@ while pctl.running:
                         #
                         #     break
                         if line == "❤":
-                            heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, [230, 230, 230, 255])
+                            heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, colours.column_bar_text)
                         else:
-                            ddt.text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
+                            ddt.text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, colours.column_bar_text, 312, bg=bg, max_w=box[2] - 25 * gui.scale)
 
 
                         run += box[2]
