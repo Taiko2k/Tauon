@@ -3764,7 +3764,9 @@ def tag_scan(nt):
                             if item.description == "MusicBrainz Artist Id":
                                 if "'musicbrainz_artistids'" not in nt.misc:
                                     nt.misc['musicbrainz_artistids'] = []
-                                nt.misc['musicbrainz_artistids'].append(item.value)
+                                ids = item.value.split("/")
+                                for id in ids:
+                                    nt.misc['musicbrainz_artistids'].append(id)
                             if item.description == "MusicBrainz Release Group Id":
                                 nt.misc['musicbrainz_releasegroupid'] = item.value
 
@@ -5456,7 +5458,6 @@ class LastFMapi:
 
     API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
     connected = False
-    hold = False
     API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
     scanning_username = ""
 
@@ -5469,6 +5470,7 @@ class LastFMapi:
 
         self.sg = None
         self.url = None
+        self.hold = False
 
     def auth1(self):
 
@@ -5914,6 +5916,7 @@ class ListenBrainz:
         if additional:
             metadata['additional_info'] = additional
 
+        #print(additional)
         data["payload"].append({"track_metadata": metadata})
         data["payload"][0]["listened_at"] = time
 
@@ -6159,8 +6162,6 @@ class LastScrob:
             pctl.b_time = 0
             self.a_pt = False
             self.a_sc = False
-
-
 
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True

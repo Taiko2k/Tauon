@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.5.0
   -todo fix window tools colours
   -todo add theme attribution
+  -todo tweak light theme dialog bg
  - Added new theme "Neon Love"
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
@@ -19,6 +20,8 @@ v5.5.0
  - Fixed queue panel colours for non-dark themes
  - Fixed audio device list not accepting mouse scrolling
  - Fixed playtime not counting near end of track
+ - Fixed a bug where listenbrainz wouldn't work if last.fm was disabled
+ - Fixed a case where listenbrainz submission would fail (requires tag rescan)
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons
