@@ -2129,8 +2129,13 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.corner_button = [255, 255, 255, 50] #[60, 60, 60, 255]
         self.corner_button_active = [255, 255, 255, 230]#[230, 230, 230, 255]
+
         self.window_buttons_bg = [0, 0, 0, 50]
-        self.window_buttons_bg_over = [80, 80, 80, 120]
+        self.window_buttons_bg_over = [255, 255, 255, 10] #[80, 80, 80, 120]
+        self.window_buttons_icon_over = (255, 255, 255, 60)
+        self.window_button_icon_off = (255, 255, 255, 40)
+        self.window_button_x_on = None
+        self.window_button_x_off = self.window_button_icon_off
 
         self.message_box_bg = self.grey(0)
         self.message_box_text = self.grey(230)
@@ -2151,7 +2156,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.bar_title_text = None
 
         self.corner_icon = [40, 40, 40, 255]
-        self.window_button_off = [50, 50, 50, 200]
         self.queue_background = None #self.side_panel_background #self.grey(18) # 18
         self.queue_card_background = self.grey(23)
 
@@ -2167,7 +2171,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.box_title_text = self.grey(245)
         self.box_text = self.grey(240)
         self.box_sub_text = self.grey_blend_bg(225)
-        self.box_input_text = self.grey(190)
+        self.box_input_text = self.grey(225)
         self.box_button_text_highlight = self.grey(250)
         self.box_button_text = self.grey(225)
         self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
@@ -2176,7 +2180,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         # self.box_background = [42,32,65, 255]
         # print("AA")
         # print(rgb_add_hls(self.box_background, 0, 0.17, 0)) # delete me
-        print(self.box_text_label)
+        # print(self.box_text_label)
 
 
 
@@ -2235,9 +2239,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         if test_lumi(self.bottom_panel_colour) < 0.2:
             self.corner_icon = [0, 0, 0, 60]
 
-        if not (self.top_panel_background[0] == self.top_panel_background[1] == self.top_panel_background[2]):
-            self.window_button_off = [255, 255, 255, 30]
-
         #if not (self.side_panel_background[0] == self.side_panel_background[1] == self.side_panel_background[2]):
         #self.queue_background = self.side_panel_background #
         if not self.queue_background:
@@ -2252,6 +2253,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.message_box_text = self.box_text
         self.message_box_border = self.box_border
 
+        if self.window_button_x_on is None:
+            self.window_button_x_on = self.artist_playing
 
     def light_mode(self):
 
@@ -2289,7 +2292,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.corner_button = self.grey(160)
         self.corner_button_active = self.grey(35)
-        self.window_buttons_bg = [0, 0, 0, 5]
+        #self.window_buttons_bg = [0, 0, 0, 5]
         self.message_box_bg = [245, 245, 245, 255]
         self.message_box_text = self.grey(20)
         self.message_box_border = self.grey(40)
@@ -7117,41 +7120,85 @@ def draw_window_tools():
     global mouse_down
     global drag_mode
 
-    if gui.mode == 1:
-        off_icon_colour = colours.window_button_off # [255, 255, 255, 30] #[100, 100, 100, 100]
-    else:
-        off_icon_colour = [120, 120, 120, 45]
-
-    if colours.lm:
-        off_icon_colour = [180, 180, 180, 200]
+    # if gui.mode == 1:
+    #     off_icon_colour = colours.window_button_icon_off # [255, 255, 255, 30] #[100, 100, 100, 100]
+    # else:
+    #     off_icon_colour = [120, 120, 120, 45]
+    #
+    # if colours.lm:
+    #     off_icon_colour = [180, 180, 180, 200]
 
     rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
     fields.add(rect)
 
+    #
+    # ref = colours.top_panel_background
+    # if gui.mode == 3:
+    #     ref = [20, 20, 20, 255]
+    #
+    # # light = test_lumi(colours.top_panel_background) < 0.2
+    # if light:
+    #     colours.window_buttons_bg_over = rgb_add_hls(ref, 0, -0.06, 0)
+    # else:
+    #     colours.window_buttons_bg_over = rgb_add_hls(ref, 0, 0.06, 0)
+    #
+    # if light:
+    #     colours.window_buttons_icon = rgb_add_hls(ref, 0, -0.3, 0)
+    # else:
+    #     colours.window_buttons_icon = rgb_add_hls(ref, 0, 0.3, 0)
+    #
+    # if light:
+    #     colours.window_buttons_bg = rgb_add_hls(ref, 0, 0.02, 0)
+    # else:
+    #     colours.window_buttons_bg = rgb_add_hls(ref, 0, -0.04, 0)
+    #
+    #
+    # #colours.window_buttons_icon = alpha_mod(colours.window_buttons_bg, 100)
+    #
+    # if not gui.mode == 3:
+    #     colours.window_buttons_bg = alpha_mod(colours.window_buttons_bg, 100)
+    # else:
+    #     colours.window_buttons_bg_over = alpha_mod(colours.window_buttons_bg_over, 140)
+    #     colours.window_buttons_bg = alpha_mod(colours.window_buttons_bg, 160)
+    #     colours.window_buttons_icon = [170, 170, 170, 255]
+    #     off_icon_colour = [150, 150, 150, 255]
+
+    bg_off = colours.window_buttons_bg
+    bg_on = colours.window_buttons_bg_over
+    fg_off = colours.window_button_icon_off
+    fg_on = colours.window_buttons_icon_over
+    x_on = colours.window_button_x_on
+    x_off = colours.window_button_x_off
+
     if gui.mode == 3:
 
+        bg_off = [0, 0, 0, 50]
+        bg_on = [255, 255, 255, 10]
+        fg_off =(255, 255, 255, 40)
+        fg_on = (255, 255, 255, 60)
+
         rect = (window_size[0] - 96 * gui.scale, 1 * gui.scale, 30 * gui.scale, 28 * gui.scale)
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg, True)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
         fields.add(rect)
         if coll(rect):
-            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
-            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, [160, 160, 160, 160])
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
+            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
             if (input.mouse_click or ab_click) and coll_point(click_location, rect):
 
                 restore_full_mode()
                 gui.update += 2
 
         else:
-            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, off_icon_colour)
+            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
 
     rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
-    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg, True)
+    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
     fields.add(rect)
     if coll(rect):
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
         ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                   [160, 160, 160, 160], True)
+                   fg_on, True)
         if (mouse_up or ab_click) and coll_point(click_location, rect):
 
             if tray.active and prefs.min_to_tray:
@@ -7164,19 +7211,19 @@ def draw_window_tools():
             drag_mode = False
     else:
         ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                   off_icon_colour, True)
+                   fg_off, True)
 
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
-    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), colours.window_buttons_bg, True)
+    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off, True)
     fields.add(rect)
     if coll(rect):
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg_over, True)
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
         #top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
         if input.mouse_click or ab_click:
             pctl.running = False
     else:
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, off_icon_colour)
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
 
 
 def draw_window_border():
@@ -7456,8 +7503,8 @@ class Drawing:
                 tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
             ddt.rect(rect, background_highlight_colour, True)
 
-            if background_highlight_colour[3] != 255:
-                background_highlight_colour = None
+            # if background_highlight_colour[3] != 255:
+            #     background_highlight_colour = None
 
             ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_highlight_colour, font,
                      bg=background_highlight_colour)
@@ -11419,7 +11466,7 @@ class RenameTrackBox:
             rename_files.text = prefs.rename_tracks_template
 
         # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-        rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(190), width=300)
+        rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.box_input_text, width=300)
         NRN = rename_files.text
 
         ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.box_text_border)
@@ -11601,7 +11648,7 @@ class SubLyricsBox:
         xx = x
         xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.box_text_label, 212)
         xx += round(6 * gui.scale)
-        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.grey(190), 312)
+        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.box_sub_text, 312)
 
         y += round(19 * gui.scale)
         xx = x
@@ -11614,14 +11661,14 @@ class SubLyricsBox:
             self.active_field = 1
             input.key_tab_press = False
 
-        sub_lyrics_a.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 1, width=rect1[2] - 8 * gui.scale)
+        sub_lyrics_a.draw(xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 1, width=rect1[2] - 8 * gui.scale)
 
         y += round(28 * gui.scale)
 
         xx = x
         xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.box_text_label, 212)
         xx += round(6 * gui.scale)
-        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.grey(190), 312)
+        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.box_sub_text, 312)
 
         y += round(19 * gui.scale)
         xx = x
@@ -11633,7 +11680,7 @@ class SubLyricsBox:
             self.active_field = 2
         #ddt.rect(rect1, [40, 40, 40, 255], True)
         ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-        sub_lyrics_b.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 2, width=rect1[2] - 8 * gui.scale)
+        sub_lyrics_b.draw(xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 2, width=rect1[2] - 8 * gui.scale)
 
 
 sub_lyrics_box = SubLyricsBox()
@@ -22684,8 +22731,9 @@ class Over:
         fields.add(rect)
         hit = False
         if coll(rect):
-            ddt.rect(rect, [255, 255, 255, 15], True)
-            real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
+            ddt.rect(rect, colours.box_button_background_highlight, True)
+            bg_colour = colours.box_button_background
+            real_bg = alpha_blend( colours.box_button_background_highlight, bg_colour)
             ddt.text((x + int(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text_highlight, 211, bg=real_bg)
             if self.click:
                 hit = True
@@ -23514,6 +23562,8 @@ class Over:
                 print("Error draw ext bar")
 
     def config_v(self, x0, y0, w0, h0):
+
+        ddt.text_background_colour = colours.box_background
 
         x = x0 + self.item_x_offset
         y = y0 + 17 * gui.scale
@@ -27998,7 +28048,7 @@ class RadioBox:
         if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
             self.active = False
 
-        ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.sys_title, 213)
+        ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.box_title_text, 213)
 
         yy += round(40 * gui.scale)
 
@@ -28011,7 +28061,7 @@ class RadioBox:
             input.key_tab_press = False
         if not self.radio_field_title.text and not (self.radio_field_active == 1 and editline):
             ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), colours.box_text_label, 312)
-        self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg(180),
+        self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.box_input_text,
                                     active=self.radio_field_active == 1,
                                     width=width, click=gui.level_2_click)
 
@@ -28029,7 +28079,7 @@ class RadioBox:
 
         if not self.radio_field.text and not (self.radio_field_active == 2 and editline):
             ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", colours.box_text_label, 312)
-        self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg(180), active=self.radio_field_active == 2,
+        self.radio_field.draw(x + 14 * gui.scale, yy, colours.box_input_text, active=self.radio_field_active == 2,
                               width=width, click=gui.level_2_click)
 
 
@@ -28083,17 +28133,22 @@ class RadioBox:
             fields.add(rect)
 
             bg = colours.box_background
+            text_colour = colours.box_input_text
 
             playing = pctl.playing_state == 3 and pctl.url == item["stream_url"]
 
             if playing:
-                bg = colours.box_sub_highlight
+                # bg = colours.box_sub_highlight
+                # ddt.rect(rect, bg, True)
+
+                bg = colours.tab_background_active
+                text_colour = colours.tab_text_active
                 ddt.rect(rect, bg, True)
 
             if (radio_entry_menu.active and radio_entry_menu.reference == p) or \
                 (not radio_entry_menu.active and coll(rect)) and not playing:
-
-                bg = colours.box_sub_highlight
+                text_colour = colours.box_sub_text
+                bg = [255, 255, 255, 12]
                 ddt.rect(rect, bg, True)
 
             if coll(rect):
@@ -28105,7 +28160,7 @@ class RadioBox:
                 if level_2_right_click:
                     radio_entry_menu.activate(p)
 
-            text_colour = [200, 200, 200, 255]
+            bg = alpha_blend(bg, colours.box_background)
 
             if item["title"]:
                 ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], text_colour, 212, bg=bg, max_w=rect[2] - 15 * gui.scale)
@@ -32102,8 +32157,10 @@ class Showcase:
         elif window_size[1] / window_size[0] > 0.7:
             x = int(window_size[0] * 0.07)
 
-        bbg = colours.grey(30)
-        bfg = colours.grey(40)
+        # bbg = colours.grey(30)
+        # bfg = colours.grey(40)
+        bbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
+        bfg = rgb_add_hls(colours.playlist_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
         bft = colours.grey(235)
         bbt = colours.grey(200)
 
@@ -32123,6 +32180,7 @@ class Showcase:
             bbt = [255, 255, 255, 200]
 
 
+
         if test_lumi(colours.playlist_panel_background) < 0.7:
             light_mode = True
             t1 = colours.grey(30)
@@ -32135,8 +32193,6 @@ class Showcase:
         #     #          True)
         # else:
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
-
-        print(colours.playlist_panel_background)
 
         if prefs.bg_showcase_only and prefs.art_bg:
             style_overlay.display()
@@ -35632,7 +35688,23 @@ while pctl.running:
                                     colours.box_button_background_highlight = get_colour_from_line(p)
                                 if 'box button border' in p:
                                     colours.box_check_border = get_colour_from_line(p)
-                                    
+
+                                if "window buttons background" in p:
+                                    colours.window_buttons_bg = get_colour_from_line(p)
+                                if "window buttons over" in p:
+                                    colours.window_buttons_bg_over = get_colour_from_line(p)
+                                if "window buttons icon off" in p:
+                                    colours.window_button_icon_off = get_colour_from_line(p)
+                                    colours.window_button_x_off = colours.window_button_icon_off
+                                if "window buttons icon over" in p:
+                                    colours.window_buttons_icon_over = get_colour_from_line(p)
+                                    colours.window_button_x_on = colours.window_buttons_icon_over
+                                if "window button x on" in p:
+                                    colours.window_button_x_on = get_colour_from_line(p)
+                                if "window button x off" in p:
+                                    colours.window_button_x_off = get_colour_from_line(p)
+
+
 
                             colours.post_config()
                             if colours.lm:
@@ -37828,6 +37900,17 @@ while pctl.running:
                         else:
                             ddt.text((x2, y1), tc.comment, value_colour, 12)
 
+            if draw_border and not gui.mode == 3:
+
+                tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
+                fields.add(tool_rect)
+                if not gui.top_bar_mode2 or coll(tool_rect):
+                    draw_window_tools()
+
+                if not fullscreen and not gui.maximized:
+                    draw_window_border()
+
+
             fader.render()
             if pref_box.enabled:
                 # rect = [0, 0, window_size[0], window_size[1]]
@@ -38276,6 +38359,7 @@ while pctl.running:
 
                     queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, True, False)
 
+                    ddt.text_background_colour = colours.queue_card_background
                     ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.box_text_label, 11)
                     ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.box_text_label, 11)
 
@@ -38312,15 +38396,7 @@ while pctl.running:
         tool_tip.render()
         tool_tip2.render()
 
-        if draw_border and not gui.mode == 3:
 
-            tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
-            fields.add(tool_rect)
-            if not gui.top_bar_mode2 or coll(tool_rect):
-                draw_window_tools()
-
-            if not fullscreen and not gui.maximized:
-                draw_window_border()
 
         if console.show:
             rect = (20 * gui.scale, 40 * gui.scale, 475 * gui.scale, 170 * gui.scale)
