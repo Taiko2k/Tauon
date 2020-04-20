@@ -7963,7 +7963,7 @@ def draw_internel_link(x, y, text, colour, font):
 
 
 # No hit detect
-def draw_linked_text(location, text, colour, font, force=False):
+def draw_linked_text(location, text, colour, font, force=False, replace=""):
     base = ""
     link_text = ""
     rest = ""
@@ -7986,6 +7986,10 @@ def draw_linked_text(location, text, colour, font, force=False):
                     break
                 else:
                     link_text += text[i]
+
+    target_link = link_text
+    if replace:
+        link_text = replace
 
     left = ddt.get_text_w(base, font)
     right = ddt.get_text_w(base + link_text, font)
@@ -8014,18 +8018,21 @@ def draw_linked_text(location, text, colour, font, force=False):
     #ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
     ddt.rect((x + left,  y + tweak + 2, right - left, round(1 * gui.scale)), alpha_mod(colours.link_text, 120), True)
 
-    return left, right - left, link_text
+    return left, right - left, target_link
 
 
-def link_activate(x, y, link_pa):
+def link_activate(x, y, link_pa, click=None):
 
     link_rect = [x + link_pa[0], y - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
+    if click is None:
+        click = input.mouse_click
+
     fields.add(link_rect)
     if coll(link_rect):
-        if not input.mouse_click:
+        if not click:
             gui.cursor_want = 3
-        if input.mouse_click:
+        if click:
             webbrowser.open(link_pa[2], new=2, autoraise=True)
             track_box = True
 
@@ -22124,29 +22131,15 @@ class Over:
         self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
         ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.box_text_label, 213)
 
-        # y = y0 + 20 * gui.scale
-        # x = x0 + 315 * gui.scale
-        #
-        # ddt.text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
-        #
-        # y += 25 * gui.scale
-        # # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        # self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
-        # y += 25 * gui.scale
-        # # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
-        # # y += 25 * gui.scale
-        # prefs.center_gallery_text = self.toggle_square(x + round(10 * gui.scale), y, prefs.center_gallery_text, _("Center alignment"))
-        # y += 25 * gui.scale
-        # if album_mode_art_size < 160:
-        #     self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
-        #
-        # y += 40 * gui.scale
-        #
-        # #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
-        #
-        # album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+        if gui.theme_name == "Neon Love":
+            x += 240 * gui.scale
+            y += 7 * gui.scale
+            # x += 165 * gui.scale
+            # y += -19 * gui.scale
+
+            #ddt.text((x, y), "Adapted from ")
+            link_pa = draw_linked_text((x, y), _("Adapted from") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
+            link_activate(x, y, link_pa, click=self.click)
 
     def eq(self, x0, y0, w0, h0):
 
