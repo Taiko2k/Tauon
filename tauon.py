@@ -2181,6 +2181,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
         self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
 
+        self.artist_bio_background = [27, 27, 27, 255]
+        self.artist_bio_text = [230, 230, 230, 255]
 
     def post_config(self):
         
@@ -27618,6 +27620,7 @@ class StandardPlaylist:
                             norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
+                            print(text)
 
                         if prefs.dim_art and album_mode and \
                                 n_track.parent_folder_name \
@@ -30643,14 +30646,16 @@ class QueueBox:
 
         sep_colour = alpha_blend([255, 255, 255, 11], colours.queue_background)
 
-        if not colours.lm:
-            ddt.rect((x, y, w, 3 * gui.scale), sep_colour, True)
-        elif y > gui.panelY + 10 * gui.scale:  # Draw fancy light mode border
+        if y > gui.panelY + 10 * gui.scale:  # Draw fancy light mode border
             gui.queue_frame_draw = y
+        # else:
+        #     if not colours.lm:
+        #         ddt.rect((x, y, w, 3 * gui.scale),  colours.queue_background, True)
+
 
         yy += round(3 * gui.scale)
 
-        box_rect = (x, yy - 3 * gui.scale, w, h)
+        box_rect = (x, yy - 6 * gui.scale, w, h)
         ddt.rect(box_rect, colours.queue_background, True)
         ddt.text_background_colour = colours.queue_background
 
@@ -30658,8 +30663,8 @@ class QueueBox:
             ddt.rect(box_rect, [255, 255, 255, 2], True)
             ddt.text_background_colour = alpha_blend([255, 255, 255, 2], ddt.text_background_colour)
 
-        if y < gui.panelY * 2:
-            ddt.rect((x, y - 3 * gui.scale, w, 30 * gui.scale), colours.queue_background, True)
+        # if y < gui.panelY * 2:
+        #     ddt.rect((x, y - 3 * gui.scale, w, 30 * gui.scale), colours.queue_background, True)
 
         if h > 40 * gui.scale:
             if not pctl.force_queue:
@@ -30667,7 +30672,7 @@ class QueueBox:
                     text = _("Add to Queue")
                 else:
                     text = _("Queue")
-                ddt.text((x + (w // 2), y + 15 * gui.scale, 2), text, [255, 255, 255, 40], 212)
+                ddt.text((x + (w // 2), y + 15 * gui.scale, 2), text, alpha_mod(colours.index_text, 200), 212)
 
         qb_right_click = 0
 
@@ -31440,8 +31445,10 @@ class ArtistInfoBox:
         if right_click and coll((x, y ,w, h)):
             artist_info_menu.activate(in_reference=artist)
 
-        backgound = [27, 27, 27, 255]
-        ddt.rect((x + 10, y + 5, w - 15, h - 5), backgound, True)
+        background = colours.artist_bio_background
+        text_colour = colours.artist_bio_text
+        ddt.rect((x + 10, y + 5, w - 15, h - 5), background, True)
+
 
         if artist != self.artist_on:
 
@@ -31546,7 +31553,7 @@ class ArtistInfoBox:
             artist_picture_render.draw(x + 20 * gui.scale, y + 10 * gui.scale)
             width = text_max_w - (text_max_w % 20)
             if width > 20 * gui.scale:
-                ddt.text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, width, 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
+                ddt.text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, width, 14000), self.processed_text, text_colour, 14.5, bg=background, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -31573,7 +31580,7 @@ class ArtistInfoBox:
                 yy += 19 * gui.scale
 
         else:
-            ddt.text((x + w // 2 , y + h // 2 - 7 * gui.scale , 2), self.status, [80, 80, 80, 255], 313, bg=backgound)
+            ddt.text((x + w // 2 , y + h // 2 - 7 * gui.scale , 2), self.status, [255, 255, 255, 60], 313, bg=background)
 
 
     def get_data(self, artist, get_img_path=False, force_dl=False):
@@ -35697,6 +35704,11 @@ while pctl.running:
                                 if "column bar background" in p:
                                     colours.column_bar_background = get_colour_from_line(p)
 
+                                if "artist bio background" in p:
+                                    colours.artist_bio_background = get_colour_from_line(p)
+                                if "artist bio text" in p:
+                                    colours.artist_bio_text = get_colour_from_line(p)
+
 
                             colours.post_config()
                             if colours.lm:
@@ -37292,7 +37304,7 @@ while pctl.running:
                         rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
                         ddt.rect(rect, colours.queue_background, True)
                         ddt.text_background_colour = colours.queue_background
-                        ddt.text((0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2), text, [255, 255, 255, 40], 212)
+                        ddt.text((0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2), text, alpha_mod(colours.index_text, 200), 212)
 
             # ------------------------------------------------
             # Scroll Bar
