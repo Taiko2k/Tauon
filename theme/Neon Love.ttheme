@@ -35,6 +35,8 @@
 242,239,255,13  select highlight
 242,239,255	    gallery highlight
 
+65,200,229     column bar background
+
 #-Bottom panel------
 
 65,49,104		buttons off

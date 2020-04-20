@@ -39,6 +39,8 @@ light-mode
 0,0,0,14		select highlight
 180,140,255,255	gallery highlight
 
+235,110,160     column bar background
+
 #-Menu-------------
 240,240,240     menu background
 200,200,200     menu highlight
