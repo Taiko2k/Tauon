@@ -2,9 +2,7 @@
 Changelog-------------------------------------
 
 v5.5.0
-  -todo fix window tools colours
-  -todo add theme attribution
-  -todo tweak light theme dialog bg
+
  - Added new theme "Neon Love"
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)

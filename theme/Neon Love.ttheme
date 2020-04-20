@@ -8,6 +8,7 @@
 42,32,65		side panel
 31,23,49		bottom panel
 42,32,69        queue panel
+42,32,65        gallery background
 
 #-Playlist-------
 
@@ -64,7 +65,15 @@
 
 242,239,255		music vis
 
+31,23,49     window buttons background
+242,239,255     window buttons over
+65,49,104     window buttons icon off
+31,23,49     window buttons icon over
+# window button x on
+# window button x off
+
 #-Menu-------------
+
 31,23,49        menu background
 60,40,100       menu highlight
 60,40,100 	 	menu border
@@ -77,19 +86,19 @@
 42,32,65        box background
 79, 60, 123     box border
 
-242,239,255        box title text
+242,239,255     box title text
 118, 100, 160   box text label
 
-242,239,255        box text normal
-242,239,255        box sub text
-#        box input text
-64, 48, 99       box text border
+242,239,255     box text normal
+242,239,255     box sub text
+242,239,255     box input text
+64,48,99        box text border
 
 #        box button text normal
 #        box button text highlight
-64, 48, 99       box button background normal
-#        box button background highlight
-64, 48, 99        box button border
+64,48,99        box button background normal
+79,60,123       box button background highlight
+64,48,99        box button border
 
 #-Misc--------------
 
