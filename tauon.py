@@ -1264,6 +1264,7 @@ class Prefs:    # Used to hold any kind of settings
         self.radio_urls = []
 
         self.lyric_metadata_panel_top = False
+        self.showcase_overlay_texture = True
 
 
 prefs = Prefs()
@@ -2036,10 +2037,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         return [255, 255, 255, value]
 
     def grey_blend_bg(self, value):
-        return alpha_blend((255, 255, 255, value), self.sys_background)
-
-    def grey_blend_bg3(self, value):
-        return alpha_blend((255, 255, 255, value), self.sys_background_3)
+        return alpha_blend((255, 255, 255, value), self.box_background)
 
     def __init__(self):
 
@@ -2049,16 +2047,12 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.last_album = ""
         self.link_text = [100, 200, 252, 255]
 
-        self.sep_line = self.grey(21)
-        self.bb_line = self.grey(21)
-        self.tb_line = self.grey(21)
+        self.tb_line = self.grey(21)  # not currently used
         self.art_box = self.grey(24)
 
         self.volume_bar_background = self.grey(30)
-        #self.volume_bar_outline = self.grey(100)
         self.volume_bar_fill = self.grey(125)
         self.seek_bar_background = self.grey(30)
-        #self.seek_bar_outline = self.grey(100)
         self.seek_bar_fill = self.grey(80)
 
         self.tab_text_active = self.grey(230)
@@ -2124,9 +2118,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.menu_highlight_background = None
         self.menu_text = [230, 230, 230, 255]
         self.menu_text_disabled = self.grey(50)
-        self.menu_icons = None
+        self.menu_icons = [255, 255, 255, 25]
         self.menu_tab = self.grey(30)
-
 
         self.gallery_highlight = self.artist_playing
 
@@ -2164,35 +2157,37 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.window_frame = [30, 30, 30, 255]
 
-        self.track_info_border = self.grey(75)
-        self.sys_background_3 = [16, 16, 16, 255]
-        self.text_box_border = self.grey(50)
+        self.box_background = [16, 16, 16, 255]
+        self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
+        self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
+        self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
+        self.box_sub_highlight = rgb_add_hls(self.box_background, 0, 0.07, -0.05)  # 58, 47, 85
+        self.box_check_border = [255, 255, 255, 18]
 
-        self.sys3_text_key_off = self.grey_blend_bg3(90)
+        self.box_title_text = self.grey(245)
+        self.box_text = self.grey(240)
+        self.box_sub_text = self.grey_blend_bg(225)
+        self.box_input_text = self.grey(190)
+        self.box_button_text_highlight = self.grey(250)
+        self.box_button_text = self.grey(225)
+        self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
+        self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
+
+        # self.box_background = [42,32,65, 255]
+        # print("AA")
+        # print(rgb_add_hls(self.box_background, 0, 0.17, 0)) # delete me
+        print(self.box_text_label)
 
 
-        self.sys3_text_value = self.grey_blend_bg3(225)
-
-
-
-
-        #self.post_config()
 
     def post_config(self):
+        
         # Pre calculate alpha blend for spec background
         self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
         self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
         self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
 
-        self.sys_background_2 = self.tab_background
-
-
-        self.sys_background_4 = self.bottom_panel_colour
-
-        if not self.lm:
-            self.sys_background_3 = self.top_panel_background
-
-        self.message_box_bg = self.sys_background_3
+        self.message_box_bg = self.box_background
         self.sys_tab_bg = self.tab_background
         self.sys_tab_hl = self.tab_background_active
         self.toggle_box_on = self.folder_title
@@ -2253,31 +2248,18 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         if self.menu_background is None and not self.lm:
             self.menu_background = self.bottom_panel_colour
-        self.sys_background = self.menu_background
 
-        if not self.lm and not self.menu_icons:
-            self.menu_icons = [255, 255, 255, 25]
-            # h, l, s = rgb_to_hls(*self.menu_background[:3])
-            # l += 0.128
-            #
-            # self.menu_icons = hls_to_rgb(h, l, s)
+        self.message_box_text = self.box_text
+        self.message_box_border = self.box_border
 
-        self.track_info_border = rgb_add_hls(self.sys_background_3, 0, 0.17, 0)
-
-        self.text_box_border = rgb_add_hls(self.sys_background_3, 0, 0.1, 0)
-
-        self.sys3_text_key_off = rgb_add_hls(self.sys_background_3, 0, 0.33, -0.1)
 
     def light_mode(self):
 
         self.lm = True
         self.star_line_playing = [255, 255, 255, 255]
-        self.sys_background = self.grey(20)
-        self.sys_background_2 = self.grey(25)
         self.sys_tab_bg = self.grey(25)
         self.sys_tab_hl = self.grey(45)
-        self.sys_background_3 = self.grey(30)
-        self.sys_background_4 = self.grey(19)
+        # self.box_background = self.grey(30)
         self.toggle_box_on = self.tab_background_active
         if colour_value(self.tab_background_active) < 250:
             self.toggle_box_on = [255, 255, 255, 200]
@@ -2310,6 +2292,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.window_buttons_bg = [0, 0, 0, 5]
         self.message_box_bg = [245, 245, 245, 255]
         self.message_box_text = self.grey(20)
+        self.message_box_border = self.grey(40)
         self.gallery_background = self.grey(230)
         self.gallery_artist_line = self.grey(40)
         self.pluse_colour = [212, 66, 244, 255]
@@ -3154,6 +3137,7 @@ def save_prefs():
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
     #cf.update_value("prefer-center-bg", prefs.center_bg)
+    cf.update_value("showcase-texture-background", prefs.showcase_overlay_texture)
     cf.update_value("side-panel-style", prefs.side_panel_layout)
     cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
     cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
@@ -3290,6 +3274,7 @@ def load_prefs():
     prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
 
     #prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
+    prefs.showcase_overlay_texture = cf.sync_add("bool", "showcase-texture-background", prefs.showcase_overlay_texture, "Draw pattern over background art")
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
     prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
     prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
@@ -7451,13 +7436,13 @@ class Drawing:
         fields.add(rect)
 
         if text_highlight_colour is None:
-            text_highlight_colour = colours.grey(250)
+            text_highlight_colour = colours.box_button_text_highlight
         if text_colour is None:
-            text_colour = colours.grey(220)
+            text_colour = colours.box_button_text
         if backgound_colour is None:
-            backgound_colour = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
+            backgound_colour = colours.box_button_background
         if background_highlight_colour is None:
-            background_highlight_colour = alpha_blend([255, 255, 255, 20], colours.sys_background_3)
+            background_highlight_colour = colours.box_button_background_highlight
 
         click = False
 
@@ -11397,10 +11382,10 @@ class RenameTrackBox:
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
 
-        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.track_info_border,
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border,
                    True)
-        ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
-        ddt.text_background_colour = colours.sys_background_3
+        ddt.rect_a((x, y), (w, h), colours.box_background, True)
+        ddt.text_background_colour = colours.box_background
 
         if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
             rename_track_box.active = False
@@ -11436,7 +11421,7 @@ class RenameTrackBox:
         rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(190), width=300)
         NRN = rename_files.text
 
-        ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.text_box_border)
+        ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.box_text_border)
 
         afterline = ""
         warn = False
@@ -11451,11 +11436,11 @@ class RenameTrackBox:
             if item == self.target_track_id:
                 afterline = parse_template2(NRN, pctl.master_library[item])
 
-        ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.sys3_text_key_off, 212)
+        ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.box_text_label, 212)
         line = trunc_line(pctl.master_library[self.target_track_id].filename, 12, 335)
         ddt.text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
 
-        ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.sys3_text_key_off, 212)
+        ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.box_text_label, 212)
         ddt.text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
 
         if (len(NRN) > 3 and len(pctl.master_library[self.target_track_id].filename) > 3 and afterline[-3:].lower() !=
@@ -11587,10 +11572,10 @@ class SubLyricsBox:
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
 
-        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.track_info_border,
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border,
                    True)
-        ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
-        ddt.text_background_colour = colours.sys_background_3
+        ddt.rect_a((x, y), (w, h), colours.box_background, True)
+        ddt.text_background_colour = colours.box_background
 
         if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
             self.active = False
@@ -11613,17 +11598,17 @@ class SubLyricsBox:
         x += round(23 * gui.scale)
 
         xx = x
-        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.sys3_text_key_off, 212)
+        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.box_text_label, 212)
         xx += round(6 * gui.scale)
         ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.grey(190), 312)
 
         y += round(19 * gui.scale)
         xx = x
-        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.sys3_text_key_off, 212)
+        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.box_text_label, 212)
         xx += round(6 * gui.scale)
         rect1 = (xx, y, round(250 * gui.scale), round(17 * gui.scale))
         fields.add(rect1)
-        ddt.bordered_rect(rect1, colours.sys_background_3, colours.text_box_border, round(1 * gui.scale))
+        ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
         if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 2):
             self.active_field = 1
             input.key_tab_press = False
@@ -11633,20 +11618,20 @@ class SubLyricsBox:
         y += round(28 * gui.scale)
 
         xx = x
-        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.sys3_text_key_off, 212)
+        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.box_text_label, 212)
         xx += round(6 * gui.scale)
         ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.grey(190), 312)
 
         y += round(19 * gui.scale)
         xx = x
-        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.sys3_text_key_off, 212)
+        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.box_text_label, 212)
         xx += round(6 * gui.scale)
         rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
         fields.add(rect1)
         if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 1):
             self.active_field = 2
         #ddt.rect(rect1, [40, 40, 40, 255], True)
-        ddt.bordered_rect(rect1, colours.sys_background_3, colours.text_box_border, round(1 * gui.scale))
+        ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
         sub_lyrics_b.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 2, width=rect1[2] - 8 * gui.scale)
 
 
@@ -19765,7 +19750,7 @@ class MessageBox:
         x, y, w, h = self.get_rect()
 
         ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
-                   colours.text_box_border, True)
+                   colours.box_text_border, True)
         ddt.rect_a((x, y), (w, h), colours.message_box_bg, True)
 
         ddt.text_background_colour = colours.message_box_bg
@@ -22055,7 +22040,8 @@ class Over:
         y = y0 + 20 * gui.scale
         x = x0 + 25 * gui.scale
 
-        ddt.text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
+        ddt.text_background_colour = colours.box_background
+        ddt.text((x, y), _("Theme"), colours.box_text_label, 12)
 
         y += 25 * gui.scale
 
@@ -22080,6 +22066,7 @@ class Over:
 
         y += 23 * gui.scale
         #prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
+        prefs.showcase_overlay_texture = self.toggle_square(x + 20 * gui.scale, y, prefs.showcase_overlay_texture, _("Pattern style"))
 
         y += 65 * gui.scale
 
@@ -22087,7 +22074,7 @@ class Over:
         self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
         #. Limited space. Max 14 chars.
         self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
-        ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+        ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.box_text_label, 213)
 
         # y = y0 + 20 * gui.scale
         # x = x0 + 315 * gui.scale
@@ -22187,7 +22174,7 @@ class Over:
             self.eq(x0, y0, w0, h0)
             return
 
-        colour = [220, 220, 220, 255]
+        colour = colours.box_sub_text
 
         if not macos and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
             if arch == "x86_64":
@@ -22209,7 +22196,7 @@ class Over:
             self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                                        ")
 
         if system == "linux":
-            ddt.text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
+            ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
             self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
         # Gstreamer
@@ -22222,7 +22209,7 @@ class Over:
             bk_gain = prefs.replay_gain
 
             if not prefs.gst_use_custom_output:
-                ddt.text((x, y), _("ReplayGain"), colours.grey_blend_bg(90), 12)
+                ddt.text((x, y), _("ReplayGain"), colours.box_text_label, 12)
                 y += round(22 * gui.scale)
 
                 self.toggle_square(x, y, switch_rg_off, "Off")
@@ -22254,8 +22241,10 @@ class Over:
             y = y0 + 37 * gui.scale
             x = x0 + 270 * gui.scale
 
+            ddt.text_background_colour = colours.box_background
+
             if not prefs.gst_use_custom_output:
-                ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
+                ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_text_label, 212)
 
                 self.device_scroll_bar_position -= pref_box.scroll
                 if self.device_scroll_bar_position < 0:
@@ -22288,13 +22277,13 @@ class Over:
                     fields.add(rect)
 
                     if prefs.gst_device == name:
-                        ddt.text((x, y), line, [255, 255, 255, 120], 10)
-                        ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
+                        ddt.text((x, y), line, colours.box_sub_text, 10)
+                        ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
                     else:
                         if coll(rect):
-                            ddt.text((x, y), line, [255, 255, 255, 120], 10)
+                            ddt.text((x, y), line, colours.box_sub_text, 10)
                         else:
-                            ddt.text((x, y), line, [255, 255, 255, 70], 10)
+                            ddt.text((x, y), line, colours.box_text_label, 10)
                     y += 14 * gui.scale
 
             if not prefs.gst_use_custom_output:
@@ -22312,12 +22301,12 @@ class Over:
             if self.button(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
                 self.eq_view = True
 
-
+            ddt.text_background_colour = colours.box_background
             y = y0 + 88 * gui.scale
             x = x0 + 25 * gui.scale
 
             x += 4 * gui.scale
-            ddt.text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(90), 12)
+            ddt.text((x, y - 22 * gui.scale), _("ReplayGain"),  colours.box_text_label, 12)
 
             y += 4 * gui.scale
 
@@ -22331,7 +22320,7 @@ class Over:
 
             y += 46 * gui.scale
 
-            ddt.text((x, y - 20 * gui.scale), _("Transitions"), colours.grey_blend_bg(90), 12)
+            ddt.text((x, y - 20 * gui.scale), _("Transitions"),  colours.box_text_label, 12)
 
             y += 5 * gui.scale
 
@@ -22350,7 +22339,7 @@ class Over:
             y = y0 + 37 * gui.scale
             x = x0 + 270 * gui.scale
 
-            ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
+            ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_sub_text, 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             self.device_scroll_bar_position -= pref_box.scroll
@@ -22385,13 +22374,13 @@ class Over:
                 fields.add(rect)
 
                 if pctl.set_device == item[4]: #item[3] > 0:
-                    ddt.text((x, y), line, [255, 255, 255, 120], 10)
-                    ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
+                    ddt.text((x, y), line, colours.box_sub_text, 10)
+                    ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
                 else:
                     if coll(rect):
-                        ddt.text((x, y), line, [255, 255, 255, 120], 10)
+                        ddt.text((x, y), line, colours.box_sub_text, 10)
                     else:
-                        ddt.text((x, y), line, [255, 255, 255, 70], 10)
+                        ddt.text((x, y), line, colours.box_text_label, 10)
                 y += 14 * gui.scale
 
             y = y0 + 245 * gui.scale
@@ -22421,12 +22410,14 @@ class Over:
         y = y0 - 10 * gui.scale
         y += 30 * gui.scale
 
+        ddt.text_background_colour = colours.box_background
+
         self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
         y += 40 * gui.scale
-        ddt.text((x, y), _("Sources:"), colours.grey(100), 11)
+        ddt.text((x, y), _("Sources:"), colours.box_text_label, 11)
         y += 23 * gui.scale
 
         for name in lyric_sources.keys():
@@ -22444,10 +22435,10 @@ class Over:
 
         y += round(6 * gui.scale)
         ddt.text((x + 12 * gui.scale, y), _("*Uses scraping. Enable at your own discretion."),
-                 colours.grey_blend_bg(90), 11)
+                 colours.box_text_label, 11)
         y += 20 * gui.scale
         ddt.text((x + 12 * gui.scale, y), _("Tip: The order enabled will be the order searched."),
-                 colours.grey_blend_bg(90), 11)
+                 colours.box_text_label, 11)
         y += 20 * gui.scale
 
 
@@ -22456,7 +22447,9 @@ class Over:
         x = x0 + 25 * gui.scale
         y = y0 + 20 * gui.scale
 
-        ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
+        ddt.text_background_colour = colours.box_background
+
+        ddt.text((x, y), _("Metadata side panel"), colours.box_text_label, 12)
         #
         y += 25 * gui.scale
 
@@ -22464,7 +22457,7 @@ class Over:
 
         y += 30 * gui.scale
 
-        ddt.text((x, y), _("Bottom panel"), colours.grey_blend_bg(100), 12)
+        ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
 
         y += 25 * gui.scale
         prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
@@ -22472,7 +22465,7 @@ class Over:
         global album_mode_art_size
         global update_layout
         y += 30 * gui.scale
-        ddt.text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
+        ddt.text((x, y), _("Gallery"), colours.box_text_label, 12)
 
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
@@ -22506,6 +22499,8 @@ class Over:
 
         x = x0 + 25 * gui.scale
         y = y0 - 10 * gui.scale
+
+        ddt.text_background_colour = colours.box_background
 
         if self.chart_view == 1:
             self.topchart(x0, y0, w0, h0)
@@ -22594,11 +22589,11 @@ class Over:
 
             if toggle_enable_web(1):
 
-                # link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
+                # link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg(190), 12)
                 # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
                 # fields.add(link_rect)
 
-                link_pa2 = draw_linked_text((x + 280 * gui.scale, y - 6 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg3(190), 13)
+                link_pa2 = draw_linked_text((x + 280 * gui.scale, y - 6 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg(190), 13)
                 link_rect2 = [x + 280 * gui.scale, y - 6 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
 
@@ -22619,7 +22614,7 @@ class Over:
             y += 60 * gui.scale
             x += 320 * gui.scale
 
-            ddt.text((x, y), _("Show in context menus:"), [255, 255, 255, 60], 11)
+            ddt.text((x, y), _("Show in context menus:"), colours.box_text_label, 11)
             y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_wiki, _("Wikipedia search"))
@@ -22653,25 +22648,25 @@ class Over:
         rect2 = (rect[0] - border_size, rect[1] - border_size, rect[2] + border_size * 2, rect[3] + border_size * 2)
 
         if bg is None:
-            bg = colours.sys_background
+            bg = colours.box_background
 
         real_bg = bg
         hit = False
 
-        ddt.rect(rect2, [255, 255, 255, 18], True)
+        ddt.rect(rect2, colours.box_check_border, True)
         ddt.rect(rect, bg, True)
 
         fields.add(rect)
         if coll(rect):
             ddt.rect(rect, [255, 255, 255, 15], True)
             real_bg = alpha_blend([255, 255, 255, 15], bg)
-            ddt.text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(250), 211, bg=real_bg)
+            ddt.text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.box_title_text, 211, bg=real_bg)
             if self.click:
                 hit = True
                 if plug is not None:
                     plug()
         else:
-            ddt.text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(225), 211, bg=real_bg)
+            ddt.text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.box_sub_text, 211, bg=real_bg)
 
         return hit
 
@@ -22681,7 +22676,7 @@ class Over:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
 
-        bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
+        bg_colour = colours.box_button_background
         real_bg = bg_colour
 
         ddt.rect(rect, bg_colour, True)
@@ -22690,11 +22685,11 @@ class Over:
         if coll(rect):
             ddt.rect(rect, [255, 255, 255, 15], True)
             real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
-            ddt.text((x + int(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.grey_blend_bg(240), 211, bg=real_bg)
+            ddt.text((x + int(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text_highlight, 211, bg=real_bg)
             if self.click:
                 hit = True
         else:
-            ddt.text((x + round(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.grey_blend_bg(220), 211, bg=real_bg)
+            ddt.text((x + round(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text, 211, bg=real_bg)
         return hit
 
     def toggle_square(self, x, y, function, text):
@@ -22708,12 +22703,12 @@ class Over:
 
         full_w = border * 2 + gap * 2 + inner_square
 
-        le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.grey_blend_bg(230), 13)
+        le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
 
         # Border outline
-        ddt.rect_a((x, y), (full_w, full_w), [255, 255, 255, 17], True)
+        ddt.rect_a((x, y), (full_w, full_w), colours.box_check_border, True)
         # Inner background
-        ddt.rect_a((x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square), alpha_blend([255, 255, 255, 14], colours.sys_background), True)
+        ddt.rect_a((x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square), alpha_blend([255, 255, 255, 14], colours.box_background), True)
 
         # Check if box clicked
         clicked = False
@@ -22745,7 +22740,7 @@ class Over:
         x = x0 + round(20 * gui.scale)
         y = y0 + round(20 * gui.scale)
 
-
+        ddt.text_background_colour = colours.box_background
         if self.button2(x, y, "Last.fm", width=84*gui.scale):
             self.account_view = 1
         self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
@@ -22782,18 +22777,18 @@ class Over:
 
         if self.account_view == 4:
 
-            ddt.text((x, y), 'fanart.tv', colours.grey_blend_bg(220), 213)
+            ddt.text((x, y), 'fanart.tv', colours.box_sub_text, 213)
 
             y += 25 * gui.scale
             ddt.text((x + 0 * gui.scale, y, 4, 270 * gui.scale, 600), _("Fanart.tv can be used for sourcing of artist images and cover art."),
-                     colours.grey_blend_bg(90), 11)
+                     colours.box_text_label, 11)
             y += 17 * gui.scale
 
 
             y += 22 * gui.scale
             #. Limited space available. Limit 55 chars.
             link_pa2 = draw_linked_text((x + 0 * gui.scale, y), _("They encourage you to contribute at https://fanart.tv"),
-                     colours.grey_blend_bg(90), 11)
+                     colours.box_text_label, 11)
             link_activate(x, y, link_pa2)
 
             y += 35 * gui.scale
@@ -22803,16 +22798,16 @@ class Over:
 
         if self.account_view == 3:
 
-            ddt.text((x, y), 'Discogs', colours.grey_blend_bg(220), 213)
+            ddt.text((x, y), 'Discogs', colours.box_sub_text, 213)
 
             y += 25 * gui.scale
             hh = ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
-                     colours.grey_blend_bg(90), 11)
+                     colours.box_text_label, 11)
 
 
             y += hh
             #y += 15 * gui.scale
-            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers", colours.grey_blend_bg3(190), 12)
+            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers",colours.box_text_label, 12)
             link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
             if coll(link_rect2):
@@ -22857,7 +22852,7 @@ class Over:
 
             y += 30 * gui.scale
             if prefs.discogs_pat:
-                ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.grey_blend_bg(180), 211)
+                ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.box_input_text, 211)
 
 
 
@@ -22866,8 +22861,8 @@ class Over:
             ddt.text((x, y), 'Last.fm', colours.grey_blend_bg(220), 213)
 
             ww = ddt.get_text_w(_("Username:"), 212)
-            ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.grey_blend_bg(60), 212)
-            ddt.text((x + ww + 65 * gui.scale + 7 * gui.scale, y - 0 * gui.scale), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
+            ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.box_text_label, 212)
+            ddt.text((x + ww + 65 * gui.scale + 7 * gui.scale, y - 0 * gui.scale), prefs.last_fm_username, colours.box_sub_text, 213)
 
             y += 25 * gui.scale
 
@@ -22878,7 +22873,7 @@ class Over:
 
                 y += 25 * gui.scale
                 ddt.text((x + 2 * gui.scale, y, 4, 270 * gui.scale, 300 * gui.scale), _("Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."),
-                         colours.grey_blend_bg(90), 11, max_w=270 * gui.scale)
+                         colours.box_text_label, 11, max_w=270 * gui.scale)
 
             else:
                 self.button(x, y, _("Forget account"), lastfm.auth3)
@@ -22916,7 +22911,7 @@ class Over:
 
         if self.account_view == 2:
 
-            ddt.text((x, y), 'ListenBrainz', colours.grey_blend_bg(220), 213)
+            ddt.text((x, y), 'ListenBrainz', colours.box_sub_text, 213)
 
             y += 30 * gui.scale
             self.button(x, y, _("Paste Token"), lb.paste_key)
@@ -22927,10 +22922,10 @@ class Over:
 
             if prefs.lb_token:
                 line = prefs.lb_token
-                ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), line, colours.grey_blend_bg(180), 212)
+                ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), line, colours.box_input_text, 212)
 
             y += 25 * gui.scale
-            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
+            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://listenbrainz.org/profile/", colours.box_sub_text, 12)
             link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
 
@@ -22979,8 +22974,8 @@ class Over:
         y = y0
 
         y += 20 * gui.scale
-
-        ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), [255, 255, 255, 60], 11)
+        ddt.text_background_colour = colours.box_background
+        ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.box_text_label, 11)
 
         ww = ddt.get_text_w(_("Open output folder"), 211) + 25 * gui.scale
         self.button(x0 + w0 - ww, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
@@ -23035,7 +23030,7 @@ class Over:
         x = x0 + round(25 * gui.scale)
         y = y0 + round(20 * gui.scale)
 
-        ddt.text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
+        ddt.text((x, y), _("Window"),colours.box_text_label, 12)
 
         y += 28 * gui.scale
 
@@ -23067,7 +23062,7 @@ class Over:
 
         y += 32 * gui.scale
 
-        ddt.text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
+        ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
 
         if system != 'windows':
             y += 25 * gui.scale
@@ -23110,7 +23105,7 @@ class Over:
         x = x0 + int(w0 * 0.3) - 10 * gui.scale
         y = y0 + 95 * gui.scale
 
-        ddt.text_background_colour = colours.sys_background
+        ddt.text_background_colour = colours.box_background
 
         icon_rect = (x - 110 * gui.scale, y - 15 * gui.scale, self.about_image.w, self.about_image.h)
 
@@ -23137,7 +23132,7 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        ddt.text((x, y + 4 * gui.scale), t_title, colours.grey_blend_bg(233), 216)
+        ddt.text((x, y + 4 * gui.scale), t_title, colours.box_title_text, 216)
 
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
@@ -23177,11 +23172,11 @@ class Over:
 
         if self.cred_page == 0:
 
-            ddt.text((x, y - 6 * gui.scale), t_version, colours.grey_blend_bg(90), 313)
+            ddt.text((x, y - 6 * gui.scale), t_version, colours.box_text_label, 313)
             y += 20 * gui.scale
-            ddt.text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.grey_blend_bg(195), 13)
+            ddt.text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
             y += 21 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmusicbox", colours.grey_blend_bg3(190), 12)
+            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmusicbox", colours.box_sub_text, 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
@@ -23195,24 +23190,24 @@ class Over:
 
             y += 15 * gui.scale
 
-            ddt.text((x, y + 1 * gui.scale), "Created by", colours.grey_blend_bg(90), 13)
+            ddt.text((x, y + 1 * gui.scale), "Created by", colours.box_text_label, 13)
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey_blend_bg(220), 13)
 
             y += 25 * gui.scale
 
-            ddt.text((x, y), "Translations", colours.grey_blend_bg(90), 13)
+            ddt.text((x, y), "Translations", colours.box_text_label, 13)
             yy = y
-            ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.grey_blend_bg(220), 13)
+            ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.box_sub_text, 13)
             y += 19 * gui.scale
-            ddt.text((x + 120 * gui.scale, y), "brunob", colours.grey_blend_bg(220), 13)
+            ddt.text((x + 120 * gui.scale, y), "brunob", colours.box_sub_text, 13)
             y += 19 * gui.scale
 
             y = yy
-            ddt.text((x + 210 * gui.scale, y), "eson57", colours.grey_blend_bg(220), 13)
+            ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
             y += 19 * gui.scale
-            ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.grey_blend_bg(220), 13)
+            ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
 
-        ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.sys_background, fade), True)
+        ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)
 
         # x = self.box_x + self.w - 100 * gui.scale
         # y = self.box_y + self.h - 35 * gui.scale
@@ -23238,11 +23233,13 @@ class Over:
         x = x0 + round(25 * gui.scale)
         y = y0 + 20 * gui.scale
 
-        ddt.text((x, y), _("Chart Grid Generator"), colours.grey(250), 214)
+        ddt.text_background_colour = colours.box_background
+
+        ddt.text((x, y), _("Chart Grid Generator"), colours.box_text, 214)
 
         y += 25 * gui.scale
-        ww = ddt.text((x, y), _("Target playlist:   "), colours.grey_blend_bg(220), 312)
-        ddt.text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.grey_blend_bg(100), 12, 400 * gui.scale)
+        ww = ddt.text((x, y), _("Target playlist:   "), colours.box_sub_text, 312)
+        ddt.text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.box_text_label, 12, 400 * gui.scale)
         #x -= 210 * gui.scale
 
 
@@ -23335,7 +23332,7 @@ class Over:
 
         if gui.generating_chart:
             ddt.text((x + 85 * gui.scale, y + 2 * gui.scale), _("Generating..."),
-                     [100, 100, 100, 255], 11)
+                     colours.box_text_label, 11)
 
         y += 27 * gui.scale
 
@@ -23345,7 +23342,7 @@ class Over:
 
         line = str(count) + " Album chart"
 
-        ddt.text((x + 37 * gui.scale, y, 2), line, colours.grey_blend_bg(100),
+        ddt.text((x + 37 * gui.scale, y, 2), line, colours.box_text_label,
                  12)
 
         if len(dex) < count:
@@ -23373,8 +23370,10 @@ class Over:
         if system == 'linux' and self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
             self.chart_view = 1
 
+
+        ddt.text_background_colour = colours.box_background
         lt_font = 312
-        lt_colour = colours.grey_blend_bg(85)
+        lt_colour = colours.box_text_label
 
         w1 = ddt.get_text_w(_("Tracks in playlist"), 12)
         w2 = ddt.get_text_w(_("Albums in playlist"), 12)
@@ -23418,14 +23417,14 @@ class Over:
         line = str(datetime.timedelta(seconds=int(self.stats_pl_length)))
 
         ddt.text((x1, y1), _("Tracks in playlist"), lt_colour, lt_font)
-        ddt.text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(220), 12)
+        ddt.text((x2, y1), '{:,}'.format(len(default_playlist)), colours.box_sub_text, 12)
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Albums in playlist"), lt_colour, lt_font)
-        ddt.text((x2, y1), str(self.stats_pl_albums), colours.grey_blend_bg(220), 12)
+        ddt.text((x2, y1), str(self.stats_pl_albums), colours.box_sub_text, 12)
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Playlist duration"), lt_colour, lt_font)
 
-        ddt.text((x2, y1), line, colours.grey_blend_bg(220), 12)
+        ddt.text((x2, y1), line, colours.box_sub_text, 12)
 
         if self.stats_timer.get() > 5:
             album_names = set()
@@ -23453,15 +23452,15 @@ class Over:
 
         y1 += 40 * gui.scale
         ddt.text((x1, y1), _("Tracks in database"), lt_colour, lt_font)
-        ddt.text((x2, y1), locale.format_string('%d', len(pctl.master_library), True), colours.grey_blend_bg(220), 12)
+        ddt.text((x2, y1), locale.format_string('%d', len(pctl.master_library), True), colours.box_sub_text, 12)
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Total albums"), lt_colour, lt_font)
-        ddt.text((x2, y1), str(self.total_albums), colours.grey_blend_bg(220), 12)
+        ddt.text((x2, y1), str(self.total_albums), colours.box_sub_text, 12)
 
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Total playtime"), lt_colour, lt_font)
         ddt.text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
-                 colours.grey_blend_bg(220), 15)
+                 colours.box_sub_text, 15)
 
         # Ratio bar
         if len(pctl.master_library) > 115 * gui.scale:
@@ -23563,7 +23562,7 @@ class Over:
         # x -= 90 * gui.scale
         x = x0 + self.item_x_offset
 
-        ddt.text((x, y), _("End of playlist action"), colours.grey_blend_bg(90), 12)
+        ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 12)
 
         y += 25 * gui.scale
         wa = ddt.get_text_w(_("Stop playback"), 13) + 10 * gui.scale
@@ -23623,12 +23622,12 @@ class Over:
         width = width * gui.scale
 
         if label is not None:
-            ddt.text((x + 55 * gui.scale, y, 1), label, colours.grey_blend_bg(230), 11)
+            ddt.text((x + 55 * gui.scale, y, 1), label, colours.box_text, 11)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
-        ddt.rect(rect, [255, 255, 255, 20], True)
+        ddt.rect(rect, colours.box_button_background, True)
         abg = [255, 255, 255, 40]
         if coll(rect):
 
@@ -23648,14 +23647,14 @@ class Over:
 
         x += 33 * gui.scale
 
-        ddt.rect((x, y, width, 15 * gui.scale), [255, 255, 255, 9], True)
-        ddt.text((x + width / 2, y, 2), str(value) + units, colours.grey(220), 11)
+        ddt.rect((x, y, width, 15 * gui.scale), alpha_mod(colours.box_button_background, 120), True)
+        ddt.text((x + width / 2, y, 2), str(value) + units, colours.box_sub_text, 11)
 
         x += width
 
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
-        ddt.rect(rect, [255, 255, 255, 20], True)
+        ddt.rect(rect, colours.box_button_background, True)
         abg = [255, 255, 255, 40]
         if coll(rect):
 
@@ -23731,12 +23730,18 @@ class Over:
         self.w = full_width
         self.h = full_height
 
-        border_colour = alpha_blend([255, 255, 255, 35], colours.sys_background)
+        border_colour = colours.box_border
+
         ddt.rect((x - 5 * gui.scale, y - 5 * gui.scale, full_width + 10 * gui.scale, full_height + 10 * gui.scale), border_colour, True)
-        ddt.rect_a((x, y), (full_width, full_height), colours.sys_background, True)
+        ddt.rect_a((x, y), (full_width, full_height), colours.box_background, True)
 
         current_tab = 0
         tab_height = round(24 * gui.scale) #30
+
+        tab_bg = colours.sys_tab_bg
+        tab_hl = colours.sys_tab_hl
+        tab_text = rgb_add_hls(tab_bg, 0, 0.3, -0.15)
+        tab_over = alpha_mod(rgb_add_hls(tab_bg, 0, 0.5, 0), 13)
 
         if top_mode:
 
@@ -23744,7 +23749,7 @@ class Over:
             yy = y
             tab_width = 90 * gui.scale
 
-            ddt.rect_a((x, y), (full_width, header_width), colours.sys_background_2, True)
+            ddt.rect_a((x, y), (full_width, header_width), tab_bg, True)
 
             for item in self.tabs:
 
@@ -23764,17 +23769,17 @@ class Over:
                     ddt.text_background_colour = colour
                     ddt.rect(box, colour, True)
                 else:
-                    ddt.text_background_colour = colours.sys_tab_bg
-                    ddt.rect(box, colours.sys_tab_bg, True)
+                    ddt.text_background_colour = tab_bg
+                    ddt.rect(box, tab_bg, True)
 
                 if coll(box2):
-                    ddt.rect(box, [255, 255, 255, 10], True)
+                    ddt.rect(box, tab_over, True)
 
                 alpha = 100
                 if current_tab == self.tab_active:
                     alpha = 240
 
-                ddt.text((xx + (tab_width // 2), yy + 4 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, alpha], ddt.text_background_colour), 212)
+                ddt.text((xx + (tab_width // 2), yy + 4 * gui.scale, 2), item[0], tab_text, 212)
 
                 current_tab += 1
                 xx += tab_width
@@ -23784,7 +23789,7 @@ class Over:
 
         else:
 
-            ddt.rect_a((x, y), (tab_width, full_height), colours.sys_background_2, True)
+            ddt.rect_a((x, y), (tab_width, full_height), tab_bg, True)
 
             for item in self.tabs:
 
@@ -23804,12 +23809,12 @@ class Over:
                     ddt.text_background_colour = bg_colour
                     ddt.rect(box, bg_colour, True)
                 else:
-                    ddt.text_background_colour = colours.sys_tab_bg
-                    ddt.rect(box, colours.sys_tab_bg, True)
+                    ddt.text_background_colour = tab_bg
+                    ddt.rect(box, tab_bg, True)
 
 
                 if coll(box2):
-                    ddt.rect(box, [255, 255, 255, 10], True)
+                    ddt.rect(box, tab_over, True)
                     
                 yy = box[1] + 4 * gui.scale
 
@@ -23818,7 +23823,7 @@ class Over:
                              alpha_blend(colours.tab_text_active, ddt.text_background_colour), 213)
                 else:
                     ddt.text((box[0] + (tab_width // 2), yy, 2), item[0],
-                             alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
+                             tab_text, 213)
 
                 current_tab += 1
 
@@ -23829,7 +23834,7 @@ class Over:
         self.click = False
         self.right_click = False
 
-        ddt.text_background_colour = colours.sys_background
+        ddt.text_background_colour = colours.box_background
 
 
 
@@ -27983,11 +27988,11 @@ class RadioBox:
 
         yy = y
 
-        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50),
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border,
                    True)
-        ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+        ddt.rect_a((x, y), (w, h), colours.box_background, True)
 
-        ddt.text_background_colour = colours.sys_background_3
+        ddt.text_background_colour = colours.box_background
 
         if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
             self.active = False
@@ -28004,26 +28009,26 @@ class RadioBox:
             self.radio_field_active = 1
             input.key_tab_press = False
         if not self.radio_field_title.text and not (self.radio_field_active == 1 and editline):
-            ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), (90, 90, 90, 255), 312)
-        self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170),
+            ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), colours.box_text_label, 312)
+        self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg(180),
                                     active=self.radio_field_active == 1,
                                     width=width, click=gui.level_2_click)
 
-        ddt.rect(rect, colours.grey(50))
+        ddt.rect(rect, colours.box_text_border)
 
 
         yy += round(30 * gui.scale)
 
         rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
-        ddt.rect(rect, colours.grey(50))
+        ddt.rect(rect, colours.box_text_border)
         fields.add(rect)
         if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 1):
             self.radio_field_active = 2
             input.key_tab_press = False
 
         if not self.radio_field.text and not (self.radio_field_active == 2 and editline):
-            ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", (90, 90, 90, 255), 312)
-        self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg3(170), active=self.radio_field_active == 2,
+            ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", colours.box_text_label, 312)
+        self.radio_field.draw(x + 14 * gui.scale, yy, colours.grey_blend_bg(180), active=self.radio_field_active == 2,
                               width=width, click=gui.level_2_click)
 
 
@@ -28076,19 +28081,18 @@ class RadioBox:
             rect = (xx, yy, round(233 * gui.scale), round(19 * gui.scale))
             fields.add(rect)
 
-            bg = colours.sys_background_3
+            bg = colours.box_background
 
             playing = pctl.playing_state == 3 and pctl.url == item["stream_url"]
 
             if playing:
-                bg = [28, 28, 28, 255]
-                bg = [70, 30, 120, 255]
+                bg = colours.box_sub_highlight
                 ddt.rect(rect, bg, True)
 
             if (radio_entry_menu.active and radio_entry_menu.reference == p) or \
                 (not radio_entry_menu.active and coll(rect)) and not playing:
 
-                bg = [40, 40, 40, 255]
+                bg = colours.box_sub_highlight
                 ddt.rect(rect, bg, True)
 
             if coll(rect):
@@ -28133,13 +28137,13 @@ class RadioBox:
                     pctl.playerCommand = 'record'
                     pctl.playerCommandReady = True
                 ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
-                                                                               colours.sys_background_3), True)
-                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(210), 212)
+                                                                               colours.box_background), True)
+                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(230), 212)
                 ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
             else:
                 ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
-                                                                               colours.sys_background_3), True)
-                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
+                                                                               colours.box_background), True)
+                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(220), 212)
                 ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
         else:
             if coll(rect):
@@ -28150,8 +28154,8 @@ class RadioBox:
                     else:
                         show_message(_("A stream needs to be playing first."))
             ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
-                                                                           colours.sys_background_3), True)
-            ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
+                                                                           colours.box_background), True)
+            ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
             ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
 
         gui.level_2_click = False
@@ -32123,20 +32127,21 @@ class Showcase:
             t1 = colours.grey(30)
             gui.vis_4_colour = [40, 40, 40, 255]
 
-        if prefs.bg_showcase_only and prefs.art_bg and not light_mode:
-            pass
-            # reg = min(colours.playlist_panel_background[0], 22)
-            # ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [reg, reg, reg, 255],
-            #          True)
-        else:
-            ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
+        # if prefs.bg_showcase_only and prefs.art_bg and not light_mode:
+        #     pass
+        #     # reg = min(colours.playlist_panel_background[0], 22)
+        #     # ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [reg, reg, reg, 255],
+        #     #          True)
+        # else:
+        ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
 
+        print(colours.playlist_panel_background)
 
         if prefs.bg_showcase_only and prefs.art_bg:
             style_overlay.display()
 
             # Draw textured background
-            if not light_mode:
+            if not light_mode and not colours.lm and prefs.showcase_overlay_texture:
                 rect = SDL_Rect()
                 rect.x = 0
                 rect.y = 0
@@ -32155,6 +32160,10 @@ class Showcase:
                     yy += 300
 
 
+        if prefs.bg_showcase_only and prefs.art_bg:
+            ddt.alpha_bg = True
+
+
         if not a01:
             if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
                            text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
@@ -32164,8 +32173,6 @@ class Showcase:
                     force_album_view()
                 return 0
 
-        if prefs.bg_showcase_only and prefs.art_bg:
-            ddt.alpha_bg = True
 
         #ddt.force_gray = True
 
@@ -35027,6 +35034,7 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
+            prefs.showcase_overlay_texture ^= True
             # gui.hide_tracklist_in_gallery ^= True
             # gui.rspw = gui.pref_gallery_w
             # gui.update_layout()
@@ -35465,11 +35473,15 @@ while pctl.running:
                                     colours.time_text = get_colour_from_line(p)
                                 if 'artist playing' in p:
                                     colours.artist_playing = get_colour_from_line(p)
-                                if 'album line' in p:
+                                if 'album line' in p: # Bad name
+                                    colours.album_text = get_colour_from_line(p)
+                                if 'track album' in p:
                                     colours.album_text = get_colour_from_line(p)
                                 if 'album playing' in p:
                                     colours.album_playing = get_colour_from_line(p)
-                                if 'player background' in p:
+                                if 'player background' in p:  # bad name
+                                    colours.top_panel_background = get_colour_from_line(p)
+                                if 'top panel' in p:
                                     colours.top_panel_background = get_colour_from_line(p)
                                 if 'queue panel' in p:
                                     colours.queue_background = get_colour_from_line(p)
@@ -35478,7 +35490,9 @@ while pctl.running:
                                     colours.playlist_box_background = colours.side_panel_background
                                 if 'gallery background' in p:
                                     colours.gallery_background = get_colour_from_line(p)
-                                if 'playlist panel' in p:
+                                if 'playlist panel' in p:  # bad name
+                                    colours.playlist_panel_background = get_colour_from_line(p)
+                                if 'tracklist panel' in p:
                                     colours.playlist_panel_background = get_colour_from_line(p)
                                 if 'track line' in p:
                                     colours.title_text = get_colour_from_line(p)
@@ -35510,9 +35524,13 @@ while pctl.running:
                                     colours.row_select_highlight = get_colour_from_line(p)
                                 if 'track artist' in p:
                                     colours.artist_text = get_colour_from_line(p)
-                                if 'tab active line' in p:
+                                if 'tab active line' in p:  # bad name
                                     colours.tab_text_active = get_colour_from_line(p)
-                                if 'tab line' in p:
+                                if 'tab line' in p:  # bad name
+                                    colours.tab_text = get_colour_from_line(p)
+                                if 'tab active text' in p:
+                                    colours.tab_text_active = get_colour_from_line(p)
+                                if 'tab text' in p:
                                     colours.tab_text = get_colour_from_line(p)
                                 if 'tab background' in p:
                                     colours.tab_background = get_colour_from_line(p)
@@ -35544,10 +35562,6 @@ while pctl.running:
                                     colours.mode_button_active = get_colour_from_line(p)
                                 if 'art border' in p:
                                     colours.art_box = get_colour_from_line(p)
-                                if 'sep line' in p:
-                                    colours.sep_line = get_colour_from_line(p)
-                                if 'bb line' in p:
-                                    colours.bb_line = get_colour_from_line(p)
                                 if 'tb line' in p:
                                     colours.tb_line = get_colour_from_line(p)
                                 if 'music vis' in p:
@@ -35583,10 +35597,41 @@ while pctl.running:
                                     colours.column_colours_playing[key] = value
                                 if 'menu bg' in p:
                                     colours.menu_background = get_colour_from_line(p)
-                                if 'playlist box bg' in p:
+                                if 'playlist box bg' in p:  # bad name
                                     colours.playlist_box_background = get_colour_from_line(p)
-                                if 'playlist box background' in p:
+                                if 'playlist background' in p:
                                     colours.playlist_box_background = get_colour_from_line(p)
+                                    
+                                if 'box background' in p:
+                                    colours.box_background = get_colour_from_line(p)
+                                if 'box border' in p:
+                                    colours.box_border = get_colour_from_line(p)
+                                if 'box text border' in p:
+                                    colours.box_text_border = get_colour_from_line(p)
+                                if 'box text label' in p:
+                                    colours.box_text_label = get_colour_from_line(p)
+                                
+                                
+                                if 'box title text' in p:
+                                    colours.box_title_text = get_colour_from_line(p)
+                                if 'box text normal' in p:
+                                    colours.box_text = get_colour_from_line(p)
+                                if 'box sub text' in p:
+                                    colours.box_sub_text = get_colour_from_line(p)
+                                if 'box input text' in p:
+                                    colours.box_input_text = get_colour_from_line(p)
+
+                                if 'box button text highlight' in p:
+                                    colours.box_button_text_highlight = get_colour_from_line(p)
+                                if 'box button text normal' in p:
+                                    colours.box_button_text = get_colour_from_line(p)
+                                if 'box button background normal' in p:
+                                    colours.box_button_background = get_colour_from_line(p)
+                                if 'box button background highlight' in p:
+                                    colours.box_button_background_highlight = get_colour_from_line(p)
+                                if 'box button border' in p:
+                                    colours.box_check_border = get_colour_from_line(p)
+                                    
 
                             colours.post_config()
                             if colours.lm:
@@ -37103,11 +37148,6 @@ while pctl.running:
                                   window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
                         draw_sep_hl = False
 
-                # # Normal Drawing
-                # if gui.rsp and True:
-                #     ddt.line(gui.plw + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
-                #               colours.sep_line)
-
 
             # Bottom title position logic
             gui.show_bottom_title = False
@@ -37450,11 +37490,10 @@ while pctl.running:
 
                 # if key_shift_down:
                 #     value_font = 12
-                key_colour_off = colours.sys3_text_key_off #colours.grey_blend_bg3(90)
-                #key_colour_off = colours.grey_blend_bg3(90)
-                key_colour_on = colours.grey_blend_bg3(240)
-                value_colour = colours.grey_blend_bg3(225)
-                path_colour = colours.grey_blend_bg3(200)
+                key_colour_off = colours.box_text_label #colours.grey_blend_bg(90)
+                key_colour_on = colours.box_title_text
+                value_colour = colours.box_sub_text
+                path_colour = alpha_mod(value_colour, 240)
 
                 # if colours.lm:
                 #     key_colour_off = colours.grey(80)
@@ -37462,9 +37501,9 @@ while pctl.running:
                 #     value_colour = colours.grey(50)
                 #     path_colour = colours.grey(70)
 
-                ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.track_info_border, True)
-                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
-                ddt.text_background_colour = colours.sys_background_3
+                ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.box_border, True)
+                ddt.rect_a((x, y), (w, h), colours.box_background, True)
+                ddt.text_background_colour = colours.box_background
 
                 if input.mouse_click and not coll([x, y, w, h]):
                     track_box = False
@@ -37806,15 +37845,15 @@ while pctl.running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.track_info_border, True)
-                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border, True)
+                ddt.rect_a((x, y), (w, h), colours.box_background, True)
 
-                ddt.text_background_colour = colours.sys_background_3
+                ddt.text_background_colour = colours.box_background
 
                 if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = ddt.text((x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.grey(230), 213)
+                p = ddt.text((x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.box_title_text, 213)
 
                 if rename_folder.text != prefs.rename_folder_template and draw.button(_("Default"),
                                                                                       x + (300 - 63) * gui.scale,
@@ -37822,9 +37861,9 @@ while pctl.running:
                                                                                       70 * gui.scale):
                     rename_folder.text = prefs.rename_folder_template
 
-                rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
+                rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.box_input_text, width=300)
 
-                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.text_box_border)
+                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.box_text_border)
 
                 if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
                                tooltip="Renames the physical folder based on the template") or input.level_2_enter:
@@ -37860,16 +37899,16 @@ while pctl.running:
                         clean_folder(rename_index, True)
                         input.mouse_click = False
 
-                ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.sys3_text_key_off, 212)
+                ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.box_text_label, 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420 * gui.scale)
                 ddt.text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(220), 211)
 
-                ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.sys3_text_key_off, 212)
+                ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.box_text_label, 212)
                 line = pctl.master_library[rename_index].parent_folder_name
                 ddt.text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
 
-                ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.sys3_text_key_off, 212)
+                ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.box_text_label, 212)
                 line = parse_template2(rename_folder.text, pctl.master_library[rename_index])
                 ddt.text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
 
@@ -37922,13 +37961,13 @@ while pctl.running:
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect2[0] = rect[0]
 
-                ddt.rect((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), [220, 100, 5, 255], True)
+                ddt.rect((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), colours.box_border, True) #[220, 100, 5, 255]
                 #ddt.rect_r((rect[0], rect[1], rect[2], rect[3]), [255,120,5,255], True)
 
-                ddt.text_background_colour = colours.sys_background_4
+                ddt.text_background_colour = colours.box_background
                 #ddt.text_background_colour = [255,120,5,255]
                 #ddt.text_background_colour = [220,100,5,255]
-                ddt.rect(rect, colours.sys_background_4, True)
+                ddt.rect(rect, colours.box_background, True)
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -37950,7 +37989,7 @@ while pctl.running:
                     if len(search_text.text) == 0:
                         line = "Quick find"
                     ddt.text((rect[0] + int(rect[2] / 2), window_size[1] - 87 * gui.scale, 2), line,
-                             (220, 220, 220, 100), 312)
+                             colours.box_text_label, 312)
 
                     # ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
                     #           colours.grey(90), 214)
@@ -38221,7 +38260,7 @@ while pctl.running:
                 if coll(rect):
                     queue_add_timer.force_set(10)
                 else:
-                    ddt.rect(grow_rect(rect, 2 * gui.scale), colours.track_info_border, True)
+                    ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border, True)
                     ddt.rect(rect, colours.queue_card_background, True)
 
                     fqo = copy.copy(pctl.force_queue[-1])
@@ -38236,8 +38275,8 @@ while pctl.running:
 
                     queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, True, False)
 
-                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.sys3_text_key_off, 11)
-                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.sys3_text_key_off, 11)
+                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.box_text_label, 11)
+                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.box_text_label, 11)
 
 
         t = toast_mode_timer.get()

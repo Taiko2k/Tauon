@@ -3,8 +3,8 @@
 
 #-Backgrounds-----
 
-30,30,30		player background (top panel)
-16,16,16	  	playlist panel
+30,30,30		top panel
+16,16,16	  	tracklist panel
 15,15,15		side panel
 92,75,185		bottom panel
 18,18,18        queue panel
@@ -71,7 +71,7 @@
 
 #-Misc--------------
 
-28,28,28		playlist box background
+28,28,28		playlist background
 
 #-Side panel--------
 
