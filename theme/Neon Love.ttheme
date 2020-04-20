@@ -89,7 +89,7 @@
 79, 60, 123     box border
 
 242,239,255     box title text
-118, 100, 160   box text label
+118,100,160     box text label
 
 242,239,255     box text normal
 242,239,255     box sub text
@@ -106,6 +106,8 @@
 
 # 28,28,28		playlist box background
 65,49,104,130 	window frame
+42,32,65        artist bio background
+242,239,255     artist bio text
 
 #-Side panel--------
 
