@@ -2219,9 +2219,12 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
 
 
-        self.status_text_over = alpha_blend([255, 255, 255, 220], self.top_panel_background)#self.grey(220)
+        # self.status_text_over = alpha_blend([255, 255, 255, 220], self.top_panel_background)#self.grey(220)
 
         self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
+
+        # self.corner_button = rgb_add_hls(self.top_panel_background, 0, 0.20, -0.15)
+        # self.corner_button_active = colours.status_text_over
 
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
@@ -2254,6 +2257,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         if test_lumi(self.column_bar_background) < 0.4:
             self.column_bar_text = [40, 40, 40, 200]
             self.column_grip = [255, 255, 255, 20]
+
+        if not self.lm:
+            self.corner_button = rgb_add_hls(self.top_panel_background, 0, 0.18, 0)
 
 
     def light_mode(self):
@@ -35089,8 +35095,9 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-            prefs.showcase_overlay_texture ^= True
+            #prefs.showcase_overlay_texture ^= True
             # gui.hide_tracklist_in_gallery ^= True
+
             # gui.rspw = gui.pref_gallery_w
             # gui.update_layout()
             pass
@@ -35708,6 +35715,10 @@ while pctl.running:
                                     colours.artist_bio_background = get_colour_from_line(p)
                                 if "artist bio text" in p:
                                     colours.artist_bio_text = get_colour_from_line(p)
+                                # if "panel button off" in p:
+                                #     colours.corner_button = get_colour_from_line(p)
+                                # if "panel button on" in p:
+                                #     colours.corner_button_active = get_colour_from_line(p)
 
 
                             colours.post_config()
