@@ -3,10 +3,11 @@
 
 #-Backgrounds-----
 
-42,32,65		top panel
+42,32,69 		top panel
 31,22,49	  	tracklist panel
-42,32,69		side panel
-38,28,61		bottom panel
+38,28,61		side panel
+#38,28,61		bottom panel
+42,32,69		bottom panel
 42,32,69        queue panel
 38,28,61        gallery background
 
@@ -39,7 +40,7 @@
 #-Bottom panel------
 
 #65,49,104		buttons off
-75,56,120		buttons off
+78,58,125		buttons off
 59,209,138		buttons over
 65,200,229		buttons active
 
@@ -47,11 +48,11 @@
 
 65,200,229		seek bar
 65,200,229		volume bar
-65,49,104,150	seek bg
-65,49,104,150	volume bg
+78,58,125,145	seek bg
+78,58,125,145	volume bg
 242,239,255		scroll bar
 
-75,56,120		mode off
+78,58,125		mode off
 59,209,138		mode over
 65,200,229		mode on
 
@@ -73,6 +74,7 @@
 31,23,49        window buttons icon over
 # window button x on
 # window button x off
+
 
 #-Menu-------------
 
