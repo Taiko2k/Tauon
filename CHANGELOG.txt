@@ -2,7 +2,7 @@
 Changelog-------------------------------------
 
 v5.5.0
-
+   - todo fix shuffle toast position in showcase with panel open
  - Added new theme "Neon Love"
  - Added "queue only" left panel type
  - Restored "gallery only" view layout (click gallery button twice)
@@ -20,6 +20,7 @@ v5.5.0
  - Fixed playtime not counting near end of track
  - Fixed a bug where listenbrainz wouldn't work if last.fm was disabled
  - Fixed a case where listenbrainz submission would fail (requires tag rescan)
+ - Fixed lyrics auto download not working if right panel was in centered mode
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons
