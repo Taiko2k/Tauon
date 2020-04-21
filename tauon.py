@@ -37136,7 +37136,7 @@ while pctl.running:
                         w = gui.rspw
 
                         ddt.rect((x, y, w, h), colours.side_panel_background, True)
-
+                        test_auto_lyrics(track)
                         # Draw lyrics if avaliable
                         if prefs.show_lyrics_side and target_track and target_track.lyrics != "": # and not prefs.show_side_art:
                             #meta_box.lyrics(x, y, w, h, target_track)
