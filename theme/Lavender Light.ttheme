@@ -81,7 +81,7 @@ light-mode
 180,140,255,255	music vis
 
 240,240,240     window buttons background
-180,180,180     window buttons over
+180,180,180     window buttons on
 190,190,190     window buttons icon off
 170,170,170     window buttons icon over
 255,255,255     window button x on
