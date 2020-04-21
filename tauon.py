@@ -35689,7 +35689,7 @@ while pctl.running:
 
                                 if "window buttons background" in p:
                                     colours.window_buttons_bg = get_colour_from_line(p)
-                                if "window buttons over" in p:
+                                if "window buttons on" in p:
                                     colours.window_buttons_bg_over = get_colour_from_line(p)
                                 if "window buttons icon off" in p:
                                     colours.window_button_icon_off = get_colour_from_line(p)

@@ -4,11 +4,11 @@
 #-Backgrounds-----
 
 42,32,65		top panel
-31,23,49	  	tracklist panel
-42,32,65		side panel
-31,23,49		bottom panel
+31,22,49	  	tracklist panel
+42,32,69		side panel
+38,28,61		bottom panel
 42,32,69        queue panel
-42,32,65        gallery background
+38,28,61        gallery background
 
 #-Playlist-------
 
@@ -29,17 +29,17 @@
 210,184,58      fav line
 242,239,255     folder line
 242,239,255		folder title
-#8,250,134
 
 65,200,229,30   playing highlight
-242,239,255,13  select highlight
-242,239,255	    gallery highlight
+210,190,255,15  select highlight
+249,154,221	    gallery highlight
 
 65,200,229     column bar background
 
 #-Bottom panel------
 
-65,49,104		buttons off
+#65,49,104		buttons off
+75,56,120		buttons off
 59,209,138		buttons over
 65,200,229		buttons active
 
@@ -47,11 +47,11 @@
 
 65,200,229		seek bar
 65,200,229		volume bar
-65,200,229,40	seek bg
-65,200,229,40	volume bg
+65,49,104,150	seek bg
+65,49,104,150	volume bg
 242,239,255		scroll bar
 
-65,49,104		mode off
+75,56,120		mode off
 59,209,138		mode over
 65,200,229		mode on
 
@@ -67,10 +67,10 @@
 
 242,239,255		music vis
 
-31,23,49     window buttons background
-242,239,255     window buttons over
-65,49,104     window buttons icon off
-31,23,49     window buttons icon over
+31,23,49        window buttons background
+242,239,255     window buttons on
+65,49,104       window buttons icon off
+31,23,49        window buttons icon over
 # window button x on
 # window button x off
 
@@ -80,7 +80,7 @@
 60,40,100       menu highlight
 60,40,100 	 	menu border
 242,239,255     menu text
-242,239,255,40  menu disable text
+65,49,104       menu disable text
 65,49,104 		menu icons
 
 #-Dialog box---------

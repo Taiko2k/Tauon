@@ -911,7 +911,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 err = BASS_ErrorGetCode()
                 #print(err)
 
-                print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
+                # print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
                 #print("TRANSITION")
                 # Try to transition without fade and and on time if possible and permitted
                 if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 3:
