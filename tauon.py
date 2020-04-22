@@ -2148,6 +2148,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.mini_mode_background = [19, 19, 19, 255]
         self.mini_mode_border = [45, 45, 45, 255]
+        self.mini_mode_text_1 = [255, 255, 255, 240]
+        self.mini_mode_text_2 = [255, 255, 255, 77]
 
         self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
@@ -25940,9 +25942,14 @@ class MiniMode:
             # Render album art
             album_art_gen.display(track, (0, 0), (w, w))
 
+            line1c = colours.mini_mode_text_1
+            line2c = colours.mini_mode_text_2
+
             if h == w and mouse_in_area:
                 #ddt.pretty_rect = (0, 260 * gui.scale, w, 100 * gui.scale)
                 ddt.rect((0, y1, w, h1), [0, 0, 0, 220], True)
+                line1c = [255, 255, 255, 240]
+                line2c = [255, 255, 255, 77]
 
             # Double click bottom text to return to full window
             text_hit_area = (60 * gui.scale, y1 + 4, 230 * gui.scale, 50 * gui.scale)
@@ -25969,17 +25976,18 @@ class MiniMode:
             seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
             seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
 
+
             if w != h or mouse_in_area:
 
                 if not line1 and not line2:
-                    ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, [255, 255, 255, 240], 214,
+                    ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
                              window_size[0] - 30 * gui.scale)
                 else:
 
-                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, [255, 255, 255, 77], 514,
+                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, line2c, 514,
                              window_size[0] - 30 * gui.scale)
 
-                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, [255, 255, 255, 240], 414,
+                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 414,
                              window_size[0] - 30 * gui.scale)
 
 
@@ -30064,7 +30072,9 @@ class TreeView:
             rect = (xx + inset - round(15 * gui.scale), yy, max_w - inset + round(15 * gui.scale), spacing - 1)
             fields.add(rect)
 
-            text_colour = [255, 255, 255, 100]
+            #text_colour = [255, 255, 255, 100]
+            text_colour = rgb_add_hls(colours.side_panel_background, 0, 0.35, -0.15)
+
             box_colour = [200, 100, 50, 255]
 
             if semilight_mode:
@@ -30235,7 +30245,8 @@ class TreeView:
 
             elif True:
                 if not mouse_in or tree_view_scroll.held:
-                    text_colour = [255, 255, 255, 50]
+                    #text_colour = [255, 255, 255, 50]
+                    text_colour = rgb_add_hls(colours.side_panel_background, 0, 0.2, -0.10)
                     if semilight_mode:
                         text_colour = [255, 255, 255, 70]
                     if light_mode:
@@ -35649,6 +35660,10 @@ while pctl.running:
                                     colours.mini_mode_background = get_colour_from_line(p)
                                 if 'mini border' in p:
                                     colours.mini_mode_border = get_colour_from_line(p)
+                                if 'mini text 1' in p:
+                                    colours.mini_mode_text_1 = get_colour_from_line(p)
+                                if 'mini text 2' in p:
+                                    colours.mini_mode_text_2 = get_colour_from_line(p)
                                 if 'column-' in p:
                                     key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
                                     value = get_colour_from_line(p)
