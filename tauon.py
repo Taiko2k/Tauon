@@ -21252,7 +21252,7 @@ def gen_power2():
                 break
 
     if noise > len(album_dex) / 2:
-        print("Playlist is too noisy for power bar.")
+        # print("Playlist is too noisy for power bar.")
         return []
 
     tag_list_sort = sorted(tag_list, key=key, reverse=True)
@@ -27617,12 +27617,9 @@ class StandardPlaylist:
 
 
                         elif item[0] == "P":
-                            #key = n_track.title + n_track.filename
                             ratio = 0
                             total = star_store.get_by_object(n_track)
-                            #if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0:
                             if total > 0 and n_track.length > 2:
-                                # total = pctl.star_library[key]
                                 if n_track.length > 15:
                                     total += 2
                                 ratio = total / (n_track.length - 1)
@@ -27634,7 +27631,6 @@ class StandardPlaylist:
                             norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
-                            print(text)
 
                         if prefs.dim_art and album_mode and \
                                 n_track.parent_folder_name \
@@ -32234,12 +32230,14 @@ class Showcase:
 
         if prefs.bg_showcase_only and prefs.art_bg:
             ddt.alpha_bg = True
+            ddt.force_gray = True
 
 
         if not a01:
             if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
                            text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
                            background_highlight_colour=bfg):
+                ddt.force_gray = False
                 switch_showcase()
                 if gui.lyrics_was_album:
                     force_album_view()
@@ -32269,10 +32267,15 @@ class Showcase:
             # if draw.button("Return", 20, gui.panelY + 5, bg=colours.grey(30)):
             #     pass
 
+            if prefs.bg_showcase_only and prefs.art_bg:
+                ddt.alpha_bg = True
+                ddt.force_gray = True
+
             if gui.force_showcase_index >= 0:
                 if draw.button(_("Playing"), 25 * gui.scale, gui.panelY + 20 * gui.scale, text_highlight_colour=bft,
                                text_colour=bbt, backgound_colour=bbg, background_highlight_colour=bfg):
                     gui.force_showcase_index = -1
+                    ddt.force_gray = False
 
             if gui.force_showcase_index >= 0:
                 index = gui.force_showcase_index

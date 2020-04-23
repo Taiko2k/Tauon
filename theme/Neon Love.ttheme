@@ -4,10 +4,11 @@
 #-Backgrounds-----
 
 42,32,69 		top panel
-31,22,49	  	tracklist panel
-38,28,61		side panel
-#38,28,61		bottom panel
-42,32,69		bottom panel
+#34,24,54	  	tracklist panel
+38,28,61	  	tracklist panel
+#38,28,61		side panel
+34,24,54		side panel
+31,22,49		bottom panel
 42,32,69        queue panel
 38,28,61        gallery background
 
