@@ -187,6 +187,11 @@ def colour_slide(a, b, x, x_limit):
      min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255), 255)
 
 
+def hex_to_rgb(colour):
+    colour = colour.strip("#")
+    return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
+
+
 # Converts string containing colour in format x,x,x,x(optional) to list
 def get_colour_from_line(cline):
     colour = ["", "", "", ""]
@@ -208,9 +213,14 @@ def get_colour_from_line(cline):
     return colour
 
 
-# Checks if the numbers in a list are the same
-def checkEqual(lst):
+# Checks if all the numbers in a list are the same
+def check_equal(lst):
     return not lst or lst.count(lst[0]) == len(lst)
+
+
+# Check if the first 3 elements of a list are the same
+def is_grey(lst):
+    return lst[0] == lst[1] == lst[2]
 
 
 # Gives a score from 0-7 based on number of seconds
@@ -233,6 +243,7 @@ def star_count(sec, dur):
     if sec > 60 * 60 * 15:
         stars += 1
     return stars
+
 
 def star_count3(sec, dur):
     stars = 0

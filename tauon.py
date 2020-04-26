@@ -9757,7 +9757,7 @@ class AlbumArt():
                 hh = h_colour[0]
                 if 0.14 < hh < 0.3:  # Yellow and green are hard to read text on, so lower the luminance for those
                     l = .45
-                if checkEqual(colour):  # Default to theme purple if source colour was grayscale
+                if check_equal(colour):  # Default to theme purple if source colour was grayscale
                     hh = 0.72
 
                 colours.bottom_panel_colour = hls_to_rgb(hh, l, s)
@@ -10926,10 +10926,10 @@ class Menu:
         global click_location
         click_location = [0, 0]
 
-    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None, pass_ref_deco=False, disable_test=None):
+    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None, pass_ref_deco=False, disable_test=None, set_ref=None):
         if render_func is None:
             render_func = self.deco
-        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test, pass_ref_deco, disable_test])
+        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test, pass_ref_deco, disable_test, set_ref])
 
     def br(self):
         self.items.append(None)
@@ -10989,6 +10989,10 @@ class Menu:
                 icon.asset.render(x, y, colour)
 
             else:
+                if not is_grey(colours.menu_background):
+                    return  # Since these are currently pre-rendered greyscale, they are
+                            # Incompatible with coloured backgrounds. Fix todo.
+
                 # Pre-rendered mode
                 if icon.mode_callback is not None:
                     if icon.mode_callback():
@@ -11104,6 +11108,8 @@ class Menu:
 
                         if self.items[i][1] is False:
                             to_call = i
+                            if self.items[i][11] is not None:
+                                self.reference = self.items[i][11]
                             global mouse_down
                             mouse_down = False
 
@@ -11148,7 +11154,7 @@ class Menu:
                     self.sub_arrow.asset.render(self.pos[0] + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
                 # Render the items label
-                ddt.text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, bg=bg)
+                ddt.text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
@@ -11348,6 +11354,7 @@ lightning_menu = Menu(165)
 lsp_menu = Menu(145)
 folder_tree_menu = Menu(175, show_icons=True)
 folder_tree_stem_menu = Menu(190, show_icons=True)
+overflow_menu = Menu(175)
 
 
 def enable_artist_list():
@@ -23969,6 +23976,11 @@ class TopPanel:
         self.click_buffer = 4 * gui.scale
 
         self.tabs_right_x = 0  # computed for drag and drop code elsewhere (hacky)
+        self.tabs_left_x = 1
+
+        self.prime_tab = 0
+        self.prime_side = 0  # 0=left, 1=right
+        self.shown_tabs = []
 
         # ---
         self.space_left = 0
@@ -23984,6 +23996,16 @@ class TopPanel:
         self.dl_button = asset_loader('dl.png', True)
 
         self.adds = []
+
+    def left_overflow_switch_playlist(self, pl):
+        self.prime_side = 0
+        self.prime_tab = pl
+        switch_playlist(pl)
+
+    def right_overflow_switch_playlist(self, pl):
+        self.prime_side = 1
+        self.prime_tab = pl
+        switch_playlist(pl)
 
     def render(self):
 
@@ -24141,6 +24163,112 @@ class TopPanel:
                         gui.update += 1
 
 
+        # List all tabs eligible to be shown
+        #print("-------------")
+        ready_tabs = []
+        for i, tab in enumerate(pctl.multi_playlist):
+
+            # Skip if hide flag is set
+            if tab[8] is True:
+                continue
+
+            ready_tabs.append(i)
+
+        if self.prime_tab > len(pctl.multi_playlist) - 1:
+            self.prime_tab = len(pctl.multi_playlist) - 1
+
+        max_w = window_size[0] - (x + right_space_es)
+
+        left_tabs = []
+        for p in ready_tabs:
+            if p < self.prime_tab:
+                left_tabs.append(p)
+        right_tabs = []
+        for p in ready_tabs:
+            if p > self.prime_tab:
+                right_tabs.append(p)
+        left_tabs.reverse()
+
+        run = max_w
+        show_tabs = []
+        if self.prime_tab in ready_tabs:
+            size = self.tab_text_spaces[self.prime_tab] + self.tab_extra_width
+            if size < run:
+                show_tabs.append(self.prime_tab)
+                run -= size
+
+        if self.prime_side == 0:
+            for tab in right_tabs:
+                size = self.tab_text_spaces[tab] + self.tab_extra_width
+                if size < run:
+                    show_tabs.append(tab)
+                    run -= size
+                else:
+                    break
+            for tab in left_tabs:
+                size = self.tab_text_spaces[tab] + self.tab_extra_width
+                if size < run:
+                    show_tabs.insert(0, tab)
+                    run -= size
+                else:
+                    break
+        else:
+            for tab in left_tabs:
+                size = self.tab_text_spaces[tab] + self.tab_extra_width
+                if size < run:
+                    show_tabs.insert(0, tab)
+                    run -= size
+                else:
+                    break
+            for tab in right_tabs:
+                size = self.tab_text_spaces[tab] + self.tab_extra_width
+                if size < run:
+                    show_tabs.append(tab)
+                    run -= size
+                else:
+                    break
+
+        # for tab in show_tabs:
+        #     print(pctl.multi_playlist[tab][0])
+        # print("---")
+        left_overflow = [x for x in left_tabs if x not in show_tabs]
+        right_overflow = [x for x in right_tabs if x not in show_tabs]
+        self.shown_tabs = show_tabs
+
+        if left_overflow:
+            rect = [x, y + 1, 17 * gui.scale, self.height - 1]
+            ddt.rect(rect, colours.tab_background_active, True)
+            x += 24 * gui.scale
+            x_start = x
+
+            if input.mouse_click and coll(rect):
+                overflow_menu.items.clear()
+                for tab in reversed(left_overflow):
+                    overflow_menu.add(pctl.multi_playlist[tab][0], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab)
+                overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
+
+        xx = x + (max_w - run) + round(6 * gui.scale)
+        self.tabs_left_x = x_start
+
+        if right_overflow:
+            rect = [xx, y + 1, 17 * gui.scale, self.height - 1]
+            ddt.rect(rect, colours.tab_background_active, True)
+            if input.mouse_click and coll(rect):
+                overflow_menu.items.clear()
+                for tab in right_overflow:
+                    overflow_menu.add(pctl.multi_playlist[tab][0], self.right_overflow_switch_playlist, pass_ref=True, set_ref=tab)
+                overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
+
+        if pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
+            if pctl.active_playlist_viewing < self.prime_tab:
+                self.prime_side = 0
+            elif pctl.active_playlist_viewing > self.prime_tab:
+                self.prime_side = 1
+            self.prime_tab = pctl.active_playlist_viewing
+            gui.update += 1
+
+
+
         # TAB INPUT PROCESSING
         for i, tab in enumerate(pctl.multi_playlist):
 
@@ -24150,14 +24278,16 @@ class TopPanel:
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
 
-            # Skip if hide flag is set
-            if tab[8] is True:
+            if i not in show_tabs:
                 continue
+            # # Skip if hide flag is set
+            # if tab[8] is True:
+            #     continue
 
-            # Truncate early if we run out of room
-            # (maybe not the best solution, but im not sure if a scroll bar would be either)
-            if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
-                break
+            # # Truncate early if we run out of room
+            # # (maybe not the best solution, but im not sure if a scroll bar would be either)
+            # if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
+            #     break
 
             # Determine the tab width
             tab_width = self.tab_text_spaces[i] + self.tab_extra_width
@@ -24268,11 +24398,14 @@ class TopPanel:
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
 
-            if tab[8] is True:
+            # if tab[8] is True:
+            #     continue
+
+            if i not in show_tabs:
                 continue
 
-            if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
-                break
+            # if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
+            #     break
 
             shown.append(i)
 
@@ -24363,6 +24496,10 @@ class TopPanel:
                 else:
                     ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255], True)
 
+        if right_overflow:
+            x += 24 * gui.scale
+            self.tabs_right_x += 24 * gui.scale
+
         # -------------
         # Other input
         if mouse_up:
@@ -24376,13 +24513,14 @@ class TopPanel:
             cycle_playlist_pinned(mouse_wheel)
 
             gui.pl_update = 1
-            if pctl.active_playlist_viewing not in shown: # and not gui.lsp:
-                gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing][0])
-                toast_mode_timer.set()
-                gui.frame_callback_list.append(TestTimer(1))
-            else:
-                toast_mode_timer.force_set(10)
-                gui.mode_toast_text = ""
+            if not prefs.tabs_on_top:
+                if pctl.active_playlist_viewing not in shown: # and not gui.lsp:
+                    gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing][0])
+                    toast_mode_timer.set()
+                    gui.frame_callback_list.append(TestTimer(1))
+                else:
+                    toast_mode_timer.force_set(10)
+                    gui.mode_toast_text = ""
         # ---------
         # Menu Bar
 
@@ -38698,7 +38836,7 @@ while pctl.running:
                             if abs(gui.spec[i] - gui.s_spec[i]) > 8:
                                 gui.s_spec[i] -= 1
 
-                    if pctl.playing_state == 0 and checkEqual(gui.s_spec):
+                    if pctl.playing_state == 0 and check_equal(gui.s_spec):
                         gui.level_update = True
                         time.sleep(0.008)
                 else:
