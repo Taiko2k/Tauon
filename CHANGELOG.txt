@@ -2,9 +2,14 @@
 Changelog-------------------------------------
 
 v5.5.0
+   - todo create overflow icon
+   - todo make top tabs slide position persistent
+   - todo fix file drag drop on top tabs
    - todo fix shuffle toast position in showcase with panel open
  - Added new theme "Neon Love"
+ - Added new theme "Sunken"
  - Added "queue only" left panel type
+ - Added overflow menus for top panel tabs
  - Restored "gallery only" view layout (click gallery button twice)
  - Improved "showcase only" background art compositing
  - Improved colour blending with custom themes
