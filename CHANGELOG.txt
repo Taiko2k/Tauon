@@ -2,7 +2,6 @@
 Changelog-------------------------------------
 
 v5.5.0
-   - todo make top tabs slide position persistent
    - todo fix file drag drop on top tabs
    - todo fix disable tabs on top
    - todo fix shuffle toast position in showcase with panel open
