@@ -98,3 +98,12 @@ toggle-show-art H Ctrl
 
 toggle-console `
 
+jump-playlist-1 1 Ctrl
+jump-playlist-2 2 Ctrl
+jump-playlist-3 3 Ctrl
+jump-playlist-4 4 Ctrl
+jump-playlist-5 5 Ctrl
+jump-playlist-6 6 Ctrl
+jump-playlist-7 7 Ctrl
+jump-playlist-8 8 Ctrl
+jump-playlist-9 9 Ctrl

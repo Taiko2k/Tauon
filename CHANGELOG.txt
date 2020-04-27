@@ -2,9 +2,7 @@
 Changelog-------------------------------------
 
 v5.5.0
-   - todo fix file drag drop on top tabs
-   - todo fix disable tabs on top
-   - todo fix shuffle toast position in showcase with panel open
+
  - Added new theme "Neon Love"
  - Added new theme "Sunken"
  - Added "queue only" left panel type
