@@ -11030,6 +11030,8 @@ class Menu:
             self.h = self.vertical_size
             ytoff = round(self.h * 0.71 - 13 * gui.scale)
 
+            x_run = self.pos[0]
+
             for i in range(len(self.items)):
                 # print(self.items[i])
 
@@ -11041,19 +11043,19 @@ class Menu:
                     else:
                         break_colour = rgb_add_hls(colours.menu_background, 0, 0.06, 0)
 
-                    rect = (self.pos[0], y_run, self.w, self.break_height - 1)
+                    rect = (x_run, y_run, self.w, self.break_height - 1)
                     if coll(rect):
                         self.clicked = False
 
-                    ddt.rect_a((self.pos[0], y_run), (self.w, self.break_height),
+                    ddt.rect_a((x_run, y_run), (self.w, self.break_height),
                               colours.menu_background, True)
 
-                    ddt.rect_a((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
+                    ddt.rect_a((x_run, y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
                               break_colour, True)
 
 
                     # Draw tab
-                    ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.break_height),
+                    ddt.rect_a((x_run, y_run), (4 * gui.scale, self.break_height),
                               colours.menu_tab, True)
                     y_run += self.break_height
 
@@ -11086,18 +11088,18 @@ class Menu:
                             fx[0] = colours.menu_text_disabled
 
                 # Draw item background, black by default
-                ddt.rect_a((self.pos[0], y_run), (self.w, self.h),
+                ddt.rect_a((x_run, y_run), (self.w, self.h),
                           fx[1], True)
                 bg = fx[1]
 
                 # Detect if mouse is over this item
                 selected = False
-                rect = (self.pos[0], y_run, self.w, self.h - 1)
+                rect = (x_run, y_run, self.w, self.h - 1)
                 fields.add(rect)
 
                 if coll_point(mouse_position,
-                              (self.pos[0], y_run, self.w, self.h - 1)):
-                    ddt.rect_a((self.pos[0], y_run), (self.w, self.h),
+                              (x_run, y_run, self.w, self.h - 1)):
+                    ddt.rect_a((x_run, y_run), (self.w, self.h),
                               colours.menu_highlight_background,
                               True)  # [15, 15, 15, 255]
                     selected = True
@@ -11119,7 +11121,7 @@ class Menu:
                             self.sub_y_postion = y_run
 
                 # Draw tab
-                ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.h),
+                ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h),
                           colours.menu_tab, True)
 
                 # Draw Icon
@@ -11127,7 +11129,7 @@ class Menu:
                 if self.items[i][1] is False and self.show_icons:
 
                     icon = self.items[i][7]
-                    self.render_icon(self.pos[0] + x , y_run + 5 * gui.scale, icon, selected)
+                    self.render_icon(x_run + x , y_run + 5 * gui.scale, icon, selected)
 
                 if self.show_icons:
                     x += 25 * gui.scale
@@ -11151,10 +11153,10 @@ class Menu:
                     #     colour = [150, 150, 150, 255]
                     # if self.sub_active == self.items[i][2]:
                     #     colour = [150, 150, 150, 255]
-                    self.sub_arrow.asset.render(self.pos[0] + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
+                    self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
                 # Render the items label
-                ddt.text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
+                ddt.text((x_run + x, y_run + ytoff), label, fx[0], self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
@@ -11165,20 +11167,27 @@ class Menu:
                         hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
 
                     #colo = alpha_blend([255, 255, 255, 50], bg)
-                    ddt.text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
+                    ddt.text((x_run + self.w - 5, y_run + ytoff, 1), self.items[i][6],
                              hint_colour, self.font, bg=bg)
 
                 y_run += self.h
 
+                if y_run > window_size[1] - self.h:
+                    direc = 1
+                    if self.pos[0] > window_size[0] // 2:
+                        direc = -1
+                    x_run += self.w * direc
+                    y_run = self.pos[1]
+
                 # Render sub menu if active
                 if self.sub_active > -1 and self.items[i][1] and self.sub_active == self.items[i][2]:
 
-                    # sub_pos = [self.pos[0] + self.w, self.pos[1] + i * self.h]
-                    sub_pos = [self.pos[0] + self.w, self.sub_y_postion]
+                    # sub_pos = [x_run + self.w, self.pos[1] + i * self.h]
+                    sub_pos = [x_run + self.w, self.sub_y_postion]
                     sub_w = self.items[i][4]
 
                     if sub_pos[0] + sub_w > window_size[0]:
-                        sub_pos[0] = self.pos[0] - sub_w
+                        sub_pos[0] = x_run - sub_w
                         if view_box.active:
                             sub_pos[0] -= view_box.w
 
@@ -13845,6 +13854,9 @@ def gen_unique_pl_title(base, extra="", start=1):
 def new_playlist(switch=True):
 
     title = gen_unique_pl_title("New Playlist")
+
+    top_panel.prime_side = 1
+    top_panel.prime_tab = len(pctl.multi_playlist)
 
     pctl.multi_playlist.append(pl_gen(title=title))  # [title, 0, [], 0, 0, 0])
     if switch:
@@ -19768,6 +19780,54 @@ class SearchOverlay:
 
                     yy += 6 * gui.scale
 
+                if item[0] == 8:
+                    cl = [100, 210, 250, int(255 * fade)]
+                    text = "Playlist"
+                    yy += 3 * gui.scale
+                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    ddt.text((105 * gui.scale, yy, 1), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+                            if key_ctrl_down:
+                                pl = id_to_pl(item[3])
+                                if pl:
+                                    default_playlist.extend(pctl.multi_playlist[pl][2])
+                                gui.pl_update += 1
+                            else:
+                                pl = id_to_pl(item[3])
+                                if pl:
+                                    switch_playlist(pl)
+                                    self.active = False
+                                    self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            pl = id_to_pl(item[3])
+                            if pl:
+                                switch_playlist(pl)
+                                self.active = False
+                                self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        pl = id_to_pl(item[3])
+                        if pl:
+                            switch_playlist(pl)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+
                 if i > 40:
                     break
 
@@ -20217,9 +20277,19 @@ def worker2():
                         temp_results[i][4] = composers[item[1]]
                     if item[0] == 7:
                         temp_results[i][4] = years[item[1]]
+                    # 8 is playlists
 
                 temp_results[:] = [item for item in temp_results if item is not None]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
+
+                i = 0
+                for playlist in pctl.multi_playlist:
+                    if search_magic(s_text, playlist[0].lower()):
+                        item = [8, playlist[0], None, playlist[6], 100000]
+                        search_over.results.insert(0, item)
+                        i += 1
+                        if i > 3:
+                            break
 
                 search_over.on = 0
                 search_over.force_select = 0
@@ -35100,21 +35170,63 @@ while pctl.running:
 
     if k_input:
 
-        if keymaps.test('cycle-playlist-left'):
-            if gui.album_tab_mode and key_left_press:
-                pass
-            else:
-                if is_level_zero():
-                    cycle_playlist_pinned(1)
-        if keymaps.test('cycle-playlist-right'):
-            if gui.album_tab_mode and key_right_press:
-                pass
-            else:
-                if is_level_zero():
-                    cycle_playlist_pinned(-1)
+        if keymaps.hits:
+            n = 1
+            while n < 10:
+                if keymaps.test(f"jump-playlist-{n}"):
+                    if len(pctl.multi_playlist) > n - 1:
+                        switch_playlist(n - 1)
+                n += 1
 
-        if keymaps.test('toggle-console'):
-            console.show ^= True
+            if keymaps.test('cycle-playlist-left'):
+                if gui.album_tab_mode and key_left_press:
+                    pass
+                else:
+                    if is_level_zero():
+                        cycle_playlist_pinned(1)
+            if keymaps.test('cycle-playlist-right'):
+                if gui.album_tab_mode and key_right_press:
+                    pass
+                else:
+                    if is_level_zero():
+                        cycle_playlist_pinned(-1)
+
+            if keymaps.test('toggle-console'):
+                console.show ^= True
+
+            if keymaps.test("toggle-fullscreen"):
+                if not fullscreen and not gui.mode == 3:
+                    fullscreen = True
+                    SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
+                elif fullscreen:
+                    fullscreen = False
+                    SDL_SetWindowFullscreen(t_window, 0)
+
+            if keymaps.test("playlist-toggle-breaks"):
+                # Toggle force off folder break for viewed playlist
+                pctl.multi_playlist[pctl.active_playlist_viewing][4] ^= 1
+                gui.pl_update = 1
+
+            if keymaps.test("find-playing-artist"):
+                #standard_size()
+                if len(pctl.track_queue) > 0:
+                    quick_search_mode = True
+                    search_text.text = ""
+                    input_text = pctl.playing_object().artist
+
+            if keymaps.test("show-encode-folder"):
+                open_encode_out()
+
+            if keymaps.test('toggle-left-panel'):
+                gui.lsp ^= True
+                update_layout_do()
+
+            if keymaps.test('toggle-last-left-panel'):
+                toggle_left_last()
+                update_layout_do()
+
+            if keymaps.test("toggle-broadcast"):
+                toggle_broadcast()
 
         if key_ctrl_down:
             gui.pl_update += 1
@@ -35126,13 +35238,7 @@ while pctl.running:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
 
-        if keymaps.test("toggle-fullscreen"):
-            if not fullscreen and not gui.mode == 3:
-                fullscreen = True
-                SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-            elif fullscreen:
-                fullscreen = False
-                SDL_SetWindowFullscreen(t_window, 0)
+
 
         if fullscreen and key_esc_press:
             fullscreen = False
@@ -35234,18 +35340,6 @@ while pctl.running:
             input.key_return_press = False
             input.level_2_enter = True
 
-        if keymaps.test("playlist-toggle-breaks"):
-            # Toggle force off folder break for viewed playlist
-            pctl.multi_playlist[pctl.active_playlist_viewing][4] ^= 1
-            gui.pl_update = 1
-
-        if keymaps.test("find-playing-artist"):
-            #standard_size()
-            if len(pctl.track_queue) > 0:
-                quick_search_mode = True
-                search_text.text = ""
-                input_text = pctl.playing_object().artist
-
 
         if key_ctrl_down and key_z_press:
             undo.undo()
@@ -35254,24 +35348,15 @@ while pctl.running:
             # else:
             #     show_message("There are no more playlists to un-delete.")
 
-        if keymaps.test("show-encode-folder"):
-            open_encode_out()
 
-        if keymaps.test('toggle-left-panel'):
-            gui.lsp ^= True
-            update_layout_do()
-
-        if keymaps.test('toggle-last-left-panel'):
-            toggle_left_last()
-            update_layout_do()
-
-        if keymaps.test("toggle-broadcast"):
-            toggle_broadcast()
 
         # print(keymaps.maps)
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
+            x_menu.activate()
+            playlist_menu.active = True
+            playlist_menu.pos = [0, 0]
             #prefs.showcase_overlay_texture ^= True
             # gui.hide_tracklist_in_gallery ^= True
 
