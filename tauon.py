@@ -1653,6 +1653,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.hide_tracklist_in_gallery = False
 
+        self.saved_prime_tab = 0
+        self.saved_prime_direction = 0
 
 gui = GuiVar()
 
@@ -2744,6 +2746,11 @@ for t in range(2):
             prefs.radio_urls = save[142]
         if save[143] is not None:
             gui.restore_showcase_view = save[143]
+        if save[144] is not None:
+            gui.saved_prime_tab = save[144]
+        if save[145] is not None:
+            gui.saved_prime_direction = save[145]
+
 
         state_file.close()
         del save
@@ -24048,8 +24055,8 @@ class TopPanel:
         self.tabs_right_x = 0  # computed for drag and drop code elsewhere (hacky)
         self.tabs_left_x = 1
 
-        self.prime_tab = 0
-        self.prime_side = 0  # 0=left, 1=right
+        self.prime_tab = gui.saved_prime_tab
+        self.prime_side = gui.saved_prime_direction  # 0=left, 1=right
         self.shown_tabs = []
 
         # ---
@@ -24250,7 +24257,7 @@ class TopPanel:
         if self.prime_tab > len(pctl.multi_playlist) - 1:
             self.prime_tab = len(pctl.multi_playlist) - 1
 
-        max_w = window_size[0] - (x + right_space_es)
+        max_w = window_size[0] - (x + right_space_es + round(34 * gui.scale))
 
         left_tabs = []
         for p in ready_tabs:
@@ -34377,6 +34384,8 @@ def save_state():
             gui.show_album_ratings,
             prefs.radio_urls,
             gui.combo_mode,
+            top_panel.prime_tab,
+            top_panel.prime_side,
         ]
 
 
