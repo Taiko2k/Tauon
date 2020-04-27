@@ -23996,6 +23996,8 @@ class TopPanel:
         self.dl_button = asset_loader('dl.png', True)
         self.overflow_icon = asset_loader('overflow.png', True)
 
+        self.drag_slide_timer = Timer(100)
+
         self.adds = []
 
     def left_overflow_switch_playlist(self, pl):
@@ -24265,13 +24267,30 @@ class TopPanel:
                     overflow_menu.add(pctl.multi_playlist[tab][0], self.right_overflow_switch_playlist, pass_ref=True, set_ref=tab)
                 overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
 
-        if pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
+        if not mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
             if pctl.active_playlist_viewing < self.prime_tab:
                 self.prime_side = 0
             elif pctl.active_playlist_viewing > self.prime_tab:
                 self.prime_side = 1
             self.prime_tab = pctl.active_playlist_viewing
             gui.update += 1
+
+        if playlist_box.drag and mouse_position[0] > xx and mouse_position[1] < gui.panelY:
+            gui.update += 1
+            if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and right_overflow:
+                self.drag_slide_timer.set()
+                self.prime_side = 1
+                self.prime_tab = right_overflow[0]
+            if self.drag_slide_timer.get() > 1:
+                self.drag_slide_timer.set()
+        if playlist_box.drag and mouse_position[0] < x and mouse_position[1] < gui.panelY:
+            gui.update += 1
+            if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and left_overflow:
+                self.drag_slide_timer.set()
+                self.prime_side = 0
+                self.prime_tab = left_overflow[0]
+            if self.drag_slide_timer.get() > 1:
+                self.drag_slide_timer.set()
 
 
 
