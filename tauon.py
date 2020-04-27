@@ -23994,6 +23994,7 @@ class TopPanel:
         self.artist_list_icon = asset_loader('artist-list.png', True)
         self.folder_list_icon = asset_loader('folder-list.png', True)
         self.dl_button = asset_loader('dl.png', True)
+        self.overflow_icon = asset_loader('overflow.png', True)
 
         self.adds = []
 
@@ -24236,9 +24237,12 @@ class TopPanel:
         self.shown_tabs = show_tabs
 
         if left_overflow:
-            rect = [x, y + 1, 17 * gui.scale, self.height - 1]
-            ddt.rect(rect, colours.tab_background_active, True)
-            x += 24 * gui.scale
+            hh = round(20 * gui.scale)
+            rect = [x, y + (self.height - hh), 17 * gui.scale, hh]
+            ddt.rect(rect, colours.tab_background, True)
+            self.overflow_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colours.tab_text)
+
+            x += 17 * gui.scale
             x_start = x
 
             if input.mouse_click and coll(rect):
@@ -24247,12 +24251,14 @@ class TopPanel:
                     overflow_menu.add(pctl.multi_playlist[tab][0], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab)
                 overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
 
-        xx = x + (max_w - run) + round(6 * gui.scale)
+        xx = x + (max_w - run) #+ round(6 * gui.scale)
         self.tabs_left_x = x_start
 
         if right_overflow:
-            rect = [xx, y + 1, 17 * gui.scale, self.height - 1]
-            ddt.rect(rect, colours.tab_background_active, True)
+            hh = round(20 * gui.scale)
+            rect = [xx, y + (self.height - hh), 17 * gui.scale, hh]
+            ddt.rect(rect, colours.tab_background, True)
+            self.overflow_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colours.tab_text)
             if input.mouse_click and coll(rect):
                 overflow_menu.items.clear()
                 for tab in right_overflow:
