@@ -28943,7 +28943,7 @@ class PlaylistBox:
 
                 # Double click to play
                 if mouse_up and pl_to_id(i) == top_panel.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-                    top_panel.tab_d_click_timer.get() < 0.6 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+                    top_panel.tab_d_click_timer.get() < 0.5 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
 
                     if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                         pctl.play()
