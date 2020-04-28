@@ -24074,6 +24074,8 @@ class TopPanel:
         self.overflow_icon = asset_loader('overflow.png', True)
 
         self.drag_slide_timer = Timer(100)
+        self.tab_d_click_timer = Timer(10)
+        self.tab_d_click_ref = None
 
         self.adds = []
 
@@ -24407,6 +24409,18 @@ class TopPanel:
             # Tab functions
             if tab_hit:
 
+                # Double click to play
+                if mouse_up and pl_to_id(i) == self.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
+                    self.tab_d_click_timer.get() < 0.5 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+
+                    if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
+                        pctl.play()
+                    elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
+                        pctl.jump(default_playlist[playlist_selected], pl_position=playlist_selected)
+                if mouse_up:
+                    self.tab_d_click_timer.set()
+                    self.tab_d_click_ref = pl_to_id(i)
+
                 # Click to change playlist
                 if input.mouse_click:
                     gui.pl_update = 1
@@ -24415,6 +24429,7 @@ class TopPanel:
                     playlist_box.drag_on = i
                     switch_playlist(i)
                     set_drag_source()
+
 
                 # Drag to move playlist
                 if mouse_up and playlist_box.drag and coll_point(mouse_up_position, f_rect):
@@ -28925,6 +28940,20 @@ class PlaylistBox:
                             move_playlist(self.drag_on, i)
 
                     gui.update += 1
+
+                # Double click to play
+                if mouse_up and pl_to_id(i) == top_panel.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
+                    top_panel.tab_d_click_timer.get() < 0.6 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+
+                    if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
+                        pctl.play()
+                    elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
+                        pctl.jump(default_playlist[playlist_selected], pl_position=playlist_selected)
+                if mouse_up:
+                    top_panel.tab_d_click_timer.set()
+                    top_panel.tab_d_click_ref = pl_to_id(i)
+
+
 
                 if not draw_pin_indicator:
                     if input.mouse_click:
