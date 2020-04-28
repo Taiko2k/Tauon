@@ -9,6 +9,7 @@ v5.5.0
  - Added overflow menus for top panel tabs
  - Added playlist results to global search
  - Added playlist number keyboard shortcuts
+ - Added double click playlist to play
  - Restored "gallery only" view layout (click gallery button twice)
  - Improved "showcase only" background art compositing
  - Improved colour blending with custom themes
