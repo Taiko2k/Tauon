@@ -26,6 +26,7 @@ v5.5.0
  - Fixed a bug where listenbrainz wouldn't work if last.fm was disabled
  - Fixed a case where listenbrainz submission would fail (requires tag rescan)
  - Fixed lyrics auto download not working if right panel was in centered mode
+ - Fixed a possible crash loading lrc files
  - Removed config option "show playlist list" (now redundant)
  - Removed playlist "auto" indicator
  - Removed playlist pin buttons
