@@ -7832,7 +7832,7 @@ class TimedLyricsRen:
         #     return False
 
         for line in data:
-            if len(line) < 9:
+            if len(line) < 10:
                 continue
 
             #print(line)
