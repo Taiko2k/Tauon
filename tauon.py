@@ -3081,6 +3081,11 @@ if db_version > 0:
 
             f.close()
 
+    if db_version <= 42:
+        print("Updating database to version 43")
+        show_message(
+            _("Upgrade to version 5.5.0 complete."),
+            _("If you enjoy using this software, please consider making a donation at https://ko-fi.com/taiko2k"), mode='link')
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -23308,7 +23313,7 @@ class Over:
 
             ddt.text((x, y - 6 * gui.scale), t_version, colours.box_text_label, 313)
             y += 20 * gui.scale
-            ddt.text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
+            ddt.text((x, y), "Copyright © 2015-2020 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
             y += 21 * gui.scale
             link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmusicbox", colours.box_sub_text, 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
@@ -23361,6 +23366,11 @@ class Over:
         if self.button(x, y, _("Credits")):
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
+
+        x -= ddt.get_text_w(_("Donate"), 211) + round(21 * gui.scale) + 2 * gui.scale
+
+        if self.button(x, y, _("Donate")):
+            webbrowser.open("https://ko-fi.com/taiko2k", new=2, autoraise=True)
 
     def topchart(self, x0, y0, w0, h0):
 
@@ -34289,7 +34299,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            42,  # Version, used for upgrading
+            43,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
