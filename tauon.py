@@ -12408,6 +12408,9 @@ def get_lyric_wiki_silent(track_object):
 
 def test_auto_lyrics(track_object):
 
+    if not track_object:
+        return
+
     if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
         if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
             result = get_lyric_wiki_silent(track_object)

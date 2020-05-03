@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.5.1
+
+ - Fixed possible crash when auto lyrics enabled
+
 v5.5.0
 
  - Added new theme "Neon Love"
