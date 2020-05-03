@@ -60,12 +60,13 @@
 
   <releases>
 
-    <release version="5.4.3" date="2020-04-16">
+    <release version="5.5.0" date="2020-05-03">
       <description>
         <ul>
-          <li>Added Portuguese translation</li>
-          <li>Added smart playlist function find</li>
-          <li>Various tweaks and fixes</li>
+          <li>Added new themes</li>
+          <li>Added playlist tab scrolling function</li>
+          <li>Added double click playlist to play function</li>
+          <li>Various UI tweaks and bug fixes</li>
         </ul>
       </description>
     </release>
