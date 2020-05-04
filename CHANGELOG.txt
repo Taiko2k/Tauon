@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.5.2
+
+- Fixed menu closing after using layout shortcut
+
 v5.5.1
 
  - Fixed possible crash when auto lyrics enabled

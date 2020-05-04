@@ -32972,9 +32972,8 @@ class ViewBox:
         elif not (album_mode is False and \
                    gui.combo_mode is False and \
                    gui.rsp is False):
-            #x_menu.active = False
-            x_menu.close_next_frame = True
-            #Menu.active = False
+            if x_menu.active:
+                x_menu.close_next_frame = True
 
         view_tracks()
 
@@ -32987,9 +32986,8 @@ class ViewBox:
         elif not (album_mode is False and \
                    gui.combo_mode is False and \
                    gui.rsp is True):
-            #x_menu.active = False
-            x_menu.close_next_frame = True
-            #Menu.active = False
+            if x_menu.active:
+                x_menu.close_next_frame = True
 
         view_standard_meta()
 
@@ -33007,9 +33005,8 @@ class ViewBox:
             #Menu.active = False
             return
 
-        #x_menu.active = False
-        x_menu.close_next_frame = True
-        #Menu.active = False
+        if x_menu.active:
+            x_menu.close_next_frame = True
 
         force_album_view()
 
@@ -33030,10 +33027,8 @@ class ViewBox:
             if gui.lyrics_was_album:
                 force_album_view()
 
-
-        #x_menu.active = False
-        x_menu.close_next_frame = True
-        #Menu.active = False
+        if x_menu.active:
+            x_menu.close_next_frame = True
 
     # def gallery2(self, hit=False):
     #
