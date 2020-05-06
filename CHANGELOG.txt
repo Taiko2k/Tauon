@@ -5,6 +5,7 @@ v5.5.2
 
 - Fixed menu closing after using layout shortcut
 - Fixed side panel synced lyrics scroll hitbox
+- Fixed possible crash when using "remove missing tracks"
 
 v5.5.1
 
