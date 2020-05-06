@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.5.1"
+n_version = "5.5.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -7875,7 +7875,7 @@ class TimedLyricsRen:
         return True
 
 
-    def render(self, index, x, y, side_panel=False):
+    def render(self, index, x, y, side_panel=False, w=0, h=0):
 
         if index != self.index:
             self.ready = False
@@ -7885,8 +7885,12 @@ class TimedLyricsRen:
             return False
 
 
-        if pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index:
-            self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+        if mouse_wheel and (pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index):
+            if side_panel:
+                if coll((x, y, w, h)):
+                    self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+            else:
+                self.scroll_position += int(mouse_wheel * 30 * gui.scale)
 
         line_active = -1
         last = -1
@@ -37403,13 +37407,13 @@ while pctl.running:
                             gui.showing_l_panel = True
 
                             if not prefs.lyric_metadata_panel_top:
-                                timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
+                                timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw, h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
                                 meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
                             else:
-                                timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True)
+                                timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True, w=gui.rspw, h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
                                 meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track)
                         else:
-                            timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
+                            timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw, h=window_size[1] - gui.panelY - gui.panelBY)
 
                     elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
 
