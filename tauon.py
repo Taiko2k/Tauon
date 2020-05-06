@@ -20980,10 +20980,15 @@ def worker1():
                             album_dex.clear()
                             playlist[2].remove(index)
 
+                    # Stop if track is playing track
+                    if pctl.track_queue and pctl.track_queue[pctl.queue_step] == index and pctl.playing_state != 0:
+                        pctl.stop(block=True)
+
                     # Remove from playback history
                     while index in pctl.track_queue:
                         pctl.track_queue.remove(index)
                         pctl.queue_step -= 1
+
 
                     # Remove track from force queue
                     for i in reversed(range(len(pctl.force_queue))):
