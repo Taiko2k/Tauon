@@ -16341,7 +16341,7 @@ def vacuum_playtimes(index):
             del star_store.db[key]
 
         key = star_store.object_key(tr)
-        value = [total_playtime, flags]
+        value = [total_playtime, flags, 0]
         if key not in star_store.db:
             print("Saving value")
             star_store.db[key] = value
