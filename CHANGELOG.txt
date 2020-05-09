@@ -5,7 +5,7 @@ v5.5.2
 
 - Fixed menu closing after using layout shortcut
 - Fixed side panel synced lyrics scroll hitbox
-- Fixed possible crash when using "remove missing tracks"
+- Fixed possible crash when using "remove missing tracks" or "edit with picard"
 - Fixed a crash when using "vacuum playtimes"
 
 v5.5.1

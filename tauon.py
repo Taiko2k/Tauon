@@ -3087,6 +3087,15 @@ if db_version > 0:
             _("Upgrade to version 5.5.0 complete."),
             _("If you enjoy using this software, please consider making a donation at https://ko-fi.com/taiko2k"), mode='link')
 
+    if db_version <= 43:
+        print("Updating database to version 44")
+        # Repair db
+        for key, value in star_store.db.items():
+            if len(value) == 2:
+                value.append(0)
+                star_store.db[key] = value
+
+
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
 shoot.start()
@@ -16541,7 +16550,7 @@ def editor(index):
             continue
 
         if new_value is None:
-            new_value = [0, ""]
+            new_value = [0, "", 0]
 
         new_value[0] += old_value[0]
         new_value[1] = "".join(set(new_value[1] + old_value[1]))
@@ -34306,7 +34315,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            43,  # Version, used for upgrading
+            44,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
