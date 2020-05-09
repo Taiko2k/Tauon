@@ -7412,19 +7412,19 @@ SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
 
 def bass_player_thread(player):
 
-    logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
-                        format='%(asctime)s %(levelname)s %(name)s %(message)s')
+    # logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
+    #                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
     try:
         player(pctl, gui, prefs, lfm_scrobbler, star_store)
     except:
-        logging.exception('Exception on player thread')
+        #logging.exception('Exception on player thread')
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
         time.sleep(1)
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
         time.sleep(1)
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
-
+        raise
 
 if system == 'windows' and taskbar_progress:
 
