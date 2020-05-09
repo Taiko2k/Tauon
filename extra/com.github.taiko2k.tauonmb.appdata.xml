@@ -61,13 +61,10 @@
 
   <releases>
 
-    <release version="5.5.1" date="2020-05-03">
+    <release version="5.5.2" date="2020-05-10">
       <description>
         <ul>
-          <li>Added new themes</li>
-          <li>Added playlist tab scrolling function</li>
-          <li>Added double click playlist to play function</li>
-          <li>Various UI tweaks and bug fixes</li>
+          <li>Bug fixes</li>
         </ul>
       </description>
     </release>
