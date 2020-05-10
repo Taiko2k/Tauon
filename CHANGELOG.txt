@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.5.3
 
  - Fixed window opacity not persisting on restart
+ - Fixed auto theme colours on track switch sometimes not working
 
 v5.5.2
 
