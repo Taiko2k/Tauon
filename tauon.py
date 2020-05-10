@@ -9662,12 +9662,11 @@ class AlbumArt():
         index = track.index
         filepath = track.fullpath
 
-        if prefs.colour_from_image and index != gui.theme_temp_current and box[0] != 115: #mark2233
+        if prefs.colour_from_image and track.album != gui.theme_temp_current and box[0] != 115:
             if track.album in gui.temp_themes:
                 global colours
                 colours = gui.temp_themes[track.album]
-
-                gui.theme_temp_current = index
+                gui.theme_temp_current = track.album
 
         source = self.get_sources(track)
 
@@ -9792,8 +9791,11 @@ class AlbumArt():
 
 
             # Processing for "Auto-theme" setting
-            if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
+            if prefs.colour_from_image and box[0] != 115 and track.album != gui.theme_temp_current \
+                    and track.album not in gui.temp_themes: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
                 colours.last_album = track.parent_folder_path
+
+                colours = copy.deepcopy(colours)
 
                 im.thumbnail((50, 50), Image.ANTIALIAS)
                 pixels = im.getcolors(maxcolors=2500)
@@ -9904,7 +9906,8 @@ class AlbumArt():
                     colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, 0.03)
 
                 gui.temp_themes[track.album] = copy.deepcopy(colours)
-                gui.theme_temp_current = index
+                colours = gui.temp_themes[track.album]
+                gui.theme_temp_current = track.album
 
 
             if theme_only:
