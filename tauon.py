@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.5.2"
+n_version = "5.5.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -328,11 +328,11 @@ try:
     scale = save[3]
     maximized = save[4]
 
-
     del save
 
 except:
     print('Error loading window state file')
+
 
 
 ## Init SDL2
@@ -366,7 +366,6 @@ if err:
 if maximized:
     SDL_MaximizeWindow(t_window)
 
-SDL_SetWindowOpacity(t_window, window_opacity)
 
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
 
@@ -432,6 +431,9 @@ SDL_SetRenderTarget(renderer, None)
 SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 SDL_RenderClear(renderer)
 #SDL_RenderPresent(renderer)
+
+SDL_SetWindowOpacity(t_window, window_opacity)
+
 
 class LoadImageAsset:
     def __init__(self, path, is_full_path=False):
@@ -34455,7 +34457,7 @@ def save_state():
         save = [
             draw_border,
             gui.save_size,
-            window_opacity,
+            prefs.window_opacity,
             gui.scale,
             gui.maximized,
 
