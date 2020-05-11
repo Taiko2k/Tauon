@@ -20814,7 +20814,14 @@ def worker1():
         try:
             items_in_dir = os.listdir(direc)
         except PermissionError:
-            show_message("Permission error accessing one or more files", mode='warning')
+
+            if snap_mode:
+                show_message(_("Permission error accessing one or more files."),
+                             _("If this location is on external media, see") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Snap-Permissions",
+                             mode='bubble')
+            else:
+                show_message(_("Permission error accessing one or more files"), mode='warning')
+
             return
 
         for q in range(len(items_in_dir)):
