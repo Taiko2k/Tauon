@@ -5196,10 +5196,12 @@ class PlayerCtl:
                             pctl.playlist_playing_position = -1
                             pctl.advance(end=end, force=True, nolock=True, play=play)
 
+                        return
 
                 elif prefs.end_setting == 'repeat':
                     pctl.playlist_playing_position = -1
                     pctl.advance(end=end, force=True, nolock=True, play=play)
+                    return
 
                 gui.update += 3
 
@@ -5312,7 +5314,6 @@ class PlayerCtl:
         lfm_scrobbler.start_queue()
         if play:
             notify_song(end_of_playlist, delay=1.3)
-
 
 pctl = PlayerCtl()
 
@@ -5438,6 +5439,8 @@ def notify_song(notify_of_end=False, delay=0):
     if not de_notify_support:
         return
 
+    if notify_of_end and prefs.end_setting != "stop":
+        return
 
     if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused():
 
