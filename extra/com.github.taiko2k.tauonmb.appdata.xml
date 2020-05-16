@@ -61,10 +61,10 @@
 
   <releases>
 
-    <release version="5.5.2" date="2020-05-10">
+    <release version="5.5.3" date="2020-05-16">
       <description>
         <ul>
-          <li>Bug fixes</li>
+          <li>Various bug fixes</li>
         </ul>
       </description>
     </release>
