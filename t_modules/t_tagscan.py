@@ -246,7 +246,6 @@ class Flac:
         samples = int(k[28:64], 2)
 
         self.length = samples / self.sample_rate
-        print(self.length)
         f.seek(-18, 1)
 
     def read(self, get_picture=False):
