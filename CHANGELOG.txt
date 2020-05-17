@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.5.4
+
+ - Fixed metadata not being read from some FLAC files
+
 v5.5.3
 
  - Fixed window opacity not persisting on restart

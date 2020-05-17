@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.5.3"
+n_version = "5.5.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -3585,7 +3585,8 @@ def tag_scan(nt):
             nt.album_artist = audio.album_artist
             nt.disc_number = audio.disc_number
             nt.lyrics = audio.lyrics
-            nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+            if nt.length:
+                nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
             nt.disc_total = audio.disc_total
             nt.comment = audio.comment
@@ -3593,7 +3594,6 @@ def tag_scan(nt):
             nt.album_gain = audio.album_gain
             nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
-
 
             return nt
 
@@ -3824,7 +3824,8 @@ def tag_scan(nt):
         # print("      In file: " + nt.fullpath)
         return nt
     except:
-
+        # import traceback
+        # traceback.print_exc()
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
         return nt
@@ -16407,6 +16408,7 @@ def reload_metadata(input, keep_star=True):
 
             tauon.worker_save_state = True
 
+    gui.pl_update += 1
 
 def reload_metadata_selection():
 
@@ -16431,6 +16433,7 @@ def reload_metadata_selection():
         if star is not None and (star[0] > 0 or star[1]):
             star_store.insert(track, star)
 
+    gui.pl_update += 1
 
 
 def editor(index):
