@@ -246,6 +246,7 @@ class Flac:
         samples = int(k[28:64], 2)
 
         self.length = samples / self.sample_rate
+        print(self.length)
         f.seek(-18, 1)
 
     def read(self, get_picture=False):
@@ -254,8 +255,15 @@ class Flac:
 
         f = open(self.filepath, "rb")
         s = f.read(4)
+
+        # Find start of FLAC stream
         if s != b'fLaC':
-            return
+            while f.tell() < 1000000:
+                s = f.read(4)
+                if s == b'fLaC':
+                    break
+            else:
+                return
 
         i = 0
         while i < 20:
