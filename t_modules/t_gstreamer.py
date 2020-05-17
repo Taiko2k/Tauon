@@ -57,11 +57,17 @@ def player3(tauon):  # GStreamer
             self.mainloop = GLib.MainLoop()
 
             # Get list of available audio device
-            pctl.gst_devices = ["Auto", "PulseAudio", "ALSA", "JACK"]
+
+            devices = []
+            outputs = {}
+
+            devices = ["Auto", "PulseAudio", "ALSA", "JACK"]
             if tauon.snap_mode:
-                pctl.gst_devices.remove("JACK")
-                pctl.gst_devices.remove("ALSA")
-            pctl.gst_outputs.clear()
+                devices.remove("JACK")
+                devices.remove("ALSA")
+
+
+
             dm = Gst.DeviceMonitor()
             dm.start()
             for device in dm.get_devices():
@@ -72,10 +78,12 @@ def player3(tauon):  # GStreamer
                     display_name = device.get_display_name()
 
                     # This is used by the UI to present list of options to the user in audio settings
-                    pctl.gst_outputs[display_name] = (type_name, device_name)
-                    pctl.gst_devices.append(display_name)
+                    outputs[display_name] = (type_name, device_name)
+                    devices.append(display_name)
 
             dm.stop()
+            pctl.gst_outputs = outputs
+            pctl.gst_devices = devices
 
             # Create main "playbin" pipeline for playback
             self.playbin = Gst.ElementFactory.make("playbin", "player")

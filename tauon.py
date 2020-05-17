@@ -957,7 +957,10 @@ class Prefs:    # Used to hold any kind of settings
         if line:
             line += " ! "
 
-        if prefs.gst_device == "Auto":
+        if prefs.gst_device not in pctl.gst_outputs:
+            line += f"pulsesink client-name=\"{t_title}\""
+
+        elif prefs.gst_device == "Auto":
             line += "autoaudiosink"
         elif prefs.gst_device == "PulseAudio":
             line += f"pulsesink client-name=\"{t_title}\""
@@ -16099,8 +16102,6 @@ def rename_parent(index, template):
     #print(old)
 
     new = parse_template2(template, track)
-    print(new)
-
 
     if len(new) < 1:
         show_message("Rename error.", "The generated name is too short", mode='warning')
@@ -25544,7 +25545,6 @@ class BottomBarType1:
                         elif pctl.playing_state == 1:
                             pctl.show_current(highlight=True)
                         else:
-                            print("PLAY")
                             pctl.play()
                         input.mouse_click = False
                     tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
@@ -26109,7 +26109,6 @@ class BottomBarType_ao1:
                         elif pctl.playing_state == 1:
                             pctl.show_current(highlight=True)
                         else:
-                            print("PLAY")
                             pctl.play()
                         input.mouse_click = False
                     tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
