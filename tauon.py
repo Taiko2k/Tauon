@@ -14810,17 +14810,70 @@ def gen_lyrics(pl, custom_list=None):
         return playlist
 
     if len(playlist) > 0:
-        pctl.multi_playlist.append(pl_gen(title="Tracks with lyrics",
+        pctl.multi_playlist.append(pl_gen(title=_("Tracks with lyrics"),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a ly"
 
     else:
-        show_message("No tracks with lyrics were found.")
+        show_message(_("No tracks with lyrics were found."))
 
 tab_menu.add_to_sub(_("Top Rated Albums"), 0, gen_folder_top_rating, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Top Rated Albums"), 0, gen_folder_top_rating, pass_ref=True)
+
+def gen_incomplete(pl, custom_list=None):
+    playlist = []
+
+    source = custom_list
+    if source is None:
+        source = pctl.multi_playlist[pl][2]
+
+    albums = {}
+    nums = {}
+    for id in source:
+        track = pctl.g(id)
+        if track.album and track.track_number:
+
+            if type(track.track_number) is str and not track.track_number.isdigit():
+                continue
+
+            if track.album not in albums:
+                albums[track.album] = []
+                nums[track.album] = []
+
+            if track not in albums[track.album]:
+                albums[track.album].append(track)
+                nums[track.album].append(int(track.track_number))
+
+    for album, tracks in albums.items():
+        numbers = nums[album]
+        if len(numbers) > 2:
+            mi = min(numbers)
+            mx = max(numbers)
+            r = list(range(int(mi), int(mx)))
+            for track in tracks:
+                if int(track.track_number) in r:
+                    r.remove(int(track.track_number))
+            if r:
+                for tr in tracks:
+                    playlist.append(tr.index)
+
+    if custom_list is not None:
+        return playlist
+
+    if len(playlist) > 0:
+        show_message(_("Note this may include albums that simply have tracks missing an album tag"))
+        pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + _(" <Incomplete Albums>"),
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        # pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a ly"
+
+    else:
+        show_message(_("No incomplete albums were found."))
+
+
 
 def gen_codec_pl(codec):
 
@@ -17915,6 +17968,11 @@ def clear_ratings():
     gui.pl_update += 1
 
 x_menu.add_to_sub(_("Reset User Ratings"), 0, clear_ratings)
+
+def find_incomplete():
+    gen_incomplete(pctl.active_playlist_viewing)
+
+x_menu.add_to_sub(_("Find Incomplete Albums"), 0, find_incomplete)
 
 def toggle_broadcast():
 
@@ -35430,9 +35488,39 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-            x_menu.activate()
-            playlist_menu.active = True
-            playlist_menu.pos = [0, 0]
+            pass
+            # albums = {}
+            # nums = {}
+            # for id in default_playlist:
+            #     track = pctl.g(id)
+            #     if track.album and track.track_number:
+            #
+            #         if type(track.track_number) is str and not track.track_number.isdigit():
+            #             continue
+            #
+            #         if track.album not in albums:
+            #             albums[track.album] = []
+            #             nums[track.album] = []
+            #
+            #         albums[track.album].append(track)
+            #         nums[track.album].append(int(track.track_number))
+            #
+            # for album, tracks in albums.items():
+            #     numbers = nums[album]
+            #     if len(numbers) > 2:
+            #         mi = min(numbers)
+            #         mx = max(numbers)
+            #         r = list(range(int(mi), int(mx)))
+            #         for track in tracks:
+            #             if int(track.track_number) in r:
+            #                 r.remove(int(track.track_number))
+            #         if r:
+            #             print(tracks[0].album)
+                        #print(r)
+                        #break
+
+
+
             #prefs.showcase_overlay_texture ^= True
             # gui.hide_tracklist_in_gallery ^= True
 
