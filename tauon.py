@@ -14855,7 +14855,7 @@ def gen_incomplete(pl, custom_list=None):
             for track in tracks:
                 if int(track.track_number) in r:
                     r.remove(int(track.track_number))
-            if r:
+            if r or mi > 1:
                 for tr in tracks:
                     playlist.append(tr.index)
 
