@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v5.5.4
 
+ - Added "Find incomplete albums" function
  - Fixed metadata not being read from some FLAC files
  - Fixed crash when selecting GStreamer output device
 
