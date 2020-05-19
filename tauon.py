@@ -14851,6 +14851,9 @@ def gen_incomplete(pl, custom_list=None):
         if len(numbers) > 2:
             mi = min(numbers)
             mx = max(numbers)
+            for track in tracks:
+                if type(track.track_total) is int or (type(track.track_total) is str and track.track_total.isdigit()):
+                    mx = max(mx, int(track.track_total))
             r = list(range(int(mi), int(mx)))
             for track in tracks:
                 if int(track.track_number) in r:
