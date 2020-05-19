@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.5.4"
+n_version = "5.5.5"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -67,7 +67,17 @@ if not windows_native:
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 #de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
 de_notify_support = False
+draw_min_button = True
 
+if desktop == 'GNOME':
+    try:
+        from gi.repository import Gio
+        print("DE dectected as GNOME")
+        gconf = Gio.Settings.new("org.gnome.desktop.wm.preferences")
+        if "minimize" not in str(gconf.get_value("button-layout")):
+            draw_min_button = False
+    except:
+        print("Error accessing dconf")
 
 # Find the directory we are running from
 install_directory = sys.path[0]
@@ -7208,14 +7218,18 @@ def draw_window_tools():
     x_on = colours.window_button_x_on
     x_off = colours.window_button_x_off
 
+
+
     if gui.mode == 3:
 
         bg_off = [0, 0, 0, 50]
         bg_on = [255, 255, 255, 10]
         fg_off =(255, 255, 255, 40)
         fg_on = (255, 255, 255, 60)
-
-        rect = (window_size[0] - 96 * gui.scale, 1 * gui.scale, 30 * gui.scale, 28 * gui.scale)
+        x = window_size[0] - 96 * gui.scale
+        if not draw_min_button:
+            x += 35 * gui.scale
+        rect = (x, 1 * gui.scale, 30 * gui.scale, 28 * gui.scale)
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
         fields.add(rect)
         if coll(rect):
@@ -7229,27 +7243,27 @@ def draw_window_tools():
         else:
             top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
+    if draw_min_button:
+        rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
+        fields.add(rect)
+        if coll(rect):
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
+            ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                       fg_on, True)
+            if (mouse_up or ab_click) and coll_point(click_location, rect):
 
-    rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
-    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
-    fields.add(rect)
-    if coll(rect):
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
-        ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                   fg_on, True)
-        if (mouse_up or ab_click) and coll_point(click_location, rect):
+                if tray.active and prefs.min_to_tray:
+                    tray.down()
+                else:
+                    SDL_MinimizeWindow(t_window)
 
-            if tray.active and prefs.min_to_tray:
-                tray.down()
-            else:
-                SDL_MinimizeWindow(t_window)
-
-            mouse_down = False
-            input.mouse_click = False
-            drag_mode = False
-    else:
-        ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                   fg_off, True)
+                mouse_down = False
+                input.mouse_click = False
+                drag_mode = False
+        else:
+            ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                       fg_off, True)
 
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off, True)
@@ -33699,7 +33713,7 @@ def hit_callback(win, point, data):
                 else:
                     return SDL_HITTEST_DRAGGABLE
 
-        elif top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80 * gui.scale:
+        elif top_panel.drag_zone_start_x < point.contents.x < window_size[0] - (gui.offset_extra + 5):
 
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
@@ -34062,7 +34076,11 @@ def update_layout_do():
 
         gui.offset_extra = 0
         if draw_border:
-            gui.offset_extra = 61 * gui.scale
+
+            offset = 61 * gui.scale
+            if not draw_min_button:
+                offset -= 35 * gui.scale
+            gui.offset_extra = offset
 
         global album_v_gap
         global album_h_gap

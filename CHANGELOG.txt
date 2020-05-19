@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.5.5
+
+ - Changed show minimize button to follow gnome setting
+
 v5.5.4
 
  - Added "Find incomplete albums" function
