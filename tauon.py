@@ -71,13 +71,12 @@ draw_min_button = True
 
 if desktop == 'GNOME':
     try:
-        from gi.repository import Gio
-        print("DE dectected as GNOME")
-        gconf = Gio.Settings.new("org.gnome.desktop.wm.preferences")
-        if "minimize" not in str(gconf.get_value("button-layout")):
+        gi.require_version('Gtk', '3.0')
+        from gi.repository import Gtk
+        if "minimize" not in str(Gtk.Settings().get_default().get_property("gtk-decoration-layout")):
             draw_min_button = False
     except:
-        print("Error accessing dconf")
+        print("Error accessing gtk settings")
 
 # Find the directory we are running from
 install_directory = sys.path[0]
