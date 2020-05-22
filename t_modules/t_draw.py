@@ -26,7 +26,7 @@ import ctypes
 system = "linux"
 if sys.platform == 'win32':
     system = "windows"
-
+system = "linux"
 if system == "linux":
     import cairo
     import gi
@@ -516,6 +516,9 @@ class TDraw:
                 extra = round(400000 * self.scale)
 
             layout.set_height(h * 1000 + extra)
+           
+        if not wrap and max_y is None:
+            layout.set_height(-1)
 
         # Attributes don't seem to be implemented in gi?
         # attrs = Pango.AttrList()
