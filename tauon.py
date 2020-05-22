@@ -49,9 +49,12 @@ bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe73
 # Detect platform
 windows_native = False
 macos = False
+msys = False
 if sys.platform == 'win32':
-    system = 'windows'
-    windows_native = True
+    #system = 'windows'
+    #windows_native = False
+    system = 'linux'
+    msys = True
 else:
     system = 'linux'
     import fcntl
@@ -62,6 +65,7 @@ if sys.platform == "darwin":
 if not windows_native:
     import gi
     from gi.repository import GLib
+
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
@@ -89,7 +93,7 @@ if pyinstaller_mode:
     install_directory = os.path.dirname(install_directory)
 
 
-if system == "windows":
+if system == "windows" and not msys:
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 
 # Set data folders (portable mode)
@@ -257,7 +261,7 @@ if flatpak_mode:
 
 pid = os.getpid()
 
-if system == 'linux':
+if system == 'linux' and not msys:
     if os.path.isfile('.gitignore'):
         print("Dev mode, ignoring single instancing")
     else:
@@ -612,7 +616,7 @@ except:
 
 if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
-else:
+elif not msys:
     gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
     from gi.repository import Notify
 
@@ -641,12 +645,12 @@ if system == 'linux':
 
 from t_modules import t_autodownload
 
-if system == "linux" and not macos:
+if system == "linux" and not macos and not msys:
     from t_modules.t_dbus import Gnome
     from t_modules.t_gdk_extra import *
 
 
-if system == "linux" and not macos:
+if system == "linux" and not macos and not msys:
     c_br = cursor_get_gdk(4)
     c_rs = cursor_get_gdk(8)
     c_ts = cursor_get_gdk(9)
@@ -3821,9 +3825,9 @@ def tag_scan(nt):
                     if len(lyrics) > 30 and ".com" not in lyrics:
                         nt.lyrics = lyrics
                     elif len(lyrics) > 2:
-                        print("Tag Scan: Possible spam found in lyric field")
-                        print("     In file: " + nt.fullpath)
-                        print("     Value: " + lyrics)
+                        console.print("Tag Scan: Possible spam found in lyric field")
+                        console.print("     In file: " + nt.fullpath)
+                        console.print("     Value: " + lyrics)
 
                 if SYLT in tag:
                     print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
@@ -5391,7 +5395,7 @@ def update_title_do():
 
 
 def open_encode_out():
-    if system == 'windows':
+    if system == 'windows' or msys:
         line = r'explorer ' + prefs.encoder_output.replace("/", "\\")
         subprocess.Popen(line)
     else:
@@ -5405,7 +5409,7 @@ def open_encode_out():
 def g_open_encode_out(a, b, c):
     open_encode_out()
 #
-if system == 'linux' and not macos:
+if system == 'linux' and not macos and not msys:
 
     try:
         Notify.init("Tauon Music Box")
@@ -6292,6 +6296,7 @@ class Tauon:
         self.love = love
         self.snap_mode = snap_mode
         self.console = console
+        self.msys = msys
 
     # def log(self, line, title=False):
     #
@@ -6307,7 +6312,9 @@ tauon = Tauon()
 
 
 # Check if BASS is present and fall back to Gstreamer if not
-if prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
+if msys:
+    prefs.backend = 1  
+elif prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
     if system != "windows":
         print("BASS not found")
         prefs.backend = 2
@@ -6917,7 +6924,7 @@ class STray:
         self.active = False
 
 
-if system == "linux" and not macos:
+if system == "linux" and not macos and not msys:
 
     gnome = Gnome(tauon)
 
@@ -7327,7 +7334,7 @@ cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
 
-if system == "linux" and not macos:
+if system == "linux" and not macos and not msys:
     cursor_br_corner = cairo_cursor_to_sdl(*c_br, fallback=cursor_standard)
     cursor_right_side = cairo_cursor_to_sdl(*c_rs, fallback=cursor_standard)
     cursor_top_side = cairo_cursor_to_sdl(*c_ts, fallback=cursor_standard)
@@ -7438,7 +7445,7 @@ def bass_player_thread(player):
     #                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
     try:
-        player(pctl, gui, prefs, lfm_scrobbler, star_store)
+        player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon)
     except:
         #logging.exception('Exception on player thread')
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
@@ -7448,7 +7455,7 @@ def bass_player_thread(player):
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
         raise
 
-if system == 'windows' and taskbar_progress:
+if (system == 'windows' or msys) and taskbar_progress:
 
     class WinTask:
 
@@ -7457,7 +7464,7 @@ if system == 'windows' and taskbar_progress:
             self.updated_state = 0
             self.window_id = gui.window_id
             import comtypes.client as cc
-            cc.GetModule("TaskbarLib.tlb")
+            cc.GetModule(install_directory + "\\TaskbarLib.tlb")
             import comtypes.gen.TaskbarLib as tbl
             self.taskbar = cc.CreateObject(
                 "{56FDF344-FD6D-11d0-958A-006097C9A090}",
@@ -7496,7 +7503,7 @@ if system == 'windows' and taskbar_progress:
                     self.taskbar.SetProgressValue(self.window_id, 0, 100)
 
 
-    if os.path.isfile("TaskbarLib.tlb"):
+    if os.path.isfile(install_directory + "/TaskbarLib.tlb"):
         print("Taskbar progress enabled")
         pctl.windows_progress = WinTask()
 
@@ -13351,7 +13358,9 @@ def export_xspf(pl):
 
     line = direc
     line += "/"
-    if system == 'mac':
+    if system == "windows" or msys:
+        os.startfile(line)
+    elif system == 'mac':
         subprocess.Popen(['open', line])
     else:
         subprocess.Popen(['xdg-open', line])
@@ -13769,7 +13778,7 @@ def export_stats(pl):
     xport.write(line)
     xport.close()
     target = os.path.join(user_directory, "stats.txt")
-    if system == "windows":
+    if system == "windows" or msys:
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
@@ -15368,7 +15377,7 @@ def open_license():
     if os.path.isfile(os.path.join(install_directory, "LICENSE.txt")):
         target = os.path.join(install_directory, "LICENSE.txt")
 
-    if system == "windows":
+    if system == "windows" or msys:
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
@@ -15395,7 +15404,7 @@ def reload_config_file():
 def open_config_file():
     save_prefs()
     target = os.path.join(config_directory, "tauon.conf")
-    if system == "windows":
+    if system == "windows" or msys:
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
@@ -15414,7 +15423,7 @@ def open_keymap_file():
         show_message("Input file missing")
         return
 
-    if system == "windows":
+    if system == "windows" or msys:
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
@@ -15427,7 +15436,7 @@ def open_file(target):
         show_message("Input file missing")
         return
 
-    if system == "windows":
+    if system == "windows" or msys:
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
@@ -15437,7 +15446,7 @@ def open_file(target):
 
 def open_data_directory():
     target = user_directory
-    if system == "windows":
+    if system == "windows" or msys:
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
@@ -20475,7 +20484,7 @@ def worker1():
         global master_count
 
         if system != "windows":  # Windows terminal doesn't like unicode
-            print("Reading CUE file: " + path)
+            console.print("Reading CUE file: " + path)
 
         try:
 
@@ -22090,7 +22099,7 @@ key_lalt = False
 
 
 def reload_backend():
-
+    print("Reload backend...")
     wait = 0
     pre_state = pctl.stop(True)
 
@@ -22428,7 +22437,7 @@ class Over:
 
         colour = colours.box_sub_text
 
-        if not macos and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
+        if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
             if arch == "x86_64":
                 if not gui.downloading_bass:
                     #. Limited width. Max 27 chars. Alt: Download BASS
@@ -35116,7 +35125,7 @@ while pctl.running:
             # print(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-                if system == "linux" and not macos:
+                if system == "linux" and not macos and not msys:
                     gnome.focus()
                 k_input = True
 
