@@ -31,8 +31,9 @@ import copy
 import threading
 import requests
 
-def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
+def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
+    print("loading bass...")
     player_timer = Timer()
     broadcast_timer = Timer()
     broadcast_update_timer = Timer()
@@ -50,13 +51,14 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     b_linux_lib_dir = linux_lib_dir.encode()
 
-    if pctl.system == 'windows':
-        bass_module = ctypes.WinDLL('bass')
-        enc_module = ctypes.WinDLL('bassenc')
-        mix_module = ctypes.WinDLL('bassmix')
-        fx_module = ctypes.WinDLL('bass_fx')
+    if pctl.system == 'windows' or tauon.msys:
+        windows_lib_dir = pctl.install_directory + '/lib/'
+        bass_module = ctypes.WinDLL(windows_lib_dir + 'bass')
+        enc_module = ctypes.WinDLL(windows_lib_dir + 'bassenc')
+        mix_module = ctypes.WinDLL(windows_lib_dir + 'bassmix')
+        fx_module = ctypes.WinDLL(windows_lib_dir + 'bass_fx')
         # opus_module = ctypes.WinDLL('bassenc_opus')
-        ogg_module = ctypes.WinDLL('bassenc_ogg')
+        ogg_module = ctypes.WinDLL(windows_lib_dir + 'bassenc_ogg')
 
         function_type = ctypes.WINFUNCTYPE
     elif pctl.system == 'linux' and pctl.macos:
