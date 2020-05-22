@@ -49,6 +49,7 @@ bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe73
 # Detect platform
 windows_native = False
 macos = False
+msys = False
 if sys.platform == 'win32':
     #system = 'windows'
     #windows_native = False
