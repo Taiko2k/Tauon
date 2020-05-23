@@ -10,3 +10,4 @@ musicbrainzngs
 discogs_client
 pypresence
 isounidecode
+infi.systray

@@ -93,7 +93,7 @@ if pyinstaller_mode:
     install_directory = os.path.dirname(install_directory)
 
 
-if system == "windows" and not msys:
+if system == "windows" or msys:
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 
 # Set data folders (portable mode)
@@ -183,7 +183,7 @@ if install_mode and system == 'linux':
                 shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
 
 
-elif system == 'windows' and ('Program Files' in install_directory or
+elif (system == 'windows' or msys) and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
 
     user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
@@ -6873,7 +6873,7 @@ def koel_get_album_thread():
     shoot_dl.start()
 
 
-if system == "windows":
+if system == "windows" or msys:
     from infi.systray import SysTrayIcon
 
 
@@ -6937,8 +6937,7 @@ if system == "linux" and not macos and not msys:
 
 tray = STray()
 
-if system == "windows":
-
+if system == "windows" or msys:
 
     tray.start()
 
@@ -6999,7 +6998,7 @@ if system == "windows":
 
         listen()
 
-if system == 'windows':
+if system == 'windows' or msys:
     print('Starting hook thread for Windows')
     keyboardHookThread = threading.Thread(target=keyboard_hook)
     keyboardHookThread.daemon = True
@@ -23003,9 +23002,10 @@ class Over:
         y = y0 + round(20 * gui.scale)
 
         ddt.text_background_colour = colours.box_background
-        if self.button2(x, y, "Last.fm", width=84*gui.scale):
-            self.account_view = 1
-        self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
+        if last_fm_enable:
+            if self.button2(x, y, "Last.fm", width=84*gui.scale):
+                self.account_view = 1
+            self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
         y += 30 * gui.scale
 
         if self.button2(x, y, "ListenBrainz", width=84*gui.scale):
