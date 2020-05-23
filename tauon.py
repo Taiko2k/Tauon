@@ -39419,7 +39419,7 @@ gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll
 
 save_state()
 
-if system == "windows":
+if system == "windows" or msys:
     tray.stop()
 else:
     if de_notify_support:
