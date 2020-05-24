@@ -362,15 +362,17 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
         init_flag |= BASS_DEVICE_MONO
 
 
-    if pctl.system == 'windows':
-        # print(BASS_ErrorGetCode())
-        BASS_PluginLoad(b'bassopus.dll', 0)
-        BASS_PluginLoad(b'bassflac.dll', 0)
-        BASS_PluginLoad(b'bass_ape.dll', 0)
-        BASS_PluginLoad(b'bass_tta.dll', 0)
-        BASS_PluginLoad(b'basswma.dll', 0)
-        BASS_PluginLoad(b'basswv.dll', 0)
-        BASS_PluginLoad(b'bassalac.dll', 0)
+    if pctl.system == 'windows' or tauon.msys:
+        #print(BASS_ErrorGetCode())
+        windows_lib_dir = pctl.install_directory + '\\lib\\'
+        windows_lib_dir = windows_lib_dir.encode()
+        BASS_PluginLoad(windows_lib_dir + b'bassopus.dll', 0)
+        BASS_PluginLoad(windows_lib_dir + b'bassflac.dll', 0)
+        BASS_PluginLoad(windows_lib_dir + b'bass_ape.dll', 0)
+        BASS_PluginLoad(windows_lib_dir + b'bass_tta.dll', 0)
+        BASS_PluginLoad(windows_lib_dir + b'basswma.dll', 0)
+        BASS_PluginLoad(windows_lib_dir + b'basswv.dll', 0)
+        BASS_PluginLoad(windows_lib_dir + b'bassalac.dll', 0)
 
     elif pctl.macos:
         BASS_PluginLoad(b_linux_lib_dir + b'libbassopus.dylib', 0)
@@ -532,7 +534,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             self.open_file_flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT
             if not prefs.short_buffer:
                 self.open_file_flags |= BASS_ASYNCFILE
-            if pctl.system == "windows":
+            if pctl.system == "windows" or tauon.msys:
                 self.open_file_flags |= BASS_UNICODE
 
         def try_init(self, re=False):
@@ -784,7 +786,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
                 target = self.save_temp.encode()
 
-                if pctl.system == "windows":
+                if pctl.system == "windows" or tauon.msys:
                     target = target.decode().replace("/", "\\")
 
                 new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
@@ -814,7 +816,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
                 # print(BASS_ErrorGetCode())
                 # Load new stream
-                if pctl.system == "windows":
+                if pctl.system == "windows" or tauon.msys:
                     target = target.decode()
 
                 new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
@@ -1331,7 +1333,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                         if len(fi) == 2:
                             line += ' -t "' + fi[0].strip('"') + '"'
                             line += ' -a "' + fi[1].strip('"') + '"'
-                    if pctl.system != 'windows':
+                    if pctl.system != 'windows' and not tauon.msys:
                         file = file.encode('utf-8')
                         line = line.encode('utf-8')
                         flag = 0
@@ -1432,7 +1434,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             if command == 'time':
 
                 pctl.target_open = pctl.time_to_get
-                if pctl.system != 'windows':
+                if pctl.system != 'windows' and not tauon.msys:
                     pctl.target_open = pctl.target_open.encode('utf-8')
                     flag = 0
                 else:
@@ -1547,7 +1549,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                             line += ' -t "' + fi[0].strip('"') + '"'
                             line += ' -a "' + fi[1].strip('"') + '"'
 
-                    if pctl.system != 'windows':
+                    if pctl.system != 'windows' and not tauon.msys:
                         file = file.encode('utf-8')
                         line = line.encode('utf-8')
                         flag = 0
@@ -1574,7 +1576,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             if command == 'cast-next':
                 #print("Next Enc Rec")
 
-                if pctl.system != 'windows':
+                if pctl.system != 'windows' and not tauon.msys:
                     pctl.target_open = pctl.target_open.encode('utf-8')
                     flag = 0
                 else:
@@ -1644,7 +1646,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 pctl.broadcast_active = True
                 print("starting encoder")
 
-                if pctl.system != 'windows':
+                if pctl.system != 'windows' and not tauon.msys:
                     pctl.target_open = pctl.target_open.encode('utf-8')
                     flag = 0
                 else:

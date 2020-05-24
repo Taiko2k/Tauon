@@ -3169,6 +3169,7 @@ def save_prefs():
     cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
 
     cf.update_value("ui-scale", prefs.scale_want)
+    cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
 
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
@@ -3176,7 +3177,7 @@ def save_prefs():
     cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
     cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
     cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
-    cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
+    
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
     cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
@@ -3283,7 +3284,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[tag-editor]")
-    if system == 'windows':
+    if system == 'windows' or msys:
         prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
         prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "C:\Program Files (x86)\MusicBrainz Picard\picard.exe", "The path of the exe to run.")
     else:
@@ -4094,7 +4095,7 @@ class PlayerCtl:
 
     def render_playlist(self):
 
-        if taskbar_progress and system == 'windows' and self.windows_progress:
+        if taskbar_progress and msys and self.windows_progress:
             self.windows_progress.update(True)
         gui.pl_update = 1
 
@@ -4605,7 +4606,7 @@ class PlayerCtl:
             self.playerCommandReady = True
             self.playing_time = self.new_time
 
-            if system == 'windows' and taskbar_progress and self.windows_progress:
+            if msys and taskbar_progress and self.windows_progress:
                 self.windows_progress.update(True)
 
             if self.mpris is not None:
@@ -4680,7 +4681,7 @@ class PlayerCtl:
         if prefs.backend == 2:  # (gstreamer)
             gap_extra = 2
 
-        if system == 'windows' and taskbar_progress and self.windows_progress:
+        if msys and taskbar_progress and self.windows_progress:
             self.windows_progress.update(True)
 
         if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
@@ -7378,7 +7379,7 @@ if not maximized and gui.maximized:
 
 # print(SDL_GetError())
 
-if system == 'windows':
+if system == 'windows' or msys:
     sss = SDL_SysWMinfo()
     SDL_GetWindowWMInfo(t_window, sss)
     gui.window_id = sss.info.win.window
@@ -7664,9 +7665,9 @@ if system == "linux":
 
 
 else:
-    standard_font = "Meiryo"
+    #standard_font = "Meiryo"
     standard_font = "Arial"
-    semibold_font = "Meiryo Semibold"
+    #semibold_font = "Meiryo Semibold"
     semibold_font = "Arial Bold"
     standard_weight = 500
     bold_weight = 600
@@ -9393,7 +9394,7 @@ class AlbumArt():
         if source[offset][0] > 0:
             return 0
 
-        if system == "windows":
+        if system == "windows" or msys:
             os.startfile(source[offset][1])
         elif system == 'mac':
             subprocess.call(["open", source[offset][1]])
@@ -11952,7 +11953,7 @@ power_bar_icon = asset_loader('power.png', True)
 
 def open_folder_stem(path):
 
-    if system == 'windows':
+    if system == 'windows' or msys:
         line = r'explorer /select,"%s"' % (
             path.replace("/", "\\"))
         subprocess.Popen(line)
@@ -11971,7 +11972,7 @@ def open_folder(index):
         show_message("Can't open folder of a network track.")
         return
 
-    if system == 'windows':
+    if system == 'windows' or msys:
         line = r'explorer /select,"%s"' % (
             track.fullpath.replace("/", "\\"))
         subprocess.Popen(line)
@@ -13430,7 +13431,7 @@ def clear_playlist(index):
 def convert_playlist(pl):
     global transcode_list
 
-    if system == 'windows':
+    if system == 'windows' or msys:
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from encoder directory",
                          "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
@@ -15488,7 +15489,7 @@ def convert_folder(index):
     global default_playlist
     global transcode_list
 
-    if system == 'windows':
+    if system == 'windows' or msys:
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from encoder directory",
                          "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
@@ -16061,7 +16062,7 @@ def delete_track(track_ref):
     tr = pctl.g(track_ref)
     fullpath = tr.fullpath
 
-    if system == "windows":
+    if system == "windows" or msys:
         fullpath = fullpath.replace("/", "\\")
 
     if tr.is_network:
@@ -16152,7 +16153,7 @@ def delete_folder(index, force=False):
         if force:
             shutil.rmtree(old)
         else:
-            if system == "windows":
+            if system == "windows" or msys:
                 send2trash(old.replace("/", "\\"))
             else:
                 send2trash(old)
@@ -16571,13 +16572,13 @@ def editor(index):
         file_line += pctl.master_library[track].fullpath
         file_line += '"'
 
-    if system == "windows":
+    if system == "windows" or msys:
         file_line = file_line.replace("/", "\\")
 
     prefix = ""
     app = prefs.tag_editor_target
 
-    if system == "windows" and app:
+    if (system == "windows" or msys) and app:
         if app[0] != '"':
             app = '"' + app
         if app[-1] != '"':
@@ -18922,7 +18923,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     command = user_directory + "/encoder/ffmpeg "
 
 
-    if system != 'windows':
+    if system != 'windows' and not msys:
         command = "ffmpeg "
     else:
         command = command.replace("/", "\\")
@@ -18958,11 +18959,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     print(shlex.split(command))
     startupinfo = None
-    if system == 'windows':
+    if system == 'windows' or msys:
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-    if system == "linux":
+    if not msys:
         command = shlex.split(command)
 
     subprocess.call(command, stdout=subprocess.PIPE, shell=False,
@@ -20502,7 +20503,7 @@ def worker1():
         global added
         global master_count
 
-        if system != "windows":  # Windows terminal doesn't like unicode
+        if not msys:  # Windows terminal doesn't like unicode
             console.print("Reading CUE file: " + path)
 
         try:
@@ -23285,8 +23286,8 @@ class Over:
 
             y -= 1 * gui.scale
             x += 280 * gui.scale
-            if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
-                    system != 'windows' and shutil.which('ffmpeg') is None):
+            if (msys and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
+                    not msys and shutil.which('ffmpeg') is None):
                 ddt.text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
         x = x0 + round(20 * gui.scale)
@@ -23336,7 +23337,7 @@ class Over:
 
 
 
-        if system == "windows":
+        if msys:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
         else:
@@ -33384,7 +33385,7 @@ class DLMon:
                 min_age = (time.time() - stamp) / 60
                 ext = os.path.splitext(path)[1][1:].lower()
 
-                if system == "windows" and "TauonMusicBox" in path:
+                if msys and "TauonMusicBox" in path:
                     continue
 
                 if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
