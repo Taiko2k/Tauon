@@ -7602,7 +7602,7 @@ draw = Drawing()
 if system == "linux":
     standard_font = prefs.linux_font
     if msys:
-        standard_font = "Sans"
+        standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working 
     ddt.prime_font(standard_font, 8, 9)
     ddt.prime_font(standard_font, 8, 10)
     ddt.prime_font(standard_font, 8.5, 11)
@@ -7624,7 +7624,7 @@ if system == "linux":
 
     standard_font = prefs.linux_font_semibold
     if msys:
-        standard_font = "Sans"
+        standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
     
     ddt.prime_font(standard_font, 8, 309)
     ddt.prime_font(standard_font, 8, 310)
@@ -7641,7 +7641,7 @@ if system == "linux":
 
     standard_font = prefs.linux_font_bold
     if msys:
-        standard_font = "Sans Bold"
+        standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
 
     ddt.prime_font(standard_font, 6, 209)
     ddt.prime_font(standard_font, 7, 210)
@@ -7659,7 +7659,7 @@ if system == "linux":
 
     standard_font = "Noto Sans, ExtraCondensed"
     if msys:
-        standard_font = "Sans"
+        standard_font = "Noto Sans ExtCond, Sans"
     ddt.prime_font(standard_font, 10, 413)
     ddt.prime_font(standard_font, 11, 414)
     ddt.prime_font(standard_font, 12, 415)
@@ -7668,7 +7668,7 @@ if system == "linux":
 
     standard_font = "Noto Sans, ExtraCondensed Bold"
     if msys:
-        standard_font = "Sans"
+        standard_font = "Noto Sans ExtCond, Sans Bold"
     ddt.prime_font(standard_font, 10, 513)
     ddt.prime_font(standard_font, 11, 514)
     ddt.prime_font(standard_font, 12, 515)
@@ -8927,6 +8927,7 @@ class GallClass:
                     im.thumbnail((size, size), Image.ANTIALIAS)
 
                     im.save(g, 'BMP')
+                    
                     if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
                         im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
 
