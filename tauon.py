@@ -7601,6 +7601,8 @@ draw = Drawing()
 
 if system == "linux":
     standard_font = prefs.linux_font
+    if msys:
+        standard_font = "Sans"
     ddt.prime_font(standard_font, 8, 9)
     ddt.prime_font(standard_font, 8, 10)
     ddt.prime_font(standard_font, 8.5, 11)
@@ -7621,6 +7623,9 @@ if system == "linux":
     ddt.prime_font(standard_font, 10, 413)
 
     standard_font = prefs.linux_font_semibold
+    if msys:
+        standard_font = "Sans"
+    
     ddt.prime_font(standard_font, 8, 309)
     ddt.prime_font(standard_font, 8, 310)
     ddt.prime_font(standard_font, 8.5, 311)
@@ -7635,6 +7640,8 @@ if system == "linux":
     ddt.prime_font(standard_font, 24, 330)
 
     standard_font = prefs.linux_font_bold
+    if msys:
+        standard_font = "Sans Bold"
 
     ddt.prime_font(standard_font, 6, 209)
     ddt.prime_font(standard_font, 7, 210)
@@ -7651,6 +7658,8 @@ if system == "linux":
     ddt.prime_font(standard_font, 25, 228)
 
     standard_font = "Noto Sans, ExtraCondensed"
+    if msys:
+        standard_font = "Sans"
     ddt.prime_font(standard_font, 10, 413)
     ddt.prime_font(standard_font, 11, 414)
     ddt.prime_font(standard_font, 12, 415)
@@ -7658,6 +7667,8 @@ if system == "linux":
 
 
     standard_font = "Noto Sans, ExtraCondensed Bold"
+    if msys:
+        standard_font = "Sans"
     ddt.prime_font(standard_font, 10, 513)
     ddt.prime_font(standard_font, 11, 514)
     ddt.prime_font(standard_font, 12, 515)
@@ -33747,7 +33758,7 @@ def hit_callback(win, point, data):
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
 
-            if gui.vis != 0 and point.contents.x > window_size[0] - 160 and system == "windows":
+            if gui.vis != 0 and point.contents.x > window_size[0] - 160 and (system == "windows" or  msys):
                 return SDL_HITTEST_NORMAL
 
             return SDL_HITTEST_DRAGGABLE
