@@ -30559,14 +30559,25 @@ class TreeView:
                 elif right_click:
 
                     if item[3]:
+                        
                         for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
-                            if pctl.g(id).fullpath.startswith(target):
-                                folder_tree_menu.activate(in_reference=id)
-                                self.menu_selected = full_folder_path
-                                break
+                            if msys:
+                                if pctl.g(id).fullpath.startswith(target.lstrip("/")):
+                                    folder_tree_menu.activate(in_reference=id)
+                                    self.menu_selected = full_folder_path
+                                    break                            
+                            else:
+                                if pctl.g(id).fullpath.startswith(target):
+                                    folder_tree_menu.activate(in_reference=id)
+                                    self.menu_selected = full_folder_path
+                                    break
                     else:
-                        folder_tree_stem_menu.activate(in_reference=full_folder_path)
-                        self.menu_selected = full_folder_path
+                        if msys:
+                            folder_tree_stem_menu.activate(in_reference=full_folder_path.lstrip("/"))
+                            self.menu_selected = full_folder_path.lstrip("/")
+                        else:
+                            folder_tree_stem_menu.activate(in_reference=full_folder_path)
+                            self.menu_selected = full_folder_path
 
                 elif input.mouse_click:
                     #quick_drag = True
@@ -30590,9 +30601,14 @@ class TreeView:
                         # Locate the first track of folder in playlist
                         track_id = None
                         for p, id in enumerate(default_playlist):
-                            if pctl.g(id).fullpath.startswith(target):
-                                track_id = id
-                                break
+                            if msys:
+                                if pctl.g(id).fullpath.startswith(target.lstrip("/")):
+                                    track_id = id
+                                    break
+                            else:
+                                if pctl.g(id).fullpath.startswith(target):
+                                    track_id = id
+                                    break                            
                         else:  # Fallback to folder name if full-path not found (hack for networked items)
                             for p, id in enumerate(default_playlist):
                                 if pctl.g(id).parent_folder_name == item[0]:
@@ -30699,6 +30715,7 @@ class TreeView:
             playlist_hold = True
 
             self.dragging_name = self.click_drag_source[0]
+            print(self.dragging_name)
 
             if "/" in self.dragging_name:
                 self.dragging_name = os.path.basename(self.dragging_name)
@@ -30706,8 +30723,12 @@ class TreeView:
             shift_selection.clear()
             set_drag_source()
             for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
-                if pctl.g(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
-                    shift_selection.append(p)
+                if msys:
+                    if pctl.g(id).fullpath.startswith(self.click_drag_source[1].lstrip("/") + "/" + self.click_drag_source[0] + "/"):
+                        shift_selection.append(p)
+                else:
+                    if pctl.g(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
+                        shift_selection.append(p)
             self.click_drag_source = None
 
         if self.dragging_name and not quick_drag:
