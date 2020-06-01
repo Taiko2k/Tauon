@@ -9233,7 +9233,7 @@ class AlbumArt():
         self.downloaded_image = None
         self.downloaded_track = None
 
-        self.base64cahce = (0, 0, "")
+        self.base64cache = (0, 0, "")
         self.processing64on = None
 
         self.bin_cached = (None, None, None)  # track, subsource, bin
@@ -10794,6 +10794,7 @@ b_panel_size = 300
 b_info_bar = False
 
 
+title_image = asset_loader("title.png", True)
 
 message_info_icon = asset_loader("notice.png")
 message_warning_icon = asset_loader("warning.png")
@@ -23427,8 +23428,8 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        ddt.text((x, y + 4 * gui.scale), t_title, colours.box_title_text, 216)
-
+        #ddt.text((x, y + 4 * gui.scale), t_title, colours.box_title_text, 216)
+        title_image.render(x - 1, y, [220, 220, 220, 255])
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
             self.ani_cred = 1
@@ -23471,7 +23472,7 @@ class Over:
             y += 20 * gui.scale
             ddt.text((x, y), "Copyright © 2015-2020 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
             y += 21 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmusicbox", colours.box_sub_text, 12)
+            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/TauonMusicBox", colours.box_sub_text, 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
