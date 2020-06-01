@@ -3,7 +3,10 @@ Changelog-------------------------------------
 
 v5.5.5
 
- - Changed show minimize button to follow gnome setting
+ - Changed show minimize button to follow GTK setting
+ - Fixed a bug with radio page not loading album art
+ - Various fixes for custom light themes
+ - Various Windows fixes for use with MSYS
 
 v5.5.4
 

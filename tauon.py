@@ -2292,8 +2292,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_tab_hl = self.grey(45)
         # self.box_background = self.grey(30)
         self.toggle_box_on = self.tab_background_active
-        if colour_value(self.tab_background_active) < 250:
-            self.toggle_box_on = [255, 255, 255, 200]
+        #if colour_value(self.tab_background_active) < 250:
+        #    self.toggle_box_on = [255, 255, 255, 200]
 
         # self.time_sub = [0, 0, 0, 200]
         self.gallery_artist_line = self.grey(40)
@@ -22461,6 +22461,7 @@ class Over:
 
     def audio(self, x0, y0, w0, h0):
 
+        ddt.text_background_colour = colours.box_background
         y = y0 + 40 * gui.scale
         x = x0 + 40 * gui.scale
 
@@ -23154,7 +23155,7 @@ class Over:
 
         if self.account_view == 1:
 
-            ddt.text((x, y), 'Last.fm', colours.grey_blend_bg(220), 213)
+            ddt.text((x, y), 'Last.fm', colours.box_sub_text, 213)
 
             ww = ddt.get_text_w(_("Username:"), 212)
             ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.box_text_label, 212)
@@ -23323,10 +23324,12 @@ class Over:
         global album_mode_art_size
         global update_layout
 
+        ddt.text_background_colour = colours.box_background
         x = x0 + round(25 * gui.scale)
         y = y0 + round(20 * gui.scale)
 
         ddt.text((x, y), _("Window"),colours.box_text_label, 12)
+
 
         y += 28 * gui.scale
 
@@ -23429,7 +23432,7 @@ class Over:
         y -= 10 * gui.scale
 
         #ddt.text((x, y + 4 * gui.scale), t_title, colours.box_title_text, 216)
-        title_image.render(x - 1, y, [220, 220, 220, 255])
+        title_image.render(x - 1, y, alpha_mod(colours.box_sub_text, 240))
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
             self.ani_cred = 1
@@ -23946,6 +23949,9 @@ class Over:
             else:
                 abg = [220, 150, 20, 255]
 
+        if colour_value(colours.box_background) > 300:
+            abg = colours.box_sub_text
+
         dec_arrow.render(x + 1 * gui.scale, y, abg)
 
         x += 33 * gui.scale
@@ -23971,6 +23977,9 @@ class Over:
                 abg = [230, 120, 20, 255]
             else:
                 abg = [220, 150, 20, 255]
+
+        if colour_value(colours.box_background) > 300:
+            abg = colours.box_sub_text
 
         inc_arrow.render(x + 1 * gui.scale, y, abg)
 
