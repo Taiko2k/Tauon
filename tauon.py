@@ -3922,6 +3922,7 @@ class PlayerCtl:
 
         self.shuffle_pools = {}
         self.after_import_flag = False
+        self.quick_add_target = None
 
         # Misc player control
 
@@ -10793,9 +10794,6 @@ transfer_setting = 0
 b_panel_size = 300
 b_info_bar = False
 
-
-title_image = asset_loader("title.png", True)
-
 message_info_icon = asset_loader("notice.png")
 message_warning_icon = asset_loader("warning.png")
 message_tick_icon = asset_loader("done.png")
@@ -13477,7 +13475,7 @@ def convert_playlist(pl):
                     show_message("This includes the conversion of a lossy codec to a lossless one!")
 
         transcode_list.append(folder)
-        print(transcode_list)
+        # print(transcode_list)
 
 
 def get_folder_tracks_local(pl_in):
@@ -14661,6 +14659,9 @@ def remove_duplicates(pl):
 
     pctl.multi_playlist[pl][2][:] = playlist[:]
 
+def start_quick_add(pl):
+    pctl.quick_add_target = pl_to_id(pl)
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
@@ -14669,6 +14670,7 @@ tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
+tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -18765,6 +18767,16 @@ if a01:
 
 x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4", )
 
+def stop_quick_add():
+    pctl.quick_add_target = None
+
+def show_stop_quick_add(_):
+    return pctl.quick_add_target is not None
+
+x_menu.add(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add, )
+
+
+
 
 def view_tracks():
     # if gui.show_playlist is False:
@@ -18952,7 +18964,6 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     command += pctl.master_library[track].fullpath.replace('"', '\\"')
 
     command += '" '
-
     if pctl.master_library[track].is_cue:
         if t.title != "":
             command += '-metadata title="' + t.title.replace('"', "").replace("'", "") + '" '
@@ -18970,7 +18981,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     command += '"' + target_out.replace('"', '\\"') + '"'
 
-    print(shlex.split(command))
+    # print(shlex.split(command))
     startupinfo = None
     if system == 'windows' or msys:
         startupinfo = subprocess.STARTUPINFO()
@@ -18986,7 +18997,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     if codec == "opus" and prefs.transcode_opus_as:
         codec = 'opus.ogg'
 
-    print(target_out)
+    #print(target_out)
 
     if manual_name is None:
         final_out = output + out_line + "." + codec
@@ -18996,7 +19007,6 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         final_out = output + manual_name + "." + codec
         final_name = manual_name + "." + codec
         os.rename(target_out, final_out)
-
     if prefs.transcode_inplace:
         print("MOVE AND REPLACE!")
         if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
@@ -19038,8 +19048,6 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
                     del star_store.db[old_key]
 
                 star_store.db[new_key] = new_star
-
-
 
     gui.transcoding_bach_done += 1
     core_use -= 1
@@ -21203,7 +21211,6 @@ def worker1():
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
 
-
                 if prefs.transcode_codec in ('opus', 'ogg', 'flac', 'mp3'):
                     global core_use
                     cores = os.cpu_count()
@@ -21211,16 +21218,19 @@ def worker1():
                     total = len(folder_items)
                     gui.transcoding_batch_total = total
                     gui.transcoding_bach_done = 0
+                    dones = []
 
                     q = 0
                     while True:
-
                         if core_use < cores and q < len(folder_items):
-                            core_use += 1
                             agg = [[folder_items[q], folder_name]]
-                            loaderThread = threading.Thread(target=transcode_single, args=agg)
-                            loaderThread.daemon = True
-                            loaderThread.start()
+                            if agg not in dones:
+                                core_use += 1
+                                dones.append(agg)
+                                loaderThread = threading.Thread(target=transcode_single, args=agg)
+                                loaderThread.daemon = True
+                                loaderThread.start()
+
                             q += 1
                             gui.update += 1
                         time.sleep(0.05)
@@ -22269,6 +22279,7 @@ class Over:
         self.about_image4 = asset_loader('v4-d.png')
         self.about_image5 = asset_loader('v4-e.png')
         self.about_image6 = asset_loader('v4-f.png')
+        self.title_image = asset_loader("title.png", True)
 
         # self.tab_width = round(115 * gui.scale)
         self.w = 100
@@ -23432,7 +23443,7 @@ class Over:
         y -= 10 * gui.scale
 
         #ddt.text((x, y + 4 * gui.scale), t_title, colours.box_title_text, 216)
-        title_image.render(x - 1, y, alpha_mod(colours.box_sub_text, 240))
+        self.title_image.render(x - 1, y, alpha_mod(colours.box_sub_text, 240))
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
             self.ani_cred = 1
@@ -23490,7 +23501,7 @@ class Over:
             y += 15 * gui.scale
 
             ddt.text((x, y + 1 * gui.scale), "Created by", colours.box_text_label, 13)
-            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey_blend_bg(220), 13)
+            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
             y += 25 * gui.scale
 
@@ -29811,6 +29822,12 @@ class ArtistList:
 
                     artists = [x.strip() for x in artists.split(';')]
 
+                # artists = [x.strip() for x in get_artist_strip_feat(track).split(';')]
+                # if 'artists' in track.misc:
+                #     artists += track.misc['artists']
+                # if track.album_artist:
+                #     artists += [x.strip() for x in track.album_artist.split(';')]
+                # artists = list(set(artists))
 
                 for artist in artists:
 
@@ -36755,20 +36772,37 @@ while pctl.running:
                                                 add_album_to_queue(default_playlist[album_dex[album_on]])
 
                                         elif right_click:
-                                            playlist_selected = album_dex[album_on]
-                                            #playlist_position = playlist_selected
-                                            shift_selection = [playlist_selected]
-                                            gallery_menu.activate(default_playlist[playlist_selected])
+                                            if pctl.quick_add_target:
+                                                pl = id_to_pl(pctl.quick_add_target)
+                                                if pl is not None:
+                                                    parent = pctl.g(
+                                                        default_playlist[album_dex[album_on]]).parent_folder_path
+                                                    # remove from target pl
+                                                    if default_playlist[album_dex[album_on]] in pctl.multi_playlist[pl][2]:
+                                                        for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
+                                                            if pctl.g(pctl.multi_playlist[pl][2][i]).parent_folder_path == parent:
+                                                                del pctl.multi_playlist[pl][2][i]
+                                                    else:
+                                                        # add
+                                                        for i in range(len(default_playlist)):
+                                                            if pctl.g(default_playlist[i]).parent_folder_path == parent:
+                                                                pctl.multi_playlist[pl][2].append(default_playlist[i])
 
-                                            shift_selection = []
-                                            u = playlist_selected
-                                            while u < len(default_playlist) and pctl.master_library[
-                                                        default_playlist[u]].parent_folder_path == \
-                                                    pctl.master_library[
-                                                        default_playlist[playlist_selected]].parent_folder_path:
-                                                shift_selection.append(u)
-                                                u += 1
-                                            pctl.render_playlist()
+                                            else:
+                                                playlist_selected = album_dex[album_on]
+                                                #playlist_position = playlist_selected
+                                                shift_selection = [playlist_selected]
+                                                gallery_menu.activate(default_playlist[playlist_selected])
+
+                                                shift_selection = []
+                                                u = playlist_selected
+                                                while u < len(default_playlist) and pctl.master_library[
+                                                            default_playlist[u]].parent_folder_path == \
+                                                        pctl.master_library[
+                                                            default_playlist[playlist_selected]].parent_folder_path:
+                                                    shift_selection.append(u)
+                                                    u += 1
+                                                pctl.render_playlist()
 
                                     album_on += 1
 
@@ -36849,6 +36883,16 @@ while pctl.running:
                                               colours.gallery_highlight, True)
                                     # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
                                     #            colours.gallery_background, True)
+
+                                # Draw quick add highlight
+                                if pctl.quick_add_target:
+                                    pl = id_to_pl(pctl.quick_add_target)
+                                    if pl is not None and default_playlist[album_dex[album_on]] in pctl.multi_playlist[pl][2]:
+                                        c = [110, 233, 90, 255]
+                                        if colours.lm:
+                                            c = [66, 244, 66, 255]
+                                        ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                                  c, True)
 
                                 # Draw transcode highlight
                                 if transcode_list and os.path.isdir(prefs.encoder_output):
