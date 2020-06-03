@@ -3,8 +3,11 @@ Changelog-------------------------------------
 
 v5.5.5
 
+ - Added feature "Playlist gallery quick add mode"
+ - Changed about title font style
  - Changed show minimize button to follow GTK setting
  - Fixed a bug with radio page not loading album art
+ - Fixed a case with "Transcode All" resulting in stall
  - Various fixes for custom light themes
  - Various Windows fixes for use with MSYS
 
