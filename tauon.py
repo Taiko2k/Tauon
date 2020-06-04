@@ -34845,6 +34845,9 @@ while y < 300:
 
 SDL_SetRenderTarget(renderer, None)
 
+if msys:
+    SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
+
 mouse_up = False
 mouse_wheel = 0
 
