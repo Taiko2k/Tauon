@@ -261,7 +261,22 @@ if flatpak_mode:
 
 pid = os.getpid()
 
-if system == 'linux' and not msys:
+if msys:
+    if os.path.isfile('.gitignore') and False:
+        print("Dev mode, ignoring single instancing")
+    else:
+        pid_file = os.path.join(user_directory, 'program.pid')
+        try:
+            if os.path.isfile(pid_file):
+                os.remove(pid_file)
+            fp = open(pid_file, 'w')
+        except IOError:
+            # another instance is running
+            print("Program is already running")
+            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+            sys.exit()
+
+elif system == 'linux':
     if os.path.isfile('.gitignore'):
         print("Dev mode, ignoring single instancing")
     else:
