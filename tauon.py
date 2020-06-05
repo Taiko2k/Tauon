@@ -20702,7 +20702,7 @@ def encode_folder_name(track_object):
         folder_name = folder_name.replace(c, '')
 
     if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
-        if track_object.disc_total not in ("", "0", 0) or (str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
+        if track_object.disc_total not in ("", "0", 0, "1", 1) or (str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
             folder_name += " CD" + str(track_object.disc_number)
 
     return folder_name
