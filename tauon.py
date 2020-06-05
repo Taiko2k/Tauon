@@ -14773,12 +14773,19 @@ def auto_sync_thread(pl):
     prefs.sync_target = path
 
     # Get list of folder names on device
+    console.print("Getting folder list from device...")
     d_folder_names = os.listdir(path)
+    console.print("Got list")
 
     # Get list of folders we want
     folders = convert_playlist(pl, get_list=True)
     folder_names = []
     folder_dict = {}
+
+    if gui.stop_sync:
+        gui.sync_progress = ""
+        gui.stop_sync = False
+        gui.update += 1
 
     # Find the folder names the transcode function would name them
     for folder in folders:
@@ -20695,7 +20702,7 @@ def encode_folder_name(track_object):
         folder_name = folder_name.replace(c, '')
 
     if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
-        if track_object.disc_total not in ("", "0", 0) or str(track_object.disc_number) > 1:
+        if track_object.disc_total not in ("", "0", 0) or (str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
             folder_name += " CD" + str(track_object.disc_number)
 
     return folder_name
