@@ -109,7 +109,7 @@ def get_hms_time(seconds):
         return f'{m:02d}:{s:02d}'
 
 
-# Creates a string from number of bytes to X MB/kB etc
+# Creates a string from number of bytes to X MB/kB etc with Locale adjustment
 def get_filesize_string(file_bytes):
     if not file_bytes:
         return "0"
@@ -123,6 +123,18 @@ def get_filesize_string(file_bytes):
         line = locale.str(file_mb) + " MB"
     return line
 
+def get_filesize_string_rounded(file_bytes):
+    if not file_bytes:
+        return "0"
+    if file_bytes < 1000:
+        line = str(round(file_bytes)) + " B"
+    elif file_bytes < 1000000:
+        file_kb = round(file_bytes / 1000)
+        line = str(file_kb) + " KB"
+    else:
+        file_mb = round(file_bytes / 1000000, 1)
+        line = str(file_mb) + " MB"
+    return line
 
 # Estimates the perceived luminance of a colour
 def test_lumi(c1):

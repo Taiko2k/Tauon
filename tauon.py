@@ -709,6 +709,8 @@ gallery_load_delay = Timer(10)
 queue_add_timer = Timer(100)
 toast_mode_timer = Timer(100)
 scrobble_warning_timer = Timer(1000)
+sync_file_timer = Timer(1000)
+sync_file_update_timer = Timer(1000)
 
 f_store = FunctionStore()
 
@@ -1695,6 +1697,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.stop_sync = False
         self.sync_progress = ""
+        self.sync_speed = ""
 
 gui = GuiVar()
 
@@ -2790,6 +2793,8 @@ for t in range(2):
             gui.saved_prime_tab = save[144]
         if save[145] is not None:
             gui.saved_prime_direction = save[145]
+        if save[146] is not None:
+            prefs.sync_playlist = save[146]
 
 
         state_file.close()
@@ -3235,6 +3240,7 @@ def save_prefs():
     cf.update_value("import-auto-sort", prefs.auto_sort)
 
     cf.update_value("encode-output-dir", prefs.custom_encoder_output)
+    cf.update_value("sync-device-music-dir", prefs.sync_target)
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
@@ -3385,6 +3391,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[directories]")
     cf.add_comment("Use full paths")
+    prefs.sync_target = cf.sync_add("string", "sync-device-music-dir", prefs.sync_target)
     prefs.custom_encoder_output = cf.sync_add("string", "encode-output-dir", prefs.custom_encoder_output, "E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
     if prefs.custom_encoder_output:
         prefs.encoder_output = prefs.custom_encoder_output
@@ -12309,7 +12316,7 @@ def cancel_import():
         gui.im_cancel = True
     if gui.sync_progress:
         gui.stop_sync = True
-        gui.sync_progress = _("Stopping Sync...")
+        gui.sync_progress = _("Aborting Sync")
 
 
 cancel_menu.add(_("Cancel"), cancel_import)
@@ -14749,7 +14756,7 @@ def auto_sync_thread(pl):
     gui.sync_progress = "Starting Sync..."
     gui.update += 1
 
-    path = sync_target.text.rstrip("/").rstrip("\\")
+    path = sync_target.text.strip().rstrip("/").rstrip("\\").replace("\n", "").replace("\r", "")
     if not path:
         show_message(_("No target folder selected"))
         gui.sync_progress = ""
@@ -14762,6 +14769,8 @@ def auto_sync_thread(pl):
         gui.stop_sync = False
         gui.update += 1
         return
+
+    prefs.sync_target = path
 
     # Get list of folder names on device
     d_folder_names = os.listdir(path)
@@ -14790,11 +14799,8 @@ def auto_sync_thread(pl):
             if d_folder not in folder_names:
                 gui.sync_progress = _("Deleting folders...")
                 gui.update += 1
-                print(f"DELETING: {d_folder}")
+                console.print(f"DELETING: {d_folder}")
                 shutil.rmtree(os.path.join(path, d_folder))
-
-
-    print("DONE")
 
     # -------
     # Find todos
@@ -14802,9 +14808,9 @@ def auto_sync_thread(pl):
     for folder in folder_names:
         if folder not in d_folder_names:
             todos.append(folder)
-            print(f"Want to add: {folder}")
+            console.print(f"Want to add: {folder}")
         else:
-            print(f"Already exists: {folder}")
+            console.print(f"Already exists: {folder}")
 
     gui.sync_progress = _("Copying files to device")
     gui.update += 1
@@ -14814,15 +14820,20 @@ def auto_sync_thread(pl):
         if gui.stop_sync:
             break
 
+        free_space = shutil.disk_usage(path)[2] / 8 / 100000000  # in GB
+        if free_space < 0.6:
+            show_message(_("Sync aborted! Low disk space on target device"), mode="warning")
+            break
+
         encode_done = os.path.join(prefs.encoder_output, item)
 
         if not os.path.exists(encode_done):
-            print("Need to transcode")
+            console.print("Need to transcode")
             transcode_list.append(folder_dict[item])
             while transcode_list:
                 time.sleep(1)
         else:
-            print("A transcode is already done")
+            console.print("A transcode is already done")
 
         if os.path.exists(encode_done):
 
@@ -14830,23 +14841,32 @@ def auto_sync_thread(pl):
                 show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
                 continue
 
-            print(f"COPYING: {item}")
-            print(f"FROM:  {encode_done}")
-            print(f"TO: {path}")
+            console.print(f"COPYING: {item}")
+            console.print(f"FROM:  {encode_done}")
+            console.print(f"TO: {path}")
 
             os.mkdir(os.path.join(path, item))
             for file in os.listdir(encode_done):
-                print("copy file")
-                gui.sync_progress += "."
+                console.print("Copy file...")
+                #gui.sync_progress += "."
                 gui.update += 1
-                if "....." in gui.sync_progress:
-                    gui.sync_progress = gui.sync_progress.rstrip(".")
+                # if "....." in gui.sync_progress:
+                #     gui.sync_progress = gui.sync_progress.rstrip(".")
+                size = os.path.getsize(os.path.join(encode_done, file))
+                sync_file_timer.set()
+
                 if os.path.isfile(os.path.join(encode_done, file)):
                     shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
-
+                if gui.sync_speed == 0 or sync_file_update_timer.get() > 1 and not file.endswith(".jpg"):
+                    sync_file_update_timer.set()
+                    gui.sync_speed = size / sync_file_timer.get()
+                    gui.sync_progress = _("Copying files to device") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
+                    if gui.stop_sync:
+                        gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
             #shutil.copytree(encode_done, path + "/")
-            print("DONE")
+            console.print("Finished copying folder")
 
+    gui.sync_speed = 0
     gui.sync_progress = ""
     gui.stop_sync = False
     gui.update += 1
@@ -20674,6 +20694,10 @@ def encode_folder_name(track_object):
     for c in r'[]/\;,><&*:%=+@!#^()|?^.':
         folder_name = folder_name.replace(c, '')
 
+    if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
+        if track_object.disc_total not in ("", "0", 0) or str(track_object.disc_number) > 1:
+            folder_name += " CD" + str(track_object.disc_number)
+
     return folder_name
 
 
@@ -23531,6 +23555,9 @@ class Over:
                         show_message(_("Could not auto-detect mounted device path"))
             power_bar_icon.render(rect[0], rect[1], colour)
 
+            # if gui.sync_progress and gui.sync_speed and not transcode_list:
+            #     ddt.text((x + 445 * gui.scale, y + 20 * gui.scale, 1), get_filesize_string_rounded(gui.sync_speed) + "/s", [200, 150, 20, 255], 11)
+
             y += 30 * gui.scale
 
             prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete folders on target"))
@@ -23547,7 +23574,7 @@ class Over:
             else:
                 if self.button(x + 130 * gui.scale, y, _("Stop"), width=ww):
                     gui.stop_sync = True
-                    gui.sync_progress = _("Stopping Sync...")
+                    gui.sync_progress = _("Aborting Sync")
 
             y += 60 * gui.scale
 
@@ -34913,6 +34940,7 @@ def save_state():
             gui.combo_mode,
             top_panel.prime_tab,
             top_panel.prime_side,
+            prefs.sync_playlist,
         ]
 
 
@@ -35112,6 +35140,7 @@ while y < 300:
     y += block_size
 
 
+sync_target.text = prefs.sync_target
 SDL_SetRenderTarget(renderer, None)
 
 if msys:
