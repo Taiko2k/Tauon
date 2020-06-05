@@ -570,7 +570,11 @@ if snap_mode:
 if system == "windows":
     import win32con, win32api, win32gui, win32ui, comtypes
     import atexit
-
+try:
+    import pylast
+    last_fm_enable = True
+except:
+    print("PyLast moduel not found, last fm will be disabled.")
 import time
 import ctypes
 import random
@@ -582,11 +586,6 @@ import subprocess
 import urllib.parse
 import urllib.request
 import datetime
-try:
-    import pylast
-    last_fm_enable = True
-except:
-    print("PyLast moduel not found, last fm will be disabled.")
 import shlex
 import math
 import locale
@@ -603,15 +602,17 @@ import platform
 import gettext
 import secrets
 import json
+import glob
 import xml.etree.ElementTree as ET
+import musicbrainzngs
+import discogs_client
 from pathlib import Path
 from xml.sax.saxutils import escape, unescape
 from ctypes import *
 from send2trash import send2trash
 from isounidecode import unidecode
 from collections import OrderedDict
-import musicbrainzngs
-import discogs_client
+
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 arch = platform.machine()
@@ -711,6 +712,7 @@ toast_mode_timer = Timer(100)
 scrobble_warning_timer = Timer(1000)
 sync_file_timer = Timer(1000)
 sync_file_update_timer = Timer(1000)
+sync_get_device_click_timer = Timer(100)
 
 f_store = FunctionStore()
 
@@ -14704,47 +14706,14 @@ def remove_duplicates(pl):
 def start_quick_add(pl):
     pctl.quick_add_target = pl_to_id(pl)
 
-def auto_get_sync_target():
+def auto_get_sync_targets():
 
-
-    path = "/run/user/1000/gvfs"
-    if not os.path.exists(path):
-        print("E1")
-        return None
-
-    # Find mpt:
-    ls = os.listdir(path)
-    if not ls:
-        print("E2")
-        return None
-    next = os.path.join(path, ls[0])
-    if not os.path.exists(next):
-        print("E3")
-        return None
-
-    path = next
-
-    # Find internal storage
-    ls = os.listdir(path)
-    if not ls:
-        print("E4")
-        return None
-    next = os.path.join(path, ls[0])
-    if not os.path.exists(next):
-        print("E5")
-        return None
-
-    path = next
-
-    # Find music folder
-    path = os.path.join(path, "Music")
-    print(path)
-    if not os.path.exists(path):
-        print("E6")
-        return None
-
-    print(f"Found: {path}")
-    return path
+    search_paths = ["/run/user/*/gvfs/*/*/[Mm]usic",
+                    "/run/media/*/*/[Mm]usic",]
+    result_paths = []
+    for item in search_paths:
+        result_paths.extend(glob.glob(item))
+    return result_paths
 
 def auto_sync_thread(pl):
 
@@ -23557,9 +23526,9 @@ class Over:
             if coll(rect):
                 colour = [225, 160, 0, 255]
                 if self.click:
-                    path = auto_get_sync_target()
-                    if path:
-                        sync_target.text = path
+                    paths = auto_get_sync_targets()
+                    if paths:
+                        sync_target.text = paths[0]
                     else:
                         show_message(_("Could not auto-detect mounted device path"))
             power_bar_icon.render(rect[0], rect[1], colour)
