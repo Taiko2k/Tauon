@@ -14839,6 +14839,8 @@ def auto_sync_thread(pl):
             transcode_list.append(folder_dict[item])
             while transcode_list:
                 time.sleep(1)
+            if gui.stop_sync:
+                break
         else:
             console.print("A transcode is already done")
 
