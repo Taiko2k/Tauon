@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.6.0
+
+ - Added "Transcode and Sync" function
+
 v5.5.5
 
  - Added feature "Playlist gallery quick add mode"

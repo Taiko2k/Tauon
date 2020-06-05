@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.5.5"
+n_version = "5.6.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1299,6 +1299,10 @@ class Prefs:    # Used to hold any kind of settings
         self.lyric_metadata_panel_top = False
         self.showcase_overlay_texture = True
 
+        self.sync_target = ""
+        self.sync_deletes = False
+        self.sync_playlist = None
+
 
 prefs = Prefs()
 
@@ -1688,6 +1692,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.saved_prime_tab = 0
         self.saved_prime_direction = 0
+
+        self.stop_sync = False
+        self.sync_progress = ""
 
 gui = GuiVar()
 
@@ -7314,7 +7321,10 @@ def draw_window_tools():
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
         #top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
         if input.mouse_click or ab_click:
-            pctl.running = False
+            if gui.sync_progress and not gui.stop_sync:
+                show_message(_("Stop the sync before exiting!"))
+            else:
+                pctl.running = False
     else:
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
 
@@ -8816,6 +8826,7 @@ search_text = TextBox()
 rename_files = TextBox2()
 sub_lyrics_a = TextBox2()
 sub_lyrics_b = TextBox2()
+sync_target = TextBox2()
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
@@ -12296,6 +12307,9 @@ def cancel_import():
         gui.tc_cancel = True
     if loading_in_progress:
         gui.im_cancel = True
+    if gui.sync_progress:
+        gui.stop_sync = True
+        gui.sync_progress = _("Stopping Sync...")
 
 
 cancel_menu.add(_("Cancel"), cancel_import)
@@ -13454,7 +13468,7 @@ def clear_playlist(index):
     gui.pl_update = 1
 
 
-def convert_playlist(pl):
+def convert_playlist(pl, get_list=False):
     global transcode_list
 
     if system == 'windows' or msys:
@@ -13474,6 +13488,7 @@ def convert_playlist(pl):
         #     return
 
     paths = []
+    folders = []
 
     for track in pctl.multi_playlist[pl][2]:
         if pctl.master_library[track].parent_folder_path not in paths:
@@ -13489,8 +13504,13 @@ def convert_playlist(pl):
                                                                                                      'ogg', 'aac'):
                     show_message("This includes the conversion of a lossy codec to a lossless one!")
 
-        transcode_list.append(folder)
-        # print(transcode_list)
+        folders.append(folder)
+
+    if get_list:
+        return folders
+
+    transcode_list.extend(folders)
+
 
 
 def get_folder_tracks_local(pl_in):
@@ -14677,6 +14697,170 @@ def remove_duplicates(pl):
 def start_quick_add(pl):
     pctl.quick_add_target = pl_to_id(pl)
 
+def auto_get_sync_target():
+
+
+    path = "/run/user/1000/gvfs"
+    if not os.path.exists(path):
+        print("E1")
+        return None
+
+    # Find mpt:
+    ls = os.listdir(path)
+    if not ls:
+        print("E2")
+        return None
+    next = os.path.join(path, ls[0])
+    if not os.path.exists(next):
+        print("E3")
+        return None
+
+    path = next
+
+    # Find internal storage
+    ls = os.listdir(path)
+    if not ls:
+        print("E4")
+        return None
+    next = os.path.join(path, ls[0])
+    if not os.path.exists(next):
+        print("E5")
+        return None
+
+    path = next
+
+    # Find music folder
+    path = os.path.join(path, "Music")
+    print(path)
+    if not os.path.exists(path):
+        print("E6")
+        return None
+
+    print(f"Found: {path}")
+    return path
+
+def auto_sync_thread(pl):
+
+    if prefs.transcode_inplace:
+        show_message("Cannot sync when in transcode inplace mode")
+        return
+
+    # Find target path
+    gui.sync_progress = "Starting Sync..."
+    gui.update += 1
+
+    path = sync_target.text.rstrip("/").rstrip("\\")
+    if not path:
+        show_message(_("No target folder selected"))
+        gui.sync_progress = ""
+        gui.stop_sync = False
+        gui.update += 1
+        return
+    if not os.path.isdir(path):
+        show_message(_("Target folder could not be found"))
+        gui.sync_progress = ""
+        gui.stop_sync = False
+        gui.update += 1
+        return
+
+    # Get list of folder names on device
+    d_folder_names = os.listdir(path)
+
+    # Get list of folders we want
+    folders = convert_playlist(pl, get_list=True)
+    folder_names = []
+    folder_dict = {}
+
+    # Find the folder names the transcode function would name them
+    for folder in folders:
+        name = encode_folder_name(pctl.g(folder[0]))
+        for item in folder:
+            if pctl.g(item).album != pctl.g(folder[0]).album:
+                name = os.path.basename(pctl.g(folder[0]).parent_folder_path)
+                break
+        folder_names.append(name)
+        folder_dict[name] = folder
+
+    # ------
+    # Find deletes
+    if prefs.sync_deletes:
+        for d_folder in d_folder_names:
+            if gui.stop_sync:
+                break
+            if d_folder not in folder_names:
+                gui.sync_progress = _("Deleting folders...")
+                gui.update += 1
+                print(f"DELETING: {d_folder}")
+                shutil.rmtree(os.path.join(path, d_folder))
+
+
+    print("DONE")
+
+    # -------
+    # Find todos
+    todos = []
+    for folder in folder_names:
+        if folder not in d_folder_names:
+            todos.append(folder)
+            print(f"Want to add: {folder}")
+        else:
+            print(f"Already exists: {folder}")
+
+    gui.sync_progress = _("Copying files to device")
+    gui.update += 1
+    # -----
+    # Prepare and copy
+    for item in todos:
+        if gui.stop_sync:
+            break
+
+        encode_done = os.path.join(prefs.encoder_output, item)
+
+        if not os.path.exists(encode_done):
+            print("Need to transcode")
+            transcode_list.append(folder_dict[item])
+            while transcode_list:
+                time.sleep(1)
+        else:
+            print("A transcode is already done")
+
+        if os.path.exists(encode_done):
+
+            if os.path.exists(os.path.join(path, item)):
+                show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+                continue
+
+            print(f"COPYING: {item}")
+            print(f"FROM:  {encode_done}")
+            print(f"TO: {path}")
+
+            os.mkdir(os.path.join(path, item))
+            for file in os.listdir(encode_done):
+                print("copy file")
+                gui.sync_progress += "."
+                gui.update += 1
+                if "....." in gui.sync_progress:
+                    gui.sync_progress = gui.sync_progress.rstrip(".")
+                if os.path.isfile(os.path.join(encode_done, file)):
+                    shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
+
+            #shutil.copytree(encode_done, path + "/")
+            print("DONE")
+
+    gui.sync_progress = ""
+    gui.stop_sync = False
+    gui.update += 1
+    show_message(_("Sync completed"), mode="done")
+
+
+def auto_sync(pl):
+    shoot_dl = threading.Thread(target=auto_sync_thread, args=([pl]))
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
+def set_sync_playlist(pl):
+    prefs.sync_playlist = pl_to_id(pl)
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
@@ -14686,6 +14870,7 @@ tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
+tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -21294,10 +21479,11 @@ def worker1():
                     line = "Press F9 to show output."
                     if prefs.transcode_codec == 'flac':
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
-                    if not gui.message_box:
-                        show_message("Encoding complete.", line, mode='done')
-                    if system == 'linux' and de_notify_support:
-                        g_tc_notify.show()
+                    if not gui.sync_progress:
+                        if not gui.message_box:
+                            show_message("Encoding complete.", line, mode='done')
+                        if system == 'linux' and de_notify_support:
+                            g_tc_notify.show()
 
         if to_scan:
             while to_scan:
@@ -22069,6 +22255,11 @@ def toggle_transcode_inplace(mode=0):
             return True
         else:
             return False
+
+    if gui.sync_progress:
+        prefs.transcode_inplace = False
+        return
+
     prefs.transcode_inplace ^= True
     if prefs.transcode_inplace:
         transcode_icon.colour = [250, 20, 20, 255]
@@ -22357,6 +22548,7 @@ class Over:
         self.view_view = 0
         self.chart_view = 0
         self.eq_view = False
+        self.sync_view = False
 
 
 
@@ -23298,10 +23490,83 @@ class Over:
 
         y += 20 * gui.scale
         ddt.text_background_colour = colours.box_background
+
+
+        if self.sync_view:
+
+            pl = None
+            if prefs.sync_playlist:
+                pl = id_to_pl(prefs.sync_playlist)
+            if pl is None:
+                prefs.sync_playlist = None
+
+            y += 5 * gui.scale
+            if prefs.sync_playlist:
+                ww = ddt.text((x, y), _("Selected playlist:   "), colours.box_text_label, 11)
+                ddt.text((x + ww, y), pctl.multi_playlist[pl][0], colours.box_sub_text, 12,
+                         400 * gui.scale)
+            else:
+                ddt.text((x, y), _("No sync playlist selected!"), colours.box_text_label, 11)
+
+            y += 25 * gui.scale
+            ww = ddt.text((x, y), _("Path to device music folder:   "), colours.box_text_label, 11)
+            y += 20 * gui.scale
+
+            rect1 = (x + 0 * gui.scale, y, round(450 * gui.scale), round(17 * gui.scale))
+            fields.add(rect1)
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            sync_target.draw(x + round(4 * gui.scale), y, colours.box_input_text, not gui.sync_progress,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+
+            rect = [x + rect1[2] + 11 * gui.scale, y - 2 * gui.scale, 15 * gui.scale, 19 * gui.scale]
+            fields.add(rect)
+            colour = colours.box_text_label
+            if coll(rect):
+                colour = [225, 160, 0, 255]
+                if self.click:
+                    path = auto_get_sync_target()
+                    if path:
+                        sync_target.text = path
+                    else:
+                        show_message(_("Could not auto-detect mounted device path"))
+            power_bar_icon.render(rect[0], rect[1], colour)
+
+            y += 30 * gui.scale
+
+            prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete folders on target"))
+
+            y += 30 * gui.scale
+
+            ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
+            if not gui.sync_progress:
+                if self.button(x + 130 * gui.scale, y, _("Start Transcode and Sync"), width=ww):
+                    if pl:
+                        auto_sync(pl)
+                    else:
+                        show_message("Selected a source playlist", "Right click tab > Misc... > Set as sync playlist")
+            else:
+                if self.button(x + 130 * gui.scale, y, _("Stop"), width=ww):
+                    gui.stop_sync = True
+                    gui.sync_progress = _("Stopping Sync...")
+
+            y += 60 * gui.scale
+
+            if self.button(x, y, _("Return")):
+                self.sync_view = False
+
+
+            return
+
+
         ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.box_text_label, 11)
 
         ww = ddt.get_text_w(_("Open output folder"), 211) + 25 * gui.scale
         self.button(x0 + w0 - ww, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
+
+        ww = ddt.get_text_w(_("Sync..."), 211) + 25 * gui.scale
+        if self.button(x0 + w0 - ww, y + 25 * gui.scale, _("Sync...")):
+            self.sync_view = True
+
 
 
         y += 40 * gui.scale
@@ -25009,7 +25274,11 @@ class TopPanel:
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
-
+        elif gui.sync_progress and not transcode_list:
+            text = gui.sync_progress
+            bg = [100, 200, 100, 255]
+            if right_click and coll([x, y, 280 * gui.scale, 18 * gui.scale]):
+                cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
         # elif transcode_list:
         #     # if key_ctrl_down and key_c_press:
         #     #     del transcode_list[1:]
