@@ -21786,18 +21786,6 @@ def reload_albums(quiet=False, return_playlist=-1):
                 current_folder = tr.parent_folder_name
                 current_album = tr.album
 
-    #
-    # else:
-    #
-    #     for i in range(len(default_playlist)):
-    #         if i == 0:
-    #             album_dex.append(i)
-    #             current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-    #         else:
-    #             if pctl.master_library[default_playlist[i]].parent_folder_name != current_folder:
-    #                 current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-    #                 album_dex.append(i)
-
     if return_playlist > -1:
         return dex
 
@@ -23486,13 +23474,11 @@ class Over:
 
     def codec_config(self, x0, y0, w0, h0):
 
-
         x = x0 + round(25 * gui.scale)
         y = y0
 
         y += 20 * gui.scale
         ddt.text_background_colour = colours.box_background
-
 
         if self.sync_view:
 
@@ -23504,7 +23490,7 @@ class Over:
 
             y += 5 * gui.scale
             if prefs.sync_playlist:
-                ww = ddt.text((x, y), _("Selected playlist:   "), colours.box_text_label, 11)
+                ww = ddt.text((x, y), _("Selected playlist:") + "    ", colours.box_text_label, 11)
                 ddt.text((x + ww, y), pctl.multi_playlist[pl][0], colours.box_sub_text, 12,
                          400 * gui.scale)
             else:
@@ -23531,37 +23517,37 @@ class Over:
                         sync_target.text = paths[0]
                     else:
                         show_message(_("Could not auto-detect mounted device path"))
+
             power_bar_icon.render(rect[0], rect[1], colour)
-
-            # if gui.sync_progress and gui.sync_speed and not transcode_list:
-            #     ddt.text((x + 445 * gui.scale, y + 20 * gui.scale, 1), get_filesize_string_rounded(gui.sync_speed) + "/s", [200, 150, 20, 255], 11)
-
             y += 30 * gui.scale
 
             prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete folders on target"))
-
             y += 30 * gui.scale
 
             ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
+            xx = (rect1[0] + (rect1[2] // 2)) - (ww // 2)
             if not gui.sync_progress:
-                if self.button(x + 130 * gui.scale, y, _("Start Transcode and Sync"), width=ww):
+                if self.button(xx, y, _("Start Transcode and Sync"), width=ww):
                     if pl:
                         auto_sync(pl)
                     else:
                         show_message("Selected a source playlist", "Right click tab > Misc... > Set as sync playlist")
             else:
-                if self.button(x + 130 * gui.scale, y, _("Stop"), width=ww):
+                if self.button(xx, y, _("Stop"), width=ww):
                     gui.stop_sync = True
                     gui.sync_progress = _("Aborting Sync")
 
-            y += 60 * gui.scale
+            y += 110 * gui.scale
 
             if self.button(x, y, _("Return")):
                 self.sync_view = False
 
+            if self.button(x + 485 * gui.scale, y, _("?")):
+                show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Transcode-and-Sync", mode="link")
 
             return
 
+        # ----------
 
         ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.box_text_label, 11)
 
@@ -23571,8 +23557,6 @@ class Over:
         ww = ddt.get_text_w(_("Sync..."), 211) + 25 * gui.scale
         if self.button(x0 + w0 - ww, y + 25 * gui.scale, _("Sync...")):
             self.sync_view = True
-
-
 
         y += 40 * gui.scale
         self.toggle_square(x, y, switch_flac, "FLAC")
@@ -24402,7 +24386,11 @@ class Over:
             for item in self.tabs:
 
                 if self.click and gui.message_box:
-                    gui.message_box = False
+                    if not coll(message_box.get_rect()):
+                        gui.message_box = False
+                    else:
+                        input.mouse_click = True
+                        self.click = False
 
                 box = [x, y + (current_tab * tab_height), tab_width, tab_height]
                 box2 = [x, y + (current_tab * tab_height), tab_width, tab_height - 1]
@@ -37067,6 +37055,7 @@ while pctl.running:
 
                                         elif right_click:
                                             if pctl.quick_add_target:
+
                                                 pl = id_to_pl(pctl.quick_add_target)
                                                 if pl is not None:
                                                     parent = pctl.g(
@@ -37081,6 +37070,8 @@ while pctl.running:
                                                         for i in range(len(default_playlist)):
                                                             if pctl.g(default_playlist[i]).parent_folder_path == parent:
                                                                 pctl.multi_playlist[pl][2].append(default_playlist[i])
+
+                                                reload_albums(True)
 
                                             else:
                                                 playlist_selected = album_dex[album_on]
