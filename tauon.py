@@ -655,6 +655,7 @@ from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 from t_modules.t_lyrics import *
+from t_modules.t_themeload import load_theme
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -22561,7 +22562,7 @@ class Over:
 
         y += 25 * gui.scale
 
-        self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
+        self.toggle_square(x, y, toggle_auto_theme, _("Auto-theme from album art"))
 
         y += 25 * gui.scale
 
@@ -22584,23 +22585,114 @@ class Over:
         #prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
         prefs.showcase_overlay_texture = self.toggle_square(x + 20 * gui.scale, y, prefs.showcase_overlay_texture, _("Pattern style"))
 
-        y += 65 * gui.scale
+        y += 48 * gui.scale
 
-        #. Limited space. Max 14 chars.
-        self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
-        #. Limited space. Max 14 chars.
-        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
-        ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.box_text_label, 213)
+        square = round(8 * gui.scale)
+        border = round(4 * gui.scale)
+        outer_border = round(2 * gui.scale)
 
-        if gui.theme_name == "Neon Love":
-            x += 240 * gui.scale
-            y += 7 * gui.scale
-            # x += 165 * gui.scale
-            # y += -19 * gui.scale
+        #theme_files = get_themes()
+        xx = x
+        yy = y
+        hover_name = None
+        for c, theme_name, theme_number in self.themes:
 
-            #ddt.text((x, y), "Adapted from ")
-            link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
-            link_activate(x, y, link_pa, click=self.click)
+            if theme_name == gui.theme_name:
+                rect = [xx - outer_border, yy - outer_border, border * 2 + square * 2 + outer_border * 2, border * 2 + square * 2 + outer_border * 2]
+                ddt.rect(rect, colours.box_text_label, True)
+
+            rect = [xx, yy, border * 2 + square * 2, border * 2 + square * 2]
+            ddt.rect(rect, [5,5,5,255], True)
+
+            rect = grow_rect(rect, 3)
+            fields.add(rect)
+            if coll(rect):
+                hover_name = theme_name
+                if self.click:
+                    global theme
+                    theme = theme_number
+                    gui.reload_theme = True
+
+            c1 = c.playlist_panel_background
+            c2 = c.artist_playing
+            c3 = c.title_playing
+            c4 = c.bottom_panel_colour
+
+            if theme_name == "Carbon":
+                c1 = c.title_playing
+                c2 = c.playlist_panel_background
+                c3 = c.top_panel_background
+
+            if theme_name == "Lavender Light":
+                c1 = c.tab_background_active
+
+            if theme_name == "Neon Love":
+                c2 = c.artist_text
+                c4 = c.menu_highlight_background
+                c1 = c.menu_highlight_background
+
+            if theme_name == "Sky":
+                c2 = c.artist_text
+
+            if theme_name == "Sunken":
+                c2 = c.title_text
+                c3 = c.artist_text
+                c4 = c.menu_highlight_background
+                c1 = c.menu_highlight_background
+
+
+            # tl
+            rect = [xx + border, yy + border, square, square]
+            ddt.rect(rect, c1, True)
+
+            # tr
+            rect = [xx + border + square, yy + border, square, square]
+            ddt.rect(rect, c2, True)
+
+            # bl
+            rect = [xx + border, yy + border + square, square, square]
+            ddt.rect(rect, c3, True)
+
+            # br
+            rect = [xx + border + square, yy + border + square, square, square]
+            ddt.rect(rect, c4, True)
+
+            # # bbl
+            # rect = [xx + border, yy + border + square + square, square, square]
+            # ddt.rect(rect, c.tab_highlight, True)
+            #
+            # # bbr
+            # rect = [xx + border + square, yy + border + square + square, square, square]
+            # ddt.rect(rect, c.title_text, True)
+
+            yy += round(27 * gui.scale)
+            if yy > y + 40 * gui.scale:
+                yy = y
+                xx += round(27 * gui.scale)
+
+            # xx += round(27 * gui.scale)
+            # if xx > x + 400 * gui.scale:
+            #     xx = x
+            #     yy += round(27 * gui.scale)
+
+        # #. Limited space. Max 14 chars.
+        # self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
+        # #. Limited space. Max 14 chars.
+        # self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
+        name = gui.theme_name
+        if hover_name:
+            name = hover_name
+        ddt.text((x, y - 23 * gui.scale), name, colours.box_text_label, 214)
+        #
+        # if gui.theme_name == "Neon Love":
+        #     x += 240 * gui.scale
+        #     y += 7 * gui.scale
+        #     # x += 165 * gui.scale
+        #     # y += -19 * gui.scale
+        #
+        #     #ddt.text((x, y), "Adapted from ")
+        #     link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
+        #     link_activate(x, y, link_pa, click=self.click)
 
     def eq(self, x0, y0, w0, h0):
 
@@ -24279,6 +24371,17 @@ class Over:
         self.init2done = True
 
         pctl.total_playtime = star_store.get_total()
+
+        self.themes = []
+
+        self.themes.append((ColoursClass(), "Mindaro", 0))
+        theme_files = get_themes()
+        for i, theme in enumerate(theme_files):
+            c = ColoursClass()
+            load_theme(c, theme[0])
+            self.themes.append((c, theme[1], i + 1))
+
+
 
     def close(self):
         self.enabled = False
@@ -29857,8 +29960,6 @@ def save_discogs_artist_thumb(artist, filepath):
     im.save(filepath, 'JPEG', quality=90)
     im.close()
     print("Found artist image from Discogs")
-
-
 
 
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
@@ -36311,270 +36412,53 @@ while pctl.running:
 
 
     if gui.reload_theme is True:
-        gui.light_mode = False
 
+        gui.light_mode = False
         gui.pl_update = 1
 
-        if theme > 25:
+        theme_files = get_themes()
+
+        if theme > len(theme_files):  # sic
             theme = 0
+
         if theme > 0:
             theme_number = theme - 1
             try:
 
-                theme_files = get_themes()
-                #print(theme_files)
                 colours.column_colours.clear()
                 colours.column_colours_playing.clear()
 
-                for i, item in enumerate(theme_files):
-                    # print(theme_files[i])
-                    if i == theme_number:
-                        colours.lm = False
-                        colours.__init__()
-                        with open(item[0], encoding="utf_8") as f:
-                            content = f.readlines()
-                            gui.theme_name = item[1]
-                            print("Applying external theme: " + gui.theme_name)
-                            for p in content:
-                                if "#" in p:
-                                    continue
-                                if "light-mode" in p:
-                                    colours.light_mode()
-                                if 'light-theme-mode' in p:
-                                    gui.light_mode = True
-                                    print("light mode")
-                                if 'window frame' in p:
-                                    colours.window_frame = get_colour_from_line(p)
-                                if 'gallery highlight' in p:
-                                    colours.gallery_highlight = get_colour_from_line(p)
-                                if 'index playing' in p:
-                                    colours.index_playing = get_colour_from_line(p)
-                                if 'time playing' in p:
-                                    colours.time_text = get_colour_from_line(p)
-                                if 'artist playing' in p:
-                                    colours.artist_playing = get_colour_from_line(p)
-                                if 'album line' in p: # Bad name
-                                    colours.album_text = get_colour_from_line(p)
-                                if 'track album' in p:
-                                    colours.album_text = get_colour_from_line(p)
-                                if 'album playing' in p:
-                                    colours.album_playing = get_colour_from_line(p)
-                                if 'player background' in p:  # bad name
-                                    colours.top_panel_background = get_colour_from_line(p)
-                                if 'top panel' in p:
-                                    colours.top_panel_background = get_colour_from_line(p)
-                                if 'queue panel' in p:
-                                    colours.queue_background = get_colour_from_line(p)
-                                if 'side panel' in p:
-                                    colours.side_panel_background = get_colour_from_line(p)
-                                    colours.playlist_box_background = colours.side_panel_background
-                                if 'gallery background' in p:
-                                    colours.gallery_background = get_colour_from_line(p)
-                                if 'playlist panel' in p:  # bad name
-                                    colours.playlist_panel_background = get_colour_from_line(p)
-                                if 'tracklist panel' in p:
-                                    colours.playlist_panel_background = get_colour_from_line(p)
-                                if 'track line' in p:
-                                    colours.title_text = get_colour_from_line(p)
-                                if 'track missing' in p:
-                                    colours.playlist_text_missing = get_colour_from_line(p)
-                                if 'playing highlight' in p:
-                                    colours.row_playing_highlight = get_colour_from_line(p)
-                                if 'track time' in p:
-                                    colours.bar_time = get_colour_from_line(p)
-                                if 'fav line' in p:
-                                    colours.star_line = get_colour_from_line(p)
-                                if 'folder title' in p:
-                                    colours.folder_title = get_colour_from_line(p)
-                                if 'folder line' in p:
-                                    colours.folder_line = get_colour_from_line(p)
-                                if 'buttons off' in p:
-                                    colours.media_buttons_off = get_colour_from_line(p)
-                                if 'buttons over' in p:
-                                    colours.media_buttons_over = get_colour_from_line(p)
-                                if 'buttons active' in p:
-                                    colours.media_buttons_active = get_colour_from_line(p)
-                                if 'playing time' in p:
-                                    colours.time_playing = get_colour_from_line(p)
-                                if 'track index' in p:
-                                    colours.index_text = get_colour_from_line(p)
-                                if 'track playing' in p:
-                                    colours.title_playing = get_colour_from_line(p)
-                                if 'select highlight' in p:
-                                    colours.row_select_highlight = get_colour_from_line(p)
-                                if 'track artist' in p:
-                                    colours.artist_text = get_colour_from_line(p)
-                                if 'tab active line' in p:  # bad name
-                                    colours.tab_text_active = get_colour_from_line(p)
-                                if 'tab line' in p:  # bad name
-                                    colours.tab_text = get_colour_from_line(p)
-                                if 'tab active text' in p:
-                                    colours.tab_text_active = get_colour_from_line(p)
-                                if 'tab text' in p:
-                                    colours.tab_text = get_colour_from_line(p)
-                                if 'tab background' in p:
-                                    colours.tab_background = get_colour_from_line(p)
-                                if 'tab over' in p:
-                                    colours.tab_highlight = get_colour_from_line(p)
-                                if 'tab active background' in p:
-                                    colours.tab_background_active = get_colour_from_line(p)
-                                if 'title info' in p:
-                                    colours.side_bar_line1 = get_colour_from_line(p)
-                                if 'extra info' in p:
-                                    colours.side_bar_line2 = get_colour_from_line(p)
-                                if 'bottom title' in p:
-                                    colours.bar_title_text = get_colour_from_line(p)
-                                if 'scroll bar' in p:
-                                    colours.scroll_colour = get_colour_from_line(p)
-                                if 'seek bar' in p:
-                                    colours.seek_bar_fill = get_colour_from_line(p)
-                                if 'seek bg' in p:
-                                    colours.seek_bar_background = get_colour_from_line(p)
-                                if 'volume bar' in p:
-                                    colours.volume_bar_fill = get_colour_from_line(p)
-                                if 'volume bg' in p:
-                                    colours.volume_bar_background = get_colour_from_line(p)
-                                if 'mode off' in p:
-                                    colours.mode_button_off = get_colour_from_line(p)
-                                if 'mode over' in p:
-                                    colours.mode_button_over = get_colour_from_line(p)
-                                if 'mode on' in p:
-                                    colours.mode_button_active = get_colour_from_line(p)
-                                if 'art border' in p:
-                                    colours.art_box = get_colour_from_line(p)
-                                if 'tb line' in p:
-                                    colours.tb_line = get_colour_from_line(p)
-                                if 'music vis' in p:
-                                    colours.vis_colour = get_colour_from_line(p)
-                                if 'menu background' in p:
-                                    colours.menu_background = get_colour_from_line(p)
-                                if 'menu text' in p:
-                                    colours.menu_text = get_colour_from_line(p)
-                                if 'menu disable' in p:
-                                    colours.menu_text_disabled = get_colour_from_line(p)
-                                if 'menu icons' in p:
-                                    colours.menu_icons = get_colour_from_line(p)
-                                if 'menu highlight' in p:
-                                    colours.menu_highlight_background = get_colour_from_line(p)
-                                if 'menu border' in p:
-                                    colours.menu_tab = get_colour_from_line(p)
-                                if 'lyrics showcase' in p:
-                                    colours.lyrics = get_colour_from_line(p)
-                                if 'bottom panel' in p:
-                                    colours.bottom_panel_colour = get_colour_from_line(p)
-                                    #colours.menu_background = colours.bottom_panel_colour
-                                if 'mini bg' in p:
-                                    colours.mini_mode_background = get_colour_from_line(p)
-                                if 'mini border' in p:
-                                    colours.mini_mode_border = get_colour_from_line(p)
-                                if 'mini text 1' in p:
-                                    colours.mini_mode_text_1 = get_colour_from_line(p)
-                                if 'mini text 2' in p:
-                                    colours.mini_mode_text_2 = get_colour_from_line(p)
-                                if 'column-' in p:
-                                    key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
-                                    value = get_colour_from_line(p)
-                                    colours.column_colours[key] = value
-                                if 'column+' in p:
-                                    key = p[p.find("column+") + 7:].replace("-", " ").lower().title().rstrip()
-                                    value = get_colour_from_line(p)
-                                    colours.column_colours_playing[key] = value
-                                if 'menu bg' in p:
-                                    colours.menu_background = get_colour_from_line(p)
-                                if 'playlist box bg' in p:  # bad name
-                                    colours.playlist_box_background = get_colour_from_line(p)
-                                if 'playlist background' in p:
-                                    colours.playlist_box_background = get_colour_from_line(p)
-                                    
-                                if 'box background' in p:
-                                    colours.box_background = get_colour_from_line(p)
-                                if 'box border' in p:
-                                    colours.box_border = get_colour_from_line(p)
-                                if 'box text border' in p:
-                                    colours.box_text_border = get_colour_from_line(p)
-                                if 'box text label' in p:
-                                    colours.box_text_label = get_colour_from_line(p)
-                                
-                                
-                                if 'box title text' in p:
-                                    colours.box_title_text = get_colour_from_line(p)
-                                if 'box text normal' in p:
-                                    colours.box_text = get_colour_from_line(p)
-                                if 'box sub text' in p:
-                                    colours.box_sub_text = get_colour_from_line(p)
-                                if 'box input text' in p:
-                                    colours.box_input_text = get_colour_from_line(p)
+                theme_item = theme_files[theme_number]
 
-                                if 'box button text highlight' in p:
-                                    colours.box_button_text_highlight = get_colour_from_line(p)
-                                if 'box button text normal' in p:
-                                    colours.box_button_text = get_colour_from_line(p)
-                                if 'box button background normal' in p:
-                                    colours.box_button_background = get_colour_from_line(p)
-                                if 'box button background highlight' in p:
-                                    colours.box_button_background_highlight = get_colour_from_line(p)
-                                if 'box button border' in p:
-                                    colours.box_check_border = get_colour_from_line(p)
+                gui.theme_name = theme_item[1]
+                colours.lm = False
+                colours.__init__()
 
-                                if "window buttons background" in p:
-                                    colours.window_buttons_bg = get_colour_from_line(p)
-                                if "window buttons on" in p:
-                                    colours.window_buttons_bg_over = get_colour_from_line(p)
-                                if "window buttons icon off" in p:
-                                    colours.window_button_icon_off = get_colour_from_line(p)
-                                    colours.window_button_x_off = colours.window_button_icon_off
-                                if "window buttons icon over" in p:
-                                    colours.window_buttons_icon_over = get_colour_from_line(p)
-                                    colours.window_button_x_on = colours.window_buttons_icon_over
-                                if "window button x on" in p:
-                                    colours.window_button_x_on = get_colour_from_line(p)
-                                if "window button x off" in p:
-                                    colours.window_button_x_off = get_colour_from_line(p)
-                                if "column bar background" in p:
-                                    colours.column_bar_background = get_colour_from_line(p)
+                load_theme(colours, theme_item[0], gui)
+                print("Applying external theme: " + gui.theme_name)
 
-                                if "artist bio background" in p:
-                                    colours.artist_bio_background = get_colour_from_line(p)
-                                if "artist bio text" in p:
-                                    colours.artist_bio_text = get_colour_from_line(p)
-                                # if "panel button off" in p:
-                                #     colours.corner_button = get_colour_from_line(p)
-                                # if "panel button on" in p:
-                                #     colours.corner_button_active = get_colour_from_line(p)
-
-
-                            colours.post_config()
-                            if colours.lm:
-                                colours.light_mode()
-
-                            if colours.lm:
-                                info_icon.colour = [60, 60, 60, 255]
-                            else:
-                                info_icon.colour = [61, 247, 163, 255]
-
-                            if colours.lm:
-                                folder_icon.colour = [255, 190, 80, 255]
-                            else:
-                                folder_icon.colour = [244, 220, 66, 255]
-
-                            if colours.lm:
-                                settings_icon.colour = [85, 187, 250, 255]
-                            else:
-                                settings_icon.colour = [232, 200, 96, 255]
-
-                            if colours.lm:
-                                radiorandom_icon.colour = [120, 200, 120, 255]
-                            else:
-                                radiorandom_icon.colour = [153, 229, 133, 255]
-
-                            # temp
-                            #colours.menu_highlight_background = [40, 40, 40, 255]
-
-                        break
+                if colours.lm:
+                    info_icon.colour = [60, 60, 60, 255]
                 else:
-                    theme = 0
+                    info_icon.colour = [61, 247, 163, 255]
+
+                if colours.lm:
+                    folder_icon.colour = [255, 190, 80, 255]
+                else:
+                    folder_icon.colour = [244, 220, 66, 255]
+
+                if colours.lm:
+                    settings_icon.colour = [85, 187, 250, 255]
+                else:
+                    settings_icon.colour = [232, 200, 96, 255]
+
+                if colours.lm:
+                    radiorandom_icon.colour = [120, 200, 120, 255]
+                else:
+                    radiorandom_icon.colour = [153, 229, 133, 255]
+
             except:
-                # raise
+                raise
                 show_message("Error loading theme file", "", mode='warning')
 
         if theme == 0:
