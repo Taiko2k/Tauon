@@ -20,7 +20,7 @@ apps:
     common-id: tauonmb
     desktop: usr/share/applications/tauonmb.desktop
     environment:
-      PYSDL2_DLL_PATH: $PYSDL2_DLL_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
+      PYSDL2_DLL_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
     extensions:
       - gnome-3-28
     plugs:
