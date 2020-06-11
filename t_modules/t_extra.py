@@ -1,7 +1,7 @@
 
 # Tauon Music Box - Misc Functions Module
 
-# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -202,27 +202,6 @@ def colour_slide(a, b, x, x_limit):
 def hex_to_rgb(colour):
     colour = colour.strip("#")
     return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
-
-
-# Converts string containing colour in format x,x,x,x(optional) to list
-def get_colour_from_line(cline):
-    colour = ["", "", "", ""]
-
-    mode = 0
-
-    for i in cline:
-
-        if i.isdigit():
-            colour[mode] += i
-        elif i == ',':
-            mode += 1
-
-    for b in range(len(colour)):
-        if colour[b] == "":
-            colour[b] = "255"
-        colour[b] = int(colour[b])
-
-    return colour
 
 
 # Checks if all the numbers in a list are the same
