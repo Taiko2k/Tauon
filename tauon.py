@@ -1130,8 +1130,8 @@ class Prefs:    # Used to hold any kind of settings
         self.plex_password = ""
         self.plex_servername = ""
 
-        self.koel_username = ""
-        self.koel_password = ""
+        self.koel_username = "admin@example.com"
+        self.koel_password = "admin"
         self.koel_server_url = "http://localhost:8050"
 
         self.auto_lyrics = False
@@ -6363,19 +6363,8 @@ class PlexService:
 
     def connect(self):
 
-        if not prefs.plex_username:
-            show_message("PLEX Account - No username in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.plex_password:
-            show_message("PLEX Account - No password in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.plex_servername:
-            show_message("PLEX - No name of plex server in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
+        if not prefs.plex_username or not prefs.plex_password or not prefs.plex_servername:
+            show_message(_("Missing username, password and/or server name"), mode='warning')
             self.scanning = False
             return
 
@@ -6391,7 +6380,7 @@ class PlexService:
             self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
         except:
             show_message(_("Error connecting to PLEX server"),
-                         "Try check login credentials and that server is accessible.", mode='error')
+                         _("Try check login credentials and that server is accessible."), mode='error')
             self.scanning = False
             return
 
@@ -6555,8 +6544,7 @@ class SubsonicService:
     def get_music(self):
 
         if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
-            show_message("Subsonic config error: Missing username, password and/or servername",
-                         'Enter details in config file then reload config to apply.', mode='warning')
+            show_message(_("Missing username, password and/or server URL"), mode='warning')
             self.scanning = False
             return
 
@@ -6666,19 +6654,8 @@ class KoelService:
 
     def connect(self):
 
-        if not prefs.koel_username:
-            show_message("Koel - No username in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.koel_password:
-            show_message("Koel - No password in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.koel_server_url:
-            show_message("Koel - No target url server in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
+        if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
+            show_message(_("Missing username, password and/or server URL"), mode='warning')
             self.scanning = False
             return
 
@@ -6719,7 +6696,8 @@ class KoelService:
             j = r.json()
             if "message" in j:
                 error = j["message"]
-            gui.show_message("Could not establish koel connection/authorisation", error, mode="error")
+
+            gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
 
 
     def resolve_stream(self, id):
@@ -6862,6 +6840,7 @@ def plex_get_album_thread():
     #     return
 
     pref_box.close()
+    save_prefs()
     if plex.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -6879,6 +6858,7 @@ def sub_get_album_thread():
     #     return
 
     pref_box.close()
+    save_prefs()
     if subsonic.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -6896,6 +6876,7 @@ def koel_get_album_thread():
     #     return
 
     pref_box.close()
+    save_prefs()
     if koel.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -8182,21 +8163,13 @@ class TextBox2:
         self.selection = 0
         self.offset = 0
         self.down_lock = False
+        self.paste_text = ""
 
     def paste(self):
 
         if SDL_HasClipboardText():
             clip = SDL_GetClipboardText().decode('utf-8')
-
-            if 'http://' in self.text and 'http://' in clip:
-                self.text = ""
-
-            clip = clip.rstrip(" ").lstrip(" ")
-            clip = clip.replace('\n', ' ').replace('\r', '')
-
-            self.eliminate_selection()
-            self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
-                self.text) - self.cursor_position:]
+            self.paste_text = clip
 
     def copy(self):
 
@@ -8313,6 +8286,18 @@ class TextBox2:
                     self.cursor_position += 1
                 if not key_shift_down and not key_shiftr_down:
                     self.selection = self.cursor_position
+
+            if self.paste_text:
+                if 'http://' in self.text and 'http://' in self.paste_text:
+                    self.text = ""
+
+                self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
+                self.paste_text = self.paste_text.replace('\n', ' ').replace('\r', '')
+
+                self.eliminate_selection()
+                self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
+                    self.text) - self.cursor_position:]
+                self.paste_text = ""
 
             # Paste via ctrl-v
             if key_ctrl_down and key_v_press:
@@ -8840,6 +8825,18 @@ sync_target = TextBox2()
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
+
+text_plex_usr = TextBox2()
+text_plex_pas = TextBox2()
+text_plex_ser = TextBox2()
+
+text_koel_usr = TextBox2()
+text_koel_pas = TextBox2()
+text_koel_ser = TextBox2()
+
+text_air_usr = TextBox2()
+text_air_pas = TextBox2()
+text_air_ser = TextBox2()
 
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
@@ -22541,7 +22538,7 @@ class Over:
         self.eq_view = False
         self.sync_view = False
 
-
+        self.account_text_field = -1
 
     # def config_a(self, x0, y0, w0, h0):
     #
@@ -23357,19 +23354,204 @@ class Over:
         if self.button2(x, y, "fanart.tv", width=84*gui.scale):
             self.account_view = 4
 
-
-        y += 75 * gui.scale
-
-        w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
-
-        self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
         y += 30 * gui.scale
-        self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
+
+        if self.button2(x, y, "PLEX", width=84*gui.scale):
+            self.account_view = 5
+
         y += 30 * gui.scale
-        self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
+
+        if self.button2(x, y, "koel", width=84*gui.scale):
+            self.account_view = 6
+
+        y += 30 * gui.scale
+
+        if self.button2(x, y, "Airsonic", width=84*gui.scale):
+            self.account_view = 7
+
+        # y += 75 * gui.scale
+        #
+        # w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
+        #
+        # self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
+        # y += 30 * gui.scale
+        # self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
+        # y += 30 * gui.scale
+        # self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
 
         x = x0 + 255 * gui.scale
         y = y0 + round(20 * gui.scale)
+
+        if self.account_view == 7:
+
+            ddt.text((x, y), _('Airsonic/Subsonic network streaming'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_air_usr.text = prefs.subsonic_user
+            text_air_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.subsonic_user = text_air_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_air_pas.text = prefs.subsonic_password
+            text_air_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.subsonic_password = text_air_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_air_ser.text = prefs.subsonic_server
+            text_air_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.subsonic_server = text_air_ser.text
+
+            y += round(40 * gui.scale)
+            self.button(x, y, _("Import music to playlist"), sub_get_album_thread)
+
+
+        if self.account_view == 6:
+
+            ddt.text((x, y), _('koel network streaming'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_koel_usr.text = prefs.koel_username
+            text_koel_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.koel_username = text_koel_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_koel_pas.text = prefs.koel_password
+            text_koel_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.koel_password = text_koel_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_koel_ser.text = prefs.koel_server_url
+            text_koel_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.koel_server_url = text_koel_ser.text
+
+            y += round(40 * gui.scale)
+            self.button(x, y, _("Import music to playlist"), koel_get_album_thread)
+
+
+        if self.account_view == 5:
+
+            ddt.text((x, y), _('PLEX network streaming'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_plex_usr.text = prefs.plex_username
+            text_plex_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.plex_username = text_plex_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_plex_pas.text = prefs.plex_password
+            text_plex_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.plex_password = text_plex_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server name"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_plex_ser.text = prefs.plex_servername
+            text_plex_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.plex_servername = text_plex_ser.text
+
+            y += round(40 * gui.scale)
+            self.button(x, y, _("Import music to playlist"), plex_get_album_thread)
+
 
 
         if self.account_view == 4:
@@ -36144,6 +36326,9 @@ while pctl.running:
                 input.mouse_click = False
                 gui.level_2_click = True
 
+        if right_click:
+            level_2_right_click = True
+
         if pref_box.enabled:
 
             if pref_box.inside():
@@ -36164,8 +36349,6 @@ while pctl.running:
                 if pref_box.lock is False:
                     pass
 
-        if right_click:
-            level_2_right_click = True
 
         if right_click and (radiobox.active or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
@@ -36413,9 +36596,7 @@ while pctl.running:
 
     if gui.reload_theme is True:
 
-        gui.light_mode = False
         gui.pl_update = 1
-
         theme_files = get_themes()
 
         if theme > len(theme_files):  # sic
@@ -36434,7 +36615,7 @@ while pctl.running:
                 colours.lm = False
                 colours.__init__()
 
-                load_theme(colours, theme_item[0], gui)
+                load_theme(colours, theme_item[0])
                 print("Applying external theme: " + gui.theme_name)
 
                 if colours.lm:

@@ -37,7 +37,7 @@ def get_colour_from_line(cline):
     return colour
 
 
-def load_theme(colours, path, gui=None):
+def load_theme(colours, path):
 
     f = open(path)
     content = f.readlines()
@@ -47,10 +47,6 @@ def load_theme(colours, path, gui=None):
             continue
         if "light-mode" in p:
             colours.light_mode()
-        if 'light-theme-mode' in p:
-            if gui:
-                gui.light_mode = True
-                print("light mode")
         if 'window frame' in p:
             colours.window_frame = get_colour_from_line(p)
         if 'gallery highlight' in p:
