@@ -20,6 +20,7 @@
 from isounidecode import unidecode
 from PyLyrics import PyLyrics
 from bs4 import BeautifulSoup  # Remember to add to dependency list if PyLyrics is removed
+from bs4 import NavigableString
 import urllib.parse
 import requests  # Remember to add to dependency list if PyLyrics is removed
 import re
@@ -71,18 +72,41 @@ def genius(artist, title, return_url=False):
 
     page = requests.get(line)
     html = BeautifulSoup(page.text, 'html.parser')
-    lyrics = html.find('div', class_='lyrics').get_text()
 
-    lyrics2 = []
-    for line in lyrics.splitlines():
-        if line.startswith("["):
-            pass
-        else:
-            lyrics2.append(line)
+    result = html.find('div', class_='lyrics') #.get_text()
+    if result is not None:
+        lyrics = result.get_text()
+        lyrics2 = []
+        for line in lyrics.splitlines():
+            if line.startswith("["):
+                pass
+            else:
+                lyrics2.append(line)
 
-    lyrics = "\n".join(lyrics2)
-    lyrics = lyrics.strip("\n")
-    return lyrics
+        lyrics = "\n".join(lyrics2)
+        lyrics = lyrics.strip("\n")
+        return lyrics
+
+    # New layout type
+    else:
+
+        results = html.findAll("div", {"class": lambda l: l and "Lyrics__Container" in l})
+        lyrics = "".join([r.get_text("\n") for r in results])
+
+        lines = lyrics.splitlines()
+        new_lines = []
+        for line in lines:
+            if "[" in line:
+                line = line.split("[", 1)[0]
+                if line:
+                    line += "\n"
+
+            new_lines.append(line + "\n")
+
+        lyrics = "".join(new_lines)
+        return lyrics
+
+
 
 
 lyric_sources = {
