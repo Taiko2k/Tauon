@@ -12475,7 +12475,6 @@ def get_lyric_fire(track_object, silent=False):
                     console.print(f"Found lyrics from {name}", level=1)
                     track_object.lyrics = lyrics
                     found = True
-                    break
             except Exception as e:
                 console.print(str(e))
 
@@ -23337,12 +23336,12 @@ class Over:
         if last_fm_enable:
             if self.button2(x, y, "Last.fm", width=84*gui.scale):
                 self.account_view = 1
-            self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
+            self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
         y += 30 * gui.scale
 
         if self.button2(x, y, "ListenBrainz", width=84*gui.scale):
             self.account_view = 2
-        self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lb, _("Enable"))
+        self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lb, _("Enable"))
 
         y += 30 * gui.scale
 
