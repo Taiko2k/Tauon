@@ -10833,6 +10833,7 @@ message_tick_icon = asset_loader("done.png")
 message_arrow_icon = asset_loader("ext.png")
 message_error_icon = asset_loader("error.png")
 message_bubble_icon = asset_loader("bubble.png")
+message_download_icon = asset_loader("ddl.png")
 
 
 class ToolTip:
@@ -20252,6 +20253,8 @@ class MessageBox:
             message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
         elif gui.message_mode == 'arrow':
             message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+        elif gui.message_mode == 'download':
+            message_download_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
         elif gui.message_mode == 'error':
             message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
         elif gui.message_mode == 'bubble':
@@ -21881,7 +21884,7 @@ def rating_toggle(mode=0):
         # gui.show_hearts = False
         gui.star_mode = 'none'
         if not prefs.write_ratings:
-            show_message(_("Note that ratings are stored in the local database only and not read/written to tags."))
+            show_message(_("Note that ratings are stored in the local database and not written to tags."))
 
     gui.update += 1
     gui.pl_update = 1
@@ -22539,6 +22542,8 @@ class Over:
 
         self.account_text_field = -1
 
+        self.themes = []
+
     # def config_a(self, x0, y0, w0, h0):
     #
     #     y = y0 + 20 * gui.scale
@@ -22624,8 +22629,8 @@ class Over:
 
             if theme_name == "Neon Love":
                 c2 = c.artist_text
-                c4 = c.menu_highlight_background
-                c1 = c.menu_highlight_background
+                c4 = [118, 85, 194, 255]
+                c1 = c4
 
             if theme_name == "Sky":
                 c2 = c.artist_text
@@ -22633,25 +22638,29 @@ class Over:
             if theme_name == "Sunken":
                 c2 = c.title_text
                 c3 = c.artist_text
-                c4 = c.menu_highlight_background
-                c1 = c.menu_highlight_background
+                c4 = [59, 115, 109, 255]
+                c1 = c4
 
+            if c2 == c3 and colour_value(c1) < 200:
+                rect = [(xx + border + square) - (square // 2), (yy + border + square) - (square // 2), square, square]
+                ddt.rect(rect, c2, True)
+            else:
 
-            # tl
-            rect = [xx + border, yy + border, square, square]
-            ddt.rect(rect, c1, True)
+                # tl
+                rect = [xx + border, yy + border, square, square]
+                ddt.rect(rect, c1, True)
 
-            # tr
-            rect = [xx + border + square, yy + border, square, square]
-            ddt.rect(rect, c2, True)
+                # tr
+                rect = [xx + border + square, yy + border, square, square]
+                ddt.rect(rect, c2, True)
 
-            # bl
-            rect = [xx + border, yy + border + square, square, square]
-            ddt.rect(rect, c3, True)
+                # bl
+                rect = [xx + border, yy + border + square, square, square]
+                ddt.rect(rect, c3, True)
 
-            # br
-            rect = [xx + border + square, yy + border + square, square, square]
-            ddt.rect(rect, c4, True)
+                # br
+                rect = [xx + border + square, yy + border + square, square, square]
+                ddt.rect(rect, c4, True)
 
             # # bbl
             # rect = [xx + border, yy + border + square + square, square, square]
@@ -22680,15 +22689,14 @@ class Over:
             name = hover_name
         ddt.text((x, y - 23 * gui.scale), name, colours.box_text_label, 214)
         #
-        # if gui.theme_name == "Neon Love":
-        #     x += 240 * gui.scale
-        #     y += 7 * gui.scale
-        #     # x += 165 * gui.scale
-        #     # y += -19 * gui.scale
-        #
-        #     #ddt.text((x, y), "Adapted from ")
-        #     link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
-        #     link_activate(x, y, link_pa, click=self.click)
+        if gui.theme_name == "Neon Love" and not hover_name:
+            x += 95 * gui.scale
+            y -= 23 * gui.scale
+            # x += 165 * gui.scale
+            # y += -19 * gui.scale
+
+            link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
+            link_activate(x, y, link_pa, click=self.click)
 
     def eq(self, x0, y0, w0, h0):
 
@@ -23217,7 +23225,7 @@ class Over:
             self.toggle_square(x, y, toggle_gen, _("Genius search"))
             if discord_allow:
                 y += 23 * gui.scale
-                self.toggle_square(x, y, toggle_show_discord, _("Discord RP"))
+                self.toggle_square(x, y, toggle_show_discord, _("Discord RP Toggle"))
 
             #y = self.box_y + 216 * gui.scale
             x -= 55 * gui.scale
@@ -23378,7 +23386,7 @@ class Over:
         # y += 30 * gui.scale
         # self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
 
-        x = x0 + 255 * gui.scale
+        x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
 
         if self.account_view == 7:
@@ -23658,7 +23666,7 @@ class Over:
 
 
 
-            x = x0 + 260 * gui.scale
+            x = x0 + 230 * gui.scale
             y = y0 + round(130 * gui.scale)
 
             # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
@@ -23682,7 +23690,7 @@ class Over:
             self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=ww)
 
 
-            x = x0 + 260 * gui.scale
+            x = x0 + 230 * gui.scale
             y = y0 + round(245 * gui.scale)
 
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
@@ -23715,7 +23723,7 @@ class Over:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
 
-            x = x0 + 260 * gui.scale
+            x = x0 + 230 * gui.scale
             y = y0 + round(230 * gui.scale)
 
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
@@ -23891,12 +23899,12 @@ class Over:
 
         y += 25 * gui.scale
 
-        if system == "linux":
-            x += round(10 * gui.scale)
-            prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
-            x -= round(10 * gui.scale)
+        # if system == "linux":
+        #     x += round(10 * gui.scale)
+        #     prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
+        #     x -= round(10 * gui.scale)
 
-        y += 25 * gui.scale
+        #y += 25 * gui.scale
 
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
@@ -24028,7 +24036,7 @@ class Over:
             y += 20 * gui.scale
             ddt.text((x, y), "Copyright © 2015-2020 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
             y += 21 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/TauonMusicBox", colours.box_sub_text, 12)
+            link_pa = draw_linked_text((x, y), "https://tauonmusicbox.rocks", colours.box_sub_text, 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
@@ -24552,16 +24560,6 @@ class Over:
         self.init2done = True
 
         pctl.total_playtime = star_store.get_total()
-
-        self.themes = []
-
-        self.themes.append((ColoursClass(), "Mindaro", 0))
-        theme_files = get_themes()
-        for i, theme in enumerate(theme_files):
-            c = ColoursClass()
-            load_theme(c, theme[0])
-            self.themes.append((c, theme[1], i + 1))
-
 
 
     def close(self):
@@ -25206,17 +25204,21 @@ class TopPanel:
                     gui.tab_menu_pl = i
 
                 # Quick drop tracks
-                elif quick_drag is True:
-                    if mouse_up:
+                elif quick_drag is True and mouse_up:
+                    self.tab_d_click_ref = -1
+                    self.tab_d_click_timer.force_set(100)
+                    if not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                         quick_drag = False
                         modified = False
                         gui.pl_update += 1
+
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                             modified = True
                         if len(shift_selection) > 0:
                             modified = True
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
+
                         if modified:
                             pctl.after_import_flag = True
                             tauon.worker_save_state = True
@@ -25327,7 +25329,7 @@ class TopPanel:
                         else:
                             ddt.rect((x, y, 2, gui.panelY2), [80, 160, 200, 255], True)
 
-                elif quick_drag is True:
+                elif quick_drag is True and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                     ddt.rect((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
 
             if len(self.adds) > 0:
@@ -25431,9 +25433,9 @@ class TopPanel:
             gui.frame_callback_list.append(TestTimer(0.2))
             x += 52 * gui.scale
             rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
-            colour = [60, 60, 60, 255]
-            if colours.lm:
-                colour = [180, 180, 180, 255]
+            colour = colours.corner_button # [60, 60, 60, 255]
+            # if colours.lm:
+            #     colour = [180, 180, 180, 255]
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if coll(rect) and input.mouse_click:
                 input.mouse_click = False
@@ -25455,9 +25457,9 @@ class TopPanel:
             fields.add(rect)
 
             if coll(rect):
-                colour = [230, 230, 230, 255]
-                if colours.lm:
-                    colour = [40, 40, 40, 255]
+                colour = colours.corner_button_active
+                # if colours.lm:
+                #     colour = [40, 40, 40, 255]
                 if dl > 0 or watching > 0:
                     if right_click:
                         dl_menu.activate(position=(mouse_position[0], gui.panelY))
@@ -25484,9 +25486,9 @@ class TopPanel:
                             console.print("DEBUG: Position changed by track import")
                             gui.update += 1
                 else:
-                    colour = [60, 60, 60, 255]
-                    if colours.lm:
-                        colour = [180, 180, 180, 255]
+                    colour = colours.corner_button #[60, 60, 60, 255]
+                    # if colours.lm:
+                    #     colour = [180, 180, 180, 255]
                     if input.mouse_click:
                         input.mouse_click = False
                         show_message("It looks like something is being downloaded...", "Let's check back later...",
@@ -25494,11 +25496,11 @@ class TopPanel:
 
 
             else:
-                colour = [60, 60, 60, 255]
+                colour = colours.corner_button #[60, 60, 60, 255]
                 if colours.lm:
-                    colour = [180, 180, 180, 255]
+                    #colour = [180, 180, 180, 255]
                     if dl_mon.ready:
-                        colour = [60, 60, 60, 255]
+                        colour = colours.corner_button_active # [60, 60, 60, 255]
 
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if dl > 0:
@@ -29711,11 +29713,14 @@ class PlaylistBox:
 
 
                 # Process input of dragging tracks onto tab
-                if quick_drag is True:
-                    if mouse_up:
+                if quick_drag is True and mouse_up:
+                    top_panel.tab_d_click_ref = -1
+                    top_panel.tab_d_click_timer.force_set(100)
+                    if not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                         quick_drag = False
                         modified = False
                         gui.pl_update += 1
+
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                             modified = True
@@ -29804,7 +29809,7 @@ class PlaylistBox:
                 #     print("SEMI")
 
             # Highlight target playlist when tragging tracks over
-            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
+            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                 #bg = [255, 255, 255, 15]
                 bg = rgb_add_hls(colours.playlist_box_background, 0, 0.04, 0)
                 if light_mode:
@@ -35393,6 +35398,14 @@ SDL_SetRenderTarget(renderer, None)
 
 if msys:
     SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
+
+# Generate theme buttons
+pref_box.themes.append((ColoursClass(), "Mindaro", 0))
+theme_files = get_themes()
+for i, theme in enumerate(theme_files):
+    c = ColoursClass()
+    load_theme(c, theme[0])
+    pref_box.themes.append((c, theme[1], i + 1))
 
 mouse_up = False
 mouse_wheel = 0
