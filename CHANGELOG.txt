@@ -8,6 +8,8 @@ v5.6.0
  - Added input fields for network accounts in settings
  - Improved transcode handling of multi disc albums
  - Fixed genius lyrics scrape for new layout version
+ - Fixed tracks showing as drop-able into a generator playlist
+ - Fixed dropping tracks then clicking playlist triggering play
 
 v5.5.5
 
