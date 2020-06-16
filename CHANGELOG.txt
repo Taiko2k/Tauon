@@ -2,11 +2,12 @@
 Changelog-------------------------------------
 
 v5.6.0
-
  - Added "Transcode and Sync" function
  - Added visual theme selector to settings
  - Added input fields for network accounts in settings
+ - Added setting for separate multi-value genre results (default is now off)
  - Improved transcode handling of multi disc albums
+ - Improved genre result names for some genres
  - Fixed genius lyrics scrape for new layout version
  - Fixed tracks showing as drop-able into a generator playlist
  - Fixed dropping tracks then clicking playlist triggering play

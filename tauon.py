@@ -1308,6 +1308,8 @@ class Prefs:    # Used to hold any kind of settings
         self.sync_deletes = False
         self.sync_playlist = None
 
+        self.sep_genre_multi = False
+
 
 prefs = Prefs()
 
@@ -3193,6 +3195,8 @@ def save_prefs():
     cf.update_value("gst-output", prefs.gst_output)
     cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
 
+    cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
+
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
@@ -3296,8 +3300,8 @@ def load_prefs():
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
-    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification")
-    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string")
+    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification.")
+    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string.")
 
 
     if prefs.dc_device_setting == 'on':
@@ -3311,6 +3315,9 @@ def load_prefs():
                                                                              "available. E.g. \"en\", \"ja\", \"zh_CH\". "
                                                                              "Default: \"auto\"")
     # prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
+    cf.br()
+    cf.add_text("[search]")
+    prefs.sep_genre_multi = cf.sync_add("bool", "separate-multi-genre", prefs.sep_genre_multi, "If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
 
 
     cf.br()
@@ -3325,7 +3332,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[playback]")
-    prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected")
+    prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
 
 
     cf.br()
@@ -14486,13 +14493,15 @@ def regenerate_playlist(pl, silent=False):
             playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
         # SEARCH GENRE
-        elif cm.startswith("g\"") and len(cm) > 3:
+        elif (cm.startswith("g\"") or cm.startswith("gm\"") or cm.startswith("g=\"")) and len(cm) > 3:
 
             if not selections:
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
-            search = quote
+            g_search = quote.lower().replace("-", "").replace(" ", "")
+
+            search = g_search
             search_over.sip = True
             search_over.search_text.text = search
             try:
@@ -14504,11 +14513,25 @@ def regenerate_playlist(pl, silent=False):
 
             found_name = ""
 
-            for result in search_over.results:
-                if result[0] == 3:
-                    found_name = result[1]
-                    break
-            else:
+
+            if cm.startswith("g=\""):
+                for result in search_over.results:
+                    if result[0] == 3 and result[1].lower().replace("-", "").replace(" ", "") == g_search:  #
+                        found_name = result[1]
+                        break
+            elif cm.startswith("g\"") or not prefs.sep_genre_multi:
+                for result in search_over.results:
+                    if result[0] == 3:
+                        found_name = result[1]
+                        break
+            elif cm.startswith("gm\""):
+                for result in search_over.results:
+                    if result[0] == 3 and result[1].endswith("+"):  #
+                        found_name = result[1]
+                        break
+
+
+            if not found_name:
                 print("No genre search result found")
                 continue
 
@@ -19569,12 +19592,10 @@ class SearchOverlay:
             for pl in pctl.multi_playlist:
                 search_lists.append(pl[2])
 
-
         include_multi = False
-        if name.endswith("+"):
+        if name.endswith("+") or not prefs.sep_genre_multi:
             name = name.rstrip("+")
             include_multi = True
-
 
         for pl in search_lists:
             for item in pl:
@@ -19599,7 +19620,10 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "g\"" + name + "\""
+        if include_multi:
+            pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "gm\"" + name + "\""
+        else:
+            pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "g=\"" + name + "\""
 
 
         input.key_return_press = False
@@ -20445,18 +20469,21 @@ def worker2():
                                 for split in genre.replace(",", "/").split("/"):
                                     if s_text in split:
 
-                                        split = split.strip().title() + "+"
+                                        split = genre_correct(split)
+                                        if prefs.sep_genre_multi:
+                                            split += "+"
                                         if split in genres:
                                             genres[split] += 3
                                         else:
                                             temp_results.append([3, split, track, playlist[6], 0])
                                             genres[split] = 1
                             else:
-                                if t.genre.title() in genres:
-                                    genres[t.genre.title()] += 3
+                                name = genre_correct(t.genre)
+                                if name in genres:
+                                    genres[name] += 3
                                 else:
-                                    temp_results.append([3, t.genre.title(), track, playlist[6], 0])
-                                    genres[t.genre.title()] = 1
+                                    temp_results.append([3, name, track, playlist[6], 0])
+                                    genres[name] = 1
 
                         if s_text in composer:
 
@@ -20622,7 +20649,6 @@ def worker2():
                             del temp_results[i]
 
                 # Sort results by weightings
-
                 for i, item in enumerate(temp_results):
                     if item[0] == 0:
                         temp_results[i][4] = artists[item[1]]
