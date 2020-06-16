@@ -93,6 +93,16 @@ def genius(artist, title, return_url=False):
 
         results = html.findAll("div", {"class": lambda l: l and "Lyrics__Container" in l})
         lyrics = "".join([r.get_text("\n") for r in results])
+        level = 0
+        new = ""
+        for cha in lyrics:
+            if level <= 0:
+                new += cha
+            if cha == "[":
+                level += 1
+            if cha == "]":
+                level -= 1
+        lyrics = new
 
         lines = lyrics.splitlines()
         new_lines = []
@@ -102,9 +112,11 @@ def genius(artist, title, return_url=False):
                 if line:
                     line += "\n"
 
-            new_lines.append(line + "\n")
+            new_lines.append(line.lstrip().rstrip() + "\n")
 
         lyrics = "".join(new_lines)
+        lyrics = lyrics.replace("(\n", "(")
+        lyrics = lyrics.replace("\n)", ")")
         return lyrics
 
 
