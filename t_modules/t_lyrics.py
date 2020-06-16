@@ -112,11 +112,13 @@ def genius(artist, title, return_url=False):
                 if line:
                     line += "\n"
 
-            new_lines.append(line.lstrip().rstrip() + "\n")
+            new_lines.append(line.lstrip().rstrip(" ") + "\n")
 
         lyrics = "".join(new_lines)
         lyrics = lyrics.replace("(\n", "(")
         lyrics = lyrics.replace("\n)", ")")
+        lyrics = lyrics.lstrip("\n")
+        lyrics = lyrics.lstrip()
         return lyrics
 
 
