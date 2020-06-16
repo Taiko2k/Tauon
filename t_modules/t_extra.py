@@ -804,3 +804,21 @@ def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with over
     south = base[0], hole[1] + hole[3], base[2], base[3] - hole[3] - 2
 
     return west, north, east, south
+
+genre_corrections = [
+    "J-Pop",
+    "J-Rock",
+    "K-Pop",
+    "Hip Hop",
+]
+
+genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
+
+def genre_correct(text):
+
+    parsed = text.lower().replace("-", "").replace(" ", "").strip()
+    if parsed.startswith("post"):
+        return ("Post-" + parsed[4:]).title()
+    if parsed in genre_corrections2:
+        return genre_corrections[genre_corrections2.index(parsed)]
+    return text.title().strip()
