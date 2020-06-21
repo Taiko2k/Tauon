@@ -99,6 +99,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
     BASS_FX_GetVersion = function_type(ctypes.c_ulong)(("BASS_FX_GetVersion", fx_module))
 
+    BASS_StreamPutData = function_type(DWORD, HSTREAM, ctypes.c_void_p, DWORD)(('BASS_StreamPutData', bass_module))
+
+    StreamProc = function_type(DWORD, HSTREAM, ctypes.c_void_p, DWORD, ctypes.c_void_p)
+    BASS_StreamCreate = function_type(HSTREAM, DWORD, DWORD, DWORD, StreamProc, ctypes.c_void_p)(('BASS_StreamCreate', bass_module))
     BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
                                           ctypes.c_int64, ctypes.c_ulong)(('BASS_StreamCreateFile', bass_module))
     BASS_Pause = function_type(ctypes.c_bool)(('BASS_Pause', bass_module))
@@ -217,6 +221,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
     BASS_GetCPU = function_type(ctypes.c_float)(('BASS_GetCPU', bass_module))
 
+    def silence_refill(stream, buffer, length, user):
+
+        ctypes.memset(buffer, 0, length)
+        return length
+
+    sil_func = StreamProc(silence_refill)
+
     def py_down(buffer, length, user):
         # if url_record:
         #
@@ -226,6 +237,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
         #     f = open(record_path + fileline, 'ab')
         #     f.write(p)
         #     f.close
+
         return 0
 
     down_func = DownloadProc(py_down)
@@ -315,6 +327,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
     BASS_POS_BYTE = 0
 
     BASS_MIXER_END = 0x10000
+    BASS_MIXER_NONSTOP = 0x20000
     BASS_SYNC_END = 2
     BASS_SYNC_STALL = 6
     BASS_SYNC_MIXTIME = 0x40000000
@@ -1623,9 +1636,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
                 # Pause broadcast
                 if pctl.encoder_pause == 0:
-                    BASS_ChannelPause(mhandle)
+                    BASS_Mixer_ChannelRemove(handle3)
                     pctl.encoder_pause = 1
                 else:
+                    BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
                     BASS_ChannelPlay(mhandle, True)
                     pctl.encoder_pause = 0
 
@@ -1635,6 +1649,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 BASS_StreamFree(handle3)
                 pctl.broadcast_clients.clear()
                 pctl.broadcast_active = False
+
+            # if command == "encpause":
+            #
+            #     BASS_ChannelStop(handle3)
+            #     #BASS_
 
             if command == "encstart":
 
@@ -1661,9 +1680,16 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 #print(pctl.target_open)
 
                 handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-                mhandle = BASS_Mixer_StreamCreate(44100, 2, 0)
+                mhandle = BASS_Mixer_StreamCreate(44100, 2, 0) #  BASS_MIXER_NONSTOP
                 BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-                channel1 = BASS_ChannelPlay(mhandle, True)
+
+                #sil = BASS_StreamCreate(44100, 2, BASS_STREAM_DECODE, sil_func, 0)
+                #BASS_Mixer_StreamAddChannel(mhandle, sil, 0)
+
+                #msilence = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_NONSTOP | BASS_STREAM_DECODE)
+                #BASS_Mixer_StreamAddChannel(mhandle, msilence, 0)
+
+                BASS_ChannelPlay(mhandle, True)
                 BASS_ChannelSetAttribute(mhandle, 2, 0)
 
                 #print(BASS_ErrorGetCode())
@@ -1678,7 +1704,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
                 if BASS_ErrorGetCode() == -1:
                     gui.show_message("Server initialisation error.", "Sorry, something isn't working right.", mode="warning")
-                channel1 = BASS_ChannelPlay(mhandle, True)
+                BASS_ChannelPlay(mhandle, True)
 
                 line = pctl.broadcast_line.encode('utf-8')
                 BASS_Encode_CastSetTitle(encoder, line, 0)
