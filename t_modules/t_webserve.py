@@ -102,7 +102,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
 
     @app.route('/favicon.ico')
     def favicon():
-        return send_file(install_directory + "/gui/favicon.ico", mimetype='image/x-icon')
+        return send_file(install_directory + "/assets/favicon.ico", mimetype='image/x-icon')
 
     if prefs.expose_web is True:
         if pctl.system == "linux":

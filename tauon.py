@@ -1309,6 +1309,7 @@ class Prefs:    # Used to hold any kind of settings
         self.sync_playlist = None
 
         self.sep_genre_multi = False
+        self.topchart_sorts_played = True
 
 
 prefs = Prefs()
@@ -3272,7 +3273,7 @@ def save_prefs():
     cf.update_value("chart-rows", prefs.chart_rows)
     cf.update_value("chart-uses-text", prefs.chart_text)
     cf.update_value("chart-font", prefs.chart_font)
-
+    cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
 
     if os.path.isdir(config_directory):
         cf.dump(os.path.join(config_directory, "tauon.conf"))
@@ -3476,6 +3477,7 @@ def load_prefs():
     prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
     prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
     prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
+    prefs.topchart_sorts_played = cf.sync_add("bool", "chart-sorts-top-played", prefs.topchart_sorts_played)
     prefs.chart_font = cf.sync_add("string", "chart-font", prefs.chart_font, "Format is fontname + size. Default is Monospace 10")
 
 load_prefs()
@@ -21774,7 +21776,7 @@ def gen_power2():
     return h
 
 
-def reload_albums(quiet=False, return_playlist=-1):
+def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     global album_dex
     global update_layout
     global old_album_pos
@@ -21783,18 +21785,18 @@ def reload_albums(quiet=False, return_playlist=-1):
         # Doing reload while things are being removed may cause crash
         return
 
-    # if not quiet:
-    #     gui.album_scroll_px = old_album_pos
     dex = []
     current_folder = ""
     current_album = ""
 
-    # if True:
-    target_pl_no = pctl.active_playlist_viewing
-    if return_playlist > -1:
-        target_pl_no = return_playlist
+    if custom_list is not None:
+        playlist = custom_list
+    else:
+        target_pl_no = pctl.active_playlist_viewing
+        if return_playlist > -1:
+            target_pl_no = return_playlist
 
-    playlist = pctl.multi_playlist[target_pl_no][2]
+        playlist = pctl.multi_playlist[target_pl_no][2]
 
     for i in range(len(playlist)):
         tr = pctl.master_library[playlist[i]]
@@ -21812,7 +21814,7 @@ def reload_albums(quiet=False, return_playlist=-1):
                 current_folder = tr.parent_folder_name
                 current_album = tr.album
 
-    if return_playlist > -1:
+    if return_playlist > -1 or custom_list:
         return dex
 
     album_dex = dex
@@ -22458,12 +22460,21 @@ def set_player_gstreamer(mode=0):
 def gen_chart():
 
     try:
-        dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+
         topchart = t_topchart.TopChart(tauon, album_art_gen)
 
         tracks = []
+
+        source_tracks = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+
+        if prefs.topchart_sorts_played:
+            source_tracks = gen_folder_top(0, custom_list=source_tracks)
+            dex = reload_albums(quiet=True, custom_list=source_tracks)
+        else:
+            dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+
         for item in dex:
-            tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
+            tracks.append(pctl.g(source_tracks[item]))
 
         cascade = False
         if prefs.chart_cascade:
@@ -23822,18 +23833,21 @@ class Over:
                     paths = auto_get_sync_targets()
                     if paths:
                         sync_target.text = paths[0]
+                        show_message(_("A mounted music folder was found!"), mode="done")
                     else:
-                        show_message(_("Could not auto-detect mounted device path"))
+                        show_message(_("Could not auto-detect mounted device path."), _("Make sure the device is mounted and path is accessible."))
 
             power_bar_icon.render(rect[0], rect[1], colour)
             y += 30 * gui.scale
 
-            prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete folders on target"))
+            prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete all other folders in target"))
             y += 30 * gui.scale
 
             ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
             xx = (rect1[0] + (rect1[2] // 2)) - (ww // 2)
-            if not gui.sync_progress:
+            if gui.stop_sync:
+                self.button(xx, y, _("Stopping..."), width=ww)
+            elif not gui.sync_progress:
                 if self.button(xx, y, _("Start Transcode and Sync"), width=ww):
                     if pl:
                         auto_sync(pl)
@@ -24169,8 +24183,14 @@ class Over:
         prefs.chart_cascade = self.toggle_square(x, y, prefs.chart_cascade, _("Cascade style"))
         y += 25 * gui.scale
         prefs.chart_tile = self.toggle_square(x, y, prefs.chart_tile ^ True, _("Use padding")) ^ True
-        y += 25 * gui.scale
+
+        y -= 25 * gui.scale
+        x += 170 * gui.scale
+
         prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
+        y += 25 * gui.scale
+        prefs.topchart_sorts_played = self.toggle_square(x, y, prefs.topchart_sorts_played, _("Sort by top played"))
+
 
         x = x0 + 15 * gui.scale + 320 * gui.scale
         y = y0 + 100 * gui.scale
@@ -24203,13 +24223,16 @@ class Over:
         # x = self.box_x + self.item_x_offset + 200 * gui.scale
         # y = self.box_y + 180 * gui.scale
 
-        x = x0 + 200 * gui.scale
+        x = x0 + 260 * gui.scale
         y = y0 + 180 * gui.scale
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
+        x = x0 + round(110 * gui.scale)
+        y = y0 + 240 * gui.scale
+
         #. Limited width. Max 9 chars.
-        if self.button(x, y, _("Generate"), width=75*gui.scale):
+        if self.button(x, y, _("Generate"), width=80*gui.scale):
             if gui.generating_chart:
                 show_message("Be patient!")
             else:
@@ -24221,23 +24244,22 @@ class Over:
                     shoot.start()
                     gui.generating_chart = True
 
+        x += round(95 * gui.scale)
         if gui.generating_chart:
-            ddt.text((x + 85 * gui.scale, y + 2 * gui.scale), _("Generating..."),
-                     colours.box_text_label, 11)
+            ddt.text((x , y + round(1 * gui.scale)), _("Generating..."),
+                     colours.box_text_label, 12)
+        else:
 
-        y += 27 * gui.scale
+            count = prefs.chart_rows * prefs.chart_columns
+            if prefs.chart_cascade:
+                count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
 
-        count = prefs.chart_rows * prefs.chart_columns
-        if prefs.chart_cascade:
-            count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
+            line = str(count) + " " + _("Album chart")
 
-        line = str(count) + " Album chart"
+            ww = ddt.text((x, y + round(1 * gui.scale)), line, colours.box_text_label, 12)
 
-        ddt.text((x + 37 * gui.scale, y, 2), line, colours.box_text_label,
-                 12)
-
-        if len(dex) < count:
-            ddt.text((x + 37 * gui.scale, y + 19 * gui.scale, 2), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
+            if len(dex) < count:
+                ddt.text((x + ww + round(10 * gui.scale), y + 1 * gui.scale), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
 
         x = x0 + round(20 * gui.scale)
         y = y0 + 240 * gui.scale
@@ -25465,7 +25487,7 @@ class TopPanel:
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if coll(rect) and input.mouse_click:
                 input.mouse_click = False
-                show_message("Downloader is running...", "You may need to restart app if download stalls", mode='info')
+                show_message("Downloader is running...", "You may need to restart app if download stalls", mode='download')
             if os.path.isdir(auto_dl.dl_dir):
                 s = get_folder_size(auto_dl.dl_dir)
 
@@ -35883,7 +35905,6 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
-                print("Maximize window")
                 update_layout = True
                 gui.pl_update = 1
                 gui.update += 1
@@ -36201,6 +36222,8 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
+            pctl.playerCommand = "encpause"
+            pctl.playerCommandReady = True
             pass
             # albums = {}
             # nums = {}
