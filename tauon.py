@@ -10990,7 +10990,7 @@ class ToolTip3:
 
 columns_tool_tip = ToolTip3()
 
-
+tool_tip_instant = ToolTip3()
 # Right click context menu generator
 
 class MenuIcon:
@@ -21911,6 +21911,7 @@ def rating_toggle(mode=0):
     if gui.show_ratings:
         # gui.show_hearts = False
         gui.star_mode = 'none'
+        prefs.rating_playtime_stars = True
         if not prefs.write_ratings:
             show_message(_("Note that ratings are stored in the local database and not written to tags."))
 
@@ -22744,7 +22745,7 @@ class Over:
         x = x0 + 130 * gui.scale
 
 
-        if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=55 * gui.scale):
+        if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=75 * gui.scale):
             self.eq_view = False
 
         base_dis = 160 * gui.scale
@@ -23156,19 +23157,20 @@ class Over:
             y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
-                               _("Serve webpage for broadcast metadata"))
+                               _("Serve broadcast landing page"))
 
 
             y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_auto_artist_dl,
-                               _("Enable auto fetch artist data"))
+                               _("Auto fetch artist data"))
 
             y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
+            self.toggle_square(x, y, toggle_top_tabs, _("Enable tabs in top panel"))
 
-            y += 25 * gui.scale
-            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto update generated playlists"))
+            y += 10 * gui.scale
+            # y += 25 * gui.scale
+            # prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto-update generated playlists"))
 
             #y += 30 * gui.scale
             # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
@@ -23184,14 +23186,14 @@ class Over:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
             y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
+            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"))
             y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
+            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
 
-            y += 30 * gui.scale
+            y += 40 * gui.scale
 
             #. Limited width. Max 19 chars.
             # self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
@@ -23207,7 +23209,7 @@ class Over:
             bg = None
             if gui.opened_config_file:
                 bg = [90, 50, 130, 255]
-            self.button(x + wc + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
+                self.button(x + wc + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
 
             y += 30 * gui.scale
 
@@ -23860,7 +23862,7 @@ class Over:
 
             y += 110 * gui.scale
 
-            if self.button(x, y, _("Return")):
+            if self.button(x, y, _("Return"), width=round(75*gui.scale)):
                 self.sync_view = False
 
             if self.button(x + 485 * gui.scale, y, _("?")):
@@ -24432,29 +24434,58 @@ class Over:
         x = x0 + self.item_x_offset
         y = y0 + 17 * gui.scale
 
-        self.toggle_square(x, y, heart_toggle, _('Show love hearts'))
+        self.toggle_square(x, y, rating_toggle, _('Track ratings'))
+        y += round(25 * gui.scale)
+        self.toggle_square(x, y, album_rating_toggle, _('Album ratings'))
+        y += round(35 * gui.scale)
+
+
+        #self.toggle_square(x, y, heart_toggle, _('Show love hearts'))
+        self.toggle_square(x, y, heart_toggle, "     ")
+        heart_row_icon.render(x + round(23 * gui.scale), y + round(2 * gui.scale), colours.box_text)
+        rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
+        fields.add(rect)
+        if coll(rect):
+            ex_tool_tip(x + round(45 * gui.scale), y - 20 * gui.scale, 0, _("Show track loves"), 12)
+
+        x += (55 * gui.scale)
+        self.toggle_square(x, y, star_toggle, "     ")
+        star_row_icon.render(x + round(22 * gui.scale), y + round(0 * gui.scale), colours.box_text)
+        rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
+        fields.add(rect)
+        if coll(rect):
+            ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playtime as stars"), 12)
+
+        x += (55 * gui.scale)
+        self.toggle_square(x, y, star_line_toggle, "     ")
+        ddt.rect((x + round(21 * gui.scale), y + round(6 * gui.scale), round(15 * gui.scale), round(1 * gui.scale)), colours.box_text, True)
+        rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
+        fields.add(rect)
+        if coll(rect):
+            ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playcount as lines"), 12)
+
+        x = x0 + self.item_x_offset
+
+        #y += round(25 * gui.scale)
+
+
+        #self.toggle_square(x, y, star_line_toggle, _('Show playtime lines'))
+        y += round(15 * gui.scale)
+
+
+
+        # if gui.show_ratings:
+        #     x += round(10 * gui.scale)
+        # #self.toggle_square(x, y, star_toggle, _('Show playtime stars'))
+        # if gui.show_ratings:
+        #     x -= round(10 * gui.scale)
+
         y += round(25 * gui.scale)
 
-        self.toggle_square(x, y, star_line_toggle, _('Show playtime lines'))
+        self.toggle_square(x, y, toggle_append_date, _('Show album release year'))
         y += round(25 * gui.scale)
 
-        self.toggle_square(x, y, rating_toggle, _('Show track ratings'))
-        y += round(25 * gui.scale)
-
-        if gui.show_ratings:
-            x += round(10 * gui.scale)
-        self.toggle_square(x, y, star_toggle, _('Show playtime stars'))
-        if gui.show_ratings:
-            x -= round(10 * gui.scale)
-        y += round(25 * gui.scale)
-
-        self.toggle_square(x, y, album_rating_toggle, _('Show album ratings'))
-        y += round(25 * gui.scale)
-
-        self.toggle_square(x, y, toggle_append_date, _('Add release year to folder title'))
-        y += round(25 * gui.scale)
-
-        self.toggle_square(x, y, toggle_append_total_time, _('Add total duration to folder title'))
+        self.toggle_square(x, y, toggle_append_total_time, _('Show album duration'))
         y += round(25 * gui.scale)
 
         x = x0 + 330 * gui.scale
@@ -27578,10 +27609,14 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                         sx -= round(13 * gui.scale)
                         star_x += round(13 * gui.scale)
 
-                if playtime_stars > 4:
-                    colour = [c + d * count, c + d * count, c + d * count, 255]
-                if playtime_stars > 6: # and count < 1:
-                    colour = [230, 220, 60, 255]
+                # if playtime_stars > 4:
+                #     colour = [c + d * count, c + d * count, c + d * count, 255]
+                # if playtime_stars > 6: # and count < 1:
+                #     colour = [230, 220, 60, 255]
+                if gui.tracklist_bg_is_light:
+                    colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
+                else:
+                    colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
 
                 # if selected_star > -2:
                 #     if selected_star >= count:
@@ -28502,9 +28537,10 @@ class StandardPlaylist:
                                 star = star_count(total, n_track.length) - 1
                                 rr = 0
                                 if star > -1:
-                                    colour = (70, 70, 70, 255)
-                                    if colours.lm:
-                                        colour = (90, 90, 90, 255)
+                                    if gui.tracklist_bg_is_light:
+                                        colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
+                                    else:
+                                        colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
 
                                     sx = run + 6 * gui.scale
                                     sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
