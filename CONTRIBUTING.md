@@ -1,28 +1,27 @@
 # Contributing to Tauon Music Box
 
-### Issues & Suggestions
+Wanna contribute? Theres a few ways you can:
 
-Feel free to create new github issues or send me an email.
+### Issues
+
+If you encounter an issue, feel free to create new issues on github.
 
 For crashes, it would be most helpful if you could replicate the crash and capture the error from terminal output.
 
-  > To run manually for standard install `python3 /opt/tauon-music-box/tauon.py` or for flatpak `flatpak run com.github.taiko2k.tauonmb`
+  > To run manually for standard install: `python3 /opt/tauon-music-box/tauon.py`. 
+  > Or for Flatpak: `flatpak run com.github.taiko2k.tauonmb`
 
 For suggestions, I may or may not choose to implement certain things. Explaining how a feature would be integrated would be more helpful than vague ideas.
-Design concepts would be great, but you should check with me before investing too much time into it.
+Design concepts would be interesting to see, but you should check with me before investing too much time into it.
 
 ### Translations
 
-There are currently no translations available. But you can contribute one if you like.
-
-Contact me or open an issue and I can give you details on how to help.
+[See here](https://github.com/Taiko2k/TauonMusicBox/wiki/Translations)
 
 ### Code Contributions
 
-The current code base is very (very) messy, as such I don't expect anyone would want to work on code contributions. 
-
-PR's are welcome, just try make sure they are concise, focused and well commented. (IK my code isn't always isn't, but you should strive to a higher standard!)
+The current code base is very (very) messy, as such I don't expect code contributions. 
 
 ### Other
 
-Other areas for contribution could include website design, UI concepts, icon design and documentation.
+Other areas for contribution could include website design, UI concepts, icon design, promotion and documentation.
