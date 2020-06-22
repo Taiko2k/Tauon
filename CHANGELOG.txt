@@ -2,6 +2,7 @@
 Changelog-------------------------------------
 
 v5.6.0
+
  - Added "Transcode and Sync" function
  - Added visual theme selector to settings
  - Added input fields for network accounts in settings
@@ -9,10 +10,13 @@ v5.6.0
  - Added "sort by top played" setting to chart generator
  - Improved transcode handling of multi disc albums
  - Improved genre result names for some genres
+ - Tweaked old playtime star colour
+ - Tweaked layout of various settings
  - Fixed genius lyrics scrape for new layout version
  - Fixed tracks showing as drop-able into a generator playlist
  - Fixed dropping tracks then clicking playlist triggering play
  - Fixed favicon not showing in radio page
+ - Removed "auto update generated playlists" from in-app settings
 
 v5.5.5
 
