@@ -118,16 +118,38 @@ p {
 
 }
 
-.buttons li{
-  display: inline;
-  font-family: sans-serif;
-  color: rgb(190, 190, 190);
-  background-color: rgb(10, 10, 10);
-  padding: 8px 35px;
-  cursor: pointer;
+#play-button {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  width: 60px;
+  height: 25px;
+
 }
 
-.buttons li:hover{
-  background-color: rgb(50, 50, 50);
+.button {
+  background-color: #222;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
 
+.button:hover{
+  background-color: #252525;
+}
+
+#play-icon{
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-left: 25px solid #444;
+  border-bottom: 12px solid transparent;
+  margin: auto;
+}
+
+#stop-icon {
+  display: none;
+  width: 20px;
+  height: 20px;
+  background: #444;
+  margin: auto;
 }
