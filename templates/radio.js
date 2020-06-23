@@ -8,6 +8,7 @@ sound.id       = 'audio-player';
 //sound.controls = 'controls';
 sound.type     = 'audio/ogg';
 sound.preload  = 'none';
+sound.volume   = 0.85;
 
 document.getElementById('player').appendChild(sound);
 

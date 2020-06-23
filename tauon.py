@@ -22262,8 +22262,8 @@ def toggle_transcode_output(mode=0):
     if prefs.transcode_inplace:
         transcode_icon.colour = [250, 20, 20, 255]
         show_message(
-            "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
-            "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.",
+            _("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
+            _("For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."),
             mode='warning')
     else:
         transcode_icon.colour = [239, 74, 157, 255]
@@ -23092,23 +23092,23 @@ class Over:
 
         self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
 
-        y += 30 * gui.scale
+        #y += 30 * gui.scale
 
-        ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
+        # ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
 
-        y += 25 * gui.scale
-        prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
+        # y += 25 * gui.scale
+        # prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
 
         global album_mode_art_size
         global update_layout
-        y += 30 * gui.scale
+        y += 35 * gui.scale
         ddt.text((x, y), _("Gallery"), colours.box_text_label, 12)
 
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
         y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
+        self.toggle_square(x, y, toggle_galler_text, _("Show titles"))
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
         # y += 25 * gui.scale
@@ -23120,7 +23120,7 @@ class Over:
         #y += 25 * gui.scale
 
         x -= 80 * gui.scale
-        x += ddt.get_text_w( _("Gallery art size"), 11)
+        x += ddt.get_text_w( _("Thumbnail size"), 11)
         #x += 20 * gui.scale
 
         if album_mode_art_size < 160:
@@ -23128,7 +23128,7 @@ class Over:
 
         #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
-        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Thumbnail size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
 
 
@@ -23966,7 +23966,7 @@ class Over:
 
         ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
 
-        if system != 'windows':
+        if system != 'windows' and (flatpak_mode or snap_mode):
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
@@ -23978,29 +23978,6 @@ class Over:
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
             y += 25 * gui.scale
 
-
-        x = x0 + self.item_x_offset + 260 * gui.scale
-        y = y0 + 20 * gui.scale
-
-        #ddt.text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
-
-        #y += 28 * gui.scale
-        #self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
-
-        #y += 25 * gui.scale
-        #self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
-
-        #y += 30 * gui.scale
-
-        # ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
-        # #
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_meta_persists_stop, _("Persist when stopped"))
-        #
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
-
-        #y += 25 * gui.scale
 
     def about(self, x0, y0, w0, h0):
 
@@ -24189,7 +24166,7 @@ class Over:
         y -= 25 * gui.scale
         x += 170 * gui.scale
 
-        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
+        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include album titles"))
         y += 25 * gui.scale
         prefs.topchart_sorts_played = self.toggle_square(x, y, prefs.topchart_sorts_played, _("Sort by top played"))
 
@@ -24637,9 +24614,6 @@ class Over:
     def init2(self):
 
         self.init2done = True
-
-        pctl.total_playtime = star_store.get_total()
-
 
     def close(self):
         self.enabled = False
@@ -35490,6 +35464,8 @@ for i, theme in enumerate(theme_files):
     c = ColoursClass()
     load_theme(c, theme[0])
     pref_box.themes.append((c, theme[1], i + 1))
+
+pctl.total_playtime = star_store.get_total()
 
 mouse_up = False
 mouse_wheel = 0

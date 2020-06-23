@@ -11,12 +11,13 @@ v5.6.0
  - Improved transcode handling of multi disc albums
  - Improved genre result names for some genres
  - Tweaked old playtime star colour
- - Tweaked layout of various settings
+ - Tweaked layout and description of various settings
  - Fixed genius lyrics scrape for new layout version
  - Fixed tracks showing as drop-able into a generator playlist
  - Fixed dropping tracks then clicking playlist triggering play
  - Fixed favicon not showing in radio page
  - Fixed radio page not working without outside connection
+ - Fixed animation stutter when opening settings box
  - Removed "auto update generated playlists" from in-app settings
 
 v5.5.5
