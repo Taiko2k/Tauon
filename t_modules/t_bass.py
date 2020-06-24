@@ -753,9 +753,17 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             url = None
             pctl.download_time = 0
 
+            if not target_object.is_network and tauon.spot_ctl.playing is True:
+                tauon.spot_ctl.control("pause")
+
             if target_object.is_network:
 
                 # print("START STREAM")
+                if target_object.file_ext == "SPTY":
+
+                    self.stop()
+                    tauon.spot_ctl.play_target(target_object.url_key)
+                    return
 
                 self.url = ""
                 params = None
@@ -1287,6 +1295,33 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                     # gui.update += 1
                     gui.level_peak = [0, 0]
 
+        if pctl.playing_state == 1 and tauon.spot_ctl.playing:
+            th = 10
+            if pctl.playing_time > pctl.playing_length:
+                th = 1
+            if tauon.spot_ctl.update_timer.get() < th:
+                pctl.playing_time += tauon.spot_ctl.progress_timer.get()
+                pctl.decode_time = pctl.playing_time
+                tauon.spot_ctl.progress_timer.set()
+                pctl.test_progress()
+            else:
+                tauon.spot_ctl.update_timer.set()
+                tauon.spot_ctl.monitor()
+
+        elif pctl.playing_state == 3 and tauon.spot_ctl.coasting:
+            th = 10
+            if pctl.playing_time > pctl.playing_length:
+                th = 1
+            if tauon.spot_ctl.update_timer.get() < th:
+                if not tauon.spot_ctl.paused:
+                    pctl.playing_time += tauon.spot_ctl.progress_timer.get()
+                    pctl.decode_time = pctl.playing_time
+                tauon.spot_ctl.progress_timer.set()
+
+            else:
+                tauon.spot_ctl.update_timer.set()
+                tauon.spot_ctl.update()
+
         if pctl.playing_state == 3 and bass_player.state == 'playing':
             if radio_meta_timer.get() > 3:
                 radio_meta_timer.set()
@@ -1750,7 +1785,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
             elif command == 'volume':
 
-                bass_player.set_volume(pctl.player_volume / 100)
+                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                    tauon.spot_ctl.control("volume", int(pctl.player_volume))
+                else:
+                    bass_player.set_volume(pctl.player_volume / 100)
 
             elif command == 'runstop':
 
@@ -1762,7 +1800,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
             elif command == 'seek':
 
-                bass_player.seek()
+                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                    tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
+                    pctl.playing_time = pctl.new_time
+                else:
+                    bass_player.seek()
 
             # UNLOAD PLAYER COMMAND
             if command == 'unload':
