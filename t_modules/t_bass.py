@@ -1299,7 +1299,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             th = 10
             if pctl.playing_time > pctl.playing_length:
                 th = 1
-            if tauon.spot_ctl.update_timer.get() < th:
+            if tauon.spot_ctl.start_timer.get() < 7 or tauon.spot_ctl.update_timer.get() < th:
                 pctl.playing_time += tauon.spot_ctl.progress_timer.get()
                 pctl.decode_time = pctl.playing_time
                 tauon.spot_ctl.progress_timer.set()

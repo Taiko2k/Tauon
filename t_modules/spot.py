@@ -13,6 +13,7 @@ class SpotCtl:
     def __init__(self, tauon):
         self.tauon = tauon
 
+        self.start_timer = Timer()
         self.status = 0
         self.spotify = None
         self.loaded_art = ""
@@ -97,11 +98,32 @@ class SpotCtl:
 
         return None
 
+    def search(self, text):
+        self.connect()
+        if not self.spotify:
+            return
+        results = self.spotify.search(text,
+                                      types=('track', 'album',),
+                                      limit=9
+                                      )
+        print(results)
+        finds = []
+
+        if results[0]:
+            for album in results[0].items[0:9]:
+                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0))
+
+        print(finds)
+        return finds
+
+
     def search_track(self, track):
         if track is None:
             return
 
         self.connect()
+        if not self.spotify:
+            return
 
         if track.artist and track.title:
             results = self.spotify.search(track.artist + " " + track.title,
@@ -144,6 +166,7 @@ class SpotCtl:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
         self.playing = True
         self.progress_timer.set()
+        self.start_timer.set()
 
     def get_library_albums(self):
         self.connect()

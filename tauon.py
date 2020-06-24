@@ -18627,6 +18627,7 @@ def activate_search_overlay():
     search_over.delay_enter = False
     search_over.search_text.selection = 0
     search_over.search_text.cursor_position = 0
+    search_over.spotify_mode = False
 
 
 extra_menu.add(_('Global Search'), activate_search_overlay, hint="CTRL + G")
@@ -19521,6 +19522,7 @@ class SearchOverlay:
         self.animate_timer = Timer(100)
         self.input_timer = Timer(100)
         self.all_folders = False
+        self.spotify_mode = False
 
 
     def clear(self):
@@ -19788,6 +19790,12 @@ class SearchOverlay:
 
             self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
+            if input.key_tab_press:
+                search_over.spotify_mode ^= True
+                self.sip = True
+                search_over.searched_text = ""
+                worker2_lock.release()
+
             if input_text or key_backspace_press:
                 self.input_timer.set()
 
@@ -19934,6 +19942,51 @@ class SearchOverlay:
                         self.search_text.text = ""
 
                     yy += 6 * gui.scale
+
+                if item[0] == 11:
+
+                    cl = [130, 237, 69, int(255 * fade)]
+                    text = "Album"
+                    yy += 3 * gui.scale
+                    xx = ddt.text((120 * gui.scale, yy), " - ".join(item[1]), [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+
+                            if key_ctrl_down:
+                                #default_playlist.extend(self.click_artist(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                spot_ctl.append_album(item[2])
+                                #self.click_artist(item[1])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        spot_ctl.append_album(item[2])
+                        #self.click_artist(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+
 
                 if item[0] == 1:
 
@@ -20388,13 +20441,27 @@ def worker4():
 
 
 worker2_lock = threading.Lock()
+spot_search_rate_timer = Timer()
+
 def worker2():
 
     while True:
         worker2_lock.acquire()
 
         if len(search_over.search_text.text) > 1:
-            if True:
+
+            if search_over.spotify_mode:
+                t = spot_search_rate_timer.get()
+                if t < 1:
+                    time.sleep(1 - t)
+                    spot_search_rate_timer.set()
+                print("Spotify search")
+                search_over.results = spot_ctl.search(search_over.search_text.text)
+                search_over.searched_text = search_over.search_text.text
+                #search_over.spotify_mode = False
+                search_over.sip = False
+
+            elif True:
                 #perf_timer.set()
 
                 temp_results = []
@@ -20719,6 +20786,7 @@ def worker2():
 
                 temp_results[:] = [item for item in temp_results if item is not None]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
+                print(search_over.results)
 
                 i = 0
                 for playlist in pctl.multi_playlist:
