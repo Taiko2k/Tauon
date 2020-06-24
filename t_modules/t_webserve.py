@@ -100,6 +100,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
         else:
             return jsonify(index=-1, image="None", title="", artist="- - Broadcast Offline -", lyrics="")
 
+
     @app.route('/favicon.ico')
     def favicon():
         return send_file(install_directory + "/assets/favicon.ico", mimetype='image/x-icon')
@@ -112,3 +113,19 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
     else:
         app.run(port=prefs.metadata_page_port)
 
+
+def authserve(tauon):
+
+    from flask import Flask, redirect, send_file, abort, request, jsonify, render_template, Response, stream_with_context
+
+    app = Flask(__name__)
+
+    @app.route('/spotredir')
+    def favicon():
+        code = request.args.get('code')
+        if code:
+            tauon.spot_ctl.paste_code(code)
+            return "You can close this now and return to Tauon Music Box"
+        abort(400)
+
+    app.run(port=7811)

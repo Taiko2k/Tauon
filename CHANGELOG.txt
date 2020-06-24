@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v5.6.0
 
+ - Added Spotify integration (wip)
  - Added "Transcode and Sync" function
  - Added visual theme selector to settings
  - Added input fields for network accounts in settings

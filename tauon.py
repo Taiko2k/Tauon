@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.6.0"
+n_version = "6.0.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -656,6 +656,7 @@ from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
+from t_modules.spot import SpotCtl
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -843,6 +844,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "PLEX": [229, 160, 13, 255],
     "KOEL": [111, 98, 190, 255],
     "SUB": [235, 140, 20, 255],
+    "SPTY": [30, 215, 96, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -1257,7 +1259,7 @@ class Prefs:    # Used to hold any kind of settings
         self.side_panel_layout = 0
         self.use_absolute_track_index = False
 
-        self.hide_bottom_title = False
+        self.hide_bottom_title = True
         self.auto_goto_playing = False
 
         self.diacritic_search = True
@@ -1311,6 +1313,8 @@ class Prefs:    # Used to hold any kind of settings
         self.sep_genre_multi = False
         self.topchart_sorts_played = True
 
+        self.spot_client = ""
+        self.spot_secret = ""
 
 prefs = Prefs()
 
@@ -2802,6 +2806,10 @@ for t in range(2):
         if save[146] is not None:
             prefs.sync_playlist = save[146]
 
+        if save[147] is not None:
+            prefs.spot_client = save[147]
+        if save[148] is not None:
+            prefs.spot_secret = save[148]
 
         state_file.close()
         del save
@@ -3954,6 +3962,7 @@ class PlayerCtl:
 
         # Database
 
+        self.master_count = master_count
         self.total_playtime = 0
         self.master_library = master_library
         #self.star_library = star_library
@@ -4059,6 +4068,8 @@ class PlayerCtl:
 
         self.radio_image_bin = None
         self.radio_rate_timer = Timer(20)
+
+        self.volume_update_timer = Timer()
 
 
     def radio_progress(self):
@@ -4215,7 +4226,7 @@ class PlayerCtl:
 
         line = ""
         track = pctl.playing_object()
-        if self.playing_state < 3 and track:
+        if track:
             title = track.title
             artist = track.artist
 
@@ -4368,6 +4379,13 @@ class PlayerCtl:
 
     def set_volume(self, notify=True):
 
+        if (spot_ctl.coasting or spot_ctl.playing) and mouse_down:
+            # Rate limit network volume change
+            t = self.volume_update_timer.get()
+            if t < 0.3:
+                return
+
+        self.volume_update_timer.set()
         self.playerCommand = 'volume'
         self.playerCommandReady = True
         if notify:
@@ -4598,6 +4616,10 @@ class PlayerCtl:
                 if loop > 110:
                     break
 
+        if spot_ctl.playing or spot_ctl.coasting:
+            print("Spotify stop")
+            spot_ctl.control("pause")
+
         self.notify_update()
         lfm_scrobbler.start_queue()
         return previous_state
@@ -4605,6 +4627,11 @@ class PlayerCtl:
     def pause(self):
 
         if self.playing_state == 3:
+            if spot_ctl.coasting:
+                if spot_ctl.paused:
+                    spot_ctl.control("resume")
+                else:
+                    spot_ctl.control("pause")
             return
         if self.playing_state == 1:
             self.playerCommand = 'pauseon'
@@ -6340,6 +6367,8 @@ class Tauon:
         self.snap_mode = snap_mode
         self.console = console
         self.msys = msys
+        self.TrackClass = TrackClass
+        self.pl_gen = pl_gen
 
     # def log(self, line, title=False):
     #
@@ -6428,8 +6457,6 @@ class PlexService:
             self.scanning = False
             return
 
-        global master_count
-
         playlist = []
 
         albums = self.resource.library.section('Music').albums()
@@ -6442,7 +6469,7 @@ class PlexService:
 
             for track in album.tracks():
 
-                id = master_count
+                id = pctl.master_count
                 replace_existing = False
                 for track_id, track in pctl.master_library.items():
                     if track.is_network and track.file_ext == "PLEX" and track.url_key == track.key:
@@ -6477,7 +6504,7 @@ class PlexService:
                 pctl.master_library[id] = nt
 
                 if not replace_existing:
-                    master_count += 1
+                    pctl.master_count += 1
 
                 playlist.append(nt.index)
 
@@ -6574,8 +6601,6 @@ class SubsonicService:
         for a in d["subsonic-response"]["artists"]["index"]:
             artists += a["artist"]
 
-
-        global master_count
         playlist = []
 
         for artist in artists:
@@ -6589,7 +6614,7 @@ class SubsonicService:
 
                 for song in songs:
 
-                    id = master_count
+                    id = pctl.master_count
                     replace_existing = False
                     for track_id, track in pctl.master_library.items():
                         if track.is_network and track.file_ext == "SUB" and track.url_key == song["id"]:
@@ -6631,7 +6656,7 @@ class SubsonicService:
                     pctl.master_library[id] = nt
 
                     if not replace_existing:
-                        master_count += 1
+                        pctl.master_count += 1
 
                     playlist.append(nt.index)
 
@@ -6737,8 +6762,6 @@ class KoelService:
             self.scanning = False
             return
 
-        global master_count
-
         playlist = []
 
         target = self.server + "/api/data"
@@ -6772,7 +6795,7 @@ class KoelService:
 
         for song in songs:
 
-            id = master_count
+            id = pctl.master_count
             replace_existing = False
             for track_id, track in pctl.master_library.items():
                 if track.is_network and track.file_ext == "KOEL" and track.url_key == song["id"]:
@@ -6804,7 +6827,7 @@ class KoelService:
             pctl.master_library[id] = nt
 
             if not replace_existing:
-                master_count += 1
+                pctl.master_count += 1
 
             playlist.append(nt.index)
 
@@ -6829,6 +6852,8 @@ tauon.koel = koel
 
 
 def get_network_thumbnail_url(track_object):
+    if track_object.file_ext == "SPTY":
+        return track_object.art_url_key
     if track_object.file_ext == "PLEX":
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
@@ -7073,8 +7098,8 @@ class GStats:
 
         pt = 0
 
-        if master_count != self.last_db or self.last_pl != playlist:
-            self.last_db = master_count
+        if pctl.master_count != self.last_db or self.last_pl != playlist:
+            self.last_db = pctl.master_count
             self.last_pl = playlist
 
             artists = {}
@@ -8847,6 +8872,9 @@ text_air_usr = TextBox2()
 text_air_pas = TextBox2()
 text_air_ser = TextBox2()
 
+text_spot_client = TextBox2()
+text_spot_secret = TextBox2()
+
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
@@ -9570,7 +9598,7 @@ class AlbumArt():
 
         elif subsource[0] == 2:
             try:
-                if track.file_ext == "RADIO":
+                if track.file_ext == "RADIO" or track.file_ext == "Spotify":
                     if pctl.radio_image_bin:
                         source_image = pctl.radio_image_bin
 
@@ -10617,7 +10645,6 @@ def load_pls(path):
 
 
 def load_xspf(path):
-    global master_count
     global to_got
 
     name = os.path.basename(path)[:-5]
@@ -10764,7 +10791,7 @@ def load_xspf(path):
 
         if not found and 'location' in track or 'title' in track:
             nt = TrackClass()
-            nt.index = master_count
+            nt.index = pctl.master_count
             nt.found = False
 
             if 'location' in track:
@@ -10790,9 +10817,9 @@ def load_xspf(path):
             if nt.found:
                 nt = tag_scan(nt)
 
-            pctl.master_library[master_count] = nt
-            playlist.append(master_count)
-            master_count += 1
+            pctl.master_library[pctl.master_count] = nt
+            playlist.append(pctl.master_count)
+            pctl.master_count += 1
             if nt.found:
                 continue
 
@@ -16027,6 +16054,12 @@ def paste(playlist_no=None, track_id=None):
 
     clip = copy_from_clipboard()
 
+    if clip.startswith("https://open.spotify.com/track/"):
+       show_message("Pasting Spotify track not implemented")
+    if clip.startswith("https://open.spotify.com/album/"):
+        spot_ctl.append_album(clip)
+        return
+
     found = False
     if clip:
         clip = clip.split("\n")
@@ -17179,8 +17212,22 @@ folder_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=
 gallery_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
 
+spot_ctl = SpotCtl(tauon)
+tauon.spot_ctl = spot_ctl
+
 # Copy album title text to clipboard
 folder_menu.add(_('Copy "Artist - Album"'), clip_title, pass_ref=True)
+
+def get_album_spot_url(track_id):
+    track_object = pctl.g(track_id)
+    url = spot_ctl.get_album_url_from_local(track_object)
+    if url:
+        copy_to_clipboard(url)
+        show_message("Url copied to clipboard", mode="done")
+    else:
+        show_message("No results found")
+
+folder_menu.add(_('Copy Spotify URL'), get_album_spot_url, pass_ref=True)
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
@@ -18973,6 +19020,8 @@ discord_icon.xoff = 3
 
 x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
 
+x_menu.add("Show Spotify Playing", spot_ctl.update)
+
 
 def stop_a01():
     global a01
@@ -19288,7 +19337,6 @@ def cue_scan(content, tn):
 
     #print(content)
 
-    global master_count
     global added
 
     cued = []
@@ -19382,7 +19430,7 @@ def cue_scan(content, tn):
             nt.cue_sheet = ""
             nt.is_embed_cue = True
 
-            nt.index = master_count
+            nt.index = pctl.master_count
             # nt.fullpath = filepath.replace('\\', '/')
             # nt.filename = filename
             # nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
@@ -19405,13 +19453,13 @@ def cue_scan(content, tn):
             if TN == 1:
                 nt.size = os.path.getsize(nt.fullpath)
 
-            pctl.master_library[master_count] = nt
+            pctl.master_library[pctl.master_count] = nt
 
-            cued.append(master_count)
-            # loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
-            #added.append(master_count)
+            cued.append(pctl.master_count)
+            # loaded_pathes_cache[filepath.replace('\\', '/')] = pctl.master_count
+            #added.append(pctl.master_count)
 
-            master_count += 1
+            pctl.master_count += 1
             LENGTH = 0
             PERFORMER = ""
             TITLE = ""
@@ -20712,7 +20760,6 @@ def worker1():
     global loaderCommand
     global loaderCommandReady
     global DA_Formats
-    global master_count
     global home
     global loading_in_progress
     global added
@@ -20752,7 +20799,6 @@ def worker1():
     def add_from_cue(path):
 
         global added
-        global master_count
 
         if not msys:  # Windows terminal doesn't like unicode
             console.print("Reading CUE file: " + path)
@@ -20883,8 +20929,8 @@ def worker1():
                         line = line[:-5]
 
                     nt = TrackClass()
-                    nt.index = master_count
-                    master_count += 1
+                    nt.index = pctl.master_count
+                    pctl.master_count += 1
                     nt.fullpath = file_path
                     nt.filename = file_name
                     nt.parent_folder_path = os.path.dirname(file_path.replace('\\', '/'))
@@ -20963,7 +21009,6 @@ def worker1():
 
     def add_file(path, force_scan=False):
         # bm.get("add file start")
-        global master_count
         global DA_Formats
         global to_got
 
@@ -21121,7 +21166,7 @@ def worker1():
 
         nt = TrackClass()
 
-        nt.index = master_count
+        nt.index = pctl.master_count
         nt.fullpath = path.replace('\\', '/')
         nt.filename = os.path.basename(path)
         nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
@@ -21135,8 +21180,8 @@ def worker1():
 
         else:
 
-            pctl.master_library[master_count] = nt
-            added.append(master_count)
+            pctl.master_library[pctl.master_count] = nt
+            added.append(pctl.master_count)
 
 
             if prefs.auto_sort or force_scan:
@@ -21144,11 +21189,11 @@ def worker1():
             else:
                 after_scan.append(nt)
 
-            master_count += 1
+            pctl.master_count += 1
 
         # bm.get("fill entry")
         if gui.auto_play_import:
-            pctl.jump(master_count - 1)
+            pctl.jump(pctl.master_count - 1)
             gui.auto_play_import = False
 
     # Count the approx number of files to be imported
@@ -21167,7 +21212,6 @@ def worker1():
     def gets(direc, force_scan=False):
 
         global DA_Formats
-        global master_count
 
         if os.path.basename(direc) == "__MACOSX":
             return
@@ -21836,6 +21880,7 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
 # WEBSERVER
 
 from t_modules.t_webserve import webserve
+from t_modules.t_webserve import authserve
 
 if prefs.enable_web is True:
     webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
@@ -23415,6 +23460,11 @@ class Over:
         if self.button2(x, y, "Airsonic", width=84*gui.scale):
             self.account_view = 7
 
+        y += 30 * gui.scale
+
+        if self.button2(x, y, "Spotify", width=84*gui.scale):
+            self.account_view = 8
+
         # y += 75 * gui.scale
         #
         # w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
@@ -23427,6 +23477,75 @@ class Over:
 
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
+
+        if self.account_view == 8:
+
+            ddt.text((x, y), _('Spotify playback control (Requires premium)'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Client ID"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_spot_client.text = prefs.spot_client
+            text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.spot_client = text_spot_client.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_spot_secret.text = prefs.spot_secret
+            text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.spot_secret = text_spot_secret.text
+
+            y += round(35 * gui.scale)
+            if self.button(x, y, _("Copy redirect URI")):
+                copy_to_clipboard(spot_ctl.redirect_uri)
+                show_message("Copied redirect URI to clipboard")
+            y += round(35 * gui.scale)
+            if self.button(x, y, _("Authorise")):
+
+                webThread = threading.Thread(target=authserve, args=[tauon])
+                webThread.daemon = True
+                webThread.start()
+                time.sleep(0.1)
+
+                spot_ctl.auth()
+
+            # y += round(30 * gui.scale)
+            # if self.button(x, y, _("Paste code param")):
+            #     text = copy_from_clipboard().strip()
+            #     if "=" in text:
+            #         text = text.split("=", 1)[1].strip()
+            #     if len(text) > 50:
+            #         spot_ctl.paste_code(text)
+
+            y += round(35 * gui.scale)
+            if self.button(x, y, _("Import Albums")):
+                spot_ctl.get_library_albums()
+
+            y += round(30 * gui.scale)
+            if self.button(x, y, _("Import Liked Songs")):
+                spot_ctl.get_library_likes()
 
         if self.account_view == 7:
 
@@ -26008,7 +26127,7 @@ class BottomBarType1:
                 h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
                 if coll(h_rect):
-                    if mouse_down:
+                    if mouse_down or mouse_up:
 
                         if bar == 0:
                             pctl.player_volume = 5
@@ -28094,9 +28213,13 @@ class StandardPlaylist:
             if key_shift_down is False and d_mouse_click and line_hit and track_position == playlist_selected and coll_point(
                     last_click_location, input_box):
 
+                if key_ctrl_down:
+                    print("HITT")
+                    spot_ctl.search_track(pctl.g(track_id))
+                else:
+                    pctl.jump(track_id, track_position)
 
                 click_time -= 1.5
-                pctl.jump(track_id, track_position)
                 quick_drag = False
                 mouse_down = False
                 mouse_up = False
@@ -29286,6 +29409,8 @@ class RadioBox:
 
 
 radiobox = RadioBox()
+
+tauon.dummy_track = radiobox.dummy_track
 
 # def visit_radio_site_show_test(p):
 #     return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
@@ -32419,7 +32544,8 @@ class MetaBox:
                                  fonts.side_panel_line2, max_w=text_width)
 
                     if ext != "":
-
+                        if ext == "SPTY":
+                            ext = "Spotify"
                         sp = ddt.text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
                                       fonts.side_panel_line2, max_w=text_width)
 
@@ -32442,8 +32568,6 @@ class PictureRender:
         self.texture = None
         self.sdl_rect = None
         self.size = (0, 0)
-
-
 
     def load(self, path, box_size=None):
 
@@ -35106,7 +35230,7 @@ def save_state():
     view_prefs['append-date'] = prefs.append_date
 
     save = [pctl.master_library,
-            master_count,
+            pctl.master_count,
             pctl.playlist_playing_position,
             pctl.active_playlist_viewing,
             pctl.playlist_view_position,
@@ -35252,6 +35376,9 @@ def save_state():
             top_panel.prime_tab,
             top_panel.prime_side,
             prefs.sync_playlist,
+            prefs.spot_client,
+            prefs.spot_secret,
+
         ]
 
 
@@ -35394,7 +35521,7 @@ for menu in Menu.instances:
     if w > menu.w:
         menu.w = w
 
-if master_count < 10:  # We don't want new users to be too confused.
+if pctl.master_count < 10:  # We don't want new users to be too confused.
     a01 = False
 
 if a01:
@@ -35469,6 +35596,9 @@ pctl.total_playtime = star_store.get_total()
 
 mouse_up = False
 mouse_wheel = 0
+
+
+
 
 while pctl.running:
     # bm.get('main')
@@ -36048,6 +36178,7 @@ while pctl.running:
     # if window_size[0] / window_size[1] > 16 / 9:
     #     print("A")
 
+
     if k_input:
 
         if keymaps.hits:
@@ -36234,8 +36365,13 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-            pctl.playerCommand = "encpause"
-            pctl.playerCommandReady = True
+            #spot_ctl.search_track(pctl.playing_object())
+            #prefs.spotify_token = None
+            #spot_ctl.auth()
+            #spot_ctl.update()
+            #spot_ctl.set_device()
+            # pctl.playerCommand = "encpause"
+            # pctl.playerCommandReady = True
             pass
             # albums = {}
             # nums = {}

@@ -12,3 +12,4 @@ discogs_client
 pypresence
 isounidecode
 setproctitle
+tekore
