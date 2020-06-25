@@ -4543,6 +4543,13 @@ class PlayerCtl:
 
     def back(self):
 
+        if spot_ctl.coasting:
+            spot_ctl.control("previous")
+            spot_ctl.update_timer.set()
+            self.playing_time = -2
+            self.decode_time = -2
+            return
+
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
@@ -4618,7 +4625,7 @@ class PlayerCtl:
 
         if spot_ctl.playing or spot_ctl.coasting:
             print("Spotify stop")
-            spot_ctl.control("pause")
+            spot_ctl.control("stop")
 
         self.notify_update()
         lfm_scrobbler.start_queue()
@@ -4633,6 +4640,17 @@ class PlayerCtl:
                 else:
                     spot_ctl.control("pause")
             return
+
+        if spot_ctl.playing:
+            if self.playing_state == 2:
+                spot_ctl.control("resume")
+                self.playing_state = 1
+            elif self.playing_state == 1:
+                spot_ctl.control("pause")
+                self.playing_state = 2
+            self.render_playlist()
+            return
+
         if self.playing_state == 1:
             self.playerCommand = 'pauseon'
             self.playing_state = 2
@@ -4642,7 +4660,6 @@ class PlayerCtl:
             notify_song()
 
         self.playerCommandReady = True
-
 
         self.render_playlist()
         self.notify_update()
@@ -4935,6 +4952,13 @@ class PlayerCtl:
         gui.pl_update += 1
 
     def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False, play=True):
+
+        if spot_ctl.coasting:
+            spot_ctl.control("next")
+            spot_ctl.update_timer.set()
+            self.playing_time = -2
+            self.decode_time = -2
+            return
 
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
@@ -13849,6 +13873,12 @@ def sort_path_pl(pl, custom_list=None):
     target.sort(key=path)
 
 def append_current_playing(index):
+
+    if spot_ctl.coasting:
+        spot_ctl.append_playing(index)
+        gui.pl_update = 1
+        return
+
     if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
         pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
         gui.pl_update = 1
@@ -14054,7 +14084,11 @@ def append_deco():
     else:
         line_colour = colours.menu_text_disabled
 
-    return [line_colour, colours.menu_background, None]
+    text = None
+    if spot_ctl.coasting:
+        text = _("Add Spotify Album")
+
+    return [line_colour, colours.menu_background, text]
 
 
 def rescan_deco(pl):
@@ -16063,6 +16097,9 @@ def paste(playlist_no=None, track_id=None):
     if clip.startswith("https://open.spotify.com/album/"):
         spot_ctl.append_album(clip)
         return
+    if clip.startswith("https://open.spotify.com/playlist/"):
+        spot_ctl.playlist(clip)
+        return
 
     found = False
     if clip:
@@ -17231,7 +17268,7 @@ def get_album_spot_url(track_id):
     else:
         show_message("No results found")
 
-folder_menu.add(_('Copy Spotify URL'), get_album_spot_url, pass_ref=True)
+folder_menu.add(_('Copy Spotify Album URL'), get_album_spot_url, pass_ref=True)
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
@@ -17351,6 +17388,24 @@ def clip_ar_tr(index):
 #track_menu.add(_('Copy "Artist - Album"'), clip_aar_al, pass_ref=True)
 # Copy metadata to clipboard
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
+
+
+def get_track_spot_url_show_test(_):
+
+    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+        return True
+    return False
+
+def get_track_spot_url(track_id):
+    track_object = pctl.g(track_id)
+    url = track_object.misc.get("spotify-track-url")
+    if url:
+        copy_to_clipboard(url)
+        show_message("Url copied to clipboard", mode="done")
+    else:
+        show_message("No results found")
+
+track_menu.add(_('Copy Spotify Track URL'), get_track_spot_url, pass_ref=True, show_test=get_track_spot_url_show_test)
 
 
 def drop_tracks_to_new_playlist(track_list, hidden=False):
@@ -26559,7 +26614,7 @@ class BottomBarType1:
             if pctl.auto_stop:
                 stop_colour = colours.media_buttons_active
 
-            if pctl.playing_state == 2:
+            if pctl.playing_state == 2 or (spot_ctl.coasting and spot_ctl.paused):
                 pause_colour = colours.media_buttons_active
                 play_colour = colours.media_buttons_active
             elif pctl.playing_state == 3:
@@ -35559,6 +35614,8 @@ def save_state():
 
         pickle.dump(save, open(user_directory + "/window.p", "wb"))
 
+        spot_ctl.save_token()
+
         with open(user_directory + "/lyrics_substitutions.json", 'w') as f:
             json.dump(prefs.lyrics_subs, f,)
 
@@ -36528,7 +36585,7 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
             #spot_ctl.search_track(pctl.playing_object())
             #prefs.spotify_token = None
-            #spot_ctl.auth()
+            spot_ctl.get_playlists()
             #spot_ctl.update()
             #spot_ctl.set_device()
             # pctl.playerCommand = "encpause"
