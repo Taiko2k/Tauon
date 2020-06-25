@@ -38,7 +38,7 @@ class AutoDownload:
 
     def get_downloaders_list(self):
 
-        downloaders = ['youtube-dl', 'spotdl', 'bandcamp-dl', 'scdl']
+        downloaders = ['youtube-dl', 'bandcamp-dl', 'scdl']
 
         for i in reversed(range(len(downloaders))):
             if not self.tauon.whicher(downloaders[i]):
@@ -153,37 +153,6 @@ class AutoDownload:
                     p.start()
                     p.join()
 
-        # Spotify -> Youtube downloader
-        elif "open.spotify.com/album/" in text:
-            if "spotdl" not in downloaders:
-                self.tauon.gui.show_message("Downloading Spotify (via Youtube) albums requires spotdl")
-                return
-
-            if "youtube-dl" not in downloaders:
-                self.tauon.gui.show_message("Downloading Youtube songs (from Spotify) requires youtube-dl")
-                return
-
-            track_list_file = os.path.join(dl_dir, "tracklist.txt")
-            code = text.split("/")[-1]
-
-            line = self.tauon.launch_prefix + "spotdl --write-to=\"" + track_list_file + "\" --album " + text
-            self.downloading = True
-            subprocess.run(shlex.split(line))
-
-            if not os.path.isfile(track_list_file):
-                self.downloading = False
-                self.tauon.gui.show_message("Could not get tracklist from Spotify")
-                return
-
-            self.downloading = True
-            self.tauon.gui.show_message("Starting Spotify->Youtube download...", 'Link: ' + text, mode="download")
-            os.makedirs(os.path.join(dl_dir, code))
-            line = self.tauon.launch_prefix + "spotdl --list=\"" + track_list_file + "\" --folder=\"" + os.path.join(dl_dir, code) + "\""
-            subprocess.run(shlex.split(line))
-
-            if os.path.isfile(track_list_file):
-                os.remove(track_list_file)
-
         # Bandcamp downloader
         elif ".bandcamp.com" in text:
             if "bandcamp-dl" not in downloaders:
@@ -224,11 +193,6 @@ class AutoDownload:
                 self.downloading = False
                 self.tauon.gui.show_message("File already exists", mode='error')
                 raise
-
-        # Give warning about spotdl
-        if 'open.spotify.com' in text:
-            self.tauon.gui.show_message("Download complete",
-                                        "Warning: This method is unreliable, found tracks may not match", mode='done')
 
         self.downloading = False
 
