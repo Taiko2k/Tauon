@@ -656,7 +656,7 @@ from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
-from t_modules.spot import SpotCtl
+from t_modules.t_spot import SpotCtl
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -6341,6 +6341,10 @@ class LastScrob:
 
 lfm_scrobbler = LastScrob()
 
+from t_modules.t_draw import TDraw
+from t_modules.t_draw import QuickThumbnail
+QuickThumbnail.renderer = renderer
+
 class Tauon:
 
     def __init__(self):
@@ -6369,6 +6373,7 @@ class Tauon:
         self.msys = msys
         self.TrackClass = TrackClass
         self.pl_gen = pl_gen
+        self.QuickThumbnail = QuickThumbnail
 
     # def log(self, line, title=False):
     #
@@ -7592,7 +7597,6 @@ def coll_point(l, r):
 def coll(r):
     return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
-from t_modules.t_draw import TDraw
 
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
@@ -18148,7 +18152,7 @@ def adl_test(_):
         return True
     return False
 
-x_menu.add(_("Download URL"), auto_download, show_test=adl_test)
+x_menu.add(_("Import URL"), auto_download, show_test=adl_test)
 
 
 def show_import_music(_):
@@ -19793,7 +19797,7 @@ class SearchOverlay:
             if input.key_tab_press:
                 search_over.spotify_mode ^= True
                 self.sip = True
-                search_over.searched_text = ""
+                search_over.searched_text = search_over.search_text.text
                 worker2_lock.release()
 
             if input_text or key_backspace_press:
@@ -19943,12 +19947,12 @@ class SearchOverlay:
 
                     yy += 6 * gui.scale
 
-                if item[0] == 11:
-
-                    cl = [130, 237, 69, int(255 * fade)]
-                    text = "Album"
+                # Spotify Artist
+                if item[0] == 10:
+                    cl = [145, 245, 78, int(255 * fade)]
+                    text = "Artist"
                     yy += 3 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy), " - ".join(item[1]), [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
                     ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
 
@@ -19957,6 +19961,92 @@ class SearchOverlay:
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
+                    go = False
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+
+                            if key_ctrl_down:
+                                #default_playlist.extend(self.click_artist(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                go = True
+                                #spot_ctl.artist_playlist(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        go = True
+                        #spot_ctl.artist_playlist(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+                    if go:
+                        show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
+                        shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
+                        shoot.daemon = True
+                        shoot.start()
+
+                # Spotify Album
+                if item[0] == 11:
+
+                    if not item[5]:
+                        cl = [130, 237, 69, int(255 * fade)]
+                        text = "Album"
+                        yy += 3 * gui.scale
+                        xx = ddt.text((120 * gui.scale, yy), " - ".join(item[1]), [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+
+                        ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                        if fade == 1:
+                            ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                        fields.add(rect)
+                        full = False
+
+                    else:
+
+                        yy += 5 * gui.scale
+                        xx = ddt.text((120 * gui.scale, yy), item[1][0], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                        artist = item[1][1]
+
+
+                        ddt.text((125 * gui.scale, yy + 25 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8 * gui.scale
+
+                        xx += ddt.text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                        ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150], True)
+                        #gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
+                        item[5].draw(50 * gui.scale, yy + 5)
+                        if fade != 1:
+                            ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
+                        full = True
+                        full_count += 1
+
+                        if fade == 1:
+                            ddt.rect((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), bar_colour, True)
+
+                        if key_ctrl_down and item[2] in default_playlist:
+                            ddt.rect((24 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), track_in_bar_colour, True)
+
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
+                        fields.add(rect)
+
+
                     if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
@@ -19985,7 +20075,10 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    if full:
+                        yy += 50 * gui.scale
+                    else:
+                        yy += 6 * gui.scale
 
 
                 if item[0] == 1:

@@ -5,8 +5,9 @@ import pickle
 import requests
 import io
 import webbrowser
-
 from t_modules.t_extra import Timer
+import urllib.request
+
 
 class SpotCtl:
 
@@ -55,31 +56,35 @@ class SpotCtl:
         if self.cred is None:
             self.prep_cred()
         self.token = self.cred.request_user_token(code)
-        print("Paste")
         pickle.dump(self.token, open(self.token_path, "wb"))
 
     def auth(self):
         if self.cred is None:
             self.prep_cred()
-        print("AUTH")
         url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state")
         webbrowser.open(url, new=2, autoraise=True)
 
     def control(self, command, param=None):
 
-        if command == "pause" and self.coasting and not self.paused:
-            self.spotify.playback_pause()
-            self.paused = True
-        if command == "pause" and self.playing:
-            self.spotify.playback_pause()
-            self.playing = False
-        if command == "resume" and self.coasting and self.paused:
-            self.spotify.playback_resume()
-            self.paused = False
-        if command == "volume":
-            self.spotify.playback_volume(param)
-        if command == "seek":
-            self.spotify.playback_seek(param)
+        try:
+            if command == "pause" and self.coasting and not self.paused:
+                self.spotify.playback_pause()
+                self.paused = True
+            if command == "pause" and self.playing:
+                self.spotify.playback_pause()
+                self.playing = False
+            if command == "resume" and self.coasting and self.paused:
+                self.spotify.playback_resume()
+                self.paused = False
+            if command == "volume":
+                self.spotify.playback_volume(param)
+            if command == "seek":
+                self.spotify.playback_seek(param)
+
+        except Exception as e:
+            print(repr(e))
+            if "No active device found" in repr(e):
+                self.tauon.gui.show_message("It looks like there are no more active Spotify devices")
 
     def get_album_url_from_local(self, track_object):
 
@@ -91,9 +96,7 @@ class SpotCtl:
             return None
 
         results = self.spotify.search(track_object.artist + " " + track_object.album, types=('album',), limit=1)
-        print(results)
         for album in results[0].items:
-            print(album.external_urls["spotify"])
             return album.external_urls["spotify"]
 
         return None
@@ -103,17 +106,35 @@ class SpotCtl:
         if not self.spotify:
             return
         results = self.spotify.search(text,
-                                      types=('track', 'album',),
+                                      types=('artist', 'album',),
                                       limit=9
                                       )
-        print(results)
         finds = []
 
         if results[0]:
-            for album in results[0].items[0:9]:
-                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0))
+            for album in results[0].items[0:3]:
 
-        print(finds)
+                # Process thumbnail
+                thumb_url = album.images[-1].url
+                response = urllib.request.urlopen(thumb_url)
+                source_image = io.BytesIO(response.read())
+                img = self.tauon.QuickThumbnail()
+                img.read_and_thumbnail(source_image, round(50 * self.tauon.gui.scale), round(50 * self.tauon.gui.scale))
+
+                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, img))
+
+            for artist in results[1].items[0:1]:
+                finds.insert(2, (10, artist.name, artist.external_urls["spotify"], 0, 0, None))
+
+            for album in results[0].items[3:7]:
+                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, None))
+
+            for artist in results[1].items[1:2]:
+                finds.append((10, artist.name, artist.external_urls["spotify"], 0, 0, None))
+
+            for album in results[0].items[7:]:
+                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, None))
+
         return finds
 
 
@@ -173,7 +194,6 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        print("LIST SAVED ALBUMS")
         albums = self.spotify.saved_albums()
 
         playlist = []
@@ -188,13 +208,26 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        id = url[31:]
+        id = url.strip("/").split("/")[-1]
         album = self.spotify.album(id)
         playlist = []
         self.load_album(album, playlist)
 
         self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].extend(playlist)
         self.tauon.gui.pl_update += 1
+
+    def artist_playlist(self, url):
+        id = url.strip("/").split("/")[-1]
+        artist = self.spotify.artist(id)
+        artist_albums = self.spotify.artist_albums(id, limit=30, include_groups=["album"])
+        playlist = []
+
+        for a in artist_albums.items:
+            full_album = self.spotify.album(a.id)
+            self.load_album(full_album, playlist)
+
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Spotify: " + artist.name, playlist=playlist))
+        self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
     def load_album(self, album, playlist):
         #a = item
@@ -214,7 +247,6 @@ class SpotCtl:
             nt.index = self.tauon.pctl.master_count
             nt.is_network = True
             nt.file_ext = "SPTY"
-            print("TRACK -------------")
             nt.url_key = track.id
             nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
             nt.misc["spotify-album-url"] = album_url
@@ -237,15 +269,11 @@ class SpotCtl:
             playlist.append(nt.index)
             self.tauon.pctl.master_count += 1
 
-
-
-
     def get_library_likes(self):
         self.connect()
         if not self.spotify:
             return
 
-        print("LIST SAVED ALBUMS")
         tracks = self.spotify.saved_tracks()
 
         playlist = []
@@ -257,7 +285,6 @@ class SpotCtl:
             nt.index = self.tauon.pctl.master_count
             nt.is_network = True
             nt.file_ext = "SPTY"
-            print("TRACK -------------")
             nt.url_key = track.id
             nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
             #nt.misc["spotify-album-url"] = album_url
