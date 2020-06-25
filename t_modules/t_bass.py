@@ -754,7 +754,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             pctl.download_time = 0
 
             if not target_object.is_network and tauon.spot_ctl.playing is True:
-                tauon.spot_ctl.control("pause")
+                tauon.spot_ctl.control("stop")
 
             if target_object.is_network:
 
@@ -1300,17 +1300,21 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             if pctl.playing_time > pctl.playing_length:
                 th = 1
             if tauon.spot_ctl.start_timer.get() < 7 or tauon.spot_ctl.update_timer.get() < th:
-                pctl.playing_time += tauon.spot_ctl.progress_timer.get()
-                pctl.decode_time = pctl.playing_time
-                tauon.spot_ctl.progress_timer.set()
-                pctl.test_progress()
+                if not tauon.spot_ctl.paused:
+                    add_time = tauon.spot_ctl.progress_timer.get()
+                    pctl.playing_time += add_time
+                    pctl.decode_time = pctl.playing_time
+                    pctl.test_progress()
+                    tauon.spot_ctl.progress_timer.set()
+                    if len(pctl.track_queue) > 0 and 2 > add_time > 0:
+                        star_store.add(pctl.track_queue[pctl.queue_step], add_time)
             else:
                 tauon.spot_ctl.update_timer.set()
                 tauon.spot_ctl.monitor()
 
         elif pctl.playing_state == 3 and tauon.spot_ctl.coasting:
             th = 10
-            if pctl.playing_time > pctl.playing_length:
+            if pctl.playing_time > pctl.playing_length or pctl.playing_time < 2.5:
                 th = 1
             if tauon.spot_ctl.update_timer.get() < th:
                 if not tauon.spot_ctl.paused:
