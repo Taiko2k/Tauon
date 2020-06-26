@@ -5,6 +5,7 @@ import pickle
 import requests
 import io
 import webbrowser
+import time
 from t_modules.t_extra import Timer
 import urllib.request
 
@@ -184,7 +185,18 @@ class SpotCtl:
 
         devices = self.spotify.playback_devices()
         if not devices:
-            return False
+            webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
+            tries = 0
+            while not devices:
+                time.sleep(2)
+                if tries == 0:
+                    self.tauon.focus_window()
+                devices = self.spotify.playback_devices()
+                tries += 1
+                if tries > 4:
+                    break
+            if not devices:
+                return False
         for d in devices:
             if d.is_active:
                 return None
@@ -365,10 +377,9 @@ class SpotCtl:
         if self.playing and self.start_timer.get() > 5:
             result = self.spotify.playback_currently_playing()
             tr = self.tauon.pctl.playing_object()
-            if result is None:
+            if result is None or tr is None:
                 print("DETACH STOP")
                 self.tauon.pctl.stop()
-            if tr is None:
                 return
             if result.item.name != tr.title:
                 self.tauon.pctl.playing_state = 3

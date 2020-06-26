@@ -6408,6 +6408,9 @@ class Tauon:
     def exit(self):
         pctl.running = False
 
+    def focus_window(self):
+        SDL_RaiseWindow(t_window)
+
 
 tauon = Tauon()
 
@@ -16096,9 +16099,15 @@ def paste(playlist_no=None, track_id=None):
        show_message("Pasting Spotify track not implemented")
     if clip.startswith("https://open.spotify.com/album/"):
         spot_ctl.append_album(clip)
+        if album_mode:
+            reload_albums()
+        gui.pl_update += 1
         return
     if clip.startswith("https://open.spotify.com/playlist/"):
         spot_ctl.playlist(clip)
+        if album_mode:
+            reload_albums()
+        gui.pl_update += 1
         return
 
     found = False
