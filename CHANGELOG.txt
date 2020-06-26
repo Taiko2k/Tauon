@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v5.6.0
+v6.0.0
 
  - Added Spotify integration (wip)
  - Added "Transcode and Sync" function
@@ -19,6 +19,7 @@ v5.6.0
  - Fixed favicon not showing in radio page
  - Fixed radio page not working without outside connection
  - Fixed animation stutter when opening settings box
+ - Fixed global search scroll wheel behavior
  - Removed "auto update generated playlists" from in-app settings
 
 v5.5.5

@@ -19883,18 +19883,23 @@ class SearchOverlay:
 
             if key_down_press:
 
-                if self.force_select > -1:
-                    self.on = self.force_select
-                    self.force_select = -1
-                self.on += 1
+                self.force_select += 1
+                if self.force_select > 4:
+                    self.on = self.force_select - 4
                 self.old_mouse = copy.deepcopy(mouse_position)
 
             if key_up_press:
 
                 if self.force_select > -1:
-                    self.on = self.force_select
-                    self.force_select = -1
-                self.on -= 1
+                    self.force_select -= 1
+                    if self.force_select < 0:
+                        self.force_select = 0
+
+                    if self.force_select < self.on + 4:
+                        self.on = self.force_select - 4
+                        if self.on < 0:
+                            self.on = 0
+
                 self.old_mouse = copy.deepcopy(mouse_position)
 
             if mouse_wheel == -1:
@@ -19937,6 +19942,7 @@ class SearchOverlay:
 
             if self.on > 4:
                 p += self.on - 4
+            p = self.on - 1
 
             for i, item in enumerate(self.results):
 
@@ -20943,7 +20949,7 @@ def worker2():
 
                 temp_results[:] = [item for item in temp_results if item is not None]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
-                print(search_over.results)
+                # print(search_over.results)
 
                 i = 0
                 for playlist in pctl.multi_playlist:
@@ -23743,10 +23749,10 @@ class Over:
             prefs.spot_secret = text_spot_secret.text
 
             y += round(35 * gui.scale)
-            if self.button(x, y, _("Copy redirect URI")):
-                copy_to_clipboard(spot_ctl.redirect_uri)
-                show_message("Copied redirect URI to clipboard")
-            y += round(35 * gui.scale)
+            # if self.button(x, y, _("Copy redirect URI")):
+            #     copy_to_clipboard(spot_ctl.redirect_uri)
+            #     show_message("Copied redirect URI to clipboard")
+            # y += round(35 * gui.scale)
             if self.button(x, y, _("Authorise")):
 
                 webThread = threading.Thread(target=authserve, args=[tauon])
