@@ -501,7 +501,7 @@ msgstr "Arquivo de configuração aberto."
 
 #: tauon.py:15411
 msgid "Track Info…"
-msgstr "Informação da Faixa…"
+msgstr "Info da Faixa…"
 
 #: tauon.py:15439 tauon.py:17762
 msgid "Un-Love Track"
