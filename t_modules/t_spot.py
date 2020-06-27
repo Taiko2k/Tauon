@@ -238,7 +238,7 @@ class SpotCtl:
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Spotify Albums", playlist=playlist))
 
-    def append_album(self, url, playlist_number=None):
+    def append_album(self, url, playlist_number=None, return_list=False):
 
         self.connect()
         if not self.spotify:
@@ -249,6 +249,9 @@ class SpotCtl:
         album = self.spotify.album(id)
         playlist = []
         self.load_album(album, playlist)
+
+        if return_list:
+            return playlist
 
         if playlist_number is None:
             playlist_number = self.tauon.pctl.active_playlist_viewing
@@ -378,7 +381,6 @@ class SpotCtl:
             result = self.spotify.playback_currently_playing()
             tr = self.tauon.pctl.playing_object()
             if result is None or tr is None:
-                print("DETACH STOP")
                 self.tauon.pctl.stop()
                 return
             if result.item.name != tr.title:
@@ -395,17 +397,23 @@ class SpotCtl:
             self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
 
     def update(self):
+
+        if self.playing:
+            self.coasting = False
+            return
+
         self.connect()
         if not self.spotify:
             return
 
-        print("UPDATE SPOT PLAYBACK")
         result = self.spotify.playback_currently_playing()
 
-        if result is None:
-            print("UPDATE STOP")
-            self.tauon.pctl.stop()
-            self.coasting = False
+        if result is None or result.is_playing is False:
+            if self.coasting:
+                self.tauon.pctl.stop()
+                self.coasting = False
+            else:
+                self.tauon.gui.show_message("This Spotify account isn't currently playing anything")
             return
 
         self.coasting = True

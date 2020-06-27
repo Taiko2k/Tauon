@@ -1315,6 +1315,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.spot_client = ""
         self.spot_secret = ""
+        self.spot_mode = False
 
 prefs = Prefs()
 
@@ -3268,6 +3269,7 @@ def save_prefs():
     cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
     cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
     cf.update_value("write-ratings-to-tag", prefs.write_ratings)
+    cf.update_value("enable-spotify", prefs.spot_mode)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -3431,6 +3433,7 @@ def load_prefs():
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
     prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generated playlists on any file import")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
+    prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
 
 
     cf.br()
@@ -13174,19 +13177,23 @@ def append_here():
 def paste_deco():
 
     active = False
+    line = None
     if len(cargo) > 0:
         active = True
     elif SDL_HasClipboardText():
         text = copy_from_clipboard()
         if text.startswith("/") or "file://" in text:
             active = True
+        elif prefs.spot_mode and text.startswith("https://open.spotify.com/album/"): # or text.startswith("https://open.spotify.com/track/"):
+            active = True
+            line = _("Paste Spotify Album")
 
     if active:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
-    return [line_colour, colours.menu_background, None]
+    return [line_colour, colours.menu_background, line]
 
 
 def lightning_move_test(discard):
@@ -16097,13 +16104,10 @@ def paste(playlist_no=None, track_id=None):
 
     if clip.startswith("https://open.spotify.com/track/"):
        show_message("Pasting Spotify track not implemented")
-    if clip.startswith("https://open.spotify.com/album/"):
-        spot_ctl.append_album(clip)
-        if album_mode:
-            reload_albums()
-        gui.pl_update += 1
-        return
-    if clip.startswith("https://open.spotify.com/playlist/"):
+    elif clip.startswith("https://open.spotify.com/album/"):
+        cargo[:] = spot_ctl.append_album(clip, return_list=True)[:]
+        clip = False
+    elif clip.startswith("https://open.spotify.com/playlist/"):
         spot_ctl.playlist(clip)
         if album_mode:
             reload_albums()
@@ -16216,7 +16220,6 @@ def del_selected(force_delete=False):
 def force_del_selected():
     del_selected(force_delete=True)
 
-
 def test_show(dummy):
     return album_mode
 
@@ -16228,7 +16231,7 @@ def show_in_gal(track, silent=False):
 
 
 # Create track context menu
-track_menu = Menu(195, show_icons=True) #175
+track_menu = Menu(195, show_icons=True)
 
 track_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 track_menu.add(_('Track Info…'), activate_track_box, pass_ref=True, icon=info_icon)
@@ -17198,7 +17201,7 @@ def clip_title(index):
     SDL_SetClipboardText(line.encode('utf-8'))
 
 selection_menu = Menu(190, show_icons=False)
-folder_menu = Menu(190, show_icons=True)
+folder_menu = Menu(193, show_icons=True)
 
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
@@ -17273,11 +17276,22 @@ def get_album_spot_url(track_id):
     url = spot_ctl.get_album_url_from_local(track_object)
     if url:
         copy_to_clipboard(url)
-        show_message("Url copied to clipboard", mode="done")
+        show_message(_("URL copied to clipboard"), mode="done")
     else:
-        show_message("No results found")
+        show_message(_("No results found"))
 
-folder_menu.add(_('Copy Spotify Album URL'), get_album_spot_url, pass_ref=True)
+def spotify_show_test(_):
+    return prefs.spot_mode
+
+def get_album_spot_url_deco(track_id):
+    track_object = pctl.g(track_id)
+    if "spotify-album-url" in track_object.misc:
+        text = _("Copy Spotify Album URL")
+    else:
+        text = _("Lookup Spotify Album URL")
+    return [colours.menu_text, colours.menu_background, text]
+
+folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_url_deco, pass_ref=True, pass_ref_deco=True, show_test=spotify_show_test)
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
@@ -18216,7 +18230,29 @@ def adl_test(_):
         return True
     return False
 
-x_menu.add(_("Import URL"), auto_download, show_test=adl_test)
+x_menu.add(_("Download URL"), auto_download, show_test=adl_test)
+
+def adl_test(_):
+    if downloaders:
+        return True
+    return False
+
+def import_spotify_playlist():
+    clip = copy_from_clipboard()
+    if not clip.startswith("https://open.spotify.com/playlist/"):
+        return
+    spot_ctl.playlist(clip)
+    if album_mode:
+        reload_albums()
+    gui.pl_update += 1
+
+def import_spotify_playlist_deco():
+    clip = copy_from_clipboard()
+    if clip.startswith("https://open.spotify.com/playlist/"):
+        return [colours.menu_text, colours.menu_background, None]
+    return [colours.menu_text_disabled, colours.menu_background, None]
+
+x_menu.add(_("Paste Spotify Playlist"), import_spotify_playlist, import_spotify_playlist_deco, show_test=spotify_show_test)
 
 
 def show_import_music(_):
@@ -18700,11 +18736,33 @@ def activate_search_overlay():
 
 extra_menu.add(_('Global Search'), activate_search_overlay, hint="CTRL + G")
 
+def get_album_spot_url_active():
+    tr = pctl.playing_object()
+    if tr:
+        url = spot_ctl.get_album_url_from_local(tr)
+        if url:
+            copy_to_clipboard(url)
+            show_message(_("URL copied to clipboard"), mode="done")
+        else:
+            show_message(_("No results found"))
+
+def get_album_spot_url_actove_deco():
+    tr = pctl.playing_object()
+    text = _("Copy Album URL")
+    if not tr:
+        return [colours.menu_text_disabled, colours.menu_background, text]
+    if not "spotify-album-url" in tr.misc:
+        text = _("Lookup Spotify Album")
+
+    return [colours.menu_text, colours.menu_background, text]
+
+extra_menu.add("Copy Spotify URL", get_album_spot_url_active, get_album_spot_url_actove_deco, show_test=spotify_show_test)
+
 def goto_playing_extra():
     pctl.show_current(highlight=True)
 
-
 extra_menu.add(_("Locate Artist"), locate_artist)
+
 extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="QUOTE")
 
 
@@ -19087,9 +19145,18 @@ discord_icon.colour = [115, 138, 219, 255]
 discord_icon.xoff = 3
 #discord_icon.colour_callback = broadcast_colour
 
-x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
+x_menu.add("Show Playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
 
-x_menu.add("Show Spotify Playing", spot_ctl.update)
+def show_spot_playing_deco():
+    if pctl.playing_state == 0:
+        return [colours.menu_text, colours.menu_background, None]
+    else:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+def show_spot_playing():
+    if pctl.playing_state == 0:
+        spot_ctl.update()
+x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test)
 
 
 def stop_a01():
@@ -23695,6 +23762,7 @@ class Over:
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
+        prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
 
         # y += 75 * gui.scale
         #
@@ -23770,7 +23838,7 @@ class Over:
             #     if len(text) > 50:
             #         spot_ctl.paste_code(text)
 
-            y += round(35 * gui.scale)
+            y += round(45 * gui.scale)
             if self.button(x, y, _("Import Albums")):
                 spot_ctl.get_library_albums()
 
@@ -28444,11 +28512,8 @@ class StandardPlaylist:
             if key_shift_down is False and d_mouse_click and line_hit and track_position == playlist_selected and coll_point(
                     last_click_location, input_box):
 
-                if key_ctrl_down:
-                    print("HITT")
-                    spot_ctl.search_track(pctl.g(track_id))
-                else:
-                    pctl.jump(track_id, track_position)
+
+                pctl.jump(track_id, track_position)
 
                 click_time -= 1.5
                 quick_drag = False
