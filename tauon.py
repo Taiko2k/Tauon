@@ -17267,6 +17267,7 @@ folder_menu.br()
 
 spot_ctl = SpotCtl(tauon)
 tauon.spot_ctl = spot_ctl
+spot_ctl.load_token()
 
 # Copy album title text to clipboard
 folder_menu.add(_('Copy "Artist - Album"'), clip_title, pass_ref=True)
@@ -23779,7 +23780,9 @@ class Over:
 
         if self.account_view == 8:
 
-            ddt.text((x, y), _('Spotify playback control (Requires premium)'), colours.box_sub_text, 213)
+            ddt.text((x, y), _('Spotify Premium account'), colours.box_sub_text, 213)
+            if self.button(x + 260 * gui.scale, y, _("?")):
+                show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", mode="link")
 
             if input.key_tab_press:
                 self.account_text_field += 1
@@ -23821,14 +23824,19 @@ class Over:
             #     copy_to_clipboard(spot_ctl.redirect_uri)
             #     show_message("Copied redirect URI to clipboard")
             # y += round(35 * gui.scale)
-            if self.button(x, y, _("Authorise")):
 
-                webThread = threading.Thread(target=authserve, args=[tauon])
-                webThread.daemon = True
-                webThread.start()
-                time.sleep(0.1)
+            if spot_ctl.token:
+                if self.button(x, y, _("Forget Account")):
+                    spot_ctl.delete_token()
+            else:
+                if self.button(x, y, _("Authorise")):
 
-                spot_ctl.auth()
+                    webThread = threading.Thread(target=authserve, args=[tauon])
+                    webThread.daemon = True
+                    webThread.start()
+                    time.sleep(0.1)
+
+                    spot_ctl.auth()
 
             # y += round(30 * gui.scale)
             # if self.button(x, y, _("Paste code param")):

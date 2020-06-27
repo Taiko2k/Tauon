@@ -41,17 +41,10 @@ class SpotCtl:
             self.prep_cred()
         if self.spotify is None:
             if self.token is None:
-                if os.path.isfile(self.token_path):
-                    f = open(self.token_path, "rb")
-                    self.token = pickle.load(f)
-                    f.close()
-                    print("LOADED TOKEN FROM FILE")
-                else:
-                    print("NO TOKEN!")
-                    return
-
-            print("INIT SPOTIFY")
-            self.spotify = tk.Spotify(self.token)
+                self.load_token()
+            if self.token:
+                print("Init spotify support")
+                self.spotify = tk.Spotify(self.token)
 
     def paste_code(self, code):
         if self.cred is None:
@@ -62,6 +55,19 @@ class SpotCtl:
     def save_token(self):
         if self.token:
             pickle.dump(self.token, open(self.token_path, "wb"))
+
+    def delete_token(self):
+        if os.path.isfile(self.token_path):
+            os.remove(self.token_path)
+        self.token = None
+
+    def load_token(self):
+        if os.path.isfile(self.token_path):
+            f = open(self.token_path, "rb")
+            self.token = pickle.load(f)
+            f.close()
+            print("Loaded spotify token from file")
+
 
     def auth(self):
         if self.cred is None:
