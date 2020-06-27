@@ -753,7 +753,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             url = None
             pctl.download_time = 0
 
-            if not target_object.is_network and tauon.spot_ctl.playing is True:
+            if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not target_object.file_ext == "SPTY":
                 tauon.spot_ctl.control("stop")
 
             if target_object.is_network:

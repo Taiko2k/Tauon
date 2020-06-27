@@ -14079,11 +14079,16 @@ def new_playlist(switch=True):
     return len(pctl.multi_playlist) - 1
 
 heartx_icon = MenuIcon(asset_loader('heart-menu.png', True))
+spot_heartx_icon = MenuIcon(asset_loader('heart-menu.png', True))
 transcode_icon = MenuIcon(asset_loader('transcode.png', True))
 mod_folder_icon = MenuIcon(asset_loader('mod_folder.png', True))
 settings_icon = MenuIcon(asset_loader('settings2.png', True))
 rename_tracks_icon = MenuIcon(asset_loader('pen.png', True))
 add_icon = MenuIcon(asset_loader('new.png', True))
+spot_icon = MenuIcon(asset_loader('spot.png', True))
+spot_icon.colour = [30, 215, 96, 255]
+spot_icon.xoff = 5
+spot_icon.yoff = 2
 
 tab_menu.br()
 
@@ -16252,11 +16257,28 @@ def heart_xmenu_colour():
             return [255, 150, 180, 255]
         return None
 
-
 heartx_icon.colour = [55, 55, 55, 255]
 heartx_icon.xoff = 1
 heartx_icon.yoff = 0
 heartx_icon.colour_callback = heart_xmenu_colour
+
+
+def spot_heart_xmenu_colour():
+    if not (pctl.playing_state == 1 or pctl.playing_state == 2):
+        return None
+    tr = pctl.playing_object()
+    if tr and "spotify-liked" in tr.misc:
+        return [30, 215, 96, 255]
+    else:
+        return None
+
+
+
+spot_heartx_icon.colour = [30, 215, 96, 255]
+spot_heartx_icon.xoff = 3
+spot_heartx_icon.yoff = 0
+spot_heartx_icon.colour_callback = spot_heart_xmenu_colour
+
 
 def love_decox():
     global r_menu_index
@@ -17292,7 +17314,7 @@ def get_album_spot_url_deco(track_id):
         text = _("Lookup Spotify Album URL")
     return [colours.menu_text, colours.menu_background, text]
 
-folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_url_deco, pass_ref=True, pass_ref_deco=True, show_test=spotify_show_test)
+folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_url_deco, pass_ref=True, pass_ref_deco=True, show_test=spotify_show_test, icon=spot_icon)
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
@@ -17429,7 +17451,7 @@ def get_track_spot_url(track_id):
     else:
         show_message("No results found")
 
-track_menu.add(_('Copy Spotify Track URL'), get_track_spot_url, pass_ref=True, show_test=get_track_spot_url_show_test)
+track_menu.add(_('Copy Spotify Track URL'), get_track_spot_url, pass_ref=True, show_test=get_track_spot_url_show_test, icon=spot_icon)
 
 
 def drop_tracks_to_new_playlist(track_list, hidden=False):
@@ -18670,6 +18692,29 @@ def select_love():
 
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
+def toggle_spotify_like_active():
+    tr = pctl.playing_object()
+    if tr and "spotify-track-url" in tr.misc:
+        if "spotify-liked" in tr.misc:
+            spot_ctl.like_track(tr)
+        else:
+            spot_ctl.like_track(tr)
+
+def toggle_spotify_like_active_deco():
+    tr = pctl.playing_object()
+    text = _("Spotify Like Track")
+    if not tr or not "spotify-track-url" in tr.misc:
+        return [colours.menu_text_disabled, colours.menu_background, text]
+    if "spotify-liked" in tr.misc:
+        text = _("Un-like Spotify Track")
+
+    return [colours.menu_text, colours.menu_background, text]
+
+
+extra_menu.add('Spotify Like Track', toggle_spotify_like_active, toggle_spotify_like_active_deco, show_test=spotify_show_test, icon=spot_heartx_icon)
+
+
+
 
 def locate_artist():
     track = pctl.playing_object()
@@ -18757,7 +18802,7 @@ def get_album_spot_url_actove_deco():
 
     return [colours.menu_text, colours.menu_background, text]
 
-extra_menu.add("Copy Spotify URL", get_album_spot_url_active, get_album_spot_url_actove_deco, show_test=spotify_show_test)
+extra_menu.add("Copy Spotify URL", get_album_spot_url_active, get_album_spot_url_actove_deco, show_test=spotify_show_test, icon=spot_icon)
 
 def goto_playing_extra():
     pctl.show_current(highlight=True)
@@ -19157,7 +19202,7 @@ def show_spot_playing_deco():
 def show_spot_playing():
     if pctl.playing_state == 0:
         spot_ctl.update()
-x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test)
+x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test, icon=spot_icon)
 
 
 def stop_a01():
