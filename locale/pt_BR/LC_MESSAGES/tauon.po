@@ -1,8 +1,9 @@
 # BRAZILIAN PORTUGUES TRANSLATION FOR TAUON MUSIC BOX.
+# Copyright (C) YEAR ORGANIZATION
 # MARCELO DOS SANTOS MAFRA <MSMAFRA@GMAIL.COM>, 2020.
 #
-msgid "Brazilian Portuguese"
-msgstr "Português do Brasil"
+msgid ""
+msgstr ""
 "Project-Id-Version: Tauon Music Box v5.6.0\n"
 "POT-Creation-Date: 2020-03-24 12:31+1300\n"
 "PO-Revision-Date: 2020-06-27 15:48-0300\n"
