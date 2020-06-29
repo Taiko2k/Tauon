@@ -667,6 +667,7 @@ from t_modules.t_extra import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
 from t_modules.t_spot import SpotCtl
+from t_modules.t_search import *
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -1038,6 +1039,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.enable_transcode = True
         self.show_rym = False
+        self.show_band = False
         self.show_wiki = False
         self.show_transfer = True
         self.show_queue = True
@@ -2821,6 +2823,8 @@ for t in range(2):
             prefs.spot_client = save[147]
         if save[148] is not None:
             prefs.spot_secret = save[148]
+        if save[149] is not None:
+            prefs.show_band = save[149]
 
         state_file.close()
         del save
@@ -9645,7 +9649,7 @@ class AlbumArt():
                     if pctl.radio_image_bin:
                         return pctl.radio_image_bin
 
-                cached_path = os.path.join(n_cache_dir, hashlib.md5(track.art_url_key.encode()).hexdigest()[:9])
+                cached_path = os.path.join(n_cache_dir, hashlib.md5(track.art_url_key.encode()).hexdigest()[:12])
                 if os.path.isfile(cached_path):
                     source_image = open(cached_path, 'rb')
                 else:
@@ -17364,6 +17368,11 @@ def toggle_rym(mode=0):
         return prefs.show_rym
     prefs.show_rym ^= True
 
+def toggle_band(mode=0):
+    if mode == 1:
+        return prefs.show_band
+    prefs.show_band ^= True
+
 def toggle_wiki(mode=0):
     if mode == 1:
         return prefs.show_wiki
@@ -17379,6 +17388,26 @@ def toggle_gen(mode=0):
     if mode == 1:
         return prefs.show_gen
     prefs.show_gen ^= True
+
+
+
+
+def ser_band_done(result):
+    if result:
+        webbrowser.open(result, new=2, autoraise=True)
+        gui.message_box = False
+        gui.update += 1
+    else:
+        show_message(_("No matching artist result found"))
+
+
+def ser_band(track_id):
+    tr = pctl.g(track_id)
+    if tr.artist:
+        shoot_dl = threading.Thread(target=bandcamp_search, args=([tr.artist, ser_band_done]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
+        show_message(_("Searching..."))
 
 
 def ser_rym(index):
@@ -17439,6 +17468,8 @@ son_icon.base_asset = asset_loader('sonemic-gs.png')
 
 son_icon.xoff = 1
 track_menu.add(_('Search Artist on Sonemic'), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
+
+track_menu.add(_('Search Artist on Bandcamp'), ser_band, pass_ref=True, show_test=toggle_band)
 
 
 def clip_ar_tr(index):
@@ -23655,7 +23686,7 @@ class Over:
                     if self.click:
                         webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
-            y += 60 * gui.scale
+            y += 37 * gui.scale
             x += 320 * gui.scale
 
             ddt.text((x, y), _("Show in context menus:"), colours.box_text_label, 11)
@@ -23664,6 +23695,8 @@ class Over:
             self.toggle_square(x, y, toggle_wiki, _("Wikipedia search"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_rym, _("Sonemic search"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_band, _("Bandcamp search"))
             # y += 23 * gui.scale
             # self.toggle_square(x, y, toggle_gimage, _("Google image search"))
             y += 23 * gui.scale
@@ -35744,6 +35777,7 @@ def save_state():
             prefs.sync_playlist,
             prefs.spot_client,
             prefs.spot_secret,
+            prefs.show_band,
 
         ]
 
@@ -36733,9 +36767,12 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
+
+
+
             #spot_ctl.search_track(pctl.playing_object())
             #prefs.spotify_token = None
-            spot_ctl.get_playlists()
+            #spot_ctl.get_playlists()
             #spot_ctl.update()
             #spot_ctl.set_device()
             # pctl.playerCommand = "encpause"

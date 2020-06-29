@@ -20,7 +20,6 @@
 from isounidecode import unidecode
 from PyLyrics import PyLyrics
 from bs4 import BeautifulSoup  # Remember to add to dependency list if PyLyrics is removed
-from bs4 import NavigableString
 import urllib.parse
 import requests  # Remember to add to dependency list if PyLyrics is removed
 import re
