@@ -1722,6 +1722,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.sync_progress = ""
         self.sync_speed = ""
 
+        self.bar_hover_timer = Timer()
+
 gui = GuiVar()
 
 
@@ -38341,9 +38343,10 @@ while pctl.running:
                     left = 0
                     if gui.lsp:
                         left = gui.lspw
-                    rect = [left, top, gui.plw, 6 * gui.scale]
+                    rect = [left, top, gui.plw, 12 * gui.scale]
                     if right_click and coll(rect):
                         set_menu_hidden.activate()
+                        right_click = False
 
                 width = gui.plw
                 if gui.set_bar and gui.set_mode:
@@ -38493,6 +38496,22 @@ while pctl.running:
                     else:
                         playlist_render.cache_render()
 
+                if not gui.set_bar and gui.set_mode and not gui.combo_mode:
+                    width = gui.plw
+                    if gui.tracklist_center_mode:
+                        x = gui.tracklist_highlight_left
+                        width = gui.tracklist_highlight_width
+                    rect = [x, top, width, gui.set_height // 2]
+                    fields.add(rect)
+                    gui.delay_frame(0.26)
+
+                    if coll(rect) and gui.bar_hover_timer.get() > 0.25:
+                        ddt.rect(rect, colours.column_bar_background, True)
+                        if input.mouse_click:
+                            gui.set_bar = True
+                            update_layout_do()
+                    if not coll(rect):
+                        gui.bar_hover_timer.set()
 
                 if gui.set_bar and gui.set_mode and not gui.combo_mode:
 
