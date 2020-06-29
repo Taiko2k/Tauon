@@ -5,6 +5,7 @@ v6.0.0
 
  - Added Spotify integration (wip)
  - Added "Transcode and Sync" function
+ - Added Bandcamp artist search function
  - Added visual theme selector to settings
  - Added input fields for network accounts in settings
  - Added setting for separate multi-value genre results (default is now off)
