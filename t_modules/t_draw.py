@@ -48,12 +48,15 @@ class QuickThumbnail:
 
     renderer = None
     items = []
+    queue = []
 
     def __init__(self):
         self.rect = SDL_Rect(0, 0)
         self.texture = None
         self.surface = None
-        self.alive = True
+        self.size = 50
+        self.alive = False
+        self.url = None
 
     def destruct(self):
         if self.surface:
@@ -74,7 +77,8 @@ class QuickThumbnail:
         g.seek(0)
         wop = rw_from_object(g)
         self.surface = IMG_Load_RW(wop, 0)
-        self.items.append(self)
+        #self.items.append(self)
+        self.alive = True
 
     def prime(self):
 
@@ -89,19 +93,21 @@ class QuickThumbnail:
         self.texture = texture
 
     def draw(self, x, y):
+        if len(self.items) > 30:
+            img = self.items[0]
+            img.destruct()
+            self.items.remove(img)
         if not self.alive:
-            return
+            if self not in self.queue:
+                self.queue.append(self)
+            return False
         if not self.texture:
             self.prime()
         self.rect.x = round(x)
         self.rect.y = round(y)
         SDL_RenderCopy(self.renderer, self.texture, None, self.rect)
-        if len(self.items) > 10:
-            print("deee")
-            print(self.items)
-            img = self.items[0]
-            img.destruct()
-            self.items.remove(img)
+
+        return True
 
 if system == "windows":
 

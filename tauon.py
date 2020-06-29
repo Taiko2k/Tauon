@@ -6428,6 +6428,7 @@ class Tauon:
         self.pl_gen = pl_gen
         self.QuickThumbnail = QuickThumbnail
 
+
     # def log(self, line, title=False):
     #
     #     log_file = open(user_directory + "/tauon.log", 'a')
@@ -8972,6 +8973,15 @@ class GallClass:
     def worker_render(self):
 
         self.lock.acquire()
+        #time.sleep(0.1)
+
+        if search_over.active:
+            while QuickThumbnail.queue:
+                img = QuickThumbnail.queue.pop(0)
+                response = urllib.request.urlopen(img.url)
+                source_image = io.BytesIO(response.read())
+                img.read_and_thumbnail(source_image, img.size, img.size)
+                gui.update += 1
 
         while len(self.queue) > 0:
 
@@ -9197,6 +9207,7 @@ class GallClass:
 
 
 gall_ren = GallClass(album_mode_art_size)
+tauon.gall_ren = gall_ren
 
 pl_thumbnail = GallClass(save_out=False)
 
@@ -20006,7 +20017,11 @@ class SearchOverlay:
                     a = 100
                     if round((t * 14)) % 4 == item:
                         a = 255
-                    colour = (140,100,255,a)
+                    if self.spotify_mode:
+                        colour = (145, 245, 78, a)
+                    else:
+                        colour = (140, 100, 255, a)
+
                     ddt.rect((x, y, s, s), colour, True)
                     x += g + s
 
@@ -20249,20 +20264,24 @@ class SearchOverlay:
 
                     else:
 
-                        yy += 5 * gui.scale
-                        xx = ddt.text((120 * gui.scale, yy), item[1][0], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                        yy += 3 * gui.scale
+                        xx = ddt.text((120 * gui.scale, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                         artist = item[1][1]
 
-
-                        ddt.text((125 * gui.scale, yy + 25 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.text((125 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
-                        xx += ddt.text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += ddt.text((150 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150], True)
                         #gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
-                        item[5].draw(50 * gui.scale, yy + 5)
+                        if not item[5].draw(50 * gui.scale, yy + 5):
+                            try:
+                                gall_ren.lock.release()
+                            except:
+                                pass
+
                         if fade != 1:
                             ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
                         full = True
@@ -20307,15 +20326,15 @@ class SearchOverlay:
                         self.search_text.text = ""
 
                     if full:
-                        yy += 50 * gui.scale
+                        yy += 47 * gui.scale
                     else:
                         yy += 6 * gui.scale
 
 
                 if item[0] == 1:
 
-                    yy += 5 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    yy += 3 * gui.scale
+                    xx = ddt.text((120 * gui.scale, yy + round(5 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                     artist = pctl.master_library[item[2]].album_artist
                     if artist == "":
@@ -20323,10 +20342,10 @@ class SearchOverlay:
 
                     if full_count < 7:
 
-                        ddt.text((125 * gui.scale, yy + 25 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.text((125 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
-                        xx += ddt.text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += ddt.text((150 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150], True)
                         gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
@@ -20391,7 +20410,7 @@ class SearchOverlay:
                         self.search_text.text = ""
 
                     if full:
-                        yy += 50 * gui.scale
+                        yy += 47 * gui.scale
 
                 if item[0] == 2:
                     cl = [250, 220, 190, int(255 * fade)]
@@ -36769,7 +36788,6 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
 
 
-
             #spot_ctl.search_track(pctl.playing_object())
             #prefs.spotify_token = None
             #spot_ctl.get_playlists()
@@ -37517,7 +37535,7 @@ while pctl.running:
                     max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
                     # Mouse wheel scrolling
-                    if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                    if not search_over.active and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                         if mouse_wheel != 0:
                             scroll_gallery_hide_timer.set()
@@ -38882,7 +38900,7 @@ while pctl.running:
                     not menu_is_open() and \
                     not pref_box.enabled and \
                     not gui.rename_playlist_box \
-                    and gui.layer_focus == 0 and gui.show_playlist:
+                    and gui.layer_focus == 0 and gui.show_playlist and not search_over.active:
 
                 scroll_opacity = 255
 
@@ -40467,6 +40485,9 @@ while pctl.running:
     # Save power if the window is minimized
     if gui.lowered:
         time.sleep(0.2)
+
+if spot_ctl.playing:
+    spot_ctl.control("stop")
 
 # Send scrobble if pending
 if lfm_scrobbler.queue and not lfm_scrobbler.running:

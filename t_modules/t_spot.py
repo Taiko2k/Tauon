@@ -141,33 +141,51 @@ class SpotCtl:
             return
         results = self.spotify.search(text,
                                       types=('artist', 'album',),
-                                      limit=9
+                                      limit=20
                                       )
         finds = []
 
-        if results[0]:
-            for album in results[0].items[0:3]:
 
-                # Process thumbnail
-                thumb_url = album.images[-1].url
-                response = urllib.request.urlopen(thumb_url)
-                source_image = io.BytesIO(response.read())
+        self.tauon.QuickThumbnail.queue.clear()
+
+        if results[0]:
+            for album in results[0].items[0:1]:
+
                 img = self.tauon.QuickThumbnail()
-                img.read_and_thumbnail(source_image, round(50 * self.tauon.gui.scale), round(50 * self.tauon.gui.scale))
+                img.url = album.images[-1].url
+                img.size = round(50 * self.tauon.gui.scale)
+                self.tauon.QuickThumbnail().items.append(img)
+                self.tauon.QuickThumbnail().queue.append(img)
+                try:
+                    self.tauon.gall_ren.lock.release()
+                except:
+                    pass
 
                 finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, img))
 
             for artist in results[1].items[0:1]:
                 finds.insert(2, (10, artist.name, artist.external_urls["spotify"], 0, 0, None))
 
-            for album in results[0].items[3:7]:
-                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, None))
+            for i, album in enumerate(results[0].items[1:]):
 
-            for artist in results[1].items[1:2]:
-                finds.append((10, artist.name, artist.external_urls["spotify"], 0, 0, None))
+                img = self.tauon.QuickThumbnail()
+                img.url = album.images[-1].url
+                img.size = round(50 * self.tauon.gui.scale)
+                self.tauon.QuickThumbnail().items.append(img)
+                if i < 10:
+                    self.tauon.QuickThumbnail().queue.append(img)
+                try:
+                    self.tauon.gall_ren.lock.release()
+                except:
+                    pass
 
-            for album in results[0].items[7:]:
-                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, None))
+                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, img))
+
+            # for artist in results[1].items[1:2]:
+            #     finds.append((10, artist.name, artist.external_urls["spotify"], 0, 0, None))
+
+            # for album in results[0].items[8:]:
+            #     finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, None))
 
         return finds
 
