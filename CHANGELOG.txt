@@ -11,6 +11,7 @@ v6.0.0
  - Added "sort by top played" setting to chart generator
  - Improved transcode handling of multi disc albums
  - Improved genre result names for some genres
+ - Improved caching for network sourced album art
  - Tweaked old playtime star colour
  - Tweaked layout and description of various settings
  - Fixed genius lyrics scrape for new layout version
@@ -20,6 +21,7 @@ v6.0.0
  - Fixed radio page not working without outside connection
  - Fixed animation stutter when opening settings box
  - Fixed global search scroll wheel behavior
+ - Fixed right click copy with text input fields
  - Removed "auto update generated playlists" from in-app settings
 
 v5.5.5

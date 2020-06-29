@@ -51,7 +51,9 @@ class SpotCtl:
         if self.cred is None:
             self.prep_cred()
         self.token = self.cred.request_user_token(code)
-        self.save_token()
+        if self.token:
+            self.save_token()
+            self.tauon.gui.show_message("Spotify account connected", mode="done")
 
     def save_token(self):
         if self.token:
