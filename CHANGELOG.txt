@@ -14,6 +14,7 @@ v6.0.0
  - Improved transcode handling of multi disc albums
  - Improved genre result names for some genres
  - Improved caching for network sourced album art
+ - Improved hidden columns bar to peak on mouse over
  - Tweaked old playtime star colour
  - Tweaked layout and description of various settings
  - Fixed genius lyrics scrape for new layout version
