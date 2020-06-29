@@ -93,6 +93,7 @@ def parse_picture_block(f):
 
     return f.read(a)
 
+
 class Flac:
 
     def __init__(self, file):
@@ -126,6 +127,7 @@ class Flac:
 
         self.track_gain = None
         self.album_gain = None
+        self.fullpath = ""
 
 
     def read_vorbis(self, f):
@@ -174,14 +176,14 @@ class Flac:
                         # print(a)
                         # print(b)
                     elif a == "genre":
-                        #self.genre = b.decode("utf-8")
+                        # self.genre = b.decode("utf-8")
                         genres.append(b.decode())
                     elif a == 'cuesheet':
                         self.cue_sheet = b.decode()
                     elif a == "date":
                         self.date = b.decode("utf-8")
-                    elif a == "comment":
-                        self.comment = b.decode("utf-8")
+                    # elif a == "comment":
+                    #     self.comment = b.decode("utf-8")
                     elif a == "album":
                         self.album = b.decode("utf-8")
                     elif a == "title":
@@ -214,6 +216,12 @@ class Flac:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
                         self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
+                    # added by msmafra
+                    elif 'comment' == a:
+                        self.comment = b.decode("utf-8")
+                    elif 'genre' == a:
+                        self.genre = b.decode("utf-8")
+
                     # else:
                     #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
                     #     print(b)
@@ -1151,5 +1159,3 @@ class M4a:
 
         while atom(f):
             pass
-
-
