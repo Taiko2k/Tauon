@@ -1,7 +1,7 @@
 
 # Tauon Music Box - Misc Functions Module
 
-# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -202,27 +202,6 @@ def colour_slide(a, b, x, x_limit):
 def hex_to_rgb(colour):
     colour = colour.strip("#")
     return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
-
-
-# Converts string containing colour in format x,x,x,x(optional) to list
-def get_colour_from_line(cline):
-    colour = ["", "", "", ""]
-
-    mode = 0
-
-    for i in cline:
-
-        if i.isdigit():
-            colour[mode] += i
-        elif i == ',':
-            mode += 1
-
-    for b in range(len(colour)):
-        if colour[b] == "":
-            colour[b] = "255"
-        colour[b] = int(colour[b])
-
-    return colour
 
 
 # Checks if all the numbers in a list are the same
@@ -825,3 +804,21 @@ def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with over
     south = base[0], hole[1] + hole[3], base[2], base[3] - hole[3] - 2
 
     return west, north, east, south
+
+genre_corrections = [
+    "J-Pop",
+    "J-Rock",
+    "K-Pop",
+    "Hip Hop",
+]
+
+genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
+
+def genre_correct(text):
+
+    parsed = text.lower().replace("-", "").replace(" ", "").strip()
+    if parsed.startswith("post"):
+        return ("Post-" + parsed[4:]).title()
+    if parsed in genre_corrections2:
+        return genre_corrections[genre_corrections2.index(parsed)]
+    return text.title().strip()

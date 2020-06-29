@@ -20,8 +20,12 @@
 
 import sys
 from sdl2 import *
+from sdl2.sdlimage import IMG_Load_RW
 from t_modules.t_extra import *
 import ctypes
+from ctypes import pointer
+import io
+from PIL import Image
 
 system = "linux"
 if sys.platform == 'win32':
@@ -38,6 +42,72 @@ else:
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
     import win32con, win32api, win32gui, win32ui
     import struct
+
+
+class QuickThumbnail:
+
+    renderer = None
+    items = []
+    queue = []
+
+    def __init__(self):
+        self.rect = SDL_Rect(0, 0)
+        self.texture = None
+        self.surface = None
+        self.size = 50
+        self.alive = False
+        self.url = None
+
+    def destruct(self):
+        if self.surface:
+            SDL_FreeSurface(self.surface)
+            self.surface = None
+        if self.texture:
+            SDL_DestroyTexture(self.texture)
+            self.texture = None
+        self.alive = False
+
+    def read_and_thumbnail(self, f, w, h):
+
+        g = io.BytesIO()
+        g.seek(0)
+        im = Image.open(f)
+        im.thumbnail((w, h), Image.ANTIALIAS)
+        im.save(g, 'PNG')
+        g.seek(0)
+        wop = rw_from_object(g)
+        self.surface = IMG_Load_RW(wop, 0)
+        #self.items.append(self)
+        self.alive = True
+
+    def prime(self):
+
+        texture = SDL_CreateTextureFromSurface(self.renderer, self.surface)
+        SDL_FreeSurface(self.surface)
+        self.surface = None
+        tex_w = pointer(c_int(0))
+        tex_h = pointer(c_int(0))
+        SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+        self.rect.w = int(tex_w.contents.value)
+        self.rect.h = int(tex_h.contents.value)
+        self.texture = texture
+
+    def draw(self, x, y):
+        if len(self.items) > 30:
+            img = self.items[0]
+            img.destruct()
+            self.items.remove(img)
+        if not self.alive:
+            if self not in self.queue:
+                self.queue.append(self)
+            return False
+        if not self.texture:
+            self.prime()
+        self.rect.x = round(x)
+        self.rect.y = round(y)
+        SDL_RenderCopy(self.renderer, self.texture, None, self.rect)
+
+        return True
 
 if system == "windows":
 

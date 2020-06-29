@@ -2,7 +2,7 @@ pillow
 pylast>=3.1.0
 flask
 hsaudiotag3k
-pysdl2==0.9.6
+pysdl2
 stagger
 send2trash
 pylyrics
@@ -12,3 +12,4 @@ discogs_client
 pypresence
 isounidecode
 setproctitle
+tekore

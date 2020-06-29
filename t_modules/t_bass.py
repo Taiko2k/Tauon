@@ -99,6 +99,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
     BASS_FX_GetVersion = function_type(ctypes.c_ulong)(("BASS_FX_GetVersion", fx_module))
 
+    BASS_StreamPutData = function_type(DWORD, HSTREAM, ctypes.c_void_p, DWORD)(('BASS_StreamPutData', bass_module))
+
+    StreamProc = function_type(DWORD, HSTREAM, ctypes.c_void_p, DWORD, ctypes.c_void_p)
+    BASS_StreamCreate = function_type(HSTREAM, DWORD, DWORD, DWORD, StreamProc, ctypes.c_void_p)(('BASS_StreamCreate', bass_module))
     BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
                                           ctypes.c_int64, ctypes.c_ulong)(('BASS_StreamCreateFile', bass_module))
     BASS_Pause = function_type(ctypes.c_bool)(('BASS_Pause', bass_module))
@@ -217,6 +221,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
     BASS_GetCPU = function_type(ctypes.c_float)(('BASS_GetCPU', bass_module))
 
+    def silence_refill(stream, buffer, length, user):
+
+        ctypes.memset(buffer, 0, length)
+        return length
+
+    sil_func = StreamProc(silence_refill)
+
     def py_down(buffer, length, user):
         # if url_record:
         #
@@ -226,6 +237,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
         #     f = open(record_path + fileline, 'ab')
         #     f.write(p)
         #     f.close
+
         return 0
 
     down_func = DownloadProc(py_down)
@@ -315,6 +327,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
     BASS_POS_BYTE = 0
 
     BASS_MIXER_END = 0x10000
+    BASS_MIXER_NONSTOP = 0x20000
     BASS_SYNC_END = 2
     BASS_SYNC_STALL = 6
     BASS_SYNC_MIXTIME = 0x40000000
@@ -740,9 +753,17 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             url = None
             pctl.download_time = 0
 
+            if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not target_object.file_ext == "SPTY":
+                tauon.spot_ctl.control("stop")
+
             if target_object.is_network:
 
                 # print("START STREAM")
+                if target_object.file_ext == "SPTY":
+
+                    self.stop()
+                    tauon.spot_ctl.play_target(target_object.url_key)
+                    return
 
                 self.url = ""
                 params = None
@@ -1274,6 +1295,37 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                     # gui.update += 1
                     gui.level_peak = [0, 0]
 
+        if pctl.playing_state == 1 and tauon.spot_ctl.playing:
+            th = 10
+            if pctl.playing_time > pctl.playing_length:
+                th = 1
+            if tauon.spot_ctl.start_timer.get() < 7 or tauon.spot_ctl.update_timer.get() < th:
+                if not tauon.spot_ctl.paused:
+                    add_time = tauon.spot_ctl.progress_timer.get()
+                    pctl.playing_time += add_time
+                    pctl.decode_time = pctl.playing_time
+                    pctl.test_progress()
+                    tauon.spot_ctl.progress_timer.set()
+                    if len(pctl.track_queue) > 0 and 2 > add_time > 0:
+                        star_store.add(pctl.track_queue[pctl.queue_step], add_time)
+            else:
+                tauon.spot_ctl.update_timer.set()
+                tauon.spot_ctl.monitor()
+
+        elif pctl.playing_state == 3 and tauon.spot_ctl.coasting:
+            th = 10
+            if pctl.playing_time > pctl.playing_length or pctl.playing_time < 2.5:
+                th = 1
+            if tauon.spot_ctl.update_timer.get() < th:
+                if not tauon.spot_ctl.paused:
+                    pctl.playing_time += tauon.spot_ctl.progress_timer.get()
+                    pctl.decode_time = pctl.playing_time
+                tauon.spot_ctl.progress_timer.set()
+
+            else:
+                tauon.spot_ctl.update_timer.set()
+                tauon.spot_ctl.update()
+
         if pctl.playing_state == 3 and bass_player.state == 'playing':
             if radio_meta_timer.get() > 3:
                 radio_meta_timer.set()
@@ -1623,9 +1675,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
                 # Pause broadcast
                 if pctl.encoder_pause == 0:
-                    BASS_ChannelPause(mhandle)
+                    BASS_Mixer_ChannelRemove(handle3)
                     pctl.encoder_pause = 1
                 else:
+                    BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
                     BASS_ChannelPlay(mhandle, True)
                     pctl.encoder_pause = 0
 
@@ -1635,6 +1688,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 BASS_StreamFree(handle3)
                 pctl.broadcast_clients.clear()
                 pctl.broadcast_active = False
+
+            # if command == "encpause":
+            #
+            #     BASS_ChannelStop(handle3)
+            #     #BASS_
 
             if command == "encstart":
 
@@ -1661,9 +1719,16 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 #print(pctl.target_open)
 
                 handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-                mhandle = BASS_Mixer_StreamCreate(44100, 2, 0)
+                mhandle = BASS_Mixer_StreamCreate(44100, 2, 0) #  BASS_MIXER_NONSTOP
                 BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-                channel1 = BASS_ChannelPlay(mhandle, True)
+
+                #sil = BASS_StreamCreate(44100, 2, BASS_STREAM_DECODE, sil_func, 0)
+                #BASS_Mixer_StreamAddChannel(mhandle, sil, 0)
+
+                #msilence = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_NONSTOP | BASS_STREAM_DECODE)
+                #BASS_Mixer_StreamAddChannel(mhandle, msilence, 0)
+
+                BASS_ChannelPlay(mhandle, True)
                 BASS_ChannelSetAttribute(mhandle, 2, 0)
 
                 #print(BASS_ErrorGetCode())
@@ -1678,7 +1743,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
                 if BASS_ErrorGetCode() == -1:
                     gui.show_message("Server initialisation error.", "Sorry, something isn't working right.", mode="warning")
-                channel1 = BASS_ChannelPlay(mhandle, True)
+                BASS_ChannelPlay(mhandle, True)
 
                 line = pctl.broadcast_line.encode('utf-8')
                 BASS_Encode_CastSetTitle(encoder, line, 0)
@@ -1724,7 +1789,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
             elif command == 'volume':
 
-                bass_player.set_volume(pctl.player_volume / 100)
+                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                    tauon.spot_ctl.control("volume", int(pctl.player_volume))
+                else:
+                    bass_player.set_volume(pctl.player_volume / 100)
 
             elif command == 'runstop':
 
@@ -1736,7 +1804,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
 
             elif command == 'seek':
 
-                bass_player.seek()
+                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                    tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
+                    pctl.playing_time = pctl.new_time
+                else:
+                    bass_player.seek()
 
             # UNLOAD PLAYER COMMAND
             if command == 'unload':

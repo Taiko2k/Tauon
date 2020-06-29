@@ -58,6 +58,7 @@ def genius(artist, title, return_url=False):
     line = re.sub("[,._@!#%^*+:;'()]", "", line)
     line = line.replace("]", "")
     line = line.replace("[", "")
+    line = line.replace("?", "")
     line = line.replace(" ", "-")
     line = line.replace("/", "-")
     line = line.replace("-&-", "-and-")
@@ -71,18 +72,55 @@ def genius(artist, title, return_url=False):
 
     page = requests.get(line)
     html = BeautifulSoup(page.text, 'html.parser')
-    lyrics = html.find('div', class_='lyrics').get_text()
 
-    lyrics2 = []
-    for line in lyrics.splitlines():
-        if line.startswith("["):
-            pass
-        else:
-            lyrics2.append(line)
+    result = html.find('div', class_='lyrics') #.get_text()
+    if result is not None:
+        lyrics = result.get_text()
+        lyrics2 = []
+        for line in lyrics.splitlines():
+            if line.startswith("["):
+                pass
+            else:
+                lyrics2.append(line)
 
-    lyrics = "\n".join(lyrics2)
-    lyrics = lyrics.strip("\n")
-    return lyrics
+        lyrics = "\n".join(lyrics2)
+        lyrics = lyrics.strip("\n")
+        return lyrics
+
+    # New layout type
+    else:
+
+        results = html.findAll("div", {"class": lambda l: l and "Lyrics__Container" in l})
+        lyrics = "".join([r.get_text("\n") for r in results])
+        level = 0
+        new = ""
+        for cha in lyrics:
+            if level <= 0:
+                new += cha
+            if cha == "[":
+                level += 1
+            if cha == "]":
+                level -= 1
+        lyrics = new
+
+        lines = lyrics.splitlines()
+        new_lines = []
+        for line in lines:
+            if "[" in line:
+                line = line.split("[", 1)[0]
+                if line:
+                    line += "\n"
+
+            new_lines.append(line.lstrip().rstrip(" ") + "\n")
+
+        lyrics = "".join(new_lines)
+        lyrics = lyrics.replace("(\n", "(")
+        lyrics = lyrics.replace("\n)", ")")
+        lyrics = lyrics.lstrip("\n")
+        lyrics = lyrics.lstrip()
+        return lyrics
+
+
 
 
 lyric_sources = {

@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.6.0"
+n_version = "6.0.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -157,9 +157,6 @@ if install_mode and system == 'linux':
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
     config_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
 
-    if not os.path.isdir(cache_directory):
-        os.makedirs(cache_directory)
-
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
 
@@ -204,6 +201,19 @@ else:
 
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
+
+n_cache_dir = os.path.join(cache_directory, "network")
+e_cache_dir = os.path.join(cache_directory, "export")
+g_cache_dir = os.path.join(cache_directory, "gallery")
+a_cache_dir = os.path.join(cache_directory, "artist")
+if not os.path.isdir(n_cache_dir):
+    os.makedirs(n_cache_dir)
+if not os.path.isdir(e_cache_dir):
+    os.makedirs(e_cache_dir)
+if not os.path.isdir(g_cache_dir):
+    os.makedirs(g_cache_dir)
+if not os.path.isdir(a_cache_dir):
+    os.makedirs(a_cache_dir)
 
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
     os.makedirs(os.path.join(user_directory, "artist-pictures"))
@@ -655,6 +665,9 @@ from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 from t_modules.t_lyrics import *
+from t_modules.t_themeload import load_theme
+from t_modules.t_spot import SpotCtl
+from t_modules.t_search import *
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -842,6 +855,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "PLEX": [229, 160, 13, 255],
     "KOEL": [111, 98, 190, 255],
     "SUB": [235, 140, 20, 255],
+    "SPTY": [30, 215, 96, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -1025,6 +1039,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.enable_transcode = True
         self.show_rym = False
+        self.show_band = False
         self.show_wiki = False
         self.show_transfer = True
         self.show_queue = True
@@ -1129,8 +1144,8 @@ class Prefs:    # Used to hold any kind of settings
         self.plex_password = ""
         self.plex_servername = ""
 
-        self.koel_username = ""
-        self.koel_password = ""
+        self.koel_username = "admin@example.com"
+        self.koel_password = "admin"
         self.koel_server_url = "http://localhost:8050"
 
         self.auto_lyrics = False
@@ -1256,7 +1271,7 @@ class Prefs:    # Used to hold any kind of settings
         self.side_panel_layout = 0
         self.use_absolute_track_index = False
 
-        self.hide_bottom_title = False
+        self.hide_bottom_title = True
         self.auto_goto_playing = False
 
         self.diacritic_search = True
@@ -1307,6 +1322,12 @@ class Prefs:    # Used to hold any kind of settings
         self.sync_deletes = False
         self.sync_playlist = None
 
+        self.sep_genre_multi = False
+        self.topchart_sorts_played = True
+
+        self.spot_client = ""
+        self.spot_secret = ""
+        self.spot_mode = False
 
 prefs = Prefs()
 
@@ -1700,6 +1721,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.stop_sync = False
         self.sync_progress = ""
         self.sync_speed = ""
+
+        self.bar_hover_timer = Timer()
 
 gui = GuiVar()
 
@@ -2798,6 +2821,12 @@ for t in range(2):
         if save[146] is not None:
             prefs.sync_playlist = save[146]
 
+        if save[147] is not None:
+            prefs.spot_client = save[147]
+        if save[148] is not None:
+            prefs.spot_secret = save[148]
+        if save[149] is not None:
+            prefs.show_band = save[149]
 
         state_file.close()
         del save
@@ -3142,6 +3171,18 @@ if db_version > 0:
                 value.append(0)
                 star_store.db[key] = value
 
+    if db_version <= 44:
+        print("Updating database to version 45")
+        print("Cleaning cache directory")
+        for item in os.listdir(cache_directory):
+            path = os.path.join(cache_directory, item)
+            if "-lfm." in item or "-ftv." in item or "-dcg." in item:
+                os.rename(path, os.path.join(a_cache_dir, item))
+        for item in os.listdir(cache_directory):
+            path = os.path.join(cache_directory, item)
+            if os.path.isfile(path):
+                os.remove(path)
+
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -3191,6 +3232,8 @@ def save_prefs():
 
     cf.update_value("gst-output", prefs.gst_output)
     cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
+
+    cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
 
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
@@ -3254,6 +3297,7 @@ def save_prefs():
     cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
     cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
     cf.update_value("write-ratings-to-tag", prefs.write_ratings)
+    cf.update_value("enable-spotify", prefs.spot_mode)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -3267,7 +3311,7 @@ def save_prefs():
     cf.update_value("chart-rows", prefs.chart_rows)
     cf.update_value("chart-uses-text", prefs.chart_text)
     cf.update_value("chart-font", prefs.chart_font)
-
+    cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
 
     if os.path.isdir(config_directory):
         cf.dump(os.path.join(config_directory, "tauon.conf"))
@@ -3295,8 +3339,8 @@ def load_prefs():
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
-    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification")
-    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string")
+    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification.")
+    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string.")
 
 
     if prefs.dc_device_setting == 'on':
@@ -3310,6 +3354,9 @@ def load_prefs():
                                                                              "available. E.g. \"en\", \"ja\", \"zh_CH\". "
                                                                              "Default: \"auto\"")
     # prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
+    cf.br()
+    cf.add_text("[search]")
+    prefs.sep_genre_multi = cf.sync_add("bool", "separate-multi-genre", prefs.sep_genre_multi, "If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
 
 
     cf.br()
@@ -3324,7 +3371,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[playback]")
-    prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected")
+    prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
 
 
     cf.br()
@@ -3414,6 +3461,7 @@ def load_prefs():
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
     prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generated playlists on any file import")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
+    prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
 
 
     cf.br()
@@ -3468,6 +3516,7 @@ def load_prefs():
     prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
     prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
     prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
+    prefs.topchart_sorts_played = cf.sync_add("bool", "chart-sorts-top-played", prefs.topchart_sorts_played)
     prefs.chart_font = cf.sync_add("string", "chart-font", prefs.chart_font, "Format is fontname + size. Default is Monospace 10")
 
 load_prefs()
@@ -3944,6 +3993,7 @@ class PlayerCtl:
 
         # Database
 
+        self.master_count = master_count
         self.total_playtime = 0
         self.master_library = master_library
         #self.star_library = star_library
@@ -4049,6 +4099,8 @@ class PlayerCtl:
 
         self.radio_image_bin = None
         self.radio_rate_timer = Timer(20)
+
+        self.volume_update_timer = Timer()
 
 
     def radio_progress(self):
@@ -4205,7 +4257,7 @@ class PlayerCtl:
 
         line = ""
         track = pctl.playing_object()
-        if self.playing_state < 3 and track:
+        if track:
             title = track.title
             artist = track.artist
 
@@ -4358,6 +4410,13 @@ class PlayerCtl:
 
     def set_volume(self, notify=True):
 
+        if (spot_ctl.coasting or spot_ctl.playing) and mouse_down:
+            # Rate limit network volume change
+            t = self.volume_update_timer.get()
+            if t < 0.3:
+                return
+
+        self.volume_update_timer.set()
         self.playerCommand = 'volume'
         self.playerCommandReady = True
         if notify:
@@ -4515,6 +4574,13 @@ class PlayerCtl:
 
     def back(self):
 
+        if spot_ctl.coasting:
+            spot_ctl.control("previous")
+            spot_ctl.update_timer.set()
+            self.playing_time = -2
+            self.decode_time = -2
+            return
+
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
@@ -4588,6 +4654,10 @@ class PlayerCtl:
                 if loop > 110:
                     break
 
+        if spot_ctl.playing or spot_ctl.coasting:
+            print("Spotify stop")
+            spot_ctl.control("stop")
+
         self.notify_update()
         lfm_scrobbler.start_queue()
         return previous_state
@@ -4595,7 +4665,23 @@ class PlayerCtl:
     def pause(self):
 
         if self.playing_state == 3:
+            if spot_ctl.coasting:
+                if spot_ctl.paused:
+                    spot_ctl.control("resume")
+                else:
+                    spot_ctl.control("pause")
             return
+
+        if spot_ctl.playing:
+            if self.playing_state == 2:
+                spot_ctl.control("resume")
+                self.playing_state = 1
+            elif self.playing_state == 1:
+                spot_ctl.control("pause")
+                self.playing_state = 2
+            self.render_playlist()
+            return
+
         if self.playing_state == 1:
             self.playerCommand = 'pauseon'
             self.playing_state = 2
@@ -4605,7 +4691,6 @@ class PlayerCtl:
             notify_song()
 
         self.playerCommandReady = True
-
 
         self.render_playlist()
         self.notify_update()
@@ -4898,6 +4983,13 @@ class PlayerCtl:
         gui.pl_update += 1
 
     def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False, play=True):
+
+        if spot_ctl.coasting:
+            spot_ctl.control("next")
+            spot_ctl.update_timer.set()
+            self.playing_time = -2
+            self.decode_time = -2
+            return
 
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
@@ -6304,6 +6396,10 @@ class LastScrob:
 
 lfm_scrobbler = LastScrob()
 
+from t_modules.t_draw import TDraw
+from t_modules.t_draw import QuickThumbnail
+QuickThumbnail.renderer = renderer
+
 class Tauon:
 
     def __init__(self):
@@ -6330,6 +6426,10 @@ class Tauon:
         self.snap_mode = snap_mode
         self.console = console
         self.msys = msys
+        self.TrackClass = TrackClass
+        self.pl_gen = pl_gen
+        self.QuickThumbnail = QuickThumbnail
+
 
     # def log(self, line, title=False):
     #
@@ -6339,6 +6439,9 @@ class Tauon:
 
     def exit(self):
         pctl.running = False
+
+    def focus_window(self):
+        SDL_RaiseWindow(t_window)
 
 
 tauon = Tauon()
@@ -6362,19 +6465,8 @@ class PlexService:
 
     def connect(self):
 
-        if not prefs.plex_username:
-            show_message("PLEX Account - No username in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.plex_password:
-            show_message("PLEX Account - No password in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.plex_servername:
-            show_message("PLEX - No name of plex server in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
+        if not prefs.plex_username or not prefs.plex_password or not prefs.plex_servername:
+            show_message(_("Missing username, password and/or server name"), mode='warning')
             self.scanning = False
             return
 
@@ -6390,7 +6482,7 @@ class PlexService:
             self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
         except:
             show_message(_("Error connecting to PLEX server"),
-                         "Try check login credentials and that server is accessible.", mode='error')
+                         _("Try check login credentials and that server is accessible."), mode='error')
             self.scanning = False
             return
 
@@ -6429,8 +6521,6 @@ class PlexService:
             self.scanning = False
             return
 
-        global master_count
-
         playlist = []
 
         albums = self.resource.library.section('Music').albums()
@@ -6443,7 +6533,7 @@ class PlexService:
 
             for track in album.tracks():
 
-                id = master_count
+                id = pctl.master_count
                 replace_existing = False
                 for track_id, track in pctl.master_library.items():
                     if track.is_network and track.file_ext == "PLEX" and track.url_key == track.key:
@@ -6478,7 +6568,7 @@ class PlexService:
                 pctl.master_library[id] = nt
 
                 if not replace_existing:
-                    master_count += 1
+                    pctl.master_count += 1
 
                 playlist.append(nt.index)
 
@@ -6554,8 +6644,7 @@ class SubsonicService:
     def get_music(self):
 
         if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
-            show_message("Subsonic config error: Missing username, password and/or servername",
-                         'Enter details in config file then reload config to apply.', mode='warning')
+            show_message(_("Missing username, password and/or server URL"), mode='warning')
             self.scanning = False
             return
 
@@ -6576,8 +6665,6 @@ class SubsonicService:
         for a in d["subsonic-response"]["artists"]["index"]:
             artists += a["artist"]
 
-
-        global master_count
         playlist = []
 
         for artist in artists:
@@ -6591,7 +6678,7 @@ class SubsonicService:
 
                 for song in songs:
 
-                    id = master_count
+                    id = pctl.master_count
                     replace_existing = False
                     for track_id, track in pctl.master_library.items():
                         if track.is_network and track.file_ext == "SUB" and track.url_key == song["id"]:
@@ -6633,7 +6720,7 @@ class SubsonicService:
                     pctl.master_library[id] = nt
 
                     if not replace_existing:
-                        master_count += 1
+                        pctl.master_count += 1
 
                     playlist.append(nt.index)
 
@@ -6665,19 +6752,8 @@ class KoelService:
 
     def connect(self):
 
-        if not prefs.koel_username:
-            show_message("Koel - No username in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.koel_password:
-            show_message("Koel - No password in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
-            self.scanning = False
-            return
-        if not prefs.koel_server_url:
-            show_message("Koel - No target url server in config",
-                         'Enter details in config file then reload config to apply.', mode='warning')
+        if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
+            show_message(_("Missing username, password and/or server URL"), mode='warning')
             self.scanning = False
             return
 
@@ -6718,7 +6794,8 @@ class KoelService:
             j = r.json()
             if "message" in j:
                 error = j["message"]
-            gui.show_message("Could not establish koel connection/authorisation", error, mode="error")
+
+            gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
 
 
     def resolve_stream(self, id):
@@ -6748,8 +6825,6 @@ class KoelService:
         if not self.connected:
             self.scanning = False
             return
-
-        global master_count
 
         playlist = []
 
@@ -6784,7 +6859,7 @@ class KoelService:
 
         for song in songs:
 
-            id = master_count
+            id = pctl.master_count
             replace_existing = False
             for track_id, track in pctl.master_library.items():
                 if track.is_network and track.file_ext == "KOEL" and track.url_key == song["id"]:
@@ -6816,7 +6891,7 @@ class KoelService:
             pctl.master_library[id] = nt
 
             if not replace_existing:
-                master_count += 1
+                pctl.master_count += 1
 
             playlist.append(nt.index)
 
@@ -6841,6 +6916,8 @@ tauon.koel = koel
 
 
 def get_network_thumbnail_url(track_object):
+    if track_object.file_ext == "SPTY":
+        return track_object.art_url_key
     if track_object.file_ext == "PLEX":
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
@@ -6861,6 +6938,7 @@ def plex_get_album_thread():
     #     return
 
     pref_box.close()
+    save_prefs()
     if plex.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -6878,6 +6956,7 @@ def sub_get_album_thread():
     #     return
 
     pref_box.close()
+    save_prefs()
     if subsonic.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -6895,6 +6974,7 @@ def koel_get_album_thread():
     #     return
 
     pref_box.close()
+    save_prefs()
     if koel.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -7082,8 +7162,8 @@ class GStats:
 
         pt = 0
 
-        if master_count != self.last_db or self.last_pl != playlist:
-            self.last_db = master_count
+        if pctl.master_count != self.last_db or self.last_pl != playlist:
+            self.last_db = pctl.master_count
             self.last_pl = playlist
 
             artists = {}
@@ -7576,7 +7656,6 @@ def coll_point(l, r):
 def coll(r):
     return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
-from t_modules.t_draw import TDraw
 
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
@@ -8181,25 +8260,19 @@ class TextBox2:
         self.selection = 0
         self.offset = 0
         self.down_lock = False
+        self.paste_text = ""
 
     def paste(self):
 
         if SDL_HasClipboardText():
             clip = SDL_GetClipboardText().decode('utf-8')
-
-            if 'http://' in self.text and 'http://' in clip:
-                self.text = ""
-
-            clip = clip.rstrip(" ").lstrip(" ")
-            clip = clip.replace('\n', ' ').replace('\r', '')
-
-            self.eliminate_selection()
-            self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
-                self.text) - self.cursor_position:]
+            self.paste_text = clip
 
     def copy(self):
 
         text = self.get_selection()
+        if not text:
+            text = self.text
         if text != "":
             SDL_SetClipboardText(text.encode('utf-8'))
 
@@ -8312,6 +8385,18 @@ class TextBox2:
                     self.cursor_position += 1
                 if not key_shift_down and not key_shiftr_down:
                     self.selection = self.cursor_position
+
+            if self.paste_text:
+                if 'http://' in self.text and 'http://' in self.paste_text:
+                    self.text = ""
+
+                self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
+                self.paste_text = self.paste_text.replace('\n', ' ').replace('\r', '')
+
+                self.eliminate_selection()
+                self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
+                    self.text) - self.cursor_position:]
+                self.paste_text = ""
 
             # Paste via ctrl-v
             if key_ctrl_down and key_v_press:
@@ -8542,6 +8627,8 @@ class TextBox:
     def copy(self):
 
         text = self.get_selection()
+        if not text:
+            text = self.text
         if text != "":
             SDL_SetClipboardText(text.encode('utf-8'))
 
@@ -8840,6 +8927,21 @@ rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
 
+text_plex_usr = TextBox2()
+text_plex_pas = TextBox2()
+text_plex_ser = TextBox2()
+
+text_koel_usr = TextBox2()
+text_koel_pas = TextBox2()
+text_koel_ser = TextBox2()
+
+text_air_usr = TextBox2()
+text_air_pas = TextBox2()
+text_air_ser = TextBox2()
+
+text_spot_client = TextBox2()
+text_spot_secret = TextBox2()
+
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
@@ -8873,6 +8975,15 @@ class GallClass:
     def worker_render(self):
 
         self.lock.acquire()
+        #time.sleep(0.1)
+
+        if search_over.active:
+            while QuickThumbnail.queue:
+                img = QuickThumbnail.queue.pop(0)
+                response = urllib.request.urlopen(img.url)
+                source_image = io.BytesIO(response.read())
+                img.read_and_thumbnail(source_image, img.size, img.size)
+                gui.update += 1
 
         while len(self.queue) > 0:
 
@@ -8908,8 +9019,8 @@ class GallClass:
                     if parent_folder in folder_image_offsets:
                         offset = folder_image_offsets[parent_folder]
                     img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(offset)
-                    if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                        source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
+                    if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
+                        source_image = open(os.path.join(g_cache_dir, img_name + '.jpg'), 'rb')
                         #print('load from cache')
                         cache_load = True
                     else:
@@ -8929,9 +9040,9 @@ class GallClass:
 
                     # gall_render_last_timer.set()
 
-                    if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                        source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
-                        print('load from cache')
+                    if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
+                        source_image = open(os.path.join(g_cache_dir, img_name + '.jpg'), 'rb')
+                        print("slow load image")
                         cache_load = True
 
                     # elif source[0] == 1:
@@ -8964,8 +9075,8 @@ class GallClass:
 
                     im.save(g, 'BMP')
                     
-                    if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                        im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
+                    if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
+                        im.save(os.path.join(g_cache_dir, img_name + '.jpg'), 'JPEG', quality=95)
 
                 g.seek(0)
 
@@ -9098,6 +9209,7 @@ class GallClass:
 
 
 gall_ren = GallClass(album_mode_art_size)
+tauon.gall_ren = gall_ren
 
 pl_thumbnail = GallClass(save_out=False)
 
@@ -9108,10 +9220,10 @@ class ThumbTracks:
 
     def path(self, track):
         image_name = track.album
-        if image_name == "":
+        if not image_name:
+            image_name = track.filename
+        if not image_name:
             image_name = track.title
-        if image_name == "":
-            image_name = "noname"
 
         source, offset = gall_ren.get_file_source(track)
 
@@ -9122,22 +9234,12 @@ class ThumbTracks:
         image_name += "-" + str(offset)
         image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
-
-        #t_path = user_directory + "/cache/" + image_name + '.jpg'
-        t_path = os.path.join(cache_directory, image_name + '.jpg')
+        t_path = os.path.join(e_cache_dir, image_name + '.jpg')
 
         if os.path.isfile(t_path):
             return t_path
 
         source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
-
-        if not os.path.isdir(cache_directory):
-            os.makedirs(cache_directory)
-
-
-        # with open("test", 'wb') as w:
-        #     w.write(source_image.read())
-
 
         im = Image.open(source_image)
         if im.mode != "RGB":
@@ -9186,15 +9288,13 @@ def clear_img_cache(delete_disk=True):
         SDL_DestroyTexture(value[2])
     gall_ren.gall = {}
 
-    if prefs.cache_gallery and delete_disk:
-        direc = os.path.join(cache_directory)
-        if os.path.isdir(direc):
-            for item in os.listdir(direc):
-                path = os.path.join(direc, item)
-                if "-lfm" not in item and "-ftv" not in item and "-dcg" not in item and os.path.isfile(path):
+    if delete_disk:
+        dirs = [g_cache_dir, n_cache_dir, e_cache_dir]
+        for direc in dirs:
+            if os.path.isdir(direc):
+                for item in os.listdir(direc):
+                    path = os.path.join(direc, item)
                     os.remove(path)
-        else:
-            os.makedirs(direc)
 
     prefs.failed_artists.clear()
     for key, value in artist_list_box.thumb_cache.items():
@@ -9214,7 +9314,7 @@ def clear_track_image_cache(track):
     if gall_ren.queue:
         time.sleep(0.5)
 
-    direc = os.path.join(cache_directory)
+    direc = os.path.join(g_cache_dir)
     if os.path.isdir(direc):
         for item in os.listdir(direc):
             n = item.split("-")
@@ -9550,11 +9650,6 @@ class AlbumArt():
         if subsource is None:
             subsource = sources[offset]
 
-        cached = self.bin_cached
-
-        #if cached[0] == track and cached[1] == subsource:
-        #    return cached[2]
-
         if subsource[0] == 1:
             # Target is a embedded image\\\
             pic = self.get_embed(track)
@@ -9563,24 +9658,32 @@ class AlbumArt():
 
         elif subsource[0] == 2:
             try:
-                if track.file_ext == "RADIO":
+                if track.file_ext == "RADIO" or track.file_ext == "Spotify":
                     if pctl.radio_image_bin:
-                        source_image = pctl.radio_image_bin
+                        return pctl.radio_image_bin
 
-                elif track.file_ext == "SUB":
-                    source_image = subsonic.get_cover(track)
+                cached_path = os.path.join(n_cache_dir, hashlib.md5(track.art_url_key.encode()).hexdigest()[:12])
+                if os.path.isfile(cached_path):
+                    source_image = open(cached_path, 'rb')
                 else:
-                    response = urllib.request.urlopen(get_network_thumbnail_url(track))
-                    source_image = io.BytesIO(response.read())
+                    if track.file_ext == "SUB":
+                        source_image = subsonic.get_cover(track)
+                    else:
+                        response = urllib.request.urlopen(get_network_thumbnail_url(track))
+                        source_image = io.BytesIO(response.read())
+                    if source_image:
+                        f = open(cached_path, 'wb')
+                        f.write(source_image.read())
+                        f.close()
+                        source_image.seek(0)
+
             except:
                 # raise
                 pass
-                # print("IMAGE NETWORK LOAD ERROR")
 
         else:
             source_image = open(subsource[1], 'rb')
 
-        #self.bin_cached = (track, subsource, source_image)
         return source_image
 
     def get_base64(self, track, size):
@@ -10610,7 +10713,6 @@ def load_pls(path):
 
 
 def load_xspf(path):
-    global master_count
     global to_got
 
     name = os.path.basename(path)[:-5]
@@ -10757,7 +10859,7 @@ def load_xspf(path):
 
         if not found and 'location' in track or 'title' in track:
             nt = TrackClass()
-            nt.index = master_count
+            nt.index = pctl.master_count
             nt.found = False
 
             if 'location' in track:
@@ -10783,9 +10885,9 @@ def load_xspf(path):
             if nt.found:
                 nt = tag_scan(nt)
 
-            pctl.master_library[master_count] = nt
-            playlist.append(master_count)
-            master_count += 1
+            pctl.master_library[pctl.master_count] = nt
+            playlist.append(pctl.master_count)
+            pctl.master_count += 1
             if nt.found:
                 continue
 
@@ -10835,6 +10937,7 @@ message_tick_icon = asset_loader("done.png")
 message_arrow_icon = asset_loader("ext.png")
 message_error_icon = asset_loader("error.png")
 message_bubble_icon = asset_loader("bubble.png")
+message_download_icon = asset_loader("ddl.png")
 
 
 class ToolTip:
@@ -10982,7 +11085,7 @@ class ToolTip3:
 
 columns_tool_tip = ToolTip3()
 
-
+tool_tip_instant = ToolTip3()
 # Right click context menu generator
 
 class MenuIcon:
@@ -11956,8 +12059,8 @@ def toggle_bio_size():
 
 def flush_artist_bio(artist):
 
-    if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
-        os.remove(os.path.join(cache_directory, artist + '-lfm.txt'))
+    if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
+        os.remove(os.path.join(a_cache_dir, artist + '-lfm.txt'))
     artist_info_box.text = ""
     artist_info_box.artist_on = None
 
@@ -12477,7 +12580,6 @@ def get_lyric_fire(track_object, silent=False):
                     console.print(f"Found lyrics from {name}", level=1)
                     track_object.lyrics = lyrics
                     found = True
-                    break
             except Exception as e:
                 console.print(str(e))
 
@@ -13109,19 +13211,23 @@ def append_here():
 def paste_deco():
 
     active = False
+    line = None
     if len(cargo) > 0:
         active = True
     elif SDL_HasClipboardText():
         text = copy_from_clipboard()
         if text.startswith("/") or "file://" in text:
             active = True
+        elif prefs.spot_mode and text.startswith("https://open.spotify.com/album/"): # or text.startswith("https://open.spotify.com/track/"):
+            active = True
+            line = _("Paste Spotify Album")
 
     if active:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
-    return [line_colour, colours.menu_background, None]
+    return [line_colour, colours.menu_background, line]
 
 
 def lightning_move_test(discard):
@@ -13811,6 +13917,12 @@ def sort_path_pl(pl, custom_list=None):
     target.sort(key=path)
 
 def append_current_playing(index):
+
+    if spot_ctl.coasting:
+        spot_ctl.append_playing(index)
+        gui.pl_update = 1
+        return
+
     if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
         pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
         gui.pl_update = 1
@@ -14001,11 +14113,16 @@ def new_playlist(switch=True):
     return len(pctl.multi_playlist) - 1
 
 heartx_icon = MenuIcon(asset_loader('heart-menu.png', True))
+spot_heartx_icon = MenuIcon(asset_loader('heart-menu.png', True))
 transcode_icon = MenuIcon(asset_loader('transcode.png', True))
 mod_folder_icon = MenuIcon(asset_loader('mod_folder.png', True))
 settings_icon = MenuIcon(asset_loader('settings2.png', True))
 rename_tracks_icon = MenuIcon(asset_loader('pen.png', True))
 add_icon = MenuIcon(asset_loader('new.png', True))
+spot_icon = MenuIcon(asset_loader('spot.png', True))
+spot_icon.colour = [30, 215, 96, 255]
+spot_icon.xoff = 5
+spot_icon.yoff = 2
 
 tab_menu.br()
 
@@ -14016,7 +14133,11 @@ def append_deco():
     else:
         line_colour = colours.menu_text_disabled
 
-    return [line_colour, colours.menu_background, None]
+    text = None
+    if spot_ctl.coasting:
+        text = _("Add Spotify Album")
+
+    return [line_colour, colours.menu_background, text]
 
 
 def rescan_deco(pl):
@@ -14488,13 +14609,15 @@ def regenerate_playlist(pl, silent=False):
             playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
         # SEARCH GENRE
-        elif cm.startswith("g\"") and len(cm) > 3:
+        elif (cm.startswith("g\"") or cm.startswith("gm\"") or cm.startswith("g=\"")) and len(cm) > 3:
 
             if not selections:
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
-            search = quote
+            g_search = quote.lower().replace("-", "").replace(" ", "")
+
+            search = g_search
             search_over.sip = True
             search_over.search_text.text = search
             try:
@@ -14506,11 +14629,25 @@ def regenerate_playlist(pl, silent=False):
 
             found_name = ""
 
-            for result in search_over.results:
-                if result[0] == 3:
-                    found_name = result[1]
-                    break
-            else:
+
+            if cm.startswith("g=\""):
+                for result in search_over.results:
+                    if result[0] == 3 and result[1].lower().replace("-", "").replace(" ", "") == g_search:  #
+                        found_name = result[1]
+                        break
+            elif cm.startswith("g\"") or not prefs.sep_genre_multi:
+                for result in search_over.results:
+                    if result[0] == 3:
+                        found_name = result[1]
+                        break
+            elif cm.startswith("gm\""):
+                for result in search_over.results:
+                    if result[0] == 3 and result[1].endswith("+"):  #
+                        found_name = result[1]
+                        break
+
+
+            if not found_name:
                 print("No genre search result found")
                 continue
 
@@ -16004,6 +16141,18 @@ def paste(playlist_no=None, track_id=None):
 
     clip = copy_from_clipboard()
 
+    if clip.startswith("https://open.spotify.com/track/"):
+       show_message("Pasting Spotify track not implemented")
+    elif clip.startswith("https://open.spotify.com/album/"):
+        cargo[:] = spot_ctl.append_album(clip, return_list=True)[:]
+        clip = False
+    elif clip.startswith("https://open.spotify.com/playlist/"):
+        spot_ctl.playlist(clip)
+        if album_mode:
+            reload_albums()
+        gui.pl_update += 1
+        return
+
     found = False
     if clip:
         clip = clip.split("\n")
@@ -16110,7 +16259,6 @@ def del_selected(force_delete=False):
 def force_del_selected():
     del_selected(force_delete=True)
 
-
 def test_show(dummy):
     return album_mode
 
@@ -16122,7 +16270,7 @@ def show_in_gal(track, silent=False):
 
 
 # Create track context menu
-track_menu = Menu(195, show_icons=True) #175
+track_menu = Menu(195, show_icons=True)
 
 track_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 track_menu.add(_('Track Info…'), activate_track_box, pass_ref=True, icon=info_icon)
@@ -16143,11 +16291,28 @@ def heart_xmenu_colour():
             return [255, 150, 180, 255]
         return None
 
-
 heartx_icon.colour = [55, 55, 55, 255]
 heartx_icon.xoff = 1
 heartx_icon.yoff = 0
 heartx_icon.colour_callback = heart_xmenu_colour
+
+
+def spot_heart_xmenu_colour():
+    if not (pctl.playing_state == 1 or pctl.playing_state == 2):
+        return None
+    tr = pctl.playing_object()
+    if tr and "spotify-liked" in tr.misc:
+        return [30, 215, 96, 255]
+    else:
+        return None
+
+
+
+spot_heartx_icon.colour = [30, 215, 96, 255]
+spot_heartx_icon.xoff = 3
+spot_heartx_icon.yoff = 0
+spot_heartx_icon.colour_callback = spot_heart_xmenu_colour
+
 
 def love_decox():
     global r_menu_index
@@ -17092,7 +17257,7 @@ def clip_title(index):
     SDL_SetClipboardText(line.encode('utf-8'))
 
 selection_menu = Menu(190, show_icons=False)
-folder_menu = Menu(190, show_icons=True)
+folder_menu = Menu(193, show_icons=True)
 
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
@@ -17156,8 +17321,34 @@ folder_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=
 gallery_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
 
+spot_ctl = SpotCtl(tauon)
+tauon.spot_ctl = spot_ctl
+spot_ctl.load_token()
+
 # Copy album title text to clipboard
 folder_menu.add(_('Copy "Artist - Album"'), clip_title, pass_ref=True)
+
+def get_album_spot_url(track_id):
+    track_object = pctl.g(track_id)
+    url = spot_ctl.get_album_url_from_local(track_object)
+    if url:
+        copy_to_clipboard(url)
+        show_message(_("URL copied to clipboard"), mode="done")
+    else:
+        show_message(_("No results found"))
+
+def spotify_show_test(_):
+    return prefs.spot_mode
+
+def get_album_spot_url_deco(track_id):
+    track_object = pctl.g(track_id)
+    if "spotify-album-url" in track_object.misc:
+        text = _("Copy Spotify Album URL")
+    else:
+        text = _("Lookup Spotify Album URL")
+    return [colours.menu_text, colours.menu_background, text]
+
+folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_url_deco, pass_ref=True, pass_ref_deco=True, show_test=spotify_show_test, icon=spot_icon)
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
@@ -17190,6 +17381,11 @@ def toggle_rym(mode=0):
         return prefs.show_rym
     prefs.show_rym ^= True
 
+def toggle_band(mode=0):
+    if mode == 1:
+        return prefs.show_band
+    prefs.show_band ^= True
+
 def toggle_wiki(mode=0):
     if mode == 1:
         return prefs.show_wiki
@@ -17205,6 +17401,26 @@ def toggle_gen(mode=0):
     if mode == 1:
         return prefs.show_gen
     prefs.show_gen ^= True
+
+
+
+
+def ser_band_done(result):
+    if result:
+        webbrowser.open(result, new=2, autoraise=True)
+        gui.message_box = False
+        gui.update += 1
+    else:
+        show_message(_("No matching artist result found"))
+
+
+def ser_band(track_id):
+    tr = pctl.g(track_id)
+    if tr.artist:
+        shoot_dl = threading.Thread(target=bandcamp_search, args=([tr.artist, ser_band_done]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
+        show_message(_("Searching..."))
 
 
 def ser_rym(index):
@@ -17266,6 +17482,8 @@ son_icon.base_asset = asset_loader('sonemic-gs.png')
 son_icon.xoff = 1
 track_menu.add(_('Search Artist on Sonemic'), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
 
+track_menu.add(_('Search Artist on Bandcamp'), ser_band, pass_ref=True, show_test=toggle_band)
+
 
 def clip_ar_tr(index):
     line = pctl.master_library[index].artist + " - " + \
@@ -17277,6 +17495,24 @@ def clip_ar_tr(index):
 #track_menu.add(_('Copy "Artist - Album"'), clip_aar_al, pass_ref=True)
 # Copy metadata to clipboard
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
+
+
+def get_track_spot_url_show_test(_):
+
+    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+        return True
+    return False
+
+def get_track_spot_url(track_id):
+    track_object = pctl.g(track_id)
+    url = track_object.misc.get("spotify-track-url")
+    if url:
+        copy_to_clipboard(url)
+        show_message("Url copied to clipboard", mode="done")
+    else:
+        show_message("No results found")
+
+track_menu.add(_('Copy Spotify Track URL'), get_track_spot_url, pass_ref=True, show_test=get_track_spot_url_show_test, icon=spot_icon)
 
 
 def drop_tracks_to_new_playlist(track_list, hidden=False):
@@ -18080,6 +18316,28 @@ def adl_test(_):
 
 x_menu.add(_("Download URL"), auto_download, show_test=adl_test)
 
+def adl_test(_):
+    if downloaders:
+        return True
+    return False
+
+def import_spotify_playlist():
+    clip = copy_from_clipboard()
+    if not clip.startswith("https://open.spotify.com/playlist/"):
+        return
+    spot_ctl.playlist(clip)
+    if album_mode:
+        reload_albums()
+    gui.pl_update += 1
+
+def import_spotify_playlist_deco():
+    clip = copy_from_clipboard()
+    if clip.startswith("https://open.spotify.com/playlist/"):
+        return [colours.menu_text, colours.menu_background, None]
+    return [colours.menu_text_disabled, colours.menu_background, None]
+
+x_menu.add(_("Paste Spotify Playlist"), import_spotify_playlist, import_spotify_playlist_deco, show_test=spotify_show_test)
+
 
 def show_import_music(_):
     return gui.add_music_folder_ready
@@ -18495,6 +18753,29 @@ def select_love():
 
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
+def toggle_spotify_like_active():
+    tr = pctl.playing_object()
+    if tr and "spotify-track-url" in tr.misc:
+        if "spotify-liked" in tr.misc:
+            spot_ctl.like_track(tr)
+        else:
+            spot_ctl.like_track(tr)
+
+def toggle_spotify_like_active_deco():
+    tr = pctl.playing_object()
+    text = _("Spotify Like Track")
+    if not tr or not "spotify-track-url" in tr.misc:
+        return [colours.menu_text_disabled, colours.menu_background, text]
+    if "spotify-liked" in tr.misc:
+        text = _("Un-like Spotify Track")
+
+    return [colours.menu_text, colours.menu_background, text]
+
+
+extra_menu.add('Spotify Like Track', toggle_spotify_like_active, toggle_spotify_like_active_deco, show_test=spotify_show_test, icon=spot_heartx_icon)
+
+
+
 
 def locate_artist():
     track = pctl.playing_object()
@@ -18557,15 +18838,38 @@ def activate_search_overlay():
     search_over.delay_enter = False
     search_over.search_text.selection = 0
     search_over.search_text.cursor_position = 0
+    search_over.spotify_mode = False
 
 
 extra_menu.add(_('Global Search'), activate_search_overlay, hint="CTRL + G")
 
+def get_album_spot_url_active():
+    tr = pctl.playing_object()
+    if tr:
+        url = spot_ctl.get_album_url_from_local(tr)
+        if url:
+            copy_to_clipboard(url)
+            show_message(_("URL copied to clipboard"), mode="done")
+        else:
+            show_message(_("No results found"))
+
+def get_album_spot_url_actove_deco():
+    tr = pctl.playing_object()
+    text = _("Copy Album URL")
+    if not tr:
+        return [colours.menu_text_disabled, colours.menu_background, text]
+    if not "spotify-album-url" in tr.misc:
+        text = _("Lookup Spotify Album")
+
+    return [colours.menu_text, colours.menu_background, text]
+
+extra_menu.add("Copy Spotify URL", get_album_spot_url_active, get_album_spot_url_actove_deco, show_test=spotify_show_test, icon=spot_icon)
+
 def goto_playing_extra():
     pctl.show_current(highlight=True)
 
-
 extra_menu.add(_("Locate Artist"), locate_artist)
+
 extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="QUOTE")
 
 
@@ -18948,7 +19252,18 @@ discord_icon.colour = [115, 138, 219, 255]
 discord_icon.xoff = 3
 #discord_icon.colour_callback = broadcast_colour
 
-x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
+x_menu.add("Show Playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
+
+def show_spot_playing_deco():
+    if pctl.playing_state == 0:
+        return [colours.menu_text, colours.menu_background, None]
+    else:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+def show_spot_playing():
+    if pctl.playing_state == 0:
+        spot_ctl.update()
+x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test, icon=spot_icon)
 
 
 def stop_a01():
@@ -19265,7 +19580,6 @@ def cue_scan(content, tn):
 
     #print(content)
 
-    global master_count
     global added
 
     cued = []
@@ -19359,7 +19673,7 @@ def cue_scan(content, tn):
             nt.cue_sheet = ""
             nt.is_embed_cue = True
 
-            nt.index = master_count
+            nt.index = pctl.master_count
             # nt.fullpath = filepath.replace('\\', '/')
             # nt.filename = filename
             # nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
@@ -19382,13 +19696,13 @@ def cue_scan(content, tn):
             if TN == 1:
                 nt.size = os.path.getsize(nt.fullpath)
 
-            pctl.master_library[master_count] = nt
+            pctl.master_library[pctl.master_count] = nt
 
-            cued.append(master_count)
-            # loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
-            #added.append(master_count)
+            cued.append(pctl.master_count)
+            # loaded_pathes_cache[filepath.replace('\\', '/')] = pctl.master_count
+            #added.append(pctl.master_count)
 
-            master_count += 1
+            pctl.master_count += 1
             LENGTH = 0
             PERFORMER = ""
             TITLE = ""
@@ -19450,6 +19764,7 @@ class SearchOverlay:
         self.animate_timer = Timer(100)
         self.input_timer = Timer(100)
         self.all_folders = False
+        self.spotify_mode = False
 
 
     def clear(self):
@@ -19571,12 +19886,10 @@ class SearchOverlay:
             for pl in pctl.multi_playlist:
                 search_lists.append(pl[2])
 
-
         include_multi = False
-        if name.endswith("+"):
+        if name.endswith("+") or not prefs.sep_genre_multi:
             name = name.rstrip("+")
             include_multi = True
-
 
         for pl in search_lists:
             for item in pl:
@@ -19601,7 +19914,10 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "g\"" + name + "\""
+        if include_multi:
+            pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "gm\"" + name + "\""
+        else:
+            pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "g=\"" + name + "\""
 
 
         input.key_return_press = False
@@ -19703,7 +20019,11 @@ class SearchOverlay:
                     a = 100
                     if round((t * 14)) % 4 == item:
                         a = 255
-                    colour = (140,100,255,a)
+                    if self.spotify_mode:
+                        colour = (145, 245, 78, a)
+                    else:
+                        colour = (140, 100, 255, a)
+
                     ddt.rect((x, y, s, s), colour, True)
                     x += g + s
 
@@ -19715,6 +20035,12 @@ class SearchOverlay:
                     ddt.text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
             self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
+
+            if input.key_tab_press:
+                search_over.spotify_mode ^= True
+                self.sip = True
+                search_over.searched_text = search_over.search_text.text
+                worker2_lock.release()
 
             if input_text or key_backspace_press:
                 self.input_timer.set()
@@ -19735,18 +20061,23 @@ class SearchOverlay:
 
             if key_down_press:
 
-                if self.force_select > -1:
-                    self.on = self.force_select
-                    self.force_select = -1
-                self.on += 1
+                self.force_select += 1
+                if self.force_select > 4:
+                    self.on = self.force_select - 4
                 self.old_mouse = copy.deepcopy(mouse_position)
 
             if key_up_press:
 
                 if self.force_select > -1:
-                    self.on = self.force_select
-                    self.force_select = -1
-                self.on -= 1
+                    self.force_select -= 1
+                    if self.force_select < 0:
+                        self.force_select = 0
+
+                    if self.force_select < self.on + 4:
+                        self.on = self.force_select - 4
+                        if self.on < 0:
+                            self.on = 0
+
                 self.old_mouse = copy.deepcopy(mouse_position)
 
             if mouse_wheel == -1:
@@ -19789,6 +20120,7 @@ class SearchOverlay:
 
             if self.on > 4:
                 p += self.on - 4
+            p = self.on - 1
 
             for i, item in enumerate(self.results):
 
@@ -19863,10 +20195,148 @@ class SearchOverlay:
 
                     yy += 6 * gui.scale
 
+                # Spotify Artist
+                if item[0] == 10:
+                    cl = [145, 245, 78, int(255 * fade)]
+                    text = "Artist"
+                    yy += 3 * gui.scale
+                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    go = False
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+
+                            if key_ctrl_down:
+                                #default_playlist.extend(self.click_artist(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                go = True
+                                #spot_ctl.artist_playlist(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        go = True
+                        #spot_ctl.artist_playlist(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+                    if go:
+                        show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
+                        shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
+                        shoot.daemon = True
+                        shoot.start()
+
+                # Spotify Album
+                if item[0] == 11:
+
+                    if not item[5]:
+                        cl = [130, 237, 69, int(255 * fade)]
+                        text = "Album"
+                        yy += 3 * gui.scale
+                        xx = ddt.text((120 * gui.scale, yy), " - ".join(item[1]), [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+
+                        ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                        if fade == 1:
+                            ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                        fields.add(rect)
+                        full = False
+
+                    else:
+
+                        yy += 3 * gui.scale
+                        xx = ddt.text((120 * gui.scale, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                        artist = item[1][1]
+
+                        ddt.text((125 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8 * gui.scale
+
+                        xx += ddt.text((150 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                        ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150], True)
+                        #gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
+                        if not item[5].draw(50 * gui.scale, yy + 5):
+                            try:
+                                gall_ren.lock.release()
+                            except:
+                                pass
+
+                        if fade != 1:
+                            ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
+                        full = True
+                        full_count += 1
+
+                        if fade == 1:
+                            ddt.rect((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), bar_colour, True)
+
+                        if key_ctrl_down and item[2] in default_playlist:
+                            ddt.rect((24 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), track_in_bar_colour, True)
+
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
+                        fields.add(rect)
+
+
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+
+                            if key_ctrl_down:
+                                #default_playlist.extend(self.click_artist(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                spot_ctl.append_album(item[2])
+                                #self.click_artist(item[1])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        spot_ctl.append_album(item[2])
+                        #self.click_artist(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    if full:
+                        yy += 47 * gui.scale
+                    else:
+                        yy += 6 * gui.scale
+
+
                 if item[0] == 1:
 
-                    yy += 5 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    yy += 3 * gui.scale
+                    xx = ddt.text((120 * gui.scale, yy + round(5 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                     artist = pctl.master_library[item[2]].album_artist
                     if artist == "":
@@ -19874,10 +20344,10 @@ class SearchOverlay:
 
                     if full_count < 7:
 
-                        ddt.text((125 * gui.scale, yy + 25 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.text((125 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
-                        xx += ddt.text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += ddt.text((150 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150], True)
                         gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
@@ -19942,7 +20412,7 @@ class SearchOverlay:
                         self.search_text.text = ""
 
                     if full:
-                        yy += 50 * gui.scale
+                        yy += 47 * gui.scale
 
                 if item[0] == 2:
                     cl = [250, 220, 190, int(255 * fade)]
@@ -20255,6 +20725,8 @@ class MessageBox:
             message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
         elif gui.message_mode == 'arrow':
             message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+        elif gui.message_mode == 'download':
+            message_download_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
         elif gui.message_mode == 'error':
             message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
         elif gui.message_mode == 'bubble':
@@ -20314,13 +20786,27 @@ def worker4():
 
 
 worker2_lock = threading.Lock()
+spot_search_rate_timer = Timer()
+
 def worker2():
 
     while True:
         worker2_lock.acquire()
 
         if len(search_over.search_text.text) > 1:
-            if True:
+
+            if search_over.spotify_mode:
+                t = spot_search_rate_timer.get()
+                if t < 1:
+                    time.sleep(1 - t)
+                    spot_search_rate_timer.set()
+                print("Spotify search")
+                search_over.results = spot_ctl.search(search_over.search_text.text)
+                search_over.searched_text = search_over.search_text.text
+                #search_over.spotify_mode = False
+                search_over.sip = False
+
+            elif True:
                 #perf_timer.set()
 
                 temp_results = []
@@ -20445,18 +20931,21 @@ def worker2():
                                 for split in genre.replace(",", "/").split("/"):
                                     if s_text in split:
 
-                                        split = split.strip().title() + "+"
+                                        split = genre_correct(split)
+                                        if prefs.sep_genre_multi:
+                                            split += "+"
                                         if split in genres:
                                             genres[split] += 3
                                         else:
                                             temp_results.append([3, split, track, playlist[6], 0])
                                             genres[split] = 1
                             else:
-                                if t.genre.title() in genres:
-                                    genres[t.genre.title()] += 3
+                                name = genre_correct(t.genre)
+                                if name in genres:
+                                    genres[name] += 3
                                 else:
-                                    temp_results.append([3, t.genre.title(), track, playlist[6], 0])
-                                    genres[t.genre.title()] = 1
+                                    temp_results.append([3, name, track, playlist[6], 0])
+                                    genres[name] = 1
 
                         if s_text in composer:
 
@@ -20622,7 +21111,6 @@ def worker2():
                             del temp_results[i]
 
                 # Sort results by weightings
-
                 for i, item in enumerate(temp_results):
                     if item[0] == 0:
                         temp_results[i][4] = artists[item[1]]
@@ -20643,6 +21131,7 @@ def worker2():
 
                 temp_results[:] = [item for item in temp_results if item is not None]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
+                # print(search_over.results)
 
                 i = 0
                 for playlist in pctl.multi_playlist:
@@ -20684,7 +21173,6 @@ def worker1():
     global loaderCommand
     global loaderCommandReady
     global DA_Formats
-    global master_count
     global home
     global loading_in_progress
     global added
@@ -20724,7 +21212,6 @@ def worker1():
     def add_from_cue(path):
 
         global added
-        global master_count
 
         if not msys:  # Windows terminal doesn't like unicode
             console.print("Reading CUE file: " + path)
@@ -20855,8 +21342,8 @@ def worker1():
                         line = line[:-5]
 
                     nt = TrackClass()
-                    nt.index = master_count
-                    master_count += 1
+                    nt.index = pctl.master_count
+                    pctl.master_count += 1
                     nt.fullpath = file_path
                     nt.filename = file_name
                     nt.parent_folder_path = os.path.dirname(file_path.replace('\\', '/'))
@@ -20935,7 +21422,6 @@ def worker1():
 
     def add_file(path, force_scan=False):
         # bm.get("add file start")
-        global master_count
         global DA_Formats
         global to_got
 
@@ -21093,7 +21579,7 @@ def worker1():
 
         nt = TrackClass()
 
-        nt.index = master_count
+        nt.index = pctl.master_count
         nt.fullpath = path.replace('\\', '/')
         nt.filename = os.path.basename(path)
         nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
@@ -21107,8 +21593,8 @@ def worker1():
 
         else:
 
-            pctl.master_library[master_count] = nt
-            added.append(master_count)
+            pctl.master_library[pctl.master_count] = nt
+            added.append(pctl.master_count)
 
 
             if prefs.auto_sort or force_scan:
@@ -21116,11 +21602,11 @@ def worker1():
             else:
                 after_scan.append(nt)
 
-            master_count += 1
+            pctl.master_count += 1
 
         # bm.get("fill entry")
         if gui.auto_play_import:
-            pctl.jump(master_count - 1)
+            pctl.jump(pctl.master_count - 1)
             gui.auto_play_import = False
 
     # Count the approx number of files to be imported
@@ -21139,7 +21625,6 @@ def worker1():
     def gets(direc, force_scan=False):
 
         global DA_Formats
-        global master_count
 
         if os.path.basename(direc) == "__MACOSX":
             return
@@ -21748,7 +22233,7 @@ def gen_power2():
     return h
 
 
-def reload_albums(quiet=False, return_playlist=-1):
+def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     global album_dex
     global update_layout
     global old_album_pos
@@ -21757,18 +22242,18 @@ def reload_albums(quiet=False, return_playlist=-1):
         # Doing reload while things are being removed may cause crash
         return
 
-    # if not quiet:
-    #     gui.album_scroll_px = old_album_pos
     dex = []
     current_folder = ""
     current_album = ""
 
-    # if True:
-    target_pl_no = pctl.active_playlist_viewing
-    if return_playlist > -1:
-        target_pl_no = return_playlist
+    if custom_list is not None:
+        playlist = custom_list
+    else:
+        target_pl_no = pctl.active_playlist_viewing
+        if return_playlist > -1:
+            target_pl_no = return_playlist
 
-    playlist = pctl.multi_playlist[target_pl_no][2]
+        playlist = pctl.multi_playlist[target_pl_no][2]
 
     for i in range(len(playlist)):
         tr = pctl.master_library[playlist[i]]
@@ -21786,19 +22271,7 @@ def reload_albums(quiet=False, return_playlist=-1):
                 current_folder = tr.parent_folder_name
                 current_album = tr.album
 
-    #
-    # else:
-    #
-    #     for i in range(len(default_playlist)):
-    #         if i == 0:
-    #             album_dex.append(i)
-    #             current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-    #         else:
-    #             if pctl.master_library[default_playlist[i]].parent_folder_name != current_folder:
-    #                 current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-    #                 album_dex.append(i)
-
-    if return_playlist > -1:
+    if return_playlist > -1 or custom_list:
         return dex
 
     album_dex = dex
@@ -21820,6 +22293,7 @@ def reload_albums(quiet=False, return_playlist=-1):
 # WEBSERVER
 
 from t_modules.t_webserve import webserve
+from t_modules.t_webserve import authserve
 
 if prefs.enable_web is True:
     webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
@@ -21895,8 +22369,9 @@ def rating_toggle(mode=0):
     if gui.show_ratings:
         # gui.show_hearts = False
         gui.star_mode = 'none'
+        prefs.rating_playtime_stars = True
         if not prefs.write_ratings:
-            show_message(_("Note that ratings are stored in the local database only and not read/written to tags."))
+            show_message(_("Note that ratings are stored in the local database and not written to tags."))
 
     gui.update += 1
     gui.pl_update = 1
@@ -22245,8 +22720,8 @@ def toggle_transcode_output(mode=0):
     if prefs.transcode_inplace:
         transcode_icon.colour = [250, 20, 20, 255]
         show_message(
-            "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
-            "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.",
+            _("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
+            _("For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."),
             mode='warning')
     else:
         transcode_icon.colour = [239, 74, 157, 255]
@@ -22444,12 +22919,21 @@ def set_player_gstreamer(mode=0):
 def gen_chart():
 
     try:
-        dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+
         topchart = t_topchart.TopChart(tauon, album_art_gen)
 
         tracks = []
+
+        source_tracks = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+
+        if prefs.topchart_sorts_played:
+            source_tracks = gen_folder_top(0, custom_list=source_tracks)
+            dex = reload_albums(quiet=True, custom_list=source_tracks)
+        else:
+            dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+
         for item in dex:
-            tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
+            tracks.append(pctl.g(source_tracks[item]))
 
         cascade = False
         if prefs.chart_cascade:
@@ -22552,7 +23036,9 @@ class Over:
         self.eq_view = False
         self.sync_view = False
 
+        self.account_text_field = -1
 
+        self.themes = []
 
     # def config_a(self, x0, y0, w0, h0):
     #
@@ -22573,7 +23059,7 @@ class Over:
 
         y += 25 * gui.scale
 
-        self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
+        self.toggle_square(x, y, toggle_auto_theme, _("Auto-theme from album art"))
 
         y += 25 * gui.scale
 
@@ -22596,21 +23082,115 @@ class Over:
         #prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
         prefs.showcase_overlay_texture = self.toggle_square(x + 20 * gui.scale, y, prefs.showcase_overlay_texture, _("Pattern style"))
 
-        y += 65 * gui.scale
+        y += 48 * gui.scale
 
-        #. Limited space. Max 14 chars.
-        self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
-        #. Limited space. Max 14 chars.
-        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
-        ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.box_text_label, 213)
+        square = round(8 * gui.scale)
+        border = round(4 * gui.scale)
+        outer_border = round(2 * gui.scale)
 
-        if gui.theme_name == "Neon Love":
-            x += 240 * gui.scale
-            y += 7 * gui.scale
+        #theme_files = get_themes()
+        xx = x
+        yy = y
+        hover_name = None
+        for c, theme_name, theme_number in self.themes:
+
+            if theme_name == gui.theme_name:
+                rect = [xx - outer_border, yy - outer_border, border * 2 + square * 2 + outer_border * 2, border * 2 + square * 2 + outer_border * 2]
+                ddt.rect(rect, colours.box_text_label, True)
+
+            rect = [xx, yy, border * 2 + square * 2, border * 2 + square * 2]
+            ddt.rect(rect, [5,5,5,255], True)
+
+            rect = grow_rect(rect, 3)
+            fields.add(rect)
+            if coll(rect):
+                hover_name = theme_name
+                if self.click:
+                    global theme
+                    theme = theme_number
+                    gui.reload_theme = True
+
+            c1 = c.playlist_panel_background
+            c2 = c.artist_playing
+            c3 = c.title_playing
+            c4 = c.bottom_panel_colour
+
+            if theme_name == "Carbon":
+                c1 = c.title_playing
+                c2 = c.playlist_panel_background
+                c3 = c.top_panel_background
+
+            if theme_name == "Lavender Light":
+                c1 = c.tab_background_active
+
+            if theme_name == "Neon Love":
+                c2 = c.artist_text
+                c4 = [118, 85, 194, 255]
+                c1 = c4
+
+            if theme_name == "Sky":
+                c2 = c.artist_text
+
+            if theme_name == "Sunken":
+                c2 = c.title_text
+                c3 = c.artist_text
+                c4 = [59, 115, 109, 255]
+                c1 = c4
+
+            if c2 == c3 and colour_value(c1) < 200:
+                rect = [(xx + border + square) - (square // 2), (yy + border + square) - (square // 2), square, square]
+                ddt.rect(rect, c2, True)
+            else:
+
+                # tl
+                rect = [xx + border, yy + border, square, square]
+                ddt.rect(rect, c1, True)
+
+                # tr
+                rect = [xx + border + square, yy + border, square, square]
+                ddt.rect(rect, c2, True)
+
+                # bl
+                rect = [xx + border, yy + border + square, square, square]
+                ddt.rect(rect, c3, True)
+
+                # br
+                rect = [xx + border + square, yy + border + square, square, square]
+                ddt.rect(rect, c4, True)
+
+            # # bbl
+            # rect = [xx + border, yy + border + square + square, square, square]
+            # ddt.rect(rect, c.tab_highlight, True)
+            #
+            # # bbr
+            # rect = [xx + border + square, yy + border + square + square, square, square]
+            # ddt.rect(rect, c.title_text, True)
+
+            yy += round(27 * gui.scale)
+            if yy > y + 40 * gui.scale:
+                yy = y
+                xx += round(27 * gui.scale)
+
+            # xx += round(27 * gui.scale)
+            # if xx > x + 400 * gui.scale:
+            #     xx = x
+            #     yy += round(27 * gui.scale)
+
+        # #. Limited space. Max 14 chars.
+        # self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
+        # #. Limited space. Max 14 chars.
+        # self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
+        name = gui.theme_name
+        if hover_name:
+            name = hover_name
+        ddt.text((x, y - 23 * gui.scale), name, colours.box_text_label, 214)
+        #
+        if gui.theme_name == "Neon Love" and not hover_name:
+            x += 95 * gui.scale
+            y -= 23 * gui.scale
             # x += 165 * gui.scale
             # y += -19 * gui.scale
 
-            #ddt.text((x, y), "Adapted from ")
             link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
             link_activate(x, y, link_pa, click=self.click)
 
@@ -22623,7 +23203,7 @@ class Over:
         x = x0 + 130 * gui.scale
 
 
-        if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=55 * gui.scale):
+        if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=75 * gui.scale):
             self.eq_view = False
 
         base_dis = 160 * gui.scale
@@ -22970,23 +23550,23 @@ class Over:
 
         self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
 
-        y += 30 * gui.scale
+        #y += 30 * gui.scale
 
-        ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
+        # ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
 
-        y += 25 * gui.scale
-        prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
+        # y += 25 * gui.scale
+        # prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
 
         global album_mode_art_size
         global update_layout
-        y += 30 * gui.scale
+        y += 35 * gui.scale
         ddt.text((x, y), _("Gallery"), colours.box_text_label, 12)
 
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
         y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
+        self.toggle_square(x, y, toggle_galler_text, _("Show titles"))
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
         # y += 25 * gui.scale
@@ -22998,7 +23578,7 @@ class Over:
         #y += 25 * gui.scale
 
         x -= 80 * gui.scale
-        x += ddt.get_text_w( _("Gallery art size"), 11)
+        x += ddt.get_text_w( _("Thumbnail size"), 11)
         #x += 20 * gui.scale
 
         if album_mode_art_size < 160:
@@ -23006,7 +23586,7 @@ class Over:
 
         #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
-        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Thumbnail size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
 
 
@@ -23035,19 +23615,20 @@ class Over:
             y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
-                               _("Serve webpage for broadcast metadata"))
+                               _("Serve broadcast landing page"))
 
 
             y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_auto_artist_dl,
-                               _("Enable auto fetch artist data"))
+                               _("Auto fetch artist data"))
 
             y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
+            self.toggle_square(x, y, toggle_top_tabs, _("Enable tabs in top panel"))
 
-            y += 25 * gui.scale
-            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto update generated playlists"))
+            y += 10 * gui.scale
+            # y += 25 * gui.scale
+            # prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto-update generated playlists"))
 
             #y += 30 * gui.scale
             # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
@@ -23063,14 +23644,14 @@ class Over:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
             y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
+            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"))
             y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
+            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
 
-            y += 30 * gui.scale
+            y += 40 * gui.scale
 
             #. Limited width. Max 19 chars.
             # self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
@@ -23086,7 +23667,7 @@ class Over:
             bg = None
             if gui.opened_config_file:
                 bg = [90, 50, 130, 255]
-            self.button(x + wc + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
+                self.button(x + wc + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
 
             y += 30 * gui.scale
 
@@ -23126,7 +23707,7 @@ class Over:
                     if self.click:
                         webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
-            y += 60 * gui.scale
+            y += 37 * gui.scale
             x += 320 * gui.scale
 
             ddt.text((x, y), _("Show in context menus:"), colours.box_text_label, 11)
@@ -23135,13 +23716,15 @@ class Over:
             self.toggle_square(x, y, toggle_wiki, _("Wikipedia search"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_rym, _("Sonemic search"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_band, _("Bandcamp search"))
             # y += 23 * gui.scale
             # self.toggle_square(x, y, toggle_gimage, _("Google image search"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_gen, _("Genius search"))
             if discord_allow:
                 y += 23 * gui.scale
-                self.toggle_square(x, y, toggle_show_discord, _("Discord RP"))
+                self.toggle_square(x, y, toggle_show_discord, _("Discord RP Toggle"))
 
             #y = self.box_y + 216 * gui.scale
             x -= 55 * gui.scale
@@ -23260,12 +23843,12 @@ class Over:
         if last_fm_enable:
             if self.button2(x, y, "Last.fm", width=84*gui.scale):
                 self.account_view = 1
-            self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
+            self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
         y += 30 * gui.scale
 
         if self.button2(x, y, "ListenBrainz", width=84*gui.scale):
             self.account_view = 2
-        self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lb, _("Enable"))
+        self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lb, _("Enable"))
 
         y += 30 * gui.scale
 
@@ -23277,19 +23860,286 @@ class Over:
         if self.button2(x, y, "fanart.tv", width=84*gui.scale):
             self.account_view = 4
 
-
-        y += 75 * gui.scale
-
-        w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
-
-        self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
         y += 30 * gui.scale
-        self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
-        y += 30 * gui.scale
-        self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
 
-        x = x0 + 255 * gui.scale
+        if self.button2(x, y, "PLEX", width=84*gui.scale):
+            self.account_view = 5
+
+        y += 30 * gui.scale
+
+        if self.button2(x, y, "koel", width=84*gui.scale):
+            self.account_view = 6
+
+        y += 30 * gui.scale
+
+        if self.button2(x, y, "Airsonic", width=84*gui.scale):
+            self.account_view = 7
+
+        y += 30 * gui.scale
+
+        if self.button2(x, y, "Spotify", width=84*gui.scale):
+            self.account_view = 8
+        prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
+
+        # y += 75 * gui.scale
+        #
+        # w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
+        #
+        # self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
+        # y += 30 * gui.scale
+        # self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
+        # y += 30 * gui.scale
+        # self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
+
+        x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
+
+        if self.account_view == 8:
+
+            ddt.text((x, y), _('Spotify Premium account'), colours.box_sub_text, 213)
+            if self.button(x + 260 * gui.scale, y, _("?")):
+                show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", mode="link")
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Client ID"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_spot_client.text = prefs.spot_client
+            text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.spot_client = text_spot_client.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_spot_secret.text = prefs.spot_secret
+            text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.spot_secret = text_spot_secret.text
+
+            y += round(35 * gui.scale)
+            # if self.button(x, y, _("Copy redirect URI")):
+            #     copy_to_clipboard(spot_ctl.redirect_uri)
+            #     show_message("Copied redirect URI to clipboard")
+            # y += round(35 * gui.scale)
+
+            if spot_ctl.token:
+                if self.button(x, y, _("Forget Account")):
+                    spot_ctl.delete_token()
+            else:
+                if self.button(x, y, _("Authorise")):
+
+                    webThread = threading.Thread(target=authserve, args=[tauon])
+                    webThread.daemon = True
+                    webThread.start()
+                    time.sleep(0.1)
+
+                    spot_ctl.auth()
+
+            # y += round(30 * gui.scale)
+            # if self.button(x, y, _("Paste code param")):
+            #     text = copy_from_clipboard().strip()
+            #     if "=" in text:
+            #         text = text.split("=", 1)[1].strip()
+            #     if len(text) > 50:
+            #         spot_ctl.paste_code(text)
+
+            y += round(45 * gui.scale)
+            if self.button(x, y, _("Import Albums")):
+                spot_ctl.get_library_albums()
+
+            y += round(30 * gui.scale)
+            if self.button(x, y, _("Import Liked Songs")):
+                spot_ctl.get_library_likes()
+
+        if self.account_view == 7:
+
+            ddt.text((x, y), _('Airsonic/Subsonic network streaming'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_air_usr.text = prefs.subsonic_user
+            text_air_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.subsonic_user = text_air_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_air_pas.text = prefs.subsonic_password
+            text_air_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.subsonic_password = text_air_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_air_ser.text = prefs.subsonic_server
+            text_air_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.subsonic_server = text_air_ser.text
+
+            y += round(40 * gui.scale)
+            self.button(x, y, _("Import music to playlist"), sub_get_album_thread)
+
+
+        if self.account_view == 6:
+
+            ddt.text((x, y), _('koel network streaming'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_koel_usr.text = prefs.koel_username
+            text_koel_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.koel_username = text_koel_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_koel_pas.text = prefs.koel_password
+            text_koel_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.koel_password = text_koel_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_koel_ser.text = prefs.koel_server_url
+            text_koel_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.koel_server_url = text_koel_ser.text
+
+            y += round(40 * gui.scale)
+            self.button(x, y, _("Import music to playlist"), koel_get_album_thread)
+
+
+        if self.account_view == 5:
+
+            ddt.text((x, y), _('PLEX network streaming'), colours.box_sub_text, 213)
+
+            if input.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_plex_usr.text = prefs.plex_username
+            text_plex_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.plex_username = text_plex_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_plex_pas.text = prefs.plex_password
+            text_plex_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.plex_password = text_plex_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server name"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_plex_ser.text = prefs.plex_servername
+            text_plex_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.plex_servername = text_plex_ser.text
+
+            y += round(40 * gui.scale)
+            self.button(x, y, _("Import music to playlist"), plex_get_album_thread)
+
 
 
         if self.account_view == 4:
@@ -23351,7 +24201,7 @@ class Over:
                     artist_list_box.thumb_cache.clear()
                     artist_list_box.to_fetch = ""
 
-                    direc = os.path.join(cache_directory)
+                    direc = os.path.join(a_cache_dir)
                     if os.path.isdir(direc):
                         for item in os.listdir(direc):
                             if "-lfm.txt" in item:
@@ -23397,7 +24247,7 @@ class Over:
 
 
 
-            x = x0 + 260 * gui.scale
+            x = x0 + 230 * gui.scale
             y = y0 + round(130 * gui.scale)
 
             # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
@@ -23421,7 +24271,7 @@ class Over:
             self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=ww)
 
 
-            x = x0 + 260 * gui.scale
+            x = x0 + 230 * gui.scale
             y = y0 + round(245 * gui.scale)
 
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
@@ -23454,7 +24304,7 @@ class Over:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
 
-            x = x0 + 260 * gui.scale
+            x = x0 + 230 * gui.scale
             y = y0 + round(230 * gui.scale)
 
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
@@ -23486,13 +24336,11 @@ class Over:
 
     def codec_config(self, x0, y0, w0, h0):
 
-
         x = x0 + round(25 * gui.scale)
         y = y0
 
         y += 20 * gui.scale
         ddt.text_background_colour = colours.box_background
-
 
         if self.sync_view:
 
@@ -23504,7 +24352,7 @@ class Over:
 
             y += 5 * gui.scale
             if prefs.sync_playlist:
-                ww = ddt.text((x, y), _("Selected playlist:   "), colours.box_text_label, 11)
+                ww = ddt.text((x, y), _("Selected playlist:") + "    ", colours.box_text_label, 11)
                 ddt.text((x + ww, y), pctl.multi_playlist[pl][0], colours.box_sub_text, 12,
                          400 * gui.scale)
             else:
@@ -23529,39 +24377,42 @@ class Over:
                     paths = auto_get_sync_targets()
                     if paths:
                         sync_target.text = paths[0]
+                        show_message(_("A mounted music folder was found!"), mode="done")
                     else:
-                        show_message(_("Could not auto-detect mounted device path"))
+                        show_message(_("Could not auto-detect mounted device path."), _("Make sure the device is mounted and path is accessible."))
+
             power_bar_icon.render(rect[0], rect[1], colour)
-
-            # if gui.sync_progress and gui.sync_speed and not transcode_list:
-            #     ddt.text((x + 445 * gui.scale, y + 20 * gui.scale, 1), get_filesize_string_rounded(gui.sync_speed) + "/s", [200, 150, 20, 255], 11)
-
             y += 30 * gui.scale
 
-            prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete folders on target"))
-
+            prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete all other folders in target"))
             y += 30 * gui.scale
 
             ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
-            if not gui.sync_progress:
-                if self.button(x + 130 * gui.scale, y, _("Start Transcode and Sync"), width=ww):
+            xx = (rect1[0] + (rect1[2] // 2)) - (ww // 2)
+            if gui.stop_sync:
+                self.button(xx, y, _("Stopping..."), width=ww)
+            elif not gui.sync_progress:
+                if self.button(xx, y, _("Start Transcode and Sync"), width=ww):
                     if pl:
                         auto_sync(pl)
                     else:
                         show_message("Selected a source playlist", "Right click tab > Misc... > Set as sync playlist")
             else:
-                if self.button(x + 130 * gui.scale, y, _("Stop"), width=ww):
+                if self.button(xx, y, _("Stop"), width=ww):
                     gui.stop_sync = True
                     gui.sync_progress = _("Aborting Sync")
 
-            y += 60 * gui.scale
+            y += 110 * gui.scale
 
-            if self.button(x, y, _("Return")):
+            if self.button(x, y, _("Return"), width=round(75*gui.scale)):
                 self.sync_view = False
 
+            if self.button(x + 485 * gui.scale, y, _("?")):
+                show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Transcode-and-Sync", mode="link")
 
             return
 
+        # ----------
 
         ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.box_text_label, 11)
 
@@ -23571,8 +24422,6 @@ class Over:
         ww = ddt.get_text_w(_("Sync..."), 211) + 25 * gui.scale
         if self.button(x0 + w0 - ww, y + 25 * gui.scale, _("Sync...")):
             self.sync_view = True
-
-
 
         y += 40 * gui.scale
         self.toggle_square(x, y, switch_flac, "FLAC")
@@ -23634,12 +24483,12 @@ class Over:
 
         y += 25 * gui.scale
 
-        if system == "linux":
-            x += round(10 * gui.scale)
-            prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
-            x -= round(10 * gui.scale)
+        # if system == "linux":
+        #     x += round(10 * gui.scale)
+        #     prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
+        #     x -= round(10 * gui.scale)
 
-        y += 25 * gui.scale
+        #y += 25 * gui.scale
 
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
@@ -23659,7 +24508,7 @@ class Over:
 
         ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
 
-        if system != 'windows':
+        if system != 'windows' and (flatpak_mode or snap_mode):
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
@@ -23671,29 +24520,6 @@ class Over:
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
             y += 25 * gui.scale
 
-
-        x = x0 + self.item_x_offset + 260 * gui.scale
-        y = y0 + 20 * gui.scale
-
-        #ddt.text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
-
-        #y += 28 * gui.scale
-        #self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
-
-        #y += 25 * gui.scale
-        #self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
-
-        #y += 30 * gui.scale
-
-        # ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
-        # #
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_meta_persists_stop, _("Persist when stopped"))
-        #
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
-
-        #y += 25 * gui.scale
 
     def about(self, x0, y0, w0, h0):
 
@@ -23771,7 +24597,7 @@ class Over:
             y += 20 * gui.scale
             ddt.text((x, y), "Copyright © 2015-2020 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
             y += 21 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/TauonMusicBox", colours.box_sub_text, 12)
+            link_pa = draw_linked_text((x, y), "https://tauonmusicbox.rocks", colours.box_sub_text, 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
@@ -23878,8 +24704,14 @@ class Over:
         prefs.chart_cascade = self.toggle_square(x, y, prefs.chart_cascade, _("Cascade style"))
         y += 25 * gui.scale
         prefs.chart_tile = self.toggle_square(x, y, prefs.chart_tile ^ True, _("Use padding")) ^ True
+
+        y -= 25 * gui.scale
+        x += 170 * gui.scale
+
+        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include album titles"))
         y += 25 * gui.scale
-        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
+        prefs.topchart_sorts_played = self.toggle_square(x, y, prefs.topchart_sorts_played, _("Sort by top played"))
+
 
         x = x0 + 15 * gui.scale + 320 * gui.scale
         y = y0 + 100 * gui.scale
@@ -23912,13 +24744,16 @@ class Over:
         # x = self.box_x + self.item_x_offset + 200 * gui.scale
         # y = self.box_y + 180 * gui.scale
 
-        x = x0 + 200 * gui.scale
+        x = x0 + 260 * gui.scale
         y = y0 + 180 * gui.scale
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
+        x = x0 + round(110 * gui.scale)
+        y = y0 + 240 * gui.scale
+
         #. Limited width. Max 9 chars.
-        if self.button(x, y, _("Generate"), width=75*gui.scale):
+        if self.button(x, y, _("Generate"), width=80*gui.scale):
             if gui.generating_chart:
                 show_message("Be patient!")
             else:
@@ -23930,23 +24765,22 @@ class Over:
                     shoot.start()
                     gui.generating_chart = True
 
+        x += round(95 * gui.scale)
         if gui.generating_chart:
-            ddt.text((x + 85 * gui.scale, y + 2 * gui.scale), _("Generating..."),
-                     colours.box_text_label, 11)
+            ddt.text((x , y + round(1 * gui.scale)), _("Generating..."),
+                     colours.box_text_label, 12)
+        else:
 
-        y += 27 * gui.scale
+            count = prefs.chart_rows * prefs.chart_columns
+            if prefs.chart_cascade:
+                count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
 
-        count = prefs.chart_rows * prefs.chart_columns
-        if prefs.chart_cascade:
-            count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
+            line = str(count) + " " + _("Album chart")
 
-        line = str(count) + " Album chart"
+            ww = ddt.text((x, y + round(1 * gui.scale)), line, colours.box_text_label, 12)
 
-        ddt.text((x + 37 * gui.scale, y, 2), line, colours.box_text_label,
-                 12)
-
-        if len(dex) < count:
-            ddt.text((x + 37 * gui.scale, y + 19 * gui.scale, 2), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
+            if len(dex) < count:
+                ddt.text((x + ww + round(10 * gui.scale), y + 1 * gui.scale), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
 
         x = x0 + round(20 * gui.scale)
         y = y0 + 240 * gui.scale
@@ -24119,29 +24953,58 @@ class Over:
         x = x0 + self.item_x_offset
         y = y0 + 17 * gui.scale
 
-        self.toggle_square(x, y, heart_toggle, _('Show love hearts'))
+        self.toggle_square(x, y, rating_toggle, _('Track ratings'))
+        y += round(25 * gui.scale)
+        self.toggle_square(x, y, album_rating_toggle, _('Album ratings'))
+        y += round(35 * gui.scale)
+
+
+        #self.toggle_square(x, y, heart_toggle, _('Show love hearts'))
+        self.toggle_square(x, y, heart_toggle, "     ")
+        heart_row_icon.render(x + round(23 * gui.scale), y + round(2 * gui.scale), colours.box_text)
+        rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
+        fields.add(rect)
+        if coll(rect):
+            ex_tool_tip(x + round(45 * gui.scale), y - 20 * gui.scale, 0, _("Show track loves"), 12)
+
+        x += (55 * gui.scale)
+        self.toggle_square(x, y, star_toggle, "     ")
+        star_row_icon.render(x + round(22 * gui.scale), y + round(0 * gui.scale), colours.box_text)
+        rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
+        fields.add(rect)
+        if coll(rect):
+            ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playtime as stars"), 12)
+
+        x += (55 * gui.scale)
+        self.toggle_square(x, y, star_line_toggle, "     ")
+        ddt.rect((x + round(21 * gui.scale), y + round(6 * gui.scale), round(15 * gui.scale), round(1 * gui.scale)), colours.box_text, True)
+        rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
+        fields.add(rect)
+        if coll(rect):
+            ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playcount as lines"), 12)
+
+        x = x0 + self.item_x_offset
+
+        #y += round(25 * gui.scale)
+
+
+        #self.toggle_square(x, y, star_line_toggle, _('Show playtime lines'))
+        y += round(15 * gui.scale)
+
+
+
+        # if gui.show_ratings:
+        #     x += round(10 * gui.scale)
+        # #self.toggle_square(x, y, star_toggle, _('Show playtime stars'))
+        # if gui.show_ratings:
+        #     x -= round(10 * gui.scale)
+
         y += round(25 * gui.scale)
 
-        self.toggle_square(x, y, star_line_toggle, _('Show playtime lines'))
+        self.toggle_square(x, y, toggle_append_date, _('Show album release year'))
         y += round(25 * gui.scale)
 
-        self.toggle_square(x, y, rating_toggle, _('Show track ratings'))
-        y += round(25 * gui.scale)
-
-        if gui.show_ratings:
-            x += round(10 * gui.scale)
-        self.toggle_square(x, y, star_toggle, _('Show playtime stars'))
-        if gui.show_ratings:
-            x -= round(10 * gui.scale)
-        y += round(25 * gui.scale)
-
-        self.toggle_square(x, y, album_rating_toggle, _('Show album ratings'))
-        y += round(25 * gui.scale)
-
-        self.toggle_square(x, y, toggle_append_date, _('Add release year to folder title'))
-        y += round(25 * gui.scale)
-
-        self.toggle_square(x, y, toggle_append_total_time, _('Add total duration to folder title'))
+        self.toggle_square(x, y, toggle_append_total_time, _('Show album duration'))
         y += round(25 * gui.scale)
 
         x = x0 + 330 * gui.scale
@@ -24294,8 +25157,6 @@ class Over:
 
         self.init2done = True
 
-        pctl.total_playtime = star_store.get_total()
-
     def close(self):
         self.enabled = False
         fader.fall()
@@ -24402,7 +25263,11 @@ class Over:
             for item in self.tabs:
 
                 if self.click and gui.message_box:
-                    gui.message_box = False
+                    if not coll(message_box.get_rect()):
+                        gui.message_box = False
+                    else:
+                        input.mouse_click = True
+                        self.click = False
 
                 box = [x, y + (current_tab * tab_height), tab_width, tab_height]
                 box2 = [x, y + (current_tab * tab_height), tab_width, tab_height - 1]
@@ -24934,17 +25799,21 @@ class TopPanel:
                     gui.tab_menu_pl = i
 
                 # Quick drop tracks
-                elif quick_drag is True:
-                    if mouse_up:
+                elif quick_drag is True and mouse_up:
+                    self.tab_d_click_ref = -1
+                    self.tab_d_click_timer.force_set(100)
+                    if not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                         quick_drag = False
                         modified = False
                         gui.pl_update += 1
+
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                             modified = True
                         if len(shift_selection) > 0:
                             modified = True
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
+
                         if modified:
                             pctl.after_import_flag = True
                             tauon.worker_save_state = True
@@ -25055,7 +25924,7 @@ class TopPanel:
                         else:
                             ddt.rect((x, y, 2, gui.panelY2), [80, 160, 200, 255], True)
 
-                elif quick_drag is True:
+                elif quick_drag is True and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                     ddt.rect((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
 
             if len(self.adds) > 0:
@@ -25159,13 +26028,13 @@ class TopPanel:
             gui.frame_callback_list.append(TestTimer(0.2))
             x += 52 * gui.scale
             rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
-            colour = [60, 60, 60, 255]
-            if colours.lm:
-                colour = [180, 180, 180, 255]
+            colour = colours.corner_button # [60, 60, 60, 255]
+            # if colours.lm:
+            #     colour = [180, 180, 180, 255]
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if coll(rect) and input.mouse_click:
                 input.mouse_click = False
-                show_message("Downloader is running...", "You may need to restart app if download stalls", mode='info')
+                show_message("Downloader is running...", "You may need to restart app if download stalls", mode='download')
             if os.path.isdir(auto_dl.dl_dir):
                 s = get_folder_size(auto_dl.dl_dir)
 
@@ -25183,9 +26052,9 @@ class TopPanel:
             fields.add(rect)
 
             if coll(rect):
-                colour = [230, 230, 230, 255]
-                if colours.lm:
-                    colour = [40, 40, 40, 255]
+                colour = colours.corner_button_active
+                # if colours.lm:
+                #     colour = [40, 40, 40, 255]
                 if dl > 0 or watching > 0:
                     if right_click:
                         dl_menu.activate(position=(mouse_position[0], gui.panelY))
@@ -25212,9 +26081,9 @@ class TopPanel:
                             console.print("DEBUG: Position changed by track import")
                             gui.update += 1
                 else:
-                    colour = [60, 60, 60, 255]
-                    if colours.lm:
-                        colour = [180, 180, 180, 255]
+                    colour = colours.corner_button #[60, 60, 60, 255]
+                    # if colours.lm:
+                    #     colour = [180, 180, 180, 255]
                     if input.mouse_click:
                         input.mouse_click = False
                         show_message("It looks like something is being downloaded...", "Let's check back later...",
@@ -25222,11 +26091,11 @@ class TopPanel:
 
 
             else:
-                colour = [60, 60, 60, 255]
+                colour = colours.corner_button #[60, 60, 60, 255]
                 if colours.lm:
-                    colour = [180, 180, 180, 255]
+                    #colour = [180, 180, 180, 255]
                     if dl_mon.ready:
-                        colour = [60, 60, 60, 255]
+                        colour = colours.corner_button_active # [60, 60, 60, 255]
 
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if dl > 0:
@@ -25681,7 +26550,7 @@ class BottomBarType1:
                 h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
                 if coll(h_rect):
-                    if mouse_down:
+                    if mouse_down or mouse_up:
 
                         if bar == 0:
                             pctl.player_volume = 5
@@ -25952,7 +26821,7 @@ class BottomBarType1:
             if pctl.auto_stop:
                 stop_colour = colours.media_buttons_active
 
-            if pctl.playing_state == 2:
+            if pctl.playing_state == 2 or (spot_ctl.coasting and spot_ctl.paused):
                 pause_colour = colours.media_buttons_active
                 play_colour = colours.media_buttons_active
             elif pctl.playing_state == 3:
@@ -27256,10 +28125,14 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                         sx -= round(13 * gui.scale)
                         star_x += round(13 * gui.scale)
 
-                if playtime_stars > 4:
-                    colour = [c + d * count, c + d * count, c + d * count, 255]
-                if playtime_stars > 6: # and count < 1:
-                    colour = [230, 220, 60, 255]
+                # if playtime_stars > 4:
+                #     colour = [c + d * count, c + d * count, c + d * count, 255]
+                # if playtime_stars > 6: # and count < 1:
+                #     colour = [230, 220, 60, 255]
+                if gui.tracklist_bg_is_light:
+                    colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
+                else:
+                    colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
 
                 # if selected_star > -2:
                 #     if selected_star >= count:
@@ -27764,8 +28637,9 @@ class StandardPlaylist:
                     last_click_location, input_box):
 
 
-                click_time -= 1.5
                 pctl.jump(track_id, track_position)
+
+                click_time -= 1.5
                 quick_drag = False
                 mouse_down = False
                 mouse_up = False
@@ -28180,9 +29054,10 @@ class StandardPlaylist:
                                 star = star_count(total, n_track.length) - 1
                                 rr = 0
                                 if star > -1:
-                                    colour = (70, 70, 70, 255)
-                                    if colours.lm:
-                                        colour = (90, 90, 90, 255)
+                                    if gui.tracklist_bg_is_light:
+                                        colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
+                                    else:
+                                        colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
 
                                     sx = run + 6 * gui.scale
                                     sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
@@ -28955,6 +29830,8 @@ class RadioBox:
 
 radiobox = RadioBox()
 
+tauon.dummy_track = radiobox.dummy_track
+
 # def visit_radio_site_show_test(p):
 #     return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
 #
@@ -29439,11 +30316,14 @@ class PlaylistBox:
 
 
                 # Process input of dragging tracks onto tab
-                if quick_drag is True:
-                    if mouse_up:
+                if quick_drag is True and mouse_up:
+                    top_panel.tab_d_click_ref = -1
+                    top_panel.tab_d_click_timer.force_set(100)
+                    if not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                         quick_drag = False
                         modified = False
                         gui.pl_update += 1
+
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                             modified = True
@@ -29532,7 +30412,7 @@ class PlaylistBox:
                 #     print("SEMI")
 
             # Highlight target playlist when tragging tracks over
-            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
+            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                 #bg = [255, 255, 255, 15]
                 bg = rgb_add_hls(colours.playlist_box_background, 0, 0.04, 0)
                 if light_mode:
@@ -29871,8 +30751,6 @@ def save_discogs_artist_thumb(artist, filepath):
     print("Found artist image from Discogs")
 
 
-
-
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
 
     print("Searching fanart.tv for image...")
@@ -29943,7 +30821,7 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        filepath = os.path.join(cache_directory, artist + "-lfm.png")
+        filepath = os.path.join(a_cache_dir, artist + "-lfm.png")
 
         if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
             filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
@@ -29951,14 +30829,14 @@ class ArtistList:
         elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
             filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
 
-        elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv-full.jpg")):
-            filepath = os.path.join(cache_directory, artist + "-ftv-full.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv-full.jpg")):
+            filepath = os.path.join(a_cache_dir, artist + "-ftv-full.jpg")
 
-        elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv.jpg")):
-            filepath = os.path.join(cache_directory, artist + "-ftv.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv.jpg")):
+            filepath = os.path.join(a_cache_dir, artist + "-ftv.jpg")
 
-        elif os.path.isfile(os.path.join(cache_directory, artist + "-dcg.jpg")):
-            filepath = os.path.join(cache_directory, artist + "-dcg.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-dcg.jpg")):
+            filepath = os.path.join(a_cache_dir, artist + "-dcg.jpg")
 
         if os.path.isfile(filepath):
 
@@ -30033,10 +30911,10 @@ class ArtistList:
             filename2 = artist + '-lfm.txt'
             filename3 = artist + '-ftv.jpg'
             filename4 = artist + '-dcg.jpg'
-            filepath = os.path.join(cache_directory, filename)
-            filepath2 = os.path.join(cache_directory, filename2)
-            filepath3 = os.path.join(cache_directory, filename3)
-            filepath4 = os.path.join(cache_directory, filename4)
+            filepath = os.path.join(a_cache_dir, filename)
+            filepath2 = os.path.join(a_cache_dir, filename2)
+            filepath3 = os.path.join(a_cache_dir, filename3)
+            filepath4 = os.path.join(a_cache_dir, filename4)
             got_image = False
             try:
 
@@ -32086,7 +32964,8 @@ class MetaBox:
                                  fonts.side_panel_line2, max_w=text_width)
 
                     if ext != "":
-
+                        if ext == "SPTY":
+                            ext = "Spotify"
                         sp = ddt.text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
                                       fonts.side_panel_line2, max_w=text_width)
 
@@ -32109,8 +32988,6 @@ class PictureRender:
         self.texture = None
         self.sdl_rect = None
         self.size = (0, 0)
-
-
 
     def load(self, path, box_size=None):
 
@@ -32242,14 +33119,14 @@ class ArtistInfoBox:
                 return
 
             if self.min_rq_timer.get() < 5:  # Limit rate
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
+                if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
                     pass
                 else:
                     self.status = _("Cooldown...")
                     wait = True
 
             if pctl.playing_time < 0.5:
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
+                if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
                     pass
                 else:
                     self.status = "..."
@@ -32380,10 +33257,10 @@ class ArtistInfoBox:
 
         img_filename = artist + '-ftv-full.jpg'
         text_filename = artist + '-lfm.txt'
-        img_filepath_lfm = os.path.join(cache_directory, artist + '-lfm.png')
-        img_filepath_dcg = os.path.join(cache_directory, artist + '-dcg.jpg')
-        img_filepath = os.path.join(cache_directory, img_filename)
-        text_filepath = os.path.join(cache_directory, text_filename)
+        img_filepath_lfm = os.path.join(a_cache_dir, artist + '-lfm.png')
+        img_filepath_dcg = os.path.join(a_cache_dir, artist + '-dcg.jpg')
+        img_filepath = os.path.join(a_cache_dir, img_filename)
+        text_filepath = os.path.join(a_cache_dir, text_filename)
 
         image_paths = [
             os.path.join(user_directory, "artist-pictures/" + artist + ".png"),
@@ -34773,7 +35650,7 @@ def save_state():
     view_prefs['append-date'] = prefs.append_date
 
     save = [pctl.master_library,
-            master_count,
+            pctl.master_count,
             pctl.playlist_playing_position,
             pctl.active_playlist_viewing,
             pctl.playlist_view_position,
@@ -34789,7 +35666,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            44,  # Version, used for upgrading
+            45,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -34919,6 +35796,10 @@ def save_state():
             top_panel.prime_tab,
             top_panel.prime_side,
             prefs.sync_playlist,
+            prefs.spot_client,
+            prefs.spot_secret,
+            prefs.show_band,
+
         ]
 
 
@@ -34937,6 +35818,8 @@ def save_state():
         ]
 
         pickle.dump(save, open(user_directory + "/window.p", "wb"))
+
+        spot_ctl.save_token()
 
         with open(user_directory + "/lyrics_substitutions.json", 'w') as f:
             json.dump(prefs.lyrics_subs, f,)
@@ -35061,7 +35944,7 @@ for menu in Menu.instances:
     if w > menu.w:
         menu.w = w
 
-if master_count < 10:  # We don't want new users to be too confused.
+if pctl.master_count < 10:  # We don't want new users to be too confused.
     a01 = False
 
 if a01:
@@ -35124,8 +36007,21 @@ SDL_SetRenderTarget(renderer, None)
 if msys:
     SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
 
+# Generate theme buttons
+pref_box.themes.append((ColoursClass(), "Mindaro", 0))
+theme_files = get_themes()
+for i, theme in enumerate(theme_files):
+    c = ColoursClass()
+    load_theme(c, theme[0])
+    pref_box.themes.append((c, theme[1], i + 1))
+
+pctl.total_playtime = star_store.get_total()
+
 mouse_up = False
 mouse_wheel = 0
+
+
+
 
 while pctl.running:
     # bm.get('main')
@@ -35574,7 +36470,6 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
-                print("Maximize window")
                 update_layout = True
                 gui.pl_update = 1
                 gui.update += 1
@@ -35705,6 +36600,7 @@ while pctl.running:
     #     print('OK')
     # if window_size[0] / window_size[1] > 16 / 9:
     #     print("A")
+
 
     if k_input:
 
@@ -35892,6 +36788,15 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
+
+
+            #spot_ctl.search_track(pctl.playing_object())
+            #prefs.spotify_token = None
+            #spot_ctl.get_playlists()
+            #spot_ctl.update()
+            #spot_ctl.set_device()
+            # pctl.playerCommand = "encpause"
+            # pctl.playerCommandReady = True
             pass
             # albums = {}
             # nums = {}
@@ -36055,6 +36960,9 @@ while pctl.running:
                 input.mouse_click = False
                 gui.level_2_click = True
 
+        if right_click:
+            level_2_right_click = True
+
         if pref_box.enabled:
 
             if pref_box.inside():
@@ -36075,8 +36983,6 @@ while pctl.running:
                 if pref_box.lock is False:
                     pass
 
-        if right_click:
-            level_2_right_click = True
 
         if right_click and (radiobox.active or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
@@ -36323,270 +37229,51 @@ while pctl.running:
 
 
     if gui.reload_theme is True:
-        gui.light_mode = False
 
         gui.pl_update = 1
+        theme_files = get_themes()
 
-        if theme > 25:
+        if theme > len(theme_files):  # sic
             theme = 0
+
         if theme > 0:
             theme_number = theme - 1
             try:
 
-                theme_files = get_themes()
-                #print(theme_files)
                 colours.column_colours.clear()
                 colours.column_colours_playing.clear()
 
-                for i, item in enumerate(theme_files):
-                    # print(theme_files[i])
-                    if i == theme_number:
-                        colours.lm = False
-                        colours.__init__()
-                        with open(item[0], encoding="utf_8") as f:
-                            content = f.readlines()
-                            gui.theme_name = item[1]
-                            print("Applying external theme: " + gui.theme_name)
-                            for p in content:
-                                if "#" in p:
-                                    continue
-                                if "light-mode" in p:
-                                    colours.light_mode()
-                                if 'light-theme-mode' in p:
-                                    gui.light_mode = True
-                                    print("light mode")
-                                if 'window frame' in p:
-                                    colours.window_frame = get_colour_from_line(p)
-                                if 'gallery highlight' in p:
-                                    colours.gallery_highlight = get_colour_from_line(p)
-                                if 'index playing' in p:
-                                    colours.index_playing = get_colour_from_line(p)
-                                if 'time playing' in p:
-                                    colours.time_text = get_colour_from_line(p)
-                                if 'artist playing' in p:
-                                    colours.artist_playing = get_colour_from_line(p)
-                                if 'album line' in p: # Bad name
-                                    colours.album_text = get_colour_from_line(p)
-                                if 'track album' in p:
-                                    colours.album_text = get_colour_from_line(p)
-                                if 'album playing' in p:
-                                    colours.album_playing = get_colour_from_line(p)
-                                if 'player background' in p:  # bad name
-                                    colours.top_panel_background = get_colour_from_line(p)
-                                if 'top panel' in p:
-                                    colours.top_panel_background = get_colour_from_line(p)
-                                if 'queue panel' in p:
-                                    colours.queue_background = get_colour_from_line(p)
-                                if 'side panel' in p:
-                                    colours.side_panel_background = get_colour_from_line(p)
-                                    colours.playlist_box_background = colours.side_panel_background
-                                if 'gallery background' in p:
-                                    colours.gallery_background = get_colour_from_line(p)
-                                if 'playlist panel' in p:  # bad name
-                                    colours.playlist_panel_background = get_colour_from_line(p)
-                                if 'tracklist panel' in p:
-                                    colours.playlist_panel_background = get_colour_from_line(p)
-                                if 'track line' in p:
-                                    colours.title_text = get_colour_from_line(p)
-                                if 'track missing' in p:
-                                    colours.playlist_text_missing = get_colour_from_line(p)
-                                if 'playing highlight' in p:
-                                    colours.row_playing_highlight = get_colour_from_line(p)
-                                if 'track time' in p:
-                                    colours.bar_time = get_colour_from_line(p)
-                                if 'fav line' in p:
-                                    colours.star_line = get_colour_from_line(p)
-                                if 'folder title' in p:
-                                    colours.folder_title = get_colour_from_line(p)
-                                if 'folder line' in p:
-                                    colours.folder_line = get_colour_from_line(p)
-                                if 'buttons off' in p:
-                                    colours.media_buttons_off = get_colour_from_line(p)
-                                if 'buttons over' in p:
-                                    colours.media_buttons_over = get_colour_from_line(p)
-                                if 'buttons active' in p:
-                                    colours.media_buttons_active = get_colour_from_line(p)
-                                if 'playing time' in p:
-                                    colours.time_playing = get_colour_from_line(p)
-                                if 'track index' in p:
-                                    colours.index_text = get_colour_from_line(p)
-                                if 'track playing' in p:
-                                    colours.title_playing = get_colour_from_line(p)
-                                if 'select highlight' in p:
-                                    colours.row_select_highlight = get_colour_from_line(p)
-                                if 'track artist' in p:
-                                    colours.artist_text = get_colour_from_line(p)
-                                if 'tab active line' in p:  # bad name
-                                    colours.tab_text_active = get_colour_from_line(p)
-                                if 'tab line' in p:  # bad name
-                                    colours.tab_text = get_colour_from_line(p)
-                                if 'tab active text' in p:
-                                    colours.tab_text_active = get_colour_from_line(p)
-                                if 'tab text' in p:
-                                    colours.tab_text = get_colour_from_line(p)
-                                if 'tab background' in p:
-                                    colours.tab_background = get_colour_from_line(p)
-                                if 'tab over' in p:
-                                    colours.tab_highlight = get_colour_from_line(p)
-                                if 'tab active background' in p:
-                                    colours.tab_background_active = get_colour_from_line(p)
-                                if 'title info' in p:
-                                    colours.side_bar_line1 = get_colour_from_line(p)
-                                if 'extra info' in p:
-                                    colours.side_bar_line2 = get_colour_from_line(p)
-                                if 'bottom title' in p:
-                                    colours.bar_title_text = get_colour_from_line(p)
-                                if 'scroll bar' in p:
-                                    colours.scroll_colour = get_colour_from_line(p)
-                                if 'seek bar' in p:
-                                    colours.seek_bar_fill = get_colour_from_line(p)
-                                if 'seek bg' in p:
-                                    colours.seek_bar_background = get_colour_from_line(p)
-                                if 'volume bar' in p:
-                                    colours.volume_bar_fill = get_colour_from_line(p)
-                                if 'volume bg' in p:
-                                    colours.volume_bar_background = get_colour_from_line(p)
-                                if 'mode off' in p:
-                                    colours.mode_button_off = get_colour_from_line(p)
-                                if 'mode over' in p:
-                                    colours.mode_button_over = get_colour_from_line(p)
-                                if 'mode on' in p:
-                                    colours.mode_button_active = get_colour_from_line(p)
-                                if 'art border' in p:
-                                    colours.art_box = get_colour_from_line(p)
-                                if 'tb line' in p:
-                                    colours.tb_line = get_colour_from_line(p)
-                                if 'music vis' in p:
-                                    colours.vis_colour = get_colour_from_line(p)
-                                if 'menu background' in p:
-                                    colours.menu_background = get_colour_from_line(p)
-                                if 'menu text' in p:
-                                    colours.menu_text = get_colour_from_line(p)
-                                if 'menu disable' in p:
-                                    colours.menu_text_disabled = get_colour_from_line(p)
-                                if 'menu icons' in p:
-                                    colours.menu_icons = get_colour_from_line(p)
-                                if 'menu highlight' in p:
-                                    colours.menu_highlight_background = get_colour_from_line(p)
-                                if 'menu border' in p:
-                                    colours.menu_tab = get_colour_from_line(p)
-                                if 'lyrics showcase' in p:
-                                    colours.lyrics = get_colour_from_line(p)
-                                if 'bottom panel' in p:
-                                    colours.bottom_panel_colour = get_colour_from_line(p)
-                                    #colours.menu_background = colours.bottom_panel_colour
-                                if 'mini bg' in p:
-                                    colours.mini_mode_background = get_colour_from_line(p)
-                                if 'mini border' in p:
-                                    colours.mini_mode_border = get_colour_from_line(p)
-                                if 'mini text 1' in p:
-                                    colours.mini_mode_text_1 = get_colour_from_line(p)
-                                if 'mini text 2' in p:
-                                    colours.mini_mode_text_2 = get_colour_from_line(p)
-                                if 'column-' in p:
-                                    key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
-                                    value = get_colour_from_line(p)
-                                    colours.column_colours[key] = value
-                                if 'column+' in p:
-                                    key = p[p.find("column+") + 7:].replace("-", " ").lower().title().rstrip()
-                                    value = get_colour_from_line(p)
-                                    colours.column_colours_playing[key] = value
-                                if 'menu bg' in p:
-                                    colours.menu_background = get_colour_from_line(p)
-                                if 'playlist box bg' in p:  # bad name
-                                    colours.playlist_box_background = get_colour_from_line(p)
-                                if 'playlist background' in p:
-                                    colours.playlist_box_background = get_colour_from_line(p)
-                                    
-                                if 'box background' in p:
-                                    colours.box_background = get_colour_from_line(p)
-                                if 'box border' in p:
-                                    colours.box_border = get_colour_from_line(p)
-                                if 'box text border' in p:
-                                    colours.box_text_border = get_colour_from_line(p)
-                                if 'box text label' in p:
-                                    colours.box_text_label = get_colour_from_line(p)
-                                
-                                
-                                if 'box title text' in p:
-                                    colours.box_title_text = get_colour_from_line(p)
-                                if 'box text normal' in p:
-                                    colours.box_text = get_colour_from_line(p)
-                                if 'box sub text' in p:
-                                    colours.box_sub_text = get_colour_from_line(p)
-                                if 'box input text' in p:
-                                    colours.box_input_text = get_colour_from_line(p)
+                theme_item = theme_files[theme_number]
 
-                                if 'box button text highlight' in p:
-                                    colours.box_button_text_highlight = get_colour_from_line(p)
-                                if 'box button text normal' in p:
-                                    colours.box_button_text = get_colour_from_line(p)
-                                if 'box button background normal' in p:
-                                    colours.box_button_background = get_colour_from_line(p)
-                                if 'box button background highlight' in p:
-                                    colours.box_button_background_highlight = get_colour_from_line(p)
-                                if 'box button border' in p:
-                                    colours.box_check_border = get_colour_from_line(p)
+                gui.theme_name = theme_item[1]
+                colours.lm = False
+                colours.__init__()
 
-                                if "window buttons background" in p:
-                                    colours.window_buttons_bg = get_colour_from_line(p)
-                                if "window buttons on" in p:
-                                    colours.window_buttons_bg_over = get_colour_from_line(p)
-                                if "window buttons icon off" in p:
-                                    colours.window_button_icon_off = get_colour_from_line(p)
-                                    colours.window_button_x_off = colours.window_button_icon_off
-                                if "window buttons icon over" in p:
-                                    colours.window_buttons_icon_over = get_colour_from_line(p)
-                                    colours.window_button_x_on = colours.window_buttons_icon_over
-                                if "window button x on" in p:
-                                    colours.window_button_x_on = get_colour_from_line(p)
-                                if "window button x off" in p:
-                                    colours.window_button_x_off = get_colour_from_line(p)
-                                if "column bar background" in p:
-                                    colours.column_bar_background = get_colour_from_line(p)
+                load_theme(colours, theme_item[0])
+                print("Applying external theme: " + gui.theme_name)
 
-                                if "artist bio background" in p:
-                                    colours.artist_bio_background = get_colour_from_line(p)
-                                if "artist bio text" in p:
-                                    colours.artist_bio_text = get_colour_from_line(p)
-                                # if "panel button off" in p:
-                                #     colours.corner_button = get_colour_from_line(p)
-                                # if "panel button on" in p:
-                                #     colours.corner_button_active = get_colour_from_line(p)
-
-
-                            colours.post_config()
-                            if colours.lm:
-                                colours.light_mode()
-
-                            if colours.lm:
-                                info_icon.colour = [60, 60, 60, 255]
-                            else:
-                                info_icon.colour = [61, 247, 163, 255]
-
-                            if colours.lm:
-                                folder_icon.colour = [255, 190, 80, 255]
-                            else:
-                                folder_icon.colour = [244, 220, 66, 255]
-
-                            if colours.lm:
-                                settings_icon.colour = [85, 187, 250, 255]
-                            else:
-                                settings_icon.colour = [232, 200, 96, 255]
-
-                            if colours.lm:
-                                radiorandom_icon.colour = [120, 200, 120, 255]
-                            else:
-                                radiorandom_icon.colour = [153, 229, 133, 255]
-
-                            # temp
-                            #colours.menu_highlight_background = [40, 40, 40, 255]
-
-                        break
+                if colours.lm:
+                    info_icon.colour = [60, 60, 60, 255]
                 else:
-                    theme = 0
+                    info_icon.colour = [61, 247, 163, 255]
+
+                if colours.lm:
+                    folder_icon.colour = [255, 190, 80, 255]
+                else:
+                    folder_icon.colour = [244, 220, 66, 255]
+
+                if colours.lm:
+                    settings_icon.colour = [85, 187, 250, 255]
+                else:
+                    settings_icon.colour = [232, 200, 96, 255]
+
+                if colours.lm:
+                    radiorandom_icon.colour = [120, 200, 120, 255]
+                else:
+                    radiorandom_icon.colour = [153, 229, 133, 255]
+
             except:
-                # raise
+                raise
                 show_message("Error loading theme file", "", mode='warning')
 
         if theme == 0:
@@ -36850,7 +37537,7 @@ while pctl.running:
                     max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
                     # Mouse wheel scrolling
-                    if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                    if not search_over.active and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                         if mouse_wheel != 0:
                             scroll_gallery_hide_timer.set()
@@ -37067,6 +37754,7 @@ while pctl.running:
 
                                         elif right_click:
                                             if pctl.quick_add_target:
+
                                                 pl = id_to_pl(pctl.quick_add_target)
                                                 if pl is not None:
                                                     parent = pctl.g(
@@ -37081,6 +37769,8 @@ while pctl.running:
                                                         for i in range(len(default_playlist)):
                                                             if pctl.g(default_playlist[i]).parent_folder_path == parent:
                                                                 pctl.multi_playlist[pl][2].append(default_playlist[i])
+
+                                                reload_albums(True)
 
                                             else:
                                                 playlist_selected = album_dex[album_on]
@@ -37653,9 +38343,10 @@ while pctl.running:
                     left = 0
                     if gui.lsp:
                         left = gui.lspw
-                    rect = [left, top, gui.plw, 6 * gui.scale]
+                    rect = [left, top, gui.plw, 12 * gui.scale]
                     if right_click and coll(rect):
                         set_menu_hidden.activate()
+                        right_click = False
 
                 width = gui.plw
                 if gui.set_bar and gui.set_mode:
@@ -37805,6 +38496,22 @@ while pctl.running:
                     else:
                         playlist_render.cache_render()
 
+                if not gui.set_bar and gui.set_mode and not gui.combo_mode:
+                    width = gui.plw
+                    if gui.tracklist_center_mode:
+                        x = gui.tracklist_highlight_left
+                        width = gui.tracklist_highlight_width
+                    rect = [x, top, width, gui.set_height // 2]
+                    fields.add(rect)
+                    gui.delay_frame(0.26)
+
+                    if coll(rect) and gui.bar_hover_timer.get() > 0.25:
+                        ddt.rect(rect, colours.column_bar_background, True)
+                        if input.mouse_click:
+                            gui.set_bar = True
+                            update_layout_do()
+                    if not coll(rect):
+                        gui.bar_hover_timer.set()
 
                 if gui.set_bar and gui.set_mode and not gui.combo_mode:
 
@@ -38212,7 +38919,7 @@ while pctl.running:
                     not menu_is_open() and \
                     not pref_box.enabled and \
                     not gui.rename_playlist_box \
-                    and gui.layer_focus == 0 and gui.show_playlist:
+                    and gui.layer_focus == 0 and gui.show_playlist and not search_over.active:
 
                 scroll_opacity = 255
 
@@ -39797,6 +40504,9 @@ while pctl.running:
     # Save power if the window is minimized
     if gui.lowered:
         time.sleep(0.2)
+
+if spot_ctl.playing:
+    spot_ctl.control("stop")
 
 # Send scrobble if pending
 if lfm_scrobbler.queue and not lfm_scrobbler.running:

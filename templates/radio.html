@@ -2,34 +2,42 @@
 
 <html>
 <head>
-  <meta charset="utf-8"/>
-  <title>Audio Stream</title>
-  <link href="theme.css" rel="stylesheet" type="text/css">
+    <meta charset="utf-8"/>
+    <title>Audio Stream</title>
+    <link href="theme.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
-  <div class="container">
+<div class="container">
     <div class="main">
-      <div id="img-holder">
-        <img id='picture' src="#" alt="No Album Art" /> <br> <br>
-      </div>
+        <div id="img-holder">
+            <img id='picture' src="#" alt="No Album Art"/> <br> <br>
+        </div>
 
-      <div id="title-text">
-      </div>
+        <div id="title-text">
+        </div>
 
-         <div id="seekback">
-           <div id="seekfront">
-           </div>
-         </div>
-         <div id='player'></div>
-      </div>
+        <div id="seekback">
+            <div id="seekfront">
+            </div>
+        </div>
+        <div id='player'>
+            <div class='button' id='play-button'>
 
-      <div id="lyrics"></div>
+                <div id="play-icon"></div>
+                <div id='stop-icon'></div>
+            </div>
+
+            <div class="slidecontainer">
+                <input type="range" min="0" max="100" value="85" class="slider" id="vol-slider">
+            </div>
+
+        </div>
     </div>
 
+    <div id="lyrics"></div>
+</div>
 
-
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="radio.js"></script>
 </body>
 
