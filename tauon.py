@@ -157,9 +157,6 @@ if install_mode and system == 'linux':
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
     config_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
 
-    if not os.path.isdir(cache_directory):
-        os.makedirs(cache_directory)
-
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
 
@@ -204,6 +201,19 @@ else:
 
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
+
+n_cache_dir = os.path.join(cache_directory, "network")
+e_cache_dir = os.path.join(cache_directory, "export")
+g_cache_dir = os.path.join(cache_directory, "gallery")
+a_cache_dir = os.path.join(cache_directory, "artist")
+if not os.path.isdir(n_cache_dir):
+    os.makedirs(n_cache_dir)
+if not os.path.isdir(e_cache_dir):
+    os.makedirs(e_cache_dir)
+if not os.path.isdir(g_cache_dir):
+    os.makedirs(g_cache_dir)
+if not os.path.isdir(a_cache_dir):
+    os.makedirs(a_cache_dir)
 
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
     os.makedirs(os.path.join(user_directory, "artist-pictures"))
@@ -3154,6 +3164,18 @@ if db_version > 0:
             if len(value) == 2:
                 value.append(0)
                 star_store.db[key] = value
+
+    if db_version <= 44:
+        print("Updating database to version 45")
+        print("Cleaning cache directory")
+        for item in os.listdir(cache_directory):
+            path = os.path.join(cache_directory, item)
+            if "-lfm." in item or "-ftv." in item or "-dcg." in item:
+                os.rename(path, os.path.join(a_cache_dir, item))
+        for item in os.listdir(cache_directory):
+            path = os.path.join(cache_directory, item)
+            if os.path.isfile(path):
+                os.remove(path)
 
 
 shoot = threading.Thread(target=keymaps.load)
@@ -8242,6 +8264,8 @@ class TextBox2:
     def copy(self):
 
         text = self.get_selection()
+        if not text:
+            text = self.text
         if text != "":
             SDL_SetClipboardText(text.encode('utf-8'))
 
@@ -8596,6 +8620,8 @@ class TextBox:
     def copy(self):
 
         text = self.get_selection()
+        if not text:
+            text = self.text
         if text != "":
             SDL_SetClipboardText(text.encode('utf-8'))
 
@@ -8977,8 +9003,8 @@ class GallClass:
                     if parent_folder in folder_image_offsets:
                         offset = folder_image_offsets[parent_folder]
                     img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(offset)
-                    if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                        source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
+                    if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
+                        source_image = open(os.path.join(g_cache_dir, img_name + '.jpg'), 'rb')
                         #print('load from cache')
                         cache_load = True
                     else:
@@ -8998,9 +9024,9 @@ class GallClass:
 
                     # gall_render_last_timer.set()
 
-                    if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                        source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
-                        print('load from cache')
+                    if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
+                        source_image = open(os.path.join(g_cache_dir, img_name + '.jpg'), 'rb')
+                        print("slow load image")
                         cache_load = True
 
                     # elif source[0] == 1:
@@ -9033,8 +9059,8 @@ class GallClass:
 
                     im.save(g, 'BMP')
                     
-                    if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                        im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
+                    if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
+                        im.save(os.path.join(g_cache_dir, img_name + '.jpg'), 'JPEG', quality=95)
 
                 g.seek(0)
 
@@ -9177,10 +9203,10 @@ class ThumbTracks:
 
     def path(self, track):
         image_name = track.album
-        if image_name == "":
+        if not image_name:
+            image_name = track.filename
+        if not image_name:
             image_name = track.title
-        if image_name == "":
-            image_name = "noname"
 
         source, offset = gall_ren.get_file_source(track)
 
@@ -9191,22 +9217,12 @@ class ThumbTracks:
         image_name += "-" + str(offset)
         image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
-
-        #t_path = user_directory + "/cache/" + image_name + '.jpg'
-        t_path = os.path.join(cache_directory, image_name + '.jpg')
+        t_path = os.path.join(e_cache_dir, image_name + '.jpg')
 
         if os.path.isfile(t_path):
             return t_path
 
         source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
-
-        if not os.path.isdir(cache_directory):
-            os.makedirs(cache_directory)
-
-
-        # with open("test", 'wb') as w:
-        #     w.write(source_image.read())
-
 
         im = Image.open(source_image)
         if im.mode != "RGB":
@@ -9255,15 +9271,13 @@ def clear_img_cache(delete_disk=True):
         SDL_DestroyTexture(value[2])
     gall_ren.gall = {}
 
-    if prefs.cache_gallery and delete_disk:
-        direc = os.path.join(cache_directory)
-        if os.path.isdir(direc):
-            for item in os.listdir(direc):
-                path = os.path.join(direc, item)
-                if "-lfm" not in item and "-ftv" not in item and "-dcg" not in item and os.path.isfile(path):
+    if delete_disk:
+        dirs = [g_cache_dir, n_cache_dir, e_cache_dir]
+        for direc in dirs:
+            if os.path.isdir(direc):
+                for item in os.listdir(direc):
+                    path = os.path.join(direc, item)
                     os.remove(path)
-        else:
-            os.makedirs(direc)
 
     prefs.failed_artists.clear()
     for key, value in artist_list_box.thumb_cache.items():
@@ -9283,7 +9297,7 @@ def clear_track_image_cache(track):
     if gall_ren.queue:
         time.sleep(0.5)
 
-    direc = os.path.join(cache_directory)
+    direc = os.path.join(g_cache_dir)
     if os.path.isdir(direc):
         for item in os.listdir(direc):
             n = item.split("-")
@@ -9619,11 +9633,6 @@ class AlbumArt():
         if subsource is None:
             subsource = sources[offset]
 
-        cached = self.bin_cached
-
-        #if cached[0] == track and cached[1] == subsource:
-        #    return cached[2]
-
         if subsource[0] == 1:
             # Target is a embedded image\\\
             pic = self.get_embed(track)
@@ -9634,22 +9643,30 @@ class AlbumArt():
             try:
                 if track.file_ext == "RADIO" or track.file_ext == "Spotify":
                     if pctl.radio_image_bin:
-                        source_image = pctl.radio_image_bin
+                        return pctl.radio_image_bin
 
-                elif track.file_ext == "SUB":
-                    source_image = subsonic.get_cover(track)
+                cached_path = os.path.join(n_cache_dir, hashlib.md5(track.art_url_key.encode()).hexdigest()[:9])
+                if os.path.isfile(cached_path):
+                    source_image = open(cached_path, 'rb')
                 else:
-                    response = urllib.request.urlopen(get_network_thumbnail_url(track))
-                    source_image = io.BytesIO(response.read())
+                    if track.file_ext == "SUB":
+                        source_image = subsonic.get_cover(track)
+                    else:
+                        response = urllib.request.urlopen(get_network_thumbnail_url(track))
+                        source_image = io.BytesIO(response.read())
+                    if source_image:
+                        f = open(cached_path, 'wb')
+                        f.write(source_image.read())
+                        f.close()
+                        source_image.seek(0)
+
             except:
                 # raise
                 pass
-                # print("IMAGE NETWORK LOAD ERROR")
 
         else:
             source_image = open(subsource[1], 'rb')
 
-        #self.bin_cached = (track, subsource, source_image)
         return source_image
 
     def get_base64(self, track, size):
@@ -12025,8 +12042,8 @@ def toggle_bio_size():
 
 def flush_artist_bio(artist):
 
-    if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
-        os.remove(os.path.join(cache_directory, artist + '-lfm.txt'))
+    if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
+        os.remove(os.path.join(a_cache_dir, artist + '-lfm.txt'))
     artist_info_box.text = ""
     artist_info_box.artist_on = None
 
@@ -24130,7 +24147,7 @@ class Over:
                     artist_list_box.thumb_cache.clear()
                     artist_list_box.to_fetch = ""
 
-                    direc = os.path.join(cache_directory)
+                    direc = os.path.join(a_cache_dir)
                     if os.path.isdir(direc):
                         for item in os.listdir(direc):
                             if "-lfm.txt" in item:
@@ -30750,7 +30767,7 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        filepath = os.path.join(cache_directory, artist + "-lfm.png")
+        filepath = os.path.join(a_cache_dir, artist + "-lfm.png")
 
         if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
             filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
@@ -30758,14 +30775,14 @@ class ArtistList:
         elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
             filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
 
-        elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv-full.jpg")):
-            filepath = os.path.join(cache_directory, artist + "-ftv-full.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv-full.jpg")):
+            filepath = os.path.join(a_cache_dir, artist + "-ftv-full.jpg")
 
-        elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv.jpg")):
-            filepath = os.path.join(cache_directory, artist + "-ftv.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv.jpg")):
+            filepath = os.path.join(a_cache_dir, artist + "-ftv.jpg")
 
-        elif os.path.isfile(os.path.join(cache_directory, artist + "-dcg.jpg")):
-            filepath = os.path.join(cache_directory, artist + "-dcg.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-dcg.jpg")):
+            filepath = os.path.join(a_cache_dir, artist + "-dcg.jpg")
 
         if os.path.isfile(filepath):
 
@@ -30840,10 +30857,10 @@ class ArtistList:
             filename2 = artist + '-lfm.txt'
             filename3 = artist + '-ftv.jpg'
             filename4 = artist + '-dcg.jpg'
-            filepath = os.path.join(cache_directory, filename)
-            filepath2 = os.path.join(cache_directory, filename2)
-            filepath3 = os.path.join(cache_directory, filename3)
-            filepath4 = os.path.join(cache_directory, filename4)
+            filepath = os.path.join(a_cache_dir, filename)
+            filepath2 = os.path.join(a_cache_dir, filename2)
+            filepath3 = os.path.join(a_cache_dir, filename3)
+            filepath4 = os.path.join(a_cache_dir, filename4)
             got_image = False
             try:
 
@@ -33048,14 +33065,14 @@ class ArtistInfoBox:
                 return
 
             if self.min_rq_timer.get() < 5:  # Limit rate
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
+                if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
                     pass
                 else:
                     self.status = _("Cooldown...")
                     wait = True
 
             if pctl.playing_time < 0.5:
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
+                if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
                     pass
                 else:
                     self.status = "..."
@@ -33186,10 +33203,10 @@ class ArtistInfoBox:
 
         img_filename = artist + '-ftv-full.jpg'
         text_filename = artist + '-lfm.txt'
-        img_filepath_lfm = os.path.join(cache_directory, artist + '-lfm.png')
-        img_filepath_dcg = os.path.join(cache_directory, artist + '-dcg.jpg')
-        img_filepath = os.path.join(cache_directory, img_filename)
-        text_filepath = os.path.join(cache_directory, text_filename)
+        img_filepath_lfm = os.path.join(a_cache_dir, artist + '-lfm.png')
+        img_filepath_dcg = os.path.join(a_cache_dir, artist + '-dcg.jpg')
+        img_filepath = os.path.join(a_cache_dir, img_filename)
+        text_filepath = os.path.join(a_cache_dir, text_filename)
 
         image_paths = [
             os.path.join(user_directory, "artist-pictures/" + artist + ".png"),
@@ -35595,7 +35612,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            44,  # Version, used for upgrading
+            45,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
