@@ -2,7 +2,8 @@
 Changelog-------------------------------------
 
 v6.0.0
-
+    todo - add bandcamp icon
+    todo - add spotify to gstreamer thread
  - Added Spotify integration (wip)
  - Added "Transcode and Sync" function
  - Added Bandcamp artist search function
