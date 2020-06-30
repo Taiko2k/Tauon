@@ -241,6 +241,8 @@ def player3(tauon):  # GStreamer
             if self.play_state == 3:
                 pctl.radio_progress()
 
+            pctl.spot_test_progress()
+
             if pctl.playerCommandReady:
                 pctl.playerCommandReady = False
 
@@ -287,8 +289,22 @@ def player3(tauon):  # GStreamer
                 if pctl.playerCommand == 'open' and pctl.target_object:
 
                     track = pctl.target_object
+
+                    if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
+                        tauon.spot_ctl.control("stop")
+
                     # Check if the file exists, mark it as missing if not
                     if track.is_network:
+
+                        if track.file_ext == "SPTY":
+                            if self.play_state > 0:
+                                self.playbin.set_state(Gst.State.READY)
+                            self.play_state = 0
+                            tauon.spot_ctl.play_target(track.url_key)
+                            GLib.timeout_add(19, self.main_callback)
+                            pctl.playerCommandReady = False
+                            return
+
                         try:
                             url, params = pctl.get_url(track)
                         except:
@@ -311,6 +327,7 @@ def player3(tauon):  # GStreamer
                         pctl.jump_time = 0
                         pctl.advance(inplace=True, nolock=True)
                         GLib.timeout_add(19, self.main_callback)
+                        pctl.playerCommandReady = False
                         return
 
                     gapless = False
@@ -382,6 +399,7 @@ def player3(tauon):  # GStreamer
                                 self.playbin.set_state(Gst.State.READY)
                                 time.sleep(0.1)
                                 GLib.timeout_add(19, self.main_callback)
+                                pctl.playerCommandReady = False
                                 return
 
                     add_time = max(min(self.player_timer.hit(), 3), 0)
@@ -426,7 +444,11 @@ def player3(tauon):  # GStreamer
 
 
                 elif pctl.playerCommand == 'volume':
-                    if self.play_state == 1 or self.play_state == 3:
+
+                    if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                        tauon.spot_ctl.control("volume", int(pctl.player_volume))
+
+                    elif self.play_state == 1 or self.play_state == 3:
                         self.playbin.set_property('volume', pctl.player_volume / 100)
 
                 elif pctl.playerCommand == 'runstop':
@@ -452,16 +474,22 @@ def player3(tauon):  # GStreamer
                     pctl.playerCommand = "stopped"
 
                 elif pctl.playerCommand == 'seek':
-                    if self.play_state > 0:
-                        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                            (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
 
-                    # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
-                    # update the seek indicator immediately and hold the thread for a moment
-                    if pctl.target_object.is_network:
-                        pctl.playing_time = pctl.new_time + pctl.start_time_target
-                        pctl.decode_time = pctl.playing_time
-                        time.sleep(0.2)
+                    if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                        tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
+                        pctl.playing_time = pctl.new_time
+                    else:
+
+                        if self.play_state > 0:
+                            self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                                (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
+
+                        # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
+                        # update the seek indicator immediately and hold the thread for a moment
+                        if pctl.target_object.is_network:
+                            pctl.playing_time = pctl.new_time + pctl.start_time_target
+                            pctl.decode_time = pctl.playing_time
+                            time.sleep(0.2)
 
                 elif pctl.playerCommand == 'pauseon':
                     self.player_timer.hit()
