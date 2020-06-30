@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.6.0\n"
 "POT-Creation-Date: 2020-03-24 12:31+1300\n"
-"PO-Revision-Date: 2020-06-27 15:48-0300\n"
+"PO-Revision-Date: 2020-06-30 16:05-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
 "Language: pt_BR\n"
@@ -23,7 +23,7 @@ msgstr "Sem Imagem do artista."
 
 #: tauon.py:1666
 msgid "No providers are enabled in settings!"
-msgstr "Não há provedores ativos nas definições!"
+msgstr "Não há provedores ativos nas configurações!"
 
 #: tauon.py:5263
 msgid "End of playlist"
@@ -219,11 +219,11 @@ msgstr "Letra não encontrada para a faixa"
 
 #: tauon.py:12128 tauon.py:12224 tauon.py:12672
 msgid "Search for Lyrics"
-msgstr "Procurar por Letra"
+msgstr "Buscar por Letra"
 
 #: tauon.py:12140
 msgid "Search GuitarParty"
-msgstr "Procurar GuitarParty"
+msgstr "Buscar GuitarParty"
 
 #: tauon.py:12175
 msgid "Paste Chord Lyrics"
@@ -307,7 +307,7 @@ msgstr "Apagar Embutido | Faixa"
 
 #: tauon.py:12644
 msgid "Quick-Fetch Cover Art"
-msgstr "Busca-Rápida de Capa"
+msgstr "Busca rápida de Capa"
 
 #: tauon.py:12908 tauon.py:27880 tauon.py:37130
 msgid "Rename"
@@ -337,7 +337,7 @@ msgstr "OK. A partir de agora esta playlist ordenará automaticamente"
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Altere/Remove este comportamento em \"Misc...\" > \"Editar gerador...\""
+"Altere/Remova este comportamento em \"Misc...\" > \"Editar gerador...\""
 
 #: tauon.py:14149 tauon.py:17349
 msgid "New Playlist"
@@ -393,7 +393,7 @@ msgstr "Exportado Estatísticas da Playlist"
 
 #: tauon.py:14203
 msgid "Transcode All"
-msgstr "Transcodificar Tudo"
+msgstr "Converter Tudo"
 
 #: tauon.py:14204
 msgid "Rescan Tags"
@@ -501,7 +501,7 @@ msgstr "Arquivo de configuração aberto."
 
 #: tauon.py:15411
 msgid "Track Info…"
-msgstr "Info da Faixa…"
+msgstr "Detalhes da Faixa…"
 
 #: tauon.py:15439 tauon.py:17762
 msgid "Un-Love Track"
@@ -549,7 +549,7 @@ msgstr "Modificar Pasta…"
 
 #: tauon.py:16090
 msgid "Tag editior app does not appear to be installed."
-msgstr "App de edição de etiquetas aparenta não estar instalada."
+msgstr "App de edição de etiquetas parece não estar instalada."
 
 #: tauon.py:16093
 msgid "App not found on host OR insufficient Flatpak permissions."
@@ -573,11 +573,11 @@ msgstr "Reparar Mojibake"
 
 #: tauon.py:16418
 msgid "Transcode Single"
-msgstr "Transcodificar Um"
+msgstr "Converter Um"
 
 #: tauon.py:16420 tauon.py:16425 tauon.py:16426 tauon.py:16644
 msgid "Transcode Folder"
-msgstr "Transcodificar Pasta"
+msgstr "Converter Pasta"
 
 #: tauon.py:16424
 msgid "Vacuum Playtimes"
@@ -601,15 +601,15 @@ msgstr "Apagar Arquivos"
 
 #: tauon.py:16553
 msgid "Search Artist on Wikipedia"
-msgstr "Procurar Artista na Wikipédia"
+msgstr "Buscar Artista na Wikipédia"
 
 #: tauon.py:16555
 msgid "Search Track on Genius"
-msgstr "Procurar Faixa no Genius"
+msgstr "Buscar Faixa no Genius"
 
 #: tauon.py:16561
 msgid "Search Artist on Sonemic"
-msgstr "Procurar Artista no Sonemic"
+msgstr "Buscar Artista no Sonemic"
 
 #: tauon.py:16573
 msgid "Copy \"Artist - Track\""
@@ -733,7 +733,7 @@ msgstr "Importar Pasta da Música"
 
 #: tauon.py:17402
 msgid "Settings"
-msgstr "Definições"
+msgstr "Configurações"
 
 #: tauon.py:17403
 msgid "Database…"
@@ -898,7 +898,7 @@ msgstr "Áudio"
 
 #: tauon.py:21746
 msgid "Tracklist"
-msgstr "Lista de Faixas"
+msgstr "Faixas"
 
 #: tauon.py:21747 tauon.py:21795
 msgid "Theme"
@@ -914,7 +914,7 @@ msgstr "Vista"
 
 #: tauon.py:21750
 msgid "Transcode"
-msgstr "Trancodificar"
+msgstr "Converter"
 
 #: tauon.py:21751 tauon.py:37054
 msgid "Lyrics"
@@ -926,7 +926,7 @@ msgstr "Contas"
 
 #: tauon.py:21753
 msgid "Stats"
-msgstr "Estatísticas"
+msgstr "Dados"
 
 #: tauon.py:21754
 msgid "About"
@@ -985,7 +985,7 @@ msgid ""
 "BASS Audio library is not currently installed. Clicking install will "
 "initiate download (<1MB)."
 msgstr ""
-"A Biblioteca de Áudio BASS não está instalada. Clicar em instalar baixará "
+"A Biblioteca BASS Audio não está instalada. Clicar em instalar baixará "
 "(<1MB)."
 
 #: tauon.py:21941
@@ -1006,15 +1006,15 @@ msgstr ""
 
 #: tauon.py:21962 tauon.py:22051
 msgid "ReplayGain"
-msgstr "ReplayGain"
+msgstr "Ganho de Reprodução"
 
 #: tauon.py:21967 tauon.py:22058
 msgid "Album gain"
-msgstr "Album gain"
+msgstr "Ganho de Álbum"
 
 #: tauon.py:21969 tauon.py:22060
 msgid "Track gain"
-msgstr "Track Gain"
+msgstr "Ganho de Faixa"
 
 #: tauon.py:21977
 msgid "Customise GStreamer output"
@@ -1034,7 +1034,7 @@ msgstr "Transições"
 
 #: tauon.py:22069
 msgid "Use crossfade"
-msgstr "Usar crossfade"
+msgstr "Usar transição suave"
 
 #: tauon.py:22073
 msgid "Use gapless playback"
@@ -1054,7 +1054,7 @@ msgstr "Desinstalar BASS"
 
 #: tauon.py:22147
 msgid "Auto search lyrics"
-msgstr "Procurar Letra automaticamente"
+msgstr "Buscar Letra automaticamente"
 
 #: tauon.py:22149
 msgid "Enable chord lyrics"
@@ -1078,7 +1078,7 @@ msgstr "Genius*"
 
 #: tauon.py:22161
 msgid "*Uses scraping. Enable at your own discretion."
-msgstr "*Usa \"scraping\". Ative por seu próprio critério."
+msgstr "*Usa \"scraping\". Ative por seu próprio risco."
 
 #: tauon.py:22164
 msgid "Tip: The order enabled will be the order searched."
@@ -1086,7 +1086,7 @@ msgstr "Dica: A ordem ativa será a ordem de pesquisa."
 
 #: tauon.py:22174
 msgid "Metadata side panel"
-msgstr "Painel lateral Metadados"
+msgstr "Metadados no painel lateral"
 
 #: tauon.py:22178
 msgid "Use centered style"
@@ -1287,7 +1287,7 @@ msgstr "Limpar todos os gostos"
 
 #: tauon.py:22698
 msgid "Output codec setting:"
-msgstr "Condifuração do codec de saída:"
+msgstr "Configuração do codec de saída:"
 
 #: tauon.py:22700 tauon.py:22701
 msgid "Open output folder"
@@ -1327,11 +1327,11 @@ msgstr "Misc"
 
 #: tauon.py:22789
 msgid "Force subpixel text rendering"
-msgstr "Forçar renderização de texto subpixel"
+msgstr "Forçar renderização subpixel de texto"
 
 #: tauon.py:22794
 msgid "Top-panel visualisation"
-msgstr "Visualização de Painel-topo"
+msgstr "Visualização no painel superior"
 
 #: tauon.py:22796
 msgid "Showcase visualisation"
@@ -1339,7 +1339,7 @@ msgstr "Mostrar visualização"
 
 #: tauon.py:22934 tauon.py:22936
 msgid "Show License"
-msgstr "Mostrar Licença"
+msgstr "A Licença"
 
 #: tauon.py:22938 tauon.py:22940
 msgid "Credits"
@@ -1363,11 +1363,11 @@ msgstr "Colunas"
 
 #: tauon.py:22989
 msgid "Cascade style"
-msgstr "Estilo cascade"
+msgstr "Estilo cascata"
 
 #: tauon.py:22991
 msgid "Use padding"
-msgstr "Usar padding"
+msgstr "Usar rebordo"
 
 #: tauon.py:22993
 msgid "Include text"
@@ -1375,7 +1375,7 @@ msgstr "Incluir texto"
 
 #: tauon.py:22999
 msgid "Randomise BG"
-msgstr "Randomizar PF"
+msgstr "PF Aleatório"
 
 #: tauon.py:23032
 msgid "Generate"
@@ -1399,7 +1399,7 @@ msgstr "Faixas da playlist"
 
 #: tauon.py:23087 tauon.py:23130
 msgid "Albums in playlist"
-msgstr "Álbuns na playlist"
+msgstr "Álbuns da playlist"
 
 #: tauon.py:23088 tauon.py:23133
 msgid "Playlist duration"
@@ -1491,7 +1491,7 @@ msgstr "Pausa"
 
 #: tauon.py:24936
 msgid "Stop, RC: Toggle auto-stop"
-msgstr "Parar, RC: Alternar autoparar"
+msgstr "Parar, RC: Alternar autoparada"
 
 #: tauon.py:24959 tauon.py:25505
 msgid "Shuffle On"
@@ -1539,7 +1539,7 @@ msgstr "Fim da Playlist"
 
 #: tauon.py:27692
 msgid "Internet Radio"
-msgstr "Internet Rádio"
+msgstr "Rádio da Internet"
 
 #: tauon.py:27704
 msgid "Name / Title"
@@ -1551,7 +1551,7 @@ msgstr "Gravação está atualmente indisponível ao utilizar a GStreamer"
 
 #: tauon.py:27848
 msgid "A stream needs to be playing first."
-msgstr "Primeiro é necessário reproduzir uma stream."
+msgstr "Primeiro é preciso reproduzir uma transmissão."
 
 #: tauon.py:27878
 msgid "Paste Website Link"
@@ -1643,7 +1643,7 @@ msgstr "Carregando..."
 
 #: tauon.py:31142
 msgid "No artist data downloaded"
-msgstr "Dados do artitsta não carregados"
+msgstr "Dados do artista não carregados"
 
 #: tauon.py:31156
 msgid "No artist bio found"
@@ -1675,7 +1675,7 @@ msgstr "Autorrolar"
 
 #: tauon.py:33821
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr "Acesso impossiblitado! Verifique as permissões Flatpak."
+msgstr "Acesso impossibilitado! Verifique as permissões Flatpak."
 
 #: tauon.py:34401
 msgid "Enabled auto theme"
@@ -1737,3 +1737,69 @@ msgstr "Lixeira"
 #: tauon.py:37149
 msgid "Raise"
 msgstr "Aumentar"
+
+msgid "Find Incomplete Albums"
+msgstr "Encontrar Álbuns Incompletos"
+
+msgid "Serve broadcast landing page"
+msgstr "Servir página de transmissão"
+
+msgid "Auto fetch artist data"
+msgstr "Auto-obter dados do artista"
+
+msgid "Enable tabs in top panel"
+msgstr "Ativar abas no painel sup."
+
+msgid "Enable download monitor"
+msgstr "Ativar monitor de Download"
+
+msgid "Bandcamp search"
+msgstr "Pesquisa no Bandcamp"
+
+msgid "Discord RP Toggle"
+msgstr "Alternar RP do Discord"
+
+msgid "Track ratings"
+msgstr "Avaliação de faixa"
+
+msgid "Album ratings"
+msgstr "Avaliação de álbum"
+
+msgid "Show album release year"
+msgstr "Ano de lançamento do álbum"
+
+msgid "Show album duration"
+msgstr "Mostrar duração do álbum"
+
+msgid "Auto-theme from album art"
+msgstr "Autotema da arte do álbum"
+
+msgid "Pattern style"
+msgstr "Estilo de padrão"
+
+msgid "Show titles"
+msgstr "Mostrar títulos"
+
+msgid "Thumbnail size"
+msgstr "Tamanho de miniatura"
+
+msgid "Sync..."
+msgstr "Sincr..."
+
+msgid "Include album titles"
+msgstr "Incluir títulos de álbuns"
+
+msgid "Sort by top played"
+msgstr "Ordenar por mais tocado"
+
+msgid "Album chart"
+msgstr "Gráfico(s) de álbum"
+
+msgid "Donate"
+msgstr "Doar"
+
+msgid "Unpin"
+msgstr "Soltar"
+
+msgid "Pin"
+msgstr "Fixar"
