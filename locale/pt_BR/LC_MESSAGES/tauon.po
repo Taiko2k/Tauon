@@ -1659,7 +1659,7 @@ msgstr "Limpar Bio"
 
 #: tauon.py:31681
 msgid "Playing"
-msgstr "Reproduzindo"
+msgstr "Tocando"
 
 #: tauon.py:31735
 msgid "Prefer synced"
@@ -1700,7 +1700,7 @@ msgstr "Caminho"
 
 #: tauon.py:36891
 msgid "Samplerate"
-msgstr "Amostragem"
+msgstr "Amostra"
 
 #: tauon.py:36951 tauon.py:36968
 msgid " of "
@@ -1720,7 +1720,7 @@ msgstr "Disco"
 
 #: tauon.py:37035
 msgid "Play count"
-msgstr "Reproduções"
+msgstr "Reprises"
 
 #: tauon.py:37048
 msgid "Play time"
