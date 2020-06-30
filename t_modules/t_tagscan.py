@@ -219,8 +219,6 @@ class Flac:
                     # added by msmafra
                     elif 'comment' == a:
                         self.comment = b.decode("utf-8")
-                    elif 'genre' == a:
-                        self.genre = b.decode("utf-8")
 
                     # else:
                     #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
