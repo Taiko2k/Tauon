@@ -145,7 +145,7 @@ class Gnome:
                                 'tauon:loved': tauon.love(False, track.index),
                                 # added by msmafra
                                 'xesam:comment': dbus.Array([track.comment]),
-                                'xesam:genre': dbus.Array([track.genre]),
+                                'xesam:genre': dbus.Array([track.genre])
 
                             }
 
@@ -189,7 +189,8 @@ class Gnome:
                         self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"LoopStatus": self.get_loop_status()}, [])
 
                     def __init__(self, object_path):
-                        dbus.service.Object.__init__(self, bus_name, object_path)
+                        # dbus.service.Object.__init__(self, bus_name, object_path)
+                        dbus.service.Object.__init__(self, bus, object_path, bus_name=bus_name)
 
                         self.playing_index = -1
 
