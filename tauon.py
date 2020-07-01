@@ -4129,7 +4129,7 @@ class PlayerCtl:
                 try:
                     get_radio_art()
                 except:
-                    raise
+                    # raise
                     print("Get art error")
                 gui.clear_image_cache_next = True
 
@@ -4712,7 +4712,7 @@ class PlayerCtl:
 
     def seek_decimal(self, decimal):
 
-        if self.playing_state == 1 or self.playing_state == 2:
+        if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
             if decimal > 1:
                 decimal = 1
             elif decimal < 0:
@@ -4731,21 +4731,23 @@ class PlayerCtl:
 
     def seek_time(self, new):
 
-        if new > self.playing_length - 0.5:
-            self.advance()
-            return
+        if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
 
-        if new < 0.4:
-            new = 0
+            if new > self.playing_length - 0.5:
+                self.advance()
+                return
 
-        self.new_time = new
-        self.playing_time = new
+            if new < 0.4:
+                new = 0
 
-        self.playerCommand = 'seek'
-        self.playerCommandReady = True
+            self.new_time = new
+            self.playing_time = new
 
-        if self.mpris is not None:
-            self.mpris.seek_do(self.playing_time)
+            self.playerCommand = 'seek'
+            self.playerCommandReady = True
+
+            if self.mpris is not None:
+                self.mpris.seek_do(self.playing_time)
 
     def play(self):
 
@@ -4774,6 +4776,38 @@ class PlayerCtl:
         self.render_playlist()
         self.notify_update()
 
+    def spot_test_progress(self):
+        
+        if self.playing_state == 1 and spot_ctl.playing:
+            th = 10
+            if self.playing_time > self.playing_length:
+                th = 1
+            if spot_ctl.start_timer.get() < 7 or spot_ctl.update_timer.get() < th:
+                if not spot_ctl.paused:
+                    add_time = spot_ctl.progress_timer.get()
+                    self.playing_time += add_time
+                    self.decode_time = self.playing_time
+                    self.test_progress()
+                    spot_ctl.progress_timer.set()
+                    if len(self.track_queue) > 0 and 2 > add_time > 0:
+                        star_store.add(self.track_queue[self.queue_step], add_time)
+            else:
+                spot_ctl.update_timer.set()
+                spot_ctl.monitor()
+
+        elif self.playing_state == 3 and spot_ctl.coasting:
+            th = 8
+            if self.playing_time > self.playing_length or self.playing_time < 2.5:
+                th = 1
+            if spot_ctl.update_timer.get() < th:
+                if not spot_ctl.paused:
+                    self.playing_time += spot_ctl.progress_timer.get()
+                    self.decode_time = self.playing_time
+                spot_ctl.progress_timer.set()
+
+            else:
+                tauon.spot_ctl.update_timer.set()
+                tauon.spot_ctl.update()
 
     def test_progress(self):
 
@@ -5451,6 +5485,8 @@ class PlayerCtl:
 
         self.render_playlist()
 
+        if spot_ctl.playing and end_of_playlist:
+            spot_ctl.control("stop")
 
         self.notify_update()
         lfm_scrobbler.start_queue()
@@ -17482,7 +17518,12 @@ son_icon.base_asset = asset_loader('sonemic-gs.png')
 son_icon.xoff = 1
 track_menu.add(_('Search Artist on Sonemic'), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
 
-track_menu.add(_('Search Artist on Bandcamp'), ser_band, pass_ref=True, show_test=toggle_band)
+band_icon = MenuIcon(asset_loader('band.png', True))
+band_icon.xoff = 0
+band_icon.yoff = 1
+band_icon.colour = [96, 147, 158, 255]
+
+track_menu.add(_('Search Artist on Bandcamp'), ser_band, pass_ref=True, icon=band_icon, show_test=toggle_band)
 
 
 def clip_ar_tr(index):
@@ -18336,7 +18377,7 @@ def import_spotify_playlist_deco():
         return [colours.menu_text, colours.menu_background, None]
     return [colours.menu_text_disabled, colours.menu_background, None]
 
-x_menu.add(_("Paste Spotify Playlist"), import_spotify_playlist, import_spotify_playlist_deco, show_test=spotify_show_test)
+x_menu.add(_("Paste Spotify Playlist"), import_spotify_playlist, import_spotify_playlist_deco, icon=spot_icon, show_test=spotify_show_test)
 
 
 def show_import_music(_):
@@ -19262,7 +19303,7 @@ def show_spot_playing_deco():
 
 def show_spot_playing():
     if pctl.playing_state == 0:
-        spot_ctl.update()
+        spot_ctl.update(start=True)
 x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test, icon=spot_icon)
 
 
@@ -23273,6 +23314,7 @@ class Over:
 
         if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
             if arch == "x86_64":
+                ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
                 if not gui.downloading_bass:
                     #. Limited width. Max 27 chars. Alt: Download BASS
                     if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
@@ -23281,7 +23323,7 @@ class Over:
                         shoot_dl.start()
                         gui.downloading_bass = True
                 #. A button that shows detailed information about context. Max 5 chars.
-                if self.button(x + 145 * gui.scale, y, _("?")):
+                if self.button(x + ww, y, _("?")):
                     show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
                                  _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
                                  _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
@@ -24473,7 +24515,7 @@ class Over:
         x = x0 + round(25 * gui.scale)
         y = y0 + round(20 * gui.scale)
 
-        ddt.text((x, y), _("Window"),colours.box_text_label, 12)
+        #ddt.text((x, y), _("Window"),colours.box_text_label, 12)
 
 
         y += 28 * gui.scale
@@ -24506,7 +24548,7 @@ class Over:
 
         y += 32 * gui.scale
 
-        ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
+        #ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
 
         if system != 'windows' and (flatpak_mode or snap_mode):
             y += 25 * gui.scale
@@ -24622,11 +24664,13 @@ class Over:
             y += 19 * gui.scale
             ddt.text((x + 120 * gui.scale, y), "brunob", colours.box_sub_text, 13)
             y += 19 * gui.scale
+            ddt.text((x + 120 * gui.scale, y), "msmafra", colours.box_sub_text, 13)
 
             y = yy
             ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
             y += 19 * gui.scale
             ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
+
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)
 
@@ -27817,7 +27861,7 @@ class MiniMode2:
         bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
         ddt.rect(bg_rect, [255, 255, 255, 18], True)
 
-        if 0 < pctl.playing_state < 3:
+        if 0 < pctl.playing_state:
 
             hit_rect = h - 5 * gui.scale, h - 12 * gui.scale, w - h + 5 * gui.scale, 13 * gui.scale
 

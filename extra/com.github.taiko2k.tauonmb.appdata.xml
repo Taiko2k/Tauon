@@ -19,15 +19,17 @@
     <p>Packed with features while maintaining simplicity. Use drag and drop for easy file importing and playlist management. Groups albums by folder and allows you to manage your music with built-in functions such as file and folder renaming, cover art downloading and file deleting.</p>
     <p>Features:</p>
     <ul>
-      <li>Playback common audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
+      <li>Playback local audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
+      <li>Add network tracks from PLEX, Airsonic and koel servers</li>
+      <li>Spotify client functionality</li>
+      <li>Automatic CUE sheet detection</li>
       <li>Gapless playback</li>
-      <li>CUE sheet detection</li>
-      <li>Lookup artists on Rate Your Music</li>
+      <li>Lookup artists on Rate Your Music and Bandcamp</li>
       <li>Scrobble and love tracks to last.fm</li>
       <li>Support for Listenbrainz and launching the Musicbrainz Picard tag editor</li>
       <li>Import downloaded music archives in one click</li>
       <li>Large album art and gallery layouts</li>
-      <li>File transcoding</li>
+      <li>Transcode and sync to device functionality</li>
       <li>Support for lyrics including synced lrc files and guitar chords</li>
       <li>Multiple preset colour themes</li>
       <li>Additional mini and micro UI modes</li>
@@ -61,10 +63,14 @@
 
   <releases>
 
-    <release version="5.5.5" date="2020-06-04">
+    <release version="6.0.0" date="2020-07-10">
       <description>
         <ul>
-          <li>Various bug fixes</li>
+          <li>Added Spotify integration</li>
+          <li>Added Bandcamp artist search</li>
+          <li>Added sync to device feature</li>
+          <li>Improved theme selector</li>
+          <li>Various other improvements and bug fixes</li>
         </ul>
       </description>
     </release>
