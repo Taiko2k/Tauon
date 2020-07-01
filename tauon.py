@@ -4129,7 +4129,7 @@ class PlayerCtl:
                 try:
                     get_radio_art()
                 except:
-                    raise
+                    # raise
                     print("Get art error")
                 gui.clear_image_cache_next = True
 
@@ -4712,7 +4712,7 @@ class PlayerCtl:
 
     def seek_decimal(self, decimal):
 
-        if self.playing_state == 1 or self.playing_state == 2:
+        if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
             if decimal > 1:
                 decimal = 1
             elif decimal < 0:
@@ -4731,21 +4731,23 @@ class PlayerCtl:
 
     def seek_time(self, new):
 
-        if new > self.playing_length - 0.5:
-            self.advance()
-            return
+        if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
 
-        if new < 0.4:
-            new = 0
+            if new > self.playing_length - 0.5:
+                self.advance()
+                return
 
-        self.new_time = new
-        self.playing_time = new
+            if new < 0.4:
+                new = 0
 
-        self.playerCommand = 'seek'
-        self.playerCommandReady = True
+            self.new_time = new
+            self.playing_time = new
 
-        if self.mpris is not None:
-            self.mpris.seek_do(self.playing_time)
+            self.playerCommand = 'seek'
+            self.playerCommandReady = True
+
+            if self.mpris is not None:
+                self.mpris.seek_do(self.playing_time)
 
     def play(self):
 
@@ -4794,7 +4796,7 @@ class PlayerCtl:
                 spot_ctl.monitor()
 
         elif self.playing_state == 3 and spot_ctl.coasting:
-            th = 10
+            th = 8
             if self.playing_time > self.playing_length or self.playing_time < 2.5:
                 th = 1
             if spot_ctl.update_timer.get() < th:
@@ -5483,6 +5485,8 @@ class PlayerCtl:
 
         self.render_playlist()
 
+        if spot_ctl.playing and end_of_playlist:
+            spot_ctl.control("stop")
 
         self.notify_update()
         lfm_scrobbler.start_queue()
@@ -18373,7 +18377,7 @@ def import_spotify_playlist_deco():
         return [colours.menu_text, colours.menu_background, None]
     return [colours.menu_text_disabled, colours.menu_background, None]
 
-x_menu.add(_("Paste Spotify Playlist"), import_spotify_playlist, import_spotify_playlist_deco, show_test=spotify_show_test)
+x_menu.add(_("Paste Spotify Playlist"), import_spotify_playlist, import_spotify_playlist_deco, icon=spot_icon, show_test=spotify_show_test)
 
 
 def show_import_music(_):
@@ -19299,7 +19303,7 @@ def show_spot_playing_deco():
 
 def show_spot_playing():
     if pctl.playing_state == 0:
-        spot_ctl.update()
+        spot_ctl.update(start=True)
 x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test, icon=spot_icon)
 
 
@@ -24660,11 +24664,13 @@ class Over:
             y += 19 * gui.scale
             ddt.text((x + 120 * gui.scale, y), "brunob", colours.box_sub_text, 13)
             y += 19 * gui.scale
+            ddt.text((x + 120 * gui.scale, y), "msmafra", colours.box_sub_text, 13)
 
             y = yy
             ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
             y += 19 * gui.scale
             ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
+
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)
 
@@ -27855,7 +27861,7 @@ class MiniMode2:
         bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
         ddt.rect(bg_rect, [255, 255, 255, 18], True)
 
-        if 0 < pctl.playing_state < 3:
+        if 0 < pctl.playing_state:
 
             hit_rect = h - 5 * gui.scale, h - 12 * gui.scale, w - h + 5 * gui.scale, 13 * gui.scale
 

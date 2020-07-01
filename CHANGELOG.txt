@@ -2,13 +2,15 @@
 Changelog-------------------------------------
 
 v6.0.0
- - Added Spotify integration (wip)
+
+ - Added Spotify integration
  - Added "Transcode and Sync" function
  - Added Bandcamp artist search function
  - Added visual theme selector to settings
  - Added input fields for network accounts in settings
  - Added setting for separate multi-value genre results (default is now off)
  - Added "sort by top played" setting to chart generator
+ - Added "comment" and "genre" properties for MPRIS2
  - Improved transcode handling of multi disc albums
  - Improved genre result names for some genres
  - Improved caching for network sourced album art
