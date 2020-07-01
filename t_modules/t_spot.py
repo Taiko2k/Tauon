@@ -85,7 +85,7 @@ class SpotCtl:
                 self.spotify.playback_pause()
                 self.paused = True
                 self.start_timer.set()
-            if command == "stop" and self.playing:
+            if command == "stop" and (self.playing or self.coasting):
                 self.spotify.playback_pause()
                 self.paused = False
                 self.playing = False
@@ -235,6 +235,7 @@ class SpotCtl:
 
     def play_target(self, id):
 
+        self.coasting = False
         self.connect()
         if not self.spotify:
             return
@@ -249,6 +250,7 @@ class SpotCtl:
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
         self.playing = True
+
         self.progress_timer.set()
         self.start_timer.set()
 
@@ -468,7 +470,7 @@ class SpotCtl:
 
 
     def monitor(self):
-        if self.playing and self.start_timer.get() > 5:
+        if self.playing and self.start_timer.get() > 6:
             result = self.spotify.playback_currently_playing()
             tr = self.tauon.pctl.playing_object()
             if result is None or tr is None:
@@ -487,7 +489,7 @@ class SpotCtl:
                 self.tauon.pctl.playing_time = p / 1000
             self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
 
-    def update(self):
+    def update(self, start=False):
 
         if self.playing:
             self.coasting = False
@@ -499,10 +501,22 @@ class SpotCtl:
 
         result = self.spotify.playback_currently_playing()
 
+        if self.playing or (not self.coasting and not start):
+            return
+
         if result is None or result.is_playing is False:
             if self.coasting:
-                self.tauon.pctl.stop()
-                self.coasting = False
+
+                if self.tauon.pctl.radio_image_bin:
+                    self.tauon.pctl.radio_image_bin.close()
+                    self.tauon.pctl.radio_image_bin = None
+                    self.tauon.dummy_track.artist = ""
+                    self.tauon.dummy_track.title = ""
+                    self.tauon.dummy_track.album = ""
+                    self.tauon.dummy_track.art_url_key = ""
+                    self.tauon.gui.clear_image_cache_next = True
+                    self.paused = True
+
             else:
                 self.tauon.gui.show_message("This Spotify account isn't currently playing anything")
             return
@@ -561,4 +575,5 @@ class SpotCtl:
             self.tauon.gui.clear_image_cache_next = True
 
         self.tauon.gui.update += 2
+        self.tauon.gui.pl_update += 1
 
