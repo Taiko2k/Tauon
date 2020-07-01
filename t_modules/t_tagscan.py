@@ -1151,5 +1151,3 @@ class M4a:
 
         while atom(f):
             pass
-
-

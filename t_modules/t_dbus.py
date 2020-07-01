@@ -35,8 +35,7 @@ class Gnome:
             try:
                 # this is what gives us the multi media keys.
                 dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-                self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
-                                               dbus_interface=dbus_interface)
+                self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0, dbus_interface=dbus_interface)
             except:
                 # Error connecting to org.gnome.SettingsDaemon.MediaKeys
                 pass
@@ -143,7 +142,10 @@ class Gnome:
                                 'xesam:asText': track.lyrics,
                                 'xesam:autoRating': star_count2(tauon.star_store.get(track.index)),
                                 'xesam:composer': dbus.Array([track.composer]),
-                                'tauon:loved': tauon.love(False, track.index)
+                                'tauon:loved': tauon.love(False, track.index),
+                                # added by msmafra
+                                'xesam:comment': dbus.Array([track.comment]),
+                                'xesam:genre': dbus.Array([track.genre])
 
                             }
 
@@ -187,7 +189,8 @@ class Gnome:
                         self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"LoopStatus": self.get_loop_status()}, [])
 
                     def __init__(self, object_path):
-                        dbus.service.Object.__init__(self, bus, object_path)
+                        # dbus.service.Object.__init__(self, bus_name, object_path)
+                        dbus.service.Object.__init__(self, bus, object_path, bus_name=bus_name)
 
                         self.playing_index = -1
 
