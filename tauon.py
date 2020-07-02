@@ -5802,12 +5802,12 @@ class LastFMapi:
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist, self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", ""), self.network)
                 bio = l_artist.get_bio_content()
-                cover_link = l_artist.get_cover_image()
+                #cover_link = l_artist.get_cover_image()
                 mbid = l_artist.get_mbid()
 
-                return True, bio, cover_link, mbid
+                return True, bio, "", mbid
         except:
             print("last.fm get artist info failed")
 
@@ -12217,8 +12217,7 @@ def move_playing_folder_to_stem(path, pl_id=None):
         artist = track.album_artist
 
     # Make filename friendly
-    for g in r'[]/\;,><&*:%=+@!#^()|?^.':
-        artist = artist.replace(g, '')
+    artist = filename_safe(artist)
 
     # Sanity checks
     if track.is_network:
@@ -13435,9 +13434,7 @@ def parse_template(string, track_object, up_ext=False, strict=False):
         output = output.replace(' ', "_")
 
     # Attempt to ensure the output text is filename safe
-    for char in output:
-        if char in '\\/:*?"<>|':
-            output = output.replace(char, '')
+    output = filename_safe(output)
 
     return output
 
@@ -16075,11 +16072,9 @@ def lightning_paste():
         t_artist = match_track.artist
         ta_artist = match_track.album_artist
 
-        for g in r'[]/\;,><&*:%=+@!#^()|?^.':
-            t_artist = t_artist.replace(c, '')
+        t_artist = filename_safe(t_artist)
+        ta_artist = filename_safe(ta_artist)
 
-        for g in r'[]/\;,><&*:%=+@!#^()|?^.':
-            ta_artist = ta_artist.replace(c, '')
 
         if (len(t_artist) > 0 and t_artist in level) or \
                 (len(ta_artist) > 0 and ta_artist in level):
@@ -16119,8 +16114,7 @@ def lightning_paste():
             if move_track.album_artist != "":
                 artist = move_track.album_artist
 
-            for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-                artist = artist.replace(c, '')
+            artist = filename_safe(artist)
 
             if artist == "":
                 show_message("The track needs to have an artist name.")
@@ -19491,8 +19485,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     if t.is_cue:
         out_line = str(t.track_number) + ". "
         out_line += t.artist + " - " + t.title
-        for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-            out_line = out_line.replace(c, '')
+        out_line = filename_safe(out_line)
 
     else:
         out_line = os.path.splitext(pctl.master_library[track].filename)[0]
@@ -21199,8 +21192,7 @@ def encode_folder_name(track_object):
     if folder_name[-1:] == ' ':
         folder_name = track_object.filename
 
-    for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-        folder_name = folder_name.replace(c, '')
+    folder_name = filename_safe(folder_name)
 
     if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
         if track_object.disc_total not in ("", "0", 0, "1", 1) or (str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
@@ -30759,7 +30751,7 @@ def save_discogs_artist_thumb(artist, filepath):
 
     d = discogs_client.Client('TauonMusicBox/' + n_version, user_token=prefs.discogs_pat)
 
-    results = d.search(artist, type='artist')
+    results = d.search(artist.replace("/", "").replace("\\", ""), type='artist')
 
     images = results[0].images
     #print(results)
@@ -30865,22 +30857,24 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        filepath = os.path.join(a_cache_dir, artist + "-lfm.png")
+        f_artist = filename_safe(artist)
 
-        if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
-            filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
+        filepath = os.path.join(a_cache_dir, f_artist + "-lfm.png")
 
-        elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
-            filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
+        if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + f_artist + ".png")):
+            filepath = os.path.join(user_directory, "artist-pictures/" + f_artist + ".png")
 
-        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv-full.jpg")):
-            filepath = os.path.join(a_cache_dir, artist + "-ftv-full.jpg")
+        elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg")):
+            filepath = os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg")
 
-        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv.jpg")):
-            filepath = os.path.join(a_cache_dir, artist + "-ftv.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg")):
+            filepath = os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg")
 
-        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-dcg.jpg")):
-            filepath = os.path.join(a_cache_dir, artist + "-dcg.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-ftv.jpg")):
+            filepath = os.path.join(a_cache_dir, f_artist + "-ftv.jpg")
+
+        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-dcg.jpg")):
+            filepath = os.path.join(a_cache_dir, f_artist + "-dcg.jpg")
 
         if os.path.isfile(filepath):
 
@@ -30951,17 +30945,17 @@ class ArtistList:
                 return
 
             artist = self.to_fetch
-            filename = artist + '-lfm.png'
-            filename2 = artist + '-lfm.txt'
-            filename3 = artist + '-ftv.jpg'
-            filename4 = artist + '-dcg.jpg'
+            f_artist = filename_safe(artist)
+            filename = f_artist + '-lfm.png'
+            filename2 = f_artist + '-lfm.txt'
+            filename3 = f_artist + '-ftv.jpg'
+            filename4 = f_artist + '-dcg.jpg'
             filepath = os.path.join(a_cache_dir, filename)
             filepath2 = os.path.join(a_cache_dir, filename2)
             filepath3 = os.path.join(a_cache_dir, filename3)
             filepath4 = os.path.join(a_cache_dir, filename4)
             got_image = False
             try:
-
                 # Lookup artist info on last.fm
                 print("lastfm lookup artist: " + artist)
                 mbid = lastfm.artist_mbid(artist)
@@ -30978,7 +30972,6 @@ class ArtistList:
                 if mbid and prefs.enable_fanart_artist:
                     save_fanart_artist_thumb(mbid, filepath3, preview=True)
                     got_image = True
-
 
             except:
                 print("Failed to find image from fanart.tv")
@@ -33299,16 +33292,18 @@ class ArtistInfoBox:
             self.lock = False
             return ""
 
-        img_filename = artist + '-ftv-full.jpg'
-        text_filename = artist + '-lfm.txt'
-        img_filepath_lfm = os.path.join(a_cache_dir, artist + '-lfm.png')
-        img_filepath_dcg = os.path.join(a_cache_dir, artist + '-dcg.jpg')
+        f_artist = filename_safe(artist)
+
+        img_filename = f_artist + '-ftv-full.jpg'
+        text_filename = f_artist + '-lfm.txt'
+        img_filepath_lfm = os.path.join(a_cache_dir, f_artist + '-lfm.png')
+        img_filepath_dcg = os.path.join(a_cache_dir, f_artist + '-dcg.jpg')
         img_filepath = os.path.join(a_cache_dir, img_filename)
         text_filepath = os.path.join(a_cache_dir, text_filename)
 
         image_paths = [
-            os.path.join(user_directory, "artist-pictures/" + artist + ".png"),
-            os.path.join(user_directory, "artist-pictures/" + artist + ".jpg"),
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
             img_filepath,
             img_filepath_dcg,
             img_filepath_lfm
@@ -33335,30 +33330,6 @@ class ArtistInfoBox:
                         artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
                         artist_picture_render.show = True
                         break
-
-                # path = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
-                # if os.path.isfile(path):
-                #     filepath = path
-                #     artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-
-                # path = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
-                # elif os.path.isfile(path):
-                #     filepath = path
-                #     artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-                #
-                # elif os.path.isfile(img_filepath):
-                #     artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-                #
-                # elif os.path.isfile(img_filepath_dcg):
-                #     artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-                #
-                # elif os.path.isfile(img_filepath_lfm):
-                #     artist_picture_render.load(img_filepath_lfm, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
 
                 with open(text_filepath, encoding="utf-8") as f:
                     self.text = f.read()
@@ -33420,7 +33391,6 @@ class ArtistInfoBox:
                     if key is None and key == artist:
                         del artist_list_box.thumb_cache[artist]
                         break
-
 
                 self.status = "Ready"
                 gui.update = 2
@@ -33735,11 +33705,8 @@ class GuitarChords:
     def get_cache_title(self, track):
 
         name = track.artist + " " + track.title
-        for char in name:
-            if char in '\\/:*?"<>|':
-                name = name.replace(char, '_')
+        name = filename_safe(name, sub="_")
         return name
-
 
     def render(self, track, x, y):
 
