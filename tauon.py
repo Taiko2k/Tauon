@@ -5802,7 +5802,7 @@ class LastFMapi:
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", ""), self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.network)
                 bio = l_artist.get_bio_content()
                 #cover_link = l_artist.get_cover_image()
                 mbid = l_artist.get_mbid()
@@ -5821,7 +5821,7 @@ class LastFMapi:
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist, self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.network)
                 mbid = l_artist.get_mbid()
                 return mbid
         except:
