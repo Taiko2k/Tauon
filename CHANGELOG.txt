@@ -25,6 +25,7 @@ v6.0.0
  - Fixed animation stutter when opening settings box
  - Fixed global search scroll wheel behavior
  - Fixed right click copy with text input fields
+ - Fixed artist image loading for some artist names
  - Removed "auto update generated playlists" from in-app settings
 
 v5.5.5

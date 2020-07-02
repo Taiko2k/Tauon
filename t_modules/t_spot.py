@@ -212,6 +212,7 @@ class SpotCtl:
             return
 
         devices = self.spotify.playback_devices()
+
         if not devices:
             webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
             tries = 0
@@ -473,7 +474,7 @@ class SpotCtl:
         if self.playing and self.start_timer.get() > 6:
             result = self.spotify.playback_currently_playing()
             tr = self.tauon.pctl.playing_object()
-            if result is None or tr is None:
+            if (result is None or not result.is_playing) or tr is None:
                 self.tauon.pctl.stop()
                 return
             if result.item.name != tr.title:
