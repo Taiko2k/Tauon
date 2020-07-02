@@ -1328,6 +1328,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spot_client = ""
         self.spot_secret = ""
         self.spot_mode = False
+        self.launch_spotify_web = False
 
 prefs = Prefs()
 
@@ -3239,6 +3240,7 @@ def save_prefs():
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
     cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
+    cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
 
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
@@ -3372,6 +3374,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[playback]")
     prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
+    prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather then attempting to launch the desktop client.")
 
 
     cf.br()
@@ -14152,7 +14155,8 @@ mod_folder_icon = MenuIcon(asset_loader('mod_folder.png', True))
 settings_icon = MenuIcon(asset_loader('settings2.png', True))
 rename_tracks_icon = MenuIcon(asset_loader('pen.png', True))
 add_icon = MenuIcon(asset_loader('new.png', True))
-spot_icon = MenuIcon(asset_loader('spot.png', True))
+spot_asset = asset_loader('spot.png', True)
+spot_icon = MenuIcon(spot_asset)
 spot_icon.colour = [30, 215, 96, 255]
 spot_icon.xoff = 5
 spot_icon.yoff = 2
@@ -18678,6 +18682,7 @@ def heart_menu_colour():
 
 heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
 heart_row_icon = asset_loader('heart-track.png', True)
+#spotify_row_icon = asset_loader('spotify-row.png', True)
 star_pc_icon = asset_loader('star-pc.png', True)
 star_row_icon = asset_loader('star.png', True)
 star_half_row_icon = asset_loader('star-half.png', True)
@@ -23995,8 +24000,10 @@ class Over:
             #         text = text.split("=", 1)[1].strip()
             #     if len(text) > 50:
             #         spot_ctl.paste_code(text)
+            y += round(30 * gui.scale)
+            prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
-            y += round(45 * gui.scale)
+            y += round(30 * gui.scale)
             if self.button(x, y, _("Import Albums")):
                 spot_ctl.get_library_albums()
 
@@ -25784,7 +25791,7 @@ class TopPanel:
 
                 # Double click to play
                 if mouse_up and pl_to_id(i) == self.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-                    self.tab_d_click_timer.get() < 0.5 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+                    self.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
 
                     if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                         pctl.play()
@@ -28923,7 +28930,19 @@ class StandardPlaylist:
 
                 ex = left + highlight_left + highlight_width - 7 * gui.scale
 
+
                 height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
+
+                # if tr.file_ext == "SPTY":
+                #     ex -= round(20 * gui.scale)
+                #     yyy = (line_y + gui.playlist_row_height // 2) - spotify_row_icon.h // 2
+                #     colour = [255, 255, 255, 60]
+                #     if gui.tracklist_bg_is_light:
+                #         colour = [0,0,0,70]
+                #     xxx = ex + round(6 * gui.scale)
+                #     if colours.lm:
+                #         xxx -= round(4 * gui.scale)
+                #     spotify_row_icon.render(xxx, yyy, colour)
 
                 star_offset = 0
                 if gui.show_album_ratings:
@@ -29016,6 +29035,10 @@ class StandardPlaylist:
                 ddt.rect(track_box, [40, 40, 190, 80], True)
                 ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
 
+            # Highlight blue if track is being broadcast
+            if tr.file_ext == "SPTY" and not spot_ctl.started_once:
+                ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20], True)
+                ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
 
             # Blue drop line
             if drag_highlight: #playlist_hold_position != p_track:
@@ -30330,7 +30353,7 @@ class PlaylistBox:
 
                 # Double click to play
                 if mouse_up and pl_to_id(i) == top_panel.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-                    top_panel.tab_d_click_timer.get() < 0.5 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+                    top_panel.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
 
                     if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                         pctl.play()
@@ -34642,14 +34665,16 @@ class DLMon:
                                 target_dir = os.path.join(music_directory, os.path.basename(target_dir))
 
                             if os.path.exists(target_dir):
-                                print("Target folder for archive already exsists")
+                                pass
+                                #print("Target folder for archive already exists")
 
                             elif archive_file_scan(path, DA_Formats, launch_prefix) >= 0.4:
                                 self.ready.add(path)
                                 gui.update += 1
-                                print("Archive detected as music")
+                                #print("Archive detected as music")
                             else:
-                                print("Archive rejected as music")
+                                pass
+                                #print("Archive rejected as music")
                             self.done.add(path)
                         else:
                             #print("update.")
