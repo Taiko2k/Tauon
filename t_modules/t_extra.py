@@ -402,16 +402,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                         matches += 5
                 count += 1
             if count > 200:
-                print("RAR archive has many files")
-                print("   --- " + path)
+                #print("RAR archive has many files")
+                #print("   --- " + path)
                 return 0
             if matches == 0:
-                print("RAR archive does not appear to contain audio files")
-                print("   --- " + path)
+                #print("RAR archive does not appear to contain audio files")
+                #print("   --- " + path)
                 return 0
             if count == 0:
-                print("Archive has no files")
-                print("   --- " + path)
+                #print("Archive has no files")
+                #print("   --- " + path)
                 return 0
 
         elif ext == '7z':
@@ -438,16 +438,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                 count += 1
 
             if count > 200:
-                print("7z archive has many files")
-                print("   --- " + path)
+                #print("7z archive has many files")
+                #print("   --- " + path)
                 return 0
             if matches == 0:
-                print("7z archive does not appear to contain audio files")
-                print("   --- " + path)
+                #print("7z archive does not appear to contain audio files")
+                #print("   --- " + path)
                 return 0
             if count == 0:
-                print("7z archive has no files")
-                print("   --- " + path)
+                #print("7z archive has no files")
+                #print("   --- " + path)
                 return 0
 
         elif ext == "zip":
@@ -455,7 +455,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
             zip_ref = zipfile.ZipFile(path, 'r')
             matches = 0
             count = 0
-            print(zip_ref.namelist())
+            #print(zip_ref.namelist())
             for fi in zip_ref.namelist():
                 for ty in extensions:
                     if fi[len(ty) * -1:].lower() == ty:
@@ -468,16 +468,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                         matches += 5
                 count += 1
             if count == 0:
-                print("Archive has no files")
-                print("   --- " + path)
+                #print("Archive has no files")
+                #print("   --- " + path)
                 return 0
             if count > 300:
-                print("Zip archive has many files")
-                print("   --- " + path)
+                #print("Zip archive has many files")
+                #print("   --- " + path)
                 return 0
             if matches == 0:
-                print("Zip archive does not appear to contain audio files")
-                print("   --- " + path)
+                #print("Zip archive does not appear to contain audio files")
+                #print("   --- " + path)
                 return 0
         else:
             return 0
@@ -504,6 +504,11 @@ def get_folder_size(path):
             total_size += os.path.getsize(fp)
     return total_size
 
+
+def filename_safe(text, sub=""):
+    for cha in '/\\<>:"|?*':
+        text = text.replace(cha, sub)
+    return text
 
 def get_artist_strip_feat(track_object):
 

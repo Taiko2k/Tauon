@@ -5,6 +5,7 @@ import pickle
 import requests
 import io
 import webbrowser
+import subprocess
 import time
 from t_modules.t_extra import Timer
 import urllib.request
@@ -24,6 +25,7 @@ class SpotCtl:
         self.paused = False
         self.token = None
         self.cred = None
+        self.started_once = False
         self.redirect_uri = f"http://localhost:7811/spotredir"
         self.current_imports = {}
 
@@ -212,19 +214,21 @@ class SpotCtl:
             return
 
         devices = self.spotify.playback_devices()
+
         if not devices:
-            webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
-            tries = 0
-            while not devices:
-                time.sleep(2)
-                if tries == 0:
-                    self.tauon.focus_window()
-                devices = self.spotify.playback_devices()
-                tries += 1
-                if tries > 4:
-                    break
-            if not devices:
-                return False
+            # webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
+            # tries = 0
+            # while not devices:
+            #     time.sleep(2)
+            #     if tries == 0:
+            #         self.tauon.focus_window()
+            #     devices = self.spotify.playback_devices()
+            #     tries += 1
+            #     if tries > 4:
+            #         break
+            # if not devices:
+            #     return False
+            return False
         for d in devices:
             if d.is_active:
                 return None
@@ -241,18 +245,75 @@ class SpotCtl:
             return
 
         d_id = self.prime_device()
-        if d_id is False:
-            return
+        # if d_id is False:
+        #     return
 
         #if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
         #try:
-        self.spotify.playback_start_tracks([id], device_id=d_id)
+        if d_id is False:
+            if self.tauon.prefs.launch_spotify_web:
+                webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
+                tries = 0
+                while True:
+                    time.sleep(2)
+                    if tries == 0:
+                        self.tauon.focus_window()
+                    devices = self.spotify.playback_devices()
+                    if devices:
+                        self.spotify.playback_start_tracks([id], device_id=devices[0].id)
+                        break
+                    tries += 1
+                    if tries > 5:
+                        self.tauon.pctl.stop()
+                        self.tauon.gui.show_message("Error starting Spotify web player", mode="error")
+                        return
+            else:
+                subprocess.run(["xdg-open", "spotify:track"])
+                print("LAUNCH SPOTIFY")
+                time.sleep(3)
+                tries = 0
+                playing = False
+                while True:
+                    print("WAIT FOR DEVICE...")
+                    devices = self.spotify.playback_devices()
+                    if devices:
+                        print("DEVICE FOUND")
+                        self.tauon.focus_window()
+                        time.sleep(1)
+                        print("ATTEMPT START")
+                        self.spotify.playback_start_tracks([id], device_id=devices[0].id)
+                        while True:
+
+                            result = self.spotify.playback_currently_playing()
+                            if result and result.is_playing:
+                                playing = True
+                                print("TRACK START SUCCESS")
+                                break
+                            time.sleep(2)
+                            tries += 1
+                            print("NOT PLAYING YET...")
+                            if tries > 6:
+                                break
+                    if playing:
+                        break
+                    tries += 1
+                    if tries > 5:
+                        print("TOO MANY TRIES")
+                        self.tauon.pctl.stop()
+                        self.tauon.gui.show_message("Error starting Spotify", mode="error")
+                        return
+                    time.sleep(2)
+
+        else:
+           self.spotify.playback_start_tracks([id], device_id=d_id)
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
         self.playing = True
+        self.started_once = True
 
         self.progress_timer.set()
         self.start_timer.set()
+        self.tauon.gui.pl_update += 1
 
     def get_library_albums(self):
         self.connect()
@@ -473,7 +534,8 @@ class SpotCtl:
         if self.playing and self.start_timer.get() > 6:
             result = self.spotify.playback_currently_playing()
             tr = self.tauon.pctl.playing_object()
-            if result is None or tr is None:
+            if (result is None or result.item is None or not result.is_playing) or tr is None:
+                self.playing = False
                 self.tauon.pctl.stop()
                 return
             if result.item.name != tr.title:

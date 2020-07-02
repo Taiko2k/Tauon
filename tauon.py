@@ -1328,6 +1328,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spot_client = ""
         self.spot_secret = ""
         self.spot_mode = False
+        self.launch_spotify_web = False
 
 prefs = Prefs()
 
@@ -3239,6 +3240,7 @@ def save_prefs():
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
     cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
+    cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
 
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
@@ -3372,6 +3374,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[playback]")
     prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
+    prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather then attempting to launch the desktop client.")
 
 
     cf.br()
@@ -5802,12 +5805,12 @@ class LastFMapi:
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist, self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.network)
                 bio = l_artist.get_bio_content()
-                cover_link = l_artist.get_cover_image()
+                #cover_link = l_artist.get_cover_image()
                 mbid = l_artist.get_mbid()
 
-                return True, bio, cover_link, mbid
+                return True, bio, "", mbid
         except:
             print("last.fm get artist info failed")
 
@@ -5821,7 +5824,7 @@ class LastFMapi:
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist, self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.network)
                 mbid = l_artist.get_mbid()
                 return mbid
         except:
@@ -12217,8 +12220,7 @@ def move_playing_folder_to_stem(path, pl_id=None):
         artist = track.album_artist
 
     # Make filename friendly
-    for g in r'[]/\;,><&*:%=+@!#^()|?^.':
-        artist = artist.replace(g, '')
+    artist = filename_safe(artist)
 
     # Sanity checks
     if track.is_network:
@@ -13435,9 +13437,7 @@ def parse_template(string, track_object, up_ext=False, strict=False):
         output = output.replace(' ', "_")
 
     # Attempt to ensure the output text is filename safe
-    for char in output:
-        if char in '\\/:*?"<>|':
-            output = output.replace(char, '')
+    output = filename_safe(output)
 
     return output
 
@@ -14155,7 +14155,8 @@ mod_folder_icon = MenuIcon(asset_loader('mod_folder.png', True))
 settings_icon = MenuIcon(asset_loader('settings2.png', True))
 rename_tracks_icon = MenuIcon(asset_loader('pen.png', True))
 add_icon = MenuIcon(asset_loader('new.png', True))
-spot_icon = MenuIcon(asset_loader('spot.png', True))
+spot_asset = asset_loader('spot.png', True)
+spot_icon = MenuIcon(spot_asset)
 spot_icon.colour = [30, 215, 96, 255]
 spot_icon.xoff = 5
 spot_icon.yoff = 2
@@ -16075,11 +16076,9 @@ def lightning_paste():
         t_artist = match_track.artist
         ta_artist = match_track.album_artist
 
-        for g in r'[]/\;,><&*:%=+@!#^()|?^.':
-            t_artist = t_artist.replace(c, '')
+        t_artist = filename_safe(t_artist)
+        ta_artist = filename_safe(ta_artist)
 
-        for g in r'[]/\;,><&*:%=+@!#^()|?^.':
-            ta_artist = ta_artist.replace(c, '')
 
         if (len(t_artist) > 0 and t_artist in level) or \
                 (len(ta_artist) > 0 and ta_artist in level):
@@ -16119,8 +16118,7 @@ def lightning_paste():
             if move_track.album_artist != "":
                 artist = move_track.album_artist
 
-            for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-                artist = artist.replace(c, '')
+            artist = filename_safe(artist)
 
             if artist == "":
                 show_message("The track needs to have an artist name.")
@@ -18684,6 +18682,7 @@ def heart_menu_colour():
 
 heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
 heart_row_icon = asset_loader('heart-track.png', True)
+#spotify_row_icon = asset_loader('spotify-row.png', True)
 star_pc_icon = asset_loader('star-pc.png', True)
 star_row_icon = asset_loader('star.png', True)
 star_half_row_icon = asset_loader('star-half.png', True)
@@ -19491,8 +19490,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     if t.is_cue:
         out_line = str(t.track_number) + ". "
         out_line += t.artist + " - " + t.title
-        for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-            out_line = out_line.replace(c, '')
+        out_line = filename_safe(out_line)
 
     else:
         out_line = os.path.splitext(pctl.master_library[track].filename)[0]
@@ -21199,8 +21197,7 @@ def encode_folder_name(track_object):
     if folder_name[-1:] == ' ':
         folder_name = track_object.filename
 
-    for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-        folder_name = folder_name.replace(c, '')
+    folder_name = filename_safe(folder_name)
 
     if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
         if track_object.disc_total not in ("", "0", 0, "1", 1) or (str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
@@ -24003,8 +24000,10 @@ class Over:
             #         text = text.split("=", 1)[1].strip()
             #     if len(text) > 50:
             #         spot_ctl.paste_code(text)
+            y += round(30 * gui.scale)
+            prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
-            y += round(45 * gui.scale)
+            y += round(30 * gui.scale)
             if self.button(x, y, _("Import Albums")):
                 spot_ctl.get_library_albums()
 
@@ -25792,7 +25791,7 @@ class TopPanel:
 
                 # Double click to play
                 if mouse_up and pl_to_id(i) == self.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-                    self.tab_d_click_timer.get() < 0.5 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+                    self.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
 
                     if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                         pctl.play()
@@ -28931,7 +28930,19 @@ class StandardPlaylist:
 
                 ex = left + highlight_left + highlight_width - 7 * gui.scale
 
+
                 height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
+
+                # if tr.file_ext == "SPTY":
+                #     ex -= round(20 * gui.scale)
+                #     yyy = (line_y + gui.playlist_row_height // 2) - spotify_row_icon.h // 2
+                #     colour = [255, 255, 255, 60]
+                #     if gui.tracklist_bg_is_light:
+                #         colour = [0,0,0,70]
+                #     xxx = ex + round(6 * gui.scale)
+                #     if colours.lm:
+                #         xxx -= round(4 * gui.scale)
+                #     spotify_row_icon.render(xxx, yyy, colour)
 
                 star_offset = 0
                 if gui.show_album_ratings:
@@ -29024,6 +29035,10 @@ class StandardPlaylist:
                 ddt.rect(track_box, [40, 40, 190, 80], True)
                 ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
 
+            # Highlight blue if track is being broadcast
+            if tr.file_ext == "SPTY" and not spot_ctl.started_once:
+                ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20], True)
+                ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
 
             # Blue drop line
             if drag_highlight: #playlist_hold_position != p_track:
@@ -30338,7 +30353,7 @@ class PlaylistBox:
 
                 # Double click to play
                 if mouse_up and pl_to_id(i) == top_panel.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-                    top_panel.tab_d_click_timer.get() < 0.5 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
+                    top_panel.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
 
                     if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                         pctl.play()
@@ -30759,7 +30774,7 @@ def save_discogs_artist_thumb(artist, filepath):
 
     d = discogs_client.Client('TauonMusicBox/' + n_version, user_token=prefs.discogs_pat)
 
-    results = d.search(artist, type='artist')
+    results = d.search(artist.replace("/", "").replace("\\", ""), type='artist')
 
     images = results[0].images
     #print(results)
@@ -30865,22 +30880,24 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        filepath = os.path.join(a_cache_dir, artist + "-lfm.png")
+        f_artist = filename_safe(artist)
 
-        if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
-            filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
+        filepath = os.path.join(a_cache_dir, f_artist + "-lfm.png")
 
-        elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
-            filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
+        if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + f_artist + ".png")):
+            filepath = os.path.join(user_directory, "artist-pictures/" + f_artist + ".png")
 
-        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv-full.jpg")):
-            filepath = os.path.join(a_cache_dir, artist + "-ftv-full.jpg")
+        elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg")):
+            filepath = os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg")
 
-        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-ftv.jpg")):
-            filepath = os.path.join(a_cache_dir, artist + "-ftv.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg")):
+            filepath = os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg")
 
-        elif os.path.isfile(os.path.join(a_cache_dir, artist + "-dcg.jpg")):
-            filepath = os.path.join(a_cache_dir, artist + "-dcg.jpg")
+        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-ftv.jpg")):
+            filepath = os.path.join(a_cache_dir, f_artist + "-ftv.jpg")
+
+        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-dcg.jpg")):
+            filepath = os.path.join(a_cache_dir, f_artist + "-dcg.jpg")
 
         if os.path.isfile(filepath):
 
@@ -30951,17 +30968,17 @@ class ArtistList:
                 return
 
             artist = self.to_fetch
-            filename = artist + '-lfm.png'
-            filename2 = artist + '-lfm.txt'
-            filename3 = artist + '-ftv.jpg'
-            filename4 = artist + '-dcg.jpg'
+            f_artist = filename_safe(artist)
+            filename = f_artist + '-lfm.png'
+            filename2 = f_artist + '-lfm.txt'
+            filename3 = f_artist + '-ftv.jpg'
+            filename4 = f_artist + '-dcg.jpg'
             filepath = os.path.join(a_cache_dir, filename)
             filepath2 = os.path.join(a_cache_dir, filename2)
             filepath3 = os.path.join(a_cache_dir, filename3)
             filepath4 = os.path.join(a_cache_dir, filename4)
             got_image = False
             try:
-
                 # Lookup artist info on last.fm
                 print("lastfm lookup artist: " + artist)
                 mbid = lastfm.artist_mbid(artist)
@@ -30978,7 +30995,6 @@ class ArtistList:
                 if mbid and prefs.enable_fanart_artist:
                     save_fanart_artist_thumb(mbid, filepath3, preview=True)
                     got_image = True
-
 
             except:
                 print("Failed to find image from fanart.tv")
@@ -33299,16 +33315,18 @@ class ArtistInfoBox:
             self.lock = False
             return ""
 
-        img_filename = artist + '-ftv-full.jpg'
-        text_filename = artist + '-lfm.txt'
-        img_filepath_lfm = os.path.join(a_cache_dir, artist + '-lfm.png')
-        img_filepath_dcg = os.path.join(a_cache_dir, artist + '-dcg.jpg')
+        f_artist = filename_safe(artist)
+
+        img_filename = f_artist + '-ftv-full.jpg'
+        text_filename = f_artist + '-lfm.txt'
+        img_filepath_lfm = os.path.join(a_cache_dir, f_artist + '-lfm.png')
+        img_filepath_dcg = os.path.join(a_cache_dir, f_artist + '-dcg.jpg')
         img_filepath = os.path.join(a_cache_dir, img_filename)
         text_filepath = os.path.join(a_cache_dir, text_filename)
 
         image_paths = [
-            os.path.join(user_directory, "artist-pictures/" + artist + ".png"),
-            os.path.join(user_directory, "artist-pictures/" + artist + ".jpg"),
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
             img_filepath,
             img_filepath_dcg,
             img_filepath_lfm
@@ -33335,30 +33353,6 @@ class ArtistInfoBox:
                         artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
                         artist_picture_render.show = True
                         break
-
-                # path = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
-                # if os.path.isfile(path):
-                #     filepath = path
-                #     artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-
-                # path = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
-                # elif os.path.isfile(path):
-                #     filepath = path
-                #     artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-                #
-                # elif os.path.isfile(img_filepath):
-                #     artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-                #
-                # elif os.path.isfile(img_filepath_dcg):
-                #     artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
-                #
-                # elif os.path.isfile(img_filepath_lfm):
-                #     artist_picture_render.load(img_filepath_lfm, round(gui.artist_panel_height - 20 * gui.scale))
-                #     artist_picture_render.show = True
 
                 with open(text_filepath, encoding="utf-8") as f:
                     self.text = f.read()
@@ -33420,7 +33414,6 @@ class ArtistInfoBox:
                     if key is None and key == artist:
                         del artist_list_box.thumb_cache[artist]
                         break
-
 
                 self.status = "Ready"
                 gui.update = 2
@@ -33735,11 +33728,8 @@ class GuitarChords:
     def get_cache_title(self, track):
 
         name = track.artist + " " + track.title
-        for char in name:
-            if char in '\\/:*?"<>|':
-                name = name.replace(char, '_')
+        name = filename_safe(name, sub="_")
         return name
-
 
     def render(self, track, x, y):
 
@@ -34675,14 +34665,16 @@ class DLMon:
                                 target_dir = os.path.join(music_directory, os.path.basename(target_dir))
 
                             if os.path.exists(target_dir):
-                                print("Target folder for archive already exsists")
+                                pass
+                                #print("Target folder for archive already exists")
 
                             elif archive_file_scan(path, DA_Formats, launch_prefix) >= 0.4:
                                 self.ready.add(path)
                                 gui.update += 1
-                                print("Archive detected as music")
+                                #print("Archive detected as music")
                             else:
-                                print("Archive rejected as music")
+                                pass
+                                #print("Archive rejected as music")
                             self.done.add(path)
                         else:
                             #print("update.")
