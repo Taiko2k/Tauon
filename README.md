@@ -28,6 +28,7 @@
   - Built-in topchart generator.
   - Background **radio broadcasting**. :radio: :satellite: (Bass only)
   - Stream music from your **PLEX**, **koel** or **Subsonic API** compatible server.
+  - Import and control playback of Spotify tracks. (Requires Spotify Premium) 
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
