@@ -8,9 +8,9 @@
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
-  <url type="homepage">https://github.com/Taiko2k/TauonMusicBox</url>
+  <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/TauonMusicBox/issues</url>
-  <url type="help">https://taiko2k.github.io/tauonmb-site</url>
+  <url type="help">https://tauonmusicbox.rocks/#manual</url>
   <url type="donation">https://ko-fi.com/taiko2k</url>
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/66533289-eb697e00-eb6e-11e9-8a93-513056a343f6.png</icon>
 
@@ -21,7 +21,7 @@
     <ul>
       <li>Playback local audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
       <li>Add network tracks from PLEX, Airsonic and koel servers</li>
-      <li>Spotify client functionality</li>
+      <li>Remote control Spotify playback</li>
       <li>Automatic CUE sheet detection</li>
       <li>Gapless playback</li>
       <li>Lookup artists on Rate Your Music and Bandcamp</li>
@@ -63,7 +63,7 @@
 
   <releases>
 
-    <release version="6.0.0" date="2020-07-10">
+    <release version="6.0.0" date="2020-07-03">
       <description>
         <ul>
           <li>Added Spotify integration</li>

@@ -11,12 +11,14 @@ v6.0.0
  - Added setting for separate multi-value genre results (default is now off)
  - Added "sort by top played" setting to chart generator
  - Added "comment" and "genre" properties for MPRIS2
+ - Added "Remove Network Tracks" function in database menu
  - Improved transcode handling of multi disc albums
  - Improved genre result names for some genres
  - Improved caching for network sourced album art
  - Improved hidden columns bar to peak on mouse over
  - Tweaked old playtime star colour
  - Tweaked layout and description of various settings
+ - Tweaked tab double click to play click timing
  - Fixed genius lyrics scrape for new layout version
  - Fixed tracks showing as drop-able into a generator playlist
  - Fixed dropping tracks then clicking playlist triggering play
