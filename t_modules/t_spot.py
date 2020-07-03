@@ -584,6 +584,7 @@ class SpotCtl:
             return
 
         self.coasting = True
+        self.started_once = True
         self.tauon.pctl.playing_state = 3
 
         if result.is_playing:
