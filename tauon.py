@@ -1329,6 +1329,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spot_secret = ""
         self.spot_mode = False
         self.launch_spotify_web = False
+        self.remove_network_tracks = False
 
 prefs = Prefs()
 
@@ -18486,9 +18487,15 @@ cm_clean_db = False
 
 def clean_db():
     global cm_clean_db
+    prefs.remove_network_tracks = False
     cm_clean_db = True
 
+def clean_db2():
+    global cm_clean_db
+    prefs.remove_network_tracks = True
+    cm_clean_db = True
 
+x_menu.add_to_sub(_("Remove Network Tracks"), 0, clean_db2)
 x_menu.add_to_sub(_("Remove Missing Tracks"), 0, clean_db)
 
 x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
@@ -21849,7 +21856,9 @@ def worker1():
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
-                if track.is_network or not os.path.isfile(track.fullpath):
+
+                if (prefs.remove_network_tracks is False and not track.is_network and not os.path.isfile(track.fullpath)) or \
+                (prefs.remove_network_tracks is True and track.is_network):
 
                     # Remove from all playlists
                     for playlist in pctl.multi_playlist:
@@ -29667,6 +29676,9 @@ class RadioBox:
         self.playing_title = ""
 
     def start(self, item):
+
+        if spot_ctl.playing or spot_ctl.coasting:
+            spot_ctl.control("stop")
 
         url = item["stream_url"]
         self.playing_title = ""
