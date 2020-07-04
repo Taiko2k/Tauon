@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.6.0\n"
 "POT-Creation-Date: 2020-07-04 13:41+1200\n"
-"PO-Revision-Date: 2020-07-04 00:49-0300\n"
+"PO-Revision-Date: 2020-07-04 01:03-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
 "Language: pt_BR\n"
@@ -431,13 +431,12 @@ msgstr "Adicionar álbum do Spotify"
 
 #: tauon.py:14838
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr "OK. A partir de agora esta playlist ordenará automaticamente"
+msgstr "OK. A partir de agora esta playlist auto-ordenará"
 
 #: tauon.py:14839
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
-msgstr ""
-"Altere/Remova este comportamento em \"Misc...\" > \"Editar gerador...\""
+msgstr "Edite/Remova esta conduta em \"Miscelânea...\" > \"Editar gerador...\""
 
 #: tauon.py:14843 tauon.py:18344
 msgid "New Playlist"
@@ -485,7 +484,7 @@ msgstr "Acrescentar Tocando"
 
 #: tauon.py:14868
 msgid "Misc…"
-msgstr "Misc…"
+msgstr "Miscelânea…"
 
 #: tauon.py:14915
 msgid "No target folder selected"
