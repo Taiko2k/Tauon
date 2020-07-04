@@ -6440,6 +6440,19 @@ from t_modules.t_draw import TDraw
 from t_modules.t_draw import QuickThumbnail
 QuickThumbnail.renderer = renderer
 
+class Strings:
+    def __init__(self):
+        self.spotify_likes = _("Spotify Likes")
+        self.spotify_albums = _("Spotify Albums")
+        self.spotify_un_liked = _("Track removed from liked tracks")
+        self.spotify_already_un_liked = _("Track was already un-liked")
+        self.spotify_already_liked = _("Track is already liked")
+        self.spotify_like_added = _("Track added to liked tracks")
+        self.spotify_account_connected = _("Spotify account connected")
+        self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
+        self.spotify_error_starting = _("Error starting Spotify")
+
+
 class Tauon:
 
     def __init__(self):
@@ -6448,6 +6461,8 @@ class Tauon:
         self.t_id = t_id
         self.desktop = desktop
 
+        self.translate = _
+        self.strings = Strings()
         self.pctl = pctl
         self.lfm_scrobbler = lfm_scrobbler
         self.star_store = star_store
@@ -14840,12 +14855,7 @@ tab_menu.add_to_sub(_('Sort Track Numbers'), 1, sort_track_2, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Year per Artist'), 1, year_sort, pass_ref=True)
 tab_menu.add_to_sub(_('Make playlist auto-sorting'), 1, make_auto_sorting, pass_ref=True)
 
-# tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
-# tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
-# tab_menu.add('Re-Import Last Folder', re_import, pass_ref=True)
-# tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
-#tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
 
 tab_menu.add(_('Rescan Folder'), re_import2, rescan_deco, pass_ref=True, pass_ref_deco=True)
 
@@ -15070,6 +15080,9 @@ def key_playcount(index):
     # else:
     #     return 0
 
+def add_pl_tag(text):
+    return f" <{text}>"
+
 def gen_top_rating(index, custom_list=None):
 
     source = custom_list
@@ -15081,7 +15094,7 @@ def gen_top_rating(index, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Rating Sorted>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Top Rated Tracks")),
                                playlist=copy.deepcopy(playlist),
                                hide_title=1))
 
@@ -15098,7 +15111,7 @@ def gen_top_100(index, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Playtime Sorted>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Top Played Tracks")),
                                playlist=copy.deepcopy(playlist),
                                hide_title=1))
 
@@ -15163,7 +15176,7 @@ def gen_folder_top(pl, get_sets=False, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Played Albums>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + add_pl_tag(_("Top Played Albums")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15218,7 +15231,7 @@ def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Top Rated Albums>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + add_pl_tag(_("Top Rated Albums")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15297,7 +15310,7 @@ def gen_incomplete(pl, custom_list=None):
 
     if len(playlist) > 0:
         show_message(_("Note this may include albums that simply have tracks missing an album tag"))
-        pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + _(" <Incomplete Albums>"),
+        pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + add_pl_tag(_("Incomplete Albums")),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
@@ -15318,7 +15331,7 @@ def gen_codec_pl(codec):
                 playlist.append(item)
 
     if len(playlist) > 0:
-        pctl.multi_playlist.append(pl_gen(title="Codec: " + codec,
+        pctl.multi_playlist.append(pl_gen(title=_("Codec") + ": " + codec,
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
@@ -15337,7 +15350,7 @@ def gen_last_modified(index, custom_list=None, reverse=True):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <File modified>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("File Modified")),
                                playlist=copy.deepcopy(playlist),
                                hide_title=0))
 
@@ -15367,7 +15380,7 @@ def gen_love(pl, custom_list=None):
 
     if len(playlist) > 0:
         #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
-        pctl.multi_playlist.append(pl_gen(title="Loved",
+        pctl.multi_playlist.append(pl_gen(title=_("Loved"),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a love>"
@@ -15397,7 +15410,7 @@ def gen_comment(pl):
 
     if len(playlist) > 0:
         #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
-        pctl.multi_playlist.append(pl_gen(title="Interesting Comments",
+        pctl.multi_playlist.append(pl_gen(title=_("Interesting Comments"),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
     else:
@@ -15441,7 +15454,7 @@ def gen_sort_len(index, custom_list=None):
     # pctl.multi_playlist.append(
     #     [pctl.multi_playlist[index][0] + " <Duration Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Duration Sorted>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Duration Sorted")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
@@ -15486,7 +15499,7 @@ def gen_folder_duration(pl, get_sets=False):
     for se in sets:
         playlist += se
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Longest Albums>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + add_pl_tag(_("Longest Albums")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15535,7 +15548,7 @@ def gen_sort_date(index, rev=False, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    line = " <Year Sorted>"
+    line = add_pl_tag(_("Year Sorted"))
     if lowest != highest and lowest != 0 and highest != 0:
         if rev:
             line = " <" + str(highest) + "-" + str(lowest) + ">"
@@ -15572,7 +15585,7 @@ def gen_500_random(index):
 
     random.shuffle(playlist)
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Shuffled Tracks")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
@@ -15608,7 +15621,7 @@ def gen_folder_shuffle(index, custom_list=None):
         return playlist
 
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled Folders>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Shuffled Albums")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15632,7 +15645,7 @@ def gen_best_random(index):
 
     if len(playlist) > 0:
 
-        pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Lucky Random>",
+        pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Lucky Random")),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=1))
 
@@ -15654,7 +15667,7 @@ def gen_reverse(index, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Reversed>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Reversed")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=pctl.multi_playlist[index][4]))
 
@@ -15688,7 +15701,7 @@ def gen_folder_reverse(index, custom_list=None):
     if custom_list is not None:
         return playlist
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Reversed Folders>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Reversed Albums")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15700,7 +15713,7 @@ extra_tab_menu.add_to_sub(_("Reverse Albums"), 0, gen_folder_reverse, pass_ref=T
 def gen_dupe(index):
     playlist = pctl.multi_playlist[index][2]
 
-    pctl.multi_playlist.append(pl_gen(title=gen_unique_pl_title(pctl.multi_playlist[index][0], "Duplicate ", 0),
+    pctl.multi_playlist.append(pl_gen(title=gen_unique_pl_title(pctl.multi_playlist[index][0], _("Duplicate") + " ", 0),
                                       playing=pctl.multi_playlist[index][1],
                                       playlist=copy.deepcopy(playlist),
                                       position=pctl.multi_playlist[index][3],
@@ -15718,7 +15731,7 @@ def gen_sort_path(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=path)
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Filepath Sorted>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Filepath Sorted")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15733,7 +15746,7 @@ def gen_sort_artist(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=artist)
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Artist Sorted>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Artist Sorted")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
@@ -15747,7 +15760,7 @@ def gen_sort_album(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=album)
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Album Sorted>",
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + add_pl_tag(_("Album Sorted")),
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 

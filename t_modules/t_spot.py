@@ -15,7 +15,7 @@ class SpotCtl:
 
     def __init__(self, tauon):
         self.tauon = tauon
-
+        self.strings = tauon.strings
         self.start_timer = Timer()
         self.status = 0
         self.spotify = None
@@ -55,7 +55,7 @@ class SpotCtl:
         self.token = self.cred.request_user_token(code)
         if self.token:
             self.save_token()
-            self.tauon.gui.show_message("Spotify account connected", mode="done")
+            self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
 
     def save_token(self):
         if self.token:
@@ -263,9 +263,9 @@ class SpotCtl:
                         self.spotify.playback_start_tracks([id], device_id=devices[0].id)
                         break
                     tries += 1
-                    if tries > 5:
+                    if tries > 6:
                         self.tauon.pctl.stop()
-                        self.tauon.gui.show_message("Error starting Spotify web player", mode="error")
+                        self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
                         return
             else:
                 subprocess.run(["xdg-open", "spotify:track"])
@@ -297,10 +297,10 @@ class SpotCtl:
                     if playing:
                         break
                     tries += 1
-                    if tries > 5:
+                    if tries > 6:
                         print("TOO MANY TRIES")
                         self.tauon.pctl.stop()
-                        self.tauon.gui.show_message("Error starting Spotify", mode="error")
+                        self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
                         return
                     time.sleep(2)
 
@@ -328,7 +328,7 @@ class SpotCtl:
         for a in albums.items:
             self.load_album(a.album, playlist)
 
-        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Spotify Albums", playlist=playlist))
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.strings.spotify_albums, playlist=playlist))
 
     def append_album(self, url, playlist_number=None, return_list=False):
 
@@ -485,9 +485,9 @@ class SpotCtl:
             if not results or results[0] is False:
                 self.spotify.saved_tracks_add([id])
                 tract_object.misc["spotify-liked"] = True
-                self.tauon.gui.show_message("Track added to liked tracks", mode="done")
+                self.tauon.gui.show_message(self.strings.spotify_like_added, mode="done")
                 return
-            self.tauon.gui.show_message("Track is already liked")
+            self.tauon.gui.show_message(self.strings.spotify_already_liked)
             return
 
     def unlike_track(self, tract_object):
@@ -498,9 +498,9 @@ class SpotCtl:
             if not results or results[0] is True:
                 self.spotify.saved_tracks_delete([id])
                 tract_object.pop("spotify-liked", None)
-                self.tauon.gui.show_message("Track removed from liked tracks", mode="done")
+                self.tauon.gui.show_message(self.strings.spotify_un_liked, mode="done")
                 return
-            self.tauon.gui.show_message("Track was already un-liked")
+            self.tauon.gui.show_message(self.strings.spotify_already_un_liked)
             return
 
     def get_library_likes(self):
@@ -523,11 +523,11 @@ class SpotCtl:
             nt.misc["spotify-liked"] = True
 
         for p in self.tauon.pctl.multi_playlist:
-            if p[0] == "Spotify Likes":
+            if p[0] == self.tauon.strings.spotify_likes:
                 p[2][:] = playlist[:]
                 return
 
-        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Spotify Likes", playlist=playlist))
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist=playlist))
 
 
     def monitor(self):
@@ -580,7 +580,7 @@ class SpotCtl:
                     self.paused = True
 
             else:
-                self.tauon.gui.show_message("This Spotify account isn't currently playing anything")
+                self.tauon.gui.show_message(self.strings.spotify_not_playing)
             return
 
         self.coasting = True
