@@ -4305,7 +4305,7 @@ class PlayerCtl:
         global playlist_selected
         global shift_selection
       
-        if highlight and spot_ctl.coasting:
+        if spot_ctl.coasting:
             sptr = tauon.dummy_track.misc.get("spotify-track-url")
             if sptr:
                 
