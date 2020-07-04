@@ -23980,7 +23980,7 @@ class Over:
             text_spot_client.text = prefs.spot_client
             text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
                               width=rect1[2] - 8 * gui.scale, click=self.click)
-            prefs.spot_client = text_spot_client.text
+            prefs.spot_client = text_spot_client.text.strip()
 
             y += round(23 * gui.scale)
             ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
@@ -23994,7 +23994,7 @@ class Over:
             text_spot_secret.text = prefs.spot_secret
             text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
                               width=rect1[2] - 8 * gui.scale, click=self.click)
-            prefs.spot_secret = text_spot_secret.text
+            prefs.spot_secret = text_spot_secret.text.strip()
 
             y += round(35 * gui.scale)
             # if self.button(x, y, _("Copy redirect URI")):
