@@ -1,6 +1,7 @@
 
 import os
 import tekore as tk
+import tekore.auth
 import pickle
 import requests
 import io
@@ -35,7 +36,7 @@ class SpotCtl:
         self.token_path = os.path.join(self.tauon.user_directory, "spot-r-token")
 
     def prep_cred(self):
-        self.cred = tk.auth.RefreshingCredentials(client_id=self.tauon.prefs.spot_client,
+        self.cred = tekore.auth.RefreshingCredentials(client_id=self.tauon.prefs.spot_client,
                                     client_secret=self.tauon.prefs.spot_secret,
                                     redirect_uri=self.redirect_uri)
 
