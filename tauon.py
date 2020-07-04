@@ -4301,8 +4301,32 @@ class PlayerCtl:
         # print("--------")
         console.print("DEBUG: Position set by show playing")
 
+
         global playlist_selected
         global shift_selection
+      
+        if highlight and spot_ctl.coasting:
+            sptr = tauon.dummy_track.misc.get("spotify-track-url")
+            if sptr:
+                
+                for p in default_playlist:
+                    tr = pctl.g(p)
+                    if tr.misc.get("spotify-track-url") == sptr:
+                        index = tr.index
+                        break
+                else:
+                    for i, pl in enumerate(pctl.multi_playlist):
+                        for p in pl[2]:
+                            tr = pctl.g(p)
+                            if tr.misc.get("spotify-track-url") == sptr:
+                                index = tr.index
+                                switch_playlist(i)
+                                break
+                        else:
+                            continue
+                        break
+                    else:
+                        return
 
         if not self.track_queue:
             return 0
@@ -26902,7 +26926,7 @@ class BottomBarType1:
                     if input.mouse_click:
                         if compact and pctl.playing_state == 1:
                             pctl.pause()
-                        elif pctl.playing_state == 1:
+                        elif pctl.playing_state == 1 or spot_ctl.coasting:
                             pctl.show_current(highlight=True)
                         else:
                             pctl.play()
