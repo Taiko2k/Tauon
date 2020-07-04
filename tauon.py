@@ -4301,8 +4301,32 @@ class PlayerCtl:
         # print("--------")
         console.print("DEBUG: Position set by show playing")
 
+
         global playlist_selected
         global shift_selection
+      
+        if spot_ctl.coasting:
+            sptr = tauon.dummy_track.misc.get("spotify-track-url")
+            if sptr:
+                
+                for p in default_playlist:
+                    tr = pctl.g(p)
+                    if tr.misc.get("spotify-track-url") == sptr:
+                        index = tr.index
+                        break
+                else:
+                    for i, pl in enumerate(pctl.multi_playlist):
+                        for p in pl[2]:
+                            tr = pctl.g(p)
+                            if tr.misc.get("spotify-track-url") == sptr:
+                                index = tr.index
+                                switch_playlist(i)
+                                break
+                        else:
+                            continue
+                        break
+                    else:
+                        return
 
         if not self.track_queue:
             return 0
@@ -23980,7 +24004,7 @@ class Over:
             text_spot_client.text = prefs.spot_client
             text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
                               width=rect1[2] - 8 * gui.scale, click=self.click)
-            prefs.spot_client = text_spot_client.text
+            prefs.spot_client = text_spot_client.text.strip()
 
             y += round(23 * gui.scale)
             ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
@@ -23994,7 +24018,7 @@ class Over:
             text_spot_secret.text = prefs.spot_secret
             text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
                               width=rect1[2] - 8 * gui.scale, click=self.click)
-            prefs.spot_secret = text_spot_secret.text
+            prefs.spot_secret = text_spot_secret.text.strip()
 
             y += round(35 * gui.scale)
             # if self.button(x, y, _("Copy redirect URI")):
@@ -26902,7 +26926,7 @@ class BottomBarType1:
                     if input.mouse_click:
                         if compact and pctl.playing_state == 1:
                             pctl.pause()
-                        elif pctl.playing_state == 1:
+                        elif pctl.playing_state == 1 or spot_ctl.coasting:
                             pctl.show_current(highlight=True)
                         else:
                             pctl.play()

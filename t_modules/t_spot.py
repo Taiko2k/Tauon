@@ -1,6 +1,11 @@
 
 import os
-import tekore as tk
+try:
+    import tekore as tk
+    tekore_imported = True
+except:
+    tekore_imported = False
+
 import pickle
 import requests
 import io
@@ -8,7 +13,6 @@ import webbrowser
 import subprocess
 import time
 from t_modules.t_extra import Timer
-import urllib.request
 
 
 class SpotCtl:
@@ -35,7 +39,12 @@ class SpotCtl:
         self.token_path = os.path.join(self.tauon.user_directory, "spot-r-token")
 
     def prep_cred(self):
-        self.cred = tk.auth.RefreshingCredentials(client_id=self.tauon.prefs.spot_client,
+
+        try:
+            rc = tk.RefreshingCredentials
+        except:
+            rc = tk.auth.RefreshingCredentials
+        self.cred = rc(client_id=self.tauon.prefs.spot_client,
                                     client_secret=self.tauon.prefs.spot_secret,
                                     redirect_uri=self.redirect_uri)
 
@@ -68,13 +77,25 @@ class SpotCtl:
 
     def load_token(self):
         if os.path.isfile(self.token_path):
-            f = open(self.token_path, "rb")
-            self.token = pickle.load(f)
-            f.close()
-            print("Loaded spotify token from file")
+            try:
+                f = open(self.token_path, "rb")
+                self.token = pickle.load(f)
+                f.close()
+                print("Loaded spotify token from file")
+            except:
+                print("ERROR LOADING TOKEN. DELETING TOKEN ON DISK.")
+                self.tauon.gui.show_message("Upgrade issue. Please re-authroise Spotify in settings!", mode="warning")
+                self.delete_token()
 
 
     def auth(self):
+        if not tekore_imported:
+            self.tauon.gui.show_message("python-tekore not installed",
+                                        "If you installed via AUR, you'll need to install this optional dependency, then restart Tauon.", mode="error")
+            return
+        if len(self.tauon.prefs.spot_client) != 32 or len(self.tauon.prefs.spot_secret) != 32:
+            self.tauon.gui.show_message("Invalid client ID or secret", mode="error")
+            return
         if self.cred is None:
             self.prep_cred()
         url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state")
@@ -570,6 +591,7 @@ class SpotCtl:
             if self.coasting:
 
                 if self.tauon.pctl.radio_image_bin:
+                    self.loaded_art = ""
                     self.tauon.pctl.radio_image_bin.close()
                     self.tauon.pctl.radio_image_bin = None
                     self.tauon.dummy_track.artist = ""
