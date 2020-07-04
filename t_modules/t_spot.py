@@ -591,6 +591,7 @@ class SpotCtl:
             if self.coasting:
 
                 if self.tauon.pctl.radio_image_bin:
+                    self.loaded_art = ""
                     self.tauon.pctl.radio_image_bin.close()
                     self.tauon.pctl.radio_image_bin = None
                     self.tauon.dummy_track.artist = ""
