@@ -75,6 +75,9 @@ class SpotCtl:
 
 
     def auth(self):
+        if len(self.tauon.prefs.spot_client) != len(self.tauon.prefs.spot_secret) != 32:
+            self.tauon.gui.show_message("Invalid client ID or secret", mode="error")
+            return
         if self.cred is None:
             self.prep_cred()
         url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state")
