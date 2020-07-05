@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.0"
+n_version = "6.0.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1330,6 +1330,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spot_mode = False
         self.launch_spotify_web = False
         self.remove_network_tracks = False
+        self.bypass_transcode = False
 
 prefs = Prefs()
 
@@ -3208,6 +3209,8 @@ cf = Config()
 
 def save_prefs():
 
+    cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
+
     cf.update_value("plex-username", prefs.plex_username)
     cf.update_value("plex-password", prefs.plex_password)
     cf.update_value("plex-servername", prefs.plex_servername)
@@ -3439,6 +3442,10 @@ def load_prefs():
     prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
     prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title", prefs.left_align_album_artist_title, "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
     prefs.auto_sort = cf.sync_add("bool", "import-auto-sort", prefs.auto_sort, "This setting is deprecated and will be removed in a future version")
+
+    cf.br()
+    cf.add_text("[transcode]")
+    prefs.bypass_transcode = cf.sync_add("bool", "sync-bypass-transcode", prefs.bypass_transcode, "Don't transcode files with sync function")
 
 
     cf.br()
@@ -15010,48 +15017,64 @@ def auto_sync_thread(pl):
             show_message(_("Sync aborted! Low disk space on target device"), mode="warning")
             break
 
-        encode_done = os.path.join(prefs.encoder_output, item)
+        if prefs.bypass_transcode:
 
-        if not os.path.exists(encode_done):
-            console.print("Need to transcode")
-            transcode_list.append(folder_dict[item])
-            while transcode_list:
-                time.sleep(1)
-            if gui.stop_sync:
-                break
-        else:
-            console.print("A transcode is already done")
+            print("VBYPASS")
+            print(item)
+            print(folder_dict[item])
 
-        if os.path.exists(encode_done):
+            source_parent = pctl.g(folder_dict[item][0]).parent_folder_path
+            if os.path.exists(source_parent):
+                if os.path.exists(os.path.join(path, item)):
+                    show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."),
+                                 mode="warning")
+                    continue
 
-            if os.path.exists(os.path.join(path, item)):
-                show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+                os.mkdir(os.path.join(path, item))
+                encode_done = source_parent
+            else:
+                show_message("One or more folders is missing")
                 continue
 
-            console.print(f"COPYING: {item}")
-            console.print(f"FROM:  {encode_done}")
-            console.print(f"TO: {path}")
+        else:
 
-            os.mkdir(os.path.join(path, item))
-            for file in os.listdir(encode_done):
-                console.print("Copy file...")
-                #gui.sync_progress += "."
-                gui.update += 1
-                # if "....." in gui.sync_progress:
-                #     gui.sync_progress = gui.sync_progress.rstrip(".")
+            encode_done = os.path.join(prefs.encoder_output, item)
+            if not os.path.exists(encode_done):
+                console.print("Need to transcode")
+                transcode_list.append(folder_dict[item])
+                while transcode_list:
+                    time.sleep(1)
+                if gui.stop_sync:
+                    break
+            else:
+                console.print("A transcode is already done")
+
+            if os.path.exists(encode_done):
+
+                if os.path.exists(os.path.join(path, item)):
+                    show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+                    continue
+
+                os.mkdir(os.path.join(path, item))
+
+        for file in os.listdir(encode_done):
+
+            console.print("Copy file...")
+            #gui.sync_progress += "."
+            gui.update += 1
+
+            if os.path.isfile(os.path.join(encode_done, file)):
                 size = os.path.getsize(os.path.join(encode_done, file))
                 sync_file_timer.set()
+                shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
+            if gui.sync_speed == 0 or sync_file_update_timer.get() > 1 and not file.endswith(".jpg"):
+                sync_file_update_timer.set()
+                gui.sync_speed = size / sync_file_timer.get()
+                gui.sync_progress = _("Copying files to device") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
+                if gui.stop_sync:
+                    gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
 
-                if os.path.isfile(os.path.join(encode_done, file)):
-                    shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
-                if gui.sync_speed == 0 or sync_file_update_timer.get() > 1 and not file.endswith(".jpg"):
-                    sync_file_update_timer.set()
-                    gui.sync_speed = size / sync_file_timer.get()
-                    gui.sync_progress = _("Copying files to device") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
-                    if gui.stop_sync:
-                        gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
-            #shutil.copytree(encode_done, path + "/")
-            console.print("Finished copying folder")
+        console.print("Finished copying folder")
 
     gui.sync_speed = 0
     gui.sync_progress = ""
@@ -24472,6 +24495,8 @@ class Over:
             y += 30 * gui.scale
 
             prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete all other folders in target"))
+            y += 25 * gui.scale
+            prefs.bypass_transcode = self.toggle_square(x, y, prefs.bypass_transcode ^ True, _("Transcode files")) ^ True
             y += 30 * gui.scale
 
             ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
@@ -24489,7 +24514,7 @@ class Over:
                     gui.stop_sync = True
                     gui.sync_progress = _("Aborting Sync")
 
-            y += 110 * gui.scale
+            y += 85 * gui.scale
 
             if self.button(x, y, _("Return"), width=round(75*gui.scale)):
                 self.sync_view = False
