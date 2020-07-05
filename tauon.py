@@ -24499,12 +24499,16 @@ class Over:
             prefs.bypass_transcode = self.toggle_square(x, y, prefs.bypass_transcode ^ True, _("Transcode files")) ^ True
             y += 30 * gui.scale
 
-            ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
+            text = _("Start Transcode and Sync")
+            ww = ddt.get_text_w(text, 211) + 25 * gui.scale
+            if prefs.bypass_transcode:
+                text = _("Start Sync")
+
             xx = (rect1[0] + (rect1[2] // 2)) - (ww // 2)
             if gui.stop_sync:
                 self.button(xx, y, _("Stopping..."), width=ww)
             elif not gui.sync_progress:
-                if self.button(xx, y, _("Start Transcode and Sync"), width=ww):
+                if self.button(xx, y, text, width=ww):
                     if pl:
                         auto_sync(pl)
                     else:
