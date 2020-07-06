@@ -937,7 +937,7 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", hidden, False, parent])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -3186,6 +3186,11 @@ if db_version > 0:
             if os.path.isfile(path):
                 os.remove(path)
 
+    if db_version <= 45:
+        print("Updating database to version 46")
+        for p in multi_playlist:
+            if type(p[7]) != list:
+                p[7] = [p[7]]
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -12359,6 +12364,7 @@ def re_import3(stem):
 
     if p:
         load_order.playlist_position = p
+
     load_order.replace_stem = True
     load_order.target = stem
     load_order.notify = True
@@ -13641,8 +13647,8 @@ def clear_playlist(index):
         show_message("Playlist is locked to prevent accidental erasure")
         return
 
-    #pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[index]))
-    #undo.bk_playlist(index)
+    pctl.multi_playlist[index][7].clear()  # clear import folder list
+
     if not pctl.multi_playlist[index][2]:
         print("Playlist is already empty")
         return
@@ -13848,35 +13854,39 @@ def rescan_tags(pl):
             to_scan.append(track)
 
 
-def re_import(pl):
-
-    path = pctl.multi_playlist[pl][7]
-    if path == "":
-        return
-    for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
-        if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl][2][i]].parent_folder_path:
-            del pctl.multi_playlist[pl][2][i]
-
-    load_order = LoadClass()
-    load_order.replace_stem = True
-    load_order.target = path
-    load_order.playlist = pctl.multi_playlist[pl][6]
-    load_orders.append(copy.deepcopy(load_order))
+# def re_import(pl):
+#
+#     path = pctl.multi_playlist[pl][7]
+#     if path == "":
+#         return
+#     for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
+#         if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl][2][i]].parent_folder_path:
+#             del pctl.multi_playlist[pl][2][i]
+#
+#     load_order = LoadClass()
+#     load_order.replace_stem = True
+#     load_order.target = path
+#     load_order.playlist = pctl.multi_playlist[pl][6]
+#     load_orders.append(copy.deepcopy(load_order))
 
 
 def re_import2(pl):
 
-    path = pctl.multi_playlist[pl][7]
-    if path == "":
-        return
+    paths = pctl.multi_playlist[pl][7]
 
-    load_order = LoadClass()
-    load_order.replace_stem = True
-    load_order.target = path
-    load_order.notify = True
-    load_order.playlist = pctl.multi_playlist[pl][6]
-    load_orders.append(copy.deepcopy(load_order))
-    show_message("Rescanning folder...", path, mode='info')
+    reduce_paths(paths)
+
+    for path in paths:
+        if os.path.isdir(path):
+            load_order = LoadClass()
+            load_order.replace_stem = True
+            load_order.target = path
+            load_order.notify = True
+            load_order.playlist = pctl.multi_playlist[pl][6]
+            load_orders.append(copy.deepcopy(load_order))
+
+    if paths:
+        show_message(_("Rescanning folders..."), mode='info')
 
 
 
@@ -14901,7 +14911,7 @@ tab_menu.add_sub(_("Misc…"), 145)
 
 def forget_pl_import_folder(pl):
 
-    pctl.multi_playlist[pl][7] = ""
+    pctl.multi_playlist[pl][7] = []
 
 def remove_duplicates(pl):
 
@@ -15089,7 +15099,18 @@ def auto_sync(pl):
     shoot_dl.start()
 
 def set_sync_playlist(pl):
-    prefs.sync_playlist = pl_to_id(pl)
+    id = pl_to_id(pl)
+    if prefs.sync_playlist == id:
+        prefs.sync_playlist = None
+    else:
+        prefs.sync_playlist = pl_to_id(pl)
+
+def sync_playlist_deco(pl):
+    text = _("Set as Sync Playlist")
+    id = pl_to_id(pl)
+    if id == prefs.sync_playlist:
+        text = _("Un-set as Sync Playlist")
+    return [colours.menu_text, colours.menu_background, text]
 
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
@@ -15100,7 +15121,7 @@ tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
-tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, pass_ref=True)
+tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, sync_playlist_deco, pass_ref_deco=True, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -16316,6 +16337,12 @@ def del_selected(force_delete=False):
             return
 
         li.append((item, default_playlist[item]))
+
+        # Remove from playlist folder import list
+        tr = pctl.g(default_playlist[item])
+        if tr.parent_folder_path in pctl.multi_playlist[pctl.active_playlist_viewing][7]:
+            pctl.multi_playlist[pctl.active_playlist_viewing][7].remove(tr.parent_folder_path)
+
         del default_playlist[item]
 
     if force_delete:
@@ -35780,7 +35807,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            45,  # Version, used for upgrading
+            46,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -36335,8 +36362,10 @@ while pctl.running:
             if os.path.isdir(load_order.target):
                 quick_import_done.append(load_order.target)
 
-                if not pctl.multi_playlist[playlist_target][7]:
-                    pctl.multi_playlist[playlist_target][7] = load_order.target
+                #if not pctl.multi_playlist[playlist_target][7]:
+                pctl.multi_playlist[playlist_target][7].append(load_order.target)
+                reduce_paths(pctl.multi_playlist[playlist_target][7])
+
 
             load_order.playlist = pctl.multi_playlist[playlist_target][6]
             load_orders.append(copy.deepcopy(load_order))
@@ -38358,8 +38387,11 @@ while pctl.running:
 
                         if order.replace_stem:
                             for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
-                                if pctl.g(id).parent_folder_path.startswith(order.target):
-                                    del pctl.multi_playlist[target_pl][2][ii]
+                                pfp = pctl.g(id).parent_folder_path
+                                if pfp.startswith(order.target):
+                                    if pfp.rstrip("/") == order.target.rstrip("/") or \
+                                            (len(pfp) > len(order.target) and pfp[len(order.target.rstrip("/"))] == "/"):
+                                        del pctl.multi_playlist[target_pl][2][ii]
 
                         # print(order.tracks)
                         if order.playlist_position is not None:
@@ -38376,8 +38408,8 @@ while pctl.running:
 
                         gui.update += 2
                         gui.pl_update += 2
-                        if order.notify and gui.message_box:
-                            show_message(_("Rescan folder complete."), order.target, mode='done')
+                        if order.notify and gui.message_box and len(load_orders) == 1:
+                            show_message(_("Rescan folders complete."), mode='done')
                         reload()
                         tree_view_box.clear_target_pl(target_pl)
 
