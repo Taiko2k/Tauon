@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v6.0.1
 
  - Added option to bypass transcode on sync
+ - Improved "set as sync playlist" function to be un-settable
+ - Fixed folder rescan to be able to rescan multiple imported folders
 
 v6.0.0
 
