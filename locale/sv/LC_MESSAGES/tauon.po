@@ -1759,7 +1759,7 @@ msgstr "Albumdiagram"
 
 #: tauon.py:24848
 msgid "Not enough albums in the playlist!"
-msgstr "Inte tillräckligt med album i spelningslistan!"
+msgstr "Inte tillräckligt med album!"
 
 #: tauon.py:24868 tauon.py:24869
 msgid "Chart generator..."
