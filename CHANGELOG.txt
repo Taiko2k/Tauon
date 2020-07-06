@@ -8,7 +8,7 @@ v6.0.1
  - Fixed folder rescan to be able to rescan multiple imported folders
  - Fixed import PLEX tracks not working
  - Fixed setting account passwords not being hidden
- - Fixed Spotify library import limitation
+ - Fixed Spotify library import limit
 
 v6.0.0
 
