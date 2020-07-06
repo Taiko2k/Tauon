@@ -63,7 +63,7 @@
 
   <releases>
 
-    <release version="6.0.0" date="2020-07-05">
+    <release version="6.0.1" date="2020-07-06">
       <description>
         <ul>
           <li>Added Spotify integration</li>
