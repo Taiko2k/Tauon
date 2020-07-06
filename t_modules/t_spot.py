@@ -32,6 +32,7 @@ class SpotCtl:
         self.started_once = False
         self.redirect_uri = f"http://localhost:7811/spotredir"
         self.current_imports = {}
+        self.spotify_com = False
 
         self.progress_timer = Timer()
         self.update_timer = Timer()
@@ -346,10 +347,14 @@ class SpotCtl:
         playlist = []
         self.update_existing_import_list()
 
-        for a in albums.items:
-            self.load_album(a.album, playlist)
+        pages = self.spotify.all_pages(albums)
+
+        for page in pages:
+            for a in page.items:
+                self.load_album(a.album, playlist)
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.strings.spotify_albums, playlist=playlist))
+        self.spotify_com = False
 
     def append_album(self, url, playlist_number=None, return_list=False):
 
@@ -537,11 +542,13 @@ class SpotCtl:
         for tr in self.tauon.pctl.master_library.values():
             tr.misc.pop("spotify-liked", None)
 
-        for item in tracks.items:
-            nt = self.load_track(item.track)
-            self.tauon.pctl.master_library[nt.index] = nt
-            playlist.append(nt.index)
-            nt.misc["spotify-liked"] = True
+        pages = self.spotify.all_pages(tracks)
+        for page in pages:
+            for item in page.items:
+                nt = self.load_track(item.track)
+                self.tauon.pctl.master_library[nt.index] = nt
+                playlist.append(nt.index)
+                nt.misc["spotify-liked"] = True
 
         for p in self.tauon.pctl.multi_playlist:
             if p[0] == self.tauon.strings.spotify_likes:
@@ -549,7 +556,7 @@ class SpotCtl:
                 return
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist=playlist))
-
+        self.spotify_com = False
 
     def monitor(self):
         if self.playing and self.start_timer.get() > 6:

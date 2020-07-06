@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.0"
+n_version = "6.0.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -937,7 +937,7 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", hidden, False, parent])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -1330,6 +1330,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spot_mode = False
         self.launch_spotify_web = False
         self.remove_network_tracks = False
+        self.bypass_transcode = False
 
 prefs = Prefs()
 
@@ -3185,6 +3186,11 @@ if db_version > 0:
             if os.path.isfile(path):
                 os.remove(path)
 
+    if db_version <= 45:
+        print("Updating database to version 46")
+        for p in multi_playlist:
+            if type(p[7]) != list:
+                p[7] = [p[7]]
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -3207,6 +3213,8 @@ cf = Config()
 
 
 def save_prefs():
+
+    cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
 
     cf.update_value("plex-username", prefs.plex_username)
     cf.update_value("plex-password", prefs.plex_password)
@@ -3439,6 +3447,10 @@ def load_prefs():
     prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
     prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title", prefs.left_align_album_artist_title, "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
     prefs.auto_sort = cf.sync_add("bool", "import-auto-sort", prefs.auto_sort, "This setting is deprecated and will be removed in a future version")
+
+    cf.br()
+    cf.add_text("[transcode]")
+    prefs.bypass_transcode = cf.sync_add("bool", "sync-bypass-transcode", prefs.bypass_transcode, "Don't transcode files with sync function")
 
 
     cf.br()
@@ -6614,9 +6626,9 @@ class PlexService:
 
                 id = pctl.master_count
                 replace_existing = False
-                for track_id, track in pctl.master_library.items():
-                    if track.is_network and track.file_ext == "PLEX" and track.url_key == track.key:
-                        id = track.index
+                for track_id, t in pctl.master_library.items():
+                    if t.is_network and t.file_ext == "PLEX" and t.url_key == track.key:
+                        id = t.index
                         replace_existing = True
                         break
 
@@ -8575,23 +8587,25 @@ class TextBox2:
             if self.down_lock:
                 pre = 0
                 post = 0
+                text = self.text
+                if secret:
+                    text = '●' * len(self.text)
                 if mouse_position[0] < x + 1:
-
-                    self.selection = len(self.text)
+                    self.selection = len(text)
                 else:
 
-                    for i in range(len(self.text)):
-                        post = ddt.get_text_w(self.text[0:i + 1], font)
+                    for i in range(len(text)):
+                        post = ddt.get_text_w(text[0:i + 1], font)
                         # pre_half = int((post - pre) / 2)
 
                         if x + pre - 0 <= mouse_position[0] <= x + post + 0:
                             diff = post - pre
 
                             if mouse_position[0] >= x + pre + int(diff / 2):
-                                self.selection = len(self.text) - i - 1
+                                self.selection = len(text) - i - 1
 
                             else:
-                                self.selection = len(self.text) - i
+                                self.selection = len(text) - i
 
                             break
                         pre = post
@@ -8599,14 +8613,15 @@ class TextBox2:
                     else:
                         self.selection = 0
 
-            a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
-            # print("")
-            # print(self.selection)
-            # print(self.cursor_position)
+            text = self.text[0: len(self.text) - self.cursor_position]
+            if secret:
+                text = '●' * len(text)
+            a = ddt.get_text_w(text, font)
 
-            b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
-
-            # rint((a, b))
+            text = self.text[0: len(self.text) - self.selection]
+            if secret:
+                text = '●' * len(text)
+            b = ddt.get_text_w(text, font)
 
             top = y
             if big:
@@ -8616,14 +8631,29 @@ class TextBox2:
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
-                space = ddt.text((0, 0), self.get_selection(0), colour, font)
-                space += ddt.text((0 + space - inf_comp, 0), self.get_selection(1), [240, 240, 240, 255], font,
+                text = self.get_selection(0)
+                if secret:
+                    text = '●' * len(text)
+                space = ddt.text((0, 0), text, colour, font)
+                text = self.get_selection(1)
+                if secret:
+                    text = '●' * len(text)
+                space += ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font,
                                   bg=[40, 120, 180, 255], )
-                ddt.text((0 + space - (inf_comp * 2), 0), self.get_selection(2), colour, font)
+                text = self.get_selection(2)
+                if secret:
+                    text = '●' * len(text)
+                ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
             else:
-                ddt.text((0, 0), self.text, colour, font)
+                text = self.text
+                if secret:
+                    text = '●' * len(text)
+                ddt.text((0, 0), text, colour, font)
 
-            space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+            text = self.text[0: len(self.text) - self.cursor_position]
+            if secret:
+                text = '●' * len(text)
+            space = ddt.get_text_w(text, font)
 
             if TextBox.cursor and self.selection == self.cursor_position:
                 # ddt.line(x + space, y + 2, x + space, y + 15, colour)
@@ -8635,13 +8665,17 @@ class TextBox2:
 
         else:
             width -= round(15 * gui.scale)
-            t_len = ddt.get_text_w(self.text, font)
-            ddt.text((0, 0), self.text, colour, font)
+            text = self.text
+            if secret:
+                text = '●' * len(text)
+            t_len = ddt.get_text_w(text, font)
+            ddt.text((0, 0), text, colour, font)
             self.offset = 0
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
         if active and editline != "" and editline != input_text:
+
             ex = ddt.text((space + 4, 0), editline, [240, 230, 230, 255], font)
             tw, th = ddt.get_text_wh(editline, font, max_x=2000)
             ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255], True)
@@ -12352,6 +12386,7 @@ def re_import3(stem):
 
     if p:
         load_order.playlist_position = p
+
     load_order.replace_stem = True
     load_order.target = stem
     load_order.notify = True
@@ -13634,8 +13669,8 @@ def clear_playlist(index):
         show_message("Playlist is locked to prevent accidental erasure")
         return
 
-    #pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[index]))
-    #undo.bk_playlist(index)
+    pctl.multi_playlist[index][7].clear()  # clear import folder list
+
     if not pctl.multi_playlist[index][2]:
         print("Playlist is already empty")
         return
@@ -13841,35 +13876,39 @@ def rescan_tags(pl):
             to_scan.append(track)
 
 
-def re_import(pl):
-
-    path = pctl.multi_playlist[pl][7]
-    if path == "":
-        return
-    for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
-        if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl][2][i]].parent_folder_path:
-            del pctl.multi_playlist[pl][2][i]
-
-    load_order = LoadClass()
-    load_order.replace_stem = True
-    load_order.target = path
-    load_order.playlist = pctl.multi_playlist[pl][6]
-    load_orders.append(copy.deepcopy(load_order))
+# def re_import(pl):
+#
+#     path = pctl.multi_playlist[pl][7]
+#     if path == "":
+#         return
+#     for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
+#         if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl][2][i]].parent_folder_path:
+#             del pctl.multi_playlist[pl][2][i]
+#
+#     load_order = LoadClass()
+#     load_order.replace_stem = True
+#     load_order.target = path
+#     load_order.playlist = pctl.multi_playlist[pl][6]
+#     load_orders.append(copy.deepcopy(load_order))
 
 
 def re_import2(pl):
 
-    path = pctl.multi_playlist[pl][7]
-    if path == "":
-        return
+    paths = pctl.multi_playlist[pl][7]
 
-    load_order = LoadClass()
-    load_order.replace_stem = True
-    load_order.target = path
-    load_order.notify = True
-    load_order.playlist = pctl.multi_playlist[pl][6]
-    load_orders.append(copy.deepcopy(load_order))
-    show_message("Rescanning folder...", path, mode='info')
+    reduce_paths(paths)
+
+    for path in paths:
+        if os.path.isdir(path):
+            load_order = LoadClass()
+            load_order.replace_stem = True
+            load_order.target = path
+            load_order.notify = True
+            load_order.playlist = pctl.multi_playlist[pl][6]
+            load_orders.append(copy.deepcopy(load_order))
+
+    if paths:
+        show_message(_("Rescanning folders..."), mode='info')
 
 
 
@@ -14894,7 +14933,7 @@ tab_menu.add_sub(_("Misc…"), 145)
 
 def forget_pl_import_folder(pl):
 
-    pctl.multi_playlist[pl][7] = ""
+    pctl.multi_playlist[pl][7] = []
 
 def remove_duplicates(pl):
 
@@ -15010,48 +15049,64 @@ def auto_sync_thread(pl):
             show_message(_("Sync aborted! Low disk space on target device"), mode="warning")
             break
 
-        encode_done = os.path.join(prefs.encoder_output, item)
+        if prefs.bypass_transcode:
 
-        if not os.path.exists(encode_done):
-            console.print("Need to transcode")
-            transcode_list.append(folder_dict[item])
-            while transcode_list:
-                time.sleep(1)
-            if gui.stop_sync:
-                break
-        else:
-            console.print("A transcode is already done")
+            print("VBYPASS")
+            print(item)
+            print(folder_dict[item])
 
-        if os.path.exists(encode_done):
+            source_parent = pctl.g(folder_dict[item][0]).parent_folder_path
+            if os.path.exists(source_parent):
+                if os.path.exists(os.path.join(path, item)):
+                    show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."),
+                                 mode="warning")
+                    continue
 
-            if os.path.exists(os.path.join(path, item)):
-                show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+                os.mkdir(os.path.join(path, item))
+                encode_done = source_parent
+            else:
+                show_message("One or more folders is missing")
                 continue
 
-            console.print(f"COPYING: {item}")
-            console.print(f"FROM:  {encode_done}")
-            console.print(f"TO: {path}")
+        else:
 
-            os.mkdir(os.path.join(path, item))
-            for file in os.listdir(encode_done):
-                console.print("Copy file...")
-                #gui.sync_progress += "."
-                gui.update += 1
-                # if "....." in gui.sync_progress:
-                #     gui.sync_progress = gui.sync_progress.rstrip(".")
+            encode_done = os.path.join(prefs.encoder_output, item)
+            if not os.path.exists(encode_done):
+                console.print("Need to transcode")
+                transcode_list.append(folder_dict[item])
+                while transcode_list:
+                    time.sleep(1)
+                if gui.stop_sync:
+                    break
+            else:
+                console.print("A transcode is already done")
+
+            if os.path.exists(encode_done):
+
+                if os.path.exists(os.path.join(path, item)):
+                    show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+                    continue
+
+                os.mkdir(os.path.join(path, item))
+
+        for file in os.listdir(encode_done):
+
+            console.print("Copy file...")
+            #gui.sync_progress += "."
+            gui.update += 1
+
+            if os.path.isfile(os.path.join(encode_done, file)):
                 size = os.path.getsize(os.path.join(encode_done, file))
                 sync_file_timer.set()
+                shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
+            if gui.sync_speed == 0 or sync_file_update_timer.get() > 1 and not file.endswith(".jpg"):
+                sync_file_update_timer.set()
+                gui.sync_speed = size / sync_file_timer.get()
+                gui.sync_progress = _("Copying files to device") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
+                if gui.stop_sync:
+                    gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
 
-                if os.path.isfile(os.path.join(encode_done, file)):
-                    shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
-                if gui.sync_speed == 0 or sync_file_update_timer.get() > 1 and not file.endswith(".jpg"):
-                    sync_file_update_timer.set()
-                    gui.sync_speed = size / sync_file_timer.get()
-                    gui.sync_progress = _("Copying files to device") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
-                    if gui.stop_sync:
-                        gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
-            #shutil.copytree(encode_done, path + "/")
-            console.print("Finished copying folder")
+        console.print("Finished copying folder")
 
     gui.sync_speed = 0
     gui.sync_progress = ""
@@ -15066,7 +15121,18 @@ def auto_sync(pl):
     shoot_dl.start()
 
 def set_sync_playlist(pl):
-    prefs.sync_playlist = pl_to_id(pl)
+    id = pl_to_id(pl)
+    if prefs.sync_playlist == id:
+        prefs.sync_playlist = None
+    else:
+        prefs.sync_playlist = pl_to_id(pl)
+
+def sync_playlist_deco(pl):
+    text = _("Set as Sync Playlist")
+    id = pl_to_id(pl)
+    if id == prefs.sync_playlist:
+        text = _("Un-set as Sync Playlist")
+    return [colours.menu_text, colours.menu_background, text]
 
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
@@ -15077,7 +15143,7 @@ tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
-tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, pass_ref=True)
+tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, sync_playlist_deco, pass_ref_deco=True, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -16293,6 +16359,12 @@ def del_selected(force_delete=False):
             return
 
         li.append((item, default_playlist[item]))
+
+        # # Remove from playlist folder import list
+        # tr = pctl.g(default_playlist[item])
+        # if tr.parent_folder_path in pctl.multi_playlist[pctl.active_playlist_viewing][7]:
+        #     pctl.multi_playlist[pctl.active_playlist_viewing][7].remove(tr.parent_folder_path)
+
         del default_playlist[item]
 
     if force_delete:
@@ -24051,11 +24123,24 @@ class Over:
 
             y += round(30 * gui.scale)
             if self.button(x, y, _("Import Albums")):
-                spot_ctl.get_library_albums()
+                if not spot_ctl.spotify_com:
+                    spot_ctl.spotify_com = True
+                    shoot = threading.Thread(target=spot_ctl.get_library_albums)
+                    shoot.daemon = True
+                    shoot.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
+
 
             y += round(30 * gui.scale)
             if self.button(x, y, _("Import Liked Songs")):
-                spot_ctl.get_library_likes()
+                if not spot_ctl.spotify_com:
+                    spot_ctl.spotify_com = True
+                    shoot = threading.Thread(target=spot_ctl.get_library_likes)
+                    shoot.daemon = True
+                    shoot.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
 
         if self.account_view == 7:
 
@@ -24093,7 +24178,7 @@ class Over:
             ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
             text_air_pas.text = prefs.subsonic_password
             text_air_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
+                              width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.subsonic_password = text_air_pas.text
 
             y += round(23 * gui.scale)
@@ -24150,7 +24235,7 @@ class Over:
             ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
             text_koel_pas.text = prefs.koel_password
             text_koel_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
+                              width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.koel_password = text_koel_pas.text
 
             y += round(23 * gui.scale)
@@ -24207,7 +24292,7 @@ class Over:
             ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
             text_plex_pas.text = prefs.plex_password
             text_plex_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
+                              width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.plex_password = text_plex_pas.text
 
             y += round(23 * gui.scale)
@@ -24472,14 +24557,20 @@ class Over:
             y += 30 * gui.scale
 
             prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete all other folders in target"))
+            y += 25 * gui.scale
+            prefs.bypass_transcode = self.toggle_square(x, y, prefs.bypass_transcode ^ True, _("Transcode files")) ^ True
             y += 30 * gui.scale
 
-            ww = ddt.get_text_w(_("Start Transcode and Sync"), 211) + 25 * gui.scale
+            text = _("Start Transcode and Sync")
+            ww = ddt.get_text_w(text, 211) + 25 * gui.scale
+            if prefs.bypass_transcode:
+                text = _("Start Sync")
+
             xx = (rect1[0] + (rect1[2] // 2)) - (ww // 2)
             if gui.stop_sync:
                 self.button(xx, y, _("Stopping..."), width=ww)
             elif not gui.sync_progress:
-                if self.button(xx, y, _("Start Transcode and Sync"), width=ww):
+                if self.button(xx, y, text, width=ww):
                     if pl:
                         auto_sync(pl)
                     else:
@@ -24489,7 +24580,7 @@ class Over:
                     gui.stop_sync = True
                     gui.sync_progress = _("Aborting Sync")
 
-            y += 110 * gui.scale
+            y += 85 * gui.scale
 
             if self.button(x, y, _("Return"), width=round(75*gui.scale)):
                 self.sync_view = False
@@ -26231,6 +26322,9 @@ class TopPanel:
         elif plex.scanning:
             text = "Accessing PLEX library..."
             bg = [229, 160, 13, 255]
+        elif spot_ctl.spotify_com:
+            text = "Accessing Spotify library..."
+            bg = [30, 215, 96, 255]
         elif subsonic.scanning:
             text = "Accessing SUBSONIC library..."
             bg = [255, 160, 60, 255]
@@ -35751,7 +35845,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            45,  # Version, used for upgrading
+            46,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -36306,8 +36400,10 @@ while pctl.running:
             if os.path.isdir(load_order.target):
                 quick_import_done.append(load_order.target)
 
-                if not pctl.multi_playlist[playlist_target][7]:
-                    pctl.multi_playlist[playlist_target][7] = load_order.target
+                #if not pctl.multi_playlist[playlist_target][7]:
+                pctl.multi_playlist[playlist_target][7].append(load_order.target)
+                reduce_paths(pctl.multi_playlist[playlist_target][7])
+
 
             load_order.playlist = pctl.multi_playlist[playlist_target][6]
             load_orders.append(copy.deepcopy(load_order))
@@ -38329,8 +38425,11 @@ while pctl.running:
 
                         if order.replace_stem:
                             for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
-                                if pctl.g(id).parent_folder_path.startswith(order.target):
-                                    del pctl.multi_playlist[target_pl][2][ii]
+                                pfp = pctl.g(id).parent_folder_path
+                                if pfp.startswith(order.target):
+                                    if pfp.rstrip("/") == order.target.rstrip("/") or \
+                                            (len(pfp) > len(order.target) and pfp[len(order.target.rstrip("/"))] == "/"):
+                                        del pctl.multi_playlist[target_pl][2][ii]
 
                         # print(order.tracks)
                         if order.playlist_position is not None:
@@ -38347,8 +38446,8 @@ while pctl.running:
 
                         gui.update += 2
                         gui.pl_update += 2
-                        if order.notify and gui.message_box:
-                            show_message(_("Rescan folder complete."), order.target, mode='done')
+                        if order.notify and gui.message_box and len(load_orders) == 1:
+                            show_message(_("Rescan folders complete."), mode='done')
                         reload()
                         tree_view_box.clear_target_pl(target_pl)
 
