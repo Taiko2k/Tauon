@@ -16338,10 +16338,10 @@ def del_selected(force_delete=False):
 
         li.append((item, default_playlist[item]))
 
-        # Remove from playlist folder import list
-        tr = pctl.g(default_playlist[item])
-        if tr.parent_folder_path in pctl.multi_playlist[pctl.active_playlist_viewing][7]:
-            pctl.multi_playlist[pctl.active_playlist_viewing][7].remove(tr.parent_folder_path)
+        # # Remove from playlist folder import list
+        # tr = pctl.g(default_playlist[item])
+        # if tr.parent_folder_path in pctl.multi_playlist[pctl.active_playlist_viewing][7]:
+        #     pctl.multi_playlist[pctl.active_playlist_viewing][7].remove(tr.parent_folder_path)
 
         del default_playlist[item]
 
