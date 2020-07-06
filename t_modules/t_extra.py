@@ -827,3 +827,30 @@ def genre_correct(text):
     if parsed in genre_corrections2:
         return genre_corrections[genre_corrections2.index(parsed)]
     return text.title().strip()
+
+
+def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of folder paths
+
+    paths[:] = list(set(paths))[:]  # remove duplicates
+
+    while "" in paths:
+        paths.remove("")
+
+    while True:
+        remove_path = False
+        for i in reversed(range(len(paths))):
+            path = paths[i].rstrip("/")
+
+            for b in reversed(range(len(paths))):
+                path2 = paths[b].rstrip("/")
+
+                if len(path) > len(path2) and path.startswith(path2) and path[len(path2)] == "/":
+                    del paths[i]
+                    remove_path = True
+                    break
+
+            if remove_path:
+                break
+        if not remove_path:
+            break
+
