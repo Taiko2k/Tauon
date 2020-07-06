@@ -6626,9 +6626,9 @@ class PlexService:
 
                 id = pctl.master_count
                 replace_existing = False
-                for track_id, track in pctl.master_library.items():
-                    if track.is_network and track.file_ext == "PLEX" and track.url_key == track.key:
-                        id = track.index
+                for track_id, t in pctl.master_library.items():
+                    if t.is_network and t.file_ext == "PLEX" and t.url_key == track.key:
+                        id = t.index
                         replace_existing = True
                         break
 
@@ -8587,23 +8587,25 @@ class TextBox2:
             if self.down_lock:
                 pre = 0
                 post = 0
+                text = self.text
+                if secret:
+                    text = '●' * len(self.text)
                 if mouse_position[0] < x + 1:
-
-                    self.selection = len(self.text)
+                    self.selection = len(text)
                 else:
 
-                    for i in range(len(self.text)):
-                        post = ddt.get_text_w(self.text[0:i + 1], font)
+                    for i in range(len(text)):
+                        post = ddt.get_text_w(text[0:i + 1], font)
                         # pre_half = int((post - pre) / 2)
 
                         if x + pre - 0 <= mouse_position[0] <= x + post + 0:
                             diff = post - pre
 
                             if mouse_position[0] >= x + pre + int(diff / 2):
-                                self.selection = len(self.text) - i - 1
+                                self.selection = len(text) - i - 1
 
                             else:
-                                self.selection = len(self.text) - i
+                                self.selection = len(text) - i
 
                             break
                         pre = post
@@ -8611,14 +8613,15 @@ class TextBox2:
                     else:
                         self.selection = 0
 
-            a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
-            # print("")
-            # print(self.selection)
-            # print(self.cursor_position)
+            text = self.text[0: len(self.text) - self.cursor_position]
+            if secret:
+                text = '●' * len(text)
+            a = ddt.get_text_w(text, font)
 
-            b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
-
-            # rint((a, b))
+            text = self.text[0: len(self.text) - self.selection]
+            if secret:
+                text = '●' * len(text)
+            b = ddt.get_text_w(text, font)
 
             top = y
             if big:
@@ -8628,14 +8631,29 @@ class TextBox2:
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
-                space = ddt.text((0, 0), self.get_selection(0), colour, font)
-                space += ddt.text((0 + space - inf_comp, 0), self.get_selection(1), [240, 240, 240, 255], font,
+                text = self.get_selection(0)
+                if secret:
+                    text = '●' * len(text)
+                space = ddt.text((0, 0), text, colour, font)
+                text = self.get_selection(1)
+                if secret:
+                    text = '●' * len(text)
+                space += ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font,
                                   bg=[40, 120, 180, 255], )
-                ddt.text((0 + space - (inf_comp * 2), 0), self.get_selection(2), colour, font)
+                text = self.get_selection(2)
+                if secret:
+                    text = '●' * len(text)
+                ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
             else:
-                ddt.text((0, 0), self.text, colour, font)
+                text = self.text
+                if secret:
+                    text = '●' * len(text)
+                ddt.text((0, 0), text, colour, font)
 
-            space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+            text = self.text[0: len(self.text) - self.cursor_position]
+            if secret:
+                text = '●' * len(text)
+            space = ddt.get_text_w(text, font)
 
             if TextBox.cursor and self.selection == self.cursor_position:
                 # ddt.line(x + space, y + 2, x + space, y + 15, colour)
@@ -8647,13 +8665,17 @@ class TextBox2:
 
         else:
             width -= round(15 * gui.scale)
-            t_len = ddt.get_text_w(self.text, font)
-            ddt.text((0, 0), self.text, colour, font)
+            text = self.text
+            if secret:
+                text = '●' * len(text)
+            t_len = ddt.get_text_w(text, font)
+            ddt.text((0, 0), text, colour, font)
             self.offset = 0
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
         if active and editline != "" and editline != input_text:
+
             ex = ddt.text((space + 4, 0), editline, [240, 230, 230, 255], font)
             tw, th = ddt.get_text_wh(editline, font, max_x=2000)
             ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255], True)
@@ -24101,11 +24123,24 @@ class Over:
 
             y += round(30 * gui.scale)
             if self.button(x, y, _("Import Albums")):
-                spot_ctl.get_library_albums()
+                if not spot_ctl.spotify_com:
+                    spot_ctl.spotify_com = True
+                    shoot = threading.Thread(target=spot_ctl.get_library_albums)
+                    shoot.daemon = True
+                    shoot.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
+
 
             y += round(30 * gui.scale)
             if self.button(x, y, _("Import Liked Songs")):
-                spot_ctl.get_library_likes()
+                if not spot_ctl.spotify_com:
+                    spot_ctl.spotify_com = True
+                    shoot = threading.Thread(target=spot_ctl.get_library_likes)
+                    shoot.daemon = True
+                    shoot.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
 
         if self.account_view == 7:
 
@@ -24143,7 +24178,7 @@ class Over:
             ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
             text_air_pas.text = prefs.subsonic_password
             text_air_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
+                              width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.subsonic_password = text_air_pas.text
 
             y += round(23 * gui.scale)
@@ -24200,7 +24235,7 @@ class Over:
             ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
             text_koel_pas.text = prefs.koel_password
             text_koel_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
+                              width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.koel_password = text_koel_pas.text
 
             y += round(23 * gui.scale)
@@ -24257,7 +24292,7 @@ class Over:
             ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
             text_plex_pas.text = prefs.plex_password
             text_plex_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
+                              width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.plex_password = text_plex_pas.text
 
             y += round(23 * gui.scale)
@@ -26287,6 +26322,9 @@ class TopPanel:
         elif plex.scanning:
             text = "Accessing PLEX library..."
             bg = [229, 160, 13, 255]
+        elif spot_ctl.spotify_com:
+            text = "Accessing Spotify library..."
+            bg = [30, 215, 96, 255]
         elif subsonic.scanning:
             text = "Accessing SUBSONIC library..."
             bg = [255, 160, 60, 255]
