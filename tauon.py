@@ -29891,15 +29891,15 @@ class RadioBox:
             input.key_tab_press = False
 
         if not self.radio_field.text and not (self.radio_field_active == 2 and editline):
-            ddt.text((x + 14 * gui.scale, yy), "Raw Stream URL http://example.stream:1234", colours.box_text_label, 312)
+            ddt.text((x + 14 * gui.scale, yy), _("Raw Stream URL http://example.stream:1234"), colours.box_text_label, 312)
         self.radio_field.draw(x + 14 * gui.scale, yy, colours.box_input_text, active=self.radio_field_active == 2,
                               width=width, click=gui.level_2_click)
 
 
-        if draw.button("Save", x + width + round(21 * gui.scale), yy - round(20 * gui.scale), press=gui.level_2_click):
+        if draw.button(_("Save"), x + width + round(21 * gui.scale), yy - round(20 * gui.scale), press=gui.level_2_click):
 
             if not self.radio_field.text:
-                show_message("Enter a stream URL")
+                show_message(_("Enter a stream URL"))
             elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
                 radio = {}
                 radio["title"] = self.radio_field_title.text
@@ -29916,7 +29916,7 @@ class RadioBox:
                 self.radio_field_title.text = ""
                 self.radio_field.text = ""
             else:
-                show_message("Could not validate URL. Must start with https://")
+                show_message(_("Could not validate URL. Must start with https://"))
 
         yy += round(30 * gui.scale)
         x += round(10 * gui.scale)

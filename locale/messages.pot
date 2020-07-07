@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-07-07 14:10+1200\n"
+"POT-Creation-Date: 2020-07-07 14:43+1200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1884,6 +1884,22 @@ msgstr ""
 
 #: tauon.py:29876
 msgid "Name / Title"
+msgstr ""
+
+#: tauon.py:29894
+msgid "Raw Stream URL http://example.stream:1234"
+msgstr ""
+
+#: tauon.py:29899
+msgid "Save"
+msgstr ""
+
+#: tauon.py:29902
+msgid "Enter a stream URL"
+msgstr ""
+
+#: tauon.py:29919
+msgid "Could not validate URL. Must start with https://"
 msgstr ""
 
 #: tauon.py:30022
