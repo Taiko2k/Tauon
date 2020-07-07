@@ -18667,7 +18667,7 @@ def broadcast_deco():
         line_colour = colours.grey(20)
         return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
-        return [line_colour, colours.menu_background, "Stop Broadcast"] # [24, 25, 60, 255]
+        return [line_colour, colours.menu_background, _("Stop Broadcast")] # [24, 25, 60, 255]
 
     return [line_colour, colours.menu_background, None]
 
@@ -34653,7 +34653,7 @@ class ViewBox:
             #high = (.55, .75, .75)
             high = [63, 63, 63, 255]
 
-        test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Art", low=low, high=high)
+        test = self.button(x, y, self.side_img, self.side, self.side_colour, _("Tracks + Art"), low=low, high=high)
         if test is not None:
             func = test
 
@@ -34669,10 +34669,10 @@ class ViewBox:
             high = [63, 63, 63, 255]
 
         if gui.hide_tracklist_in_gallery:
-            test = self.button(x - round(1 * gui.scale), y, self.gallery2_img, self.gallery1, self.gallery1_colour, "Gallery", low=low,
+            test = self.button(x - round(1 * gui.scale), y, self.gallery2_img, self.gallery1, self.gallery1_colour, _("Gallery"), low=low,
                                high=high)
         else:
-            test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery", low=low, high=high)
+            test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, _("Gallery"), low=low, high=high)
         if test is not None:
             func = test
 
@@ -34686,7 +34686,7 @@ class ViewBox:
             #high = (.5, .7, .65)
             high = [63, 63, 63, 255]
 
-        test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only", low=low, high=high)
+        test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, _("Tracks only"), low=low, high=high)
         if test is not None:
             func = test
 
@@ -34699,7 +34699,7 @@ class ViewBox:
             #high = (.7, .75, .75)
             high = [63, 63, 63, 255]
 
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase + Lyrics", low=low, high=high)
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, _("Showcase + Lyrics"), low=low, high=high)
         if test is not None:
             func = test
 
@@ -34712,7 +34712,7 @@ class ViewBox:
             #high = (.9, .75, .65)
             high = [63, 63, 63, 255]
 
-        test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False, low=low, high=high)
+        test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, _("Toggle columns"), False, low=low, high=high)
         if test is not None:
             func = test
 
@@ -34728,7 +34728,7 @@ class ViewBox:
         if gui.scale == 1.25:
             x-= 1
 
-        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False, low=low, high=high)
+        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, _("Toggle artist info"), False, low=low, high=high)
         if test is not None:
             func = test
 
