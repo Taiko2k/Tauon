@@ -29916,7 +29916,7 @@ class RadioBox:
                 self.radio_field_title.text = ""
                 self.radio_field.text = ""
             else:
-                show_message(_("Could not validate URL. Must start with https://"))
+                show_message(_("Could not validate URL. Must start with https:// or http://"))
 
         yy += round(30 * gui.scale)
         x += round(10 * gui.scale)
