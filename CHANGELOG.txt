@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.0.2
+
+ - Improved Airsonic library import
+
 v6.0.1
 
  - Added option to bypass transcode on sync
