@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.1"
+n_version = "6.0.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -6732,102 +6732,200 @@ class SubsonicService:
         return self.r("stream", p={"id": key}, get_url=True)
         #print(responce.content)
 
-    def get_music(self):
+    def get_music2(self):
 
-        if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
-            show_message(_("Missing username, password and/or server URL"), mode='warning')
-            self.scanning = False
-            return
+        existing = {}
 
-        try:
-            d = self.r("getArtists")
-        except:
-            show_message("Subsonic error", "Server not found?", mode="warning")
-            self.scanning = False
-            return
+        for track_id, track in pctl.master_library.items():
+            if track.is_network and track.file_ext == "SUB":
+                existing[track.url_key] = track_id
 
-        artists = []
+        a = self.r("getIndexes")
+        b = a["subsonic-response"]["indexes"]["index"]
 
-        if d["subsonic-response"]["status"] != "ok":
-            show_message("Subsonic error", d["subsonic-response"]["error"]["message"], mode="warning")
-            self.scanning = False
-            return
+        folders = []
 
-        for a in d["subsonic-response"]["artists"]["index"]:
-            artists += a["artist"]
+        for letter in b:
+            artists = letter["artist"]
+            for artist in artists:
+                folders.append((
+                    artist["id"],
+                    artist["name"]
+                ))
 
         playlist = []
 
-        for artist in artists:
-            d = self.r("getArtist", p={"id": artist["id"]})
-            albums = d["subsonic-response"]["artist"]["album"]
 
-            for album in albums:
-                b = self.r("getAlbum", p={"id": album["id"]})
-                #print(b)
-                songs = b["subsonic-response"]["album"]["song"]
+        def get(folder_id, name):
 
-                for song in songs:
+            d = self.r("getMusicDirectory", p={"id": folder_id})
+            if "child" not in d["subsonic-response"]["directory"]:
+                return
 
-                    id = pctl.master_count
-                    replace_existing = False
-                    for track_id, track in pctl.master_library.items():
-                        if track.is_network and track.file_ext == "SUB" and track.url_key == song["id"]:
-                            id = track.index
-                            replace_existing = True
-                            break
+            items = d["subsonic-response"]["directory"]["child"]
 
-                    nt = TrackClass()
+            for item in items:
+                if item["isDir"]:
+                    get(item["id"], item["title"])
+                    continue
 
-                    if "title" in song:
-                        nt.title = song["title"]
-                    if "artist" in song:
-                        nt.artist = song["artist"]
-                    if "album" in song:
-                        nt.album = song["album"]
-                    if "track" in song:
-                        nt.track_number = song["track"]
-                    if "year" in song:
-                        nt.date = str(song["year"])
-                    if "duration" in song:
-                        nt.length = song["duration"]
+                song = item
+                id = pctl.master_count
 
-                    # if "bitRate" in song:
-                    #     nt.bitrate = song["bitRate"]
+                print(song)
 
-                    nt.file_ext = "SUB"
+                replace_existing = False
+                ex = existing.get(song["id"])
+                if ex is not None:
+                    id = ex
+                    replace_existing = True
 
-                    nt.index = id
+                nt = TrackClass()
 
-                    nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
-                    nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
+                if "title" in song:
+                    nt.title = song["title"]
+                if "artist" in song:
+                    nt.artist = song["artist"]
+                if "album" in song:
+                    nt.album = song["album"]
+                if "track" in song:
+                    nt.track_number = song["track"]
+                if "year" in song:
+                    nt.date = str(song["year"])
+                if "duration" in song:
+                    nt.length = song["duration"]
 
-                    if "coverArt" in song:
-                        nt.art_url_key = song["id"]
+                # if "bitRate" in song:
+                #     nt.bitrate = song["bitRate"]
 
-                    nt.url_key = song["id"]
-                    nt.is_network = True
+                nt.file_ext = "SUB"
 
-                    pctl.master_library[id] = nt
+                nt.index = id
 
-                    if not replace_existing:
-                        pctl.master_count += 1
+                nt.fullpath = song["path"]
+                nt.parent_folder_name = name
+                nt.parent_folder_path = os.path.dirname(song["path"])
 
-                    playlist.append(nt.index)
+                if "coverArt" in song:
+                    nt.art_url_key = song["id"]
+
+                nt.url_key = song["id"]
+                nt.is_network = True
+
+                pctl.master_library[id] = nt
+
+                if not replace_existing:
+                    pctl.master_count += 1
+
+                playlist.append(nt.index)
+
+        for id, name in folders:
+
+            get(id, name)
+
 
         self.scanning = False
 
         pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
-        standard_sort(len(pctl.multi_playlist) - 1)
+        #standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        b = self.r("getPlaylists")
-        playlists = b["subsonic-response"]["playlists"]["playlist"]
-
-        for playlist in playlists:
-            print((playlist["name"], playlist["id"], playlist["songCount"]))
-
-
+    # def get_music(self):
+    #
+    #     if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
+    #         show_message(_("Missing username, password and/or server URL"), mode='warning')
+    #         self.scanning = False
+    #         return
+    #
+    #     try:
+    #         d = self.r("getArtists")
+    #         print(d)
+    #     except:
+    #         show_message("Subsonic error", "Server not found?", mode="warning")
+    #         self.scanning = False
+    #         return
+    #
+    #     artists = []
+    #
+    #     if d["subsonic-response"]["status"] != "ok":
+    #         show_message("Subsonic error", d["subsonic-response"]["error"]["message"], mode="warning")
+    #         self.scanning = False
+    #         return
+    #
+    #     for a in d["subsonic-response"]["artists"]["index"]:
+    #         artists += a["artist"]
+    #
+    #     playlist = []
+    #     print("AAAA")
+    #     for artist in artists:
+    #         d = self.r("getArtist", p={"id": artist["id"]})
+    #         print(d)
+    #         albums = d["subsonic-response"]["artist"]["album"]
+    #
+    #         for album in albums:
+    #             b = self.r("getAlbum", p={"id": album["id"]})
+    #             #print(b)
+    #             songs = b["subsonic-response"]["album"]["song"]
+    #
+    #             for song in songs:
+    #                 print(song)
+    #                 id = pctl.master_count
+    #                 replace_existing = False
+    #                 # for track_id, track in pctl.master_library.items():
+    #                 #     if track.is_network and track.file_ext == "SUB" and track.url_key == song["id"]:
+    #                 #         id = track.index
+    #                 #         replace_existing = True
+    #                 #         break
+    #
+    #                 nt = TrackClass()
+    #
+    #                 if "title" in song:
+    #                     nt.title = song["title"]
+    #                 if "artist" in song:
+    #                     nt.artist = song["artist"]
+    #                 if "album" in song:
+    #                     nt.album = song["album"]
+    #                 if "track" in song:
+    #                     nt.track_number = song["track"]
+    #                 if "year" in song:
+    #                     nt.date = str(song["year"])
+    #                 if "duration" in song:
+    #                     nt.length = song["duration"]
+    #
+    #                 # if "bitRate" in song:
+    #                 #     nt.bitrate = song["bitRate"]
+    #
+    #                 nt.file_ext = "SUB"
+    #
+    #                 nt.index = id
+    #
+    #                 nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
+    #                 nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
+    #
+    #                 if "coverArt" in song:
+    #                     nt.art_url_key = song["id"]
+    #
+    #                 nt.url_key = song["id"]
+    #                 nt.is_network = True
+    #
+    #                 pctl.master_library[id] = nt
+    #
+    #                 if not replace_existing:
+    #                     pctl.master_count += 1
+    #
+    #                 playlist.append(nt.index)
+    #
+    #     self.scanning = False
+    #
+    #     pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
+    #     standard_sort(len(pctl.multi_playlist) - 1)
+    #     switch_playlist(len(pctl.multi_playlist) - 1)
+    #
+    #     b = self.r("getPlaylists")
+    #     playlists = b["subsonic-response"]["playlists"]["playlist"]
+    #
+    #     for playlist in playlists:
+    #         print((playlist["name"], playlist["id"], playlist["songCount"]))
 
 subsonic = SubsonicService()
 
@@ -7054,7 +7152,7 @@ def sub_get_album_thread():
         return
     subsonic.scanning = True
 
-    shoot_dl = threading.Thread(target=subsonic.get_music)
+    shoot_dl = threading.Thread(target=subsonic.get_music2)
     shoot_dl.daemon = True
     shoot_dl.start()
 
@@ -12693,6 +12791,7 @@ def get_lyric_fire(track_object, silent=False):
                     console.print(f"Found lyrics from {name}", level=1)
                     track_object.lyrics = lyrics
                     found = True
+                    break
             except Exception as e:
                 console.print(str(e))
 
@@ -22177,6 +22276,7 @@ def worker1():
                     added = []
                     order.stage = 2
                     loaderCommandReady = False
+                    print("DONEW LOADING")
                     break
 
 album_info_cache = {}
@@ -36970,14 +37070,8 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
 
+            subsonic.get_music2()
 
-            #spot_ctl.search_track(pctl.playing_object())
-            #prefs.spotify_token = None
-            #spot_ctl.get_playlists()
-            #spot_ctl.update()
-            #spot_ctl.set_device()
-            # pctl.playerCommand = "encpause"
-            # pctl.playerCommandReady = True
             pass
             # albums = {}
             # nums = {}

@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.0.2
+
+ - Improved Airsonic library import
+ - Fixed lyrics searching all providers even if one was successful
+
 v6.0.1
 
  - Added option to bypass transcode on sync
