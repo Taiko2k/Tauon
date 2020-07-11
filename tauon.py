@@ -12791,6 +12791,7 @@ def get_lyric_fire(track_object, silent=False):
                     console.print(f"Found lyrics from {name}", level=1)
                     track_object.lyrics = lyrics
                     found = True
+                    break
             except Exception as e:
                 console.print(str(e))
 
@@ -22275,6 +22276,7 @@ def worker1():
                     added = []
                     order.stage = 2
                     loaderCommandReady = False
+                    print("DONEW LOADING")
                     break
 
 album_info_cache = {}
