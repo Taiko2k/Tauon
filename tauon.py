@@ -3196,6 +3196,12 @@ if db_version > 0:
             if type(p[7]) != list:
                 p[7] = [p[7]]
 
+    if db_version <= 46:
+        print("Updating database to version 47")
+        for p in multi_playlist:
+            if type(p[7]) != list:
+                p[7] = [p[7]]
+
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
 shoot.start()
@@ -18609,7 +18615,7 @@ def show_import_music(_):
 def import_music():
 
     pl = pl_gen("Music")
-    pl[7] = music_directory
+    pl[7] = [music_directory]
     pctl.multi_playlist.append(pl)
     load_order = LoadClass()
     load_order.target = music_directory
@@ -36022,7 +36028,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            46,  # Version, used for upgrading
+            47,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
