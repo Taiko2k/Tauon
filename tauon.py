@@ -72,15 +72,18 @@ desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 #de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
 de_notify_support = False
 draw_min_button = True
+xdpi = 0
 
-if desktop == 'GNOME':
-    try:
-        gi.require_version('Gtk', '3.0')
-        from gi.repository import Gtk
-        if "minimize" not in str(Gtk.Settings().get_default().get_property("gtk-decoration-layout")):
-            draw_min_button = False
-    except:
-        print("Error accessing gtk settings")
+try:
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import Gtk
+    gtk_settings = Gtk.Settings().get_default()
+    xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+    if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+        draw_min_button = False
+
+except:
+    print("Error accessing GTK settings")
 
 # Find the directory we are running from
 install_directory = sys.path[0]
@@ -1241,6 +1244,7 @@ class Prefs:    # Used to hold any kind of settings
         self.left_align_album_artist_title = False
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
+        self.x_scale = True
         self.hide_queue = True
         self.show_playlist_list = True
         self.thin_gallery_borders = False
@@ -3252,6 +3256,7 @@ def save_prefs():
     cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
 
     cf.update_value("ui-scale", prefs.scale_want)
+    cf.update_value("use-xft-dpi", prefs.x_scale)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
 
@@ -3387,11 +3392,15 @@ def load_prefs():
 
 
     cf.br()
-    cf.add_text("[ui]")
+    cf.add_text("[HiDPI]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
-    prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this")
+    prefs.x_scale = cf.sync_add("float", "use-xft-dpi", prefs.x_scale, "Automatically scale UI based on your Xresources setting. If the above ui-scale setting is not the default, it will overide this." )
+    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this.")
 
+    cf.br()
+    cf.add_text("[ui]")
+
+    prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
@@ -3604,27 +3613,36 @@ else:
 force_render = False
 
 
-if prefs.scale_want != 1:
+scale_want = prefs.scale_want
+
+if prefs.scale_want == 1 and prefs.x_scale and scale_want == 1 and xdpi > 40:
+    scale_want = xdpi / 96
+    print("Applying scale based on xft setting")
+
+scale_want = round(scale_want / 0.05) * 0.05
+
+print(scale_want)
+
+if scale_want != 1:
     scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
     if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(os.listdir(scaled_asset_directory)):
         print("Force rerender icons")
         force_render = True
 
 
-if prefs.scale_want != prefs.ui_scale or force_render:
+if scale_want != prefs.ui_scale or force_render:
 
-    if prefs.scale_want != 1:
+    if scale_want != 1:
         if os.path.isdir(scaled_asset_directory):
             shutil.rmtree(scaled_asset_directory)
         from t_modules.t_svgout import render_icons
 
         if scaled_asset_directory != asset_directory:
             print("Rendering icons...")
-            render_icons(svg_directory, scaled_asset_directory, prefs.scale_want)
+            render_icons(svg_directory, scaled_asset_directory, scale_want)
 
 
-    #if prefs.scale_want in (1, 1.25, 2):
-    prefs.ui_scale = prefs.scale_want
+    prefs.ui_scale = scale_want
     prefs.playlist_row_height = round(22 * prefs.ui_scale)
     #prefs.playlist_font_size = 15
     gui.__init__()
@@ -25293,15 +25311,15 @@ class Over:
         y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
-        # prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak Text Y"), "px", prefs.tracklist_y_text_offset, -5, 5)
-        # y += 25 * gui.scale
+        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
+        y += 25 * gui.scale
 
         x += 65 * gui.scale
         self.button(x, y, _("Thin default"), self.small_preset, 124 * gui.scale)
         y += 27 * gui.scale
         self.button(x, y, _("Thick default"), self.large_preset, 124 * gui.scale)
 
-        y += 90 * gui.scale
+        y += 65 * gui.scale
         # x -= 90 * gui.scale
         x = x0 + self.item_x_offset
 
@@ -35660,9 +35678,21 @@ def update_layout_do():
 
         if gui.scale != 1:
             real_font_px = ddt.f_dict[gui.row_font_size][2]
-            gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("abcd", gui.row_font_size, 100) + round(1.3 * gui.scale)
+            #gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("AbcD", gui.row_font_size, 100) + round(1.3 * gui.scale)
+
+            if gui.scale < 1.3:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.9 * gui.scale)
+            elif gui.scale < 1.5:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.3 * gui.scale)
+            elif gui.scale < 1.75:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.1 * gui.scale)
+            elif gui.scale < 2.3:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.5 * gui.scale)
+            else:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.8 * gui.scale)
 
         gui.playlist_text_offset += prefs.tracklist_y_text_offset
+
 
         gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
