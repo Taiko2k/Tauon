@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.0.3
+
+ - Fixed network track pausing with BASS
+
 v6.0.2
 
  - Improved Airsonic library import
