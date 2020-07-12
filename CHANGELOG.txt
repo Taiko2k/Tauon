@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.0.3
 
+ - Added auto-scale based on xft dpi
  - Fixed network track pausing with BASS
 
 v6.0.2
