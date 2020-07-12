@@ -3394,7 +3394,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[HiDPI]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
-    prefs.x_scale = cf.sync_add("float", "use-xft-dpi", prefs.x_scale, "Automatically scale UI based on your Xresources setting. If the above ui-scale setting is not the default, it will overide this." )
+    prefs.x_scale = cf.sync_add("bool", "use-xft-dpi", prefs.x_scale, "Automatically scale UI based on your Xresources setting. If the above ui-scale setting is not the default, it will overide this." )
     prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this.")
 
     cf.br()
@@ -3619,7 +3619,7 @@ if prefs.scale_want == 1 and prefs.x_scale and scale_want == 1 and xdpi > 40:
     scale_want = xdpi / 96
     print("Applying scale based on xft setting")
 
-scale_want = round(scale_want / 0.05) * 0.05
+scale_want = round(round(scale_want / 0.05) * 0.05, 2)
 
 print(scale_want)
 
@@ -24769,51 +24769,90 @@ class Over:
 
         #ddt.text((x, y), _("Window"),colours.box_text_label, 12)
 
-
-        y += 28 * gui.scale
-
         if system == "linux":
             self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 25 * gui.scale
-
-        # if system == "linux":
-        #     x += round(10 * gui.scale)
-        #     prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
-        #     x -= round(10 * gui.scale)
-
-        #y += 25 * gui.scale
-
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
         y += 25 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-
-
         if msys:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
-        else:
-            y += 5 * gui.scale
 
-        y += 32 * gui.scale
-
-        #ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
-
+        y += 25 * gui.scale
         if system != 'windows' and (flatpak_mode or snap_mode):
-            y += 25 * gui.scale
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
         y += 25 * gui.scale
-
         if prefs.backend == 1:
             self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
-            y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
-            y += 25 * gui.scale
 
+        y += 25 * gui.scale
+        if prefs.backend == 1:
+            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+
+        y += round(25 * gui.scale)
+        if not msys:
+            y += round(15 * gui.scale)
+
+        ddt.text((x, y), _("UI scale for HiDPI displays"), colours.box_text_label, 12)
+
+        y += round(25 * gui.scale)
+
+        sw = round(200 * gui.scale)
+        sh = round(2 * gui.scale)
+
+        slider = (x,y,sw,sh)
+
+        gh = round(14 * gui.scale)
+        gw = round(8 * gui.scale)
+        grip = [0, y - (gh // 2), gw, gh]
+
+        grip[0] = x
+        grip[0] += ((prefs.scale_want - 0.5) / 3 * sw)
+
+        m1 = (x + ((1.0 - 0.5) / 3 * sw), y, sh, sh * 2)
+        m2 = (x + ((2.0 - 0.5) / 3 * sw), y, sh, sh * 2)
+        m3 = (x + ((3.0 - 0.5) / 3 * sw), y, sh, sh * 2)
+
+        if coll(grow_rect(slider, 15)) and mouse_down:
+            prefs.scale_want = ((mouse_position[0] - x) / sw * 3) + 0.5
+            prefs.x_scale = False
+        if prefs.scale_want < 0.5:
+            prefs.scale_want = 0.5
+        if prefs.scale_want > 3.5:
+            prefs.scale_want = 3.5
+        prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
+
+        text = str(prefs.scale_want)
+        if len(text) == 3:
+            text += "0"
+        text += "x"
+
+        if prefs.x_scale:
+            text = "auto"
+
+        ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colours.box_sub_text, 13)
+        ddt.text((x + sw + round(14 * gui.scale), y + round(10 * gui.scale)), _("Restart app to apply any changes"), colours.box_text_label, 11)
+
+        ddt.rect(slider, colours.box_text_border, True)
+        ddt.rect(m1, colours.box_text_border, True)
+        ddt.rect(m2, colours.box_text_border, True)
+        ddt.rect(m3, colours.box_text_border, True)
+        ddt.rect(grip, colours.box_text_label, True)
+
+        y += round(25 * gui.scale)
+        self.toggle_square(x, y, self.toggle_x_scale, _("Auto scale based on xft-dpi"))
+
+    def toggle_x_scale(self, mode=0):
+        if mode == 1:
+            return prefs.x_scale
+        prefs.x_scale ^= True
+        prefs.scale_want = 1.0
 
     def about(self, x0, y0, w0, h0):
 
@@ -26306,7 +26345,7 @@ class TopPanel:
                 xx = x
                 if x > window_size[0] - (210 * gui.scale):
                     xx = window_size[0] - round(210 * gui.scale)
-                x_menu.activate(position=(xx + 12, gui.panelY))
+                x_menu.activate(position=(xx + round(12 * gui.scale), gui.panelY))
                 view_box.activate(xx)
 
         view_box.render()
