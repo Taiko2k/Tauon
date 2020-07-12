@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.2"
+n_version = "6.0.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -6772,8 +6772,6 @@ class SubsonicService:
                 song = item
                 id = pctl.master_count
 
-                print(song)
-
                 replace_existing = False
                 ex = existing.get(song["id"])
                 if ex is not None:
@@ -6826,7 +6824,7 @@ class SubsonicService:
 
         self.scanning = False
 
-        pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
+        pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
         #standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
 
