@@ -24827,6 +24827,12 @@ class Over:
         if prefs.scale_want > 3.5:
             prefs.scale_want = 3.5
         prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
+        if prefs.scale_want == 0.95 or prefs.scale_want == 1.05:
+            prefs.scale_want = 1.0
+        if prefs.scale_want == 1.95 or prefs.scale_want == 2.05:
+            prefs.scale_want = 2.0
+        if prefs.scale_want == 2.95 or prefs.scale_want == 3.05:
+            prefs.scale_want = 3.0
 
         text = str(prefs.scale_want)
         if len(text) == 3:
@@ -24836,7 +24842,11 @@ class Over:
         if prefs.x_scale:
             text = "auto"
 
-        ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colours.box_sub_text, 13)
+        font = 13
+        if not prefs.x_scale and (prefs.scale_want == 1.0 or prefs.scale_want == 2.0 or prefs.scale_want == 3.0):
+            font = 313
+
+        ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colours.box_sub_text, font)
         ddt.text((x + sw + round(14 * gui.scale), y + round(10 * gui.scale)), _("Restart app to apply any changes"), colours.box_text_label, 11)
 
         ddt.rect(slider, colours.box_text_border, True)
