@@ -536,6 +536,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
             self.save_temp = ""
             self.alt = "a"
             self.url = ""
+            self.id = ""
             self.init = False
             self.old_target = ""
 
@@ -686,7 +687,12 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 BASS_ChannelPause(self.channel)
                 self.state = 'paused'
 
-                if prefs.dc_device or force_suspend:
+                tr = self.loaded_track
+                network = False
+                if tr:
+                    network = tr.is_network
+
+                if (prefs.dc_device or force_suspend) and not network:
                     self.try_unload()
                     if not self.init:
                         self.state = 'suspend'
@@ -698,7 +704,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                     BASS_ChannelSlideAttribute(self.channel, 2, pctl.player_volume / 100, prefs.pause_fade_time)
                 self.state = 'playing'
 
-        def download_part(self, url, target, params):
+        def download_part(self, url, target, params, id):
 
             try:
                 self.part = requests.get(url, stream=True, params=params)
@@ -720,21 +726,22 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                         a += 1
                         if a == 300:  # kilobyes~
                             self.dl_ready = True
-                        if url != self.url:
+
+                        if id != self.id:
                             self.part.close()
                             break
 
                         f.write(chunk)
 
-                    z += 1
-                    if z == 60:
-                        z = 0
-                        if bitrate == 0:
-                            audio = auto.File(target)
-                            bitrate = audio.bitrate
-                        if bitrate > 0:
-                            gui.update += 1
-                            pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+                        z += 1
+                        if z == 60:
+                            z = 0
+                            if bitrate == 0:
+                                audio = auto.File(target)
+                                bitrate = audio.bitrate
+                            if bitrate > 0:
+                                gui.update += 1
+                                pctl.download_time = a * 1024 / (bitrate / 8) / 1000
 
 
             pctl.download_time = -1
@@ -787,9 +794,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon):  # BASS
                 else:
                     self.alt = 'a'
 
-                self.url = url
+                if os.path.isfile(self.save_temp):
+                    os.remove(self.save_temp)
 
-                shoot_dl = threading.Thread(target=self.download_part, args=([url, self.save_temp, params]))
+                self.url = url
+                self.id = target_object.url_key
+
+                shoot_dl = threading.Thread(target=self.download_part, args=([url, self.save_temp, params, target_object.url_key]))
                 shoot_dl.daemon = True
                 shoot_dl.start()
 

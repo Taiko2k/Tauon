@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+v6.0.3
+
+ - Added UI scale slider in settings
+ - Added auto-scale based on xft dpi setting
+ - Fixed network track pausing with BASS
+ - Fixed crash on rescan music folder
+
 v6.0.2
 
  - Improved Airsonic library import

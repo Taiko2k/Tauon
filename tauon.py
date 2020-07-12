@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.2"
+n_version = "6.0.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -72,15 +72,18 @@ desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 #de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
 de_notify_support = False
 draw_min_button = True
+xdpi = 0
 
-if desktop == 'GNOME':
-    try:
-        gi.require_version('Gtk', '3.0')
-        from gi.repository import Gtk
-        if "minimize" not in str(Gtk.Settings().get_default().get_property("gtk-decoration-layout")):
-            draw_min_button = False
-    except:
-        print("Error accessing gtk settings")
+try:
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import Gtk
+    gtk_settings = Gtk.Settings().get_default()
+    xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+    if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+        draw_min_button = False
+
+except:
+    print("Error accessing GTK settings")
 
 # Find the directory we are running from
 install_directory = sys.path[0]
@@ -1241,6 +1244,7 @@ class Prefs:    # Used to hold any kind of settings
         self.left_align_album_artist_title = False
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
+        self.x_scale = True
         self.hide_queue = True
         self.show_playlist_list = True
         self.thin_gallery_borders = False
@@ -3192,6 +3196,12 @@ if db_version > 0:
             if type(p[7]) != list:
                 p[7] = [p[7]]
 
+    if db_version <= 46:
+        print("Updating database to version 47")
+        for p in multi_playlist:
+            if type(p[7]) != list:
+                p[7] = [p[7]]
+
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
 shoot.start()
@@ -3252,6 +3262,7 @@ def save_prefs():
     cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
 
     cf.update_value("ui-scale", prefs.scale_want)
+    cf.update_value("use-xft-dpi", prefs.x_scale)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
 
@@ -3387,11 +3398,15 @@ def load_prefs():
 
 
     cf.br()
-    cf.add_text("[ui]")
+    cf.add_text("[HiDPI]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
-    prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this")
+    prefs.x_scale = cf.sync_add("bool", "use-xft-dpi", prefs.x_scale, "Automatically scale UI based on your Xresources setting. If the above ui-scale setting is not the default, it will overide this." )
+    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this.")
 
+    cf.br()
+    cf.add_text("[ui]")
+
+    prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
@@ -3604,27 +3619,36 @@ else:
 force_render = False
 
 
-if prefs.scale_want != 1:
+scale_want = prefs.scale_want
+
+if prefs.scale_want == 1 and prefs.x_scale and scale_want == 1 and xdpi > 40:
+    scale_want = xdpi / 96
+    print("Applying scale based on xft setting")
+
+scale_want = round(round(scale_want / 0.05) * 0.05, 2)
+
+print(scale_want)
+
+if scale_want != 1:
     scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
     if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(os.listdir(scaled_asset_directory)):
         print("Force rerender icons")
         force_render = True
 
 
-if prefs.scale_want != prefs.ui_scale or force_render:
+if scale_want != prefs.ui_scale or force_render:
 
-    if prefs.scale_want != 1:
+    if scale_want != 1:
         if os.path.isdir(scaled_asset_directory):
             shutil.rmtree(scaled_asset_directory)
         from t_modules.t_svgout import render_icons
 
         if scaled_asset_directory != asset_directory:
             print("Rendering icons...")
-            render_icons(svg_directory, scaled_asset_directory, prefs.scale_want)
+            render_icons(svg_directory, scaled_asset_directory, scale_want)
 
 
-    #if prefs.scale_want in (1, 1.25, 2):
-    prefs.ui_scale = prefs.scale_want
+    prefs.ui_scale = scale_want
     prefs.playlist_row_height = round(22 * prefs.ui_scale)
     #prefs.playlist_font_size = 15
     gui.__init__()
@@ -6772,8 +6796,6 @@ class SubsonicService:
                 song = item
                 id = pctl.master_count
 
-                print(song)
-
                 replace_existing = False
                 ex = existing.get(song["id"])
                 if ex is not None:
@@ -6826,7 +6848,7 @@ class SubsonicService:
 
         self.scanning = False
 
-        pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
+        pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
         #standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -18593,7 +18615,7 @@ def show_import_music(_):
 def import_music():
 
     pl = pl_gen("Music")
-    pl[7] = music_directory
+    pl[7] = [music_directory]
     pctl.multi_playlist.append(pl)
     load_order = LoadClass()
     load_order.target = music_directory
@@ -24753,51 +24775,100 @@ class Over:
 
         #ddt.text((x, y), _("Window"),colours.box_text_label, 12)
 
-
-        y += 28 * gui.scale
-
         if system == "linux":
             self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 25 * gui.scale
-
-        # if system == "linux":
-        #     x += round(10 * gui.scale)
-        #     prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
-        #     x -= round(10 * gui.scale)
-
-        #y += 25 * gui.scale
-
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
         y += 25 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-
-
         if msys:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
-        else:
-            y += 5 * gui.scale
 
-        y += 32 * gui.scale
-
-        #ddt.text((x, y), _("Misc"), colours.box_text_label, 12)
-
+        y += 25 * gui.scale
         if system != 'windows' and (flatpak_mode or snap_mode):
-            y += 25 * gui.scale
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
         y += 25 * gui.scale
-
         if prefs.backend == 1:
             self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
-            y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
-            y += 25 * gui.scale
 
+        y += 25 * gui.scale
+        if prefs.backend == 1:
+            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+
+        y += round(25 * gui.scale)
+        if not msys:
+            y += round(15 * gui.scale)
+
+        ddt.text((x, y), _("UI scale for HiDPI displays"), colours.box_text_label, 12)
+
+        y += round(25 * gui.scale)
+
+        sw = round(200 * gui.scale)
+        sh = round(2 * gui.scale)
+
+        slider = (x,y,sw,sh)
+
+        gh = round(14 * gui.scale)
+        gw = round(8 * gui.scale)
+        grip = [0, y - (gh // 2), gw, gh]
+
+        grip[0] = x
+        grip[0] += ((prefs.scale_want - 0.5) / 3 * sw)
+
+        m1 = (x + ((1.0 - 0.5) / 3 * sw), y, sh, sh * 2)
+        m2 = (x + ((2.0 - 0.5) / 3 * sw), y, sh, sh * 2)
+        m3 = (x + ((3.0 - 0.5) / 3 * sw), y, sh, sh * 2)
+
+        if coll(grow_rect(slider, 15)) and mouse_down:
+            prefs.scale_want = ((mouse_position[0] - x) / sw * 3) + 0.5
+            prefs.x_scale = False
+        if prefs.scale_want < 0.5:
+            prefs.scale_want = 0.5
+        if prefs.scale_want > 3.5:
+            prefs.scale_want = 3.5
+        prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
+        if prefs.scale_want == 0.95 or prefs.scale_want == 1.05:
+            prefs.scale_want = 1.0
+        if prefs.scale_want == 1.95 or prefs.scale_want == 2.05:
+            prefs.scale_want = 2.0
+        if prefs.scale_want == 2.95 or prefs.scale_want == 3.05:
+            prefs.scale_want = 3.0
+
+        text = str(prefs.scale_want)
+        if len(text) == 3:
+            text += "0"
+        text += "x"
+
+        if prefs.x_scale:
+            text = "auto"
+
+        font = 13
+        if not prefs.x_scale and (prefs.scale_want == 1.0 or prefs.scale_want == 2.0 or prefs.scale_want == 3.0):
+            font = 313
+
+        ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colours.box_sub_text, font)
+        ddt.text((x + sw + round(14 * gui.scale), y + round(10 * gui.scale)), _("Restart app to apply any changes"), colours.box_text_label, 11)
+
+        ddt.rect(slider, colours.box_text_border, True)
+        ddt.rect(m1, colours.box_text_border, True)
+        ddt.rect(m2, colours.box_text_border, True)
+        ddt.rect(m3, colours.box_text_border, True)
+        ddt.rect(grip, colours.box_text_label, True)
+
+        y += round(25 * gui.scale)
+        self.toggle_square(x, y, self.toggle_x_scale, _("Auto scale based on xft-dpi"))
+
+    def toggle_x_scale(self, mode=0):
+        if mode == 1:
+            return prefs.x_scale
+        prefs.x_scale ^= True
+        prefs.scale_want = 1.0
 
     def about(self, x0, y0, w0, h0):
 
@@ -25295,15 +25366,15 @@ class Over:
         y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
-        # prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak Text Y"), "px", prefs.tracklist_y_text_offset, -5, 5)
-        # y += 25 * gui.scale
+        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
+        y += 25 * gui.scale
 
         x += 65 * gui.scale
         self.button(x, y, _("Thin default"), self.small_preset, 124 * gui.scale)
         y += 27 * gui.scale
         self.button(x, y, _("Thick default"), self.large_preset, 124 * gui.scale)
 
-        y += 90 * gui.scale
+        y += 65 * gui.scale
         # x -= 90 * gui.scale
         x = x0 + self.item_x_offset
 
@@ -26290,7 +26361,7 @@ class TopPanel:
                 xx = x
                 if x > window_size[0] - (210 * gui.scale):
                     xx = window_size[0] - round(210 * gui.scale)
-                x_menu.activate(position=(xx + 12, gui.panelY))
+                x_menu.activate(position=(xx + round(12 * gui.scale), gui.panelY))
                 view_box.activate(xx)
 
         view_box.render()
@@ -35662,9 +35733,21 @@ def update_layout_do():
 
         if gui.scale != 1:
             real_font_px = ddt.f_dict[gui.row_font_size][2]
-            gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("abcd", gui.row_font_size, 100) + round(1.3 * gui.scale)
+            #gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("AbcD", gui.row_font_size, 100) + round(1.3 * gui.scale)
+
+            if gui.scale < 1.3:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.9 * gui.scale)
+            elif gui.scale < 1.5:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.3 * gui.scale)
+            elif gui.scale < 1.75:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.1 * gui.scale)
+            elif gui.scale < 2.3:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.5 * gui.scale)
+            else:
+                gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.8 * gui.scale)
 
         gui.playlist_text_offset += prefs.tracklist_y_text_offset
+
 
         gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
@@ -35945,7 +36028,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            46,  # Version, used for upgrading
+            47,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
