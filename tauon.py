@@ -1325,6 +1325,7 @@ class Prefs:    # Used to hold any kind of settings
         self.sync_target = ""
         self.sync_deletes = False
         self.sync_playlist = None
+        self.download_playlist = None
 
         self.sep_genre_multi = False
         self.topchart_sorts_played = True
@@ -2834,6 +2835,8 @@ for t in range(2):
             prefs.spot_secret = save[148]
         if save[149] is not None:
             prefs.show_band = save[149]
+        if save[150] is not None:
+            prefs.download_playlist = save[150]
 
         state_file.close()
         del save
@@ -4155,6 +4158,7 @@ class PlayerCtl:
 
                 radiobox.dummy_track.art_url_key = ""
                 radiobox.dummy_track.title = ""
+                radiobox.dummy_track.date = ""
                 radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
                 radiobox.dummy_track.lyrics = ""
@@ -15049,7 +15053,7 @@ tab_menu.br()
 
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
-tab_menu.add_sub(_("Misc…"), 145)
+tab_menu.add_sub(_("Misc…"), 175)
 
 
 def forget_pl_import_folder(pl):
@@ -15255,6 +15259,20 @@ def sync_playlist_deco(pl):
         text = _("Un-set as Sync Playlist")
     return [colours.menu_text, colours.menu_background, text]
 
+def set_download_playlist(pl):
+    id = pl_to_id(pl)
+    if prefs.download_playlist == id:
+        prefs.download_playlist = None
+    else:
+        prefs.download_playlist = pl_to_id(pl)
+
+def set_download_deco(pl):
+    text = _("Set as Downloads Playlist")
+    id = pl_to_id(pl)
+    if id == prefs.download_playlist:
+        text = _("Un-set as Downloads Playlist")
+    return [colours.menu_text, colours.menu_background, text]
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
@@ -15265,6 +15283,7 @@ tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=Tr
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
 tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, sync_playlist_deco, pass_ref_deco=True, pass_ref=True)
+tab_menu.add_to_sub(_("Set as Downloads Playlist"), 2, set_download_playlist, set_download_deco, pass_ref_deco=True, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -18614,7 +18633,7 @@ def show_import_music(_):
 
 def import_music():
 
-    pl = pl_gen("Music")
+    pl = pl_gen(_("Music"))
     pl[7] = [music_directory]
     pctl.multi_playlist.append(pl)
     load_order = LoadClass()
@@ -26417,13 +26436,22 @@ class TopPanel:
                             load_order.target = item
                             pln = pctl.active_playlist_viewing
                             load_order.playlist = pctl.multi_playlist[pln][6]
+
                             for i, pl in enumerate(pctl.multi_playlist):
-                                if pl[0].lower() == "downloads":
-                                    load_order.playlist = pl[6]
-                                    pln = i
-                                    break
+                                if prefs.download_playlist is not None:
+                                    if pl[6] == prefs.download_playlist:
+                                        load_order.playlist = pl[6]
+                                        pln = i
+                                        break
+                            else:
+                                for i, pl in enumerate(pctl.multi_playlist):
+                                    if pl[0].lower() == "downloads":
+                                        load_order.playlist = pl[6]
+                                        pln = i
+                                        break
 
                             load_orders.append(copy.deepcopy(load_order))
+
                         if len(dl_mon.ready) > 0:
                             dl_mon.ready.clear()
                             switch_playlist(pln)
@@ -29989,6 +30017,7 @@ class RadioBox:
         self.dummy_track.title = ""
         self.dummy_track.artist = ""
         self.dummy_track.album = ""
+        self.dummy_track.date = ""
 
         album_art_gen.clear_cache()
 
@@ -36161,6 +36190,7 @@ def save_state():
             prefs.spot_client,
             prefs.spot_secret,
             prefs.show_band,
+            prefs.download_playlist,
 
         ]
 

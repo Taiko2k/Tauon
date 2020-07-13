@@ -451,7 +451,8 @@ class SpotCtl:
             nt.album_artist = album_artist
             nt.date = date
             nt.album = album_name
-            nt.disc_total = track.disc_number
+            nt.disc_number = track.disc_number
+            #nt.disc_total =
             nt.length = track.duration_ms / 1000
             nt.title = track.name
             nt.track_number = track.track_number
@@ -488,7 +489,7 @@ class SpotCtl:
         nt.album_artist = track.album.artists[0].name
         nt.date = track.album.release_date
         nt.album = track.album.name
-        nt.disc_total = track.disc_number
+        nt.disc_number = track.disc_number
         nt.length = track.duration_ms / 1000
         nt.title = track.name
         nt.track_number = track.track_number
@@ -602,6 +603,7 @@ class SpotCtl:
                     self.tauon.pctl.radio_image_bin.close()
                     self.tauon.pctl.radio_image_bin = None
                     self.tauon.dummy_track.artist = ""
+                    self.tauon.dummy_track.date = ""
                     self.tauon.dummy_track.title = ""
                     self.tauon.dummy_track.album = ""
                     self.tauon.dummy_track.art_url_key = ""
@@ -635,6 +637,7 @@ class SpotCtl:
         self.tauon.dummy_track.artist = result.item.artists[0].name
         self.tauon.dummy_track.title = result.item.name
         self.tauon.dummy_track.album = result.item.album.name
+        self.tauon.dummy_track.date = result.item.album.release_date
         self.tauon.dummy_track.file_ext = "Spotify"
 
         self.progress_timer.set()
