@@ -13,9 +13,11 @@
 
   - Fast, comfortable and responsive UI.
   - Import tracks and create playlists by simple **drag and drop**.
+  - Seamless support for CUE sheets.
+  - Import and control playback of **Spotify** tracks. (Requires Spotify Premium) 
+  - Stream music from your **PLEX**, **koel** or **Subsonic API** compatible server.
   - Large album art and gallery displays!
   - Support for **gapless playback**.
-  - Seamless support for CUE sheets.
   - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music.
   - Last.fm **scrobbling** with track love support :heart:  
   See which of your tracks your friends loved too! :purple_heart: :blue_heart:
@@ -27,8 +29,6 @@
   - Linux desktop integration with MPRIS2.
   - Built-in topchart generator.
   - Background **radio broadcasting**. :radio: :satellite: (Bass only)
-  - Stream music from your **PLEX**, **koel** or **Subsonic API** compatible server.
-  - Import and control playback of Spotify tracks. (Requires Spotify Premium) 
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
