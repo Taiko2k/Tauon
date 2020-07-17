@@ -110,10 +110,10 @@ class SpotCtl:
                 self.paused = True
                 self.start_timer.set()
             if command == "stop" and (self.playing or self.coasting):
-                self.spotify.playback_pause()
                 self.paused = False
                 self.playing = False
                 self.coasting = False
+                self.spotify.playback_pause()
                 self.start_timer.set()
             if command == "resume" and (self.coasting or self.playing) and self.paused:
                 self.spotify.playback_resume()
@@ -560,9 +560,10 @@ class SpotCtl:
         self.spotify_com = False
 
     def monitor(self):
-        if self.playing and self.start_timer.get() > 6:
+        tr = self.tauon.pctl.playing_object()
+        if self.playing and self.start_timer.get() > 6 and self.tauon.pctl.playing_time + 5 < tr.length:
             result = self.spotify.playback_currently_playing()
-            tr = self.tauon.pctl.playing_object()
+
             if (result is None or result.item is None or not result.is_playing) or tr is None:
                 self.playing = False
                 self.tauon.pctl.stop()

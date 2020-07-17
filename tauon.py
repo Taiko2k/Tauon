@@ -2512,9 +2512,26 @@ gbc.disable()
 ggc = 2
 
 try:
-    star_store.db = pickle.load(open(user_directory + "/star.p", "rb"))
+
+    sp1 = user_directory + "/star.p"
+    sp2 = user_directory + "/star.p.backup"
+
+    s1 = 0
+    s2 = 0
+
+    if os.path.isfile(sp1):
+        s1 = os.path.getsize(sp1)
+    if os.path.isfile(sp2):
+        s2 = os.path.getsize(sp2)
+    to_load = sp1
+    if s2 > s1:
+        print("Loading backup star.p")
+        to_load = sp2
+
+    star_store.db = pickle.load(open(to_load, "rb"))
 
 except:
+    raise
     print('No existing star.p file')
 
 try:
@@ -13136,12 +13153,39 @@ def dl_art_deco(tr):
 def download_art1(tr):
 
     if tr.is_network:
-        show_message("Cannot download art for network tracks.")
+        show_message(_("Cannot download art for network tracks."))
         return
 
-    if not os.path.isdir(tr.parent_folder_path):
-        show_message("Directroy missing.")
+    # Determine noise of folder ----------------
+    siblings = []
+    parent = tr.parent_folder_path
+
+    for pl in pctl.multi_playlist:
+        for ti in pl[2]:
+            tr = pctl.g(ti)
+            if tr.parent_folder_path == parent:
+                siblings.append(tr)
+
+    album_tags = []
+    date_tags = []
+
+    for tr in siblings:
+        album_tags.append(tr.album)
+        date_tags.append(tr.date)
+
+    album_tags = set(album_tags)
+    date_tags = set(date_tags)
+
+    if len(album_tags) > 2 or len(date_tags) > 2:
+        show_message(_("It doesn't look like this folder belongs to a single album, sorry"))
         return
+
+    # -------------------------------------------
+
+    if not os.path.isdir(tr.parent_folder_path):
+        show_message("Directory missing.")
+        return
+
 
     try:
         show_message(_("Looking up MusicBrainz ID..."))
@@ -25385,7 +25429,7 @@ class Over:
         y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
-        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
+        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Baseline offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
         y += 25 * gui.scale
 
         x += 65 * gui.scale
@@ -37171,58 +37215,8 @@ while pctl.running:
 
         if key_ctrl_down and key_z_press:
             undo.undo()
-            # if pctl.playlist_backup:
-            #     pctl.multi_playlist.append(pctl.playlist_backup.pop())
-            # else:
-            #     show_message("There are no more playlists to un-delete.")
-
-
-
-        # print(keymaps.maps)
-        # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-
-            subsonic.get_music2()
-
-            pass
-            # albums = {}
-            # nums = {}
-            # for id in default_playlist:
-            #     track = pctl.g(id)
-            #     if track.album and track.track_number:
-            #
-            #         if type(track.track_number) is str and not track.track_number.isdigit():
-            #             continue
-            #
-            #         if track.album not in albums:
-            #             albums[track.album] = []
-            #             nums[track.album] = []
-            #
-            #         albums[track.album].append(track)
-            #         nums[track.album].append(int(track.track_number))
-            #
-            # for album, tracks in albums.items():
-            #     numbers = nums[album]
-            #     if len(numbers) > 2:
-            #         mi = min(numbers)
-            #         mx = max(numbers)
-            #         r = list(range(int(mi), int(mx)))
-            #         for track in tracks:
-            #             if int(track.track_number) in r:
-            #                 r.remove(int(track.track_number))
-            #         if r:
-            #             print(tracks[0].album)
-                        #print(r)
-                        #break
-
-
-
-            #prefs.showcase_overlay_texture ^= True
-            # gui.hide_tracklist_in_gallery ^= True
-
-            # gui.rspw = gui.pref_gallery_w
-            # gui.update_layout()
             pass
 
         if gui.mode < 3:
@@ -40916,7 +40910,9 @@ pctl.playerCommandReady = True
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
 date = datetime.date.today()
+pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
+
 
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 
