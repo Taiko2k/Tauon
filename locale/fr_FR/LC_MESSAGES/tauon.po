@@ -83,7 +83,7 @@ msgstr "APRÈS"
 
 #: tauon.py:10949
 msgid "Rename complete."
-msgstr "Rennomage terminé."
+msgstr "Renommage terminé."
 
 #: tauon.py:10950
 msgid " filenames were written."
@@ -207,7 +207,7 @@ msgstr "Recherche en cours..."
 
 #: tauon.py:11603
 msgid "No lyrics for this track were found"
-msgstr "Aucune parole trouvée pour cette piste"
+msgstr "Aucune paroles trouvées pour cette piste"
 
 #: tauon.py:11663 tauon.py:11758 tauon.py:12192
 msgid "Search for Lyrics"
@@ -888,7 +888,7 @@ msgstr "Affichage"
 
 #: tauon.py:21221
 msgid "Transcode"
-msgstr "Ecnoder"
+msgstr "Encoder"
 
 #: tauon.py:21222 tauon.py:35482
 msgid "Lyrics"
