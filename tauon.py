@@ -2531,7 +2531,6 @@ try:
     star_store.db = pickle.load(open(to_load, "rb"))
 
 except:
-    raise
     print('No existing star.p file')
 
 try:
