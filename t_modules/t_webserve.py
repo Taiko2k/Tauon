@@ -116,7 +116,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
 
 def authserve(tauon):
 
-    from flask import Flask, redirect, send_file, abort, request, jsonify, render_template, Response, stream_with_context
+    from flask import Flask, abort, request
 
     app = Flask(__name__)
 

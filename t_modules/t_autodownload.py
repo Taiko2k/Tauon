@@ -55,11 +55,19 @@ class AutoDownload:
             load_order.force_scan = True
             pln = self.tauon.pctl.active_playlist_viewing
             load_order.playlist = self.tauon.pctl.multi_playlist[pln][6]
+
             for i, pl in enumerate(self.tauon.pctl.multi_playlist):
-                if pl[0].lower() == "downloads":
-                    load_order.playlist = pl[6]
-                    pln = i
-                    break
+                if self.tauon.prefs.download_playlist is not None:
+                    if pl[6] == self.tauon.prefs.download_playlist:
+                        load_order.playlist = pl[6]
+                        pln = i
+                        break
+            else:
+                for i, pl in enumerate(self.tauon.pctl.multi_playlist):
+                    if pl[0].lower() == "downloads":
+                        load_order.playlist = pl[6]
+                        pln = i
+                        break
 
             self.tauon.load_orders.append(copy.deepcopy(load_order))
             self.tauon.switch_playlist(pln)

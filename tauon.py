@@ -1325,6 +1325,7 @@ class Prefs:    # Used to hold any kind of settings
         self.sync_target = ""
         self.sync_deletes = False
         self.sync_playlist = None
+        self.download_playlist = None
 
         self.sep_genre_multi = False
         self.topchart_sorts_played = True
@@ -2511,7 +2512,23 @@ gbc.disable()
 ggc = 2
 
 try:
-    star_store.db = pickle.load(open(user_directory + "/star.p", "rb"))
+
+    sp1 = user_directory + "/star.p"
+    sp2 = user_directory + "/star.p.backup"
+
+    s1 = 0
+    s2 = 0
+
+    if os.path.isfile(sp1):
+        s1 = os.path.getsize(sp1)
+    if os.path.isfile(sp2):
+        s2 = os.path.getsize(sp2)
+    to_load = sp1
+    if s2 > s1:
+        print("Loading backup star.p")
+        to_load = sp2
+
+    star_store.db = pickle.load(open(to_load, "rb"))
 
 except:
     print('No existing star.p file')
@@ -2834,6 +2851,8 @@ for t in range(2):
             prefs.spot_secret = save[148]
         if save[149] is not None:
             prefs.show_band = save[149]
+        if save[150] is not None:
+            prefs.download_playlist = save[150]
 
         state_file.close()
         del save
@@ -4155,6 +4174,7 @@ class PlayerCtl:
 
                 radiobox.dummy_track.art_url_key = ""
                 radiobox.dummy_track.title = ""
+                radiobox.dummy_track.date = ""
                 radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
                 radiobox.dummy_track.lyrics = ""
@@ -13132,12 +13152,39 @@ def dl_art_deco(tr):
 def download_art1(tr):
 
     if tr.is_network:
-        show_message("Cannot download art for network tracks.")
+        show_message(_("Cannot download art for network tracks."))
         return
 
-    if not os.path.isdir(tr.parent_folder_path):
-        show_message("Directroy missing.")
+    # Determine noise of folder ----------------
+    siblings = []
+    parent = tr.parent_folder_path
+
+    for pl in pctl.multi_playlist:
+        for ti in pl[2]:
+            tr = pctl.g(ti)
+            if tr.parent_folder_path == parent:
+                siblings.append(tr)
+
+    album_tags = []
+    date_tags = []
+
+    for tr in siblings:
+        album_tags.append(tr.album)
+        date_tags.append(tr.date)
+
+    album_tags = set(album_tags)
+    date_tags = set(date_tags)
+
+    if len(album_tags) > 2 or len(date_tags) > 2:
+        show_message(_("It doesn't look like this folder belongs to a single album, sorry"))
         return
+
+    # -------------------------------------------
+
+    if not os.path.isdir(tr.parent_folder_path):
+        show_message("Directory missing.")
+        return
+
 
     try:
         show_message(_("Looking up MusicBrainz ID..."))
@@ -15049,7 +15096,7 @@ tab_menu.br()
 
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
-tab_menu.add_sub(_("Misc…"), 145)
+tab_menu.add_sub(_("Misc…"), 175)
 
 
 def forget_pl_import_folder(pl):
@@ -15255,6 +15302,20 @@ def sync_playlist_deco(pl):
         text = _("Un-set as Sync Playlist")
     return [colours.menu_text, colours.menu_background, text]
 
+def set_download_playlist(pl):
+    id = pl_to_id(pl)
+    if prefs.download_playlist == id:
+        prefs.download_playlist = None
+    else:
+        prefs.download_playlist = pl_to_id(pl)
+
+def set_download_deco(pl):
+    text = _("Set as Downloads Playlist")
+    id = pl_to_id(pl)
+    if id == prefs.download_playlist:
+        text = _("Un-set as Downloads Playlist")
+    return [colours.menu_text, colours.menu_background, text]
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
@@ -15265,6 +15326,7 @@ tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=Tr
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
 tab_menu.add_to_sub(_("Set as Sync Playlist"), 2, set_sync_playlist, sync_playlist_deco, pass_ref_deco=True, pass_ref=True)
+tab_menu.add_to_sub(_("Set as Downloads Playlist"), 2, set_download_playlist, set_download_deco, pass_ref_deco=True, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -18614,7 +18676,7 @@ def show_import_music(_):
 
 def import_music():
 
-    pl = pl_gen("Music")
+    pl = pl_gen(_("Music"))
     pl[7] = [music_directory]
     pctl.multi_playlist.append(pl)
     load_order = LoadClass()
@@ -25366,7 +25428,7 @@ class Over:
         y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
-        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
+        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Baseline offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
         y += 25 * gui.scale
 
         x += 65 * gui.scale
@@ -26417,13 +26479,22 @@ class TopPanel:
                             load_order.target = item
                             pln = pctl.active_playlist_viewing
                             load_order.playlist = pctl.multi_playlist[pln][6]
+
                             for i, pl in enumerate(pctl.multi_playlist):
-                                if pl[0].lower() == "downloads":
-                                    load_order.playlist = pl[6]
-                                    pln = i
-                                    break
+                                if prefs.download_playlist is not None:
+                                    if pl[6] == prefs.download_playlist:
+                                        load_order.playlist = pl[6]
+                                        pln = i
+                                        break
+                            else:
+                                for i, pl in enumerate(pctl.multi_playlist):
+                                    if pl[0].lower() == "downloads":
+                                        load_order.playlist = pl[6]
+                                        pln = i
+                                        break
 
                             load_orders.append(copy.deepcopy(load_order))
+
                         if len(dl_mon.ready) > 0:
                             dl_mon.ready.clear()
                             switch_playlist(pln)
@@ -29989,6 +30060,7 @@ class RadioBox:
         self.dummy_track.title = ""
         self.dummy_track.artist = ""
         self.dummy_track.album = ""
+        self.dummy_track.date = ""
 
         album_art_gen.clear_cache()
 
@@ -36161,6 +36233,7 @@ def save_state():
             prefs.spot_client,
             prefs.spot_secret,
             prefs.show_band,
+            prefs.download_playlist,
 
         ]
 
@@ -37141,58 +37214,8 @@ while pctl.running:
 
         if key_ctrl_down and key_z_press:
             undo.undo()
-            # if pctl.playlist_backup:
-            #     pctl.multi_playlist.append(pctl.playlist_backup.pop())
-            # else:
-            #     show_message("There are no more playlists to un-delete.")
-
-
-
-        # print(keymaps.maps)
-        # print(keymaps.hits)
 
         if keymaps.test('testkey'):  # F7: test
-
-            subsonic.get_music2()
-
-            pass
-            # albums = {}
-            # nums = {}
-            # for id in default_playlist:
-            #     track = pctl.g(id)
-            #     if track.album and track.track_number:
-            #
-            #         if type(track.track_number) is str and not track.track_number.isdigit():
-            #             continue
-            #
-            #         if track.album not in albums:
-            #             albums[track.album] = []
-            #             nums[track.album] = []
-            #
-            #         albums[track.album].append(track)
-            #         nums[track.album].append(int(track.track_number))
-            #
-            # for album, tracks in albums.items():
-            #     numbers = nums[album]
-            #     if len(numbers) > 2:
-            #         mi = min(numbers)
-            #         mx = max(numbers)
-            #         r = list(range(int(mi), int(mx)))
-            #         for track in tracks:
-            #             if int(track.track_number) in r:
-            #                 r.remove(int(track.track_number))
-            #         if r:
-            #             print(tracks[0].album)
-                        #print(r)
-                        #break
-
-
-
-            #prefs.showcase_overlay_texture ^= True
-            # gui.hide_tracklist_in_gallery ^= True
-
-            # gui.rspw = gui.pref_gallery_w
-            # gui.update_layout()
             pass
 
         if gui.mode < 3:
@@ -40886,7 +40909,9 @@ pctl.playerCommandReady = True
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
 date = datetime.date.today()
+pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
+
 
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 

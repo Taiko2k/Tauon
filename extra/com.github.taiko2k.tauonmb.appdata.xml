@@ -63,14 +63,10 @@
 
   <releases>
 
-    <release version="6.0.2" date="2020-07-12">
+    <release version="6.0.3" date="2020-07-17">
       <description>
         <ul>
-          <li>Added Spotify integration</li>
-          <li>Added Bandcamp artist search</li>
-          <li>Added sync to device feature</li>
-          <li>Improved theme selector</li>
-          <li>Various other improvements and bug fixes</li>
+          <li>Added UI scale slider</li>
         </ul>
       </description>
     </release>
