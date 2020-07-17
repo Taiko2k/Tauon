@@ -9,6 +9,8 @@ v6.0.3
  - Fixed network track pausing with BASS
  - Fixed crash on rescan music folder
  - Fixed Spotify remote mode not showing track date
+ - Reduced chance of playtime database corruption
+ - Changed cover art downloader to abort if non-album folder
 
 v6.0.2
 
