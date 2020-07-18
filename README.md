@@ -47,7 +47,7 @@ Installation is available as a Flatpak.
 For **Arch Linux** based distros, you can install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/). For **Ubuntu**, install is alternatively available from [Snapcraft](https://snapcraft.io/tauon). Flatpak and Snap versions use sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.
 ___
 
-For manual and further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
+I highly recommend reading the Tauon Music Box [manual](https://tauonmusicbox.rocks#manual).
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
