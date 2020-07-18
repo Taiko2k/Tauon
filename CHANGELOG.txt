@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.0.4
+
+ - Fixed a possible crash when using artist info panel
+
 v6.0.3
 
  - Added UI scale slider in settings

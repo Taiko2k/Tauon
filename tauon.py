@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.3"
+n_version = "6.0.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -33762,16 +33762,17 @@ class ArtistInfoBox:
             self.status = _("Looking up...")
             gui.update += 1
             data = lastfm.artist_info(artist)
+            self.text = ""
             if data[0] is False:
-                self.text = ""
                 artist_picture_render.show = False
                 self.status = _("No artist bio found")
                 self.artist_on = artist
                 self.lock = False
                 return
             else:
-                self.text = data[1]
-                #cover_link = data[2]
+                if data[1]:
+                    self.text = data[1]
+                # cover_link = data[2]
                 # Save text as file
                 f = open(text_filepath, 'w', encoding='utf-8')
                 f.write(self.text)
