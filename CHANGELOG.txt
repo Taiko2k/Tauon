@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v6.0.4
 
  - Fixed a possible crash when using artist info panel
+ - Fixed transcode status not showing correct remaining during sync
 
 v6.0.3
 

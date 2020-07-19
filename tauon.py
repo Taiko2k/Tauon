@@ -15204,11 +15204,12 @@ def auto_sync_thread(pl):
         else:
             console.print(f"Already exists: {folder}")
 
-    gui.sync_progress = _("Copying files to device")
+
     gui.update += 1
     # -----
     # Prepare and copy
-    for item in todos:
+    for i, item in enumerate(todos):
+        gui.sync_progress = _("Copying files to device")
         if gui.stop_sync:
             break
 
@@ -15241,6 +15242,11 @@ def auto_sync_thread(pl):
             encode_done = os.path.join(prefs.encoder_output, item)
             if not os.path.exists(encode_done):
                 console.print("Need to transcode")
+                remain = len(todos) - i
+                if remain > 1:
+                    gui.sync_progress = str(remain) + " " + _("Folders Remaining")
+                else:
+                    gui.sync_progress = str(remain) + " " + _("Folder Remaining")
                 transcode_list.append(folder_dict[item])
                 while transcode_list:
                     time.sleep(1)
@@ -26665,10 +26671,12 @@ class TopPanel:
 
             x += w + 8 * gui.scale
 
-
-            text = str(len(transcode_list)) + " Folder Remaining " + transcode_state
-            if len(transcode_list) > 1:
-                text = str(len(transcode_list)) + " Folders Remaining " + transcode_state
+            if gui.sync_progress:
+                text = gui.sync_progress
+            else:
+                text = str(len(transcode_list)) + " " + _("Folder Remaining") + " " + transcode_state
+                if len(transcode_list) > 1:
+                    text = str(len(transcode_list)) + " " + _("Folders Remaining") + " " + transcode_state
 
             x += ddt.text((x, y), text, bg, 311) + 8 * gui.scale
 
