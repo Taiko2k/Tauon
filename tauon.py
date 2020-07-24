@@ -16516,8 +16516,27 @@ def s_cut():
     s_copy()
     del_selected()
 
+
 playlist_menu.add('Paste', paste, paste_deco)
 
+def spotify_show_test(_):
+    return prefs.spot_mode
+
+def paste_playlist_coast_album():
+    if spot_ctl.coasting and pctl.playing_state == 3:
+        url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+        if url:
+            default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+
+def paste_playlist_coast_album_deco():
+    if spot_ctl.coasting:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+playlist_menu.add(_('Add Playing Spotify Album'), paste_playlist_coast_album, paste_playlist_coast_album_deco, show_test=spotify_show_test)
 
 def refind_playing():
     # Refind playing index
@@ -17670,8 +17689,7 @@ def get_album_spot_url(track_id):
     else:
         show_message(_("No results found"))
 
-def spotify_show_test(_):
-    return prefs.spot_mode
+
 
 def get_album_spot_url_deco(track_id):
     track_object = pctl.g(track_id)
@@ -22366,7 +22384,7 @@ def worker1():
                     added = []
                     order.stage = 2
                     loaderCommandReady = False
-                    print("DONEW LOADING")
+                    # print("DONE LOADING")
                     break
 
 album_info_cache = {}
