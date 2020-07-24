@@ -260,7 +260,6 @@ class SpotCtl:
         return None
 
     def play_target(self, id):
-
         self.coasting = False
         self.connect()
         if not self.spotify:
@@ -327,7 +326,14 @@ class SpotCtl:
                     time.sleep(2)
 
         else:
-           self.spotify.playback_start_tracks([id], device_id=d_id)
+            try:
+                self.spotify.playback_start_tracks([id], device_id=d_id)
+            except tk.client.decor.error.InternalServerError:
+                self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
+                return
+            except:
+                self.tauon.gui.show_message("Unknown error")
+                return
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
         self.playing = True
