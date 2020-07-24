@@ -4893,6 +4893,30 @@ class PlayerCtl:
                 tauon.spot_ctl.update_timer.set()
                 tauon.spot_ctl.update()
 
+    def purge_track(self, track_id):  # Remove a track from the database
+
+        # Remove from all playlists
+        for playlist in self.multi_playlist:
+            while track_id in playlist[2]:
+                album_dex.clear()
+                playlist[2].remove(track_id)
+
+        # Stop if track is playing track
+        if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
+            self.stop(block=True)
+
+        # Remove from playback history
+        while track_id in self.track_queue:
+            self.track_queue.remove(track_id)
+            self.queue_step -= 1
+
+        # Remove track from force queue
+        for i in reversed(range(len(self.force_queue))):
+            if self.force_queue[i][0] == track_id:
+                del self.force_queue[i]
+
+        del self.master_library[track_id]
+
     def test_progress(self):
 
         global playlist_selected
@@ -22172,32 +22196,25 @@ def worker1():
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
+                    
+                if not prefs.remove_network_tracks and track.file_ext == "SPTY":
+                    
+                    for playlist in pctl.multi_playlist:
+                        if index in playlist[2]:
+                            break
+                    else:
+                        pctl.purge_track(index)
+                        items_removed += 1
+
+                    continue
 
                 if (prefs.remove_network_tracks is False and not track.is_network and not os.path.isfile(track.fullpath)) or \
                 (prefs.remove_network_tracks is True and track.is_network):
 
-                    # Remove from all playlists
-                    for playlist in pctl.multi_playlist:
-                        while index in playlist[2]:
-                            album_dex.clear()
-                            playlist[2].remove(index)
+                    if track.is_network and track.file_ext == "SPTY":
+                        continue
 
-                    # Stop if track is playing track
-                    if pctl.track_queue and pctl.track_queue[pctl.queue_step] == index and pctl.playing_state != 0:
-                        pctl.stop(block=True)
-
-                    # Remove from playback history
-                    while index in pctl.track_queue:
-                        pctl.track_queue.remove(index)
-                        pctl.queue_step -= 1
-
-
-                    # Remove track from force queue
-                    for i in reversed(range(len(pctl.force_queue))):
-                        if pctl.force_queue[i][0] == index:
-                            del pctl.force_queue[i]
-
-                    del pctl.master_library[index]
+                    pctl.purge_track(index)
                     items_removed += 1
 
             cm_clean_db = False
@@ -22206,8 +22223,7 @@ def worker1():
                 reload_albums(True)
             if gui.combo_mode:
                 reload_albums()
-                # combo_pl_render.pl_pos_px = 0
-                # combo_pl_render.prep(True)
+
             gui.update = 1
             gui.pl_update = 1
 
