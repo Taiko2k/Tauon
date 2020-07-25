@@ -8384,9 +8384,11 @@ class TimedLyricsRen:
                         colour = [180, 130, 210, 255]
 
 
-                ddt.text((x, yy), line[1], colour, font_size, 2000, bg)
-
-            yy += spacing
+                #ddt.text((x, yy), line[1], colour, font_size, 2000, bg)
+                h = ddt.text((x, yy, 4, w - 20 * gui.scale), line[1], colour, font_size, w - 20 * gui.scale, bg)
+                yy += max(h - round(6 * gui.scale), spacing)
+            else:
+                yy += spacing
 
 
 
@@ -34460,8 +34462,8 @@ class Showcase:
                         gc.auto_scroll = True
 
             elif True and prefs.show_lyrics_showcase and timed_ready:
-
-                timed_lyrics_ren.render(track.index, gcx, y)
+                w = window_size[0] - (x + box) - round(30 * gui.scale)
+                timed_lyrics_ren.render(track.index, gcx, y, w=w)
 
             elif track.lyrics == "" or not prefs.show_lyrics_showcase:
 
