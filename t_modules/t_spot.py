@@ -99,7 +99,7 @@ class SpotCtl:
             return
         if self.cred is None:
             self.prep_cred()
-        url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state")
+        url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private")
         webbrowser.open(url, new=2, autoraise=True)
 
     def control(self, command, param=None):
@@ -151,13 +151,22 @@ class SpotCtl:
 
         return None
 
-    def get_playlists(self):
+    def get_playlist_list(self):
         self.connect()
         if not self.spotify:
             return None
 
+        playlists = []
         results = self.spotify.playlists(self.spotify.current_user().id)
-        print(results)
+        pages = self.spotify.all_pages(results)
+        for page in pages:
+            items = page.items
+            for item in items:
+                name = item.name
+                url = item.external_urls["spotify"]
+                playlists.append((name, url))
+
+        return playlists
 
     def search(self, text):
         self.connect()
@@ -260,7 +269,6 @@ class SpotCtl:
         return None
 
     def play_target(self, id):
-
         self.coasting = False
         self.connect()
         if not self.spotify:
@@ -327,7 +335,14 @@ class SpotCtl:
                     time.sleep(2)
 
         else:
-           self.spotify.playback_start_tracks([id], device_id=d_id)
+            try:
+                self.spotify.playback_start_tracks([id], device_id=d_id)
+            except tk.client.decor.error.InternalServerError:
+                self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
+                return
+            except:
+                self.tauon.gui.show_message("Unknown error")
+                return
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
         self.playing = True
@@ -396,6 +411,8 @@ class SpotCtl:
 
         title = p.name + " by " + p.owner.display_name
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist=playlist))
+        if p.name == "Discover Weekly":
+            self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
         self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
     def artist_playlist(self, url):

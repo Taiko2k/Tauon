@@ -1,6 +1,18 @@
 
 Changelog-------------------------------------
 
+v6.0.4
+
+ - Added maximize button
+ - Added "Add Spotify album" function to end of playlist menu
+ - Added import Spotify playlists function (read only)
+ - Fixed a possible crash when using artist info panel
+ - Fixed transcode status not showing correct remaining during sync
+ - Fixed synced lyrics not word wrapping
+ - Fixed pressing play button not un-pausing with Spotify
+ - Changed "remove network tracks" to not remove Spotify tracks
+ - Changed left panel button to exit showcase view
+
 v6.0.3
 
  - Added UI scale slider in settings

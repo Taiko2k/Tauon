@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.3"
+n_version = "6.0.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -72,6 +72,7 @@ desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 #de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
 de_notify_support = False
 draw_min_button = True
+draw_max_button = True
 xdpi = 0
 
 try:
@@ -79,8 +80,11 @@ try:
     from gi.repository import Gtk
     gtk_settings = Gtk.Settings().get_default()
     xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+    print(str(gtk_settings.get_property("gtk-decoration-layout")))
     if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
         draw_min_button = False
+    if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+        draw_max_button = False
 
 except:
     print("Error accessing GTK settings")
@@ -1336,6 +1340,7 @@ class Prefs:    # Used to hold any kind of settings
         self.launch_spotify_web = False
         self.remove_network_tracks = False
         self.bypass_transcode = False
+        self.force_hide_max_button = False
 
 prefs = Prefs()
 
@@ -3330,6 +3335,7 @@ def save_prefs():
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
+    cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
@@ -3503,6 +3509,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[app]")
+    prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
@@ -4835,6 +4842,11 @@ class PlayerCtl:
 
     def play(self):
 
+        if spot_ctl.playing:
+            if self.playing_state == 2:
+                self.play_pause()
+            return
+
         # Unpause if paused
         if self.playing_state == 2:
             self.playerCommand = 'pauseoff'
@@ -4892,6 +4904,30 @@ class PlayerCtl:
             else:
                 tauon.spot_ctl.update_timer.set()
                 tauon.spot_ctl.update()
+
+    def purge_track(self, track_id):  # Remove a track from the database
+
+        # Remove from all playlists
+        for playlist in self.multi_playlist:
+            while track_id in playlist[2]:
+                album_dex.clear()
+                playlist[2].remove(track_id)
+
+        # Stop if track is playing track
+        if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
+            self.stop(block=True)
+
+        # Remove from playback history
+        while track_id in self.track_queue:
+            self.track_queue.remove(track_id)
+            self.queue_step -= 1
+
+        # Remove track from force queue
+        for i in reversed(range(len(self.force_queue))):
+            if self.force_queue[i][0] == track_id:
+                del self.force_queue[i]
+
+        del self.master_library[track_id]
 
     def test_progress(self):
 
@@ -7612,7 +7648,12 @@ def draw_window_tools():
             top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
     if draw_min_button:
-        rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
+
+        x = window_size[0] - round(65 * gui.scale)
+        if draw_max_button and not gui.mode == 3:
+            x -= round(34 * gui.scale)
+
+        rect = (x, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
         fields.add(rect)
         if coll(rect):
@@ -7632,6 +7673,28 @@ def draw_window_tools():
         else:
             ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                        fg_off, True)
+
+    if draw_max_button and not gui.mode == 3:
+        x = window_size[0] - round(63 * gui.scale)
+        rect = (x, 1 * gui.scale, 33 * gui.scale, 28 * gui.scale)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
+        fields.add(rect)
+        if coll(rect):
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
+            top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
+            if (mouse_up or ab_click) and coll_point(click_location, rect):
+                if gui.maximized:
+                    gui.maximized = False
+                    SDL_RestoreWindow(t_window)
+                else:
+                    gui.maximized = True
+                    SDL_MaximizeWindow(t_window)
+
+                mouse_down = False
+                input.mouse_click = False
+                drag_mode = False
+        else:
+            top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off, True)
@@ -8360,9 +8423,11 @@ class TimedLyricsRen:
                         colour = [180, 130, 210, 255]
 
 
-                ddt.text((x, yy), line[1], colour, font_size, 2000, bg)
-
-            yy += spacing
+                #ddt.text((x, yy), line[1], colour, font_size, 2000, bg)
+                h = ddt.text((x, yy, 4, w - 20 * gui.scale), line[1], colour, font_size, w - 20 * gui.scale, bg)
+                yy += max(h - round(6 * gui.scale), spacing)
+            else:
+                yy += spacing
 
 
 
@@ -11843,6 +11908,7 @@ lsp_menu = Menu(145)
 folder_tree_menu = Menu(175, show_icons=True)
 folder_tree_stem_menu = Menu(190, show_icons=True)
 overflow_menu = Menu(175)
+spotify_playlist_menu = Menu(175)
 
 
 def enable_artist_list():
@@ -15204,11 +15270,12 @@ def auto_sync_thread(pl):
         else:
             console.print(f"Already exists: {folder}")
 
-    gui.sync_progress = _("Copying files to device")
+
     gui.update += 1
     # -----
     # Prepare and copy
-    for item in todos:
+    for i, item in enumerate(todos):
+        gui.sync_progress = _("Copying files to device")
         if gui.stop_sync:
             break
 
@@ -15241,6 +15308,11 @@ def auto_sync_thread(pl):
             encode_done = os.path.join(prefs.encoder_output, item)
             if not os.path.exists(encode_done):
                 console.print("Need to transcode")
+                remain = len(todos) - i
+                if remain > 1:
+                    gui.sync_progress = str(remain) + " " + _("Folders Remaining")
+                else:
+                    gui.sync_progress = str(remain) + " " + _("Folder Remaining")
                 transcode_list.append(folder_dict[item])
                 while transcode_list:
                     time.sleep(1)
@@ -16510,8 +16582,27 @@ def s_cut():
     s_copy()
     del_selected()
 
+
 playlist_menu.add('Paste', paste, paste_deco)
 
+def spotify_show_test(_):
+    return prefs.spot_mode
+
+def paste_playlist_coast_album():
+    if spot_ctl.coasting and pctl.playing_state == 3:
+        url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+        if url:
+            default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+
+def paste_playlist_coast_album_deco():
+    if spot_ctl.coasting:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+playlist_menu.add(_('Add Playing Spotify Album'), paste_playlist_coast_album, paste_playlist_coast_album_deco, show_test=spotify_show_test)
 
 def refind_playing():
     # Refind playing index
@@ -17664,8 +17755,7 @@ def get_album_spot_url(track_id):
     else:
         show_message(_("No results found"))
 
-def spotify_show_test(_):
-    return prefs.spot_mode
+
 
 def get_album_spot_url_deco(track_id):
     track_object = pctl.g(track_id)
@@ -22148,32 +22238,25 @@ def worker1():
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
+                    
+                if not prefs.remove_network_tracks and track.file_ext == "SPTY":
+                    
+                    for playlist in pctl.multi_playlist:
+                        if index in playlist[2]:
+                            break
+                    else:
+                        pctl.purge_track(index)
+                        items_removed += 1
+
+                    continue
 
                 if (prefs.remove_network_tracks is False and not track.is_network and not os.path.isfile(track.fullpath)) or \
                 (prefs.remove_network_tracks is True and track.is_network):
 
-                    # Remove from all playlists
-                    for playlist in pctl.multi_playlist:
-                        while index in playlist[2]:
-                            album_dex.clear()
-                            playlist[2].remove(index)
+                    if track.is_network and track.file_ext == "SPTY":
+                        continue
 
-                    # Stop if track is playing track
-                    if pctl.track_queue and pctl.track_queue[pctl.queue_step] == index and pctl.playing_state != 0:
-                        pctl.stop(block=True)
-
-                    # Remove from playback history
-                    while index in pctl.track_queue:
-                        pctl.track_queue.remove(index)
-                        pctl.queue_step -= 1
-
-
-                    # Remove track from force queue
-                    for i in reversed(range(len(pctl.force_queue))):
-                        if pctl.force_queue[i][0] == index:
-                            del pctl.force_queue[i]
-
-                    del pctl.master_library[index]
+                    pctl.purge_track(index)
                     items_removed += 1
 
             cm_clean_db = False
@@ -22182,8 +22265,7 @@ def worker1():
                 reload_albums(True)
             if gui.combo_mode:
                 reload_albums()
-                # combo_pl_render.pl_pos_px = 0
-                # combo_pl_render.prep(True)
+
             gui.update = 1
             gui.pl_update = 1
 
@@ -22360,7 +22442,7 @@ def worker1():
                     added = []
                     order.stage = 2
                     loaderCommandReady = False
-                    print("DONEW LOADING")
+                    # print("DONE LOADING")
                     break
 
 album_info_cache = {}
@@ -24306,6 +24388,8 @@ class Over:
             prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
             y += round(30 * gui.scale)
+
+            ww = ddt.get_text_w(_("Import Albums"), 211)
             if self.button(x, y, _("Import Albums")):
                 if not spot_ctl.spotify_com:
                     spot_ctl.spotify_com = True
@@ -24316,13 +24400,26 @@ class Over:
                     show_message(_("Please wait until current job is finished"))
 
 
-            y += round(30 * gui.scale)
-            if self.button(x, y, _("Import Liked Songs")):
+
+            if self.button(x + ww + round(20 * gui.scale), y, _("Import Liked Songs")):
                 if not spot_ctl.spotify_com:
                     spot_ctl.spotify_com = True
                     shoot = threading.Thread(target=spot_ctl.get_library_likes)
                     shoot.daemon = True
                     shoot.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
+
+
+            y += round(30 * gui.scale)
+
+            if self.button(x, y, _("Import user playlist...")):
+                if not spot_ctl.spotify_com:
+                    playlists = spot_ctl.get_playlist_list()
+                    spotify_playlist_menu.items.clear()
+                    for item in playlists:
+                        spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
+                        spotify_playlist_menu.activate(position=(x, y))
                 else:
                     show_message(_("Please wait until current job is finished"))
 
@@ -25816,6 +25913,7 @@ class TopPanel:
         self.drag_zone_start_x = 300 * gui.scale
 
         self.exit_button = asset_loader('ex.png', True)
+        self.maximize_button = asset_loader('max.png', True)
         self.restore_button = asset_loader('restore.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
         self.artist_list_icon = asset_loader('artist-list.png', True)
@@ -25901,7 +25999,13 @@ class TopPanel:
 
         if coll(rect):
             if input.mouse_click:
-                gui.lsp ^= True
+
+                if gui.combo_mode:
+                    if not gui.lsp:
+                        gui.lsp = True
+                    switch_showcase()
+                else:
+                    gui.lsp ^= True
 
                 update_layout = True
                 gui.update += 1
@@ -26665,10 +26769,12 @@ class TopPanel:
 
             x += w + 8 * gui.scale
 
-
-            text = str(len(transcode_list)) + " Folder Remaining " + transcode_state
-            if len(transcode_list) > 1:
-                text = str(len(transcode_list)) + " Folders Remaining " + transcode_state
+            if gui.sync_progress:
+                text = gui.sync_progress
+            else:
+                text = str(len(transcode_list)) + " " + _("Folder Remaining") + " " + transcode_state
+                if len(transcode_list) > 1:
+                    text = str(len(transcode_list)) + " " + _("Folders Remaining") + " " + transcode_state
 
             x += ddt.text((x, y), text, bg, 311) + 8 * gui.scale
 
@@ -33762,16 +33868,17 @@ class ArtistInfoBox:
             self.status = _("Looking up...")
             gui.update += 1
             data = lastfm.artist_info(artist)
+            self.text = ""
             if data[0] is False:
-                self.text = ""
                 artist_picture_render.show = False
                 self.status = _("No artist bio found")
                 self.artist_on = artist
                 self.lock = False
                 return
             else:
-                self.text = data[1]
-                #cover_link = data[2]
+                if data[1]:
+                    self.text = data[1]
+                # cover_link = data[2]
                 # Save text as file
                 f = open(text_filepath, 'w', encoding='utf-8')
                 f.write(self.text)
@@ -34417,8 +34524,8 @@ class Showcase:
                         gc.auto_scroll = True
 
             elif True and prefs.show_lyrics_showcase and timed_ready:
-
-                timed_lyrics_ren.render(track.index, gcx, y)
+                w = window_size[0] - (x + box) - round(30 * gui.scale)
+                timed_lyrics_ren.render(track.index, gcx, y, w=w)
 
             elif track.lyrics == "" or not prefs.show_lyrics_showcase:
 
@@ -35572,6 +35679,10 @@ def update_layout_do():
     w = window_size[0]
     h = window_size[1]
 
+    global draw_max_button
+    if draw_max_button and prefs.force_hide_max_button:
+        draw_max_button = False
+
     if gui.theme_name != prefs.theme_name:
         gui.reload_theme = True
         global theme
@@ -35757,6 +35868,8 @@ def update_layout_do():
             offset = 61 * gui.scale
             if not draw_min_button:
                 offset -= 35 * gui.scale
+            if draw_max_button:
+                offset += 33 * gui.scale
             gui.offset_extra = offset
 
         global album_v_gap
