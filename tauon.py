@@ -7684,7 +7684,6 @@ def draw_window_tools():
             top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
             if (mouse_up or ab_click) and coll_point(click_location, rect):
                 if gui.maximized:
-                    print("TREY")
                     gui.maximized = False
                     SDL_RestoreWindow(t_window)
                 else:
@@ -26000,7 +25999,13 @@ class TopPanel:
 
         if coll(rect):
             if input.mouse_click:
-                gui.lsp ^= True
+
+                if gui.combo_mode:
+                    if not gui.lsp:
+                        gui.lsp = True
+                    switch_showcase()
+                else:
+                    gui.lsp ^= True
 
                 update_layout = True
                 gui.update += 1

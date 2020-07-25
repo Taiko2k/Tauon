@@ -11,6 +11,7 @@ v6.0.4
  - Fixed synced lyrics not word wrapping
  - Fixed pressing play button not un-pausing with Spotify
  - Changed "remove network tracks" to not remove Spotify tracks
+ - Changed left panel button to exit showcase view
 
 v6.0.3
 
