@@ -4835,6 +4835,11 @@ class PlayerCtl:
 
     def play(self):
 
+        if spot_ctl.playing:
+            if self.playing_state == 2:
+                self.play_pause()
+            return
+
         # Unpause if paused
         if self.playing_state == 2:
             self.playerCommand = 'pauseoff'
