@@ -509,6 +509,7 @@ class TDraw:
         if len(text) == 0:
             return 0
 
+
         key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
 
         if not real_bg:

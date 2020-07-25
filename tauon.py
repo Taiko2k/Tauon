@@ -72,6 +72,7 @@ desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 #de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
 de_notify_support = False
 draw_min_button = True
+draw_max_button = True
 xdpi = 0
 
 try:
@@ -79,8 +80,11 @@ try:
     from gi.repository import Gtk
     gtk_settings = Gtk.Settings().get_default()
     xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+    print(str(gtk_settings.get_property("gtk-decoration-layout")))
     if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
         draw_min_button = False
+    if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+        draw_max_button = False
 
 except:
     print("Error accessing GTK settings")
@@ -1336,6 +1340,7 @@ class Prefs:    # Used to hold any kind of settings
         self.launch_spotify_web = False
         self.remove_network_tracks = False
         self.bypass_transcode = False
+        self.force_hide_max_button = False
 
 prefs = Prefs()
 
@@ -3330,6 +3335,7 @@ def save_prefs():
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
+    cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
@@ -3503,6 +3509,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[app]")
+    prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
@@ -7641,7 +7648,12 @@ def draw_window_tools():
             top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
     if draw_min_button:
-        rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
+
+        x = window_size[0] - round(65 * gui.scale)
+        if draw_max_button and not gui.mode == 3:
+            x -= round(34 * gui.scale)
+
+        rect = (x, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
         fields.add(rect)
         if coll(rect):
@@ -7661,6 +7673,29 @@ def draw_window_tools():
         else:
             ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                        fg_off, True)
+
+    if draw_max_button and not gui.mode == 3:
+        x = window_size[0] - round(63 * gui.scale)
+        rect = (x, 1 * gui.scale, 33 * gui.scale, 28 * gui.scale)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off, True)
+        fields.add(rect)
+        if coll(rect):
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
+            top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
+            if (mouse_up or ab_click) and coll_point(click_location, rect):
+                if gui.maximized:
+                    print("TREY")
+                    gui.maximized = False
+                    SDL_RestoreWindow(t_window)
+                else:
+                    gui.maximized = True
+                    SDL_MaximizeWindow(t_window)
+
+                mouse_down = False
+                input.mouse_click = False
+                drag_mode = False
+        else:
+            top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off, True)
@@ -11874,6 +11909,7 @@ lsp_menu = Menu(145)
 folder_tree_menu = Menu(175, show_icons=True)
 folder_tree_stem_menu = Menu(190, show_icons=True)
 overflow_menu = Menu(175)
+spotify_playlist_menu = Menu(175)
 
 
 def enable_artist_list():
@@ -24353,6 +24389,8 @@ class Over:
             prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
             y += round(30 * gui.scale)
+
+            ww = ddt.get_text_w(_("Import Albums"), 211)
             if self.button(x, y, _("Import Albums")):
                 if not spot_ctl.spotify_com:
                     spot_ctl.spotify_com = True
@@ -24363,13 +24401,26 @@ class Over:
                     show_message(_("Please wait until current job is finished"))
 
 
-            y += round(30 * gui.scale)
-            if self.button(x, y, _("Import Liked Songs")):
+
+            if self.button(x + ww + round(20 * gui.scale), y, _("Import Liked Songs")):
                 if not spot_ctl.spotify_com:
                     spot_ctl.spotify_com = True
                     shoot = threading.Thread(target=spot_ctl.get_library_likes)
                     shoot.daemon = True
                     shoot.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
+
+
+            y += round(30 * gui.scale)
+
+            if self.button(x, y, _("Import user playlist...")):
+                if not spot_ctl.spotify_com:
+                    playlists = spot_ctl.get_playlist_list()
+                    spotify_playlist_menu.items.clear()
+                    for item in playlists:
+                        spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
+                        spotify_playlist_menu.activate(position=(x, y))
                 else:
                     show_message(_("Please wait until current job is finished"))
 
@@ -25863,6 +25914,7 @@ class TopPanel:
         self.drag_zone_start_x = 300 * gui.scale
 
         self.exit_button = asset_loader('ex.png', True)
+        self.maximize_button = asset_loader('max.png', True)
         self.restore_button = asset_loader('restore.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
         self.artist_list_icon = asset_loader('artist-list.png', True)
@@ -35622,6 +35674,10 @@ def update_layout_do():
     w = window_size[0]
     h = window_size[1]
 
+    global draw_max_button
+    if draw_max_button and prefs.force_hide_max_button:
+        draw_max_button = False
+
     if gui.theme_name != prefs.theme_name:
         gui.reload_theme = True
         global theme
@@ -35807,6 +35863,8 @@ def update_layout_do():
             offset = 61 * gui.scale
             if not draw_min_button:
                 offset -= 35 * gui.scale
+            if draw_max_button:
+                offset += 33 * gui.scale
             gui.offset_extra = offset
 
         global album_v_gap
