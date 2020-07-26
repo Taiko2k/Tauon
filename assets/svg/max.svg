@@ -7,43 +7,43 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="15"
-   height="11.000012"
-   viewBox="0 0 3.9687502 2.9104199"
-   version="1.1"
-   id="svg8"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
-   sodipodi:docname="max.svg"
-   inkscape:export-filename="/home/kai/Tauon/dev/assets/max.png"
+   inkscape:export-ydpi="186.29944"
    inkscape:export-xdpi="186.29944"
-   inkscape:export-ydpi="186.29944">
+   inkscape:export-filename="/home/kai/Tauon/dev/assets/max.png"
+   sodipodi:docname="max.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 3.7041661 2.38125"
+   height="9"
+   width="13.999997">
   <defs
      id="defs2" />
   <sodipodi:namedview
-     id="base"
-     pagecolor="#212121"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="15.999999"
-     inkscape:cx="-15.237676"
-     inkscape:cy="6.9641041"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
-     showgrid="false"
-     inkscape:pagecheckerboard="false"
-     fit-margin-top="0"
-     fit-margin-left="0"
-     fit-margin-right="0"
-     fit-margin-bottom="0"
-     units="px"
-     inkscape:window-width="1774"
-     inkscape:window-height="754"
-     inkscape:window-x="-40"
-     inkscape:window-y="100"
+     inkscape:document-rotation="0"
      inkscape:window-maximized="0"
-     inkscape:document-rotation="0" />
+     inkscape:window-y="103"
+     inkscape:window-x="0"
+     inkscape:window-height="809"
+     inkscape:window-width="2096"
+     units="px"
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     fit-margin-top="0"
+     inkscape:pagecheckerboard="false"
+     showgrid="false"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="5.8390899"
+     inkscape:cx="-15.893926"
+     inkscape:zoom="15.999999"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#212121"
+     id="base" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -57,17 +57,17 @@
     </rdf:RDF>
   </metadata>
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
+     transform="translate(-69.863082,-153.47965)"
      id="layer1"
-     transform="translate(-69.689449,-153.18199)">
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
     <path
-       id="rect850"
-       style="fill:#ffffff;stroke-width:1.41946;paint-order:markers stroke fill"
-       d="m 69.689449,153.18199 v 2.91042 h 3.96875 v -2.91042 z m 0.613035,0.73944 h 2.710635 v 1.71122 h -2.710635 z"
-       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-ydpi="96.000023"
+       inkscape:export-xdpi="96.000023"
        inkscape:export-filename="/home/kai/Tauon/dev/assets/max.png"
-       inkscape:export-xdpi="174.36415"
-       inkscape:export-ydpi="174.36415" />
+       sodipodi:nodetypes="cccccccccc"
+       d="m 69.863082,153.47965 v 2.38125 h 3.704166 v -2.38125 z m 0.59103,0.6663 h 2.492899 v 1.2986 h -2.492899 z"
+       style="fill:#ffffff;stroke-width:1.24138;paint-order:markers stroke fill"
+       id="rect850" />
   </g>
 </svg>

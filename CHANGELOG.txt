@@ -1,11 +1,13 @@
 
 Changelog-------------------------------------
 
-v6.0.4
+v6.1.0
 
  - Added maximize button
  - Added "Add Spotify album" function to end of playlist menu
- - Added import Spotify playlists function (read only)
+ - Added import and upload Spotify playlist functions
+ - Added exit app keyboard shortcut as Ctrl + Q
+ - Moved "add to queue" shortcut to Ctrl + S
  - Fixed a possible crash when using artist info panel
  - Fixed transcode status not showing correct remaining during sync
  - Fixed synced lyrics not word wrapping
