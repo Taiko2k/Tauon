@@ -99,7 +99,7 @@ class SpotCtl:
             return
         if self.cred is None:
             self.prep_cred()
-        url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private")
+        url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public")
         webbrowser.open(url, new=2, autoraise=True)
 
     def control(self, command, param=None):
@@ -337,11 +337,11 @@ class SpotCtl:
         else:
             try:
                 self.spotify.playback_start_tracks([id], device_id=d_id)
-            except tk.client.decor.error.InternalServerError:
-                self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
-                return
+            # except tk.client.decor.error.InternalServerError:
+            #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
+            #     return
             except:
-                self.tauon.gui.show_message("Unknown error")
+                self.tauon.gui.show_message("Spotify error, try again?", mode="warning")
                 return
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
@@ -393,12 +393,23 @@ class SpotCtl:
         self.tauon.pctl.multi_playlist[playlist_number][2].extend(playlist)
         self.tauon.gui.pl_update += 1
 
-    def playlist(self, url):
+    def playlist(self, url, return_list=False):
+
         self.connect()
         if not self.spotify:
             return
 
-        id = url.strip("/").split("/")[-1]
+        if len(url) != 22:
+            id = url.strip("/").split("/")[-1]
+        else:
+            id = url
+
+        if len(id) != 22:
+            print("ID Error")
+            if return_list:
+                return []
+            return
+
         p = self.spotify.playlist(id)
         playlist = []
         self.update_existing_import_list()
@@ -408,12 +419,18 @@ class SpotCtl:
             self.tauon.pctl.master_library[nt.index] = nt
             playlist.append(nt.index)
 
+        if return_list:
+            return playlist
 
         title = p.name + " by " + p.owner.display_name
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist=playlist))
         if p.name == "Discover Weekly":
             self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
+
+        self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
+
         self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+
 
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]
@@ -434,6 +451,36 @@ class SpotCtl:
         for tr in self.tauon.pctl.master_library.values():
             if "spotify-track-url" in tr.misc:
                 self.current_imports[tr.misc["spotify-track-url"]] = tr
+
+    def create_playlist(self, name):
+        print("Create new spotify playlist")
+        self.connect()
+        if not self.spotify:
+            return None
+
+        try:
+            user = self.spotify.current_user()
+            playlist = self.spotify.playlist_create(user.id, name, True)
+            return playlist.id
+        except:
+            return None
+
+    def upload_playlist(self, playlist_id, track_urls):
+        self.connect()
+        if not self.spotify:
+            return None
+
+        try:
+            uris = []
+            for url in track_urls:
+                uris.append("spotify:track:" + url.strip("/").split("/")[-1])
+
+            self.spotify.playlist_clear(playlist_id)
+            time.sleep(0.05)
+            with self.spotify.chunked(True):
+                self.spotify.playlist_add(playlist_id, uris)
+        except:
+            self.tauon.gui.show_message("Spotify upload error!", mode="error")
 
     def load_album(self, album, playlist):
         #a = item
