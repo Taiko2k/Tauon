@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.0.4"
+n_version = "6.1.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -3225,6 +3225,11 @@ if db_version > 0:
         for p in multi_playlist:
             if type(p[7]) != list:
                 p[7] = [p[7]]
+
+    if db_version <= 47:
+        print("Updating database to version 48")
+        if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
+            show_message("Welcome to v6.1.0. Due to changes, please re-authorise Spotify", "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify")
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -6568,6 +6573,14 @@ class Strings:
         self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
         self.spotify_error_starting = _("Error starting Spotify")
 
+def id_to_pl(id):
+    for i, item in enumerate(pctl.multi_playlist):
+        if item[6] == id:
+            return i
+    return None
+
+def pl_to_id(pl):
+    return pctl.multi_playlist[pl][6]
 
 class Tauon:
 
@@ -6600,6 +6613,7 @@ class Tauon:
         self.TrackClass = TrackClass
         self.pl_gen = pl_gen
         self.QuickThumbnail = QuickThumbnail
+        self.pl_to_id = pl_to_id
 
 
     # def log(self, line, title=False):
@@ -7681,7 +7695,7 @@ def draw_window_tools():
         fields.add(rect)
         if coll(rect):
             ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
-            top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
+            top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
             if (mouse_up or ab_click) and coll_point(click_location, rect):
                 if gui.maximized:
                     gui.maximized = False
@@ -7694,7 +7708,7 @@ def draw_window_tools():
                 input.mouse_click = False
                 drag_mode = False
         else:
-            top_panel.maximize_button.render(rect[0] + 9 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
+            top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
 
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off, True)
@@ -7702,7 +7716,6 @@ def draw_window_tools():
     if coll(rect):
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
-        #top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
         if input.mouse_click or ab_click:
             if gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
@@ -14532,15 +14545,8 @@ column_names = (
     "Bitrate"
 )
 
-def regenerate_playlist(pl, silent=False):
 
-    id = pl_to_id(pl)
-    string = pctl.gen_codes.get(id)
-    if not string:
-        if not silent:
-            show_message("This playlist has no generator")
-        return
-
+def parse_generator(string):
     cmds = []
     quotes = []
     current = ""
@@ -14562,13 +14568,71 @@ def regenerate_playlist(pl, silent=False):
         if inquote and cha != "\"":
             q_string += cha
 
-    if inquote:
-        gui.gen_code_errors = "close"
-        return
-
     if current:
         cmds.append(current)
         quotes.append(q_string)
+
+    return cmds, quotes, inquote
+
+
+def upload_spotify_playlist(pl):
+
+    p_id = pl_to_id(pl)
+    string = pctl.gen_codes.get(p_id)
+    id = None
+    if string:
+        cmds, quotes, inquote = parse_generator(string)
+        for i, cm in enumerate(cmds):
+            if cm.startswith("spl\""):
+                id = quotes[i]
+                break
+
+    urls = []
+    playlist = pctl.multi_playlist[pl][2]
+
+    warn = False
+    for track_id in playlist:
+        tr = pctl.g(track_id)
+        url = tr.misc.get("spotify-track-url")
+        if not url:
+            warn = True
+            continue
+        urls.append(url)
+
+    if warn:
+        show_message(_("Playlist contains non-Spotify tracks"), mode="error")
+        return
+
+    new = False
+    if id is None:
+        name = pctl.multi_playlist[pl][0].split(" by ")[0]
+        show_message(_("Created new Spotify playlist"), name, mode="done")
+        id = spot_ctl.create_playlist(name)
+        if id:
+            new = True
+            pctl.gen_codes[p_id] = "spl\"" + id + "\""
+    if id is None:
+        show_message(_("Error creating Spotify playlist"))
+        return
+    if not new:
+        show_message(_("Updated Spotify playlist"), mode="done")
+    spot_ctl.upload_playlist(id, urls)
+
+
+def regenerate_playlist(pl, silent=False):
+
+    id = pl_to_id(pl)
+    string = pctl.gen_codes.get(id)
+    if not string:
+        if not silent:
+            show_message("This playlist has no generator")
+        return
+
+    cmds, quotes, inquote = parse_generator(string)
+
+    if inquote:
+        gui.gen_code_errors = "close"
+        return
 
     playlist = []
     selections = []
@@ -14603,6 +14667,9 @@ def regenerate_playlist(pl, silent=False):
 
         elif cm == "auto":
             pass
+
+        elif cm.startswith("spl\""):
+            playlist.extend(spot_ctl.playlist(quote, return_list=True))
 
         elif cm == "a":
             if not selections and not selections_searched:
@@ -15139,6 +15206,10 @@ extra_tab_menu = Menu(155, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
+def spotify_show_test(_):
+    return prefs.spot_mode
+
+tab_menu.add(_("Upload"), upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=spotify_show_test)
 tab_menu.add(_("Regenerate"), regenerate_playlist, regenerate_deco, pass_ref=True, pass_ref_deco=True)
 tab_menu.add_sub(_("Generate…"), 150)
 tab_menu.add_sub(_("Sort…"), 170)
@@ -16585,8 +16656,6 @@ def s_cut():
 
 playlist_menu.add('Paste', paste, paste_deco)
 
-def spotify_show_test(_):
-    return prefs.spot_mode
 
 def paste_playlist_coast_album():
     if spot_ctl.coasting and pctl.playing_state == 3:
@@ -16751,17 +16820,6 @@ def love_index():
 
 # Mark track as 'liked'
 track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
-
-def id_to_pl(id):
-
-    for i, item in enumerate(pctl.multi_playlist):
-        if item[6] == id:
-            return i
-    return None
-
-def pl_to_id(pl):
-
-    return pctl.multi_playlist[pl][6]
 
 
 def add_to_queue(ref):
@@ -36213,7 +36271,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            47,  # Version, used for upgrading
+            48,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -37324,11 +37382,14 @@ while pctl.running:
             input.key_return_press = False
             input.level_2_enter = True
 
-
         if key_ctrl_down and key_z_press:
             undo.undo()
 
+        if keymaps.test('quit'):
+            pctl.running = False
+
         if keymaps.test('testkey'):  # F7: test
+            spot_ctl.create_playlist("test")
             pass
 
         if gui.mode < 3:
