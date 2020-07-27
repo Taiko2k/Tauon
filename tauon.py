@@ -16667,12 +16667,17 @@ def s_cut():
 
 playlist_menu.add('Paste', paste, paste_deco)
 
-
-def paste_playlist_coast_album():
+def paste_playlist_coast_fire():
     if spot_ctl.coasting and pctl.playing_state == 3:
         url = spot_ctl.get_album_url_from_local(pctl.playing_object())
         if url:
             default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+    gui.pl_update += 1
+
+def paste_playlist_coast_album():
+    shoot_dl = threading.Thread(target=paste_playlist_coast_fire)
+    shoot_dl.daemon = True
+    shoot_dl.start()
 
 def paste_playlist_coast_album_deco():
     if spot_ctl.coasting:

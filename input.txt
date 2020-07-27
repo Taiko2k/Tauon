@@ -62,7 +62,7 @@ substitute-search-selected
 quick-find \
 quick-find F Ctrl
 global-search G Ctrl
-add-to-queue S Ctrl
+add-to-queue Q Alt
 love-playing
 love-selected L Ctrl
 
