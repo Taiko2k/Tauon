@@ -59,6 +59,7 @@ parts:
     requirements:
       - requirements.txt
     stage-packages:
+      - librsvg
       - libsdl2-2.0-0
       - libsdl2-image-2.0-0
       - fonts-noto

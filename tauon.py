@@ -3661,6 +3661,15 @@ if prefs.scale_want == 1 and prefs.x_scale and scale_want == 1 and xdpi > 40:
 
 scale_want = round(round(scale_want / 0.05) * 0.05, 2)
 
+if scale_want == 0.95:
+    scale_want = 1.0
+if scale_want == 1.05:
+    scale_want = 1.0
+if scale_want == 1.95:
+    scale_want = 2.0
+if scale_want == 2.05:
+    scale_want = 2.0
+
 print(scale_want)
 
 if scale_want != 1:
@@ -37445,7 +37454,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            spot_ctl.create_playlist("test")
             pass
 
         if gui.mode < 3:
