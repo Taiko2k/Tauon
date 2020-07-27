@@ -1,5 +1,5 @@
-
-
+from gi import require_version
+require_version('Rsvg', '2.0')
 from gi.repository import Rsvg
 import cairo
 import os
