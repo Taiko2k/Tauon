@@ -173,31 +173,14 @@ class SpotCtl:
         if not self.spotify:
             return
         results = self.spotify.search(text,
-                                      types=('artist', 'album',),
+                                      types=('artist', 'album', 'track'),
                                       limit=20
                                       )
         finds = []
 
-
         self.tauon.QuickThumbnail.queue.clear()
 
         if results[0]:
-            for album in results[0].items[0:1]:
-
-                img = self.tauon.QuickThumbnail()
-                img.url = album.images[-1].url
-                img.size = round(50 * self.tauon.gui.scale)
-                self.tauon.QuickThumbnail().items.append(img)
-                self.tauon.QuickThumbnail().queue.append(img)
-                try:
-                    self.tauon.gall_ren.lock.release()
-                except:
-                    pass
-
-                finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, img))
-
-            for artist in results[1].items[0:1]:
-                finds.insert(2, (10, artist.name, artist.external_urls["spotify"], 0, 0, None))
 
             for i, album in enumerate(results[0].items[1:]):
 
@@ -214,11 +197,15 @@ class SpotCtl:
 
                 finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, img))
 
-            # for artist in results[1].items[1:2]:
-            #     finds.append((10, artist.name, artist.external_urls["spotify"], 0, 0, None))
+            for artist in results[1].items[0:1]:
+                finds.insert(1, (10, artist.name, artist.external_urls["spotify"], 0, 0, None))
+            for artist in results[1].items[1:2]:
+                finds.insert(11, (10, artist.name, artist.external_urls["spotify"], 0, 0, None))
 
-            # for album in results[0].items[8:]:
-            #     finds.append((11, (album.name, album.artists[0].name), album.external_urls["spotify"], 0, 0, None))
+            for track in results[2].items[0:1]:
+                finds.insert(2, (12, (track.name, track.artists[0].name), track.external_urls["spotify"], 0, 0, None))
+            for track in results[2].items[5:6]:
+                finds.insert(8, (12, (track.name, track.artists[0].name), track.external_urls["spotify"], 0, 0, None))
 
         return finds
 
@@ -371,6 +358,20 @@ class SpotCtl:
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.strings.spotify_albums, playlist=playlist))
         self.spotify_com = False
 
+    def append_track(self, url):
+
+        self.connect()
+        if not self.spotify:
+            return
+
+        id = url.strip("/").split("/")[-1]
+
+        track = self.spotify.track(id)
+        tr = self.load_track(track)
+        self.tauon.pctl.master_library[tr.index] = tr
+        self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].append(tr.index)
+        self.tauon.gui.pl_update += 1
+
     def append_album(self, url, playlist_number=None, return_list=False):
 
         self.connect()
@@ -445,6 +446,7 @@ class SpotCtl:
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Spotify: " + artist.name, playlist=playlist))
         self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+        self.tauon.gui.message_box = False
 
     def update_existing_import_list(self):
         self.current_imports.clear()

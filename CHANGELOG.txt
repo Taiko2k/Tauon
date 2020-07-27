@@ -6,6 +6,7 @@ v6.1.0
  - Added maximize button
  - Added "Add Spotify album" function to end of playlist menu
  - Added import and upload Spotify playlist functions
+ - Added import and search Spotify track function
  - Added exit app keyboard shortcut as Ctrl + Q
  - Moved "add to queue" shortcut to Ctrl + S
  - Fixed a possible crash when using artist info panel
