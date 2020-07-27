@@ -16606,7 +16606,7 @@ def paste(playlist_no=None, track_id=None):
     clip = copy_from_clipboard()
 
     if clip.startswith("https://open.spotify.com/track/"):
-       show_message("Pasting Spotify track not implemented")
+       spot_ctl.append_track(clip)
     elif clip.startswith("https://open.spotify.com/album/"):
         cargo[:] = spot_ctl.append_album(clip, return_list=True)[:]
         clip = False
@@ -20947,6 +20947,49 @@ class SearchOverlay:
                         self.click_album(item[2])
                         self.active = False
                         self.search_text.text = ""
+
+                # spotify track
+                if item[0] == 12:
+                    cl = [200, 255, 150, int(255 * fade)]
+                    text = "Track"
+
+                    xx = ddt.text((120 * gui.scale, yy), item[1][0], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                    ddt.text((xx + (120 + 11) * gui.scale, yy), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    xx += 8 * gui.scale
+                    xx += ddt.text((xx + (120 + 30) * gui.scale, yy), item[1][1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour, True)
+
+                    if key_ctrl_down and item[2] in default_playlist:
+                        ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if gui.level_2_click:
+
+                            if key_ctrl_down:
+                                #default_playlist.append(item[2])
+                                gui.pl_update += 1
+                            else:
+                                spot_ctl.append_track(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+                    if enter and fade == 1:
+                        spot_ctl.append_track(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+
 
                 if item[0] == 3:
                     cl = [240, 240, 160, int(255 * fade)]
