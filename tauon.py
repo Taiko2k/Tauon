@@ -1341,6 +1341,7 @@ class Prefs:    # Used to hold any kind of settings
         self.remove_network_tracks = False
         self.bypass_transcode = False
         self.force_hide_max_button = False
+        self.zoom_art = False
 
 prefs = Prefs()
 
@@ -3294,6 +3295,7 @@ def save_prefs():
     cf.update_value("use-xft-dpi", prefs.x_scale)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
+    cf.update_value("allow-art-zoom", prefs.zoom_art)
 
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
     cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
@@ -3437,6 +3439,7 @@ def load_prefs():
     cf.add_text("[ui]")
 
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
+    prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
@@ -9833,20 +9836,23 @@ class AlbumArt():
         bh = round(box[1])
         bw = round(box[0])
 
-        # Constrain image to given box
-        if temp_dest.w > bw:
-            temp_dest.w = bw
-            temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
+        if prefs.zoom_art:
+            temp_dest.w, temp_dest.h = fit_box((unit.original_size[0], unit.original_size[1]), box)
+        else:
 
-        if temp_dest.h > bh:
-            temp_dest.h = bh
-            temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
+            # Constrain image to given box
+            if temp_dest.w > bw:
+                temp_dest.w = bw
+                temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
 
+            if temp_dest.h > bh:
+                temp_dest.h = bh
+                temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
 
-        # prevent scaling larger than original image size
-        if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
-            temp_dest.w = unit.original_size[0]
-            temp_dest.h = unit.original_size[1]
+            # prevent scaling larger than original image size
+            if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
+                temp_dest.w = unit.original_size[0]
+                temp_dest.h = unit.original_size[1]
 
         # center the image
         temp_dest.x = int((box[0] - temp_dest.w) / 2) + temp_dest.x
@@ -10283,7 +10289,12 @@ class AlbumArt():
                 im = im.convert("RGB")
 
             if not theme_only:
-                im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
+
+                if prefs.zoom_art:
+                    new_size = fit_box(o_size, box)
+                    im = im.resize(new_size, Image.ANTIALIAS)
+                else:
+                    im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
                 im.save(g, 'BMP')
                 g.seek(0)
 
@@ -24069,17 +24080,14 @@ class Over:
         ddt.text_background_colour = colours.box_background
 
         ddt.text((x, y), _("Metadata side panel"), colours.box_text_label, 12)
-        #
+
         y += 25 * gui.scale
-
         self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
-
-        #y += 30 * gui.scale
-
-        # ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
-
-        # y += 25 * gui.scale
-        # prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
+        y += 25 * gui.scale
+        old = prefs.zoom_art
+        prefs.zoom_art = self.toggle_square(x, y, prefs.zoom_art, _("Zoom album art to fit"))
+        if prefs.zoom_art != old:
+            album_art_gen.clear_cache()
 
         global album_mode_art_size
         global update_layout
@@ -24102,7 +24110,7 @@ class Over:
         #y += 25 * gui.scale
 
         x -= 80 * gui.scale
-        x += ddt.get_text_w( _("Thumbnail size"), 11)
+        x += ddt.get_text_w( _("Thumbnail size"), 312)
         #x += 20 * gui.scale
 
         if album_mode_art_size < 160:
@@ -25698,7 +25706,7 @@ class Over:
         width = width * gui.scale
 
         if label is not None:
-            ddt.text((x + 55 * gui.scale, y, 1), label, colours.box_text, 11)
+            ddt.text((x + 55 * gui.scale, y, 1), label, colours.box_text, 312)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
@@ -25727,7 +25735,7 @@ class Over:
         x += 33 * gui.scale
 
         ddt.rect((x, y, width, 15 * gui.scale), alpha_mod(colours.box_button_background, 120), True)
-        ddt.text((x + width / 2, y, 2), str(value) + units, colours.box_sub_text, 11)
+        ddt.text((x + width / 2, y, 2), str(value) + units, colours.box_sub_text, 312)
 
         x += width
 
