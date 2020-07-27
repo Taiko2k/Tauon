@@ -68,6 +68,8 @@ parts:
       - python-gst-1.0
       - python3-gi-cairo
       - gir1.2-notify-0.7
+      - gir1.2-rsvg-2.0
+      - freeglut3-dev
       - libgstreamer1.0-0
       - gstreamer1.0-plugins-base
       - gstreamer1.0-plugins-good

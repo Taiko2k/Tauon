@@ -1341,6 +1341,7 @@ class Prefs:    # Used to hold any kind of settings
         self.remove_network_tracks = False
         self.bypass_transcode = False
         self.force_hide_max_button = False
+        self.zoom_art = False
 
 prefs = Prefs()
 
@@ -3294,6 +3295,7 @@ def save_prefs():
     cf.update_value("use-xft-dpi", prefs.x_scale)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
+    cf.update_value("allow-art-zoom", prefs.zoom_art)
 
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
     cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
@@ -3437,6 +3439,7 @@ def load_prefs():
     cf.add_text("[ui]")
 
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
+    prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
@@ -3657,6 +3660,15 @@ if prefs.scale_want == 1 and prefs.x_scale and scale_want == 1 and xdpi > 40:
     print("Applying scale based on xft setting")
 
 scale_want = round(round(scale_want / 0.05) * 0.05, 2)
+
+if scale_want == 0.95:
+    scale_want = 1.0
+if scale_want == 1.05:
+    scale_want = 1.0
+if scale_want == 1.95:
+    scale_want = 2.0
+if scale_want == 2.05:
+    scale_want = 2.0
 
 print(scale_want)
 
@@ -9833,20 +9845,23 @@ class AlbumArt():
         bh = round(box[1])
         bw = round(box[0])
 
-        # Constrain image to given box
-        if temp_dest.w > bw:
-            temp_dest.w = bw
-            temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
+        if prefs.zoom_art:
+            temp_dest.w, temp_dest.h = fit_box((unit.original_size[0], unit.original_size[1]), box)
+        else:
 
-        if temp_dest.h > bh:
-            temp_dest.h = bh
-            temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
+            # Constrain image to given box
+            if temp_dest.w > bw:
+                temp_dest.w = bw
+                temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
 
+            if temp_dest.h > bh:
+                temp_dest.h = bh
+                temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
 
-        # prevent scaling larger than original image size
-        if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
-            temp_dest.w = unit.original_size[0]
-            temp_dest.h = unit.original_size[1]
+            # prevent scaling larger than original image size
+            if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
+                temp_dest.w = unit.original_size[0]
+                temp_dest.h = unit.original_size[1]
 
         # center the image
         temp_dest.x = int((box[0] - temp_dest.w) / 2) + temp_dest.x
@@ -10283,7 +10298,12 @@ class AlbumArt():
                 im = im.convert("RGB")
 
             if not theme_only:
-                im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
+
+                if prefs.zoom_art:
+                    new_size = fit_box(o_size, box)
+                    im = im.resize(new_size, Image.ANTIALIAS)
+                else:
+                    im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
                 im.save(g, 'BMP')
                 g.seek(0)
 
@@ -16606,7 +16626,7 @@ def paste(playlist_no=None, track_id=None):
     clip = copy_from_clipboard()
 
     if clip.startswith("https://open.spotify.com/track/"):
-       show_message("Pasting Spotify track not implemented")
+       spot_ctl.append_track(clip)
     elif clip.startswith("https://open.spotify.com/album/"):
         cargo[:] = spot_ctl.append_album(clip, return_list=True)[:]
         clip = False
@@ -16656,12 +16676,17 @@ def s_cut():
 
 playlist_menu.add('Paste', paste, paste_deco)
 
-
-def paste_playlist_coast_album():
+def paste_playlist_coast_fire():
     if spot_ctl.coasting and pctl.playing_state == 3:
         url = spot_ctl.get_album_url_from_local(pctl.playing_object())
         if url:
             default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+    gui.pl_update += 1
+
+def paste_playlist_coast_album():
+    shoot_dl = threading.Thread(target=paste_playlist_coast_fire)
+    shoot_dl.daemon = True
+    shoot_dl.start()
 
 def paste_playlist_coast_album_deco():
     if spot_ctl.coasting:
@@ -20948,6 +20973,49 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
+                # spotify track
+                if item[0] == 12:
+                    cl = [200, 255, 150, int(255 * fade)]
+                    text = "Track"
+
+                    xx = ddt.text((120 * gui.scale, yy), item[1][0], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                    ddt.text((xx + (120 + 11) * gui.scale, yy), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    xx += 8 * gui.scale
+                    xx += ddt.text((xx + (120 + 30) * gui.scale, yy), item[1][1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour, True)
+
+                    if key_ctrl_down and item[2] in default_playlist:
+                        ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if gui.level_2_click:
+
+                            if key_ctrl_down:
+                                #default_playlist.append(item[2])
+                                gui.pl_update += 1
+                            else:
+                                spot_ctl.append_track(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+                    if enter and fade == 1:
+                        spot_ctl.append_track(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+
+
                 if item[0] == 3:
                     cl = [240, 240, 160, int(255 * fade)]
                     text = "Genre"
@@ -24026,17 +24094,14 @@ class Over:
         ddt.text_background_colour = colours.box_background
 
         ddt.text((x, y), _("Metadata side panel"), colours.box_text_label, 12)
-        #
+
         y += 25 * gui.scale
-
         self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
-
-        #y += 30 * gui.scale
-
-        # ddt.text((x, y), _("Bottom panel"), colours.box_text_label, 12)
-
-        # y += 25 * gui.scale
-        # prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
+        y += 25 * gui.scale
+        old = prefs.zoom_art
+        prefs.zoom_art = self.toggle_square(x, y, prefs.zoom_art, _("Zoom album art to fit"))
+        if prefs.zoom_art != old:
+            album_art_gen.clear_cache()
 
         global album_mode_art_size
         global update_layout
@@ -24059,7 +24124,7 @@ class Over:
         #y += 25 * gui.scale
 
         x -= 80 * gui.scale
-        x += ddt.get_text_w( _("Thumbnail size"), 11)
+        x += ddt.get_text_w( _("Thumbnail size"), 312)
         #x += 20 * gui.scale
 
         if album_mode_art_size < 160:
@@ -25655,7 +25720,7 @@ class Over:
         width = width * gui.scale
 
         if label is not None:
-            ddt.text((x + 55 * gui.scale, y, 1), label, colours.box_text, 11)
+            ddt.text((x + 55 * gui.scale, y, 1), label, colours.box_text, 312)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
@@ -25684,7 +25749,7 @@ class Over:
         x += 33 * gui.scale
 
         ddt.rect((x, y, width, 15 * gui.scale), alpha_mod(colours.box_button_background, 120), True)
-        ddt.text((x + width / 2, y, 2), str(value) + units, colours.box_sub_text, 11)
+        ddt.text((x + width / 2, y, 2), str(value) + units, colours.box_sub_text, 312)
 
         x += width
 
@@ -37389,7 +37454,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            spot_ctl.create_playlist("test")
             pass
 
         if gui.mode < 3:
