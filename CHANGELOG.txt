@@ -9,7 +9,7 @@ v6.1.0
  - Added import and upload Spotify playlist functions
  - Added import and search Spotify track function
  - Added exit app keyboard shortcut as Ctrl + Q
- - Moved "add to queue" shortcut to Ctrl + S
+ - Moved "add to queue" shortcut to Alt + Q
  - Fixed a possible crash when using artist info panel
  - Fixed transcode status not showing correct remaining during sync
  - Fixed synced lyrics not word wrapping
