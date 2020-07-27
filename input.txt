@@ -62,7 +62,7 @@ substitute-search-selected
 quick-find \
 quick-find F Ctrl
 global-search G Ctrl
-add-to-queue Q Ctrl
+add-to-queue S Ctrl
 love-playing
 love-selected L Ctrl
 
@@ -87,6 +87,7 @@ toggle-broadcast F6
 testkey F7
 show-encode-folder F9
 toggle-fullscreen F11
+quit Q Ctrl
 
 cycle-theme-reverse
 reload-theme F10

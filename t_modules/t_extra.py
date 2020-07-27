@@ -854,3 +854,31 @@ def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of 
         if not remove_path:
             break
 
+def fit_box(inner, outer):
+
+    w = inner[0]
+    h = inner[1]
+
+    # find the largest side
+    large = outer[0]
+    if outer[1] > large:
+        large = outer[1]
+
+    # find the aspect ratio of image
+    ratio = inner[0] / inner[1]
+
+    # scale up
+    w = large
+    h = w * ratio
+
+    # scale to height
+    if h > outer[1]:
+        h = outer[1]
+        w = h / ratio
+
+    # scale to width
+    if w > outer[0]:
+        w = outer[0]
+        h = w * ratio
+
+    return (round(w), round(h))
