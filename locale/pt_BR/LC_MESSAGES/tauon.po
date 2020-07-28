@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-07-27 15:34+1200\n"
-"PO-Revision-Date: 2020-07-27 13:54-0300\n"
+"PO-Revision-Date: 2020-07-28 10:17-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
 "Language: pt_BR\n"
@@ -1785,7 +1785,7 @@ msgstr "Reiniciar a app para aplicar mudanças"
 
 #: tauon.py:25133
 msgid "Auto scale based on xft-dpi"
-msgstr "Auto escalonar baseando-se na Xft.dpi"
+msgstr "Auto, baseando-se na Xft.dpi"
 
 #: tauon.py:25261 tauon.py:25263
 msgid "Show License"
