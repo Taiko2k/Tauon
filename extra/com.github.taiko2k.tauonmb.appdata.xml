@@ -63,10 +63,13 @@
 
   <releases>
 
-    <release version="6.0.3" date="2020-07-17">
+    <release version="6.1.0" date="2020-07-28">
       <description>
         <ul>
-          <li>Added UI scale slider</li>
+          <li>Added maximize window control</li>
+          <li>Added zoom album art setting</li>
+          <li>Added Spotify playlist save support</li>
+          <li>Fixed various bugs</li>
         </ul>
       </description>
     </release>
