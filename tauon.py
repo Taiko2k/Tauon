@@ -24540,9 +24540,10 @@ class Over:
                 if not spot_ctl.spotify_com:
                     playlists = spot_ctl.get_playlist_list()
                     spotify_playlist_menu.items.clear()
-                    for item in playlists:
-                        spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
-                        spotify_playlist_menu.activate(position=(x, y))
+                    if playlists:
+                        for item in playlists:
+                            spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
+                            spotify_playlist_menu.activate(position=(x, y))
                 else:
                     show_message(_("Please wait until current job is finished"))
 
