@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.1.0"
+n_version = "6.1.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -6573,7 +6573,9 @@ from t_modules.t_draw import TDraw
 from t_modules.t_draw import QuickThumbnail
 QuickThumbnail.renderer = renderer
 
+
 class Strings:
+
     def __init__(self):
         self.spotify_likes = _("Spotify Likes")
         self.spotify_albums = _("Spotify Albums")
@@ -6584,6 +6586,13 @@ class Strings:
         self.spotify_account_connected = _("Spotify account connected")
         self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
         self.spotify_error_starting = _("Error starting Spotify")
+
+        self.day = _("day")
+        self.days = _("days")
+
+        self.web_server_stopped = _("Web server stopped.")
+
+strings = Strings()
 
 def id_to_pl(id):
     for i, item in enumerate(pctl.multi_playlist):
@@ -6603,7 +6612,7 @@ class Tauon:
         self.desktop = desktop
 
         self.translate = _
-        self.strings = Strings()
+        self.strings = strings
         self.pctl = pctl
         self.lfm_scrobbler = lfm_scrobbler
         self.star_store = star_store
@@ -22844,7 +22853,7 @@ from t_modules.t_webserve import webserve
 from t_modules.t_webserve import authserve
 
 if prefs.enable_web is True:
-    webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
+    webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings])
     webThread.daemon = True
     webThread.start()
 
@@ -23123,10 +23132,15 @@ def toggle_enable_web(mode=0):
     if mode == 1:
         return prefs.enable_web
 
+    if not prefs.enable_web:
+        if prefs.backend != 1:
+            show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"))
+            return
+
     prefs.enable_web ^= True
 
     if prefs.enable_web and not gui.web_running:
-        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
+        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings])
         webThread.daemon = True
         webThread.start()
         show_message("Web server starting", "External connections will be accepted.", mode='done')
@@ -23856,7 +23870,7 @@ class Over:
                 ddt.text((x, y), _("ReplayGain"), colours.box_text_label, 12)
                 y += round(22 * gui.scale)
 
-                self.toggle_square(x, y, switch_rg_off, "Off")
+                self.toggle_square(x, y, switch_rg_off, _("Off"))
                 y += round(22 * gui.scale)
                 self.toggle_square(x, y, switch_rg_album, _("Album gain"))
                 y += round(22 * gui.scale)
@@ -25482,10 +25496,10 @@ class Over:
             for item in default_playlist:
                 self.stats_pl_length += pctl.master_library[item].length
 
-        line = str(datetime.timedelta(seconds=int(self.stats_pl_length)))
+        line = seconds_to_day_hms(self.stats_pl_length, strings.day, strings.days)
 
         ddt.text((x1, y1), _("Tracks in playlist"), lt_colour, lt_font)
-        ddt.text((x2, y1), '{:,}'.format(len(default_playlist)), colours.box_sub_text, 12)
+        ddt.text((x2, y1), locale.format_string('%d', len(default_playlist), True), colours.box_sub_text, 12)
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Albums in playlist"), lt_colour, lt_font)
         ddt.text((x2, y1), str(self.stats_pl_albums), colours.box_sub_text, 12)
@@ -25527,8 +25541,9 @@ class Over:
 
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Total playtime"), lt_colour, lt_font)
-        ddt.text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
+        ddt.text((x2, y1), seconds_to_day_hms(pctl.total_playtime, strings.day, strings.days),
                  colours.box_sub_text, 15)
+
 
         # Ratio bar
         if len(pctl.master_library) > 115 * gui.scale:
@@ -25592,8 +25607,6 @@ class Over:
         self.toggle_square(x, y, album_rating_toggle, _('Album ratings'))
         y += round(35 * gui.scale)
 
-
-        #self.toggle_square(x, y, heart_toggle, _('Show love hearts'))
         self.toggle_square(x, y, heart_toggle, "     ")
         heart_row_icon.render(x + round(23 * gui.scale), y + round(2 * gui.scale), colours.box_text)
         rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
