@@ -21,7 +21,7 @@
 import html
 import requests
 
-def webserve(pctl, prefs, gui, album_art_gen, install_directory):
+def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
 
     if prefs.enable_web is False:
         return 0
@@ -45,7 +45,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
     def shutdown():
         shutdown_server()
         gui.web_running = False
-        gui.show_message("Web server stopped.")
+        gui.show_message(strings.web_server_stopped)
         return 'Server shutting down...'
 
     @app.route('/radio/')

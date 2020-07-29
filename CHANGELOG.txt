@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.1.1
+
+ -
+
 v6.1.0
 
  - Added maximize window button
