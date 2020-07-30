@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
-"POT-Creation-Date: 2020-07-29 12:28+1200\n"
-"PO-Revision-Date: 2020-07-29 13:24-0300\n"
+"POT-Creation-Date: 2020-07-30 16:15+1200\n"
+"PO-Revision-Date: 2020-07-30 11:52-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
 "Language: pt_BR\n"
@@ -1230,9 +1230,22 @@ msgstr ""
 msgid "Change will be applied on restart."
 msgstr "As alterações serão aplicadas ao reiniciar."
 
+#: tauon.py:23092
+msgid "Tip: You can also toggle this from a right-click context menu"
+msgstr ""
+"Dica: Você pode também mudar isto de um menu contextual clique secundário"
+
 #: tauon.py:23137
 msgid "Sorry, broadcasting feature not implemented with GStreamer backend!"
 msgstr "Lamento, o recurso de transmissão não foi implementado com GStreamer!"
+
+#: tauon.py:23146
+msgid "External connections will be accepted."
+msgstr "Conexões externas serão aceitas."
+
+#: tauon.py:23146
+msgid "Web server starting"
+msgstr "Servidor web iniciando"
 
 #: tauon.py:23285
 msgid ""
@@ -1250,6 +1263,22 @@ msgstr ""
 "Por segurança, esta definição é por padrão desativada. Miniaturas integradas "
 "não são mantidas, melhor extraí-las antes."
 
+#: tauon.py:23306
+msgid ""
+"DANGER! This will delete the original files. You may want to have backups in "
+"case of malfunction."
+msgstr ""
+"PERIGO! Isso apagará os arquivos originais. Manter backups é recomendado em "
+"caso de mal funcionamento."
+
+#: tauon.py:23307
+msgid ""
+"For safety, this setting will reset on restart. Embedded thumbnails are not "
+"kept so you may want to extract them first."
+msgstr ""
+"Por segurança, esta definição restaurará ao reiniciar. Miniaturas integradas "
+"não são mantidas, melhor extraí-las antes."
+
 #: tauon.py:23418
 msgid "Downloading... Please wait"
 msgstr "Baixando... Por favor aguarde"
@@ -1257,6 +1286,14 @@ msgstr "Baixando... Por favor aguarde"
 #: tauon.py:23448
 msgid "BASS Download Complete."
 msgstr "BASS foi Baixado."
+
+#: tauon.py:23509 tauon.py:23517
+msgid "There was an error generating the chart"
+msgstr "Houve um erro ao gerar o gráfico"
+
+#: tauon.py:23520
+msgid "Chart generated"
+msgstr "Gráfico gerado"
 
 #: tauon.py:23565
 msgid "Function"
