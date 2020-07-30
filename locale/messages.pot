@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-07-29 12:28+1200\n"
+"POT-Creation-Date: 2020-07-30 16:15+1200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1211,8 +1211,20 @@ msgstr ""
 msgid "Change will be applied on restart."
 msgstr ""
 
+#: tauon.py:23092
+msgid "Tip: You can also toggle this from a right-click context menu"
+msgstr ""
+
 #: tauon.py:23137
 msgid "Sorry, broadcasting feature not implemented with GStreamer backend!"
+msgstr ""
+
+#: tauon.py:23146
+msgid "External connections will be accepted."
+msgstr ""
+
+#: tauon.py:23146
+msgid "Web server starting"
 msgstr ""
 
 #: tauon.py:23285
@@ -1223,12 +1235,28 @@ msgstr ""
 msgid "For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."
 msgstr ""
 
+#: tauon.py:23306
+msgid "DANGER! This will delete the original files. You may want to have backups in case of malfunction."
+msgstr ""
+
+#: tauon.py:23307
+msgid "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."
+msgstr ""
+
 #: tauon.py:23418
 msgid "Downloading... Please wait"
 msgstr ""
 
 #: tauon.py:23448
 msgid "BASS Download Complete."
+msgstr ""
+
+#: tauon.py:23509 tauon.py:23517
+msgid "There was an error generating the chart"
+msgstr ""
+
+#: tauon.py:23520
+msgid "Chart generated"
 msgstr ""
 
 #: tauon.py:23565

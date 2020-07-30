@@ -23089,7 +23089,7 @@ def toggle_hide_bar(mode=0):
         return gui.set_bar ^ True
     gui.update_layout()
     gui.set_bar ^= True
-    show_message("Tip: You can also toggle this from a right-click context menu")
+    show_message(_("Tip: You can also toggle this from a right-click context menu"))
 
 
 # def toggle_auto_import_sort(mode=0):
@@ -23143,7 +23143,7 @@ def toggle_enable_web(mode=0):
         webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings])
         webThread.daemon = True
         webThread.start()
-        show_message("Web server starting", "External connections will be accepted.", mode='done')
+        show_message(_("Web server starting"), _("External connections will be accepted."), mode='done')
 
     elif prefs.enable_web is False:
         requests.post(f"http://localhost:{str(prefs.metadata_page_port)}/shutdown")
@@ -23303,8 +23303,8 @@ def toggle_transcode_inplace(mode=0):
     if prefs.transcode_inplace:
         transcode_icon.colour = [250, 20, 20, 255]
         show_message(
-            "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
-            "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.",
+        _("DANGER! This will delete the original files. You may want to have backups in case of malfunction."),
+            _("For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."),
             mode='warning')
     else:
         transcode_icon.colour = [239, 74, 157, 255]
@@ -23506,7 +23506,7 @@ def gen_chart():
 
     except:
         gui.generating_chart = False
-        show_message("There was an error generating the chart", "Sorry!", mode='error')
+        show_message(_("There was an error generating the chart"), "Sorry!", mode='error')
         return
 
     gui.generating_chart = False
@@ -23514,10 +23514,10 @@ def gen_chart():
     if path:
         open_file(path)
     else:
-        show_message("There was an error generating the chart", "Sorry!", mode='error')
+        show_message(_("There was an error generating the chart"), "Sorry!", mode='error')
         return
 
-    show_message("Chart generated", mode='done')
+    show_message(_("Chart generated"), mode='done')
 
 
 class Over:
