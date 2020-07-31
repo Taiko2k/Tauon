@@ -80,7 +80,7 @@ try:
     from gi.repository import Gtk
     gtk_settings = Gtk.Settings().get_default()
     xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
-    print(str(gtk_settings.get_property("gtk-decoration-layout")))
+    # print(str(gtk_settings.get_property("gtk-decoration-layout")))
     if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
         draw_min_button = False
     if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
@@ -3670,7 +3670,7 @@ if scale_want == 1.95:
 if scale_want == 2.05:
     scale_want = 2.0
 
-print(scale_want)
+print(f"Using UI scale: {scale_want}")
 
 if scale_want != 1:
     scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
@@ -20831,6 +20831,7 @@ class SearchOverlay:
                                 gui.pl_update += 1
                             else:
                                 spot_ctl.append_album(item[2])
+                                reload_albums()
                                 #self.click_artist(item[1])
                                 self.active = False
                                 self.search_text.text = ""
@@ -20843,6 +20844,7 @@ class SearchOverlay:
 
                     if enter and fade == 1:
                         spot_ctl.append_album(item[2])
+                        reload_albums()
                         #self.click_artist(item[1])
                         self.active = False
                         self.search_text.text = ""
@@ -21012,6 +21014,7 @@ class SearchOverlay:
                                 gui.pl_update += 1
                             else:
                                 spot_ctl.append_track(item[2])
+                                reload_albums()
                                 self.active = False
                                 self.search_text.text = ""
 
@@ -21021,6 +21024,7 @@ class SearchOverlay:
                             self.search_text.text = ""
                     if enter and fade == 1:
                         spot_ctl.append_track(item[2])
+                        reload_albums()
                         self.active = False
                         self.search_text.text = ""
 
@@ -23134,7 +23138,8 @@ def toggle_enable_web(mode=0):
 
     if not prefs.enable_web:
         if prefs.backend != 1:
-            show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"))
+            show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
+                         _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
             return
 
     prefs.enable_web ^= True
