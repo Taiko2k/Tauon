@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-07-31 12:44+1200\n"
+"POT-Creation-Date: 2020-07-31 12:45+1200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1220,7 +1220,7 @@ msgid "Sorry, broadcasting feature not implemented with GStreamer backend!"
 msgstr ""
 
 #: tauon.py:23142
-msgid "See here for details on using broadcast feature:"
+msgid "See here for details on using the broadcast feature:"
 msgstr ""
 
 #: tauon.py:23151

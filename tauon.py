@@ -23139,7 +23139,7 @@ def toggle_enable_web(mode=0):
     if not prefs.enable_web:
         if prefs.backend != 1:
             show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
-                         _("See here for details on using broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
+                         _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
             return
 
     prefs.enable_web ^= True
