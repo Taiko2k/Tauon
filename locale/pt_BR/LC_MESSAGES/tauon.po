@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-07-31 12:45+1200\n"
-"PO-Revision-Date: 2020-07-30 22:00-0300\n"
+"PO-Revision-Date: 2020-07-30 22:05-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
 "Language: pt_BR\n"
@@ -1241,7 +1241,7 @@ msgstr "Lamento, o recurso de transmissão não foi implementado com GStreamer!"
 
 #: tauon.py:23142
 msgid "See here for details on using the broadcast feature:"
-msgstr "Veja aqui para detalhes de uso da função de transmissão:"
+msgstr "Veja aqui detalhes de uso da função de transmissão:"
 
 #: tauon.py:23151
 msgid "External connections will be accepted."
