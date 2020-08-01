@@ -685,8 +685,13 @@ if system == "linux" and not macos and not msys:
     from t_modules.t_dbus import Gnome
     from t_modules.t_gdk_extra import *
 
+import_cursors = True
 
-if system == "linux" and not macos and not msys:
+if desktop == "KDE" and flatpak_mode:
+    print("Using crash workaround for KDE + Flatpak")
+    import_cursors = False
+
+if import_cursors and system == "linux" and not macos and not msys:
     c_br = cursor_get_gdk(4)
     c_rs = cursor_get_gdk(8)
     c_ts = cursor_get_gdk(9)
@@ -7796,7 +7801,7 @@ cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
 
-if system == "linux" and not macos and not msys:
+if system == "linux" and not macos and not msys and import_cursors:
     cursor_br_corner = cairo_cursor_to_sdl(*c_br, fallback=cursor_standard)
     cursor_right_side = cairo_cursor_to_sdl(*c_rs, fallback=cursor_standard)
     cursor_top_side = cairo_cursor_to_sdl(*c_ts, fallback=cursor_standard)
