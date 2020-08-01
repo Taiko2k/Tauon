@@ -3,7 +3,7 @@ Changelog-------------------------------------
 
 v6.1.1
 
- -
+ - Added workaround for crash on KDE + Flatpak
 
 v6.1.0
 

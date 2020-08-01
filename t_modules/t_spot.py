@@ -33,6 +33,7 @@ class SpotCtl:
         self.redirect_uri = f"http://localhost:7811/spotredir"
         self.current_imports = {}
         self.spotify_com = False
+        self.sender = None
 
         self.progress_timer = Timer()
         self.update_timer = Timer()
@@ -57,7 +58,8 @@ class SpotCtl:
                 self.load_token()
             if self.token:
                 print("Init spotify support")
-                self.spotify = tk.Spotify(self.token)
+                self.sender = tk.RetryingSender(retries=3)
+                self.spotify = tk.Spotify(self.token, sender=self.sender)
 
     def paste_code(self, code):
         if self.cred is None:
@@ -232,6 +234,11 @@ class SpotCtl:
             return
 
         devices = self.spotify.playback_devices()
+
+        if devices:
+            pass
+        else:
+            print("No spotify devices found")
 
         if not devices:
             # webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
