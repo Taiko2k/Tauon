@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.1.2
+
+ - Fixed sync not working with first ordered playlist
+
 v6.1.1
 
  - Added workaround for crash on KDE + Flatpak

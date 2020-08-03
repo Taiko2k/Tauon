@@ -15375,7 +15375,6 @@ def auto_sync_thread(pl):
         else:
             console.print(f"Already exists: {folder}")
 
-
     gui.update += 1
     # -----
     # Prepare and copy
@@ -15390,10 +15389,6 @@ def auto_sync_thread(pl):
             break
 
         if prefs.bypass_transcode:
-
-            print("VBYPASS")
-            print(item)
-            print(folder_dict[item])
 
             source_parent = pctl.g(folder_dict[item][0]).parent_folder_path
             if os.path.exists(source_parent):
@@ -16380,8 +16375,8 @@ def convert_folder(index):
 
                 if item not in folder:
                     folder.append(item)
-                print(prefs.transcode_codec)
-                print(track_object.file_ext)
+                # print(prefs.transcode_codec)
+                # print(track_object.file_ext)
                 if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
                                                                                                       'mp4', 'ogg',
                                                                                                       'aac'):
@@ -16390,7 +16385,7 @@ def convert_folder(index):
 
                     return
 
-    print(folder)
+    # print(folder)
     transcode_list.append(folder)
 
 
@@ -25000,10 +24995,10 @@ class Over:
                 self.button(xx, y, _("Stopping..."), width=ww)
             elif not gui.sync_progress:
                 if self.button(xx, y, text, width=ww):
-                    if pl:
+                    if pl is not None:
                         auto_sync(pl)
                     else:
-                        show_message("Selected a source playlist", "Right click tab > Misc... > Set as sync playlist")
+                        show_message(_("Select a source playlist"), _("Right click tab > Misc... > Set as sync playlist"))
             else:
                 if self.button(xx, y, _("Stop"), width=ww):
                     gui.stop_sync = True
@@ -25034,10 +25029,10 @@ class Over:
         self.toggle_square(x, y, switch_flac, "FLAC")
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_opus, "OPUS")
-        if  prefs.transcode_codec == 'opus':
+        if prefs.transcode_codec == 'opus':
             self.toggle_square(x + 120 * gui.scale, y, switch_opus_ogg, _("Save opus as .ogg extension"))
         y += 25 * gui.scale
-        self.toggle_square(x, y, switch_ogg, "OGG")
+        self.toggle_square(x, y, switch_ogg, "OGG Vorbis")
         y += 25 * gui.scale
 
         #if not flatpak_mode:
