@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.1.2
 
+ - Added "--nogdk" to bypass possible crash
  - Fixed sync not working with first ordered playlist
 
 v6.1.1

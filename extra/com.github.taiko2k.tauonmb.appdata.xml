@@ -63,7 +63,7 @@
 
   <releases>
 
-    <release version="6.1.1" date="2020-08-01">
+    <release version="6.1.2" date="2020-08-04">
       <description>
         <ul>
           <li>Added maximize window control</li>

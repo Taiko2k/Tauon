@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.1.1"
+n_version = "6.1.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -686,6 +686,8 @@ if system == "linux" and not macos and not msys:
     from t_modules.t_gdk_extra import *
 
 import_cursors = True
+if "--nogdk" in str(sys.argv):
+    import_cursors = False
 
 if desktop == "KDE" and flatpak_mode:
     print("Using crash workaround for KDE + Flatpak")
@@ -752,6 +754,8 @@ d = datetime.date.today()
 a01 = False
 if "--a01" in str(sys.argv):  # or (d.month == 4 and d.day == 1):
     a01 = True
+
+
 
 # GUI Variables -------------------------------------------------------------------------------------------
 
