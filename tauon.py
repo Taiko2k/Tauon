@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.1.2"
+n_version = "6.1.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4899,26 +4899,28 @@ class PlayerCtl:
         self.notify_update()
 
     def spot_test_progress(self):
-        
-        if self.playing_state == 1 and spot_ctl.playing:
-            th = 10
+        if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
+            th = 7
             if self.playing_time > self.playing_length:
                 th = 1
-            if spot_ctl.start_timer.get() < 7 or spot_ctl.update_timer.get() < th:
-                if not spot_ctl.paused:
-                    add_time = spot_ctl.progress_timer.get()
-                    self.playing_time += add_time
-                    self.decode_time = self.playing_time
-                    self.test_progress()
-                    spot_ctl.progress_timer.set()
-                    if len(self.track_queue) > 0 and 2 > add_time > 0:
-                        star_store.add(self.track_queue[self.queue_step], add_time)
-            else:
+            if not spot_ctl.paused:
+                add_time = spot_ctl.progress_timer.get()
+                if add_time > 5:
+                    add_time = 0
+                self.playing_time += add_time
+                self.decode_time = self.playing_time
+                #self.test_progress()
+                spot_ctl.progress_timer.set()
+                if len(self.track_queue) > 0 and 2 > add_time > 0:
+                    star_store.add(self.track_queue[self.queue_step], add_time)
+            if spot_ctl.update_timer.get() > th:
                 spot_ctl.update_timer.set()
                 spot_ctl.monitor()
+            else:
+                self.test_progress()
 
         elif self.playing_state == 3 and spot_ctl.coasting:
-            th = 8
+            th = 7
             if self.playing_time > self.playing_length or self.playing_time < 2.5:
                 th = 1
             if spot_ctl.update_timer.get() < th:
@@ -16690,10 +16692,13 @@ def s_cut():
 playlist_menu.add('Paste', paste, paste_deco)
 
 def paste_playlist_coast_fire():
+    url = None
     if spot_ctl.coasting and pctl.playing_state == 3:
         url = spot_ctl.get_album_url_from_local(pctl.playing_object())
-        if url:
-            default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+    elif pctl.playing_ready() and "spotify-album-url" in pctl.playing_object().misc:
+        url = pctl.playing_object().misc["spotify-album-url"]
+    if url:
+        default_playlist.extend(spot_ctl.append_album(url, return_list=True))
     gui.pl_update += 1
 
 def paste_playlist_coast_album():
@@ -16702,7 +16707,7 @@ def paste_playlist_coast_album():
     shoot_dl.start()
 
 def paste_playlist_coast_album_deco():
-    if spot_ctl.coasting:
+    if spot_ctl.coasting or spot_ctl.playing:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled

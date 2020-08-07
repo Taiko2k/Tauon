@@ -120,6 +120,7 @@ class SpotCtl:
             if command == "resume" and (self.coasting or self.playing) and self.paused:
                 self.spotify.playback_resume()
                 self.paused = False
+                self.progress_timer.set()
                 self.start_timer.set()
             if command == "volume":
                 self.spotify.playback_volume(param)
@@ -284,6 +285,7 @@ class SpotCtl:
                         self.tauon.focus_window()
                     devices = self.spotify.playback_devices()
                     if devices:
+                        self.progress_timer.set()
                         self.spotify.playback_start_tracks([id], device_id=devices[0].id)
                         break
                     tries += 1
@@ -305,12 +307,13 @@ class SpotCtl:
                         self.tauon.focus_window()
                         time.sleep(1)
                         print("ATTEMPT START")
+
                         self.spotify.playback_start_tracks([id], device_id=devices[0].id)
                         while True:
-
                             result = self.spotify.playback_currently_playing()
                             if result and result.is_playing:
                                 playing = True
+                                self.progress_timer.set()
                                 print("TRACK START SUCCESS")
                                 break
                             time.sleep(2)
@@ -330,6 +333,7 @@ class SpotCtl:
 
         else:
             try:
+                self.progress_timer.set()
                 self.spotify.playback_start_tracks([id], device_id=d_id)
             # except tk.client.decor.error.InternalServerError:
             #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
@@ -342,7 +346,6 @@ class SpotCtl:
         self.playing = True
         self.started_once = True
 
-        self.progress_timer.set()
         self.start_timer.set()
         self.tauon.gui.pl_update += 1
 
@@ -423,7 +426,7 @@ class SpotCtl:
         self.update_existing_import_list()
 
         for item in p.tracks.items:
-            nt = self.load_track(item.track)
+            nt = self.load_track(item.track, include_album_url=True)
             self.tauon.pctl.master_library[nt.index] = nt
             playlist.append(nt.index)
 
@@ -438,7 +441,6 @@ class SpotCtl:
         self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
 
         self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
-
 
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]
@@ -540,7 +542,7 @@ class SpotCtl:
 
 
 
-    def load_track(self, track, update_master_count=True):
+    def load_track(self, track, update_master_count=True, include_album_url=False):
 
         pr = self.current_imports.get(track.external_urls["spotify"])
         if pr:
@@ -554,10 +556,11 @@ class SpotCtl:
         nt.is_network = True
         nt.file_ext = "SPTY"
         nt.url_key = track.id
-        if new:
-            nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
-            # nt.misc["spotify-album-url"] = album_url
-            nt.misc["spotify-track-url"] = track.external_urls["spotify"]
+        #if new:
+        nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
+        if include_album_url and "spotify-album-url" not in nt.misc:
+            nt.misc["spotify-album-url"] = track.album.external_urls["spotify"]
+        nt.misc["spotify-track-url"] = track.external_urls["spotify"]
         nt.artist = track.artists[0].name
         nt.album_artist = track.album.artists[0].name
         nt.date = track.album.release_date
@@ -634,13 +637,32 @@ class SpotCtl:
 
     def monitor(self):
         tr = self.tauon.pctl.playing_object()
-        if self.playing and self.start_timer.get() > 6 and self.tauon.pctl.playing_time + 5 < tr.length:
+
+        # Detect if playback has resumed
+        if self.playing and self.paused:
+            result = self.spotify.playback_currently_playing()
+            if result.is_playing:
+                self.paused = False
+                self.progress_timer.set()
+                self.tauon.pctl.playing_state = 1
+                self.tauon.gui.update += 1
+
+        # Detect is playback has been modified
+        elif self.playing and self.start_timer.get() > 6 and self.tauon.pctl.playing_time + 5 < tr.length:
             result = self.spotify.playback_currently_playing()
 
-            if (result is None or result.item is None or not result.is_playing) or tr is None:
+            # Playback has been stopped?
+            if (result is None or result.item is None) or tr is None:
                 self.playing = False
                 self.tauon.pctl.stop()
                 return
+            # Playback has been paused?
+            elif tr and result and not result.is_playing:
+                self.paused = True
+                self.tauon.pctl.playing_state = 2
+                self.tauon.gui.update += 1
+                return
+            # Something else is now playing? If so, switch into coast mode
             if result.item.name != tr.title:
                 self.tauon.pctl.playing_state = 3
                 self.playing = False
@@ -651,8 +673,13 @@ class SpotCtl:
 
             p = result.progress_ms
             if p is not None:
-                self.tauon.pctl.playing_time = p / 1000
-            self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
+                if abs(self.tauon.pctl.playing_time - (p / 1000)) > 0.5:
+                    # print("DESYNC")
+                    # print(abs(self.tauon.pctl.playing_time - (p / 1000)))
+                    self.tauon.pctl.playing_time = p / 1000
+                    self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
+                # else:
+                #     print("SYNCED")
 
     def update(self, start=False):
 
