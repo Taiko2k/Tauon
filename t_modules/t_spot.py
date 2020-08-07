@@ -334,11 +334,28 @@ class SpotCtl:
         else:
             try:
                 self.progress_timer.set()
-                self.spotify.playback_start_tracks([id], device_id=d_id)
+                okay = False
+
+                # Check conditions for a proper transition
+                if self.playing:
+                    result = self.spotify.playback_currently_playing()
+                    if result and result.item and result.is_playing:
+                        remain = result.item.duration_ms - result.progress_ms
+                        if 1000 < remain < 2500:
+                            self.spotify.playback_queue_add("spotify:track:" + id,  device_id=d_id)
+                            okay = True
+                            time.sleep(remain / 1000)
+                            self.progress_timer.set()
+
+                # Force a transition
+                if not okay:
+                    self.spotify.playback_start_tracks([id], device_id=d_id)
+
             # except tk.client.decor.error.InternalServerError:
             #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
             #     return
             except:
+                raise
                 self.tauon.gui.show_message("Spotify error, try again?", mode="warning")
                 return
         # except Exception as e:

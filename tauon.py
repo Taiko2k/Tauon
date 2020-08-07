@@ -4980,6 +4980,9 @@ class PlayerCtl:
         if prefs.backend == 2:  # (gstreamer)
             gap_extra = 2
 
+        if spot_ctl.playing:
+            gap_extra = 2
+
         if msys and taskbar_progress and self.windows_progress:
             self.windows_progress.update(True)
 
