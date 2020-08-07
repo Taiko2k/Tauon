@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.1.3
+
+ - Improved Spotify playback synchronisation
+
 v6.1.2
 
  - Added "--nogdk" to bypass possible crash
