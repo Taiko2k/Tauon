@@ -777,6 +777,8 @@ class DConsole:
 
 console = DConsole()
 
+spot_cache_saved_albums = []
+
 resize_mode = False
 
 side_panel_text_align = 0
@@ -2868,6 +2870,8 @@ for t in range(2):
             prefs.show_band = save[149]
         if save[150] is not None:
             prefs.download_playlist = save[150]
+        if save[151] is not None:
+            spot_cache_saved_albums = save[151]
 
         state_file.close()
         del save
@@ -14714,6 +14718,12 @@ def regenerate_playlist(pl, silent=False):
         elif cm.startswith("spl\""):
             playlist.extend(spot_ctl.playlist(quote, return_list=True))
 
+        elif cm == "sal":
+            playlist.extend(spot_ctl.get_library_albums(return_list=True))
+
+        elif cm == "slt":
+            playlist.extend(spot_ctl.get_library_likes(return_list=True))
+
         elif cm == "a":
             if not selections and not selections_searched:
                 for plist in pctl.multi_playlist:
@@ -17847,6 +17857,8 @@ spot_ctl = SpotCtl(tauon)
 tauon.spot_ctl = spot_ctl
 spot_ctl.load_token()
 
+spot_ctl.cache_saved_albums = spot_cache_saved_albums
+
 # Copy album title text to clipboard
 folder_menu.add(_('Copy "Artist - Album"'), clip_title, pass_ref=True)
 
@@ -17870,6 +17882,48 @@ def get_album_spot_url_deco(track_id):
     return [colours.menu_text, colours.menu_background, text]
 
 folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_url_deco, pass_ref=True, pass_ref_deco=True, show_test=spotify_show_test, icon=spot_icon)
+
+
+def add_to_spotify_library_deco(track_id):
+    track_object = pctl.g(track_id)
+    text = _("Save to Spotify Library")
+    if track_object.file_ext != "SPTY":
+        return (colours.menu_text_disabled, colours.menu_background, text)
+
+    album_url = track_object.misc.get("spotify-album-url")
+    if album_url and album_url in spot_ctl.cache_saved_albums:
+        text = _("Remove from Spotify Library")
+
+    return (colours.menu_text, colours.menu_background, text)
+
+def add_to_spotify_library2(album_url):
+
+    if album_url in spot_ctl.cache_saved_albums:
+        spot_ctl.remove_album_from_library(album_url)
+    else:
+        spot_ctl.add_album_to_library(album_url)
+
+    for i, p in enumerate(pctl.multi_playlist):
+        code = pctl.gen_codes.get(p[6])
+        if code and code.startswith("sal"):
+            print("Fetching Spotify Library...")
+            regenerate_playlist(i, silent=True)
+
+def add_to_spotify_library(track_id):
+
+    track_object = pctl.g(track_id)
+    album_url = track_object.misc.get("spotify-album-url")
+    if track_object.file_ext != "SPTY" or not album_url:
+        return
+
+    shoot_dl = threading.Thread(target=add_to_spotify_library2, args=([album_url]))
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
+
+
+folder_menu.add('Add to Spotify Library', add_to_spotify_library, add_to_spotify_library_deco, pass_ref=True, pass_ref_deco=True, show_test=spotify_show_test, icon=spot_icon)
+
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
@@ -19286,18 +19340,32 @@ def select_love():
 
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
-def toggle_spotify_like_active():
-    tr = pctl.playing_object()
-    if tr and "spotify-track-url" in tr.misc:
+def toggle_spotify_like_active2(tr):
+
+    if "spotify-track-url" in tr.misc:
         if "spotify-liked" in tr.misc:
-            spot_ctl.like_track(tr)
+            spot_ctl.unlike_track(tr)
         else:
             spot_ctl.like_track(tr)
+
+    for i, p in enumerate(pctl.multi_playlist):
+        code = pctl.gen_codes.get(p[6])
+        if code and code.startswith("slt"):
+            print("Fetching Spotify likes...")
+            regenerate_playlist(i, silent=True)
+
+def toggle_spotify_like_active():
+    tr = pctl.playing_object()
+    if tr:
+        shoot_dl = threading.Thread(target=toggle_spotify_like_active2, args=([tr]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
 
 def toggle_spotify_like_active_deco():
     tr = pctl.playing_object()
     text = _("Spotify Like Track")
-    if not tr or not "spotify-track-url" in tr.misc:
+
+    if pctl.playing_state == 0 or not tr or not "spotify-track-url" in tr.misc:
         return [colours.menu_text_disabled, colours.menu_background, text]
     if "spotify-liked" in tr.misc:
         text = _("Un-like Spotify Track")
@@ -24521,6 +24589,7 @@ class Over:
             if spot_ctl.token:
                 if self.button(x, y, _("Forget Account")):
                     spot_ctl.delete_token()
+                    spot_ctl.cache_saved_albums.clear()
             else:
                 if self.button(x, y, _("Authorise")):
 
@@ -36501,7 +36570,7 @@ def save_state():
             prefs.spot_secret,
             prefs.show_band,
             prefs.download_playlist,
-
+            spot_ctl.cache_saved_albums,
         ]
 
 
