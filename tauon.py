@@ -17886,7 +17886,7 @@ folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_u
 
 def add_to_spotify_library_deco(track_id):
     track_object = pctl.g(track_id)
-    text = _("Add to Spotify Library")
+    text = _("Save to Spotify Library")
     if track_object.file_ext != "SPTY":
         return (colours.menu_text_disabled, colours.menu_background, text)
 
@@ -19340,13 +19340,26 @@ def select_love():
 
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
-def toggle_spotify_like_active():
-    tr = pctl.playing_object()
-    if tr and "spotify-track-url" in tr.misc:
+def toggle_spotify_like_active2(tr):
+
+    if "spotify-track-url" in tr.misc:
         if "spotify-liked" in tr.misc:
-            spot_ctl.like_track(tr)
+            spot_ctl.unlike_track(tr)
         else:
             spot_ctl.like_track(tr)
+
+    for i, p in enumerate(pctl.multi_playlist):
+        code = pctl.gen_codes.get(p[6])
+        if code and code.startswith("slt"):
+            print("Fetching Spotify likes...")
+            regenerate_playlist(i, silent=True)
+
+def toggle_spotify_like_active():
+    tr = pctl.playing_object()
+    if tr:
+        shoot_dl = threading.Thread(target=toggle_spotify_like_active2, args=([tr]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
 
 def toggle_spotify_like_active_deco():
     tr = pctl.playing_object()

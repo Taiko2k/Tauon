@@ -5,8 +5,9 @@ v6.1.3
 
  - Improved Spotify support
    - Added support for saving albums to library
-   - Added generate library albums and likes playlists
+   - Added regenerate library albums and liked track playlists
    - Improved Spotify playback synchronisation
+   - Fixed un-like track not working
 
 v6.1.2
 
