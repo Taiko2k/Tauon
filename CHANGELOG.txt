@@ -3,7 +3,10 @@ Changelog-------------------------------------
 
 v6.1.3
 
- - Improved Spotify playback synchronisation
+ - Improved Spotify support
+   - Added support for saving albums to library
+   - Added generate library albums and likes playlists
+   - Improved Spotify playback synchronisation
 
 v6.1.2
 
