@@ -651,7 +651,7 @@ class SpotCtl:
             results = self.spotify.saved_tracks_contains([id])
             if not results or results[0] is True:
                 self.spotify.saved_tracks_delete([id])
-                tract_object.pop("spotify-liked", None)
+                tract_object.misc.pop("spotify-liked", None)
                 self.tauon.gui.show_message(self.strings.spotify_un_liked, mode="done")
                 return
             self.tauon.gui.show_message(self.strings.spotify_already_un_liked)
