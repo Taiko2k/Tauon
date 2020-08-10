@@ -640,10 +640,10 @@ if arch == "x86_64":
     bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
 elif arch == "aarch64":
     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-aarch64-202008.zip"
-    bass_archive_checksum = "97046fea0eb56aab377587519a7deaf35d6b974908041b6cd7a4260369887b90"
+    bass_archive_checksum = "3acd36fcc3227d8fb44e16b148596c2621bd8d1898e52ed1581cd6d42621e9fc"
 elif arch == "arm":
     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-arm-202008.zip"
-    bass_archive_checksum = "c7c12817542c7543d2b43d6ea610485f6db744e77adb2ce9d9be2cbbef3d4aa0"
+    bass_archive_checksum = "bfd27bc5d2b2b0c7e6b84dfbc4d8d4961fff392b6903af3b736af6a2058d21d5"
 
 
 #print(arch)
