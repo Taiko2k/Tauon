@@ -63,13 +63,11 @@
 
   <releases>
 
-    <release version="6.1.2" date="2020-08-04">
+    <release version="6.1.3" date="2020-08-10">
       <description>
         <ul>
-          <li>Added maximize window control</li>
-          <li>Added zoom album art setting</li>
-          <li>Added Spotify playlist save support</li>
-          <li>Fixed various bugs</li>
+          <li>Added ARM Flatpak build</li>
+          <li>Improved Spotify Support</li>
         </ul>
       </description>
     </release>

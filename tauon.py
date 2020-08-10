@@ -42,8 +42,6 @@ t_id = 'tauonmb'
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
 
-
-
 # Detect platform
 windows_native = False
 macos = False
