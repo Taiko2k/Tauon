@@ -42,8 +42,6 @@ t_id = 'tauonmb'
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
 
-bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
-bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
 
 
 # Detect platform
@@ -633,6 +631,21 @@ from collections import OrderedDict
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 arch = platform.machine()
+
+bass_archive_link = None
+bass_archive_checksum = None
+
+if arch == "x86_64":
+    bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
+    bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
+elif arch == "aarch64":
+    bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-aarch64-202008.zip"
+    bass_archive_checksum = "97046fea0eb56aab377587519a7deaf35d6b974908041b6cd7a4260369887b90"
+elif arch == "arm":
+    bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-arm-202008.zip"
+    bass_archive_checksum = "c7c12817542c7543d2b43d6ea610485f6db744e77adb2ce9d9be2cbbef3d4aa0"
+
+
 #print(arch)
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
@@ -15274,7 +15287,7 @@ extra_tab_menu.add_sub(_("From Current…"), 133)
 tab_menu.add_to_sub(_("Sort by Filepath"), 1, standard_sort, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Track Numbers'), 1, sort_track_2, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Year per Artist'), 1, year_sort, pass_ref=True)
-tab_menu.add_to_sub(_('Make playlist auto-sorting'), 1, make_auto_sorting, pass_ref=True)
+tab_menu.add_to_sub(_('Make Playlist Auto-Sorting'), 1, make_auto_sorting, pass_ref=True)
 
 tab_menu.br()
 
@@ -23919,7 +23932,7 @@ class Over:
         colour = colours.box_sub_text
 
         if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
-            if arch == "x86_64":
+            if bass_archive_link:
                 ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
                 if not gui.downloading_bass:
                     #. Limited width. Max 27 chars. Alt: Download BASS
