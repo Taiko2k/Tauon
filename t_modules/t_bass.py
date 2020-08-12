@@ -17,6 +17,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 #
+#     Additional permission under GNU GPL version 3 section 7
+#
 #     If you modify this Program, or any covered work, by linking or
 #     combining it with BASS Audio Library including associated add-ons
 #     from https://www.un4seen.com/, containing parts covered by the

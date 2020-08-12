@@ -17,12 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# If you modify this Program, or any covered work, by linking or
-# combining it with BASS Audio Library including associated add-ons
-# from https://www.un4seen.com/, containing parts covered by the
-# terms of the BASS license, the licensors of this Program grant you
-# additional permission to convey the resulting work.
 
 # --------------------------------------------------------------------
 # Preamble
@@ -638,15 +632,15 @@ arch = platform.machine()
 bass_archive_link = None
 bass_archive_checksum = None
 
-if arch == "x86_64":
-    bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
-    bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
-elif arch == "aarch64":
-    bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-aarch64-202008.zip"
-    bass_archive_checksum = "3acd36fcc3227d8fb44e16b148596c2621bd8d1898e52ed1581cd6d42621e9fc"
-elif arch == "arm":
-    bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-arm-202008.zip"
-    bass_archive_checksum = "bfd27bc5d2b2b0c7e6b84dfbc4d8d4961fff392b6903af3b736af6a2058d21d5"
+# if arch == "x86_64":
+#     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
+#     bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
+# elif arch == "aarch64":
+#     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-aarch64-202008.zip"
+#     bass_archive_checksum = "3acd36fcc3227d8fb44e16b148596c2621bd8d1898e52ed1581cd6d42621e9fc"
+# elif arch == "arm":
+#     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-arm-202008.zip"
+#     bass_archive_checksum = "bfd27bc5d2b2b0c7e6b84dfbc4d8d4961fff392b6903af3b736af6a2058d21d5"
 
 
 #print(arch)
@@ -3622,10 +3616,10 @@ if 0 < db_version <= 34:
         prefs.theme_name = get_theme_name(theme)
         print(prefs.theme_name)
 
-if 0 < db_version <= 36 and prefs.backend == 1 and system == "linux" and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
-    show_message("Welcome to v5.1.0! 🚨 Just letting you know that BASS is no longer included by default.",
-                 "You can enable it again by going MENU > Settings > Audio > Install BASS Audio Library.",
-                 "If you do nothing, GStreamer will be used for playback instead.")
+# if 0 < db_version <= 36 and prefs.backend == 1 and system == "linux" and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
+#     show_message("Welcome to v5.1.0! 🚨 Just letting you know that BASS is no longer included by default.",
+#                  "You can enable it again by going MENU > Settings > Audio > Install BASS Audio Library.",
+#                  "If you do nothing, GStreamer will be used for playback instead.")
 
 # Set UI language -----
 
@@ -23934,20 +23928,21 @@ class Over:
         colour = colours.box_sub_text
 
         if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
-            if bass_archive_link:
-                ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
-                if not gui.downloading_bass:
-                    #. Limited width. Max 27 chars. Alt: Download BASS
-                    if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
-                        shoot_dl = threading.Thread(target=download_bass)
-                        shoot_dl.daemon = True
-                        shoot_dl.start()
-                        gui.downloading_bass = True
-                #. A button that shows detailed information about context. Max 5 chars.
-                if self.button(x + ww, y, _("?")):
-                    show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
-                                 _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
-                                 _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
+            pass
+            # if bass_archive_link:
+            #     ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
+            #     if not gui.downloading_bass:
+            #         #. Limited width. Max 27 chars. Alt: Download BASS
+            #         if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
+            #             shoot_dl = threading.Thread(target=download_bass)
+            #             shoot_dl.daemon = True
+            #             shoot_dl.start()
+            #             gui.downloading_bass = True
+            #     #. A button that shows detailed information about context. Max 5 chars.
+            #     if self.button(x + ww, y, _("?")):
+            #         show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
+            #                      _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
+            #                      _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
 
         else:
             ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
