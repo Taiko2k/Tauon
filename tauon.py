@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 # Tauon Music Box
 
 # Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
@@ -18,6 +17,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# If you modify this Program, or any covered work, by linking or
+# combining it with BASS Audio Library including associated add-ons
+# from https://www.un4seen.com/, containing parts covered by the
+# terms of the BASS license, the licensors of this Program grant you
+# additional permission to convey the resulting work.
 
 # --------------------------------------------------------------------
 # Preamble
