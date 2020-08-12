@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-08-12 18:56+1200\n"
+"POT-Creation-Date: 2020-08-12 19:12+1200\n"
 "PO-Revision-Date: 2019-05-01 22:39+1200\n"
 "Last-Translator:  <captain.gxj@gmail.com>\n"
 "Language-Team: Language zh_CN\n"
@@ -22,16 +22,6 @@ msgstr "没有找到艺术家"
 
 #: tauon.py:1799
 msgid "No providers are enabled in settings!"
-msgstr ""
-
-#: tauon.py:3224
-msgid "Upgrade to version 5.5.0 complete."
-msgstr ""
-
-#: tauon.py:3225
-msgid ""
-"If you enjoy using this software, please consider making a donation at "
-"https://ko-fi.com/taiko2k"
 msgstr ""
 
 #: tauon.py:5826
