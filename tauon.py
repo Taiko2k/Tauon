@@ -16384,7 +16384,7 @@ def convert_folder(index):
     if key_shift_down or key_shiftr_down:
         track_object = pctl.g(index)
         if track_object.is_network:
-            show_message("Transcoding tracks from network locations is not currenty supported")
+            show_message(_("Transcoding tracks from network locations is not supported"))
             return
         folder = [index]
 
@@ -16404,7 +16404,7 @@ def convert_folder(index):
 
                 track_object = pctl.g(item)
                 if track_object.is_network:
-                    show_message("Transcoding tracks from network locations is not currenty supported")
+                    show_message(_("Transcoding tracks from network locations is not supported"))
                     return
 
                 if item not in folder:
@@ -16991,7 +16991,7 @@ def delete_track(track_ref):
         fullpath = fullpath.replace("/", "\\")
 
     if tr.is_network:
-        show_message("Deleting a network track is not supported")
+        show_message(_("Cannot delete a network track"))
         return
 
     while track_ref in default_playlist:
@@ -17003,18 +17003,18 @@ def delete_track(track_ref):
         if os.path.exists(fullpath):
             try:
                 os.remove(fullpath)
-                show_message("File deleted", fullpath, mode='info')
+                show_message(_("File deleted"), fullpath, mode='info')
             except:
-                show_message("Error deleting file", fullpath, mode='error')
+                show_message(_("Error deleting file"), fullpath, mode='error')
         else:
-            show_message("File moved to trash")
+            show_message(_("File moved to trash"))
 
     except:
         try:
             os.remove(fullpath)
-            show_message("File deleted", fullpath, mode='info')
+            show_message(_("File deleted"), fullpath, mode='info')
         except:
-            show_message("Error deleting file", fullpath, mode='error')
+            show_message(_("Error deleting file"), fullpath, mode='error')
 
     reload()
     refind_playing()
@@ -17045,7 +17045,7 @@ def delete_folder(index, force=False):
     track = pctl.master_library[index]
 
     if track.is_network:
-        show_message("Cannot physically delete", "One or more tracks is from a network location!", mode='info')
+        show_message(_("Cannot physically delete"), _("One or more tracks is from a network location!"), mode='info')
         return
 
     old = track.parent_folder_path
@@ -17066,7 +17066,7 @@ def delete_folder(index, force=False):
             return
 
     if directory_size(old) > 1500000000:
-        show_message("Folder size safety limit reached! (1.5GB)", old, mode='warning')
+        show_message(_("Delete size safety limit reached!") + " (1.5GB)", old, mode='warning')
         return
 
     try:
@@ -17104,7 +17104,7 @@ def delete_folder(index, force=False):
         if force:
             show_message("Unable to comply.", "Could not delete folder. Try check permissions.", mode='error')
         else:
-            show_message("Folder could not be trashed.", "Try again while holding shift to force delete.", mode='error')
+            show_message(_("Folder could not be trashed."), "Try again while holding shift to force delete.", mode='error')
 
     tauon.worker_save_state = True
     tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
