@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
-"POT-Creation-Date: 2020-08-12 18:56+1200\n"
+"POT-Creation-Date: 2020-08-12 19:12+1200\n"
 "PO-Revision-Date: 2020-08-08 10:25-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
@@ -25,18 +25,6 @@ msgstr "Sem Imagem do artista."
 #: tauon.py:1799
 msgid "No providers are enabled in settings!"
 msgstr "Não há provedores ativos nas configurações!"
-
-#: tauon.py:3224
-msgid "Upgrade to version 5.5.0 complete."
-msgstr "Atualização para a versão 5.5.0 finalizada."
-
-#: tauon.py:3225
-msgid ""
-"If you enjoy using this software, please consider making a donation at "
-"https://ko-fi.com/taiko2k"
-msgstr ""
-"Se gostou deste software, por favor considere uma doação em https://ko-fi."
-"com/taiko2k"
 
 #: tauon.py:5826
 msgid "End of playlist"
@@ -2354,6 +2342,16 @@ msgstr "Lixeira"
 #: tauon.py:40294
 msgid "Raise"
 msgstr "Aumentar"
+
+#~ msgid "Upgrade to version 5.5.0 complete."
+#~ msgstr "Atualização para a versão 5.5.0 finalizada."
+
+#~ msgid ""
+#~ "If you enjoy using this software, please consider making a donation at "
+#~ "https://ko-fi.com/taiko2k"
+#~ msgstr ""
+#~ "Se gostou deste software, por favor considere uma doação em https://ko-fi."
+#~ "com/taiko2k"
 
 #~ msgid "Generate theme from album art"
 #~ msgstr "Gerar tema a partir da capa do álbum"

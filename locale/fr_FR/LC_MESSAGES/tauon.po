@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2020-08-12 18:56+1200\n"
+"POT-Creation-Date: 2020-08-12 19:12+1200\n"
 "PO-Revision-Date: 2020-01-21 18:18+0100\n"
 "Last-Translator: b_b <bruno@eliaz.fr>\n"
 "Language-Team: \n"
@@ -24,16 +24,6 @@ msgstr "Aucune image trouvée pour l'artiste"
 #: tauon.py:1799
 msgid "No providers are enabled in settings!"
 msgstr "Aucune source définie dans les paramètres !"
-
-#: tauon.py:3224
-msgid "Upgrade to version 5.5.0 complete."
-msgstr ""
-
-#: tauon.py:3225
-msgid ""
-"If you enjoy using this software, please consider making a donation at "
-"https://ko-fi.com/taiko2k"
-msgstr ""
 
 #: tauon.py:5826
 msgid "End of playlist"

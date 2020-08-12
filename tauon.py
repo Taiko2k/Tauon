@@ -3220,9 +3220,9 @@ if db_version > 0:
 
     if db_version <= 42:
         print("Updating database to version 43")
-        show_message(
-            _("Upgrade to version 5.5.0 complete."),
-            _("If you enjoy using this software, please consider making a donation at https://ko-fi.com/taiko2k"), mode='link')
+        # show_message(
+        #     "Upgrade to version 5.5.0 complete.",
+        #     "If you enjoy using this software, please consider making a donation at https://ko-fi.com/taiko2k", mode='link')
 
     if db_version <= 43:
         print("Updating database to version 44")

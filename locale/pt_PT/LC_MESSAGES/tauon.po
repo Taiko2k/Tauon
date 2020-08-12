@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
-"POT-Creation-Date: 2020-08-12 18:56+1200\n"
+"POT-Creation-Date: 2020-08-12 19:12+1200\n"
 "PO-Revision-Date: 2020-04-04 00:57+0100\n"
 "Last-Translator: Ricardo Simões - XM Corporation <xm.corporation@gmail.com>\n"
 "Language-Team: \n"
@@ -24,16 +24,6 @@ msgstr "Imagem do artista não encontrada."
 #: tauon.py:1799
 msgid "No providers are enabled in settings!"
 msgstr "Nenhuns fornecedores estão ativados nas definições!"
-
-#: tauon.py:3224
-msgid "Upgrade to version 5.5.0 complete."
-msgstr ""
-
-#: tauon.py:3225
-msgid ""
-"If you enjoy using this software, please consider making a donation at "
-"https://ko-fi.com/taiko2k"
-msgstr ""
 
 #: tauon.py:5826
 msgid "End of playlist"
