@@ -1,6 +1,7 @@
-# Language ja translations for PACKAGE package.
-# Copyright (C) 2019 ORGANIZATION
-#  <captain.gxj@gmail.com>, 2019.
+# Tauon Music Box UI translation
+# Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
+# This file is avaliable under the same license as Tauon Music Box
+
 #
 msgid ""
 msgstr ""

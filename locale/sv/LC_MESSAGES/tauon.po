@@ -1,5 +1,6 @@
-# Swedish translation for Tauon Music Box.
-# Copyright (C) YEAR ORGANIZATION
+# Tauon Music Box UI translation
+# Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
+# This file is avaliable under the same license as Tauon Music Box
 # Åke Engelbrektson <eson@svenskasprakfiler.se>, 2020.
 #
 msgid ""
