@@ -1,5 +1,6 @@
-# BRAZILIAN PORTUGUES TRANSLATION FOR TAUON MUSIC BOX.
-# Copyright (C) YEAR ORGANIZATION
+# Tauon Music Box UI translation
+# Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
+# This file is avaliable under the same license as Tauon Music Box
 # MARCELO DOS SANTOS MAFRA <MSMAFRA@GMAIL.COM>, 2020.
 #
 msgid ""
