@@ -16272,11 +16272,11 @@ def get_broadcast_line():
 
 
 def open_license():
-    target = os.path.join(install_directory, "license.txt")
+
     if os.path.isfile(os.path.join(install_directory, "LICENSE")):
         target = os.path.join(install_directory, "LICENSE")
-    if os.path.isfile(os.path.join(install_directory, "LICENSE.txt")):
-        target = os.path.join(install_directory, "LICENSE.txt")
+    else:
+        return
 
     if system == "windows" or msys:
         os.startfile(target)
@@ -16284,7 +16284,6 @@ def open_license():
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
-        print(target)
 
 
 def reload_config_file():
