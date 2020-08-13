@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.1.3"
+n_version = "6.2.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -629,19 +629,6 @@ musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Tai
 
 arch = platform.machine()
 
-bass_archive_link = None
-bass_archive_checksum = None
-
-# if arch == "x86_64":
-#     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.3.1/basslibs64-Mar17.zip"
-#     bass_archive_checksum = "8af8dcd5fea4c4535d6d93b847b9ed5fe393aae2ccb54987f1dfe7387f79263a"  # sha256
-# elif arch == "aarch64":
-#     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-aarch64-202008.zip"
-#     bass_archive_checksum = "3acd36fcc3227d8fb44e16b148596c2621bd8d1898e52ed1581cd6d42621e9fc"
-# elif arch == "arm":
-#     bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v6.1.2/basslibs-arm-202008.zip"
-#     bass_archive_checksum = "bfd27bc5d2b2b0c7e6b84dfbc4d8d4961fff392b6903af3b736af6a2058d21d5"
-
 
 #print(arch)
 # -----------------------------------------------------------
@@ -1151,7 +1138,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.true_shuffle = True
         self.append_total_time = False
-        self.backend = 1
+        self.backend = 2
 
         self.album_repeat_mode = False # passed to pctl
         self.album_shuffle_mode = False # passed to pctl
@@ -2763,8 +2750,8 @@ for t in range(2):
             prefs.use_pause_fade = save[91]
         if save[92] is not None:
             prefs.append_total_time = save[92]
-        if save[93] is not None:
-            prefs.backend = save[93]
+        # if save[93] is not None:
+        #     prefs.backend = save[93]
         if save[94] is not None:
             prefs.album_shuffle_mode = save[94]
         if save[95] is not None:
@@ -3408,11 +3395,11 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
-    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. BASS only. Default is 400.")
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In milliseconds. BASS only. Default is 700.")
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. BASS only. Default is 40.")
-    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "BASS only.")
-    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "BASS only.")
+    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. This setting currently has no effect. Default is 400.")
+    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In milliseconds. This setting currently has no effect. Default is 700.")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. This setting currently has no effect. Default is 40.")
+    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This setting currently has no effect.")
+    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This setting currently has no effect.")
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
@@ -6682,12 +6669,12 @@ tauon = Tauon()
 
 
 # Check if BASS is present and fall back to Gstreamer if not
-if msys:
-    prefs.backend = 1  
-elif prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
-    if system != "windows":
-        print("BASS not found")
-        prefs.backend = 2
+# if msys:
+#     prefs.backend = 1
+# elif prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
+#     if system != "windows":
+#         print("BASS not found")
+prefs.backend = 2
 
 
 class PlexService:
@@ -18178,7 +18165,7 @@ def bass_test(_):
     # return True
     return prefs.backend == 1
 
-track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True, show_test=bass_test)
+# track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True, show_test=bass_test)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -19124,7 +19111,7 @@ def broadcast_colour():
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
 broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
-x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon, show_test=bass_test)
+# x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon, show_test=bass_test)
 
 
 def clear_queue():
@@ -23226,10 +23213,10 @@ def toggle_enable_web(mode=0):
         return prefs.enable_web
 
     if not prefs.enable_web:
-        if prefs.backend != 1:
-            show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
-                         _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
-            return
+        # if prefs.backend != 1:
+        #     show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
+        #                  _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
+        return
 
     prefs.enable_web ^= True
 
@@ -23506,60 +23493,57 @@ def reload_backend():
     if pre_state == 1:
         pctl.revert()
 
-
-def download_bass():
-
-    show_message(_("Downloading... Please wait"))
-    input.mouse_click = False
-    user_lib_dir = user_directory + "/lib"
-
-    try:
-        if os.path.isdir(user_lib_dir):
-            shutil.rmtree(user_lib_dir)
-        os.makedirs(user_lib_dir)
-    except:
-        show_message("Folder access error", mode="error")
-        gui.downloading_bass = False
-        return
-
-    bass_zip = user_lib_dir + "/bass.zip"
-
-    try:
-        urllib.request.urlretrieve(bass_archive_link,
-                                   bass_zip)
-    except Exception as e:
-        show_message("Download of archive failed.", str(e), mode="error")
-        gui.downloading_bass = False
-        return
-
-    if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != bass_archive_checksum:
-        show_message("Checksum failed", mode="error")
-        gui.downloading_bass = False
-        return
-    with zipfile.ZipFile(bass_zip, 'r') as zip_ref:
-        zip_ref.extractall(user_lib_dir)
-
-    show_message(_("BASS Download Complete."), mode="done")
-    input.mouse_click = False
-    gui.downloading_bass = False
-
-
-def set_player_bass(mode=0):
-
-    if mode == 1:
-        return True if prefs.backend == 1 else False
-
-    if key_shift_down:
-        shoot_dl = threading.Thread(target=download_bass)
-        shoot_dl.daemon = True
-        shoot_dl.start()
-        return
-
-    if prefs.backend != 1:
-        prefs.backend = 1
-        reload_backend()
+# def download_bass():
+#
+#     show_message(_("Downloading... Please wait"))
+#     input.mouse_click = False
+#     user_lib_dir = user_directory + "/lib"
+#
+#     try:
+#         if os.path.isdir(user_lib_dir):
+#             shutil.rmtree(user_lib_dir)
+#         os.makedirs(user_lib_dir)
+#     except:
+#         show_message("Folder access error", mode="error")
+#         gui.downloading_bass = False
+#         return
+#
+#     bass_zip = user_lib_dir + "/bass.zip"
+#
+#     try:
+#         urllib.request.urlretrieve(bass_archive_link,
+#                                    bass_zip)
+#     except Exception as e:
+#         show_message("Download of archive failed.", str(e), mode="error")
+#         gui.downloading_bass = False
+#         return
+#
+#     if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != bass_archive_checksum:
+#         show_message("Checksum failed", mode="error")
+#         gui.downloading_bass = False
+#         return
+#     with zipfile.ZipFile(bass_zip, 'r') as zip_ref:
+#         zip_ref.extractall(user_lib_dir)
+#
+#     show_message(_("BASS Download Complete."), mode="done")
+#     input.mouse_click = False
+#     gui.downloading_bass = False
 
 
+# def set_player_bass(mode=0):
+#
+#     if mode == 1:
+#         return True if prefs.backend == 1 else False
+#
+#     if key_shift_down:
+#         shoot_dl = threading.Thread(target=download_bass)
+#         shoot_dl.daemon = True
+#         shoot_dl.start()
+#         return
+#
+#     if prefs.backend != 1:
+#         prefs.backend = 1
+#         reload_backend()
 
 def set_player_gstreamer(mode=0):
 
@@ -23919,38 +23903,38 @@ class Over:
 
         ddt.text_background_colour = colours.box_background
         y = y0 + 40 * gui.scale
-        x = x0 + 40 * gui.scale
+        x = x0 + 20 * gui.scale
 
         if self.eq_view:
             self.eq(x0, y0, w0, h0)
             return
 
         colour = colours.box_sub_text
+        #
+        # if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
+        #     pass
+        #     # if bass_archive_link:
+        #     #     ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
+        #     #     if not gui.downloading_bass:
+        #     #         #. Limited width. Max 27 chars. Alt: Download BASS
+        #     #         if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
+        #     #             shoot_dl = threading.Thread(target=download_bass)
+        #     #             shoot_dl.daemon = True
+        #     #             shoot_dl.start()
+        #     #             gui.downloading_bass = True
+        #     #     #. A button that shows detailed information about context. Max 5 chars.
+        #     #     if self.button(x + ww, y, _("?")):
+        #     #         show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
+        #     #                      _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
+        #     #                      _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
+        #
+        # else:
+        #     ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
+        #     self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                                        ")
 
-        if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
-            pass
-            # if bass_archive_link:
-            #     ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
-            #     if not gui.downloading_bass:
-            #         #. Limited width. Max 27 chars. Alt: Download BASS
-            #         if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
-            #             shoot_dl = threading.Thread(target=download_bass)
-            #             shoot_dl.daemon = True
-            #             shoot_dl.start()
-            #             gui.downloading_bass = True
-            #     #. A button that shows detailed information about context. Max 5 chars.
-            #     if self.button(x + ww, y, _("?")):
-            #         show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
-            #                      _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
-            #                      _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
-
-        else:
-            ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
-            self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                                        ")
-
-        if system == "linux":
-            ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+        #if system == "linux":
+        ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
+        #    self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
         # Gstreamer
         if prefs.backend == 2:
@@ -24048,103 +24032,103 @@ class Over:
             if reload:
                 reload_backend()
 
-
-        if prefs.backend == 1:
-
-            if self.button(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
-                self.eq_view = True
-
-            ddt.text_background_colour = colours.box_background
-            y = y0 + 88 * gui.scale
-            x = x0 + 25 * gui.scale
-
-            x += 4 * gui.scale
-            ddt.text((x, y - 22 * gui.scale), _("ReplayGain"),  colours.box_text_label, 12)
-
-            y += 4 * gui.scale
-
-            # self.toggle_square(x, y, switch_rg_off, "Off")
-            # y += 23 * gui.scale
-
-            self.toggle_square(x, y, switch_rg_album, _("Album gain"))
-            y += 23 * gui.scale
-            self.toggle_square(x, y, switch_rg_track, _("Track gain"))
-
-
-            y += 46 * gui.scale
-
-            ddt.text((x, y - 20 * gui.scale), _("Transitions"),  colours.box_text_label, 12)
-
-            y += 5 * gui.scale
-
-            self.toggle_square(x, y, toggle_transition_crossfade, _("Use crossfade"))
-
-            y += 23 * gui.scale
-
-            self.toggle_square(x, y, toggle_transition_gapless, _("Use gapless playback"))
-
-            y += 29 * gui.scale
-
-            self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
-
-            y = y0 + 37 * gui.scale
-            x = x0 + 270 * gui.scale
-
-            ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_sub_text, 212)
-            # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
-
-            self.device_scroll_bar_position -= pref_box.scroll
-            if self.device_scroll_bar_position < 0:
-                self.device_scroll_bar_position = 0
-            if self.device_scroll_bar_position > len(pctl.bass_devices) - 11 > 11:
-                self.device_scroll_bar_position = len(pctl.bass_devices) - 11
-
-
-            if len(pctl.bass_devices) > 13:
-                self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.bass_devices) - 11, click=self.click)
-
-
-            for i, item in enumerate(pctl.bass_devices):
-
-                if i < self.device_scroll_bar_position:
-                    continue
-                if y > self.box_y + self.h - 55 * gui.scale:
-                    break
-
-                rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
-                #ddt.rect_r(rect, [0, 255, 0, 50])
-
-                if self.click and coll(rect):
-                    pctl.set_device = item[4]
-                    prefs.last_device = item[0]
-                    pctl.playerCommandReady = True
-                    pctl.playerCommand = "setdev"
-
-                line = trunc_line(item[0], 10, 245 * gui.scale)
-
-                fields.add(rect)
-
-                if pctl.set_device == item[4]: #item[3] > 0:
-                    ddt.text((x, y), line, colours.box_sub_text, 10)
-                    ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
-                else:
-                    if coll(rect):
-                        ddt.text((x, y), line, colours.box_sub_text, 10)
-                    else:
-                        ddt.text((x, y), line, colours.box_text_label, 10)
-                y += 14 * gui.scale
-
-            y = y0 + 245 * gui.scale
-            x += 40 * gui.scale
-            if os.path.isfile(user_directory + '/lib/libbass.so'):
-                #. Limited width. Max 17 chars.
-                ww = ddt.get_text_w(_("Uninstall BASS"), 211) + 10 * gui.scale
-                if self.button(x0 + w0 - (ww + 15 * gui.scale), y, _("Uninstall BASS")):
-                    shutil.rmtree(user_directory + "/lib")
-                    show_message("BASS Deleted.", "Restart app to complete uninstall.",
-                                 mode="info")
+        #
+        # if prefs.backend == 1:
+        #
+        #     if self.button(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
+        #         self.eq_view = True
+        #
+        #     ddt.text_background_colour = colours.box_background
+        #     y = y0 + 88 * gui.scale
+        #     x = x0 + 25 * gui.scale
+        #
+        #     x += 4 * gui.scale
+        #     ddt.text((x, y - 22 * gui.scale), _("ReplayGain"),  colours.box_text_label, 12)
+        #
+        #     y += 4 * gui.scale
+        #
+        #     # self.toggle_square(x, y, switch_rg_off, "Off")
+        #     # y += 23 * gui.scale
+        #
+        #     self.toggle_square(x, y, switch_rg_album, _("Album gain"))
+        #     y += 23 * gui.scale
+        #     self.toggle_square(x, y, switch_rg_track, _("Track gain"))
+        #
+        #
+        #     y += 46 * gui.scale
+        #
+        #     ddt.text((x, y - 20 * gui.scale), _("Transitions"),  colours.box_text_label, 12)
+        #
+        #     y += 5 * gui.scale
+        #
+        #     self.toggle_square(x, y, toggle_transition_crossfade, _("Use crossfade"))
+        #
+        #     y += 23 * gui.scale
+        #
+        #     self.toggle_square(x, y, toggle_transition_gapless, _("Use gapless playback"))
+        #
+        #     y += 29 * gui.scale
+        #
+        #     self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
+        #     y += 23 * gui.scale
+        #     self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
+        #
+        #     y = y0 + 37 * gui.scale
+        #     x = x0 + 270 * gui.scale
+        #
+        #     ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_sub_text, 212)
+        #     # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
+        #
+        #     self.device_scroll_bar_position -= pref_box.scroll
+        #     if self.device_scroll_bar_position < 0:
+        #         self.device_scroll_bar_position = 0
+        #     if self.device_scroll_bar_position > len(pctl.bass_devices) - 11 > 11:
+        #         self.device_scroll_bar_position = len(pctl.bass_devices) - 11
+        #
+        #
+        #     if len(pctl.bass_devices) > 13:
+        #         self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.bass_devices) - 11, click=self.click)
+        #
+        #
+        #     for i, item in enumerate(pctl.bass_devices):
+        #
+        #         if i < self.device_scroll_bar_position:
+        #             continue
+        #         if y > self.box_y + self.h - 55 * gui.scale:
+        #             break
+        #
+        #         rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
+        #         #ddt.rect_r(rect, [0, 255, 0, 50])
+        #
+        #         if self.click and coll(rect):
+        #             pctl.set_device = item[4]
+        #             prefs.last_device = item[0]
+        #             pctl.playerCommandReady = True
+        #             pctl.playerCommand = "setdev"
+        #
+        #         line = trunc_line(item[0], 10, 245 * gui.scale)
+        #
+        #         fields.add(rect)
+        #
+        #         if pctl.set_device == item[4]: #item[3] > 0:
+        #             ddt.text((x, y), line, colours.box_sub_text, 10)
+        #             ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
+        #         else:
+        #             if coll(rect):
+        #                 ddt.text((x, y), line, colours.box_sub_text, 10)
+        #             else:
+        #                 ddt.text((x, y), line, colours.box_text_label, 10)
+        #         y += 14 * gui.scale
+        #
+        #     y = y0 + 245 * gui.scale
+        #     x += 40 * gui.scale
+        #     if os.path.isfile(user_directory + '/lib/libbass.so'):
+        #         #. Limited width. Max 17 chars.
+        #         ww = ddt.get_text_w(_("Uninstall BASS"), 211) + 10 * gui.scale
+        #         if self.button(x0 + w0 - (ww + 15 * gui.scale), y, _("Uninstall BASS")):
+        #             shutil.rmtree(user_directory + "/lib")
+        #             show_message("BASS Deleted.", "Restart app to complete uninstall.",
+        #                          mode="info")
 
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
             #prefs.device_buffer = self.slide_control(x, y, _("Device buffer length"), 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
@@ -24267,10 +24251,10 @@ class Over:
 
         else:
 
-            y += 25 * gui.scale
+            # y += 25 * gui.scale
 
-            self.toggle_square(x, y, toggle_enable_web,
-                               _("Serve broadcast landing page"))
+            # self.toggle_square(x, y, toggle_enable_web,
+            #                    _("Serve broadcast landing page"))
 
 
             y += 25 * gui.scale
@@ -25186,13 +25170,13 @@ class Over:
         if system != 'windows' and (flatpak_mode or snap_mode):
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
-        y += 25 * gui.scale
-        if prefs.backend == 1:
-            self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
-
-        y += 25 * gui.scale
-        if prefs.backend == 1:
-            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+        # y += 25 * gui.scale
+        # if prefs.backend == 1:
+        #     self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+        #
+        # y += 25 * gui.scale
+        # if prefs.backend == 1:
+        #     self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
 
         y += round(25 * gui.scale)
         if not msys:
@@ -30581,33 +30565,34 @@ class RadioBox:
         rect = (x, yy, round(50 * gui.scale), round(22 * gui.scale))
         fields.add(rect)
 
-        if pctl.playing_state == 3 and prefs.backend == 1:
-
-            if coll(rect):
-                if gui.level_2_click:
-                    pctl.playerCommand = 'record'
-                    pctl.playerCommandReady = True
-                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
-                                                                               colours.box_background), True)
-                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(230), 212)
-                ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
-            else:
-                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
-                                                                               colours.box_background), True)
-                ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(220), 212)
-                ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
-        else:
-            if coll(rect):
-                if gui.level_2_click:
-                    radiobox.active = False
-                    if prefs.backend == 2:
-                        show_message(_("Recording is currently unavailable with the GStreamer backend"))
-                    else:
-                        show_message(_("A stream needs to be playing first."))
-            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
-                                                                           colours.box_background), True)
-            ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
-            ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
+        # if pctl.playing_state == 3 and prefs.backend == 1:
+        #
+        #     if coll(rect):
+        #         if gui.level_2_click:
+        #             pctl.playerCommand = 'record'
+        #             pctl.playerCommandReady = True
+        #         ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
+        #                                                                        colours.box_background), True)
+        #         ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(230), 212)
+        #         ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
+        #     else:
+        #         ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
+        #                                                                        colours.box_background), True)
+        #         ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(220), 212)
+        #         ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
+        # else:
+        #     if coll(rect):
+        #         if gui.level_2_click:
+        #             radiobox.active = False
+        #             if prefs.backend == 2:
+        #                 show_message(_("Recording is currently unavailable with the GStreamer backend"))
+        #             else:
+        #                 show_message(_("A stream needs to be playing first."))
+        #
+        #     ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
+        #                                                                    colours.box_background), True)
+        #     ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
+        #     ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
 
         gui.level_2_click = False
 
@@ -35775,8 +35760,9 @@ class ThreadManager:
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
             if prefs.backend == 1:
-                from t_modules.t_bass import player
-                self.playback = threading.Thread(target=bass_player_thread, args=[player])
+                pass
+                # from t_modules.t_bass import player
+                # self.playback = threading.Thread(target=bass_player_thread, args=[player])
             elif prefs.backend == 2:
                 from t_modules.t_gstreamer import player3
                 self.playback = threading.Thread(target=player3, args=[tauon])
@@ -35845,9 +35831,9 @@ sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
 print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 
 # C-ML
-if prefs.backend == 2:
-    print("Using GStreamer as fallback. Some functions disabled")
-elif prefs.backend == 0:
+# if prefs.backend == 2:
+#     print("Using GStreamer as fallback. Some functions disabled")
+if prefs.backend == 0:
     show_message("ERROR: No backend found", mode='error')
 
 
@@ -39351,9 +39337,8 @@ while pctl.running:
 
 
                 # Switch Vis:
-                if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)) and not gui.top_bar_mode2:
-                    vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
-
+                # if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)) and not gui.top_bar_mode2:
+                #     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
                 #edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
 
