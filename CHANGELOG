@@ -3,12 +3,14 @@ Changelog-------------------------------------
 
 v6.2.0
 
- - Add detection of OGA file extension
+ - Added detection of OGA file extension
  - Fixed a crash when reading malformed lyrics files
+ - Fixed long Spotify playlists not being imported in full
  - Removed BASS backend
- - Disabled broadscast feature
- - Disabled EQ feature
- - Disabled visualisers
+   - Lost broadscast feature
+   - Lost EQ feature
+   - Lost spectrum visualisers
+ - Enabled level meter visualiser for GStreamer backend
 
 v6.1.3
 
