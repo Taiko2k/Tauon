@@ -3,6 +3,8 @@ Changelog-------------------------------------
 
 v6.2.0
 
+ - Add detection of OGA file extension
+ - Fixed a crash when reading malformed lyrics files
  - Removed BASS backend
  - Disabled broadscast feature
  - Disabled EQ feature
