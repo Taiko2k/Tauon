@@ -862,6 +862,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "FLAC": [156, 249, 79, 255],
     "M4A": [81, 220, 225, 255],
     "OGG": [244, 244, 78, 255],
+    "OGA": [244, 244, 78, 255],
     "WMA": [213, 79, 247, 255],
     "APE": [247, 79, 79, 255],
     "TTA": [94, 78, 244, 255],
@@ -876,7 +877,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 
 # These will be the extensions of files to be added when importing
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
-              'm4a', 'ogg', 'aac', 'tta', 'wv', 'wma'}
+              'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'}
 
 Archive_Formats = {'zip'}
 
@@ -3801,7 +3802,7 @@ def tag_scan(nt):
 
             return nt
 
-        elif nt.file_ext == "OPUS" or nt.file_ext == "OGG":
+        elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
             # print("get opus")
             audio = Opus(nt.fullpath)
