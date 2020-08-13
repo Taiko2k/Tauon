@@ -3,7 +3,7 @@
 
 ## Tauon Music Box
 
-**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer or optionally BASS Audio Library for playback. 
+**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer for playback. 
 
 <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
 
@@ -28,7 +28,6 @@
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Linux desktop integration with MPRIS2.
   - Built-in topchart generator.
-  - Background **radio broadcasting**. :radio: :satellite: (Bass only)
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
