@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+v6.2.0
+
+ - Removed BASS backend
+ - Disabled broadscast feature
+ - Disabled EQ feature
+ - Disabled visualisers
+
 v6.1.3
 
  - Improved Spotify support
