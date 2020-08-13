@@ -246,6 +246,7 @@ transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
 
+old_backend = 2
 # # Find home music folder
 # music_folder = os.path.join(os.path.expanduser('~'), "Music")
 # if not os.path.isdir(music_folder):
@@ -2750,8 +2751,8 @@ for t in range(2):
             prefs.use_pause_fade = save[91]
         if save[92] is not None:
             prefs.append_total_time = save[92]
-        # if save[93] is not None:
-        #     prefs.backend = save[93]
+        if save[93] is not None:
+            old_backend = save[93] #prefs.backend = save[93]
         if save[94] is not None:
             prefs.album_shuffle_mode = save[94]
         if save[95] is not None:
@@ -3241,6 +3242,9 @@ if db_version > 0:
         print("Updating database to version 48")
         if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
             show_message("Welcome to v6.1.0. Due to changes, please re-authorise Spotify", "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify")
+
+if old_backend == 1:
+    show_message("It looks like you were previously using the BASS backend.", "BASS has been removed in this version going forward, thus some features may now be unavailable, apologies for any inconvenience :<")
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
