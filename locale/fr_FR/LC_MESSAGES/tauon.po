@@ -7,16 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-13 12:23+1200\n"
-"PO-Revision-Date: 2020-01-21 18:18+0100\n"
-"Last-Translator: b_b <bruno@eliaz.fr>\n"
-"Language-Team: \n"
+"PO-Revision-Date: 2020-08-13 23:54+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 1.8.7.1\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: tauon.py:1778 tauon.py:1780
 msgid "No artist image found."
@@ -32,7 +33,7 @@ msgstr "Fin de la liste de lecture"
 
 #: tauon.py:5851
 msgid "Once authorised click the 'done' button."
-msgstr "Cliquez sur le bouton 'Terminé' après avoir autorisé."
+msgstr "Cliquez sur le bouton « Terminé » après avoir autorisé."
 
 #: tauon.py:5851
 msgid "Web auth page opened"
@@ -52,57 +53,55 @@ msgstr "Cela peut prendre un certain temps."
 
 #: tauon.py:6595
 msgid "Spotify Likes"
-msgstr ""
+msgstr "Mentions J’aime Spotify"
 
 #: tauon.py:6596
-#, fuzzy
 msgid "Spotify Albums"
-msgstr "Albums les plus longs"
+msgstr "Albums Spotify"
 
 #: tauon.py:6597
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Piste retirée des pistes aimées"
 
 #: tauon.py:6598
 msgid "Track was already un-liked"
-msgstr ""
+msgstr "La piste a déjà été désaimée"
 
 #: tauon.py:6599
-#, fuzzy
 msgid "Track is already liked"
-msgstr "Pistes dans la liste de lecture"
+msgstr "La piste est déjà aimée"
 
 #: tauon.py:6600
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Piste ajoutée aux pistes aimées"
 
 #: tauon.py:6601
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Compte Spotify connecté"
 
 #: tauon.py:6602
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Ce compte Spotify ne lit actuellement rien"
 
 #: tauon.py:6603
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Erreur de démarrage Spotify"
 
 #: tauon.py:6605
 msgid "day"
-msgstr ""
+msgstr "jour"
 
 #: tauon.py:6606
 msgid "days"
-msgstr ""
+msgstr "jours"
 
 #: tauon.py:6608
 msgid "Web server stopped."
-msgstr ""
+msgstr "Le serveur Web s’est arrêté."
 
 #: tauon.py:6690
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Nom d’utilisateur, mot de passe ou nom du serveur manquant"
 
 #: tauon.py:6705
 msgid "Error connecting to PLEX server"
@@ -111,30 +110,32 @@ msgstr "Erreur de connexion au serveur PLEX"
 #: tauon.py:6706
 msgid "Try check login credentials and that server is accessible."
 msgstr ""
+"Essayez de vérifier les informations de connexion et si ce serveur est "
+"accessible."
 
 #: tauon.py:7073
 msgid "Missing username, password and/or server URL"
-msgstr ""
+msgstr "Nom d’utilisateur, mot de passe ou URL du serveur manquant"
 
 #: tauon.py:7115
 msgid "Could not establish connection/authorisation"
-msgstr ""
+msgstr "Impossible d’établir la connexion / l’autorisation"
 
 #: tauon.py:7757
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Arrêter la synchro avant de quitter !"
 
 #: tauon.py:12027 tauon.py:33108
 msgid "Queue"
-msgstr "Lsite d'attente"
+msgstr "File d’attente"
 
 #: tauon.py:12029
 msgid "Playlists + Queue"
-msgstr "Liste de lecture + File d'attente"
+msgstr "Listes de lecture + File d’attente"
 
 #: tauon.py:12031
 msgid "Artist List"
-msgstr "Liste d'artistes"
+msgstr "Liste d’artistes"
 
 #: tauon.py:12033
 msgid "Folder Navigator"
@@ -165,16 +166,17 @@ msgid " filenames were written."
 msgstr " fichiers renommés."
 
 #: tauon.py:12276
+#, fuzzy
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Remplacer la recherche des paroles"
 
 #: tauon.py:12282 tauon.py:12302
 msgid "Substitute"
-msgstr ""
+msgstr "Remplacer"
 
 #: tauon.py:12288 tauon.py:12308
 msgid "with"
-msgstr ""
+msgstr "par"
 
 #: tauon.py:12350
 msgid "Repeat OFF"
@@ -186,7 +188,7 @@ msgstr "Répéter la piste"
 
 #: tauon.py:12352
 msgid "Repeat Album"
-msgstr "Répéter l'album"
+msgstr "Répéter l’album"
 
 #: tauon.py:12386
 msgid "Shuffle OFF"
@@ -365,7 +367,7 @@ msgstr ""
 
 #: tauon.py:13313
 msgid "Looking up MusicBrainz ID..."
-msgstr "Recherche de l'ID  MusicBrainz..."
+msgstr "Recherche de l’ID MusicBrainz…"
 
 #: tauon.py:13375
 msgid "Cover art downloaded from fanart.tv"
@@ -1585,33 +1587,31 @@ msgstr ""
 
 #: tauon.py:24539 tauon.py:25087
 msgid "?"
-msgstr " ?"
+msgstr "?"
 
 #: tauon.py:24550
 msgid "Client ID"
-msgstr ""
+msgstr "ID du client"
 
 #: tauon.py:24564
 msgid "Client Secret"
-msgstr ""
+msgstr "Client secret"
 
 #: tauon.py:24584
-#, fuzzy
 msgid "Forget Account"
 msgstr "Oublier le compte"
 
 #: tauon.py:24588
 msgid "Authorise"
-msgstr ""
+msgstr "Autoriser"
 
 #: tauon.py:24605
 msgid "Prefer launching web player"
 msgstr ""
 
 #: tauon.py:24609 tauon.py:24610
-#, fuzzy
 msgid "Import Albums"
-msgstr "Albums les plus longs"
+msgstr "Importer les albums"
 
 #: tauon.py:24617 tauon.py:24628 tauon.py:24642
 msgid "Please wait until current job is finished"
@@ -1623,24 +1623,23 @@ msgstr ""
 
 #: tauon.py:24633
 msgid "Import user playlist..."
-msgstr ""
+msgstr "Importer la liste de lecture utilisateur…"
 
 #: tauon.py:24646
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
 #: tauon.py:24656 tauon.py:24713 tauon.py:24770
-#, fuzzy
 msgid "Username / Email"
-msgstr "Nom d'utilisateur :"
+msgstr "Nom d’utilisateur / courriel"
 
 #: tauon.py:24670 tauon.py:24727 tauon.py:24784
 msgid "Password"
-msgstr ""
+msgstr "Mot de passe"
 
 #: tauon.py:24684 tauon.py:24741
 msgid "Server URL"
-msgstr ""
+msgstr "URL du serveur"
 
 #: tauon.py:24698 tauon.py:24755 tauon.py:24812
 #, fuzzy
@@ -1656,14 +1655,13 @@ msgid "PLEX network streaming"
 msgstr ""
 
 #: tauon.py:24798
-#, fuzzy
 msgid "Server name"
-msgstr "Nom d'utilisateur :"
+msgstr "Nom du serveur"
 
 #: tauon.py:24821
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr ""
-"Fanart.tv peut être utilisé comme source pour les images d'artistes et les "
+"Fanart.tv peut être utilisé comme source pour les images d’artistes et les "
 "pochettes."
 
 #: tauon.py:24828 tauon.py:31553
@@ -1696,7 +1694,7 @@ msgstr "Coller la clé d'autorisation"
 
 #: tauon.py:24901 tauon.py:24902
 msgid "Username:"
-msgstr "Nom d'utilisateur :"
+msgstr "Nom d’utilisateur :"
 
 #: tauon.py:24908 tauon.py:24909
 msgid "Login"
@@ -1711,8 +1709,9 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
-"Cliquez sur \"Identification\" pour ouvrir la page d'autorisation sur last."
-"fm et suivez les instructions, puis revenez ici et cliquez sur \"Terminé\"."
+"Cliquez sur « Identification » pour ouvrir la page d'autorisation sur "
+"last.fm et suivez les instructions, puis revenez ici et cliquez sur « "
+"Terminé »."
 
 #: tauon.py:24917
 msgid "Forget account"
