@@ -8348,14 +8348,17 @@ class TimedLyricsRen:
         direc = track.parent_folder_path
         name = os.path.splitext(track.filename)[0] + ".lrc"
 
-        if os.path.isfile(os.path.join(direc, name)):
-            f = open(os.path.join(direc, name), 'r')
-            self.data = []
-            data = f.readlines()
-            f.close()
-        else:
+        try:
+            if os.path.isfile(os.path.join(direc, name)):
+                f = open(os.path.join(direc, name), 'r')
+                self.data = []
+                data = f.readlines()
+                f.close()
+            else:
+                return False
+        except:
+            print("Read lyrics file error")
             return False
-
 
         # for file in os.listdir(direc):
         #     if file == name:
@@ -18170,7 +18173,7 @@ def bass_test(_):
     # return True
     return prefs.backend == 1
 
-# track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True, show_test=bass_test)
+#track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -19116,7 +19119,7 @@ def broadcast_colour():
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
 broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
-# x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon, show_test=bass_test)
+#x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
 
 def clear_queue():
