@@ -18215,8 +18215,8 @@ def level_on():
 
     gui.vis_want = 1
     gui.update_layout()
-    if prefs.backend == 2:
-        show_message("Visualisers not implemented in GStreamer mode")
+    # if prefs.backend == 2:
+    #     show_message("Visualisers not implemented in GStreamer mode")
     #gui.turbo = True
 vis_menu.add(_("Level Meter"), level_on)
 
@@ -18224,10 +18224,10 @@ vis_menu.add(_("Level Meter"), level_on)
 def spec_on():
     gui.vis_want = 2
     if prefs.backend == 2:
-        show_message("Visualisers not implemented in GStreamer mode")
+        show_message("Not implemented")
     gui.update_layout()
 
-vis_menu.add(_("Spectrum Visualizer"), spec_on)
+# vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 
 def spec2_def():
@@ -18239,12 +18239,12 @@ def spec2_def():
 
     gui.vis_want = 3
     if prefs.backend == 2:
-        show_message("Visualisers not implemented in GStreamer mode")
+        show_message("Not implemented")
     #gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()
 
-vis_menu.add(_("Spectrogram"), spec2_def)
+# vis_menu.add(_("Spectrogram"), spec2_def)
 
 def sa_remove(h):
     if len(gui.pl_st) > 1:
@@ -19600,7 +19600,7 @@ def toggle_level_meter(mode=0):
         return gui.vis_want != 0
 
     if gui.vis_want == 0:
-        gui.vis_want = 2
+        gui.vis_want = 1
     else:
         gui.vis_want = 0
 
@@ -24261,7 +24261,6 @@ class Over:
             # self.toggle_square(x, y, toggle_enable_web,
             #                    _("Serve broadcast landing page"))
 
-
             y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_auto_artist_dl,
@@ -25175,9 +25174,8 @@ class Over:
         if system != 'windows' and (flatpak_mode or snap_mode):
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
-        # y += 25 * gui.scale
-        # if prefs.backend == 1:
-        #     self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
         #
         # y += 25 * gui.scale
         # if prefs.backend == 1:
@@ -36057,7 +36055,7 @@ def update_layout_do():
             gui.turbo = True
 
     # Disable vis when in compact view
-    if gui.mode == 3 or gui.top_bar_mode2 or prefs.backend == 2:
+    if gui.mode == 3 or gui.top_bar_mode2: # or prefs.backend == 2:
         if not gui.combo_mode:
             gui.vis = 0
             gui.turbo = False
@@ -39342,8 +39340,8 @@ while pctl.running:
 
 
                 # Switch Vis:
-                # if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)) and not gui.top_bar_mode2:
-                #     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
+                if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)) and not gui.top_bar_mode2:
+                    vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
                 #edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
 
