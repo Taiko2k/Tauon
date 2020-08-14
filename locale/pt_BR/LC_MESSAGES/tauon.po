@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-08-13 12:23+1200\n"
-"PO-Revision-Date: 2020-08-08 10:25-0300\n"
+"PO-Revision-Date: 2020-08-14 15:41-0300\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Marcelo dos Santos Mafra\n"
 "Language: pt_BR\n"
@@ -505,9 +505,8 @@ msgid "Sort Year per Artist"
 msgstr "Ordenar Ano por Artista"
 
 #: tauon.py:15274
-#, fuzzy
 msgid "Make Playlist Auto-Sorting"
-msgstr "Tornar playlist auto-ordenável"
+msgstr "Tornar playlist Auto-Ordenável"
 
 #: tauon.py:15280 tauon.py:16963 tauon.py:18193
 msgid "Paste"
@@ -754,7 +753,7 @@ msgstr "Arquivo de configuração aberto."
 
 #: tauon.py:16368 tauon.py:16388
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Conversão de faixar à partir de locais de rede não é suportado"
 
 #: tauon.py:16726
 msgid "Add Playing Spotify Album"
@@ -793,23 +792,20 @@ msgid "Copy"
 msgstr "Copiar"
 
 #: tauon.py:16975
-#, fuzzy
 msgid "Cannot delete a network track"
-msgstr "Não é possível baixar arte de faixas de rede."
+msgstr "Não é possível excluir uma faixa de rede"
 
 #: tauon.py:16987 tauon.py:16996
-#, fuzzy
 msgid "File deleted"
-msgstr "Arquivo Modificado"
+msgstr "Arquivo excluído"
 
 #: tauon.py:16989 tauon.py:16998
 msgid "Error deleting file"
-msgstr ""
+msgstr "Erro ao excluir arquivo"
 
 #: tauon.py:16991
-#, fuzzy
 msgid "File moved to trash"
-msgstr "Remover Faixas de Rede"
+msgstr "Arquivo movido para lixeira"
 
 #: tauon.py:17005
 msgid "Delete Track File"
@@ -825,20 +821,19 @@ msgstr "Renomear Faixas…"
 
 #: tauon.py:17029
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Exclusão física impossiblitada"
 
 #: tauon.py:17029
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Uma ou mais faixas é de um local de rede!"
 
 #: tauon.py:17050
 msgid "Delete size safety limit reached!"
-msgstr ""
+msgstr "Tamanho limite para exclusão alcançado!"
 
 #: tauon.py:17088
-#, fuzzy
 msgid "Folder could not be trashed."
-msgstr "Pasta alvo não foi encontrada"
+msgstr "Pasta não pode ser descartada."
 
 #: tauon.py:17215 tauon.py:17792 tauon.py:17793 tauon.py:17798
 msgid "Modify Folder…"
