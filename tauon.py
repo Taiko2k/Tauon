@@ -3298,8 +3298,8 @@ def save_prefs():
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("force-mono", prefs.mono)
-    cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
-    cf.update_value("use-short-buffering", prefs.short_buffer)
+    #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
+    #cf.update_value("use-short-buffering", prefs.short_buffer)
 
     cf.update_value("gst-output", prefs.gst_output)
     cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
@@ -3406,17 +3406,22 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
-    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. This setting currently has no effect. Default is 400.")
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In milliseconds. This setting currently has no effect. Default is 700.")
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. This setting currently has no effect. Default is 40.")
-    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This setting currently has no effect.")
-    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This setting currently has no effect.")
-    prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
-    prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
+    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400.")
+
+    if prefs.pause_fade_time < 100:
+        prefs.pause_fade_time = 100
+    if prefs.pause_fade_time > 5000:
+        prefs.pause_fade_time = 5000
+
+    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "This is a placeholder setting and currently has no effect.")
+    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
+    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
+    # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
+    # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
     prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification.")
     prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string.")
-
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
@@ -23980,15 +23985,18 @@ class Over:
                 y += round(66 * gui.scale)
 
 
-            y += round(40 * gui.scale)
+            y += round(35 * gui.scale)
 
             if self.button(x, y, "EQ", width=50*gui.scale):
                 self.eq_view = True
 
+            y += 35 * gui.scale
+            self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
+
             if bk_gain != prefs.replay_gain:
                 reload = True
 
-            y += 60 * gui.scale
+            y += 30 * gui.scale
             prefs.gst_use_custom_output = self.toggle_square(x, y, prefs.gst_use_custom_output, _("Customise GStreamer output"))
             y += 22 * gui.scale
 

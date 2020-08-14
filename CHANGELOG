@@ -16,6 +16,7 @@ v6.2.0
  - Improved GStreamer backend
    - Added level meter visualiser
    - Added audio equalizer
+   - Added pause/resume volume fader
    - Added rough workaround for some network tracks not being seekable
    - Fixed start of CUE file audible on track jump
    - Fixed a possible issue with track jumping
