@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-13 12:23+1200\n"
-"PO-Revision-Date: 2020-08-13 23:54+0000\n"
+"PO-Revision-Date: 2020-08-15 02:15+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -261,7 +261,7 @@ msgstr "Ajouter l'album à la file d'attente"
 
 #: tauon.py:12800 tauon.py:15463 tauon.py:25080
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Abandon de la synchro"
 
 #: tauon.py:12803
 msgid "Cancel"
@@ -363,7 +363,7 @@ msgstr ""
 
 #: tauon.py:13302
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Ce dossier n'a pas l'air d'appartenir à un seul album, désolé"
 
 #: tauon.py:13313
 msgid "Looking up MusicBrainz ID..."
@@ -411,7 +411,7 @@ msgstr "Récupération rapide de la pochette"
 
 #: tauon.py:13627
 msgid "Paste Spotify Album"
-msgstr ""
+msgstr "Coller l'album Spotify"
 
 #: tauon.py:13843 tauon.py:30625 tauon.py:40252
 msgid "Rename"
@@ -424,7 +424,7 @@ msgstr "En cours"
 
 #: tauon.py:13856
 msgid "Unpin"
-msgstr ""
+msgstr "Désépingler"
 
 #: tauon.py:13865
 msgid "Unlock"
@@ -439,9 +439,8 @@ msgid "Clear"
 msgstr "Vider"
 
 #: tauon.py:14202
-#, fuzzy
 msgid "Rescanning folders..."
-msgstr "Réanalyser le dossier"
+msgstr "Réanalyse des dossiers…"
 
 #: tauon.py:14488 tauon.py:40261
 msgid "Delete"
@@ -449,11 +448,11 @@ msgstr "Supprimer"
 
 #: tauon.py:14545
 msgid "Add Spotify Album"
-msgstr ""
+msgstr "Ajouter un album Spotify"
 
 #: tauon.py:14647
 msgid "Playlist contains non-Spotify tracks"
-msgstr ""
+msgstr "La liste de lecture contient des pistes non Spotify"
 
 #: tauon.py:14653
 #, fuzzy
@@ -478,15 +477,16 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
+"Vous retirez ou modifiez ce comportement en allant dans « Divers » > « "
+"Modifier le génerateur… »"
 
 #: tauon.py:15257 tauon.py:18867
 msgid "New Playlist"
 msgstr "Nouvelle liste de lecture"
 
 #: tauon.py:15262
-#, fuzzy
 msgid "Upload"
-msgstr "Recharger"
+msgstr "Téléverser"
 
 #: tauon.py:15263
 #, fuzzy
@@ -495,15 +495,15 @@ msgstr "Générer"
 
 #: tauon.py:15264
 msgid "Generate…"
-msgstr "Générer..."
+msgstr "Génération…"
 
 #: tauon.py:15265
 msgid "Sort…"
-msgstr "Trier..."
+msgstr "Tri…"
 
 #: tauon.py:15266
 msgid "From Current…"
-msgstr "À partir de l'actuel..."
+msgstr "À partir de l’actuel…"
 
 #: tauon.py:15271
 msgid "Sort by Filepath"
@@ -1819,7 +1819,7 @@ msgstr "Ouvrir le dossier de sortie"
 
 #: tauon.py:25099 tauon.py:25100
 msgid "Sync..."
-msgstr ""
+msgstr "Synchro…"
 
 #: tauon.py:25108
 msgid "Save opus as .ogg extension"
@@ -1871,7 +1871,7 @@ msgstr "Crédits"
 
 #: tauon.py:25380 tauon.py:25382
 msgid "Donate"
-msgstr ""
+msgstr "Faire un don"
 
 #: tauon.py:25392
 msgid "Chart Grid Generator"
@@ -2092,7 +2092,7 @@ msgstr "Fin de la liste de lecture"
 
 #: tauon.py:30430
 msgid "Internet Radio"
-msgstr ""
+msgstr "Webradio"
 
 #: tauon.py:30442
 msgid "Name / Title"
@@ -2104,23 +2104,24 @@ msgstr ""
 
 #: tauon.py:30465
 msgid "Save"
-msgstr ""
+msgstr "Enregistrer"
 
 #: tauon.py:30468
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Entrez une URL de flux"
 
 #: tauon.py:30485
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
+"Impossible de valider l’URL. Elle doit commencer par https:// ou http://"
 
 #: tauon.py:30623
 msgid "Paste Website Link"
-msgstr ""
+msgstr "Coller le lien du site web"
 
 #: tauon.py:30624
 msgid "Visit Website"
-msgstr ""
+msgstr "Visitez le site web"
 
 #: tauon.py:30627
 msgid "Remove All After"
@@ -2280,7 +2281,7 @@ msgstr "Réanalyser du dossier terminée."
 
 #: tauon.py:39599
 msgid "Queue is Empty"
-msgstr ""
+msgstr "La file d’attente est vide"
 
 #: tauon.py:39922 tauon.py:39942 tauon.py:39961 tauon.py:39981 tauon.py:40029
 #: tauon.py:40050 tauon.py:40091 tauon.py:40106 tauon.py:40122 tauon.py:40177
