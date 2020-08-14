@@ -206,15 +206,20 @@ def player3(tauon):  # GStreamer
             # print(struct.get_name())
             # print(struct.to_string())
 
-            if self.play_state == 3 and struct.get_name() == "GstMessageTag":
+            name = struct.get_name()
+            
+            if name == "GstMessageError":
+                print(struct.to_string())
+
+            if self.play_state == 3 and name == "GstMessageTag":
                 data = struct.get_value("taglist").get_string("title")
                 if data[0]:
                     pctl.tag_meta = data[1]
 
-            elif struct.get_name() == "GstMessageError":
+            elif name == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
                     gui.show_message("Connection error", mode="info")
-            elif struct.get_name() == 'GstMessageBuffering':
+            elif name == 'GstMessageBuffering':
                 buff_percent = struct.get_value("buffer-percent")
 
                 if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
@@ -223,7 +228,7 @@ def player3(tauon):  # GStreamer
                 elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
                     self.playbin.set_state(Gst.State.PLAYING)
 
-            if gui.vis == 1 and struct.get_name() == 'level':
+            if gui.vis == 1 and name == 'level':
 
                 data = struct.get_value("peak")
                 ts = struct.get_value("timestamp")
@@ -519,26 +524,40 @@ def player3(tauon):  # GStreamer
                         # Play file on disk
                         self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(track.fullpath)))
 
-
-                    self._vol.set_property('volume', pctl.player_volume / 100)
+                    if pctl.start_time_target > 0:
+                        self._vol.set_property('volume', 0.0)
+                    else:
+                        self._vol.set_property('volume', pctl.player_volume / 100)
                     #if pctl.start_time_target == 0:
+
                     self.playbin.set_state(Gst.State.PLAYING)
                     if pctl.jump_time == 0:
                         pctl.playing_time = 0
 
-                    time.sleep(0.1)  # Setting and querying position right away seems to fail, so wait a small moment
-
                     # The position to start is not always the beginning of the file, so seek to position
                     if pctl.start_time_target > 0 or pctl.jump_time > 0:
 
-                        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                            (pctl.start_time_target + pctl.jump_time) * Gst.SECOND)
+                        tries = 0
+                        while tries < 150:
+                            time.sleep(0.03)
+                            r = self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                                (pctl.start_time_target + pctl.jump_time) * Gst.SECOND)
+                            if r:
+                                break
+                            tries += 1
+                            if tries > 2:
+                                print("Seek failed, retrying...")
+                                print(tries)
+
                         pctl.playing_time = 0
                         gui.update = 1
+
+                        self._vol.set_property('volume', pctl.player_volume / 100)
 
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
+
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
 
                             time.sleep(0.02)
@@ -684,7 +703,6 @@ def player3(tauon):  # GStreamer
                             self.using_cache = True
                             time.sleep(0.1)
 
-                        print("SEEK")
                         self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                                  (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
 
