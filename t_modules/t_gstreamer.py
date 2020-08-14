@@ -30,6 +30,7 @@ print("GST 1")
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
+from t_modules.t_extra import get_folder_size
 import threading
 import requests
 import urllib.parse
@@ -172,7 +173,8 @@ def player3(tauon):  # GStreamer
             # Variables used with network downloading
             self.temp_id = "a"
             self.url = None
-            self.dl_ready = False
+            self.dl_ready = True
+            self.using_cache = False
             self.temp_path = ""  # Full path + filename
 
             print("GST 6")
@@ -285,33 +287,35 @@ def player3(tauon):  # GStreamer
         def download_part(self, url, target, params, id):
 
             try:
-                self.part = requests.get(url, stream=True, params=params)
+                part = requests.get(url, stream=True, params=params)
             except:
                 gui.show_message("Could not connect to server", mode="error")
-                self.dl_ready = "Failure"
+                self.dl_ready = True
                 return
-
-            # .part.status_code)
 
             bitrate = 0
 
             a = 0
             z = 0
             # print(target)
-            with open(target, 'wb') as f:
-                for chunk in self.part.iter_content(chunk_size=1024):
-                    if chunk:  # filter out keep-alive new chunks
-                        a += 1
-                        if a == 300:  # kilobyes~
-                            self.dl_ready = True
+            f = open(target, "wb")
+            for chunk in part.iter_content(chunk_size=1024):
+                if chunk:  # filter out keep-alive new chunks
+                    a += 1
+                    # if a == 300:  # kilobyes~
+                    #     self.dl_ready = True
 
-                        if id != self.id:
-                            self.part.close()
-                            break
+                    if id != self.id:
+                        part.close()
+                        f.close()
+                        os.remove(target)
+                        return
+                        # break
 
-                        f.write(chunk)
+                    f.write(chunk)
 
-                        z += 1
+                    z += 1
+                    if id == self.id:
                         if z == 60:
                             z = 0
                             if bitrate == 0:
@@ -320,7 +324,7 @@ def player3(tauon):  # GStreamer
                             if bitrate > 0:
                                 gui.update += 1
                                 pctl.download_time = a * 1024 / (bitrate / 8) / 1000
-
+            f.close()
             pctl.download_time = -1
 
             self.dl_ready = True
@@ -414,7 +418,7 @@ def player3(tauon):  # GStreamer
                 # - Binned to particular numbers of bins and passed onto UI after some scaling and truncating
                 # There's also a level meter which just takes peak "level" (scaled in someway perhaps)
 
-
+                pctl.download_time = 0
                 url = None
                 if pctl.playerCommand == 'open' and pctl.target_object:
 
@@ -437,6 +441,7 @@ def player3(tauon):  # GStreamer
 
                         try:
                             url, params = pctl.get_url(track)
+                            self.urlparams = url, params
                         except:
                             time.sleep(0.1)
                             gui.show_message("Connection error", "Bad login? Server offline?", mode='info')
@@ -492,17 +497,24 @@ def player3(tauon):  # GStreamer
                     pctl.playerSubCommand = ""
                     self.play_state = 1
 
-                    #self.save_temp = prefs.cache_directory + "/" + str(track.index) + "-audio"
+                    self.save_temp = tauon.temp_audio + "/" + str(track.index) + "-audio"
                     # shoot_dl = threading.Thread(target=self.download_part,
                     #                             args=([url, self.save_temp, params, track.url_key]))
                     # shoot_dl.daemon = True
                     # shoot_dl.start()
-                    self.id = track.url_key
+                    self.using_cache = False
 
+                    self.id = track.url_key
                     if url:
                         # self.playbin.set_property('uri',
                         #                           'file://' + urllib.parse.quote(os.path.abspath(self.save_temp)))
-                        self.playbin.set_property('uri', self.url)
+
+                        if self.dl_ready and os.path.exists(self.save_temp):
+                            self.using_cache = True
+                            self.playbin.set_property('uri',
+                                                      'file://' + urllib.parse.quote(os.path.abspath(self.save_temp)))
+                        else:
+                            self.playbin.set_property('uri', self.url)
                     else:
                         # Play file on disk
                         self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(track.fullpath)))
@@ -629,12 +641,53 @@ def player3(tauon):  # GStreamer
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
-                    else:
+                        
+                    elif self.play_state > 0:
 
-                        if self.play_state > 0:
-                            #print("SEEK TRY")
-                            self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                                (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
+                        if not self.using_cache and pctl.target_object.is_network and \
+                                not pctl.target_object.file_ext == "KOEL" and \
+                                not (pctl.target_object.file_ext == "SUB" and pctl.target_object.fullpath.endswith("mp3")):
+
+                            if not os.path.exists(tauon.temp_audio):
+                                os.makedirs(tauon.temp_audio)
+
+                            listing = os.listdir(tauon.temp_audio)
+                            full = [os.path.join(tauon.temp_audio, x) for x in listing]
+                            size = get_folder_size(tauon.temp_audio) / 1000000
+                            print(f"Audio cache size is {size}MB")
+                            if size > 120:
+                                oldest_file = min(full, key=os.path.getctime)
+                                print("Cache full, delete oldest cached file")
+                                os.remove(oldest_file)
+
+                            pctl.playing_time = 0
+                            self.playbin.set_state(Gst.State.NULL)
+                            self.dl_ready = False
+                            url, params = self.urlparams
+                            shoot_dl = threading.Thread(target=self.download_part,
+                                                        args=([url, self.save_temp, params, pctl.target_object.url_key]))
+                            shoot_dl.daemon = True
+                            shoot_dl.start()
+                            pctl.playerCommand = ""
+                            while not self.dl_ready:
+                                # print("waiting...")
+                                time.sleep(0.25)
+                                if pctl.playerCommandReady and pctl.playerCommand != "seek":
+                                    print("BREAK!")
+                                    self.main_callback()
+                                    return
+
+                            self.playbin.set_property('uri', 'file://' + urllib.parse.quote(
+                                os.path.abspath(self.save_temp)))
+                            #time.sleep(0.05)
+                            self.playbin.set_state(Gst.State.PLAYING)
+                            self.using_cache = True
+                            time.sleep(0.1)
+
+                        print("SEEK")
+                        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                                 (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
+
 
                         # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
                         # update the seek indicator immediately and hold the thread for a moment

@@ -204,6 +204,12 @@ else:
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
 
+if not os.path.isfile(os.path.join(user_directory, "state.p")):
+    if os.path.isdir(cache_directory):
+        print("Clearing old cache directory")
+        print(cache_directory)
+        shutil.rmtree(cache_directory)
+
 n_cache_dir = os.path.join(cache_directory, "network")
 e_cache_dir = os.path.join(cache_directory, "export")
 g_cache_dir = os.path.join(cache_directory, "gallery")
@@ -6639,6 +6645,7 @@ class Tauon:
         self.gui = gui
         self.prefs = prefs
         self.cache_directory = cache_directory
+        self.temp_audio = os.path.join(cache_directory, "stream-audio")
         self.user_directory = user_directory
         self.music_directory = music_directory
         self.worker_save_state = False
