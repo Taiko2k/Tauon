@@ -28,7 +28,9 @@ from gi.repository import GLib
 
 print("GST 1")
 
-gi.require_version('Gst', '1.0')
+from gi import require_version
+require_version('Gst', '1.0')
+require_version('GstController', '1.0')
 from gi.repository import Gst, GstController
 from t_modules.t_extra import get_folder_size
 import threading
@@ -224,7 +226,7 @@ def player3(tauon):  # GStreamer
             # print(struct.to_string())
 
             name = struct.get_name()
-            
+
             if name == "GstMessageError":
                 print(struct.to_string())
 
@@ -703,7 +705,7 @@ def player3(tauon):  # GStreamer
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
-                        
+
                     elif self.play_state > 0:
 
                         if not self.using_cache and pctl.target_object.is_network and \
