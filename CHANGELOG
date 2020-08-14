@@ -1,6 +1,27 @@
 
 Changelog-------------------------------------
 
+v6.2.0
+
+ - Added detection of OGA file extension
+ - Added support pasting list of Spotify links
+ - Added support for pasting Spotify URI type
+ - Fixed Spotify playlists not being imported in full
+ - Fixed some misc UI elements with scaling
+ - Fixed a crash when reading malformed lyrics files
+ - Removed BASS backend
+   - Lost broadcast feature
+   - Lost spectrum visualiser
+   - Lost internet radio recording feature
+ - Improved GStreamer backend
+   - Added level meter visualiser
+   - Added audio equalizer
+   - Added pause/resume volume fader
+   - Added rough workaround for some network tracks not being seekable
+   - Fixed start of CUE file audible on track jump
+   - Fixed a possible issue with track jumping
+ - todo: Added rough workaround for crash on startup issue
+
 v6.1.3
 
  - Improved Spotify support

@@ -1,3 +1,20 @@
+# Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
+
+#     This file is part of Tauon Music Box.
+#
+#     Tauon Music Box is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     Tauon Music Box is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU Lesser General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import os
 try:
@@ -425,7 +442,11 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        id = url.strip("/").split("/")[-1]
+        if url.startswith("spotify:track:"):
+            id = url[14:]
+        else:
+            url = url.split("?")[0]
+            id = url.strip("/").split("/")[-1]
 
         track = self.spotify.track(id)
         tr = self.load_track(track)
@@ -439,7 +460,15 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        id = url.strip("/").split("/")[-1]
+        print(url)
+
+        if url.startswith("spotify:album:"):
+            id = url[14:]
+        else:
+            url = url.split("?")[0]
+            id = url.strip("/").split("/")[-1]
+
+        print(id)
 
         album = self.spotify.album(id)
         playlist = []
@@ -461,10 +490,14 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        if len(url) != 22:
-            id = url.strip("/").split("/")[-1]
+        if url.startswith("spotify:playlist:"):
+            id = url[17:]
         else:
-            id = url
+            url = url.split("?")[0]
+            if len(url) != 22:
+                id = url.strip("/").split("/")[-1]
+            else:
+                id = url
 
         if len(id) != 22:
             print("ID Error")
@@ -475,11 +508,12 @@ class SpotCtl:
         p = self.spotify.playlist(id)
         playlist = []
         self.update_existing_import_list()
-
-        for item in p.tracks.items:
-            nt = self.load_track(item.track, include_album_url=True)
-            self.tauon.pctl.master_library[nt.index] = nt
-            playlist.append(nt.index)
+        pages = self.spotify.all_pages(p.tracks)
+        for page in pages:
+            for item in page.items:
+                nt = self.load_track(item.track, include_album_url=True)
+                self.tauon.pctl.master_library[nt.index] = nt
+                playlist.append(nt.index)
 
         if return_list:
             return playlist
