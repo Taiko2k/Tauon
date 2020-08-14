@@ -2625,8 +2625,8 @@ for t in range(2):
             album_mode_art_size = save[24]
         if save[25] is not None:
             draw_border = save[25]
-        if save[26] is not None:
-            prefs.enable_web = save[26]
+        # if save[26] is not None:
+        #     prefs.enable_web = save[26]
         if save[27] is not None:
             prefs.allow_remote = save[27]
         if save[28] is not None:
@@ -18243,7 +18243,7 @@ def spec_on():
     #     show_message("Not implemented")
     gui.update_layout()
 
-vis_menu.add(_("Spectrum Visualizer"), spec_on)
+# vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 
 def spec2_def():
@@ -18952,7 +18952,7 @@ def import_music():
     load_orders.append(load_order)
     switch_playlist(len(pctl.multi_playlist) - 1)
     gui.add_music_folder_ready = False
-
+print("test47")
 
 x_menu.add(_("Import Music Folder"), import_music, show_test=show_import_music)
 
@@ -19230,7 +19230,7 @@ extra_menu.add(_('Revert'), pctl.revert, hint='SHIFT + /', icon=revert_icon)
 # extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
 extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
 
-
+print("test48")
 
 
 def heart_menu_colour():
@@ -19909,7 +19909,7 @@ def show_stop_quick_add(_):
 x_menu.add(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add, )
 
 
-
+print("test49")
 
 def view_tracks():
     # if gui.show_playlist is False:
@@ -20186,6 +20186,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     gui.update += 1
 
 
+print("TEST50")
 # ---------------------
 added = []
 
@@ -21339,6 +21340,7 @@ class SearchOverlay:
                 self.searched_text = ""
 
 search_over = SearchOverlay()
+
 
 
 class MessageBox:
@@ -23478,7 +23480,7 @@ def toggle_eq(mode=0):
     if mode == 1:
         return prefs.use_eq
     prefs.use_eq ^= True
-    pctl.playerCommand = 'reload'
+    pctl.playerCommand = 'seteq'
     pctl.playerCommandReady = True
 
 
@@ -23859,12 +23861,8 @@ class Over:
 
     def eq(self, x0, y0, w0, h0):
 
-        if prefs.backend != 1:
-            return
-
         y = y0 + 55 * gui.scale
         x = x0 + 130 * gui.scale
-
 
         if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=75 * gui.scale):
             self.eq_view = False
@@ -23962,8 +23960,9 @@ class Over:
         # Gstreamer
         if prefs.backend == 2:
 
-            y = y0 + 66 * gui.scale
+            y = y0 + 45 * gui.scale
             x = x0 + 29 * gui.scale
+
 
             reload = False
             bk_gain = prefs.replay_gain
@@ -23980,10 +23979,16 @@ class Over:
             else:
                 y += round(66 * gui.scale)
 
+
+            y += round(40 * gui.scale)
+
+            if self.button(x, y, "EQ", width=50*gui.scale):
+                self.eq_view = True
+
             if bk_gain != prefs.replay_gain:
                 reload = True
 
-            y += 80 * gui.scale
+            y += 60 * gui.scale
             prefs.gst_use_custom_output = self.toggle_square(x, y, prefs.gst_use_custom_output, _("Customise GStreamer output"))
             y += 22 * gui.scale
 

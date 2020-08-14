@@ -139,14 +139,25 @@ def player3(tauon):  # GStreamer
             # # ------------------------------------
 
             # Create volume element
+
+            self._eq = Gst.ElementFactory.make("equalizer-10bands", "eq")
             self._vol = Gst.ElementFactory.make("volume", "volume")
+
+            self._sink.add(self._eq)
             self._sink.add(self._vol)
+
+            self._eq.link(self._vol)
             self._vol.link(self._output)
 
+            for i, level in enumerate(prefs.eq):
+                if prefs.use_eq:
+                    self._eq.set_property("band" + str(i), level)
+                else:
+                    self._eq.set_property("band" + str(i), 0.0)
             # Set up sink pad for the intermediate bin via the
             #  first element (volume)
             ghost = Gst.GhostPad.new(
-                "sink", self._vol.get_static_pad("sink"))
+                "sink", self._eq.get_static_pad("sink"))
 
             self._sink.add_pad(ghost)
 
@@ -154,7 +165,7 @@ def player3(tauon):  # GStreamer
             self.playbin.set_property("audio-sink", self._sink)
 
             # The pipeline should look something like this -
-            # (player) -> [(volume) -> (output)]
+            # (player) -> [(eq) -> (volume) -> (output)]
 
             # Set callback for the main callback loop
             GLib.timeout_add(50, self.main_callback)
@@ -630,6 +641,13 @@ def player3(tauon):  # GStreamer
                     self.play_state = 3
                     self.player_timer.hit()
 
+
+                elif pctl.playerCommand == 'seteq':
+                    for i, level in enumerate(prefs.eq):
+                        if prefs.use_eq:
+                            self._eq.set_property("band" + str(i), level)
+                        else:
+                            self._eq.set_property("band" + str(i), 0.0)
 
                 elif pctl.playerCommand == 'volume':
 
