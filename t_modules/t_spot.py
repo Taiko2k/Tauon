@@ -442,7 +442,11 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        id = url.strip("/").split("/")[-1]
+        if url.startswith("spotify:track:"):
+            id = url[14:]
+        else:
+            url = url.split("?")[0]
+            id = url.strip("/").split("/")[-1]
 
         track = self.spotify.track(id)
         tr = self.load_track(track)
@@ -456,7 +460,15 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        id = url.strip("/").split("/")[-1]
+        print(url)
+
+        if url.startswith("spotify:album:"):
+            id = url[14:]
+        else:
+            url = url.split("?")[0]
+            id = url.strip("/").split("/")[-1]
+
+        print(id)
 
         album = self.spotify.album(id)
         playlist = []
@@ -478,10 +490,14 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        if len(url) != 22:
-            id = url.strip("/").split("/")[-1]
+        if url.startswith("spotify:playlist:"):
+            id = url[17:]
         else:
-            id = url
+            url = url.split("?")[0]
+            if len(url) != 22:
+                id = url.strip("/").split("/")[-1]
+            else:
+                id = url
 
         if len(id) != 22:
             print("ID Error")

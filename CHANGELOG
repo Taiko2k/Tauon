@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v6.2.0
 
  - Added detection of OGA file extension
+ - Added support pasting list of Spotify links
+ - Added support for pasting Spotify URI type
  - Fixed a crash when reading malformed lyrics files
  - Fixed long Spotify playlists not being imported in full
  - Removed BASS backend

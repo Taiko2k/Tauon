@@ -17,6 +17,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+
 # The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
 
 import struct

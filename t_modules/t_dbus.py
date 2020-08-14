@@ -17,6 +17,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from gi.repository import GLib
 import urllib.parse
 from t_modules.t_extra import *
@@ -96,6 +97,22 @@ class Gnome:
                                              on_mediakey)
             except:
                 print("Could not connect to gnome media keys")
+
+        # ----------
+
+        # t_bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+        # t_bus_name = dbus.service.BusName('com.github.taiko2k.tauonmb', t_bus)  # This object must be kept alive
+        #
+        # class T(dbus.service.Object):
+        #     @dbus.service.method("com.github.taiko2k.tauonmb",
+        #                          in_signature='a{sv}', out_signature='')
+        #     def start(self, options={}):
+        #         print("START")
+        #
+        #     def __init__(self, object_path):
+        #         dbus.service.Object.__init__(self, t_bus, object_path, bus_name=t_bus_name)
+        #
+        # pctl.sgl = T("/")
 
         # ----------
         if prefs.enable_mpris:

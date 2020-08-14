@@ -17,6 +17,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from isounidecode import unidecode
 from PyLyrics import PyLyrics
 from bs4 import BeautifulSoup  # Remember to add to dependency list if PyLyrics is removed
