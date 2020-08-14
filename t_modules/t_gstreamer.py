@@ -29,7 +29,7 @@ from gi.repository import GLib
 print("GST 1")
 
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst
+from gi.repository import Gst, GstController
 from t_modules.t_extra import get_folder_size
 import threading
 import requests
@@ -166,6 +166,11 @@ def player3(tauon):  # GStreamer
 
             # The pipeline should look something like this -
             # (player) -> [(eq) -> (volume) -> (output)]
+
+            self.c_source = GstController.InterpolationControlSource()
+            self.c_source.set_property('mode', GstController.InterpolationMode.LINEAR)
+            self.c_binding = GstController.DirectControlBinding.new(self._vol, "volume", self.c_source)
+            self._vol.add_control_binding(self.c_binding)
 
             # Set callback for the main callback loop
             GLib.timeout_add(50, self.main_callback)
@@ -542,9 +547,9 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(track.fullpath)))
 
                     if pctl.start_time_target > 0:
-                        self._vol.set_property('volume', 0.0)
+                        self.playbin.set_property('volume', 0.0)
                     else:
-                        self._vol.set_property('volume', pctl.player_volume / 100)
+                        self.playbin.set_property('volume', pctl.player_volume / 100)
                     #if pctl.start_time_target == 0:
 
                     self.playbin.set_state(Gst.State.PLAYING)
@@ -569,7 +574,7 @@ def player3(tauon):  # GStreamer
                         pctl.playing_time = 0
                         gui.update = 1
 
-                        self._vol.set_property('volume', pctl.player_volume / 100)
+                        self.playbin.set_property('volume', pctl.player_volume / 100)
 
 
                     if gapless:  # Hold thread while a gapless transition is in progress
@@ -675,7 +680,21 @@ def player3(tauon):  # GStreamer
                 elif pctl.playerCommand == 'stop':
 
                     if self.play_state > 0:
+
+                        if prefs.use_pause_fade:
+                            success, current_time = self.playbin.query_position(Gst.Format.TIME)
+                            if success:
+                                start = current_time
+                                end = current_time + (prefs.pause_fade_time / 1000 * Gst.SECOND)
+                                self.c_source.set(start, (pctl.player_volume / 100) / 10)
+                                self.c_source.set(end, 0.0)
+                                time.sleep(prefs.pause_fade_time / 1000)
+                                self.c_source.unset_all()
+
                         self.playbin.set_state(Gst.State.READY)
+                        time.sleep(0.1)
+                        self._vol.set_property("volume", pctl.player_volume / 100)
+
                     self.play_state = 0
                     pctl.playerCommand = "stopped"
 
@@ -742,11 +761,41 @@ def player3(tauon):  # GStreamer
                 elif pctl.playerCommand == 'pauseon':
                     self.player_timer.hit()
                     self.play_state = 2
+
+                    if prefs.use_pause_fade:
+                        success, current_time = self.playbin.query_position(Gst.Format.TIME)
+                        if success:
+                            start = current_time
+                            end = current_time + (prefs.pause_fade_time / 1000 * Gst.SECOND)
+                            self.c_source.set(start, (pctl.player_volume / 100) / 10)
+                            self.c_source.set(end, 0.0)
+                            time.sleep(prefs.pause_fade_time / 1000)
+                            self.c_source.unset_all()
+
                     self.playbin.set_state(Gst.State.PAUSED)
 
                 elif pctl.playerCommand == 'pauseoff':
                     self.player_timer.hit()
-                    self.playbin.set_state(Gst.State.PLAYING)
+
+                    if not prefs.use_pause_fade:
+                        self.playbin.set_state(Gst.State.PLAYING)
+
+                    else:
+                        self._vol.set_property("volume", 0.0)
+                        success, current_time = self.playbin.query_position(Gst.Format.TIME)
+                        self.playbin.set_state(Gst.State.PLAYING)
+                        if success:
+                            start = current_time
+                            end = current_time + ((prefs.pause_fade_time / 1000) * Gst.SECOND)
+                            self.c_source.set(start, 0.0)
+                            self.c_source.set(end, (pctl.player_volume / 100) / 10)
+                            time.sleep(prefs.pause_fade_time / 1000)
+                            time.sleep(0.05)
+                            self.c_source.unset_all()
+
+                    self._vol.set_property("volume", pctl.player_volume / 100)
+
+
                     self.play_state = 1
 
                 elif pctl.playerCommand == 'unload':
