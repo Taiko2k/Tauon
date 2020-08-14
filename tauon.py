@@ -8210,6 +8210,7 @@ else:
     ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
 
+
 class DropShadow:
 
     def __init__(self):
@@ -13635,7 +13636,7 @@ def paste_deco():
         active = True
     elif SDL_HasClipboardText():
         text = copy_from_clipboard()
-        if text.startswith("/") or "file://" in text:
+        if text.startswith("/") or "file://" in text or text.startswith("spotify"):
             active = True
         elif prefs.spot_mode and text.startswith("https://open.spotify.com/album/"): # or text.startswith("https://open.spotify.com/track/"):
             active = True
@@ -16663,18 +16664,23 @@ def lightning_paste():
 def paste(playlist_no=None, track_id=None):
 
     clip = copy_from_clipboard()
-
-    if clip.startswith("https://open.spotify.com/track/"):
-       spot_ctl.append_track(clip)
-    elif clip.startswith("https://open.spotify.com/album/"):
-        cargo[:] = spot_ctl.append_album(clip, return_list=True)[:]
-        clip = False
-    elif clip.startswith("https://open.spotify.com/playlist/"):
-        spot_ctl.playlist(clip)
+    if "spotify" in clip:
+        cargo.clear()
+        for link in clip.split("\n"):
+            print(link)
+            link = link.strip()
+            if clip.startswith("https://open.spotify.com/track/") or clip.startswith("spotify:track:"):
+               spot_ctl.append_track(link)
+            elif clip.startswith("https://open.spotify.com/album/") or clip.startswith("spotify:album:"):
+                l = spot_ctl.append_album(link, return_list=True)
+                if l:
+                    cargo.extend(l)
+            elif clip.startswith("https://open.spotify.com/playlist/"):
+                spot_ctl.playlist(link)
         if album_mode:
             reload_albums()
         gui.pl_update += 1
-        return
+        clip = False
 
     found = False
     if clip:
@@ -18233,11 +18239,11 @@ vis_menu.add(_("Level Meter"), level_on)
 
 def spec_on():
     gui.vis_want = 2
-    if prefs.backend == 2:
-        show_message("Not implemented")
+    # if prefs.backend == 2:
+    #     show_message("Not implemented")
     gui.update_layout()
 
-# vis_menu.add(_("Spectrum Visualizer"), spec_on)
+vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 
 def spec2_def():
@@ -18914,16 +18920,18 @@ def adl_test(_):
 
 def import_spotify_playlist():
     clip = copy_from_clipboard()
-    if not clip.startswith("https://open.spotify.com/playlist/"):
-        return
-    spot_ctl.playlist(clip)
+    for line in clip.split("\n"):
+        if line.startswith("https://open.spotify.com/playlist/") or line.startswith("spotify:playlist:"):
+            clip = clip.strip()
+            spot_ctl.playlist(line)
+
     if album_mode:
         reload_albums()
     gui.pl_update += 1
 
 def import_spotify_playlist_deco():
     clip = copy_from_clipboard()
-    if clip.startswith("https://open.spotify.com/playlist/"):
+    if clip.startswith("https://open.spotify.com/playlist/") or clip.startswith("spotify:playlist:"):
         return [colours.menu_text, colours.menu_background, None]
     return [colours.menu_text_disabled, colours.menu_background, None]
 

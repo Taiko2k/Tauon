@@ -35,7 +35,8 @@ import threading
 import requests
 import urllib.parse
 from hsaudiotag import auto
-
+import re
+import math
 
 print("GST 2")
 
@@ -250,21 +251,26 @@ def player3(tauon):  # GStreamer
                             break
                     self.level_train.append((rt, r, l))
 
+            # if struct.get_name() == 'spectrum':
+            #     struct_str = struct.to_string()
+            #     magnitude_str = re.match(r'.*magnitude=\(float\){(.*)}.*', struct_str)
+            #     if magnitude_str:
+            #         magnitude = map(float, magnitude_str.group(1).split(','))
+            #
+            #         l = list(magnitude)
+            #         k = []
+            #         print(l)
+            #         for a in l[:23]:
+            #             v = a ??
+            #             k.append(v)
+            #         print(k)
+            #         gui.spec = k
+            #         #print(k)
+            #         gui.level_update = True
+
             return True
 
-            # if struct.get_name() == 'spectrum':
-        #         struct_str = struct.to_string()
-        #         magnitude_str = re.match(r'.*magnitude=\(float\){(.*)}.*', struct_str)
-        #         if magnitude_str:
-        #             magnitude = map(float, magnitude_str.group(1).split(','))
-        #
-        #             l = list(magnitude)
-        #             k = []
-        #             for a in l[:23]:
-        #                 k.append(a + 60)
-        #             gui.spec = k
-        #             #print(k)
-        #             gui.level_update = True
+
 
 
         def check_duration(self):
