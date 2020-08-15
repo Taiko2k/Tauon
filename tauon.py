@@ -7191,15 +7191,22 @@ class KoelService:
                 if "cover" in album:
                     covers[id] = album["cover"]
 
+
+        existing = {}
+
+        for track_id, track in pctl.master_library.items():
+            if track.is_network and track.file_ext == "KOEL":
+                existing[track.url_key] = track_id
+
         for song in songs:
 
             id = pctl.master_count
             replace_existing = False
-            for track_id, track in pctl.master_library.items():
-                if track.is_network and track.file_ext == "KOEL" and track.url_key == song["id"]:
-                    id = track.index
-                    replace_existing = True
-                    break
+
+            e = existing.get(song["id"])
+            if e is not None:
+                id = e
+                replace_existing = True
 
             nt = TrackClass()
 

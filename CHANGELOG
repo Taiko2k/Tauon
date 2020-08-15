@@ -6,6 +6,7 @@ v6.2.0
  - Added detection of OGA file extension
  - Added support pasting list of Spotify links
  - Added support for pasting Spotify URI type
+ - Improved koel library import speed
  - Fixed Spotify playlists not being imported in full
  - Fixed some misc UI elements with scaling
  - Fixed a crash when reading malformed lyrics files
@@ -16,11 +17,12 @@ v6.2.0
  - Improved GStreamer backend
    - Added level meter visualiser
    - Added audio equalizer
-   - Added pause/resume volume fader
-   - Added rough workaround for some network tracks not being seekable
+   - Added pause/resume fade
+   - Added crude workaround for some network tracks not being seekable
    - Fixed start of CUE file audible on track jump
    - Fixed a possible issue with track jumping
- - todo: Added rough workaround for crash on startup issue
+   - Removed auto output device option
+ - Added crude workaround for crash on startup issue
 
 v6.1.3
 

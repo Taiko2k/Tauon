@@ -28,9 +28,8 @@ from gi.repository import GLib
 
 print("GST 1")
 
-from gi import require_version
-require_version('Gst', '1.0')
-require_version('GstController', '1.0')
+gi.require_version('Gst', '1.0')
+gi.require_version('GstController', '1.0')
 from gi.repository import Gst, GstController
 from t_modules.t_extra import get_folder_size
 import threading
@@ -79,7 +78,7 @@ def player3(tauon):  # GStreamer
             devices = []
             outputs = {}
 
-            devices = ["Auto", "PulseAudio", "ALSA", "JACK"]
+            devices = ["PulseAudio", "ALSA", "JACK"]
             if tauon.snap_mode:
                 devices.remove("JACK")
                 devices.remove("ALSA")
@@ -118,13 +117,14 @@ def player3(tauon):  # GStreamer
             self._sink.add(self._output)
 
             print("GST 5")
-            # # Spectrum -------------------------
-            # # This kind of works, but is a different result to that of the bass backend.
-            # # This seems linear and also less visually appealing.
-            #
+            # Spectrum -------------------------
+            # This kind of works, but is a different result to that of the bass backend.
+            # This seems linear and also less visually appealing.
+
             # self.spectrum = Gst.ElementFactory.make("spectrum", "spectrum")
-            # self.spectrum.set_property('bands', 280)
-            # self.spectrum.set_property('interval', 10000000)
+            # self.spectrum.set_property('bands', 50)
+            # self.spectrum.set_property('interval', 20000000)
+            # self.spectrum.set_property('threshold', -100)
             # self.spectrum.set_property('post-messages', True)
             # self.spectrum.set_property('message-magnitude', True)
             #
@@ -222,11 +222,11 @@ def player3(tauon):  # GStreamer
         # # Used to get spectrum data and pass onto UI
         def on_message(self, bus, msg):
             struct = msg.get_structure()
-            # print(struct.get_name())
-            # print(struct.to_string())
+            #print(struct.get_name())
+            #print(struct.to_string())
 
             name = struct.get_name()
-
+            
             if name == "GstMessageError":
                 print(struct.to_string())
 
@@ -269,7 +269,7 @@ def player3(tauon):  # GStreamer
                             break
                     self.level_train.append((rt, r, l))
 
-            # if struct.get_name() == 'spectrum':
+            # if name == 'spectrum':
             #     struct_str = struct.to_string()
             #     magnitude_str = re.match(r'.*magnitude=\(float\){(.*)}.*', struct_str)
             #     if magnitude_str:
@@ -277,16 +277,16 @@ def player3(tauon):  # GStreamer
             #
             #         l = list(magnitude)
             #         k = []
-            #         print(l)
-            #         for a in l[:23]:
-            #             v = a ??
+            #         #print(l)
+            #         for a in l[5:25]:
+            #             #v = ??
             #             k.append(v)
             #         print(k)
             #         gui.spec = k
             #         #print(k)
             #         gui.level_update = True
-
-            return True
+            #
+            # return True
 
 
 
@@ -387,6 +387,12 @@ def player3(tauon):  # GStreamer
             if self.play_state == 1 and pctl.playing_time > 1 and not pctl.playerCommandReady:
                 pctl.test_progress()  # This function triggers an advance if we are near end of track
 
+                success, state, pending = self.playbin.get_state(3 * Gst.SECOND)
+                if state != Gst.State.PLAYING:
+                    time.sleep(0.5)
+
+                    print("Stall...")
+
             if self.play_state == 3:
                 pctl.radio_progress()
 
@@ -450,7 +456,7 @@ def player3(tauon):  # GStreamer
                 pctl.download_time = 0
                 url = None
                 if pctl.playerCommand == 'open' and pctl.target_object:
-
+                    print("Start track")
                     track = pctl.target_object
 
                     if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
@@ -515,13 +521,13 @@ def player3(tauon):  # GStreamer
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
-                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now':
+                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now' and pctl.playing_time > 4:
                         #print("Use GStreamer Gapless transition")
                         gapless = True
 
                     # If we are not supposed to be playing, stop (crossfade todo)
                     else:
-                        self.playbin.set_state(Gst.State.READY)
+                        self.playbin.set_state(Gst.State.NULL)
 
                     pctl.playerSubCommand = ""
                     self.play_state = 1
@@ -596,7 +602,7 @@ def player3(tauon):  # GStreamer
 
                             if pctl.playerCommand == 'open' and pctl.playerCommandReady:
                                 # Cancel the gapless transition
-                                self.playbin.set_state(Gst.State.READY)
+                                self.playbin.set_state(Gst.State.NULL)
                                 time.sleep(0.1)
                                 GLib.timeout_add(19, self.main_callback)
                                 pctl.playerCommandReady = False
@@ -705,7 +711,7 @@ def player3(tauon):  # GStreamer
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
-
+                        
                     elif self.play_state > 0:
 
                         if not self.using_cache and pctl.target_object.is_network and \
