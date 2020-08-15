@@ -70,7 +70,7 @@ function update() {
             if (status == 2 && data.index > -1){
                 // Stream starts again
                 status = 1;
-                sound.src = "http://" + window.location.hostname + ":" + data.port;
+                sound.src = "/stream.ogg" //":" + data.port;
                 sound.load();
                 sound.play();
                 console.log("AUTO RESUME");
@@ -91,7 +91,7 @@ playbutton.onclick = function() {
             status = 2;
         }
         else {
-            sound.src = "http://" + window.location.hostname + ":" + port;
+            sound.src = "/stream.ogg" //":" + port;
             sound.load();
             sound.play();
             console.log("PRESS PLAY");

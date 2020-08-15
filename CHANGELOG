@@ -22,7 +22,7 @@ v6.2.0
    - Fixed start of CUE file audible on track jump
    - Fixed a possible issue with track jumping
    - Removed auto output device option
- - Added crude workaround for crash on startup issue
+   - Fixed a possible crash on startup
 
 v6.1.3
 
