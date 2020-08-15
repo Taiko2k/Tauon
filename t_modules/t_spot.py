@@ -530,7 +530,7 @@ class SpotCtl:
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]
         artist = self.spotify.artist(id)
-        artist_albums = self.spotify.artist_albums(id, limit=30, include_groups=["album"])
+        artist_albums = self.spotify.artist_albums(id, limit=50, include_groups=["album"])
         playlist = []
         self.update_existing_import_list()
 
