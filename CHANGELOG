@@ -6,6 +6,7 @@ v6.2.0
  - Added detection of OGA file extension
  - Added support pasting list of Spotify links
  - Added support for pasting Spotify URI type
+ - Improved koel library import speed
  - Fixed Spotify playlists not being imported in full
  - Fixed some misc UI elements with scaling
  - Fixed a crash when reading malformed lyrics files
