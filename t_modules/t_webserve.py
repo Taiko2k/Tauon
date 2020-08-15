@@ -21,8 +21,20 @@
 
 import html
 import requests
+import time
+import struct
+
+class Chunker:
+
+    def __init__(self):
+        self.master_count = 0
+        self.chunks = {}
+        self.header = None
+
+chunker = Chunker()
 
 def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
+
 
     if prefs.enable_web is False:
         return 0
@@ -48,6 +60,40 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
         gui.web_running = False
         gui.show_message(strings.web_server_stopped)
         return 'Server shutting down...'
+
+    @app.route('/rec', methods=['PUT'])
+    def test():
+        if request.remote_addr != "127.0.0.1":
+            abort(400)
+        chunk_size = 224096
+
+        while True:
+            chunk = request.stream.read(chunk_size)
+            if not chunker.header:
+                chunker.header = chunk
+            if len(chunk) == 0:
+                return "Okay"
+            else:
+                chunker.chunks[chunker.master_count + 1] = chunk
+                chunker.master_count += 1
+                d = chunker.master_count - 200
+                if d > 1:
+                    del chunker.chunks[d]
+
+    @app.route('/stream.ogg',)
+    def test2():
+        def generate():
+            position = max(chunker.master_count - 30, 2)
+            yield chunker.header
+            while True:
+                if position < chunker.master_count:
+                    yield chunker.chunks[position]
+                    position += 1
+                else:
+                    time.sleep(0.01)
+
+        return Response(generate(), mimetype="audio/ogg")
+
 
     @app.route('/radio/')
     def radio():
