@@ -24,16 +24,9 @@ import requests
 import time
 import struct
 
-class Chunker:
 
-    def __init__(self):
-        self.master_count = 0
-        self.chunks = {}
-        self.header = None
 
-chunker = Chunker()
-
-def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
+def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
 
     if prefs.enable_web is False:
@@ -45,6 +38,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
         gui.show_message("Web server failed to start.", "Required dependency 'flask' was not found.", 'warning')
         return 0
 
+    chunker = tauon.chunker
     gui.web_running = True
     app = Flask(__name__)
 
@@ -61,34 +55,17 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
         gui.show_message(strings.web_server_stopped)
         return 'Server shutting down...'
 
-    @app.route('/rec', methods=['PUT'])
-    def test():
-        if request.remote_addr != "127.0.0.1":
-            abort(400)
-        chunk_size = 224096
-
-        while True:
-            chunk = request.stream.read(chunk_size)
-            if not chunker.header:
-                chunker.header = chunk
-            if len(chunk) == 0:
-                return "Okay"
-            else:
-                chunker.chunks[chunker.master_count + 1] = chunk
-                chunker.master_count += 1
-                d = chunker.master_count - 200
-                if d > 1:
-                    del chunker.chunks[d]
-
     @app.route('/stream.ogg',)
     def test2():
         def generate():
-            position = max(chunker.master_count - 30, 2)
-            yield chunker.header
+            position = max(chunker.master_count - 7, 1)
+            for header in chunker.headers:
+                yield header
             while True:
-                if position < chunker.master_count:
-                    yield chunker.chunks[position]
-                    position += 1
+                if 1 < position < chunker.master_count:
+                    while 1 < position < chunker.master_count:
+                        yield chunker.chunks[position]
+                        position += 1
                 else:
                     time.sleep(0.01)
 
