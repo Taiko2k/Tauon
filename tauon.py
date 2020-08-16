@@ -6648,6 +6648,8 @@ class Chunker:
         self.headers = []
         self.h2 = None
 
+        self.clients = {}
+
 class Tauon:
 
     def __init__(self):
@@ -18186,6 +18188,14 @@ def queue_deco():
 
 def broadcast_select_track(track_id):
 
+    if shutil.which('ffmpeg') is None:
+        show_message(_("FFmpeg does not appear to be installed"), mode="error")
+        return
+
+    if shutil.which('opusenc') is None:
+        show_message(_("Package opus-tools does not appear to be installed"), mode="error")
+        return
+
     pctl.broadcast_index = track_id
     track = pctl.g(track_id)
 
@@ -19130,7 +19140,7 @@ def toggle_broadcast():
             show_message(_("There are no tracks in this playlist to broadcast."), mode='error')
             return 0
         if not prefs.enable_web:
-            print("You need to start the web server in settings.")
+            show_message(_("You need to start the broadcast web server in settings."))
             return
         pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.active_playlist_viewing][6])
         pctl.broadcast_position = -1
@@ -19138,18 +19148,21 @@ def toggle_broadcast():
         pctl.advance_broadcast(start=True)
 
     else:
+        # if key_shift_down:
+        #     pctl.broadcastCommand = "encpause"
+        #     pctl.broadcastCommandReady = True
+        #     return
+
         pctl.broadcastCommand = "encstop"
         pctl.broadcastCommandReady = True
 
 
 def broadcast_deco():
     line_colour = colours.menu_text
-    if prefs.backend != 1:
-        line_colour = colours.grey(20)
-        return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
+        # if key_shift_down:
+        #     return [line_colour, colours.menu_background, _("Pause Broadcast")]
         return [line_colour, colours.menu_background, _("Stop Broadcast")] # [24, 25, 60, 255]
-
     return [line_colour, colours.menu_background, None]
 
 
@@ -24309,7 +24322,7 @@ class Over:
             y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
-                               _("Serve broadcast landing page"))
+                               _("Run web server for broadcasting"))
 
             y += 25 * gui.scale
 
@@ -27079,22 +27092,23 @@ class TopPanel:
 
 
             x += 110 * gui.scale
-            ddt.text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
+            ddt.text((x, y), str(len(tauon.chunker.clients)), [70, 85, 230, 255], 11)
 
             self.drag_zone_start_x = x + 21 * gui.scale
 
             if input.mouse_click and coll((x-5, y-5, 20, 24)):
                 line = ""
                 input.mouse_click = False
-                for client in pctl.broadcast_clients:
-                    line += client.split(":")[0] + "  "
+                for ip, timestamp in tauon.chunker.clients.values():
+                    print(ip)
+                    line += ip + " "
 
-                if len(pctl.broadcast_clients) == 0:
-                    show_message("There are currently no connected clients")
-                elif len(pctl.broadcast_clients) == 1:
-                    show_message("There is " + str(len(pctl.broadcast_clients)) + " inbound connection.", line, mode='info')
+                if len(tauon.chunker.clients) == 0:
+                    show_message(_("There are currently no connected clients"))
+                elif len(tauon.chunker.clients) == 1:
+                    show_message(_("There is 1 inbound connection."), line, mode='info')
                 else:
-                    show_message("There are " + str(len(pctl.broadcast_clients)) + " inbound connections.", line,
+                    show_message(_("There are %d inbound connections.") % len(tauon.chunker.clients), line,
                                  mode='info')
 
         # if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
@@ -41248,6 +41262,12 @@ while pctl.running:
     #
     if pctl.broadcast_active and round(pctl.broadcast_time) != pctl.broadcast_last_time:
         pctl.broadcast_last_time = round(pctl.broadcast_time)
+
+        for id, value in tauon.chunker.clients.items():
+            if time.time() - value[1] > 5:
+                del tauon.chunker.clients[id]
+                break
+
         gui.update += 1
     # if pctl.broadcast_active and pctl.broadcast_time == 0:
     #     gui.pl_update = 1

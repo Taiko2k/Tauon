@@ -18,13 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import html
-import requests
 import time
-import struct
-
-
+import random
 
 def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
@@ -57,19 +53,25 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
     @app.route('/stream.ogg',)
     def test2():
-        def generate():
+        ip = request.remote_addr
+
+        def generate(ip):
+            id = random.random()
             position = max(chunker.master_count - 7, 1)
             for header in chunker.headers:
                 yield header
             while True:
+                if not pctl.broadcast_active:
+                    return
                 if 1 < position < chunker.master_count:
                     while 1 < position < chunker.master_count:
                         yield chunker.chunks[position]
                         position += 1
                 else:
                     time.sleep(0.01)
+                    chunker.clients[id] = (ip, time.time())
 
-        return Response(generate(), mimetype="audio/ogg")
+        return Response(generate(ip), mimetype="audio/ogg")
 
 
     @app.route('/radio/')
