@@ -6,17 +6,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
-"POT-Creation-Date: 2020-08-16 21:18+1200\n"
-"PO-Revision-Date: 2020-04-04 00:57+0100\n"
-"Last-Translator: Ricardo Simões - XM Corporation <xm.corporation@gmail.com>\n"
-"Language-Team: \n"
+"POT-Creation-Date: 2020-08-13 12:23+1200\n"
+"PO-Revision-Date: 2020-08-13 23:54+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt_PT/>\n"
 "Language: pt_PT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 2.3\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: tauon.py:1788 tauon.py:1790
 msgid "No artist image found."
@@ -1646,10 +1647,9 @@ msgstr ""
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
-#: tauon.py:24723 tauon.py:24780 tauon.py:24837
-#, fuzzy
+#: tauon.py:24656 tauon.py:24713 tauon.py:24770
 msgid "Username / Email"
-msgstr "Nome de utilizador:"
+msgstr "Nome de utilizador / e-mail"
 
 #: tauon.py:24737 tauon.py:24794 tauon.py:24851
 msgid "Password"

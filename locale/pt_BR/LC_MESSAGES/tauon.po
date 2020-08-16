@@ -6,17 +6,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
-"POT-Creation-Date: 2020-08-16 21:18+1200\n"
-"PO-Revision-Date: 2020-08-08 10:25-0300\n"
+"POT-Creation-Date: 2020-08-13 12:23+1200\n"
+"PO-Revision-Date: 2020-08-15 23:05+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
-"Language-Team: Marcelo dos Santos Mafra\n"
+"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 2.4\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: tauon.py:1788 tauon.py:1790
@@ -504,10 +505,9 @@ msgstr "Ordenar por Número da Faixa"
 msgid "Sort Year per Artist"
 msgstr "Ordenar Ano por Artista"
 
-#: tauon.py:15321
-#, fuzzy
+#: tauon.py:15274
 msgid "Make Playlist Auto-Sorting"
-msgstr "Tornar playlist auto-ordenável"
+msgstr "Tornar playlist Auto-Ordenável"
 
 #: tauon.py:15327 tauon.py:17015 tauon.py:18253
 msgid "Paste"
@@ -754,11 +754,11 @@ msgstr "Arquivo de configuração aberto."
 
 #: tauon.py:16415 tauon.py:16435
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Conversão de faixar à partir de locais de rede não é suportado"
 
 #: tauon.py:16778
 msgid "Add Playing Spotify Album"
-msgstr "Apor álbum Spotify Tocando"
+msgstr "Adicionar álbum do Spotify"
 
 #: tauon.py:16867
 msgid "Track Info…"
@@ -792,24 +792,21 @@ msgstr "Meta…"
 msgid "Copy"
 msgstr "Copiar"
 
-#: tauon.py:17027
-#, fuzzy
+#: tauon.py:16975
 msgid "Cannot delete a network track"
-msgstr "Não é possível baixar arte de faixas de rede."
+msgstr "Não é possível baixar arte de faixas de rede"
 
-#: tauon.py:17039 tauon.py:17048
-#, fuzzy
+#: tauon.py:16987 tauon.py:16996
 msgid "File deleted"
-msgstr "Arquivo Modificado"
+msgstr "Arquivo excluído"
 
 #: tauon.py:17041 tauon.py:17050
 msgid "Error deleting file"
-msgstr ""
+msgstr "Erro ao excluir arquivo"
 
-#: tauon.py:17043
-#, fuzzy
+#: tauon.py:16991
 msgid "File moved to trash"
-msgstr "Remover Faixas de Rede"
+msgstr "Arquivo movido para lixeira"
 
 #: tauon.py:17057
 msgid "Delete Track File"
@@ -825,20 +822,19 @@ msgstr "Renomear Faixas…"
 
 #: tauon.py:17081
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Exclusão física impossiblitada"
 
 #: tauon.py:17081
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Uma ou mais faixas é de um local de rede!"
 
 #: tauon.py:17102
 msgid "Delete size safety limit reached!"
-msgstr ""
+msgstr "Tamanho limite para exclusão, alcançado!"
 
-#: tauon.py:17140
-#, fuzzy
+#: tauon.py:17088
 msgid "Folder could not be trashed."
-msgstr "Pasta alvo não foi encontrada"
+msgstr "Pasta não pôde ser excluída."
 
 #: tauon.py:17267 tauon.py:17844 tauon.py:17845 tauon.py:17850
 msgid "Modify Folder…"
@@ -1044,7 +1040,7 @@ msgstr "Comentário"
 
 #: tauon.py:18527
 msgid "Starline"
-msgstr "Starline"
+msgstr "Linha estelar"
 
 #: tauon.py:18528
 msgid "Rating"
@@ -1731,7 +1727,7 @@ msgstr "Playlist de sincr. não selecionada!"
 
 #: tauon.py:25100
 msgid "Path to device music folder:   "
-msgstr "Caminho para a pasta de música do dispositivo: "
+msgstr "Caminho para a pasta de música do dispositivo:   "
 
 #: tauon.py:25118
 msgid "A mounted music folder was found!"
@@ -1852,7 +1848,7 @@ msgstr "Gerador de Grade de Gráfico"
 
 #: tauon.py:25461
 msgid "Target playlist:   "
-msgstr "Playlist alvo:  "
+msgstr "Playlist alvo:   "
 
 #: tauon.py:25489
 msgid "Rows"
