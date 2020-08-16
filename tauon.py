@@ -23283,7 +23283,7 @@ def toggle_enable_web(mode=0):
     prefs.enable_web ^= True
 
     if prefs.enable_web and not gui.web_running:
-        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings])
+        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
         webThread.daemon = True
         webThread.start()
         show_message(_("Web server starting"), _("External connections will be accepted."), mode='done')
