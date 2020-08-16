@@ -80,6 +80,9 @@ def enc(tauon):
                         self.output_buffer_size = 0
                         self.raw_buffer = io.BytesIO()
                         self.output_buffer = io.BytesIO()
+                        tauon.chunker.chunks.clear()
+                        tauon.chunker.headers.clear()
+                        tauon.chunker.master_count = 0
                         pctl.broadcast_active = False
                         pctl.broadcast_time = 0
 
@@ -94,11 +97,11 @@ def enc(tauon):
                         fcntl.fcntl(self.encoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
                         print("Begin decode of file")
-                        cmd = self.get_decode_command(target, 0)
+                        cmd = self.get_decode_command(target, pctl.b_start_time)
                         print(cmd)
                         self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
                         time.sleep(0.1)
-                        self.stream_time.set()
+                        self.stream_time.force_set(6)
                         print("Broadcast started")
 
                     if command == "cast-next":
@@ -142,20 +145,21 @@ def enc(tauon):
                             data = self.decoder.stdout.read(int(48000 * (16 / 8) * 2))
                             #print(data)
                             if not data:
-                                dry += 1
+                                self.dry += 1
 
-                                if owed_seconds > 0.1 and dry > 2:
+                                if owed_seconds > 0.1 and self.dry > 2:
                                     #print("SILENCE")
                                     data = b"\x00" * 19200
                                 else:
                                     break
                             else:
-                                dry = 0
+                                self.dry = 0
                             self.raw_buffer.write(data)
                             self.raw_buffer_size += len(data)
                             self.bytes_sent += len(data)
                             self.track_bytes_sent += len(data)
                             owed_bytes -= len(data)
+                            break
 
                     if not data:
                         #print("No more decoded data...")
@@ -219,7 +223,7 @@ def enc(tauon):
                             d = tauon.chunker.master_count - 30
                             if d > 1:
                                 del tauon.chunker.chunks[d]
-                            #print(f"Received page {tauon.chunker.master_count}")
+                            print(f"Received page {tauon.chunker.master_count}")
 
                             # Reset the buffer with the remainder
                             self.temp_buffer.seek(0)
