@@ -176,13 +176,6 @@ def player3(tauon):  # GStreamer
             self.temp_path = ""  # Full path + filename
             self.level_train = []
 
-            # # Broadcasting pipeline ------------
-            # Issue: Cannot load new file without stopping encoder
-
-            # self.b_playbin = Gst.ElementFactory.make("playbin", "player")
-            # self.b_encoder = Gst.parse_bin_from_description("audioconvert ! vorbisenc ! oggmux ! souphttpclientsink location=http://localhost:7590/rec", ghost_unlinked_pads=True)
-            # self.b_playbin.set_property("audio-sink", self.b_encoder)
-
             # Start GLib mainloop
             self.mainloop.run()
 
@@ -365,12 +358,6 @@ def player3(tauon):  # GStreamer
             if not pctl.playerCommandReady:
                 pctl.spot_test_progress()
 
-                # if pctl.broadcast_active:
-                #     t = self.b_timer.hit()
-                #     pctl.broadcast_time += t
-                #     t = self.b_playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
-                #     #print(t)
-
             if pctl.playerCommandReady:
                 pctl.playerCommandReady = False
 
@@ -392,15 +379,6 @@ def player3(tauon):  # GStreamer
                 #                 automatically name files and split on metadata change
                 # unload:   Stop, cleanup and exit thread
                 # done:     Tell the main thread we finished doing a special request it was waiting for (such as unload)
-                #
-                # encstart:  todo: Start a icecast/shoutcast style HTTP stream
-                #                  Given file from pctl.target_open
-                #                  Starting position given by pctl.b_start_time
-                #                  Title given by pctl.broadcast_line
-                #                  INCREMENT pctl.broadcast_time with time
-                # encseek:   todo: Seek to postion pctl.b_start_time + pctl.broadcast_time
-                # cast-next: todo: Switch stream to given track (same as encstart but with existing stream)
-                # encstop:   todo: Stop and shut-down HTTP stream
 
                 # Tip: When performing actions that take a small measure of time, you can simply block the thread until
                 #      done.
@@ -418,7 +396,7 @@ def player3(tauon):  # GStreamer
                 pctl.download_time = 0
                 url = None
                 if pctl.playerCommand == 'open' and pctl.target_object:
-                    print("Start track")
+                    # print("Start track")
                     track = pctl.target_object
 
                     if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
@@ -478,12 +456,12 @@ def player3(tauon):  # GStreamer
                         # Determine time position of currently playing track
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                         current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
-                        # print("We are " + str(current_duration - current_time) + " seconds from end.")
+                        #print("We are " + str(current_duration - current_time) + " seconds from end.")
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
-                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now' and pctl.playing_time > 4:
-                        # print("Use GStreamer Gapless transition")
+                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now': # and pctl.playing_time > 4:
+                        #print("Use GStreamer Gapless transition")
                         gapless = True
 
                     # If we are not supposed to be playing, stop (crossfade todo)
@@ -546,7 +524,7 @@ def player3(tauon):  # GStreamer
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
-
+                        # print("Gapless go")
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
 
                             time.sleep(0.02)
@@ -572,39 +550,23 @@ def player3(tauon):  # GStreamer
                     if self.loaded_track:
                         star_store.add(self.loaded_track.index, add_time)
 
-                    pctl.jump_time = 0
-                    time.sleep(0.15)
-
                     self.loaded_track = track
+
+                    pctl.jump_time = 0
+                    time.sleep(1)
+                    add_time = self.player_timer.hit()
+                    if add_time > 2:
+                        add_time = 2
+                    if add_time < 0:
+                        add_time = 0
+                    pctl.playing_time += add_time
+                    pctl.decode_time = pctl.playing_time
+
+                    if self.loaded_track:
+                        star_store.add(self.loaded_track.index, add_time)
 
                     self.check_duration()
                     self.player_timer.hit()
-
-                elif pctl.playerCommand == "encstop":
-                    pctl.broadcast_active = False
-                    self.b_playbin.set_state(Gst.State.NULL)
-                    print("STOP")
-
-                elif pctl.playerCommand == 'encseek':
-                    print("SEEK")
-                    s = self.b_playbin.seek_simple(Gst.Format.TIME, 0,
-                                             (pctl.b_start_time + pctl.broadcast_seek_position) * Gst.SECOND)
-                    print(s)
-
-                elif pctl.playerCommand == 'encstart':
-                    print("Start Gstreamer broadcast")
-                    self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
-                    self.b_playbin.set_state(Gst.State.PLAYING)
-                    pctl.broadcast_time = 0
-
-                    pctl.broadcast_active = True
-
-                elif pctl.playerCommand == 'cast-next':
-                    print("NEXT")
-                    self.b_playbin.set_state(Gst.State.NULL)
-                    self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
-                    self.b_playbin.set_state(Gst.State.PLAYING)
-
 
                 elif pctl.playerCommand == 'url':
 
@@ -718,17 +680,15 @@ def player3(tauon):  # GStreamer
                             self.using_cache = True
                             time.sleep(0.1)
 
-                        print("SEEK GO")
                         self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                                  (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
-
 
                         # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
                         # update the seek indicator immediately and hold the thread for a moment
                         if pctl.target_object.is_network:
                             pctl.playing_time = pctl.new_time + pctl.start_time_target
                             pctl.decode_time = pctl.playing_time
-                            time.sleep(0.2)
+                            time.sleep(0.25)
 
 
                 elif pctl.playerCommand == 'pauseon':
