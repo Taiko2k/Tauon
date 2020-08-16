@@ -115,16 +115,16 @@ def enc(tauon):
                         print("started next")
                         self.track_bytes_sent = 0
 
-                    # if command == "encseek":
-                    #     target = pctl.target_open
-                    #     start = pctl.b_start_time + pctl.broadcast_seek_position
-                    #     print(f"URI = {target}")
-                    #     self.decoder.terminate()
-                    #     cmd = self.get_decode_command(target, start)
-                    #     self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-                    #     time.sleep(0.1)
-                    #     print("started next")
-                    #     self.track_bytes_sent = pctl.broadcast_seek_position * (48000 * (16 / 8) * 2)
+                    if command == "encseek":
+                        target = pctl.target_open
+                        start = pctl.b_start_time + pctl.broadcast_seek_position
+                        print(f"URI = {target}")
+                        self.decoder.terminate()
+                        cmd = self.get_decode_command(target, start)
+                        self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                        time.sleep(0.1)
+                        print("started next")
+                        self.track_bytes_sent = pctl.broadcast_seek_position * (48000 * (16 / 8) * 2)
 
                 if self.decoder:
 

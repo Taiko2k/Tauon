@@ -572,13 +572,12 @@ def player3(tauon):  # GStreamer
 
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
-                        self.playbin.set_state(Gst.State.READY)
+                        self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.1)
 
                     # Open URL stream
                     self.playbin.set_property('uri', pctl.url)
                     self.playbin.set_property('volume', pctl.player_volume / 100)
-                    time.sleep(0.1)
                     self.playbin.set_state(Gst.State.PLAYING)
                     self.play_state = 3
                     self.player_timer.hit()
