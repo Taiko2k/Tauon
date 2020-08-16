@@ -6,17 +6,19 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2020-08-16 21:18+1200\n"
-"PO-Revision-Date: 2020-08-09 07:38+0200\n"
+"POT-Creation-Date: 2020-08-13 12:23+1200\n"
+"PO-Revision-Date: 2020-08-15 05:43+0000\n"
+
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
-"Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
+"Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/sv/>\n"
 "Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 2.0.6\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: tauon.py:1788 tauon.py:1790
 msgid "No artist image found."
@@ -508,8 +510,7 @@ msgstr "Sortera efter spårnummer"
 msgid "Sort Year per Artist"
 msgstr "Sortera år per artist"
 
-#: tauon.py:15321
-#, fuzzy
+#: tauon.py:15274
 msgid "Make Playlist Auto-Sorting"
 msgstr "Gör spelningslistan automatiskt sorteringsbar"
 
@@ -759,7 +760,7 @@ msgstr "Konfigurationsfil öppnad."
 
 #: tauon.py:16415 tauon.py:16435
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Omkodning av spår från nätverksplatser stöds inte"
 
 #: tauon.py:16778
 msgid "Add Playing Spotify Album"
@@ -797,24 +798,21 @@ msgstr "Meta…"
 msgid "Copy"
 msgstr "Kopiera"
 
-#: tauon.py:17027
-#, fuzzy
+#: tauon.py:16975
 msgid "Cannot delete a network track"
-msgstr "Kan inte ladda ner bilder för nätverksspår."
+msgstr "Kan inte ta bort ett nätverksspår"
 
-#: tauon.py:17039 tauon.py:17048
-#, fuzzy
+#: tauon.py:16987 tauon.py:16996
 msgid "File deleted"
-msgstr "Filen ändrad"
+msgstr "Fil borttagen"
 
 #: tauon.py:17041 tauon.py:17050
 msgid "Error deleting file"
-msgstr ""
+msgstr "Kunde inte ta bort filen"
 
-#: tauon.py:17043
-#, fuzzy
+#: tauon.py:16991
 msgid "File moved to trash"
-msgstr "Ta bort nätverksspår"
+msgstr "Fil flyttad till papperskorgen"
 
 #: tauon.py:17057
 msgid "Delete Track File"
@@ -830,20 +828,19 @@ msgstr "Namnändra spår…"
 
 #: tauon.py:17081
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Kan inte fysiskt ta bort"
 
 #: tauon.py:17081
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Ett eller flera spår kommer från en nätverksplats!"
 
 #: tauon.py:17102
 msgid "Delete size safety limit reached!"
-msgstr ""
+msgstr "Säkerhetsgränsen för borttagningsstorlek uppnådd!"
 
-#: tauon.py:17140
-#, fuzzy
+#: tauon.py:17088
 msgid "Folder could not be trashed."
-msgstr "Målmappen kunde inte hittas"
+msgstr "Mappen kunde inte flyttas till papperskorgen."
 
 #: tauon.py:17267 tauon.py:17844 tauon.py:17845 tauon.py:17850
 msgid "Modify Folder…"

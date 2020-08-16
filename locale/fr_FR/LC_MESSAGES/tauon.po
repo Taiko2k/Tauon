@@ -6,17 +6,20 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2020-08-16 21:18+1200\n"
-"PO-Revision-Date: 2020-01-21 18:18+0100\n"
-"Last-Translator: b_b <bruno@eliaz.fr>\n"
-"Language-Team: \n"
+
+"POT-Creation-Date: 2020-08-13 12:23+1200\n"
+"PO-Revision-Date: 2020-08-15 02:15+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/fr/>\n"
+
 "Language: fr_FR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 1.8.7.1\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: tauon.py:1788 tauon.py:1790
 msgid "No artist image found."
@@ -32,7 +35,7 @@ msgstr "Fin de la liste de lecture"
 
 #: tauon.py:5872
 msgid "Once authorised click the 'done' button."
-msgstr "Cliquez sur le bouton 'Terminé' après avoir autorisé."
+msgstr "Cliquez sur le bouton « Terminé » après avoir autorisé."
 
 #: tauon.py:5872
 msgid "Web auth page opened"
@@ -52,57 +55,56 @@ msgstr "Cela peut prendre un certain temps."
 
 #: tauon.py:6616
 msgid "Spotify Likes"
-msgstr ""
+msgstr "Mentions J’aime Spotify"
 
-#: tauon.py:6617
-#, fuzzy
+
+#: tauon.py:6596
 msgid "Spotify Albums"
-msgstr "Albums les plus longs"
+msgstr "Albums Spotify"
 
 #: tauon.py:6618
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Piste retirée des pistes aimées"
 
 #: tauon.py:6619
 msgid "Track was already un-liked"
-msgstr ""
+msgstr "La piste a déjà été désaimée"
 
-#: tauon.py:6620
-#, fuzzy
+#: tauon.py:6599
 msgid "Track is already liked"
-msgstr "Pistes dans la liste de lecture"
+msgstr "La piste est déjà aimée"
 
 #: tauon.py:6621
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Piste ajoutée aux pistes aimées"
 
 #: tauon.py:6622
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Compte Spotify connecté"
 
 #: tauon.py:6623
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Ce compte Spotify ne lit actuellement rien"
 
 #: tauon.py:6624
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Erreur de démarrage Spotify"
 
 #: tauon.py:6626
 msgid "day"
-msgstr ""
+msgstr "jour"
 
 #: tauon.py:6627
 msgid "days"
-msgstr ""
+msgstr "jours"
 
 #: tauon.py:6629
 msgid "Web server stopped."
-msgstr ""
+msgstr "Le serveur Web s’est arrêté."
 
 #: tauon.py:6726
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Nom d’utilisateur, mot de passe ou nom du serveur manquant"
 
 #: tauon.py:6741
 msgid "Error connecting to PLEX server"
@@ -111,30 +113,32 @@ msgstr "Erreur de connexion au serveur PLEX"
 #: tauon.py:6742
 msgid "Try check login credentials and that server is accessible."
 msgstr ""
+"Essayez de vérifier les informations de connexion et si ce serveur est "
+"accessible."
 
 #: tauon.py:7109
 msgid "Missing username, password and/or server URL"
-msgstr ""
+msgstr "Nom d’utilisateur, mot de passe ou URL du serveur manquant"
 
 #: tauon.py:7151
 msgid "Could not establish connection/authorisation"
-msgstr ""
+msgstr "Impossible d’établir la connexion / l’autorisation"
 
 #: tauon.py:7800
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Arrêter la synchro avant de quitter !"
 
 #: tauon.py:12074 tauon.py:33175
 msgid "Queue"
-msgstr "Lsite d'attente"
+msgstr "File d’attente"
 
 #: tauon.py:12076
 msgid "Playlists + Queue"
-msgstr "Liste de lecture + File d'attente"
+msgstr "Listes de lecture + File d’attente"
 
 #: tauon.py:12078
 msgid "Artist List"
-msgstr "Liste d'artistes"
+msgstr "Liste d’artistes"
 
 #: tauon.py:12080
 msgid "Folder Navigator"
@@ -164,17 +168,16 @@ msgstr "Renommage terminé."
 msgid " filenames were written."
 msgstr " fichiers renommés."
 
-#: tauon.py:12323
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Remplacer la recherche des paroles"
 
 #: tauon.py:12329 tauon.py:12349
 msgid "Substitute"
-msgstr ""
+msgstr "Remplacer"
 
 #: tauon.py:12335 tauon.py:12355
 msgid "with"
-msgstr ""
+msgstr "par"
 
 #: tauon.py:12397
 msgid "Repeat OFF"
@@ -186,7 +189,7 @@ msgstr "Répéter la piste"
 
 #: tauon.py:12399
 msgid "Repeat Album"
-msgstr "Répéter l'album"
+msgstr "Répéter l’album"
 
 #: tauon.py:12433
 msgid "Shuffle OFF"
@@ -259,7 +262,7 @@ msgstr "Ajouter l'album à la file d'attente"
 
 #: tauon.py:12847 tauon.py:15510 tauon.py:25147
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Abandon de la synchro"
 
 #: tauon.py:12850
 msgid "Cancel"
@@ -361,11 +364,11 @@ msgstr ""
 
 #: tauon.py:13349
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Ce dossier n'a pas l'air d'appartenir à un seul album, désolé"
 
 #: tauon.py:13360
 msgid "Looking up MusicBrainz ID..."
-msgstr "Recherche de l'ID  MusicBrainz..."
+msgstr "Recherche de l’ID MusicBrainz…"
 
 #: tauon.py:13422
 msgid "Cover art downloaded from fanart.tv"
@@ -409,7 +412,7 @@ msgstr "Récupération rapide de la pochette"
 
 #: tauon.py:13674
 msgid "Paste Spotify Album"
-msgstr ""
+msgstr "Coller l'album Spotify"
 
 #: tauon.py:13890 tauon.py:30692 tauon.py:40326
 msgid "Rename"
@@ -422,7 +425,7 @@ msgstr "En cours"
 
 #: tauon.py:13903
 msgid "Unpin"
-msgstr ""
+msgstr "Désépingler"
 
 #: tauon.py:13912
 msgid "Unlock"
@@ -436,10 +439,9 @@ msgstr "Vérrouiller"
 msgid "Clear"
 msgstr "Vider"
 
-#: tauon.py:14249
-#, fuzzy
+#: tauon.py:14202
 msgid "Rescanning folders..."
-msgstr "Réanalyser le dossier"
+msgstr "Réanalyse des dossiers…"
 
 #: tauon.py:14535 tauon.py:40335
 msgid "Delete"
@@ -447,11 +449,11 @@ msgstr "Supprimer"
 
 #: tauon.py:14592
 msgid "Add Spotify Album"
-msgstr ""
+msgstr "Ajouter un album Spotify"
 
 #: tauon.py:14694
 msgid "Playlist contains non-Spotify tracks"
-msgstr ""
+msgstr "La liste de lecture contient des pistes non Spotify"
 
 #: tauon.py:14700
 #, fuzzy
@@ -476,15 +478,16 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
+"Vous retirez ou modifiez ce comportement en allant dans « Divers » > « "
+"Modifier le génerateur… »"
 
 #: tauon.py:15304 tauon.py:18927
 msgid "New Playlist"
 msgstr "Nouvelle liste de lecture"
 
-#: tauon.py:15309
-#, fuzzy
+#: tauon.py:15262
 msgid "Upload"
-msgstr "Recharger"
+msgstr "Téléverser"
 
 #: tauon.py:15310
 #, fuzzy
@@ -493,15 +496,15 @@ msgstr "Générer"
 
 #: tauon.py:15311
 msgid "Generate…"
-msgstr "Générer..."
+msgstr "Génération…"
 
 #: tauon.py:15312
 msgid "Sort…"
-msgstr "Trier..."
+msgstr "Tri…"
 
 #: tauon.py:15313
 msgid "From Current…"
-msgstr "À partir de l'actuel..."
+msgstr "À partir de l’actuel…"
 
 #: tauon.py:15318
 msgid "Sort by Filepath"
@@ -1611,33 +1614,31 @@ msgstr ""
 
 #: tauon.py:24606 tauon.py:25154
 msgid "?"
-msgstr " ?"
+msgstr "?"
 
 #: tauon.py:24617
 msgid "Client ID"
-msgstr ""
+msgstr "ID du client"
 
 #: tauon.py:24631
 msgid "Client Secret"
-msgstr ""
+msgstr "Client secret"
 
-#: tauon.py:24651
-#, fuzzy
+#: tauon.py:24584
 msgid "Forget Account"
 msgstr "Oublier le compte"
 
 #: tauon.py:24655
 msgid "Authorise"
-msgstr ""
+msgstr "Autoriser"
 
 #: tauon.py:24672
 msgid "Prefer launching web player"
 msgstr ""
 
-#: tauon.py:24676 tauon.py:24677
-#, fuzzy
+#: tauon.py:24609 tauon.py:24610
 msgid "Import Albums"
-msgstr "Albums les plus longs"
+msgstr "Importer les albums"
 
 #: tauon.py:24684 tauon.py:24695 tauon.py:24709
 msgid "Please wait until current job is finished"
@@ -1649,24 +1650,23 @@ msgstr ""
 
 #: tauon.py:24700
 msgid "Import user playlist..."
-msgstr ""
+msgstr "Importer la liste de lecture utilisateur…"
 
 #: tauon.py:24713
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
-#: tauon.py:24723 tauon.py:24780 tauon.py:24837
-#, fuzzy
+#: tauon.py:24656 tauon.py:24713 tauon.py:24770
 msgid "Username / Email"
-msgstr "Nom d'utilisateur :"
+msgstr "Nom d’utilisateur / courriel"
 
 #: tauon.py:24737 tauon.py:24794 tauon.py:24851
 msgid "Password"
-msgstr ""
+msgstr "Mot de passe"
 
 #: tauon.py:24751 tauon.py:24808
 msgid "Server URL"
-msgstr ""
+msgstr "URL du serveur"
 
 #: tauon.py:24765 tauon.py:24822 tauon.py:24879
 #, fuzzy
@@ -1681,15 +1681,14 @@ msgstr ""
 msgid "PLEX network streaming"
 msgstr ""
 
-#: tauon.py:24865
-#, fuzzy
+#: tauon.py:24798
 msgid "Server name"
-msgstr "Nom d'utilisateur :"
+msgstr "Nom du serveur"
 
 #: tauon.py:24888
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr ""
-"Fanart.tv peut être utilisé comme source pour les images d'artistes et les "
+"Fanart.tv peut être utilisé comme source pour les images d’artistes et les "
 "pochettes."
 
 #: tauon.py:24895 tauon.py:31620
@@ -1722,7 +1721,7 @@ msgstr "Coller la clé d'autorisation"
 
 #: tauon.py:24968 tauon.py:24969
 msgid "Username:"
-msgstr "Nom d'utilisateur :"
+msgstr "Nom d’utilisateur :"
 
 #: tauon.py:24975 tauon.py:24976
 msgid "Login"
@@ -1737,8 +1736,9 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
-"Cliquez sur \"Identification\" pour ouvrir la page d'autorisation sur last."
-"fm et suivez les instructions, puis revenez ici et cliquez sur \"Terminé\"."
+"Cliquez sur « Identification » pour ouvrir la page d'autorisation sur "
+"last.fm et suivez les instructions, puis revenez ici et cliquez sur « "
+"Terminé »."
 
 #: tauon.py:24984
 msgid "Forget account"
@@ -1846,7 +1846,7 @@ msgstr "Ouvrir le dossier de sortie"
 
 #: tauon.py:25166 tauon.py:25167
 msgid "Sync..."
-msgstr ""
+msgstr "Synchro…"
 
 #: tauon.py:25175
 msgid "Save opus as .ogg extension"
@@ -1902,7 +1902,7 @@ msgstr "Crédits"
 
 #: tauon.py:25446 tauon.py:25448
 msgid "Donate"
-msgstr ""
+msgstr "Faire un don"
 
 #: tauon.py:25458
 msgid "Chart Grid Generator"
@@ -2135,7 +2135,7 @@ msgstr "Fin de la liste de lecture"
 
 #: tauon.py:30497
 msgid "Internet Radio"
-msgstr ""
+msgstr "Webradio"
 
 #: tauon.py:30509
 msgid "Name / Title"
@@ -2147,23 +2147,24 @@ msgstr ""
 
 #: tauon.py:30532
 msgid "Save"
-msgstr ""
+msgstr "Enregistrer"
 
 #: tauon.py:30535
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Entrez une URL de flux"
 
 #: tauon.py:30552
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
+"Impossible de valider l’URL. Elle doit commencer par https:// ou http://"
 
 #: tauon.py:30690
 msgid "Paste Website Link"
-msgstr ""
+msgstr "Coller le lien du site web"
 
 #: tauon.py:30691
 msgid "Visit Website"
-msgstr ""
+msgstr "Visitez le site web"
 
 #: tauon.py:30694
 msgid "Remove All After"
@@ -2323,7 +2324,7 @@ msgstr "Réanalyser du dossier terminée."
 
 #: tauon.py:39673
 msgid "Queue is Empty"
-msgstr ""
+msgstr "La file d’attente est vide"
 
 #: tauon.py:39996 tauon.py:40016 tauon.py:40035 tauon.py:40055 tauon.py:40103
 #: tauon.py:40124 tauon.py:40165 tauon.py:40180 tauon.py:40196 tauon.py:40251
