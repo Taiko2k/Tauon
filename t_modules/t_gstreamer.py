@@ -48,7 +48,6 @@ def player3(tauon):  # GStreamer
     class GPlayer:
 
         def __init__(self):
-
             # This is used to keep track of time between callbacks to progress the seek bar
             self.player_timer = Timer()
 
@@ -674,7 +673,6 @@ def player3(tauon):  # GStreamer
                     pctl.playerCommand = "stopped"
 
                 elif pctl.playerCommand == 'seek':
-                    print("SEEK")
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
@@ -848,7 +846,10 @@ def player3(tauon):  # GStreamer
 
     player = GPlayer()
 
-    player.dm.stop()
+    try:
+        player.dm.stop()
+    except:
+        pass
 
     # Notify main thread we have closed cleanly
     player.exit()
