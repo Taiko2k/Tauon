@@ -6,12 +6,12 @@ v6.2.0
  - Added detection of OGA file extension
  - Added support pasting list of Spotify links
  - Added support for pasting Spotify URI type
+ - Added custom broadcast backend
  - Improved koel library import speed
  - Fixed Spotify playlists not being imported in full
  - Fixed some misc UI elements with scaling
  - Fixed a crash when reading malformed lyrics files
  - Removed BASS backend
-   - Lost broadcast feature
    - Lost spectrum visualiser
    - Lost internet radio recording feature
  - Improved GStreamer backend
@@ -22,7 +22,7 @@ v6.2.0
    - Fixed start of CUE file audible on track jump
    - Fixed a possible issue with track jumping
    - Removed auto output device option
- - Added crude workaround for crash on startup issue
+   - Fixed a possible crash on startup
 
 v6.1.3
 

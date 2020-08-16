@@ -675,6 +675,7 @@ from t_modules.t_tagscan import Wav
 from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
+from t_modules.t_cast import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
 from t_modules.t_spot import SpotCtl
@@ -723,6 +724,7 @@ scroll_timer = Timer()
 perf_timer = Timer()
 quick_d_timer = Timer()
 core_timer = Timer()
+sleep_timer = Timer()
 gallery_select_animate_timer = Timer()
 gallery_select_animate_timer.force_set(10)
 search_clear_timer = Timer()
@@ -2625,8 +2627,8 @@ for t in range(2):
             album_mode_art_size = save[24]
         if save[25] is not None:
             draw_border = save[25]
-        # if save[26] is not None:
-        #     prefs.enable_web = save[26]
+        if save[26] is not None:
+            prefs.enable_web = save[26]
         if save[27] is not None:
             prefs.allow_remote = save[27]
         if save[28] is not None:
@@ -4134,6 +4136,8 @@ class PlayerCtl:
         self.b_start_time = 0
         self.playerCommand = ""
         self.playerSubCommand = ""
+        self.broadcastCommand = ""
+        self.broadcastCommandReady = False
         self.playerCommandReady = False
         self.playing_state = 0
         self.playing_length = 0
@@ -4169,6 +4173,7 @@ class PlayerCtl:
         self.broadcast_position = 0
         self.broadcast_index = 0
         self.broadcast_time = 0
+        self.broadcast_seek_position = 0
         self.broadcast_last_time = 0
         self.broadcast_line = ""
         self.broadcast_clients = []
@@ -5132,8 +5137,8 @@ class PlayerCtl:
 
         pl_id = id_to_pl(pctl.broadcast_playlist)
         if pl_id is None or not pctl.multi_playlist[pl_id][2]:
-            pctl.playerCommand = "encstop"
-            pctl.playerCommandReady = True
+            pctl.broadcastCommand = "encstop"
+            pctl.broadcastCommandReady = True
             show_message("Broadcast stopped", "The broadcasting playlist no longer has any tracks")
             return
 
@@ -5163,8 +5168,8 @@ class PlayerCtl:
                 show_message("No tracks in this playlist can be broadcasted")
             else:
                 show_message("Broadcast stopped", "No tracks in the playlist could be streamed", mode="warning")
-                pctl.playerCommand = "encstop"
-                pctl.playerCommandReady = True
+                pctl.broadcastCommand = "encstop"
+                pctl.broadcastCommandReady = True
             return
 
         pctl.broadcast_position = found
@@ -5176,11 +5181,11 @@ class PlayerCtl:
         pctl.broadcast_line = track.artist + " - " + track.title
 
         if start:
-            pctl.playerCommand = "encstart"
-            pctl.playerCommandReady = True
+            pctl.broadcastCommand = "encstart"
+            pctl.broadcastCommandReady = True
         else:
-            pctl.playerCommand = "cast-next"
-            pctl.playerCommandReady = True
+            pctl.broadcastCommand = "cast-next"
+            pctl.broadcastCommandReady = True
 
         gui.pl_update += 1
 
@@ -6634,6 +6639,17 @@ def id_to_pl(id):
 def pl_to_id(pl):
     return pctl.multi_playlist[pl][6]
 
+class Chunker:
+
+    def __init__(self):
+        self.master_count = 0
+        self.chunks = {}
+        self.header = None
+        self.headers = []
+        self.h2 = None
+
+        self.clients = {}
+
 class Tauon:
 
     def __init__(self):
@@ -6667,6 +6683,9 @@ class Tauon:
         self.pl_gen = pl_gen
         self.QuickThumbnail = QuickThumbnail
         self.pl_to_id = pl_to_id
+        self.chunker = Chunker()
+
+
 
 
     # def log(self, line, title=False):
@@ -18169,6 +18188,14 @@ def queue_deco():
 
 def broadcast_select_track(track_id):
 
+    if shutil.which('ffmpeg') is None:
+        show_message(_("FFmpeg does not appear to be installed"), mode="error")
+        return
+
+    if shutil.which('opusenc') is None:
+        show_message(_("Package opus-tools does not appear to be installed"), mode="error")
+        return
+
     pctl.broadcast_index = track_id
     track = pctl.g(track_id)
 
@@ -18181,11 +18208,11 @@ def broadcast_select_track(track_id):
                           track.title
 
     if pctl.broadcast_active:
-        pctl.playerCommand = "cast-next"
-        pctl.playerCommandReady = True
+        pctl.broadcastCommand = "cast-next"
+        pctl.broadcastCommandReady = True
     else:
-        pctl.playerCommand = "encstart"
-        pctl.playerCommandReady = True
+        pctl.broadcastCommand = "encstart"
+        pctl.broadcastCommandReady = True
 
 
 if prefs.enable_transcode or prefs.backend == 1:
@@ -18198,7 +18225,7 @@ def bass_test(_):
     # return True
     return prefs.backend == 1
 
-#track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
+track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -18964,7 +18991,6 @@ def import_music():
     load_orders.append(load_order)
     switch_playlist(len(pctl.multi_playlist) - 1)
     gui.add_music_folder_ready = False
-print("test47")
 
 x_menu.add(_("Import Music Folder"), import_music, show_test=show_import_music)
 
@@ -19111,26 +19137,32 @@ def toggle_broadcast():
 
     if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
-            show_message("There are no tracks in this playlist to broadcast.", mode='error')
+            show_message(_("There are no tracks in this playlist to broadcast."), mode='error')
             return 0
+        if not prefs.enable_web:
+            show_message(_("You need to start the broadcast web server in settings."))
+            return
         pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.active_playlist_viewing][6])
         pctl.broadcast_position = -1
 
         pctl.advance_broadcast(start=True)
 
     else:
-        pctl.playerCommand = "encstop"
-        pctl.playerCommandReady = True
+        # if key_shift_down:
+        #     pctl.broadcastCommand = "encpause"
+        #     pctl.broadcastCommandReady = True
+        #     return
+
+        pctl.broadcastCommand = "encstop"
+        pctl.broadcastCommandReady = True
 
 
 def broadcast_deco():
     line_colour = colours.menu_text
-    if prefs.backend != 1:
-        line_colour = colours.grey(20)
-        return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
+        # if key_shift_down:
+        #     return [line_colour, colours.menu_background, _("Pause Broadcast")]
         return [line_colour, colours.menu_background, _("Stop Broadcast")] # [24, 25, 60, 255]
-
     return [line_colour, colours.menu_background, None]
 
 
@@ -19146,7 +19178,7 @@ def broadcast_colour():
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
 broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
-#x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
+x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
 
 def clear_queue():
@@ -19241,9 +19273,6 @@ extra_menu.add(_('Revert'), pctl.revert, hint='SHIFT + /', icon=revert_icon)
 
 # extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
 extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
-
-print("test48")
-
 
 def heart_menu_colour():
     if not (pctl.playing_state == 1 or pctl.playing_state == 2):
@@ -19920,9 +19949,6 @@ def show_stop_quick_add(_):
 
 x_menu.add(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add, )
 
-
-print("test49")
-
 def view_tracks():
     # if gui.show_playlist is False:
     #     gui.show_playlist = True
@@ -20198,7 +20224,6 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     gui.update += 1
 
 
-print("TEST50")
 # ---------------------
 added = []
 
@@ -22970,7 +22995,7 @@ from t_modules.t_webserve import webserve
 from t_modules.t_webserve import authserve
 
 if prefs.enable_web is True:
-    webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings])
+    webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
     webThread.daemon = True
     webThread.start()
 
@@ -23249,16 +23274,16 @@ def toggle_enable_web(mode=0):
     if mode == 1:
         return prefs.enable_web
 
-    if not prefs.enable_web:
-        # if prefs.backend != 1:
-        #     show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
-        #                  _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
-        return
+    # if not prefs.enable_web:
+    #     # if prefs.backend != 1:
+    #     #     show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
+    #     #                  _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
+    #     return
 
     prefs.enable_web ^= True
 
     if prefs.enable_web and not gui.web_running:
-        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings])
+        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
         webThread.daemon = True
         webThread.start()
         show_message(_("Web server starting"), _("External connections will be accepted."), mode='done')
@@ -24294,10 +24319,10 @@ class Over:
 
         else:
 
-            # y += 25 * gui.scale
+            y += 25 * gui.scale
 
-            # self.toggle_square(x, y, toggle_enable_web,
-            #                    _("Serve broadcast landing page"))
+            self.toggle_square(x, y, toggle_enable_web,
+                               _("Run web server for broadcasting"))
 
             y += 25 * gui.scale
 
@@ -27061,28 +27086,29 @@ class TopPanel:
 
             if input.mouse_click and coll((x, y, 100 * gui.scale, 11)):
                 newtime = ((mouse_position[0] - x) / (100 * gui.scale)) * pctl.master_library[pctl.broadcast_index].length
-                pctl.broadcast_time = newtime
-                pctl.playerCommand = 'encseek'
-                pctl.playerCommandReady = True
+                pctl.broadcast_seek_position = newtime
+                pctl.broadcastCommand = 'encseek'
+                pctl.broadcastCommandReady = True
 
 
             x += 110 * gui.scale
-            ddt.text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
+            ddt.text((x, y), str(len(tauon.chunker.clients)), [70, 85, 230, 255], 11)
 
             self.drag_zone_start_x = x + 21 * gui.scale
 
             if input.mouse_click and coll((x-5, y-5, 20, 24)):
                 line = ""
                 input.mouse_click = False
-                for client in pctl.broadcast_clients:
-                    line += client.split(":")[0] + "  "
+                for ip, timestamp in tauon.chunker.clients.values():
+                    print(ip)
+                    line += ip + " "
 
-                if len(pctl.broadcast_clients) == 0:
-                    show_message("There are currently no connected clients")
-                elif len(pctl.broadcast_clients) == 1:
-                    show_message("There is " + str(len(pctl.broadcast_clients)) + " inbound connection.", line, mode='info')
+                if len(tauon.chunker.clients) == 0:
+                    show_message(_("There are currently no connected clients"))
+                elif len(tauon.chunker.clients) == 1:
+                    show_message(_("There is 1 inbound connection."), line, mode='info')
                 else:
-                    show_message("There are " + str(len(pctl.broadcast_clients)) + " inbound connections.", line,
+                    show_message(_("There are %d inbound connections.") % len(tauon.chunker.clients), line,
                                  mode='info')
 
         # if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
@@ -35789,6 +35815,7 @@ SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
 
 
+
 class ThreadManager:
 
     def __init__(self):
@@ -35797,6 +35824,7 @@ class ThreadManager:
         self.worker2 = None  # Art bg, search
         self.worker3 = None  # Gallery rendering
         self.playback = None
+        self.player_lock = threading.Lock()
 
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
@@ -35815,24 +35843,25 @@ class ThreadManager:
             return False
         return self.playback.is_alive()
 
+caster = threading.Thread(target=enc, args=[tauon])
+caster.daemon = True
+caster.start()
 
 tm = ThreadManager()
+tauon.tm = tm
 tm.ready_playback()
 
 thread = threading.Thread(target=worker1)
 thread.daemon = True
 thread.start()
-
+#
 thread = threading.Thread(target=worker2)
 thread.daemon = True
 thread.start()
-
+#
 thread = threading.Thread(target=worker3)
 thread.daemon = True
 thread.start()
-# thread = threading.Thread(target=worker3)
-# thread.daemon = True
-# thread.start()
 
 thread = threading.Thread(target=worker4)
 thread.daemon = True
@@ -36833,7 +36862,7 @@ mouse_wheel = 0
 
 while pctl.running:
     # bm.get('main')
-
+    #time.sleep(100)
     if k_input:
 
         keymaps.hits.clear()
@@ -36888,7 +36917,7 @@ while pctl.running:
     # gui.update = 2
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
-
+        sleep_timer.set()
         # print(event.type)
 
         # if event.type == SDL_SYSWMEVENT:
@@ -37308,10 +37337,16 @@ while pctl.running:
     # ----------------
     # This section of code controls the internal processing speed or 'frame-rate'.
     # It's pretty messy.
-    if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
-        console.print("WARNING: The playlist failed to render at the latest position!!!!")
+    # if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
+    #     console.print("WARNING: The playlist failed to render at the latest position!!!!")
 
     power += 1
+
+    if pctl.playerCommandReady:
+        try:
+            tm.player_lock.release()
+        except:
+            pass
 
     if gui.frame_callback_list:
         i = len(gui.frame_callback_list) - 1
@@ -37348,14 +37383,14 @@ while pctl.running:
     if gui.level_update and not album_scroll_hold and not scroll_hold:
         power = 500
 
-    if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
-        power = 500
-        if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
-            gui.spec2_timer.set()
-            gui.level_update = True
-            vis_update = True
-        else:
-            SDL_Delay(5)
+    # if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
+    #     power = 500
+    #     if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
+    #         gui.spec2_timer.set()
+    #         gui.level_update = True
+    #         vis_update = True
+    #     else:
+    #         SDL_Delay(5)
 
     if not pctl.running:
         break
@@ -37365,12 +37400,12 @@ while pctl.running:
 
     if power < 500:
 
-        SDL_Delay(30)
-
+        time.sleep(0.03)
         if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
-                SDL_WaitEventTimeout(None, 1000)
-                check_transfer_p()
+            if sleep_timer.get() > 5:
+                time.sleep(0.30)
 
+            check_transfer_p()
         continue
 
     else:
@@ -37410,7 +37445,6 @@ while pctl.running:
     #     print('OK')
     # if window_size[0] / window_size[1] > 16 / 9:
     #     print("A")
-
 
     if k_input:
 
@@ -37880,6 +37914,21 @@ while pctl.running:
 
             if keymaps.test("add-to-queue") and pctl.selected_ready():
                 add_selected_to_queue()
+
+            if keymaps.test("cycle-theme"):
+                gui.reload_theme = True
+                gui.theme_temp_current = -1
+                gui.temp_themes.clear()
+                theme += 1
+
+            if keymaps.test("cycle-theme-reverse"):
+                gui.theme_temp_current = -1
+                gui.temp_themes.clear()
+                pref_box.devance_theme()
+
+            if keymaps.test("reload-theme"):
+                gui.reload_theme = True
+
     # if mouse_position[1] < 1:
     #     mouse_down = False
 
@@ -37946,8 +37995,6 @@ while pctl.running:
         # gui.pl_update = 1
         # loading_in_progress = False
 
-
-
     if update_layout:
 
         update_layout_do()
@@ -37969,20 +38016,6 @@ while pctl.running:
 
     # -----------------------------------------------------
     # THEME SWITCHER--------------------------------------------------------------------
-    if keymaps.test("cycle-theme"):
-        gui.reload_theme = True
-        gui.theme_temp_current = -1
-        gui.temp_themes.clear()
-        theme += 1
-
-    if keymaps.test("cycle-theme-reverse"):
-        gui.theme_temp_current = -1
-        gui.temp_themes.clear()
-        pref_box.devance_theme()
-
-    if keymaps.test("reload-theme"):
-        gui.reload_theme = True
-
 
     if gui.reload_theme is True:
 
@@ -41218,17 +41251,23 @@ while pctl.running:
     # -------------------------------------------------------------------------------------------
     # Misc things to update every tick
 
-    # Broadcast control
+    # # Broadcast control
     if pctl.broadcast_active and pctl.broadcast_time > pctl.master_library[
             pctl.broadcast_index].length:
         pctl.advance_broadcast()
+    #
+    # # elif pctl.join_broadcast and pctl.broadcast_active:
+    # #     pctl.broadcast_index = pctl.track_queue[pctl.queue_step]
+    # #     pctl.broadcast_time = pctl.playing_time
+    #
+    if pctl.broadcast_active and round(pctl.broadcast_time) != pctl.broadcast_last_time:
+        pctl.broadcast_last_time = round(pctl.broadcast_time)
 
-    # elif pctl.join_broadcast and pctl.broadcast_active:
-    #     pctl.broadcast_index = pctl.track_queue[pctl.queue_step]
-    #     pctl.broadcast_time = pctl.playing_time
+        for id, value in tauon.chunker.clients.items():
+            if time.time() - value[1] > 5:
+                del tauon.chunker.clients[id]
+                break
 
-    if pctl.broadcast_active and pctl.broadcast_time != pctl.broadcast_last_time:
-        pctl.broadcast_last_time = pctl.broadcast_time
         gui.update += 1
     # if pctl.broadcast_active and pctl.broadcast_time == 0:
     #     gui.pl_update = 1
@@ -41277,19 +41316,22 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
     print("Saving play state...")
     prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
-pctl.playerCommand = "unload"
-pctl.playerCommandReady = True
-
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
-
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 
 save_state()
+
+pctl.playerCommand = "unload"
+pctl.playerCommandReady = True
+try:
+    tm.player_lock.release()
+except:
+    pass
 
 if system == "windows" or msys:
     tray.stop()

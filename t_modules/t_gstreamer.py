@@ -26,8 +26,6 @@ from t_modules.t_extra import Timer
 import gi
 from gi.repository import GLib
 
-print("GST 1")
-
 gi.require_version('Gst', '1.0')
 gi.require_version('GstController', '1.0')
 from gi.repository import Gst, GstController
@@ -36,11 +34,6 @@ import threading
 import requests
 import urllib.parse
 from hsaudiotag import auto
-import re
-import math
-
-print("GST 2")
-
 
 
 def player3(tauon):  # GStreamer
@@ -52,13 +45,9 @@ def player3(tauon):  # GStreamer
     prefs = tauon.prefs
 
 
-
     class GPlayer:
 
         def __init__(self):
-
-            print("GST 3")
-
             # This is used to keep track of time between callbacks to progress the seek bar
             self.player_timer = Timer()
 
@@ -71,23 +60,16 @@ def player3(tauon):  # GStreamer
             Gst.init([])
             self.mainloop = GLib.MainLoop()
 
-            print("GST 4")
-
             # Get list of available audio device
-
-            devices = []
             outputs = {}
-
             devices = ["PulseAudio", "ALSA", "JACK"]
             if tauon.snap_mode:
                 devices.remove("JACK")
                 devices.remove("ALSA")
 
-
-
-            dm = Gst.DeviceMonitor()
-            dm.start()
-            for device in dm.get_devices():
+            self.dm = Gst.DeviceMonitor()
+            self.dm.start()
+            for device in self.dm.get_devices():
                 if device.get_device_class() == "Audio/Sink":
                     element = device.create_element(None)
                     type_name = element.get_factory().get_name()
@@ -97,8 +79,7 @@ def player3(tauon):  # GStreamer
                     # This is used by the UI to present list of options to the user in audio settings
                     outputs[display_name] = (type_name, device_name)
                     devices.append(display_name)
-
-            dm.stop()
+            #dm.stop()
             pctl.gst_outputs = outputs
             pctl.gst_devices = devices
 
@@ -116,10 +97,8 @@ def player3(tauon):  # GStreamer
             self._sink = Gst.ElementFactory.make("bin", "sink")
             self._sink.add(self._output)
 
-            print("GST 5")
             # Spectrum -------------------------
-            # This kind of works, but is a different result to that of the bass backend.
-            # This seems linear and also less visually appealing.
+            # Cant seem to figure out how to process these magnitudes in a way that looks good
 
             # self.spectrum = Gst.ElementFactory.make("spectrum", "spectrum")
             # self.spectrum.set_property('bands', 50)
@@ -156,11 +135,10 @@ def player3(tauon):  # GStreamer
                     self._eq.set_property("band" + str(i), level)
                 else:
                     self._eq.set_property("band" + str(i), 0.0)
-            # Set up sink pad for the intermediate bin via the
-            #  first element (volume)
-            ghost = Gst.GhostPad.new(
-                "sink", self._eq.get_static_pad("sink"))
 
+            # Set up sink pad for the intermediate bin via the
+            # first element (volume)
+            ghost = Gst.GhostPad.new("sink", self._eq.get_static_pad("sink"))
             self._sink.add_pad(ghost)
 
             # Connect the playback bin to to the intermediate bin sink pad
@@ -169,6 +147,7 @@ def player3(tauon):  # GStreamer
             # The pipeline should look something like this -
             # (player) -> [(eq) -> (volume) -> (output)]
 
+            # Create controller for pause/resume fading
             self.c_source = GstController.InterpolationControlSource()
             self.c_source.set_property('mode', GstController.InterpolationMode.LINEAR)
             self.c_binding = GstController.DirectControlBinding.new(self._vol, "volume", self.c_source)
@@ -177,7 +156,7 @@ def player3(tauon):  # GStreamer
             # Set callback for the main callback loop
             GLib.timeout_add(50, self.main_callback)
 
-            # self.playbin.connect("about-to-finish", self.about_to_finish)  # Not used by anything
+            # self.playbin.connect("about-to-finish", self.about_to_finish)  # Not used
 
             # # Enable bus to get spectrum messages
             bus = self.playbin.get_bus()
@@ -195,31 +174,12 @@ def player3(tauon):  # GStreamer
             self.dl_ready = True
             self.using_cache = False
             self.temp_path = ""  # Full path + filename
-
-            print("GST 6")
-            # # Broadcasting pipeline ------------
-            #
-            # # This works, but only for one track, switching tracks seems to be a more complicated process.
-            #
-            # self.b_playbin = Gst.ElementFactory.make("playbin", "player")
-            #
-            # # Create output bin
-            # # Using tcpserversink seems to mostly work with the html5 player, though an HTTP server may be preferred.
-            # self._b_output = Gst.parse_bin_from_description(
-            #    "audioconvert ! vorbisenc ! oggmux ! tcpserversink port=8000", ghost_unlinked_pads=True)
-            #    #"autoaudiosink", ghost_unlinked_pads=True)
-            #
-            # # Connect the playback bin to to the output bin
-            # self.b_playbin.set_property("audio-sink", self._b_output)
-            # # ----------------------------------------
-
-
             self.level_train = []
+
             # Start GLib mainloop
             self.mainloop.run()
 
 
-        # # Used to get spectrum data and pass onto UI
         def on_message(self, bus, msg):
             struct = msg.get_structure()
             #print(struct.get_name())
@@ -287,8 +247,6 @@ def player3(tauon):  # GStreamer
             #         gui.level_update = True
             #
             # return True
-
-
 
 
         def check_duration(self):
@@ -360,9 +318,10 @@ def player3(tauon):  # GStreamer
 
         def main_callback(self):
 
+            if not pctl.playerCommandReady and pctl.playing_state == 0:
+                tauon.tm.player_lock.acquire()
             # Level meter visualiser
             if gui.vis == 1:
-
                 if pctl.playing_state == 1:
                     gui.level_update = True
                     while self.level_train and self.level_train[0][0] < time.time():
@@ -408,17 +367,11 @@ def player3(tauon):  # GStreamer
 
                 # open:     Start playback of a file
                 #           Path given by pctl.target_open at position pctl.start_time_target + pctl.jump_time
-                #           todo: use a crossfade from previous if self.playerSubCommand != "now"
-                #                 of duration prefs.cross_fade_time (but still use gapless if near end of track)
                 # stop:     Stop playback (Implies release file)
-                #           todo: use a fade if prefs.use_pause_fade of duration prefs.pause_fade_time
                 # runstop:  Stop playback but let finish if we are near the end of the file
                 # pauseon:  Pause playback (be ready to resume)
-                #           todo: use a fade if prefs.use_pause_fade of duration prefs.pause_fade_time
                 # pauseoff: Resume playback if paused
-                #           todo: use a fade if prefs.use_pause_fade of duration prefs.pause_fade_time
                 # volume:   Set to the volume specified by pctl.player_volume (0 to 100)
-                #           todo: use a fade of duration prefs.change_volume_fade_time
                 # seek:     Seek to position given by pctl.new_time + pctl.start_time (don't resume playback if paused)
                 # url:      Start playback of a shoutcast/icecast stream. URL specified by pctl.url
                 #           todo: start recording if pctl.record_stream  (rec button is current disabled for GST in UI)
@@ -426,18 +379,6 @@ def player3(tauon):  # GStreamer
                 #                 automatically name files and split on metadata change
                 # unload:   Stop, cleanup and exit thread
                 # done:     Tell the main thread we finished doing a special request it was waiting for (such as unload)
-                #
-                # encstart:  todo: Start a icecast/shoutcast style HTTP stream
-                #                  Given file from pctl.target_open
-                #                  Starting position given by pctl.b_start_time
-                #                  Title given by pctl.broadcast_line
-                #                  INCREMENT pctl.broadcast_time with time
-                # encseek:   todo: Seek to postion pctl.b_start_time + pctl.broadcast_time
-                # cast-next: todo: Switch stream to given track (same as encstart but with existing stream)
-                # encstop:   todo: Stop and shut-down HTTP stream
-
-                # Note: Although the BASS side supports end of track crossfade setting, I don't think this is necessary
-                #       going forward as gapless is almost always preferable.
 
                 # Tip: When performing actions that take a small measure of time, you can simply block the thread until
                 #      done.
@@ -451,12 +392,11 @@ def player3(tauon):  # GStreamer
                 # - 1024 samples (returns 512 values)
                 # - Combined left and right channels
                 # - Binned to particular numbers of bins and passed onto UI after some scaling and truncating
-                # There's also a level meter which just takes peak "level" (scaled in someway perhaps)
 
                 pctl.download_time = 0
                 url = None
                 if pctl.playerCommand == 'open' and pctl.target_object:
-                    print("Start track")
+                    # print("Start track")
                     track = pctl.target_object
 
                     if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
@@ -484,7 +424,6 @@ def player3(tauon):  # GStreamer
                             pctl.playerCommand = ""
                             self.main_callback()
                             return
-
 
                     elif os.path.isfile(track.fullpath):
                         # File exists so continue
@@ -521,7 +460,7 @@ def player3(tauon):  # GStreamer
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
-                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now' and pctl.playing_time > 4:
+                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now': # and pctl.playing_time > 4:
                         #print("Use GStreamer Gapless transition")
                         gapless = True
 
@@ -558,7 +497,6 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_property('volume', 0.0)
                     else:
                         self.playbin.set_property('volume', pctl.player_volume / 100)
-                    #if pctl.start_time_target == 0:
 
                     self.playbin.set_state(Gst.State.PLAYING)
                     if pctl.jump_time == 0:
@@ -584,10 +522,9 @@ def player3(tauon):  # GStreamer
 
                         self.playbin.set_property('volume', pctl.player_volume / 100)
 
-
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
-
+                        # print("Gapless go")
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
 
                             time.sleep(0.02)
@@ -613,47 +550,37 @@ def player3(tauon):  # GStreamer
                     if self.loaded_track:
                         star_store.add(self.loaded_track.index, add_time)
 
-                    pctl.jump_time = 0
-                    time.sleep(0.15)
-
                     self.loaded_track = track
+
+                    pctl.jump_time = 0
+                    time.sleep(1)
+                    add_time = self.player_timer.hit()
+                    if add_time > 2:
+                        add_time = 2
+                    if add_time < 0:
+                        add_time = 0
+                    pctl.playing_time += add_time
+                    pctl.decode_time = pctl.playing_time
+
+                    if self.loaded_track:
+                        star_store.add(self.loaded_track.index, add_time)
 
                     self.check_duration()
                     self.player_timer.hit()
-
-                elif pctl.playerCommand == 'encstart':
-                    print("Start Gstreamer broadcast")
-
-                    #self.b_pipe.set_state(Gst.State.PLAYING)
-                    self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
-                    self.b_playbin.set_state(Gst.State.PLAYING)
-
-                    pctl.broadcast_active = True
-
-                elif pctl.playerCommand == 'cast-next':
-                    self.b_playbin.set_state(Gst.State.NULL)
-                    print("castt next")
-                    time.sleep(0.3)
-                    # self.playbin.set_state(Gst.State.READY)
-                    #time.sleep(0.15)
-                    self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
-                    self.b_playbin.set_state(Gst.State.PLAYING)
 
                 elif pctl.playerCommand == 'url':
 
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
-                        self.playbin.set_state(Gst.State.READY)
+                        self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.1)
 
                     # Open URL stream
                     self.playbin.set_property('uri', pctl.url)
                     self.playbin.set_property('volume', pctl.player_volume / 100)
-                    time.sleep(0.1)
                     self.playbin.set_state(Gst.State.PLAYING)
                     self.play_state = 3
                     self.player_timer.hit()
-
 
                 elif pctl.playerCommand == 'seteq':
                     for i, level in enumerate(prefs.eq):
@@ -707,13 +634,11 @@ def player3(tauon):  # GStreamer
                     pctl.playerCommand = "stopped"
 
                 elif pctl.playerCommand == 'seek':
-
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
                         
                     elif self.play_state > 0:
-
                         if not self.using_cache and pctl.target_object.is_network and \
                                 not pctl.target_object.file_ext == "KOEL" and \
                                 not (pctl.target_object.file_ext == "SUB" and pctl.target_object.fullpath.endswith("mp3")):
@@ -757,13 +682,12 @@ def player3(tauon):  # GStreamer
                         self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                                  (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
 
-
                         # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
                         # update the seek indicator immediately and hold the thread for a moment
                         if pctl.target_object.is_network:
                             pctl.playing_time = pctl.new_time + pctl.start_time_target
                             pctl.decode_time = pctl.playing_time
-                            time.sleep(0.2)
+                            time.sleep(0.25)
 
 
                 elif pctl.playerCommand == 'pauseon':
@@ -871,12 +795,20 @@ def player3(tauon):  # GStreamer
                 pctl.playerCommand = 'done'
 
             else:
-                GLib.timeout_add(19, self.main_callback)
+                if gui.vis == 1:
+                    GLib.timeout_add(19, self.main_callback)
+                else:
+                    GLib.timeout_add(100, self.main_callback)
 
         def exit(self):
             pctl.playerCommand = 'done'
 
     player = GPlayer()
+
+    try:
+        player.dm.stop()
+    except:
+        pass
 
     # Notify main thread we have closed cleanly
     player.exit()

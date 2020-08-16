@@ -18,11 +18,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import html
-import requests
+import time
+import random
 
-def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
+def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
+
 
     if prefs.enable_web is False:
         return 0
@@ -33,6 +34,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
         gui.show_message("Web server failed to start.", "Required dependency 'flask' was not found.", 'warning')
         return 0
 
+    chunker = tauon.chunker
     gui.web_running = True
     app = Flask(__name__)
 
@@ -48,6 +50,29 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings):
         gui.web_running = False
         gui.show_message(strings.web_server_stopped)
         return 'Server shutting down...'
+
+    @app.route('/stream.ogg',)
+    def test2():
+        ip = request.remote_addr
+
+        def generate(ip):
+            id = random.random()
+            position = max(chunker.master_count - 7, 1)
+            for header in chunker.headers:
+                yield header
+            while True:
+                if not pctl.broadcast_active:
+                    return
+                if 1 < position < chunker.master_count:
+                    while 1 < position < chunker.master_count:
+                        yield chunker.chunks[position]
+                        position += 1
+                else:
+                    time.sleep(0.01)
+                    chunker.clients[id] = (ip, time.time())
+
+        return Response(generate(ip), mimetype="audio/ogg")
+
 
     @app.route('/radio/')
     def radio():
