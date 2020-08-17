@@ -44,13 +44,14 @@ def player3(tauon):  # GStreamer
     gui = tauon.gui
     prefs = tauon.prefs
 
-
     class GPlayer:
 
         def __init__(self):
-            # This is used to keep track of time between callbacks to progress the seek bar
+
+            # This is used to keep track of time between callbacks.
             self.player_timer = Timer()
 
+            # Store the track object that is currently playing
             self.loaded_track = None
 
             # This is used to keep note of what state of playing we should be in
@@ -60,13 +61,14 @@ def player3(tauon):  # GStreamer
             Gst.init([])
             self.mainloop = GLib.MainLoop()
 
-            # Get list of available audio device
+            # Populate list of output devices with defaults
             outputs = {}
             devices = ["PulseAudio", "ALSA", "JACK"]
-            if tauon.snap_mode:
+            if tauon.snap_mode:  # Snap permissions don't support these by default
                 devices.remove("JACK")
                 devices.remove("ALSA")
 
+            # Get list of available audio device
             self.dm = Gst.DeviceMonitor()
             self.dm.start()
             for device in self.dm.get_devices():
@@ -79,14 +81,15 @@ def player3(tauon):  # GStreamer
                     # This is used by the UI to present list of options to the user in audio settings
                     outputs[display_name] = (type_name, device_name)
                     devices.append(display_name)
-            #dm.stop()
+
+            # dm.stop()  # Causes a segfault sometimes
             pctl.gst_outputs = outputs
             pctl.gst_devices = devices
 
             # Create main "playbin" pipeline for playback
             self.playbin = Gst.ElementFactory.make("playbin", "player")
 
-            # Create output bin
+            # Create custom output bin from user preferences
             if not prefs.gst_use_custom_output:
                 prefs.gst_output = prefs.gen_gst_out()
 
@@ -110,16 +113,11 @@ def player3(tauon):  # GStreamer
             # self.playbin.set_property('audio-filter', self.spectrum)
             # # ------------------------------------
 
-            # # Level -------------------------
-            # # This kind of works, but is a different result to that of the bass backend.
-            # # This seems linear and also less visually appealing.
-            #
+            # # Level Meter -------------------------
             self.level = Gst.ElementFactory.make("level", "level")
             self.level.set_property('interval', 20000000)
             self.playbin.set_property('audio-filter', self.level)
             # # ------------------------------------
-
-            # Create volume element
 
             self._eq = Gst.ElementFactory.make("equalizer-10bands", "eq")
             self._vol = Gst.ElementFactory.make("volume", "volume")
@@ -130,6 +128,7 @@ def player3(tauon):  # GStreamer
             self._eq.link(self._vol)
             self._vol.link(self._output)
 
+            # Set the equalizer based on user preferences
             for i, level in enumerate(prefs.eq):
                 if prefs.use_eq:
                     self._eq.set_property("band" + str(i), level)
@@ -147,7 +146,7 @@ def player3(tauon):  # GStreamer
             # The pipeline should look something like this -
             # (player) -> [(eq) -> (volume) -> (output)]
 
-            # Create controller for pause/resume fading
+            # Create controller for pause/resume volume fading
             self.c_source = GstController.InterpolationControlSource()
             self.c_source.set_property('mode', GstController.InterpolationMode.LINEAR)
             self.c_binding = GstController.DirectControlBinding.new(self._vol, "volume", self.c_source)
@@ -156,9 +155,9 @@ def player3(tauon):  # GStreamer
             # Set callback for the main callback loop
             GLib.timeout_add(50, self.main_callback)
 
-            # self.playbin.connect("about-to-finish", self.about_to_finish)  # Not used
+            self.playbin.connect("about-to-finish", self.about_to_finish)  # Not used
 
-            # # Enable bus to get spectrum messages
+            # Setup bus and select what types of messages we want to listen for
             bus = self.playbin.get_bus()
             bus.add_signal_watch()
             bus.connect('message::element', self.on_message)
@@ -166,7 +165,7 @@ def player3(tauon):  # GStreamer
             bus.connect('message::error', self.on_message)
             bus.connect('message::tag', self.on_message)
             bus.connect('message::warning', self.on_message)
-            #bus.connect('message::eos', self.on_message)
+            # bus.connect('message::eos', self.on_message)
 
             # Variables used with network downloading
             self.temp_id = "a"
@@ -176,9 +175,14 @@ def player3(tauon):  # GStreamer
             self.temp_path = ""  # Full path + filename
             self.level_train = []
 
+            # Other
+            self.end_timer = Timer()
+
             # Start GLib mainloop
             self.mainloop.run()
 
+        def about_to_finish(self, bin):
+            self.end_timer.set()
 
         def on_message(self, bus, msg):
             struct = msg.get_structure()
@@ -273,6 +277,22 @@ def player3(tauon):  # GStreamer
 
         def download_part(self, url, target, params, id):
 
+            #   GStreamer can't seek some types of HTTP sources.
+            #
+            #   To work around this, when a seek is requested by the user, this
+            #   function facilitates the download of the URL in whole, then loaded
+            #   into GStreamer as a complete file to provide at least some manner of seeking
+            #   ability for the user. (User must wait for full download)
+            #
+            #   (Koel and Airsonic MP3 sources are exempt from this as seeking does work with them)
+            #
+            #   A better solution might be to download file externally then feed the audio data
+            #   into GStreamer as it downloads. This still would have the issue that the whole file
+            #   must have been downloaded before a seek could begin.
+            #
+            #   With the old BASS backend, this was done with the file on disk being constantly
+            #   appended to. Unfortunately GStreamer doesn't support playing files in this manner.
+
             try:
                 part = requests.get(url, stream=True, params=params)
             except:
@@ -301,6 +321,7 @@ def player3(tauon):  # GStreamer
 
                     f.write(chunk)
 
+                    # Periodically update download the progress indicator
                     z += 1
                     if id == self.id:
                         if z == 60:
@@ -320,6 +341,7 @@ def player3(tauon):  # GStreamer
 
             if not pctl.playerCommandReady and pctl.playing_state == 0:
                 tauon.tm.player_lock.acquire()
+
             # Level meter visualiser
             if gui.vis == 1:
                 if pctl.playing_state == 1:
@@ -344,6 +366,7 @@ def player3(tauon):  # GStreamer
 
             # This is the main callback function to be triggered continuously as long as application is running
             if self.play_state == 1 and pctl.playing_time > 1 and not pctl.playerCommandReady:
+
                 pctl.test_progress()  # This function triggers an advance if we are near end of track
 
                 success, state, pending = self.playbin.get_state(3 * Gst.SECOND)
@@ -380,18 +403,15 @@ def player3(tauon):  # GStreamer
                 # unload:   Stop, cleanup and exit thread
                 # done:     Tell the main thread we finished doing a special request it was waiting for (such as unload)
 
-                # Tip: When performing actions that take a small measure of time, you can simply block the thread until
-                #      done.
-
                 # Todo: Visualisers (Hard)
-                # Ideally we would want the same visual effect as the BASS based visualisers.
-                # What we want to do is constantly get binned spectrum data and pass it to the UI (in certain formats).
-                # Specifically, current format used with BASS module is:
-                # - An FFT of (a current segment of?) raw sample data
-                # - Non-complex (magnitudes of the first half of the FFT are returned)
-                # - 1024 samples (returns 512 values)
+                # Ideally we would want the same visual effect as the old BASS based visualisers.
+                # What we want to do is constantly get binned spectrum data and pass it to the UI.
+                # Specifically, format used with BASS module is:
+                # - An FFT of sample data with Hanning window applied
+                # - 1024 samples (returns first half, 512 values)
+                # - Non-complex (magnitudes)
                 # - Combined left and right channels
-                # - Binned to particular numbers of bins and passed onto UI after some scaling and truncating
+                # - Binned to particular numbers of bars and passed onto UI after some scaling and truncating
 
                 pctl.download_time = 0
                 url = None
@@ -425,11 +445,11 @@ def player3(tauon):  # GStreamer
                             self.main_callback()
                             return
 
+                    # If the target is a file, check that is exists
                     elif os.path.isfile(track.fullpath):
-                        # File exists so continue
                         track.found = True
                     else:
-                        # File does not exist, trigger an advance
+                        # File does not exist, force trigger an advance
                         pctl.target_object.found = False
                         tauon.console.print("Missing File: " + track.fullpath, 2)
                         pctl.playing_state = 0
@@ -444,27 +464,27 @@ def player3(tauon):  # GStreamer
                     current_duration = 0
 
                     if track.is_network:
-
                         if params:
                             self.url = url + ".view?" + urllib.parse.urlencode(params)
                         else:
                             self.url = url
 
-                        #print(self.url)
+                        # print(self.url)
 
                     if self.play_state != 0:
                         # Determine time position of currently playing track
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                         current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
-                        #print("We are " + str(current_duration - current_time) + " seconds from end.")
+                        # print("We are " + str(current_duration - current_time) + " seconds from end.")
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
-                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now': # and pctl.playing_time > 4:
-                        #print("Use GStreamer Gapless transition")
+                            current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now' \
+                            and self.end_timer.get() > 3:
+
                         gapless = True
 
-                    # If we are not supposed to be playing, stop (crossfade todo)
+                    # We're not at the end of the last track so reset the pipeline
                     else:
                         self.playbin.set_state(Gst.State.NULL)
 
@@ -754,7 +774,7 @@ def player3(tauon):  # GStreamer
                 # Get jump in time since last call
                 add_time = self.player_timer.hit()
 
-                # Limit the jump. Timer is monotonic, but we'll double check, just in case.
+                # Limit the jump.
                 if add_time > 2:
                     add_time = 2
                 if add_time < 0:
