@@ -5877,7 +5877,7 @@ class LastFMapi:
         # This is step 2 where the user clicks "Done"
 
         if self.sg is None:
-            show_message(_("You need to login first"))
+            show_message(_("You need to log in first"))
             return
 
         try:

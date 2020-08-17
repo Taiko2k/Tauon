@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-08-16 21:18+1200\n"
+"POT-Creation-Date: 2020-08-17 18:07+1200\n"
 "PO-Revision-Date: 2019-05-01 22:39+1200\n"
 "Last-Translator:  <captain.gxj@gmail.com>\n"
 "Language-Team: Language zh_CN\n"
@@ -37,7 +37,8 @@ msgid "Web auth page opened"
 msgstr "网络认证页面已打开"
 
 #: tauon.py:5880
-msgid "You need to login first"
+#, fuzzy
+msgid "You need to log in first"
 msgstr "您需要先登录"
 
 #: tauon.py:6115

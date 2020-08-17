@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
-"POT-Creation-Date: 2020-08-13 12:23+1200\n"
+"POT-Creation-Date: 2020-08-17 18:07+1200\n"
 "PO-Revision-Date: 2020-08-15 23:05+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
@@ -41,7 +41,8 @@ msgid "Web auth page opened"
 msgstr "Página de autenticação aberta"
 
 #: tauon.py:5880
-msgid "You need to login first"
+#, fuzzy
+msgid "You need to log in first"
 msgstr "Faça login antes"
 
 #: tauon.py:6115
@@ -505,7 +506,7 @@ msgstr "Ordenar por Número da Faixa"
 msgid "Sort Year per Artist"
 msgstr "Ordenar Ano por Artista"
 
-#: tauon.py:15274
+#: tauon.py:15321
 msgid "Make Playlist Auto-Sorting"
 msgstr "Tornar playlist Auto-Ordenável"
 
@@ -792,11 +793,11 @@ msgstr "Meta…"
 msgid "Copy"
 msgstr "Copiar"
 
-#: tauon.py:16975
+#: tauon.py:17027
 msgid "Cannot delete a network track"
 msgstr "Não é possível baixar arte de faixas de rede"
 
-#: tauon.py:16987 tauon.py:16996
+#: tauon.py:17039 tauon.py:17048
 msgid "File deleted"
 msgstr "Arquivo excluído"
 
@@ -804,7 +805,7 @@ msgstr "Arquivo excluído"
 msgid "Error deleting file"
 msgstr "Erro ao excluir arquivo"
 
-#: tauon.py:16991
+#: tauon.py:17043
 msgid "File moved to trash"
 msgstr "Arquivo movido para lixeira"
 
@@ -832,7 +833,7 @@ msgstr "Uma ou mais faixas é de um local de rede!"
 msgid "Delete size safety limit reached!"
 msgstr "Tamanho limite para exclusão, alcançado!"
 
-#: tauon.py:17088
+#: tauon.py:17140
 msgid "Folder could not be trashed."
 msgstr "Pasta não pôde ser excluída."
 
