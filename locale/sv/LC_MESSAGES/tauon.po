@@ -7,8 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-13 12:23+1200\n"
-"PO-Revision-Date: 2020-08-15 05:43+0000\n"
-
+"PO-Revision-Date: 2020-08-17 05:40+0000\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
@@ -952,14 +951,12 @@ msgid "Copy Spotify Track URL"
 msgstr "Kopiera Spotify spår-URL"
 
 #: tauon.py:18192
-#, fuzzy
 msgid "FFmpeg does not appear to be installed"
-msgstr "Taggredigeringsprogram verkar inte vara installerat."
+msgstr "FFmpeg verkar inte vara installerat"
 
 #: tauon.py:18196
-#, fuzzy
 msgid "Package opus-tools does not appear to be installed"
-msgstr "Taggredigeringsprogram verkar inte vara installerat."
+msgstr "Paketet opus-verktyg verkar inte vara installerat"
 
 #: tauon.py:18228
 msgid "Broadcast This"
@@ -1131,11 +1128,11 @@ msgstr "Sök ofullständiga album"
 
 #: tauon.py:19140
 msgid "There are no tracks in this playlist to broadcast."
-msgstr ""
+msgstr "Det finns inga spår att sända i den här spelningslistan."
 
 #: tauon.py:19143
 msgid "You need to start the broadcast web server in settings."
-msgstr ""
+msgstr "Du måste starta sändningswebbservern i inställningarna."
 
 #: tauon.py:19165
 msgid "Stop Broadcast"
@@ -1497,9 +1494,8 @@ msgid "Prefer thinner padding"
 msgstr "Föredra tunnare omslutning"
 
 #: tauon.py:24325
-#, fuzzy
 msgid "Run web server for broadcasting"
-msgstr "Webbserver startar"
+msgstr "Kör webbserver för sändning"
 
 #: tauon.py:24330
 msgid "Auto fetch artist data"
@@ -1819,7 +1815,7 @@ msgstr "Tvinga fram underpixel-textåtergivning"
 
 #: tauon.py:25241
 msgid "Top-panel level meter"
-msgstr ""
+msgstr "Nivåmätare på översta panelen"
 
 #: tauon.py:25251
 msgid "UI scale for HiDPI displays"
@@ -1995,15 +1991,15 @@ msgstr "Upprepa alla spelningslistor"
 
 #: tauon.py:27107
 msgid "There are currently no connected clients"
-msgstr ""
+msgstr "Det finns för närvarande inga anslutna klienter"
 
 #: tauon.py:27109
 msgid "There is 1 inbound connection."
-msgstr ""
+msgstr "Det finns en inkommande anslutning."
 
 #: tauon.py:27111
 msgid "There are %d inbound connections."
-msgstr ""
+msgstr "Det finns %d inkommande anslutningar."
 
 #: tauon.py:27660 tauon.py:28224
 msgid "Play, RC: Go to playing"
