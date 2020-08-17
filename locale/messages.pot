@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-08-16 21:18+1200\n"
+"POT-Creation-Date: 2020-08-17 18:07+1200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,7 +36,7 @@ msgid "Web auth page opened"
 msgstr ""
 
 #: tauon.py:5880
-msgid "You need to login first"
+msgid "You need to log in first"
 msgstr ""
 
 #: tauon.py:6115
