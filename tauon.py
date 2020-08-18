@@ -676,6 +676,7 @@ from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 from t_modules.t_cast import *
+from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
 from t_modules.t_spot import SpotCtl
@@ -1360,6 +1361,7 @@ class Prefs:    # Used to hold any kind of settings
         self.bypass_transcode = False
         self.force_hide_max_button = False
         self.zoom_art = False
+        self.auto_rec = False
 
 prefs = Prefs()
 
@@ -2879,6 +2881,8 @@ for t in range(2):
             prefs.download_playlist = save[150]
         if save[151] is not None:
             spot_cache_saved_albums = save[151]
+        if save[152] is not None:
+            prefs.auto_rec = save[152]
 
         state_file.close()
         del save
@@ -4662,6 +4666,9 @@ class PlayerCtl:
         self.playing_length = target.length
         self.last_playing_time = 0
 
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
+
         if jump and not prefs.use_jump_crossfade:
             self.playerSubCommand = 'now'
 
@@ -4796,6 +4803,9 @@ class PlayerCtl:
         if spot_ctl.playing or spot_ctl.coasting:
             print("Spotify stop")
             spot_ctl.control("stop")
+
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
 
         self.notify_update()
         lfm_scrobbler.start_queue()
@@ -6684,9 +6694,7 @@ class Tauon:
         self.QuickThumbnail = QuickThumbnail
         self.pl_to_id = pl_to_id
         self.chunker = Chunker()
-
-
-
+        self.stream_proxy = StreamEnc(self)
 
     # def log(self, line, title=False):
     #
@@ -11600,7 +11608,7 @@ class Menu:
                 return False
         return True
 
-    def render_icon(self, x, y, icon, selected):
+    def render_icon(self, x, y, icon, selected, fx):
 
         if colours.lm:
             selected = True
@@ -11618,9 +11626,8 @@ class Menu:
                 if icon.colour_callback is not None: #and icon.colour_callback() is not None:
                     colour = icon.colour_callback()
 
-                elif selected:
+                elif selected and not fx[0] == colours.menu_text_disabled:
                     colour = icon.colour
-
 
                 if colour is None and icon.base_asset_mod:
                     colour = colours.menu_icons
@@ -11777,7 +11784,7 @@ class Menu:
                 if self.items[i][1] is False and self.show_icons:
 
                     icon = self.items[i][7]
-                    self.render_icon(x_run + x , y_run + 5 * gui.scale, icon, selected)
+                    self.render_icon(x_run + x , y_run + 5 * gui.scale, icon, selected, fx)
 
                 if self.show_icons:
                     x += 25 * gui.scale
@@ -11900,7 +11907,7 @@ class Menu:
 
                         # Render sub items icon
                         icon = self.subs[self.sub_active][w][7]
-                        self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select)
+                        self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select, fx)
 
                         # Render the items label
                         ddt.text((sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0],
@@ -22993,6 +23000,7 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
 
 from t_modules.t_webserve import webserve
 from t_modules.t_webserve import authserve
+from t_modules.t_webserve import stream_proxy
 
 if prefs.enable_web is True:
     webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
@@ -24497,7 +24505,7 @@ class Over:
             ddt.text((x + round(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text, 211, bg=real_bg)
         return hit
 
-    def toggle_square(self, x, y, function, text):
+    def toggle_square(self, x, y, function, text, click=False):
 
         x = round(x)
         y = round(y)
@@ -24517,7 +24525,7 @@ class Over:
 
         # Check if box clicked
         clicked = False
-        if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
+        if (self.click or click) and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
             clicked = True
 
         # There are two mode, function type, and passthrough bool type
@@ -30438,6 +30446,8 @@ class RadioBox:
         self.dummy_track.file_ext = "RADIO"
         self.playing_title = ""
 
+        self.proxy_started = False
+
     def start(self, item):
 
         if spot_ctl.playing or spot_ctl.coasting:
@@ -30454,7 +30464,31 @@ class RadioBox:
 
         album_art_gen.clear_cache()
 
-        pctl.url = url
+        if shutil.which('ffmpeg') is None:
+            show_message(_("FFmpeg does not appear to be installed"), mode="error")
+            prefs.auto_rec = False
+
+        if shutil.which('opusenc') is None:
+            show_message(_("Package opus-tools does not appear to be installed"), mode="error")
+            prefs.auto_rec = False
+
+        if not self.proxy_started:
+            shoot = threading.Thread(target=stream_proxy, args=[tauon])
+            shoot.daemon = True
+            shoot.start()
+            self.proxy_started = True
+
+        # pctl.url = url
+        pctl.url = f"http://127.0.0.1:{7812}"
+        pctl.tag_meta = ""
+
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.abort = True
+
+        if not tauon.stream_proxy.start_download(url):
+            show_message(_("Failed to establish a connection"), mode="error")
+            return
+
         pctl.playing_state = 0
         pctl.record_stream = False
         pctl.playerCommand = "url"
@@ -30463,7 +30497,7 @@ class RadioBox:
         pctl.playing_time = 0
         pctl.decode_time = 0
         pctl.playing_length = 0
-        pctl.tag_meta = ""
+
 
     def delete_radio_entry(self, p):
         del prefs.radio_urls[p]
@@ -30495,6 +30529,16 @@ class RadioBox:
             self.active = False
 
         ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.box_title_text, 213)
+
+        # ---
+        if pctl.playing_state == 3:
+            if tauon.stream_proxy.s_format:
+                ddt.text((x + 425 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_format, colours.box_title_text, 311)
+            if tauon.stream_proxy.s_bitrate:
+                ddt.text((x + 454 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_bitrate + "kbps", colours.box_title_text, 311)
+
+        # ---
+
 
         yy += round(40 * gui.scale)
 
@@ -30627,10 +30671,16 @@ class RadioBox:
         if to_delete is not None:
             del prefs.radio_urls[to_delete]
 
-        yy = (y + h) - round(35 * gui.scale)
-        # y += 30
-        rect = (x, yy, round(50 * gui.scale), round(22 * gui.scale))
         fields.add(rect)
+
+        yy += 8 * gui.scale
+        if pctl.playing_state == 3 and not prefs.auto_rec:
+            pass
+        else:
+            if pctl.playing_state == 3:
+                pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click)
+            else:
+                prefs.auto_rec = pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click)
 
         # if pctl.playing_state == 3 and prefs.backend == 1:
         #
@@ -36637,6 +36687,7 @@ def save_state():
             prefs.show_band,
             prefs.download_playlist,
             spot_ctl.cache_saved_albums,
+            prefs.auto_rec
         ]
 
 
@@ -37625,6 +37676,8 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+
+
             pass
 
         if gui.mode < 3:
@@ -39011,7 +39064,6 @@ while pctl.running:
             # End of gallery view
             # --------------------------------------------------------------------------
             # Main Playlist:
-
             if len(load_orders) > 0:
 
                 for i, order in enumerate(load_orders):
@@ -39554,6 +39606,7 @@ while pctl.running:
                                     center_info_menu.activate(target_track)
 
                             ww = w - 25 * gui.scale
+
                             if target_track:
                                 ddt.text_background_colour = colours.side_panel_background
 

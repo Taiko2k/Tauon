@@ -6,23 +6,26 @@ v6.2.0
  - Added detection of OGA file extension
  - Added support pasting list of Spotify links
  - Added support for pasting Spotify URI type
- - Added custom broadcast backend
+ - Added radio stream metadata display
+ - Changed radio recording from button to setting
  - Improved koel library import speed
  - Fixed Spotify playlists not being imported in full
  - Fixed some misc UI elements with scaling
  - Fixed a crash when reading malformed lyrics files
- - Removed BASS backend
-   - Lost spectrum visualiser
-   - Lost internet radio recording feature
+ - Fixed disabled menu items icon colour
+ - Replaced BASS based broadcast backend with custom backend
  - Improved GStreamer backend
    - Added level meter visualiser
    - Added audio equalizer
    - Added pause/resume fade
-   - Added crude workaround for some network tracks not being seekable
+   - Workaround for some network tracks not being seekable
+   - Workaround for poor audio quality on some radio streams
    - Fixed start of CUE file audible on track jump
-   - Fixed a possible issue with track jumping
-   - Removed auto output device option
+   - Fixed a bug where playback would immediately jump to next track
    - Fixed a possible crash on startup
+   - Removed auto output device option
+ - Removed BASS backend
+   - Lost spectrum visualiser
 
 v6.1.3
 
