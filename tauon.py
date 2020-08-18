@@ -22430,6 +22430,9 @@ def worker1():
                                 not "sa" in cmds and
                                 not "st" in cmds and
                                 not "rt" in cmds and
+                                not "sal" in cmds and
+                                not "slt" in cmds and
+                                not "spl\"" in code and
                                 not "r" in cmds):
                             if not pl_is_locked(i):
                                 regenerate_playlist(i, silent=True)
@@ -30434,6 +30437,7 @@ class RadioBox:
         self.playing_title = ""
 
         self.proxy_started = False
+        self.loaded_url = None
 
         self.song_key = ""
 
@@ -30469,6 +30473,7 @@ class RadioBox:
 
         # pctl.url = url
         pctl.url = f"http://127.0.0.1:{7812}"
+        self.loaded_url = None
         pctl.tag_meta = ""
 
         if tauon.stream_proxy.download_running:
@@ -30478,6 +30483,7 @@ class RadioBox:
             show_message(_("Failed to establish a connection"), mode="error")
             return
 
+        self.loaded_url = url
         pctl.playing_state = 0
         pctl.record_stream = False
         pctl.playerCommand = "url"
@@ -30614,7 +30620,7 @@ class RadioBox:
             bg = colours.box_background
             text_colour = colours.box_input_text
 
-            playing = pctl.playing_state == 3 and pctl.url == item["stream_url"]
+            playing = pctl.playing_state == 3 and self.loaded_url == item["stream_url"]
 
             if playing:
                 # bg = colours.box_sub_highlight
@@ -38368,7 +38374,8 @@ while pctl.running:
                     max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
                     # Mouse wheel scrolling
-                    if not search_over.active and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                    if not search_over.active and not radiobox.active \
+                            and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                         if mouse_wheel != 0:
                             scroll_gallery_hide_timer.set()
