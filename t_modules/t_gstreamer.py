@@ -35,7 +35,6 @@ import requests
 import urllib.parse
 from hsaudiotag import auto
 
-
 def player3(tauon):  # GStreamer
 
     pctl = tauon.pctl
@@ -197,19 +196,29 @@ def player3(tauon):  # GStreamer
             if self.play_state == 3 and name == "GstMessageTag":
                 data = struct.get_value("taglist").get_string("title")
                 if data[0]:
+                    print("GST FOUND tag")
+                    print(data[1])
                     pctl.tag_meta = data[1]
 
             elif name == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
                     gui.show_message("Connection error", mode="info")
             elif name == 'GstMessageBuffering':
-                buff_percent = struct.get_value("buffer-percent")
 
-                if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
-                    self.playbin.set_state(Gst.State.PAUSED)
+                if pctl.playing_state != 3:
 
-                elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
-                    self.playbin.set_state(Gst.State.PLAYING)
+                    # The documentation says to do this, but when playing certain radio streams
+                    # it causes audible glitches. Gst-launch also exhibits this issue.
+                    # Workaround; don't do it.
+
+                    buff_percent = struct.get_value("buffer-percent")
+
+                    if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
+                        self.playbin.set_state(Gst.State.PAUSED)
+                        print("BUFFER ")
+
+                    elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
+                        self.playbin.set_state(Gst.State.PLAYING)
 
             if gui.vis == 1 and name == 'level':
 
@@ -329,6 +338,7 @@ def player3(tauon):  # GStreamer
                             if bitrate == 0:
                                 audio = auto.File(target)
                                 bitrate = audio.bitrate
+
                             if bitrate > 0:
                                 gui.update += 1
                                 pctl.download_time = a * 1024 / (bitrate / 8) / 1000
@@ -421,6 +431,9 @@ def player3(tauon):  # GStreamer
 
                     if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
                         tauon.spot_ctl.control("stop")
+
+                    if tauon.stream_proxy.download_running:
+                        tauon.stream_proxy.stop()
 
                     # Check if the file exists, mark it as missing if not
                     if track.is_network:
@@ -595,12 +608,23 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.1)
 
-                    # Open URL stream
-                    self.playbin.set_property('uri', pctl.url)
-                    self.playbin.set_property('volume', pctl.player_volume / 100)
-                    self.playbin.set_state(Gst.State.PLAYING)
-                    self.play_state = 3
-                    self.player_timer.hit()
+                    w = 0
+                    while len(tauon.stream_proxy.chunks) < 50:
+                        time.sleep(0.01)
+                        w += 1
+                        if w > 500:
+                            print("Taking too long!")
+                            tauon.stream_proxy.stop()
+                            pctl.playerCommand = 'stop'
+                            pctl.playerCommandReady = True
+                            break
+                    else:
+                        # Open URL stream
+                        self.playbin.set_property('uri', pctl.url)
+                        self.playbin.set_property('volume', pctl.player_volume / 100)
+                        self.playbin.set_state(Gst.State.PLAYING)
+                        self.play_state = 3
+                        self.player_timer.hit()
 
                 elif pctl.playerCommand == 'seteq':
                     for i, level in enumerate(prefs.eq):

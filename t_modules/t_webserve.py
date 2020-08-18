@@ -22,13 +22,16 @@ import html
 import time
 import random
 
+from http.server import HTTPServer
+from http.server import BaseHTTPRequestHandler
+
 def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
 
     if prefs.enable_web is False:
         return 0
     try:
-        from flask import Flask, redirect, send_file, abort, request, jsonify, render_template, Response, stream_with_context
+        from flask import Flask, send_file, abort, request, jsonify, Response
     except:
         print("Failed to load Flask")
         gui.show_message("Web server failed to start.", "Required dependency 'flask' was not found.", 'warning')
@@ -52,7 +55,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
         return 'Server shutting down...'
 
     @app.route('/stream.ogg',)
-    def test2():
+    def broadcast_stream():
         ip = request.remote_addr
 
         def generate(ip):
@@ -142,16 +145,55 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
 def authserve(tauon):
 
-    from flask import Flask, abort, request
+    class Server(BaseHTTPRequestHandler):
 
-    app = Flask(__name__)
+        def do_GET(self):
 
-    @app.route('/spotredir')
-    def favicon():
-        code = request.args.get('code')
-        if code:
-            tauon.spot_ctl.paste_code(code)
-            return "You can close this now and return to Tauon Music Box"
-        abort(400)
+            path = self.path
+            if path.startswith("/spotredir"):
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                code = path.split("code=")
+                if len(code) > 1:
+                    code = code[1]
+                    tauon.spot_ctl.paste_code(code)
+                    self.wfile.write(b"You can close this now and return to Tauon Music Box")
 
-    app.run(port=7811)
+            else:
+                self.send_response(400)
+                self.end_headers()
+
+    httpd = HTTPServer(("127.0.0.1", 7811), Server)
+    httpd.serve_forever()
+    httpd.server_close()
+
+
+def stream_proxy(tauon):
+
+    class Server(BaseHTTPRequestHandler):
+
+        def do_GET(self):
+
+            self.send_response(200)
+            self.send_header("Content-type", "audio/ogg")
+            self.end_headers()
+
+            position = 0
+
+            while True:
+                if not tauon.stream_proxy.download_running:
+                    return
+
+                while position < tauon.stream_proxy.c:
+                    if position not in tauon.stream_proxy.chunks:
+                        return
+                    self.wfile.write(tauon.stream_proxy.chunks[position])
+                    position += 1
+
+                else:
+                    time.sleep(0.01)
+
+    httpd = HTTPServer(("localhost", 7812), Server)
+    httpd.serve_forever()
+    httpd.server_close()
+
