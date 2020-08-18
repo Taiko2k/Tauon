@@ -49,6 +49,7 @@ class StreamEnc:
 
     def stop(self):
         self.abort = True
+        self.tauon.radiobox.loaded_url = None
 
     def start_download(self, url):
 

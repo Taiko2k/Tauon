@@ -412,7 +412,7 @@ class SpotCtl:
     def get_library_albums(self, return_list=False):
         self.connect()
         if not self.spotify:
-            return
+            return []
 
         albums = self.spotify.saved_albums()
 
@@ -488,7 +488,7 @@ class SpotCtl:
 
         self.connect()
         if not self.spotify:
-            return
+            return []
 
         if url.startswith("spotify:playlist:"):
             id = url[17:]
@@ -694,7 +694,7 @@ class SpotCtl:
     def get_library_likes(self, return_list=False):
         self.connect()
         if not self.spotify:
-            return
+            return []
 
         self.update_existing_import_list()
         tracks = self.spotify.saved_tracks()
