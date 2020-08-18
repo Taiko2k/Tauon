@@ -47,6 +47,8 @@ def player3(tauon):  # GStreamer
 
         def __init__(self):
 
+            print("Init GStreamer...")
+
             # This is used to keep track of time between callbacks.
             self.player_timer = Timer()
 
