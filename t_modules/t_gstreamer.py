@@ -175,6 +175,8 @@ def player3(tauon):  # GStreamer
             self.using_cache = False
             self.temp_path = ""  # Full path + filename
             self.level_train = []
+            self.seek_timer = Timer()
+            self.seek_timer.force_set(10)
 
             # Other
             self.end_timer = Timer()
@@ -226,7 +228,7 @@ def player3(tauon):  # GStreamer
 
                 data = struct.get_value("peak")
                 ts = struct.get_value("timestamp")
-                #print(data)
+                # print(data)
                 r = (10 ** (data[0] / 20)) * 11.6
                 if len(data) == 1:
                     l = r
@@ -237,12 +239,12 @@ def player3(tauon):  # GStreamer
                 t = time.time()
                 rt = t + td
                 if td > 0:
-                    for item in self.level_train:
+                    for item in tauon.level_train:
                         if rt < item[0]:
-                            self.level_train.clear()
-                            #print("FF")
+                            tauon.level_train.clear()
+                            # print("FF")
                             break
-                    self.level_train.append((rt, r, l))
+                    tauon.level_train.append((rt, r, l))
 
             # if name == 'spectrum':
             #     struct_str = struct.to_string()
@@ -354,27 +356,30 @@ def player3(tauon):  # GStreamer
             if not pctl.playerCommandReady and pctl.playing_state == 0:
                 tauon.tm.player_lock.acquire()
 
-            # Level meter visualiser
             if gui.vis == 1:
                 if pctl.playing_state == 1:
                     gui.level_update = True
-                    while self.level_train and self.level_train[0][0] < time.time():
-
-                        l = self.level_train[0][1]
-                        r = self.level_train[0][2]
-
-                        if r > gui.level_peak[0]:
-                            gui.level_peak[0] = r
-                        if l > gui.level_peak[1]:
-                            gui.level_peak[1] = l
-
-                        del self.level_train[0]
-
-                    gui.level_peak[1] -= 0.30
-                    gui.level_peak[0] -= 0.30
-
-                else:
-                    self.level_train.clear()
+            # Level meter visualiser
+            ##if gui.vis == 1:
+                # if pctl.playing_state == 1:
+                #     gui.level_update = True
+                #     while self.level_train and self.level_train[0][0] < time.time():
+                #
+                #         l = self.level_train[0][1]
+                #         r = self.level_train[0][2]
+                #
+                #         if r > gui.level_peak[0]:
+                #             gui.level_peak[0] = r
+                #         if l > gui.level_peak[1]:
+                #             gui.level_peak[1] = l
+                #
+                #         del self.level_train[0]
+                #
+                #     gui.level_peak[1] -= 0.30
+                #     gui.level_peak[0] -= 0.30
+                #
+                # else:
+                #     self.level_train.clear()
 
             # This is the main callback function to be triggered continuously as long as application is running
             if self.play_state == 1 and pctl.playing_time > 1 and not pctl.playerCommandReady:
@@ -502,6 +507,7 @@ def player3(tauon):  # GStreamer
                     # We're not at the end of the last track so reset the pipeline
                     else:
                         self.playbin.set_state(Gst.State.NULL)
+                        tauon.level_train.clear()
 
                     pctl.playerSubCommand = ""
                     self.play_state = 1
@@ -534,7 +540,7 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_property('volume', pctl.player_volume / 100)
 
                     self.playbin.set_state(Gst.State.PLAYING)
-                    if pctl.jump_time == 0:
+                    if pctl.jump_time == 0 and not pctl.playerCommand == "seek":
                         pctl.playing_time = 0
 
                     # The position to start is not always the beginning of the file, so seek to position
@@ -588,7 +594,7 @@ def player3(tauon):  # GStreamer
                     self.loaded_track = track
 
                     pctl.jump_time = 0
-                    time.sleep(1)
+                    #time.sleep(1)
                     add_time = self.player_timer.hit()
                     if add_time > 2:
                         add_time = 2
@@ -600,7 +606,7 @@ def player3(tauon):  # GStreamer
                     if self.loaded_track:
                         star_store.add(self.loaded_track.index, add_time)
 
-                    self.check_duration()
+                    # self.check_duration()
                     self.player_timer.hit()
 
                 elif pctl.playerCommand == 'url':
@@ -680,6 +686,7 @@ def player3(tauon):  # GStreamer
                     pctl.playerCommand = "stopped"
 
                 elif pctl.playerCommand == 'seek':
+                    self.seek_timer.set()
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
@@ -806,15 +813,22 @@ def player3(tauon):  # GStreamer
                 if add_time < 0:
                     add_time = 0
 
-                # Progress main seek head
-                if self.playbin.get_state(0).state == Gst.State.PLAYING:
-                    pctl.playing_time = max(0, (self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND) -
+                # # Progress main seek head
+                if self.playbin.get_state(0).state == Gst.State.PLAYING and self.seek_timer.get() > 1 and not pctl.playerCommandReady:
+
+                    pctl.playing_time += add_time
+
+                    p = max(0, (self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND) -
                                                  pctl.start_time_target)
+
+                    if abs(pctl.playing_time - p) > 1.5:
+                        pctl.playing_time = p
+
                     pctl.decode_time = pctl.playing_time  # A difference isn't discerned in this module
 
                 else:
                     # We're supposed to be playing but it's not? Give it a push I guess.
-                    self.playbin.set_state(Gst.State.PLAYING)
+                    #self.playbin.set_state(Gst.State.PLAYING)
                     pctl.playing_time += add_time
                     pctl.decode_time = pctl.playing_time
 

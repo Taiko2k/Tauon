@@ -1463,8 +1463,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.time_passed = 0
         self.level_meter_colour_mode = 3
 
-        self.vis = 2  # visualiser mode actual
-        self.vis_want = 2  # visualiser mode setting
+        self.vis = 0  # visualiser mode actual
+        self.vis_want = 0  # visualiser mode setting
         self.spec = None
         self.s_spec = [0] * 24
         self.s4_spec = [0] * 45
@@ -1757,6 +1757,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.sync_speed = ""
 
         self.bar_hover_timer = Timer()
+
+        self.level_decay_timer = Timer()
 
 gui = GuiVar()
 
@@ -6682,6 +6684,7 @@ class Tauon:
         self.pl_to_id = pl_to_id
         self.chunker = Chunker()
         self.stream_proxy = StreamEnc(self)
+        self.level_train = []
 
     # def log(self, line, title=False):
     #
@@ -36155,10 +36158,10 @@ def update_layout_do():
 
     gui.draw_vis4_top = False
 
-    if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
-        gui.vis = 4
-        gui.turbo = True
-    elif gui.vis_want == 0:
+    # if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
+    #     gui.vis = 4
+    #     gui.turbo = True
+    if gui.vis_want == 0:
         gui.turbo = False
         gui.vis = 0
     else:
@@ -40951,22 +40954,22 @@ while pctl.running:
             gui.level_update = True
 
 
-    if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
-
-        # print(gui.level_peak)
-        gui.time_passed = gui.level_time.hit()
-        if gui.time_passed > 1:
-            gui.time_passed = 0
-        while gui.time_passed > 0.01:
-            gui.level_peak[1] -= 0.5
-            if gui.level_peak[1] < 0:
-                gui.level_peak[1] = 0
-            gui.level_peak[0] -= 0.5
-            if gui.level_peak[0] < 0:
-                gui.level_peak[0] = 0
-            gui.time_passed -= 0.020
-
-        gui.level_update = True
+    # if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
+    #
+    #     # print(gui.level_peak)
+    #     gui.time_passed = gui.level_time.hit()
+    #     if gui.time_passed > 1:
+    #         gui.time_passed = 0
+    #     while gui.time_passed > 0.01:
+    #         gui.level_peak[1] -= 0.5
+    #         if gui.level_peak[1] < 0:
+    #             gui.level_peak[1] = 0
+    #         gui.level_peak[0] -= 0.5
+    #         if gui.level_peak[0] < 0:
+    #             gui.level_peak[0] = 0
+    #         gui.time_passed -= 0.020
+    #
+    #     gui.level_update = True
 
     if gui.level_update is True and not resize_mode and not gui.mode == 3:
         gui.level_update = False
@@ -41144,6 +41147,26 @@ while pctl.running:
 
         if gui.vis == 1:
 
+            if pctl.playing_state == 1:
+                #gui.level_update = True
+                while tauon.level_train and tauon.level_train[0][0] < time.time():
+
+                    l = tauon.level_train[0][1]
+                    r = tauon.level_train[0][2]
+
+                    if r > gui.level_peak[0]:
+                        gui.level_peak[0] = r
+                    if l > gui.level_peak[1]:
+                        gui.level_peak[1] = l
+
+                    del tauon.level_train[0]
+
+            else:
+                tauon.level_train.clear()
+
+
+
+
             SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 
             x = window_size[0] - 20 * gui.scale - gui.offset_extra
@@ -41160,12 +41183,35 @@ while pctl.running:
             x = round(gui.level_ww - 9 * gui.scale)
             y = 10 * gui.scale
 
-            if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and pctl.playing_state != 1:
-                gui.level_update = True
-                time.sleep(0.016)
+            if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
+                #gui.level_update = True
+                if pctl.playing_time < 1:
+                    gui.delay_frame(0.032)
+
+                if pctl.playing_state == 1 or pctl.playing_state == 3:
+                    t = gui.level_decay_timer.hit()
+                    decay = 14 * t
+                    gui.level_peak[1] -= decay
+                    gui.level_peak[0] -= decay
+                elif pctl.playing_state == 0 or pctl.playing_state == 2:
+                    gui.level_update = True
+                    time.sleep(0.016)
+                    t = gui.level_decay_timer.hit()
+                    decay = 16 * t
+                    gui.level_peak[1] -= decay
+                    gui.level_peak[0] -= decay
+
+                # if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and (
+                #         (pctl.playing_state == 0 or pctl.playing_state == 2) or (pctl.playing_state == 1)) :
+                #     gui.level_update = True
+                #     time.sleep(0.016)
                 # print(vis_decay_timer.get())
                 # vis_decay_timer.set()
-                pass
+                #for i in tauon.level_train:
+                # gui.level_peak[1] -= 0.30
+                # gui.level_peak[0] -= 0.30
+
+                    pass
 
             for t in range(12):
 
