@@ -24,6 +24,7 @@ import subprocess
 import os
 import fcntl
 import datetime
+import io
 from t_modules.t_extra import filename_safe
 
 class StreamEnc:
@@ -53,18 +54,21 @@ class StreamEnc:
 
         self.abort = True
 
+        print("AB1")
         while self.download_running:
             time.sleep(0.01)
+        print("AB2")
         while self.encode_running:
             time.sleep(0.01)
+
+        print("Ready")
 
         self.__init__(self.tauon)
 
         def NiceToICY(self):
-            class InterceptedHTTPResponse():
+            class InterceptedHTTPResponse:
                 pass
 
-            import io
             line = self.fp.readline().replace(b"ICY 200 OK\r\n", b"HTTP/1.0 200 OK\r\n")
             InterceptedSelf = InterceptedHTTPResponse()
             InterceptedSelf.fp = io.BufferedReader(io.BytesIO(line))
@@ -95,72 +99,84 @@ class StreamEnc:
 
         self.encode_running = True
 
-        while self.c < 20:
-            if self.abort:
-                return
-            time.sleep(0.05)
+        try:
 
-        target_file = os.path.join(self.tauon.cache_directory, "stream.ogg")
-        if os.path.isfile(target_file):
-            os.remove(target_file)
+            while self.c < 20:
+                if self.abort:
+                    self.encode_running = False
+                    return
+                time.sleep(0.05)
 
-        cmd = ['ffmpeg', "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", "48000", "-"]
+            target_file = os.path.join(self.tauon.cache_directory, "stream.ogg")
+            if os.path.isfile(target_file):
+                os.remove(target_file)
 
-        decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+            cmd = ['ffmpeg', "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", "48000", "-"]
 
-        position = 0
-        old_metadata = self.tauon.pctl.tag_meta
+            decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
-        cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-        encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            position = 0
+            old_metadata = self.tauon.radiobox.song_key
 
-        while True:
+            cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
+            encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-            if self.abort:
-                decoder.terminate()
-                encoder.terminate()
+            while True:
 
-                if os.path.exists(target_file):
-
-                    print("Save file")
-                    save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                    save_file += " " + filename_safe(old_metadata)
-                    save_file = save_file.strip() + ".opus"
-                    save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                    if os.path.exists(save_file):
-                        os.remove(save_file)
-                    os.rename(target_file, save_file)
-
-                self.encode_running = False
-                return
-
-            if old_metadata != self.tauon.pctl.tag_meta:
-                if self.c < 100:
-                    old_metadata = self.tauon.pctl.tag_meta
-                elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
-                    old_metadata = self.tauon.pctl.tag_meta
-                else:
-                    print("Split and save file")
-
+                if self.abort:
+                    decoder.terminate()
                     encoder.terminate()
-                    save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                    save_file += " " + filename_safe(old_metadata)
-                    save_file = save_file.strip() + ".opus"
-                    save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                    if os.path.exists(save_file):
-                        os.remove(save_file)
-                    os.rename(target_file, save_file)
-                    encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-            if position < self.c:
-                chunk = self.chunks[position]
-                decoder.stdin.write(chunk)
-                position += 1
+                    if os.path.exists(target_file):
 
-            raw_audio = decoder.stdout.read(2048)
-            if raw_audio:
-                encoder.stdin.write(raw_audio)
+                        print("Save file")
+                        save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                        save_file += " " + filename_safe(old_metadata)
+                        save_file = save_file.strip() + ".opus"
+                        save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
+                        if os.path.exists(save_file):
+                            os.remove(save_file)
+                        os.rename(target_file, save_file)
+
+                    self.encode_running = False
+                    return
+
+                if old_metadata != self.tauon.radiobox.song_key:
+                    if self.c < 100:
+                        old_metadata = self.tauon.radiobox.song_key
+                    elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
+                        old_metadata = self.tauon.radiobox.song_key
+                    else:
+                        print("Split and save file")
+
+                        encoder.terminate()
+                        save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                        save_file += " " + filename_safe(old_metadata)
+                        save_file = save_file.strip() + ".opus"
+                        save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
+                        if os.path.exists(save_file):
+                            os.remove(save_file)
+                        os.rename(target_file, save_file)
+                        encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+                raw_audio = decoder.stdout.read(200000)
+                if raw_audio:
+                    encoder.stdin.write(raw_audio)
+
+
+                if position < self.c:
+                    chunk = self.chunks[position]
+                    decoder.stdin.write(chunk)
+                    position += 1
+                else:
+                    time.sleep(0.01)
+
+        except:
+            print("Encoder thread crashed!")
+            raise
+            self.encode_running = False
+            return
 
     def run_download(self, r):
 
@@ -180,6 +196,8 @@ class StreamEnc:
             self.s_format = "OGG"
         if self.s_mime == "audio/aac":
             self.s_format = "AAC"
+        if self.s_mime == "audio/aacp":
+            self.s_format = "AAC+"
 
         test_done = 0
 
@@ -198,78 +216,82 @@ class StreamEnc:
             self.download_process.daemon = True
             self.download_process.start()
 
-        while True:
+        try:
+            while True:
 
-            chunk = r.read(1024)
+                chunk = r.read(1024)
 
-            if self.abort:
-                r.close()
-                print("Abort stream connection")
-                self.download_running = False
-                return
+                if self.abort:
+                    r.close()
+                    print("Abort stream connection")
+                    self.download_running = False
+                    return
 
-            if chunk:
-                if not icy or m_remain > len(chunk):
-                    # We're sure its data Its data, send it on
-                    self.chunks[self.c] = chunk
-                    # Delete old data
-                    d = self.c - 512
-                    if d in self.chunks:
-                        del self.chunks[d]
+                if chunk:
+                    if not icy or m_remain > len(chunk):
+                        # We're sure its data Its data, send it on
+                        self.chunks[self.c] = chunk
+                        # Delete old data
+                        d = self.c - 512
+                        if d in self.chunks:
+                            del self.chunks[d]
 
-                    test_done += len(chunk)
-                    self.c += 1
-                    m_remain -= len(chunk)
+                        test_done += len(chunk)
+                        self.c += 1
+                        m_remain -= len(chunk)
 
-                    continue
-                else:
-                    # It may contain the metadata block, put it aside
-                    maybe += chunk
-
-            # Try to extract ICY tag
-            if maybe:
-                data1 = maybe[:m_remain]
-                inter = maybe[m_remain:]
-
-                # Read the metadata length byte
-                if inter:
-                    special = inter[0]
-                    follow = special * 16
-
-                    if len(inter) < follow + 2:
-                        print("Not enough data")
                         continue
+                    else:
+                        # It may contain the metadata block, put it aside
+                        maybe += chunk
 
-                    text = inter[1:follow + 1]
-                    data2 = inter[follow + 1:]
+                # Try to extract ICY tag
+                if maybe:
+                    data1 = maybe[:m_remain]
+                    inter = maybe[m_remain:]
 
-                    self.chunks[self.c] = data1 + data2
-                    # Delete old data
-                    d = self.c - 512
-                    if d in self.chunks:
-                        del self.chunks[d]
+                    # Read the metadata length byte
+                    if inter:
+                        special = inter[0]
+                        follow = special * 16
 
-                    self.c += 1
+                        if len(inter) < follow + 2:
+                            # Not enough data yet
+                            continue
 
-                    test_done += len(data1)
-                    test_done = 0
+                        text = inter[1:follow + 1]
+                        data2 = inter[follow + 1:]
 
-                    m_remain = m - len(data2)
-                    test_done += len(data2)
-                    maybe = b""
+                        self.chunks[self.c] = data1 + data2
+                        # Delete old data
+                        d = self.c - 512
+                        if d in self.chunks:
+                            del self.chunks[d]
 
-                    try:
-                        meta = text.decode().rstrip("\x00")
-                        for tag in meta.split(";"):
-                            if '=' in tag:
-                                a, b = tag.split('=')
-                                if a == 'StreamTitle':
-                                    #print("Set meta")
-                                    self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
-                                    self.tauon.dummy_track = self.tauon.pctl.tag_meta
-                                    break
-                    except:
-                        r.close()
-                        self.download_running = False
-                        self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
-                        raise
+                        self.c += 1
+
+                        test_done += len(data1)
+                        test_done = 0
+
+                        m_remain = m - len(data2)
+                        test_done += len(data2)
+                        maybe = b""
+
+                        try:
+                            meta = text.decode().rstrip("\x00")
+                            for tag in meta.split(";"):
+                                if '=' in tag:
+                                    a, b = tag.split('=')
+                                    if a == 'StreamTitle':
+                                        #print("Set meta")
+                                        self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
+                                        break
+                        except:
+                            r.close()
+                            self.download_running = False
+                            self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
+                            raise
+        except:
+            print("Stream download thread crashed!")
+            self.download_running = False
+            return

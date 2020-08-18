@@ -3257,7 +3257,7 @@ if db_version > 0:
             show_message("Welcome to v6.1.0. Due to changes, please re-authorise Spotify", "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify")
 
 if old_backend == 1:
-    show_message("It looks like you were previously using the BASS backend.", "BASS has been removed in this version going forward, thus some features may now be unavailable, apologies for any inconvenience :<")
+    show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -3625,31 +3625,12 @@ if 0 < db_version <= 34:
         prefs.theme_name = get_theme_name(theme)
         print(prefs.theme_name)
 
-# if 0 < db_version <= 36 and prefs.backend == 1 and system == "linux" and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
-#     show_message("Welcome to v5.1.0! 🚨 Just letting you know that BASS is no longer included by default.",
-#                  "You can enable it again by going MENU > Settings > Audio > Install BASS Audio Library.",
-#                  "If you do nothing, GStreamer will be used for playback instead.")
-
-# Set UI language -----
-
-#lc = locale.getlocale(locale.LC_MESSAGES)
-#print(f"Locale detected: {lc[0]}")
-
 lang = ""
-
-# if lc[0] is not None and "_" in lc[0]:
-#     lang = lc[0]
-
-# if prefs.ui_lang != "en":
-#     lang = prefs.ui_lang
 
 locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
     locale_dir = "/app/share/locale"
-
-
-
 
 lang = []
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
@@ -3722,6 +3703,7 @@ if scale_want != prefs.ui_scale or force_render:
             print("Rendering icons...")
             render_icons(svg_directory, scaled_asset_directory, scale_want)
 
+    print("Done rendering icons")
 
     prefs.ui_scale = scale_want
     prefs.playlist_row_height = round(22 * prefs.ui_scale)
@@ -4242,6 +4224,11 @@ class PlayerCtl:
                     artist, title = self.tag_meta.split("-")
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
+
+                if self.tag_meta:
+                    radiobox.song_key = self.tag_meta
+                else:
+                    radiobox.song_key = radiobox.dummy_track.artist + " - " + radiobox.dummy_track.title
 
                 pctl.radio_image_bin = None
 
@@ -30448,6 +30435,8 @@ class RadioBox:
 
         self.proxy_started = False
 
+        self.song_key = ""
+
     def start(self, item):
 
         if spot_ctl.playing or spot_ctl.coasting:
@@ -30673,7 +30662,7 @@ class RadioBox:
 
         fields.add(rect)
 
-        yy += 8 * gui.scale
+        yy = y + round(328 * gui.scale)
         if pctl.playing_state == 3 and not prefs.auto_rec:
             pass
         else:
@@ -30715,7 +30704,7 @@ class RadioBox:
 
 
 radiobox = RadioBox()
-
+tauon.radiobox = radiobox
 tauon.dummy_track = radiobox.dummy_track
 
 # def visit_radio_site_show_test(p):
