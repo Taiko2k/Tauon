@@ -105,8 +105,8 @@ def player3(tauon):  # GStreamer
             # Cant seem to figure out how to process these magnitudes in a way that looks good
 
             # self.spectrum = Gst.ElementFactory.make("spectrum", "spectrum")
-            # self.spectrum.set_property('bands', 50)
-            # self.spectrum.set_property('interval', 20000000)
+            # self.spectrum.set_property('bands', 20)
+            # self.spectrum.set_property('interval', 10000000)
             # self.spectrum.set_property('threshold', -100)
             # self.spectrum.set_property('post-messages', True)
             # self.spectrum.set_property('message-magnitude', True)
@@ -174,7 +174,7 @@ def player3(tauon):  # GStreamer
             self.dl_ready = True
             self.using_cache = False
             self.temp_path = ""  # Full path + filename
-            self.level_train = []
+            # self.level_train = []
             self.seek_timer = Timer()
             self.seek_timer.force_set(10)
 
@@ -195,7 +195,21 @@ def player3(tauon):  # GStreamer
             name = struct.get_name()
             
             if name == "GstMessageError":
-                print(struct.to_string())
+
+                if "_is_dead" in struct.to_string():
+                    # Looks like PulseAudio was reset. Need to restart playback.
+
+                    self.playbin.set_state(Gst.State.NULL)
+                    self.playbin.set_state(Gst.State.PLAYING)
+
+                    tries = 0
+                    while tries < 10:
+                        time.sleep(0.03)
+                        r = self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                                     (pctl.start_time_target + pctl.playing_time) * Gst.SECOND)
+                        if r:
+                            break
+                        tries += 1
 
             if self.play_state == 3 and name == "GstMessageTag":
                 data = struct.get_value("taglist").get_string("title")
@@ -255,9 +269,9 @@ def player3(tauon):  # GStreamer
             #         l = list(magnitude)
             #         k = []
             #         #print(l)
-            #         for a in l[5:25]:
+            #         for a in l[0:20]:
             #             #v = ??
-            #             k.append(v)
+            #             k.append()
             #         print(k)
             #         gui.spec = k
             #         #print(k)
@@ -446,12 +460,19 @@ def player3(tauon):  # GStreamer
                     if track.is_network:
 
                         if track.file_ext == "SPTY":
+                            tauon.level_train.clear()
                             if self.play_state > 0:
                                 self.playbin.set_state(Gst.State.READY)
                             self.play_state = 0
-                            tauon.spot_ctl.play_target(track.url_key)
+                            try:
+                                tauon.spot_ctl.play_target(track.url_key)
+                            except:
+                                print("Failed to start Spotify track")
+                                pctl.playerCommand = "stop"
+                                pctl.playerCommandReady = True
+
                             GLib.timeout_add(19, self.main_callback)
-                            pctl.playerCommandReady = False
+
                             return
 
                         try:
@@ -489,8 +510,6 @@ def player3(tauon):  # GStreamer
                         else:
                             self.url = url
 
-                        # print(self.url)
-
                     if self.play_state != 0:
                         # Determine time position of currently playing track
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
@@ -504,8 +523,14 @@ def player3(tauon):  # GStreamer
 
                         gapless = True
 
+                        if self.play_state == 1 and self.loaded_track and self.loaded_track.is_network:
+                            # Gst may report wrong length for network tracks, use known length instead
+                            if pctl.playing_time < self.loaded_track.length - 4:
+                                gapless = False
+
+
                     # We're not at the end of the last track so reset the pipeline
-                    else:
+                    if not gapless:
                         self.playbin.set_state(Gst.State.NULL)
                         tauon.level_train.clear()
 
@@ -565,7 +590,7 @@ def player3(tauon):  # GStreamer
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
-                        # print("Gapless go")
+                        print("Gapless go")
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
 
                             time.sleep(0.02)

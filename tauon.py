@@ -3301,11 +3301,11 @@ def save_prefs():
     cf.update_value("display-language", prefs.ui_lang)
     #cf.update_value("decode-search", prefs.diacritic_search)
 
-    cf.update_value("use-log-volume-scale", prefs.log_vol)
-    cf.update_value("pause-fade-time", prefs.pause_fade_time)
-    cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    cf.update_value("device-buffer-length", prefs.device_buffer)
-    cf.update_value("force-mono", prefs.mono)
+    #cf.update_value("use-log-volume-scale", prefs.log_vol)
+    #cf.update_value("pause-fade-time", prefs.pause_fade_time)
+    #cf.update_value("cross-fade-time", prefs.cross_fade_time)
+    #cf.update_value("device-buffer-length", prefs.device_buffer)
+    #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
 
@@ -3385,9 +3385,9 @@ def save_prefs():
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
 
-    cf.update_value("broadcast-port", prefs.broadcast_port)
-    cf.update_value("metadata-page-port", prefs.metadata_page_port)
-    cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
+    #cf.update_value("broadcast-port", prefs.broadcast_port)
+    cf.update_value("broadcast-page-port", prefs.metadata_page_port)
+    #cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
     cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
     cf.update_value("chart-columns", prefs.chart_columns)
@@ -3421,15 +3421,15 @@ def load_prefs():
     if prefs.pause_fade_time > 5000:
         prefs.pause_fade_time = 5000
 
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "This is a placeholder setting and currently has no effect.")
-    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
-    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
+    #prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
+    #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "This is a placeholder setting and currently has no effect.")
+    #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
+    #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
     prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification.")
-    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string.")
+    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
@@ -3606,9 +3606,9 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[broadcasting]")
-    prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
-    prefs.metadata_page_port = cf.sync_add("int", "metadata-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this. Must be different to the broadcast port")
-    prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
+    #prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
+    prefs.metadata_page_port = cf.sync_add("int", "broadcast-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this. Must be different to the broadcast port")
+    # prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
 
     cf.br()
     cf.add_text("[chart]")
@@ -41054,7 +41054,6 @@ while pctl.running:
             # Standard spectrum visualiser
 
             if gui.update_spec == 0 and pctl.playing_state != 2:
-
                 if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
                     vis_decay_timer.set()
                     for i in range(len(gui.spec)):
