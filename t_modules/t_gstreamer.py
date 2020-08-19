@@ -200,16 +200,19 @@ def player3(tauon):  # GStreamer
                     # Looks like PulseAudio was reset. Need to restart playback.
 
                     self.playbin.set_state(Gst.State.NULL)
-                    self.playbin.set_state(Gst.State.PLAYING)
 
-                    tries = 0
-                    while tries < 10:
-                        time.sleep(0.03)
-                        r = self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                                     (pctl.start_time_target + pctl.playing_time) * Gst.SECOND)
-                        if r:
-                            break
-                        tries += 1
+                    if tauon.stream_proxy.download_running:
+                        tauon.stream_proxy.stop()
+                    else:
+                        self.playbin.set_state(Gst.State.PLAYING)
+                        tries = 0
+                        while tries < 10:
+                            time.sleep(0.03)
+                            r = self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                                         (pctl.start_time_target + pctl.playing_time) * Gst.SECOND)
+                            if r:
+                                break
+                            tries += 1
 
             if self.play_state == 3 and name == "GstMessageTag":
                 data = struct.get_value("taglist").get_string("title")
