@@ -13,11 +13,12 @@ v6.2.0
  - Fixed some misc UI elements with scaling
  - Fixed a crash when reading malformed lyrics files
  - Fixed disabled menu items icon colour
+ - Workaround for memory leak crash on startup
  - Replaced BASS based broadcast backend with custom backend
  - Improved GStreamer backend
    - Added level meter visualiser
    - Added audio equalizer
-   - Added pause/resume fade
+   - Added pause/resume/volume fade
    - Workaround for some network tracks not being seekable
    - Workaround for poor audio quality on some radio streams
    - Fixed start of CUE file audible on track jump

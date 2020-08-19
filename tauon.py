@@ -691,13 +691,11 @@ if system == "linux" and not macos and not msys:
     from t_modules.t_dbus import Gnome
     from t_modules.t_gdk_extra import *
 
-import_cursors = True
-if "--nogdk" in str(sys.argv):
-    import_cursors = False
+import_cursors = False
 
-if desktop == "KDE" and flatpak_mode:
-    print("Using crash workaround for KDE + Flatpak")
-    import_cursors = False
+if desktop == "GNOME":
+    print("Using crash workaround for gdk crash")
+    import_cursors = True
 
 if import_cursors and system == "linux" and not macos and not msys:
     c_br = cursor_get_gdk(4)
@@ -17900,7 +17898,6 @@ folder_menu.br()
 
 spot_ctl = SpotCtl(tauon)
 tauon.spot_ctl = spot_ctl
-spot_ctl.load_token()
 
 spot_ctl.cache_saved_albums = spot_cache_saved_albums
 
@@ -37675,7 +37672,7 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
 
-
+            spot_ctl.load_token()
             pass
 
         if gui.mode < 3:
