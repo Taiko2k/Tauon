@@ -236,7 +236,7 @@ def player3(tauon):  # GStreamer
 
                     if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
                         self.playbin.set_state(Gst.State.PAUSED)
-                        print("BUFFER ")
+                        #print("BUFFER")
 
                     elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
                         self.playbin.set_state(Gst.State.PLAYING)
@@ -675,7 +675,19 @@ def player3(tauon):  # GStreamer
                         tauon.spot_ctl.control("volume", int(pctl.player_volume))
 
                     elif self.play_state == 1 or self.play_state == 3:
-                        self.playbin.set_property('volume', pctl.player_volume / 100)
+
+                        success, current_time = self.playbin.query_position(Gst.Format.TIME)
+                        self.playbin.set_state(Gst.State.PLAYING)
+
+                        if success:
+                            start = current_time + ((150 / 1000) * Gst.SECOND)
+                            end = current_time + ((500 / 1000) * Gst.SECOND)
+                            self.c_source.set(start, self._vol.get_property('volume') / 10)
+                            self.c_source.set(end, (pctl.player_volume / 100) / 10)
+                            time.sleep(0.5)
+                            self.c_source.unset_all()
+                        else:
+                            self.playbin.set_property('volume', pctl.player_volume / 100)
 
                 elif pctl.playerCommand == 'runstop':
 
@@ -778,7 +790,7 @@ def player3(tauon):  # GStreamer
                     if prefs.use_pause_fade:
                         success, current_time = self.playbin.query_position(Gst.Format.TIME)
                         if success:
-                            start = current_time
+                            start = current_time + (150 / 1000 * Gst.SECOND)
                             end = current_time + (prefs.pause_fade_time / 1000 * Gst.SECOND)
                             self.c_source.set(start, (pctl.player_volume / 100) / 10)
                             self.c_source.set(end, 0.0)
@@ -798,7 +810,7 @@ def player3(tauon):  # GStreamer
                         success, current_time = self.playbin.query_position(Gst.Format.TIME)
                         self.playbin.set_state(Gst.State.PLAYING)
                         if success:
-                            start = current_time
+                            start = current_time + (150 / 1000 * Gst.SECOND)
                             end = current_time + ((prefs.pause_fade_time / 1000) * Gst.SECOND)
                             self.c_source.set(start, 0.0)
                             self.c_source.set(end, (pctl.player_volume / 100) / 10)
