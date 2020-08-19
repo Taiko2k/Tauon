@@ -6,13 +6,11 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-
-"POT-Creation-Date: 2020-08-13 12:23+1200\n"
+"POT-Creation-Date: 2020-08-17 18:07+1200\n"
 "PO-Revision-Date: 2020-08-15 02:15+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
-
 "Language: fr_FR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -42,7 +40,8 @@ msgid "Web auth page opened"
 msgstr "Page d'identification ouverte"
 
 #: tauon.py:5880
-msgid "You need to login first"
+#, fuzzy
+msgid "You need to log in first"
 msgstr "Vous devez d'abord vous identifier"
 
 #: tauon.py:6115
@@ -57,8 +56,7 @@ msgstr "Cela peut prendre un certain temps."
 msgid "Spotify Likes"
 msgstr "Mentions J’aime Spotify"
 
-
-#: tauon.py:6596
+#: tauon.py:6617
 msgid "Spotify Albums"
 msgstr "Albums Spotify"
 
@@ -70,7 +68,7 @@ msgstr "Piste retirée des pistes aimées"
 msgid "Track was already un-liked"
 msgstr "La piste a déjà été désaimée"
 
-#: tauon.py:6599
+#: tauon.py:6620
 msgid "Track is already liked"
 msgstr "La piste est déjà aimée"
 
@@ -168,6 +166,7 @@ msgstr "Renommage terminé."
 msgid " filenames were written."
 msgstr " fichiers renommés."
 
+#: tauon.py:12323
 msgid "Substitute Lyric Search"
 msgstr "Remplacer la recherche des paroles"
 
@@ -439,7 +438,7 @@ msgstr "Vérrouiller"
 msgid "Clear"
 msgstr "Vider"
 
-#: tauon.py:14202
+#: tauon.py:14249
 msgid "Rescanning folders..."
 msgstr "Réanalyse des dossiers…"
 
@@ -478,14 +477,14 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Vous retirez ou modifiez ce comportement en allant dans « Divers » > « "
-"Modifier le génerateur… »"
+"Vous retirez ou modifiez ce comportement en allant dans « Divers » > "
+"« Modifier le génerateur… »"
 
 #: tauon.py:15304 tauon.py:18927
 msgid "New Playlist"
 msgstr "Nouvelle liste de lecture"
 
-#: tauon.py:15262
+#: tauon.py:15309
 msgid "Upload"
 msgstr "Téléverser"
 
@@ -1624,7 +1623,7 @@ msgstr "ID du client"
 msgid "Client Secret"
 msgstr "Client secret"
 
-#: tauon.py:24584
+#: tauon.py:24651
 msgid "Forget Account"
 msgstr "Oublier le compte"
 
@@ -1636,7 +1635,7 @@ msgstr "Autoriser"
 msgid "Prefer launching web player"
 msgstr ""
 
-#: tauon.py:24609 tauon.py:24610
+#: tauon.py:24676 tauon.py:24677
 msgid "Import Albums"
 msgstr "Importer les albums"
 
@@ -1656,7 +1655,7 @@ msgstr "Importer la liste de lecture utilisateur…"
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
-#: tauon.py:24656 tauon.py:24713 tauon.py:24770
+#: tauon.py:24723 tauon.py:24780 tauon.py:24837
 msgid "Username / Email"
 msgstr "Nom d’utilisateur / courriel"
 
@@ -1681,7 +1680,7 @@ msgstr ""
 msgid "PLEX network streaming"
 msgstr ""
 
-#: tauon.py:24798
+#: tauon.py:24865
 msgid "Server name"
 msgstr "Nom du serveur"
 
@@ -1736,9 +1735,8 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
-"Cliquez sur « Identification » pour ouvrir la page d'autorisation sur "
-"last.fm et suivez les instructions, puis revenez ici et cliquez sur « "
-"Terminé »."
+"Cliquez sur « Identification » pour ouvrir la page d'autorisation sur last."
+"fm et suivez les instructions, puis revenez ici et cliquez sur « Terminé »."
 
 #: tauon.py:24984
 msgid "Forget account"

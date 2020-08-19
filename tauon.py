@@ -676,6 +676,7 @@ from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 from t_modules.t_cast import *
+from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
 from t_modules.t_spot import SpotCtl
@@ -1360,6 +1361,7 @@ class Prefs:    # Used to hold any kind of settings
         self.bypass_transcode = False
         self.force_hide_max_button = False
         self.zoom_art = False
+        self.auto_rec = False
 
 prefs = Prefs()
 
@@ -1461,8 +1463,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.time_passed = 0
         self.level_meter_colour_mode = 3
 
-        self.vis = 2  # visualiser mode actual
-        self.vis_want = 2  # visualiser mode setting
+        self.vis = 0  # visualiser mode actual
+        self.vis_want = 0  # visualiser mode setting
         self.spec = None
         self.s_spec = [0] * 24
         self.s4_spec = [0] * 45
@@ -1755,6 +1757,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.sync_speed = ""
 
         self.bar_hover_timer = Timer()
+
+        self.level_decay_timer = Timer()
 
 gui = GuiVar()
 
@@ -2879,6 +2883,8 @@ for t in range(2):
             prefs.download_playlist = save[150]
         if save[151] is not None:
             spot_cache_saved_albums = save[151]
+        if save[152] is not None:
+            prefs.auto_rec = save[152]
 
         state_file.close()
         del save
@@ -3253,7 +3259,7 @@ if db_version > 0:
             show_message("Welcome to v6.1.0. Due to changes, please re-authorise Spotify", "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify")
 
 if old_backend == 1:
-    show_message("It looks like you were previously using the BASS backend.", "BASS has been removed in this version going forward, thus some features may now be unavailable, apologies for any inconvenience :<")
+    show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -3295,11 +3301,11 @@ def save_prefs():
     cf.update_value("display-language", prefs.ui_lang)
     #cf.update_value("decode-search", prefs.diacritic_search)
 
-    cf.update_value("use-log-volume-scale", prefs.log_vol)
-    cf.update_value("pause-fade-time", prefs.pause_fade_time)
-    cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    cf.update_value("device-buffer-length", prefs.device_buffer)
-    cf.update_value("force-mono", prefs.mono)
+    #cf.update_value("use-log-volume-scale", prefs.log_vol)
+    #cf.update_value("pause-fade-time", prefs.pause_fade_time)
+    #cf.update_value("cross-fade-time", prefs.cross_fade_time)
+    #cf.update_value("device-buffer-length", prefs.device_buffer)
+    #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
 
@@ -3379,9 +3385,9 @@ def save_prefs():
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
 
-    cf.update_value("broadcast-port", prefs.broadcast_port)
-    cf.update_value("metadata-page-port", prefs.metadata_page_port)
-    cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
+    #cf.update_value("broadcast-port", prefs.broadcast_port)
+    cf.update_value("broadcast-page-port", prefs.metadata_page_port)
+    #cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
     cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
     cf.update_value("chart-columns", prefs.chart_columns)
@@ -3415,15 +3421,15 @@ def load_prefs():
     if prefs.pause_fade_time > 5000:
         prefs.pause_fade_time = 5000
 
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "This is a placeholder setting and currently has no effect.")
-    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
-    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
+    #prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
+    #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "This is a placeholder setting and currently has no effect.")
+    #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
+    #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
     prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification.")
-    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string.")
+    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
@@ -3600,9 +3606,9 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[broadcasting]")
-    prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
-    prefs.metadata_page_port = cf.sync_add("int", "metadata-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this. Must be different to the broadcast port")
-    prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
+    #prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
+    prefs.metadata_page_port = cf.sync_add("int", "broadcast-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this. Must be different to the broadcast port")
+    # prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
 
     cf.br()
     cf.add_text("[chart]")
@@ -3621,31 +3627,12 @@ if 0 < db_version <= 34:
         prefs.theme_name = get_theme_name(theme)
         print(prefs.theme_name)
 
-# if 0 < db_version <= 36 and prefs.backend == 1 and system == "linux" and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
-#     show_message("Welcome to v5.1.0! 🚨 Just letting you know that BASS is no longer included by default.",
-#                  "You can enable it again by going MENU > Settings > Audio > Install BASS Audio Library.",
-#                  "If you do nothing, GStreamer will be used for playback instead.")
-
-# Set UI language -----
-
-#lc = locale.getlocale(locale.LC_MESSAGES)
-#print(f"Locale detected: {lc[0]}")
-
 lang = ""
-
-# if lc[0] is not None and "_" in lc[0]:
-#     lang = lc[0]
-
-# if prefs.ui_lang != "en":
-#     lang = prefs.ui_lang
 
 locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
     locale_dir = "/app/share/locale"
-
-
-
 
 lang = []
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
@@ -3718,6 +3705,7 @@ if scale_want != prefs.ui_scale or force_render:
             print("Rendering icons...")
             render_icons(svg_directory, scaled_asset_directory, scale_want)
 
+    print("Done rendering icons")
 
     prefs.ui_scale = scale_want
     prefs.playlist_row_height = round(22 * prefs.ui_scale)
@@ -4239,6 +4227,11 @@ class PlayerCtl:
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
 
+                if self.tag_meta:
+                    radiobox.song_key = self.tag_meta
+                else:
+                    radiobox.song_key = radiobox.dummy_track.artist + " - " + radiobox.dummy_track.title
+
                 pctl.radio_image_bin = None
 
                 try:
@@ -4662,6 +4655,9 @@ class PlayerCtl:
         self.playing_length = target.length
         self.last_playing_time = 0
 
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
+
         if jump and not prefs.use_jump_crossfade:
             self.playerSubCommand = 'now'
 
@@ -4796,6 +4792,9 @@ class PlayerCtl:
         if spot_ctl.playing or spot_ctl.coasting:
             print("Spotify stop")
             spot_ctl.control("stop")
+
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
 
         self.notify_update()
         lfm_scrobbler.start_queue()
@@ -5877,7 +5876,7 @@ class LastFMapi:
         # This is step 2 where the user clicks "Done"
 
         if self.sg is None:
-            show_message(_("You need to login first"))
+            show_message(_("You need to log in first"))
             return
 
         try:
@@ -6684,9 +6683,8 @@ class Tauon:
         self.QuickThumbnail = QuickThumbnail
         self.pl_to_id = pl_to_id
         self.chunker = Chunker()
-
-
-
+        self.stream_proxy = StreamEnc(self)
+        self.level_train = []
 
     # def log(self, line, title=False):
     #
@@ -11600,7 +11598,7 @@ class Menu:
                 return False
         return True
 
-    def render_icon(self, x, y, icon, selected):
+    def render_icon(self, x, y, icon, selected, fx):
 
         if colours.lm:
             selected = True
@@ -11618,9 +11616,8 @@ class Menu:
                 if icon.colour_callback is not None: #and icon.colour_callback() is not None:
                     colour = icon.colour_callback()
 
-                elif selected:
+                elif selected and not fx[0] == colours.menu_text_disabled:
                     colour = icon.colour
-
 
                 if colour is None and icon.base_asset_mod:
                     colour = colours.menu_icons
@@ -11777,7 +11774,7 @@ class Menu:
                 if self.items[i][1] is False and self.show_icons:
 
                     icon = self.items[i][7]
-                    self.render_icon(x_run + x , y_run + 5 * gui.scale, icon, selected)
+                    self.render_icon(x_run + x , y_run + 5 * gui.scale, icon, selected, fx)
 
                 if self.show_icons:
                     x += 25 * gui.scale
@@ -11900,7 +11897,7 @@ class Menu:
 
                         # Render sub items icon
                         icon = self.subs[self.sub_active][w][7]
-                        self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select)
+                        self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select, fx)
 
                         # Render the items label
                         ddt.text((sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0],
@@ -22436,6 +22433,9 @@ def worker1():
                                 not "sa" in cmds and
                                 not "st" in cmds and
                                 not "rt" in cmds and
+                                not "sal" in cmds and
+                                not "slt" in cmds and
+                                not "spl\"" in code and
                                 not "r" in cmds):
                             if not pl_is_locked(i):
                                 regenerate_playlist(i, silent=True)
@@ -22993,6 +22993,7 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
 
 from t_modules.t_webserve import webserve
 from t_modules.t_webserve import authserve
+from t_modules.t_webserve import stream_proxy
 
 if prefs.enable_web is True:
     webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
@@ -24497,7 +24498,7 @@ class Over:
             ddt.text((x + round(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text, 211, bg=real_bg)
         return hit
 
-    def toggle_square(self, x, y, function, text):
+    def toggle_square(self, x, y, function, text, click=False):
 
         x = round(x)
         y = round(y)
@@ -24517,7 +24518,7 @@ class Over:
 
         # Check if box clicked
         clicked = False
-        if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
+        if (self.click or click) and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
             clicked = True
 
         # There are two mode, function type, and passthrough bool type
@@ -30438,6 +30439,11 @@ class RadioBox:
         self.dummy_track.file_ext = "RADIO"
         self.playing_title = ""
 
+        self.proxy_started = False
+        self.loaded_url = None
+
+        self.song_key = ""
+
     def start(self, item):
 
         if spot_ctl.playing or spot_ctl.coasting:
@@ -30454,7 +30460,33 @@ class RadioBox:
 
         album_art_gen.clear_cache()
 
-        pctl.url = url
+        if shutil.which('ffmpeg') is None:
+            show_message(_("FFmpeg does not appear to be installed"), mode="error")
+            prefs.auto_rec = False
+
+        if shutil.which('opusenc') is None:
+            show_message(_("Package opus-tools does not appear to be installed"), mode="error")
+            prefs.auto_rec = False
+
+        if not self.proxy_started:
+            shoot = threading.Thread(target=stream_proxy, args=[tauon])
+            shoot.daemon = True
+            shoot.start()
+            self.proxy_started = True
+
+        # pctl.url = url
+        pctl.url = f"http://127.0.0.1:{7812}"
+        self.loaded_url = None
+        pctl.tag_meta = ""
+
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.abort = True
+
+        if not tauon.stream_proxy.start_download(url):
+            show_message(_("Failed to establish a connection"), mode="error")
+            return
+
+        self.loaded_url = url
         pctl.playing_state = 0
         pctl.record_stream = False
         pctl.playerCommand = "url"
@@ -30463,7 +30495,7 @@ class RadioBox:
         pctl.playing_time = 0
         pctl.decode_time = 0
         pctl.playing_length = 0
-        pctl.tag_meta = ""
+
 
     def delete_radio_entry(self, p):
         del prefs.radio_urls[p]
@@ -30495,6 +30527,16 @@ class RadioBox:
             self.active = False
 
         ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.box_title_text, 213)
+
+        # ---
+        if pctl.playing_state == 3:
+            if tauon.stream_proxy.s_format:
+                ddt.text((x + 425 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_format, colours.box_title_text, 311)
+            if tauon.stream_proxy.s_bitrate:
+                ddt.text((x + 454 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_bitrate + "kbps", colours.box_title_text, 311)
+
+        # ---
+
 
         yy += round(40 * gui.scale)
 
@@ -30581,7 +30623,7 @@ class RadioBox:
             bg = colours.box_background
             text_colour = colours.box_input_text
 
-            playing = pctl.playing_state == 3 and pctl.url == item["stream_url"]
+            playing = pctl.playing_state == 3 and self.loaded_url == item["stream_url"]
 
             if playing:
                 # bg = colours.box_sub_highlight
@@ -30627,10 +30669,16 @@ class RadioBox:
         if to_delete is not None:
             del prefs.radio_urls[to_delete]
 
-        yy = (y + h) - round(35 * gui.scale)
-        # y += 30
-        rect = (x, yy, round(50 * gui.scale), round(22 * gui.scale))
         fields.add(rect)
+
+        yy = y + round(328 * gui.scale)
+        if pctl.playing_state == 3 and not prefs.auto_rec:
+            pass
+        else:
+            if pctl.playing_state == 3:
+                pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click)
+            else:
+                prefs.auto_rec = pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click)
 
         # if pctl.playing_state == 3 and prefs.backend == 1:
         #
@@ -30665,7 +30713,7 @@ class RadioBox:
 
 
 radiobox = RadioBox()
-
+tauon.radiobox = radiobox
 tauon.dummy_track = radiobox.dummy_track
 
 # def visit_radio_site_show_test(p):
@@ -36110,10 +36158,10 @@ def update_layout_do():
 
     gui.draw_vis4_top = False
 
-    if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
-        gui.vis = 4
-        gui.turbo = True
-    elif gui.vis_want == 0:
+    # if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
+    #     gui.vis = 4
+    #     gui.turbo = True
+    if gui.vis_want == 0:
         gui.turbo = False
         gui.vis = 0
     else:
@@ -36637,6 +36685,7 @@ def save_state():
             prefs.show_band,
             prefs.download_playlist,
             spot_ctl.cache_saved_albums,
+            prefs.auto_rec
         ]
 
 
@@ -37625,6 +37674,8 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+
+
             pass
 
         if gui.mode < 3:
@@ -38326,7 +38377,8 @@ while pctl.running:
                     max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
                     # Mouse wheel scrolling
-                    if not search_over.active and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                    if not search_over.active and not radiobox.active \
+                            and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                         if mouse_wheel != 0:
                             scroll_gallery_hide_timer.set()
@@ -39011,7 +39063,6 @@ while pctl.running:
             # End of gallery view
             # --------------------------------------------------------------------------
             # Main Playlist:
-
             if len(load_orders) > 0:
 
                 for i, order in enumerate(load_orders):
@@ -39554,6 +39605,7 @@ while pctl.running:
                                     center_info_menu.activate(target_track)
 
                             ww = w - 25 * gui.scale
+
                             if target_track:
                                 ddt.text_background_colour = colours.side_panel_background
 
@@ -40902,22 +40954,22 @@ while pctl.running:
             gui.level_update = True
 
 
-    if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
-
-        # print(gui.level_peak)
-        gui.time_passed = gui.level_time.hit()
-        if gui.time_passed > 1:
-            gui.time_passed = 0
-        while gui.time_passed > 0.01:
-            gui.level_peak[1] -= 0.5
-            if gui.level_peak[1] < 0:
-                gui.level_peak[1] = 0
-            gui.level_peak[0] -= 0.5
-            if gui.level_peak[0] < 0:
-                gui.level_peak[0] = 0
-            gui.time_passed -= 0.020
-
-        gui.level_update = True
+    # if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
+    #
+    #     # print(gui.level_peak)
+    #     gui.time_passed = gui.level_time.hit()
+    #     if gui.time_passed > 1:
+    #         gui.time_passed = 0
+    #     while gui.time_passed > 0.01:
+    #         gui.level_peak[1] -= 0.5
+    #         if gui.level_peak[1] < 0:
+    #             gui.level_peak[1] = 0
+    #         gui.level_peak[0] -= 0.5
+    #         if gui.level_peak[0] < 0:
+    #             gui.level_peak[0] = 0
+    #         gui.time_passed -= 0.020
+    #
+    #     gui.level_update = True
 
     if gui.level_update is True and not resize_mode and not gui.mode == 3:
         gui.level_update = False
@@ -41002,7 +41054,6 @@ while pctl.running:
             # Standard spectrum visualiser
 
             if gui.update_spec == 0 and pctl.playing_state != 2:
-
                 if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
                     vis_decay_timer.set()
                     for i in range(len(gui.spec)):
@@ -41095,6 +41146,26 @@ while pctl.running:
 
         if gui.vis == 1:
 
+            if pctl.playing_state == 1:
+                #gui.level_update = True
+                while tauon.level_train and tauon.level_train[0][0] < time.time():
+
+                    l = tauon.level_train[0][1]
+                    r = tauon.level_train[0][2]
+
+                    if r > gui.level_peak[0]:
+                        gui.level_peak[0] = r
+                    if l > gui.level_peak[1]:
+                        gui.level_peak[1] = l
+
+                    del tauon.level_train[0]
+
+            else:
+                tauon.level_train.clear()
+
+
+
+
             SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 
             x = window_size[0] - 20 * gui.scale - gui.offset_extra
@@ -41111,12 +41182,35 @@ while pctl.running:
             x = round(gui.level_ww - 9 * gui.scale)
             y = 10 * gui.scale
 
-            if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and pctl.playing_state != 1:
-                gui.level_update = True
-                time.sleep(0.016)
+            if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
+                #gui.level_update = True
+                if pctl.playing_time < 1:
+                    gui.delay_frame(0.032)
+
+                if pctl.playing_state == 1 or pctl.playing_state == 3:
+                    t = gui.level_decay_timer.hit()
+                    decay = 14 * t
+                    gui.level_peak[1] -= decay
+                    gui.level_peak[0] -= decay
+                elif pctl.playing_state == 0 or pctl.playing_state == 2:
+                    gui.level_update = True
+                    time.sleep(0.016)
+                    t = gui.level_decay_timer.hit()
+                    decay = 16 * t
+                    gui.level_peak[1] -= decay
+                    gui.level_peak[0] -= decay
+
+                # if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and (
+                #         (pctl.playing_state == 0 or pctl.playing_state == 2) or (pctl.playing_state == 1)) :
+                #     gui.level_update = True
+                #     time.sleep(0.016)
                 # print(vis_decay_timer.get())
                 # vis_decay_timer.set()
-                pass
+                #for i in tauon.level_train:
+                # gui.level_peak[1] -= 0.30
+                # gui.level_peak[0] -= 0.30
+
+                    pass
 
             for t in range(12):
 
