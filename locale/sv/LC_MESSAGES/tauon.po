@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
 "PO-Revision-Date: 2020-08-20 19:36+0000\n"
-"Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
+"Last-Translator: Luna Jernberg <droidbittin@gmail.com>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
 "Language: sv\n"
@@ -40,7 +40,6 @@ msgid "Web auth page opened"
 msgstr "Webbautentisering öppnad"
 
 #: tauon.py:5879
-#, fuzzy
 msgid "You need to log in first"
 msgstr "Du måste logga in först"
 
@@ -2063,9 +2062,8 @@ msgid "End of Playlist"
 msgstr "Slut på spelningslista"
 
 #: tauon.py:30482
-#, fuzzy
 msgid "Failed to establish a connection"
-msgstr "Kunde inte etablera anslutning/auktorisation"
+msgstr "Kunde inte etablera en anslutning"
 
 #: tauon.py:30525
 msgid "Internet Radio"
