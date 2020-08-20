@@ -132,7 +132,7 @@ def player3(tauon):  # GStreamer
             # Set the equalizer based on user preferences
             for i, level in enumerate(prefs.eq):
                 if prefs.use_eq:
-                    self._eq.set_property("band" + str(i), level)
+                    self._eq.set_property("band" + str(i), level * -1)
                 else:
                     self._eq.set_property("band" + str(i), 0.0)
 
@@ -666,7 +666,7 @@ def player3(tauon):  # GStreamer
                 elif command == 'seteq':
                     for i, level in enumerate(prefs.eq):
                         if prefs.use_eq:
-                            self._eq.set_property("band" + str(i), level)
+                            self._eq.set_property("band" + str(i), level * -1)
                         else:
                             self._eq.set_property("band" + str(i), 0.0)
 
