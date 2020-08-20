@@ -91,7 +91,8 @@ def enc(tauon):
                         print(f"URI = {target}")
                         pctl.broadcast_active = True
                         print("Start encoder")
-                        cmd = shlex.split("opusenc --raw --raw-rate 48000 - -")
+                        #cmd = shlex.split("opusenc --raw --raw-rate 48000 - -")
+                        cmd = ["ffmpeg", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", '-f', "opus", "-c:a", "libopus", "pipe:1"]
                         # cmd = shlex.split("oggenc --raw --raw-rate 48000 -")
                         self.encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
                         fcntl.fcntl(self.encoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
@@ -223,7 +224,8 @@ def enc(tauon):
                             d = tauon.chunker.master_count - 30
                             if d > 1:
                                 del tauon.chunker.chunks[d]
-                            print(f"Received page {tauon.chunker.master_count}")
+
+                            # print(f"Received page {tauon.chunker.master_count}")
 
                             # Reset the buffer with the remainder
                             self.temp_buffer.seek(0)
