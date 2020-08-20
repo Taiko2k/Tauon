@@ -4045,7 +4045,7 @@ def get_radio_art():
                     radiobox.dummy_track.art_url_key = "ok"
                     return
 
-    elif "radio.plaza.one" in pctl.url:
+    elif "radio.plaza.one" in radiobox.loaded_url:
         console.print("Fetching plaza art")
         response = requests.get("https://api.plaza.one/status")
         if response.status_code == 200:
