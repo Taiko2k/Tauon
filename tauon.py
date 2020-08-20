@@ -7797,6 +7797,8 @@ def draw_window_tools():
         if input.mouse_click or ab_click:
             if gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
+            if tauon.stream_proxy.encode_running:
+                show_message(_("A recording radio stream is running!"))
             else:
                 pctl.running = False
     else:
@@ -26343,6 +26345,8 @@ class TopPanel:
         offset = 15 * gui.scale
         if draw_border:
             offset += 61 * gui.scale
+            if draw_max_button:
+                offset += 61 * gui.scale
         if gui.turbo:
             offset += 90 * gui.scale
             if gui.vis == 3:
@@ -36274,8 +36278,6 @@ def update_layout_do():
         gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
         # -------------------------------------------------------------------------
-
-
         gui.playlist_view_length = int((window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
 
         box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
@@ -39609,7 +39611,7 @@ while pctl.running:
                             if target_track:
                                 ddt.text_background_colour = colours.side_panel_background
 
-                                if pctl.playing_state == 3:
+                                if pctl.playing_state == 3 and not radiobox.dummy_track.title:
                                     title = pctl.tag_meta
                                 else:
                                     title = target_track.title
