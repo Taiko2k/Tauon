@@ -378,7 +378,7 @@ try:
     del save
 
 except:
-    print('Error loading window state file')
+    print('No previous window state')
 
 
 
@@ -18191,10 +18191,6 @@ def broadcast_select_track(track_id):
         show_message(_("FFmpeg does not appear to be installed"), mode="error")
         return
 
-    if shutil.which('opusenc') is None:
-        show_message(_("Package opus-tools does not appear to be installed"), mode="error")
-        return
-
     pctl.broadcast_index = track_id
     track = pctl.g(track_id)
 
@@ -27646,8 +27642,8 @@ class BottomBarType1:
                 play_colour = colours.media_buttons_active
             elif pctl.playing_state == 3:
                 play_colour = colours.media_buttons_active
-                if pctl.record_stream:
-                    play_colour = [220, 50 ,50 , 255]
+                if tauon.stream_proxy.encode_running:
+                    play_colour = [220, 50, 50, 255]
 
             if not compact or (compact and pctl.playing_state != 2):
                 rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
@@ -30466,10 +30462,6 @@ class RadioBox:
 
         if shutil.which('ffmpeg') is None:
             show_message(_("FFmpeg does not appear to be installed"), mode="error")
-            prefs.auto_rec = False
-
-        if shutil.which('opusenc') is None:
-            show_message(_("Package opus-tools does not appear to be installed"), mode="error")
             prefs.auto_rec = False
 
         if not self.proxy_started:

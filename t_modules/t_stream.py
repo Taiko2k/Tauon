@@ -159,20 +159,20 @@ class StreamEnc:
                         save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
                         if os.path.exists(save_file):
                             os.remove(save_file)
+                        if not os.path.exists(self.tauon.prefs.encoder_output):
+                            os.makedirs(self.tauon.prefs.encoder_output)
                         os.rename(target_file, save_file)
                         encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
                 raw_audio = decoder.stdout.read(1000000)
                 if raw_audio:
-                    #print(len(raw_audio))
                     encoder.stdin.write(raw_audio)
 
                 if position < self.c:
                     chunk = self.chunks[position]
                     position += 1
                     decoder.stdin.write(chunk)
-
                 else:
                     time.sleep(0.005)
 
@@ -236,7 +236,7 @@ class StreamEnc:
                         # We're sure its data Its data, send it on
                         self.chunks[self.c] = chunk
                         # Delete old data
-                        d = self.c - 512
+                        d = self.c - (256 * 12)
                         if d in self.chunks:
                             del self.chunks[d]
 
