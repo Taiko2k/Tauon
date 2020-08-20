@@ -7,10 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-08-17 18:07+1200\n"
-=======
 "POT-Creation-Date: 2020-08-20 11:51+1200\n"
 "PO-Revision-Date: 2020-08-15 23:05+0000\n"
->>>>>>> 87ad0dcc420568f55fb9d3653774a59b860e948f
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
