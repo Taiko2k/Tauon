@@ -120,7 +120,8 @@ class StreamEnc:
             position = 0
             old_metadata = self.tauon.radiobox.song_key
 
-            cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
+            ##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
+            cmd = ["ffmpeg", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", target_file]
             encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             while True:
@@ -161,21 +162,23 @@ class StreamEnc:
                         os.rename(target_file, save_file)
                         encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-                raw_audio = decoder.stdout.read(200000)
-                if raw_audio:
-                    encoder.stdin.write(raw_audio)
 
+                raw_audio = decoder.stdout.read(1000000)
+                if raw_audio:
+                    #print(len(raw_audio))
+                    encoder.stdin.write(raw_audio)
 
                 if position < self.c:
                     chunk = self.chunks[position]
-                    decoder.stdin.write(chunk)
                     position += 1
+                    decoder.stdin.write(chunk)
+
                 else:
-                    time.sleep(0.01)
+                    time.sleep(0.005)
 
         except:
             print("Encoder thread crashed!")
-            raise
+            # raise
             self.encode_running = False
             return
 
@@ -220,7 +223,7 @@ class StreamEnc:
         try:
             while True:
 
-                chunk = r.read(1024)
+                chunk = r.read(256)
 
                 if self.abort:
                     r.close()

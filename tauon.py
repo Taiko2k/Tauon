@@ -691,13 +691,11 @@ if system == "linux" and not macos and not msys:
     from t_modules.t_dbus import Gnome
     from t_modules.t_gdk_extra import *
 
-import_cursors = True
-if "--nogdk" in str(sys.argv):
-    import_cursors = False
+import_cursors = False
 
-if desktop == "KDE" and flatpak_mode:
-    print("Using crash workaround for KDE + Flatpak")
-    import_cursors = False
+if desktop == "GNOME":
+    print("Using crash workaround for gdk crash")
+    import_cursors = True
 
 if import_cursors and system == "linux" and not macos and not msys:
     c_br = cursor_get_gdk(4)
@@ -4763,6 +4761,8 @@ class PlayerCtl:
         self.playerCommand = 'stop'
         if run:
             self.playerCommand = 'runstop'
+        if block:
+            self.playerSubCommand = "return"
 
         self.playerCommandReady = True
         self.record_stream = False
@@ -4783,7 +4783,7 @@ class PlayerCtl:
 
         if block:
             loop = 0
-            while self.playerCommand != "stopped":
+            while self.playerSubCommand != "stopped":
                 time.sleep(0.03)
                 loop += 1
                 if loop > 110:
@@ -6621,6 +6621,7 @@ class Strings:
         self.spotify_account_connected = _("Spotify account connected")
         self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
         self.spotify_error_starting = _("Error starting Spotify")
+        self.spotify_request_auth = _("Please authorise Spotify in settings!")
 
         self.day = _("day")
         self.days = _("days")
@@ -7796,6 +7797,8 @@ def draw_window_tools():
         if input.mouse_click or ab_click:
             if gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
+            if tauon.stream_proxy.encode_running:
+                show_message(_("A recording radio stream is running!"))
             else:
                 pctl.running = False
     else:
@@ -17900,7 +17903,6 @@ folder_menu.br()
 
 spot_ctl = SpotCtl(tauon)
 tauon.spot_ctl = spot_ctl
-spot_ctl.load_token()
 
 spot_ctl.cache_saved_albums = spot_cache_saved_albums
 
@@ -26343,6 +26345,8 @@ class TopPanel:
         offset = 15 * gui.scale
         if draw_border:
             offset += 61 * gui.scale
+            if draw_max_button:
+                offset += 61 * gui.scale
         if gui.turbo:
             offset += 90 * gui.scale
             if gui.vis == 3:
@@ -36274,8 +36278,6 @@ def update_layout_do():
         gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
         # -------------------------------------------------------------------------
-
-
         gui.playlist_view_length = int((window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
 
         box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
@@ -37675,7 +37677,7 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
 
-
+            spot_ctl.load_token()
             pass
 
         if gui.mode < 3:
@@ -39609,7 +39611,7 @@ while pctl.running:
                             if target_track:
                                 ddt.text_background_colour = colours.side_panel_background
 
-                                if pctl.playing_state == 3:
+                                if pctl.playing_state == 3 and not radiobox.dummy_track.title:
                                     title = pctl.tag_meta
                                 else:
                                     title = target_track.title

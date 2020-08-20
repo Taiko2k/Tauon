@@ -236,7 +236,7 @@ def player3(tauon):  # GStreamer
 
                     if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
                         self.playbin.set_state(Gst.State.PAUSED)
-                        print("BUFFER ")
+                        #print("BUFFER")
 
                     elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
                         self.playbin.set_state(Gst.State.PLAYING)
@@ -416,6 +416,7 @@ def player3(tauon):  # GStreamer
                 pctl.spot_test_progress()
 
             if pctl.playerCommandReady:
+                command = pctl.playerCommand
                 pctl.playerCommandReady = False
 
                 # Here we process commands from the main thread/module
@@ -449,7 +450,7 @@ def player3(tauon):  # GStreamer
 
                 pctl.download_time = 0
                 url = None
-                if pctl.playerCommand == 'open' and pctl.target_object:
+                if command == 'open' and pctl.target_object:
                     # print("Start track")
                     track = pctl.target_object
 
@@ -637,7 +638,7 @@ def player3(tauon):  # GStreamer
                     # self.check_duration()
                     self.player_timer.hit()
 
-                elif pctl.playerCommand == 'url':
+                elif command == 'url':
 
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
@@ -662,22 +663,34 @@ def player3(tauon):  # GStreamer
                         self.play_state = 3
                         self.player_timer.hit()
 
-                elif pctl.playerCommand == 'seteq':
+                elif command == 'seteq':
                     for i, level in enumerate(prefs.eq):
                         if prefs.use_eq:
                             self._eq.set_property("band" + str(i), level)
                         else:
                             self._eq.set_property("band" + str(i), 0.0)
 
-                elif pctl.playerCommand == 'volume':
+                elif command == 'volume':
 
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("volume", int(pctl.player_volume))
 
                     elif self.play_state == 1 or self.play_state == 3:
-                        self.playbin.set_property('volume', pctl.player_volume / 100)
 
-                elif pctl.playerCommand == 'runstop':
+                        success, current_time = self.playbin.query_position(Gst.Format.TIME)
+                        self.playbin.set_state(Gst.State.PLAYING)
+
+                        if success and False:
+                            start = current_time + ((100 / 1000) * Gst.SECOND)
+                            end = current_time + ((600 / 1000) * Gst.SECOND)
+                            self.c_source.set(start, self._vol.get_property('volume') / 10)
+                            self.c_source.set(end, (pctl.player_volume / 100) / 10)
+                            time.sleep(0.5)
+                            self.c_source.unset_all()
+                        else:
+                            self.playbin.set_property('volume', pctl.player_volume / 100)
+
+                elif command == 'runstop':
 
                     if self.play_state != 0:
                         # Determine time position of currently playing track
@@ -690,10 +703,9 @@ def player3(tauon):  # GStreamer
                     else:
                         self.playbin.set_state(Gst.State.READY)
                     self.play_state = 0
-                    pctl.playerCommand = "stopped"
+                    pctl.playerSubCommand = "stopped"
 
-                elif pctl.playerCommand == 'stop':
-
+                elif command == 'stop':
                     if self.play_state > 0:
 
                         if prefs.use_pause_fade:
@@ -711,9 +723,9 @@ def player3(tauon):  # GStreamer
                         self._vol.set_property("volume", pctl.player_volume / 100)
 
                     self.play_state = 0
-                    pctl.playerCommand = "stopped"
+                    pctl.playerSubCommand = "stopped"
 
-                elif pctl.playerCommand == 'seek':
+                elif command == 'seek':
                     self.seek_timer.set()
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
@@ -771,14 +783,14 @@ def player3(tauon):  # GStreamer
                             time.sleep(0.25)
 
 
-                elif pctl.playerCommand == 'pauseon':
+                elif command == 'pauseon':
                     self.player_timer.hit()
                     self.play_state = 2
 
                     if prefs.use_pause_fade:
                         success, current_time = self.playbin.query_position(Gst.Format.TIME)
                         if success:
-                            start = current_time
+                            start = current_time + (150 / 1000 * Gst.SECOND)
                             end = current_time + (prefs.pause_fade_time / 1000 * Gst.SECOND)
                             self.c_source.set(start, (pctl.player_volume / 100) / 10)
                             self.c_source.set(end, 0.0)
@@ -787,7 +799,7 @@ def player3(tauon):  # GStreamer
 
                     self.playbin.set_state(Gst.State.PAUSED)
 
-                elif pctl.playerCommand == 'pauseoff':
+                elif command == 'pauseoff':
                     self.player_timer.hit()
 
                     if not prefs.use_pause_fade:
@@ -798,7 +810,7 @@ def player3(tauon):  # GStreamer
                         success, current_time = self.playbin.query_position(Gst.Format.TIME)
                         self.playbin.set_state(Gst.State.PLAYING)
                         if success:
-                            start = current_time
+                            start = current_time + (150 / 1000 * Gst.SECOND)
                             end = current_time + ((prefs.pause_fade_time / 1000) * Gst.SECOND)
                             self.c_source.set(start, 0.0)
                             self.c_source.set(end, (pctl.player_volume / 100) / 10)
@@ -811,7 +823,7 @@ def player3(tauon):  # GStreamer
 
                     self.play_state = 1
 
-                elif pctl.playerCommand == 'unload':
+                elif command == 'unload':
                     if self.play_state > 0:
                         self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.5)

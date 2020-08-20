@@ -29,6 +29,7 @@ import io
 import webbrowser
 import subprocess
 import time
+import json
 from t_modules.t_extra import Timer
 
 
@@ -52,10 +53,12 @@ class SpotCtl:
         self.spotify_com = False
         self.sender = None
         self.cache_saved_albums = []
+        self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
 
         self.progress_timer = Timer()
         self.update_timer = Timer()
 
+        self.token_path = os.path.join(self.tauon.user_directory, "spot_token-j")
         self.token_path = os.path.join(self.tauon.user_directory, "spot-r-token")
 
     def prep_cred(self):
@@ -89,24 +92,38 @@ class SpotCtl:
 
     def save_token(self):
         if self.token:
+
             pickle.dump(self.token, open(self.token_path, "wb"))
+
+            if os.path.getsize(self.token_path) > 10000:
+                print("PICKLE MALFUNCTION")
+                os.remove(self.token_path)
+
+    def load_token(self):
+        if os.path.isfile(self.token_path):
+            try:
+
+                if os.path.getsize(self.token_path) > 10000:
+                    print("PICKLE MALFUNCTION")
+                    os.remove(self.token_path)
+                else:
+                    f = open(self.token_path, "rb")
+                    self.token = pickle.load(f)
+                    # Fix for memory leak
+                    self.token._token._scope = tk.Scope(self.scope.split(" "))
+                    f.close()
+                    print("Loaded token from file")
+                    return
+            except:
+                print("ERROR LOADING TOKEN.")
+
+        self.tauon.gui.show_message(self.tauon.strings.spotify_request_auth, mode="warning")
+        self.delete_token()
 
     def delete_token(self):
         if os.path.isfile(self.token_path):
             os.remove(self.token_path)
         self.token = None
-
-    def load_token(self):
-        if os.path.isfile(self.token_path):
-            try:
-                f = open(self.token_path, "rb")
-                self.token = pickle.load(f)
-                f.close()
-                print("Loaded spotify token from file")
-            except:
-                print("ERROR LOADING TOKEN. DELETING TOKEN ON DISK.")
-                self.tauon.gui.show_message("Upgrade issue. Please re-authroise Spotify in settings!", mode="warning")
-                self.delete_token()
 
 
     def auth(self):
@@ -119,7 +136,7 @@ class SpotCtl:
             return
         if self.cred is None:
             self.prep_cred()
-        url = self.cred.user_authorisation_url(scope="user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public")
+        url = self.cred.user_authorisation_url(scope=self.scope)
         webbrowser.open(url, new=2, autoraise=True)
 
     def control(self, command, param=None):
