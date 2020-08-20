@@ -4761,6 +4761,8 @@ class PlayerCtl:
         self.playerCommand = 'stop'
         if run:
             self.playerCommand = 'runstop'
+        if block:
+            self.playerSubCommand = "return"
 
         self.playerCommandReady = True
         self.record_stream = False
@@ -4781,7 +4783,7 @@ class PlayerCtl:
 
         if block:
             loop = 0
-            while self.playerCommand != "stopped":
+            while self.playerSubCommand != "stopped":
                 time.sleep(0.03)
                 loop += 1
                 if loop > 110:
@@ -6619,6 +6621,7 @@ class Strings:
         self.spotify_account_connected = _("Spotify account connected")
         self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
         self.spotify_error_starting = _("Error starting Spotify")
+        self.spotify_request_auth = _("Please authorise Spotify in settings!")
 
         self.day = _("day")
         self.days = _("days")

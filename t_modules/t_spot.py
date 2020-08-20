@@ -109,14 +109,15 @@ class SpotCtl:
                 else:
                     f = open(self.token_path, "rb")
                     self.token = pickle.load(f)
+                    # Fix for memory leak
                     self.token._token._scope = tk.Scope(self.scope.split(" "))
                     f.close()
-                    print("Loaded spotify token from file")
+                    print("Loaded token from file")
                     return
             except:
                 print("ERROR LOADING TOKEN.")
 
-        self.tauon.gui.show_message("Please authroise Spotify in settings!", mode="warning")
+        self.tauon.gui.show_message(self.tauon.strings.spotify_request_auth, mode="warning")
         self.delete_token()
 
     def delete_token(self):
