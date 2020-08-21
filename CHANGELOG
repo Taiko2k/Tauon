@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.2.0
 
+ - Added station search browser for internet radio
  - Added detection of OGA file extension
  - Added support pasting list of Spotify links
  - Added support for pasting Spotify URI type
