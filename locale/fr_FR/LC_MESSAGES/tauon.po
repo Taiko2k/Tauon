@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
-"PO-Revision-Date: 2020-08-15 02:15+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2020-08-21 17:27+0000\n"
+"Last-Translator: Louis Hermier <loulou76train+github@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.2-dev\n"
+"X-Generator: Weblate 4.2.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1790 tauon.py:1792
@@ -40,7 +40,6 @@ msgid "Web auth page opened"
 msgstr "Page d'identification ouverte"
 
 #: tauon.py:5879
-#, fuzzy
 msgid "You need to log in first"
 msgstr "Vous devez d'abord vous identifier"
 
@@ -89,8 +88,9 @@ msgid "Error starting Spotify"
 msgstr "Erreur de démarrage Spotify"
 
 #: tauon.py:6624
+#, fuzzy
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Veuillez autoriser Spotify dans les paramètres!"
 
 #: tauon.py:6626
 msgid "day"
