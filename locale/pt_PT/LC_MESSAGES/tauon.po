@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
-"PO-Revision-Date: 2020-08-13 23:54+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2020-08-21 17:27+0000\n"
+"Last-Translator: ssantos <ssantos@web.de>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_PT/>\n"
 "Language: pt_PT\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.2-dev\n"
+"X-Generator: Weblate 4.2.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1790 tauon.py:1792
@@ -156,7 +156,7 @@ msgstr "Alteração de nome da Faixa"
 
 #: tauon.py:12144 tauon.py:40362
 msgid "Default"
-msgstr "Padrão"
+msgstr "Predefinição"
 
 #: tauon.py:12167
 msgid "BEFORE"
@@ -1473,7 +1473,7 @@ msgstr "Recarregar"
 
 #: tauon.py:24051
 msgid "Set audio output device"
-msgstr "Definir dispositivo de saída áudio"
+msgstr "Definir aparelho de saída áudio"
 
 #: tauon.py:24219
 msgid "Auto search lyrics"
@@ -1557,7 +1557,7 @@ msgstr ""
 
 #: tauon.py:24354
 msgid "Trash archive after extraction"
-msgstr "Apagar arquivos após extração"
+msgstr "Apagar arquivo após extração"
 
 #: tauon.py:24356
 msgid "Always extract to Music folder"
@@ -2027,11 +2027,11 @@ msgstr ""
 
 #: tauon.py:25814
 msgid "Thin default"
-msgstr "Fino padrão"
+msgstr "Fino predefinido"
 
 #: tauon.py:25816
 msgid "Thick default"
-msgstr "Grosso padrão"
+msgstr "Grosso predefinido"
 
 #: tauon.py:25822
 msgid "End of playlist action"
