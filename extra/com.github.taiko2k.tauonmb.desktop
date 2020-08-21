@@ -1,7 +1,7 @@
 [Desktop Entry]
 Comment=Ultra player for your music collection
 Comment[ja]=音楽コレクションのウルトラプレーヤー
-Comment[de]=Ultra Player für deine Musik-Sammlung
+Comment[de]=Ultra Player für deine Musiksammlung
 Exec=com.github.taiko2k.tauonmb.sh %U
 GenericName=Audio Player
 GenericName[ja]=音楽プレイヤー
