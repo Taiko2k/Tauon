@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
-"PO-Revision-Date: 2020-08-21 05:10+0000\n"
+"PO-Revision-Date: 2020-08-21 17:27+0000\n"
 "Last-Translator: Samuel Kaiser <sk22@mailbox.org>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
@@ -80,7 +80,7 @@ msgstr "Spotify-Account verbunden"
 
 #: tauon.py:6622
 msgid "This Spotify account isn't currently playing anything"
-msgstr "Dieser Spotify-Account spielt gerade nichts"
+msgstr "Auf diesem Spotify-Account spielt gerade nichts"
 
 #: tauon.py:6623
 msgid "Error starting Spotify"
@@ -196,11 +196,11 @@ msgstr "Album wiederholen"
 
 #: tauon.py:12433
 msgid "Shuffle OFF"
-msgstr "Shuffle AUS"
+msgstr "Zufallswiedergabe AUS"
 
 #: tauon.py:12434
 msgid "Shuffle Tracks"
-msgstr "Tracks shufflen"
+msgstr "Tracks zufällig wiedergeben"
 
 #: tauon.py:12435
 msgid "Random Albums"
@@ -244,7 +244,7 @@ msgstr "Ordner neu scannen"
 
 #: tauon.py:12741 tauon.py:12743
 msgid "Move Playing Folder Here"
-msgstr "Spielenden Ordner hierher verschieben"
+msgstr "Abgespielten Ordner hierher verschieben"
 
 #: tauon.py:12749 tauon.py:17863
 msgid "Collapse All"
@@ -280,23 +280,23 @@ msgstr "Metadaten-Panel anzeigen"
 
 #: tauon.py:12872
 msgid "Panel Below Lyrics"
-msgstr "Panel unter Lyrics"
+msgstr "Panel unter Songtext"
 
 #: tauon.py:12874
 msgid "Panel Above Lyrics"
-msgstr "Panel über Lyrics"
+msgstr "Panel über Songtext"
 
 #: tauon.py:12902 tauon.py:12912 tauon.py:12920
 msgid "Hide Lyrics"
-msgstr "Lyrics verstecken"
+msgstr "Songtext verstecken"
 
 #: tauon.py:12904 tauon.py:12914 tauon.py:12922
 msgid "Show Lyrics"
-msgstr "Lyrics anzeigen"
+msgstr "Songtext anzeigen"
 
 #: tauon.py:12956
 msgid "There are no lyric sources enabled."
-msgstr "Es sind keine Lyrics-Quellen aktiviert."
+msgstr "Es sind keine Songtext-Quellen aktiviert."
 
 #: tauon.py:12965
 msgid "Let's be polite and try later."
@@ -312,7 +312,7 @@ msgstr "Für diesen Track wurde kein Songtext gefunden"
 
 #: tauon.py:13078 tauon.py:13175 tauon.py:13652
 msgid "Search for Lyrics"
-msgstr "Suche nach Lyrics"
+msgstr "Suche nach Songtext"
 
 #: tauon.py:13090
 msgid "Search GuitarParty"
@@ -320,15 +320,15 @@ msgstr "Auf GuitarParty suchen"
 
 #: tauon.py:13125
 msgid "Paste Chord Lyrics"
-msgstr "Chord-Lyrics einfügen"
+msgstr "Gitarrengriffe einfügen"
 
 #: tauon.py:13126
 msgid "Clear Chord Lyrics"
-msgstr "Chord-Lyrics löschen"
+msgstr "Gitarrengriffe löschen"
 
 #: tauon.py:13165 tauon.py:13176 tauon.py:13653
 msgid "Toggle Lyrics"
-msgstr "Lyrics ein-/ausschalten"
+msgstr "Songtext ein-/ausschalten"
 
 #: tauon.py:13167 tauon.py:13178
 msgid "Substitute Search..."
@@ -344,7 +344,7 @@ msgstr "Lyrics kopieren"
 
 #: tauon.py:13170 tauon.py:13181
 msgid "Clear Lyrics"
-msgstr "Lyrics löschen"
+msgstr "Songtext löschen"
 
 #: tauon.py:13285
 msgid "Open Image"
@@ -522,7 +522,7 @@ msgstr "Einfügen"
 
 #: tauon.py:15328
 msgid "Append Playing"
-msgstr "Spielendes anfügen"
+msgstr "Abgespieltes anfügen"
 
 #: tauon.py:15333
 msgid "Misc…"
@@ -602,7 +602,7 @@ msgstr "XSPF exportieren"
 
 #: tauon.py:15560
 msgid "Toggle Breaks"
-msgstr ""
+msgstr "Trennung nach Alben ein/aus"
 
 #: tauon.py:15561
 msgid "Edit Generator..."
@@ -610,7 +610,7 @@ msgstr "Generator bearbeiten…"
 
 #: tauon.py:15562
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Hinzufügen aus Galerie aktivieren"
 
 #: tauon.py:15565
 msgid "Remove Duplicates"
@@ -634,11 +634,11 @@ msgstr "Bestbewertete Alben"
 
 #: tauon.py:15764
 msgid "Tracks with lyrics"
-msgstr "Tracks mit Lyrics"
+msgstr "Tracks mit Songtext"
 
 #: tauon.py:15771
 msgid "No tracks with lyrics were found."
-msgstr "Keine Tracks mit Lyrics gefunden."
+msgstr "Keine Tracks mit Songtext gefunden."
 
 #: tauon.py:15820
 msgid "Note this may include albums that simply have tracks missing an album tag"
@@ -742,7 +742,7 @@ msgstr "Hat Kommentar"
 
 #: tauon.py:16280 tauon.py:16281 tauon.py:18519
 msgid "Has Lyrics"
-msgstr "Hat Lyrics"
+msgstr "Hat Songtext"
 
 #: tauon.py:16329
 msgid "Configuration reloaded"
@@ -762,7 +762,7 @@ msgstr "Online-Tracks transkodieren wird nicht unterstützt"
 
 #: tauon.py:16778
 msgid "Add Playing Spotify Album"
-msgstr "Spielendes Spotify-Album hinzufügen"
+msgstr "Abgespieltes Spotify-Album hinzufügen"
 
 #: tauon.py:16867
 msgid "Track Info…"
@@ -862,7 +862,7 @@ msgstr "Bearbeiten mit "
 
 #: tauon.py:17696
 msgid "Lyrics..."
-msgstr "Lyrics…"
+msgstr "Songtext…"
 
 #: tauon.py:17799
 msgid "Fix Mojibake"
@@ -878,7 +878,7 @@ msgstr "Ordner transkodieren"
 
 #: tauon.py:17899
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Abspiel-Zeiten leeren"
 
 #: tauon.py:17910
 msgid "Copy \"Artist - Album\""
@@ -1199,7 +1199,7 @@ msgstr "Künstler suchen"
 
 #: tauon.py:19529
 msgid "Go To Playing"
-msgstr "Gehe zum Spielenden"
+msgstr "Gehe zu Abgespieltem"
 
 #: tauon.py:19687
 msgid "ListenBrainz is Paused"
@@ -1227,7 +1227,7 @@ msgstr "Discord trennen"
 
 #: tauon.py:19898
 msgid "Show playing in Discord"
-msgstr "Spielendes in Discord anzeigen"
+msgstr "Abgespieltes in Discord anzeigen"
 
 #: tauon.py:19937
 msgid "Exit"
@@ -1235,7 +1235,7 @@ msgstr "Schließen"
 
 #: tauon.py:19945
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "Schnell-Hinzufügen deaktivieren"
 
 #: tauon.py:20895
 msgid "Searching for albums by artist: "
@@ -1423,11 +1423,11 @@ msgstr "Audio-Output-Device auswählen"
 
 #: tauon.py:24219
 msgid "Auto search lyrics"
-msgstr "Lyrics automatisch suchen"
+msgstr "Songtext automatisch suchen"
 
 #: tauon.py:24221
 msgid "Enable chord lyrics"
-msgstr "Chord-Lyrics einschalten"
+msgstr "Gitarrengriffe einschalten"
 
 #: tauon.py:24224
 msgid "Sources:"
@@ -1439,7 +1439,7 @@ msgstr "*Verwendet Scraping. Auf eigene Gefahr verwenden."
 
 #: tauon.py:24244
 msgid "Tip: The order enabled will be the order searched."
-msgstr "Tipp: In der Reihenfolge, wie eingeschaltet wird, wird auch gesucht."
+msgstr "Tipp: In der Reihenfolge, wie eingeschaltet, wird auch gesucht."
 
 #: tauon.py:24256
 msgid "Metadata side panel"
@@ -1539,7 +1539,7 @@ msgstr "Genius-Suche"
 
 #: tauon.py:24432
 msgid "Discord RP Toggle"
-msgstr ""
+msgstr "Discord RP ein/aus"
 
 #: tauon.py:24604
 msgid "Spotify Premium account"
@@ -1790,7 +1790,7 @@ msgstr "Eigene Fenster-Dekorationen zeichnen"
 
 #: tauon.py:25229
 msgid "Show playing in titlebar"
-msgstr "Gespieltes in der Titelleiste anzeigen"
+msgstr "Abgespieltes in der Titelleiste anzeigen"
 
 #: tauon.py:25237
 msgid "Force subpixel text rendering"
@@ -1858,7 +1858,7 @@ msgstr "Nach meistgespielten sortieren"
 
 #: tauon.py:25513
 msgid "Randomise BG"
-msgstr ""
+msgstr "Zufälliger BG"
 
 #: tauon.py:25549
 msgid "Generate"
@@ -1929,9 +1929,8 @@ msgid "Show album release year"
 msgstr "Album-Release-Jahr anzeigen"
 
 #: tauon.py:25799
-#, fuzzy
 msgid "Show album duration"
-msgstr "Album-Dauer anzeigen"
+msgstr "Alben-Dauer anzeigen"
 
 #: tauon.py:25806
 msgid "Font Size"
@@ -1987,7 +1986,7 @@ msgstr "Es gibt %d eingehende Verbindungen."
 
 #: tauon.py:27661 tauon.py:28225
 msgid "Play, RC: Go to playing"
-msgstr "Spielen, RC: Gehe zu Spielendem"
+msgstr "Spielen, RC: Gehe zu Abgespieltem"
 
 #: tauon.py:27689 tauon.py:28253
 msgid "Pause"
@@ -1999,11 +1998,11 @@ msgstr "Stop, RC: Auto-Stop umschalten"
 
 #: tauon.py:27729 tauon.py:28274
 msgid "Shuffle On"
-msgstr "Shuffle an"
+msgstr "Zufallswiedergabe an"
 
 #: tauon.py:27732 tauon.py:28277
 msgid "Shuffle Off"
-msgstr "Shuffle aus"
+msgstr "Zufallswiedergabe aus"
 
 #: tauon.py:27761
 msgid "Repeat On"
@@ -2019,7 +2018,7 @@ msgstr "Zurück, RC: Toggle Repeat, MC: Zurücksetzen"
 
 #: tauon.py:27827 tauon.py:27829
 msgid "Shuffle"
-msgstr "Shuffle"
+msgstr "Zufallswiedergabe"
 
 #: tauon.py:27876 tauon.py:27884
 msgid "Repeat album"
@@ -2175,7 +2174,7 @@ msgstr "Bio leeren"
 
 #: tauon.py:34781
 msgid "Playing"
-msgstr "Spielend"
+msgstr "Spielt gerade ab"
 
 #: tauon.py:34837
 msgid "Prefer synced"
@@ -2191,7 +2190,7 @@ msgstr "Auto-Scroll"
 
 #: tauon.py:35335
 msgid "Tracks + Art"
-msgstr "Tracks + Art"
+msgstr "Tracks + Cover-Art"
 
 #: tauon.py:35368
 msgid "Tracks only"
@@ -2199,7 +2198,7 @@ msgstr "Nur Tracks"
 
 #: tauon.py:35381
 msgid "Showcase + Lyrics"
-msgstr "Showcase + Lyrics"
+msgstr "Showcase + Songtext"
 
 #: tauon.py:35394
 msgid "Toggle columns"
