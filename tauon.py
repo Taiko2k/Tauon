@@ -4031,7 +4031,6 @@ def tag_scan(nt):
         print("     On file: " + nt.fullpath)
         return nt
 
-
 def get_radio_art():
 
     if "ggdrasil" in radiobox.playing_title:
@@ -4216,7 +4215,7 @@ class PlayerCtl:
 
         if self.tag_meta:
 
-            if self.radio_rate_timer.get() > 20 and self.radio_meta_on != self.tag_meta:
+            if self.radio_rate_timer.get() > 10 and self.radio_meta_on != self.tag_meta:
                 self.radio_rate_timer.set()
                 self.radio_scrobble_trip = False
                 self.radio_meta_timer.set()
@@ -7817,8 +7816,6 @@ def draw_window_tools():
         if input.mouse_click or ab_click:
             if gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
-            if tauon.stream_proxy.encode_running:
-                show_message(_("A recording radio stream is running!"))
             else:
                 pctl.running = False
     else:
@@ -7826,8 +7823,6 @@ def draw_window_tools():
 
 
 def draw_window_border():
-
-
 
     corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
@@ -30518,6 +30513,7 @@ class RadioBox:
         self.loaded_url = None
         pctl.tag_meta = ""
         pctl.found_tags = {}
+        self.song_key = ""
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.abort = True
@@ -30614,7 +30610,7 @@ class RadioBox:
         #     self.radio_field_active = 1
         #     input.key_tab_press = False
         if not self.radio_field_search.text and not editline:
-            ddt.text((x + 14 * gui.scale, yy), _("Tag or 2 letter country code"), colours.box_text_label, 312)
+            ddt.text((x + 14 * gui.scale, yy), _("Genre or 2 letter country code"), colours.box_text_label, 312)
         self.radio_field_search.draw(x + 14 * gui.scale, yy, colours.box_input_text,
                                     active=True,
                                     width=width, click=gui.level_2_click)
@@ -30622,7 +30618,7 @@ class RadioBox:
         ddt.rect(rect, colours.box_text_border)
 
         if draw.button(_("Search"), x + width + round(21 * gui.scale), yy - round(3 * gui.scale),
-                       press=gui.level_2_click, w=round(80 * gui.scale)):
+                       press=gui.level_2_click, w=round(80 * gui.scale)) or input.level_2_enter:
             text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").replace("-", "").upper()
             text = urllib.parse.quote(text)
             if len(text) > 1:

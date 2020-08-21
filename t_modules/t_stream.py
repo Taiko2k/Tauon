@@ -129,41 +129,65 @@ class StreamEnc:
                 if self.abort:
                     decoder.terminate()
                     encoder.terminate()
+                    time.sleep(0.1)
+                    try:
+                        decoder.kill()
+                    except:
+                        pass
+                    try:
+                        encoder.kill()
+                    except:
+                        pass
 
                     if os.path.exists(target_file):
+                        if os.path.getsize(target_file) > 256000:
 
-                        print("Save file")
-                        save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                        save_file += " " + filename_safe(old_metadata)
-                        save_file = save_file.strip() + ".opus"
-                        save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                        if os.path.exists(save_file):
-                            os.remove(save_file)
-                        os.rename(target_file, save_file)
+                            print("Save file")
+                            save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                            save_file += filename_safe(old_metadata)
+                            save_file = save_file.strip() + ".opus"
+                            save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
+                            if os.path.exists(save_file):
+                                os.remove(save_file)
+                            os.rename(target_file, save_file)
+                        else:
+                            print("Discard small file")
+                            os.remove(target_file)
 
                     self.encode_running = False
                     return
 
                 if old_metadata != self.tauon.radiobox.song_key:
-                    if self.c < 100:
+                    if self.c < 400 and not old_metadata:
                         old_metadata = self.tauon.radiobox.song_key
                     elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
                         old_metadata = self.tauon.radiobox.song_key
                     else:
                         print("Split and save file")
-
-                        encoder.terminate()
-                        save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                        save_file += " " + filename_safe(old_metadata)
-                        save_file = save_file.strip() + ".opus"
-                        save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                        if os.path.exists(save_file):
-                            os.remove(save_file)
-                        if not os.path.exists(self.tauon.prefs.encoder_output):
-                            os.makedirs(self.tauon.prefs.encoder_output)
-                        os.rename(target_file, save_file)
+                        encoder.stdin.close()
+                        try:
+                            encoder.wait(timeout=4)
+                        except:
+                            pass
+                        try:
+                            encoder.kill()
+                        except:
+                            pass
+                        if os.path.exists(target_file):
+                            if os.path.getsize(target_file) > 256000:
+                                save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                                save_file += filename_safe(old_metadata)
+                                save_file = save_file.strip() + ".opus"
+                                save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
+                                if os.path.exists(save_file):
+                                    os.remove(save_file)
+                                if not os.path.exists(self.tauon.prefs.encoder_output):
+                                    os.makedirs(self.tauon.prefs.encoder_output)
+                                os.rename(target_file, save_file)
+                            else:
+                                print("Discard small file")
+                                os.remove(target_file)
                         encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
 
                 raw_audio = decoder.stdout.read(1000000)
                 if raw_audio:
