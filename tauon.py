@@ -4115,6 +4115,7 @@ class PlayerCtl:
         self.url = ""
         # self.save_urls = url_saves
         self.tag_meta = ""
+        self.found_tags = {}
         self.encoder_pause = 0
 
         # Playback
@@ -4227,8 +4228,19 @@ class PlayerCtl:
                 radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
                 radiobox.dummy_track.lyrics = ""
+                radiobox.dummy_track.date = ""
 
-                if self.tag_meta.count("-") == 1 and not ":" in self.tag_meta and not "advert" in self.tag_meta.lower():
+                tags = pctl.found_tags
+                if "title" in tags:
+                    radiobox.dummy_track.title = tags["title"]
+                    if "artist" in tags:
+                        radiobox.dummy_track.artist = tags["artist"]
+                    if "year" in tags:
+                        radiobox.dummy_track.date = tags["year"]
+                    if "album" in tags:
+                        radiobox.dummy_track.album = tags["album"]
+
+                elif self.tag_meta.count("-") == 1 and not ":" in self.tag_meta and not "advert" in self.tag_meta.lower():
                     artist, title = self.tag_meta.split("-")
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
@@ -4385,8 +4397,8 @@ class PlayerCtl:
                         line += "  -  "
                     line += title
 
-        elif not gui.combo_mode:
-            line = self.tag_meta
+            if pctl.playing_state == 3 and not title and not artist:
+                return pctl.tag_meta
 
         return line
 
@@ -30505,6 +30517,7 @@ class RadioBox:
         pctl.url = f"http://127.0.0.1:{7812}"
         self.loaded_url = None
         pctl.tag_meta = ""
+        pctl.found_tags = {}
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.abort = True
@@ -30601,7 +30614,7 @@ class RadioBox:
         #     self.radio_field_active = 1
         #     input.key_tab_press = False
         if not self.radio_field_search.text and not editline:
-            ddt.text((x + 14 * gui.scale, yy), _("Tag / 2 letter country code"), colours.box_text_label, 312)
+            ddt.text((x + 14 * gui.scale, yy), _("Tag or 2 letter country code"), colours.box_text_label, 312)
         self.radio_field_search.draw(x + 14 * gui.scale, yy, colours.box_input_text,
                                     active=True,
                                     width=width, click=gui.level_2_click)
@@ -30610,12 +30623,13 @@ class RadioBox:
 
         if draw.button(_("Search"), x + width + round(21 * gui.scale), yy - round(3 * gui.scale),
                        press=gui.level_2_click, w=round(80 * gui.scale)):
-            text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").upper()
+            text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").replace("-", "").upper()
             text = urllib.parse.quote(text)
             if len(text) > 1:
                 if len(text) == 2 and text.isalpha():
                     self.search_radio_browser("/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
                 else:
+                    text = text.lower()
                     self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
         if draw.button(_("Get Top Voted"), x + round(8 * gui.scale), yy + round(30 * gui.scale),
                        press=gui.level_2_click):
@@ -34027,8 +34041,9 @@ class MetaBox:
                 ext += ","
             date = tr.date
             genre = tr.genre
-            # else:
-            #     title = pctl.tag_meta
+
+            if not title and not artist:
+                title = pctl.tag_meta
 
             if h > 58 * gui.scale:
 
@@ -41628,6 +41643,11 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 
 save_state()
+
+if tauon.stream_proxy.download_running:
+    print("Stopping stream...")
+    tauon.stream_proxy.stop()
+    time.sleep(2)
 
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
