@@ -14,6 +14,7 @@ v6.2.0
  - Fixed some misc UI elements with scaling
  - Fixed a crash when reading malformed lyrics files
  - Fixed disabled menu items icon colour
+ - Fixed radio artist and title display for some cases
  - Workaround for memory leak crash on startup
  - Replaced BASS based broadcast backend with custom backend
  - Improved GStreamer backend

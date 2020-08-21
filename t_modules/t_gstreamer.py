@@ -216,10 +216,31 @@ def player3(tauon):  # GStreamer
 
             if self.play_state == 3 and name == "GstMessageTag":
                 data = struct.get_value("taglist").get_string("title")
+                data2 = struct.get_value("taglist").get_string("artist")
+                data3 = struct.get_value("taglist").get_string("year")
+                data4 = struct.get_value("taglist").get_string("album")
+                # print(struct.to_string())
                 if data[0]:
-                    print("GST FOUND tag")
-                    print(data[1])
-                    pctl.tag_meta = data[1]
+                    pctl.tag_meta = ""
+                    line = ""
+                    line = data[1]
+                    if data2[0]:
+                        line = data2[1] + " - " + line
+
+                    pctl.found_tags = {}
+
+                    pctl.found_tags["title"] = data[1]
+                    if data2[0]:
+                        pctl.found_tags["artist"] = data2[1]
+                    if data3[0]:
+                        pctl.found_tags["year"] = str(data3[1])
+                    if data4[0]:
+                        pctl.found_tags["album"] = data4[1]
+
+                    pctl.tag_meta = line
+                    print("Found tag: " + line)
+
+
 
             elif name == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
