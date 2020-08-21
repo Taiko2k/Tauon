@@ -37,6 +37,7 @@ n_version = "6.2.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
+t_agent = "TauonMusicBox/" + n_version
 
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
@@ -165,7 +166,13 @@ if install_mode and system == 'linux':
     if not os.path.isdir(config_directory):
         os.makedirs(config_directory)
 
-    print("Running from installed location")
+    if snap_mode:
+        print("Installed as Flatpak")
+    elif flatpak_mode:
+        print("Installed as Snap")
+    else:
+        print("Running from installed location")
+
     print("User files location: " + user_directory)
 
     if not os.path.isdir(os.path.join(user_directory, "encoder")):
@@ -378,7 +385,7 @@ try:
     del save
 
 except:
-    print('Error loading window state file')
+    print('No previous window state')
 
 
 
@@ -3659,8 +3666,8 @@ else:
         _ = translation.gettext
 
         print("Translation file loaded")
-    else:
-        print("No translation file available")
+    # else:
+    #     print("No translation file available")
 
 # ----
 force_render = False
@@ -4024,10 +4031,10 @@ def tag_scan(nt):
         print("     On file: " + nt.fullpath)
         return nt
 
-
 def get_radio_art():
 
     if "ggdrasil" in radiobox.playing_title:
+        print("")
         url = "https://yggdrasilradio.net/data.php?"
         response = requests.get(url)
         if response.status_code == 200:
@@ -4045,7 +4052,7 @@ def get_radio_art():
                     radiobox.dummy_track.art_url_key = "ok"
                     return
 
-    elif "radio.plaza.one" in pctl.url:
+    elif "radio.plaza.one" in radiobox.loaded_url:
         console.print("Fetching plaza art")
         response = requests.get("https://api.plaza.one/status")
         if response.status_code == 200:
@@ -4107,6 +4114,7 @@ class PlayerCtl:
         self.url = ""
         # self.save_urls = url_saves
         self.tag_meta = ""
+        self.found_tags = {}
         self.encoder_pause = 0
 
         # Playback
@@ -4207,7 +4215,7 @@ class PlayerCtl:
 
         if self.tag_meta:
 
-            if self.radio_rate_timer.get() > 20 and self.radio_meta_on != self.tag_meta:
+            if self.radio_rate_timer.get() > 10 and self.radio_meta_on != self.tag_meta:
                 self.radio_rate_timer.set()
                 self.radio_scrobble_trip = False
                 self.radio_meta_timer.set()
@@ -4219,8 +4227,19 @@ class PlayerCtl:
                 radiobox.dummy_track.artist = ""
                 radiobox.dummy_track.album = ""
                 radiobox.dummy_track.lyrics = ""
+                radiobox.dummy_track.date = ""
 
-                if self.tag_meta.count("-") == 1 and not ":" in self.tag_meta and not "advert" in self.tag_meta.lower():
+                tags = pctl.found_tags
+                if "title" in tags:
+                    radiobox.dummy_track.title = tags["title"]
+                    if "artist" in tags:
+                        radiobox.dummy_track.artist = tags["artist"]
+                    if "year" in tags:
+                        radiobox.dummy_track.date = tags["year"]
+                    if "album" in tags:
+                        radiobox.dummy_track.album = tags["album"]
+
+                elif self.tag_meta.count("-") == 1 and not ":" in self.tag_meta and not "advert" in self.tag_meta.lower():
                     artist, title = self.tag_meta.split("-")
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
@@ -4377,8 +4396,8 @@ class PlayerCtl:
                         line += "  -  "
                     line += title
 
-        elif not gui.combo_mode:
-            line = self.tag_meta
+            if pctl.playing_state == 3 and not title and not artist:
+                return pctl.tag_meta
 
         return line
 
@@ -7797,8 +7816,6 @@ def draw_window_tools():
         if input.mouse_click or ab_click:
             if gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
-            if tauon.stream_proxy.encode_running:
-                show_message(_("A recording radio stream is running!"))
             else:
                 pctl.running = False
     else:
@@ -7806,8 +7823,6 @@ def draw_window_tools():
 
 
 def draw_window_border():
-
-
 
     corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
@@ -18191,10 +18206,6 @@ def broadcast_select_track(track_id):
         show_message(_("FFmpeg does not appear to be installed"), mode="error")
         return
 
-    if shutil.which('opusenc') is None:
-        show_message(_("Package opus-tools does not appear to be installed"), mode="error")
-        return
-
     pctl.broadcast_index = track_id
     track = pctl.g(track_id)
 
@@ -22424,7 +22435,6 @@ def worker1():
 
             for i, plist in enumerate(pctl.multi_playlist):
                 if pl_to_id(i) in pctl.gen_codes:
-                    print("Reloading smart playlist: " + plist[0])
                     code = pctl.gen_codes[pl_to_id(i)]
                     try:
                         cmds = shlex.split(code)
@@ -22440,6 +22450,7 @@ def worker1():
                                 not "spl\"" in code and
                                 not "r" in cmds):
                             if not pl_is_locked(i):
+                                print("Reloading smart playlist: " + plist[0])
                                 regenerate_playlist(i, silent=True)
                     except:
                         #raise
@@ -27646,8 +27657,8 @@ class BottomBarType1:
                 play_colour = colours.media_buttons_active
             elif pctl.playing_state == 3:
                 play_colour = colours.media_buttons_active
-                if pctl.record_stream:
-                    play_colour = [220, 50 ,50 , 255]
+                if tauon.stream_proxy.encode_running:
+                    play_colour = [220, 50, 50, 255]
 
             if not compact or (compact and pctl.playing_state != 2):
                 rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
@@ -30432,6 +30443,7 @@ class RadioBox:
         self.radio_field_active = 1
         self.radio_field = TextBox2()
         self.radio_field_title = TextBox2()
+        self.radio_field_search = TextBox2()
 
         self.scroll_position = 0
         self.scroll = ScrollBox()
@@ -30445,15 +30457,37 @@ class RadioBox:
 
         self.proxy_started = False
         self.loaded_url = None
+        self.load_connecting = False
+        self.load_failed = False
+        self.searching = False
+        self.load_failed_timer = Timer()
+        self.right_clicked_station = None
+        self.right_clicked_station_p = None
 
         self.song_key = ""
 
+        self.tab = 0
+        self.temp_list = []
+
+        self.hosts = None
+        self.host = None
+
     def start(self, item):
+
+        url = item["stream_url"]
+        print("Start radio")
+        print(url)
+        if url.endswith("m3u") or url.endswith("m3u8"):
+            show_message("Sorry, m3u parsing not fully implemented.")
+            return
+
+        if self.load_connecting:
+            return
 
         if spot_ctl.playing or spot_ctl.coasting:
             spot_ctl.control("stop")
 
-        url = item["stream_url"]
+
         self.playing_title = ""
         self.playing_title = item["title"]
         self.dummy_track.art_url_key = ""
@@ -30468,10 +30502,6 @@ class RadioBox:
             show_message(_("FFmpeg does not appear to be installed"), mode="error")
             prefs.auto_rec = False
 
-        if shutil.which('opusenc') is None:
-            show_message(_("Package opus-tools does not appear to be installed"), mode="error")
-            prefs.auto_rec = False
-
         if not self.proxy_started:
             shoot = threading.Thread(target=stream_proxy, args=[tauon])
             shoot.daemon = True
@@ -30482,12 +30512,27 @@ class RadioBox:
         pctl.url = f"http://127.0.0.1:{7812}"
         self.loaded_url = None
         pctl.tag_meta = ""
+        pctl.found_tags = {}
+        self.song_key = ""
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.abort = True
 
+        self.load_connecting = True
+        self.load_failed = False
+
+        shoot = threading.Thread(target=self.start2, args=[url])
+        shoot.daemon = True
+        shoot.start()
+
+    def start2(self, url):
+
         if not tauon.stream_proxy.start_download(url):
-            show_message(_("Failed to establish a connection"), mode="error")
+            self.load_failed_timer.set()
+            self.load_failed = True
+            self.load_connecting = False
+            gui.update += 1
+            # show_message(_("Failed to establish a connection"), mode="error")
             return
 
         self.loaded_url = url
@@ -30500,17 +30545,133 @@ class RadioBox:
         pctl.decode_time = 0
         pctl.playing_length = 0
 
+        time.sleep(0.1)
 
-    def delete_radio_entry(self, p):
-        del prefs.radio_urls[p]
+        self.load_connecting = False
+        self.load_failed = False
+        gui.update += 1
 
-    def delete_radio_entry_after(self, p):
+
+    def delete_radio_entry(self, item):
+        for i, saved in enumerate(prefs.radio_urls):
+            if saved["stream_url"] == item["stream_url"] and saved["title"] == item["title"]:
+                del prefs.radio_urls[i]
+
+    def delete_radio_entry_after(self, item):
+        p = radiobox.right_clicked_station_p
         del prefs.radio_urls[p + 1:]
 
-    def edit_entry(self, p):
-        radio = prefs.radio_urls[p]
+    def edit_entry(self, item):
+        radio = item
         self.radio_field_title.text = radio["title"]
         self.radio_field.text = radio["stream_url"]
+
+    def browser_get_hosts(self):
+
+        import socket
+        """
+        Get all base urls of all currently available radiobrowser servers
+
+        Returns: 
+        list: a list of strings
+
+        """
+        hosts = []
+        # get all hosts from DNS
+        ips = socket.getaddrinfo('all.api.radio-browser.info',
+                                 80, 0, 0, socket.IPPROTO_TCP)
+        for ip_tupple in ips:
+            ip = ip_tupple[4][0]
+
+            # do a reverse lookup on every one of the ips to have a nice name for it
+            host_addr = socket.gethostbyaddr(ip)
+            # add the name to a list if not already in there
+            if host_addr[0] not in hosts:
+                hosts.append(host_addr[0])
+
+        # sort list of names
+        hosts.sort()
+        # add "https://" in front to make it an url
+        return list(map(lambda x: "https://" + x, hosts))
+
+    def search_page(self):
+
+        y = self.y
+        x = self.x
+        w = self.w
+        h = self.h
+
+        yy = y + round(40 * gui.scale)
+
+        width = round(330 * gui.scale)
+        rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
+        fields.add(rect)
+        # if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 2):
+        #     self.radio_field_active = 1
+        #     input.key_tab_press = False
+        if not self.radio_field_search.text and not editline:
+            ddt.text((x + 14 * gui.scale, yy), _("Genre or 2 letter country code"), colours.box_text_label, 312)
+        self.radio_field_search.draw(x + 14 * gui.scale, yy, colours.box_input_text,
+                                    active=True,
+                                    width=width, click=gui.level_2_click)
+
+        ddt.rect(rect, colours.box_text_border)
+
+        if draw.button(_("Search"), x + width + round(21 * gui.scale), yy - round(3 * gui.scale),
+                       press=gui.level_2_click, w=round(80 * gui.scale)) or input.level_2_enter:
+            text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").replace("-", "").upper()
+            text = urllib.parse.quote(text)
+            if len(text) > 1:
+                if len(text) == 2 and text.isalpha():
+                    self.search_radio_browser("/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
+                else:
+                    text = text.lower()
+                    self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+        if draw.button(_("Get Top Voted"), x + round(8 * gui.scale), yy + round(30 * gui.scale),
+                       press=gui.level_2_click):
+            self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
+
+
+
+    def search_radio_browser(self, param):
+        if self.searching:
+            return
+        self.searching = True
+        shoot = threading.Thread(target=self.search_radio_browser2, args=[param])
+        shoot.daemon = True
+        shoot.start()
+
+    def search_radio_browser2(self, param):
+
+        if not self.hosts:
+            self.hosts = self.browser_get_hosts()
+        if not self.host:
+            self.host = random.choice(self.hosts)
+
+        uri = self.host + param
+        req = urllib.request.Request(uri)
+        req.add_header('User-Agent', t_agent)
+        req.add_header('Content-Type', 'application/json')
+        response = urllib.request.urlopen(req)
+        data = response.read()
+        data = json.loads(data.decode())
+        self.parse_data(data)
+        self.searching = False
+
+    def parse_data(self, data):
+
+        self.temp_list.clear()
+
+        for station in data:
+            radio = {}
+            radio["title"] = station["name"]
+            radio["stream_url_unresolved"] = station["url"]
+            radio["stream_url"] = station["url_resolved"]
+            radio["website_url"] = ""
+            if "homepage" in station:
+                radio["website_url"] = station["homepage"]
+            self.temp_list.append(radio)
+        gui.update += 1
 
     def render(self):
 
@@ -30518,6 +30679,11 @@ class RadioBox:
         h = round(356 * gui.scale)  # + sh
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
+
+        self.w = w
+        self.h = h
+        self.x = x
+        self.y = y
 
         yy = y
 
@@ -30533,16 +30699,41 @@ class RadioBox:
         ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.box_title_text, 213)
 
         # ---
-        if pctl.playing_state == 3:
+        if self.load_connecting:
+            ddt.text((x + 495 * gui.scale, yy + 8 * gui.scale, 1), _("Connecting..."), colours.box_title_text,
+                     311)
+        elif self.load_failed:
+            ddt.text((x + 495 * gui.scale, yy + 8 * gui.scale, 1), _("Failed to connect!"), colours.box_title_text,
+                     311)
+            if self.load_failed_timer.get() > 3:
+                gui.delay_frame(0.2)
+                self.load_failed = False
+
+        elif self.searching:
+            ddt.text((x + 495 * gui.scale, yy + 8 * gui.scale, 1), _("Searching..."), colours.box_title_text,
+                     311)
+        elif pctl.playing_state == 3:
             if tauon.stream_proxy.s_format:
                 ddt.text((x + 425 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_format, colours.box_title_text, 311)
             if tauon.stream_proxy.s_bitrate:
                 ddt.text((x + 454 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_bitrate + "kbps", colours.box_title_text, 311)
 
-        # ---
+        # --- ----------------------------------------------------------------------
+        if self.tab == 1:
+            self.search_page()
+        elif self.tab == 0:
+            self.saved()
+        self.draw_list()
+        self.footer()
+        return
 
+    def saved(self):
+        y = self.y
+        x = self.x
+        w = self.w
+        h = self.h
 
-        yy += round(40 * gui.scale)
+        yy = y + round(40 * gui.scale)
 
         width = round(370 * gui.scale)
 
@@ -30597,15 +30788,26 @@ class RadioBox:
             else:
                 show_message(_("Could not validate URL. Must start with https:// or http://"))
 
-        yy += round(30 * gui.scale)
+    def draw_list(self):
+
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+
+        yy = y + round(100 * gui.scale)
         x += round(10 * gui.scale)
+
+        radio_list = prefs.radio_urls
+        if self.tab == 1:
+            radio_list = self.temp_list
 
         self.scroll_position += mouse_wheel * -1
         self.scroll_position = max(self.scroll_position, 0)
-        self.scroll_position = min(self.scroll_position, len(prefs.radio_urls) // 2 - 7)
+        self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
-        if len(prefs.radio_urls) // 2 > 9:
-            self.scroll_position = self.scroll.draw((x + w) - round(35 * gui.scale), yy, round(15 * gui.scale), round(210 * gui.scale), self.scroll_position, len(prefs.radio_urls) // 2 - 7, True, click=gui.level_2_click)
+        if len(radio_list) // 2 > 9:
+            self.scroll_position = self.scroll.draw((x + w) - round(35 * gui.scale), yy, round(15 * gui.scale), round(210 * gui.scale), self.scroll_position, len(radio_list) // 2 - 7, True, click=gui.level_2_click)
 
         self.scroll_position = max(self.scroll_position, 0)
 
@@ -30615,11 +30817,11 @@ class RadioBox:
 
         while True:
 
-            if p > len(prefs.radio_urls) - 1:
+            if p > len(radio_list) - 1:
                 break
 
             xx = x + offset
-            item = prefs.radio_urls[p]
+            item = radio_list[p]
 
             rect = (xx, yy, round(233 * gui.scale), round(19 * gui.scale))
             fields.add(rect)
@@ -30650,7 +30852,9 @@ class RadioBox:
                 if middle_click:
                     to_delete = p
                 if level_2_right_click:
-                    radio_entry_menu.activate(p)
+                    self.right_clicked_station = item
+                    self.right_clicked_station_p = p
+                    radio_entry_menu.activate(item)
 
             bg = alpha_blend(bg, colours.box_background)
 
@@ -30671,48 +30875,41 @@ class RadioBox:
             p += 1
 
         if to_delete is not None:
-            del prefs.radio_urls[to_delete]
+            del radio_list[to_delete]
 
-        fields.add(rect)
+
+
+    def footer(self):
+
+        y = self.y
+        x = self.x + round(15 * gui.scale)
+        w = self.w
+        h = self.h
 
         yy = y + round(328 * gui.scale)
         if pctl.playing_state == 3 and not prefs.auto_rec:
             pass
         else:
             if pctl.playing_state == 3:
-                pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click)
+                old = prefs.auto_rec
+                if old and not pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click):
+                    show_message(_("Please stop playback first to end current recording"))
+
             else:
+                old = prefs.auto_rec
                 prefs.auto_rec = pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"), click=gui.level_2_click)
+                if prefs.auto_rec != old and prefs.auto_rec:
+                    show_message(_("Tracks will now be recorded."), _("Tip: You can press F9 to view the output folder."), mode="info")
 
-        # if pctl.playing_state == 3 and prefs.backend == 1:
-        #
-        #     if coll(rect):
-        #         if gui.level_2_click:
-        #             pctl.playerCommand = 'record'
-        #             pctl.playerCommandReady = True
-        #         ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
-        #                                                                        colours.box_background), True)
-        #         ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(230), 212)
-        #         ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
-        #     else:
-        #         ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
-        #                                                                        colours.box_background), True)
-        #         ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(220), 212)
-        #         ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
-        # else:
-        #     if coll(rect):
-        #         if gui.level_2_click:
-        #             radiobox.active = False
-        #             if prefs.backend == 2:
-        #                 show_message(_("Recording is currently unavailable with the GStreamer backend"))
-        #             else:
-        #                 show_message(_("A stream needs to be playing first."))
-        #
-        #     ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
-        #                                                                    colours.box_background), True)
-        #     ddt.text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
-        #     ddt.text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
 
+        if self.tab == 0:
+            if draw.button(_("Browse"), (x + w) - round(130 * gui.scale), yy - round(3 * gui.scale),
+                           press=gui.level_2_click, w=round(100 * gui.scale)):
+                self.tab = 1
+        elif self.tab == 1:
+            if draw.button(_("Saved"), (x + w) - round(130 * gui.scale), yy - round(3 * gui.scale),
+                           press=gui.level_2_click, w=round(100 * gui.scale)):
+                self.tab = 0
         gui.level_2_click = False
 
 
@@ -30724,26 +30921,46 @@ tauon.dummy_track = radiobox.dummy_track
 #     return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
 #
 
-def visit_radio_site_deco(p):
+def visit_radio_site_deco(item):
 
-    if p < len(prefs.radio_urls) and "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
+    if "website_url" in item and item["website_url"]:
         return [colours.menu_text, colours.menu_background, None]
     else:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
 
-def visit_radio_site(p):
-    if "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]:
-        webbrowser.open(prefs.radio_urls[p]["website_url"], new=2, autoraise=True)
+def visit_radio_site(item):
+    if "website_url" in item and item["website_url"]:
+        webbrowser.open(item["website_url"], new=2, autoraise=True)
 
-def paste_radio_site(p):
-    prefs.radio_urls[p]["website_url"] = copy_from_clipboard()
+def paste_radio_site(item):
+    item["website_url"] = copy_from_clipboard()
+
+def radio_item_saved_test(_):
+    for saved in prefs.radio_urls:
+        if saved["stream_url"] == radiobox.right_clicked_station["stream_url"]:
+            return True
+    return False
+
+def radio_saved_panel_test(_):
+    return radiobox.tab == 0
+
+def not_radio_item_saved_test(_):
+    for saved in prefs.radio_urls:
+        if saved["stream_url"] == radiobox.right_clicked_station["stream_url"]:
+            return False
+    return True
+
+def save_to_radios(item):
+    prefs.radio_urls.append(item)
+    show_message(_("Added to list of saved stations"), mode="done")
 
 radio_entry_menu.add(_("Paste Website Link"), paste_radio_site, show_test=test_shift, pass_ref=True, pass_ref_deco=True)
 radio_entry_menu.add(_("Visit Website"), visit_radio_site, visit_radio_site_deco, pass_ref=True, pass_ref_deco=True)
-radio_entry_menu.add(_("Rename"), radiobox.edit_entry, pass_ref=True)
-radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True)
-radio_entry_menu.add(_("Remove All After"), radiobox.delete_radio_entry_after, pass_ref=True)
+radio_entry_menu.add(_("Save"), save_to_radios, pass_ref=True, show_test=not_radio_item_saved_test)
+radio_entry_menu.add(_("Rename"), radiobox.edit_entry, pass_ref=True, show_test=radio_saved_panel_test)
+radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True, show_test=radio_item_saved_test)
+radio_entry_menu.add(_("Remove All After"), radiobox.delete_radio_entry_after, pass_ref=True, show_test=radio_saved_panel_test)
 
 class RenamePlaylistBox:
 
@@ -33820,8 +34037,9 @@ class MetaBox:
                 ext += ","
             date = tr.date
             genre = tr.genre
-            # else:
-            #     title = pctl.tag_meta
+
+            if not title and not artist:
+                title = pctl.tag_meta
 
             if h > 58 * gui.scale:
 
@@ -33908,7 +34126,7 @@ class PictureRender:
                 SDL_DestroyTexture(self.texture)
 
             # Convert raw image to sdl texture
-            print("Create Texture")
+            # print("Create Texture")
             wop = rw_from_object(self.image_data)
             s_image = IMG_Load_RW(wop, 0)
             self.texture = SDL_CreateTextureFromSurface(renderer, s_image)
@@ -35550,8 +35768,8 @@ class DLMon:
                 if item not in quick_import_done:
                     if os.path.exists(path):
                         temp.add(item)
-                else:
-                    print("FILE IMPORTED")
+                # else:
+                #     print("FILE IMPORTED")
             self.ready = temp
 
         if len(self.watching) > 0:
@@ -36028,7 +36246,7 @@ def update_layout_do():
         gui.reload_theme = True
         global theme
         theme = get_theme_number(prefs.theme_name)
-        print("Config reload theme...")
+        # print("Config reload theme...")
 
     # Restore in case of error
     if gui.rspw < 30 * gui.scale:
@@ -37677,7 +37895,7 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
 
-            spot_ctl.load_token()
+            radiobox.tab = 1
             pass
 
         if gui.mode < 3:
@@ -38092,7 +38310,7 @@ while pctl.running:
                 colours.__init__()
 
                 load_theme(colours, theme_item[0])
-                print("Applying external theme: " + gui.theme_name)
+                print("Applying theme: " + gui.theme_name)
 
                 if colours.lm:
                     info_icon.colour = [60, 60, 60, 255]
@@ -38127,7 +38345,7 @@ while pctl.running:
 
         prefs.theme_name = gui.theme_name
 
-        print("Theme number: " + str(theme))
+        # print("Theme number: " + str(theme))
         gui.reload_theme = False
         ddt.text_background_colour = colours.playlist_panel_background
 
@@ -38190,7 +38408,7 @@ while pctl.running:
             elif ggc == 1:
                 ggc = 0
                 gbc.enable()
-                print("Enabling garbage collecting")
+                # print("Enabling garbage collecting")
 
         if gui.mode == 1 or gui.mode == 2:
 
@@ -41381,7 +41599,7 @@ while pctl.running:
 
     # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
-        print("Auto Save")
+        print("Auto save playtime")
         try:
             pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
         except PermissionError:
@@ -41421,6 +41639,11 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 
 save_state()
+
+if tauon.stream_proxy.download_running:
+    print("Stopping stream...")
+    tauon.stream_proxy.stop()
+    time.sleep(2)
 
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True

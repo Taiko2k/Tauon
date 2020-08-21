@@ -132,7 +132,7 @@ def player3(tauon):  # GStreamer
             # Set the equalizer based on user preferences
             for i, level in enumerate(prefs.eq):
                 if prefs.use_eq:
-                    self._eq.set_property("band" + str(i), level)
+                    self._eq.set_property("band" + str(i), level * -1)
                 else:
                     self._eq.set_property("band" + str(i), 0.0)
 
@@ -193,7 +193,7 @@ def player3(tauon):  # GStreamer
             #print(struct.to_string())
 
             name = struct.get_name()
-            
+
             if name == "GstMessageError":
 
                 if "_is_dead" in struct.to_string():
@@ -216,10 +216,31 @@ def player3(tauon):  # GStreamer
 
             if self.play_state == 3 and name == "GstMessageTag":
                 data = struct.get_value("taglist").get_string("title")
+                data2 = struct.get_value("taglist").get_string("artist")
+                data3 = struct.get_value("taglist").get_string("year")
+                data4 = struct.get_value("taglist").get_string("album")
+                # print(struct.to_string())
                 if data[0]:
-                    print("GST FOUND tag")
-                    print(data[1])
-                    pctl.tag_meta = data[1]
+                    pctl.tag_meta = ""
+                    line = ""
+                    line = data[1]
+                    if data2[0]:
+                        line = data2[1] + " - " + line
+
+                    pctl.found_tags = {}
+
+                    pctl.found_tags["title"] = data[1]
+                    if data2[0]:
+                        pctl.found_tags["artist"] = data2[1]
+                    if data3[0]:
+                        pctl.found_tags["year"] = str(data3[1])
+                    if data4[0]:
+                        pctl.found_tags["album"] = data4[1]
+
+                    pctl.tag_meta = line
+                    print("Found tag: " + line)
+
+
 
             elif name == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
@@ -594,7 +615,7 @@ def player3(tauon):  # GStreamer
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
-                        print("Gapless go")
+                        # print("Gapless go")
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
 
                             time.sleep(0.02)
@@ -640,6 +661,9 @@ def player3(tauon):  # GStreamer
 
                 elif command == 'url':
 
+                    print("gst load stream")
+                    print(pctl.url)
+
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
                         self.playbin.set_state(Gst.State.NULL)
@@ -666,7 +690,7 @@ def player3(tauon):  # GStreamer
                 elif command == 'seteq':
                     for i, level in enumerate(prefs.eq):
                         if prefs.use_eq:
-                            self._eq.set_property("band" + str(i), level)
+                            self._eq.set_property("band" + str(i), level * -1)
                         else:
                             self._eq.set_property("band" + str(i), 0.0)
 
@@ -711,14 +735,15 @@ def player3(tauon):  # GStreamer
                         if prefs.use_pause_fade:
                             success, current_time = self.playbin.query_position(Gst.Format.TIME)
                             if success:
-                                start = current_time
+                                start = current_time + (150 / 1000 * Gst.SECOND)
                                 end = current_time + (prefs.pause_fade_time / 1000 * Gst.SECOND)
                                 self.c_source.set(start, (pctl.player_volume / 100) / 10)
                                 self.c_source.set(end, 0.0)
                                 time.sleep(prefs.pause_fade_time / 1000)
+                                time.sleep(0.05)
                                 self.c_source.unset_all()
 
-                        self.playbin.set_state(Gst.State.READY)
+                        self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.1)
                         self._vol.set_property("volume", pctl.player_volume / 100)
 
@@ -901,6 +926,7 @@ def player3(tauon):  # GStreamer
                     GLib.timeout_add(100, self.main_callback)
 
         def exit(self):
+            print("GStreamer unloaded")
             pctl.playerCommand = 'done'
 
     player = GPlayer()
