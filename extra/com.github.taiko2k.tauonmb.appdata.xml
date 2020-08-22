@@ -11,7 +11,6 @@
   <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/TauonMusicBox/issues</url>
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
-  <url type="donation">https://ko-fi.com/taiko2k</url>
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/66533289-eb697e00-eb6e-11e9-8a93-513056a343f6.png</icon>
 
   <description>
@@ -39,12 +38,8 @@
   <screenshots>
 
     <screenshot type="default">
-      <image type="source">https://user-images.githubusercontent.com/17271572/61632863-f0dac900-ace1-11e9-9144-852fe2a40251.png</image>
+      <image type="source">https://user-images.githubusercontent.com/17271572/90944081-f40a3080-e470-11ea-8a52-ba20c6e7758f.png</image>
       <caption>Player window showing track-list and album art</caption>
-    </screenshot>
-    <screenshot>
-      <image type="source">https://user-images.githubusercontent.com/17271572/76140132-1aebca80-60bc-11ea-9cac-d389dbbbd52c.png</image>
-      <caption>Player window showing track-list and album grid</caption>
     </screenshot>
     <screenshot>
       <image type="source">https://user-images.githubusercontent.com/17271572/68853658-61996b80-073f-11ea-9b64-21e0d5da18a6.png</image>
@@ -63,9 +58,10 @@
 
   <releases>
 
-    <release version="6.2.0" date="2020-08-21">
+    <release version="6.2.0" date="2020-08-22">
       <description>
         <ul>
+          <li>Added radio station search</li>
           <li>Improved GStreamer backend</li>
           <li>Removed BASS backend</li>
           <li>Various bug fixes</li>

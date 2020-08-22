@@ -25457,10 +25457,6 @@ class Over:
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
 
-        x -= ddt.get_text_w(_("Donate"), 211) + round(21 * gui.scale) + 2 * gui.scale
-
-        if self.button(x, y, _("Donate")):
-            webbrowser.open("https://ko-fi.com/taiko2k", new=2, autoraise=True)
 
     def topchart(self, x0, y0, w0, h0):
 
@@ -26418,14 +26414,20 @@ class TopPanel:
             max_w = window_size[0] - (x + right_space_es + round(34 * gui.scale))
 
             left_tabs = []
-            for p in ready_tabs:
-                if p < self.prime_tab:
-                    left_tabs.append(p)
             right_tabs = []
-            for p in ready_tabs:
-                if p > self.prime_tab:
-                    right_tabs.append(p)
-            left_tabs.reverse()
+            if a01:
+                for p in ready_tabs:
+                    left_tabs.append(p)
+
+            else:
+                for p in ready_tabs:
+                    if p < self.prime_tab:
+                        left_tabs.append(p)
+
+                for p in ready_tabs:
+                    if p > self.prime_tab:
+                        right_tabs.append(p)
+                left_tabs.reverse()
 
             run = max_w
 
@@ -30439,6 +30441,7 @@ tree_view_scroll = ScrollBox()
 class RadioBox:
 
     def __init__(self):
+
         self.active = False
         self.radio_field_active = 1
         self.radio_field = TextBox2()
@@ -37061,27 +37064,27 @@ if a01:
                  "Upgrade to a Tauon PREMIUM subscription to play tracks in any order.")
     #prefs.tabs_on_top = True
 
-    target = None
-    for pl in pctl.multi_playlist:
-        if pl[0] == "0401":
-            target = pl[2]
-            break
-    else:
-
-        pctl.multi_playlist.append(pl_gen(title="0401",
-                                          playlist=[],
-                                          hide_title=0))
-
-        target = pctl.multi_playlist[len(pctl.multi_playlist) - 1][2]
-
-        if target is not None:
-            for pl in pctl.multi_playlist:
-                target += pl[2]
-
-    for i, pl in enumerate(pctl.multi_playlist):
-        if pl[0] == "0401":
-            switch_playlist(i)
-            break
+    # target = None
+    # for pl in pctl.multi_playlist:
+    #     if pl[0] == "0401":
+    #         target = pl[2]
+    #         break
+    # else:
+    #
+    #     pctl.multi_playlist.append(pl_gen(title="0401",
+    #                                       playlist=[],
+    #                                       hide_title=0))
+    #
+    #     target = pctl.multi_playlist[len(pctl.multi_playlist) - 1][2]
+    #
+    #     if target is not None:
+    #         for pl in pctl.multi_playlist:
+    #             target += pl[2]
+    #
+    # for i, pl in enumerate(pctl.multi_playlist):
+    #     if pl[0] == "0401":
+    #         switch_playlist(i)
+    #         break
 
 elif gui.restore_showcase_view:
     toggle_combo_view(showcase=True)
