@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
-"PO-Revision-Date: 2020-08-15 02:15+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2020-08-22 00:18+0000\n"
+"Last-Translator: Louis Hermier <loulou76train+github@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.2-dev\n"
+"X-Generator: Weblate 4.2.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1790 tauon.py:1792
@@ -40,7 +40,6 @@ msgid "Web auth page opened"
 msgstr "Page d'identification ouverte"
 
 #: tauon.py:5879
-#, fuzzy
 msgid "You need to log in first"
 msgstr "Vous devez d'abord vous identifier"
 
@@ -89,8 +88,9 @@ msgid "Error starting Spotify"
 msgstr "Erreur de démarrage Spotify"
 
 #: tauon.py:6624
+#, fuzzy
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Veuillez autoriser Spotify dans les paramètres!"
 
 #: tauon.py:6626
 msgid "day"
@@ -231,9 +231,8 @@ msgid "Unlock Panel"
 msgstr "Détacher le panneau"
 
 #: tauon.py:12732
-#, fuzzy
 msgid "Lock Panel"
-msgstr "Détacher le panneau"
+msgstr "Verrouiller le panneau"
 
 #: tauon.py:12734 tauon.py:12735 tauon.py:12756 tauon.py:16866 tauon.py:17842
 msgid "Open Folder"
@@ -367,7 +366,7 @@ msgstr "Extraire l'image"
 
 #: tauon.py:13325
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Impossible de télécharger l'illustration des pistes réseau."
 
 #: tauon.py:13349
 msgid "It doesn't look like this folder belongs to a single album, sorry"
@@ -426,9 +425,8 @@ msgid "Rename"
 msgstr "Renommer"
 
 #: tauon.py:13901
-#, fuzzy
 msgid "Pin"
-msgstr "En cours"
+msgstr "Épingler"
 
 #: tauon.py:13903
 msgid "Unpin"
@@ -463,19 +461,16 @@ msgid "Playlist contains non-Spotify tracks"
 msgstr "La liste de lecture contient des pistes non Spotify"
 
 #: tauon.py:14700
-#, fuzzy
 msgid "Created new Spotify playlist"
-msgstr "Lancer la prochaine liste de lecture"
+msgstr "Nouvelle liste de lecture Spotify créée"
 
 #: tauon.py:14706
-#, fuzzy
 msgid "Error creating Spotify playlist"
-msgstr "Fin de la liste de lecture"
+msgstr "Erreur lors de la création de la liste de lecture Spotify"
 
 #: tauon.py:14709
-#, fuzzy
 msgid "Updated Spotify playlist"
-msgstr "Fin de la liste de lecture"
+msgstr "Liste de lecture Spotify mise à jour"
 
 #: tauon.py:15299
 msgid "OK. This playlist will automatically sort on import from now on"
@@ -497,9 +492,8 @@ msgid "Upload"
 msgstr "Téléverser"
 
 #: tauon.py:15310
-#, fuzzy
 msgid "Regenerate"
-msgstr "Générer"
+msgstr "Générer de nouveau"
 
 #: tauon.py:15311
 msgid "Generate…"
@@ -526,9 +520,8 @@ msgid "Sort Year per Artist"
 msgstr "Trier les années par artistes"
 
 #: tauon.py:15321
-#, fuzzy
 msgid "Make Playlist Auto-Sorting"
-msgstr "Durée de la liste de lecture"
+msgstr "Faire en sorte que la playlist soit triée automatiquement"
 
 #: tauon.py:15327 tauon.py:17015 tauon.py:18248
 msgid "Paste"
@@ -544,66 +537,64 @@ msgstr "Divers..."
 
 #: tauon.py:15380
 msgid "No target folder selected"
-msgstr ""
+msgstr "Pas de dossier cible sélectionné"
 
 #: tauon.py:15386
-#, fuzzy
 msgid "Target folder could not be found"
-msgstr "Aucune pochette correspondante trouvée."
+msgstr "Le dossier cible n'a pas pu être trouvé"
 
 #: tauon.py:15426
 msgid "Deleting folders..."
-msgstr ""
+msgstr "Supression des dossiers..."
 
 #: tauon.py:15445 tauon.py:15508
-#, fuzzy
 msgid "Copying files to device"
-msgstr "Fichier de configuration ouvert."
+msgstr "Copie des fichiers vers l'appareil"
 
 #: tauon.py:15451
 msgid "Sync aborted! Low disk space on target device"
 msgstr ""
+"Synchronisation annulée ! Pas assez d'espace disque sur l'appareil cible"
 
 #: tauon.py:15459 tauon.py:15490
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
+"Un ou plusieurs dossiers à synchroniser ont le même nom. Le dossier sera "
+"ignoré."
 
 #: tauon.py:15459 tauon.py:15490
 msgid "Sync warning"
-msgstr ""
+msgstr "Avertissement lié à la synchronisation"
 
 #: tauon.py:15476 tauon.py:27061
-#, fuzzy
 msgid "Folders Remaining"
-msgstr "Explorateur de dossiers"
+msgstr "Dossiers restants"
 
 #: tauon.py:15478 tauon.py:27059
-#, fuzzy
 msgid "Folder Remaining"
-msgstr "Explorateur de dossiers"
+msgstr "Dossier restant"
 
 #: tauon.py:15518
-#, fuzzy
 msgid "Sync completed"
-msgstr "Renommage terminé."
+msgstr "Synchronisation terminée"
 
 #: tauon.py:15534 tauon.py:15563
-#, fuzzy
 msgid "Set as Sync Playlist"
-msgstr "Afficher dans la liste de lecture"
+msgstr "Définir comme liste de lecture de synchronisation"
 
 #: tauon.py:15537
+#, fuzzy
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Désactiver la synchronisation avec cette liste de lecture"
 
 #: tauon.py:15548 tauon.py:15564
-#, fuzzy
 msgid "Set as Downloads Playlist"
-msgstr "Afficher dans la liste de lecture"
+msgstr "Définir comme liste de lecture des téléchargements"
 
 #: tauon.py:15551
+#, fuzzy
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Définir comme n'étant plus la liste de lecture des téléchargements"
 
 #: tauon.py:15554
 msgid "Export Playlist Stats"
@@ -626,23 +617,20 @@ msgid "Toggle Breaks"
 msgstr "Afficher/Masquer les séparateurs"
 
 #: tauon.py:15561
-#, fuzzy
 msgid "Edit Generator..."
-msgstr "Planches de contact"
+msgstr "Modifier le générateur..."
 
 #: tauon.py:15562
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Activer l'ajout rapide depuis la galerie"
 
 #: tauon.py:15565
-#, fuzzy
 msgid "Remove Duplicates"
-msgstr "Doublon"
+msgstr "Enlever les doublons"
 
 #: tauon.py:15605 tauon.py:15697 tauon.py:15698
-#, fuzzy
 msgid "Top Rated Tracks"
-msgstr "Pistes les plus jouées"
+msgstr "Pistes les mieux évaluées"
 
 #: tauon.py:15622 tauon.py:15629 tauon.py:15630
 msgid "Top Played Tracks"
@@ -655,12 +643,12 @@ msgstr "Albums les plus jouées"
 #: tauon.py:15742 tauon.py:15773 tauon.py:15774
 #, fuzzy
 msgid "Top Rated Albums"
-msgstr "Albums les plus jouées"
+msgstr "Albums les plus joués"
 
 #: tauon.py:15764
 #, fuzzy
 msgid "Tracks with lyrics"
-msgstr "Pistes dans la liste de lecture"
+msgstr "Pistes comportant des paroles"
 
 #: tauon.py:15771
 #, fuzzy
@@ -673,13 +661,12 @@ msgid ""
 msgstr ""
 
 #: tauon.py:15821
-#, fuzzy
 msgid "Incomplete Albums"
-msgstr "Albums aléatoires"
+msgstr "Albums non-complets"
 
 #: tauon.py:15828
 msgid "No incomplete albums were found."
-msgstr ""
+msgstr "Aucun album non-complet trouvé."
 
 #: tauon.py:15842 tauon.py:18517
 msgid "Codec"
@@ -695,12 +682,11 @@ msgstr "Favori"
 
 #: tauon.py:15921
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Commentaires intéressants"
 
 #: tauon.py:15965
-#, fuzzy
 msgid "Duration Sorted"
-msgstr "Durée"
+msgstr "Tri par durée"
 
 #: tauon.py:15971 tauon.py:15972
 msgid "Longest Tracks"
@@ -712,7 +698,7 @@ msgstr "Albums les plus longs"
 
 #: tauon.py:16059
 msgid "Year Sorted"
-msgstr ""
+msgstr "Tri par année"
 
 #: tauon.py:16075 tauon.py:16076
 msgid "Year by Oldest"
@@ -728,7 +714,6 @@ msgid "Shuffled Tracks"
 msgstr "Pistes aléatoires"
 
 #: tauon.py:16132 tauon.py:16138 tauon.py:16139
-#, fuzzy
 msgid "Shuffled Albums"
 msgstr "Albums aléatoires"
 
@@ -737,16 +722,14 @@ msgid "Lucky Random"
 msgstr "Aléatoire chanceux"
 
 #: tauon.py:16178
-#, fuzzy
 msgid "Reversed"
-msgstr "Annuler"
+msgstr "Inversé"
 
 #: tauon.py:16184 tauon.py:16185
 msgid "Reverse Tracks"
 msgstr "Inverser les pistes"
 
 #: tauon.py:16212
-#, fuzzy
 msgid "Reversed Albums"
 msgstr "Inverser les albums"
 
@@ -759,9 +742,8 @@ msgid "Duplicate"
 msgstr "Doublon"
 
 #: tauon.py:16242
-#, fuzzy
 msgid "Filepath Sorted"
-msgstr "Chemin"
+msgstr "Tri par chemin des fichiers"
 
 #: tauon.py:16257
 #, fuzzy
@@ -769,9 +751,8 @@ msgid "Artist Sorted"
 msgstr "Liste d'artistes"
 
 #: tauon.py:16271
-#, fuzzy
 msgid "Album Sorted"
-msgstr "Artiste de l'album"
+msgstr "Tri par album"
 
 #: tauon.py:16278 tauon.py:16279
 msgid "Has Comment"
@@ -798,7 +779,7 @@ msgstr "Fichier de configuration ouvert."
 
 #: tauon.py:16415 tauon.py:16435
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Transcoder des pistes depuis des emplacements réseau n'est pas supporté"
 
 #: tauon.py:16778
 msgid "Add Playing Spotify Album"
@@ -806,7 +787,7 @@ msgstr ""
 
 #: tauon.py:16867
 msgid "Track Info…"
-msgstr "Informations sur la piste..."
+msgstr "Informations sur la piste…"
 
 #: tauon.py:16912 tauon.py:19372
 msgid "Un-Love Track"
