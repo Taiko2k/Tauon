@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
-"PO-Revision-Date: 2020-08-20 00:09+0000\n"
+"PO-Revision-Date: 2020-08-21 17:27+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.2-dev\n"
+"X-Generator: Weblate 4.2.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
@@ -90,7 +90,7 @@ msgstr "Erro ao iniciar o Spotify"
 
 #: tauon.py:6624
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Por favor autorize o Spotify em configurações!"
 
 #: tauon.py:6626
 msgid "day"
@@ -130,7 +130,7 @@ msgstr "Pare a sincronização antes de sair!"
 
 #: tauon.py:7801
 msgid "A recording radio stream is running!"
-msgstr ""
+msgstr "Uma gravação de transmissão de rádio está rodando!"
 
 #: tauon.py:12074 tauon.py:33219
 msgid "Queue"
@@ -2060,9 +2060,8 @@ msgid "End of Playlist"
 msgstr "Fim da Playlist"
 
 #: tauon.py:30482
-#, fuzzy
 msgid "Failed to establish a connection"
-msgstr "Não foi possível estabelecer conexão/autorização"
+msgstr "Falha ao estabelecer conexão"
 
 #: tauon.py:30525
 msgid "Internet Radio"
@@ -2090,7 +2089,7 @@ msgstr "URL não validada. Deve iniciar com https:// ou http://"
 
 #: tauon.py:30675 tauon.py:30677
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Gravar e auto dividir músicas"
 
 #: tauon.py:30734
 msgid "Paste Website Link"

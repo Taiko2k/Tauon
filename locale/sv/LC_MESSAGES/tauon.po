@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-20 19:38+1200\n"
-"PO-Revision-Date: 2020-08-17 05:40+0000\n"
-"Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
+"PO-Revision-Date: 2020-08-20 19:36+0000\n"
+"Last-Translator: Luna Jernberg <droidbittin@gmail.com>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
 "Language: sv\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.2-dev\n"
+"X-Generator: Weblate 4.2.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1790 tauon.py:1792
@@ -40,7 +40,6 @@ msgid "Web auth page opened"
 msgstr "Webbautentisering öppnad"
 
 #: tauon.py:5879
-#, fuzzy
 msgid "You need to log in first"
 msgstr "Du måste logga in först"
 
@@ -90,7 +89,7 @@ msgstr "Kan inte starta Spotify"
 
 #: tauon.py:6624
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Auktorisera Spotify i inställningarna!"
 
 #: tauon.py:6626
 msgid "day"
@@ -131,7 +130,7 @@ msgstr "Stoppa synkronisering före avslut!"
 
 #: tauon.py:7801
 msgid "A recording radio stream is running!"
-msgstr ""
+msgstr "En inspelningsström är igång!"
 
 #: tauon.py:12074 tauon.py:33219
 msgid "Queue"
@@ -2063,9 +2062,8 @@ msgid "End of Playlist"
 msgstr "Slut på spelningslista"
 
 #: tauon.py:30482
-#, fuzzy
 msgid "Failed to establish a connection"
-msgstr "Kunde inte etablera anslutning/auktorisation"
+msgstr "Kunde inte etablera en anslutning"
 
 #: tauon.py:30525
 msgid "Internet Radio"
@@ -2093,7 +2091,7 @@ msgstr "Kunde inte validera URL. Den måste börja med https:// eller http://"
 
 #: tauon.py:30675 tauon.py:30677
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Spela in och separera låtar automatiskt"
 
 #: tauon.py:30734
 msgid "Paste Website Link"
