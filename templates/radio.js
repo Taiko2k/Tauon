@@ -64,7 +64,7 @@ function update() {
             if (status == 2 && data.index > -1){
                 // Stream starts again
                 status = 1;
-                sound.src = "/stream.ogg"
+                sound.src = "/stream.ogg";
                 sound.load();
                 sound.play();
                 console.log("AUTO RESUME");
