@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.2.0"
+n_version = "6.2.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1367,6 +1367,7 @@ class Prefs:    # Used to hold any kind of settings
         self.force_hide_max_button = False
         self.zoom_art = False
         self.auto_rec = False
+        self.radio_record_codec = "OPUS"
 
 prefs = Prefs()
 
@@ -3289,6 +3290,7 @@ cf = Config()
 def save_prefs():
 
     cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
+    cf.update_value("radio-record-codec", prefs.radio_record_codec)
 
     cf.update_value("plex-username", prefs.plex_username)
     cf.update_value("plex-password", prefs.plex_password)
@@ -3538,6 +3540,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[transcode]")
     prefs.bypass_transcode = cf.sync_add("bool", "sync-bypass-transcode", prefs.bypass_transcode, "Don't transcode files with sync function")
+    prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec, "Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
 
 
     cf.br()
@@ -30466,8 +30469,11 @@ class RadioBox:
         self.load_failed_timer = Timer()
         self.right_clicked_station = None
         self.right_clicked_station_p = None
+        self.click_point = (0, 0)
 
         self.song_key = ""
+        
+        self.drag = None
 
         self.tab = 0
         self.temp_list = []
@@ -30475,12 +30481,37 @@ class RadioBox:
         self.hosts = None
         self.host = None
 
+        self.search_menu = Menu(170)
+        self.search_menu.add(_("Search Tag"), self.search_tag, pass_ref=True)
+        self.search_menu.add(_("Search Country"), self.search_country, pass_ref=True)
+        self.search_menu.add(_("Search Title"), self.search_title, pass_ref=True)
+
+    def search_country(self, text):
+
+        if len(text) == 2 and text.isalpha():
+            self.search_radio_browser(
+                "/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
+        else:
+            self.search_radio_browser(
+                "/json/stations/search?country=" + text + "&order=votes&limit=250&reverse=true")
+
+    def search_tag(self, text):
+
+        text = text.lower()
+        self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+
+    def search_title(self, text):
+
+        text = text.lower()
+        self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&name=" + text)
+
     def start(self, item):
 
         url = item["stream_url"]
         print("Start radio")
         print(url)
         if url.endswith("m3u") or url.endswith("m3u8"):
+
             show_message("Sorry, m3u parsing not fully implemented.")
             return
 
@@ -30613,7 +30644,7 @@ class RadioBox:
         #     self.radio_field_active = 1
         #     input.key_tab_press = False
         if not self.radio_field_search.text and not editline:
-            ddt.text((x + 14 * gui.scale, yy), _("Genre or 2 letter country code"), colours.box_text_label, 312)
+            ddt.text((x + 14 * gui.scale, yy), _("Search text…"), colours.box_text_label, 312)
         self.radio_field_search.draw(x + 14 * gui.scale, yy, colours.box_input_text,
                                     active=True,
                                     width=width, click=gui.level_2_click)
@@ -30622,14 +30653,11 @@ class RadioBox:
 
         if draw.button(_("Search"), x + width + round(21 * gui.scale), yy - round(3 * gui.scale),
                        press=gui.level_2_click, w=round(80 * gui.scale)) or input.level_2_enter:
+
             text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").replace("-", "").upper()
             text = urllib.parse.quote(text)
             if len(text) > 1:
-                if len(text) == 2 and text.isalpha():
-                    self.search_radio_browser("/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
-                else:
-                    text = text.lower()
-                    self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+                self.search_menu.activate(text, position=(x + width + round(21 * gui.scale), yy + round(20 * gui.scale)))
         if draw.button(_("Get Top Voted"), x + round(8 * gui.scale), yy + round(30 * gui.scale),
                        press=gui.level_2_click):
             self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
@@ -30817,6 +30845,7 @@ class RadioBox:
         p = self.scroll_position * 2
         offset = 0
         to_delete = None
+        swap = None
 
         while True:
 
@@ -30851,7 +30880,14 @@ class RadioBox:
             if coll(rect):
 
                 if gui.level_2_click:
-                    self.start(item)
+                    self.drag = p
+                    self.click_point = copy.copy(mouse_position)
+                if mouse_up: #gui.level_2_click:
+                    gui.update += 1
+                    if self.drag is not None and p != self.drag:
+                        swap = p
+                    elif point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
+                        self.start(item)
                 if middle_click:
                     to_delete = p
                 if level_2_right_click:
@@ -30880,6 +30916,28 @@ class RadioBox:
         if to_delete is not None:
             del radio_list[to_delete]
 
+        if mouse_up and self.drag and mouse_position[1] > yy + round(22 * gui.scale):
+            swap = len(radio_list)
+
+        if self.drag and not point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
+            ddt.rect((mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 45 * gui.scale, 13 * gui.scale), colours.grey(70), True)
+
+        if swap is not None:
+
+            old = radio_list[self.drag]
+            radio_list[self.drag] = None
+
+            if swap > self.drag:
+                swap += 1
+
+            radio_list.insert(swap, old)
+            radio_list.remove(None)
+
+            self.drag = None
+            gui.update += 1
+
+        if not mouse_down:
+            self.drag = None
 
 
     def footer(self):
@@ -30891,7 +30949,10 @@ class RadioBox:
 
         yy = y + round(328 * gui.scale)
         if pctl.playing_state == 3 and not prefs.auto_rec:
-            pass
+            old = prefs.auto_rec
+            if not old and pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"),
+                                                  click=gui.level_2_click):
+                show_message(_("Please stop playback first before toggling this setting"))
         else:
             if pctl.playing_state == 3:
                 old = prefs.auto_rec
