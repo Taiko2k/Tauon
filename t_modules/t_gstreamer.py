@@ -215,6 +215,7 @@ def player3(tauon):  # GStreamer
                             tries += 1
 
             if self.play_state == 3 and name == "GstMessageTag":
+
                 data = struct.get_value("taglist").get_string("title")
                 data2 = struct.get_value("taglist").get_string("artist")
                 data3 = struct.get_value("taglist").get_string("year")
@@ -240,24 +241,23 @@ def player3(tauon):  # GStreamer
                     pctl.tag_meta = line
                     print("Found tag: " + line)
 
-
-
             elif name == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
                     gui.show_message("Connection error", mode="info")
             elif name == 'GstMessageBuffering':
 
-                buff_percent = struct.get_value("buffer-percent")
+                if pctl.playing_state == 3:
+                    buff_percent = struct.get_value("buffer-percent")
 
-                if buff_percent == 0 and (self.play_state == 1 or self.play_state == 3):
-                    self.playbin.set_state(Gst.State.PAUSED)
-                    self.buffering = True
-                    print("Buffering...")
+                    if buff_percent == 0 and (self.play_state == 1 or self.play_state == 3):
+                        self.playbin.set_state(Gst.State.PAUSED)
+                        self.buffering = True
+                        print("Buffering...")
 
-                elif self.buffering and buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
-                    self.playbin.set_state(Gst.State.PLAYING)
-                    self.buffering = False
-                    print("Buffered")
+                    elif self.buffering and buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
+                        self.playbin.set_state(Gst.State.PLAYING)
+                        self.buffering = False
+                        print("Buffered")
 
             if gui.vis == 1 and name == 'level':
 

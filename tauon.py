@@ -37958,8 +37958,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-
-            radiobox.tab = 1
             pass
 
         if gui.mode < 3:

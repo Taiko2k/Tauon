@@ -6,7 +6,7 @@ locale_folder = "locale"
 pot_path = os.path.join(locale_folder, "messages.pot")
 
 print("Generate template")
-subprocess.run(['python', "pygettext.py", "tauon.py"])
+subprocess.run(['python', "pygettext.py", "tauon.py", "--no-location"])
 print("Copy template")
 subprocess.run(['cp', "messages.pot", pot_path])
 subprocess.run(['rm', "messages.pot"])
