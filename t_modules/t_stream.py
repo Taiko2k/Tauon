@@ -108,11 +108,24 @@ class StreamEnc:
                     return
                 time.sleep(0.05)
 
-            target_file = os.path.join(self.tauon.cache_directory, "stream.ogg")
+            ext = ".opus"
+            rate = "48000"
+            codec = self.tauon.prefs.radio_record_codec.upper()
+            if codec == "OGG":
+                ext = ".ogg"
+                rate = "44100"
+            if codec == "MP3":
+                ext = ".mp3"
+                rate = "44100"
+            if codec == "FLAC":
+                ext = ".flac"
+                rate = "44100"
+
+            target_file = os.path.join(self.tauon.cache_directory, "stream" + ext)
             if os.path.isfile(target_file):
                 os.remove(target_file)
 
-            cmd = ['ffmpeg', "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", "48000", "-"]
+            cmd = ['ffmpeg', "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
             decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
@@ -121,7 +134,7 @@ class StreamEnc:
             old_metadata = self.tauon.radiobox.song_key
 
             ##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-            cmd = ["ffmpeg", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", target_file]
+            cmd = ["ffmpeg", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
             encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             while True:
@@ -145,7 +158,7 @@ class StreamEnc:
                             print("Save file")
                             save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
                             save_file += filename_safe(old_metadata)
-                            save_file = save_file.strip() + ".opus"
+                            save_file = save_file.strip() + ext
                             save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
                             if os.path.exists(save_file):
                                 os.remove(save_file)
@@ -177,7 +190,7 @@ class StreamEnc:
                             if os.path.getsize(target_file) > 256000:
                                 save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
                                 save_file += filename_safe(old_metadata)
-                                save_file = save_file.strip() + ".opus"
+                                save_file = save_file.strip() + ext
                                 save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
                                 if os.path.exists(save_file):
                                     os.remove(save_file)
@@ -260,7 +273,7 @@ class StreamEnc:
                         # We're sure its data Its data, send it on
                         self.chunks[self.c] = chunk
                         # Delete old data
-                        d = self.c - (256 * 12)
+                        d = self.c - (256 * 36)
                         if d in self.chunks:
                             del self.chunks[d]
 

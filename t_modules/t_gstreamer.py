@@ -177,7 +177,7 @@ def player3(tauon):  # GStreamer
             # self.level_train = []
             self.seek_timer = Timer()
             self.seek_timer.force_set(10)
-
+            self.buffering = False
             # Other
             self.end_timer = Timer()
 
@@ -247,20 +247,17 @@ def player3(tauon):  # GStreamer
                     gui.show_message("Connection error", mode="info")
             elif name == 'GstMessageBuffering':
 
-                if pctl.playing_state != 3:
+                buff_percent = struct.get_value("buffer-percent")
 
-                    # The documentation says to do this, but when playing certain radio streams
-                    # it causes audible glitches. Gst-launch also exhibits this issue.
-                    # Workaround; don't do it.
+                if buff_percent == 0 and (self.play_state == 1 or self.play_state == 3):
+                    self.playbin.set_state(Gst.State.PAUSED)
+                    self.buffering = True
+                    print("Buffering...")
 
-                    buff_percent = struct.get_value("buffer-percent")
-
-                    if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
-                        self.playbin.set_state(Gst.State.PAUSED)
-                        #print("BUFFER")
-
-                    elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
-                        self.playbin.set_state(Gst.State.PLAYING)
+                elif self.buffering and buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
+                    self.playbin.set_state(Gst.State.PLAYING)
+                    self.buffering = False
+                    print("Buffered")
 
             if gui.vis == 1 and name == 'level':
 
@@ -683,6 +680,7 @@ def player3(tauon):  # GStreamer
                         # Open URL stream
                         self.playbin.set_property('uri', pctl.url)
                         self.playbin.set_property('volume', pctl.player_volume / 100)
+                        self.buffering = False
                         self.playbin.set_state(Gst.State.PLAYING)
                         self.play_state = 3
                         self.player_timer.hit()
