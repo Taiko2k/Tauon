@@ -658,9 +658,6 @@ def player3(tauon):  # GStreamer
 
                 elif command == 'url':
 
-                    print("gst load stream")
-                    print(pctl.url)
-
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
                         self.playbin.set_state(Gst.State.NULL)

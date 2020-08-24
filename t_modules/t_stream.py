@@ -55,14 +55,10 @@ class StreamEnc:
 
         self.abort = True
 
-        print("AB1")
         while self.download_running:
             time.sleep(0.01)
-        print("AB2")
         while self.encode_running:
             time.sleep(0.01)
-
-        print("Ready")
 
         self.__init__(self.tauon)
 

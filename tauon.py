@@ -30833,7 +30833,9 @@ class RadioBox:
         if self.tab == 1:
             radio_list = self.temp_list
 
-        self.scroll_position += mouse_wheel * -1
+        rect = (x, y, w, h)
+        if coll(rect):
+            self.scroll_position += mouse_wheel * -1
         self.scroll_position = max(self.scroll_position, 0)
         self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
