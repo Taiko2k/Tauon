@@ -58,13 +58,10 @@
 
   <releases>
 
-    <release version="6.2.0" date="2020-08-22">
+    <release version="6.2.1" date="2020-08-24">
       <description>
         <ul>
-          <li>Added radio station search</li>
-          <li>Improved GStreamer backend</li>
-          <li>Removed BASS backend</li>
-          <li>Various bug fixes</li>
+          <li>Fixes and improvements to radio station search</li>
         </ul>
       </description>
     </release>
