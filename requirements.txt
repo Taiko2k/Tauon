@@ -1,6 +1,5 @@
 pillow
 pylast>=3.1.0
-flask
 hsaudiotag3k
 pysdl2
 stagger
@@ -8,7 +7,6 @@ send2trash
 pylyrics
 plexapi
 musicbrainzngs
-discogs_client
 pypresence
 isounidecode
 setproctitle

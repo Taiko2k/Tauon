@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.2.0"
+n_version = "6.2.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -631,7 +631,6 @@ import json
 import glob
 import xml.etree.ElementTree as ET
 import musicbrainzngs
-import discogs_client
 from pathlib import Path
 from xml.sax.saxutils import escape, unescape
 from ctypes import *
@@ -1034,11 +1033,13 @@ class Prefs:    # Used to hold any kind of settings
         if line:
             line += " ! "
 
-        if prefs.gst_device not in pctl.gst_outputs:
-            line += f"pulsesink client-name=\"{t_title}\""
+        #print(prefs.gst_device)
+        #print(pctl.gst_outputs)
 
-        elif prefs.gst_device == "Auto":
+        if prefs.gst_device == "Auto":
             line += "autoaudiosink"
+        elif prefs.gst_device == "PipeWire":
+            line += "pipewiresink"
         elif prefs.gst_device == "PulseAudio":
             line += f"pulsesink client-name=\"{t_title}\""
         elif prefs.gst_device == "JACK":
@@ -1046,7 +1047,8 @@ class Prefs:    # Used to hold any kind of settings
         elif prefs.gst_device == "ALSA":
             line += "alsasink"
         else:
-            line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
+            print("todo, fix devices")
+            #line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
 
         return line
 
@@ -1367,6 +1369,7 @@ class Prefs:    # Used to hold any kind of settings
         self.force_hide_max_button = False
         self.zoom_art = False
         self.auto_rec = False
+        self.radio_record_codec = "OPUS"
 
 prefs = Prefs()
 
@@ -3289,6 +3292,7 @@ cf = Config()
 def save_prefs():
 
     cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
+    cf.update_value("radio-record-codec", prefs.radio_record_codec)
 
     cf.update_value("plex-username", prefs.plex_username)
     cf.update_value("plex-password", prefs.plex_password)
@@ -3538,6 +3542,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[transcode]")
     prefs.bypass_transcode = cf.sync_add("bool", "sync-bypass-transcode", prefs.bypass_transcode, "Don't transcode files with sync function")
+    prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec, "Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
 
 
     cf.br()
@@ -3638,6 +3643,8 @@ locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
     locale_dir = "/app/share/locale"
+elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
+    locale_dir = "/usr/share/locale"
 
 lang = []
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
@@ -4784,6 +4791,12 @@ class PlayerCtl:
             self.playerSubCommand = "return"
 
         self.playerCommandReady = True
+
+        try:
+            tm.player_lock.release()
+        except:
+            pass
+
         self.record_stream = False
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
@@ -4803,9 +4816,9 @@ class PlayerCtl:
         if block:
             loop = 0
             while self.playerSubCommand != "stopped":
-                time.sleep(0.03)
+                time.sleep(0.05)
                 loop += 1
-                if loop > 110:
+                if loop > 200:
                     break
 
         if spot_ctl.playing or spot_ctl.coasting:
@@ -6705,6 +6718,7 @@ class Tauon:
         self.chunker = Chunker()
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
+        self.radio_server = None
 
     # def log(self, line, title=False):
     #
@@ -23303,7 +23317,10 @@ def toggle_enable_web(mode=0):
         show_message(_("Web server starting"), _("External connections will be accepted."), mode='done')
 
     elif prefs.enable_web is False:
-        requests.post(f"http://localhost:{str(prefs.metadata_page_port)}/shutdown")
+        if tauon.radio_server is not None:
+            tauon.radio_server.shutdown()
+            gui.web_running = False
+
         time.sleep(0.25)
 
 
@@ -23546,6 +23563,7 @@ key_lalt = False
 def reload_backend():
     print("Reload backend...")
     wait = 0
+
     pre_state = pctl.stop(True)
 
     while pctl.playerCommandReady:
@@ -23561,7 +23579,7 @@ def reload_backend():
     while pctl.playerCommand != 'done':
         time.sleep(0.01)
         wait += 1
-        if wait > 20:
+        if wait > 200:
             break
 
     tm.ready_playback()
@@ -25457,10 +25475,6 @@ class Over:
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
 
-        x -= ddt.get_text_w(_("Donate"), 211) + round(21 * gui.scale) + 2 * gui.scale
-
-        if self.button(x, y, _("Donate")):
-            webbrowser.open("https://ko-fi.com/taiko2k", new=2, autoraise=True)
 
     def topchart(self, x0, y0, w0, h0):
 
@@ -26418,14 +26432,20 @@ class TopPanel:
             max_w = window_size[0] - (x + right_space_es + round(34 * gui.scale))
 
             left_tabs = []
-            for p in ready_tabs:
-                if p < self.prime_tab:
-                    left_tabs.append(p)
             right_tabs = []
-            for p in ready_tabs:
-                if p > self.prime_tab:
-                    right_tabs.append(p)
-            left_tabs.reverse()
+            if a01:
+                for p in ready_tabs:
+                    left_tabs.append(p)
+
+            else:
+                for p in ready_tabs:
+                    if p < self.prime_tab:
+                        left_tabs.append(p)
+
+                for p in ready_tabs:
+                    if p > self.prime_tab:
+                        right_tabs.append(p)
+                left_tabs.reverse()
 
             run = max_w
 
@@ -30439,6 +30459,7 @@ tree_view_scroll = ScrollBox()
 class RadioBox:
 
     def __init__(self):
+
         self.active = False
         self.radio_field_active = 1
         self.radio_field = TextBox2()
@@ -30463,8 +30484,11 @@ class RadioBox:
         self.load_failed_timer = Timer()
         self.right_clicked_station = None
         self.right_clicked_station_p = None
+        self.click_point = (0, 0)
 
         self.song_key = ""
+        
+        self.drag = None
 
         self.tab = 0
         self.temp_list = []
@@ -30472,12 +30496,37 @@ class RadioBox:
         self.hosts = None
         self.host = None
 
+        self.search_menu = Menu(170)
+        self.search_menu.add(_("Search Tag"), self.search_tag, pass_ref=True)
+        self.search_menu.add(_("Search Country"), self.search_country, pass_ref=True)
+        self.search_menu.add(_("Search Title"), self.search_title, pass_ref=True)
+
+    def search_country(self, text):
+
+        if len(text) == 2 and text.isalpha():
+            self.search_radio_browser(
+                "/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
+        else:
+            self.search_radio_browser(
+                "/json/stations/search?country=" + text + "&order=votes&limit=250&reverse=true")
+
+    def search_tag(self, text):
+
+        text = text.lower()
+        self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+
+    def search_title(self, text):
+
+        text = text.lower()
+        self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&name=" + text)
+
     def start(self, item):
 
         url = item["stream_url"]
         print("Start radio")
         print(url)
         if url.endswith("m3u") or url.endswith("m3u8"):
+
             show_message("Sorry, m3u parsing not fully implemented.")
             return
 
@@ -30610,7 +30659,7 @@ class RadioBox:
         #     self.radio_field_active = 1
         #     input.key_tab_press = False
         if not self.radio_field_search.text and not editline:
-            ddt.text((x + 14 * gui.scale, yy), _("Genre or 2 letter country code"), colours.box_text_label, 312)
+            ddt.text((x + 14 * gui.scale, yy), _("Search text…"), colours.box_text_label, 312)
         self.radio_field_search.draw(x + 14 * gui.scale, yy, colours.box_input_text,
                                     active=True,
                                     width=width, click=gui.level_2_click)
@@ -30619,14 +30668,11 @@ class RadioBox:
 
         if draw.button(_("Search"), x + width + round(21 * gui.scale), yy - round(3 * gui.scale),
                        press=gui.level_2_click, w=round(80 * gui.scale)) or input.level_2_enter:
+
             text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").replace("-", "").upper()
             text = urllib.parse.quote(text)
             if len(text) > 1:
-                if len(text) == 2 and text.isalpha():
-                    self.search_radio_browser("/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
-                else:
-                    text = text.lower()
-                    self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+                self.search_menu.activate(text, position=(x + width + round(21 * gui.scale), yy + round(20 * gui.scale)))
         if draw.button(_("Get Top Voted"), x + round(8 * gui.scale), yy + round(30 * gui.scale),
                        press=gui.level_2_click):
             self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
@@ -30802,7 +30848,9 @@ class RadioBox:
         if self.tab == 1:
             radio_list = self.temp_list
 
-        self.scroll_position += mouse_wheel * -1
+        rect = (x, y, w, h)
+        if coll(rect):
+            self.scroll_position += mouse_wheel * -1
         self.scroll_position = max(self.scroll_position, 0)
         self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
@@ -30814,6 +30862,7 @@ class RadioBox:
         p = self.scroll_position * 2
         offset = 0
         to_delete = None
+        swap = None
 
         while True:
 
@@ -30848,7 +30897,14 @@ class RadioBox:
             if coll(rect):
 
                 if gui.level_2_click:
-                    self.start(item)
+                    self.drag = p
+                    self.click_point = copy.copy(mouse_position)
+                if mouse_up: #gui.level_2_click:
+                    gui.update += 1
+                    if self.drag is not None and p != self.drag:
+                        swap = p
+                    elif point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
+                        self.start(item)
                 if middle_click:
                     to_delete = p
                 if level_2_right_click:
@@ -30877,6 +30933,28 @@ class RadioBox:
         if to_delete is not None:
             del radio_list[to_delete]
 
+        if mouse_up and self.drag and mouse_position[1] > yy + round(22 * gui.scale):
+            swap = len(radio_list)
+
+        if self.drag and not point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
+            ddt.rect((mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 45 * gui.scale, 13 * gui.scale), colours.grey(70), True)
+
+        if swap is not None:
+
+            old = radio_list[self.drag]
+            radio_list[self.drag] = None
+
+            if swap > self.drag:
+                swap += 1
+
+            radio_list.insert(swap, old)
+            radio_list.remove(None)
+
+            self.drag = None
+            gui.update += 1
+
+        if not mouse_down:
+            self.drag = None
 
 
     def footer(self):
@@ -30888,7 +30966,10 @@ class RadioBox:
 
         yy = y + round(328 * gui.scale)
         if pctl.playing_state == 3 and not prefs.auto_rec:
-            pass
+            old = prefs.auto_rec
+            if not old and pref_box.toggle_square(x, yy, prefs.auto_rec, _("Record and auto split songs"),
+                                                  click=gui.level_2_click):
+                show_message(_("Please stop playback first before toggling this setting"))
         else:
             if pctl.playing_state == 3:
                 old = prefs.auto_rec
@@ -31818,13 +31899,25 @@ def save_discogs_artist_thumb(artist, filepath):
 
     print("Searching discogs for artist image...")
 
-    d = discogs_client.Client('TauonMusicBox/' + n_version, user_token=prefs.discogs_pat)
+    # Make artist name url safe
+    artist = artist.replace("/", "").replace("\\", "").replace(":", "")
 
-    results = d.search(artist.replace("/", "").replace("\\", ""), type='artist')
+    # Search for Discogs artist id
+    url = "https://api.discogs.com/database/search"
+    r = requests.get(url, params={"query": artist, "type": "artist", 'token': prefs.discogs_pat}, headers={"User-Agent": t_agent})
+    id = r.json()["results"][0]["id"]
 
-    images = results[0].images
-    #print(results)
+    # Search artist info, get images
+    url = "https://api.discogs.com/artists/" + str(id)
+    r = requests.get(url, headers={"User-Agent": t_agent}, params={'token': prefs.discogs_pat})
+    images = r.json()["images"]
 
+    # Respect rate limit
+    rate_remaining = r.headers["X-Discogs-Ratelimit-Remaining"]
+    if int(rate_remaining) < 30:
+        time.sleep(5)
+
+    # Find a square image in list of images
     for image in images:
         if image['height'] == image['width']:
             print("Found square")
@@ -37061,27 +37154,27 @@ if a01:
                  "Upgrade to a Tauon PREMIUM subscription to play tracks in any order.")
     #prefs.tabs_on_top = True
 
-    target = None
-    for pl in pctl.multi_playlist:
-        if pl[0] == "0401":
-            target = pl[2]
-            break
-    else:
-
-        pctl.multi_playlist.append(pl_gen(title="0401",
-                                          playlist=[],
-                                          hide_title=0))
-
-        target = pctl.multi_playlist[len(pctl.multi_playlist) - 1][2]
-
-        if target is not None:
-            for pl in pctl.multi_playlist:
-                target += pl[2]
-
-    for i, pl in enumerate(pctl.multi_playlist):
-        if pl[0] == "0401":
-            switch_playlist(i)
-            break
+    # target = None
+    # for pl in pctl.multi_playlist:
+    #     if pl[0] == "0401":
+    #         target = pl[2]
+    #         break
+    # else:
+    #
+    #     pctl.multi_playlist.append(pl_gen(title="0401",
+    #                                       playlist=[],
+    #                                       hide_title=0))
+    #
+    #     target = pctl.multi_playlist[len(pctl.multi_playlist) - 1][2]
+    #
+    #     if target is not None:
+    #         for pl in pctl.multi_playlist:
+    #             target += pl[2]
+    #
+    # for i, pl in enumerate(pctl.multi_playlist):
+    #     if pl[0] == "0401":
+    #         switch_playlist(i)
+    #         break
 
 elif gui.restore_showcase_view:
     toggle_combo_view(showcase=True)
@@ -37894,8 +37987,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-
-            radiobox.tab = 1
             pass
 
         if gui.mode < 3:

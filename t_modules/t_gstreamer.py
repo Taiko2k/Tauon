@@ -64,24 +64,30 @@ def player3(tauon):  # GStreamer
 
             # Populate list of output devices with defaults
             outputs = {}
-            devices = ["PulseAudio", "ALSA", "JACK"]
+            devices = ["PulseAudio", "ALSA", "JACK",]
             if tauon.snap_mode:  # Snap permissions don't support these by default
                 devices.remove("JACK")
                 devices.remove("ALSA")
 
             # Get list of available audio device
-            self.dm = Gst.DeviceMonitor()
-            self.dm.start()
-            for device in self.dm.get_devices():
-                if device.get_device_class() == "Audio/Sink":
-                    element = device.create_element(None)
-                    type_name = element.get_factory().get_name()
-                    device_name = element.props.device
-                    display_name = device.get_display_name()
-
-                    # This is used by the UI to present list of options to the user in audio settings
-                    outputs[display_name] = (type_name, device_name)
-                    devices.append(display_name)
+            # self.dm = Gst.DeviceMonitor()
+            # self.dm.start()
+            # for device in self.dm.get_devices():
+            #     if device.get_device_class() == "Audio/Sink":
+            #         print("----")
+            #         print(device)
+            #         element = device.create_element(None)
+            #         print(element.get_factory().get_name())
+            #         print(device.get_display_name())
+            #         type_name = element.get_factory().get_name()
+            #         if hasattr(element.props, "device"):
+            #             print("HAS")
+            #             device_name = element.props.device
+            #             display_name = device.get_display_name()
+            #
+            #             # This is used by the UI to present list of options to the user in audio settings
+            #             outputs[display_name] = (type_name, device_name)
+            #             devices.append(display_name)
 
             # dm.stop()  # Causes a segfault sometimes
             pctl.gst_outputs = outputs
@@ -177,7 +183,7 @@ def player3(tauon):  # GStreamer
             # self.level_train = []
             self.seek_timer = Timer()
             self.seek_timer.force_set(10)
-
+            self.buffering = False
             # Other
             self.end_timer = Timer()
 
@@ -215,6 +221,7 @@ def player3(tauon):  # GStreamer
                             tries += 1
 
             if self.play_state == 3 and name == "GstMessageTag":
+
                 data = struct.get_value("taglist").get_string("title")
                 data2 = struct.get_value("taglist").get_string("artist")
                 data3 = struct.get_value("taglist").get_string("year")
@@ -240,27 +247,23 @@ def player3(tauon):  # GStreamer
                     pctl.tag_meta = line
                     print("Found tag: " + line)
 
-
-
             elif name == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
                     gui.show_message("Connection error", mode="info")
             elif name == 'GstMessageBuffering':
 
-                if pctl.playing_state != 3:
-
-                    # The documentation says to do this, but when playing certain radio streams
-                    # it causes audible glitches. Gst-launch also exhibits this issue.
-                    # Workaround; don't do it.
-
+                if pctl.playing_state == 3:
                     buff_percent = struct.get_value("buffer-percent")
 
-                    if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
+                    if buff_percent == 0 and (self.play_state == 1 or self.play_state == 3):
                         self.playbin.set_state(Gst.State.PAUSED)
-                        #print("BUFFER")
+                        self.buffering = True
+                        print("Buffering...")
 
-                    elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
+                    elif self.buffering and buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
                         self.playbin.set_state(Gst.State.PLAYING)
+                        self.buffering = False
+                        print("Buffered")
 
             if gui.vis == 1 and name == 'level':
 
@@ -661,9 +664,6 @@ def player3(tauon):  # GStreamer
 
                 elif command == 'url':
 
-                    print("gst load stream")
-                    print(pctl.url)
-
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
                         self.playbin.set_state(Gst.State.NULL)
@@ -683,6 +683,7 @@ def player3(tauon):  # GStreamer
                         # Open URL stream
                         self.playbin.set_property('uri', pctl.url)
                         self.playbin.set_property('volume', pctl.player_volume / 100)
+                        self.buffering = False
                         self.playbin.set_state(Gst.State.PLAYING)
                         self.play_state = 3
                         self.player_timer.hit()
@@ -851,10 +852,11 @@ def player3(tauon):  # GStreamer
                 elif command == 'unload':
                     if self.play_state > 0:
                         self.playbin.set_state(Gst.State.NULL)
-                        time.sleep(0.5)
-
+                        time.sleep(0.05)
+                    print("unload")
                     self.mainloop.quit()
                     pctl.playerCommand = 'done'
+                    print("return")
                     return
 
             if self.play_state == 3:
@@ -931,10 +933,10 @@ def player3(tauon):  # GStreamer
 
     player = GPlayer()
 
-    try:
-        player.dm.stop()
-    except:
-        pass
+    # try:
+    #     player.dm.stop()
+    # except:
+    #     pass
 
     # Notify main thread we have closed cleanly
     player.exit()

@@ -1,6 +1,20 @@
 
 Changelog-------------------------------------
 
+v6.2.2
+
+ - Disabled device selector
+ - Fixed freeze on audio setting change
+ - Remove python-discogs_client dependency
+
+v6.2.1
+
+ - Improved internet radio
+   - Improved buffering and reliability
+   - Added drag to re-arrange for saved stations
+   - Added option for search type
+   - Added radio output codec setting in config file
+
 v6.2.0
 
  - Added station search browser for internet radio
