@@ -59,19 +59,17 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             if path == "/radio":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
 
-            elif path == "/assets/favicon.ico":
+            elif path == "/favicon.ico":
                 self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
-            elif path == "/radio.js":
+            elif path == "/radio/radio.js":
                 self.send_file(install_directory + "/templates/radio.js", "application/javascript")
-            elif path == "/theme.css":
+            elif path == "/radio/theme.css":
                 self.send_file(install_directory + "/templates/theme.css", "text/css")
 
             elif path == "/radio/update_radio":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-
-                print("HIT")
 
                 if pctl.broadcast_active:
                     track = pctl.master_library[pctl.broadcast_index]
@@ -83,14 +81,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "index": track.index,
                             "port": str(prefs.broadcast_port)}
                     data = json.dumps(data).replace(" ", "").encode()
-                    print(data)
                     self.wfile.write(data)
 
                 else:
                     data = {"position": 0,
                             "index": -1}
                     data = json.dumps(data).replace(" ", "").encode()
-                    print(data)
                     self.wfile.write(data)
 
             elif path == "/radio/getpic":
@@ -119,7 +115,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "lyrics": lyrics}
 
                         data = json.dumps(data).replace(" ", "").encode()
-                        print(data)
                         self.wfile.write(data)
                     except:
                         # Failed getting image
@@ -131,7 +126,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "lyrics": lyrics}
 
                         data = json.dumps(data).replace(" ", "").encode()
-                        print(data)
                         self.wfile.write(data)
                 else:
                     # Broadcast is not active
@@ -143,7 +137,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "lyrics": ""}
 
                     data = json.dumps(data).replace(" ", "").encode()
-                    print(data)
                     self.wfile.write(data)
 
             elif path == "/stream.ogg":

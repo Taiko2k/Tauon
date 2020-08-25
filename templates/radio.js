@@ -43,10 +43,8 @@ function setArt(){
 function update() {
     connect_fault = connect_fault - 1
     request.open('GET', '/radio/update_radio', true);
-    console.log("TRY GET TICK")
     request.onload = function() {
         var data = JSON.parse(this.response);
-        console.log("GOT TICK")
         connect_fault = 2;
         document.getElementById('seekfront').style.width = Math.round(data.position * 700) + "px";
 
