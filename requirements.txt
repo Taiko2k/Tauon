@@ -8,7 +8,6 @@ send2trash
 pylyrics
 plexapi
 musicbrainzngs
-discogs_client
 pypresence
 isounidecode
 setproctitle
