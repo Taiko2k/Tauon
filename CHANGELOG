@@ -3,6 +3,8 @@ Changelog-------------------------------------
 
 v6.2.2
 
+ - Disabled device selector
+ - Fixed freeze on audio setting change
  - Remove python-discogs_client dependency
 
 v6.2.1

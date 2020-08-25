@@ -64,24 +64,30 @@ def player3(tauon):  # GStreamer
 
             # Populate list of output devices with defaults
             outputs = {}
-            devices = ["PulseAudio", "ALSA", "JACK"]
+            devices = ["PulseAudio", "ALSA", "JACK",]
             if tauon.snap_mode:  # Snap permissions don't support these by default
                 devices.remove("JACK")
                 devices.remove("ALSA")
 
             # Get list of available audio device
-            self.dm = Gst.DeviceMonitor()
-            self.dm.start()
-            for device in self.dm.get_devices():
-                if device.get_device_class() == "Audio/Sink":
-                    element = device.create_element(None)
-                    type_name = element.get_factory().get_name()
-                    device_name = element.props.device
-                    display_name = device.get_display_name()
-
-                    # This is used by the UI to present list of options to the user in audio settings
-                    outputs[display_name] = (type_name, device_name)
-                    devices.append(display_name)
+            # self.dm = Gst.DeviceMonitor()
+            # self.dm.start()
+            # for device in self.dm.get_devices():
+            #     if device.get_device_class() == "Audio/Sink":
+            #         print("----")
+            #         print(device)
+            #         element = device.create_element(None)
+            #         print(element.get_factory().get_name())
+            #         print(device.get_display_name())
+            #         type_name = element.get_factory().get_name()
+            #         if hasattr(element.props, "device"):
+            #             print("HAS")
+            #             device_name = element.props.device
+            #             display_name = device.get_display_name()
+            #
+            #             # This is used by the UI to present list of options to the user in audio settings
+            #             outputs[display_name] = (type_name, device_name)
+            #             devices.append(display_name)
 
             # dm.stop()  # Causes a segfault sometimes
             pctl.gst_outputs = outputs
@@ -846,10 +852,11 @@ def player3(tauon):  # GStreamer
                 elif command == 'unload':
                     if self.play_state > 0:
                         self.playbin.set_state(Gst.State.NULL)
-                        time.sleep(0.5)
-
+                        time.sleep(0.05)
+                    print("unload")
                     self.mainloop.quit()
                     pctl.playerCommand = 'done'
+                    print("return")
                     return
 
             if self.play_state == 3:
@@ -926,10 +933,10 @@ def player3(tauon):  # GStreamer
 
     player = GPlayer()
 
-    try:
-        player.dm.stop()
-    except:
-        pass
+    # try:
+    #     player.dm.stop()
+    # except:
+    #     pass
 
     # Notify main thread we have closed cleanly
     player.exit()

@@ -1033,11 +1033,13 @@ class Prefs:    # Used to hold any kind of settings
         if line:
             line += " ! "
 
-        if prefs.gst_device not in pctl.gst_outputs:
-            line += f"pulsesink client-name=\"{t_title}\""
+        #print(prefs.gst_device)
+        #print(pctl.gst_outputs)
 
-        elif prefs.gst_device == "Auto":
+        if prefs.gst_device == "Auto":
             line += "autoaudiosink"
+        elif prefs.gst_device == "PipeWire":
+            line += "pipewiresink"
         elif prefs.gst_device == "PulseAudio":
             line += f"pulsesink client-name=\"{t_title}\""
         elif prefs.gst_device == "JACK":
@@ -1045,7 +1047,8 @@ class Prefs:    # Used to hold any kind of settings
         elif prefs.gst_device == "ALSA":
             line += "alsasink"
         else:
-            line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
+            print("todo, fix devices")
+            #line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
 
         return line
 
@@ -4788,6 +4791,12 @@ class PlayerCtl:
             self.playerSubCommand = "return"
 
         self.playerCommandReady = True
+
+        try:
+            tm.player_lock.release()
+        except:
+            pass
+
         self.record_stream = False
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
@@ -4807,9 +4816,9 @@ class PlayerCtl:
         if block:
             loop = 0
             while self.playerSubCommand != "stopped":
-                time.sleep(0.03)
+                time.sleep(0.05)
                 loop += 1
-                if loop > 110:
+                if loop > 200:
                     break
 
         if spot_ctl.playing or spot_ctl.coasting:
@@ -23550,6 +23559,7 @@ key_lalt = False
 def reload_backend():
     print("Reload backend...")
     wait = 0
+
     pre_state = pctl.stop(True)
 
     while pctl.playerCommandReady:
@@ -23565,7 +23575,7 @@ def reload_backend():
     while pctl.playerCommand != 'done':
         time.sleep(0.01)
         wait += 1
-        if wait > 20:
+        if wait > 200:
             break
 
     tm.ready_playback()
