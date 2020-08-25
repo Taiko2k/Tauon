@@ -43,9 +43,10 @@ function setArt(){
 function update() {
     connect_fault = connect_fault - 1
     request.open('GET', '/radio/update_radio', true);
+    console.log("TRY GET TICK")
     request.onload = function() {
         var data = JSON.parse(this.response);
-
+        console.log("GOT TICK")
         connect_fault = 2;
         document.getElementById('seekfront').style.width = Math.round(data.position * 700) + "px";
 
@@ -53,9 +54,12 @@ function update() {
           setArt();
         }
 
+        console.log(data.index);
+
         if (status > 0){
             if (status == 1 && data.index == -1) {
                 // The stream has stopped
+                console.log("STREAM STOPPED")
                 status = 2;
                 sound.src = "";
                 sound.load();
@@ -82,6 +86,7 @@ playbutton.onclick = function() {
         document.getElementById("play-icon").style.display = "none"
         document.getElementById("stop-icon").style.display = "block"
         if (index == -1) {
+            console.log("NO TRACK LOADED")
             status = 2;
         }
         else {
@@ -108,6 +113,7 @@ function tick(){
         setTimeout(tick, 5000);
     }
     else {
+        console.log("CONNECTION LOST")
         document.getElementById("picture").src = '#';
         document.getElementById("title-text").innerText = "-- Connection Lost --";
         document.getElementById("lyrics").innerHTML = "";
