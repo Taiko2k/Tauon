@@ -928,10 +928,10 @@ def player3(tauon):  # GStreamer
 
     player = GPlayer()
 
-    try:
-        player.dm.stop()
-    except:
-        pass
+    # try:
+    #     player.dm.stop()
+    # except:
+    #     pass
 
     # Notify main thread we have closed cleanly
     player.exit()
