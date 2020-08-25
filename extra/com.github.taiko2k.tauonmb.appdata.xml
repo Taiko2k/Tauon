@@ -58,7 +58,7 @@
 
   <releases>
 
-    <release version="6.2.1" date="2020-08-24">
+    <release version="6.2.2" date="2020-08-25">
       <description>
         <ul>
           <li>Fixes and improvements to radio station search</li>
