@@ -160,9 +160,9 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
         pass
 
     httpd = ThreadedHTTPServer(("0.0.0.0", prefs.metadata_page_port), Server)
+    tauon.radio_server = httpd
     httpd.serve_forever()
     httpd.server_close()
-
 
 def authserve(tauon):
 

@@ -6718,6 +6718,7 @@ class Tauon:
         self.chunker = Chunker()
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
+        self.radio_server = None
 
     # def log(self, line, title=False):
     #
@@ -23316,7 +23317,10 @@ def toggle_enable_web(mode=0):
         show_message(_("Web server starting"), _("External connections will be accepted."), mode='done')
 
     elif prefs.enable_web is False:
-        requests.post(f"http://localhost:{str(prefs.metadata_page_port)}/shutdown")
+        if tauon.radio_server is not None:
+            tauon.radio_server.shutdown()
+            gui.web_running = False
+
         time.sleep(0.25)
 
 
