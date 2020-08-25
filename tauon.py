@@ -3641,6 +3641,8 @@ locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
     locale_dir = "/app/share/locale"
+elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
+    locale_dir = "/usr/share/locale"
 
 lang = []
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
