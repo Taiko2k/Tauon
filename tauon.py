@@ -1047,8 +1047,7 @@ class Prefs:    # Used to hold any kind of settings
         elif prefs.gst_device == "ALSA":
             line += "alsasink"
         else:
-            print("todo, fix devices")
-            #line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
+            line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
 
         return line
 
