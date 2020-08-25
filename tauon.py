@@ -1046,8 +1046,10 @@ class Prefs:    # Used to hold any kind of settings
             line += f"jackaudiosink client-name=\"{t_title}\""
         elif prefs.gst_device == "ALSA":
             line += "alsasink"
-        else:
+        elif prefs.gst_device in pctl.gst_outputs:
             line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
+        else:
+            print("Device not found, fallback to PulseAudio")
 
         return line
 
