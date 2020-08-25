@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.2.1"
+n_version = "6.2.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -631,7 +631,6 @@ import json
 import glob
 import xml.etree.ElementTree as ET
 import musicbrainzngs
-import discogs_client
 from pathlib import Path
 from xml.sax.saxutils import escape, unescape
 from ctypes import *
@@ -31886,13 +31885,25 @@ def save_discogs_artist_thumb(artist, filepath):
 
     print("Searching discogs for artist image...")
 
-    d = discogs_client.Client('TauonMusicBox/' + n_version, user_token=prefs.discogs_pat)
+    # Make artist name url safe
+    artist = artist.replace("/", "").replace("\\", "").replace(":", "")
 
-    results = d.search(artist.replace("/", "").replace("\\", ""), type='artist')
+    # Search for Discogs artist id
+    url = "https://api.discogs.com/database/search"
+    r = requests.get(url, params={"query": artist, "type": "artist", 'token': prefs.discogs_pat}, headers={"User-Agent": t_agent})
+    id = r.json()["results"][0]["id"]
 
-    images = results[0].images
-    #print(results)
+    # Search artist info, get images
+    url = "https://api.discogs.com/artists/" + str(id)
+    r = requests.get(url, headers={"User-Agent": t_agent}, params={'token': prefs.discogs_pat})
+    images = r.json()["images"]
 
+    # Respect rate limit
+    rate_remaining = r.headers["X-Discogs-Ratelimit-Remaining"]
+    if int(rate_remaining) < 30:
+        time.sleep(5)
+
+    # Find a square image in list of images
     for image in images:
         if image['height'] == image['width']:
             print("Found square")

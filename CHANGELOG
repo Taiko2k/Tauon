@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.2.2
+
+ - Remove python-discogs_client dependency
+
 v6.2.1
 
  - Improved internet radio
