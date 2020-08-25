@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-08-22 12:21+1200\n"
-"PO-Revision-Date: 2020-08-23 02:13+0000\n"
+"PO-Revision-Date: 2020-08-27 02:19+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -2053,7 +2053,7 @@ msgstr "Fim da Playlist"
 
 #: tauon.py:30616
 msgid "Genre or 2 letter country code"
-msgstr ""
+msgstr "Gênero ou 2 letras do código de país"
 
 #: tauon.py:30623
 msgid "Search"
