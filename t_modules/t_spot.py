@@ -805,6 +805,11 @@ class SpotCtl:
         if self.playing or (not self.coasting and not start):
             return
 
+        try:
+            self.tauon.tm.player_lock.release()
+        except:
+            pass
+
         if result is None or result.is_playing is False:
             if self.coasting:
 
