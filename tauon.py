@@ -5026,16 +5026,16 @@ class PlayerCtl:
             gui.update += 1
             self.playing_time_int = next_round
 
-        if not prefs.use_transition_crossfade:
-            gap_extra = 1.2
-        else:
-            gap_extra = prefs.cross_fade_time / 1000
-
-        if prefs.backend == 2:  # (gstreamer)
-            gap_extra = 2
+        # if not prefs.use_transition_crossfade:
+        #     gap_extra = 1.2
+        # else:
+        #     gap_extra = prefs.cross_fade_time / 1000
+        #
+        # if prefs.backend == 2:  # (gstreamer)
+        gap_extra = 2
 
         if spot_ctl.playing:
-            gap_extra = 2
+            gap_extra = 3
 
         if msys and taskbar_progress and self.windows_progress:
             self.windows_progress.update(True)
@@ -25453,6 +25453,8 @@ class Over:
             ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
             y += 19 * gui.scale
             ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
+            y += 19 * gui.scale
+            ddt.text((x + 210 * gui.scale, y), "sk22", colours.box_sub_text, 13)
 
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)

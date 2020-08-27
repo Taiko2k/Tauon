@@ -862,10 +862,10 @@ def player3(tauon):  # GStreamer
                     p = max(0, (self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND) -
                                                  pctl.start_time_target)
 
-                    if abs(pctl.playing_time - p) > 1.5:
+                    if abs(pctl.playing_time - p) > 0.2:
                         pctl.playing_time = p
 
-                    pctl.decode_time = pctl.playing_time  # A difference isn't discerned in this module
+                    pctl.decode_time = p
 
                 else:
                     # We're supposed to be playing but it's not? Give it a push I guess.
