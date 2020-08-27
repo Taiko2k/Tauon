@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.2.4"
+n_version = "6.2.5"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
