@@ -70,24 +70,19 @@ def player3(tauon):  # GStreamer
                 devices.remove("ALSA")
 
             # Get list of available audio device
-            # self.dm = Gst.DeviceMonitor()
-            # self.dm.start()
-            # for device in self.dm.get_devices():
-            #     if device.get_device_class() == "Audio/Sink":
-            #         print("----")
-            #         print(device)
-            #         element = device.create_element(None)
-            #         print(element.get_factory().get_name())
-            #         print(device.get_display_name())
-            #         type_name = element.get_factory().get_name()
-            #         if hasattr(element.props, "device"):
-            #             print("HAS")
-            #             device_name = element.props.device
-            #             display_name = device.get_display_name()
-            #
-            #             # This is used by the UI to present list of options to the user in audio settings
-            #             outputs[display_name] = (type_name, device_name)
-            #             devices.append(display_name)
+            self.dm = Gst.DeviceMonitor()
+            self.dm.start()
+            for device in self.dm.get_devices():
+                if device.get_device_class() == "Audio/Sink":
+                    element = device.create_element(None)
+                    type_name = element.get_factory().get_name()
+                    if hasattr(element.props, "device"):
+                        device_name = element.props.device
+                        display_name = device.get_display_name()
+
+                        # This is used by the UI to present list of options to the user in audio settings
+                        outputs[display_name] = (type_name, device_name)
+                        devices.append(display_name)
 
             # dm.stop()  # Causes a segfault sometimes
             pctl.gst_outputs = outputs
@@ -394,33 +389,12 @@ def player3(tauon):  # GStreamer
 
         def main_callback(self):
 
-            if not pctl.playerCommandReady and pctl.playing_state == 0:
+            if not pctl.playerCommandReady and pctl.playing_state == 0 and not tauon.spot_ctl.playing and not tauon.spot_ctl.coasting:
                 tauon.tm.player_lock.acquire()
 
             if gui.vis == 1:
                 if pctl.playing_state == 1:
                     gui.level_update = True
-            # Level meter visualiser
-            ##if gui.vis == 1:
-                # if pctl.playing_state == 1:
-                #     gui.level_update = True
-                #     while self.level_train and self.level_train[0][0] < time.time():
-                #
-                #         l = self.level_train[0][1]
-                #         r = self.level_train[0][2]
-                #
-                #         if r > gui.level_peak[0]:
-                #             gui.level_peak[0] = r
-                #         if l > gui.level_peak[1]:
-                #             gui.level_peak[1] = l
-                #
-                #         del self.level_train[0]
-                #
-                #     gui.level_peak[1] -= 0.30
-                #     gui.level_peak[0] -= 0.30
-                #
-                # else:
-                #     self.level_train.clear()
 
             # This is the main callback function to be triggered continuously as long as application is running
             if self.play_state == 1 and pctl.playing_time > 1 and not pctl.playerCommandReady:
@@ -888,10 +862,10 @@ def player3(tauon):  # GStreamer
                     p = max(0, (self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND) -
                                                  pctl.start_time_target)
 
-                    if abs(pctl.playing_time - p) > 1.5:
+                    if abs(pctl.playing_time - p) > 0.2:
                         pctl.playing_time = p
 
-                    pctl.decode_time = pctl.playing_time  # A difference isn't discerned in this module
+                    pctl.decode_time = p
 
                 else:
                     # We're supposed to be playing but it's not? Give it a push I guess.

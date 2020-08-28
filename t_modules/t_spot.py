@@ -402,11 +402,16 @@ class SpotCtl:
                     result = self.spotify.playback_currently_playing()
                     if result and result.item and result.is_playing:
                         remain = result.item.duration_ms - result.progress_ms
-                        if 1000 < remain < 2500:
+                        if 1400 < remain < 3500:
                             self.spotify.playback_queue_add("spotify:track:" + id,  device_id=d_id)
                             okay = True
                             time.sleep(remain / 1000)
                             self.progress_timer.set()
+                            time.sleep(1)
+                            result = self.spotify.playback_currently_playing()
+                            if not (result and result.item and result.is_playing):
+                                print("A queue transition failed")
+                                okay = False
 
                 # Force a transition
                 if not okay:
@@ -782,11 +787,11 @@ class SpotCtl:
 
             p = result.progress_ms
             if p is not None:
-                if abs(self.tauon.pctl.playing_time - (p / 1000)) > 0.5:
+                #if abs(self.tauon.pctl.playing_time - (p / 1000)) > 0.4:
                     # print("DESYNC")
                     # print(abs(self.tauon.pctl.playing_time - (p / 1000)))
-                    self.tauon.pctl.playing_time = p / 1000
-                    self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
+                self.tauon.pctl.playing_time = p / 1000
+                self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
                 # else:
                 #     print("SYNCED")
 
@@ -804,6 +809,11 @@ class SpotCtl:
 
         if self.playing or (not self.coasting and not start):
             return
+
+        try:
+            self.tauon.tm.player_lock.release()
+        except:
+            pass
 
         if result is None or result.is_playing is False:
             if self.coasting:
