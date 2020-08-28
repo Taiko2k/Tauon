@@ -417,6 +417,8 @@ def player3(tauon):  # GStreamer
                 command = pctl.playerCommand
                 pctl.playerCommandReady = False
 
+                print("RUN COMMAND")
+                print(command)
                 # Here we process commands from the main thread/module
 
                 # Possible commands:
@@ -449,8 +451,9 @@ def player3(tauon):  # GStreamer
                 pctl.download_time = 0
                 url = None
                 if command == 'open' and pctl.target_object:
-                    # print("Start track")
+                    print("Start track")
                     track = pctl.target_object
+                    print(track.title)
 
                     if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
                         tauon.spot_ctl.control("stop")
@@ -497,9 +500,9 @@ def player3(tauon):  # GStreamer
                         tauon.console.print("Missing File: " + track.fullpath, 2)
                         pctl.playing_state = 0
                         pctl.jump_time = 0
-                        pctl.advance(inplace=True, nolock=True)
+                        print("FORCE JUMP")
+                        pctl.advance(inplace=True, play=True)
                         GLib.timeout_add(19, self.main_callback)
-                        pctl.playerCommandReady = False
                         return
 
                     gapless = False
@@ -899,7 +902,7 @@ def player3(tauon):  # GStreamer
                 if gui.vis == 1:
                     GLib.timeout_add(19, self.main_callback)
                 else:
-                    GLib.timeout_add(100, self.main_callback)
+                    GLib.timeout_add(50, self.main_callback)
 
         def exit(self):
             print("GStreamer unloaded")
