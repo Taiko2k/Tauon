@@ -5630,14 +5630,13 @@ class PlayerCtl:
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 
-                print("standand advance")
+                # print("standand advance")
                 #self.queue_target = len(self.track_queue) - 1
                 # if end:
                 #     self.play_target_gapless(jump= not end)
                 # else:
                 self.queue_step = len(self.track_queue) - 1
                 if play:
-                    print("play")
                     self.play_target(jump= not end)
 
         else:
