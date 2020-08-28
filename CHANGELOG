@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.2.6
+
+ - Fixed a crash when using copy in an empty playlist
+ - Fixed an issue with playback stalling after missing track or jump during transition
+
 v6.2.5
 
  - Fixed Spotify remote not progressing
