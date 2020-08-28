@@ -611,10 +611,10 @@ def player3(tauon):  # GStreamer
 
                             if pctl.playerCommand == 'open' and pctl.playerCommandReady:
                                 # Cancel the gapless transition
+                                print("Cancel transition")
                                 self.playbin.set_state(Gst.State.NULL)
                                 time.sleep(0.1)
                                 GLib.timeout_add(19, self.main_callback)
-                                pctl.playerCommandReady = False
                                 return
 
 
