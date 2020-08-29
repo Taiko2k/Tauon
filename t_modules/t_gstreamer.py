@@ -684,11 +684,11 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_state(Gst.State.PLAYING)
 
                         if success and False:
-                            start = current_time + ((100 / 1000) * Gst.SECOND)
-                            end = current_time + ((600 / 1000) * Gst.SECOND)
+                            start = current_time + ((150 / 1000) * Gst.SECOND)
+                            end = current_time + ((200 / 1000) * Gst.SECOND)
                             self.c_source.set(start, self._vol.get_property('volume') / 10)
                             self.c_source.set(end, (pctl.player_volume / 100) / 10)
-                            time.sleep(0.5)
+                            time.sleep(0.6)
                             self.c_source.unset_all()
                         else:
                             self.playbin.set_property('volume', pctl.player_volume / 100)
@@ -778,6 +778,7 @@ def player3(tauon):  # GStreamer
 
                         self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                                  (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
+
 
                         # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
                         # update the seek indicator immediately and hold the thread for a moment
