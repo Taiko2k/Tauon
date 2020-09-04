@@ -58,10 +58,10 @@
 
   <releases>
 
-    <release version="6.2.5" date="2020-08-27">
+    <release version="6.2.6" date="2020-09-04">
       <description>
         <ul>
-          <li>Various fixes for Spotify playback</li>
+          <li>Various playback related fixes</li>
         </ul>
       </description>
     </release>

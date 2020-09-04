@@ -2774,7 +2774,7 @@ for t in range(2):
         if save[92] is not None:
             prefs.append_total_time = save[92]
         if save[93] is not None:
-            old_backend = save[93] #prefs.backend = save[93]
+            prefs.backend = save[93]
         if save[94] is not None:
             prefs.album_shuffle_mode = save[94]
         if save[95] is not None:
@@ -3266,6 +3266,14 @@ if db_version > 0:
         print("Updating database to version 48")
         if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
             show_message("Welcome to v6.1.0. Due to changes, please re-authorise Spotify", "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify")
+
+    if db_version <= 48:
+        print("Fix bad upgrade, now 49")
+        for key, value in master_library.items():
+            if not hasattr(master_library[key], 'url_key'):
+                setattr(master_library[key], 'url_key', "")
+            if not hasattr(master_library[key], 'art_url_key'):
+                setattr(master_library[key], 'art_url_key', "")
 
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
@@ -5032,6 +5040,7 @@ class PlayerCtl:
         #     gap_extra = prefs.cross_fade_time / 1000
         #
         # if prefs.backend == 2:  # (gstreamer)
+
         gap_extra = 2
 
         if spot_ctl.playing:
@@ -6773,7 +6782,9 @@ tauon = Tauon()
 # elif prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
 #     if system != "windows":
 #         print("BASS not found")
-prefs.backend = 2
+
+if prefs.backend == 1:
+    prefs.backend = 2
 
 
 class PlexService:
@@ -23604,6 +23615,11 @@ def reload_backend():
         if wait > 20:
             break
 
+    try:
+        tm.player_lock.release()
+    except:
+        pass
+
     pctl.playerCommand = "unload"
     pctl.playerCommandReady = True
 
@@ -23670,6 +23686,15 @@ def reload_backend():
 #     if prefs.backend != 1:
 #         prefs.backend = 1
 #         reload_backend()
+
+def set_player_phazor(mode=0):
+
+    if mode == 1:
+        return True if prefs.backend == 4 else False
+
+    if prefs.backend != 4:
+        prefs.backend = 4
+        reload_backend()
 
 def set_player_gstreamer(mode=0):
 
@@ -24055,8 +24080,30 @@ class Over:
         #     self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                                        ")
 
         #if system == "linux":
-        ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-        #    self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+        pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "aud.so"))
+        if pha_detected:
+            x += round(20 * gui.scale)
+            ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
+            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+
+            #y += round(19 * gui.scale)
+            x += round(115 * gui.scale)
+            ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
+            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
+
+        else:
+            prefs.backend = 2
+            ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
+            #self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+
+        if prefs.backend == 4:
+
+            y = y0 + 45 * gui.scale
+            x = x0 + 29 * gui.scale
+            y += round(80 * gui.scale)
+            x += round(10 * gui.scale)
+            ddt.text((x, y), "The Phazor backend is currently in early alpha.", colour, 312)
+
 
         # Gstreamer
         if prefs.backend == 2:
@@ -36225,6 +36272,9 @@ class ThreadManager:
 
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
+            if prefs.backend == 4:
+                from t_modules.t_phazor import player4
+                self.playback = threading.Thread(target=player4, args=[tauon])
             if prefs.backend == 1:
                 pass
                 # from t_modules.t_bass import player
@@ -38021,11 +38071,12 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            d = pctl.advance(dry=True)
-            print(d)
-            if d:
-                print(d.title)
             pass
+            # d = pctl.advance(dry=True)
+            # print(d)
+            # if d:
+            #     print(d.title)
+            # pass
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -41397,7 +41448,6 @@ while pctl.running:
             # gui.level_update = False
 
 
-
         if gui.vis == 2 and gui.spec is not None:
 
             # Standard spectrum visualiser
@@ -41495,25 +41545,23 @@ while pctl.running:
 
         if gui.vis == 1:
 
-            if pctl.playing_state == 1:
-                #gui.level_update = True
-                while tauon.level_train and tauon.level_train[0][0] < time.time():
+            if prefs.backend == 2 or True:
+                if pctl.playing_state == 1:
+                    #gui.level_update = True
+                    while tauon.level_train and tauon.level_train[0][0] < time.time():
 
-                    l = tauon.level_train[0][1]
-                    r = tauon.level_train[0][2]
+                        l = tauon.level_train[0][1]
+                        r = tauon.level_train[0][2]
 
-                    if r > gui.level_peak[0]:
-                        gui.level_peak[0] = r
-                    if l > gui.level_peak[1]:
-                        gui.level_peak[1] = l
+                        if r > gui.level_peak[0]:
+                            gui.level_peak[0] = r
+                        if l > gui.level_peak[1]:
+                            gui.level_peak[1] = l
 
-                    del tauon.level_train[0]
+                        del tauon.level_train[0]
 
-            else:
-                tauon.level_train.clear()
-
-
-
+                else:
+                    tauon.level_train.clear()
 
             SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 
@@ -41531,35 +41579,25 @@ while pctl.running:
             x = round(gui.level_ww - 9 * gui.scale)
             y = 10 * gui.scale
 
-            if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
-                #gui.level_update = True
-                if pctl.playing_time < 1:
-                    gui.delay_frame(0.032)
+            if prefs.backend == 2 or True:
+                if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
+                    #gui.level_update = True
+                    if pctl.playing_time < 1:
+                        gui.delay_frame(0.032)
 
-                if pctl.playing_state == 1 or pctl.playing_state == 3:
-                    t = gui.level_decay_timer.hit()
-                    decay = 14 * t
-                    gui.level_peak[1] -= decay
-                    gui.level_peak[0] -= decay
-                elif pctl.playing_state == 0 or pctl.playing_state == 2:
-                    gui.level_update = True
-                    time.sleep(0.016)
-                    t = gui.level_decay_timer.hit()
-                    decay = 16 * t
-                    gui.level_peak[1] -= decay
-                    gui.level_peak[0] -= decay
+                    if pctl.playing_state == 1 or pctl.playing_state == 3:
+                        t = gui.level_decay_timer.hit()
+                        decay = 14 * t
+                        gui.level_peak[1] -= decay
+                        gui.level_peak[0] -= decay
+                    elif pctl.playing_state == 0 or pctl.playing_state == 2:
+                        gui.level_update = True
+                        time.sleep(0.016)
+                        t = gui.level_decay_timer.hit()
+                        decay = 16 * t
+                        gui.level_peak[1] -= decay
+                        gui.level_peak[0] -= decay
 
-                # if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and (
-                #         (pctl.playing_state == 0 or pctl.playing_state == 2) or (pctl.playing_state == 1)) :
-                #     gui.level_update = True
-                #     time.sleep(0.016)
-                # print(vis_decay_timer.get())
-                # vis_decay_timer.set()
-                #for i in tauon.level_train:
-                # gui.level_peak[1] -= 0.30
-                # gui.level_peak[0] -= 0.30
-
-                    pass
 
             for t in range(12):
 
