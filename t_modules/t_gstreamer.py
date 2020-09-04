@@ -261,7 +261,7 @@ def player3(tauon):  # GStreamer
                         print("Buffered")
 
             if gui.vis == 1 and name == 'level':
-
+                # print(struct.to_string())
                 data = struct.get_value("peak")
                 ts = struct.get_value("timestamp")
                 # print(data)
