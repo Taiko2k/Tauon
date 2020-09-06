@@ -1372,6 +1372,8 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_rec = False
         self.radio_record_codec = "OPUS"
 
+        self.pa_fast_seek = False
+
 prefs = Prefs()
 
 
@@ -6760,12 +6762,6 @@ class Tauon:
         self.level_train = []
         self.radio_server = None
 
-    # def log(self, line, title=False):
-    #
-    #     log_file = open(user_directory + "/tauon.log", 'a')
-    #     log_file.writelines(line + "\n")
-    #     log_file.close()
-
     def exit(self):
         pctl.running = False
 
@@ -6774,14 +6770,6 @@ class Tauon:
 
 
 tauon = Tauon()
-
-
-# Check if BASS is present and fall back to Gstreamer if not
-# if msys:
-#     prefs.backend = 1
-# elif prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
-#     if system != "windows":
-#         print("BASS not found")
 
 if prefs.backend == 1:
     prefs.backend = 2
@@ -7067,103 +7055,6 @@ class SubsonicService:
         pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
         #standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
-
-    # def get_music(self):
-    #
-    #     if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
-    #         show_message(_("Missing username, password and/or server URL"), mode='warning')
-    #         self.scanning = False
-    #         return
-    #
-    #     try:
-    #         d = self.r("getArtists")
-    #         print(d)
-    #     except:
-    #         show_message("Subsonic error", "Server not found?", mode="warning")
-    #         self.scanning = False
-    #         return
-    #
-    #     artists = []
-    #
-    #     if d["subsonic-response"]["status"] != "ok":
-    #         show_message("Subsonic error", d["subsonic-response"]["error"]["message"], mode="warning")
-    #         self.scanning = False
-    #         return
-    #
-    #     for a in d["subsonic-response"]["artists"]["index"]:
-    #         artists += a["artist"]
-    #
-    #     playlist = []
-    #     print("AAAA")
-    #     for artist in artists:
-    #         d = self.r("getArtist", p={"id": artist["id"]})
-    #         print(d)
-    #         albums = d["subsonic-response"]["artist"]["album"]
-    #
-    #         for album in albums:
-    #             b = self.r("getAlbum", p={"id": album["id"]})
-    #             #print(b)
-    #             songs = b["subsonic-response"]["album"]["song"]
-    #
-    #             for song in songs:
-    #                 print(song)
-    #                 id = pctl.master_count
-    #                 replace_existing = False
-    #                 # for track_id, track in pctl.master_library.items():
-    #                 #     if track.is_network and track.file_ext == "SUB" and track.url_key == song["id"]:
-    #                 #         id = track.index
-    #                 #         replace_existing = True
-    #                 #         break
-    #
-    #                 nt = TrackClass()
-    #
-    #                 if "title" in song:
-    #                     nt.title = song["title"]
-    #                 if "artist" in song:
-    #                     nt.artist = song["artist"]
-    #                 if "album" in song:
-    #                     nt.album = song["album"]
-    #                 if "track" in song:
-    #                     nt.track_number = song["track"]
-    #                 if "year" in song:
-    #                     nt.date = str(song["year"])
-    #                 if "duration" in song:
-    #                     nt.length = song["duration"]
-    #
-    #                 # if "bitRate" in song:
-    #                 #     nt.bitrate = song["bitRate"]
-    #
-    #                 nt.file_ext = "SUB"
-    #
-    #                 nt.index = id
-    #
-    #                 nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
-    #                 nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
-    #
-    #                 if "coverArt" in song:
-    #                     nt.art_url_key = song["id"]
-    #
-    #                 nt.url_key = song["id"]
-    #                 nt.is_network = True
-    #
-    #                 pctl.master_library[id] = nt
-    #
-    #                 if not replace_existing:
-    #                     pctl.master_count += 1
-    #
-    #                 playlist.append(nt.index)
-    #
-    #     self.scanning = False
-    #
-    #     pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
-    #     standard_sort(len(pctl.multi_playlist) - 1)
-    #     switch_playlist(len(pctl.multi_playlist) - 1)
-    #
-    #     b = self.r("getPlaylists")
-    #     playlists = b["subsonic-response"]["playlists"]["playlist"]
-    #
-    #     for playlist in playlists:
-    #         print((playlist["name"], playlist["id"], playlist["songCount"]))
 
 subsonic = SubsonicService()
 
@@ -23178,16 +23069,6 @@ def toggle_meta_shows_selected(mode=0):
     prefs.meta_shows_selected_always ^= True
 
 
-# def toggle_show_playlist_list(mode=0):
-#     if mode == 1:
-#         return prefs.show_playlist_list
-#     prefs.show_playlist_list ^= True
-
-# def toggle_hide_queue(mode=0):
-#     if mode == 1:
-#         return prefs.hide_queue ^ True
-#     prefs.hide_queue ^= True
-
 def scale1(mode=0):
 
     if mode == 1:
@@ -23279,40 +23160,12 @@ def toggle_scroll(mode=0):
         update_layout = True
 
 
-# def toggle_follow(mode=0):
-#     global pl_follow
-#
-#     if mode == 1:
-#         return pl_follow
-#     else:
-#         pl_follow ^= True
-#     if pl_follow is True:
-#         if prefs.end_setting == 'advance' or prefs.end_setting == 'cycle':
-#             prefs.end_setting = 'stop'
-
-
-# def toggle_playback_follow(mode=0):
-#     if mode == 1:
-#         return prefs.playback_follow_cursor
-#     prefs.playback_follow_cursor ^= True
-
-
 def toggle_hide_bar(mode=0):
     if mode == 1:
         return gui.set_bar ^ True
     gui.update_layout()
     gui.set_bar ^= True
     show_message(_("Tip: You can also toggle this from a right-click context menu"))
-
-
-# def toggle_auto_import_sort(mode=0):
-#     if mode == 1:
-#         return prefs.auto_sort
-#     prefs.auto_sort ^= True
-#     if prefs.auto_sort:
-#         show_message(
-#             "This will automatically apply 'Filepath' and 'Year per Artist' sorting functions to playlist when importing.")
-
 
 def toggle_append_total_time(mode=0):
     if mode == 1:
@@ -23344,12 +23197,6 @@ def toggle_auto_artist_dl(mode=0):
 def toggle_enable_web(mode=0):
     if mode == 1:
         return prefs.enable_web
-
-    # if not prefs.enable_web:
-    #     # if prefs.backend != 1:
-    #     #     show_message(_("Sorry, broadcasting feature not implemented with GStreamer backend!"),
-    #     #                  _("See here for details on using the broadcast feature:") + " https://github.com/Taiko2k/TauonMusicBox/wiki/Outbound-Broadcasting", mode="link")
-    #     return
 
     prefs.enable_web ^= True
 
@@ -23635,57 +23482,6 @@ def reload_backend():
     if pre_state == 1:
         pctl.revert()
 
-# def download_bass():
-#
-#     show_message(_("Downloading... Please wait"))
-#     input.mouse_click = False
-#     user_lib_dir = user_directory + "/lib"
-#
-#     try:
-#         if os.path.isdir(user_lib_dir):
-#             shutil.rmtree(user_lib_dir)
-#         os.makedirs(user_lib_dir)
-#     except:
-#         show_message("Folder access error", mode="error")
-#         gui.downloading_bass = False
-#         return
-#
-#     bass_zip = user_lib_dir + "/bass.zip"
-#
-#     try:
-#         urllib.request.urlretrieve(bass_archive_link,
-#                                    bass_zip)
-#     except Exception as e:
-#         show_message("Download of archive failed.", str(e), mode="error")
-#         gui.downloading_bass = False
-#         return
-#
-#     if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != bass_archive_checksum:
-#         show_message("Checksum failed", mode="error")
-#         gui.downloading_bass = False
-#         return
-#     with zipfile.ZipFile(bass_zip, 'r') as zip_ref:
-#         zip_ref.extractall(user_lib_dir)
-#
-#     show_message(_("BASS Download Complete."), mode="done")
-#     input.mouse_click = False
-#     gui.downloading_bass = False
-
-
-# def set_player_bass(mode=0):
-#
-#     if mode == 1:
-#         return True if prefs.backend == 1 else False
-#
-#     if key_shift_down:
-#         shoot_dl = threading.Thread(target=download_bass)
-#         shoot_dl.daemon = True
-#         shoot_dl.start()
-#         return
-#
-#     if prefs.backend != 1:
-#         prefs.backend = 1
-#         reload_backend()
 
 def set_player_phazor(mode=0):
 
@@ -23949,28 +23745,11 @@ class Over:
                 rect = [xx + border + square, yy + border + square, square, square]
                 ddt.rect(rect, c4, True)
 
-            # # bbl
-            # rect = [xx + border, yy + border + square + square, square, square]
-            # ddt.rect(rect, c.tab_highlight, True)
-            #
-            # # bbr
-            # rect = [xx + border + square, yy + border + square + square, square, square]
-            # ddt.rect(rect, c.title_text, True)
-
             yy += round(27 * gui.scale)
             if yy > y + 40 * gui.scale:
                 yy = y
                 xx += round(27 * gui.scale)
 
-            # xx += round(27 * gui.scale)
-            # if xx > x + 400 * gui.scale:
-            #     xx = x
-            #     yy += round(27 * gui.scale)
-
-        # #. Limited space. Max 14 chars.
-        # self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
-        # #. Limited space. Max 14 chars.
-        # self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
         name = gui.theme_name
         if hover_name:
             name = hover_name
@@ -24057,30 +23836,9 @@ class Over:
             return
 
         colour = colours.box_sub_text
-        #
-        # if not macos and not msys and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
-        #     pass
-        #     # if bass_archive_link:
-        #     #     ww = ddt.get_text_w(_("Install BASS Audio Library"), 211) + round(10 * gui.scale)
-        #     #     if not gui.downloading_bass:
-        #     #         #. Limited width. Max 27 chars. Alt: Download BASS
-        #     #         if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
-        #     #             shoot_dl = threading.Thread(target=download_bass)
-        #     #             shoot_dl.daemon = True
-        #     #             shoot_dl.start()
-        #     #             gui.downloading_bass = True
-        #     #     #. A button that shows detailed information about context. Max 5 chars.
-        #     #     if self.button(x + ww, y, _("?")):
-        #     #         show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
-        #     #                      _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
-        #     #                      _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
-        #
-        # else:
-        #     ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
-        #     self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                                        ")
 
         #if system == "linux":
-        pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "aud.so"))
+        pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "lib/libphazor.so"))
         if pha_detected:
             x += round(20 * gui.scale)
             ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
@@ -24099,10 +23857,18 @@ class Over:
         if prefs.backend == 4:
 
             y = y0 + 45 * gui.scale
-            x = x0 + 29 * gui.scale
-            y += round(80 * gui.scale)
+            x = x0 + 20 * gui.scale
+            y += round(10 * gui.scale)
             x += round(10 * gui.scale)
-            ddt.text((x, y), "The Phazor backend is currently in early alpha.", colour, 312)
+            ddt.text((x, y), "The Phazor backend is currently in alpha development stage.", colours.box_text_label, 12)
+            y += round(17 * gui.scale)
+            ddt.text((x, y), "Only FLAC, MP3 and OGG Vorbis are currently supported.", colours.box_text_label, 12)
+            y += round(17 * gui.scale)
+            ddt.text((x, y), "There may be other bugs or issues. Settings are not yet saved.", colours.box_text_label, 12)
+
+            y += round(50 * gui.scale)
+
+            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek, "Fast scrubbing")
 
 
         # Gstreamer
@@ -24211,106 +23977,6 @@ class Over:
             if reload:
                 reload_backend()
 
-        #
-        # if prefs.backend == 1:
-        #
-        #     if self.button(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
-        #         self.eq_view = True
-        #
-        #     ddt.text_background_colour = colours.box_background
-        #     y = y0 + 88 * gui.scale
-        #     x = x0 + 25 * gui.scale
-        #
-        #     x += 4 * gui.scale
-        #     ddt.text((x, y - 22 * gui.scale), _("ReplayGain"),  colours.box_text_label, 12)
-        #
-        #     y += 4 * gui.scale
-        #
-        #     # self.toggle_square(x, y, switch_rg_off, "Off")
-        #     # y += 23 * gui.scale
-        #
-        #     self.toggle_square(x, y, switch_rg_album, _("Album gain"))
-        #     y += 23 * gui.scale
-        #     self.toggle_square(x, y, switch_rg_track, _("Track gain"))
-        #
-        #
-        #     y += 46 * gui.scale
-        #
-        #     ddt.text((x, y - 20 * gui.scale), _("Transitions"),  colours.box_text_label, 12)
-        #
-        #     y += 5 * gui.scale
-        #
-        #     self.toggle_square(x, y, toggle_transition_crossfade, _("Use crossfade"))
-        #
-        #     y += 23 * gui.scale
-        #
-        #     self.toggle_square(x, y, toggle_transition_gapless, _("Use gapless playback"))
-        #
-        #     y += 29 * gui.scale
-        #
-        #     self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
-        #     y += 23 * gui.scale
-        #     self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
-        #
-        #     y = y0 + 37 * gui.scale
-        #     x = x0 + 270 * gui.scale
-        #
-        #     ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_sub_text, 212)
-        #     # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
-        #
-        #     self.device_scroll_bar_position -= pref_box.scroll
-        #     if self.device_scroll_bar_position < 0:
-        #         self.device_scroll_bar_position = 0
-        #     if self.device_scroll_bar_position > len(pctl.bass_devices) - 11 > 11:
-        #         self.device_scroll_bar_position = len(pctl.bass_devices) - 11
-        #
-        #
-        #     if len(pctl.bass_devices) > 13:
-        #         self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.bass_devices) - 11, click=self.click)
-        #
-        #
-        #     for i, item in enumerate(pctl.bass_devices):
-        #
-        #         if i < self.device_scroll_bar_position:
-        #             continue
-        #         if y > self.box_y + self.h - 55 * gui.scale:
-        #             break
-        #
-        #         rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
-        #         #ddt.rect_r(rect, [0, 255, 0, 50])
-        #
-        #         if self.click and coll(rect):
-        #             pctl.set_device = item[4]
-        #             prefs.last_device = item[0]
-        #             pctl.playerCommandReady = True
-        #             pctl.playerCommand = "setdev"
-        #
-        #         line = trunc_line(item[0], 10, 245 * gui.scale)
-        #
-        #         fields.add(rect)
-        #
-        #         if pctl.set_device == item[4]: #item[3] > 0:
-        #             ddt.text((x, y), line, colours.box_sub_text, 10)
-        #             ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
-        #         else:
-        #             if coll(rect):
-        #                 ddt.text((x, y), line, colours.box_sub_text, 10)
-        #             else:
-        #                 ddt.text((x, y), line, colours.box_text_label, 10)
-        #         y += 14 * gui.scale
-        #
-        #     y = y0 + 245 * gui.scale
-        #     x += 40 * gui.scale
-        #     if os.path.isfile(user_directory + '/lib/libbass.so'):
-        #         #. Limited width. Max 17 chars.
-        #         ww = ddt.get_text_w(_("Uninstall BASS"), 211) + 10 * gui.scale
-        #         if self.button(x0 + w0 - (ww + 15 * gui.scale), y, _("Uninstall BASS")):
-        #             shutil.rmtree(user_directory + "/lib")
-        #             show_message("BASS Deleted.", "Restart app to complete uninstall.",
-        #                          mode="info")
-
-            # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
-            #prefs.device_buffer = self.slide_control(x, y, _("Device buffer length"), 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
 
     def reload_device(self, _):
 
@@ -24427,7 +24093,6 @@ class Over:
             x += 260 * gui.scale
             # prefs.show_side_lyrics_art_panel = self.toggle_square(x, y, prefs.show_side_lyrics_art_panel, _("Show info under side panel lyrics"))
 
-
         else:
 
             y += 25 * gui.scale
@@ -24443,22 +24108,7 @@ class Over:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_top_tabs, _("Enable tabs in top panel"))
 
-            y += 10 * gui.scale
-            # y += 25 * gui.scale
-            # prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto-update generated playlists"))
-
-            #y += 30 * gui.scale
-            # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
-            # y += 23 * gui.scale
-            # self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
-            # y += 23 * gui.scale
-
-            # self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
-            #
-            # y += 30 * gui.scale
-
-
-            y += 25 * gui.scale
+            y += 35 * gui.scale
             self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"))
