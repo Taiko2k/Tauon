@@ -211,7 +211,7 @@ class StreamEnc:
 
         except:
             print("Encoder thread crashed!")
-            # raise
+            raise
             self.encode_running = False
             return
 
