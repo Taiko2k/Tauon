@@ -30,7 +30,6 @@
 #include "opus/opusfile.h"
 
 
-
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
                           // before writing
@@ -96,6 +95,7 @@ enum command_status {
 };
 
 enum decoder_types {
+  UNKNOWN,
   FLAC,
   MPG,
   VORBIS,
@@ -112,6 +112,8 @@ int decoder_allocated = 0;
 float ramp_step(int sample_rate, int milliseconds){
   return 1.0 / sample_rate / (milliseconds / 1000.0); 
 }
+
+FILE *fptr;
 
 // Pulseaudio ---------------------------------------------------------
 
@@ -327,31 +329,57 @@ int load_next(){
   char *ext;
   ext = strrchr(load_target_file, '.');
   
-  codec = -1;
+  codec = UNKNOWN;
   current_length_count = 0;
   
-  // We will eventually want to scan the actual file to determine
-  // the type and codec
-  // 
-  if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
+  char peak[35];
+  
+  if ((fptr = fopen(load_target_file, "rb")) == NULL) {
+    
+      printf("pa: Error opening file\n");
+      return 1;
+  }
+  
+  fread(peak, sizeof (peak), 1, fptr); 
+  
+  if (memcmp(peak, "fLaC", 4) == 0) {
     codec = FLAC;
-    printf("pa: Set codec as FLAC\n");
-  }
-  if (strcmp(ext, ".mp3") == 0 || strcmp(ext, ".MP3") == 0) {
-    printf("pa: Set codec as MP3\n");
-    codec = MPG;
-  }
-  if (strcmp(ext, ".ogg") == 0 || strcmp(ext, ".OGG") == 0 ||
-      strcmp(ext, ".oga") == 0 || strcmp(ext, ".OGA") == 0) {
-    printf("pa: Set codec as OGG Vorbis\n");
+  } else if (memcmp(peak, "OggS", 4) == 0) {
     codec = VORBIS;
+    if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
   }
-  if (strcmp(ext, ".opus") == 0 || strcmp(ext, ".OPUS") == 0) {
-    printf("pa: Set codec as OGG Opus\n");
-    codec = OPUS;
+  
+  if (codec == UNKNOWN) {
+                 
+    if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
+      codec = FLAC;
+      printf("pa: Set codec as FLAC\n");
+    }
+    if (strcmp(ext, ".mp3") == 0 || strcmp(ext, ".MP3") == 0) {
+      printf("pa: Set codec as MP3\n");
+      codec = MPG;
+    }
+    if (strcmp(ext, ".ogg") == 0 || strcmp(ext, ".OGG") == 0 ||
+        strcmp(ext, ".oga") == 0 || strcmp(ext, ".OGA") == 0) {
+      printf("pa: Set codec as OGG Vorbis\n");
+      codec = VORBIS;
+    }
+    if (strcmp(ext, ".opus") == 0 || strcmp(ext, ".OPUS") == 0) {
+      printf("pa: Set codec as OGG Opus\n");
+      codec = OPUS;
+    }
   }
-
-                  
+                 
+  // todo - search further into file for identification
+  
+  if (codec == UNKNOWN) {
+    codec = MPG;
+    printf("pa: Codec could not be identified, assuming MP3\n");
+  }
+  
+  fclose(fptr);
+  
+                 
   switch(codec){
 
     // Unlock the output thread mutex cause loading could take a while?..
