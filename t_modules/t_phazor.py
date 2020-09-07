@@ -193,6 +193,7 @@ def player4(tauon):
 
                     length = aud.get_length_ms() / 1000
                     position = aud.get_position_ms() / 1000
+                    remain = length - position
 
                     # print("length: " + str(length))
                     # print("position: " + str(position))
