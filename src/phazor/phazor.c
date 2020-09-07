@@ -417,10 +417,8 @@ int load_next(){
     break;  
     case VORBIS:
     pthread_mutex_unlock(&out_mutex);
-    printf("Try open\n");
     e = ov_fopen(load_target_file, &vf);
     decoder_allocated = 1;
-    printf("pa: Opened...\n");
     if (e != 0){
       printf("pa: Error reading ogg file (expecting vorbis)\n");
       pthread_mutex_lock(&out_mutex);
@@ -563,7 +561,6 @@ void pump_decode(){
   } else if (codec == OPUS){
     
     unsigned int done;
-    int stream;
     
     done = op_read_stereo(opus_dec, opus_buffer, 1024*2) * 2;
     unsigned int i = 0;
@@ -617,7 +614,6 @@ void pump_decode(){
 
 }
 
-
                                        
 // ------------------------------------------------------------------------------------
 // Audio output thread
@@ -644,19 +640,6 @@ void *out_thread(void *thread_id){
 
       peak_roll_l = 0;
       peak_roll_r = 0;
-
-      /* if (buff_filled == 0 && pulse_connected == 1){ */
-      /*   while (b < 512){ */
-      /*     out_buf[b    ] = (buff16l[buff_base]) & 0xFF; */
-      /*     out_buf[b + 1] = (buff16l[buff_base] >> 8) & 0xFF; */
-      /*     out_buf[b + 2] = (buff16r[buff_base]) & 0xFF; */
-      /*     out_buf[b + 3] = (buff16r[buff_base] >> 8) & 0xFF; */
-      /*     b += 4; */
-          
-      /*   } */
-      /*   pa_simple_write (s, out_buf, b, &error); */
-      // }
-
       
       // Fill the out buffer...
       while (buff_filled > 0) {
@@ -777,11 +760,11 @@ void *main_loop(void *thread_id){
   // Main loop ---------------------------------------------------------------
   while (1){
     
-  test1++;
-  if (test1 > 650){
-    printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, buff_filled);
-    test1 = 0;
-  }
+  /* test1++; */
+  /* if (test1 > 650){ */
+  /*   printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, buff_filled); */
+  /*   test1 = 0; */
+  /* } */
     
     if (command != NONE){
       
@@ -882,8 +865,7 @@ void *main_loop(void *thread_id){
         buff_base = (buff_base + buff_filled) & BUFF_SIZE;
         buff_filled = 0;
         if (command == SEEK && config_fast_seek == 1) {
-          pa_simple_flush(s, &error); // uncomment for faster seeking
-          printf("pa: Fast seek\n"); 
+          pa_simple_flush(s, &error);
         }
         mode = RAMP_UP;
         command = NONE;
@@ -930,7 +912,7 @@ void *main_loop(void *thread_id){
              
   }
 
-  printf("pa: Cleanup...\n");
+  printf("pa: Cleanup and exit\n");
   
   main_running = 0;
   out_thread_running = 0;
@@ -946,7 +928,6 @@ void *main_loop(void *thread_id){
   FLAC__stream_decoder_delete(dec);
   mpg123_delete(mh);
                                   
-  printf("pa: Main loop exit\n");
   return thread_id;
 }
 
@@ -955,7 +936,7 @@ void *main_loop(void *thread_id){
 // Begin exported functions
 
 int init(){
-  printf("ph: WELCOME TO PHAzOR!\n");
+  printf("ph: PHAzOR starting up\n");
   if (main_running == 0){
     main_running = 1;
     pthread_t main_thread_id;
