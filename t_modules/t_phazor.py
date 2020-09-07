@@ -177,6 +177,14 @@ def player4(tauon):
                     aud.stop()
                     continue
 
+                if not os.path.isfile(target_path):
+                    target_object.found = False
+                    if not target_object.is_network:
+                        pctl.playing_state = 0
+                        pctl.jump_time = 0
+                        pctl.advance(inplace=True, play=True)
+                    continue
+
                 length = 0
                 remain = 0
                 position = 0
@@ -290,11 +298,15 @@ def player4(tauon):
 
         else:
 
+            if state == 3:
+                pctl.radio_progress()
+
+            pctl.spot_test_progress()
+
             if state == 1:
 
                 add_time = player_timer.hit()
                 if add_time > 2:
-                    print("Add time error!")
                     add_time = 2
                 if add_time < 0:
                     add_time = 0
