@@ -18183,6 +18183,11 @@ def bass_test(_):
     # return True
     return prefs.backend == 1
 
+def gstreamer_test(_):
+    # return True
+    return prefs.backend == 2
+
+
 track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
 
 # Create top menu
@@ -18880,12 +18885,12 @@ def activate_radio_box():
 
 add_icon.xoff = 3
 add_icon.yoff = 0
-add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
+add_icon.colour = [237, 80, 221, 255]
 
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
-x_menu.add(_("Internet Radio…"), activate_radio_box)#, show_test=bass_test)
+x_menu.add(_("Internet Radio…"), activate_radio_box, show_test=gstreamer_test)
 
 tauon.switch_playlist = switch_playlist
 auto_dl = t_autodownload.AutoDownload(tauon)
@@ -23862,7 +23867,7 @@ class Over:
             x += round(10 * gui.scale)
             ddt.text((x, y), "The Phazor backend is currently in alpha development stage.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "Only FLAC, MP3 and OGG Vorbis are currently supported.", colours.box_text_label, 12)
+            ddt.text((x, y), "Only FLAC, MP3, Vorbis and Opus are currently supported.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "There may be other bugs or issues. Settings are not yet saved.", colours.box_text_label, 12)
 

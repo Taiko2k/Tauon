@@ -20,7 +20,10 @@
 
 import ctypes
 import time
+import requests
+import threading
 from t_modules.t_extra import *
+from hsaudiotag import auto
 
 # todo - normal file into cue track
 
@@ -41,6 +44,57 @@ def player4(tauon):
     aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
     aud.init()
     aud.set_volume(int(pctl.player_volume))
+
+
+    class URLDownloader:
+
+        def __init__(self):
+            self.active_url = ""
+            self.part = None
+            self.dl_ready = False
+            self.save_temp = ""
+            self.alt = "b"
+
+        def download_part(self, url, target, params):
+
+            try:
+                self.part = requests.get(url, stream=True, params=params)
+            except:
+                gui.show_message("Could not connect to server", mode="error")
+                self.dl_ready = "Failure"
+                return
+
+            bitrate = 0
+            a = 0
+            z = 0
+
+            with open(target, 'wb') as f:
+                for chunk in self.part.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        a += 1
+                        if a == 300:  # kilobyes~
+                            self.dl_ready = True
+                        if url != self.url:
+                            self.part.close()
+                            break
+
+                        f.write(chunk)
+
+                        z += 1
+                        if z == 60:
+                            z = 0
+                            if bitrate == 0:
+                                audio = auto.File(target)
+                                bitrate = audio.bitrate
+                            if bitrate > 0:
+                                gui.update += 1
+                                pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+
+            pctl.download_time = -1
+
+            self.dl_ready = True
+
+    dl = URLDownloader()
 
     while True:
 
@@ -64,7 +118,61 @@ def player4(tauon):
 
             if command == "open":
 
-                if pctl.target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
+                target_object = pctl.target_object
+                target_path = target_object.fullpath
+
+                if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not target_object.file_ext == "SPTY":
+                    tauon.spot_ctl.control("stop")
+
+                if target_object.is_network:
+
+                    if target_object.file_ext == "SPTY":
+                        tauon.level_train.clear()
+                        if state > 0:
+                            aud.stop()
+                        state = 0
+                        try:
+                            tauon.spot_ctl.play_target(target_object.url_key)
+                        except:
+                            print("Failed to start Spotify track")
+                            pctl.playerCommand = "stop"
+                            pctl.playerCommandReady = True
+                        continue
+
+                    url = ""
+                    params = None
+
+                    try:
+                        url, params = pctl.get_url(target_object)
+                    except:
+                        gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
+                        pctl.stop()
+                        return
+
+                    if url is None:
+                        print(gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info'))
+                        pctl.stop()
+                        return
+
+                    dl.save_temp = prefs.cache_directory + "/" + dl.alt + "-temp.mp3"
+
+                    if dl.alt == 'a':
+                        dl.alt = 'b'
+                    else:
+                        dl.alt = 'a'
+
+                    dl.url = url
+                    dl.dl_ready = False
+
+                    shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params]))
+                    shoot_dl.daemon = True
+                    shoot_dl.start()
+
+                    while not dl.dl_ready:
+                        time.sleep(0.02)
+                    target_path = dl.save_temp
+
+                if not target_object.is_network and target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
                     state = 0
                     aud.stop()
                     continue
@@ -77,10 +185,14 @@ def player4(tauon):
 
                     length = aud.get_length_ms() / 1000
                     position = aud.get_position_ms() / 1000
-                    remain = length - position
+
                     # print("length: " + str(length))
                     # print("position: " + str(position))
                     # print("We are %s from end" % str(remain))
+
+                if target_object.is_network and position:
+                    length = target_object.length
+                    remain = length - position
 
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue:
@@ -93,11 +205,12 @@ def player4(tauon):
                     if remain > 0:
                         time.sleep(remain)
 
-                    loaded_track = pctl.target_object
+                    loaded_track = target_object
 
                 else:
-                    aud.start(pctl.target_object.fullpath.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
-                    loaded_track = pctl.target_object
+                    print("START FILE")
+                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
+                    loaded_track = target_object
                     pctl.playing_time = 0
                     state = 1
 
@@ -105,11 +218,18 @@ def player4(tauon):
                 pctl.jump_time = 0
 
             if command == "seek":
-                aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)  # ms, fast_seek
-                pctl.playing_time = pctl.new_time
+                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                    tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
+                    pctl.playing_time = pctl.new_time
+                elif state > 0:
+                    aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)  # ms, fast_seek
+                    pctl.playing_time = pctl.new_time
                 pctl.decode_time = pctl.playing_time
             if command == "volume":
-                aud.ramp_volume(int(pctl.player_volume), 750)
+                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                    tauon.spot_ctl.control("volume", int(pctl.player_volume))
+                else:
+                    aud.ramp_volume(int(pctl.player_volume), 750)
             if command == "runstop":
                 length = aud.get_length_ms() / 1000
                 position = aud.get_position_ms() / 1000

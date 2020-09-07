@@ -478,7 +478,6 @@ def player3(tauon):  # GStreamer
                                 pctl.playerCommandReady = True
 
                             GLib.timeout_add(19, self.main_callback)
-
                             return
 
                         try:
