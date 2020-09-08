@@ -116,6 +116,22 @@ def player4(tauon):
             command = pctl.playerCommand
             pctl.playerCommandReady = False
 
+            if command == "url":
+                w = 0
+                while len(tauon.stream_proxy.chunks) < 500:
+                    time.sleep(0.1)
+                    w += 1
+                    if w > 100:
+                        print("Taking too long!")
+                        tauon.stream_proxy.stop()
+                        pctl.playerCommand = 'stop'
+                        pctl.playerCommandReady = True
+                        break
+                else:
+                    aud.start(pctl.url.encode(), 0)
+                    state = 3
+                    player_timer.hit()
+
             if command == "open":
 
                 target_object = pctl.target_object
@@ -172,10 +188,10 @@ def player4(tauon):
                         time.sleep(0.02)
                     target_path = dl.save_temp
 
-                if not target_object.is_network and target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
-                    state = 0
-                    aud.stop()
-                    continue
+                # if not target_object.is_network and target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
+                #     state = 0
+                #     aud.stop()
+                #     continue
 
                 if not os.path.isfile(target_path):
                     target_object.found = False

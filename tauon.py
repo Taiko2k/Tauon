@@ -18890,7 +18890,7 @@ add_icon.colour = [237, 80, 221, 255]
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
-x_menu.add(_("Internet Radio…"), activate_radio_box, show_test=gstreamer_test)
+x_menu.add(_("Internet Radio…"), activate_radio_box)
 
 tauon.switch_playlist = switch_playlist
 auto_dl = t_autodownload.AutoDownload(tauon)

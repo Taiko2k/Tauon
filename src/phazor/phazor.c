@@ -54,6 +54,7 @@ unsigned int reset_set_value = 0;
 unsigned int reset_set_byte = 0;
 
 char load_target_file[4096]; // 4069 bytes for max linux filepath
+
 unsigned int load_target_seek = 0;
 unsigned int next_ready = 0;
 unsigned int seek_request_ms = 0;
@@ -100,6 +101,7 @@ enum decoder_types {
   MPG,
   VORBIS,
   OPUS,
+  FFMPEG,
 };
 
 int mode = STOPPED;
@@ -134,6 +136,27 @@ int16_t opus_buffer[2048 * 2];
 
 mpg123_handle *mh;
 char parse_buffer[2048 * 2];
+
+// FFMPEG related -----------------------------------------------------
+
+FILE *ffm;
+char exe_string[4096];
+char ffm_buffer[2048];
+
+void start_ffmpeg(char uri[], int start_ms){
+  
+  sprintf(exe_string, "ffmpeg -i \"%s\" -ss %dms -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ", uri, start_ms);
+  printf(exe_string, uri, start_ms);
+  ffm = popen(exe_string, "r");
+  if (ffm == NULL){
+    printf("pa: Error starting FFMPEG\n");
+  } 
+}
+
+void stop_ffmpeg(){
+  printf("pa: Stop FFMPEG\n");
+  pclose(ffm);
+}
 
 // FLAC related ---------------------------------------------------------------
 
@@ -291,6 +314,8 @@ void stop_decoder(){
   case MPG:
     mpg123_close(mh);
     break;
+  case FFMPEG:
+    pclose(ffm);
   }
   decoder_allocated = 0;
 }                                        
@@ -310,7 +335,11 @@ void decode_seek(int abs_ms, int sample_rate){
   case MPG:
     mpg123_seek(mh, (int) sample_rate * (abs_ms / 1000.0), SEEK_SET);
     break;
-  }
+  case FFMPEG:
+    stop_ffmpeg();
+    start_ffmpeg (load_target_file, abs_ms);
+    break;
+    }
   
 }
                             
@@ -333,6 +362,20 @@ int load_next(){
   current_length_count = 0;
   
   char peak[35];
+  
+  if (strcmp(ext, ".ape") == 0 || strcmp(ext, ".APE") == 0 ||
+      strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
+      strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
+      strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
+      strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
+      load_target_file[0] == 'h'){
+        codec = FFMPEG;
+        start_ffmpeg (load_target_file, load_target_seek);
+        sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+        want_sample_rate = 44100;
+        return 0;
+  }
+  
   
   if ((fptr = fopen(load_target_file, "rb")) == NULL) {
     
@@ -498,7 +541,6 @@ int load_next(){
       }
       
       break;
-      
   }
   return 1;
 }
@@ -610,6 +652,43 @@ void pump_decode(){
     if (done == 0){
       decoder_eos();
     }
+  } else if (codec == FFMPEG) {
+    
+    int i = 0;
+    int b = 0;
+    int done = 0;
+    
+    pthread_mutex_unlock(&out_mutex);
+
+    while (b < 2048){
+      if (feof(ffm)){
+        done = 1;
+        break;
+      }
+      ffm_buffer[b] = fgetc(ffm);
+      b++;
+    }
+    
+    pthread_mutex_lock(&out_mutex);
+                                
+    if (b % 2 == 1){
+      decoder_eos();
+      return;
+    }
+
+    while (i < b){
+        
+      buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((ffm_buffer[i + 1] << 8) | (ffm_buffer[i] & 0xFF));
+      buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((ffm_buffer[i + 3] << 8) | (ffm_buffer[i + 2] & 0xFF));
+      buff_filled++;
+      i += 4;
+    }
+    
+    if (done == 1){
+      decoder_eos();
+    }
+                               
+    
   }
 
 }
