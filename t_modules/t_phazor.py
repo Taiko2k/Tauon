@@ -246,7 +246,7 @@ def player4(tauon):
                     tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                     pctl.playing_time = pctl.new_time
                 elif state > 0:
-                    aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), True)  # ms, flush_seek
+                    aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), False)  # ms, flush_seek
                     pctl.playing_time = pctl.new_time
                 pctl.decode_time = pctl.playing_time
             if command == "volume":
