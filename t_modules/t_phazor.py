@@ -107,7 +107,7 @@ def player4(tauon):
             amp = aud.get_level_peak_r()
             r = (amp / 32767) * 12
 
-            tauon.level_train.append((time.time() + 0.12, r, l))
+            tauon.level_train.append((0, r, l))
             gui.level_update = True
 
         # Command processing
@@ -233,7 +233,6 @@ def player4(tauon):
                     loaded_track = target_object
 
                 else:
-                    print("START FILE")
                     aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
                     loaded_track = target_object
                     pctl.playing_time = 0
@@ -247,7 +246,7 @@ def player4(tauon):
                     tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                     pctl.playing_time = pctl.new_time
                 elif state > 0:
-                    aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), False)  # ms, fast_seek
+                    aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), True)  # ms, flush_seek
                     pctl.playing_time = pctl.new_time
                 pctl.decode_time = pctl.playing_time
             if command == "volume":

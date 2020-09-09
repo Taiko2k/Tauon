@@ -122,6 +122,8 @@ FILE *fptr;
 pa_simple *s;
 pa_sample_spec ss;
 
+pa_buffer_attr pab;
+
 // Vorbis related --------------------------------------------------------
 
 OggVorbis_File vf;  
@@ -260,9 +262,9 @@ int pulse_connected = 0;
 int want_reconnect = 0;
 
 int disconnect_pulse(){
-  
   if (pulse_connected == 1) {
-    pa_simple_drain(s, NULL);
+    //pa_simple_drain(s, NULL);
+    pa_simple_flush(s, NULL);
     pa_simple_free(s);
     printf("pa: Disconnect from pulseaudio\n");
   }
@@ -274,8 +276,12 @@ void connect_pulse(){
   
   if (pulse_connected == 1) disconnect_pulse(); 
   
+  if (want_sample_rate > 0){
   current_sample_rate = want_sample_rate;
   want_sample_rate = 0;
+  }
+  
+  pab.maxlength = (current_sample_rate * 2 * 0.04); // 40ms buffer
   
   printf("pa: Connect to pulseaudio\n");
   ss.format = PA_SAMPLE_S16LE;
@@ -289,7 +295,7 @@ void connect_pulse(){
                     "Music",             // Description
                     &ss,                 // Format
                     NULL,                // Channel map
-                    NULL,                // Buffering attributes
+                    &pab,                // Buffering attributes
                     NULL                 // Error
                     );
   
@@ -552,7 +558,7 @@ void end(){
   command = NONE;
   buff_base = 0;
   buff_filled = 0;
-  pa_simple_flush (s, &error);
+  //pa_simple_flush (s, &error);
   disconnect_pulse();
   current_sample_rate = 0;
 }
@@ -703,6 +709,7 @@ int out_thread_running = 0; // bool
     
 void *out_thread(void *thread_id){    
 
+  
   out_thread_running = 1;
   int b = 0;
   
@@ -711,6 +718,7 @@ void *out_thread(void *thread_id){
     usleep(1000);
     
     pthread_mutex_lock(&out_mutex);
+
     
     // Process decoded audio data and send out
     if ((mode == PLAYING || mode == RAMP_UP || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0){
@@ -734,7 +742,7 @@ void *out_thread(void *thread_id){
           } 
           
           if (reset_set == 1 && reset_set_byte == buff_base){
-            printf("pa: Reset position counter");
+            printf("pa: Reset position counter\n");
             reset_set = 0;
             position_count = reset_set_value;
           }
@@ -792,8 +800,8 @@ void *out_thread(void *thread_id){
       // Send data to pulseaudio server
       if (b > 0){
         
-        peak_l = peak_roll_l;
-        peak_r = peak_roll_r;
+        if (peak_roll_l > peak_l) peak_l = peak_roll_l;
+        if (peak_roll_r > peak_r) peak_r = peak_roll_r;
         
         if (pulse_connected == 0){
           printf("pa: Error, not connected to any output!\n");
@@ -854,12 +862,14 @@ void *main_loop(void *thread_id){
       case PAUSE:
         if (mode == PLAYING){
           mode = PAUSED;
+          disconnect_pulse();
         }
         command = NONE;
         break;
       case RESUME:
         if (mode == PAUSED){
           mode = PLAYING;
+          connect_pulse();
         }
         command = NONE;  
         break;
@@ -870,7 +880,7 @@ void *main_loop(void *thread_id){
         else if (mode == PLAYING){
           mode = RAMP_DOWN;
         }
-        if (mode == RAMP_DOWN && gate == 0){
+        if ((mode == RAMP_DOWN && gate == 0) || mode == PAUSED){
           end();
         }
         break;
@@ -932,7 +942,9 @@ void *main_loop(void *thread_id){
         
         buff_base = 0;
         buff_filled = 0;
-        pa_simple_flush(s, &error);
+        if (pulse_connected == 1){
+          pa_simple_flush(s, &error);
+        }
         command = NONE;
       } else if (mode != RAMP_DOWN) {
         printf("pa: fixme - cannot seek at this time\n");
@@ -1123,10 +1135,14 @@ int get_length_ms(){
                                                     
 
 int get_level_peak_l(){
-  return peak_l;
+  int peak = peak_l;
+  peak_l = 0;
+  return peak;
 }  
 int get_level_peak_r(){
-  return peak_r;
+  int peak = peak_r; 
+  peak_r = 0;
+  return peak;
 }  
 
 int shutdown(){
