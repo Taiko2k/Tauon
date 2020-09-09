@@ -1372,8 +1372,6 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_rec = False
         self.radio_record_codec = "OPUS"
 
-        self.pa_fast_seek = False
-
 prefs = Prefs()
 
 
@@ -23872,8 +23870,6 @@ class Over:
             ddt.text((x, y), "There may be other bugs or issues. Settings are not yet saved.", colours.box_text_label, 12)
 
             y += round(50 * gui.scale)
-
-            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek, "Fast scrubbing")
 
 
         # Gstreamer
