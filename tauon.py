@@ -36598,7 +36598,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            48,  # Version, used for upgrading
+            49,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
