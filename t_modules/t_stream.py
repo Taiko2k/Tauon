@@ -269,7 +269,7 @@ class StreamEnc:
                         # We're sure its data Its data, send it on
                         self.chunks[self.c] = chunk
                         # Delete old data
-                        d = self.c - (256 * 36)
+                        d = self.c - (30000)
                         if d in self.chunks:
                             del self.chunks[d]
 

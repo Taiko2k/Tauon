@@ -118,7 +118,7 @@ def player4(tauon):
 
             if command == "url":
                 w = 0
-                while len(tauon.stream_proxy.chunks) < 500:
+                while len(tauon.stream_proxy.chunks) < 200:
                     time.sleep(0.1)
                     w += 1
                     if w > 100:

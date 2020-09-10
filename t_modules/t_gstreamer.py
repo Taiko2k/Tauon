@@ -737,7 +737,7 @@ def player3(tauon):  # GStreamer
                     elif self.play_state > 0:
                         if not self.using_cache and pctl.target_object.is_network and \
                                 not pctl.target_object.file_ext == "KOEL" and \
-                                not (pctl.target_object.file_ext == "SUB" and pctl.target_object.fullpath.endswith("mp3")):
+                                not pctl.target_object.file_ext == "SUB":
 
                             if not os.path.exists(tauon.temp_audio):
                                 os.makedirs(tauon.temp_audio)

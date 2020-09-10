@@ -108,6 +108,7 @@ int mode = STOPPED;
 int command = NONE;
 
 int decoder_allocated = 0;
+int buffering = 0;
 
 // Misc ----------------------------------------------------------
 
@@ -147,8 +148,8 @@ char ffm_buffer[2048];
 
 void start_ffmpeg(char uri[], int start_ms){
   
-  sprintf(exe_string, "ffmpeg -i \"%s\" -ss %dms -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ", uri, start_ms);
-  printf(exe_string, uri, start_ms);
+  sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -ss %dms -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ", uri, start_ms);
+  //printf(exe_string, uri, start_ms);
   ffm = popen(exe_string, "r");
   if (ffm == NULL){
     printf("pa: Error starting FFMPEG\n");
@@ -264,9 +265,9 @@ int want_reconnect = 0;
 int disconnect_pulse(){
   if (pulse_connected == 1) {
     //pa_simple_drain(s, NULL);
-    pa_simple_flush(s, NULL);
+    //pa_simple_flush(s, NULL);
     pa_simple_free(s);
-    printf("pa: Disconnect from pulseaudio\n");
+    printf("pa: Disconnect from PulseAudio\n");
   }
   pulse_connected = 0;
   return 0;
@@ -283,7 +284,7 @@ void connect_pulse(){
   
   pab.maxlength = (current_sample_rate * 2 * 0.04); // 40ms buffer
   
-  printf("pa: Connect to pulseaudio\n");
+  printf("pa: Connect to PulseAudio\n");
   ss.format = PA_SAMPLE_S16LE;
   ss.channels = 2;
   ss.rate = current_sample_rate;
@@ -366,6 +367,9 @@ int load_next(){
   
   codec = UNKNOWN;
   current_length_count = 0;
+  buffering = 0;
+  
+  if (load_target_file[0] == 'h') buffering = 1;
   
   char peak[35];
   
@@ -377,8 +381,10 @@ int load_next(){
       load_target_file[0] == 'h'){
         codec = FFMPEG;
         start_ffmpeg (load_target_file, load_target_seek);
-        sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
-        want_sample_rate = 44100;
+        if (current_sample_rate != 44100){
+          sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+          want_sample_rate = 44100;
+        }
         return 0;
   }
   
@@ -477,7 +483,7 @@ int load_next(){
       vi = *ov_info(&vf, -1);
       
       pthread_mutex_lock(&out_mutex);
-      printf("pa: Vorbis samplerate is %lu", vi.rate);
+      printf("pa: Vorbis samplerate is %lu\n", vi.rate);
       if (current_sample_rate != vi.rate){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
         want_sample_rate = vi.rate;
@@ -665,7 +671,7 @@ void pump_decode(){
     int done = 0;
     
     pthread_mutex_unlock(&out_mutex);
-
+    
     while (b < 2048){
       if (feof(ffm)){
         done = 1;
@@ -678,6 +684,7 @@ void pump_decode(){
     pthread_mutex_lock(&out_mutex);
                                 
     if (b % 2 == 1){
+      printf("pa: Uneven data\n");
       decoder_eos();
       return;
     }
@@ -691,6 +698,7 @@ void pump_decode(){
     }
     
     if (done == 1){
+      printf("pa: FFMPEG has finished\n");
       decoder_eos();
     }
                                
@@ -719,14 +727,29 @@ void *out_thread(void *thread_id){
     
     pthread_mutex_lock(&out_mutex);
 
+    if (buffering == 1 && buff_filled > 9000){
+      buffering = 0;
+      printf("pa: Buffering -> Playing\n");
+      sleep(1);
+      connect_pulse();
+    }
+    
+    
+    if (buff_filled < 1000 && load_target_file[0] == 'h'){
+        disconnect_pulse();
+        printf("pa: Buffering...\n");
+        buffering = 1;
+      }
     
     // Process decoded audio data and send out
-    if ((mode == PLAYING || mode == RAMP_UP || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0){
+    if ((mode == PLAYING || mode == RAMP_UP || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0 && buffering == 0){
       
       b = 0; // byte number  
 
       peak_roll_l = 0;
       peak_roll_r = 0;
+      
+      //printf("pa: Buffer is at %d\n", buff_filled);
       
       // Fill the out buffer...
       while (buff_filled > 0) {
@@ -1000,7 +1023,6 @@ void *main_loop(void *thread_id){
     usleep(1000);
     pthread_mutex_lock(&out_mutex);
     } else usleep(10000);
-             
   }
 
   printf("pa: Cleanup and exit\n");
