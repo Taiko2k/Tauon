@@ -726,7 +726,7 @@ void *out_thread(void *thread_id){
     usleep(1000);
     
     pthread_mutex_lock(&out_mutex);
-
+    
     if (buffering == 1 && buff_filled > 9000){
       buffering = 0;
       printf("pa: Buffering -> Playing\n");
@@ -734,9 +734,9 @@ void *out_thread(void *thread_id){
       connect_pulse();
     }
     
-    
     if (buff_filled < 1000 && load_target_file[0] == 'h'){
         disconnect_pulse();
+        if (mode == RAMP_DOWN) gate = 0;
         printf("pa: Buffering...\n");
         buffering = 1;
       }
@@ -828,7 +828,9 @@ void *out_thread(void *thread_id){
         
         if (pulse_connected == 0){
           printf("pa: Error, not connected to any output!\n");
-        } else pa_simple_write (s, out_buf, b, &error);
+        } else {
+          pa_simple_write (s, out_buf, b, &error); 
+        }
       } // sent data
 
     } // close if data
