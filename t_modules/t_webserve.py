@@ -22,6 +22,7 @@ import html
 import time
 import random
 import json
+import io
 
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler

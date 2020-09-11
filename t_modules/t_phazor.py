@@ -117,6 +117,7 @@ def player4(tauon):
             pctl.playerCommandReady = False
 
             if command == "url":
+                pctl.download_time = 0
                 w = 0
                 while len(tauon.stream_proxy.chunks) < 200:
                     time.sleep(0.1)
@@ -134,6 +135,7 @@ def player4(tauon):
 
             if command == "open":
 
+                pctl.download_time = 0
                 target_object = pctl.target_object
                 target_path = target_object.fullpath
 
@@ -316,8 +318,9 @@ def player4(tauon):
 
             if state == 3:
                 pctl.radio_progress()
-
-            pctl.spot_test_progress()
+                add_time = player_timer.hit()
+                pctl.playing_time += add_time
+                pctl.decode_time = pctl.playing_time
 
             if state == 1:
 
