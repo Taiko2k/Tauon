@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <pthread.h> 
+#include <time.h>
 #include <pulse/simple.h>
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
@@ -33,6 +34,8 @@
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
                           // before writing
+
+time_t timer;
 
 int16_t buff16l[BUFF_SIZE];
 int16_t buff16r[BUFF_SIZE];
@@ -72,6 +75,7 @@ int peak_r = 0;
 int peak_roll_r = 0;
 
 int config_fast_seek = 0;
+int config_dev_buffer = 40;
 
 unsigned int test1 = 0;
 
@@ -267,11 +271,12 @@ int disconnect_pulse(){
     //pa_simple_drain(s, NULL);
     //pa_simple_flush(s, NULL);
     pa_simple_free(s);
-    printf("pa: Disconnect from PulseAudio\n");
+    //printf("pa: Disconnect from PulseAudio\n");
   }
   pulse_connected = 0;
   return 0;
-}                 
+} 
+
 
 void connect_pulse(){
   
@@ -282,9 +287,15 @@ void connect_pulse(){
   want_sample_rate = 0;
   }
   
-  pab.maxlength = (current_sample_rate * 2 * 0.04); // 40ms buffer
+
+  pab.maxlength = (current_sample_rate * 4 * (config_dev_buffer / 1000.0));
+  pab.fragsize = (uint32_t) -1;
+  pab.minreq = (uint32_t) -1;
+  pab.prebuf = (uint32_t) -1;
+  pab.tlength =  (uint32_t) -1;
+
   
-  printf("pa: Connect to PulseAudio\n");
+  //printf("pa: Connect to PulseAudio\n");
   ss.format = PA_SAMPLE_S16LE;
   ss.channels = 2;
   ss.rate = current_sample_rate;
@@ -301,6 +312,7 @@ void connect_pulse(){
                     );
   
   pulse_connected = 1;
+
       
 }
 
@@ -353,7 +365,7 @@ void decode_seek(int abs_ms, int sample_rate){
 int load_next(){
   // Function to load a file / prepare decoder
   
-  printf("pa: Loading file: %s\n", load_target_file);
+  //printf("pa: Loading file: %s\n", load_target_file);
   
   stop_decoder();
  
@@ -408,19 +420,19 @@ int load_next(){
                  
     if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
       codec = FLAC;
-      printf("pa: Set codec as FLAC\n");
+      //printf("pa: Set codec as FLAC\n");
     }
     if (strcmp(ext, ".mp3") == 0 || strcmp(ext, ".MP3") == 0) {
-      printf("pa: Set codec as MP3\n");
+      //printf("pa: Set codec as MP3\n");
       codec = MPG;
     }
     if (strcmp(ext, ".ogg") == 0 || strcmp(ext, ".OGG") == 0 ||
         strcmp(ext, ".oga") == 0 || strcmp(ext, ".OGA") == 0) {
-      printf("pa: Set codec as OGG Vorbis\n");
+      //printf("pa: Set codec as OGG Vorbis\n");
       codec = VORBIS;
     }
     if (strcmp(ext, ".opus") == 0 || strcmp(ext, ".OPUS") == 0) {
-      printf("pa: Set codec as OGG Opus\n");
+      //printf("pa: Set codec as OGG Opus\n");
       codec = OPUS;
     }
   }
@@ -483,7 +495,7 @@ int load_next(){
       vi = *ov_info(&vf, -1);
       
       pthread_mutex_lock(&out_mutex);
-      printf("pa: Vorbis samplerate is %lu\n", vi.rate);
+      //printf("pa: Vorbis samplerate is %lu\n", vi.rate);
       if (current_sample_rate != vi.rate){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
         want_sample_rate = vi.rate;
@@ -491,9 +503,10 @@ int load_next(){
       current_length_count = ov_pcm_total(&vf, -1);
       
       if (load_target_seek > 0) {
-        printf("pa: Start at position %d\n", load_target_seek);
+        //printf("pa: Start at position %d\n", load_target_seek);
         ov_pcm_seek (&vf, (ogg_int64_t) vi.rate * (load_target_seek / 1000.0));
-        reset_set_value = op_raw_tell(opus_dec);
+        reset_set_value = vi.rate * (load_target_seek / 1000.0); // op_pcm_tell(opus_dec); that segfaults?
+        reset_set_value = 0;
         reset_set = 1;
         reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
         load_target_seek = 0;
@@ -525,7 +538,7 @@ int load_next(){
       decoder_allocated = 1;
       mpg123_getformat(mh, &rate, &channels, &encoding);
       mpg123_scan(mh);
-      printf("pa: %lu. / %d. / %d\n", rate, channels, encoding);
+      //printf("pa: %lu. / %d. / %d\n", rate, channels, encoding);
       pthread_mutex_lock(&out_mutex);
       if (current_sample_rate != rate){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -536,7 +549,7 @@ int load_next(){
       if (encoding == MPG123_ENC_SIGNED_16){
         
         if (load_target_seek > 0) {
-          printf("pa: Start at position %d\n", load_target_seek);
+          //printf("pa: Start at position %d\n", load_target_seek);
           mpg123_seek(mh, (int) rate * (load_target_seek / 1000.0), SEEK_SET); 
           reset_set_value = mpg123_tell(mh);
           reset_set = 1;
@@ -572,7 +585,7 @@ void end(){
 void decoder_eos(){
   // Call once current decode steam has run out
   printf("pa: End of stream\n");
-  if (next_ready){
+  if (next_ready == 1){
     printf("pa: Read next gapless\n");
     load_next();
     next_ready = 0;
@@ -601,7 +614,7 @@ void pump_decode(){
     }
     
     if (load_target_seek > 0){
-      printf("pa: Set start position %d\n", load_target_seek);
+      //printf("pa: Set start position %d\n", load_target_seek);
       int rate = current_sample_rate;
       if (want_sample_rate > 0) rate = want_sample_rate;
       
@@ -650,8 +663,10 @@ void pump_decode(){
     // MP3 decoding
     
     size_t done;
+    pthread_mutex_unlock(&out_mutex);
     mpg123_read(mh, parse_buffer, 2048 * 2, &done);
-
+    pthread_mutex_lock(&out_mutex);
+    
     unsigned int i = 0;
     while (i < done){
     
@@ -759,7 +774,7 @@ void *out_thread(void *thread_id){
           if (mode == RAMP_DOWN && gate == 0) break;
         
           if (want_sample_rate > 0 && sample_change_byte == buff_base){
-            printf("pa: Set new sample rate\n");
+            //printf("pa: Set new sample rate\n");
             connect_pulse();
             break;
           } 
@@ -817,7 +832,7 @@ void *out_thread(void *thread_id){
           position_count++;
 
           
-          if (b >= 512 * 4) break; // Buffer is now full
+          if (b >= 256 * 4) break; // Buffer is now full
       }
 
       // Send data to pulseaudio server
@@ -864,6 +879,7 @@ void *main_loop(void *thread_id){
 
   mpg123_init();
   mh = mpg123_new(NULL, &error);
+  mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_QUIET | MPG123_SKIP_ID3V2, 0);
   
   // FLAC decoder ----------------------------------------------------------------
   
@@ -995,7 +1011,10 @@ void *main_loop(void *thread_id){
       mode = PLAYING;
     }
     
-
+    if (mode == PLAYING){
+       gate = 1;
+    }
+                       
     // Refill the buffer
     if (mode == PLAYING || mode == RAMP_UP){
       while (buff_filled < BUFF_SAFE && mode != ENDING){
@@ -1016,9 +1035,9 @@ void *main_loop(void *thread_id){
       mode = PLAYING;
     }
              
-    if (mode == RAMP_DOWN && buff_filled == 0){
-      gate = 0;
-    }
+    /* if (mode == RAMP_DOWN && buff_filled == 0){ */
+    /*   gate = 0; */
+    /* } */
     
     if (buff_filled > 0){
     pthread_mutex_unlock(&out_mutex);
@@ -1157,7 +1176,10 @@ int get_length_ms(){
   } else return 0;
 }
                                                     
-
+void config_set_dev_buffer(int ms){
+  config_dev_buffer = ms;
+}
+                                  
 int get_level_peak_l(){
   int peak = peak_l;
   peak_l = 0;

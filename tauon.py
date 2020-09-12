@@ -1208,7 +1208,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spec2_colour_mode = 0
         self.flatpak_mode = flatpak_mode
 
-        self.device_buffer = 40
+        self.device_buffer = 100
 
         self.eq = [0.0] * 10
         self.use_eq = False
@@ -3322,7 +3322,7 @@ def save_prefs():
     #cf.update_value("use-log-volume-scale", prefs.log_vol)
     #cf.update_value("pause-fade-time", prefs.pause_fade_time)
     #cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    #cf.update_value("device-buffer-length", prefs.device_buffer)
+    cf.update_value("device-buffer-length", prefs.device_buffer)
     #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -3440,7 +3440,7 @@ def load_prefs():
         prefs.pause_fade_time = 5000
 
     #prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
-    #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "This is a placeholder setting and currently has no effect.")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. Used by Phazor backend only. Default: 40")
     #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
@@ -23863,13 +23863,21 @@ class Over:
             x = x0 + 20 * gui.scale
             y += round(10 * gui.scale)
             x += round(10 * gui.scale)
-            ddt.text((x, y), "The Phazor backend is currently in alpha development stage.", colours.box_text_label, 12)
+            ddt.text((x, y), "Phazor is an alternative backend currently in beta.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "Only FLAC, MP3, Vorbis and Opus are currently supported.", colours.box_text_label, 12)
+            ddt.text((x, y), "Audio is output to the default PulseAudio device only.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "There may be other bugs or issues. Settings are not yet saved.", colours.box_text_label, 12)
+            ddt.text((x, y), "Best suited for playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
+            y += round(17 * gui.scale)
+            ddt.text((x, y), "There may be bugs present. It even might not work at all.", colours.box_text_label, 12)
 
-            y += round(50 * gui.scale)
+            y += round(95 * gui.scale)
+            ddt.text((x, y), "If you experience cracking audio, try increase this value.", colours.box_text_label, 12)
+            y += round(17 * gui.scale)
+            ddt.text((x, y), "Change applies after track stop.", colours.box_text_label, 12)
+            y += round(25 * gui.scale)
+            prefs.device_buffer = self.slide_control(x + round(55 * gui.scale), y, _("Output buffer"), 'ms', prefs.device_buffer, 10,
+                                                     500, 10, self.reload_device)
 
 
         # Gstreamer
