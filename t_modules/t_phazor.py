@@ -96,6 +96,11 @@ def player4(tauon):
 
     dl = URLDownloader()
 
+    def set_config():
+        aud.config_set_dev_buffer(prefs.device_buffer)
+
+    set_config()
+
     while True:
 
         time.sleep(0.016)
@@ -115,6 +120,9 @@ def player4(tauon):
 
             command = pctl.playerCommand
             pctl.playerCommandReady = False
+
+            if command == "reload":
+                set_config()
 
             if command == "url":
                 pctl.download_time = 0
@@ -224,7 +232,7 @@ def player4(tauon):
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue:
 
-                    print("Gapless mode")
+                    print("Transition gapless mode")
 
                     aud.next(pctl.target_object.fullpath.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
                     pctl.playing_time = 0
@@ -248,7 +256,12 @@ def player4(tauon):
                     tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                     pctl.playing_time = pctl.new_time
                 elif state > 0:
-                    aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), False)  # ms, flush_seek
+
+                    if loaded_track.is_network and loaded_track.fullpath.endswith(".ogg"):
+                        # The vorbis decoder doesn't like appended files
+                        aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000)
+                    else:
+                        aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), False)  # ms, flush_seek
                     pctl.playing_time = pctl.new_time
                 pctl.decode_time = pctl.playing_time
             if command == "volume":
