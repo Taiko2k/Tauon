@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.3.0
+
+ - Added option to restore window position on restart
+
 v6.2.6
 
  - Fixed an upgrading issue causing some tracks to stall

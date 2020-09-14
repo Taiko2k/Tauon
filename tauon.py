@@ -371,6 +371,7 @@ window_size = window_default_size
 window_opacity = 1
 scale = 1
 maximized = False
+old_window_position = None
 
 try:
     state_file = open(user_directory + "/window.p", "rb")
@@ -381,6 +382,7 @@ try:
     window_opacity = save[2]
     scale = save[3]
     maximized = save[4]
+    old_window_position = save[5]
 
     del save
 
@@ -406,8 +408,15 @@ flags = SDL_WINDOW_RESIZABLE # SDL_WINDOW_HIDDEN |
 if draw_border:
     flags |= SDL_WINDOW_BORDERLESS
 
+if old_window_position is None:
+    o_x = SDL_WINDOWPOS_UNDEFINED
+    o_y = SDL_WINDOWPOS_UNDEFINED
+else:
+    o_x = old_window_position[0]
+    o_y = old_window_position[1]
+
 t_window = SDL_CreateWindow(window_title,
-                            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                            o_x, o_y,
                             window_size[0], window_size[1],
                             flags)
 
@@ -1208,7 +1217,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spec2_colour_mode = 0
         self.flatpak_mode = flatpak_mode
 
-        self.device_buffer = 100
+        self.device_buffer = 90
 
         self.eq = [0.0] * 10
         self.use_eq = False
@@ -1371,6 +1380,8 @@ class Prefs:    # Used to hold any kind of settings
         self.zoom_art = False
         self.auto_rec = False
         self.radio_record_codec = "OPUS"
+        self.pa_fast_seek = False
+        self.save_window_position = False
 
 prefs = Prefs()
 
@@ -1997,7 +2008,7 @@ class Input:    # Used to keep track of button states (or should be)
         self.media_key = "Previous"
         gui.update += 1
 
-input = Input()
+inp = Input()
 
 
 class KeyMap:
@@ -3323,6 +3334,7 @@ def save_prefs():
     #cf.update_value("pause-fade-time", prefs.pause_fade_time)
     #cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
+    cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -3390,6 +3402,7 @@ def save_prefs():
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
+    cf.update_value("restore-window-position", prefs.save_window_position)
     cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
@@ -3441,6 +3454,7 @@ def load_prefs():
 
     #prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
     prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. Used by Phazor backend only. Default: 40")
+    prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
     #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
@@ -3571,6 +3585,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[app]")
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
+    prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position, "Save and restore the last window position on desktop on open")
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
@@ -7263,7 +7278,7 @@ def plex_get_album_thread():
     pref_box.close()
     save_prefs()
     if plex.scanning:
-        input.mouse_click = False
+        inp.mouse_click = False
         show_message("Already scanning!")
         return
     plex.scanning = True
@@ -7281,7 +7296,7 @@ def sub_get_album_thread():
     pref_box.close()
     save_prefs()
     if subsonic.scanning:
-        input.mouse_click = False
+        inp.mouse_click = False
         show_message("Already scanning!")
         return
     subsonic.scanning = True
@@ -7299,7 +7314,7 @@ def koel_get_album_thread():
     pref_box.close()
     save_prefs()
     if koel.scanning:
-        input.mouse_click = False
+        inp.mouse_click = False
         show_message("Already scanning!")
         return
     koel.scanning = True
@@ -7382,13 +7397,13 @@ if system == "windows" or msys:
     def key_callback(event):
         if event.event_type == "down":
             if event.scan_code == 179:
-                input.media_key = 'play'
+                inp.media_key = 'play'
             elif event.scan_code == 178:
-                input.media_key = 'stop'
+                inp.media_key = 'stop'
             elif event.scan_code == 177:
-                input.media_key = 'back'
+                inp.media_key = 'back'
             elif event.scan_code == 176:
-                input.media_key = 'forward'
+                inp.media_key = 'forward'
             gui.update += 1
         
     keyboard.hook_key(179, key_callback)
@@ -7695,7 +7710,7 @@ def draw_window_tools():
         if coll(rect):
             ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
             top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
-            if (input.mouse_click or ab_click) and coll_point(click_location, rect):
+            if (inp.mouse_click or ab_click) and coll_point(click_location, rect):
 
                 restore_full_mode()
                 gui.update += 2
@@ -7724,7 +7739,7 @@ def draw_window_tools():
                     SDL_MinimizeWindow(t_window)
 
                 mouse_down = False
-                input.mouse_click = False
+                inp.mouse_click = False
                 drag_mode = False
         else:
             ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
@@ -7747,7 +7762,7 @@ def draw_window_tools():
                     SDL_MaximizeWindow(t_window)
 
                 mouse_down = False
-                input.mouse_click = False
+                inp.mouse_click = False
                 drag_mode = False
         else:
             top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
@@ -7758,7 +7773,7 @@ def draw_window_tools():
     if coll(rect):
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
-        if input.mouse_click or ab_click:
+        if inp.mouse_click or ab_click:
             if gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
             else:
@@ -8035,7 +8050,7 @@ class Drawing:
 
 
         if press is None:
-            press = input.mouse_click
+            press = inp.mouse_click
 
         if coll(rect):
             if tooltip:
@@ -8512,10 +8527,10 @@ def draw_internel_link(x, y, text, colour, font):
     fields.add(rect)
 
     if coll(rect):
-        if not input.mouse_click:
+        if not inp.mouse_click:
             gui.cursor_want = 3
         ddt.line(x, y + tweak + 2, x + sp, y + tweak + 2, alpha_mod(colour, 180))
-        if input.mouse_click:
+        if inp.mouse_click:
             return True
     return False
 
@@ -8586,7 +8601,7 @@ def link_activate(x, y, link_pa, click=None):
     link_rect = [x + link_pa[0], y - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
     if click is None:
-        click = input.mouse_click
+        click = inp.mouse_click
 
     fields.add(link_rect)
     if coll(link_rect):
@@ -8690,7 +8705,7 @@ class TextBox2:
         selection_height *= gui.scale
 
         if click is False:
-            click = input.mouse_click
+            click = inp.mouse_click
 
         rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
         select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
@@ -8714,15 +8729,15 @@ class TextBox2:
 
 
             # Handle backspace
-            if input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                while input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+            if inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
                     if self.selection != self.cursor_position:
                         self.eliminate_selection()
                     else:
                         self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
                             self.text) - self.cursor_position:]
-                    input.backspace_press -= 1
-            elif input.backspace_press and len(self.get_selection()) > 0:
+                    inp.backspace_press -= 1
+            elif inp.backspace_press and len(self.get_selection()) > 0:
                 self.eliminate_selection()
 
             # Left and right arrow keys to move cursor
@@ -9059,7 +9074,7 @@ class TextBox:
         selection_height *= gui.scale
 
         if click is False:
-            click = input.mouse_click
+            click = inp.mouse_click
 
 
 
@@ -9086,14 +9101,14 @@ class TextBox:
                 self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
 
             # Handle backspace
-            if input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                while input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+            if inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
                     if self.selection != self.cursor_position:
                         self.eliminate_selection()
                     else:
                         self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
-                    input.backspace_press -= 1
-            elif input.backspace_press and len(self.get_selection()) > 0:
+                    inp.backspace_press -= 1
+            elif inp.backspace_press and len(self.get_selection()) > 0:
                 self.eliminate_selection()
 
             # Left and right arrow keys to move cursor
@@ -9259,9 +9274,9 @@ class TextBox:
                 if input_text != "":
                     self.cursor = True
 
-                while input.backspace_press and len(self.text) > 0:
+                while inp.backspace_press and len(self.text) > 0:
                     self.text = self.text[:-1]
-                    input.backspace_press -= 1
+                    inp.backspace_press -= 1
 
                 if key_ctrl_down and key_v_press:
                     self.paste()
@@ -11421,7 +11436,7 @@ class ToolTip3:
             self.timer.set()
             return
 
-        if input.mouse_click:
+        if inp.mouse_click:
             self.click_exclude_point = copy.copy(mouse_position)
             self.timer.set()
             return
@@ -11443,7 +11458,7 @@ class ToolTip3:
         if not point_proximity_test(self.click_exclude_point, mouse_position, 20 * gui.scale):
             self.click_exclude_point = (0, 0)
 
-        if not coll(self.rect) or input.mouse_click or gui.level_2_click or self.pl_position != pctl.playlist_view_position:
+        if not coll(self.rect) or inp.mouse_click or gui.level_2_click or self.pl_position != pctl.playlist_view_position:
             self.show = False
 
         gui.frame_callback_list.append(TestTimer(0.02))
@@ -12062,7 +12077,7 @@ class RenameTrackBox:
             return
 
         if gui.level_2_click:
-            input.mouse_click = True
+            inp.mouse_click = True
         gui.level_2_click = False
 
         w = 420 * gui.scale
@@ -12075,7 +12090,7 @@ class RenameTrackBox:
         ddt.rect_a((x, y), (w, h), colours.box_background, True)
         ddt.text_background_colour = colours.box_background
 
-        if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+        if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
             rename_track_box.active = False
 
         r_todo = []
@@ -12151,8 +12166,8 @@ class RenameTrackBox:
 
         if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale,
                        text_highlight_colour=colours.grey(255), background_highlight_colour=colour_warn,
-                       tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
-            input.mouse_click = False
+                       tooltip="Physically renames all the tracks in the folder") or inp.level_2_enter:
+            inp.mouse_click = False
             total_todo = len(r_todo)
             pre_state = 0
 
@@ -12252,7 +12267,7 @@ class SubLyricsBox:
             return
 
         if gui.level_2_click:
-            input.mouse_click = True
+            inp.mouse_click = True
         gui.level_2_click = False
 
         w = 400 * gui.scale
@@ -12265,7 +12280,7 @@ class SubLyricsBox:
         ddt.rect_a((x, y), (w, h), colours.box_background, True)
         ddt.text_background_colour = colours.box_background
 
-        if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+        if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
             self.active = False
 
             if sub_lyrics_a.text and sub_lyrics_a.text != self.target_track.artist:
@@ -12297,9 +12312,9 @@ class SubLyricsBox:
         rect1 = (xx, y, round(250 * gui.scale), round(17 * gui.scale))
         fields.add(rect1)
         ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-        if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 2):
+        if (coll(rect1) and inp.mouse_click) or (inp.key_tab_press and self.active_field == 2):
             self.active_field = 1
-            input.key_tab_press = False
+            inp.key_tab_press = False
 
         sub_lyrics_a.draw(xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 1, width=rect1[2] - 8 * gui.scale)
 
@@ -12316,7 +12331,7 @@ class SubLyricsBox:
         xx += round(6 * gui.scale)
         rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
         fields.add(rect1)
-        if (coll(rect1) and input.mouse_click) or (input.key_tab_press and self.active_field == 1):
+        if (coll(rect1) and inp.mouse_click) or (inp.key_tab_press and self.active_field == 1):
             self.active_field = 2
         #ddt.rect(rect1, [40, 40, 40, 255], True)
         ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
@@ -17652,7 +17667,7 @@ def show_lyrics_menu(index):
     global track_box
     track_box = False
     switch_showcase(r_menu_index)
-    input.mouse_click = False
+    inp.mouse_click = False
 
 track_menu.add_to_sub(_("Lyrics..."), 0, show_lyrics_menu, pass_ref=True)
 
@@ -19265,7 +19280,7 @@ def draw_rating_widget(x, y, n_track, album=False):
     rect = (x - round(5 * gui.scale), y - round(4 * gui.scale), round(80 * gui.scale), round(16 * gui.scale))
     gui.heart_fields.append(rect)
 
-    if coll(rect) and (input.mouse_click or (is_level_zero() and not quick_drag)):
+    if coll(rect) and (inp.mouse_click or (is_level_zero() and not quick_drag)):
         gui.pl_update = 2
         pp = mouse_position[0] - x
 
@@ -19276,7 +19291,7 @@ def draw_rating_widget(x, y, n_track, album=False):
         else:
             rat = pp // (star_row_icon.w // 2)
 
-        if input.mouse_click:
+        if inp.mouse_click:
             rat = min(rat, 10)
             if album:
                 album_star_store.set_rating(n_track, rat)
@@ -20004,7 +20019,7 @@ def switch_showcase(index=-1):
     if gui.combo_mode:
         toggle_combo_view()
     toggle_combo_view(showcase=True)
-    input.mouse_click = False
+    inp.mouse_click = False
 
 def toggle_library_mode():
     if gui.set_mode:
@@ -20422,7 +20437,7 @@ class SearchOverlay:
 
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "a\"" + name + "\""
 
-        input.key_return_press = False
+        inp.key_return_press = False
 
 
     def click_year(self, name, get_list=False):
@@ -20444,7 +20459,7 @@ class SearchOverlay:
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
-        input.key_return_press = False
+        inp.key_return_press = False
 
     def click_composer(self, name, get_list=False):
 
@@ -20465,7 +20480,7 @@ class SearchOverlay:
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
-        input.key_return_press = False
+        inp.key_return_press = False
 
     def click_meta(self, name, get_list=False, search_lists=None):
 
@@ -20492,7 +20507,7 @@ class SearchOverlay:
 
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "p\"" + name + "\""
 
-        input.key_return_press = False
+        inp.key_return_press = False
 
     def click_genre(self, name, get_list=False, search_lists=None):
 
@@ -20538,7 +20553,7 @@ class SearchOverlay:
             pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "g=\"" + name + "\""
 
 
-        input.key_return_press = False
+        inp.key_return_press = False
 
 
     def click_album(self, index):
@@ -20546,7 +20561,7 @@ class SearchOverlay:
         pctl.jump(index)
         pctl.show_current()
 
-        input.key_return_press = False
+        inp.key_return_press = False
 
     def render(self):
 
@@ -20576,11 +20591,11 @@ class SearchOverlay:
             w = window_size[0]
             h = window_size[1]
 
-            if input.backspace_press:
+            if inp.backspace_press:
                 # self.searched_text = ""
                 # self.results.clear()
 
-                if len(self.search_text.text) - input.backspace_press < 1:
+                if len(self.search_text.text) - inp.backspace_press < 1:
                     self.active = False
                     self.search_text.text = ""
                     self.results.clear()
@@ -20654,7 +20669,7 @@ class SearchOverlay:
 
             self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
-            if input.key_tab_press:
+            if inp.key_tab_press:
                 search_over.spotify_mode ^= True
                 self.sip = True
                 search_over.searched_text = search_over.search_text.text
@@ -20711,7 +20726,7 @@ class SearchOverlay:
                 enter = True
                 self.delay_enter = False
 
-            elif input.key_return_press:
+            elif inp.key_return_press:
                 if self.results:
                     enter = True
                     self.delay_enter = False
@@ -20722,7 +20737,7 @@ class SearchOverlay:
                         enter = True
                         self.delay_enter = False
 
-            input.key_return_press = False
+            inp.key_return_press = False
 
             bar_colour = [140, 80, 240, 255]
             track_in_bar_colour = [244, 209, 66, 255]
@@ -21367,13 +21382,13 @@ class MessageBox:
 
     def render(self):
 
-        if input.mouse_click or input.key_return_press or right_click or key_esc_press or input.backspace_press \
+        if inp.mouse_click or inp.key_return_press or right_click or key_esc_press or inp.backspace_press \
                 or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
 
             if not key_focused and message_box_min_timer.get() > 0.4:
                 gui.message_box = False
                 gui.update += 1
-                input.key_return_press = False
+                inp.key_return_press = False
 
         x, y, w, h = self.get_rect()
 
@@ -23861,9 +23876,9 @@ class Over:
 
             y = y0 + 45 * gui.scale
             x = x0 + 20 * gui.scale
-            y += round(10 * gui.scale)
-            x += round(10 * gui.scale)
-            ddt.text((x, y), "Phazor is an alternative backend currently in beta.", colours.box_text_label, 12)
+
+            x += round(5 * gui.scale)
+            ddt.text((x, y), "Phazor is an alternative backend currently in alpha testing stage.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "Audio is output to the default PulseAudio device only.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
@@ -23871,7 +23886,14 @@ class Over:
             y += round(17 * gui.scale)
             ddt.text((x, y), "There may be bugs present. It even might not work at all.", colours.box_text_label, 12)
 
-            y += round(95 * gui.scale)
+            y += round(30 * gui.scale)
+            ddt.text((x, y), "Scrubbing mode", colours.box_text_label, 12)
+            y += round(22 * gui.scale)
+            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek, "Fast")
+            y += round(22 * gui.scale)
+            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
+
+            y += round(30 * gui.scale)
             ddt.text((x, y), "If you experience cracking audio, try increase this value.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "Change applies after track stop.", colours.box_text_label, 12)
@@ -24376,7 +24398,7 @@ class Over:
             if self.button(x + 260 * gui.scale, y, _("?")):
                 show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", mode="link")
 
-            if input.key_tab_press:
+            if inp.key_tab_press:
                 self.account_text_field += 1
                 if self.account_text_field > 2:
                     self.account_text_field = 0
@@ -24482,7 +24504,7 @@ class Over:
 
             ddt.text((x, y), _('Airsonic/Subsonic network streaming'), colours.box_sub_text, 213)
 
-            if input.key_tab_press:
+            if inp.key_tab_press:
                 self.account_text_field += 1
                 if self.account_text_field > 2:
                     self.account_text_field = 0
@@ -24539,7 +24561,7 @@ class Over:
 
             ddt.text((x, y), _('koel network streaming'), colours.box_sub_text, 213)
 
-            if input.key_tab_press:
+            if inp.key_tab_press:
                 self.account_text_field += 1
                 if self.account_text_field > 2:
                     self.account_text_field = 0
@@ -24596,7 +24618,7 @@ class Over:
 
             ddt.text((x, y), _('PLEX network streaming'), colours.box_sub_text, 213)
 
-            if input.key_tab_press:
+            if inp.key_tab_press:
                 self.account_text_field += 1
                 if self.account_text_field > 2:
                     self.account_text_field = 0
@@ -24996,6 +25018,9 @@ class Over:
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
         y += 25 * gui.scale
+        prefs.save_window_position = self.toggle_square(x, y, prefs.save_window_position, _("Restore window position on restart"))
+
+        y += 25 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
@@ -25009,7 +25034,7 @@ class Over:
 
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
-        #
+
         # y += 25 * gui.scale
         # if prefs.backend == 1:
         #     self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
@@ -25827,7 +25852,7 @@ class Over:
                     if not coll(message_box.get_rect()):
                         gui.message_box = False
                     else:
-                        input.mouse_click = True
+                        inp.mouse_click = True
                         self.click = False
 
                 box = [x, y + (current_tab * tab_height), tab_width, tab_height]
@@ -26049,7 +26074,7 @@ class TopPanel:
         fields.add(rect)
 
         if coll(rect):
-            if input.mouse_click:
+            if inp.mouse_click:
 
                 if gui.combo_mode:
                     if not gui.lsp:
@@ -26242,7 +26267,7 @@ class TopPanel:
                 x += 17 * gui.scale
                 x_start = x
 
-                if input.mouse_click and coll(rect):
+                if inp.mouse_click and coll(rect):
                     overflow_menu.items.clear()
                     for tab in reversed(left_overflow):
                         overflow_menu.add(pctl.multi_playlist[tab][0], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab)
@@ -26256,7 +26281,7 @@ class TopPanel:
                 rect = [xx, y + (self.height - hh), 17 * gui.scale, hh]
                 ddt.rect(rect, colours.tab_background, True)
                 self.overflow_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colours.tab_text)
-                if input.mouse_click and coll(rect):
+                if inp.mouse_click and coll(rect):
                     overflow_menu.items.clear()
                     for tab in right_overflow:
                         overflow_menu.add(pctl.multi_playlist[tab][0], self.right_overflow_switch_playlist, pass_ref=True, set_ref=tab)
@@ -26335,7 +26360,7 @@ class TopPanel:
                     self.tab_d_click_ref = pl_to_id(i)
 
                 # Click to change playlist
-                if input.mouse_click:
+                if inp.mouse_click:
                     gui.pl_update = 1
                     playlist_box.drag = True
                     playlist_box.drag_source = 0
@@ -26579,7 +26604,7 @@ class TopPanel:
             bg = colours.status_text_normal
         ddt.text((x, y), word, bg, 212)
 
-        if hit and input.mouse_click:
+        if hit and inp.mouse_click:
             if x_menu.active:
                 x_menu.active = False
             else:
@@ -26608,8 +26633,8 @@ class TopPanel:
             # if colours.lm:
             #     colour = [180, 180, 180, 255]
             self.dl_button.render(x, y + 1 * gui.scale, colour)
-            if coll(rect) and input.mouse_click:
-                input.mouse_click = False
+            if coll(rect) and inp.mouse_click:
+                inp.mouse_click = False
                 show_message("Downloader is running...", "You may need to restart app if download stalls", mode='download')
             if os.path.isdir(auto_dl.dl_dir):
                 s = get_folder_size(auto_dl.dl_dir)
@@ -26635,7 +26660,7 @@ class TopPanel:
                     if right_click:
                         dl_menu.activate(position=(mouse_position[0], gui.panelY))
                 if dl > 0:
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         pln = 0
                         for item in dl_mon.ready:
                             load_order = LoadClass()
@@ -26669,8 +26694,8 @@ class TopPanel:
                     colour = colours.corner_button #[60, 60, 60, 255]
                     # if colours.lm:
                     #     colour = [180, 180, 180, 255]
-                    if input.mouse_click:
-                        input.mouse_click = False
+                    if inp.mouse_click:
+                        inp.mouse_click = False
                         show_message("It looks like something is being downloaded...", "Let's check back later...",
                                      mode='info')
 
@@ -26851,7 +26876,7 @@ class TopPanel:
             text_w = ddt.text((x, y), text, colours.grey(130), 311, max_w=trunc)
 
             rect[2] = (x - rect[0]) + text_w
-            if coll(rect) and input.mouse_click:
+            if coll(rect) and inp.mouse_click:
                 pctl.show_current(index=pctl.broadcast_index)
 
             x += text_w + 13 * gui.scale
@@ -26860,7 +26885,7 @@ class TopPanel:
             ddt.rect_a((x, y + 4), (progress, 9 * gui.scale), [65, 80, 220, 255], True)
             ddt.rect_a((x, y + 4), (100 * gui.scale, 9 * gui.scale), colours.grey(30))
 
-            if input.mouse_click and coll((x, y, 100 * gui.scale, 11)):
+            if inp.mouse_click and coll((x, y, 100 * gui.scale, 11)):
                 newtime = ((mouse_position[0] - x) / (100 * gui.scale)) * pctl.master_library[pctl.broadcast_index].length
                 pctl.broadcast_seek_position = newtime
                 pctl.broadcastCommand = 'encseek'
@@ -26872,9 +26897,9 @@ class TopPanel:
 
             self.drag_zone_start_x = x + 21 * gui.scale
 
-            if input.mouse_click and coll((x-5, y-5, 20, 24)):
+            if inp.mouse_click and coll((x - 5, y - 5, 20, 24)):
                 line = ""
-                input.mouse_click = False
+                inp.mouse_click = False
                 for ip, timestamp in tauon.chunker.clients.values():
                     print(ip)
                     line += ip + " "
@@ -26995,7 +27020,7 @@ class BottomBarType1:
         if pctl.playing_time < 1:
             self.seek_time = 0
 
-        if input.mouse_click and coll_point(mouse_position,
+        if inp.mouse_click and coll_point(mouse_position,
                                       self.seek_bar_position + [self.seek_bar_size[0]] + [self.seek_bar_size[1] + 2]):
             self.seek_down = True
             self.volume_hit = True
@@ -27186,13 +27211,13 @@ class BottomBarType1:
 
         # Volume Bar --------------------------------------------------------
         else:
-            if input.mouse_click and coll((
+            if inp.mouse_click and coll((
                 self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
                 self.volume_bar_size[1] + 4)) or \
                             self.volume_bar_being_dragged is True:
                 clicked = True
 
-                if input.mouse_click is True or self.volume_bar_being_dragged is True:
+                if inp.mouse_click is True or self.volume_bar_being_dragged is True:
                     gui.update = 2
 
                     self.volume_bar_being_dragged = True
@@ -27265,7 +27290,7 @@ class BottomBarType1:
             ddt.text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
                      fonts.panel_title, max_w=mx)
 
-        if (input.mouse_click or right_click) and coll((
+        if (inp.mouse_click or right_click) and coll((
                     self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
             # if pctl.playing_state == 3:
             #     copy_to_clipboard(pctl.tag_meta)
@@ -27274,7 +27299,7 @@ class BottomBarType1:
             #         input.mouse_click = False
             #         right_click = False
             # else:
-            if input.mouse_click and pctl.playing_state != 3:
+            if inp.mouse_click and pctl.playing_state != 3:
                 pctl.show_current()
 
             if pctl.playing_ready() and not fullscreen == 1:
@@ -27282,7 +27307,7 @@ class BottomBarType1:
                 if right_click:
                     mode_menu.activate()
 
-                if d_click_timer.get() < 0.3 and input.mouse_click:
+                if d_click_timer.get() < 0.3 and inp.mouse_click:
                     set_mini_mode()
                     gui.update += 1
                     return
@@ -27299,7 +27324,7 @@ class BottomBarType1:
             r_start -= 20 * gui.scale
         rect = (r_start, y - 3 * gui.scale, 80 * gui.scale, 27 * gui.scale)
         # ddt.rect_r(rect, [255, 0, 0, 40], True)
-        if input.mouse_click and coll(rect):
+        if inp.mouse_click and coll(rect):
             gui.display_time_mode += 1
             if gui.display_time_mode > 3:
                 gui.display_time_mode = 0
@@ -27425,14 +27450,14 @@ class BottomBarType1:
                 fields.add(rect)
                 if coll(rect):
                     play_colour = colours.media_buttons_over
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         if compact and pctl.playing_state == 1:
                             pctl.pause()
                         elif pctl.playing_state == 1 or spot_ctl.coasting:
                             pctl.show_current(highlight=True)
                         else:
                             pctl.play()
-                        input.mouse_click = False
+                        inp.mouse_click = False
                     tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
                     if right_click:
@@ -27457,7 +27482,7 @@ class BottomBarType1:
                 fields.add(rect)
                 if coll(rect):
                     pause_colour = colours.media_buttons_over
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         pctl.pause()
                     if right_click:
                         pctl.show_current(highlight=True)
@@ -27474,7 +27499,7 @@ class BottomBarType1:
             fields.add(rect)
             if coll(rect):
                 stop_colour = colours.media_buttons_over
-                if input.mouse_click:
+                if inp.mouse_click:
                     pctl.stop()
                 if right_click:
                     pctl.auto_stop ^= True
@@ -27492,7 +27517,7 @@ class BottomBarType1:
             fields.add(rect)
             if coll(rect):
                 forward_colour = colours.media_buttons_over
-                if input.mouse_click:
+                if inp.mouse_click:
                     pctl.advance()
                     gui.tool_tip_lock_off_f = True
                 if right_click:
@@ -27525,7 +27550,7 @@ class BottomBarType1:
             fields.add(rect)
             if coll(rect):
                 back_colour = colours.media_buttons_over
-                if input.mouse_click:
+                if inp.mouse_click:
                     pctl.back()
                     gui.tool_tip_lock_off_b = True
                 if right_click:
@@ -27562,7 +27587,7 @@ class BottomBarType1:
                 if not extra_menu.active:
                     tool_tip.test(x, y - 28 * gui.scale, "Playback menu")
                 rpbc = colours.mode_button_over
-                if input.mouse_click:
+                if inp.mouse_click:
                     extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
                 elif right_click:
                     mode_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
@@ -27586,9 +27611,9 @@ class BottomBarType1:
                 fields.add(rect)
 
                 rpbc = colours.mode_button_off
-                if (input.mouse_click or right_click) and coll(rect):
+                if (inp.mouse_click or right_click) and coll(rect):
 
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         #pctl.random_mode ^= True
                         toggle_random()
                         if pctl.random_mode is False:
@@ -27632,9 +27657,9 @@ class BottomBarType1:
 
                 rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
                 fields.add(rect)
-                if (input.mouse_click or right_click) and coll(rect):
+                if (inp.mouse_click or right_click) and coll(rect):
 
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         toggle_repeat()
                         if pctl.repeat_mode is False:
                             self.repeat_click_off = True
@@ -27863,7 +27888,7 @@ class BottomBarType_ao1:
             r_start -= 20 * gui.scale
         rect = (r_start, y - 3 * gui.scale, 80 * gui.scale, 27 * gui.scale)
         # ddt.rect_r(rect, [255, 0, 0, 40], True)
-        if input.mouse_click and coll(rect):
+        if inp.mouse_click and coll(rect):
             gui.display_time_mode += 1
             if gui.display_time_mode > 3:
                 gui.display_time_mode = 0
@@ -27989,14 +28014,14 @@ class BottomBarType_ao1:
                 fields.add(rect)
                 if coll(rect):
                     play_colour = colours.media_buttons_over
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         if compact and pctl.playing_state == 1:
                             pctl.pause()
                         elif pctl.playing_state == 1:
                             pctl.show_current(highlight=True)
                         else:
                             pctl.play()
-                        input.mouse_click = False
+                        inp.mouse_click = False
                     tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
                     if right_click:
@@ -28021,7 +28046,7 @@ class BottomBarType_ao1:
                 fields.add(rect)
                 if coll(rect):
                     pause_colour = colours.media_buttons_over
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         pctl.pause()
                     if right_click:
                         pctl.show_current(highlight=True)
@@ -28037,7 +28062,7 @@ class BottomBarType_ao1:
             fields.add(rect)
             if coll(rect):
                 forward_colour = colours.media_buttons_over
-                if input.mouse_click:
+                if inp.mouse_click:
                     pctl.advance()
                     gui.tool_tip_lock_off_f = True
                 if right_click:
@@ -28149,7 +28174,7 @@ class MiniMode:
 
 
             if coll(text_hit_area):
-                if input.mouse_click:
+                if inp.mouse_click:
                     if d_click_timer.get() < 0.3:
                         restore_full_mode()
                         gui.update += 1
@@ -28259,7 +28284,7 @@ class MiniMode:
 
         if coll(control_hit_area):
             colour = [255, 255, 255, 20]
-            if input.mouse_click and coll(shuffle_area):
+            if inp.mouse_click and coll(shuffle_area):
                 #pctl.random_mode ^= True
                 toggle_random()
             if pctl.random_mode:
@@ -28275,7 +28300,7 @@ class MiniMode:
         shuffle_area = (seek_r[0] - 41 * gui.scale, seek_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
         if coll(control_hit_area):
             colour = [255, 255, 255, 20]
-            if input.mouse_click and coll(shuffle_area):
+            if inp.mouse_click and coll(shuffle_area):
                 toggle_repeat()
             if pctl.repeat_mode:
                 colour = [255, 255, 255, 190]
@@ -28290,7 +28315,7 @@ class MiniMode:
 
 
         # Forward and back clicking
-        if input.mouse_click:
+        if inp.mouse_click:
             if coll(left_area):
                 pctl.back()
             if coll(right_area):
@@ -28365,7 +28390,7 @@ class MiniMode2:
             text_hit_area = (x1, 0, w, h)
 
             if coll(text_hit_area):
-                if input.mouse_click:
+                if inp.mouse_click:
                     if d_click_timer.get() < 0.3:
                         restore_full_mode()
                         gui.update += 1
@@ -28445,13 +28470,17 @@ def set_mini_mode():
 
     global mouse_down
     global mouse_up
+    global old_window_position
     mouse_down = False
     mouse_up = False
-    input.mouse_click = False
+    inp.mouse_click = False
 
     if gui.maximized:
         SDL_RestoreWindow(t_window)
         update_layout_do()
+
+    if gui.mode < 3:
+        old_window_position = get_window_position()
 
     gui.mode = 3
     gui.vis = 0
@@ -28533,7 +28562,7 @@ def restore_full_mode():
     global mouse_up
     mouse_down = False
     mouse_up = False
-    input.mouse_click = False
+    inp.mouse_click = False
 
     if gui.maximized:
         SDL_MaximizeWindow(t_window)
@@ -29093,7 +29122,7 @@ class StandardPlaylist:
                             move_on_title = True
 
                     # Ignore click in ratings box
-                    click_title = (input.mouse_click or right_click or middle_click) and coll(input_box)
+                    click_title = (inp.mouse_click or right_click or middle_click) and coll(input_box)
                     if click_title and gui.show_album_ratings:
                         if mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
                             click_title = False
@@ -29124,7 +29153,7 @@ class StandardPlaylist:
                             click_time -= 1.5
                             pctl.jump(track_id, track_position)
                             line_hit = False
-                            input.mouse_click = False
+                            inp.mouse_click = False
 
                             if album_mode:
                                 goto_album(pctl.playlist_playing_position)
@@ -29147,7 +29176,7 @@ class StandardPlaylist:
 
 
                         # Add folder to selection if clicked
-                        if input.mouse_click and not (scroll_enable and mouse_position[0] < 30 * gui.scale) and not side_drag:
+                        if inp.mouse_click and not (scroll_enable and mouse_position[0] < 30 * gui.scale) and not side_drag:
 
                             quick_drag = True
                             set_drag_source()
@@ -29211,7 +29240,7 @@ class StandardPlaylist:
             line_hit = False
             if coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
                 line_over = True
-                if (input.mouse_click or right_click or (middle_click and is_level_zero())):
+                if (inp.mouse_click or right_click or (middle_click and is_level_zero())):
                     line_hit = True
                 else:
                     line_hit = False
@@ -29269,7 +29298,7 @@ class StandardPlaylist:
             #         playlist_hold = True
 
             # Begin drag single track
-            if input.mouse_click and line_hit and not side_drag:
+            if inp.mouse_click and line_hit and not side_drag:
                 quick_drag = True
                 set_drag_source()
 
@@ -29350,7 +29379,7 @@ class StandardPlaylist:
                         shift_selection = [playlist_selected]
 
 
-            if line_over and input.mouse_click:
+            if line_over and inp.mouse_click:
 
                 if track_position in shift_selection:
                     pass
@@ -29994,7 +30023,7 @@ class ArtBox:
 
             # Cycle images on click
 
-            if coll(gui.main_art_box) and input.mouse_click is True and key_focused == 0:
+            if coll(gui.main_art_box) and inp.mouse_click is True and key_focused == 0:
 
                 album_art_gen.cycle_offset(target_track)
 
@@ -30048,7 +30077,7 @@ class ScrollBox():
             return 0
 
         if click is None:
-            click = input.mouse_click
+            click = inp.mouse_click
 
         bar_height = round(90 * gui.scale)
 
@@ -30407,7 +30436,7 @@ class RadioBox:
         ddt.rect(rect, colours.box_text_border)
 
         if draw.button(_("Search"), x + width + round(21 * gui.scale), yy - round(3 * gui.scale),
-                       press=gui.level_2_click, w=round(80 * gui.scale)) or input.level_2_enter:
+                       press=gui.level_2_click, w=round(80 * gui.scale)) or inp.level_2_enter:
 
             text = self.radio_field_search.text.replace("/", "").replace(":", "").replace("\\", "").replace(".", "").replace("-", "").upper()
             text = urllib.parse.quote(text)
@@ -30525,9 +30554,9 @@ class RadioBox:
 
         rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
         fields.add(rect)
-        if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 2):
+        if (coll(rect) and gui.level_2_click) or (inp.key_tab_press and self.radio_field_active == 2):
             self.radio_field_active = 1
-            input.key_tab_press = False
+            inp.key_tab_press = False
         if not self.radio_field_title.text and not (self.radio_field_active == 1 and editline):
             ddt.text((x + 14 * gui.scale, yy), _("Name / Title"), colours.box_text_label, 312)
         self.radio_field_title.draw(x + 14 * gui.scale, yy, colours.box_input_text,
@@ -30542,9 +30571,9 @@ class RadioBox:
         rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
         ddt.rect(rect, colours.box_text_border)
         fields.add(rect)
-        if (coll(rect) and gui.level_2_click) or (input.key_tab_press and self.radio_field_active == 1):
+        if (coll(rect) and gui.level_2_click) or (inp.key_tab_press and self.radio_field_active == 1):
             self.radio_field_active = 2
-            input.key_tab_press = False
+            inp.key_tab_press = False
 
         if not self.radio_field.text and not (self.radio_field_active == 2 and editline):
             ddt.text((x + 14 * gui.scale, yy), _("Raw Stream URL http://example.stream:1234"), colours.box_text_label, 312)
@@ -30823,10 +30852,10 @@ class RenamePlaylistBox:
     def render(self):
 
         if gui.level_2_click:
-            input.mouse_click = True
+            inp.mouse_click = True
         gui.level_2_click = False
 
-        if input.key_tab_press:
+        if inp.key_tab_press:
             self.toggle_edit_gen()
 
         text_w = ddt.get_text_w(rename_text_area.text, 315)
@@ -31038,8 +31067,8 @@ class RenamePlaylistBox:
         #ddt.pretty_rect = None
 
         # If enter or click outside of box: save and close
-        if input.key_return_press or (key_esc_press and len(editline) == 0) \
-                or ((input.mouse_click or level_2_right_click) and not coll(rect)):
+        if inp.key_return_press or (key_esc_press and len(editline) == 0) \
+                or ((inp.mouse_click or level_2_right_click) and not coll(rect)):
             gui.rename_playlist_box = False
 
             if self.edit_generator:
@@ -31047,7 +31076,7 @@ class RenamePlaylistBox:
             else:
                 if len(rename_text_area.text) > 0:
                     pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
-            input.key_return_press = False
+            inp.key_return_press = False
 
 
 rename_playlist_box = RenamePlaylistBox()
@@ -31233,7 +31262,7 @@ class PlaylistBox:
 
 
                 if not draw_pin_indicator:
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         switch_playlist(i)
                         self.drag_on = i
                         self.drag = True
@@ -31263,7 +31292,7 @@ class PlaylistBox:
                             tree_view_box.clear_target_pl(i)
 
             # Toggle hidden flag on click
-            if draw_pin_indicator and input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
+            if draw_pin_indicator and inp.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26 * gui.scale)):
                 pl[8] ^= True
 
             yy += self.tab_h + self.gap
@@ -32138,7 +32167,7 @@ class ArtistList:
 
                         if path:
                             set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
-            if input.mouse_click:
+            if inp.mouse_click:
                 self.hover_timer.force_set(-2)
                 gui.delay_frame(2 + hover_delay)
 
@@ -32191,7 +32220,7 @@ class ArtistList:
             ddt.text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
-            if input.mouse_click:
+            if inp.mouse_click:
                 self.click_ref = artist
 
                 double_click = False
@@ -32711,7 +32740,7 @@ class TreeView:
                             folder_tree_stem_menu.activate(in_reference=full_folder_path)
                             self.menu_selected = full_folder_path
 
-                elif input.mouse_click:
+                elif inp.mouse_click:
                     #quick_drag = True
 
                     if not self.click_drag_source:
@@ -33396,7 +33425,7 @@ class QueueBox:
                         if u != 0:
                             pctl.force_queue[u][4] = 0
 
-                input.mouse_click = False
+                inp.mouse_click = False
                 self.draw(x, y, w, h)
                 return
 
@@ -33410,7 +33439,7 @@ class QueueBox:
 
             rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
-            if input.mouse_click and coll(rect):
+            if inp.mouse_click and coll(rect):
 
                 self.dragging = fq[i][5]
                 self.drag_start_y = mouse_position[1]
@@ -33692,14 +33721,14 @@ class MetaBox:
 
         border_rect = (art_rect[0] - border, art_rect[1] - border, art_rect[2] + (border * 2), art_rect[3] + (border * 2))
 
-        if (input.mouse_click or right_click) and is_level_zero(False):
+        if (inp.mouse_click or right_click) and is_level_zero(False):
             if coll(border_rect):
-                if input.mouse_click:
+                if inp.mouse_click:
                     album_art_gen.cycle_offset(target_track)
                 if right_click:
                     picture_menu.activate(in_reference=target_track)
             elif coll(rect):
-                if input.mouse_click:
+                if inp.mouse_click:
                     pctl.show_current()
                 if right_click:
                     showcase_menu.activate(track)
@@ -33825,7 +33854,7 @@ class MetaBox:
 
             if coll((x + 10, y, w - 10, h)):
                 # Click area to jump to current track
-                if input.mouse_click:
+                if inp.mouse_click:
                     pctl.show_current()
                     gui.update += 1
 
@@ -34166,9 +34195,9 @@ class ArtistInfoBox:
                 fields.add(rect)
                 self.mini_box.render(right, yy, alpha_mod(item[1], 100))
                 if coll(rect):
-                    if not input.mouse_click:
+                    if not inp.mouse_click:
                         gui.cursor_want = 3
-                    if input.mouse_click:
+                    if inp.mouse_click:
                         webbrowser.open(item[0], new=2, autoraise=True)
                     gui.pl_update += 1
                     w = ddt.get_text_w(item[0], 13)
@@ -34395,7 +34424,7 @@ class GuitarChords:
         t = copy_from_clipboard()
         if not t:
             show_message("Clipboard has no text")
-            input.mouse_click = False
+            inp.mouse_click = False
             return
 
         cache_title = self.get_cache_title(track)
@@ -34514,7 +34543,7 @@ class GuitarChords:
 
         except:
             show_message("Could not find matching track on GuitarParty")
-            input.mouse_click = False
+            inp.mouse_click = False
             self.ready[cache_title] = 2
 
     def test_ready_status(self, track):
@@ -34866,7 +34895,7 @@ class Showcase:
                 album_art_gen.display(track, (x, y), (box, box))
 
                 # Click art to cycle
-                if coll((x, y, box, box)) and input.mouse_click is True:
+                if coll((x, y, box, box)) and inp.mouse_click is True:
                     album_art_gen.cycle_offset(track)
 
             # Check for lyrics if auto setting
@@ -36750,12 +36779,17 @@ def save_state():
         # if not pctl.running:
         pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
+        old_position = old_window_position
+        if not prefs.save_window_position:
+            old_position = None
+
         save = [
             draw_border,
             gui.save_size,
             prefs.window_opacity,
             gui.scale,
             gui.maximized,
+            old_position,
 
         ]
 
@@ -36977,19 +37011,19 @@ while pctl.running:
         mouse5 = False
         right_click = False
         level_2_right_click = False
-        input.mouse_click = False
+        inp.mouse_click = False
         middle_click = False
         mouse_up = False
-        input.key_return_press = False
+        inp.key_return_press = False
         key_down_press = False
         key_up_press = False
         key_right_press = False
         key_left_press = False
         key_esc_press = False
         key_del = False
-        input.backspace_press = 0
+        inp.backspace_press = 0
         key_backspace_press = False
-        input.key_tab_press = False
+        inp.key_tab_press = False
         key_c_press = False
         key_v_press = False
         #key_f_press = False
@@ -37003,7 +37037,7 @@ while pctl.running:
         pref_box.scroll = 0
         new_playlist_cooldown = False
         input_text = ''
-        input.level_2_enter = False
+        inp.level_2_enter = False
 
         mouse_enter_window = False
         gui.mouse_in_window = True
@@ -37219,7 +37253,7 @@ while pctl.running:
                 # if mouse_position[1] > 1 and mouse_position[0] > 1:
                 #     mouse_down = True
 
-                input.mouse_click = True
+                inp.mouse_click = True
 
                 mouse_down = True
             elif event.button.button == SDL_BUTTON_MIDDLE:
@@ -37249,13 +37283,13 @@ while pctl.running:
             keymaps.hits.append(event.key.keysym.sym)
 
             if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
-                input.key_return_press = True
+                inp.key_return_press = True
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
-                input.key_return_press = True
+                inp.key_return_press = True
             elif event.key.keysym.sym == SDLK_TAB:
-                input.key_tab_press = True
+                inp.key_tab_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
-                input.backspace_press += 1
+                inp.backspace_press += 1
                 key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:
                 key_del = True
@@ -37615,9 +37649,9 @@ while pctl.running:
             gui.pl_update += 1
 
         if mouse_enter_window:
-            input.key_return_press = False
+            inp.key_return_press = False
 
-        if input.mouse_click or right_click or mouse_up:
+        if inp.mouse_click or right_click or mouse_up:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
 
@@ -37719,9 +37753,9 @@ while pctl.running:
 
 
 
-        if input.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
-            input.key_return_press = False
-            input.level_2_enter = True
+        if inp.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
+            inp.key_return_press = False
+            inp.level_2_enter = True
 
         if key_ctrl_down and key_z_press:
             undo.undo()
@@ -37838,26 +37872,26 @@ while pctl.running:
             rename_playlist_box.y = 60 * gui.scale
 
         # Transfer click register to menus
-        if input.mouse_click:
+        if inp.mouse_click:
             for instance in Menu.instances:
                 if instance.active:
                     instance.click()
-                    input.mouse_click = False
+                    inp.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
-            input.mouse_click = False
+        if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
+            inp.mouse_click = False
             gui.level_2_click = True
         else:
             gui.level_2_click = False
 
-        if track_box and input.mouse_click:
+        if track_box and inp.mouse_click:
             w = 540
             h = 240
             x = int(window_size[0] / 2) - int(w / 2)
             y = int(window_size[1] / 2) - int(h / 2)
             if coll([x, y, w, h]):
-                input.mouse_click = False
+                inp.mouse_click = False
                 gui.level_2_click = True
 
         if right_click:
@@ -37866,9 +37900,9 @@ while pctl.running:
         if pref_box.enabled:
 
             if pref_box.inside():
-                if input.mouse_click: # and not gui.message_box:
+                if inp.mouse_click: # and not gui.message_box:
                     pref_box.click = True
-                    input.mouse_click = False
+                    inp.mouse_click = False
                 if right_click:
                     right_click = False
                     pref_box.right_click = True
@@ -37876,7 +37910,7 @@ while pctl.running:
                 pref_box.scroll = mouse_wheel
                 mouse_wheel = 0
             else:
-                if input.mouse_click:
+                if inp.mouse_click:
                     pref_box.close()
                 if right_click:
                     pref_box.close()
@@ -38048,31 +38082,31 @@ while pctl.running:
     # if focused is True:
     #     mouse_down = False
 
-    if input.media_key:
-        if input.media_key == 'Play':
+    if inp.media_key:
+        if inp.media_key == 'Play':
             if pctl.playing_state == 0:
                 pctl.play()
             else:
                 pctl.pause()
-        elif input.media_key == 'Pause':
+        elif inp.media_key == 'Pause':
             pctl.pause_only()
-        elif input.media_key == 'Stop':
+        elif inp.media_key == 'Stop':
             pctl.stop()
-        elif input.media_key == 'Next':
+        elif inp.media_key == 'Next':
             pctl.advance()
-        elif input.media_key == 'Previous':
+        elif inp.media_key == 'Previous':
             pctl.back()
 
-        elif input.media_key == 'Rewind':
+        elif inp.media_key == 'Rewind':
             pctl.seek_time(pctl.playing_time - 10)
-        elif input.media_key == 'FastForward':
+        elif inp.media_key == 'FastForward':
             pctl.seek_time(pctl.playing_time + 10)
-        elif input.media_key == 'Repeat':
+        elif inp.media_key == 'Repeat':
             toggle_repeat()
-        elif input.media_key == 'Shuffle':
+        elif inp.media_key == 'Shuffle':
             toggle_random()
 
-        input.media_key = ""
+        inp.media_key = ""
 
     if len(load_orders) > 0:
         loading_in_progress = True
@@ -38226,10 +38260,10 @@ while pctl.running:
 
         gui.layer_focus = 0
 
-        if input.mouse_click or mouse_wheel or right_click:
+        if inp.mouse_click or mouse_wheel or right_click:
             mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
 
-        if input.mouse_click:
+        if inp.mouse_click:
             n_click_time = time.time()
             if n_click_time - click_time < 0.42:
                 d_mouse_click = True
@@ -38237,7 +38271,7 @@ while pctl.running:
 
             # Don't register bottom level click when closing message box
             if gui.message_box and pref_box.enabled and not key_focused and not coll(message_box.get_rect()):
-                input.mouse_click = False
+                inp.mouse_click = False
                 gui.message_box = False
 
         # Enable the garbage collecter (since we disabled it during startup)
@@ -38278,7 +38312,7 @@ while pctl.running:
                 if side_drag != True:
                     draw_sep_hl = True
 
-                if input.mouse_click:
+                if inp.mouse_click:
                     side_drag = True
                     gui.side_bar_drag_source = mouse_position[0]
                     gui.side_bar_drag_original = gui.rspw
@@ -38384,14 +38418,14 @@ while pctl.running:
                     x = window_size[0] - w
                     h = window_size[1] - gui.panelY - gui.panelBY
 
-                    if not gui.show_playlist and input.mouse_click:
+                    if not gui.show_playlist and inp.mouse_click:
                         left = 0
                         if gui.lsp:
                             left = gui.lspw
 
                         if left < mouse_position[0] < left + 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
                             toggle_album_mode()
-                            input.mouse_click = False
+                            inp.mouse_click = False
                             mouse_down = False
 
                     rect = [x, gui.panelY, w, h]
@@ -38486,7 +38520,7 @@ while pctl.running:
                                 colour = [255, 220, 100, 245]
                                 if colours.lm:
                                     colour = [250, 100, 0, 255]
-                                if input.mouse_click:
+                                if inp.mouse_click:
                                     gui.pt = 1
 
                             power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
@@ -38509,7 +38543,7 @@ while pctl.running:
                         extend = 40 * gui.scale
 
                     # Process inputs first
-                    if (input.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
+                    if (inp.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
                         while render_pos < gui.album_scroll_px + window_size[1]:
 
                             if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
@@ -38610,7 +38644,7 @@ while pctl.running:
                                     if m_in:
 
                                         info = get_album_info(album_dex[album_on])
-                                        if input.mouse_click:
+                                        if inp.mouse_click:
 
                                             if prefs.gallery_single_click:
                                                 gui.d_click_ref = album_dex[album_on]
@@ -39101,7 +39135,7 @@ while pctl.running:
                                         ddt.rect((rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h), [230, 230, 230, 255], True)
                                         ddt.text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
 
-                                        if input.mouse_click:
+                                        if inp.mouse_click:
                                             goto_album(item.position)
                                         if right_click:
                                             lightning_menu.activate(item, position=(window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
@@ -39228,7 +39262,7 @@ while pctl.running:
                 # playlist hit test
                 if coll((
                 gui.playlist_left, gui.playlist_top, gui.plw, window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
-                                            input.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
+                        inp.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
                     gui.pl_update = 1
 
                 if gui.combo_mode and mouse_wheel != 0:
@@ -39326,7 +39360,7 @@ while pctl.running:
 
                                     gui.set_label_hold = -1
 
-                            if input.mouse_click:
+                            if inp.mouse_click:
                                 gui.set_label_hold = h
                                 gui.set_label_point = copy.deepcopy(mouse_position)
                             if right_click:
@@ -39335,7 +39369,7 @@ while pctl.running:
                         if h != 0:
                             if coll(m_grip):
                                 in_grip = True
-                                if input.mouse_click:
+                                if inp.mouse_click:
 
                                     gui.set_hold = h
                                     gui.set_point = mouse_position[0]
@@ -39409,7 +39443,7 @@ while pctl.running:
 
                     if coll(rect) and gui.bar_hover_timer.get() > 0.25:
                         ddt.rect(rect, colours.column_bar_background, True)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             gui.set_bar = True
                             update_layout_do()
                     if not coll(rect):
@@ -39862,7 +39896,7 @@ while pctl.running:
                         #     pctl.playlist_view_position -= 2
                         # elif mouse_position[1] > sbp + sbl:
                         #     pctl.playlist_view_position += 2
-                        elif input.mouse_click:
+                        elif inp.mouse_click:
 
                             if mouse_position[1] < sbp:
                                 gui.scroll_direction = -1
@@ -39897,7 +39931,7 @@ while pctl.running:
                     if not mouse_down:
                         scroll_hold = False
 
-                    if scroll_hold and not input.mouse_click:
+                    if scroll_hold and not inp.mouse_click:
                         gui.pl_update = 1
                         # p_y = pointer(c_int(0))
                         # p_x = pointer(c_int(0))
@@ -40008,17 +40042,17 @@ while pctl.running:
                           artist_preview_render.size[0] + border * 2), (20, 20, 20, 255), True)
 
                 artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
-                if input.mouse_click or right_click or mouse_wheel:
+                if inp.mouse_click or right_click or mouse_wheel:
                     gui.preview_artist = ""
 
             if track_box:
-                if input.key_return_press or right_click or key_esc_press or input.backspace_press or keymaps.test("quick-find"):
+                if inp.key_return_press or right_click or key_esc_press or inp.backspace_press or keymaps.test("quick-find"):
                     track_box = False
 
-                    input.key_return_press = False
+                    inp.key_return_press = False
 
                 if gui.level_2_click:
-                    input.mouse_click = True
+                    inp.mouse_click = True
                 gui.level_2_click = False
 
                 tc = pctl.master_library[r_menu_index]
@@ -40063,7 +40097,7 @@ while pctl.running:
                 ddt.rect_a((x, y), (w, h), colours.box_background, True)
                 ddt.text_background_colour = colours.box_background
 
-                if input.mouse_click and not coll([x, y, w, h]):
+                if inp.mouse_click and not coll([x, y, w, h]):
                     track_box = False
 
                 else:
@@ -40103,10 +40137,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Title"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.title)
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Title"), key_colour_off, 212)
                         #
@@ -40123,10 +40157,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Artist"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.artist)
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Artist"), key_colour_off, 212)
 
@@ -40142,10 +40176,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Album"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.album)
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Album"), key_colour_off, 212)
 
@@ -40162,10 +40196,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Path"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.fullpath)
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Path"), key_colour_off, 212)
 
@@ -40210,10 +40244,10 @@ while pctl.running:
                         fields.add(rect)
                         if coll(rect):
                             ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_on, 212)
-                            if input.mouse_click:
+                            if inp.mouse_click:
                                 show_message(_("Copied text to clipboard"))
                                 copy_to_clipboard(tc.album_artist)
-                                input.mouse_click = False
+                                inp.mouse_click = False
                         else:
                             ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_off, 212)
 
@@ -40230,10 +40264,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Duration"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(tc.length)).lstrip("0"))
                             show_message(_("Copied text to clipboard"))
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Duration"), key_colour_off, 212)
                     line = time.strftime('%M:%S', time.gmtime(tc.length))
@@ -40272,10 +40306,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Genre"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.genre)
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Genre"), key_colour_off, 212)
                     ddt.text((x2, y1), tc.genre, value_colour,
@@ -40287,10 +40321,10 @@ while pctl.running:
                     fields.add(rect)
                     if coll(rect):
                         ddt.text((x1, y1), _("Date"), key_colour_on, 212)
-                        if input.mouse_click:
+                        if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.date)
-                            input.mouse_click = False
+                            inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Date"), key_colour_off, 212)
                     ddt.text((x2, y1), str(tc.date),
@@ -40303,10 +40337,10 @@ while pctl.running:
                         fields.add(rect)
                         if coll(rect):
                             ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_on, 212)
-                            if input.mouse_click:
+                            if inp.mouse_click:
                                 show_message(_("Copied text to clipboard"))
                                 copy_to_clipboard(tc.album_artist)
-                                input.mouse_click = False
+                                inp.mouse_click = False
                         else:
                             ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_off, 212)
                         q = ddt.text((x + (8 + 88) * gui.scale, y1), tc.composer,
@@ -40349,7 +40383,7 @@ while pctl.running:
                             prefs.show_lyrics_showcase = True
                             track_box = False
                             switch_showcase(r_menu_index)
-                            input.mouse_click = False
+                            inp.mouse_click = False
 
                     if len(tc.comment) > 0:
                         y1 += 20 * gui.scale
@@ -40358,10 +40392,10 @@ while pctl.running:
                         fields.add(rect)
                         if coll(rect):
                             ddt.text((x1, y1), _("Comment"), key_colour_on, 212)
-                            if input.mouse_click:
+                            if inp.mouse_click:
                                 show_message(_("Copied text to clipboard"))
                                 copy_to_clipboard(tc.comment)
-                                input.mouse_click = False
+                                inp.mouse_click = False
                         else:
                             ddt.text((x1, y1), _("Comment"), key_colour_off, 212)
                         # ddt.draw_text((x1, y1), "Comment", key_colour_off, 12)
@@ -40374,9 +40408,9 @@ while pctl.running:
 
                             fields.add(link_rect)
                             if coll(link_rect):
-                                if not input.mouse_click:
+                                if not inp.mouse_click:
                                     gui.cursor_want = 3
-                                if input.mouse_click:
+                                if inp.mouse_click:
                                     webbrowser.open(link_pa[2], new=2, autoraise=True)
                                     track_box = True
 
@@ -40405,7 +40439,7 @@ while pctl.running:
             if gui.rename_folder_box:
 
                 if gui.level_2_click:
-                    input.mouse_click = True
+                    inp.mouse_click = True
 
                 gui.level_2_click = False
 
@@ -40419,7 +40453,7 @@ while pctl.running:
 
                 ddt.text_background_colour = colours.box_background
 
-                if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+                if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
                 p = ddt.text((x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.box_title_text, 213)
@@ -40435,10 +40469,10 @@ while pctl.running:
                 ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.box_text_border)
 
                 if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
-                               tooltip="Renames the physical folder based on the template") or input.level_2_enter:
+                               tooltip="Renames the physical folder based on the template") or inp.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
                     gui.rename_folder_box = False
-                    input.mouse_click = False
+                    inp.mouse_click = False
 
                 text = _("Trash")
                 tt = "Moves folder to system trash"
@@ -40453,20 +40487,20 @@ while pctl.running:
                     else:
                         delete_folder(rename_index)
                     gui.rename_folder_box = False
-                    input.mouse_click = False
+                    inp.mouse_click = False
 
                 if move_folder_up(rename_index):
                     if draw.button(_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
                                    tooltip="Moves folder up 2 levels and deletes old the containing folder"):
                         move_folder_up(rename_index, True)
-                        input.mouse_click = False
+                        inp.mouse_click = False
 
                 to_clean = clean_folder(rename_index)
                 if to_clean > 0:
                     if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
                                    80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
                         clean_folder(rename_index, True)
-                        input.mouse_click = False
+                        inp.mouse_click = False
 
                 ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.box_text_label, 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
@@ -40508,7 +40542,7 @@ while pctl.running:
                     search_text.text = ""
                 input_text = ""
             elif (keymaps.test("quick-find") or (
-                        key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
+                        key_esc_press and len(editline) == 0)) or inp.mouse_click and quick_search_mode is True:
                 quick_search_mode = False
                 search_text.text = ""
 
@@ -40541,7 +40575,7 @@ while pctl.running:
                 if len(input_text) > 0:
                     search_index = -1
 
-                if input.backspace_press and search_text.text == "":
+                if inp.backspace_press and search_text.text == "":
                     quick_search_mode = False
 
                 if len(search_text.text) == 0:
@@ -40577,8 +40611,8 @@ while pctl.running:
 
                 search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213)
 
-                if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and input.key_return_press:
-                    input.key_return_press = False
+                if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and inp.key_return_press:
+                    inp.key_return_press = False
                     playlist = []
                     if len(search_text.text) > 0:
                         if search_text.text[0] == '/':
@@ -40626,7 +40660,7 @@ while pctl.running:
                         search_text.text = ""
                         quick_search_mode = False
 
-                if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or input.backspace_press\
+                if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or inp.backspace_press\
                         or gui.force_search:
 
                     gui.pl_update = 1
@@ -40634,7 +40668,7 @@ while pctl.running:
                     if gui.force_search:
                         search_index = 0
 
-                    if input.backspace_press:
+                    if inp.backspace_press:
                         search_index = 0
 
                     if len(search_text.text) > 0 and search_text.text[0] != "/":
@@ -40717,7 +40751,7 @@ while pctl.running:
 
                         edge_playlist2.pulse()
 
-                if input.key_return_press is True and search_index > -1:
+                if inp.key_return_press is True and search_index > -1:
                     gui.pl_update = 1
                     pctl.jump(default_playlist[search_index], search_index)
                     if album_mode:
@@ -40781,7 +40815,7 @@ while pctl.running:
                     if playlist_selected < 0:
                         playlist_selected = 0
 
-                if input.key_return_press and not pref_box.enabled and not radiobox.active:
+                if inp.key_return_press and not pref_box.enabled and not radiobox.active:
                     gui.pl_update = 1
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
@@ -40794,7 +40828,7 @@ while pctl.running:
 
         elif gui.mode == 3:
 
-            if (key_shift_down and input.mouse_click) or middle_click:
+            if (key_shift_down and inp.mouse_click) or middle_click:
                 if prefs.mini_mode_mode == 4:
                     prefs.mini_mode_mode = 1
                     window_size[0] = int(330 * gui.scale)
@@ -41449,6 +41483,9 @@ if spot_ctl.playing:
 if lfm_scrobbler.queue and not lfm_scrobbler.running:
     lfm_scrobbler.start_queue()
     print("Sending scrobble before close...")
+
+if gui.mode < 3:
+    old_window_position = get_window_position()
 
 SDL_DestroyWindow(t_window)
 

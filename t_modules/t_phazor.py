@@ -261,7 +261,7 @@ def player4(tauon):
                         # The vorbis decoder doesn't like appended files
                         aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000)
                     else:
-                        aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), False)  # ms, flush_seek
+                        aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
                     pctl.playing_time = pctl.new_time
                 pctl.decode_time = pctl.playing_time
             if command == "volume":
