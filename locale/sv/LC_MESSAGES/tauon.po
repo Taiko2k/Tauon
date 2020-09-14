@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-09-14 22:51+1200\n"
-"PO-Revision-Date: 2020-08-22 07:57+0000\n"
+"PO-Revision-Date: 2020-09-14 13:33+0000\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.2.1-dev\n"
+"X-Generator: Weblate 4.3-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1813 tauon.py:1815
@@ -1410,7 +1410,6 @@ msgid "Enable"
 msgstr "Aktivera"
 
 #: tauon.py:23904
-#, fuzzy
 msgid "Output buffer"
 msgstr "Öppna utdatamappen"
 
@@ -1812,7 +1811,7 @@ msgstr "Rita egen fönsterdekoration"
 
 #: tauon.py:25024
 msgid "Restore window position on restart"
-msgstr ""
+msgstr "Återställ fönsterposition vid omstart"
 
 #: tauon.py:25028
 msgid "Show playing in titlebar"
@@ -2063,24 +2062,20 @@ msgid "End of Playlist"
 msgstr "Slut på spelningslista"
 
 #: tauon.py:30272
-#, fuzzy
 msgid "Search Tag"
-msgstr "Sök"
+msgstr "Sök tagg"
 
 #: tauon.py:30273
-#, fuzzy
 msgid "Search Country"
-msgstr "Sök på GuitarParty"
+msgstr "Sök land"
 
 #: tauon.py:30274
-#, fuzzy
 msgid "Search Title"
-msgstr "Sök"
+msgstr "Sök titel"
 
 #: tauon.py:30434
-#, fuzzy
 msgid "Search text…"
-msgstr "Sök"
+msgstr "Sök text…"
 
 #: tauon.py:30441
 msgid "Search"
@@ -2127,9 +2122,8 @@ msgid "Record and auto split songs"
 msgstr "Spela in och separera låtar automatiskt"
 
 #: tauon.py:30744
-#, fuzzy
 msgid "Please stop playback first before toggling this setting"
-msgstr "Stoppa uppspelning först för att avsluta aktuell inspelning"
+msgstr "Stoppa uppspelning först, för att ändra denna inställning"
 
 #: tauon.py:30749
 msgid "Please stop playback first to end current recording"
