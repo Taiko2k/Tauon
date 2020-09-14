@@ -84,7 +84,6 @@ enum status {
   PAUSED,
   STOPPED,
   RAMP_DOWN,
-  RAMP_UP,
   ENDING,
 };
 
@@ -757,7 +756,7 @@ void *out_thread(void *thread_id){
       }
     
     // Process decoded audio data and send out
-    if ((mode == PLAYING || mode == RAMP_UP || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0 && buffering == 0){
+    if ((mode == PLAYING || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0 && buffering == 0){
       
       b = 0; // byte number  
 
@@ -790,7 +789,7 @@ void *out_thread(void *thread_id){
             gate -= ramp_step(current_sample_rate, 5);
             if (gate < 0) gate = 0; }
 
-          if (mode == RAMP_UP){
+          if (gate < 1 && mode == PLAYING){
             gate += ramp_step(current_sample_rate, 5);
             if (gate > 1) gate = 1; 
           }
@@ -943,7 +942,7 @@ void *main_loop(void *thread_id){
           gate = 0;
           sample_change_byte = 0;
           reset_set_byte = 0;
-          mode = RAMP_UP;
+          mode = PLAYING;
           command = NONE;
         } else {
           printf("pa: Load file failed\n");
@@ -999,24 +998,15 @@ void *main_loop(void *thread_id){
         if (command == SEEK && config_fast_seek == 1) {
           pa_simple_flush(s, &error);
         }
-        mode = RAMP_UP;
+        mode = PLAYING;
         command = NONE;
 
       }
     }
 
-    
-    if (mode == RAMP_UP && gate == 1){
-      //printf("pa: RAMPED UP\n");
-      mode = PLAYING;
-    }
-    
-    if (mode == PLAYING){
-       gate = 1;
-    }
                        
     // Refill the buffer
-    if (mode == PLAYING || mode == RAMP_UP){
+    if (mode == PLAYING){
       while (buff_filled < BUFF_SAFE && mode != ENDING){
         
         pump_decode();

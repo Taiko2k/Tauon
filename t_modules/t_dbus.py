@@ -55,25 +55,25 @@ class Gnome:
         def on_mediakey(comes_from, what):
 
             if what == 'Play':
-                self.tauon.input.media_key = 'Play'
+                self.tauon.inp.media_key = 'Play'
             elif what == 'Pause':
-                self.tauon.input.media_key = 'Pause'
+                self.tauon.inp.media_key = 'Pause'
             elif what == 'Stop':
-                self.tauon.input.media_key = 'Stop'
+                self.tauon.inp.media_key = 'Stop'
             elif what == 'Next':
-                self.tauon.input.media_key = 'Next'
+                self.tauon.inp.media_key = 'Next'
             elif what == 'Previous':
-                self.tauon.input.media_key = 'Previous'
+                self.tauon.inp.media_key = 'Previous'
             elif what == 'Rewind':
-                self.tauon.input.media_key = 'Rewind'
+                self.tauon.inp.media_key = 'Rewind'
             elif what == 'FastForward':
-                self.tauon.input.media_key = 'FastForward'
+                self.tauon.inp.media_key = 'FastForward'
             elif what == 'Repeat':
-                self.tauon.input.media_key = 'Repeat'
+                self.tauon.inp.media_key = 'Repeat'
             elif what == 'Shuffle':
-                self.tauon.input.media_key = 'Shuffle'
+                self.tauon.inp.media_key = 'Shuffle'
 
-            if self.tauon.input.media_key:
+            if self.tauon.inp.media_key:
                 gui.update = 1
 
         # set up the glib main loop.
