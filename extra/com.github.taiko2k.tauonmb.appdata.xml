@@ -58,10 +58,11 @@
 
   <releases>
 
-    <release version="6.2.6" date="2020-09-04">
+    <release version="6.3.0" date="2020-09-14">
       <description>
         <ul>
-          <li>Various playback related fixes</li>
+          <li>Add remember window position setting</li>
+          <li>Add alternate audio backend</li>
         </ul>
       </description>
     </release>
