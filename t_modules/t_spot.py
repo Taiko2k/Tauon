@@ -58,15 +58,11 @@ class SpotCtl:
         self.progress_timer = Timer()
         self.update_timer = Timer()
 
-        self.token_path = os.path.join(self.tauon.user_directory, "spot_token-j")
-        self.token_path = os.path.join(self.tauon.user_directory, "spot-r-token")
+        self.token_path = os.path.join(self.tauon.user_directory, "spot-a-token")
 
     def prep_cred(self):
 
-        try:
-            rc = tk.RefreshingCredentials
-        except:
-            rc = tk.auth.RefreshingCredentials
+        rc = tk.RefreshingCredentials
         self.cred = rc(client_id=self.tauon.prefs.spot_client,
                                     client_secret=self.tauon.prefs.spot_secret,
                                     redirect_uri=self.redirect_uri)
@@ -85,46 +81,28 @@ class SpotCtl:
     def paste_code(self, code):
         if self.cred is None:
             self.prep_cred()
-        self.token = self.cred.request_user_token(code)
+
+        self.token = self.cred.request_user_token(code.strip().strip("\n"))
         if self.token:
             self.save_token()
             self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
 
     def save_token(self):
+
         if self.token:
-
-            pickle.dump(self.token, open(self.token_path, "wb"))
-
-            if os.path.getsize(self.token_path) > 10000:
-                print("PICKLE MALFUNCTION")
-                os.remove(self.token_path)
+            self.tauon.prefs.spotify_token = str(self.token.refresh_token)
 
     def load_token(self):
-        if os.path.isfile(self.token_path):
+        if self.tauon.prefs.spotify_token:
             try:
-
-                if os.path.getsize(self.token_path) > 10000:
-                    print("PICKLE MALFUNCTION")
-                    os.remove(self.token_path)
-                else:
-                    f = open(self.token_path, "rb")
-                    self.token = pickle.load(f)
-                    # Fix for memory leak
-                    self.token._token._scope = tk.Scope(self.scope.split(" "))
-                    f.close()
-                    print("Loaded token from file")
-                    return
+                self.token = tk.refresh_user_token(self.tauon.prefs.spot_client, self.tauon.prefs.spot_secret, self.tauon.prefs.spotify_token)
             except:
-                print("ERROR LOADING TOKEN.")
-
-        self.tauon.gui.show_message(self.tauon.strings.spotify_request_auth, mode="warning")
-        self.delete_token()
+                print("ERROR LOADING TOKEN")
+                self.tauon.prefs.spotify_token = ""
 
     def delete_token(self):
-        if os.path.isfile(self.token_path):
-            os.remove(self.token_path)
+        self.tauon.prefs.spotify_token = ""
         self.token = None
-
 
     def auth(self):
         if not tekore_imported:
