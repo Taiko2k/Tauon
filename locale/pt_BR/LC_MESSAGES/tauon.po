@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-08-22 12:21+1200\n"
-"PO-Revision-Date: 2020-08-21 17:27+0000\n"
+"PO-Revision-Date: 2020-08-27 02:19+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -2053,30 +2053,27 @@ msgstr "Fim da Playlist"
 
 #: tauon.py:30616
 msgid "Genre or 2 letter country code"
-msgstr ""
+msgstr "Gênero ou 2 letras do código de país"
 
 #: tauon.py:30623
-#, fuzzy
 msgid "Search"
-msgstr "Procurando..."
+msgstr "Busca"
 
 #: tauon.py:30633
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Obter Mais Votado"
 
 #: tauon.py:30702
 msgid "Internet Radio"
 msgstr "Rádio da Internet"
 
 #: tauon.py:30706
-#, fuzzy
 msgid "Connecting..."
-msgstr "Desconectando..."
+msgstr "Conectando..."
 
 #: tauon.py:30709
-#, fuzzy
 msgid "Failed to connect!"
-msgstr "Falha ao estabelecer conexão"
+msgstr "Falha ao conectar!"
 
 #: tauon.py:30749
 msgid "Name / Title"
@@ -2104,28 +2101,27 @@ msgstr "Gravar e auto dividir músicas"
 
 #: tauon.py:30899
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Por favor pare a reprodução para finalizar a gravação atual"
 
 #: tauon.py:30905
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Dica: Você pode pressionar F9 para visualizar a pasta destino."
 
 #: tauon.py:30905
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Faixas serão gravadas agora."
 
 #: tauon.py:30909
 msgid "Browse"
-msgstr ""
+msgstr "Navegar"
 
 #: tauon.py:30913
-#, fuzzy
 msgid "Saved"
-msgstr "Salvar"
+msgstr "Salvo"
 
 #: tauon.py:30959
 msgid "Added to list of saved stations"
-msgstr ""
+msgstr "Adicionado à lista de estações salvas"
 
 #: tauon.py:30961
 msgid "Paste Website Link"

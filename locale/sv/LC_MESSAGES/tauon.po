@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-08-22 12:21+1200\n"
-"PO-Revision-Date: 2020-08-20 19:36+0000\n"
-"Last-Translator: Luna Jernberg <droidbittin@gmail.com>\n"
+"PO-Revision-Date: 2020-08-22 07:57+0000\n"
+"Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
 "Language: sv\n"
@@ -2055,30 +2055,27 @@ msgstr "Slut på spelningslista"
 
 #: tauon.py:30616
 msgid "Genre or 2 letter country code"
-msgstr ""
+msgstr "Genre eller landskod med två bokstäver"
 
 #: tauon.py:30623
-#, fuzzy
 msgid "Search"
-msgstr "Söker..."
+msgstr "Sök"
 
 #: tauon.py:30633
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Hämta toppröstade"
 
 #: tauon.py:30702
 msgid "Internet Radio"
 msgstr "Internetradio"
 
 #: tauon.py:30706
-#, fuzzy
 msgid "Connecting..."
-msgstr "Kopplar ner..."
+msgstr "Ansluter..."
 
 #: tauon.py:30709
-#, fuzzy
 msgid "Failed to connect!"
-msgstr "Kunde inte etablera en anslutning"
+msgstr "Kunde inte ansluta!"
 
 #: tauon.py:30749
 msgid "Name / Title"
@@ -2106,28 +2103,27 @@ msgstr "Spela in och separera låtar automatiskt"
 
 #: tauon.py:30899
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Stoppa uppspelning först för att avsluta aktuell inspelning"
 
 #: tauon.py:30905
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Tips: Du kan trycka F9 för att visa utdatamappen."
 
 #: tauon.py:30905
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Spår kommer nu att spelas in."
 
 #: tauon.py:30909
 msgid "Browse"
-msgstr ""
+msgstr "Bläddra"
 
 #: tauon.py:30913
-#, fuzzy
 msgid "Saved"
-msgstr "Spara"
+msgstr "Sparat"
 
 #: tauon.py:30959
 msgid "Added to list of saved stations"
-msgstr ""
+msgstr "Tillagd i lista över sparade stationer"
 
 #: tauon.py:30961
 msgid "Paste Website Link"
