@@ -170,20 +170,23 @@ def authserve(tauon):
     class Server(BaseHTTPRequestHandler):
 
         def do_GET(self):
-
+            code = ""
             path = self.path
             if path.startswith("/spotredir"):
                 self.send_response(200)
                 self.send_header("Content-type", "text/plain")
+                self.end_headers()
                 code = path.split("code=")
                 if len(code) > 1:
                     code = code[1]
-                    tauon.spot_ctl.paste_code(code)
                     self.wfile.write(b"You can close this now and return to Tauon Music Box")
 
             else:
                 self.send_response(400)
                 self.end_headers()
+
+            if code:
+                tauon.spot_ctl.paste_code(code)
 
     httpd = HTTPServer(("127.0.0.1", 7811), Server)
     httpd.serve_forever()

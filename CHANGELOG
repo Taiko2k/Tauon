@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v6.3.0
 
  - Added option to restore window position on restart
+ - Fixed spotify auth not working with tekore v3
 
 v6.2.6
 

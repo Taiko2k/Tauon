@@ -1382,6 +1382,7 @@ class Prefs:    # Used to hold any kind of settings
         self.radio_record_codec = "OPUS"
         self.pa_fast_seek = False
         self.save_window_position = False
+        self.spotify_token = ""
 
 prefs = Prefs()
 
@@ -2905,6 +2906,8 @@ for t in range(2):
             spot_cache_saved_albums = save[151]
         if save[152] is not None:
             prefs.auto_rec = save[152]
+        if save[153] is not None:
+            prefs.spotify_token = save[153]
 
         state_file.close()
         del save
@@ -24439,7 +24442,7 @@ class Over:
             #     show_message("Copied redirect URI to clipboard")
             # y += round(35 * gui.scale)
 
-            if spot_ctl.token:
+            if prefs.spotify_token:
                 if self.button(x, y, _("Forget Account")):
                     spot_ctl.delete_token()
                     spot_ctl.cache_saved_albums.clear()
@@ -36770,7 +36773,8 @@ def save_state():
             prefs.show_band,
             prefs.download_playlist,
             spot_ctl.cache_saved_albums,
-            prefs.auto_rec
+            prefs.auto_rec,
+            prefs.spotify_token,
         ]
 
 
@@ -37765,11 +37769,6 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-            # d = pctl.advance(dry=True)
-            # print(d)
-            # if d:
-            #     print(d.title)
-            # pass
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
