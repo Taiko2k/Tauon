@@ -329,6 +329,8 @@ def player4(tauon):
 
         else:
 
+            pctl.spot_test_progress()
+
             if state == 3:
                 pctl.radio_progress()
                 add_time = player_timer.hit()
