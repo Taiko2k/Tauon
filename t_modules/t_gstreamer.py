@@ -265,11 +265,11 @@ def player3(tauon):  # GStreamer
                 data = struct.get_value("peak")
                 ts = struct.get_value("timestamp")
                 # print(data)
-                r = (10 ** (data[0] / 20)) * 11.6
+                l = (10 ** (data[0] / 20)) * 11.6
                 if len(data) == 1:
-                    l = r
+                    r = l
                 else:
-                    l = (10 ** (data[1] / 20)) * 11.6
+                    r = (10 ** (data[1] / 20)) * 11.6
 
                 td = (ts / 1000000000) - (self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
                 t = time.time()
@@ -280,7 +280,7 @@ def player3(tauon):  # GStreamer
                             tauon.level_train.clear()
                             # print("FF")
                             break
-                    tauon.level_train.append((rt, r, l))
+                    tauon.level_train.append((rt, l, r))
 
             # if name == 'spectrum':
             #     struct_str = struct.to_string()

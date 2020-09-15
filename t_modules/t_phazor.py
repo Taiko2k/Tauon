@@ -112,7 +112,7 @@ def player4(tauon):
             amp = aud.get_level_peak_r()
             r = (amp / 32767) * 12
 
-            tauon.level_train.append((0, r, l))
+            tauon.level_train.append((0, l, r))
             gui.level_update = True
 
         # Command processing
@@ -273,9 +273,9 @@ def player4(tauon):
                 length = aud.get_length_ms() / 1000
                 position = aud.get_position_ms() / 1000
                 remain = length - position
-                print("length: " + str(length))
-                print("position: " + str(position))
-                print("We are %s from end" % str(remain))
+                # print("length: " + str(length))
+                # print("position: " + str(position))
+                # print("We are %s from end" % str(remain))
                 time.sleep(2.5)
                 command = "stop"
             if command == "stop":
