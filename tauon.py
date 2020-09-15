@@ -3289,6 +3289,13 @@ if db_version > 0:
             if not hasattr(master_library[key], 'art_url_key'):
                 setattr(master_library[key], 'art_url_key', "")
 
+    if db_version <= 49:
+        print("Updating database to version 50")
+        if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
+            show_message("Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify",
+                         "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify")
+            os.remove(os.path.join(user_directory, "spot-r-token"))
+
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
 
@@ -36638,7 +36645,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            49,  # Version, used for upgrading
+            50,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
