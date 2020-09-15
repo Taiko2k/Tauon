@@ -102,7 +102,7 @@ parts:
       - flac
       - libpulse0
       - libvorbis0a
-      - opusfile
+      - libopusfile0
       - libmpg123-0
       
     override-build: |
