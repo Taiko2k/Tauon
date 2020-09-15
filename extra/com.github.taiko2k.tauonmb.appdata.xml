@@ -58,7 +58,7 @@
 
   <releases>
 
-    <release version="6.3.0" date="2020-09-14">
+    <release version="6.3.0" date="2020-09-15">
       <description>
         <ul>
           <li>Add remember window position setting</li>
