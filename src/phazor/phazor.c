@@ -35,14 +35,23 @@
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
                           // before writing
 
-time_t timer;
+double get_time_ms()
+{
+struct timeval t;
+gettimeofday(&t, NULL);
+return (t.tv_sec + (t.tv_usec / 1000000.0)) * 1000.0;
+}
+
+double t_start, t_end;
 
 int16_t buff16l[BUFF_SIZE];
 int16_t buff16r[BUFF_SIZE];
 unsigned int buff_filled = 0;
 unsigned int buff_base = 0;
 
-pthread_mutex_t out_mutex;
+pthread_mutex_t buffer_mutex;
+pthread_mutex_t pulse_mutex;
+
 unsigned char out_buf[2048 * 4]; // 4 bytes for 16bit stereo
 
 unsigned int position_count = 0;
@@ -172,7 +181,7 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
   //printf("Resolution is: %d\n", frame->header.bits_per_sample);
   //printf("Samplerate is: %d\n", frame->header.sample_rate); 
   //printf("Pointer is %d\n", buffer[0]);
-  
+  pthread_mutex_lock(&buffer_mutex);
   if (frame->header.sample_rate != current_sample_rate){
     if (want_sample_rate != frame->header.sample_rate){
       want_sample_rate = frame->header.sample_rate;
@@ -185,6 +194,7 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
   }
   
   if (load_target_seek > 0) {
+    pthread_mutex_unlock(&buffer_mutex);
     return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
   }                                                                                                                                                        
                                                                                                                                                             
@@ -244,7 +254,7 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
     
     i++;
   }
-  
+  pthread_mutex_unlock(&buffer_mutex);
   return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 
@@ -269,7 +279,9 @@ int disconnect_pulse(){
   if (pulse_connected == 1) {
     //pa_simple_drain(s, NULL);
     //pa_simple_flush(s, NULL);
+    pthread_mutex_lock(&pulse_mutex);
     pa_simple_free(s);
+    pthread_mutex_unlock(&pulse_mutex);
     //printf("pa: Disconnect from PulseAudio\n");
   }
   pulse_connected = 0;
@@ -281,6 +293,7 @@ void connect_pulse(){
   
   if (pulse_connected == 1) disconnect_pulse(); 
   
+  pthread_mutex_lock(&pulse_mutex);
   if (want_sample_rate > 0){
   current_sample_rate = want_sample_rate;
   want_sample_rate = 0;
@@ -311,7 +324,7 @@ void connect_pulse(){
                     );
   
   pulse_connected = 1;
-
+  pthread_mutex_unlock(&pulse_mutex);
       
 }
 
@@ -392,10 +405,12 @@ int load_next(){
       load_target_file[0] == 'h'){
         codec = FFMPEG;
         start_ffmpeg (load_target_file, load_target_seek);
+        pthread_mutex_lock(&buffer_mutex);
         if (current_sample_rate != 44100){
           sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
           want_sample_rate = 44100;
         }
+        pthread_mutex_unlock(&buffer_mutex);
         return 0;
   }
   
@@ -451,18 +466,16 @@ int load_next(){
     // Unlock the output thread mutex cause loading could take a while?..
     // and we dont wanna interrupt the output for too long.
     case OPUS:
-    pthread_mutex_unlock(&out_mutex);
     
     opus_dec = op_open_file (load_target_file, &e);
     decoder_allocated = 1;
     
     if (e != 0){
       printf("pa: Error reading ogg file (expecting opus)\n");
-      pthread_mutex_lock(&out_mutex);
       return 1;    
     }
     else{
-      pthread_mutex_lock(&out_mutex);
+      pthread_mutex_lock(&buffer_mutex);
       if (current_sample_rate != 48000){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
         want_sample_rate = 48000;
@@ -477,23 +490,24 @@ int load_next(){
         reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
         load_target_seek = 0;
       }
+      pthread_mutex_unlock(&buffer_mutex);
       return 0;
     }
       
     break;  
     case VORBIS:
-    pthread_mutex_unlock(&out_mutex);
+
     e = ov_fopen(load_target_file, &vf);
     decoder_allocated = 1;
     if (e != 0){
       printf("pa: Error reading ogg file (expecting vorbis)\n");
-      pthread_mutex_lock(&out_mutex);
+
       return 1;
     } else {
       
       vi = *ov_info(&vf, -1);
       
-      pthread_mutex_lock(&out_mutex);
+      pthread_mutex_lock(&buffer_mutex);
       //printf("pa: Vorbis samplerate is %lu\n", vi.rate);
       if (current_sample_rate != vi.rate){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -510,13 +524,13 @@ int load_next(){
         reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
         load_target_seek = 0;
       }
+      pthread_mutex_unlock(&buffer_mutex);
       return 0;
       
     }
     
     break;
     case FLAC:
-      pthread_mutex_unlock(&out_mutex);
       if ( FLAC__stream_decoder_init_file(
         dec,
         load_target_file,
@@ -524,21 +538,23 @@ int load_next(){
         NULL, //&f_meta,
         &f_err,
         0) == FLAC__STREAM_DECODER_INIT_STATUS_OK) { 
+          
         decoder_allocated = 1;
-        pthread_mutex_lock(&out_mutex);
         return 0;
+          
       } else return 1;
-
+      
       break;
     
     case MPG:
-      pthread_mutex_unlock(&out_mutex);
+
       mpg123_open(mh, load_target_file);
       decoder_allocated = 1;
       mpg123_getformat(mh, &rate, &channels, &encoding);
       mpg123_scan(mh);
       //printf("pa: %lu. / %d. / %d\n", rate, channels, encoding);
-      pthread_mutex_lock(&out_mutex);
+
+      pthread_mutex_lock(&buffer_mutex);
       if (current_sample_rate != rate){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
         want_sample_rate = rate;
@@ -555,12 +571,14 @@ int load_next(){
           reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
           load_target_seek = 0;
         }
+        pthread_mutex_unlock(&buffer_mutex);                                     
         return 0;
                                              
       } else { 
         // Pretty much every MP3 ive tried is S16, so we might not have 
         // to worry about this.
         printf("pa: ERROR, encoding format not supported!\n"); 
+        pthread_mutex_unlock(&buffer_mutex);
         return 1;
       }
       
@@ -572,10 +590,12 @@ int load_next(){
 void end(){
   // Call when buffer has run out or otherwise ready to stop and flush
   stop_decoder();
+  pthread_mutex_lock(&buffer_mutex);
   mode = STOPPED;
   command = NONE;
   buff_base = 0;
   buff_filled = 0;
+  pthread_mutex_unlock(&buffer_mutex);
   //pa_simple_flush (s, &error);
   disconnect_pulse();
   current_sample_rate = 0;
@@ -587,10 +607,12 @@ void decoder_eos(){
   if (next_ready == 1){
     printf("pa: Read next gapless\n");
     load_next();
+    pthread_mutex_lock(&buffer_mutex);
     next_ready = 0;
     reset_set_value = 0;
     reset_set = 1;
     reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+    pthread_mutex_unlock(&buffer_mutex);
               
   } else mode = ENDING;
 }
@@ -604,24 +626,27 @@ void pump_decode(){
 
     switch (FLAC__stream_decoder_get_state(dec)) {
       case FLAC__STREAM_DECODER_END_OF_STREAM:
-        
         decoder_eos();
         break;
           
       default:
         FLAC__stream_decoder_process_single(dec); 
+
     }
     
     if (load_target_seek > 0){
       //printf("pa: Set start position %d\n", load_target_seek);
+      
       int rate = current_sample_rate;
       if (want_sample_rate > 0) rate = want_sample_rate;
       
       FLAC__stream_decoder_seek_absolute (dec, (int) rate * (load_target_seek / 1000.0));
+      pthread_mutex_lock(&buffer_mutex);
       reset_set_value = rate * (load_target_seek / 1000.0);
       reset_set = 1;
       reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
       load_target_seek = 0;
+      pthread_mutex_unlock(&buffer_mutex);
     }         
 
   } else if (codec == OPUS){
@@ -630,12 +655,15 @@ void pump_decode(){
     
     done = op_read_stereo(opus_dec, opus_buffer, 1024*2) * 2;
     unsigned int i = 0;
+    
+    pthread_mutex_lock(&buffer_mutex);
     while (i < done){
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = opus_buffer[i];
       buff16r[(buff_filled + buff_base) % BUFF_SIZE] = opus_buffer[i + 1];
       buff_filled++;
       i += 2;
-    }    
+    }
+    pthread_mutex_unlock(&buffer_mutex);
     if (done == 0){
       decoder_eos();
     }    
@@ -647,13 +675,15 @@ void pump_decode(){
     int stream;
     done = ov_read(&vf, parse_buffer, 2048*2, 0, 2, 1, &stream);
     unsigned int i = 0;
+    pthread_mutex_lock(&buffer_mutex);
     while (i < done){
     
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 1] << 8) | (parse_buffer[i+0] & 0xFF));
       buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 3] << 8) | (parse_buffer[i+2] & 0xFF));
       buff_filled++;
       i += 4;
-    }    
+    }
+    pthread_mutex_unlock(&buffer_mutex);
     if (done == 0){
       decoder_eos();
     }    
@@ -662,11 +692,12 @@ void pump_decode(){
     // MP3 decoding
     
     size_t done;
-    pthread_mutex_unlock(&out_mutex);
+
     mpg123_read(mh, parse_buffer, 2048 * 2, &done);
-    pthread_mutex_lock(&out_mutex);
+
     
     unsigned int i = 0;
+    pthread_mutex_lock(&buffer_mutex);
     while (i < done){
     
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 1] << 8) | (parse_buffer[i+0] & 0xFF));
@@ -674,7 +705,7 @@ void pump_decode(){
       buff_filled++;
       i += 4;
     }
-                          
+    pthread_mutex_unlock(&buffer_mutex);                    
     if (done == 0){
       decoder_eos();
     }
@@ -684,8 +715,6 @@ void pump_decode(){
     int b = 0;
     int done = 0;
     
-    pthread_mutex_unlock(&out_mutex);
-    
     while (b < 2048){
       if (feof(ffm)){
         done = 1;
@@ -694,15 +723,13 @@ void pump_decode(){
       ffm_buffer[b] = fgetc(ffm);
       b++;
     }
-    
-    pthread_mutex_lock(&out_mutex);
                                 
     if (b % 2 == 1){
       printf("pa: Uneven data\n");
       decoder_eos();
       return;
     }
-
+    pthread_mutex_lock(&buffer_mutex);
     while (i < b){
         
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((ffm_buffer[i + 1] << 8) | (ffm_buffer[i] & 0xFF));
@@ -710,10 +737,11 @@ void pump_decode(){
       buff_filled++;
       i += 4;
     }
-    
+    pthread_mutex_unlock(&buffer_mutex);
     if (done == 1){
       printf("pa: FFMPEG has finished\n");
       decoder_eos();
+
     }
                                
     
@@ -734,29 +762,37 @@ void *out_thread(void *thread_id){
   
   out_thread_running = 1;
   int b = 0;
+  double testa, testb;
+  
+  t_start = get_time_ms();
   
   while (out_thread_running == 1){
     
-    usleep(1000);
+    usleep(500);
     
-    pthread_mutex_lock(&out_mutex);
     
     if (buffering == 1 && buff_filled > 9000){
+
       buffering = 0;
       printf("pa: Buffering -> Playing\n");
       sleep(1);
       connect_pulse();
+
     }
     
     if (buff_filled < 1000 && load_target_file[0] == 'h'){
+
         disconnect_pulse();
         if (mode == RAMP_DOWN) gate = 0;
         printf("pa: Buffering...\n");
         buffering = 1;
+
       }
     
     // Process decoded audio data and send out
     if ((mode == PLAYING || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0 && buffering == 0){
+      
+      pthread_mutex_lock(&buffer_mutex);
       
       b = 0; // byte number  
 
@@ -833,23 +869,43 @@ void *out_thread(void *thread_id){
           
           if (b >= 256 * 4) break; // Buffer is now full
       }
-
+      pthread_mutex_unlock(&buffer_mutex);
       // Send data to pulseaudio server
       if (b > 0){
         
         if (peak_roll_l > peak_l) peak_l = peak_roll_l;
         if (peak_roll_r > peak_r) peak_r = peak_roll_r;
         
+        pthread_mutex_lock(&pulse_mutex);
         if (pulse_connected == 0){
           printf("pa: Error, not connected to any output!\n");
         } else {
+          
+          /* t_end = get_time_ms(); */
+          /* testa = (t_end - t_start); */
+          /* t_start = t_end; */
+          
+          
           pa_simple_write (s, out_buf, b, &error); 
+  
+          /* t_end = get_time_ms(); */
+          /* testb = (t_end - t_start); */
+          /* t_start = t_end; */
+          
+          /* if (testa + testb > 19){ */
+          /*   printf("Write at: %f\n", testa); */
+          /*   printf("Took: %f\n\n", testb); */
+          /* } */
+        
+          
         }
+        pthread_mutex_unlock(&pulse_mutex);
+                  
       } // sent data
 
     } // close if data
-      
-    pthread_mutex_unlock(&out_mutex);   
+    else usleep(500);
+        
   } // close main loop
 
   return thread_id;
@@ -864,7 +920,6 @@ int main_running = 0;
 
 void *main_loop(void *thread_id){
   
-  pthread_mutex_lock(&out_mutex);
   
   pthread_t out_thread_id;
   pthread_create(&out_thread_id, NULL, out_thread, NULL); 
@@ -936,6 +991,7 @@ void *main_loop(void *thread_id){
         load_result = load_next();
         
         if (load_result == 0){
+          pthread_mutex_lock(&buffer_mutex);
           position_count = 0;
           buff_base = 0;
           buff_filled = 0;
@@ -944,6 +1000,7 @@ void *main_loop(void *thread_id){
           reset_set_byte = 0;
           mode = PLAYING;
           command = NONE;
+          pthread_mutex_unlock(&buffer_mutex);
         } else {
           printf("pa: Load file failed\n");
           command = NONE;
@@ -962,44 +1019,54 @@ void *main_loop(void *thread_id){
       if (mode == PLAYING){
         
         mode = RAMP_DOWN;
-        pthread_mutex_unlock(&out_mutex);
         
         if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
         else decode_seek(seek_request_ms, current_sample_rate);
-        
-        pthread_mutex_lock(&out_mutex);  
         
         if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
         else position_count = current_sample_rate * (seek_request_ms / 1000.0);
 
       } else if (mode == PAUSED) {
         
+
+        
         if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
         else decode_seek(seek_request_ms, current_sample_rate);
         
         if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
         else position_count = current_sample_rate * (seek_request_ms / 1000.0);
         
+        pthread_mutex_lock(&buffer_mutex);
+        
         buff_base = 0;
         buff_filled = 0;
         if (pulse_connected == 1){
+          pthread_mutex_lock(&pulse_mutex);
           pa_simple_flush(s, &error);
+          pthread_mutex_unlock(&pulse_mutex);
         }
+                                                              
         command = NONE;
+        
+        pthread_mutex_unlock(&buffer_mutex);
+        
       } else if (mode != RAMP_DOWN) {
         printf("pa: fixme - cannot seek at this time\n");
         command = NONE;
       }
                           
       if (mode == RAMP_DOWN && gate == 0){
- 
+        pthread_mutex_lock(&buffer_mutex);
         buff_base = (buff_base + buff_filled) & BUFF_SIZE;
         buff_filled = 0;
         if (command == SEEK && config_fast_seek == 1) {
+          pthread_mutex_lock(&pulse_mutex);
           pa_simple_flush(s, &error);
+          pthread_mutex_unlock(&pulse_mutex);
         }
         mode = PLAYING;
         command = NONE;
+        pthread_mutex_unlock(&buffer_mutex);
 
       }
     }
@@ -1008,7 +1075,6 @@ void *main_loop(void *thread_id){
     // Refill the buffer
     if (mode == PLAYING){
       while (buff_filled < BUFF_SAFE && mode != ENDING){
-        
         pump_decode();
 
       }
@@ -1024,20 +1090,14 @@ void *main_loop(void *thread_id){
       printf("pa: -- remaining was %d\n", buff_filled);
       mode = PLAYING;
     }
-             
-    /* if (mode == RAMP_DOWN && buff_filled == 0){ */
-    /*   gate = 0; */
-    /* } */
     
-    if (buff_filled > 0){
-    pthread_mutex_unlock(&out_mutex);
-    usleep(1000);
-    pthread_mutex_lock(&out_mutex);
-    } else usleep(10000);
+    usleep(5000);
   }
 
   printf("pa: Cleanup and exit\n");
   
+  pthread_mutex_lock(&buffer_mutex);
+
   main_running = 0;
   out_thread_running = 0;
   command = NONE;
@@ -1045,12 +1105,12 @@ void *main_loop(void *thread_id){
   buff_base = 0;
   buff_filled = 0;
   
-  pthread_mutex_unlock(&out_mutex);
-  
   disconnect_pulse();
   FLAC__stream_decoder_finish(dec);
   FLAC__stream_decoder_delete(dec);
   mpg123_delete(mh);
+  
+  pthread_mutex_unlock(&buffer_mutex);
                                   
   return thread_id;
 }
@@ -1067,6 +1127,10 @@ int init(){
     pthread_create(&main_thread_id, NULL, main_loop, NULL); 
   } else printf("ph: Cannot init. Main loop already running!\n");
   return 0;
+}
+                                  
+int get_status(){
+  return mode;
 }
 
 int start(char *filename, int start_ms){

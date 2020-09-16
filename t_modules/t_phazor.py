@@ -52,10 +52,13 @@ def player4(tauon):
             self.active_url = ""
             self.part = None
             self.dl_ready = False
+            self.dl_running = False
             self.save_temp = ""
             self.alt = "b"
 
-        def download_part(self, url, target, params):
+        def download_part(self, url, target, params, item):
+
+            self.dl_running = True
 
             try:
                 self.part = requests.get(url, stream=True, params=params)
@@ -93,6 +96,7 @@ def player4(tauon):
             pctl.download_time = -1
 
             self.dl_ready = True
+            self.dl_running = False
 
     dl = URLDownloader()
 
@@ -152,6 +156,8 @@ def player4(tauon):
 
                 if target_object.is_network:
 
+                    dl.dl_running = False
+
                     if target_object.file_ext == "SPTY":
                         tauon.level_train.clear()
                         if state > 0:
@@ -190,7 +196,7 @@ def player4(tauon):
                     dl.url = url
                     dl.dl_ready = False
 
-                    shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params]))
+                    shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params, target_object]))
                     shoot_dl.daemon = True
                     shoot_dl.start()
 
@@ -257,12 +263,30 @@ def player4(tauon):
                     pctl.playing_time = pctl.new_time
                 elif state > 0:
 
+                    if dl.dl_running and pctl.new_time > pctl.download_time - 20:
+
+                        was_playing = False
+                        if state == 1:
+                            was_playing = True
+                            aud.pause()
+
+                        while True:
+                            print("Buffering...")
+                            if not dl.dl_running or pctl.new_time < pctl.download_time - 20 or pctl.playerCommandReady:
+                                break
+                            time.sleep(0.1)
+
+                        if was_playing:
+                            aud.resume()
+
                     if loaded_track.is_network and loaded_track.fullpath.endswith(".ogg"):
                         # The vorbis decoder doesn't like appended files
                         aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000)
                     else:
                         aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
+
                     pctl.playing_time = pctl.new_time
+
                 pctl.decode_time = pctl.playing_time
             if command == "volume":
                 if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
