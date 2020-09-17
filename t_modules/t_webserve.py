@@ -48,7 +48,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
         def do_GET(self):
 
-            path = self.path.rstrip("/")
+            path = self.path
+
+            if path == "/radio/":
+                self.send_response(302)
+                self.send_header('Location', "/radio")
+                self.end_headers()
 
             if path == "/radio":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
@@ -156,6 +161,10 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     else:
                         time.sleep(0.01)
                         chunker.clients[id] = (ip, time.time())
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"404 Not found")
 
     class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
         pass
