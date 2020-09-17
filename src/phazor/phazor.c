@@ -892,7 +892,7 @@ void *out_thread(void *thread_id){
           /* testb = (t_end - t_start); */
           /* t_start = t_end; */
           
-          /* if (testa + testb > 19){ */
+          /* if (testa + testb > 15){ */
           /*   printf("Write at: %f\n", testa); */
           /*   printf("Took: %f\n\n", testb); */
           /* } */
@@ -998,9 +998,17 @@ void *main_loop(void *thread_id){
           gate = 0;
           sample_change_byte = 0;
           reset_set_byte = 0;
+          
+          if (want_sample_rate == 0 && pulse_connected == 0){
+            connect_pulse();
+            
+          }
+          
           mode = PLAYING;
           command = NONE;
           pthread_mutex_unlock(&buffer_mutex);
+        
+          
         } else {
           printf("pa: Load file failed\n");
           command = NONE;

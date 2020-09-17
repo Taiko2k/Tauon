@@ -1217,7 +1217,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spec2_colour_mode = 0
         self.flatpak_mode = flatpak_mode
 
-        self.device_buffer = 90
+        self.device_buffer = 60
 
         self.eq = [0.0] * 10
         self.use_eq = False
@@ -3667,9 +3667,9 @@ save_prefs()
 
 # Temporary
 if 0 < db_version <= 34:
-        print("Update to dv 35")
         prefs.theme_name = get_theme_name(theme)
-        print(prefs.theme_name)
+if 0 < db_version <= 50:
+    prefs.device_buffer = 60
 
 lang = ""
 
@@ -23897,7 +23897,7 @@ class Over:
             ddt.text((x, y), "There may be bugs present. It even might not work at all.", colours.box_text_label, 12)
 
             y += round(30 * gui.scale)
-            ddt.text((x, y), "Scrubbing mode", colours.box_text_label, 12)
+            ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
             y += round(22 * gui.scale)
             prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek, "Fast")
             y += round(22 * gui.scale)
@@ -36645,7 +36645,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            50,  # Version, used for upgrading
+            51,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -41495,6 +41495,9 @@ if gui.mode < 3:
 
 SDL_DestroyWindow(t_window)
 
+pctl.playerCommand = "unload"
+pctl.playerCommandReady = True
+
 if prefs.reload_play_state and pctl.playing_state in (1, 2):
     print("Saving play state...")
     prefs.reload_state = (pctl.playing_state, pctl.playing_time)
@@ -41514,8 +41517,6 @@ if tauon.stream_proxy.download_running:
     tauon.stream_proxy.stop()
     time.sleep(2)
 
-pctl.playerCommand = "unload"
-pctl.playerCommandReady = True
 try:
     tm.player_lock.release()
 except:
