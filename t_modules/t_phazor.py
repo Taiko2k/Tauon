@@ -147,6 +147,9 @@ def player4(tauon):
 
             if command == "open":
 
+                if state == 2:
+                    aud.set_volume(int(pctl.player_volume))
+
                 pctl.download_time = 0
                 target_object = pctl.target_object
                 target_path = target_object.fullpath
@@ -310,7 +313,7 @@ def player4(tauon):
                     speed = fade_time / (5 / 100)
 
                 aud.ramp_volume(0, int(speed))
-                time.sleep((fade_time + 10) / 1000)
+                time.sleep((fade_time + 100) / 1000)
 
                 state = 0
                 pctl.playing_time = 0
@@ -329,7 +332,7 @@ def player4(tauon):
                     speed = fade_time / (5 / 100)
 
                 aud.ramp_volume(0, int(speed))
-                time.sleep((fade_time + 10) / 1000)
+                time.sleep((fade_time + 100) / 1000)
                 aud.pause()
                 state = 2
 
@@ -345,6 +348,15 @@ def player4(tauon):
                 state = 1
 
             if command == "unload":
+
+                if pctl.player_volume > 5:
+                    speed = fade_time / (int(pctl.player_volume) / 100)
+                else:
+                    speed = fade_time / (5 / 100)
+
+                aud.ramp_volume(0, int(speed))
+                time.sleep((fade_time + 100) / 1000)
+
                 aud.stop()
                 aud.shutdown()
                 pctl.playerCommand = "done"
