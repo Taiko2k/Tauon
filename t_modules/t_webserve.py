@@ -55,7 +55,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 self.send_header('Location', "/radio")
                 self.end_headers()
 
-            if path == "/radio":
+            elif path == "/radio":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
 
             elif path == "/favicon.ico":
