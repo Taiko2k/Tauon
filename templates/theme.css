@@ -1,3 +1,4 @@
+
 body {
   background-color: #111;
   font-family: sans-serif;
@@ -10,52 +11,65 @@ p {
 
 .container {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding-left: 15px;
   padding-top: 20px;
+  flex-direction: column;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 5vh;
+  width: 50vw;
+  height: 100vh;
 }
 
-#main {
-  flex: auto;
+#main{
+  display: flex;
+  height: 40%;
+  width: 100%;
+  margin-bottom: 5%;
+}
+
+#img-holder{
+  width: auto;
+  height: 100%;
+  background-color: gray;
+}
+#picture{
+  height: 100%;
+}
+
+#handlers{
+  flex: left;
+  margin-left: 3%;
+  width: 70%;
 }
 
 #lyrics {
   color: #CCC;
-  flex: auto;
-  max-width: 600px;
-  word-wrap: break-word;
-  padding-top: 0px;
-  padding-left: 35px;
+  max-width: 25vw;
+  max-height: 30vh;
+  /* word-wrap: break-word; */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-#img-holder {
-  height: 300px;
-  width: 300px;
-  background-color: #222;
-  float: left;
-  clear: left;
-}
-
-#control-holder {
-  float: left;
-  clear: left;
-}
 
 #seekfront {
-  height: 20px;
-  width: 100px;
+  height: 2.5vh;
+  max-width: 80%;
   background-color: rgb(50, 50, 150);
 }
 
 #seekback {
-  height: 20px;
-  width: 700px;
+  height: 2.5vh;
+  width: 80%;
   background-color: rgb(40, 40, 40);
-  clear: left;
 }
 
 #title-text {
-  clear: left;
   padding-top: 10px;
   font-family: sans-serif;
   color: rgb(230, 230, 230);
@@ -64,7 +78,6 @@ p {
 
 #tracklist {
   padding-top: 50px;
-  clear: left;
   font-family: sans-serif;
   width: 600px;
 }
@@ -80,11 +93,10 @@ p {
 }
 
 #player {
-  padding-top: 50px;
+  padding-top: 3%;
 }
 
 .buttons {
-  float: left;
   height: 50px;
   clear: left;
 }
@@ -106,12 +118,12 @@ p {
   padding-bottom: 8px;
   width: 60px;
   height: 25px;
+  margin-bottom: 5%;
 }
 
 .button {
   background-color: #222;
   cursor: pointer;
-  display: flex;
   align-items: center;
 }
 
@@ -135,11 +147,13 @@ p {
   background: #444;
   margin: auto;
 }
-
+#slidecontainer{
+  display: flex;
+  flex: left;
+}
 .slidecontainer {
   width: 120px;
 }
-
 input[type=range] {
   width: 100%;
   margin: 4.3px 0;
