@@ -24,7 +24,6 @@ function setArt(){
     request.open('GET', '/radio/getpic', true);
     request.onload = function() {
         var data = JSON.parse(this.response);
-
         index = data.index
         if (data.image != 'None'){
             document.getElementById("picture").src = 'data:image/jpeg;base64,' + data.image
@@ -33,7 +32,9 @@ function setArt(){
             document.getElementById("picture").src = '#'
         }
 
-        document.getElementById("title-text").innerText = data.artist + " - " + data.title
+        document.getElementById("song-title").innerText = data.title  
+        // document.getElementById("album-name").innerText = data.album  
+        document.getElementById("artist").innerText = data.artist
         document.getElementById("lyrics").innerHTML = data.lyrics
       };
 

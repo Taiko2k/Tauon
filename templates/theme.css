@@ -38,6 +38,22 @@ p {
   height: 100%;
 }
 
+.track-info{
+  color: #ccc;
+}
+.track-info div{
+  margin-bottom: 3%;
+}
+#artist{
+  margin-left: auto;
+}
+
+#seperator{
+  width: 50%;
+  height: 2px;
+  background-color: #333;
+}
+
 #handlers{
   flex: left;
   margin-left: 3%;
