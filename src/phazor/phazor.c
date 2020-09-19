@@ -569,7 +569,7 @@ int load_next(){
         want_sample_rate = rate;
       }
       current_length_count = (u_int) mpg123_length(mh);
-      
+    
       if (encoding == MPG123_ENC_SIGNED_16){
         
         if (load_target_seek > 0) {
@@ -939,7 +939,8 @@ void *main_loop(void *thread_id){
 
   mpg123_init();
   mh = mpg123_new(NULL, &error);
-  mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_QUIET | MPG123_SKIP_ID3V2, 0);
+  mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_SKIP_ID3V2, 0);
+  mpg123_param(mh, MPG123_RESYNC_LIMIT, 10000, 0);
   
   // FLAC decoder ----------------------------------------------------------------
   

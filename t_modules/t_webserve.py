@@ -33,6 +33,22 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
     if prefs.enable_web is False:
         return 0
 
+    def get_broadcast_track():
+        if pctl.broadcast_active is False:
+            return None, None
+        delay = 6
+        tr = None
+        t = time.time()
+        for item in reversed(pctl.broadcast_update_train):
+            if 20 > t - item[2] > delay:
+                tr = item
+                break
+        if tr is None:
+            return None, None
+        else:
+            return tr[0], tr[1]
+
+
     chunker = tauon.chunker
     gui.web_running = True
 
@@ -70,10 +86,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
 
-                if pctl.broadcast_active:
-                    track = pctl.master_library[pctl.broadcast_index]
+                track_id, p = get_broadcast_track()
+                if track_id is not None:
+
+                    track = pctl.master_library[track_id]
                     if track.length > 2:
-                        position = pctl.broadcast_time / track.length
+                        position = p / track.length
                     else:
                         position = 0
                     data = {"position": position,
@@ -93,9 +111,11 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
 
-                if pctl.broadcast_active:
-                    index = pctl.broadcast_index
-                    track = pctl.master_library[index]
+                track_id, p = get_broadcast_track()
+
+                if track_id is not None:
+
+                    track = pctl.master_library[track_id]
 
                     # Lyrics ---
                     lyrics = ""
@@ -106,7 +126,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         base64 = album_art_gen.get_base64(track, (300, 300)).decode()
 
                         data = {
-                            "index": index,
+                            "index": track_id,
                             "image": base64,
                             "title": track.title,
                             "artist": track.artist,
@@ -118,7 +138,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     except:
                         # Failed getting image
                         data = {
-                            "index": index,
+                            "index": track_id,
                             "image": "None",
                             "title": track.title,
                             "artist": track.artist,
