@@ -134,7 +134,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "artist": "- - Broadcast Offline -",
                         "lyrics": ""}
 
-                    data = json.dumps(data).replace(" ", "").encode()
+                    data = json.dumps(data).encode()
                     self.wfile.write(data)
 
             elif path == "/stream.ogg":
