@@ -58,11 +58,10 @@
 
   <releases>
 
-    <release version="6.3.0" date="2020-09-15">
+    <release version="6.3.1" date="2020-09-19">
       <description>
         <ul>
-          <li>Add remember window position setting</li>
-          <li>Add alternate audio backend</li>
+          <li>Various fixes</li>
         </ul>
       </description>
     </release>
