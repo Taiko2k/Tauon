@@ -102,7 +102,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     if prefs.radio_page_lyrics and track.lyrics != "":
                         lyrics = html.escape(track.lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n",
                                                                                                              "<br>")
-
                     try:
                         base64 = album_art_gen.get_base64(track, (300, 300)).decode()
 
@@ -113,7 +112,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "artist": track.artist,
                             "lyrics": lyrics}
 
-                        data = json.dumps(data).replace(" ", "").encode()
+                        data = json.dumps(data).encode()
                         self.wfile.write(data)
                     except:
                         # Failed getting image
@@ -124,7 +123,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "artist": track.artist,
                             "lyrics": lyrics}
 
-                        data = json.dumps(data).replace(" ", "").encode()
+                        data = json.dumps(data).encode()
                         self.wfile.write(data)
                 else:
                     # Broadcast is not active
