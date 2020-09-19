@@ -110,6 +110,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "image": base64,
                             "title": track.title,
                             "artist": track.artist,
+                            "album": track.album,
                             "lyrics": lyrics}
 
                         data = json.dumps(data).encode()
@@ -121,6 +122,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "image": "None",
                             "title": track.title,
                             "artist": track.artist,
+                            "album": track.album,
                             "lyrics": lyrics}
 
                         data = json.dumps(data).encode()
@@ -132,6 +134,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "image": "None",
                         "title": "",
                         "artist": "- - Broadcast Offline -",
+                        "album": "",
                         "lyrics": ""}
 
                     data = json.dumps(data).encode()
