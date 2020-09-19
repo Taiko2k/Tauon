@@ -4214,6 +4214,7 @@ class PlayerCtl:
         self.broadcast_last_time = 0
         self.broadcast_line = ""
         self.broadcast_clients = []
+        self.broadcast_update_train = []
 
         self.record_stream = False
         self.record_title = ""
@@ -5249,6 +5250,7 @@ class PlayerCtl:
         pctl.broadcast_line = track.artist + " - " + track.title
 
         if start:
+            pctl.broadcast_update_train.clear()
             pctl.broadcastCommand = "encstart"
             pctl.broadcastCommandReady = True
         else:
@@ -18206,6 +18208,7 @@ def broadcast_select_track(track_id):
         pctl.broadcastCommand = "cast-next"
         pctl.broadcastCommandReady = True
     else:
+        pctl.broadcast_update_train.clear()
         pctl.broadcastCommand = "encstart"
         pctl.broadcastCommandReady = True
 
@@ -41461,12 +41464,17 @@ while pctl.running:
     if pctl.broadcast_active and round(pctl.broadcast_time) != pctl.broadcast_last_time:
         pctl.broadcast_last_time = round(pctl.broadcast_time)
 
+        pctl.broadcast_update_train.append((pctl.broadcast_index, pctl.broadcast_time, time.time()))
+        if len(pctl.broadcast_update_train) > 10:
+            del pctl.broadcast_update_train[0]
+
         for id, value in tauon.chunker.clients.items():
             if time.time() - value[1] > 5:
                 del tauon.chunker.clients[id]
                 break
 
         gui.update += 1
+
     # if pctl.broadcast_active and pctl.broadcast_time == 0:
     #     gui.pl_update = 1
 
