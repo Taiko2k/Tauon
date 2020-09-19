@@ -41515,6 +41515,7 @@ SDL_DestroyWindow(t_window)
 
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
+pctl.broadcast_active = False
 
 if prefs.reload_play_state and pctl.playing_state in (1, 2):
     print("Saving play state...")
