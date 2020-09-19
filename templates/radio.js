@@ -33,7 +33,7 @@ function setArt(){
         }
 
         document.getElementById("song-title").innerText = data.title  
-        // document.getElementById("album-name").innerText = data.album  
+        document.getElementById("album-name").innerText = data.album  
         document.getElementById("artist").innerText = data.artist
         document.getElementById("lyrics").innerHTML = data.lyrics
       };
@@ -47,7 +47,7 @@ function update() {
     request.onload = function() {
         var data = JSON.parse(this.response);
         connect_fault = 2;
-        document.getElementById('seekfront').style.width = Math.round(data.position * 700) + "px";
+        document.getElementById('seekfront').style.width = Math.round(data.position * 100) + "%";
 
         if (data.index != index){
           setArt();
