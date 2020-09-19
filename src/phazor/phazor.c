@@ -24,6 +24,7 @@
 #include <pthread.h> 
 #include <time.h>
 #include <pulse/simple.h>
+#include <pulse/error.h>
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
 #include "vorbis/codec.h"
@@ -299,13 +300,13 @@ void connect_pulse(){
   want_sample_rate = 0;
   }
   
+  int error = 0;
 
-  pab.maxlength = (current_sample_rate * 4 * (config_dev_buffer / 1000.0));
+  pab.maxlength = (uint32_t) -1;
   pab.fragsize = (uint32_t) -1;
   pab.minreq = (uint32_t) -1;
   pab.prebuf = (uint32_t) -1;
-  pab.tlength =  (uint32_t) -1;
-
+  pab.tlength =  (current_sample_rate * 4 * (config_dev_buffer / 1000.0));
   
   //printf("pa: Connect to PulseAudio\n");
   ss.format = PA_SAMPLE_S16LE;
@@ -320,10 +321,18 @@ void connect_pulse(){
                     &ss,                 // Format
                     NULL,                // Channel map
                     &pab,                // Buffering attributes
-                    NULL                 // Error
+                    &error               // Error
                     );
   
-  pulse_connected = 1;
+  if (error > 0){
+
+    printf("pa: PulseAudio init error: ");
+    printf(pa_strerror(error));
+    printf("\n");
+    mode = STOPPED;
+  }
+  else pulse_connected = 1;
+  
   pthread_mutex_unlock(&pulse_mutex);
       
 }
@@ -759,7 +768,6 @@ int out_thread_running = 0; // bool
     
 void *out_thread(void *thread_id){    
 
-  
   out_thread_running = 1;
   int b = 0;
   double testa, testb;
@@ -767,9 +775,6 @@ void *out_thread(void *thread_id){
   t_start = get_time_ms();
   
   while (out_thread_running == 1){
-    
-    usleep(500);
-    
     
     if (buffering == 1 && buff_filled > 9000){
 
@@ -892,9 +897,10 @@ void *out_thread(void *thread_id){
           /* testb = (t_end - t_start); */
           /* t_start = t_end; */
           
-          /* if (testa + testb > 15){ */
+          /* if (testa + testb > config_dev_buffer - 5){ */
           /*   printf("Write at: %f\n", testa); */
-          /*   printf("Took: %f\n\n", testb); */
+          /*   printf("Took: %f\n", testb); */
+          /*   printf("Buffer: %d\n", buff_filled); */
           /* } */
         
           
@@ -947,7 +953,7 @@ void *main_loop(void *thread_id){
   /*   printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, buff_filled); */
   /*   test1 = 0; */
   /* } */
-    
+
     if (command != NONE){
       
       if (command == EXIT){

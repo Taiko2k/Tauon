@@ -3,11 +3,13 @@ Changelog-------------------------------------
 
 v6.3.1
 
+ - Enabled picture menu for showcase album art
+ - Fixed borked radio metadata page
  - Phazor:
    - Fixed audio not fading out on app exit
    - Fixed no audio when start after pause
    - Reduced glitches/latency
- - Fixed borked radio metadata page
+
 
 v6.3.0
 

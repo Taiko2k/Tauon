@@ -1217,7 +1217,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spec2_colour_mode = 0
         self.flatpak_mode = flatpak_mode
 
-        self.device_buffer = 60
+        self.device_buffer = 70
 
         self.eq = [0.0] * 10
         self.use_eq = False
@@ -3669,7 +3669,7 @@ save_prefs()
 if 0 < db_version <= 34:
         prefs.theme_name = get_theme_name(theme)
 if 0 < db_version <= 50:
-    prefs.device_buffer = 60
+    prefs.device_buffer = 70
 
 lang = ""
 
@@ -3950,6 +3950,8 @@ def tag_scan(nt):
             nt.disc_number = audio.disc_number
             nt.lyrics = audio.lyrics
             nt.bitrate = audio.bit_rate
+            if not nt.bitrate and nt.size and nt.length:
+                nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             #nt.track_total = audio.track_total
             #nt.disc_total = audio.disc_total
             nt.comment = audio.comment
@@ -8343,6 +8345,18 @@ class LyricsRen:
 
 lyrics_ren = LyricsRen()
 
+# class TimedLyricsToStatic:
+#
+#     def __init__(self):
+#         self.cache = {}
+#
+#     def get(self, track):
+#         if track.lyrics:
+#             return track.lyrics
+#         if track.is_network:
+#             return ""
+#         if track in self.cache:
+#             return self.cache[track]
 
 
 class TimedLyricsRen:
@@ -34746,7 +34760,7 @@ class Showcase:
 
     def render(self):
 
-
+        global right_click
         #ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,255], True)
 
         # album_art_gen.display_blur(pctl.playing_object().index, [200, 200])
@@ -34905,8 +34919,12 @@ class Showcase:
                 album_art_gen.display(track, (x, y), (box, box))
 
                 # Click art to cycle
-                if coll((x, y, box, box)) and inp.mouse_click is True:
-                    album_art_gen.cycle_offset(track)
+                if coll((x, y, box, box)):
+                    if inp.mouse_click is True:
+                        album_art_gen.cycle_offset(track)
+                    if right_click:
+                        picture_menu.activate(in_reference=track)
+                        right_click = False
 
             # Check for lyrics if auto setting
             test_auto_lyrics(track)
