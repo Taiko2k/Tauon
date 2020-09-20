@@ -39,12 +39,17 @@ p {
     max-width: 50%;
 }
 #picture {
+    display: block;
     width: 100%;
     height: auto;
 }
 
 .track-info {
     color: #ccc;
+    margin-top: calc(-23px);
+    margin-bottom: 32px;
+}
+.track-info div{
 }
 .track-info div {
     margin-bottom: 3%;
@@ -64,17 +69,19 @@ p {
     flex: left;
     margin-left: 3%;
     width: 70%;
+    margin-bottom: 5px;
 }
 
 #lyrics {
     color: #ccc;
-    max-width: 30vw;
+    max-width: 50vw;
+    width: max-content;
     max-height: 30vh;
     overflow-y: scroll;
     overflow-x: hidden;
     text-align: center;
-    margin-left: auto;
-    margin-right: auto;
+    /* margin-left: auto;
+    margin-right: auto; */
     scrollbar-color: #111 #111;
 }
 #lyrics:hover {
@@ -90,13 +97,13 @@ p {
 }
 
 #seekfront {
-    height: 2.5vh;
+    height: 15px;
     max-width: 100%;
     background-color: rgb(50, 50, 150);
 }
 
 #seekback {
-    height: 2.5vh;
+    height: 15px;
     width: 80%;
     background-color: rgb(40, 40, 40);
 }
@@ -279,35 +286,31 @@ input[type="range"]:focus::-ms-fill-upper {
 
 @media (max-device-width: 700px) {
     .container {
-        padding: 0;
-        flex-direction: column;
-        width: 100vw;
-        margin-left: 15%;
+        padding-right: 200px;
+        margin-left: auto;
         margin-right: auto;
     }
     #main {
         font-size: 3rem;
         width: 100vw;
-        height: 50vh;
-        flex-wrap: wrap;
-        margin-bottom: 25vh;
+        display: block;
     }
     #handlers {
         margin-left: 0;
         width: 90%;
     }
     #img-holder {
-        width: 150%;
+        width: 170%;
         height: auto;
     }
     #picture {
-        width: 140%;
+        width: 170%;
     }
     #lyrics {
-        max-width: 90%;
-        max-height: 300px;
+        margin-top: 100px;
+        min-width: 170%;
+        max-height: 400px;
         font-size: 3rem;
-        margin-left: -5%;
     }
     #play-button {
         width: 100px;
@@ -325,18 +328,25 @@ input[type="range"]:focus::-ms-fill-upper {
     #vol-slider {
         height: 50px;
     }
+    #seekback{
+        height: 50px;
+        width: 93%;
+    }
+    #seekfront{
+        height: 50px;
+        width: 93%;
+    }
 
     input[type=range]::-webkit-slider-thumb {
-      height: 40px;
+      height: 100%;
       width: 40px;
+      border: 0;
     }
     
     input[type=range]::-moz-range-thumb {
-      height: 40px;
+      height: 100%;
       width: 40px;
-    }
-    .track-info div{
-      margin-bottom: 2%
+      border: 0;
     }
 }
 
