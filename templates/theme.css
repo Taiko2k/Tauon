@@ -75,11 +75,10 @@ p {
 #lyrics {
     color: #ccc;
     max-width: 50vw;
-    width: max-content;
     max-height: 30vh;
     overflow-y: scroll;
     overflow-x: hidden;
-    text-align: center;
+    text-align: left;
     /* margin-left: auto;
     margin-right: auto; */
     scrollbar-color: #111 #111;
