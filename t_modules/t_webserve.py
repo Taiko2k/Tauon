@@ -57,13 +57,21 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
             elif path == "/radio":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
-
             elif path == "/favicon.ico":
                 self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
             elif path == "/radio/radio.js":
                 self.send_file(install_directory + "/templates/radio.js", "application/javascript")
             elif path == "/radio/theme.css":
                 self.send_file(install_directory + "/templates/theme.css", "text/css")
+            elif path == "/assets/album-icon.png":
+                self.send_file(install_directory + "/templates/theme.css", "text/css")
+            elif path == "/assets/album-icon-small.png":
+                self.send_file(install_directory + "/assets/album-icon-small.png", 'image/x-icon')
+            elif path == "/assets/volume-down.png":
+                self.send_file(install_directory + "/assets/volume-down.png", 'image/x-icon')
+            elif path == "/assets/volume-up.png":
+                self.send_file(install_directory + "/assets/volume-up.png", 'image/x-icon')
+
 
             elif path == "/radio/update_radio":
                 self.send_response(200)

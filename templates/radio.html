@@ -11,7 +11,10 @@
         <div class="container">
             <div id="main">
                 <div id="img-holder">
-                    <img id="picture" src="#" alt="No Album Art" />
+                    <img id="picture" src="#" 
+                    onerror="this.onerror=null;
+                    this.src='/assets/album-icon-small.png';"
+                    alt="No Album Art" />
                 </div>
                 <div id="handlers">
                     <div class="track-info">
@@ -34,7 +37,13 @@
 
                         <div class="slidecontainer">
                             <div>
+                                <img id="vol-down" class="vol-icons" src="/assets/volume-down.png" alt="">
+                            </div>
+                            <div>
                                 <input type="range" min="0" max="100" value="85" class="slider" id="vol-slider" />
+                            </div>
+                            <div>
+                                <img id="vol-up" class="vol-icons" src="/assets/volume-up.png" alt="">
                             </div>
                         </div>
                     </div>

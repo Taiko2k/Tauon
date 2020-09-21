@@ -20,28 +20,20 @@ p {
     width: 50vw;
     /* height: 100vh; */
 }
-
-#seekfront {
-    height: 10px;
-}
-
-#seekback {
-    height: 10px;
-}
-
 #main {
     display: flex;
     height: 30%;
     width: 100%;
     margin-bottom: 5%;
 }
-#img-holder {
-    max-width: 50%;
-}
+/* #img-holder {
+    width: 50%;
+    background-color: #33333334;
+} */
 #picture {
-    display: block;
     width: 100%;
     height: auto;
+    background-color: #33333334;
 }
 
 .track-info {
@@ -49,8 +41,7 @@ p {
     margin-top: calc(-23px);
     margin-bottom: 32px;
 }
-.track-info div{
-}
+
 .track-info div {
     margin-bottom: 3%;
 }
@@ -158,7 +149,6 @@ p {
     height: 25px;
     margin-bottom: 5%;
 }
-
 .button {
     background-color: #222;
     cursor: pointer;
@@ -185,12 +175,19 @@ p {
     background: #444;
     margin: auto;
 }
-#slidecontainer {
-    display: flex;
-    flex: left;
-}
 .slidecontainer {
-    width: 120px;
+    width: 150px;
+    display: flex;
+}
+.vol-icons{
+    width: 15px;
+    margin-top: 5px;
+}
+#vol-up{
+    margin-left: 5px;
+}
+#vol-down{
+    margin-right: 5px;
 }
 input[type="range"] {
     width: 100%;
@@ -206,7 +203,7 @@ input[type="range"]:focus {
 input[type="range"]::-webkit-slider-runnable-track {
     background: #343434;
     border: 0;
-    width: 100%;
+    width: 80%;
     height: 100%;
     cursor: pointer;
 }
@@ -247,7 +244,7 @@ input[type="range"]::-ms-track {
     border-color: transparent;
     border-width: 4.3px 0;
     color: transparent;
-    width: 100%;
+    width: 80%;
     height: 8.4px;
     cursor: pointer;
 }
@@ -298,12 +295,12 @@ input[type="range"]:focus::-ms-fill-upper {
         margin-left: 0;
         width: 90%;
     }
-    #img-holder {
-        width: 170%;
-        height: auto;
-    }
+    /* #img-holder {
+        width: 100%;
+    } */
     #picture {
-        width: 170%;
+        width: 85%;
+        background-color: #33333334;
     }
     #lyrics {
         margin-top: 100px;
@@ -324,8 +321,15 @@ input[type="range"]:focus::-ms-fill-upper {
     .slidecontainer {
         width: 50%;
     }
+    .slidecontainer div{
+        margin-right: 10px;
+    }
+    .vol-icons{
+        width: 50px;
+    }
     #vol-slider {
         height: 50px;
+        width: 300px;
     }
     #seekback{
         height: 50px;
