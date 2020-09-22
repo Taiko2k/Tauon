@@ -68,6 +68,8 @@ class SpotCtl:
                                     redirect_uri=self.redirect_uri)
 
     def connect(self):
+        if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
+            return
         if self.cred is None:
             self.prep_cred()
         if self.spotify is None:
