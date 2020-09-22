@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.3.1"
+n_version = "6.3.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -8347,18 +8347,62 @@ class LyricsRen:
 
 lyrics_ren = LyricsRen()
 
-# class TimedLyricsToStatic:
-#
-#     def __init__(self):
-#         self.cache = {}
-#
-#     def get(self, track):
-#         if track.lyrics:
-#             return track.lyrics
-#         if track.is_network:
-#             return ""
-#         if track in self.cache:
-#             return self.cache[track]
+
+def find_synced_lyric_data(track):
+    if track.is_network:
+        return None
+
+    direc = track.parent_folder_path
+    name = os.path.splitext(track.filename)[0] + ".lrc"
+
+    try:
+        if os.path.isfile(os.path.join(direc, name)):
+            with open(os.path.join(direc, name), 'r') as f:
+                data = f.readlines()
+        else:
+            return None
+    except:
+        print("Read lyrics file error")
+        return None
+
+    return data
+
+class TimedLyricsToStatic:
+
+    def __init__(self):
+        self.cache_key = None
+        self.cache_lyrics = ""
+
+    def get(self, track):
+        if track.lyrics:
+            return track.lyrics
+        if track.is_network:
+            return ""
+        if track == self.cache_key:
+            return self.cache_lyrics
+        else:
+            data = find_synced_lyric_data(track)
+
+            if data is None:
+                self.cache_lyrics = ""
+                self.cache_key = track
+                return ""
+            text = ""
+            for line in data:
+                if len(line) < 10:
+                    continue
+
+                if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+                    continue
+
+                text += line.split("]")[-1].rstrip("\n") + "\n"
+
+            self.cache_lyrics = text
+            self.cache_key = track
+            return text
+
+tauon.synced_to_static_lyrics = TimedLyricsToStatic()
+
 
 
 class TimedLyricsRen:
@@ -8373,7 +8417,6 @@ class TimedLyricsRen:
 
         self.scroll_position = 0
 
-
     def generate(self, track):
 
         if self.index == track.index:
@@ -8382,34 +8425,11 @@ class TimedLyricsRen:
         self.ready = False
         self.index = track.index
         self.scroll_position = 0
+        self.data.clear()
 
-        if track.is_network:
-            return False
-
-        direc = track.parent_folder_path
-        name = os.path.splitext(track.filename)[0] + ".lrc"
-
-        try:
-            if os.path.isfile(os.path.join(direc, name)):
-                f = open(os.path.join(direc, name), 'r')
-                self.data = []
-                data = f.readlines()
-                f.close()
-            else:
-                return False
-        except:
-            print("Read lyrics file error")
-            return False
-
-        # for file in os.listdir(direc):
-        #     if file == name:
-        #         f = open(os.path.join(direc, name), 'r')
-        #         data = f.readlines()
-        #         f.close()
-        #
-        #         break
-        # else:
-        #     return False
+        data = find_synced_lyric_data(track)
+        if data is None:
+            return
 
         for line in data:
             if len(line) < 10:
@@ -16298,21 +16318,6 @@ def get_broadcast_line():
         return artist + " - " + title
     else:
         return 'No Title'
-
-
-def open_license():
-
-    if os.path.isfile(os.path.join(install_directory, "LICENSE")):
-        target = os.path.join(install_directory, "LICENSE")
-    else:
-        return
-
-    if system == "windows" or msys:
-        os.startfile(target)
-    elif system == 'mac':
-        subprocess.call(['open', target])
-    else:
-        subprocess.call(["xdg-open", target])
 
 
 def reload_config_file():
@@ -25138,7 +25143,7 @@ class Over:
     def about(self, x0, y0, w0, h0):
 
         x = x0 + int(w0 * 0.3) - 10 * gui.scale
-        y = y0 + 95 * gui.scale
+        y = y0 + 85 * gui.scale
 
         ddt.text_background_colour = colours.box_background
 
@@ -25167,8 +25172,9 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        #ddt.text((x, y + 4 * gui.scale), t_title, colours.box_title_text, 216)
         self.title_image.render(x - 1, y, alpha_mod(colours.box_sub_text, 240))
+
+        credit_pages = 2
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
             self.ani_cred = 1
@@ -25184,7 +25190,9 @@ class Over:
 
             if t > 0.7:
                 self.ani_cred = 2
-                self.cred_page ^= 1
+                self.cred_page += 1
+                if self.cred_page > credit_pages:
+                    self.cred_page = 0
                 self.ani_fade_on_timer.set()
 
             gui.update = 2
@@ -25204,14 +25212,14 @@ class Over:
 
         block_y = y - 10 * gui.scale
 
-
         if self.cred_page == 0:
 
             ddt.text((x, y - 6 * gui.scale), t_version, colours.box_text_label, 313)
-            y += 20 * gui.scale
+            y += 19 * gui.scale
             ddt.text((x, y), "Copyright © 2015-2020 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
-            y += 21 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://tauonmusicbox.rocks", colours.box_sub_text, 12)
+
+            y += 19 * gui.scale
+            link_pa = draw_linked_text((x, y), "https://tauonmusicbox.rocks", colours.box_sub_text, 12, replace="tauonmusicbox.rocks")
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
@@ -25221,7 +25229,20 @@ class Over:
 
             fields.add(link_rect)
 
-        else:
+
+            y += 27 * gui.scale
+            ddt.text((x, y), "This program comes with absolutely no warranty.", colours.box_text_label, 12)
+            y += 16 * gui.scale
+            link_pa = draw_linked_text((x, y), "See the https://www.gnu.org/licenses/gpl-3.0.html license for details.", colours.box_text_label, 12, replace="GNU GPLv3+")
+            link_rect = [x + link_pa[0], y, link_pa[1], 18 * gui.scale]
+            if coll(link_rect):
+                if not self.click:
+                    gui.cursor_want = 3
+                if self.click:
+                    webbrowser.open(link_pa[2], new=2, autoraise=True)
+            fields.add(link_rect)
+
+        elif self.cred_page == 1:
 
             y += 15 * gui.scale
 
@@ -25229,6 +25250,13 @@ class Over:
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
             y += 25 * gui.scale
+
+            ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
+            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Teddy Okello", colours.box_sub_text, 13)
+
+        else:
+
+            y += 15 * gui.scale
 
             ddt.text((x, y), "Translations", colours.box_text_label, 13)
             yy = y
@@ -25248,22 +25276,16 @@ class Over:
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)
 
-        # x = self.box_x + self.w - 100 * gui.scale
-        # y = self.box_y + self.h - 35 * gui.scale
-
         y = y0 + h0 - round(33 * gui.scale)
-
         x = x0 + w0 - 0 * gui.scale
 
-        #. Limited space. Max 13 chars.
+        w = max(ddt.get_text_w(_("Credits"), 211), ddt.get_text_w(_("Next"), 211))
+        x -= w + round(40 * gui.scale)
 
-        x -= ddt.get_text_w(_("Show License"), 211) + round(21 * gui.scale) + 5 * gui.scale
-
-        self.button(x, y, _("Show License"), open_license)
-
-        x -= ddt.get_text_w(_("Credits"), 211) + round(21 * gui.scale) + 2 * gui.scale
-
-        if self.button(x, y, _("Credits")):
+        text = _("Credits")
+        if self.cred_page != 0:
+            text = _("Next")
+        if self.button(x, y, text, width = w + round(25 * gui.scale)):
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
 

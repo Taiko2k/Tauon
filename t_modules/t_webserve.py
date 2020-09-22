@@ -66,6 +66,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
             path = self.path
 
+            # print(self.headers)
+
             if path == "/radio/":
                 self.send_response(302)
                 self.send_header('Location', "/radio")
@@ -127,9 +129,10 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
                     # Lyrics ---
                     lyrics = ""
-                    if prefs.radio_page_lyrics and track.lyrics != "":
-                        lyrics = html.escape(track.lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n",
-                                                                                                             "<br>")
+
+                    if prefs.radio_page_lyrics:
+                        lyrics = tauon.synced_to_static_lyrics.get(track)
+                        lyrics = html.escape(lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
                     try:
                         base64 = album_art_gen.get_base64(track, (300, 300)).decode()
 
