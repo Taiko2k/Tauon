@@ -3668,7 +3668,7 @@ save_prefs()
 # Temporary
 if 0 < db_version <= 34:
         prefs.theme_name = get_theme_name(theme)
-if 0 < db_version <= 50:
+if 0 < db_version <= 51:
     prefs.device_buffer = 70
 
 lang = ""
@@ -21514,9 +21514,14 @@ def worker2():
                     time.sleep(1 - t)
                     spot_search_rate_timer.set()
                 print("Spotify search")
-                search_over.results = spot_ctl.search(search_over.search_text.text)
+                search_over.results.clear()
+                results = spot_ctl.search(search_over.search_text.text)
+                if results is not None:
+                    search_over.results = results
+                else:
+                    search_over.active = False
+                    gui.show_message("Global search + Tab triggers Spotify search but Spotify is not enabled in settings!", mode="warning")
                 search_over.searched_text = search_over.search_text.text
-                #search_over.spotify_mode = False
                 search_over.sip = False
 
             elif True:
@@ -36688,7 +36693,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            51,  # Version, used for upgrading
+            52,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
