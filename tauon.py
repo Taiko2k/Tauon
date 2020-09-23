@@ -41576,6 +41576,11 @@ try:
 except:
     pass
 
+try:
+    tauon.radio_server.server_close()
+except:
+    pass
+
 if system == "windows" or msys:
     tray.stop()
 else:

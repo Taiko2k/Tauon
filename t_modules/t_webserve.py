@@ -81,15 +81,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 self.send_file(install_directory + "/templates/radio.js", "application/javascript")
             elif path == "/radio/theme.css":
                 self.send_file(install_directory + "/templates/theme.css", "text/css")
-            elif path == "/assets/album-icon.png":
-                self.send_file(install_directory + "/templates/theme.css", "text/css")
-            elif path == "/assets/album-icon-small.png":
-                self.send_file(install_directory + "/assets/album-icon-small.png", 'image/x-icon')
-            elif path == "/assets/volume-down.png":
-                self.send_file(install_directory + "/assets/volume-down.png", 'image/x-icon')
-            elif path == "/assets/volume-up.png":
-                self.send_file(install_directory + "/assets/volume-up.png", 'image/x-icon')
-
+            elif path == "/radio/logo-bg.png":
+                self.send_file(install_directory + "/templates/logo-bg.png", 'image/png')
 
             elif path == "/radio/update_radio":
                 self.send_response(200)
@@ -164,7 +157,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "index": -1,
                         "image": "None",
                         "title": "",
-                        "artist": "- - Broadcast Offline -",
+                        "artist": "- - Broadcast Offline - -",
                         "album": "",
                         "lyrics": ""}
 
@@ -189,6 +182,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         return
                     if 1 < position < chunker.master_count:
                         while 1 < position < chunker.master_count:
+                            if not pctl.broadcast_active:
+                                return
                             self.wfile.write(chunker.chunks[position])
                             position += 1
                     else:
