@@ -72,6 +72,9 @@ def enc(tauon):
                     pctl.broadcastCommandReady = False
 
                     if command == "encstop":
+                        print("Stopping broadcast...")
+                        pctl.broadcast_active = False
+                        time.sleep(1)
                         self.decoder.terminate()
                         self.encoder.terminate()
                         self.encoder = None
@@ -83,7 +86,8 @@ def enc(tauon):
                         tauon.chunker.chunks.clear()
                         tauon.chunker.headers.clear()
                         tauon.chunker.master_count = 0
-                        pctl.broadcast_active = False
+                        print("Broadcast stopped")
+
                         pctl.broadcast_time = 0
 
                     if command == "encstart":
@@ -239,12 +243,6 @@ def enc(tauon):
                             del self.temp_buffer
                             self.temp_buffer = io.BytesIO()
 
-                            # # Swap the buffers
-                            # self.output_buffer, self.temp_buffer = self.temp_buffer, self.output_buffer
-                            # self.output_buffer_size = self.output_buffer_size - total
-                            #
-                            # self.output_buffer.seek(self.output_buffer_size)
-                            # print(self.output_buffer.read(50))
 
     en = Enc()
     en.main()

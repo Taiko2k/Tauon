@@ -28,12 +28,12 @@ function setArt() {
         if (data.image != "None") {
             document.getElementById("picture").src = "data:image/jpeg;base64," + data.image;
         } else {
-            document.getElementById("picture").src = "/assets/album-icon-small.png";
+            document.getElementById("picture").src = "/radio/logo-bg.png";
         }
 
-        document.getElementById("song-title").innerText = data.title;
-        document.getElementById("album-name").innerText = data.album;
-        document.getElementById("artist").innerText = data.artist;
+        document.getElementById("title-text").innerText = data.title;
+        //document.getElementById("album-text").innerText = data.album;
+        document.getElementById("artist-text").innerText = data.artist;
         document.getElementById("lyrics").innerHTML = data.lyrics;
     };
 
@@ -57,7 +57,7 @@ function update() {
         if (status > 0) {
             if (status == 1 && data.index == -1) {
                 // The stream has stopped
-                document.getElementById("picture").src = "/assets/album-icon-small.png";
+                document.getElementById("picture").src = "/radio/logo-bg.png";
                 console.log("STREAM STOPPED");
                 status = 2;
                 sound.src = "";
@@ -109,8 +109,9 @@ function tick() {
         setTimeout(tick, 5000);
     } else {
         console.log("CONNECTION LOST");
-        document.getElementById("picture").src = "/assets/album-icon-small.png";
-        document.getElementById("song-title").innerText = "-- Connection Lost --";
+        document.getElementById("picture").src = "/radio/logo-bg.png";
+        document.getElementById("title-text").innerText = "-- Server Offline --";
+        document.getElementById("artist-text").innerText = "";
         document.getElementById("lyrics").innerHTML = "";
         if (status == 1) {
             status = 2;

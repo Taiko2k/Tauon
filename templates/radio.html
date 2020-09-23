@@ -1,58 +1,53 @@
 <!DOCTYPE html>
 
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>Audio Stream</title>
-        <link href="radio/theme.css" rel="stylesheet" type="text/css" />
-    </head>
+<head>
+    <meta charset="utf-8"/>
+    <title>Tauon Music Box - Audio Stream</title>
+    <link href="radio/theme.css" rel="stylesheet" type="text/css">
+</head>
 
-    <body>
-        <div class="container">
-            <div id="main">
-                <div id="img-holder">
-                    <img id="picture" src="#" 
-                    onerror="this.onerror=null;
-                    this.src='/assets/album-icon-small.png';"
-                    alt="No Album Art" />
-                </div>
-                <div id="handlers">
-                    <div class="track-info">
+<body>
+<div class="container">
 
-                    <div>
-                        <h2 id="song-title"></h2>
-                    </div>
-                    <div id="artist"></div>
-                    <div id="seperator"></div>
-                    <div id="album-name"></div>
-                    </div>
-                    <div id="seekback">
-                        <div id="seekfront"></div>
-                    </div>
-                    <div id="player">
-                        <div class="button" id="play-button">
-                            <div id="play-icon"></div>
-                            <div id="stop-icon"></div>
-                        </div>
+        <div id="img-holder">
 
-                        <div class="slidecontainer">
-                            <div>
-                                <img id="vol-down" class="vol-icons" src="/assets/volume-down.png" alt="">
-                            </div>
-                            <div>
-                                <input type="range" min="0" max="100" value="85" class="slider" id="vol-slider" />
-                            </div>
-                            <div>
-                                <img id="vol-up" class="vol-icons" src="/assets/volume-up.png" alt="">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <img id='picture' src="radio/logo-bg.png" alt=""/> <br> <br>
 
-            <div id="lyrics"></div>
+
         </div>
 
-        <script src="radio/radio.js"></script>
-    </body>
+        <div id="meta">
+
+            <div id="title-text">
+            </div>
+            <div id="artist-text">
+            </div>
+
+            <div id="seekback">
+                <div id="seekfront">
+                </div>
+            </div>
+            <div id='player'>
+                <div class='button' id='play-button'>
+
+                    <div id="play-icon"></div>
+                    <div id='stop-icon'></div>
+                </div>
+
+                <div class="slidecontainer">
+                    <input type="range" min="0" max="100" value="85" class="slider" id="vol-slider">
+                </div>
+
+            </div>
+
+    </div>
+
+    <div id="lyrics"></div>
+</div>
+
+
+<script src="radio/radio.js"></script>
+</body>
+
 </html>
