@@ -8355,6 +8355,9 @@ def find_synced_lyric_data(track):
     direc = track.parent_folder_path
     name = os.path.splitext(track.filename)[0] + ".lrc"
 
+    if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
+        return track.lyrics.splitlines()
+
     try:
         if os.path.isfile(os.path.join(direc, name)):
             with open(os.path.join(direc, name), 'r') as f:
@@ -8435,12 +8438,9 @@ class TimedLyricsRen:
             if len(line) < 10:
                 continue
 
-            #print(line)
-            if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+            if line[0] != "[" or "]" not in line or ":" not in line or "." not in line:
                 continue
 
-            es = 0
-            s = 0
             try:
 
                 text = line.split("]")[-1].rstrip("\n")
@@ -8455,7 +8455,11 @@ class TimedLyricsRen:
                     mm, b = a.split(":")
                     ss, ms = b.split(".")
 
-                    s = int(mm) * 60 + int(ss) + int(ms) / 100
+                    s = int(mm) * 60 + int(ss)
+                    if len(ms) == 2:
+                        int(ms) / 100
+                    elif len(ms) == 3:
+                        int(ms) / 1000
                     self.data.append((s, text))
 
                     if len(t) < 10:
