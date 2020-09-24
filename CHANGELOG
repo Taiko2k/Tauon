@@ -9,6 +9,7 @@ v6.3.2
   - Added sourcing lyrics from lrc files (static)
   - Fixed no spaces in text bug
  - Fixed global search crash with Spotify when not enabled
+ - Fixed delay when restarting broadcast
 
 v6.3.1
 
