@@ -59,7 +59,7 @@ def enc(tauon):
             ms *= 10
             t = f"{str(int(hh)).zfill(2)}:{str(int(mm)).zfill(2)}:{str(int(ss)).zfill(2)}.{str(round(ms))}"
 
-            return ['ffmpeg', "-i", target, "-ss", t, "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",  # -re
+            return ['ffmpeg', "-loglevel", "quiet", "-i", target, "-ss", t, "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",  # -re
                     "48000", "-"]
 
         def main(self):
@@ -72,7 +72,7 @@ def enc(tauon):
                     pctl.broadcastCommandReady = False
 
                     if command == "encstop":
-                        print("Stopping broadcast...")
+                        # print("Stopping broadcast...")
                         pctl.broadcast_active = False
                         time.sleep(1)
                         self.decoder.terminate()
@@ -83,6 +83,10 @@ def enc(tauon):
                         self.output_buffer_size = 0
                         self.raw_buffer = io.BytesIO()
                         self.output_buffer = io.BytesIO()
+                        self.temp_buffer = io.BytesIO()
+                        self.dry = 0
+                        self.bytes_sent = 0
+                        self.stream_time.set()
                         tauon.chunker.chunks.clear()
                         tauon.chunker.headers.clear()
                         tauon.chunker.master_count = 0
@@ -91,19 +95,20 @@ def enc(tauon):
                         pctl.broadcast_time = 0
 
                     if command == "encstart":
+                        # print("Start broadcast...")
                         target = pctl.target_open
-                        print(f"URI = {target}")
+                        # print(f"URI = {target}")
                         pctl.broadcast_active = True
-                        print("Start encoder")
+                        # print("Start encoder")
                         #cmd = shlex.split("opusenc --raw --raw-rate 48000 - -")
-                        cmd = ["ffmpeg", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", '-f', "opus", "-c:a", "libopus", "pipe:1"]
+                        cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", '-f', "opus", "-c:a", "libopus", "pipe:1"]
                         # cmd = shlex.split("oggenc --raw --raw-rate 48000 -")
                         self.encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
                         fcntl.fcntl(self.encoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
-                        print("Begin decode of file")
+                        # print("Begin decode of file")
                         cmd = self.get_decode_command(target, pctl.b_start_time)
-                        print(cmd)
+                        # print(cmd)
                         self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
                         time.sleep(0.1)
                         self.stream_time.force_set(6)
@@ -111,24 +116,24 @@ def enc(tauon):
 
                     if command == "cast-next":
                         target = pctl.target_open
-                        print(f"URI = {target}")
+                        # print(f"URI = {target}")
 
                         self.decoder.terminate()
                         cmd = self.get_decode_command(target, 0)
                         self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
                         time.sleep(0.1)
-                        print("started next")
+                        # print("started next")
                         self.track_bytes_sent = 0
 
                     if command == "encseek":
                         target = pctl.target_open
                         start = pctl.b_start_time + pctl.broadcast_seek_position
-                        print(f"URI = {target}")
+                        # print(f"URI = {target}")
                         self.decoder.terminate()
                         cmd = self.get_decode_command(target, start)
                         self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
                         time.sleep(0.1)
-                        print("started next")
+                        # print("started next")
                         self.track_bytes_sent = pctl.broadcast_seek_position * (48000 * (16 / 8) * 2)
 
                 if self.decoder:
@@ -242,7 +247,6 @@ def enc(tauon):
                             self.output_buffer_size = self.output_buffer.tell()
                             del self.temp_buffer
                             self.temp_buffer = io.BytesIO()
-
 
     en = Enc()
     en.main()
