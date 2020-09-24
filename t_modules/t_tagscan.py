@@ -23,7 +23,7 @@
 import struct
 import wave
 import io
-
+import os
 
 def parse_mbids_from_vorbis(object, key, value):
 
@@ -252,13 +252,16 @@ class Flac:
     def read(self, get_picture=False):
 
         # Very helpful: https://xiph.org/flac/format.html
+        size = os.path.getsize(self.filepath) / 8
+        if size < 100:
+            return
 
         f = open(self.filepath, "rb")
         s = f.read(4)
 
         # Find start of FLAC stream
         if s != b'fLaC':
-            while f.tell() < 1000000:
+            while f.tell() < size + 100:
                 f.seek(-3, 1)
                 s = f.read(4)
                 if s == b'fLaC':
