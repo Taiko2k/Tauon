@@ -58,7 +58,7 @@
 
   <releases>
 
-    <release version="6.3.1" date="2020-09-19">
+    <release version="6.3.2" date="2020-09-19">
       <description>
         <ul>
           <li>Various fixes</li>
