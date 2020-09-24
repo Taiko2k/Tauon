@@ -3807,11 +3807,8 @@ def tag_scan(nt):
 
         if nt.file_ext == "FLAC":
 
-            # print("get opus")
             audio = Flac(nt.fullpath)
             audio.read()
-
-            # print(audio.title)
 
             nt.length = audio.length
             nt.title = audio.title
@@ -8357,7 +8354,7 @@ def find_synced_lyric_data(track):
 
     if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
         return track.lyrics.splitlines()
-
+    print("fine")
     try:
         if os.path.isfile(os.path.join(direc, name)):
             with open(os.path.join(direc, name), 'r') as f:
@@ -8391,6 +8388,7 @@ class TimedLyricsToStatic:
                 self.cache_key = track
                 return ""
             text = ""
+
             for line in data:
                 if len(line) < 10:
                     continue
@@ -22145,8 +22143,6 @@ def worker1():
         # bm.get("add file start")
         global DA_Formats
         global to_got
-
-        print(f"Scan file: {path}")
 
         if not os.path.isfile(path):
             print("file to import missing")
