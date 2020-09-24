@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v6.3.3
 
  - Tweaked lyrics to use as sycned if detected
+ - Tweaked synced lyrics synchronisation
  - Fixed a possible stall when importing corrupted flac files
 
 v6.3.2

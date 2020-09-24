@@ -4250,7 +4250,7 @@ class PlayerCtl:
         self.radio_rate_timer = Timer(20)
 
         self.volume_update_timer = Timer()
-
+        self.wake_past_time = 0
 
     def radio_progress(self):
 
@@ -8354,7 +8354,7 @@ def find_synced_lyric_data(track):
 
     if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
         return track.lyrics.splitlines()
-    print("fine")
+
     try:
         if os.path.isfile(os.path.join(direc, name)):
             with open(os.path.join(direc, name), 'r') as f:
@@ -8404,7 +8404,13 @@ class TimedLyricsToStatic:
 
 tauon.synced_to_static_lyrics = TimedLyricsToStatic()
 
-
+def get_real_time():
+    offset = pctl.decode_time - (prefs.sync_lyrics_time_offset / 1000)
+    if prefs.backend == 4:
+        offset -= (prefs.device_buffer - 120) / 1000
+    elif prefs.backend == 2:
+        offset += 0.1
+    return max(0, offset)
 
 class TimedLyricsRen:
 
@@ -8455,9 +8461,10 @@ class TimedLyricsRen:
 
                     s = int(mm) * 60 + int(ss)
                     if len(ms) == 2:
-                        int(ms) / 100
+                        s += int(ms) / 100
                     elif len(ms) == 3:
-                        int(ms) / 1000
+                        s += int(ms) / 1000
+
                     self.data.append((s, text))
 
                     if len(t) < 10:
@@ -8503,20 +8510,19 @@ class TimedLyricsRen:
             font_size = 17
             spacing = round(23 * gui.scale)
 
-        test_time = max(0, pctl.playing_time - (prefs.sync_lyrics_time_offset / 1000))
+        test_time = get_real_time()
 
         if pctl.track_queue[pctl.queue_step] == index:
 
-            for i, line in (enumerate(self.data)):
+            for i, line in enumerate(self.data):
                 if line[0] < test_time:
 
                     last = i
 
-                if line[0] > pctl.playing_time:
-                    line_active = last
-                    if not gui.frame_callback_list:
-                        gui.frame_callback_list.append(TestTimer(line[0] - test_time + 0.001))
+                if line[0] > test_time:
 
+                    pctl.wake_past_time = line[0]
+                    line_active = last
                     break
             else:
                 line_active = len(self.data) - 1
@@ -8526,7 +8532,6 @@ class TimedLyricsRen:
                 self.scroll_position = (max(0, line_active)) * spacing * -1
 
         yy = y + self.scroll_position
-
 
 
         for i, line in enumerate(self.data):
@@ -8542,14 +8547,10 @@ class TimedLyricsRen:
                     if colours.lm:
                         colour = [180, 130, 210, 255]
 
-
-                #ddt.text((x, yy), line[1], colour, font_size, 2000, bg)
                 h = ddt.text((x, yy, 4, w - 20 * gui.scale), line[1], colour, font_size, w - 20 * gui.scale, bg)
                 yy += max(h - round(6 * gui.scale), spacing)
             else:
                 yy += spacing
-
-
 
 
 timed_lyrics_ren = TimedLyricsRen()
@@ -37579,6 +37580,13 @@ while pctl.running:
 
     if mouse_down:
         power = 1000
+
+    if pctl.wake_past_time:
+
+        if get_real_time() > pctl.wake_past_time:
+            pctl.wake_past_time = 0
+            power = 1000
+            gui.update += 1
 
     if gui.level_update and not album_scroll_hold and not scroll_hold:
         power = 500
