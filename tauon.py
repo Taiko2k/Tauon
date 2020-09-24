@@ -22146,6 +22146,8 @@ def worker1():
         global DA_Formats
         global to_got
 
+        print(f"Scan file: {path}")
+
         if not os.path.isfile(path):
             print("file to import missing")
             return 0
