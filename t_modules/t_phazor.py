@@ -382,8 +382,16 @@ def player4(tauon):
                     add_time = 0
 
                 pctl.playing_time += add_time
-                pctl.decode_time = aud.get_position_ms() / 1000
+
+                t = aud.get_position_ms() / 1000
+
                 pctl.total_playtime += add_time
+
+                if t:
+                    pctl.decode_time = (aud.get_position_ms() / 1000) - loaded_track.start_time
+                else:
+                    pctl.decode_time = pctl.playing_time
+
                 tauon.lfm_scrobbler.update(add_time)
                 if len(pctl.track_queue) > 0 and 2 > add_time > 0:
                     tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)

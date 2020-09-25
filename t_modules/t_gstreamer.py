@@ -634,7 +634,7 @@ def player3(tauon):  # GStreamer
 
                     t = self.playbin.query_position(Gst.Format.TIME)
                     if t[0]:
-                        pctl.decode_time = t[1] / Gst.SECOND
+                        pctl.decode_time = (t[1] / Gst.SECOND) - self.loaded_track.start_time
                     else:
                         pctl.decode_time = pctl.playing_time
 
