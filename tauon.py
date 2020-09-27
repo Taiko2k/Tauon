@@ -8404,6 +8404,7 @@ class TimedLyricsToStatic:
 
 tauon.synced_to_static_lyrics = TimedLyricsToStatic()
 
+
 def get_real_time():
     offset = pctl.decode_time - (prefs.sync_lyrics_time_offset / 1000)
     if prefs.backend == 4:
@@ -8411,6 +8412,7 @@ def get_real_time():
     elif prefs.backend == 2:
         offset += 0.1
     return max(0, offset)
+
 
 class TimedLyricsRen:
 
@@ -20732,6 +20734,8 @@ class SearchOverlay:
                 self.force_select += 1
                 if self.force_select > 4:
                     self.on = self.force_select - 4
+                if self.force_select > len(self.results) - 1:
+                    self.force_select = len(self.results) - 1
                 self.old_mouse = copy.deepcopy(mouse_position)
 
             if key_up_press:
@@ -40533,16 +40537,16 @@ while pctl.running:
                 ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.box_text_border)
 
                 if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
-                               tooltip="Renames the physical folder based on the template") or inp.level_2_enter:
+                               tooltip=_("Renames the physical folder based on the template")) or inp.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
                     gui.rename_folder_box = False
                     inp.mouse_click = False
 
                 text = _("Trash")
-                tt = "Moves folder to system trash"
+                tt = _("Moves folder to system trash")
                 if key_shift_down:
                     text = _("Delete")
-                    tt = "Physically deletes folder from disk"
+                    tt = _("Physically deletes folder from disk")
                 if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale,
                                text_highlight_colour=colours.grey(255), background_highlight_colour=[180, 60, 60, 255],
                                press=mouse_up, tooltip=tt):
@@ -40555,14 +40559,14 @@ while pctl.running:
 
                 if move_folder_up(rename_index):
                     if draw.button(_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
-                                   tooltip="Moves folder up 2 levels and deletes old the containing folder"):
+                                   tooltip=_("Moves folder up 2 levels and deletes the old container folder")):
                         move_folder_up(rename_index, True)
                         inp.mouse_click = False
 
                 to_clean = clean_folder(rename_index)
                 if to_clean > 0:
                     if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
-                                   80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
+                                   80 * gui.scale, tooltip=_("Deletes some unnecessary files from folder")):
                         clean_folder(rename_index, True)
                         inp.mouse_click = False
 
