@@ -63,7 +63,7 @@ quick-find \
 quick-find F Ctrl
 global-search G Ctrl
 add-to-queue Q Alt
-love-playing
+love-playing L Shift Ctrl
 love-selected L Ctrl
 
 toggle-left-panel ~
