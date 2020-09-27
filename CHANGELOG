@@ -3,9 +3,11 @@ Changelog-------------------------------------
 
 v6.3.3
 
+ - Set default keybind for "love playing" as Ctrl+Shift+L
  - Tweaked lyrics to use as sycned if detected
  - Tweaked synced lyrics synchronisation
  - Fixed a possible stall when importing corrupted flac files
+ - Fixed down key on search overly advancing past results
 
 v6.3.2
 
