@@ -1748,6 +1748,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.gen_code_errors = False
 
         self.regen_single = -1
+        self.regen_single_id = None
 
         self.tracklist_bg_is_light = False
         self.clear_image_cache_next = False
@@ -3604,7 +3605,7 @@ def load_prefs():
     prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data, "Enable automatic downloading of thumbnails in artist list")
     prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
-    prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generated playlists on any file import")
+    prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generator playlists")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
     prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
 
@@ -3653,7 +3654,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[broadcasting]")
     #prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
-    prefs.metadata_page_port = cf.sync_add("int", "broadcast-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this. Must be different to the broadcast port")
+    prefs.metadata_page_port = cf.sync_add("int", "broadcast-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this.")
     # prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
 
     cf.br()
@@ -6574,18 +6575,12 @@ def love(set=True, track_id=None, no_delay=False):
     if pctl.mpris is not None:
         pctl.mpris.update(force=True)
 
-    reload = False
-    for i, p in enumerate(pctl.multi_playlist):
-        code = pctl.gen_codes.get(p[6])
-        if code:
-            cmds = shlex.split(code)
-            if "l" in cmds and "auto" in cmds:
-                reload = True
-                break
-
-    if reload:
-        pctl.after_import_flag = True
-
+    id = pl_to_id(pctl.active_playlist_viewing)
+    code = pctl.gen_codes.get(id)
+    if code is not None:
+        cmds = shlex.split(code)
+        if "l" in cmds:
+            gui.regen_single_id = id
 
 class LastScrob:
 
@@ -11962,7 +11957,6 @@ class Menu:
                 else:
                     self.items[to_call][2]()
 
-
             if self.clicked or key_esc_press or self.close_next_frame:
                 self.close_next_frame = False
                 self.active = False
@@ -11971,14 +11965,11 @@ class Menu:
                 last_click_location[0] = 0
                 last_click_location[1] = 0
 
-
                 for menu in Menu.instances:
                     if menu.active:
                         break
                 else:
                     Menu.active = False
-
-
 
                 # Render the menu outline
                 # ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
@@ -14754,9 +14745,14 @@ def upload_spotify_playlist(pl):
     spot_ctl.upload_playlist(id, urls)
 
 
-def regenerate_playlist(pl, silent=False):
+def regenerate_playlist(pl=-1, silent=False, id=None):
 
-    id = pl_to_id(pl)
+    if id is None:
+        id = pl_to_id(pl)
+
+    if id_to_pl(id) is None:
+        return
+
     string = pctl.gen_codes.get(id)
     if not string:
         if not silent:
@@ -15329,6 +15325,7 @@ def regenerate_playlist(pl, silent=False):
     if gui.rename_playlist_box and (not playlist or cmds.count("a") > 1):
         pass
     else:
+        pl = id_to_pl(id)
         pctl.multi_playlist[pl][2][:] = playlist[:]
     gui.pl_update = 1
     reload()
@@ -15935,7 +15932,7 @@ def gen_love(pl, custom_list=None):
         pctl.multi_playlist.append(pl_gen(title=_("Loved"),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a love>"
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a l"
     else:
         show_message("No loved tracks were found.")
 
@@ -18842,6 +18839,19 @@ def toggle_album_mode(force_on=False):
         if playlist_selected < len(pctl.playing_playlist()):
             goto_album(playlist_selected)
 
+def check_auto_update_okay(code):
+    cmds = shlex.split(code)
+    return "auto" in cmds or (prefs.always_auto_update_playlists and
+                          not "sf" in cmds and
+                          not "rf" in cmds and
+                          not "ra" in cmds and
+                          not "sa" in cmds and
+                          not "st" in cmds and
+                          not "rt" in cmds and
+                          not "sal" in cmds and
+                          not "slt" in cmds and
+                          not "spl\"" in code and
+                          not "r" in cmds)
 
 def switch_playlist(number, cycle=False, quiet=False):
     global default_playlist
@@ -18898,11 +18908,14 @@ def switch_playlist(number, cycle=False, quiet=False):
     console.print("DEBUG: Position changed by playlist change")
     shift_selection = [playlist_selected]
 
+    id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
+    code = pctl.gen_codes.get(id)
+    if code is not None and check_auto_update_okay(code):
+        gui.regen_single_id = id
 
     if album_mode:
         reload_albums(True)
-
-        id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         if id in gui.gallery_positions:
             gui.album_scroll_px = gui.gallery_positions[id]
         else:
@@ -22463,6 +22476,11 @@ def worker1():
             dl_mon.scan()
 
         # Update smart playlists
+        if gui.regen_single_id is not None:
+            regenerate_playlist(pl=-1, silent=True, id=gui.regen_single_id)
+            gui.regen_single_id = None
+
+        # Update smart playlists
         if gui.regen_single > -1:
             target = gui.regen_single
             gui.regen_single = -1
@@ -22475,24 +22493,12 @@ def worker1():
                 if pl_to_id(i) in pctl.gen_codes:
                     code = pctl.gen_codes[pl_to_id(i)]
                     try:
-                        cmds = shlex.split(code)
-                        if "auto" in cmds or (prefs.always_auto_update_playlists and
-                                not "sf" in cmds and
-                                not "rf" in cmds and
-                                not "ra" in cmds and
-                                not "sa" in cmds and
-                                not "st" in cmds and
-                                not "rt" in cmds and
-                                not "sal" in cmds and
-                                not "slt" in cmds and
-                                not "spl\"" in code and
-                                not "r" in cmds):
+                        if check_auto_update_okay(code):
                             if not pl_is_locked(i):
                                 print("Reloading smart playlist: " + plist[0])
                                 regenerate_playlist(i, silent=True)
                                 time.sleep(0.02)
                     except:
-                        #raise
                         pass
 
         if tauon.worker_save_state and \
@@ -24199,20 +24205,23 @@ class Over:
 
         else:
 
-            y += 25 * gui.scale
+            y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
                                _("Run web server for broadcasting"))
 
-            y += 25 * gui.scale
+            y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_auto_artist_dl,
                                _("Auto fetch artist data"))
 
-            y += 25 * gui.scale
+            y += 23 * gui.scale
             self.toggle_square(x, y, toggle_top_tabs, _("Enable tabs in top panel"))
 
-            y += 35 * gui.scale
+            y += 23 * gui.scale
+            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto regenerate playlists"))
+
+            y += 23 * gui.scale
             self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"))
@@ -24222,7 +24231,7 @@ class Over:
             self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
 
-            y += 40 * gui.scale
+            y += 37 * gui.scale
 
             #. Limited width. Max 19 chars.
             # self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
