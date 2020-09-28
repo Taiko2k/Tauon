@@ -1781,6 +1781,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.level_decay_timer = Timer()
 
+        self.showed_title = False
+
 gui = GuiVar()
 
 
@@ -11966,6 +11968,10 @@ class Menu:
                 self.active = False
                 self.clicked = False
 
+                last_click_location[0] = 0
+                last_click_location[1] = 0
+
+
                 for menu in Menu.instances:
                     if menu.active:
                         break
@@ -12921,7 +12927,7 @@ def toggle_lyrics_panel_position():
 
 def lyrics_in_side_show(track_object):
 
-    if gui.combo_mode or not prefs.show_lyrics_side or (prefs.show_lyrics_side and not track_object.lyrics):
+    if gui.combo_mode or not prefs.show_lyrics_side:
         return False
     return True
 
@@ -27146,7 +27152,7 @@ class BottomBarType1:
                 self.seek_hit = True
 
 
-        if (mouse_up and coll(self.seek_bar_position + self.seek_bar_size)
+        if (mouse_up and coll(self.seek_bar_position + self.seek_bar_size) and coll_point(last_click_location,self.seek_bar_position + self.seek_bar_size)
             and coll_point(click_location,
                            self.seek_bar_position + self.seek_bar_size)) or mouse_up and self.volume_hit or self.seek_hit:
 
@@ -27359,6 +27365,10 @@ class BottomBarType1:
                 else:
                     ddt.text((self.volume_bar_position[0] - right_offset + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
                              11, bg=colours.volume_bar_background)
+
+        gui.show_bottom_title = gui.showed_title ^ True
+        if not prefs.hide_bottom_title:
+            gui.show_bottom_title = True
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
 
@@ -33841,6 +33851,7 @@ class MetaBox:
             yy += round(20 * gui.scale)
             ddt.text((text_x, yy), track.date, line2_colour, 14, max_w=max_w)
 
+            gui.showed_title = True
 
     def lyrics(self, x, y, w, h, track):
 
@@ -34000,6 +34011,8 @@ class MetaBox:
                     ddt.text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max_w=text_width)
                 if artist != "":
                     ddt.text((margin, block_y + 23 * gui.scale), artist, colours.side_bar_line2, fonts.side_panel_line2, max_w=text_width)
+
+                gui.showed_title = True
 
                 if h > 140 * gui.scale:
 
@@ -38339,6 +38352,7 @@ while pctl.running:
         # perf_timer.set()
 
         mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
+        gui.showed_title = False
 
         if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
             mouse_position[0] = -300
@@ -39700,6 +39714,9 @@ while pctl.running:
                         else:
                             timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw, h=window_size[1] - gui.panelY - gui.panelBY)
 
+                            if right_click and coll((window_size[0] - gui.rspw,  gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
+                                center_info_menu.activate(target_track)
+
                     elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
 
                         if prefs.show_side_lyrics_art_panel:
@@ -39792,6 +39809,8 @@ while pctl.running:
 
                             ww = w - 25 * gui.scale
 
+                            gui.showed_title = True
+
                             if target_track:
                                 ddt.text_background_colour = colours.side_panel_background
 
@@ -39833,23 +39852,6 @@ while pctl.running:
                                   window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
                         draw_sep_hl = False
 
-
-            # Bottom title position logic
-            gui.show_bottom_title = False
-            if not prefs.hide_bottom_title:
-                gui.show_bottom_title = True
-            else:
-                if album_mode or prefs.meta_shows_selected_always:
-                    gui.show_bottom_title = True
-                elif gui.rsp:
-                    if prefs.side_panel_layout == 0 and window_size[
-                            1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[
-                            0] > 1500 * gui.scale or gui.maximized:
-                        gui.show_bottom_title = True
-                    if prefs.show_lyrics_side and gui.showing_l_panel:
-                        gui.show_bottom_title = False
-                else:
-                    gui.show_bottom_title = True
 
             if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
                 artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)

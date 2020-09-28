@@ -10,6 +10,9 @@ v6.3.3
  - Tweaked synced lyrics synchronisation accuracy
  - Fixed a possible stall when importing corrupted flac files
  - Fixed down key on search overly advancing past results
+ - Fixed bottom panel title hiding
+ - Fixed no lyric menu when only synced lyrics showing
+ - Fixed menu click triggering seek bar when over
 
 v6.3.2
 
