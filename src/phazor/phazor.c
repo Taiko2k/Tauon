@@ -76,6 +76,8 @@ float volume_want = 1.0;
 float volume_on = 1.0;
 float volume_ramp_speed = 750;  // ms for 1 to 0
 
+/* int active_latency = 0; */
+
 int codec = 0;
 int error = 0;
 
@@ -892,6 +894,7 @@ void *out_thread(void *thread_id){
           
           
           pa_simple_write (s, out_buf, b, &error); 
+          /* active_latency = (int) pa_simple_get_latency(s, &error); */
   
           /* t_end = get_time_ms(); */
           /* testb = (t_end - t_start); */
@@ -1259,6 +1262,10 @@ int get_level_peak_r(){
   peak_r = 0;
   return peak;
 }  
+                                  
+/* int get_latency(){ */
+/*   return active_latency / 1000; */
+/* } */
 
 int shutdown(){
   while (command != NONE){
