@@ -312,6 +312,8 @@ def player3(tauon):  # GStreamer
 
             if current_track is not None and current_track.length < 1:
 
+                time.sleep(0.25)
+
                 result = self.playbin.query_duration(Gst.Format.TIME)
 
                 if result[0] is True:
@@ -641,7 +643,8 @@ def player3(tauon):  # GStreamer
                     if self.loaded_track:
                         star_store.add(self.loaded_track.index, add_time)
 
-                    # self.check_duration()
+
+                    self.check_duration()
                     self.player_timer.hit()
 
                 elif command == 'url':
