@@ -6572,6 +6572,18 @@ def love(set=True, track_id=None, no_delay=False):
     if pctl.mpris is not None:
         pctl.mpris.update(force=True)
 
+    reload = False
+    for i, p in enumerate(pctl.multi_playlist):
+        code = pctl.gen_codes.get(p[6])
+        if code:
+            cmds = shlex.split(code)
+            if "l" in cmds and "auto" in cmds:
+                reload = True
+                break
+
+    if reload:
+        pctl.after_import_flag = True
+
 
 class LastScrob:
 
@@ -16942,7 +16954,6 @@ def add_to_queue(ref):
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
     queue_timer_set()
 
-
 def add_selected_to_queue():
     gui.pl_update += 1
 
@@ -16954,6 +16965,13 @@ def add_selected_to_queue():
                                                playlist_selected,
                                                pl_to_id(pctl.active_playlist_viewing)))
         queue_timer_set()
+
+def add_selected_to_queue_multi():
+
+    for index in shift_selection:
+        pctl.force_queue.append(queue_item_gen(default_playlist[index],
+                                               index,
+                                               pl_to_id(pctl.active_playlist_viewing)))
 
 
 def queue_timer_set(plural=False, queue_object=None):
@@ -17986,6 +18004,10 @@ folder_menu.add('Add to Spotify Library', add_to_spotify_library, add_to_spotify
 
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
+
+selection_menu.add(_('Add to queue'), add_selected_to_queue_multi)
+
+selection_menu.br()
 
 selection_menu.add(_('Reload Metadata'), reload_metadata_selection)
 
@@ -19240,7 +19262,7 @@ def copy_bb_metadata():
         show_message(_("No metadata available to copy"))
 
 mode_menu.br()
-mode_menu.add(_('Copy to Clipboard'), copy_bb_metadata)
+mode_menu.add(_('Copy Title to Clipboard'), copy_bb_metadata)
 
 extra_menu = Menu(175, show_icons=True)
 
@@ -22462,6 +22484,7 @@ def worker1():
                             if not pl_is_locked(i):
                                 print("Reloading smart playlist: " + plist[0])
                                 regenerate_playlist(i, silent=True)
+                                time.sleep(0.02)
                     except:
                         #raise
                         pass
@@ -29344,7 +29367,7 @@ class StandardPlaylist:
 
 
             # Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
-            if len(shift_selection) > 1 and mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
+            if len(shift_selection) > 1 and mouse_up and line_over and not key_shift_down and not key_ctrl_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
                 shift_selection = [track_position]
                 playlist_selected = track_position
                 gui.pl_update = 1
@@ -29455,6 +29478,8 @@ class StandardPlaylist:
                             if y not in shift_selection:
                                 shift_selection.append(y)
                         shift_selection.sort()
+                    elif key_ctrl_down:
+                        shift_selection.append(track_position)
                     else:
                         playlist_selected = track_position
                         shift_selection = [playlist_selected]
