@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-09-14 22:53+1200\n"
-"PO-Revision-Date: 2020-09-29 00:09+0000\n"
+"PO-Revision-Date: 2020-09-30 19:41+0000\n"
 "Last-Translator: ssantos <ssantos@web.de>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt/>\n"
@@ -1824,7 +1824,7 @@ msgstr "Mostrar Licença"
 
 #: tauon.py:25240 tauon.py:25242
 msgid "Credits"
-msgstr "Créditos"
+msgstr "Méritos"
 
 #: tauon.py:25254
 msgid "Chart Grid Generator"
