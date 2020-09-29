@@ -1384,6 +1384,7 @@ class Prefs:    # Used to hold any kind of settings
         self.save_window_position = False
         self.spotify_token = ""
 
+
 prefs = Prefs()
 
 
@@ -2661,8 +2662,8 @@ for t in range(2):
             prefs.allow_remote = save[27]
         if save[28] is not None:
             prefs.expose_web = save[28]
-        # if save[29] is not None:
-        #     prefs.enable_transcode = save[29]
+        if save[29] is not None:
+            prefs.enable_transcode = save[29]
         if save[30] is not None:
             prefs.show_rym = save[30]
         # if save[31] is not None:
@@ -18248,11 +18249,9 @@ def broadcast_select_track(track_id):
         pctl.broadcastCommandReady = True
 
 
-if prefs.enable_transcode or prefs.backend == 1:
-    track_menu.br()
-
-
+track_menu.br()
 track_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+
 
 def bass_test(_):
     # return True
@@ -24295,15 +24294,17 @@ class Over:
             ddt.text((x, y), _("Show in context menus:"), colours.box_text_label, 11)
             y += 23 * gui.scale
 
-            self.toggle_square(x, y, toggle_wiki, _("Wikipedia search"))
+            self.toggle_square(x, y, toggle_wiki, _("Wikipedia Search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_rym, _("Sonemic search"))
+            self.toggle_square(x, y, toggle_rym, _("Sonemic Search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_band, _("Bandcamp search"))
+            self.toggle_square(x, y, toggle_band, _("Bandcamp Search"))
             # y += 23 * gui.scale
             # self.toggle_square(x, y, toggle_gimage, _("Google image search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_gen, _("Genius search"))
+            self.toggle_square(x, y, toggle_gen, _("Genius Search"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_transcode, _("Transcode Folder"))
             if discord_allow:
                 y += 23 * gui.scale
                 self.toggle_square(x, y, toggle_show_discord, _("Discord RP Toggle"))
@@ -36761,7 +36762,7 @@ def save_state():
             prefs.enable_web,
             prefs.allow_remote,
             prefs.expose_web,
-            True,  # prefs.enable_transcode
+            prefs.enable_transcode,
             prefs.show_rym,
             None,  # was combo mode art size
             gui.maximized,
