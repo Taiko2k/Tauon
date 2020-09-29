@@ -755,6 +755,7 @@ get_lfm_wait_timer = Timer(10)
 lyrics_fetch_timer = Timer(10)
 gallery_load_delay = Timer(10)
 queue_add_timer = Timer(100)
+toast_love_timer = Timer(100)
 toast_mode_timer = Timer(100)
 scrobble_warning_timer = Timer(1000)
 sync_file_timer = Timer(1000)
@@ -1724,6 +1725,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.reload_theme = False
         self.theme_number = 0
         self.toast_queue_object = None
+        self.toast_love_object = None
+        self.toast_love_added = True
 
         self.force_side_on_drag = False
         self.last_left_panel_mode = "playlist"
@@ -6509,7 +6512,7 @@ def get_love_index(index):
         return False
 
 
-def love(set=True, track_id=None, no_delay=False):
+def love(set=True, track_id=None, no_delay=False, notify=False):
 
     if len(pctl.track_queue) < 1:
         return False
@@ -6541,6 +6544,12 @@ def love(set=True, track_id=None, no_delay=False):
 
     loved ^= True
 
+    if notify:
+        gui.toast_love_object = pctl.g(track_id)
+        gui.toast_love_added = loved
+        toast_love_timer.set()
+        gui.delay_frame(1.81)
+
     delay = 0.3
     if not lastfm.details_ready() or no_delay:
         delay = 0
@@ -6557,6 +6566,7 @@ def love(set=True, track_id=None, no_delay=False):
             print("Failed updating last.fm love status", mode='warning')
             star = [star[0], star[1].strip("L"), star[2]]
             star_store.insert(track_id, star)
+            show_message(_("Error updating love to last.fm!"), _("Maybe check your internet connection and try again?"), mode="error")
 
     else:
         time.sleep(delay)
@@ -19436,19 +19446,19 @@ def love_deco():
         else:
             return [colours.menu_text_disabled, colours.menu_background, _("Love Track")]
 
-def bar_love():
-    shoot_love = threading.Thread(target=love)
+def bar_love(notify=False):
+    shoot_love = threading.Thread(target=love, args=[True, None, False, notify])
     shoot_love.daemon = True
     shoot_love.start()
 
-def select_love():
+def select_love(notify=False):
 
     selected = playlist_selected
     playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
     if -1 < selected < len(playlist):
         track_id = playlist[selected]
 
-        shoot_love = threading.Thread(target=love, args=[True, track_id])
+        shoot_love = threading.Thread(target=love, args=[True, track_id, False, notify])
         shoot_love.daemon = True
         shoot_love.start()
 
@@ -38154,10 +38164,10 @@ while pctl.running:
                 pctl.pause_only()
 
             if keymaps.test("love-playing"):
-                bar_love()
+                bar_love(notify=True)
 
             if keymaps.test("love-selected"):
-                select_love()
+                select_love(notify=True)
 
             if keymaps.test("search-lyrics-selected"):
                 if pctl.selected_ready():
@@ -40954,40 +40964,69 @@ while pctl.running:
             else:
                 mini_mode.render()
 
-        # Add to queue toast
-        if pctl.force_queue: # and not (gui.lsp and not gui.artist_info_panel):
-            t = queue_add_timer.get()
-            if t < 2.5 and gui.toast_queue_object:
-                track = pctl.g(gui.toast_queue_object[0])
+        t = toast_love_timer.get()
+        if t < 1.8 and gui.toast_love_object is not None:
+            track = gui.toast_love_object
 
-                ww = 0
-                if gui.lsp:
-                    ww = gui.lspw
+            ww = 0
+            if gui.lsp:
+                ww = gui.lspw
 
-                rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
-                fields.add(rect)
+            rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
+            fields.add(rect)
 
-                if coll(rect):
-                    queue_add_timer.force_set(10)
+            if coll(rect):
+                toast_love_timer.force_set(10)
+            else:
+                ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border, True)
+                ddt.rect(rect, colours.queue_card_background, True)
+
+                # fqo = copy.copy(pctl.force_queue[-1])
+
+                ddt.text_background_colour = colours.queue_card_background
+
+                if gui.toast_love_added:
+                    text = _("Loved track")
                 else:
-                    ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border, True)
-                    ddt.rect(rect, colours.queue_card_background, True)
+                    text = _("Un-Loved track")
 
-                    fqo = copy.copy(pctl.force_queue[-1])
+                ddt.text_background_colour = colours.queue_card_background
+                ddt.text((rect[0] + (rect[2] // 2), rect[1] + 3 * gui.scale, 2), text, colours.box_text, 313)
+                ddt.text((rect[0] + (rect[2] // 2), rect[1] + 20 * gui.scale, 2), f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label, 13, max_w=rect[2] - 15 * gui.scale)
 
-                    ddt.text_background_colour = colours.queue_card_background
-                    top_text = "Track"
-                    if gui.queue_toast_plural:
-                        top_text = "Album"
-                        fqo[3] = 1
-                    if pctl.force_queue[-1][3] == 1:
-                        top_text = "Album"
 
-                    queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, True, False)
+        t = queue_add_timer.get()
+        if t < 2.5 and gui.toast_queue_object:
+            track = pctl.g(gui.toast_queue_object[0])
 
-                    ddt.text_background_colour = colours.queue_card_background
-                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.box_text_label, 11)
-                    ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.box_text_label, 11)
+            ww = 0
+            if gui.lsp:
+                ww = gui.lspw
+
+            rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
+            fields.add(rect)
+
+            if coll(rect):
+                queue_add_timer.force_set(10)
+            else:
+                ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border, True)
+                ddt.rect(rect, colours.queue_card_background, True)
+
+                fqo = copy.copy(pctl.force_queue[-1])
+
+                ddt.text_background_colour = colours.queue_card_background
+                top_text = "Track"
+                if gui.queue_toast_plural:
+                    top_text = "Album"
+                    fqo[3] = 1
+                if pctl.force_queue[-1][3] == 1:
+                    top_text = "Album"
+
+                queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, True, False)
+
+                ddt.text_background_colour = colours.queue_card_background
+                ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.box_text_label, 11)
+                ddt.text((rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.box_text_label, 11)
 
 
         t = toast_mode_timer.get()
