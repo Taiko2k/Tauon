@@ -14747,11 +14747,18 @@ def upload_spotify_playlist(pl):
 
 def regenerate_playlist(pl=-1, silent=False, id=None):
 
+    if id is None and pl == -1:
+        return
+
     if id is None:
         id = pl_to_id(pl)
 
-    if id_to_pl(id) is None:
-        return
+    if pl == -1:
+        pl = id_to_pl(id)
+        if pl is None:
+            return
+
+    source_playlist = pctl.multi_playlist[pl][2]
 
     string = pctl.gen_codes.get(id)
     if not string:
@@ -15325,8 +15332,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     if gui.rename_playlist_box and (not playlist or cmds.count("a") > 1):
         pass
     else:
-        pl = id_to_pl(id)
-        pctl.multi_playlist[pl][2][:] = playlist[:]
+        source_playlist[:] = playlist[:]
     gui.pl_update = 1
     reload()
 
