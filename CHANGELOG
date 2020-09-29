@@ -8,6 +8,7 @@ v6.3.3
  - Enabled option to disable "transcode folder" menu entry
  - Added ctrl click to add track to selection
  - Added "Add to Queue" to selection menu
+ - Added toast for love track shortcut
  - Tweaked lyrics to use as sycned if detected
  - Tweaked synced lyrics synchronisation accuracy
  - Tweaked auto regenerate playlists behaviour
