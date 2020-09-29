@@ -6575,12 +6575,6 @@ def love(set=True, track_id=None, no_delay=False):
     if pctl.mpris is not None:
         pctl.mpris.update(force=True)
 
-    id = pl_to_id(pctl.active_playlist_viewing)
-    code = pctl.gen_codes.get(id)
-    if code is not None:
-        cmds = shlex.split(code)
-        if "l" in cmds:
-            gui.regen_single_id = id
 
 class LastScrob:
 
@@ -18845,9 +18839,11 @@ def toggle_album_mode(force_on=False):
         if playlist_selected < len(pctl.playing_playlist()):
             goto_album(playlist_selected)
 
-def check_auto_update_okay(code):
+
+def check_auto_update_okay(code, pl=None):
     cmds = shlex.split(code)
     return "auto" in cmds or (prefs.always_auto_update_playlists and
+                          pctl.active_playlist_playing != pl and
                           not "sf" in cmds and
                           not "rf" in cmds and
                           not "ra" in cmds and
@@ -18917,7 +18913,7 @@ def switch_playlist(number, cycle=False, quiet=False):
     id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
     code = pctl.gen_codes.get(id)
-    if code is not None and check_auto_update_okay(code):
+    if code is not None and check_auto_update_okay(code, pctl.active_playlist_viewing):
         gui.regen_single_id = id
 
     if album_mode:
@@ -22499,7 +22495,7 @@ def worker1():
                 if pl_to_id(i) in pctl.gen_codes:
                     code = pctl.gen_codes[pl_to_id(i)]
                     try:
-                        if check_auto_update_okay(code):
+                        if check_auto_update_okay(code, pl=i):
                             if not pl_is_locked(i):
                                 print("Reloading smart playlist: " + plist[0])
                                 regenerate_playlist(i, silent=True)
