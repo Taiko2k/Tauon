@@ -9,6 +9,7 @@ v6.3.3
  - Added ctrl click to add track to selection
  - Added "Add to Queue" to selection menu
  - Added toast for love track shortcut
+ - Added counter to Airsonic library import
  - Tweaked lyrics to use as sycned if detected
  - Tweaked synced lyrics synchronisation accuracy
  - Tweaked auto regenerate playlists behaviour
