@@ -1788,6 +1788,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.showed_title = False
 
+        self.to_get = 0
+        self.to_got = 0
+
 gui = GuiVar()
 
 
@@ -6268,6 +6271,8 @@ class LastFMapi:
             print("Lookup last.fm user " + username)
 
             lastfm_user = self.network.get_user(username)
+
+
             tracks = lastfm_user.get_loved_tracks(limit=None)
             #tracks = lastfm_user.get_recent_tracks()
 
@@ -7000,6 +7005,8 @@ class SubsonicService:
 
     def get_music2(self):
 
+        gui.to_got = 0
+
         existing = {}
 
         for track_id, track in pctl.master_library.items():
@@ -7021,7 +7028,6 @@ class SubsonicService:
 
         playlist = []
 
-
         def get(folder_id, name):
 
             d = self.r("getMusicDirectory", p={"id": folder_id})
@@ -7030,7 +7036,12 @@ class SubsonicService:
 
             items = d["subsonic-response"]["directory"]["child"]
 
+            gui.update = 1
+
             for item in items:
+
+                gui.to_got += 1
+
                 if item["isDir"]:
                     get(item["id"], item["title"])
                     continue
@@ -26868,8 +26879,9 @@ class TopPanel:
             text = "Accessing Spotify library..."
             bg = [30, 215, 96, 255]
         elif subsonic.scanning:
-            text = "Accessing SUBSONIC library..."
-            bg = [255, 160, 60, 255]
+            text = "Accessing AIRSONIC library..."
+            text += f" {gui.to_got}"
+            bg = [58, 194, 224, 255]
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
