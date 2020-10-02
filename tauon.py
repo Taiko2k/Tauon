@@ -14430,6 +14430,10 @@ def sort_track_2(pl, custom_list=None):
     gui.pl_update += 1
 
 
+def key_filepath(index):
+    track = pctl.master_library[index]
+    return track.parent_folder_path.lower(), track.filename
+
 def sort_path_pl(pl, custom_list=None):
 
     if custom_list is not None:
@@ -14437,11 +14441,7 @@ def sort_path_pl(pl, custom_list=None):
     else:
         target = pctl.multi_playlist[pl][2]
 
-    def path(index):
-        track = pctl.master_library[index]
-        return (track.parent_folder_path.lower(), track.filename)
-
-    target.sort(key=path)
+    target.sort(key=key_filepath)
 
 def append_current_playing(index):
 
@@ -18510,6 +18510,8 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 
     key = None
 
+    if name == "Filepath":
+        key = key_filepath
     if name == "Artist":
         key = key_artist
     if name == "Album Artist":
@@ -39488,7 +39490,7 @@ while pctl.running:
 
                         if coll(l_grip):
                             if mouse_up and gui.set_label_hold != -1:
-                                if point_distance(mouse_position, gui.set_label_point) < 3 * gui.scale:
+                                if point_distance(mouse_position, gui.set_label_point) < 8 * gui.scale:
                                     sort_direction = 0
                                     if h != gui.column_d_click_on or gui.column_d_click_timer.get() > 2.5:
                                         gui.column_d_click_timer.set()
