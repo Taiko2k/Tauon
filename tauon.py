@@ -18964,7 +18964,7 @@ def cycle_playlist_pinned(step):
                 on = le - 1
             if on == p:
                 break
-            if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
+            if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top or (gui.lsp and prefs.left_panel_mode == "playlist"):
                 switch_playlist(on)
                 break
             on -= 1
@@ -18979,7 +18979,7 @@ def cycle_playlist_pinned(step):
                 on = 0
             if on == p:
                 break
-            if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
+            if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top or (gui.lsp and prefs.left_panel_mode == "playlist"):
                 switch_playlist(on)
                 break
             on += 1
