@@ -1385,6 +1385,8 @@ class Prefs:    # Used to hold any kind of settings
         self.save_window_position = False
         self.spotify_token = ""
 
+        self.use_libre_fm = False
+
 
 prefs = Prefs()
 
@@ -2611,7 +2613,6 @@ perf_timer.set()
 for t in range(2):
     try:
 
-
         # if os.path.isfile(user_directory + "/state.p.backup") and (
         #
         #     not os.path.isfile(user_directory + "/state.p") or
@@ -2918,6 +2919,8 @@ for t in range(2):
             prefs.auto_rec = save[152]
         if save[153] is not None:
             prefs.spotify_token = save[153]
+        if save[154] is not None:
+            prefs.use_libre_fm = save[154]
 
         state_file.close()
         del save
@@ -5957,6 +5960,7 @@ class LastFMapi:
     scanning_username = ""
 
     network = None
+    lastfm_network = None
     tries = 0
 
     scanning_friends = False
@@ -5966,6 +5970,12 @@ class LastFMapi:
         self.sg = None
         self.url = None
         self.hold = False
+
+    def get_network(self):
+        if prefs.use_libre_fm:
+            return pylast.LibreFMNetwork
+        else:
+            return pylast.LastFMNetwork
 
     def auth1(self):
 
@@ -5991,7 +6001,7 @@ class LastFMapi:
             # session_key = self.sg.get_web_auth_session_key(self.url)
             session_key, username = self.sg.get_web_auth_session_key_username(self.url)
             prefs.last_fm_token = session_key
-            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=
+            self.network = self.get_network()(api_key=self.API_KEY, api_secret=
                 self.API_SECRET, session_key=prefs.last_fm_token)
             # user = self.network.get_authenticated_user()
             # username = user.get_name()
@@ -6033,7 +6043,7 @@ class LastFMapi:
 
         try:
 
-            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=
+            self.network = self.get_network()(api_key=self.API_KEY, api_secret=
                 self.API_SECRET, session_key=prefs.last_fm_token) #, username=lfm_username, password_hash=lfm_hash)
 
             self.connected = True
@@ -6061,10 +6071,22 @@ class LastFMapi:
         else:
             return False
 
+    def last_fm_only_connect(self):
+
+        try:
+            self.lastfm_network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
+            print('Connection appears successful')
+            return True
+
+        except Exception as e:
+            show_message("Error communicating with Last.fm network", str(e), mode='warning')
+            print(e)
+            return False
+
     def no_user_connect(self):
 
         try:
-            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
+            self.network = self.get_network()(api_key=self.API_KEY, api_secret=self.API_SECRET)
             print('Connection appears successful')
             return True
 
@@ -6076,13 +6098,13 @@ class LastFMapi:
 
     def artist_info(self, artist):
 
-        if self.network is None:
-            if self.no_user_connect() is False:
+        if self.lastfm_network is None:
+            if self.last_fm_only_connect() is False:
                 return False, "", ""
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.lastfm_network)
                 bio = l_artist.get_bio_content()
                 #cover_link = l_artist.get_cover_image()
                 mbid = l_artist.get_mbid()
@@ -6095,13 +6117,13 @@ class LastFMapi:
 
     def artist_mbid(self, artist):
 
-        if self.network is None:
-            if self.no_user_connect() is False:
+        if self.lastfm_network is None:
+            if self.last_fm_only_connect() is False:
                 return ""
 
         try:
             if artist != "":
-                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.network)
+                l_artist = pylast.Artist(artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "), self.lastfm_network)
                 mbid = l_artist.get_mbid()
                 return mbid
         except:
@@ -6163,10 +6185,11 @@ class LastFMapi:
 
     def get_bio(self, artist):
         #if self.connected:
-        if self.network is None:
-            self.no_user_connect()
+        if self.lastfm_network is None:
+            if self.last_fm_only_connect() is False:
+                return ""
 
-        artist_object = pylast.Artist(artist, self.network)
+        artist_object = pylast.Artist(artist, self.lastfm_network)
         bio = artist_object.get_bio_summary(language="en")
         # print(artist_object.get_cover_image())
         # print("\n\n")
@@ -24445,7 +24468,10 @@ class Over:
 
         ddt.text_background_colour = colours.box_background
         if last_fm_enable:
-            if self.button2(x, y, "Last.fm", width=84*gui.scale):
+            text = "Last.fm"
+            if prefs.use_libre_fm:
+                text = "Libre.fm"
+            if self.button2(x, y, text, width=84*gui.scale):
                 self.account_view = 1
             self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
         y += 30 * gui.scale
@@ -24861,7 +24887,11 @@ class Over:
 
         if self.account_view == 1:
 
-            ddt.text((x, y), 'Last.fm', colours.box_sub_text, 213)
+            text = "Last.fm"
+            if prefs.use_libre_fm:
+                text = "Libre.fm"
+
+            ddt.text((x, y), text, colours.box_sub_text, 213)
 
             ww = ddt.get_text_w(_("Username:"), 212)
             ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.box_text_label, 212)
@@ -24871,8 +24901,12 @@ class Over:
 
             if prefs.last_fm_token is None:
                 ww = ddt.get_text_w(_("Login"), 211) + 10 * gui.scale
+                ww2 = ddt.get_text_w(_("Done"), 211) + 40 * gui.scale
                 self.button(x, y, _("Login"), lastfm.auth1)
                 self.button(x + ww + 10 * gui.scale, y, _("Done"), lastfm.auth2)
+
+                if prefs.last_fm_token is None and lastfm.url is None:
+                    prefs.use_libre_fm = self.toggle_square(x + ww + ww2, y + round(1 * gui.scale), prefs.use_libre_fm, _("Use LibreFM"))
 
                 y += 25 * gui.scale
                 ddt.text((x + 2 * gui.scale, y, 4, 270 * gui.scale, 300 * gui.scale), _("Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."),
@@ -26880,7 +26914,8 @@ class TopPanel:
             bg = [30, 215, 96, 255]
         elif subsonic.scanning:
             text = "Accessing AIRSONIC library..."
-            text += f" {gui.to_got}"
+            if gui.to_got:
+                text += f" {gui.to_got}"
             bg = [58, 194, 224, 255]
         elif koel.scanning:
             text = "Accessing KOEL library..."
@@ -36909,6 +36944,7 @@ def save_state():
             spot_ctl.cache_saved_albums,
             prefs.auto_rec,
             prefs.spotify_token,
+            prefs.use_libre_fm
         ]
 
 
