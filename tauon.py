@@ -1386,6 +1386,7 @@ class Prefs:    # Used to hold any kind of settings
         self.spotify_token = ""
 
         self.use_libre_fm = False
+        self.back_restarts = False
 
 
 prefs = Prefs()
@@ -3372,6 +3373,7 @@ def save_prefs():
 
     cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
     cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
+    cf.update_value("back-restarts", prefs.back_restarts)
 
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("use-xft-dpi", prefs.x_scale)
@@ -3516,7 +3518,7 @@ def load_prefs():
     cf.add_text("[playback]")
     prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
     prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather then attempting to launch the desktop client.")
-
+    prefs.back_restarts = cf.sync_add("bool", "back-restarts", prefs.back_restarts, "Pressing the back button restarts playing track on first press.")
 
     cf.br()
     cf.add_text("[HiDPI]")
@@ -4779,6 +4781,11 @@ class PlayerCtl:
         gui.pl_update = 1
 
     def back(self):
+
+        if self.playing_state < 3 and prefs.back_restarts and pctl.playing_time > 2:
+            self.seek_time(0)
+            self.render_playlist()
+            return
 
         if spot_ctl.coasting:
             spot_ctl.control("previous")
@@ -10100,6 +10107,7 @@ class AlbumArt():
                     pic = tag[PIC][0].data
                 except:
                     pass
+
             if len(pic) < 30:
                 pic = None
 
@@ -10665,7 +10673,11 @@ class AlbumArt():
             console.print("-- Exception: " + str(error))
 
             self.current_wu = None
-            del self.source_cache[index][offset]
+            try:
+                del self.source_cache[index][offset]
+            except:
+                print(" -- Error, no source cache?")
+
             return 1
 
         return 0
