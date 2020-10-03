@@ -197,8 +197,6 @@ def player4(tauon):
 
                     if dl.alt == 'a':
                         dl.alt = 'b'
-                    elif dl.alt == 'b':
-                        dl.alt = 'c'
                     else:
                         dl.alt = 'a'
 
