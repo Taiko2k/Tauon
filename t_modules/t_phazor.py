@@ -396,9 +396,16 @@ def player4(tauon):
                 else:
                     pctl.decode_time = pctl.playing_time
 
+                if pctl.playing_time < 3 and pctl.a_time < 3:
+                    pctl.a_time = pctl.playing_time
+                else:
+                    pctl.a_time += add_time
+
                 tauon.lfm_scrobbler.update(add_time)
+
                 if len(pctl.track_queue) > 0 and 2 > add_time > 0:
                     tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
                 if pctl.playing_time > 1:
                     pctl.test_progress()
+
 
