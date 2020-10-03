@@ -6075,7 +6075,6 @@ class LastFMapi:
 
     def details_ready(self):
         if prefs.last_fm_token:
-        #if len(lfm_username) > 1 and len(lfm_username) > 1 and prefs.auto_lfm:
             return True
         else:
             return False
@@ -6357,7 +6356,7 @@ class LastFMapi:
         else:
             return 0
 
-        # print('Updating Now Playing')
+        #print('Updating Now Playing')
 
         title = track_object.title
         album = track_object.album
@@ -6701,7 +6700,6 @@ class LastScrob:
 
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
-
             if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
                 mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
