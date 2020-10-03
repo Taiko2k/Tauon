@@ -87,15 +87,15 @@ def player4(tauon):
 
                         f.write(chunk)
 
-                        # z += 1
-                        # if z == 60:
-                        #     z = 0
-                        #     if bitrate == 0:
-                        #         audio = auto.File(target)
-                        #         bitrate = audio.bitrate
-                        #     if bitrate > 0:
-                        #         gui.update += 1
-                        #         pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+                        z += 1
+                        if z == 60:
+                            z = 0
+                            if bitrate == 0:
+                                audio = auto.File(target)
+                                bitrate = audio.bitrate
+                            if bitrate > 0:
+                                gui.update += 1
+                                pctl.download_time = a * 1024 / (bitrate / 8) / 1000
 
             pctl.download_time = -1
 
