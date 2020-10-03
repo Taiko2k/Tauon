@@ -30,6 +30,7 @@
 #include "vorbis/codec.h"
 #include "vorbis/vorbisfile.h"
 #include "opus/opusfile.h"
+#include <sys/stat.h>
 
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
@@ -132,6 +133,10 @@ float ramp_step(int sample_rate, int milliseconds){
 }
 
 FILE *fptr;
+
+struct stat st;
+int load_file_size = 0;
+int samples_decoded = 0;
 
 // Pulseaudio ---------------------------------------------------------
 
@@ -370,6 +375,7 @@ void decode_seek(int abs_ms, int sample_rate){
     break;
   case OPUS:
     op_pcm_seek(opus_dec, (int) sample_rate * (abs_ms / 1000.0)); 
+    samples_decoded = sample_rate * (abs_ms / 1000.0) * 2;
     break;
   case VORBIS:
     ov_pcm_seek (&vf, (ogg_int64_t) sample_rate * (abs_ms / 1000.0));
@@ -403,6 +409,8 @@ int load_next(){
   codec = UNKNOWN;
   current_length_count = 0;
   buffering = 0;
+  samples_decoded = 0;
+  
   
   if (load_target_file[0] == 'h') buffering = 1;
   
@@ -431,6 +439,10 @@ int load_next(){
       printf("pa: Error opening file\n");
       return 1;
   }
+  
+                 
+  stat(load_target_file, &st);
+  load_file_size = st.st_size;
   
   fread(peak, sizeof (peak), 1, fptr); 
   
@@ -499,6 +511,7 @@ int load_next(){
         printf("pa: Start at position %d\n", load_target_seek);
         op_pcm_seek(opus_dec, (int) 48000 * (load_target_seek / 1000.0)); 
         reset_set_value = op_raw_tell(opus_dec);
+        samples_decoded = reset_set_value * 2;
         reset_set = 1;
         reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
         load_target_seek = 0;
@@ -678,8 +691,23 @@ void pump_decode(){
       buff_filled++;
       i += 2;
     }
+                             
+    samples_decoded += done;
+    
     pthread_mutex_unlock(&buffer_mutex);
     if (done == 0){
+      
+      // Check if file was appended to...   
+      stat(load_target_file, &st);
+      if (load_file_size != st.st_size){
+        printf("pa: Ogg file size changed!\n");
+        int e = 0;
+        op_free(opus_dec);
+        opus_dec = op_open_file(load_target_file, &e);
+        op_pcm_seek(opus_dec, samples_decoded / 2); 
+        return;
+      }
+      
       decoder_eos();
     }    
     
