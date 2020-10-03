@@ -6904,20 +6904,28 @@ class PlexService:
             return self.resource.url(location, True)
         return None
 
-    def get_albums(self):
+    def get_albums(self, return_list=False):
 
         gui.update += 1
+
+        self.scanning = True
 
         if not self.connected:
             self.connect()
 
         if not self.connected:
             self.scanning = False
-            return
+            return []
 
         playlist = []
 
+        existing = {}
+        for track_id, track in pctl.master_library.items():
+            if track.is_network and track.file_ext == "PLEX":
+                existing[track.url_key] = track_id
+
         albums = self.resource.library.section('Music').albums()
+
         for album in albums:
             year = album.year
             album_artist = album.parentTitle
@@ -6929,11 +6937,11 @@ class PlexService:
 
                 id = pctl.master_count
                 replace_existing = False
-                for track_id, t in pctl.master_library.items():
-                    if t.is_network and t.file_ext == "PLEX" and t.url_key == track.key:
-                        id = t.index
-                        replace_existing = True
-                        break
+
+                e = existing.get(track.key)
+                if e is not None:
+                    id = e
+                    replace_existing = True
 
                 title = track.title
                 track_artist = track.grandparentTitle
@@ -6968,7 +6976,11 @@ class PlexService:
 
         self.scanning = False
 
+        if return_list:
+            return playlist
+
         pctl.multi_playlist.append(pl_gen(title="PLEX Collection", playlist=playlist))
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex"
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -7221,16 +7233,17 @@ class KoelService:
         return target, params
 
 
-    def get_albums(self):
+    def get_albums(self, return_list=False):
 
         gui.update += 1
+        self.scanning = True
 
         if not self.connected:
             self.connect()
 
         if not self.connected:
             self.scanning = False
-            return
+            return []
 
         playlist = []
 
@@ -7262,7 +7275,6 @@ class KoelService:
                 album_ids[id] = album["name"]
                 if "cover" in album:
                     covers[id] = album["cover"]
-
 
         existing = {}
 
@@ -7310,17 +7322,12 @@ class KoelService:
 
         self.scanning = False
 
-        def key(track_id):
-            return pctl.g(track_id).album
-
+        if return_list:
+            return playlist
 
         pctl.multi_playlist.append(pl_gen(title="Koel Collection", playlist=playlist))
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "koel path tn"
         standard_sort(len(pctl.multi_playlist) - 1)
-
-        #pctl.multi_playlist[len(pctl.multi_playlist) - 1][2].sort(key=key)
-
-        #sort_tracK_numbers_album_only(len(pctl.multi_playlist) - 1)
-
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -14877,6 +14884,14 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "slt":
             playlist.extend(spot_ctl.get_library_likes(return_list=True))
 
+        elif cm == "plex":
+            if not plex.scanning:
+                playlist.extend(plex.get_albums(return_list=True))
+
+        elif cm == "koel":
+            if not koel.scanning:
+                playlist.extend(koel.get_albums(return_list=True))
+
         elif cm == "air":
             if not subsonic.scanning:
                 playlist.extend(subsonic.get_music2(return_list=True))
@@ -18935,6 +18950,8 @@ def check_auto_update_okay(code, pl=None):
                           not "sa" in cmds and
                           not "st" in cmds and
                           not "rt" in cmds and
+                          not "plex" in cmds and
+                          not "koel" in cmds and
                           not "air" in cmds and
                           not "sal" in cmds and
                           not "slt" in cmds and

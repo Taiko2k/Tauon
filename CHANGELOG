@@ -5,7 +5,7 @@ v6.3.3
 
  - Added config option to restart track on back press
  - Added option to scrobble to Libre.fm instead of Last.fm
- - Added regenerate Airsonic collection
+ - Added regenerate network collections functionality
  - Set default keybind for "love playing" as Ctrl+Shift+L
  - Set auto regen playlist setting default to on
  - Enabled option to disable "transcode folder" menu entry
@@ -16,6 +16,7 @@ v6.3.3
  - Tweaked lyrics to use as sycned if detected
  - Tweaked synced lyrics synchronisation accuracy
  - Tweaked auto regenerate playlists behaviour
+ - Improved PLEX import speed
  - Fixed a possible stall when importing corrupted flac files
  - Fixed down key on search overly advancing past results
  - Fixed bottom panel title hiding
