@@ -4267,6 +4267,8 @@ class PlayerCtl:
         self.volume_update_timer = Timer()
         self.wake_past_time = 0
 
+        self.regen_in_progress = False
+
     def radio_progress(self):
 
         if self.tag_meta:
@@ -7033,8 +7035,9 @@ class SubsonicService:
         return self.r("stream", p={"id": key}, get_url=True)
         #print(responce.content)
 
-    def get_music2(self):
+    def get_music2(self, return_list=False):
 
+        self.scanning = True
         gui.to_got = 0
 
         existing = {}
@@ -7043,7 +7046,12 @@ class SubsonicService:
             if track.is_network and track.file_ext == "SUB":
                 existing[track.url_key] = track_id
 
-        a = self.r("getIndexes")
+        try:
+            a = self.r("getIndexes")
+        except:
+            show_message("Error connecting to Airsonic server", mode="error")
+            return []
+
         b = a["subsonic-response"]["indexes"]["index"]
 
         folders = []
@@ -7128,11 +7136,12 @@ class SubsonicService:
 
             get(id, name)
 
-
         self.scanning = False
+        if return_list:
+            return playlist
 
         pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
-        #standard_sort(len(pctl.multi_playlist) - 1)
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 subsonic = SubsonicService()
@@ -14831,6 +14840,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     # print(cmds)
     # print(quotes)
 
+    pctl.regen_in_progress = True
+
     for i, cm in enumerate(cmds):
 
         quote = quotes[i]
@@ -14865,6 +14876,10 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
         elif cm == "slt":
             playlist.extend(spot_ctl.get_library_likes(return_list=True))
+
+        elif cm == "air":
+            if not subsonic.scanning:
+                playlist.extend(subsonic.get_music2(return_list=True))
 
         elif cm == "a":
             if not selections and not selections_searched:
@@ -15384,6 +15399,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         pass
     else:
         source_playlist[:] = playlist[:]
+
+    pctl.regen_in_progress = False
     gui.pl_update = 1
     reload()
 
@@ -15405,7 +15422,18 @@ def spotify_show_test(_):
     return prefs.spot_mode
 
 tab_menu.add(_("Upload"), upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=spotify_show_test)
-tab_menu.add(_("Regenerate"), regenerate_playlist, regenerate_deco, pass_ref=True, pass_ref_deco=True)
+
+
+def regen_playlist_async(pl):
+    if pctl.regen_in_progress:
+        show_message("A regen is already in progress...")
+        return
+    shoot_dl = threading.Thread(target=regenerate_playlist, args=([pl]))
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
+
+tab_menu.add(_("Regenerate"), regen_playlist_async, regenerate_deco, pass_ref=True, pass_ref_deco=True)
 tab_menu.add_sub(_("Generate…"), 150)
 tab_menu.add_sub(_("Sort…"), 170)
 extra_tab_menu.add_sub(_("From Current…"), 133)
@@ -18907,6 +18935,7 @@ def check_auto_update_okay(code, pl=None):
                           not "sa" in cmds and
                           not "st" in cmds and
                           not "rt" in cmds and
+                          not "air" in cmds and
                           not "sal" in cmds and
                           not "slt" in cmds and
                           not "spl\"" in code and

@@ -5,6 +5,7 @@ v6.3.3
 
  - Added config option to restart track on back press
  - Added option to scrobble to Libre.fm instead of Last.fm
+ - Added regenerate Airsonic collection
  - Set default keybind for "love playing" as Ctrl+Shift+L
  - Set auto regen playlist setting default to on
  - Enabled option to disable "transcode folder" menu entry
