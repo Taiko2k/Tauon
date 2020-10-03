@@ -71,27 +71,31 @@ def player4(tauon):
             a = 0
             z = 0
 
+            if os.path.isfile(target):
+                os.remove(target)
+
             with open(target, 'wb') as f:
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
                         a += 1
                         if a == 300:  # kilobyes~
                             self.dl_ready = True
-                        if url != self.url:
+                        if url != self.active_url:
                             self.part.close()
+                            print("Abort download")
                             break
 
                         f.write(chunk)
 
-                        z += 1
-                        if z == 60:
-                            z = 0
-                            if bitrate == 0:
-                                audio = auto.File(target)
-                                bitrate = audio.bitrate
-                            if bitrate > 0:
-                                gui.update += 1
-                                pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+                        # z += 1
+                        # if z == 60:
+                        #     z = 0
+                        #     if bitrate == 0:
+                        #         audio = auto.File(target)
+                        #         bitrate = audio.bitrate
+                        #     if bitrate > 0:
+                        #         gui.update += 1
+                        #         pctl.download_time = a * 1024 / (bitrate / 8) / 1000
 
             pctl.download_time = -1
 
@@ -193,10 +197,12 @@ def player4(tauon):
 
                     if dl.alt == 'a':
                         dl.alt = 'b'
+                    elif dl.alt == 'b':
+                        dl.alt = 'c'
                     else:
                         dl.alt = 'a'
 
-                    dl.url = url
+                    dl.active_url = url
                     dl.dl_ready = False
 
                     shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params, target_object]))

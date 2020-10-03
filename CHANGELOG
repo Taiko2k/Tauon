@@ -21,6 +21,7 @@ v6.3.3
  - Fixed no lyric menu when only synced lyrics showing
  - Fixed menu click triggering seek bar when over
  - Fixed column sorting by filepath
+ - Fixed possible crash when loading network track with Phazor
 
 v6.3.2
 

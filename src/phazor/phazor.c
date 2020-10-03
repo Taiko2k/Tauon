@@ -483,9 +483,11 @@ int load_next(){
     
     if (e != 0){
       printf("pa: Error reading ogg file (expecting opus)\n");
-      return 1;    
+      printf("pa: %d\n", e);
+      printf("pa: %s\n", load_target_file);
     }
-    else{
+
+    if (e == 0) {
       pthread_mutex_lock(&buffer_mutex);
       if (current_sample_rate != 48000){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -503,7 +505,9 @@ int load_next(){
       }
       pthread_mutex_unlock(&buffer_mutex);
       return 0;
-    }
+    } else { 
+      decoder_allocated = 0;
+      return 1;}
       
     break;  
     case VORBIS:
@@ -1021,8 +1025,8 @@ void *main_loop(void *thread_id){
           
         } else {
           printf("pa: Load file failed\n");
-          command = NONE;
-          mode = NONE;
+          command = STOP;
+          //mode = STOPPED;
         }
               
         break;
