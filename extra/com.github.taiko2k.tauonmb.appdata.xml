@@ -58,10 +58,11 @@
 
   <releases>
 
-    <release version="6.3.2" date="2020-09-19">
+    <release version="6.3.3" date="2020-10-09">
       <description>
         <ul>
-          <li>Various fixes</li>
+          <li>Added libre.fm support</li>
+          <li>Various UI tweaks and bug fixes</li>
         </ul>
       </description>
     </release>

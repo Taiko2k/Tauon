@@ -25363,7 +25363,7 @@ class Over:
 
         self.title_image.render(x - 1, y, alpha_mod(colours.box_sub_text, 240))
 
-        credit_pages = 2
+        credit_pages = 1
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
             self.ani_cred = 1
@@ -25438,14 +25438,9 @@ class Over:
             ddt.text((x, y + 1 * gui.scale), "Created by", colours.box_text_label, 13)
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
+            #y += 25 * gui.scale
+
             y += 25 * gui.scale
-
-            ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
-            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Teddy Okello", colours.box_sub_text, 13)
-
-        else:
-
-            y += 15 * gui.scale
 
             ddt.text((x, y), "Translations", colours.box_text_label, 13)
             yy = y
@@ -25461,6 +25456,28 @@ class Over:
             ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
             y += 19 * gui.scale
             ddt.text((x + 210 * gui.scale, y), "sk22", colours.box_sub_text, 13)
+
+            # ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
+            # ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "", colours.box_sub_text, 13)
+
+        else:
+            pass
+            # y += 15 * gui.scale
+            #
+            # ddt.text((x, y), "Translations", colours.box_text_label, 13)
+            # yy = y
+            # ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.box_sub_text, 13)
+            # y += 19 * gui.scale
+            # ddt.text((x + 120 * gui.scale, y), "brunob", colours.box_sub_text, 13)
+            # y += 19 * gui.scale
+            # ddt.text((x + 120 * gui.scale, y), "msmafra", colours.box_sub_text, 13)
+            #
+            # y = yy
+            # ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
+            # y += 19 * gui.scale
+            # ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
+            # y += 19 * gui.scale
+            # ddt.text((x + 210 * gui.scale, y), "sk22", colours.box_sub_text, 13)
 
 
         ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)
