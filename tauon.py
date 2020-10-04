@@ -4753,7 +4753,7 @@ class PlayerCtl:
             album_art_gen.display(target, (0,0), (50, 50), theme_only=True)
 
 
-    def jump(self, index, pl_position=None):
+    def jump(self, index, pl_position=None, jump=True):
 
         lfm_scrobbler.start_queue()
 
@@ -4775,7 +4775,7 @@ class PlayerCtl:
         self.track_queue.append(index)
         self.queue_step = len(self.track_queue) - 1
         playlist_hold = False
-        self.play_target(jump=True)
+        self.play_target(jump=jump)
 
         if pl_position is not None:
             self.playlist_playing_position = pl_position
@@ -5150,7 +5150,7 @@ class PlayerCtl:
                         playlist_selected = i
                         shift_selection = [i]
 
-                        self.jump(pp[i], i)
+                        self.jump(pp[i], i, jump=False)
 
                     elif prefs.playback_follow_cursor and self.playing_ready() \
                             and self.multi_playlist[pctl.active_playlist_viewing][2][
