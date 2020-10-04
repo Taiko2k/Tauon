@@ -6033,7 +6033,6 @@ class LastFMapi:
         prefs.last_fm_username = ""
         show_message("Logout will complete on app restart.")
 
-
     def connect(self, m_notify=True):
 
         if not last_fm_enable:
@@ -6280,7 +6279,6 @@ class LastFMapi:
         self.scanning_friends = False
 
     def dl_love(self):
-
 
         username = prefs.last_fm_username
 
@@ -6596,13 +6594,14 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         gui.pl_update += 1
         star = [star[0], star[1] + "L", star[2]]
         star_store.insert(track_id, star)
-        try:
-            lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
-        except:
-            print("Failed updating last.fm love status", mode='warning')
-            star = [star[0], star[1].strip("L"), star[2]]
-            star_store.insert(track_id, star)
-            show_message(_("Error updating love to last.fm!"), _("Maybe check your internet connection and try again?"), mode="error")
+        if prefs.last_fm_token:
+            try:
+                lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
+            except:
+                print("Failed updating last.fm love status", mode='warning')
+                star = [star[0], star[1].strip("L"), star[2]]
+                star_store.insert(track_id, star)
+                show_message(_("Error updating love to last.fm!"), _("Maybe check your internet connection and try again?"), mode="error")
 
     else:
         time.sleep(delay)
@@ -6610,12 +6609,13 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         gui.pl_update += 1
         star = [star[0], star[1].strip("L"), star[2]]
         star_store.insert(track_id, star)
-        try:
-            lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
-        except:
-            print("Failed updating last.fm love status", mode='warning')
-            star = [star[0], star[1] + "L", star[2]]
-            star_store.insert(track_id, star)
+        if prefs.last_fm_token:
+            try:
+                lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
+            except:
+                print("Failed updating last.fm love status", mode='warning')
+                star = [star[0], star[1] + "L", star[2]]
+                star_store.insert(track_id, star)
 
     gui.pl_update = 2
     gui.update += 1
@@ -17042,8 +17042,12 @@ def love_decox():
 def love_index():
     global r_menu_index
 
+    notify = False
+    if not gui.show_hearts:
+        notify = True
+
     #love(True, r_menu_index)
-    shoot_love = threading.Thread(target=love, args=[True, r_menu_index])
+    shoot_love = threading.Thread(target=love, args=[True, r_menu_index, False, notify])
     shoot_love.daemon = True
     shoot_love.start()
 
@@ -17967,7 +17971,7 @@ def clip_title(index):
 
     SDL_SetClipboardText(line.encode('utf-8'))
 
-selection_menu = Menu(190, show_icons=False)
+selection_menu = Menu(200, show_icons=False)
 folder_menu = Menu(193, show_icons=True)
 
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
@@ -18106,7 +18110,20 @@ folder_menu.add('Add to Spotify Library', add_to_spotify_library, add_to_spotify
 # Copy artist name text to clipboard
 #folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
 
-selection_menu.add(_('Add to queue'), add_selected_to_queue_multi)
+def selection_queue_deco():
+
+    total = 0
+    for item in shift_selection:
+        total += pctl.g(default_playlist[item]).length
+
+    total = get_hms_time(total)
+
+    text = (_('Queue %d') % len(shift_selection)) + f" [{total}]"
+
+    return [colours.menu_text, colours.menu_background, text]
+
+
+selection_menu.add(_('Add to queue'), add_selected_to_queue_multi, selection_queue_deco)
 
 selection_menu.br()
 
@@ -19446,6 +19463,8 @@ def heart_menu_colour():
 
 heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
 heart_row_icon = asset_loader('heart-track.png', True)
+heart_notify_icon = asset_loader('heart-notify.png', True)
+heart_notify_break_icon = asset_loader('heart-notify-break.png', True)
 #spotify_row_icon = asset_loader('spotify-row.png', True)
 star_pc_icon = asset_loader('star-pc.png', True)
 star_row_icon = asset_loader('star.png', True)
@@ -19538,10 +19557,14 @@ def love_deco():
         else:
             return [colours.menu_text_disabled, colours.menu_background, _("Love Track")]
 
+
 def bar_love(notify=False):
     shoot_love = threading.Thread(target=love, args=[True, None, False, notify])
     shoot_love.daemon = True
     shoot_love.start()
+
+def bar_love_notify():
+    bar_love(notify=True)
 
 def select_love(notify=False):
 
@@ -19555,7 +19578,7 @@ def select_love(notify=False):
         shoot_love.start()
 
 
-extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
+extra_menu.add('Love', bar_love_notify, love_deco, icon=heart_icon)
 
 def toggle_spotify_like_active2(tr):
 
@@ -37824,6 +37847,12 @@ while pctl.running:
     # if window_size[0] / window_size[1] > 16 / 9:
     #     print("A")
 
+    if key_meta:
+        input_text = ""
+        k_input = False
+        inp.key_return_press = False
+        inp.key_tab_press = False
+
     if k_input:
 
         if keymaps.hits:
@@ -41078,7 +41107,7 @@ while pctl.running:
             if gui.lsp:
                 ww = gui.lspw
 
-            rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
+            rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
             fields.add(rect)
 
             if coll(rect):
@@ -41093,12 +41122,16 @@ while pctl.running:
 
                 if gui.toast_love_added:
                     text = _("Loved track")
+                    heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, [250, 100, 100, 255])
                 else:
                     text = _("Un-Loved track")
+                    heart_notify_break_icon.render(rect[0] + 9 * gui.scale, rect[1] + 7 * gui.scale, [150, 150, 150, 255])
+
+
 
                 ddt.text_background_colour = colours.queue_card_background
-                ddt.text((rect[0] + (rect[2] // 2), rect[1] + 3 * gui.scale, 2), text, colours.box_text, 313)
-                ddt.text((rect[0] + (rect[2] // 2), rect[1] + 20 * gui.scale, 2), f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label, 13, max_w=rect[2] - 15 * gui.scale)
+                ddt.text((rect[0] + 42 * gui.scale, rect[1] + 3 * gui.scale), text, colours.box_text, 313)
+                ddt.text((rect[0] + 42 * gui.scale, rect[1] + 20 * gui.scale), f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label, 13, max_w=rect[2] - 50 * gui.scale)
 
 
         t = queue_add_timer.get()
