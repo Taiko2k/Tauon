@@ -41164,11 +41164,12 @@ while pctl.running:
 
             if coll(rect):
                 queue_add_timer.force_set(10)
-            else:
-                ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border, True)
-                ddt.rect(rect, colours.queue_card_background, True)
+            elif len(pctl.force_queue) > 0:
 
                 fqo = copy.copy(pctl.force_queue[-1])
+
+                ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border, True)
+                ddt.rect(rect, colours.queue_card_background, True)
 
                 ddt.text_background_colour = colours.queue_card_background
                 top_text = "Track"
