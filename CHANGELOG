@@ -24,6 +24,7 @@ v6.3.3
  - Fixed menu click triggering seek bar when over
  - Fixed column sorting by filepath
  - Fixed possible crash when loading network track with Phazor
+ - Fixed case with Japanese font not loading
 
 v6.3.2
 
