@@ -1114,11 +1114,11 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_del_zip = False
         self.pl_thumb = False
 
-        self.linux_font = "Noto Sans CJK JP, IPAGothic, Noto Sans"
-        self.linux_font_semibold = "Noto Sans CJK JP Medium, Noto Sans Medium"
-        self.linux_font_bold = "Noto Sans CJK JP Bold, Noto Sans Bold"
-        self.linux_font_condensed = "Noto Sans CJK JP ExtraCondensed, Noto Sans ExtraCondensed"
-        self.linux_font_condensed_bold = "Noto Sans CJK JP ExtraCondensed Bold, Noto Sans ExtraCondensed Bold"
+        self.linux_font = "Noto Sans"
+        self.linux_font_semibold = "Noto Sans Medium"
+        self.linux_font_bold = "Noto Sans Bold"
+        self.linux_font_condensed = "Noto Sans ExtraCondensed"
+        self.linux_font_condensed_bold = "Noto Sans ExtraCondensed Bold"
 
         self.spec2_scroll = True
 
@@ -3687,12 +3687,12 @@ if 0 < db_version <= 34:
     prefs.theme_name = get_theme_name(theme)
 if 0 < db_version <= 51:
     prefs.device_buffer = 70
-# if 0 < db_version <= 52:
-#     print("Resetting fonts to defaults")
-#     prefs.linux_font = "Noto Sans CJK JP, IPAGothic, Noto Sans"
-#     prefs.linux_font_semibold = "Noto Sans CJK JP Medium, Noto Sans Medium"
-#     prefs.linux_font_bold = "Noto Sans CJK JP Bold, Noto Sans Bold"
-#     save_prefs()
+if 0 < db_version <= 53:
+    print("Resetting fonts to defaults")
+    prefs.linux_font = "Noto Sans"
+    prefs.linux_font_semibold = "Noto Sans Medium"
+    prefs.linux_font_bold = "Noto Sans Bold"
+    save_prefs()
 
 
 lang = ""
@@ -36914,7 +36914,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            53,  # Version, used for upgrading
+            54,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
