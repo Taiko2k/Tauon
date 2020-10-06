@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-09-14 22:51+1200\n"
-"PO-Revision-Date: 2020-08-27 02:19+0000\n"
+"PO-Revision-Date: 2020-09-16 05:14+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.2.1-dev\n"
+"X-Generator: Weblate 4.3-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
@@ -1406,9 +1406,8 @@ msgid "Enable"
 msgstr "Ativar"
 
 #: tauon.py:23904
-#, fuzzy
 msgid "Output buffer"
-msgstr "Abrir pasta de saída"
+msgstr "Buffer de saída"
 
 #: tauon.py:23919
 msgid "ReplayGain"
@@ -1810,7 +1809,7 @@ msgstr "Desenhar decorações de janela próprias"
 
 #: tauon.py:25024
 msgid "Restore window position on restart"
-msgstr ""
+msgstr "Restaure posição da janela ao reiniciar"
 
 #: tauon.py:25028
 msgid "Show playing in titlebar"
@@ -2061,28 +2060,24 @@ msgid "End of Playlist"
 msgstr "Fim da Playlist"
 
 #: tauon.py:30272
-#, fuzzy
 msgid "Search Tag"
-msgstr "Busca"
+msgstr "Buscar etiqueta"
 
 #: tauon.py:30273
-#, fuzzy
 msgid "Search Country"
-msgstr "Buscar GuitarParty"
+msgstr "Buscar País"
 
 #: tauon.py:30274
-#, fuzzy
 msgid "Search Title"
-msgstr "Busca"
+msgstr "Buscar Título"
 
 #: tauon.py:30434
-#, fuzzy
 msgid "Search text…"
-msgstr "Busca"
+msgstr "Buscar texto…"
 
 #: tauon.py:30441
 msgid "Search"
-msgstr "Busca"
+msgstr "Buscar"
 
 #: tauon.py:30448
 msgid "Get Top Voted"
@@ -2125,9 +2120,8 @@ msgid "Record and auto split songs"
 msgstr "Gravar e auto dividir músicas"
 
 #: tauon.py:30744
-#, fuzzy
 msgid "Please stop playback first before toggling this setting"
-msgstr "Por favor pare a reprodução para finalizar a gravação atual"
+msgstr "Por favor pare a reprodução antes de mudar está definição"
 
 #: tauon.py:30749
 msgid "Please stop playback first to end current recording"
