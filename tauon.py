@@ -3687,12 +3687,12 @@ if 0 < db_version <= 34:
     prefs.theme_name = get_theme_name(theme)
 if 0 < db_version <= 51:
     prefs.device_buffer = 70
-if 0 < db_version <= 52:
-    print("Resetting fonts to defaults")
-    prefs.linux_font = "Noto Sans CJK JP, IPAGothic, Noto Sans"
-    prefs.linux_font_semibold = "Noto Sans CJK JP Medium, Noto Sans Medium"
-    prefs.linux_font_bold = "Noto Sans CJK JP Bold, Noto Sans Bold"
-    save_prefs()
+# if 0 < db_version <= 52:
+#     print("Resetting fonts to defaults")
+#     prefs.linux_font = "Noto Sans CJK JP, IPAGothic, Noto Sans"
+#     prefs.linux_font_semibold = "Noto Sans CJK JP Medium, Noto Sans Medium"
+#     prefs.linux_font_bold = "Noto Sans CJK JP Bold, Noto Sans Bold"
+#     save_prefs()
 
 
 lang = ""
