@@ -3684,7 +3684,7 @@ save_prefs()
 
 # Temporary
 if 0 < db_version <= 34:
-        prefs.theme_name = get_theme_name(theme)
+    prefs.theme_name = get_theme_name(theme)
 if 0 < db_version <= 51:
     prefs.device_buffer = 70
 if 0 < db_version <= 52:
