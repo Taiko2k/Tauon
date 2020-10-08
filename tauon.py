@@ -6725,7 +6725,8 @@ def maloja_scrobble(track):
             return False
     except:
         show_message("There was an error submitting data to Maloja server", mode='warning')
-
+        return False
+    return True
 
 class LastScrob:
 
