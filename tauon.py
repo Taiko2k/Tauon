@@ -6724,6 +6724,7 @@ def maloja_scrobble(track):
             show_message("There was an error submitting data to Maloja server", r.text, mode='warning')
             return False
     except:
+        raise
         show_message("There was an error submitting data to Maloja server", mode='warning')
         return False
     return True
