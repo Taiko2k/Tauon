@@ -6716,7 +6716,6 @@ def maloja_scrobble(track):
     d["artist"] = track.artist
     d["title"] = track.title
     d["key"] = prefs.maloja_key
-    data = json.dumps(d)
 
     try:
         r = requests.post(url, data=d)
