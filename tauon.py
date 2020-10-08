@@ -1390,7 +1390,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.old_playlist_box_position = 0
         self.listenbrainz_url = ""
-        self.maloja_url = "http://localhost:42010"
+        self.maloja_url = ""
         self.maloja_key = ""
 
 
