@@ -39808,10 +39808,13 @@ while pctl.running:
 
                 if not gui.set_bar and gui.set_mode and not gui.combo_mode:
                     width = gui.plw
+                    left = 0
+                    if gui.lsp:
+                        left = gui.lspw
                     if gui.tracklist_center_mode:
-                        x = gui.tracklist_highlight_left
+                        left = gui.tracklist_highlight_left
                         width = gui.tracklist_highlight_width
-                    rect = [x, top, width, gui.set_height // 2]
+                    rect = [left, top, width, gui.set_height // 2.5]
                     fields.add(rect)
                     gui.delay_frame(0.26)
 
