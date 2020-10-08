@@ -1390,6 +1390,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.old_playlist_box_position = 0
         self.listenbrainz_url = ""
+        self.maloja_url = ""
+        self.maloja_key = ""
 
 
 prefs = Prefs()
@@ -3453,6 +3455,9 @@ def save_prefs():
     cf.update_value("listenbrainz-token", prefs.lb_token)
     cf.update_value("custom-listenbrainz-url", prefs.listenbrainz_url)
 
+    cf.update_value("maloja-key", prefs.maloja_key)
+    cf.update_value("maloja-url", prefs.maloja_url)
+
     #cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-page-port", prefs.metadata_page_port)
     #cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
@@ -3643,6 +3648,10 @@ def load_prefs():
         print("Warning: Invalid discogs token in config")
     else:
         prefs.discogs_pat = temp
+
+    prefs.maloja_url = cf.sync_add("string", "maloga-url", prefs.maloja_url)
+    prefs.maloja_key = cf.sync_add("string", "maloga-key", prefs.maloja_key)
+
 
     prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
     prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
@@ -6511,7 +6520,6 @@ class ListenBrainz:
         data["payload"].append({"track_metadata": metadata})
         data["payload"][0]["listened_at"] = time
 
-
         r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", r.text, mode='warning')
@@ -6691,6 +6699,34 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         pctl.mpris.update(force=True)
 
 
+def maloga_scrobble(track):
+    print("Submit Maloja scrobble")
+    url = prefs.maloja_url
+
+    if not track.artist or not track.title:
+        return
+
+    if not url.endswith("/newscrobble"):
+
+        if not url.endswith("/"):
+            url += "/"
+        url += "api/newscrobble"
+
+    d = {}
+    d["artist"] = track.artist
+    d["title"] = track.title
+    d["key"] = prefs.maloja_key
+    data = json.dumps(d)
+
+    try:
+        r = requests.post(url, data=data)
+        if r.status_code != 200:
+            show_message("There was an error submitting data to Maloja server", r.text, mode='warning')
+            return False
+    except:
+        show_message("There was an error submitting data to Maloja server", mode='warning')
+
+
 class LastScrob:
 
     def __init__(self):
@@ -6727,6 +6763,8 @@ class LastScrob:
                     success = lastfm.scrobble(tr[0], tr[1])
                 elif tr[2] == "lb" and lb.enable:
                     success = lb.listen_full(tr[0], tr[1])
+                elif tr[2] == "maloja":
+                    success = maloga_scrobble(tr[0])
 
                 if not success:
                     print("Re-queue scrobble")
@@ -6815,6 +6853,8 @@ class LastScrob:
             self.queue.append((track_object, int(time.time()), "lfm"))
         if lb.enable and not lb.hold:
             self.queue.append((track_object, int(time.time()), "lb"))
+        if prefs.maloja_url:
+            self.queue.append((track_object, int(time.time()), "maloja"))
 
 
 lfm_scrobbler = LastScrob()
