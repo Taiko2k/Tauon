@@ -7,6 +7,7 @@ v6.3.4
  - Added custom listenbrainz server option
  - Tweaks settings function tab page layout
  - Tweaked playlist list to remember scroll position over restart
+ - Fixed column bar peak position
 
 v6.3.3
 
