@@ -742,8 +742,6 @@ sleep_timer = Timer()
 gallery_select_animate_timer = Timer()
 gallery_select_animate_timer.force_set(10)
 search_clear_timer = Timer()
-lfm_dl_timer = Timer()
-lfm_dl_timer.force_set(60)
 gall_pl_switch_timer = Timer()
 gall_pl_switch_timer.force_set(999)
 d_click_timer = Timer()
@@ -5997,6 +5995,7 @@ class LastFMapi:
     tries = 0
 
     scanning_friends = False
+    scanning_loves = False
     scanning_scrobbles = False
 
     def __init__(self):
@@ -6336,6 +6335,8 @@ class LastFMapi:
     def dl_love(self):
 
         username = prefs.last_fm_username
+        show_message(_("Scanning loved tracks for: %s" % username), mode="info")
+        self.scanning_username = username
 
         if not username:
             show_message("No username found", mode='error')
@@ -6344,24 +6345,18 @@ class LastFMapi:
         if len(username) > 25:
             return
 
-        if lfm_dl_timer.get() < 15:
-            show_message("Dont press this button so much.")
-        lfm_dl_timer.set()
+        self.scanning_loves = True
 
         try:
             if self.network is None:
                 self.no_user_connect()
 
-            print("Lookup last.fm user " + username)
+            self.network.enable_rate_limit()
 
             lastfm_user = self.network.get_user(username)
-
-
             tracks = lastfm_user.get_loved_tracks(limit=None)
-            #tracks = lastfm_user.get_recent_tracks()
 
             matches = 0
-            misses = 0
             updated = 0
 
             for track in tracks:
@@ -6384,6 +6379,7 @@ class LastFMapi:
 
                         star_store.insert(index, star)
 
+            self.scanning_loves = False
             if len(tracks) == 0:
                 show_message("User has no loved tracks.")
                 return
@@ -6398,7 +6394,7 @@ class LastFMapi:
                 return
         except:
             show_message("This doesn't seem to be working :(", mode='error')
-
+        self.scanning_loves = False
 
     def update(self, track_object):
         if self.hold:
@@ -25079,7 +25075,7 @@ class Over:
             #wd = ddt.get_text_w(_("Clear friend loves"),211) + 10 * gui.scale
             ww = max(wa, wb, wc, ws)
 
-            self.button(x, y, _("Get user loves"), lastfm.dl_love, width=ww)
+            self.button(x, y, _("Get user loves"), self.get_user_love, width=ww)
             self.button(x + ww + round(12 * gui.scale), y, _("Clear"), self.clear_local_loves, width=wcc)
 
             #y += 26 * gui.scale
@@ -25155,12 +25151,12 @@ class Over:
                            _("Press again while holding Shift if you understand"), mode="warning")
             return
 
-        if not lastfm.scanning_scrobbles:
+        if not lastfm.scanning_friends and not lastfm.scanning_scrobbles and not lastfm.scanning_loves:
             shoot_dl = threading.Thread(target=lastfm.get_all_scrobbles)
             shoot_dl.daemon = True
             shoot_dl.start()
         else:
-            show_message("This process is already running. Wait for it to finish.")
+            show_message("A process is already running. Wait for it to finish.")
 
     def clear_scrobble_counts(self):
 
@@ -25175,12 +25171,21 @@ class Over:
                            _("Press again while holding Shift if you understand"), mode="warning")
             return
 
-        if not lastfm.scanning_friends:
+        if not lastfm.scanning_friends and not lastfm.scanning_scrobbles and not lastfm.scanning_loves:
             shoot_dl = threading.Thread(target=lastfm.get_friends_love)
             shoot_dl.daemon = True
             shoot_dl.start()
         else:
-            show_message("This process is already running. Wait for it to finish.")
+            show_message("A process is already running. Wait for it to finish.")
+
+    def get_user_love(self):
+
+        if not lastfm.scanning_friends and not lastfm.scanning_scrobbles and not lastfm.scanning_loves:
+            shoot_dl = threading.Thread(target=lastfm.dl_love)
+            shoot_dl.daemon = True
+            shoot_dl.start()
+        else:
+            show_message("A process is already running. Wait for it to finish.")
 
 
     def codec_config(self, x0, y0, w0, h0):
@@ -27144,7 +27149,7 @@ class TopPanel:
         elif pctl.encoder_pause == 1 and pctl.broadcast_active:
             text = "Streaming Paused"
             bg = colours.streaming_text
-        elif lastfm.scanning_friends:
+        elif lastfm.scanning_friends or lastfm.scanning_loves:
             text = "Scanning: " + lastfm.scanning_username
             bg = [200, 150, 240, 255]
         elif lastfm.scanning_scrobbles:
