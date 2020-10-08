@@ -6716,10 +6716,10 @@ def maloja_scrobble(track):
     d["artist"] = track.artist
     d["title"] = track.title
     d["key"] = prefs.maloja_key
-    data = json.dumps(d)
+    #data = json.dumps(d)
 
     try:
-        r = requests.post(url, data=data)
+        r = requests.post(url, params=d)
         if r.status_code != 200:
             show_message("There was an error submitting data to Maloja server", r.text, mode='warning')
             return False
