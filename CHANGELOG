@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.3.4
+
+ - Added function to import scrobble counts and column to display
+ - Tweaked playlist list to remember scroll position over restart
+
 v6.3.3
 
  - Added config option to restart track on back press
@@ -24,7 +29,6 @@ v6.3.3
  - Fixed menu click triggering seek bar when over
  - Fixed column sorting by filepath
  - Fixed possible crash when loading network track with Phazor
- - Fixed case with Japanese font not loading
 
 v6.3.2
 

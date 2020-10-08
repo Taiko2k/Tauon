@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.3.3"
+n_version = "6.3.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1390,6 +1390,8 @@ class Prefs:    # Used to hold any kind of settings
         self.use_libre_fm = False
         self.back_restarts = False
 
+        self.old_playlist_box_position = 0
+
 
 prefs = Prefs()
 
@@ -2141,7 +2143,7 @@ def auto_size_columns():
             item[1] = round(58 * gui.scale)
             total -= round(58 * gui.scale)
 
-        if item[0] == "T" or item[0] == "P":
+        if item[0] == "T" or item[0] == "P" or item[0] == "S":
             item[1] = round(32 * gui.scale)
             total -= round(32 * gui.scale)
 
@@ -2535,6 +2537,7 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.track_gain = None
 
         self.lfm_friend_likes = set()
+        self.lfm_scrobbles = 0
         self.misc = {}
 
 
@@ -2924,6 +2927,8 @@ for t in range(2):
             prefs.spotify_token = save[153]
         if save[154] is not None:
             prefs.use_libre_fm = save[154]
+        if save[155] is not None:
+            prefs.old_playlist_box_position = save[155]
 
         state_file.close()
         del save
@@ -3311,6 +3316,11 @@ if db_version > 0:
             show_message("Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify",
                          "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify")
             os.remove(os.path.join(user_directory, "spot-r-token"))
+
+    if db_version <= 54:
+        print("Updating database to version 55")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'lfm_scrobbles', 0)
 
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
@@ -5018,7 +5028,7 @@ class PlayerCtl:
 
     def spot_test_progress(self):
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
-            th = 7
+            th = 8
             if self.playing_time > self.playing_length:
                 th = 1
             if not spot_ctl.paused:
@@ -5038,7 +5048,7 @@ class PlayerCtl:
                 self.test_progress()
 
         elif self.playing_state == 3 and spot_ctl.coasting:
-            th = 7
+            th = 8
             if self.playing_time > self.playing_length or self.playing_time < 2.5:
                 th = 1
             if spot_ctl.update_timer.get() < th:
@@ -5049,6 +5059,11 @@ class PlayerCtl:
 
             else:
                 tauon.spot_ctl.update_timer.set()
+                # todo
+                # print("UPDATE")
+                # print(tauon.spot_ctl.coasting)
+                # print(tauon.spot_ctl.playing)
+                # print(tauon.spot_ctl.paused)
                 tauon.spot_ctl.update()
 
     def purge_track(self, track_id):  # Remove a track from the database
@@ -5982,6 +5997,7 @@ class LastFMapi:
     tries = 0
 
     scanning_friends = False
+    scanning_scrobbles = False
 
     def __init__(self):
 
@@ -6111,6 +6127,39 @@ class LastFMapi:
             print(e)
             return False
 
+    def get_all_scrobbles(self):
+
+        if not self.connected:
+            self.connect(False)
+        if not self.connected or not prefs.last_fm_username:
+            return
+
+        self.scanning_scrobbles = True
+        self.network.enable_rate_limit()
+        user = pylast.User(prefs.last_fm_username, self.network)
+        # username = user.get_name()
+        tracks = user.get_recent_tracks(None)
+
+        counts = {}
+
+        for track in tracks:
+            key = (str(track.track.artist), str(track.track.title))
+            c = counts.get(key, 0)
+            counts[key] = c + 1
+
+        for key, value in counts.items():
+            artist, title = key
+            artist = artist.lower()
+            title = title.lower()
+
+            for track in pctl.master_library.values():
+                if track.artist.lower() == artist:
+                    if track.title.lower() == title:
+                        track.lfm_scrobbles = value
+
+        gui.pl_update += 1
+        self.scanning_scrobbles = False
+        show_message(_("Scanning scrobbles complete"), mode="done")
 
     def artist_info(self, artist):
 
@@ -6255,14 +6304,12 @@ class LastFMapi:
             if self.network is None:
                 self.no_user_connect()
 
-            time.sleep(1)
+            self.network.enable_rate_limit()
             lastfm_user = self.network.get_user(username)
             friends = lastfm_user.get_friends(limit=None)
             show_message(_("Getting friend data..."), _("This may take a very long time."), mode='info')
-            time.sleep(3)
             for friend in friends:
                 self.scanning_username = friend.name
-                time.sleep(1)
                 print("Getting friend loves: " + friend.name)
 
                 try:
@@ -6273,7 +6320,6 @@ class LastFMapi:
                 for track in loves:
                     title = track.track.title.casefold()
                     artist = track.track.artist.name.casefold()
-                    time.sleep(0.001)
                     for index, tr in pctl.master_library.items():
 
                         if tr.title.casefold() == title and tr.artist.casefold() == artist:
@@ -6751,6 +6797,9 @@ class LastScrob:
             mini_t.start()
 
     def scrob_full_track(self, track_object):
+
+        track_object.lfm_scrobbles += 1
+        gui.pl_update += 1
 
         if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())):
             self.queue.append((track_object, int(time.time()), "lfm"))
@@ -14742,7 +14791,8 @@ column_names = (
     "Comment",
     "Codec",
     "Lyrics",
-    "Bitrate"
+    "Bitrate",
+    "S"
 )
 
 
@@ -15722,6 +15772,9 @@ def best(index):
 
 def key_rating(index):
     return star_store.get_rating(index)
+
+def key_scrobbles(index):
+    return pctl.g(index).lfm_scrobbles
 
 def key_modified(index):
     return pctl.master_library[index].modified_time
@@ -18492,6 +18545,9 @@ def sa_track():
 def sa_count():
     gui.pl_st.insert(set_menu.reference + 1, ["P", 25, True])
     gui.update_layout()
+def sa_scrobbles():
+    gui.pl_st.insert(set_menu.reference + 1, ["S", 25, True])
+    gui.update_layout()
 def sa_time():
     gui.pl_st.insert(set_menu.reference + 1, ["Time", 55, True])
     gui.update_layout()
@@ -18609,6 +18665,8 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
         key = key_genre
     if name == "T":
         key = key_t
+    if name == "S":
+        key = key_scrobbles
     if name == "P":
         key = key_playcount
     if name == 'Starline':
@@ -18681,6 +18739,7 @@ set_menu.add("+ " + _("Date"), sa_date)
 set_menu.add("+ " + _("Genre"), sa_genre)
 set_menu.add("+ " + _("Track Number"), sa_track)
 set_menu.add("+ " + _("Play Count"), sa_count)
+set_menu.add("+ " + _("Scrobble Count"), sa_scrobbles)
 set_menu.add("+ " + _("Codec"), sa_codec)
 set_menu.add("+ " + _("Bitrate"), sa_bitrate)
 set_menu.add("+ " + _("Has Lyrics"), sa_lyrics)
@@ -25015,20 +25074,25 @@ class Over:
             wa = ddt.get_text_w(_("Get user loves"),211) + 10 * gui.scale
             wb = ddt.get_text_w(_("Clear local loves"),211) + 10 * gui.scale
             wc = ddt.get_text_w(_("Get friend loves"),211) + 10 * gui.scale
-            wd = ddt.get_text_w(_("Clear friend loves"),211) + 10 * gui.scale
-            ww = max(wa, wb, wc, wd)
+            ws = ddt.get_text_w(_("Get scrobble counts"),211) + 10 * gui.scale
+            wcc = ddt.get_text_w(_("Clear"),211) + 15 * gui.scale
+            #wd = ddt.get_text_w(_("Clear friend loves"),211) + 10 * gui.scale
+            ww = max(wa, wb, wc, ws)
 
             self.button(x, y, _("Get user loves"), lastfm.dl_love, width=ww)
+            self.button(x + ww + round(12 * gui.scale), y, _("Clear"), self.clear_local_loves, width=wcc)
 
-            y += 26 * gui.scale
-            self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=ww)
+            #y += 26 * gui.scale
+            #self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=ww)
 
             y += 26 * gui.scale
 
             self.button(x, y, _("Get friend loves"), self.get_friend_love, width=ww)
+            self.button(x + ww + round(12 * gui.scale), y, _("Clear"), lastfm.clear_friends_love, width=wcc)
 
             y += 26 * gui.scale
-            self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=ww)
+            self.button(x, y, _("Get scrobble counts"), self.get_scrobble_counts, width=ww)
+            self.button(x + ww + round(12 * gui.scale), y, _("Clear"), self.clear_scrobble_counts, width=wcc)
 
 
             x = x0 + 230 * gui.scale
@@ -25084,7 +25148,32 @@ class Over:
         gui.pl_update += 1
         show_message(_("Cleared all loves"), mode="done")
 
+    def get_scrobble_counts(self):
+
+        if not key_shift_down:
+            show_message(_("Warning: This process can take a long time to complete! (up to an hour or more)"),
+                           _("Press again while holding Shift if you understand"), mode="warning")
+            return
+
+        if not lastfm.scanning_scrobbles:
+            shoot_dl = threading.Thread(target=lastfm.get_all_scrobbles)
+            shoot_dl.daemon = True
+            shoot_dl.start()
+        else:
+            show_message("This process is already running. Wait for it to finish.")
+
+    def clear_scrobble_counts(self):
+
+        for track in pctl.master_library.values():
+            track.lfm_scrobbles = value
+
     def get_friend_love(self):
+
+        if not key_shift_down:
+            show_message(_("Warning: This process can take a long time to complete! (up to an hour or more)"),
+                         _("This feature is not recommended for accounts that have many friends."),
+                           _("Press again while holding Shift if you understand"), mode="warning")
+            return
 
         if not lastfm.scanning_friends:
             shoot_dl = threading.Thread(target=lastfm.get_friends_love)
@@ -27058,6 +27147,9 @@ class TopPanel:
         elif lastfm.scanning_friends:
             text = "Scanning: " + lastfm.scanning_username
             bg = [200, 150, 240, 255]
+        elif lastfm.scanning_scrobbles:
+            text = "Scanning Scrobbles..."
+            bg = [219, 88, 18, 255]
 
         elif lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
             text = "Network error. Will try again later."
@@ -30039,6 +30131,14 @@ class StandardPlaylist:
                             norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
+                        elif item[0] == "S":
+                            if n_track.lfm_scrobbles > 0:
+                                text = str(n_track.lfm_scrobbles)
+
+                            colour = colours.index_text
+                            norm_colour = colour
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "T":
 
                             if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing][4] == 1:
@@ -31354,16 +31454,14 @@ class RenamePlaylistBox:
 rename_playlist_box = RenamePlaylistBox()
 
 
-
 class PlaylistBox:
 
     def __init__(self):
 
-        self.scroll_on = 0
+        self.scroll_on = prefs.old_playlist_box_position
         self.drag = False
         self.drag_source = 0
         self.drag_on = -1
-
 
         self.adds = []
 
@@ -31410,28 +31508,6 @@ class PlaylistBox:
         else:
             indicate_w = round(2 * gui.scale)
 
-
-        # Calculate tabs on top panel
-        # tabs_on_top = []
-        # tabs_to_show = 0
-
-        # xx = top_panel.start_space_left
-        # for i in range(len(pctl.multi_playlist)):
-        #
-        #     if i > len(top_panel.tab_text_spaces) - 1:
-        #         break
-        #
-        #     # Ignore hidden playlist
-        #     if pctl.multi_playlist[i][8]:
-        #         tabs_to_show += 1
-        #         continue
-        #     # Ignore truncated tabs
-        #     if not xx > top_panel.tabs_right_x and prefs.tabs_on_top:
-        #         xx += top_panel.tab_text_spaces[i] + top_panel.tab_extra_width
-        #         tabs_on_top.append(i)
-        #     else:
-        #         tabs_to_show += 1
-
         show_scroll = False
         tab_start = x + 10 * gui.scale
 
@@ -31447,7 +31523,7 @@ class PlaylistBox:
         if self.scroll_on < 0:
             self.scroll_on = 0
 
-        if len(pctl.multi_playlist) > max_tabs: #tabs_to_show > max_tabs:
+        if len(pctl.multi_playlist) > max_tabs:
             show_scroll = True
         else:
             self.scroll_on = 0
@@ -36914,7 +36990,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            54,  # Version, used for upgrading
+            55,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -37051,7 +37127,8 @@ def save_state():
             spot_ctl.cache_saved_albums,
             prefs.auto_rec,
             prefs.spotify_token,
-            prefs.use_libre_fm
+            prefs.use_libre_fm,
+            playlist_box.scroll_on,
         ]
 
 
@@ -39623,7 +39700,7 @@ while pctl.running:
 
                                     if sort_direction:
 
-                                        if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "Time", "Date"}:
+                                        if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "S", "Time", "Date"}:
                                             sort_direction *= -1
 
                                         if sort_direction == 1:
