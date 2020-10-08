@@ -1389,6 +1389,7 @@ class Prefs:    # Used to hold any kind of settings
         self.back_restarts = False
 
         self.old_playlist_box_position = 0
+        self.listenbrainz_url = ""
 
 
 prefs = Prefs()
@@ -3450,6 +3451,7 @@ def save_prefs():
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
+    cf.update_value("custom-listenbrainz-url", prefs.listenbrainz_url)
 
     #cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-page-port", prefs.metadata_page_port)
@@ -3649,6 +3651,8 @@ def load_prefs():
         print("Warning: Invalid discogs token in config")
     else:
         prefs.lb_token = temp
+
+    cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
 
     cf.br()
     cf.add_text("[plex_account]")
@@ -6093,6 +6097,7 @@ class LastFMapi:
     def toggle(self):
         #if self.connected:
         self.hold ^= True
+        lb.hold ^= True
         #else:
         #    self.connect()
 
@@ -6451,7 +6456,15 @@ class ListenBrainz:
 
         self.enable = prefs.enable_lb
         self.hold = False
-        self.url = "https://api.listenbrainz.org/1/submit-listens"
+        # self.url = "https://api.listenbrainz.org/1/submit-listens"
+
+    def url(self):
+        url = prefs.listenbrainz_url
+        if not url:
+            url = "https://api.listenbrainz.org/"
+        if not url.endswith("/"):
+            url += "/"
+        return url + "1/submit-listens"
 
     def listen_full(self, track_object, time):
 
@@ -6498,21 +6511,19 @@ class ListenBrainz:
         data["payload"][0]["listened_at"] = time
 
 
-        r = requests.post(self.url, headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+        r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", r.text, mode='warning')
             return False
         return True
 
     def listen_playing(self, track_object):
-
         if self.enable is False:
             return
         if self.hold is True:
             return
         if prefs.lb_token is None:
             show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
-
         title = track_object.title
         album = track_object.album
         artist = get_artist_strip_feat(track_object)
@@ -6547,7 +6558,7 @@ class ListenBrainz:
         data["payload"].append({"track_metadata": metadata})
         #data["payload"][0]["listened_at"] = int(time.time())
 
-        r = requests.post(self.url, headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+        r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", r.text, mode='warning')
             print("error")
@@ -6729,9 +6740,6 @@ class LastScrob:
 
     def update(self, add_time):
 
-        if lastfm.hold:
-            return
-
         if pctl.queue_step > len(pctl.track_queue) - 1:
             print("Queue step error 1")
             return
@@ -6751,12 +6759,12 @@ class LastScrob:
 
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
-            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not lastfm.hold:
                 mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
 
-            if lb.enable:
+            if lb.enable and not lb.hold:
                 mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
@@ -6797,9 +6805,9 @@ class LastScrob:
         track_object.lfm_scrobbles += 1
         gui.pl_update += 1
 
-        if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())):
+        if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())) and not lastfm.hold:
             self.queue.append((track_object, int(time.time()), "lfm"))
-        if lb.enable:
+        if lb.enable and not lb.hold:
             self.queue.append((track_object, int(time.time()), "lb"))
 
 
@@ -23523,10 +23531,10 @@ def toggle_lb(mode=0):
         show_message("Can't enable this if there's no token.", mode='warning')
         return
     lb.enable ^= True
-    if lb.enable:
-        lb.hold = False
-    else:
-        lb.hold = True
+    # if lb.enable:
+    #     lb.hold = False
+    # else:
+    #     lb.hold = True
 
 
 # def toggle_resume_state(mode=0):
@@ -27351,7 +27359,7 @@ class BottomBarType1:
             right_offset -= 90 * gui.scale
         # Scrobble marker
 
-        if prefs.scrobble_mark and (prefs.auto_lfm or lb.enable) and not lastfm.hold and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
+        if prefs.scrobble_mark and ((prefs.auto_lfm and not lastfm.hold) or (lb.enable and not lb.hold)) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
