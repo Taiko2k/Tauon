@@ -3649,8 +3649,8 @@ def load_prefs():
     else:
         prefs.discogs_pat = temp
 
-    prefs.maloja_url = cf.sync_add("string", "maloga-url", prefs.maloja_url)
-    prefs.maloja_key = cf.sync_add("string", "maloga-key", prefs.maloja_key)
+    prefs.maloja_url = cf.sync_add("string", "maloja-url", prefs.maloja_url)
+    prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key)
 
 
     prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
