@@ -6710,16 +6710,16 @@ def maloja_scrobble(track):
 
         if not url.endswith("/"):
             url += "/"
-        url += "api/newscrobble"
+        url += "apis/mlj_1/newscrobble"
 
     d = {}
     d["artist"] = track.artist
     d["title"] = track.title
     d["key"] = prefs.maloja_key
-    #data = json.dumps(d)
+    data = json.dumps(d)
 
     try:
-        r = requests.post(url, params=d)
+        r = requests.post(url, data=d)
         if r.status_code != 200:
             show_message("There was an error submitting data to Maloja server", r.text, mode='warning')
             return False
