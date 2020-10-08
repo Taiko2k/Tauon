@@ -1390,7 +1390,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.old_playlist_box_position = 0
         self.listenbrainz_url = ""
-        self.maloja_url = ""
+        self.maloja_url = "http://localhost:42010"
         self.maloja_key = ""
 
 
@@ -9560,6 +9560,9 @@ text_air_ser = TextBox2()
 
 text_spot_client = TextBox2()
 text_spot_secret = TextBox2()
+
+text_maloja_url = TextBox2()
+text_maloja_key = TextBox2()
 
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
@@ -24662,42 +24665,51 @@ class Over:
             if self.button2(x, y, text, width=84*gui.scale):
                 self.account_view = 1
             self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
-        y += 30 * gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "ListenBrainz", width=84*gui.scale):
             self.account_view = 2
         self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lb, _("Enable"))
 
-        y += 30 * gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "Discogs", width=84*gui.scale):
             self.account_view = 3
 
-        y += 30 * gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "fanart.tv", width=84*gui.scale):
             self.account_view = 4
 
-        y += 30 * gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "PLEX", width=84*gui.scale):
             self.account_view = 5
 
-        y += 30 * gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "koel", width=84*gui.scale):
             self.account_view = 6
 
-        y += 30 * gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "Airsonic", width=84*gui.scale):
             self.account_view = 7
 
-        y += 30 * gui.scale
+        y += 28* gui.scale
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
+            
         prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
+            
+        y += 28 * gui.scale
+
+        if self.button2(x, y, "Maloja", width=84*gui.scale):
+            self.account_view = 9
+            
+            
+        
 
         # y += 75 * gui.scale
         #
@@ -24711,6 +24723,82 @@ class Over:
 
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
+
+	
+        if self.account_view == 9:
+
+            ddt.text((x, y), _('Maloja Server'), colours.box_sub_text, 213)
+            if self.button(x + 260 * gui.scale, y, _("?")):
+                show_message("See here to learn more", "https://github.com/krateng/maloja", mode="link")
+
+            if inp.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_maloja_url.text = prefs.maloja_url
+            text_maloja_url.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.maloja_url = text_maloja_url.text.strip()
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("API Key"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_maloja_key.text = prefs.maloja_key
+            text_maloja_key.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.maloja_key = text_maloja_key.text.strip()
+
+            y += round(35 * gui.scale)
+            # if self.button(x, y, _("Copy redirect URI")):
+            #     copy_to_clipboard(spot_ctl.redirect_uri)
+            #     show_message("Copied redirect URI to clipboard")
+            # y += round(35 * gui.scale)
+
+ 
+            if self.button(x, y, _("Test")):
+
+                url = prefs.maloja_url
+                if not url.endswith("/mlj_1"):
+                    if not url.endswith("/"):
+                        url += "/"
+                    url += "apis/mlj_1"
+                url += "/test"
+
+                try:
+                    r = requests.get(url, params={'key':prefs.maloja_key})
+                    if r.status_code == 403:
+                        show_message("Invalid API key", mode='warning')
+                        return False
+                    if r.status_code == 200:
+                        show_message("Successfully established connection with Maloja server", mode='done')
+                        return True
+                    else:
+                    	show_message("The Maloja server returned an error", r.text, mode='warning')
+                    	return False
+                except:
+                    show_message("Could not communicate with the Maloja server", mode='warning')
+                    return False
+
+         
+
 
         if self.account_view == 8:
 
