@@ -6699,7 +6699,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         pctl.mpris.update(force=True)
 
 
-def maloga_scrobble(track):
+def maloja_scrobble(track):
     print("Submit Maloja scrobble")
     url = prefs.maloja_url
 
@@ -6764,7 +6764,7 @@ class LastScrob:
                 elif tr[2] == "lb" and lb.enable:
                     success = lb.listen_full(tr[0], tr[1])
                 elif tr[2] == "maloja":
-                    success = maloga_scrobble(tr[0])
+                    success = maloja_scrobble(tr[0])
 
                 if not success:
                     print("Re-queue scrobble")
