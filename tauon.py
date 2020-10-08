@@ -3644,15 +3644,16 @@ def load_prefs():
     else:
         prefs.discogs_pat = temp
 
-    temp = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
-    if not temp:
-        prefs.lb_token = ""
-    elif len(temp) != 36 or temp[8] != "-":
-        print("Warning: Invalid discogs token in config")
-    else:
-        prefs.lb_token = temp
+    prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
+    prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
+    if not prefs.listenbrainz_url:
+        if not temp:
+            prefs.lb_token = ""
+        elif len(temp) != 36 or temp[8] != "-":
+            print("Warning: Invalid listenbrainz token in config")
+        else:
+            prefs.lb_token = temp
 
-    cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
 
     cf.br()
     cf.add_text("[plex_account]")
@@ -6571,10 +6572,15 @@ class ListenBrainz:
         if text == "":
             show_message("There is no text in the clipboard", mode="error")
             return
+
+        if prefs.listenbrainz_url:
+            prefs.lb_token = text
+            return
+
         if len(text) == 36 and text[8] == "-":
             prefs.lb_token = text
         else:
-            show_message("That is not a valid token", mode='error')
+            show_message("That is not a valid token.", mode='error')
 
     def clear_key(self):
 
@@ -23880,6 +23886,7 @@ class Over:
         self.temp_lastfm_pass = ""
         self.lastfm_input_box = 0
 
+        self.func_page = 0
         self.tab_active = 0
         self.tabs = [
             [_("Function"), self.funcs],
@@ -23922,18 +23929,12 @@ class Over:
 
         self.themes = []
 
-    # def config_a(self, x0, y0, w0, h0):
-    #
-    #     y = y0 + 20 * gui.scale
-    #     x = x0 + 25 * gui.scale
-
-        
     def theme(self, x0, y0, w0, h0):
 
         global album_mode_art_size
         global update_layout
 
-        y = y0 + 20 * gui.scale
+        y = y0 + 13 * gui.scale
         x = x0 + 25 * gui.scale
 
         ddt.text_background_colour = colours.box_background
@@ -23964,7 +23965,7 @@ class Over:
         #prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
         prefs.showcase_overlay_texture = self.toggle_square(x + 20 * gui.scale, y, prefs.showcase_overlay_texture, _("Pattern style"))
 
-        y += 48 * gui.scale
+        y += 55 * gui.scale
 
         square = round(8 * gui.scale)
         border = round(4 * gui.scale)
@@ -24389,94 +24390,18 @@ class Over:
 
         ddt.text_background_colour = colours.box_background
 
-        if self.chart_view == 1:
-            self.topchart(x0, y0, w0, h0)
-            return
-
-        if self.lyrics_panel:
-
-            x = x0 + 25 * gui.scale
-            y = y0 - 10 * gui.scale
-            y += 30 * gui.scale
-            x += 260 * gui.scale
-            # prefs.show_side_lyrics_art_panel = self.toggle_square(x, y, prefs.show_side_lyrics_art_panel, _("Show info under side panel lyrics"))
-
-        else:
+        if self.func_page == 0:
 
             y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
-                               _("Run web server for broadcasting"))
-
-            y += 23 * gui.scale
-
-            self.toggle_square(x, y, toggle_auto_artist_dl,
-                               _("Auto fetch artist data"))
-
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_top_tabs, _("Enable tabs in top panel"))
-
-            y += 23 * gui.scale
-            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto regenerate playlists"))
-
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
-            y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"))
-            y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
-            y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
-
-
-            y += 37 * gui.scale
-
-            #. Limited width. Max 19 chars.
-            # self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
-
-            wa = ddt.get_text_w(_("Open config file"), 211) + 10 * gui.scale
-            wb = ddt.get_text_w(_("Open keymap file"), 211) + 10 * gui.scale
-            wc = max(wa, wb)
-
-            self.button(x, y, _("Open config file"), open_config_file, width=wc)
-
-
-            #y += 25 * gui.scale
-            bg = None
-            if gui.opened_config_file:
-                bg = [90, 50, 130, 255]
-                self.button(x + wc + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
-
-            y += 30 * gui.scale
-
-
-            self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
-
-            wa = ddt.get_text_w( _("Open data folder"), 211) + 10 * gui.scale
-            x = x0 + w0
-            self.button(x - (wa + 15 * gui.scale), y, _("Open data folder"), open_data_directory, wa)
-
-            x = x0 + 25 * gui.scale
-            y = y0 - 10 * gui.scale
-
-            y += 30 * gui.scale
+                               _("Ready broadcaster"), subtitle=_("Start web server for broadcasting"))
 
             if toggle_enable_web(1):
 
-                # link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg(190), 12)
-                # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
-                # fields.add(link_rect)
-
-                link_pa2 = draw_linked_text((x + 280 * gui.scale, y - 6 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg(190), 13)
-                link_rect2 = [x + 280 * gui.scale, y - 6 * gui.scale, link_pa2[1], 20 * gui.scale]
+                link_pa2 = draw_linked_text((x + 320 * gui.scale, y - 1 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg(190), 13)
+                link_rect2 = [x + 320 * gui.scale, y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
-
-                # if coll(link_rect):
-                #     if not self.click:
-                #         gui.cursor_want = 3
-                #
-                #     if self.click:
-                #         webbrowser.open(link_pa[2], new=2, autoraise=True)
 
                 if coll(link_rect2):
                     if not self.click:
@@ -24485,31 +24410,87 @@ class Over:
                     if self.click:
                         webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
-            y += 37 * gui.scale
-            x += 320 * gui.scale
+            y += 38 * gui.scale
 
-            ddt.text((x, y), _("Show in context menus:"), colours.box_text_label, 11)
-            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_auto_artist_dl,
+                               _("Auto fetch artist data"), subtitle=_("Downloads data in background when artist panel is open"))
 
-            self.toggle_square(x, y, toggle_wiki, _("Wikipedia Search"))
+            y += 38 * gui.scale
+            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto regenerate playlists"),
+                                                                    subtitle=_("Generator playlists reload when re-entering"))
+
+
+            y += 38 * gui.scale
+            self.toggle_square(x, y, toggle_top_tabs, _("Tabs in top panel"), subtitle=_("Disables the tab pin function"))
+
+
+            y += 45 * gui.scale
+
+            wa = ddt.get_text_w(_("Open config file"), 211) + 10 * gui.scale
+            #wb = ddt.get_text_w(_("Open keymap file"), 211) + 10 * gui.scale
+            wc = ddt.get_text_w(_("Open data folder"), 211) + 10 * gui.scale
+
+            ww = max(wa, wc)
+
+            self.button(x, y, _("Open config file"), open_config_file, width=ww)
+            bg = None
+            if gui.opened_config_file:
+                bg = [90, 50, 130, 255]
+                self.button(x + ww + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
+
+            y += 30 * gui.scale
+
+            self.button(x, y, _("Open data folder"), open_data_directory, ww)
+
+        elif self.func_page == 1:
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_rym, _("Sonemic Search"))
+            ddt.text((x, y), _("Enable/Disable track context menu functions:"), colours.box_text_label, 11)
+            y += 25 * gui.scale
+
+            self.toggle_square(x, y, toggle_wiki, _("Wikipedia artist search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_band, _("Bandcamp Search"))
+            self.toggle_square(x, y, toggle_rym, _("Sonemic artist search"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_band, _("Bandcamp artist page search"))
             # y += 23 * gui.scale
             # self.toggle_square(x, y, toggle_gimage, _("Google image search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_gen, _("Genius Search"))
+            self.toggle_square(x, y, toggle_gen, _("Genius track search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_transcode, _("Transcode Folder"))
+            self.toggle_square(x, y, toggle_transcode, _("Transcode folder"))
             if discord_allow:
-                y += 23 * gui.scale
-                self.toggle_square(x, y, toggle_show_discord, _("Discord RP Toggle"))
+                y += 30 * gui.scale
+                ddt.text((x, y), _("Enable/Disable main MENU functions:"), colours.box_text_label, 11)
+                y += 25 * gui.scale
+                self.toggle_square(x, y, toggle_show_discord, _("Discord Rich Presence toggle"))
 
-            #y = self.box_y + 216 * gui.scale
-            x -= 55 * gui.scale
+        elif self.func_page == 2:
+            y += 23 * gui.scale
+            #ddt.text((x, y), _("Auto download monitor and archive extractor"), colours.box_text_label, 11)
+            #y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_extract, _("Extract archives"),
+                               subtitle=_("Extracts zip archives on drag and drop"))
+            y += 38 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"),
+                               subtitle=("One click import new archives and folders from downloads folder"))
+            y += 38 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
+            y += 23 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
-            y = y0 + 216 * gui.scale
+        # Switcher
+        pages = 3
+        x = x0 + round(23 * gui.scale)
+        y = (y0 + h0) - round(31 * gui.scale)
+        ww = round(31 * gui.scale)
+
+        for p in range(pages):
+            if self.button2(x, y, str(p + 1), width=ww, center_text=True, force_on=self.func_page == p):
+                self.func_page = p
+            x += ww
+
+        # self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
+
 
 
     def button(self, x, y, text, plug=None, width=0, bg=None):
@@ -24548,7 +24529,7 @@ class Over:
 
         return hit
 
-    def button2(self, x, y, text, width=0):
+    def button2(self, x, y, text, width=0, center_text=False, force_on=False):
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
@@ -24560,18 +24541,23 @@ class Over:
         ddt.rect(rect, bg_colour, True)
         fields.add(rect)
         hit = False
-        if coll(rect):
+
+        text_position = (x + int(7 * gui.scale), rect[1] + 1 * gui.scale)
+        if center_text:
+            text_position = (x + rect[2] // 2, rect[1] + 1 * gui.scale, 2)
+
+        if coll(rect) or force_on:
             ddt.rect(rect, colours.box_button_background_highlight, True)
             bg_colour = colours.box_button_background
             real_bg = alpha_blend( colours.box_button_background_highlight, bg_colour)
-            ddt.text((x + int(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text_highlight, 211, bg=real_bg)
-            if self.click:
+            ddt.text(text_position, text, colours.box_button_text_highlight, 211, bg=real_bg)
+            if self.click and not force_on:
                 hit = True
         else:
-            ddt.text((x + round(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.box_button_text, 211, bg=real_bg)
+            ddt.text(text_position, text, colours.box_button_text, 211, bg=real_bg)
         return hit
 
-    def toggle_square(self, x, y, function, text, click=False):
+    def toggle_square(self, x, y, function, text, click=False, subtitle=""):
 
         x = round(x)
         y = round(y)
@@ -24582,7 +24568,15 @@ class Over:
 
         full_w = border * 2 + gap * 2 + inner_square
 
-        le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
+        if subtitle:
+            le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
+            se = ddt.text((x + 20 * gui.scale, y + 14 * gui.scale), subtitle, colours.box_text_label, 13)
+            hit_rect = (x - 10 * gui.scale, y - 3 * gui.scale, max(le, se) + 30 * gui.scale, 34 * gui.scale)
+            y += round(8 * gui.scale)
+
+        else:
+            le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
+            hit_rect = (x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)
 
         # Border outline
         ddt.rect_a((x, y), (full_w, full_w), colours.box_check_border, True)
@@ -24591,7 +24585,7 @@ class Over:
 
         # Check if box clicked
         clicked = False
-        if (self.click or click) and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
+        if (self.click or click) and coll(hit_rect):
             clicked = True
 
         # There are two mode, function type, and passthrough bool type
