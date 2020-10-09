@@ -118,9 +118,12 @@ def get_filesize_string(file_bytes):
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000, 2)
         line = locale.str(file_kb) + " KB"
-    else:
+    elif file_bytes < 1000000000:
         file_mb = round(file_bytes / 1000000, 2)
         line = locale.str(file_mb) + " MB"
+    else:
+        file_mb = round(file_bytes / 1000000000, 1)
+        line = locale.str(file_mb) + " GB"
     return line
 
 def get_filesize_string_rounded(file_bytes):
