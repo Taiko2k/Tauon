@@ -14616,20 +14616,13 @@ def export_stats(pl):
                 if not size and os.path.isfile(track.fullpath):
                     size = os.path.getsize(track.fullpath)
                 seen_files[track.fullpath] = size
-        
-        
 
     total_size = sum(seen_files.values())
-    #unique = len(set(pctl.multi_playlist[pl][0]))
 
     stats_gen.update(pl)
     line = 'Playlist:\n' + pctl.multi_playlist[pl][0] + "\n\n"
     line += 'Generated:\n' + time.strftime("%c") + "\n\n"
     line += 'Tracks in playlist:\n' + str(tracks_in_playlist)
-    # if unique == total_size:
-    #     pass
-    # else:
-    #     line += f" ({unique})"
 
     line += "\n\n"
     line += 'Total local size:\n' + get_filesize_string(total_size) + "\n\n"
@@ -24764,17 +24757,9 @@ class Over:
             self.account_view = 8
             
         prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
-            
 
-        # y += 75 * gui.scale
-        #
-        # w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
-        #
-        # self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
-        # y += 30 * gui.scale
-        # self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
-        # y += 30 * gui.scale
-        # self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
+        if self.account_view in (9, 2, 1):
+            self.toggle_square(x0 + 230 * gui.scale, y + 2 * gui.scale, toggle_scrobble_mark, _("Show threshold marker"))
 
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
@@ -24844,7 +24829,6 @@ class Over:
                             show_message("The Maloja server returned an error", r.text, mode='warning')
                     except:
                         show_message("Could not communicate with the Maloja server", mode='warning')
-
 
         if self.account_view == 8:
 
@@ -25264,11 +25248,6 @@ class Over:
             self.button(x + ww + round(12 * gui.scale), y, _("Clear"), self.clear_scrobble_counts, width=wcc)
 
 
-            x = x0 + 230 * gui.scale
-            y = y0 + round(245 * gui.scale)
-
-            self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
-
         if self.account_view == 2:
 
             ddt.text((x, y), 'ListenBrainz', colours.box_sub_text, 213)
@@ -25295,12 +25274,6 @@ class Over:
 
                 if self.click:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
-
-
-            x = x0 + 230 * gui.scale
-            y = y0 + round(230 * gui.scale)
-
-            self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
 
     def clear_local_loves(self):
