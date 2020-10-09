@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.3.4
 
+ - Added Maloja scrobble support
  - Added function to import scrobble counts and column to display
  - Added custom listenbrainz server option
  - Tweaks settings function tab page layout
