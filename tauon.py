@@ -1390,8 +1390,11 @@ class Prefs:    # Used to hold any kind of settings
 
         self.old_playlist_box_position = 0
         self.listenbrainz_url = ""
+        self.maloja_enable = False
         self.maloja_url = ""
         self.maloja_key = ""
+
+        self.scrobble_hold = False
 
 
 prefs = Prefs()
@@ -5072,10 +5075,10 @@ class PlayerCtl:
             else:
                 tauon.spot_ctl.update_timer.set()
                 # todo
-                # print("UPDATE")
-                # print(tauon.spot_ctl.coasting)
-                # print(tauon.spot_ctl.playing)
-                # print(tauon.spot_ctl.paused)
+                print("UPDATE")
+                print(tauon.spot_ctl.coasting)
+                print(tauon.spot_ctl.playing)
+                print(tauon.spot_ctl.paused)
                 tauon.spot_ctl.update()
 
     def purge_track(self, track_id):  # Remove a track from the database
@@ -6013,10 +6016,8 @@ class LastFMapi:
     scanning_scrobbles = False
 
     def __init__(self):
-
         self.sg = None
         self.url = None
-        self.hold = False
 
     def get_network(self):
         if prefs.use_libre_fm:
@@ -6105,11 +6106,7 @@ class LastFMapi:
             return False
 
     def toggle(self):
-        #if self.connected:
-        self.hold ^= True
-        lb.hold ^= True
-        #else:
-        #    self.connect()
+        prefs.scrobble_hold ^= True
 
     def details_ready(self):
         if prefs.last_fm_token:
@@ -6211,7 +6208,7 @@ class LastFMapi:
         return ""
 
     def scrobble(self, track_object, timestamp=None):
-        if self.hold:
+        if prefs.scrobble_hold:
             return True
         if prefs.auto_lfm:
             self.connect(False)
@@ -6282,7 +6279,7 @@ class LastFMapi:
     def love(self, artist, title):
         if not self.connected and prefs.auto_lfm:
             self.connect(False)
-            self.hold = True
+            prefs.scrobble_hold = True
         if self.connected and artist != "" and title != "":
             track = self.network.get_track(artist, title)
             track.love()
@@ -6290,7 +6287,7 @@ class LastFMapi:
     def unlove(self, artist, title):
         if not self.connected and prefs.auto_lfm:
             self.connect(False)
-            self.hold = True
+            prefs.scrobble_hold = True
         if self.connected and artist != "" and title != "":
             track = self.network.get_track(artist, title)
             track.love()
@@ -6412,7 +6409,7 @@ class LastFMapi:
         self.scanning_loves = False
 
     def update(self, track_object):
-        if self.hold:
+        if prefs.scrobble_hold:
             return 0
         if prefs.auto_lfm:
             if self.connect(False) is False:
@@ -6465,7 +6462,6 @@ class ListenBrainz:
     def __init__(self):
 
         self.enable = prefs.enable_lb
-        self.hold = False
         # self.url = "https://api.listenbrainz.org/1/submit-listens"
 
     def url(self):
@@ -6480,7 +6476,7 @@ class ListenBrainz:
 
         if self.enable is False:
             return True
-        if self.hold is True:
+        if prefs.scrobble_hold is True:
             return True
         if prefs.lb_token is None:
             show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
@@ -6529,7 +6525,7 @@ class ListenBrainz:
     def listen_playing(self, track_object):
         if self.enable is False:
             return
-        if self.hold is True:
+        if prefs.scrobble_hold is True:
             return
         if prefs.lb_token is None:
             show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
@@ -6804,12 +6800,12 @@ class LastScrob:
 
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
-            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not lastfm.hold:
+            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not prefs.scrobble_hold:
                 mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
 
-            if lb.enable and not lb.hold:
+            if lb.enable and not prefs.scrobble_hold:
                 mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
@@ -6850,12 +6846,13 @@ class LastScrob:
         track_object.lfm_scrobbles += 1
         gui.pl_update += 1
 
-        if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())) and not lastfm.hold:
-            self.queue.append((track_object, int(time.time()), "lfm"))
-        if lb.enable and not lb.hold:
-            self.queue.append((track_object, int(time.time()), "lb"))
-        if prefs.maloja_url:
-            self.queue.append((track_object, int(time.time()), "maloja"))
+        if not prefs.scrobble_hold:
+            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+                self.queue.append((track_object, int(time.time()), "lfm"))
+            if lb.enable:
+                self.queue.append((track_object, int(time.time()), "lb"))
+            if prefs.maloja_url:
+                self.queue.append((track_object, int(time.time()), "maloja"))
 
 
 lfm_scrobbler = LastScrob()
@@ -7116,10 +7113,6 @@ class SubsonicService:
 
         if p:
             params.update(p)
-
-        #print(params)
-
-        #point = "rest/ping"
 
         point = "rest/" + point
 
@@ -19988,8 +19981,7 @@ theme_files.sort()
 
 def last_fm_menu_deco():
 
-    if lastfm.hold:
-
+    if prefs.scrobble_hold:
         if not prefs.auto_lfm and lb.enable:
             line = _("ListenBrainz is Paused")
         else:
@@ -20000,13 +19992,14 @@ def last_fm_menu_deco():
             line = _("ListenBrainz is Active")
         else:
             line = _("Scrobbling is Active")
+
         bg = colours.menu_background
 
     return [colours.menu_text, bg, line]
 
 
 def lastfm_colour():
-    if not lastfm.hold:
+    if not prefs.scrobble_hold:
         return [250, 50, 50, 255]
     else:
         return None
@@ -20028,7 +20021,7 @@ lastfm_icon.colour_callback = lastfm_colour
 
 def lastfm_menu_test(a):
 
-    if (prefs.auto_lfm and prefs.last_fm_token is not None) or prefs.enable_lb:
+    if (prefs.auto_lfm and prefs.last_fm_token is not None) or prefs.enable_lb or prefs.maloja_enable:
         return True
     return False
 
@@ -23569,10 +23562,10 @@ def toggle_lfm_auto(mode=0):
     if mode == 1:
         return prefs.auto_lfm
     prefs.auto_lfm ^= True
-    if prefs.auto_lfm:
-        lastfm.hold = False
-    else:
-        lastfm.hold = True
+    # if prefs.auto_lfm:
+    #     lastfm.hold = False
+    # else:
+    #     lastfm.hold = True
 
 def toggle_lb(mode=0):
     if mode == 1:
@@ -23581,16 +23574,15 @@ def toggle_lb(mode=0):
         show_message("Can't enable this if there's no token.", mode='warning')
         return
     lb.enable ^= True
-    # if lb.enable:
-    #     lb.hold = False
-    # else:
-    #     lb.hold = True
 
+def toggle_maloja(mode=0):
+    if mode == 1:
+        return prefs.maloja_enable
+    if not prefs.maloja_url or not prefs.maloja_key:
+        show_message(_("One or more fields is missing."), mode='warning')
+        return
+    prefs.maloja_enable ^= True
 
-# def toggle_resume_state(mode=0):
-#     if mode == 1:
-#         return prefs.reload_play_state
-#     prefs.reload_play_state ^= True
 
 def toggle_ex_del(mode=0):
     if mode == 1:
@@ -24655,7 +24647,7 @@ class Over:
     def last_fm_box(self, x0, y0, w0, h0):
 
         x = x0 + round(20 * gui.scale)
-        y = y0 + round(20 * gui.scale)
+        y = y0 + round(15 * gui.scale)
 
         ddt.text_background_colour = colours.box_background
         if last_fm_enable:
@@ -24665,11 +24657,18 @@ class Over:
             if self.button2(x, y, text, width=84*gui.scale):
                 self.account_view = 1
             self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
+
         y += 28 * gui.scale
 
         if self.button2(x, y, "ListenBrainz", width=84*gui.scale):
             self.account_view = 2
         self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lb, _("Enable"))
+
+        y += 28 * gui.scale
+
+        if self.button2(x, y, "Maloja", width=84*gui.scale):
+            self.account_view = 9
+        self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_maloja, _("Enable"))
 
         y += 28 * gui.scale
 
@@ -24696,20 +24695,13 @@ class Over:
         if self.button2(x, y, "Airsonic", width=84*gui.scale):
             self.account_view = 7
 
-        y += 28* gui.scale
+        y += 28 * gui.scale
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
             
         prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
             
-        y += 28 * gui.scale
-
-        if self.button2(x, y, "Maloja", width=84*gui.scale):
-            self.account_view = 9
-            
-            
-        
 
         # y += 75 * gui.scale
         #
@@ -24724,12 +24716,11 @@ class Over:
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
 
-	
         if self.account_view == 9:
 
             ddt.text((x, y), _('Maloja Server'), colours.box_sub_text, 213)
             if self.button(x + 260 * gui.scale, y, _("?")):
-                show_message("See here to learn more", "https://github.com/krateng/maloja", mode="link")
+                show_message(_("Maloja is a self-hosted scrobble server."), _("See here to lean more: %s") % "https://github.com/krateng/maloja", mode="link")
 
             if inp.key_tab_press:
                 self.account_text_field += 1
@@ -24767,13 +24758,8 @@ class Over:
             prefs.maloja_key = text_maloja_key.text.strip()
 
             y += round(35 * gui.scale)
-            # if self.button(x, y, _("Copy redirect URI")):
-            #     copy_to_clipboard(spot_ctl.redirect_uri)
-            #     show_message("Copied redirect URI to clipboard")
-            # y += round(35 * gui.scale)
-
  
-            if self.button(x, y, _("Test")):
+            if self.button(x, y, _("Test connectivity")):
 
                 url = prefs.maloja_url
                 if not url.endswith("/mlj_1"):
@@ -24783,21 +24769,15 @@ class Over:
                 url += "/test"
 
                 try:
-                    r = requests.get(url, params={'key':prefs.maloja_key})
+                    r = requests.get(url, params={'key': prefs.maloja_key})
                     if r.status_code == 403:
                         show_message("Invalid API key", mode='warning')
-                        return False
-                    if r.status_code == 200:
+                    elif r.status_code == 200:
                         show_message("Successfully established connection with Maloja server", mode='done')
-                        return True
                     else:
-                    	show_message("The Maloja server returned an error", r.text, mode='warning')
-                    	return False
+                        show_message("The Maloja server returned an error", r.text, mode='warning')
                 except:
                     show_message("Could not communicate with the Maloja server", mode='warning')
-                    return False
-
-         
 
 
         if self.account_view == 8:
@@ -24842,10 +24822,6 @@ class Over:
             prefs.spot_secret = text_spot_secret.text.strip()
 
             y += round(35 * gui.scale)
-            # if self.button(x, y, _("Copy redirect URI")):
-            #     copy_to_clipboard(spot_ctl.redirect_uri)
-            #     show_message("Copied redirect URI to clipboard")
-            # y += round(35 * gui.scale)
 
             if prefs.spotify_token:
                 if self.button(x, y, _("Forget Account")):
@@ -27482,7 +27458,7 @@ class BottomBarType1:
             right_offset -= 90 * gui.scale
         # Scrobble marker
 
-        if prefs.scrobble_mark and ((prefs.auto_lfm and not lastfm.hold) or (lb.enable and not lb.hold)) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
+        if prefs.scrobble_mark and (prefs.auto_lfm or lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
