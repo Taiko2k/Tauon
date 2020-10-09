@@ -3460,6 +3460,7 @@ def save_prefs():
 
     cf.update_value("maloja-key", prefs.maloja_key)
     cf.update_value("maloja-url", prefs.maloja_url)
+    cf.update_value("maloja-enable", prefs.maloja_enable)
 
     #cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-page-port", prefs.metadata_page_port)
@@ -3652,10 +3653,6 @@ def load_prefs():
     else:
         prefs.discogs_pat = temp
 
-    prefs.maloja_url = cf.sync_add("string", "maloja-url", prefs.maloja_url)
-    prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key)
-
-
     prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
     prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
     if not prefs.listenbrainz_url:
@@ -3666,6 +3663,12 @@ def load_prefs():
         else:
             prefs.lb_token = temp
 
+
+    cf.br()
+    cf.add_text("[maloja_account]")
+    prefs.maloja_url = cf.sync_add("string", "maloja-url", prefs.maloja_url, "A Maloja server URL, e.g. http://localhost:32400")
+    prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key, "One of your Maloja API keys")
+    prefs.maloja_enable = cf.sync_add("bool", "maloja-enable", prefs.maloja_enable)
 
     cf.br()
     cf.add_text("[plex_account]")
@@ -6696,14 +6699,13 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
 
 
 def maloja_scrobble(track):
-    print("Submit Maloja scrobble")
+
     url = prefs.maloja_url
 
     if not track.artist or not track.title:
         return
 
     if not url.endswith("/newscrobble"):
-
         if not url.endswith("/"):
             url += "/"
         url += "apis/mlj_1/newscrobble"
@@ -24761,23 +24763,26 @@ class Over:
  
             if self.button(x, y, _("Test connectivity")):
 
-                url = prefs.maloja_url
-                if not url.endswith("/mlj_1"):
-                    if not url.endswith("/"):
-                        url += "/"
-                    url += "apis/mlj_1"
-                url += "/test"
+                if not prefs.maloja_url or not prefs.maloja_key:
+                    show_message(_("One or more fields is missing."))
+                else:
+                    url = prefs.maloja_url
+                    if not url.endswith("/mlj_1"):
+                        if not url.endswith("/"):
+                            url += "/"
+                        url += "apis/mlj_1"
+                    url += "/test"
 
-                try:
-                    r = requests.get(url, params={'key': prefs.maloja_key})
-                    if r.status_code == 403:
-                        show_message("Invalid API key", mode='warning')
-                    elif r.status_code == 200:
-                        show_message("Successfully established connection with Maloja server", mode='done')
-                    else:
-                        show_message("The Maloja server returned an error", r.text, mode='warning')
-                except:
-                    show_message("Could not communicate with the Maloja server", mode='warning')
+                    try:
+                        r = requests.get(url, params={'key': prefs.maloja_key})
+                        if r.status_code == 403:
+                            show_message("Connection appeared successful but the API key was invalid", mode='warning')
+                        elif r.status_code == 200:
+                            show_message("Connection to Maloja server was successful.", mode='done')
+                        else:
+                            show_message("The Maloja server returned an error", r.text, mode='warning')
+                    except:
+                        show_message("Could not communicate with the Maloja server", mode='warning')
 
 
         if self.account_view == 8:
