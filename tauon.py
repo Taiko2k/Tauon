@@ -20097,10 +20097,12 @@ lb_icon.yoff = -1
 if gui.scale == 1.25:
     lb_icon.yoff = 0
 
-listen_icon = lastfm_icon
-
-if not prefs.auto_lfm and lb.enable:
+if prefs.auto_lfm:
+    listen_icon = lastfm_icon
+elif lb.enable:
     listen_icon = lb_icon
+else:
+    listen_icon = None
 
 x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=listen_icon, show_test=lastfm_menu_test)
 
