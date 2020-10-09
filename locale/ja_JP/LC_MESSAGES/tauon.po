@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2020-09-14 22:51+1200\n"
+"POT-Creation-Date: 2020-10-10 00:00+1300\n"
 "PO-Revision-Date: 2019-05-01 22:39+1200\n"
 "Last-Translator:  <captain.gxj@gmail.com>\n"
 "Language-Team: Language ja\n"
@@ -15,1687 +15,1781 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
 
-#: tauon.py:1813 tauon.py:1815
+#: tauon.py:1834 tauon.py:1836
 msgid "No artist image found."
 msgstr "アーティスト画像が見つかりません"
 
-#: tauon.py:1815
+#: tauon.py:1836
 msgid "No providers are enabled in settings!"
 msgstr "設定で有効になっているプロバイダーはありません！"
 
-#: tauon.py:5917
+#: tauon.py:5989
 msgid "End of playlist"
 msgstr "プレイリストの終わり"
 
-#: tauon.py:5961
+#: tauon.py:6040
 msgid "Once authorised click the 'done' button."
 msgstr "承認されたら、「完了」ボタンをクリックして。"
 
-#: tauon.py:5961
+#: tauon.py:6040
 msgid "Web auth page opened"
 msgstr "ページ化されたWeb認証"
 
-#: tauon.py:5969
+#: tauon.py:6048
 #, fuzzy
 msgid "You need to log in first"
 msgstr "先にログインする必要があります"
 
-#: tauon.py:6204
+#: tauon.py:6176
+#, fuzzy
+msgid "Scanning scrobbles complete"
+msgstr "フォルダーの再スキャンが完了しました.。"
+
+#: tauon.py:6324
 msgid "Getting friend data..."
 msgstr "友達データを取得しています..."
 
-#: tauon.py:6204
+#: tauon.py:6324
 msgid "This may take a very long time."
 msgstr "これには時間がかかる場合があります。"
 
-#: tauon.py:6705
+#: tauon.py:6679
+#, fuzzy
+msgid "Error updating love to last.fm!"
+msgstr "プレイリストの終わり"
+
+#: tauon.py:6679
+msgid "Maybe check your internet connection and try again?"
+msgstr ""
+
+#: tauon.py:6870
 msgid "Spotify Likes"
 msgstr ""
 
-#: tauon.py:6706
+#: tauon.py:6871
 #, fuzzy
 msgid "Spotify Albums"
 msgstr "最長アルバム"
 
-#: tauon.py:6707
+#: tauon.py:6872
 msgid "Track removed from liked tracks"
 msgstr ""
 
-#: tauon.py:6708
+#: tauon.py:6873
 msgid "Track was already un-liked"
 msgstr ""
 
-#: tauon.py:6709
+#: tauon.py:6874
 #, fuzzy
 msgid "Track is already liked"
 msgstr "このトラック数"
 
-#: tauon.py:6710
+#: tauon.py:6875
 msgid "Track added to liked tracks"
 msgstr ""
 
-#: tauon.py:6711
+#: tauon.py:6876
 msgid "Spotify account connected"
 msgstr ""
 
-#: tauon.py:6712
+#: tauon.py:6877
 msgid "This Spotify account isn't currently playing anything"
 msgstr ""
 
-#: tauon.py:6713
+#: tauon.py:6878
 msgid "Error starting Spotify"
 msgstr ""
 
-#: tauon.py:6714
+#: tauon.py:6879
 msgid "Please authorise Spotify in settings!"
 msgstr ""
 
-#: tauon.py:6716
+#: tauon.py:6881
 msgid "day"
 msgstr ""
 
-#: tauon.py:6717
+#: tauon.py:6882
 msgid "days"
 msgstr ""
 
-#: tauon.py:6719
+#: tauon.py:6884
 msgid "Web server stopped."
 msgstr ""
 
-#: tauon.py:6804
+#: tauon.py:6969
 msgid "Missing username, password and/or server name"
 msgstr ""
 
-#: tauon.py:6819
+#: tauon.py:6984
 msgid "Error connecting to PLEX server"
 msgstr "PLEXサーバーへの接続エラー"
 
-#: tauon.py:6820
+#: tauon.py:6985
 msgid "Try check login credentials and that server is accessible."
 msgstr ""
 
-#: tauon.py:7090
+#: tauon.py:7276
 msgid "Missing username, password and/or server URL"
 msgstr ""
 
-#: tauon.py:7132
+#: tauon.py:7318
 msgid "Could not establish connection/authorisation"
 msgstr ""
 
-#: tauon.py:7781
+#: tauon.py:7962
 msgid "Stop the sync before exiting!"
 msgstr ""
 
-#: tauon.py:12052 tauon.py:33309
+#: tauon.py:12281 tauon.py:33807
 msgid "Queue"
 msgstr "キュー"
 
-#: tauon.py:12054
+#: tauon.py:12283
 msgid "Playlists + Queue"
 msgstr "プレイリストとキュー"
 
-#: tauon.py:12056
+#: tauon.py:12285
 msgid "Artist List"
 msgstr "アーティスト"
 
-#: tauon.py:12058
+#: tauon.py:12287
 msgid "Folder Navigator"
 msgstr "フォルダーツリー"
 
-#: tauon.py:12119
+#: tauon.py:12348
 msgid "Track Renaming"
 msgstr "トラックの名前変更"
 
-#: tauon.py:12122 tauon.py:40460
+#: tauon.py:12351 tauon.py:40972
 msgid "Default"
 msgstr "デフォルト"
 
-#: tauon.py:12145
+#: tauon.py:12374
 msgid "BEFORE"
 msgstr "前"
 
-#: tauon.py:12149
+#: tauon.py:12378
 msgid "AFTER"
 msgstr "後"
 
-#: tauon.py:12237
+#: tauon.py:12466
 msgid "Rename complete."
 msgstr "名前変更完了。"
 
-#: tauon.py:12238
+#: tauon.py:12467
 msgid " filenames were written."
 msgstr "　ファイル名が書き込まれました。"
 
-#: tauon.py:12301
+#: tauon.py:12530
 msgid "Substitute Lyric Search"
 msgstr ""
 
-#: tauon.py:12307 tauon.py:12327
+#: tauon.py:12536 tauon.py:12556
 msgid "Substitute"
 msgstr ""
 
-#: tauon.py:12313 tauon.py:12333
+#: tauon.py:12542 tauon.py:12562
 msgid "with"
 msgstr ""
 
-#: tauon.py:12375
+#: tauon.py:12604
 msgid "Repeat OFF"
 msgstr "リピートOFF"
 
-#: tauon.py:12376
+#: tauon.py:12605
 msgid "Repeat Track"
 msgstr "繰り返しトラック"
 
-#: tauon.py:12377
+#: tauon.py:12606
 msgid "Repeat Album"
 msgstr "リピートアルバム"
 
-#: tauon.py:12411
+#: tauon.py:12640
 msgid "Shuffle OFF"
 msgstr "シャッフルOFF"
 
-#: tauon.py:12412
+#: tauon.py:12641
 msgid "Shuffle Tracks"
 msgstr "シャッフルトラック"
 
-#: tauon.py:12413
+#: tauon.py:12642
 msgid "Random Albums"
 msgstr "ランダムアルバム"
 
-#: tauon.py:12438
+#: tauon.py:12667
 msgid "Make Large Size"
 msgstr "大サイズにする"
 
-#: tauon.py:12440
+#: tauon.py:12669
 msgid "Make Compact Size"
 msgstr "小サイズにする"
 
-#: tauon.py:12475
+#: tauon.py:12704
 msgid "Close Panel"
 msgstr "閉じる"
 
-#: tauon.py:12476
+#: tauon.py:12705
 msgid "Make Large"
 msgstr "大サイズにする"
 
-#: tauon.py:12708
+#: tauon.py:12937
 #, fuzzy
 msgid "Unlock Panel"
 msgstr "閉じる"
 
-#: tauon.py:12710
+#: tauon.py:12939
 #, fuzzy
 msgid "Lock Panel"
 msgstr "閉じる"
 
-#: tauon.py:12712 tauon.py:12713 tauon.py:12734 tauon.py:16845 tauon.py:17821
+#: tauon.py:12941 tauon.py:12942 tauon.py:12963 tauon.py:17156 tauon.py:18142
 msgid "Open Folder"
 msgstr "フォルダを開く"
 
-#: tauon.py:12715 tauon.py:12716 tauon.py:12717 tauon.py:31664
+#: tauon.py:12944 tauon.py:12945 tauon.py:12946 tauon.py:32162
 msgid "Filter to New Playlist"
 msgstr "新しいプレイリストへ"
 
-#: tauon.py:12718 tauon.py:15303
+#: tauon.py:12947 tauon.py:15626
 msgid "Rescan Folder"
 msgstr "フォルダースキャン"
 
-#: tauon.py:12719 tauon.py:12721
+#: tauon.py:12948 tauon.py:12950
 msgid "Move Playing Folder Here"
 msgstr "再生フォルダをここに移動"
 
-#: tauon.py:12727 tauon.py:17842
+#: tauon.py:12956 tauon.py:18163
 msgid "Collapse All"
 msgstr "すべて折りたたむ"
 
-#: tauon.py:12736
+#: tauon.py:12965
 msgid "Show in Playlist"
 msgstr "プレイリストに表示"
 
-#: tauon.py:12812 tauon.py:17826 tauon.py:17838
+#: tauon.py:13041 tauon.py:18147 tauon.py:18159
 msgid "Add Album to Queue"
 msgstr "キューに追加"
 
-#: tauon.py:12813 tauon.py:17827 tauon.py:17839
+#: tauon.py:13042 tauon.py:18148 tauon.py:18160
 msgid "Enqueue Album Next"
 msgstr "次をキューに入れる"
 
-#: tauon.py:12825 tauon.py:15488 tauon.py:24942
+#: tauon.py:13054 tauon.py:15811 tauon.py:25411
 msgid "Aborting Sync"
 msgstr ""
 
-#: tauon.py:12828
+#: tauon.py:13057
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: tauon.py:12838
+#: tauon.py:13067
 msgid "Hide Metadata Panel"
 msgstr "メタデータパネルを非表示"
 
-#: tauon.py:12840
+#: tauon.py:13069
 msgid "Show Metadata Panel"
 msgstr "メタデータパネルを表示"
 
-#: tauon.py:12850
+#: tauon.py:13079
 #, fuzzy
 msgid "Panel Below Lyrics"
 msgstr "歌詞をペースト"
 
-#: tauon.py:12852
+#: tauon.py:13081
 #, fuzzy
 msgid "Panel Above Lyrics"
 msgstr "歌詞をペースト"
 
-#: tauon.py:12880 tauon.py:12890 tauon.py:12898
+#: tauon.py:13109 tauon.py:13119 tauon.py:13127
 msgid "Hide Lyrics"
 msgstr "歌詞を隠す"
 
-#: tauon.py:12882 tauon.py:12892 tauon.py:12900
+#: tauon.py:13111 tauon.py:13121 tauon.py:13129
 msgid "Show Lyrics"
 msgstr "歌詞を示す"
 
-#: tauon.py:12934
+#: tauon.py:13163
 msgid "There are no lyric sources enabled."
 msgstr "有効な歌詞ソースはありません。"
 
-#: tauon.py:12943
+#: tauon.py:13172
 msgid "Let's be polite and try later."
 msgstr "礼儀正しく、後で試してみましょう。"
 
-#: tauon.py:12960 tauon.py:18024 tauon.py:30531
+#: tauon.py:13189 tauon.py:18362 tauon.py:31053
 msgid "Searching..."
 msgstr "検索中..."
 
-#: tauon.py:12993
+#: tauon.py:13222
 msgid "No lyrics for this track were found"
 msgstr "歌詞が見つかりません。"
 
-#: tauon.py:13056 tauon.py:13153 tauon.py:13630
+#: tauon.py:13285 tauon.py:13382 tauon.py:13859
 msgid "Search for Lyrics"
 msgstr "歌詞を検索"
 
-#: tauon.py:13068
+#: tauon.py:13297
 msgid "Search GuitarParty"
 msgstr ""
 
-#: tauon.py:13103
+#: tauon.py:13332
 msgid "Paste Chord Lyrics"
 msgstr ""
 
-#: tauon.py:13104
+#: tauon.py:13333
 msgid "Clear Chord Lyrics"
 msgstr ""
 
-#: tauon.py:13143 tauon.py:13154 tauon.py:13631
+#: tauon.py:13372 tauon.py:13383 tauon.py:13860
 msgid "Toggle Lyrics"
 msgstr "歌詞をトグル"
 
-#: tauon.py:13145 tauon.py:13156
+#: tauon.py:13374 tauon.py:13385
 msgid "Substitute Search..."
 msgstr ""
 
-#: tauon.py:13146 tauon.py:13157
+#: tauon.py:13375 tauon.py:13386
 msgid "Paste Lyrics"
 msgstr "歌詞をペースト"
 
-#: tauon.py:13147 tauon.py:13158
+#: tauon.py:13376 tauon.py:13387
 msgid "Copy Lyrics"
 msgstr "歌詞をコピー"
 
-#: tauon.py:13148 tauon.py:13159
+#: tauon.py:13377 tauon.py:13388
 msgid "Clear Lyrics"
 msgstr "歌詞を消す"
 
-#: tauon.py:13263
+#: tauon.py:13492
 msgid "Open Image"
 msgstr "画像を開く"
 
-#: tauon.py:13287
+#: tauon.py:13516
 msgid "Previous"
 msgstr "前"
 
-#: tauon.py:13290
+#: tauon.py:13519
 msgid "Extract Image"
 msgstr "画像を抽出"
 
-#: tauon.py:13303
+#: tauon.py:13532
 msgid "Cannot download art for network tracks."
 msgstr ""
 
-#: tauon.py:13327
+#: tauon.py:13556
 msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
 
-#: tauon.py:13338
+#: tauon.py:13567
 msgid "Looking up MusicBrainz ID..."
 msgstr "MBIDを探している"
 
-#: tauon.py:13400
+#: tauon.py:13629
 msgid "Cover art downloaded from fanart.tv"
 msgstr "カバーアートはfanart.tvからダウンロードされました"
 
-#: tauon.py:13421
+#: tauon.py:13650
 msgid "Cover art downloaded from MusicBrainz"
 msgstr "カバーアートはMusicBrainzからダウンロードされました"
 
-#: tauon.py:13432
+#: tauon.py:13661
 msgid "Matching cover art or ID could not be found."
 msgstr "カバーアートまたはIDが見つかりませんでした"
 
-#: tauon.py:13528
+#: tauon.py:13757
 msgid "Image removal failed."
 msgstr "画像の削除に失敗しました。"
 
-#: tauon.py:13532
+#: tauon.py:13761
 msgid "Processed one FLAC files"
 msgstr "1つのFLACファイルを処理しました"
 
-#: tauon.py:13534
+#: tauon.py:13763
 msgid "Deleted embedded picture from file"
 msgstr "ファイルから埋め込み画像を削除しました"
 
-#: tauon.py:13565 tauon.py:13572
+#: tauon.py:13794 tauon.py:13801
 msgid "Delete Image File"
 msgstr "画像ファイルを削除"
 
-#: tauon.py:13580
+#: tauon.py:13809
 msgid "Delete Embedded | Folder"
 msgstr "埋め込みを削除 | フォルダ"
 
-#: tauon.py:13582
+#: tauon.py:13811
 msgid "Delete Embedded | Track"
 msgstr "埋め込みを削除 | トラック"
 
-#: tauon.py:13602
+#: tauon.py:13831
 msgid "Quick-Fetch Cover Art"
 msgstr "カバーアートを取得"
 
-#: tauon.py:13652
+#: tauon.py:13881
 msgid "Paste Spotify Album"
 msgstr ""
 
-#: tauon.py:13868 tauon.py:30814 tauon.py:40470
+#: tauon.py:14097 tauon.py:31336 tauon.py:40982
 msgid "Rename"
 msgstr "リネーム"
 
-#: tauon.py:13879
+#: tauon.py:14108
 #, fuzzy
 msgid "Pin"
 msgstr "現在"
 
-#: tauon.py:13881
+#: tauon.py:14110
 msgid "Unpin"
 msgstr ""
 
-#: tauon.py:13890
+#: tauon.py:14119
 msgid "Unlock"
 msgstr "ロック解除"
 
-#: tauon.py:13892 tauon.py:13926
+#: tauon.py:14121 tauon.py:14155
 msgid "Lock"
 msgstr "掛ける"
 
-#: tauon.py:14072 tauon.py:18234 tauon.py:24747 tauon.py:24819
+#: tauon.py:14301 tauon.py:18571 tauon.py:25180 tauon.py:25233 tauon.py:25238
+#: tauon.py:25246 tauon.py:25250 tauon.py:25260
 msgid "Clear"
 msgstr "クリア"
 
-#: tauon.py:14227
+#: tauon.py:14456
 #, fuzzy
 msgid "Rescanning folders..."
 msgstr "フォルダースキャン"
 
-#: tauon.py:14513 tauon.py:40479
+#: tauon.py:14796 tauon.py:40991
 msgid "Delete"
 msgstr "削除する"
 
-#: tauon.py:14570
+#: tauon.py:14853
 msgid "Add Spotify Album"
 msgstr ""
 
-#: tauon.py:14672
+#: tauon.py:14956
 msgid "Playlist contains non-Spotify tracks"
 msgstr ""
 
-#: tauon.py:14678
+#: tauon.py:14962
 #, fuzzy
 msgid "Created new Spotify playlist"
 msgstr "次"
 
-#: tauon.py:14684
+#: tauon.py:14968
 #, fuzzy
 msgid "Error creating Spotify playlist"
 msgstr "プレイリストの終わり"
 
-#: tauon.py:14687
+#: tauon.py:14971
 #, fuzzy
 msgid "Updated Spotify playlist"
 msgstr "プレイリストの終わり"
 
-#: tauon.py:15277
+#: tauon.py:15589
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
 
-#: tauon.py:15278
+#: tauon.py:15590
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
 
-#: tauon.py:15282 tauon.py:18906
+#: tauon.py:15594 tauon.py:19272
 msgid "New Playlist"
 msgstr "新しいプレイリスト"
 
-#: tauon.py:15287
+#: tauon.py:15599
 #, fuzzy
 msgid "Upload"
 msgstr "リロード"
 
-#: tauon.py:15288
+#: tauon.py:15611
 #, fuzzy
 msgid "Regenerate"
 msgstr "生成する"
 
-#: tauon.py:15289
+#: tauon.py:15612
 msgid "Generate…"
 msgstr "生成する..."
 
-#: tauon.py:15290
+#: tauon.py:15613
 msgid "Sort…"
 msgstr "ソート..."
 
-#: tauon.py:15291
+#: tauon.py:15614
 msgid "From Current…"
 msgstr "現行から..."
 
-#: tauon.py:15296
+#: tauon.py:15619
 msgid "Sort by Filepath"
 msgstr "ファイルパスで並べ替え"
 
-#: tauon.py:15297
+#: tauon.py:15620
 msgid "Sort Track Numbers"
 msgstr "トラック番号を並べ替える"
 
-#: tauon.py:15298
+#: tauon.py:15621
 msgid "Sort Year per Artist"
 msgstr "アーティストごとのソート年"
 
-#: tauon.py:15299
+#: tauon.py:15622
 #, fuzzy
 msgid "Make Playlist Auto-Sorting"
 msgstr "プレイリストの長さ"
 
-#: tauon.py:15305 tauon.py:16994 tauon.py:18232
+#: tauon.py:15628 tauon.py:17315 tauon.py:18569
 msgid "Paste"
 msgstr "ペースト"
 
-#: tauon.py:15306
+#: tauon.py:15629
 msgid "Append Playing"
 msgstr "再生を追加"
 
-#: tauon.py:15311
+#: tauon.py:15634
 msgid "Misc…"
 msgstr "その他..."
 
-#: tauon.py:15358
+#: tauon.py:15681
 msgid "No target folder selected"
 msgstr ""
 
-#: tauon.py:15364
+#: tauon.py:15687
 #, fuzzy
 msgid "Target folder could not be found"
 msgstr "カバーアートまたはIDが見つかりませんでした"
 
-#: tauon.py:15404
+#: tauon.py:15727
 msgid "Deleting folders..."
 msgstr ""
 
-#: tauon.py:15423 tauon.py:15486
+#: tauon.py:15746 tauon.py:15809
 #, fuzzy
 msgid "Copying files to device"
 msgstr "設定ファイルが開かれました。"
 
-#: tauon.py:15429
+#: tauon.py:15752
 msgid "Sync aborted! Low disk space on target device"
 msgstr ""
 
-#: tauon.py:15437 tauon.py:15468
+#: tauon.py:15760 tauon.py:15791
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
 
-#: tauon.py:15437 tauon.py:15468
+#: tauon.py:15760 tauon.py:15791
 msgid "Sync warning"
 msgstr ""
 
-#: tauon.py:15454 tauon.py:26864
+#: tauon.py:15777 tauon.py:27372
 #, fuzzy
 msgid "Folders Remaining"
 msgstr "フォルダーツリー"
 
-#: tauon.py:15456 tauon.py:26862
+#: tauon.py:15779 tauon.py:27370
 #, fuzzy
 msgid "Folder Remaining"
 msgstr "フォルダーツリー"
 
-#: tauon.py:15496
+#: tauon.py:15819
 #, fuzzy
 msgid "Sync completed"
 msgstr "名前変更完了。"
 
-#: tauon.py:15512 tauon.py:15541
+#: tauon.py:15835 tauon.py:15864
 #, fuzzy
 msgid "Set as Sync Playlist"
 msgstr "プレイリストに表示"
 
-#: tauon.py:15515
+#: tauon.py:15838
 msgid "Un-set as Sync Playlist"
 msgstr ""
 
-#: tauon.py:15526 tauon.py:15542
+#: tauon.py:15849 tauon.py:15865
 #, fuzzy
 msgid "Set as Downloads Playlist"
 msgstr "プレイリストに表示"
 
-#: tauon.py:15529
+#: tauon.py:15852
 msgid "Un-set as Downloads Playlist"
 msgstr ""
 
-#: tauon.py:15532
+#: tauon.py:15855
 msgid "Export Playlist Stats"
 msgstr "統計をエクスポート"
 
-#: tauon.py:15533
+#: tauon.py:15856
 msgid "Transcode All"
 msgstr "すべてをトランスコード"
 
-#: tauon.py:15534
+#: tauon.py:15857
 msgid "Rescan Tags"
 msgstr "タグの再スキャン"
 
-#: tauon.py:15537
+#: tauon.py:15860
 msgid "Export XSPF"
 msgstr "XSPFでエクスポート"
 
-#: tauon.py:15538
+#: tauon.py:15861
 msgid "Toggle Breaks"
 msgstr "ブレークの切り替え"
 
-#: tauon.py:15539
+#: tauon.py:15862
 #, fuzzy
 msgid "Edit Generator..."
 msgstr "チャート"
 
-#: tauon.py:15540
+#: tauon.py:15863
 msgid "Engage Gallery Quick Add"
 msgstr ""
 
-#: tauon.py:15543
+#: tauon.py:15866
 #, fuzzy
 msgid "Remove Duplicates"
 msgstr "複写"
 
-#: tauon.py:15583 tauon.py:15675 tauon.py:15676
+#: tauon.py:15909 tauon.py:16001 tauon.py:16002
 #, fuzzy
 msgid "Top Rated Tracks"
 msgstr "人気のトラック"
 
-#: tauon.py:15600 tauon.py:15607 tauon.py:15608
+#: tauon.py:15926 tauon.py:15933 tauon.py:15934
 msgid "Top Played Tracks"
 msgstr "人気のトラック"
 
-#: tauon.py:15665 tauon.py:15672 tauon.py:15673
+#: tauon.py:15991 tauon.py:15998 tauon.py:15999
 msgid "Top Played Albums"
 msgstr "人気のアルバム"
 
-#: tauon.py:15720 tauon.py:15751 tauon.py:15752
+#: tauon.py:16046 tauon.py:16077 tauon.py:16078
 #, fuzzy
 msgid "Top Rated Albums"
 msgstr "人気のアルバム"
 
-#: tauon.py:15742
+#: tauon.py:16068
 #, fuzzy
 msgid "Tracks with lyrics"
 msgstr "このトラック数"
 
-#: tauon.py:15749
+#: tauon.py:16075
 #, fuzzy
 msgid "No tracks with lyrics were found."
 msgstr "歌詞が見つかりません。"
 
-#: tauon.py:15798
+#: tauon.py:16124
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
 
-#: tauon.py:15799
+#: tauon.py:16125
 #, fuzzy
 msgid "Incomplete Albums"
 msgstr "ランダムアルバム"
 
-#: tauon.py:15806
+#: tauon.py:16132
 msgid "No incomplete albums were found."
 msgstr ""
 
-#: tauon.py:15820 tauon.py:18501
+#: tauon.py:16146 tauon.py:18846
 msgid "Codec"
 msgstr "コーデック"
 
-#: tauon.py:15839 tauon.py:15845 tauon.py:15846
+#: tauon.py:16165 tauon.py:16171 tauon.py:16172
 msgid "File Modified"
 msgstr "変更されたファイル"
 
-#: tauon.py:15869 tauon.py:16254 tauon.py:16255 tauon.py:18508
+#: tauon.py:16195 tauon.py:16580 tauon.py:16581 tauon.py:18853
 msgid "Loved"
 msgstr "好き"
 
-#: tauon.py:15899
+#: tauon.py:16225
 msgid "Interesting Comments"
 msgstr ""
 
-#: tauon.py:15943
+#: tauon.py:16269
 #, fuzzy
 msgid "Duration Sorted"
 msgstr "遷移"
 
-#: tauon.py:15949 tauon.py:15950
+#: tauon.py:16275 tauon.py:16276
 msgid "Longest Tracks"
 msgstr "最長トラック"
 
-#: tauon.py:15988 tauon.py:15993 tauon.py:15994
+#: tauon.py:16314 tauon.py:16319 tauon.py:16320
 msgid "Longest Albums"
 msgstr "最長アルバム"
 
-#: tauon.py:16037
+#: tauon.py:16363
 msgid "Year Sorted"
 msgstr ""
 
-#: tauon.py:16053 tauon.py:16054
+#: tauon.py:16379 tauon.py:16380
 msgid "Year by Oldest"
 msgstr "年が古い"
 
-#: tauon.py:16061 tauon.py:16062
+#: tauon.py:16387 tauon.py:16388
 msgid "Year by Latest"
 msgstr "最新の年"
 
-#: tauon.py:16074 tauon.py:16080 tauon.py:16081
+#: tauon.py:16400 tauon.py:16406 tauon.py:16407
 msgid "Shuffled Tracks"
 msgstr "シャッフルトラック"
 
-#: tauon.py:16110 tauon.py:16116 tauon.py:16117
+#: tauon.py:16436 tauon.py:16442 tauon.py:16443
 msgid "Shuffled Albums"
 msgstr "シャッフルアルバム"
 
-#: tauon.py:16134 tauon.py:16141 tauon.py:16142
+#: tauon.py:16460 tauon.py:16467 tauon.py:16468
 msgid "Lucky Random"
 msgstr "ラッキーランダム"
 
-#: tauon.py:16156
+#: tauon.py:16482
 #, fuzzy
 msgid "Reversed"
 msgstr "元に戻す"
 
-#: tauon.py:16162 tauon.py:16163
+#: tauon.py:16488 tauon.py:16489
 msgid "Reverse Tracks"
 msgstr "リバーストラック"
 
-#: tauon.py:16190
+#: tauon.py:16516
 #, fuzzy
 msgid "Reversed Albums"
 msgstr "リバースアルバム"
 
-#: tauon.py:16196 tauon.py:16197
+#: tauon.py:16522 tauon.py:16523
 msgid "Reverse Albums"
 msgstr "リバースアルバム"
 
-#: tauon.py:16202 tauon.py:16209 tauon.py:16210
+#: tauon.py:16528 tauon.py:16535 tauon.py:16536
 msgid "Duplicate"
 msgstr "複写"
 
-#: tauon.py:16220
+#: tauon.py:16546
 #, fuzzy
 msgid "Filepath Sorted"
 msgstr "パス"
 
-#: tauon.py:16235
+#: tauon.py:16561
 #, fuzzy
 msgid "Artist Sorted"
 msgstr "アーティスト"
 
-#: tauon.py:16249
+#: tauon.py:16575
 #, fuzzy
 msgid "Album Sorted"
 msgstr "アルバム数"
 
-#: tauon.py:16256 tauon.py:16257
+#: tauon.py:16582 tauon.py:16583
 msgid "Has Comment"
 msgstr "コメントあり"
 
-#: tauon.py:16258 tauon.py:16259 tauon.py:18503
+#: tauon.py:16584 tauon.py:16585 tauon.py:18848
 msgid "Has Lyrics"
 msgstr "歌詞あり"
 
-#: tauon.py:16307
+#: tauon.py:16618
 msgid "Configuration reloaded"
 msgstr "設定がリロードされました"
 
-#: tauon.py:16319
+#: tauon.py:16630
 #, fuzzy
 msgid "Click \"Reload\" if you made any changes"
 msgstr "変更した場合は、「設定ファイルを再読み込み」をクリックします"
 
-#: tauon.py:16319
+#: tauon.py:16630
 msgid "Config file opened."
 msgstr "設定ファイルが開かれました。"
 
-#: tauon.py:16393 tauon.py:16413
+#: tauon.py:16704 tauon.py:16724
 msgid "Transcoding tracks from network locations is not supported"
 msgstr ""
 
-#: tauon.py:16757
+#: tauon.py:17068
 msgid "Add Playing Spotify Album"
 msgstr ""
 
-#: tauon.py:16846
+#: tauon.py:17157
 msgid "Track Info…"
 msgstr "トラック情報..."
 
-#: tauon.py:16891 tauon.py:19356
+#: tauon.py:17202 tauon.py:19724
 msgid "Un-Love Track"
 msgstr "好きじゃない"
 
-#: tauon.py:16893 tauon.py:19359 tauon.py:19361
+#: tauon.py:17204 tauon.py:19727 tauon.py:19729
 msgid "Love Track"
 msgstr "好き"
 
-#: tauon.py:16978 tauon.py:33307
+#: tauon.py:17299 tauon.py:33805
 msgid "Add to Queue"
 msgstr "キューに追加する"
 
-#: tauon.py:16980
+#: tauon.py:17301
 msgid "↳ After Current Track"
 msgstr "現行のアルバムの後"
 
-#: tauon.py:16982
+#: tauon.py:17303
 msgid "Show in Gallery"
 msgstr "ギャラリーに表示"
 
-#: tauon.py:16985
+#: tauon.py:17306
 msgid "Meta…"
 msgstr "メタ..."
 
-#: tauon.py:16990 tauon.py:17967 tauon.py:17972 tauon.py:17973 tauon.py:18230
+#: tauon.py:17311 tauon.py:18305 tauon.py:18310 tauon.py:18311 tauon.py:18567
 msgid "Copy"
 msgstr "コピー"
 
-#: tauon.py:17006
+#: tauon.py:17327
 msgid "Cannot delete a network track"
 msgstr ""
 
-#: tauon.py:17018 tauon.py:17027
+#: tauon.py:17339 tauon.py:17348
 #, fuzzy
 msgid "File deleted"
 msgstr "変更されたファイル"
 
-#: tauon.py:17020 tauon.py:17029
+#: tauon.py:17341 tauon.py:17350
 msgid "Error deleting file"
 msgstr ""
 
-#: tauon.py:17022
+#: tauon.py:17343
 msgid "File moved to trash"
 msgstr ""
 
-#: tauon.py:17036
+#: tauon.py:17357
 msgid "Delete Track File"
 msgstr "ファイルを削除する"
 
-#: tauon.py:17044
+#: tauon.py:17365
 msgid "Rename (Single track)"
 msgstr "リネーム （単一）"
 
-#: tauon.py:17046 tauon.py:17831 tauon.py:17832
+#: tauon.py:17367 tauon.py:18152 tauon.py:18153
 msgid "Rename Tracks…"
 msgstr "トラックの名前を変更"
 
-#: tauon.py:17060
+#: tauon.py:17381
 msgid "Cannot physically delete"
 msgstr ""
 
-#: tauon.py:17060
+#: tauon.py:17381
 msgid "One or more tracks is from a network location!"
 msgstr ""
 
-#: tauon.py:17081
+#: tauon.py:17402
 msgid "Delete size safety limit reached!"
 msgstr ""
 
-#: tauon.py:17119
+#: tauon.py:17440
 msgid "Folder could not be trashed."
 msgstr ""
 
-#: tauon.py:17246 tauon.py:17823 tauon.py:17824 tauon.py:17829
+#: tauon.py:17567 tauon.py:18144 tauon.py:18145 tauon.py:18150
 msgid "Modify Folder…"
 msgstr "フォルダーを変更"
 
-#: tauon.py:17544
+#: tauon.py:17865
 msgid "Tag editior app does not appear to be installed."
 msgstr "タグエディターアプリがインストールされていないようです。"
 
-#: tauon.py:17547
+#: tauon.py:17868
 msgid "App not found on host OR insufficient Flatpak permissions."
 msgstr "ホストでアプリが見つからないか、Flatpakの権限が不十分です。"
 
-#: tauon.py:17642 tauon.py:17877 tauon.py:17957
+#: tauon.py:17963 tauon.py:18198 tauon.py:18295
 msgid "Reload Metadata"
 msgstr "メタデータをリロード"
 
-#: tauon.py:17663
+#: tauon.py:17984
 msgid "Edit with "
 msgstr "編集: "
 
-#: tauon.py:17675
+#: tauon.py:17996
 msgid "Lyrics..."
 msgstr "歌詞..."
 
-#: tauon.py:17778
+#: tauon.py:18099
 msgid "Fix Mojibake"
 msgstr "文字化けを修正"
 
-#: tauon.py:17872
+#: tauon.py:18193
 msgid "Transcode Single"
 msgstr "１つトランスコード"
 
-#: tauon.py:17874 tauon.py:17879 tauon.py:17880 tauon.py:18196
+#: tauon.py:18195 tauon.py:18200 tauon.py:18201 tauon.py:18532
 msgid "Transcode Folder"
 msgstr "トランスコード"
 
-#: tauon.py:17878
+#: tauon.py:18199
 msgid "Vacuum Playtimes"
 msgstr "真空プレイタイム"
 
-#: tauon.py:17889
+#: tauon.py:18210
 msgid "Copy \"Artist - Album\""
 msgstr "「アーティストーアルバム」"
 
-#: tauon.py:17896 tauon.py:19492
+#: tauon.py:18217 tauon.py:19864
 #, fuzzy
 msgid "URL copied to clipboard"
 msgstr "テキストをクリップボードにコピーしました"
 
-#: tauon.py:17898 tauon.py:19494
+#: tauon.py:18219 tauon.py:19866
 #, fuzzy
 msgid "No results found"
 msgstr "バイオが見つかりません"
 
-#: tauon.py:17905
+#: tauon.py:18226
 #, fuzzy
 msgid "Copy Spotify Album URL"
 msgstr "「アーティストーアルバム」"
 
-#: tauon.py:17907
+#: tauon.py:18228
 msgid "Lookup Spotify Album URL"
 msgstr ""
 
-#: tauon.py:17915
+#: tauon.py:18236
 msgid "Save to Spotify Library"
 msgstr ""
 
-#: tauon.py:17921
+#: tauon.py:18242
 msgid "Remove from Spotify Library"
 msgstr ""
 
-#: tauon.py:17968
+#: tauon.py:18286
+#, fuzzy
+msgid "Queue %d"
+msgstr "キュー"
+
+#: tauon.py:18291
+#, fuzzy
+msgid "Add to queue"
+msgstr "キューに追加する"
+
+#: tauon.py:18306
 msgid "Cut"
 msgstr "カット"
 
-#: tauon.py:17969 tauon.py:17977 tauon.py:17978 tauon.py:30815
+#: tauon.py:18307 tauon.py:18315 tauon.py:18316 tauon.py:31337
 msgid "Remove"
 msgstr "削除する"
 
-#: tauon.py:17970
+#: tauon.py:18308
 msgid "Delete Files"
 msgstr "ファイルを削除する"
 
-#: tauon.py:18015
+#: tauon.py:18353
 #, fuzzy
 msgid "No matching artist result found"
 msgstr "アーティスト画像が見つかりません"
 
-#: tauon.py:18076
+#: tauon.py:18414
 msgid "Search Artist on Wikipedia"
 msgstr "ウィキペディアで検索"
 
-#: tauon.py:18078
+#: tauon.py:18416
 msgid "Search Track on Genius"
 msgstr "Geniusでトラックを検索"
 
-#: tauon.py:18084
+#: tauon.py:18422
 msgid "Search Artist on Sonemic"
 msgstr "Sonemicで検索"
 
-#: tauon.py:18091
+#: tauon.py:18429
 #, fuzzy
 msgid "Search Artist on Bandcamp"
 msgstr "Sonemicで検索"
 
-#: tauon.py:18103
+#: tauon.py:18441
 msgid "Copy \"Artist - Track\""
 msgstr "「アーティストートラック」"
 
-#: tauon.py:18121
+#: tauon.py:18459
 #, fuzzy
 msgid "Copy Spotify Track URL"
 msgstr "「アーティストートラック」"
 
-#: tauon.py:18170 tauon.py:30323
+#: tauon.py:18508 tauon.py:30845
 #, fuzzy
 msgid "FFmpeg does not appear to be installed"
 msgstr "タグエディターアプリがインストールされていないようです。"
 
-#: tauon.py:18207
+#: tauon.py:18544
 msgid "Broadcast This"
 msgstr "これを放送する"
 
-#: tauon.py:18242 tauon.py:23922
+#: tauon.py:18579 tauon.py:24291
 msgid "Off"
 msgstr "オフ"
 
-#: tauon.py:18255
+#: tauon.py:18592
 msgid "Level Meter"
 msgstr "騒音計"
 
-#: tauon.py:18478
+#: tauon.py:18822
 msgid "Time"
 msgstr "期間"
 
-#: tauon.py:18479 tauon.py:18505
+#: tauon.py:18823 tauon.py:18850
 msgid "Filepath"
 msgstr "パス"
 
-#: tauon.py:18485
+#: tauon.py:18829
 msgid "Auto Resize"
 msgstr "自動サイズ"
 
-#: tauon.py:18486
+#: tauon.py:18830
 msgid "Hide bar"
 msgstr "バーを隠す"
 
-#: tauon.py:18487
+#: tauon.py:18831
 msgid "Show bar"
 msgstr "バーに表示"
 
-#: tauon.py:18489 tauon.py:33035
+#: tauon.py:18833 tauon.py:33533
 msgid "Remove This"
 msgstr "これを削除"
 
-#: tauon.py:18491 tauon.py:40158 tauon.py:40164
+#: tauon.py:18835 tauon.py:40670 tauon.py:40676
 msgid "Artist"
 msgstr "アーティスト"
 
-#: tauon.py:18492 tauon.py:40138 tauon.py:40144
+#: tauon.py:18836 tauon.py:40650 tauon.py:40656
 msgid "Title"
 msgstr "タイトル"
 
-#: tauon.py:18493 tauon.py:40177 tauon.py:40183
+#: tauon.py:18837 tauon.py:40689 tauon.py:40695
 msgid "Album"
 msgstr "アルバム"
 
-#: tauon.py:18494 tauon.py:40245 tauon.py:40251
+#: tauon.py:18838 tauon.py:40757 tauon.py:40763
 msgid "Album Artist"
 msgstr "アルバム数"
 
-#: tauon.py:18495 tauon.py:40338 tauon.py:40344
+#: tauon.py:18839 tauon.py:40850 tauon.py:40856
 msgid "Composer"
 msgstr "作曲家"
 
-#: tauon.py:18496 tauon.py:40265 tauon.py:40271
+#: tauon.py:18840 tauon.py:40777 tauon.py:40783
 msgid "Duration"
 msgstr "遷移"
 
-#: tauon.py:18497 tauon.py:40322 tauon.py:40328
+#: tauon.py:18841 tauon.py:40834 tauon.py:40840
 msgid "Date"
 msgstr "日付"
 
-#: tauon.py:18498 tauon.py:40307 tauon.py:40313
+#: tauon.py:18842 tauon.py:40819 tauon.py:40825
 msgid "Genre"
 msgstr "ジャンル"
 
-#: tauon.py:18499
+#: tauon.py:18843
 msgid "Track Number"
 msgstr "番号"
 
-#: tauon.py:18500
+#: tauon.py:18844
 msgid "Play Count"
 msgstr "プレイ回数"
 
-#: tauon.py:18502 tauon.py:24983 tauon.py:40232
+#: tauon.py:18845
+msgid "Scrobble Count"
+msgstr ""
+
+#: tauon.py:18847 tauon.py:25452 tauon.py:40744
 msgid "Bitrate"
 msgstr "ビットレート"
 
-#: tauon.py:18504 tauon.py:40393 tauon.py:40399
+#: tauon.py:18849 tauon.py:40905 tauon.py:40911
 msgid "Comment"
 msgstr "コメント"
 
-#: tauon.py:18506
+#: tauon.py:18851
 msgid "Starline"
 msgstr "星"
 
-#: tauon.py:18507
+#: tauon.py:18852
 msgid "Rating"
 msgstr ""
 
-#: tauon.py:18909
+#: tauon.py:19275
 msgid "Internet Radio…"
 msgstr ""
 
-#: tauon.py:18932
+#: tauon.py:19298
 msgid "Download URL"
 msgstr "ダウンロードURL"
 
-#: tauon.py:18956
+#: tauon.py:19322
 #, fuzzy
 msgid "Paste Spotify Playlist"
 msgstr "プレイリストへの再生履歴"
 
-#: tauon.py:18964
+#: tauon.py:19330
 msgid "Music"
 msgstr ""
 
-#: tauon.py:18974
+#: tauon.py:19340
 msgid "Import Music Folder"
 msgstr "音楽フォルダをインポート"
 
-#: tauon.py:18982
+#: tauon.py:19348
 msgid "Settings"
 msgstr "設定"
 
-#: tauon.py:18983
+#: tauon.py:19349
 msgid "Database…"
 msgstr "データベース..."
 
-#: tauon.py:19052
+#: tauon.py:19418
 msgid "Export as CSV"
 msgstr "CSVとしてエクスポート"
 
-#: tauon.py:19053
+#: tauon.py:19419
 msgid "Play History to Playlist"
 msgstr "プレイリストへの再生履歴"
 
-#: tauon.py:19054
+#: tauon.py:19420
 msgid "Reset Image Cache"
 msgstr "画像キャッシュをリセット"
 
-#: tauon.py:19074
+#: tauon.py:19440
 #, fuzzy
 msgid "Remove Network Tracks"
 msgstr "リバーストラック"
 
-#: tauon.py:19075
+#: tauon.py:19441
 msgid "Remove Missing Tracks"
 msgstr "クリーン"
 
-#: tauon.py:19077
+#: tauon.py:19443
 msgid "Mark Missing as Found"
 msgstr "見つからないことをマークする"
 
-#: tauon.py:19094
+#: tauon.py:19460
 msgid "Import FMPS_Ratings from Tags"
 msgstr ""
 
-#: tauon.py:19099
+#: tauon.py:19465
 msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
 
-#: tauon.py:19100 tauon.py:24850
+#: tauon.py:19466 tauon.py:25285
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
 msgstr ""
 
-#: tauon.py:19108
+#: tauon.py:19474
 msgid "Reset User Ratings"
 msgstr ""
 
-#: tauon.py:19113
+#: tauon.py:19479
 #, fuzzy
 msgid "Find Incomplete Albums"
 msgstr "ランダムアルバム"
 
-#: tauon.py:19119
+#: tauon.py:19485
 msgid "There are no tracks in this playlist to broadcast."
 msgstr ""
 
-#: tauon.py:19122
+#: tauon.py:19488
 msgid "You need to start the broadcast web server in settings."
 msgstr ""
 
-#: tauon.py:19144
+#: tauon.py:19510
 #, fuzzy
 msgid "Stop Broadcast"
 msgstr "放送開始"
 
-#: tauon.py:19160
+#: tauon.py:19526
 msgid "Start Broadcast"
 msgstr "放送開始"
 
-#: tauon.py:19191
+#: tauon.py:19557
 msgid "Mini"
 msgstr "ミニ"
 
-#: tauon.py:19193
+#: tauon.py:19559
 msgid "Square"
 msgstr "平方"
 
-#: tauon.py:19194
+#: tauon.py:19560
 msgid "Square Large"
 msgstr "大平方"
 
-#: tauon.py:19195
+#: tauon.py:19561
 msgid "Micro"
 msgstr "マイクロ"
 
-#: tauon.py:19206
+#: tauon.py:19572
 msgid "No metadata available to copy"
 msgstr ""
 
-#: tauon.py:19209
+#: tauon.py:19575
 #, fuzzy
-msgid "Copy to Clipboard"
+msgid "Copy Title to Clipboard"
 msgstr "テキストをクリップボードにコピーしました"
 
-#: tauon.py:19227
+#: tauon.py:19593
 msgid "Random Track"
 msgstr "ランダムトラック"
 
-#: tauon.py:19240
+#: tauon.py:19606
 msgid "Radio Random"
 msgstr "ラジオランダム"
 
-#: tauon.py:19246
+#: tauon.py:19612
 msgid "Revert"
 msgstr "元に戻す"
 
-#: tauon.py:19254 tauon.py:33040
+#: tauon.py:19620 tauon.py:33538
 msgid "Clear Queue"
 msgstr "キューをクリア"
 
-#: tauon.py:19405
+#: tauon.py:19777
 msgid "Spotify Like Track"
 msgstr ""
 
-#: tauon.py:19410
+#: tauon.py:19782
 msgid "Un-like Spotify Track"
 msgstr ""
 
-#: tauon.py:19484
+#: tauon.py:19856
 msgid "Global Search"
 msgstr "サーチ"
 
-#: tauon.py:19498
+#: tauon.py:19870
 #, fuzzy
 msgid "Copy Album URL"
 msgstr "「アルバムタイトル」"
 
-#: tauon.py:19502
+#: tauon.py:19874
 msgid "Lookup Spotify Album"
 msgstr ""
 
-#: tauon.py:19511
+#: tauon.py:19883
 msgid "Locate Artist"
 msgstr "アーティストを探す"
 
-#: tauon.py:19513
+#: tauon.py:19885
 msgid "Go To Playing"
 msgstr "現在の歌に行く"
 
-#: tauon.py:19671
+#: tauon.py:20042
 msgid "ListenBrainz is Paused"
 msgstr "Listenが一時停止"
 
-#: tauon.py:19673
+#: tauon.py:20044
 msgid "Scrobbling is Paused"
 msgstr "Scrobblingが一時停止"
 
-#: tauon.py:19677
+#: tauon.py:20048
 msgid "ListenBrainz is Active"
 msgstr "Listenがアクティブ"
 
-#: tauon.py:19679
+#: tauon.py:20050
 msgid "Scrobbling is Active"
 msgstr "Scrobblingが一時停止"
 
-#: tauon.py:19878
+#: tauon.py:20252
 msgid "Disconnecting..."
 msgstr "生成中。。。"
 
-#: tauon.py:19880
+#: tauon.py:20254
 msgid "Disconnect Discord"
 msgstr "Discord切断する"
 
-#: tauon.py:19882
+#: tauon.py:20256
 msgid "Show playing in Discord"
 msgstr "DiscordRPCを可能"
 
-#: tauon.py:19921
+#: tauon.py:20295
 msgid "Exit"
 msgstr "終了"
 
-#: tauon.py:19929
+#: tauon.py:20303
 msgid "Disengage Quick Add"
 msgstr ""
 
-#: tauon.py:20879
+#: tauon.py:21255
 #, fuzzy
 msgid "Searching for albums by artist: "
 msgstr "歌詞を検索"
 
-#: tauon.py:20879
+#: tauon.py:21255
 #, fuzzy
 msgid "This may take a moment"
 msgstr "これには時間がかかる場合があります。"
 
-#: tauon.py:22320
+#: tauon.py:22701
 msgid "Permission error accessing one or more files."
 msgstr ""
 
-#: tauon.py:22321
+#: tauon.py:22702
 msgid "If this location is on external media, see"
 msgstr ""
 
-#: tauon.py:22324
+#: tauon.py:22705
 msgid "Permission error accessing one or more files"
 msgstr ""
 
-#: tauon.py:23056
+#: tauon.py:23431
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 
-#: tauon.py:23105 tauon.py:23119 tauon.py:23137
+#: tauon.py:23480 tauon.py:23494 tauon.py:23512
 msgid "Change will be applied on restart."
 msgstr "変更は再起動時に適用されます。"
 
-#: tauon.py:23189
+#: tauon.py:23564
 msgid "Tip: You can also toggle this from a right-click context menu"
 msgstr ""
 
-#: tauon.py:23228
+#: tauon.py:23603
 msgid "External connections will be accepted."
 msgstr ""
 
-#: tauon.py:23228
+#: tauon.py:23603
 msgid "Web server starting"
 msgstr ""
 
-#: tauon.py:23370
+#: tauon.py:23640 tauon.py:24815
+msgid "One or more fields is missing."
+msgstr ""
+
+#: tauon.py:23744
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
 msgstr ""
 
-#: tauon.py:23371
+#: tauon.py:23745
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
 
-#: tauon.py:23391
+#: tauon.py:23765
 msgid ""
 "DANGER! This will delete the original files. You may want to have backups in "
 "case of malfunction."
 msgstr ""
 
-#: tauon.py:23392
+#: tauon.py:23766
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
 
-#: tauon.py:23555 tauon.py:23563
+#: tauon.py:23929 tauon.py:23937
 msgid "There was an error generating the chart"
 msgstr ""
 
-#: tauon.py:23566
+#: tauon.py:23940
 #, fuzzy
 msgid "Chart generated"
 msgstr "チャート"
 
-#: tauon.py:23611
+#: tauon.py:23986
 msgid "Function"
 msgstr "関数"
 
-#: tauon.py:23612
+#: tauon.py:23987
 msgid "Audio"
 msgstr "オーディオ"
 
-#: tauon.py:23613
+#: tauon.py:23988
 msgid "Tracklist"
 msgstr "トラックリスト"
 
-#: tauon.py:23614 tauon.py:23666
+#: tauon.py:23989 tauon.py:24035
 msgid "Theme"
 msgstr "テーマ"
 
-#: tauon.py:23615
+#: tauon.py:23990
 msgid "Window"
 msgstr "ウィンドウ"
 
-#: tauon.py:23616
+#: tauon.py:23991
 msgid "View"
 msgstr "ビュー "
 
-#: tauon.py:23617
+#: tauon.py:23992
 msgid "Transcode"
 msgstr "トランスコード"
 
-#: tauon.py:23618 tauon.py:40381
+#: tauon.py:23993 tauon.py:40893
 msgid "Lyrics"
 msgstr "歌詞"
 
-#: tauon.py:23619
+#: tauon.py:23994
 msgid "Accounts"
 msgstr "アカウント"
 
-#: tauon.py:23620
+#: tauon.py:23995
 msgid "Stats"
 msgstr "統計"
 
-#: tauon.py:23621
+#: tauon.py:23996
 msgid "About"
 msgstr "情報"
 
-#: tauon.py:23670
+#: tauon.py:24039
 #, fuzzy
 msgid "Auto-theme from album art"
 msgstr "アルバムアートからテーマを生成する"
 
-#: tauon.py:23674
+#: tauon.py:24043
 msgid "Use album art as background"
 msgstr "アルバムアートを背景として使用する"
 
-#: tauon.py:23678
+#: tauon.py:24047
 msgid "Stronger"
 msgstr "より明るい"
 
-#: tauon.py:23684
+#: tauon.py:24053
 msgid "Blur"
 msgstr "ぼかす"
 
-#: tauon.py:23687
+#: tauon.py:24056
 msgid "Showcase only"
 msgstr "ショーケースのみ"
 
-#: tauon.py:23691
+#: tauon.py:24060
 #, fuzzy
 msgid "Pattern style"
 msgstr "カスケード"
 
-#: tauon.py:23785
+#: tauon.py:24154
 msgid "Based on"
 msgstr ""
 
-#: tauon.py:23793 tauon.py:24946 tauon.py:25379 tauon.py:34834
+#: tauon.py:24162 tauon.py:25415 tauon.py:25882 tauon.py:35335
 msgid "Return"
 msgstr "戻る"
 
-#: tauon.py:23802 tauon.py:24347 tauon.py:24352 tauon.py:24383
+#: tauon.py:24171 tauon.py:24717 tauon.py:24723 tauon.py:24729 tauon.py:24761
 msgid "Enable"
 msgstr "有効にする"
 
-#: tauon.py:23904
+#: tauon.py:24273
 #, fuzzy
 msgid "Output buffer"
 msgstr "出力を開く"
 
-#: tauon.py:23919
+#: tauon.py:24288
 msgid "ReplayGain"
 msgstr ""
 
-#: tauon.py:23924
+#: tauon.py:24293
 msgid "Album gain"
 msgstr "アルバムゲイン"
 
-#: tauon.py:23926
+#: tauon.py:24295
 msgid "Track gain"
 msgstr "トラックゲイン"
 
-#: tauon.py:23937
+#: tauon.py:24306
 msgid "Use fade on pause/stop"
 msgstr "停止時にフェード"
 
-#: tauon.py:23943
+#: tauon.py:24312
 msgid "Customise GStreamer output"
 msgstr ""
 
-#: tauon.py:23955 tauon.py:24171
+#: tauon.py:24324 tauon.py:24533
 msgid "Reload"
 msgstr "リロード"
 
-#: tauon.py:23963
+#: tauon.py:24332
 msgid "Set audio output device"
 msgstr "デバイスを設定する"
 
-#: tauon.py:24031
+#: tauon.py:24400
 msgid "Auto search lyrics"
 msgstr "歌詞の自動検索"
 
-#: tauon.py:24033
+#: tauon.py:24402
 msgid "Enable chord lyrics"
 msgstr "コード歌詞を有効"
 
-#: tauon.py:24036
+#: tauon.py:24405
 msgid "Sources:"
 msgstr "ソース："
 
-#: tauon.py:24053
+#: tauon.py:24422
 msgid "*Uses scraping. Enable at your own discretion."
 msgstr "＊スクレイピングを使用します。 独自の裁量で有効にします。"
 
-#: tauon.py:24056
+#: tauon.py:24425
 msgid "Tip: The order enabled will be the order searched."
 msgstr "ヒント：有効な順序は検索された順序になります。"
 
-#: tauon.py:24068
+#: tauon.py:24437
 msgid "Metadata side panel"
 msgstr ""
 
-#: tauon.py:24071
+#: tauon.py:24440
 msgid "Use centered style"
 msgstr "中央揃えのスタイル"
 
-#: tauon.py:24074
+#: tauon.py:24443
 msgid "Zoom album art to fit"
 msgstr ""
 
-#: tauon.py:24081 tauon.py:35442 tauon.py:35445
+#: tauon.py:24450 tauon.py:35947 tauon.py:35950
 msgid "Gallery"
 msgstr "ギャラリー"
 
-#: tauon.py:24085
+#: tauon.py:24454
 msgid "Single click to play"
 msgstr "クリックしてプレイ"
 
-#: tauon.py:24087
+#: tauon.py:24456
 #, fuzzy
 msgid "Show titles"
 msgstr "ライセンス"
 
-#: tauon.py:24091
+#: tauon.py:24460
 msgid "Center alignment"
 msgstr "中央揃え"
 
-#: tauon.py:24099 tauon.py:24107
+#: tauon.py:24468 tauon.py:24476
 #, fuzzy
 msgid "Thumbnail size"
 msgstr "サイズ"
 
-#: tauon.py:24103
+#: tauon.py:24472
 msgid "Prefer thinner padding"
 msgstr "より薄いパディング"
 
-#: tauon.py:24135
-msgid "Run web server for broadcasting"
-msgstr ""
+#: tauon.py:24492
+#, fuzzy
+msgid "Ready broadcaster"
+msgstr "放送開始"
 
-#: tauon.py:24140
+#: tauon.py:24492
+#, fuzzy
+msgid "Start web server for broadcasting"
+msgstr "ブロードキャストWebページを提供する"
+
+#: tauon.py:24510
 #, fuzzy
 msgid "Auto fetch artist data"
 msgstr "歌詞の自動検索"
 
-#: tauon.py:24143
-#, fuzzy
-msgid "Enable tabs in top panel"
-msgstr "トップパネルのタブを使用する"
-
-#: tauon.py:24146
-msgid "Extract archives on import"
-msgstr "インポート時にアーカイブを抽出する"
-
-#: tauon.py:24148
-msgid "Enable download monitor"
+#: tauon.py:24510
+msgid "Downloads data in background when artist panel is open"
 msgstr ""
 
-#: tauon.py:24150
-msgid "Trash archive after extraction"
-msgstr "抽出後のゴミ箱アーカイブ"
+#: tauon.py:24513
+#, fuzzy
+msgid "Auto regenerate playlists"
+msgstr "繰り返す"
 
-#: tauon.py:24152
-msgid "Always extract to Music folder"
-msgstr "常に音楽フォルダーに抽出する"
+#: tauon.py:24514
+msgid "Generator playlists reload when re-entering"
+msgstr ""
 
-#: tauon.py:24160 tauon.py:24164
+#: tauon.py:24518
+msgid "Disables the tab pin function"
+msgstr ""
+
+#: tauon.py:24518
+#, fuzzy
+msgid "Tabs in top panel"
+msgstr "トップパネルのタブを使用する"
+
+#: tauon.py:24523 tauon.py:24529
 msgid "Open config file"
 msgstr "設定を開く"
 
-#: tauon.py:24161 tauon.py:24176
-msgid "Open keymap file"
-msgstr "キーマップを開く"
-
-#: tauon.py:24178 tauon.py:24180
+#: tauon.py:24525 tauon.py:24537
 msgid "Open data folder"
 msgstr "データを開く"
 
-#: tauon.py:24214
-msgid "Show in context menus:"
-msgstr "コンテキストメニューに表示"
+#: tauon.py:24541
+msgid "Enable/Disable track context menu functions:"
+msgstr ""
 
-#: tauon.py:24217
-msgid "Wikipedia search"
+#: tauon.py:24544
+#, fuzzy
+msgid "Wikipedia artist search"
 msgstr "Wikipedia 検索"
 
-#: tauon.py:24219
-msgid "Sonemic search"
-msgstr "Sonemic 検索"
-
-#: tauon.py:24221
+#: tauon.py:24546
 #, fuzzy
-msgid "Bandcamp search"
+msgid "Sonemic artist search"
 msgstr "Sonemic 検索"
 
-#: tauon.py:24225
-msgid "Genius search"
+#: tauon.py:24548
+#, fuzzy
+msgid "Bandcamp artist page search"
+msgstr "Sonemic 検索"
+
+#: tauon.py:24552
+#, fuzzy
+msgid "Genius track search"
 msgstr "Genius 検索"
 
-#: tauon.py:24228
-msgid "Discord RP Toggle"
+#: tauon.py:24554
+#, fuzzy
+msgid "Transcode folder"
+msgstr "トランスコード"
+
+#: tauon.py:24557
+msgid "Enable/Disable main MENU functions:"
 msgstr ""
 
-#: tauon.py:24400
-msgid "Spotify Premium account"
+#: tauon.py:24559
+msgid "Discord Rich Presence toggle"
 msgstr ""
 
-#: tauon.py:24401 tauon.py:24949
+#: tauon.py:24565
+#, fuzzy
+msgid "Extract archives"
+msgstr "インポート時にアーカイブを抽出する"
+
+#: tauon.py:24566
+#, fuzzy
+msgid "Extracts zip archives on drag and drop"
+msgstr "インポート時にアーカイブを抽出する"
+
+#: tauon.py:24568
+msgid "Enable download monitor"
+msgstr ""
+
+#: tauon.py:24571
+msgid "Trash archive after extraction"
+msgstr "抽出後のゴミ箱アーカイブ"
+
+#: tauon.py:24573
+msgid "Always extract to Music folder"
+msgstr "常に音楽フォルダーに抽出する"
+
+#: tauon.py:24764
+msgid "Show threshold marker"
+msgstr "しきい値マーカーを表示"
+
+#: tauon.py:24771
+msgid "Maloja Server"
+msgstr ""
+
+#: tauon.py:24772 tauon.py:24838 tauon.py:25418
 msgid "?"
 msgstr ""
 
-#: tauon.py:24412
+#: tauon.py:24773
+msgid "Maloja is a self-hosted scrobble server."
+msgstr ""
+
+#: tauon.py:24773
+msgid "See here to lean more: %s"
+msgstr ""
+
+#: tauon.py:24783 tauon.py:24979 tauon.py:25036
+msgid "Server URL"
+msgstr ""
+
+#: tauon.py:24797
+msgid "API Key"
+msgstr ""
+
+#: tauon.py:24812
+msgid "Test connectivity"
+msgstr ""
+
+#: tauon.py:24837
+msgid "Spotify Premium account"
+msgstr ""
+
+#: tauon.py:24849
 msgid "Client ID"
 msgstr ""
 
-#: tauon.py:24426
+#: tauon.py:24863
 msgid "Client Secret"
 msgstr ""
 
-#: tauon.py:24446
+#: tauon.py:24879
 #, fuzzy
 msgid "Forget Account"
 msgstr "アカウントを忘れる"
 
-#: tauon.py:24450
+#: tauon.py:24883
 msgid "Authorise"
 msgstr ""
 
-#: tauon.py:24467
+#: tauon.py:24900
 msgid "Prefer launching web player"
 msgstr ""
 
-#: tauon.py:24471 tauon.py:24472
+#: tauon.py:24904 tauon.py:24905
 #, fuzzy
 msgid "Import Albums"
 msgstr "最長アルバム"
 
-#: tauon.py:24479 tauon.py:24490 tauon.py:24504
+#: tauon.py:24912 tauon.py:24923 tauon.py:24937
 msgid "Please wait until current job is finished"
 msgstr ""
 
-#: tauon.py:24483
+#: tauon.py:24916
 msgid "Import Liked Songs"
 msgstr ""
 
-#: tauon.py:24495
+#: tauon.py:24928
 msgid "Import user playlist..."
 msgstr ""
 
-#: tauon.py:24508
+#: tauon.py:24941
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
-#: tauon.py:24518 tauon.py:24575 tauon.py:24632
+#: tauon.py:24951 tauon.py:25008 tauon.py:25065
 #, fuzzy
 msgid "Username / Email"
 msgstr "ユーザー名："
 
-#: tauon.py:24532 tauon.py:24589 tauon.py:24646
+#: tauon.py:24965 tauon.py:25022 tauon.py:25079
 msgid "Password"
 msgstr ""
 
-#: tauon.py:24546 tauon.py:24603
-msgid "Server URL"
-msgstr ""
-
-#: tauon.py:24560 tauon.py:24617 tauon.py:24674
+#: tauon.py:24993 tauon.py:25050 tauon.py:25107
 #, fuzzy
 msgid "Import music to playlist"
 msgstr "音楽フォルダをインポート"
 
-#: tauon.py:24565
+#: tauon.py:24998
 msgid "koel network streaming"
 msgstr ""
 
-#: tauon.py:24622
+#: tauon.py:25055
 msgid "PLEX network streaming"
 msgstr ""
 
-#: tauon.py:24660
+#: tauon.py:25093
 #, fuzzy
 msgid "Server name"
 msgstr "ユーザー名："
 
-#: tauon.py:24683
+#: tauon.py:25116
 #, fuzzy
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr "Fanart.tvは、アーティスト画像の調達に使用できます。"
 
-#: tauon.py:24690 tauon.py:31754
+#: tauon.py:25123 tauon.py:32252
 msgid "They encourage you to contribute at https://fanart.tv"
 msgstr ""
 
-#: tauon.py:24695
+#: tauon.py:25128
 msgid "Cover art (Manual only)"
 msgstr ""
 
-#: tauon.py:24697
+#: tauon.py:25130
 msgid "Artist images (May be automatic)"
 msgstr ""
 
-#: tauon.py:24704
+#: tauon.py:25137
 msgid ""
 "Discogs can be used for sourcing artist images. For this you will need a "
 "\"Personal Access Token\".\n"
@@ -1703,720 +1797,776 @@ msgid ""
 "You can generate one with a Discogs account here:"
 msgstr ""
 
-#: tauon.py:24720 tauon.py:24817 tauon.py:24819
+#: tauon.py:25153 tauon.py:25258 tauon.py:25260
 msgid "Paste Token"
 msgstr "トークンを貼り付け"
 
-#: tauon.py:24763 tauon.py:24764
+#: tauon.py:25200 tauon.py:25201
 msgid "Username:"
 msgstr "ユーザー名："
 
-#: tauon.py:24770 tauon.py:24771
+#: tauon.py:25207 tauon.py:25209
 msgid "Login"
 msgstr "ログイン"
 
-#: tauon.py:24772
+#: tauon.py:25208 tauon.py:25210
 msgid "Done"
 msgstr "完了"
 
-#: tauon.py:24775
+#: tauon.py:25213
+msgid "Use LibreFM"
+msgstr ""
+
+#: tauon.py:25216
 msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
 
-#: tauon.py:24779
+#: tauon.py:25220
 msgid "Forget account"
 msgstr "アカウントを忘れる"
 
-#: tauon.py:24788 tauon.py:24794
+#: tauon.py:25229 tauon.py:25237
 msgid "Get user loves"
 msgstr "すきを得る"
 
-#: tauon.py:24789 tauon.py:24797
+#: tauon.py:25230
 msgid "Clear local loves"
 msgstr "すきを消す"
 
-#: tauon.py:24790 tauon.py:24801
+#: tauon.py:25231 tauon.py:25245
 msgid "Get friend loves"
 msgstr "友すきを得る"
 
-#: tauon.py:24791 tauon.py:24804
-msgid "Clear friend loves"
-msgstr "友すきを消す"
+#: tauon.py:25232 tauon.py:25249
+msgid "Get scrobble counts"
+msgstr ""
 
-#: tauon.py:24810 tauon.py:24843
-msgid "Show threshold marker"
-msgstr "しきい値マーカーを表示"
-
-#: tauon.py:24849
+#: tauon.py:25284
 msgid "This will mark all tracks in local database as unloved!"
 msgstr ""
 
-#: tauon.py:24858
+#: tauon.py:25293
 #, fuzzy
 msgid "Cleared all loves"
 msgstr "すきを消す"
 
-#: tauon.py:24888
+#: tauon.py:25298 tauon.py:25317
+msgid ""
+"Warning: This process can take a long time to complete! (up to an hour or "
+"more)"
+msgstr ""
+
+#: tauon.py:25299 tauon.py:25319
+msgid "Press again while holding Shift if you understand"
+msgstr ""
+
+#: tauon.py:25318
+msgid "This feature is not recommended for accounts that have many friends."
+msgstr ""
+
+#: tauon.py:25357
 #, fuzzy
 msgid "Selected playlist:"
 msgstr "繰り返す"
 
-#: tauon.py:24892
+#: tauon.py:25361
 msgid "No sync playlist selected!"
 msgstr ""
 
-#: tauon.py:24895
+#: tauon.py:25364
 msgid "Path to device music folder:   "
 msgstr ""
 
-#: tauon.py:24913
+#: tauon.py:25382
 msgid "A mounted music folder was found!"
 msgstr ""
 
-#: tauon.py:24915
+#: tauon.py:25384
 msgid "Could not auto-detect mounted device path."
 msgstr ""
 
-#: tauon.py:24915
+#: tauon.py:25384
 msgid "Make sure the device is mounted and path is accessible."
 msgstr ""
 
-#: tauon.py:24920
+#: tauon.py:25389
 msgid "Delete all other folders in target"
 msgstr ""
 
-#: tauon.py:24922
+#: tauon.py:25391
 #, fuzzy
 msgid "Transcode files"
 msgstr "１つトランスコード"
 
-#: tauon.py:24925
+#: tauon.py:25394
 #, fuzzy
 msgid "Start Transcode and Sync"
 msgstr "１つトランスコード"
 
-#: tauon.py:24928
+#: tauon.py:25397
 msgid "Start Sync"
 msgstr ""
 
-#: tauon.py:24932
+#: tauon.py:25401
 #, fuzzy
 msgid "Stopping..."
 msgstr "検索中..."
 
-#: tauon.py:24938
+#: tauon.py:25407
 msgid "Right click tab > Misc... > Set as sync playlist"
 msgstr ""
 
-#: tauon.py:24938
+#: tauon.py:25407
 #, fuzzy
 msgid "Select a source playlist"
 msgstr "次"
 
-#: tauon.py:24940
+#: tauon.py:25409
 #, fuzzy
 msgid "Stop"
 msgstr "自動停止"
 
-#: tauon.py:24956
+#: tauon.py:25425
 msgid "Output codec setting:"
 msgstr "コーデック設定："
 
-#: tauon.py:24958 tauon.py:24959
+#: tauon.py:25427 tauon.py:25428
 msgid "Open output folder"
 msgstr "出力を開く"
 
-#: tauon.py:24961 tauon.py:24962
+#: tauon.py:25430 tauon.py:25431
 msgid "Sync..."
 msgstr ""
 
-#: tauon.py:24970
+#: tauon.py:25439
 msgid "Save opus as .ogg extension"
 msgstr "opusを.ogg拡張子として保存します"
 
-#: tauon.py:24994
+#: tauon.py:25463
 msgid "Save to output folder"
 msgstr "出力フォルダーに保存"
 
-#: tauon.py:24996
+#: tauon.py:25465
 msgid "Save and overwrite files inplace"
 msgstr "上書きする"
 
-#: tauon.py:25018
+#: tauon.py:25487
 msgid "Emit track change notifications"
 msgstr "通知"
 
-#: tauon.py:25021
+#: tauon.py:25490
 msgid "Draw own window decorations"
 msgstr "独自のウィンドウ装飾を描く"
 
-#: tauon.py:25024
+#: tauon.py:25493
 msgid "Restore window position on restart"
 msgstr ""
 
-#: tauon.py:25028
+#: tauon.py:25497
 msgid "Show playing in titlebar"
 msgstr "タイトルバーに表示"
 
-#: tauon.py:25036
+#: tauon.py:25505
 msgid "Force subpixel text rendering"
 msgstr "サブピクセルテキスト"
 
-#: tauon.py:25039
+#: tauon.py:25508
 msgid "Top-panel level meter"
 msgstr ""
 
-#: tauon.py:25049
+#: tauon.py:25518
 msgid "UI scale for HiDPI displays"
 msgstr ""
 
-#: tauon.py:25097
+#: tauon.py:25566
 msgid "Restart app to apply any changes"
 msgstr ""
 
-#: tauon.py:25106
+#: tauon.py:25575
 msgid "Auto scale based on xft-dpi"
 msgstr ""
 
-#: tauon.py:25236 tauon.py:25238
-msgid "Show License"
-msgstr "ライセンス"
-
-#: tauon.py:25240 tauon.py:25242
+#: tauon.py:25739 tauon.py:25742
 msgid "Credits"
 msgstr "クレジット"
 
-#: tauon.py:25254
+#: tauon.py:25739 tauon.py:25744
+msgid "Next"
+msgstr "次"
+
+#: tauon.py:25757
 msgid "Chart Grid Generator"
 msgstr "チャート"
 
-#: tauon.py:25257
+#: tauon.py:25760
 msgid "Target playlist:   "
 msgstr "ターゲット:   "
 
-#: tauon.py:25285
+#: tauon.py:25788
 msgid "Rows"
 msgstr "行"
 
-#: tauon.py:25287
+#: tauon.py:25790
 msgid "Columns"
 msgstr "桁"
 
-#: tauon.py:25294
+#: tauon.py:25797
 msgid "Cascade style"
 msgstr "カスケード"
 
-#: tauon.py:25296
+#: tauon.py:25799
 msgid "Use padding"
 msgstr "パディング"
 
-#: tauon.py:25301
+#: tauon.py:25804
 #, fuzzy
 msgid "Include album titles"
 msgstr "アルバムのタイトルを含める"
 
-#: tauon.py:25303
+#: tauon.py:25806
 msgid "Sort by top played"
 msgstr ""
 
-#: tauon.py:25310
+#: tauon.py:25813
 msgid "Randomise BG"
 msgstr "ランダムｂｇ"
 
-#: tauon.py:25346
+#: tauon.py:25849
 msgid "Generate"
 msgstr "生成する"
 
-#: tauon.py:25360
+#: tauon.py:25863
 msgid "Generating..."
 msgstr "生成中。。。"
 
-#: tauon.py:25368
+#: tauon.py:25871
 #, fuzzy
 msgid "Album chart"
 msgstr "アルバム数"
 
-#: tauon.py:25373
+#: tauon.py:25876
 msgid "Not enough albums in the playlist!"
 msgstr "十分なアルバムがありません！"
 
-#: tauon.py:25393 tauon.py:25394
+#: tauon.py:25896 tauon.py:25897
 msgid "Chart generator..."
 msgstr "チャート"
 
-#: tauon.py:25402 tauon.py:25443
+#: tauon.py:25905 tauon.py:25946
 msgid "Tracks in playlist"
 msgstr "このトラック数"
 
-#: tauon.py:25403 tauon.py:25446
+#: tauon.py:25906 tauon.py:25949
 msgid "Albums in playlist"
 msgstr "このアルバム数"
 
-#: tauon.py:25404 tauon.py:25449
+#: tauon.py:25907 tauon.py:25952
 msgid "Playlist duration"
 msgstr "プレイリストの長さ"
 
-#: tauon.py:25405 tauon.py:25478
+#: tauon.py:25908 tauon.py:25981
 msgid "Tracks in database"
 msgstr "総トラック数"
 
-#: tauon.py:25406 tauon.py:25481
+#: tauon.py:25909 tauon.py:25984
 msgid "Total albums"
 msgstr "合計アルバム"
 
-#: tauon.py:25407 tauon.py:25485
+#: tauon.py:25910 tauon.py:25988
 msgid "Total playtime"
 msgstr "総プレイ時間"
 
-#: tauon.py:25547
+#: tauon.py:26050
 #, fuzzy
 msgid "Track ratings"
 msgstr "トラックゲイン"
 
-#: tauon.py:25549
+#: tauon.py:26052
 #, fuzzy
 msgid "Album ratings"
 msgstr "アルバム数"
 
-#: tauon.py:25557
+#: tauon.py:26060
 #, fuzzy
 msgid "Show track loves"
 msgstr "Geniusでトラックを検索"
 
-#: tauon.py:25565
+#: tauon.py:26068
 #, fuzzy
 msgid "Represent playtime as stars"
 msgstr "星を表示"
 
-#: tauon.py:25573
+#: tauon.py:26076
 #, fuzzy
 msgid "Represent playcount as lines"
 msgstr "繰り返す"
 
-#: tauon.py:25593
+#: tauon.py:26096
 msgid "Show album release year"
 msgstr ""
 
-#: tauon.py:25596
+#: tauon.py:26099
 #, fuzzy
 msgid "Show album duration"
 msgstr "プレイリストの長さ"
 
-#: tauon.py:25603
+#: tauon.py:26106
 msgid "Font Size"
 msgstr "フォントサイズ"
 
-#: tauon.py:25605
+#: tauon.py:26108
 msgid "Row Size"
 msgstr "行サイズ"
 
-#: tauon.py:25607
+#: tauon.py:26110
 msgid "Baseline offset"
 msgstr ""
 
-#: tauon.py:25611
+#: tauon.py:26114
 msgid "Thin default"
 msgstr "薄いデフォルト"
 
-#: tauon.py:25613
+#: tauon.py:26116
 msgid "Thick default"
 msgstr "厚いデフォルト"
 
-#: tauon.py:25619
+#: tauon.py:26122
 msgid "End of playlist action"
 msgstr "プレイリストの終わり"
 
-#: tauon.py:25622 tauon.py:25626
+#: tauon.py:26125 tauon.py:26129
 msgid "Stop playback"
 msgstr "止まれ"
 
-#: tauon.py:25623 tauon.py:25628
+#: tauon.py:26126 tauon.py:26131
 msgid "Repeat playlist"
 msgstr "繰り返す"
 
-#: tauon.py:25632
+#: tauon.py:26135
 msgid "Play next playlist"
 msgstr "次"
 
-#: tauon.py:25634
+#: tauon.py:26137
 msgid "Cycle all playlists"
 msgstr "サイクル"
 
-#: tauon.py:26911
+#: tauon.py:27419
 msgid "There are currently no connected clients"
 msgstr ""
 
-#: tauon.py:26913
+#: tauon.py:27421
 msgid "There is 1 inbound connection."
 msgstr ""
 
-#: tauon.py:26915
+#: tauon.py:27423
 msgid "There are %d inbound connections."
 msgstr ""
 
-#: tauon.py:27464 tauon.py:28028
+#: tauon.py:27976 tauon.py:28540
 msgid "Play, RC: Go to playing"
 msgstr ""
 
-#: tauon.py:27492 tauon.py:28056
+#: tauon.py:28004 tauon.py:28568
 msgid "Pause"
 msgstr "一時停止"
 
-#: tauon.py:27509
+#: tauon.py:28021
 msgid "Stop, RC: Toggle auto-stop"
 msgstr ""
 
-#: tauon.py:27532 tauon.py:28077
+#: tauon.py:28044 tauon.py:28589
 msgid "Shuffle On"
 msgstr "シャッフルON"
 
-#: tauon.py:27535 tauon.py:28080
+#: tauon.py:28047 tauon.py:28592
 msgid "Shuffle Off"
 msgstr "シャッフルOFF"
 
-#: tauon.py:27564
+#: tauon.py:28076
 msgid "Repeat On"
 msgstr "リピートOFF"
 
-#: tauon.py:27567
+#: tauon.py:28079
 msgid "Repeat Off"
 msgstr "リピートOFF"
 
-#: tauon.py:27574
+#: tauon.py:28086
 msgid "Back, RC: Toggle repeat, MC: Revert"
 msgstr ""
 
-#: tauon.py:27630 tauon.py:27632
+#: tauon.py:28142 tauon.py:28144
 msgid "Shuffle"
 msgstr "シャッフル"
 
-#: tauon.py:27679 tauon.py:27687
+#: tauon.py:28191 tauon.py:28199
 msgid "Repeat album"
 msgstr "リピートアルバム"
 
-#: tauon.py:27681 tauon.py:27689
+#: tauon.py:28193 tauon.py:28201
 msgid "Repeat track"
 msgstr "繰り返しトラック"
 
-#: tauon.py:29042
+#: tauon.py:29554
 msgid "Playlist is empty"
 msgstr "プレイリストが空です"
 
-#: tauon.py:29044
+#: tauon.py:29556
 msgid "Drag and drop files to import"
 msgstr "インポートするファイルをドロップします"
 
-#: tauon.py:29066
+#: tauon.py:29578
 msgid "End of Playlist"
 msgstr "プレイリストの終わり"
 
-#: tauon.py:30272
+#: tauon.py:30794
 #, fuzzy
 msgid "Search Tag"
 msgstr "検索中..."
 
-#: tauon.py:30273
+#: tauon.py:30795
 #, fuzzy
 msgid "Search Country"
 msgstr "歌詞を検索"
 
-#: tauon.py:30274
+#: tauon.py:30796
 #, fuzzy
 msgid "Search Title"
 msgstr "検索中..."
 
-#: tauon.py:30434
+#: tauon.py:30956
 #, fuzzy
 msgid "Search text…"
 msgstr "検索中..."
 
-#: tauon.py:30441
+#: tauon.py:30963
 #, fuzzy
 msgid "Search"
 msgstr "検索中..."
 
-#: tauon.py:30448
+#: tauon.py:30970
 msgid "Get Top Voted"
 msgstr ""
 
-#: tauon.py:30517
+#: tauon.py:31039
 msgid "Internet Radio"
 msgstr ""
 
-#: tauon.py:30521
+#: tauon.py:31043
 #, fuzzy
 msgid "Connecting..."
 msgstr "生成中。。。"
 
-#: tauon.py:30524
+#: tauon.py:31046
 msgid "Failed to connect!"
 msgstr ""
 
-#: tauon.py:30564
+#: tauon.py:31086
 msgid "Name / Title"
 msgstr ""
 
-#: tauon.py:30582
+#: tauon.py:31104
 msgid "Raw Stream URL http://example.stream:1234"
 msgstr ""
 
-#: tauon.py:30587 tauon.py:30813
+#: tauon.py:31109 tauon.py:31335
 msgid "Save"
 msgstr ""
 
-#: tauon.py:30590
+#: tauon.py:31112
 msgid "Enter a stream URL"
 msgstr ""
 
-#: tauon.py:30607
+#: tauon.py:31129
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
 
-#: tauon.py:30742 tauon.py:30748 tauon.py:30753
+#: tauon.py:31264 tauon.py:31270 tauon.py:31275
 msgid "Record and auto split songs"
 msgstr ""
 
-#: tauon.py:30744
+#: tauon.py:31266
 msgid "Please stop playback first before toggling this setting"
 msgstr ""
 
-#: tauon.py:30749
+#: tauon.py:31271
 msgid "Please stop playback first to end current recording"
 msgstr ""
 
-#: tauon.py:30755
+#: tauon.py:31277
 msgid "Tip: You can press F9 to view the output folder."
 msgstr ""
 
-#: tauon.py:30755
+#: tauon.py:31277
 msgid "Tracks will now be recorded."
 msgstr ""
 
-#: tauon.py:30759
+#: tauon.py:31281
 msgid "Browse"
 msgstr ""
 
-#: tauon.py:30763
+#: tauon.py:31285
 msgid "Saved"
 msgstr ""
 
-#: tauon.py:30809
+#: tauon.py:31331
 msgid "Added to list of saved stations"
 msgstr ""
 
-#: tauon.py:30811
+#: tauon.py:31333
 msgid "Paste Website Link"
 msgstr ""
 
-#: tauon.py:30812
+#: tauon.py:31334
 msgid "Visit Website"
 msgstr ""
 
-#: tauon.py:30816
+#: tauon.py:31338
 msgid "Remove All After"
 msgstr ""
 
-#: tauon.py:31753
+#: tauon.py:32251
 msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "イメージはfanart.tvからダウンロードされました"
 
-#: tauon.py:32220
+#: tauon.py:32718
 msgid "Downloading data..."
 msgstr ""
 
-#: tauon.py:32379
+#: tauon.py:32877
 msgid "No artists in playlist"
 msgstr "アーティストなし"
 
-#: tauon.py:32382
+#: tauon.py:32880
 msgid "Artist threshold not met"
 msgstr "しきい値に達していません"
 
-#: tauon.py:32384
+#: tauon.py:32882
 msgid "Loading Artist List..."
 msgstr "アーティスト読み込み中..."
 
-#: tauon.py:32386
+#: tauon.py:32884
 msgid "Busy..."
 msgstr "忙しい"
 
-#: tauon.py:32597
+#: tauon.py:33095
 msgid "Loading Folder Tree..."
 msgstr "フォルダ読み込み中..."
 
-#: tauon.py:32605 tauon.py:32621
+#: tauon.py:33103 tauon.py:33119
 msgid "Folder Tree"
 msgstr "フォルダーツリー"
 
-#: tauon.py:33005
+#: tauon.py:33503
 msgid "Resume Queue"
 msgstr "キューを再開"
 
-#: tauon.py:33007
+#: tauon.py:33505
 msgid "Pause Queue"
 msgstr "キューをためらう"
 
-#: tauon.py:33036
+#: tauon.py:33534
 msgid "Play Now"
 msgstr "今すぐプレイ"
 
-#: tauon.py:33042
+#: tauon.py:33540
 msgid "↳ Except for This"
 msgstr "↳　これを除いて"
 
-#: tauon.py:33044
+#: tauon.py:33542
 msgid "Queue to New Playlist"
 msgstr "プレイリストへ"
 
-#: tauon.py:33189
+#: tauon.py:33687
 msgid "Cancel Auto-Stop"
 msgstr "自動停止をキャンセル"
 
-#: tauon.py:33191
+#: tauon.py:33689
 msgid "Auto-Stop"
 msgstr "自動停止"
 
-#: tauon.py:34053 tauon.py:34288
+#: tauon.py:34554 tauon.py:34789
 msgid "Looking up..."
 msgstr "探している"
 
-#: tauon.py:34097
+#: tauon.py:34598
 msgid "Cooldown..."
 msgstr "クールダウン。。。"
 
-#: tauon.py:34112
+#: tauon.py:34613
 msgid "Loading..."
 msgstr "検索中..."
 
-#: tauon.py:34280
+#: tauon.py:34781
 msgid "No artist data downloaded"
 msgstr "データがダウンロードされていません"
 
-#: tauon.py:34294
+#: tauon.py:34795
 msgid "No artist bio found"
 msgstr "バイオが見つかりません"
 
-#: tauon.py:34386
+#: tauon.py:34887
 msgid "Download Artist Data"
 msgstr ""
 
-#: tauon.py:34387
+#: tauon.py:34888
 msgid "Clear Bio"
 msgstr "クリアバイオ"
 
-#: tauon.py:34872
+#: tauon.py:35373
 msgid "Playing"
 msgstr "現在"
 
-#: tauon.py:34928
+#: tauon.py:35433
 msgid "Prefer synced"
 msgstr "同期を優先"
 
-#: tauon.py:34930
+#: tauon.py:35435
 msgid "Prefer static"
 msgstr "静的を優先"
 
-#: tauon.py:34941
+#: tauon.py:35446
 msgid "Auto-Scroll"
 msgstr "スクロール"
 
-#: tauon.py:35426
+#: tauon.py:35931
 #, fuzzy
 msgid "Tracks + Art"
 msgstr "トラックリスト"
 
-#: tauon.py:35459
+#: tauon.py:35964
 #, fuzzy
 msgid "Tracks only"
 msgstr "このトラック数"
 
-#: tauon.py:35472
+#: tauon.py:35977
 #, fuzzy
 msgid "Showcase + Lyrics"
 msgstr "歌詞を示す"
 
-#: tauon.py:35485
+#: tauon.py:35990
 #, fuzzy
 msgid "Toggle columns"
 msgstr "歌詞をトグル"
 
-#: tauon.py:35501
+#: tauon.py:36006
 #, fuzzy
 msgid "Toggle artist info"
 msgstr "画像をトグル"
 
-#: tauon.py:37193
+#: tauon.py:37700
 msgid "Could not access! Possible insufficient Flatpak permissions."
 msgstr ""
 "アクセスできませんでした！ Flatpakの権限が不十分である可能性があります。"
 
-#: tauon.py:37777
+#: tauon.py:38297
 msgid "Enabled auto theme"
 msgstr "自動テーマを有効にしました"
 
-#: tauon.py:37779
+#: tauon.py:38299
 msgid "Disabled auto theme"
 msgstr "自動テーマを無効にしました"
 
-#: tauon.py:39201
+#: tauon.py:39722
 #, fuzzy
 msgid "Rescan folders complete."
 msgstr "フォルダーの再スキャンが完了しました.。"
 
-#: tauon.py:39817
+#: tauon.py:40329
 msgid "Queue is Empty"
 msgstr ""
 
-#: tauon.py:40140 tauon.py:40160 tauon.py:40179 tauon.py:40199 tauon.py:40247
-#: tauon.py:40268 tauon.py:40309 tauon.py:40324 tauon.py:40340 tauon.py:40395
+#: tauon.py:40652 tauon.py:40672 tauon.py:40691 tauon.py:40711 tauon.py:40759
+#: tauon.py:40780 tauon.py:40821 tauon.py:40836 tauon.py:40852 tauon.py:40907
 msgid "Copied text to clipboard"
 msgstr "テキストをクリップボードにコピーしました"
 
-#: tauon.py:40197 tauon.py:40203
+#: tauon.py:40709 tauon.py:40715
 msgid "Path"
 msgstr "ファイル"
 
-#: tauon.py:40218
+#: tauon.py:40730
 msgid "Samplerate"
 msgstr "サンプル"
 
-#: tauon.py:40278 tauon.py:40295
+#: tauon.py:40790 tauon.py:40807
 msgid " of "
 msgstr " ／ "
 
-#: tauon.py:40280
+#: tauon.py:40792
 msgid "Track"
 msgstr "トラックリスト"
 
-#: tauon.py:40288
+#: tauon.py:40800
 msgid "File size"
 msgstr "サイズ"
 
-#: tauon.py:40297
+#: tauon.py:40809
 msgid "Disc"
 msgstr "ディスク"
 
-#: tauon.py:40362
+#: tauon.py:40874
 msgid "Play count"
 msgstr "プレイ回数"
 
-#: tauon.py:40375
+#: tauon.py:40887
 msgid "Play time"
 msgstr "プレイ時間"
 
-#: tauon.py:40458
+#: tauon.py:40970
 msgid "Folder Modification"
 msgstr "フォルダーを変更"
 
-#: tauon.py:40476
+#: tauon.py:40983
+msgid "Renames the physical folder based on the template"
+msgstr ""
+
+#: tauon.py:40988
 msgid "Trash"
 msgstr "ゴミ箱に移動"
 
-#: tauon.py:40492
+#: tauon.py:40989
+msgid "Moves folder to system trash"
+msgstr ""
+
+#: tauon.py:40992
+msgid "Physically deletes folder from disk"
+msgstr ""
+
+#: tauon.py:41004
 msgid "Raise"
 msgstr "上げる"
+
+#: tauon.py:41005
+msgid "Moves folder up 2 levels and deletes the old container folder"
+msgstr ""
+
+#: tauon.py:41012
+msgid "Deletes some unnecessary files from folder"
+msgstr ""
+
+#: tauon.py:41383
+#, fuzzy
+msgid "Loved track"
+msgstr "好き"
+
+#: tauon.py:41386
+#, fuzzy
+msgid "Un-Loved track"
+msgstr "好きじゃない"
+
+#~ msgid "Open keymap file"
+#~ msgstr "キーマップを開く"
+
+#~ msgid "Show in context menus:"
+#~ msgstr "コンテキストメニューに表示"
+
+#~ msgid "Clear friend loves"
+#~ msgstr "友すきを消す"
+
+#~ msgid "Show License"
+#~ msgstr "ライセンス"
 
 #, fuzzy
 #~ msgid "Package opus-tools does not appear to be installed"
@@ -2500,9 +2650,6 @@ msgstr "上げる"
 
 #~ msgid "LyricWiki*"
 #~ msgstr "LyricWiki＊"
-
-#~ msgid "Serve webpage for broadcast metadata"
-#~ msgstr "ブロードキャストWebページを提供する"
 
 #~ msgid "Monitor download folders"
 #~ msgstr "ダウンロードフォルダーの監視"
@@ -2602,9 +2749,6 @@ msgstr "上げる"
 
 #~ msgid "Always show selected"
 #~ msgstr "常に選択を表示"
-
-#~ msgid "Next"
-#~ msgstr "次"
 
 #~ msgid "Forget Import Folder"
 #~ msgstr "インポートフォルダを忘れる"
