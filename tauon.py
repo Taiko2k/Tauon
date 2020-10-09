@@ -14591,34 +14591,95 @@ def append_current_playing(index):
 def export_stats(pl):
     playlist_time = 0
     play_time = 0
+    total_size = 0
+    tracks_in_playlist = len(pctl.multi_playlist[pl][2])
+
+    seen_files = {}
+    seen_types = {}
+
+    are_cue = 0
+
     for index in pctl.multi_playlist[pl][2]:
-        playlist_time += int(pctl.master_library[index].length)
-        # key = pctl.master_library[index].title + pctl.master_library[index].filename
-        # if key in pctl.star_library:
-        #     play_time += pctl.star_library[key]
+        track = pctl.g(index)
+
+        playlist_time += int(track.length)
         play_time += star_store.get(index)
 
-    stats_gen.update(pl)
-    line = 'Playlist: ' + pctl.multi_playlist[pl][0] + "\r\n"
-    line += 'Generated: ' + time.strftime("%c") + "\r\n"
-    line += '\r\nTracks in playlist: ' + str(len(pctl.multi_playlist[pl][2]))
-    line += '\r\n\r\nTotal Duration: ' + str(datetime.timedelta(seconds=int(playlist_time)))
-    line += '\r\nTotal Playtime: ' + str(datetime.timedelta(seconds=int(play_time)))
+        if track.is_cue:
+            are_cue += 1
 
-    line += "\r\n\r\n-------------- Top Artists --------------------\r\n\r\n"
+        seen_types[track.file_ext] = seen_types.get(track.file_ext, 0) + 1
+
+        if track.fullpath and not track.is_network:
+            if track.fullpath not in seen_files:
+                size = track.size
+                if not size and os.path.isfile(track.fullpath):
+                    size = os.path.getsize(track.fullpath)
+                seen_files[track.fullpath] = size
+        
+        
+
+    total_size = sum(seen_files.values())
+    #unique = len(set(pctl.multi_playlist[pl][0]))
+
+    stats_gen.update(pl)
+    line = 'Playlist:\n' + pctl.multi_playlist[pl][0] + "\n\n"
+    line += 'Generated:\n' + time.strftime("%c") + "\n\n"
+    line += 'Tracks in playlist:\n' + str(tracks_in_playlist)
+    # if unique == total_size:
+    #     pass
+    # else:
+    #     line += f" ({unique})"
+
+    line += "\n\n"
+    line += 'Total local size:\n' + get_filesize_string(total_size) + "\n\n"
+    line += 'Playlist Duration:\n' + str(datetime.timedelta(seconds=int(playlist_time))) + "\n\n"
+    line += 'Total Playtime:\n' + str(datetime.timedelta(seconds=int(play_time))) + "\n\n"
+
+    line += "Track types:\n"
+
+    if tracks_in_playlist:
+        types = sorted(seen_types, key=seen_types.get, reverse=True)
+        for type in types:
+            perc = round((seen_types.get(type) / tracks_in_playlist) * 100, 1)
+            if perc < 0.1:
+                perc = "<0.1"
+            if type == "SPOT":
+                type = "SPOTIFY"
+            if type == "SUB":
+                type = "AIRSONIC"
+            line += f"{type} ({perc}%); "
+
+    line += "\n\n"
+
+    line += "Percent of tracks are CUE type:\n"
+    if tracks_in_playlist:
+        print(are_cue)
+        perc = are_cue / tracks_in_playlist
+        if perc == 0:
+            perc = 0
+        if 0 < perc < 0.01:
+            perc = "<0.01"
+        else:
+            perc = round(perc, 2)
+
+        line += str(perc) + "%"
+    line += "\n\n"
+
+    line += "\n\n-------------- Top Artists --------------------\n\n"
 
     ls = stats_gen.artist_list
     for i, item in enumerate(ls[:50]):
-        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\r\n"
+        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
 
-    line += "\r\n\r\n-------------- Top Albums --------------------\r\n\r\n"
+    line += "\n\n-------------- Top Albums --------------------\n\n"
     ls = stats_gen.album_list
     for i, item in enumerate(ls[:50]):
-        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\r\n"
-    line += "\r\n\r\n-------------- Top Genres --------------------\r\n\r\n"
+        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
+    line += "\n\n-------------- Top Genres --------------------\n\n"
     ls = stats_gen.genre_list
     for i, item in enumerate(ls[:50]):
-        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\r\n"
+        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
 
     line = line.encode('utf-8')
     xport = open(user_directory + '/stats.txt', 'wb')
