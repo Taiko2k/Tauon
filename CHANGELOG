@@ -11,6 +11,7 @@ v6.3.4
  - Tweaked playlist list to remember scroll position over restart
  - Fixed column bar peak position
  - Fixed a case where Spotify monitoring would stall
+ - Fixed UI draw when using "Return" from showcase view
 
 v6.3.3
 
