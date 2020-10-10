@@ -1801,6 +1801,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.to_get = 0
         self.to_got = 0
+        self.switch_showcase_off = False
 
 gui = GuiVar()
 
@@ -35404,11 +35405,9 @@ class Showcase:
             if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
                            text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
                            background_highlight_colour=bfg):
-                ddt.force_gray = False
-                switch_showcase()
-                if gui.lyrics_was_album:
-                    force_album_view()
-                return 0
+                gui.switch_showcase_off = True
+                gui.update += 1
+                gui.update_layout()
 
 
         #ddt.force_gray = True
@@ -36679,6 +36678,13 @@ def update_layout_do():
 
     w = window_size[0]
     h = window_size[1]
+
+    if gui.switch_showcase_off:
+        ddt.force_gray = False
+        gui.switch_showcase_off = False
+        switch_showcase()
+        if gui.lyrics_was_album:
+            force_album_view()
 
     global draw_max_button
     if draw_max_button and prefs.force_hide_max_button:
