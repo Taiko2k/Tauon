@@ -6,9 +6,11 @@ v6.3.4
  - Added Maloja scrobble support
  - Added function to import scrobble counts and column to display
  - Added custom listenbrainz server option
- - Tweaks settings function tab page layout
+ - Tweaked playlists stats readout
+ - Tweaked settings function tab page layout
  - Tweaked playlist list to remember scroll position over restart
  - Fixed column bar peak position
+ - Fixed a case where Spotify monitoring would stall
 
 v6.3.3
 
