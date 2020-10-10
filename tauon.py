@@ -5046,7 +5046,7 @@ class PlayerCtl:
 
     def spot_test_progress(self):
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
-            th = 8
+            th = 7
             if self.playing_time > self.playing_length:
                 th = 1
             if not spot_ctl.paused:
@@ -5066,7 +5066,7 @@ class PlayerCtl:
                 self.test_progress()
 
         elif self.playing_state == 3 and spot_ctl.coasting:
-            th = 8
+            th = 7
             if self.playing_time > self.playing_length or self.playing_time < 2.5:
                 th = 1
             if spot_ctl.update_timer.get() < th:
@@ -5077,11 +5077,6 @@ class PlayerCtl:
 
             else:
                 tauon.spot_ctl.update_timer.set()
-                # todo
-                print("UPDATE")
-                print(tauon.spot_ctl.coasting)
-                print(tauon.spot_ctl.playing)
-                print(tauon.spot_ctl.paused)
                 tauon.spot_ctl.update()
 
     def purge_track(self, track_id):  # Remove a track from the database
@@ -14597,6 +14592,10 @@ def export_stats(pl):
     seen_files = {}
     seen_types = {}
 
+    mp3_bitrates = {}
+    ogg_bitrates = {}
+    m4a_bitrates = {}
+
     are_cue = 0
 
     for index in pctl.multi_playlist[pl][2]:
@@ -14608,7 +14607,17 @@ def export_stats(pl):
         if track.is_cue:
             are_cue += 1
 
-        seen_types[track.file_ext] = seen_types.get(track.file_ext, 0) + 1
+        if track.file_ext == "MP3":
+            mp3_bitrates[track.bitrate] = mp3_bitrates.get(track.bitrate, 0) + 1
+        if track.file_ext == "OGG" or track.file_ext == "OGA":
+            ogg_bitrates[track.bitrate] = ogg_bitrates.get(track.bitrate, 0) + 1
+        if track.file_ext == "M4A":
+            m4a_bitrates[track.bitrate] = m4a_bitrates.get(track.bitrate, 0) + 1
+
+        type = track.file_ext
+        if type == "OGA":
+            type = "OGG"
+        seen_types[type] = seen_types.get(type, 0) + 1
 
         if track.fullpath and not track.is_network:
             if track.fullpath not in seen_files:
@@ -14617,20 +14626,23 @@ def export_stats(pl):
                     size = os.path.getsize(track.fullpath)
                 seen_files[track.fullpath] = size
 
+
     total_size = sum(seen_files.values())
 
     stats_gen.update(pl)
     line = 'Playlist:\n' + pctl.multi_playlist[pl][0] + "\n\n"
     line += 'Generated:\n' + time.strftime("%c") + "\n\n"
     line += 'Tracks in playlist:\n' + str(tracks_in_playlist)
-
+    line += "\n\n"
+    line += "Track duplicates:\n"
+    unique = len(set(pctl.multi_playlist[pl][2]))
+    line += str(tracks_in_playlist - unique)
     line += "\n\n"
     line += 'Total local size:\n' + get_filesize_string(total_size) + "\n\n"
-    line += 'Playlist Duration:\n' + str(datetime.timedelta(seconds=int(playlist_time))) + "\n\n"
-    line += 'Total Playtime:\n' + str(datetime.timedelta(seconds=int(play_time))) + "\n\n"
+    line += 'Playlist duration:\n' + str(datetime.timedelta(seconds=int(playlist_time))) + "\n\n"
+    line += 'Total playtime:\n' + str(datetime.timedelta(seconds=int(play_time))) + "\n\n"
 
     line += "Track types:\n"
-
     if tracks_in_playlist:
         types = sorted(seen_types, key=seen_types.get, reverse=True)
         for type in types:
@@ -14642,12 +14654,11 @@ def export_stats(pl):
             if type == "SUB":
                 type = "AIRSONIC"
             line += f"{type} ({perc}%); "
-
+    line = line.rstrip("; ")
     line += "\n\n"
 
-    line += "Percent of tracks are CUE type:\n"
     if tracks_in_playlist:
-        print(are_cue)
+        line += "Percent of tracks are CUE type:\n"
         perc = are_cue / tracks_in_playlist
         if perc == 0:
             perc = 0
@@ -14657,9 +14668,67 @@ def export_stats(pl):
             perc = round(perc, 2)
 
         line += str(perc) + "%"
-    line += "\n\n"
+        line += "\n\n"
 
-    line += "\n\n-------------- Top Artists --------------------\n\n"
+    if tracks_in_playlist and mp3_bitrates:
+        line += "MP3 bitrates (kbps):\n"
+        rates = sorted(mp3_bitrates, key=mp3_bitrates.get, reverse=True)
+        others = 0
+        for rate in rates:
+            perc = round((mp3_bitrates.get(rate) / sum(mp3_bitrates.values())) * 100, 1)
+            if perc < 1:
+                others += perc
+            else:
+                line += f"{rate} ({perc}%); "
+
+        if others:
+            others = round(others, 1)
+            if others < 0.1:
+                others = "<0.1"
+            line += f"Others ({others}%);"
+        line = line.rstrip("; ")
+        line += "\n\n"
+
+    if tracks_in_playlist and ogg_bitrates:
+        line += "OGG bitrates (kbps):\n"
+        rates = sorted(ogg_bitrates, key=ogg_bitrates.get, reverse=True)
+        others = 0
+        for rate in rates:
+            perc = round((ogg_bitrates.get(rate) / sum(ogg_bitrates.values())) * 100, 1)
+            if perc < 1:
+                others += perc
+            else:
+                line += f"{rate} ({perc}%); "
+
+        if others:
+            others = round(others, 1)
+            if others < 0.1:
+                others = "<0.1"
+            line += f"Others ({others}%);"
+        line = line.rstrip("; ")
+        line += "\n\n"
+
+    # if tracks_in_playlist and m4a_bitrates:
+    #     line += "M4A bitrates (kbps):\n"
+    #     rates = sorted(m4a_bitrates, key=m4a_bitrates.get, reverse=True)
+    #     others = 0
+    #     for rate in rates:
+    #         perc = round((m4a_bitrates.get(rate) / sum(m4a_bitrates.values())) * 100, 1)
+    #         if perc < 1:
+    #             others += perc
+    #         else:
+    #             line += f"{rate} ({perc}%); "
+    #
+    #     if others:
+    #         others = round(others, 1)
+    #         if others < 0.1:
+    #             others = "<0.1"
+    #         line += f"Others ({others}%);"
+    #
+    #     line = line.rstrip("; ")
+    #     line += "\n\n"
+
+    line += "\n-------------- Top Artists --------------------\n\n"
 
     ls = stats_gen.artist_list
     for i, item in enumerate(ls[:50]):

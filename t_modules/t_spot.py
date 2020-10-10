@@ -462,15 +462,11 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        print(url)
-
         if url.startswith("spotify:album:"):
             id = url[14:]
         else:
             url = url.split("?")[0]
             id = url.strip("/").split("/")[-1]
-
-        print(id)
 
         album = self.spotify.album(id)
         playlist = []
@@ -833,6 +829,10 @@ class SpotCtl:
             self.append_album(tr.misc["spotify-album-url"], playlist_number)
 
     def coast_update(self, result):
+
+        if result is None or result.item is None:
+            print("Spotify returned unknown")
+            return
 
         self.tauon.dummy_track.artist = result.item.artists[0].name
         self.tauon.dummy_track.title = result.item.name
