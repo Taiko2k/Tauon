@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v6.3.4
 
+ - Added artist list sorting options
  - Added Maloja scrobble support
  - Added function to import scrobble counts and column to display
  - Added custom listenbrainz server option
  - Tweaked playlists stats readout
+ - Tweaked artist list appearance
  - Tweaked settings function tab page layout
  - Tweaked playlist list to remember scroll position over restart
  - Fixed column bar peak position

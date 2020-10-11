@@ -1396,6 +1396,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.scrobble_hold = False
 
+        self.artist_list_sort_mode = "alpha"
+
 
 prefs = Prefs()
 
@@ -2934,6 +2936,8 @@ for t in range(2):
             prefs.use_libre_fm = save[154]
         if save[155] is not None:
             prefs.old_playlist_box_position = save[155]
+        if save[156] is not None:
+            prefs.artist_list_sort_mode = save[156]
 
         state_file.close()
         del save
@@ -32231,6 +32235,22 @@ def create_artist_pl(artist, replace=False):
 
 artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon)
 
+artist_list_menu.add_sub(_("Set List Sorting..."), 130)
+
+def aa_sort_alpha():
+    prefs.artist_list_sort_mode = "alpha"
+    artist_list_box.saves.clear()
+def aa_sort_popular():
+    prefs.artist_list_sort_mode = "popular"
+    artist_list_box.saves.clear()
+def aa_sort_play():
+    prefs.artist_list_sort_mode = "play"
+    artist_list_box.saves.clear()
+
+artist_list_menu.add_to_sub("Sort Alphabetically", 0, aa_sort_alpha)
+artist_list_menu.add_to_sub("Sort by Popularity", 0, aa_sort_popular)
+artist_list_menu.add_to_sub("Sort by Playtime", 0, aa_sort_play)
+
 
 def verify_discogs():
     return len(prefs.discogs_pat) == 40
@@ -32356,6 +32376,8 @@ class ArtistList:
 
         self.hover_on = "NONE"
         self.hover_timer = Timer(10)
+
+        self.sample_tracks = {}
 
     def load_img(self, artist):
 
@@ -32506,6 +32528,9 @@ class ArtistList:
         all = []
         artist_parents = {}
         counts = {}
+        play_time = {}
+
+        self.sample_tracks.clear()
 
         b = 0
 
@@ -32528,17 +32553,24 @@ class ArtistList:
 
                     artists = [x.strip() for x in artists.split(';')]
 
-                # artists = [x.strip() for x in get_artist_strip_feat(track).split(';')]
-                # if 'artists' in track.misc:
-                #     artists += track.misc['artists']
-                # if track.album_artist:
-                #     artists += [x.strip() for x in track.album_artist.split(';')]
-                # artists = list(set(artists))
+                pp = 0
+                if prefs.artist_list_sort_mode == "play":
+                    pp = star_store.get(item)
 
                 for artist in artists:
 
                     if artist:
-                        # Confirm to final list if appeared at least 5 timesv
+
+                        # Add play time
+                        if prefs.artist_list_sort_mode == "play":
+                            p = play_time.get(artist, 0)
+                            play_time[artist] = p + pp
+
+                        # Get a sample track for fallback art
+                        if artist not in self.sample_tracks:
+                            self.sample_tracks[artist] = track
+
+                        # Confirm to final list if appeared at least 5 times
                         #if artist not in all:
                         if artist not in counts:
                             counts[artist] = 0
@@ -32556,8 +32588,12 @@ class ArtistList:
 
             current_album_counts = artist_parents
 
-
-            all.sort(key=lambda y: y.lower())
+            if prefs.artist_list_sort_mode == "popular":
+                all.sort(key=counts.get, reverse=True)
+            elif prefs.artist_list_sort_mode == "play":
+                all.sort(key=play_time.get, reverse=True)
+            else:
+                all.sort(key=lambda y: y.lower())
 
         except:
             print("Album scan failure")
@@ -32589,7 +32625,7 @@ class ArtistList:
 
     def locate_artist_letter(self, text):
 
-        if not text:
+        if not text or prefs.artist_list_sort_mode != "alpha":
             return
 
         letter = text[0].lower()
@@ -32615,7 +32651,6 @@ class ArtistList:
         viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         if viewing_pl_id in self.saves:
             self.saves[viewing_pl_id][2] = self.scroll_position
-        #gui.update += 1
 
     def draw_card(self, artist, x, y, w):
 
@@ -32664,8 +32699,8 @@ class ArtistList:
             self.load_img(artist)
 
         thumb_x = round(x + 10 * gui.scale)
-        x_text = x + self.thumb_size + 22 * gui.scale
-        artist_font = 212
+        x_text = x + self.thumb_size + 19 * gui.scale
+        artist_font = 513
         count_font = 312
         extra_text_space = 0
         if thin_mode:
@@ -32701,17 +32736,6 @@ class ArtistList:
         ddt.rect(rect, back_colour, True)
         ddt.rect(rect, border_colour)
 
-        # if not thin_mode and coll(rect) and input.mouse_click and not gui.preview_artist_loading:
-        #     input.mouse_click = False
-        #     gui.preview_artist = ""
-        #     path = artist_info_box.get_data(artist, get_img_path=True)
-        #     if not path:
-        #         shoot = threading.Thread(target=get_artist_preview, args=((artist, round(thumb_x + self.thumb_size), round(y))))
-        #         shoot.daemon = True
-        #         shoot.start()
-        #
-        #     if path:
-        #         set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
         fields.add(rect)
         if coll(rect) and is_level_zero(True):
             self.hover_any = True
@@ -32719,6 +32743,7 @@ class ArtistList:
             hover_delay = 0.5
             if gui.compact_artist_list:
                 hover_delay = 2
+
 
             if gui.preview_artist != artist:
                 if self.hover_on != artist:
@@ -32738,22 +32763,29 @@ class ArtistList:
 
                         if path:
                             set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
+
             if inp.mouse_click:
                 self.hover_timer.force_set(-2)
                 gui.delay_frame(2 + hover_delay)
 
+        drawn = False
         if artist in self.thumb_cache:
             thumb = self.thumb_cache[artist]
             if thumb is not None:
                 thumb[1].x = thumb_x
                 thumb[1].y = round(y)
                 SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
+                drawn = True
                 if prefs.art_bg:
                     rect = SDL_Rect(thumb_x, round(y), self.thumb_size, self.thumb_size)
                     if (rect.y + rect.h) > window_size[1] - gui.panelBY:
                         diff = (rect.y + rect.h) - (window_size[1] - gui.panelBY)
                         rect.h -= round(diff)
                     style_overlay.hole_punches.append(rect)
+        if not drawn:
+            track = self.sample_tracks.get(artist)
+            if track:
+                gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
 
         if thin_mode:
             text = artist[:2].title()
@@ -32787,8 +32819,8 @@ class ArtistList:
                 #. Max 20 chars. Alt: Downloading image, Loading image
                 text = _("Downloading data...")
 
-            ddt.text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 35 * gui.scale, bg=bg)
-            ddt.text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
+            ddt.text((x_text, y + self.tab_h // 2 - 19 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
+            ddt.text((x_text, y + self.tab_h // 2 - 2 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if inp.mouse_click:
@@ -32972,8 +33004,6 @@ class ArtistList:
         for i, artist in enumerate(self.current_artists[i:], start=i):
 
             if not prefetch_mode:
-
-
                 self.draw_card(artist, x, round(yy), w)
 
                 yy += self.tab_h
@@ -36731,6 +36761,8 @@ def update_layout_do():
     else:
         gui.lspw = 220 * gui.scale
         gui.compact_artist_list = False
+        if prefs.left_panel_mode == "artist list":
+            gui.lspw = 230 * gui.scale
 
     if gui.lsp and prefs.left_panel_mode == "folder view":
         gui.lspw = 260 * gui.scale
@@ -37357,6 +37389,7 @@ def save_state():
             prefs.spotify_token,
             prefs.use_libre_fm,
             playlist_box.scroll_on,
+            prefs.artist_list_sort_mode,
         ]
 
 
@@ -38734,10 +38767,7 @@ while pctl.running:
         # loading_in_progress = False
 
     if update_layout:
-
         update_layout_do()
-        # update layout
-        # C-UL
         update_layout = False
 
     # if tauon.worker_save_state and\
