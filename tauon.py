@@ -32541,8 +32541,6 @@ class ArtistList:
         counts = {}
         play_time = {}
 
-        self.sample_tracks.clear()
-
         b = 0
 
         try:
