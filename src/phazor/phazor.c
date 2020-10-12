@@ -188,8 +188,10 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
   //printf("Frame size is: %d\n", frame->header.blocksize);
   //printf("Resolution is: %d\n", frame->header.bits_per_sample);
   //printf("Samplerate is: %d\n", frame->header.sample_rate); 
-  //printf("Pointer is %d\n", buffer[0]);
+  //printf("Channels is  : %d\n", frame->header.channels);
+
   pthread_mutex_lock(&buffer_mutex);
+  
   if (frame->header.sample_rate != current_sample_rate){
     if (want_sample_rate != frame->header.sample_rate){
       want_sample_rate = frame->header.sample_rate;
@@ -205,35 +207,37 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
     pthread_mutex_unlock(&buffer_mutex);
     return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
   }                                                                                                                                                        
-                                                                                                                                                            
-                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                              
   unsigned int i = 0;
   int ran = 512;
   
+  if (frame->header.blocksize > (BUFF_SIZE - buff_filled)){
+    printf("pa: critical: BUFFER OVERFLOW!");
+  }
+
   while (i < frame->header.blocksize){
 
-    if (buff_filled >= BUFF_SIZE){
-      // This shouldn't happen
-      printf("ERROR: Buffer overrun!\n");
-    }
-    else {
-      // Read and handle 24bit audio
-      if (frame->header.bits_per_sample == 24){
+    // Read and handle 24bit audio
+    if (frame->header.bits_per_sample == 24){
 
-        // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
+      // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
+      
+      // left
+      ran = 512;
+      if (buffer[0][i] > 8388351) {
+        ran = (8388608 - buffer[0][i]) - 3;
+      }
         
-        // left
-        ran = 512;
-        if (buffer[0][i] > 8388351) {
-          ran = (8388608 - buffer[0][i]) - 3;
-        }
-          
-        if (buffer[0][i] < -8388353) {
-          ran = (8388608 - abs(buffer[0][i])) - 3;
-        } 
-        
-        if (ran > 1) buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[0][i] + (rand() % ran) - (ran / 2)) / 256);
-        else buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[0][i] / 256);
+      if (buffer[0][i] < -8388353) {
+        ran = (8388608 - abs(buffer[0][i])) - 3;
+      } 
+      
+      if (ran > 1) buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[0][i] + (rand() % ran) - (ran / 2)) / 256);
+      else buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[0][i] / 256);
+      
+      if (frame->header.channels == 1){
+        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = buff16l[(buff_filled + buff_base) % BUFF_SIZE];
+      } else {
         
         //right
         ran = 512;
@@ -248,20 +252,25 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
         
         if (ran > 1) buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[1][i] + (rand() % ran) - (ran / 2)) / 256);
         else buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[1][i] / 256);
-                                                                                  
+      }                                                                            
+    } // end 24 bit audio
+         
+    // Read 16bit audio
+    else if (frame->header.bits_per_sample == 16){
+      buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
+      if (frame->header.channels == 1){
+        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
+      } else {
+        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[1][i];
       }
-      // Read 16bit audio
-      else if (frame->header.bits_per_sample == 16){
-        buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
-        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[1][i];       
-      }
-      else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
       
-    buff_filled++;
     }
+    else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
     
+    buff_filled++;
     i++;
   }
+
   pthread_mutex_unlock(&buffer_mutex);
   return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
@@ -282,6 +291,30 @@ FLAC__StreamDecoderInitStatus status;
 
 int pulse_connected = 0;
 int want_reconnect = 0;
+
+void stop_decoder(){
+  
+  if (decoder_allocated == 0) return;
+  
+  switch(codec){
+  case OPUS:
+    op_free(opus_dec);
+    break;
+  case VORBIS:
+    ov_clear(&vf);
+    break;
+  case FLAC:
+    FLAC__stream_decoder_finish(dec);
+    break;
+  case MPG:
+    mpg123_close(mh);
+    break;
+  case FFMPEG:
+    pclose(ffm);
+  }
+  decoder_allocated = 0;
+}                                        
+
 
 int disconnect_pulse(){
   if (pulse_connected == 1) {
@@ -306,7 +339,13 @@ void connect_pulse(){
   current_sample_rate = want_sample_rate;
   want_sample_rate = 0;
   }
-  
+
+  if (current_sample_rate <= 1){
+    printf("pa: Samplerate detection warning.\n");
+    pthread_mutex_unlock(&pulse_mutex);
+    return;
+  }
+                      
   int error = 0;
 
   pab.maxlength = (uint32_t) -1;
@@ -332,7 +371,6 @@ void connect_pulse(){
                     );
   
   if (error > 0){
-
     printf("pa: PulseAudio init error: ");
     printf(pa_strerror(error));
     printf("\n");
@@ -343,29 +381,6 @@ void connect_pulse(){
   pthread_mutex_unlock(&pulse_mutex);
       
 }
-
-void stop_decoder(){
-  
-  if (decoder_allocated == 0) return;
-  
-  switch(codec){
-  case OPUS:
-    op_free(opus_dec);
-    break;
-  case VORBIS:
-    ov_clear(&vf);
-    break;
-  case FLAC:
-    FLAC__stream_decoder_finish(dec);
-    break;
-  case MPG:
-    mpg123_close(mh);
-    break;
-  case FFMPEG:
-    pclose(ffm);
-  }
-  decoder_allocated = 0;
-}                                        
 
 void decode_seek(int abs_ms, int sample_rate){
   
@@ -804,7 +819,7 @@ void *out_thread(void *thread_id){
 
   out_thread_running = 1;
   int b = 0;
-  double testa, testb;
+  //double testa, testb;
   
   t_start = get_time_ms();
   
@@ -924,7 +939,6 @@ void *out_thread(void *thread_id){
           /* testa = (t_end - t_start); */
           /* t_start = t_end; */
           
-          
           pa_simple_write (s, out_buf, b, &error); 
           /* active_latency = (int) pa_simple_get_latency(s, &error); */
   
@@ -937,9 +951,25 @@ void *out_thread(void *thread_id){
           /*   printf("Took: %f\n", testb); */
           /*   printf("Buffer: %d\n", buff_filled); */
           /* } */
-        
           
+          // Flush buffer with 0s to avoid popping noise on close
+          if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)){
+            pulse_connected = 0;
+            b = 0;
+            while (b < 256 * 4){
+              out_buf[b] = 0 & 0xFF;
+              b += 1;
+            }
+            int g = 0;
+            while (g < 12){
+              g++;
+              pa_simple_write (s, out_buf, b, &error);
+            }
+            pa_simple_flush (s, &error);
+            pa_simple_free(s);
+          }
         }
+                  
         pthread_mutex_unlock(&pulse_mutex);
                   
       } // sent data
@@ -997,16 +1027,18 @@ void *main_loop(void *thread_id){
       }
       switch (command) {
       case PAUSE:
-        if (mode == PLAYING){
+        if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)){
           mode = PAUSED;
-          disconnect_pulse();
+          
+          //disconnect_pulse();
+          command = NONE;
         }
-        command = NONE;
+        
         break;
       case RESUME:
         if (mode == PAUSED){
+          if (pulse_connected == 0) connect_pulse();
           mode = PLAYING;
-          connect_pulse();
         }
         command = NONE;  
         break;
@@ -1221,6 +1253,9 @@ int pause(){
   while (command != NONE){
       usleep(1000);
     }  
+  if (mode == PLAYING){
+    mode = RAMP_DOWN;
+  }
   command = PAUSE;
   return 0;
 }
@@ -1229,6 +1264,9 @@ int resume(){
   while (command != NONE){
       usleep(1000);
     }  
+  if (mode == PAUSED){
+    gate = 0;
+  }
   command = RESUME;
   return 0;
 }

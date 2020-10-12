@@ -6141,6 +6141,21 @@ class LastFMapi:
             print(e)
             return False
 
+    def get_all_scrobbles_estimate_time(self):
+
+        if not self.connected:
+            self.connect(False)
+        if not self.connected or not prefs.last_fm_username:
+            return
+
+        user = pylast.User(prefs.last_fm_username, self.network)
+        total = user.get_playcount()
+
+        if total:
+            return 0.04364 * total
+        return 0
+
+
     def get_all_scrobbles(self):
 
         if not self.connected:
@@ -6148,29 +6163,38 @@ class LastFMapi:
         if not self.connected or not prefs.last_fm_username:
             return
 
-        self.scanning_scrobbles = True
-        self.network.enable_rate_limit()
-        user = pylast.User(prefs.last_fm_username, self.network)
-        # username = user.get_name()
-        tracks = user.get_recent_tracks(None)
+        try:
+            self.scanning_scrobbles = True
+            self.network.enable_rate_limit()
+            user = pylast.User(prefs.last_fm_username, self.network)
+            # username = user.get_name()
+            perf_timer.set()
+            tracks = user.get_recent_tracks(None)
 
-        counts = {}
+            counts = {}
 
-        for track in tracks:
-            key = (str(track.track.artist), str(track.track.title))
-            c = counts.get(key, 0)
-            counts[key] = c + 1
+            for track in tracks:
+                key = (str(track.track.artist), str(track.track.title))
+                c = counts.get(key, 0)
+                counts[key] = c + 1
 
-        for key, value in counts.items():
-            artist, title = key
-            artist = artist.lower()
-            title = title.lower()
+            for key, value in counts.items():
+                artist, title = key
+                artist = artist.lower()
+                title = title.lower()
 
-            for track in pctl.master_library.values():
-                if track.artist.lower() == artist:
-                    if track.title.lower() == title:
-                        track.lfm_scrobbles = value
+                for track in pctl.master_library.values():
+                    if track.artist.lower() == artist:
+                        if track.title.lower() == title:
+                            track.lfm_scrobbles = value
+        except:
+            gui.pl_update += 1
+            raise
+            self.scanning_scrobbles = False
+            show_message(_("Scanning failed. Try again?"), mode="error")
+            return
 
+        print(perf_timer.get())
         gui.pl_update += 1
         self.scanning_scrobbles = False
         show_message(_("Scanning scrobbles complete"), mode="done")
@@ -10072,11 +10096,15 @@ class AlbumArt():
             dirs_in_dir = [subdirec for subdirec in items_in_dir if
                            os.path.isdir(os.path.join(direc, subdirec)) and subdirec.lower() in self.art_folder_names]
 
+            ins = len(source_list)
             for i in range(len(items_in_dir)):
                 if os.path.splitext(items_in_dir[i])[1][1:] in self.image_types:
                     dir_path = os.path.join(direc, items_in_dir[i]).replace('\\', "/")
-                    #print(dir_path)
-                    source_list.append([0, dir_path])
+                    # The image name "Folder" is likely desired to be prioritised over other names
+                    if os.path.splitext(os.path.basename(dir_path))[0] in ("Folder", "folder"):
+                        source_list.insert(ins, [0, dir_path])
+                    else:
+                        source_list.append([0, dir_path])
 
             for i in range(len(dirs_in_dir)):
                 subdirec = os.path.join(direc, dirs_in_dir[i])
@@ -24323,24 +24351,25 @@ class Over:
             y = y0 + 45 * gui.scale
             x = x0 + 20 * gui.scale
 
-            x += round(5 * gui.scale)
+            x += round(2 * gui.scale)
             ddt.text((x, y), "Phazor is an alternative backend currently in alpha testing stage.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "Audio is output to the default PulseAudio device only.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "Best suited for playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
-            y += round(17 * gui.scale)
-            ddt.text((x, y), "There may be bugs present. It even might not work at all.", colours.box_text_label, 12)
 
-            y += round(30 * gui.scale)
+            y += round(26 * gui.scale)
             ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
             y += round(22 * gui.scale)
-            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek, "Fast")
-            y += round(22 * gui.scale)
-            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
 
-            y += round(30 * gui.scale)
-            ddt.text((x, y), "If you experience cracking audio, try increase this value.", colours.box_text_label, 12)
+            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
+            prefs.pa_fast_seek = self.toggle_square(x + 90 * gui.scale, y, prefs.pa_fast_seek, "Fast")
+
+            y += round(39 * gui.scale)
+            self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
+
+            y += round(34 * gui.scale)
+            ddt.text((x, y), "If you experience cracking audio, try increase output buffer.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "Change applies after track stop.", colours.box_text_label, 12)
             y += round(25 * gui.scale)
@@ -24585,7 +24614,7 @@ class Over:
 
             y += 38 * gui.scale
             prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto regenerate playlists"),
-                                                                    subtitle=_("Generator playlists reload when re-entering"))
+                                                                    subtitle=_("Generated playlists reload when re-entering"))
 
 
             y += 38 * gui.scale
@@ -25369,7 +25398,8 @@ class Over:
     def get_scrobble_counts(self):
 
         if not key_shift_down:
-            show_message(_("Warning: This process can take a long time to complete! (up to an hour or more)"),
+            t = lastfm.get_all_scrobbles_estimate_time()
+            show_message(_("Warning: This process will take approximately %d minutes to complete." % (t // 60)),
                            _("Press again while holding Shift if you understand"), mode="warning")
             return
 
@@ -25383,7 +25413,7 @@ class Over:
     def clear_scrobble_counts(self):
 
         for track in pctl.master_library.values():
-            track.lfm_scrobbles = value
+            track.lfm_scrobbles = 0
 
     def get_friend_love(self):
 
@@ -29050,8 +29080,6 @@ class MiniMode2:
 
 mini_mode2 = MiniMode2()
 
-
-
 def set_mini_mode():
 
     if fullscreen == 1:
@@ -32119,15 +32147,6 @@ class PlaylistBox:
                         else:
                             ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), [80, 160, 200, 255], True)
 
-
-
-            # elif pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
-            #     cl = [120, 50, 220, 230]
-            #     if light_mode:
-            #         cl = [120, 50, 255, 200]
-            #     self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
-
-
             # Draw effect of adding tracks to playlist
             if len(self.adds) > 0:
                 for k in reversed(range(len(self.adds))):
@@ -32163,7 +32182,6 @@ class PlaylistBox:
             if right_click:
                 extra_tab_menu.activate(pctl.active_playlist_viewing)
 
-
             # Move tab to end playlist if dragged past end
             if self.drag:
                 if mouse_up:
@@ -32192,8 +32210,6 @@ playlist_box = PlaylistBox()
 
 
 def create_artist_pl(artist, replace=False):
-
-    #replace = False
 
     source_pl = pctl.active_playlist_viewing
     this_pl = pctl.active_playlist_viewing
@@ -32460,11 +32476,6 @@ class ArtistList:
 
         if self.to_fetch:
 
-            #self.thumb_cache[self.to_fetch] = None
-            #self.to_fetch = ""
-            #return
-
-
             if get_lfm_wait_timer.get() < 2:
                 return
 
@@ -32517,7 +32528,6 @@ class ArtistList:
 
     def prep(self):
 
-        #self.current_artists.clear()
         self.scroll_position = 0
 
         curren_pl_no = id_to_pl(self.id_to_load)
@@ -32619,9 +32629,6 @@ class ArtistList:
 
         self.saves[current_pl[6]] = save
         gui.update += 1
-        #self.current_artists.sort()
-
-        #print(self.current_artists)
 
     def locate_artist_letter(self, text):
 
@@ -35388,19 +35395,11 @@ class Showcase:
             bft = [255, 255, 255, 250]
             bbt = [255, 255, 255, 200]
 
-
-
         if test_lumi(colours.playlist_panel_background) < 0.7:
             light_mode = True
             t1 = colours.grey(30)
             gui.vis_4_colour = [40, 40, 40, 255]
 
-        # if prefs.bg_showcase_only and prefs.art_bg and not light_mode:
-        #     pass
-        #     # reg = min(colours.playlist_panel_background[0], 22)
-        #     # ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [reg, reg, reg, 255],
-        #     #          True)
-        # else:
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
 
         if prefs.bg_showcase_only and prefs.art_bg:
@@ -35758,15 +35757,6 @@ class ColourPulse2:
                 gui.update = 2
 
         return colour_slide(low_hls, high_hls, pro, 1)
-        # lumi = low_hls[1] + ((high_hls[1] - low_hls[1]) * pro)
-        # sat = low_hls[2] + ((high_hls[2] - low_hls[2]) * pro)
-        # hue = low_hls[0] + ((high_hls[0] - low_hls[0]) * pro)
-        #
-        #
-        # rgb = colorsys.hls_to_rgb(hue, lumi, sat)
-        # alpha = round(pro * 185)
-        #
-        # return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), alpha + 70]
 
 cctest = ColourPulse2()
 
