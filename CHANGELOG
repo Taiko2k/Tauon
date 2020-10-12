@@ -11,9 +11,12 @@ v6.3.4
  - Tweaked artist list appearance
  - Tweaked settings function tab page layout
  - Tweaked playlist list to remember scroll position over restart
+ - Tweaked album art display to prioritise "folder.*" over other names
  - Fixed column bar peak position
  - Fixed a case where Spotify monitoring would stall
  - Fixed UI draw when using "Return" from showcase view
+ - Phazor: Added "Fade on pause/stop" setting
+ - Phazor: Fixed a crash when attempting to play mono FLACs
 
 v6.3.3
 

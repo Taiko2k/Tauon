@@ -310,14 +310,14 @@ def player4(tauon):
                 time.sleep(2.5)
                 command = "stop"
             if command == "stop":
+                if prefs.use_pause_fade:
+                    if pctl.player_volume > 5:
+                        speed = fade_time / (int(pctl.player_volume) / 100)
+                    else:
+                        speed = fade_time / (5 / 100)
 
-                if pctl.player_volume > 5:
-                    speed = fade_time / (int(pctl.player_volume) / 100)
-                else:
-                    speed = fade_time / (5 / 100)
-
-                aud.ramp_volume(0, int(speed))
-                time.sleep((fade_time + 100) / 1000)
+                    aud.ramp_volume(0, int(speed))
+                    time.sleep((fade_time + 100) / 1000)
 
                 state = 0
                 pctl.playing_time = 0
@@ -329,37 +329,39 @@ def player4(tauon):
                     pctl.playerCommandReady = True
 
             if command == "pauseon":
+                if prefs.use_pause_fade:
+                    if pctl.player_volume > 5:
+                        speed = fade_time / (int(pctl.player_volume) / 100)
+                    else:
+                        speed = fade_time / (5 / 100)
 
-                if pctl.player_volume > 5:
-                    speed = fade_time / (int(pctl.player_volume) / 100)
-                else:
-                    speed = fade_time / (5 / 100)
-
-                aud.ramp_volume(0, int(speed))
-                time.sleep((fade_time + 100) / 1000)
+                    aud.ramp_volume(0, int(speed))
+                    time.sleep((fade_time + 100) / 1000)
                 aud.pause()
                 state = 2
 
             if command == "pauseoff":
-                if pctl.player_volume > 5:
-                    speed = fade_time / (int(pctl.player_volume) / 100)
-                else:
-                    speed = fade_time / (5 / 100)
+                if prefs.use_pause_fade:
+                    if pctl.player_volume > 5:
+                        speed = fade_time / (int(pctl.player_volume) / 100)
+                    else:
+                        speed = fade_time / (5 / 100)
 
-                aud.ramp_volume(int(pctl.player_volume), int(speed))
+                    aud.ramp_volume(int(pctl.player_volume), int(speed))
                 aud.resume()
                 player_timer.set()
                 state = 1
 
             if command == "unload":
 
-                if pctl.player_volume > 5:
-                    speed = fade_time / (int(pctl.player_volume) / 100)
-                else:
-                    speed = fade_time / (5 / 100)
+                if prefs.use_pause_fade:
+                    if pctl.player_volume > 5:
+                        speed = fade_time / (int(pctl.player_volume) / 100)
+                    else:
+                        speed = fade_time / (5 / 100)
 
-                aud.ramp_volume(0, int(speed))
-                time.sleep((fade_time + 100) / 1000)
+                    aud.ramp_volume(0, int(speed))
+                    time.sleep((fade_time + 100) / 1000)
 
                 aud.stop()
                 aud.shutdown()
