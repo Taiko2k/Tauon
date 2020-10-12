@@ -3664,7 +3664,8 @@ def load_prefs():
         if not temp:
             prefs.lb_token = ""
         elif len(temp) != 36 or temp[8] != "-":
-            print("Warning: Invalid listenbrainz token in config")
+            if temp:
+                print("Warning: Invalid listenbrainz token in config")
         else:
             prefs.lb_token = temp
 
