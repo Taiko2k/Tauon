@@ -911,7 +911,7 @@ void *out_thread(void *thread_id){
           } 
           
           if (reset_set == 1 && reset_set_byte == buff_base){
-            printf("pa: Reset position counter\n");
+            //printf("pa: Reset position counter\n");
             reset_set = 0;
             position_count = reset_set_value;
           }
@@ -1123,8 +1123,9 @@ void *main_loop(void *thread_id){
               fade_position = 0;
               fade_fill = l;
               buff_filled = reserve;
+
               reset_set_byte = (buff_base + reserve) % BUFF_SIZE;
-              reset_set = 1;
+              //reset_set = 1;
             }
           } else {
           
@@ -1135,6 +1136,7 @@ void *main_loop(void *thread_id){
             gate = 0;
             sample_change_byte = 0;
             reset_set_byte = 0;
+            reset_set_value = 0;
            
           }
           

@@ -4717,7 +4717,7 @@ class PlayerCtl:
         self.playerCommandReady = True
         self.playing_state = 1
 
-        self.last_playing_time = random_start
+        #self.last_playing_time = random_start
 
         if update_title:
             update_title_do()
