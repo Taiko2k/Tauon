@@ -145,7 +145,7 @@ def player4(tauon):
                         pctl.playerCommandReady = True
                         break
                 else:
-                    aud.start(pctl.url.encode(), 0)
+                    aud.start(pctl.url.encode(), 0, 0)
                     state = 3
                     player_timer.hit()
 
@@ -256,7 +256,10 @@ def player4(tauon):
                     loaded_track = target_object
 
                 else:
-                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
+                    fade = 0
+                    if state == 1 and prefs.use_jump_crossfade:
+                        fade = 1
+                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade)
                     loaded_track = target_object
                     pctl.playing_time = 0
                     state = 1
@@ -288,7 +291,7 @@ def player4(tauon):
 
                     if loaded_track.is_network and loaded_track.fullpath.endswith(".ogg"):
                         # The vorbis decoder doesn't like appended files
-                        aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000)
+                        aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0)
                     else:
                         aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
 
