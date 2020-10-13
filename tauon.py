@@ -2781,10 +2781,10 @@ for t in range(2):
             prefs.extract_to_music = save[78]
         if save[79] is not None:
             prefs.enable_lb = save[79]
-        if save[80] is not None:
-            prefs.lb_token = save[80]
-            if prefs.lb_token is None:
-                prefs.lb_token = ""
+        # if save[80] is not None:
+        #     prefs.lb_token = save[80]
+        #     if prefs.lb_token is None:
+        #         prefs.lb_token = ""
         if save[81] is not None:
             rename_files_previous = save[81]
         if save[82] is not None:
@@ -3660,15 +3660,6 @@ def load_prefs():
 
     prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
     prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
-    if not prefs.listenbrainz_url:
-        if not temp:
-            prefs.lb_token = ""
-        elif len(temp) != 36 or temp[8] != "-":
-            if temp:
-                print("Warning: Invalid listenbrainz token in config")
-        else:
-            prefs.lb_token = temp
-
 
     cf.br()
     cf.add_text("[maloja_account]")
