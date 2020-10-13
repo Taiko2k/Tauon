@@ -1125,6 +1125,11 @@ void *main_loop(void *thread_id){
               buff_filled = reserve;
 
               reset_set_byte = (buff_base + reserve) % BUFF_SIZE;
+              if (reset_set == 0) {
+                reset_set = 1;
+                reset_set_value = 0;
+                
+              }
               //reset_set = 1;
             }
           } else {
