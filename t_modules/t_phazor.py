@@ -325,6 +325,7 @@ def player4(tauon):
                 state = 0
                 pctl.playing_time = 0
                 aud.stop()
+                time.sleep(0.1)
                 aud.set_volume(int(pctl.player_volume))
 
                 if pctl.playerSubCommand == "return":

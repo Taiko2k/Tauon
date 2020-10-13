@@ -941,7 +941,7 @@ void *out_thread(void *thread_id){
             if (volume_on < volume_want){
               volume_on = volume_want;
             }
-          }                                
+          }
           
           if (abs(buff16l[buff_base]) > peak_roll_l) peak_roll_l = abs(buff16l[buff_base]);
           if (abs(buff16r[buff_base]) > peak_roll_r) peak_roll_r = abs(buff16r[buff_base]);
