@@ -248,7 +248,7 @@ def player4(tauon):
                     print("Transition gapless mode")
 
                     aud.next(pctl.target_object.fullpath.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
-                    pctl.playing_time = 0
+                    pctl.playing_time = pctl.jump_time
 
                     if remain > 0:
                         time.sleep(remain)
@@ -261,7 +261,7 @@ def player4(tauon):
                         fade = 1
                     aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade)
                     loaded_track = target_object
-                    pctl.playing_time = 0
+                    pctl.playing_time = pctl.jump_time
                     state = 1
 
                 player_timer.set()
