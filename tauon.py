@@ -14668,7 +14668,7 @@ def export_stats(pl):
     line += 'Generated:\n' + time.strftime("%c") + "\n\n"
     line += 'Tracks in playlist:\n' + str(tracks_in_playlist)
     line += "\n\n"
-    line += "Track duplicates:\n"
+    line += "Repeats in playlist:\n"
     unique = len(set(pctl.multi_playlist[pl][2]))
     line += str(tracks_in_playlist - unique)
     line += "\n\n"
@@ -24349,7 +24349,7 @@ class Over:
 
         if prefs.backend == 4:
 
-            y = y0 + 45 * gui.scale
+            y = y0 + 44 * gui.scale
             x = x0 + 20 * gui.scale
 
             x += round(2 * gui.scale)
@@ -24366,10 +24366,12 @@ class Over:
             prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
             prefs.pa_fast_seek = self.toggle_square(x + 90 * gui.scale, y, prefs.pa_fast_seek, "Fast")
 
-            y += round(39 * gui.scale)
+            y += round(28 * gui.scale)
             self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
+            y += round(23 * gui.scale)
+            self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
 
-            y += round(34 * gui.scale)
+            y += round(24 * gui.scale)
             ddt.text((x, y), "If you experience cracking audio, try increase output buffer.", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "Change applies after track stop.", colours.box_text_label, 12)

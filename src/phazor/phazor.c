@@ -51,6 +51,11 @@ int16_t buff16r[BUFF_SIZE];
 unsigned int buff_filled = 0;
 unsigned int buff_base = 0;
 
+int16_t fade16l[BUFF_SIZE];
+int16_t fade16r[BUFF_SIZE];
+int fade_fill = 0;
+int fade_position = 0;
+
 pthread_mutex_t buffer_mutex;
 pthread_mutex_t pulse_mutex;
 
@@ -89,6 +94,7 @@ int peak_roll_r = 0;
 
 int config_fast_seek = 0;
 int config_dev_buffer = 40;
+int config_fade_jump = 1;
 
 unsigned int test1 = 0;
 
@@ -130,6 +136,26 @@ int buffering = 0;
 
 float ramp_step(int sample_rate, int milliseconds){
   return 1.0 / sample_rate / (milliseconds / 1000.0); 
+}
+
+void fade_fx(){
+  if (fade_fill > 0){
+    if (fade_fill == fade_position){
+      fade_fill = 0;
+      fade_position = 0;
+    } else {
+      
+      float cross = fade_position / (float) fade_fill;
+      float cross_i = 1.0 - cross;
+      
+      buff16l[(buff_filled + buff_base) % BUFF_SIZE] *= cross;
+      buff16l[(buff_filled + buff_base) % BUFF_SIZE] += fade16l[fade_position] * cross_i;
+      
+      buff16r[(buff_filled + buff_base) % BUFF_SIZE] *= cross;
+      buff16r[(buff_filled + buff_base) % BUFF_SIZE] += fade16r[fade_position] * cross_i;
+      fade_position ++;
+    }
+  }
 }
 
 FILE *fptr;
@@ -267,6 +293,10 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
     }
     else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
     
+    if (fade_fill > 0){
+      fade_fx();
+    }
+                                       
     buff_filled++;
     i++;
   }
@@ -333,7 +363,7 @@ int disconnect_pulse(){
 void connect_pulse(){
   
   if (pulse_connected == 1) disconnect_pulse(); 
-  
+  //printf("pa: Connect pulse\n");
   pthread_mutex_lock(&pulse_mutex);
   if (want_sample_rate > 0){
   current_sample_rate = want_sample_rate;
@@ -703,6 +733,9 @@ void pump_decode(){
     while (i < done){
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = opus_buffer[i];
       buff16r[(buff_filled + buff_base) % BUFF_SIZE] = opus_buffer[i + 1];
+      if (fade_fill > 0){
+        fade_fx();
+      }
       buff_filled++;
       i += 2;
     }
@@ -738,6 +771,9 @@ void pump_decode(){
     
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 1] << 8) | (parse_buffer[i+0] & 0xFF));
       buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 3] << 8) | (parse_buffer[i+2] & 0xFF));
+      if (fade_fill > 0){
+        fade_fx();
+      }
       buff_filled++;
       i += 4;
     }
@@ -760,6 +796,9 @@ void pump_decode(){
     
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 1] << 8) | (parse_buffer[i+0] & 0xFF));
       buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((parse_buffer[i + 3] << 8) | (parse_buffer[i+2] & 0xFF));
+      if (fade_fill > 0){
+        fade_fx();
+      }
       buff_filled++;
       i += 4;
     }
@@ -792,6 +831,9 @@ void pump_decode(){
         
       buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((ffm_buffer[i + 1] << 8) | (ffm_buffer[i] & 0xFF));
       buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((ffm_buffer[i + 3] << 8) | (ffm_buffer[i + 2] & 0xFF));
+      if (fade_fill > 0){
+        fade_fx();
+      }
       buff_filled++;
       i += 4;
     }
@@ -982,7 +1024,6 @@ void *out_thread(void *thread_id){
   return thread_id;
 } // close thread
 
-
                                        
 // ---------------------------------------------------------------------------------------
 // Main loop
@@ -1061,17 +1102,40 @@ void *main_loop(void *thread_id){
           command = LOAD;
         } else break;
       case LOAD:
-              
+
         load_result = load_next();
-        
         if (load_result == 0){
           pthread_mutex_lock(&buffer_mutex);
-          position_count = 0;
-          buff_base = 0;
-          buff_filled = 0;
-          gate = 0;
-          sample_change_byte = 0;
-          reset_set_byte = 0;
+          
+          // Prepare for a crossfade if enabled and suitable
+          if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING){
+            int reserve = current_sample_rate * 0.1;
+            int l;
+            
+            l = current_sample_rate * 0.7;
+            if (buff_filled > l + reserve){
+              int i = 0;
+              while (i < l){
+                fade16l[i] = buff16l[(buff_base + i + reserve) % BUFF_SIZE];
+                fade16r[i] = buff16r[(buff_base + i + reserve) % BUFF_SIZE];
+                i++;
+              }
+              fade_position = 0;
+              fade_fill = l;
+              buff_filled = reserve;
+              reset_set_byte = (buff_base + reserve) % BUFF_SIZE;
+            }
+          } else {
+          
+            // Jump immediately
+            position_count = 0;
+            buff_base = 0;
+            buff_filled = 0;
+            gate = 0;
+            sample_change_byte = 0;
+            reset_set_byte = 0;
+           
+          }
           
           if (want_sample_rate == 0 && pulse_connected == 0){
             connect_pulse();
@@ -1215,17 +1279,20 @@ int get_status(){
   return mode;
 }
 
-int start(char *filename, int start_ms){
+int start(char *filename, int start_ms, int fade){
 
   while (command != NONE){
     usleep(1000);
   }
+                                                   
+  config_fade_jump = fade;
   
   load_target_seek = start_ms;
   strcpy(load_target_file, filename);  
   
   if (mode == PLAYING){
-    command = START;
+    if (fade == 1) command = LOAD;
+    else command = START;
   } else command = LOAD;
   
   return 0;
@@ -1239,7 +1306,7 @@ int next(char *filename, int start_ms){
   }
 
   if (mode == STOPPED){
-    start(filename, start_ms);
+    start(filename, start_ms, 0);
   } else {
     load_target_seek = start_ms;
     strcpy(load_target_file, filename);  
