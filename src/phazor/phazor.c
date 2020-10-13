@@ -1124,6 +1124,7 @@ void *main_loop(void *thread_id){
               fade_fill = l;
               buff_filled = reserve;
               reset_set_byte = (buff_base + reserve) % BUFF_SIZE;
+              reset_set = 1;
             }
           } else {
           
