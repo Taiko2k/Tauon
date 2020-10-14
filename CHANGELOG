@@ -6,7 +6,8 @@ v6.3.4
  - Added artist list sorting options
  - Added Maloja scrobble support
  - Added function to import scrobble counts and column to display
- - Added custom listenbrainz server option
+ - Added custom Listenbrainz server option
+ - Added "Launching Spotfiy" status text
  - Tweaked playlists stats readout
  - Tweaked artist list appearance
  - Tweaked settings function tab page layout
@@ -15,6 +16,7 @@ v6.3.4
  - Fixed column bar peak position
  - Fixed a case where Spotify monitoring would stall
  - Fixed UI draw when using "Return" from showcase view
+ - Fixed a bug with seek bar display when using "radio random"
  - Phazor: Added "Fade on pause/stop" setting
  - Phazor: Added "Fade on jump" setting
  - Phazor: Fixed a crash when attempting to play mono FLACs
