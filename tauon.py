@@ -27356,6 +27356,9 @@ class TopPanel:
         elif plex.scanning:
             text = "Accessing PLEX library..."
             bg = [229, 160, 13, 255]
+        elif spot_ctl.launching_spotify:
+            text = "Launching Spotify..."
+            bg = [30, 215, 96, 255]
         elif spot_ctl.spotify_com:
             text = "Accessing Spotify library..."
             bg = [30, 215, 96, 255]
@@ -27372,23 +27375,6 @@ class TopPanel:
             bg = [100, 200, 100, 255]
             if right_click and coll([x, y, 280 * gui.scale, 18 * gui.scale]):
                 cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
-        # elif transcode_list:
-        #     # if key_ctrl_down and key_c_press:
-        #     #     del transcode_list[1:]
-        #     #     gui.tc_cancel = True
-        #     if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
-        #         cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
-        #
-        #     text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
-        #     if len(transcode_list) > 1:
-        #         text = "Transcoding... " + str(len(transcode_list)) + " Folders Remaining " + transcode_state
-        #     if not gui.tc_cancel:
-        #         bg = colours.status_info_text
-        #     else:
-        #         text = "Stopping transcode..."
-        # elif pctl.join_broadcast and pctl.broadcast_active:
-        #     text = "Streaming Synced"
-        #     bg = [60, 75, 220, 255]  # colours.streaming_text
         elif transcode_list and gui.tc_cancel:
             bg = [150, 150, 150, 255]
             text = "Stopping transcode..."

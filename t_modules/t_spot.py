@@ -54,6 +54,7 @@ class SpotCtl:
         self.sender = None
         self.cache_saved_albums = []
         self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
+        self.launching_spotify = False
 
         self.progress_timer = Timer()
         self.update_timer = Timer()
@@ -283,18 +284,6 @@ class SpotCtl:
             print("No spotify devices found")
 
         if not devices:
-            # webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
-            # tries = 0
-            # while not devices:
-            #     time.sleep(2)
-            #     if tries == 0:
-            #         self.tauon.focus_window()
-            #     devices = self.spotify.playback_devices()
-            #     tries += 1
-            #     if tries > 4:
-            #         break
-            # if not devices:
-            #     return False
             return False
         for d in devices:
             if d.is_active:
@@ -305,18 +294,23 @@ class SpotCtl:
         return None
 
     def play_target(self, id):
+
         self.coasting = False
         self.connect()
         if not self.spotify:
+            self.tauon.gui.show_message("Error. You may need to click Authorise in Settings > Accounts > Spotify.", mode="warning")
             return
 
         d_id = self.prime_device()
         # if d_id is False:
         #     return
 
+
         #if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
         #try:
         if d_id is False:
+            self.launching_spotify = True
+            self.tauon.gui.update += 1
             if self.tauon.prefs.launch_spotify_web:
                 webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
                 tries = 0
@@ -333,6 +327,8 @@ class SpotCtl:
                     if tries > 6:
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
+                        self.launching_spotify = False
+                        self.tauon.gui.update += 1
                         return
             else:
                 subprocess.run(["xdg-open", "spotify:track"])
@@ -369,8 +365,13 @@ class SpotCtl:
                         print("TOO MANY TRIES")
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
+                        self.launching_spotify = False
+                        self.tauon.gui.update += 1
                         return
                     time.sleep(2)
+
+            self.launching_spotify = False
+            self.tauon.gui.update += 1
 
         else:
             try:
