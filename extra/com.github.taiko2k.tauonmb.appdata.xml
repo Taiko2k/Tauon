@@ -58,11 +58,11 @@
 
   <releases>
 
-    <release version="6.3.3" date="2020-10-06">
+    <release version="6.4.0" date="2020-10-30">
       <description>
         <ul>
-          <li>Added libre.fm support</li>
-          <li>Various UI tweaks and bug fixes</li>
+          <li>Added Maloja scrobble support</li>
+          <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
     </release>

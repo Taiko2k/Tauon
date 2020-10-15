@@ -425,14 +425,14 @@ class Opus:
 
         s = v.read(4)
         l -= 4
-        a = int.from_bytes(s, byteorder='little')
-        s = v.read(a)
+        a = int.from_bytes(s, byteorder='little')  # Vendor string length
+        s = v.read(a)  # Vendor string
         l -= a
 
         s = v.read(4)
         l -= 4
 
-        number = int.from_bytes(s, byteorder='little')
+        number = int.from_bytes(s, byteorder='little')  # Number of comments
 
         artists = []
         genres = []

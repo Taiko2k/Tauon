@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v6.3.4
+v6.4.0
 
  - Added artist list sorting options
  - Added Maloja scrobble support
@@ -20,6 +20,7 @@ v6.3.4
  - Phazor: Added pulseaudio output selector
  - Phazor: Added "Fade on pause/stop" setting
  - Phazor: Added "Fade on jump" setting
+ - Phazor: Added OGG metadata parsing for internet radio
  - Phazor: Fixed a crash when attempting to play mono FLACs
 
 v6.3.3
