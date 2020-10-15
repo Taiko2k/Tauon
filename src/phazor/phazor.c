@@ -884,13 +884,13 @@ void *out_thread(void *thread_id){
     
     if (buff_filled < 1000 && load_target_file[0] == 'h'){
 
-        disconnect_pulse();
-        if (mode == RAMP_DOWN) gate = 0;
-        printf("pa: Buffering...\n");
-        buffering = 1;
-
-      }
-    
+        if (mode == PLAYING){
+          disconnect_pulse();
+          printf("pa: Buffering...\n");
+          buffering = 1;
+        } else buffering = 0;
+    }
+      
     // Process decoded audio data and send out
     if ((mode == PLAYING || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0 && buffering == 0){
       

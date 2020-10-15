@@ -229,6 +229,97 @@ def authserve(tauon):
     httpd.serve_forever()
     httpd.server_close()
 
+import struct
+class VorbisMonitor():
+
+    def __init__(self):
+
+        self.enable = True
+        self.buffer = io.BytesIO()
+        self.tauon = None
+
+    def input(self, data):
+
+        if not self.enable:
+            return
+
+        b = self.buffer
+        b.seek(0, io.SEEK_END)
+        b.write(data)
+
+        # Check theres enough data to decode header
+        b.seek(0, io.SEEK_END)
+        l = b.tell()
+        if l < 128:
+            print("Not enough data to parse vorbis")
+            return
+
+        # Get page length
+        b.seek(0, io.SEEK_SET)
+        ogg = b.read(4)
+
+        if not ogg == b"OggS":
+            # print("Not an ogg stream")
+            self.enable = False
+            return
+        b.seek(0, io.SEEK_SET)
+        header = struct.unpack('<4sBBqIIiB', b.read(27))
+        segs = struct.unpack('B' * header[7], b.read(header[7]))
+
+        length = 0
+        for s in segs:
+            length += s
+
+        length += 27 + header[7]
+
+        if l > length:
+            h = b.read(7)
+            # print(h)
+            if h == b"\x03vorbis" or h == b"OpusTag":
+                if h == b"OpusTag":
+                    b.seek(1, io.SEEK_CUR)
+
+                vendor_length = int.from_bytes(b.read(4), byteorder='little')
+                vendor = int.from_bytes(b.read(vendor_length), byteorder='little')
+                comment_list_length = int.from_bytes(b.read(4), byteorder='little')
+
+                found_tags = {}
+                for i in range(comment_list_length):
+                    comment_length = int.from_bytes(b.read(4), byteorder='little')
+                    comment = b.read(comment_length)
+
+
+                    key, value = comment.decode().split("=", 1)
+
+                    if key == "title":
+                        found_tags["title"] = value
+                    if key == "artist":
+                        found_tags["artist"] = value
+                    if key == "year":
+                        found_tags["year"] = value
+                    if key == "album":
+                        found_tags["album"] = value
+
+                line = ""
+                if "title" in found_tags:
+                    line += found_tags["title"]
+                    if "artist" in found_tags:
+                        line = found_tags["artist"] + " - " + line
+
+                self.tauon.pctl.found_tags = found_tags
+                self.tauon.pctl.tag_meta = line
+
+                print("Found vorbis comment")
+                print(line)
+
+            # Consume page from buffer
+            b.seek(length, io.SEEK_SET)
+            new = io.BytesIO()
+            new.write(b.read())
+            self.buffer = new
+
+
+vb = VorbisMonitor()
 
 def stream_proxy(tauon):
 
@@ -241,6 +332,8 @@ def stream_proxy(tauon):
             self.end_headers()
 
             position = 0
+            vb.enable = True
+            vb.tauon = tauon
 
             while True:
                 if not tauon.stream_proxy.download_running:
@@ -251,6 +344,8 @@ def stream_proxy(tauon):
                         print("The buffer was deleted too soon!")
                         return
                     self.wfile.write(tauon.stream_proxy.chunks[position])
+
+                    vb.input(tauon.stream_proxy.chunks[position])
 
                     position += 1
 
