@@ -17,6 +17,7 @@ v6.3.4
  - Fixed a case where Spotify monitoring would stall
  - Fixed UI draw when using "Return" from showcase view
  - Fixed a bug with seek bar display when using "radio random"
+ - Phazor: Added pulseaudio output selector
  - Phazor: Added "Fade on pause/stop" setting
  - Phazor: Added "Fade on jump" setting
  - Phazor: Fixed a crash when attempting to play mono FLACs

@@ -1398,6 +1398,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.artist_list_sort_mode = "alpha"
 
+        self.phazor_device_selected = "Default"
+        self.phazor_devices = {"Default": "Default"}
 
 prefs = Prefs()
 
@@ -1804,6 +1806,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.to_get = 0
         self.to_got = 0
         self.switch_showcase_off = False
+
+        self.backend_reloading = False
 
 gui = GuiVar()
 
@@ -2938,6 +2942,8 @@ for t in range(2):
             prefs.old_playlist_box_position = save[155]
         if save[156] is not None:
             prefs.artist_list_sort_mode = save[156]
+        if save[157] is not None:
+            prefs.phazor_device_selected = save[157]
 
         state_file.close()
         del save
@@ -5131,6 +5137,10 @@ class PlayerCtl:
             self.windows_progress.update(True)
 
         if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
+
+            # Allow some time for spotify playing time to update?
+            if spot_ctl.playing and spot_ctl.start_timer.get() < 3:
+                return
 
             self.decode_time = 0
             if self.playing_length == 0 and self.playing_time < 1:
@@ -23940,6 +23950,7 @@ key_lalt = False
 
 
 def reload_backend():
+    gui.backend_reloading = True
     print("Reload backend...")
     wait = 0
 
@@ -23970,7 +23981,7 @@ def reload_backend():
 
     if pre_state == 1:
         pctl.revert()
-
+    gui.backend_reloading = False
 
 def set_player_phazor(mode=0):
 
@@ -24344,32 +24355,85 @@ class Over:
             x = x0 + 20 * gui.scale
 
             x += round(2 * gui.scale)
-            ddt.text((x, y), "Phazor is an alternative backend currently in alpha testing stage.", colours.box_text_label, 12)
+            ddt.text((x, y), "Phazor is an alternative backend", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "Audio is output to the default PulseAudio device only.", colours.box_text_label, 12)
+            ddt.text((x, y), "in beta testing stage. Best suited for", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "Best suited for playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
+            ddt.text((x, y), "playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
 
             y += round(26 * gui.scale)
-            ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
-            y += round(22 * gui.scale)
-
-            prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
-            prefs.pa_fast_seek = self.toggle_square(x + 90 * gui.scale, y, prefs.pa_fast_seek, "Fast")
+            # ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
+            # y += round(22 * gui.scale)
+            #
+            # prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
+            # prefs.pa_fast_seek = self.toggle_square(x + 90 * gui.scale, y, prefs.pa_fast_seek, "Fast")
 
             y += round(28 * gui.scale)
             self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
             y += round(23 * gui.scale)
             self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
 
-            y += round(24 * gui.scale)
-            ddt.text((x, y), "If you experience cracking audio, try increase output buffer.", colours.box_text_label, 12)
+            y += round(30 * gui.scale)
+            ddt.text((x, y), "If you experience cracking audio, try ", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "Change applies after track stop.", colours.box_text_label, 12)
+            ddt.text((x, y), "increase output buffer.", colours.box_text_label, 12)
             y += round(25 * gui.scale)
-            prefs.device_buffer = self.slide_control(x + round(55 * gui.scale), y, _("Output buffer"), 'ms', prefs.device_buffer, 10,
+            prefs.device_buffer = self.slide_control(x + round(45 * gui.scale), y, _("Output buffer"), 'ms', prefs.device_buffer, 10,
                                                      500, 10, self.reload_device)
 
+            if prefs.device_buffer > 100:
+                prefs.pa_fast_seek = True
+            else:
+                prefs.pa_fast_seek = False
+
+            y = y0 + 37 * gui.scale
+            x = x0 + 270 * gui.scale
+            ddt.text_background_colour = colours.box_background
+            ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_text_label, 212)
+
+            self.device_scroll_bar_position -= pref_box.scroll
+            if self.device_scroll_bar_position < 0:
+                self.device_scroll_bar_position = 0
+            if self.device_scroll_bar_position > len(prefs.phazor_devices) - 11 > 11:
+                self.device_scroll_bar_position = len(prefs.phazor_devices) - 11
+
+            if len(prefs.phazor_devices) > 13:
+                self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180,
+                                                                     self.device_scroll_bar_position,
+                                                                     len(prefs.phazor_devices) - 11, click=self.click)
+
+            i = 0
+            reload = False
+            for f_name, s_name in prefs.phazor_devices.items():
+
+                if i < self.device_scroll_bar_position:
+                    continue
+                if y > self.box_y + self.h - 40 * gui.scale:
+                    break
+
+                rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
+
+                if self.click and coll(rect):
+                    prefs.phazor_device_selected = s_name
+                    reload = True
+
+                line = trunc_line(f_name, 10, 245 * gui.scale)
+
+                fields.add(rect)
+
+                if prefs.phazor_device_selected == s_name:
+                    ddt.text((x, y), line, colours.box_sub_text, 10)
+                    ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
+                else:
+                    if coll(rect):
+                        ddt.text((x, y), line, colours.box_sub_text, 10)
+                    else:
+                        ddt.text((x, y), line, colours.box_text_label, 10)
+                y += 14 * gui.scale
+                i += 1
+
+            if reload:
+                reload_backend()
 
         # Gstreamer
         if prefs.backend == 2:
@@ -37358,6 +37422,7 @@ def save_state():
             prefs.use_libre_fm,
             playlist_box.scroll_on,
             prefs.artist_list_sort_mode,
+            prefs.phazor_device_selected,
         ]
 
 

@@ -36,6 +36,18 @@ def player4(tauon):
 
     print("Start PHAzOR backend...")
 
+    # Get output device names
+    if len(prefs.phazor_devices) < 2:
+        try:
+            import pulsectl
+            pulse = pulsectl.Pulse('Tauon Music Box')
+            sink_list = pulse.sink_list()
+            for sink in sink_list:
+                prefs.phazor_devices[sink.description] = sink.name
+            pulse.close()
+        except:
+            print("Warning: Missing dependency Pulsectl")
+
     state = 0
     player_timer = Timer()
     loaded_track = None
@@ -106,6 +118,15 @@ def player4(tauon):
 
     def set_config():
         aud.config_set_dev_buffer(prefs.device_buffer)
+
+        if prefs.phazor_device_selected != "Default":
+            if prefs.phazor_device_selected in prefs.phazor_devices.values():
+                aud.config_set_dev_name(prefs.phazor_device_selected.encode())
+            else:
+                print("Warning: Selected audio output is now missing. Defaulting to default.")
+                aud.config_set_dev_name(None)
+        else:
+            aud.config_set_dev_name(None)
 
     set_config()
 
