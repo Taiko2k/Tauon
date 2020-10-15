@@ -95,6 +95,7 @@ int peak_roll_r = 0;
 int config_fast_seek = 0;
 int config_dev_buffer = 40;
 int config_fade_jump = 1;
+char config_output_sink[256]; // 256 just a conservative guess
 
 unsigned int test1 = 0;
 
@@ -377,7 +378,12 @@ void connect_pulse(){
   }
                       
   int error = 0;
-
+  
+  char *dev = NULL;
+  if (strcmp(config_output_sink, "Default") != 0){
+    dev = config_output_sink;
+  }
+  
   pab.maxlength = (uint32_t) -1;
   pab.fragsize = (uint32_t) -1;
   pab.minreq = (uint32_t) -1;
@@ -392,7 +398,7 @@ void connect_pulse(){
   s = pa_simple_new(NULL,                // Use default server
                     "Tauon Music Box",   // Application name
                     PA_STREAM_PLAYBACK,  // Flow direction
-                    NULL,                // Use the default device
+                    dev, //NULL,                // Use the default device
                     "Music",             // Description
                     &ss,                 // Format
                     NULL,                // Channel map
@@ -401,9 +407,9 @@ void connect_pulse(){
                     );
   
   if (error > 0){
-    printf("pa: PulseAudio init error: ");
-    printf(pa_strerror(error));
-    printf("\n");
+    printf("pa: PulseAudio init error\n");
+    //printf(pa_strerror(error));
+    //printf("\n");
     mode = STOPPED;
   }
   else pulse_connected = 1;
@@ -1395,6 +1401,14 @@ int get_length_ms(){
                                                     
 void config_set_dev_buffer(int ms){
   config_dev_buffer = ms;
+}
+                                  
+void config_set_dev_name(char *device){
+    if (device == NULL){
+    strcpy(config_output_sink, "Default");  
+  } else {
+    strcpy(config_output_sink, device);
+  }
 }
                                   
 int get_level_peak_l(){
