@@ -13,6 +13,7 @@ v6.4.0
  - Tweaked settings function tab page layout
  - Tweaked playlist list to remember scroll position over restart
  - Tweaked album art display to prioritise "folder.*" over other names
+ - Fixed compact mode play/pause button order
  - Fixed column bar peak position
  - Fixed a case where Spotify monitoring would stall
  - Fixed UI draw when using "Return" from showcase view

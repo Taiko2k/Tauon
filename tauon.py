@@ -28106,7 +28106,7 @@ class BottomBarType1:
                 if tauon.stream_proxy.encode_running:
                     play_colour = [220, 50, 50, 255]
 
-            if not compact or (compact and pctl.playing_state != 2):
+            if not compact or (compact and pctl.playing_state != 1):
                 rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
                 fields.add(rect)
                 if coll(rect):
@@ -28136,7 +28136,7 @@ class BottomBarType1:
             y = window_size[1] - self.control_line_bottom
 
 
-            if not compact or (compact and pctl.playing_state == 2):
+            if not compact or (compact and pctl.playing_state == 1):
 
 
                 rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
