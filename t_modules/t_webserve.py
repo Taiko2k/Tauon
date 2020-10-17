@@ -345,7 +345,8 @@ def stream_proxy(tauon):
                         return
                     self.wfile.write(tauon.stream_proxy.chunks[position])
 
-                    vb.input(tauon.stream_proxy.chunks[position])
+                    if tauon.prefs.backend == 4:
+                        vb.input(tauon.stream_proxy.chunks[position])
 
                     position += 1
 
