@@ -24373,12 +24373,12 @@ class Over:
             y += round(23 * gui.scale)
             self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
 
-            y += round(30 * gui.scale)
+            y += round(74 * gui.scale)
             ddt.text((x, y), "If you experience cracking audio, try ", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "increase output buffer.", colours.box_text_label, 12)
-            y += round(25 * gui.scale)
-            prefs.device_buffer = self.slide_control(x + round(45 * gui.scale), y, _("Output buffer"), 'ms', prefs.device_buffer, 10,
+            y += round(0 * gui.scale)
+            prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms', prefs.device_buffer, 10,
                                                      500, 10, self.reload_device)
 
             if prefs.device_buffer > 100:
@@ -26706,8 +26706,7 @@ class TopPanel:
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
             if tr:
-                if pctl.playing_state < 3:
-                    album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
+                album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
                 if loading_in_progress or\
                         to_scan or \
                         cm_clean_db or \

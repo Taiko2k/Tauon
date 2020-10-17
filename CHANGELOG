@@ -17,6 +17,7 @@ v6.4.0
  - Fixed a case where Spotify monitoring would stall
  - Fixed UI draw when using "Return" from showcase view
  - Fixed a bug with seek bar display when using "radio random"
+ - Fixed radio type album art not showing in compact layout
  - Phazor: Added pulseaudio output selector
  - Phazor: Added "Fade on pause/stop" setting
  - Phazor: Added "Fade on jump" setting
