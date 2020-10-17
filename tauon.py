@@ -26715,7 +26715,8 @@ class TopPanel:
                         after_scan or \
                         move_in_progress or \
                         plex.scanning or \
-                        transcode_list:
+                        transcode_list or spot_ctl.launching_spotify or spot_ctl.spotify_com or subsonic.scanning or \
+                        koel.scanning or gui.sync_progress or lastfm.scanning_scrobbles:
 
                     ddt.rect((window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2), colours.top_panel_background, True)
 
@@ -27378,8 +27379,6 @@ class TopPanel:
             if dl > 0:
                 ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pluse_colour, 209) #[244, 223, 66, 255]
                 # [166, 244, 179, 255]
-
-
 
 
         # LAYOUT --------------------------------
@@ -36541,7 +36540,7 @@ def hit_callback(win, point, data):
 
             if point.contents.y < gui.panelY - gui.panelY2:
 
-                if point.contents.x > window_size[0] - 80 * gui.scale and point.contents.y < 30 * gui.scale:
+                if point.contents.x > window_size[0] - 100 * gui.scale and point.contents.y < 30 * gui.scale:
                     return SDL_HITTEST_NORMAL
                 else:
                     return SDL_HITTEST_DRAGGABLE
