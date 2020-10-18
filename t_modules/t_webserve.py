@@ -234,9 +234,18 @@ class VorbisMonitor():
 
     def __init__(self):
 
-        self.enable = True
-        self.buffer = io.BytesIO()
         self.tauon = None
+        self.reset()
+        self.enable = True
+        self.synced = False
+        self.buffer = io.BytesIO()
+        self.tries = 0
+
+    def reset(self, tries=0):
+        self.enable = True
+        self.synced = False
+        self.buffer = io.BytesIO()
+        self.tries = tries
 
     def input(self, data):
 
@@ -259,9 +268,23 @@ class VorbisMonitor():
         ogg = b.read(4)
 
         if not ogg == b"OggS":
-            # print("Not an ogg stream")
-            self.enable = False
-            return
+            f = data.find(b"Oggs")
+            self.reset(self.tries)
+            if f > -1:
+                print("Ogg stream synced")
+                data = data[f:]
+                b = self.buffer
+                b.write(data)
+            else:
+                self.tries += 1
+                if self.tries > 100:
+                    print("Giving up looking for OGG pages")
+                    self.enable = False
+                return
+
+            # self.enable = False
+            # return
+
         b.seek(0, io.SEEK_SET)
         header = struct.unpack('<4sBBqIIiB', b.read(27))
         segs = struct.unpack('B' * header[7], b.read(header[7]))
@@ -287,7 +310,6 @@ class VorbisMonitor():
                 for i in range(comment_list_length):
                     comment_length = int.from_bytes(b.read(4), byteorder='little')
                     comment = b.read(comment_length)
-
 
                     key, value = comment.decode().split("=", 1)
 
@@ -332,7 +354,7 @@ def stream_proxy(tauon):
             self.end_headers()
 
             position = 0
-            vb.enable = True
+            vb.reset()
             vb.tauon = tauon
 
             while True:

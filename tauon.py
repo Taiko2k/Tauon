@@ -5121,13 +5121,6 @@ class PlayerCtl:
             gui.update += 1
             self.playing_time_int = next_round
 
-        # if not prefs.use_transition_crossfade:
-        #     gap_extra = 1.2
-        # else:
-        #     gap_extra = prefs.cross_fade_time / 1000
-        #
-        # if prefs.backend == 2:  # (gstreamer)
-
         gap_extra = 2
 
         if spot_ctl.playing:
@@ -5142,128 +5135,127 @@ class PlayerCtl:
             if spot_ctl.playing and spot_ctl.start_timer.get() < 3:
                 return
 
+            # Allow some time for backend to provide a length
+            if self.playing_time < 6 and self.playing_length == 0:
+                return
+
             self.decode_time = 0
-            if self.playing_length == 0 and self.playing_time < 1:
-                # If the length is unknown, allow backend some time to provide a duration
-                pass
-            else:
 
-                pp = self.playing_playlist()
+            pp = self.playing_playlist()
 
-                if pctl.auto_stop: # and not pctl.force_queue and not (pctl.force_queue and pctl.pause_queue):
-                    self.stop(run=True)
-                    if pctl.force_queue or (not pctl.force_queue and not pctl.random_mode and not pctl.repeat_mode):
-                        self.advance(play=False)
-                    gui.update += 2
-                    pctl.auto_stop = False
+            if pctl.auto_stop: # and not pctl.force_queue and not (pctl.force_queue and pctl.pause_queue):
+                self.stop(run=True)
+                if pctl.force_queue or (not pctl.force_queue and not pctl.random_mode and not pctl.repeat_mode):
+                    self.advance(play=False)
+                gui.update += 2
+                pctl.auto_stop = False
 
-                elif self.force_queue and not self.pause_queue:
-                    self.advance(end=True, quiet=True)
+            elif self.force_queue and not self.pause_queue:
+                self.advance(end=True, quiet=True)
 
-                elif self.repeat_mode is True:
+            elif self.repeat_mode is True:
 
-                    if self.album_repeat_mode:
+                if self.album_repeat_mode:
 
-                        if self.playlist_playing_position > len(pp) - 1:
-                            self.playlist_playing_position = 0  # Hack fix, race conditon bug?
+                    if self.playlist_playing_position > len(pp) - 1:
+                        self.playlist_playing_position = 0  # Hack fix, race conditon bug?
 
-                        ti = self.g(pp[self.playlist_playing_position])
+                    ti = self.g(pp[self.playlist_playing_position])
 
-                        i = self.playlist_playing_position
+                    i = self.playlist_playing_position
 
-                        # Test if next track is in same folder
-                        if i + 1 < len(pp):
-                            nt = self.g(pp[i + 1])
-                            if ti.parent_folder_path == nt.parent_folder_path:
-                                # The next track is in the same folder
-                                # so advance normaly
-                                self.advance(quiet=True, end=True)
-                                return
+                    # Test if next track is in same folder
+                    if i + 1 < len(pp):
+                        nt = self.g(pp[i + 1])
+                        if ti.parent_folder_path == nt.parent_folder_path:
+                            # The next track is in the same folder
+                            # so advance normaly
+                            self.advance(quiet=True, end=True)
+                            return
 
-                        # We need to backtrack to see where the folder begins
+                    # We need to backtrack to see where the folder begins
+                    i -= 1
+                    while i >= 0:
+                        nt = self.g(pp[i])
+                        if ti.parent_folder_path != nt.parent_folder_path:
+                            i += 1
+                            break
                         i -= 1
-                        while i >= 0:
-                            nt = self.g(pp[i])
-                            if ti.parent_folder_path != nt.parent_folder_path:
-                                i += 1
-                                break
-                            i -= 1
-                        if i < 0:
-                            i = 0
+                    if i < 0:
+                        i = 0
 
-                        playlist_selected = i
-                        shift_selection = [i]
+                    playlist_selected = i
+                    shift_selection = [i]
 
-                        self.jump(pp[i], i, jump=False)
+                    self.jump(pp[i], i, jump=False)
 
-                    elif prefs.playback_follow_cursor and self.playing_ready() \
-                            and self.multi_playlist[pctl.active_playlist_viewing][2][
-                        playlist_selected] != self.playing_object().index \
-                            and -1 < playlist_selected < len(default_playlist):
+                elif prefs.playback_follow_cursor and self.playing_ready() \
+                        and self.multi_playlist[pctl.active_playlist_viewing][2][
+                    playlist_selected] != self.playing_object().index \
+                        and -1 < playlist_selected < len(default_playlist):
 
-                        print("Repeat follow cursor")
+                    print("Repeat follow cursor")
 
-                        self.playing_time = 0
-                        self.decode_time = 0
-                        self.active_playlist_playing = self.active_playlist_viewing
-                        self.playlist_playing_position = playlist_selected
-
-                        self.track_queue.append(default_playlist[playlist_selected])
-                        self.queue_step = len(self.track_queue) - 1
-                        self.play_target(jump=False)
-                        self.render_playlist()
-                        lfm_scrobbler.start_queue()
-
-                    else:
-                        self.play_target(jump=False)
-                        # self.playing_time = 0
-                        # self.decode_time = 0
-                        # self.new_time = 0
-                        # self.playerCommand = 'seek'
-                        # self.playerCommandReady = True
-
-                        self.render_playlist()
-                        lfm_scrobbler.start_queue()
-
-                        # Reload lastfm for rescrobble
-                        if lfm_scrobbler.a_sc:
-                            lfm_scrobbler.a_sc = False
-                            self.a_time = 0
-
-
-                elif self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
-                        self.master_library[pp[self.playlist_playing_position]].is_cue is True \
-                        and self.master_library[pp[self.playlist_playing_position + 1]].filename == \
-                        self.master_library[pp[self.playlist_playing_position]].filename and int(
-                    self.master_library[pp[self.playlist_playing_position]].track_number) == int(
-                    self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
-
-                    #  not (self.force_queue and not self.pause_queue) and \
-
-                    # We can shave it closer
-                    if not self.playing_time + 0.1 >= self.playing_length:
-                        return
-
-                    print("Do transition CUE")
-                    self.playlist_playing_position += 1
-                    self.queue_step += 1
-                    self.track_queue.append(pp[self.playlist_playing_position])
-                    self.playing_state = 1
                     self.playing_time = 0
                     self.decode_time = 0
-                    self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
-                    self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
-                    self.start_time_target = self.start_time
+                    self.active_playlist_playing = self.active_playlist_viewing
+                    self.playlist_playing_position = playlist_selected
+
+                    self.track_queue.append(default_playlist[playlist_selected])
+                    self.queue_step = len(self.track_queue) - 1
+                    self.play_target(jump=False)
+                    self.render_playlist()
                     lfm_scrobbler.start_queue()
 
-                    gui.update += 1
-                    gui.pl_update = 1
-
                 else:
-                    self.advance(quiet=True, end=True)
+                    self.play_target(jump=False)
+                    # self.playing_time = 0
+                    # self.decode_time = 0
+                    # self.new_time = 0
+                    # self.playerCommand = 'seek'
+                    # self.playerCommandReady = True
 
-                    self.playing_time = 0
-                    self.decode_time = 0
+                    self.render_playlist()
+                    lfm_scrobbler.start_queue()
+
+                    # Reload lastfm for rescrobble
+                    if lfm_scrobbler.a_sc:
+                        lfm_scrobbler.a_sc = False
+                        self.a_time = 0
+
+            elif self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
+                    self.master_library[pp[self.playlist_playing_position]].is_cue is True \
+                    and self.master_library[pp[self.playlist_playing_position + 1]].filename == \
+                    self.master_library[pp[self.playlist_playing_position]].filename and int(
+                self.master_library[pp[self.playlist_playing_position]].track_number) == int(
+                self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
+
+                #  not (self.force_queue and not self.pause_queue) and \
+
+                # We can shave it closer
+                if not self.playing_time + 0.1 >= self.playing_length:
+                    return
+
+                print("Do transition CUE")
+                self.playlist_playing_position += 1
+                self.queue_step += 1
+                self.track_queue.append(pp[self.playlist_playing_position])
+                self.playing_state = 1
+                self.playing_time = 0
+                self.decode_time = 0
+                self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
+                self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
+                self.start_time_target = self.start_time
+                lfm_scrobbler.start_queue()
+
+                gui.update += 1
+                gui.pl_update = 1
+
+            else:
+                self.advance(quiet=True, end=True)
+
+                self.playing_time = 0
+                self.decode_time = 0
 
     def advance_broadcast(self, start=False):
 
@@ -14593,6 +14585,8 @@ def sort_track_2(pl, custom_list=None):
     gui.pl_update += 1
 
 
+
+
 def key_filepath(index):
     track = pctl.master_library[index]
     return track.parent_folder_path.lower(), track.filename
@@ -14791,10 +14785,22 @@ def export_stats(pl):
         subprocess.call(["xdg-open", target])
 
 
+def imported_sort(pl):
+
+    if pl_is_locked(pl):
+        show_message(_("Playlist is locked"))
+        return
+
+    pctl.multi_playlist[pl][2].sort(key= lambda x: pctl.g(x).index)
+
+    reload_albums()
+    tree_view_box.clear_target_pl(pl)
+
+
 def standard_sort(pl):
 
     if pl_is_locked(pl):
-        show_message("Playlist is locked")
+        show_message(_("Playlist is locked"))
         return
 
     sort_path_pl(pl)
@@ -14885,13 +14891,9 @@ def year_sort(pl, custom_list=None):
     tree_view_box.clear_target_pl(pl)
 
 
-
-
-
 def pl_toggle_playlist_break(ref):
     pctl.multi_playlist[ref][4] ^= 1
     gui.pl_update = 1
-
 
 
 delete_icon.xoff = 3
@@ -15720,6 +15722,7 @@ extra_tab_menu.add_sub(_("From Current…"), 133)
 # tab_menu.add(_("Sort Track Numbers"), sort_track_2, pass_ref=True)
 # tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
+tab_menu.add_to_sub(_("Sort by Imported"), 1, imported_sort, pass_ref=True)
 tab_menu.add_to_sub(_("Sort by Filepath"), 1, standard_sort, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Track Numbers'), 1, sort_track_2, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Year per Artist'), 1, year_sort, pass_ref=True)

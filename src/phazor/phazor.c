@@ -886,7 +886,7 @@ void *out_thread(void *thread_id){
 
         if (mode == PLAYING){
           disconnect_pulse();
-          printf("pa: Buffering...\n");
+          if (buffering == 0) printf("pa: Buffering...\n");
           buffering = 1;
         } else buffering = 0;
     }
