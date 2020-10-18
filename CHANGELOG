@@ -8,6 +8,7 @@ v6.4.0
  - Added function to import scrobble counts and column to display
  - Added custom Listenbrainz server option
  - Added "Launching Spotfiy" status text
+ - Added new sorting option "Sort by Imported"
  - Tweaked playlists stats readout
  - Tweaked artist list appearance
  - Tweaked settings function tab page layout
