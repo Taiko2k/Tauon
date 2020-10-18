@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-10-10 00:00+1300\n"
-"PO-Revision-Date: 2020-09-14 13:33+0000\n"
+"PO-Revision-Date: 2020-10-11 06:26+0000\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
@@ -63,7 +63,7 @@ msgstr "Kan inte skapa Spotify-lista"
 
 #: tauon.py:6679
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Kanske kontrollera din internetuppkoppling och försöka igen?"
 
 #: tauon.py:6870
 msgid "Spotify Likes"
