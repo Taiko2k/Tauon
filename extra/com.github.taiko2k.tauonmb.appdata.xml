@@ -58,7 +58,7 @@
 
   <releases>
 
-    <release version="6.4.0" date="2020-10-17">
+    <release version="6.4.0" date="2020-10-19">
       <description>
         <ul>
           <li>Added Maloja scrobble support</li>
