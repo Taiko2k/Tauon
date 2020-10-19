@@ -25,6 +25,7 @@ v6.4.0
  - Phazor: Added "Fade on jump" setting
  - Phazor: Added OGG metadata parsing for internet radio
  - Phazor: Fixed a crash when attempting to play mono FLACs
+ - Phazor: Fixed FFMPEG processes not being cleaned up
 
 v6.3.3
 
