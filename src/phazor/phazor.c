@@ -73,6 +73,7 @@ unsigned int reset_set_value = 0;
 unsigned int reset_set_byte = 0;
 
 char load_target_file[4096]; // 4069 bytes for max linux filepath
+char loaded_target_file[4096] = ""; // 4069 bytes for max linux filepath
 
 unsigned int load_target_seek = 0;
 unsigned int next_ready = 0;
@@ -439,7 +440,7 @@ void decode_seek(int abs_ms, int sample_rate){
     break;
   case FFMPEG:
     stop_ffmpeg();
-    start_ffmpeg (load_target_file, abs_ms);
+    start_ffmpeg (loaded_target_file, abs_ms);
     break;
     }
   
@@ -448,25 +449,24 @@ void decode_seek(int abs_ms, int sample_rate){
 int load_next(){
   // Function to load a file / prepare decoder
   
-  //printf("pa: Loading file: %s\n", load_target_file);
-  
   stop_decoder();
- 
+  
+  strcpy(loaded_target_file, load_target_file); 
+
   int channels;
   int encoding;
   long rate;
   int e = 0;
   
   char *ext;
-  ext = strrchr(load_target_file, '.');
+  ext = strrchr(loaded_target_file, '.');
   
   codec = UNKNOWN;
   current_length_count = 0;
   buffering = 0;
   samples_decoded = 0;
   
-  
-  if (load_target_file[0] == 'h') buffering = 1;
+  if (loaded_target_file[0] == 'h') buffering = 1;
   
   char peak[35];
   
@@ -475,9 +475,10 @@ int load_next(){
       strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
       strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
       strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
-      load_target_file[0] == 'h'){
+      loaded_target_file[0] == 'h'){
         codec = FFMPEG;
-        start_ffmpeg (load_target_file, load_target_seek);
+        
+        start_ffmpeg (loaded_target_file, load_target_seek);
         pthread_mutex_lock(&buffer_mutex);
         if (current_sample_rate != 44100){
           sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -488,15 +489,16 @@ int load_next(){
   }
   
   
-  if ((fptr = fopen(load_target_file, "rb")) == NULL) {
+  if ((fptr = fopen(loaded_target_file, "rb")) == NULL) {
     
       printf("pa: Error opening file\n");
       return 1;
   }
   
-                 
-  stat(load_target_file, &st);
+                
+  stat(loaded_target_file, &st);
   load_file_size = st.st_size;
+  printf("pa: target was: %s\n", loaded_target_file);
   
   fread(peak, sizeof (peak), 1, fptr); 
   
@@ -544,13 +546,13 @@ int load_next(){
     // and we dont wanna interrupt the output for too long.
     case OPUS:
     
-    opus_dec = op_open_file (load_target_file, &e);
+    opus_dec = op_open_file (loaded_target_file, &e);
     decoder_allocated = 1;
     
     if (e != 0){
       printf("pa: Error reading ogg file (expecting opus)\n");
       printf("pa: %d\n", e);
-      printf("pa: %s\n", load_target_file);
+      printf("pa: %s\n", loaded_target_file);
     }
 
     if (e == 0) {
@@ -579,7 +581,7 @@ int load_next(){
     break;  
     case VORBIS:
 
-    e = ov_fopen(load_target_file, &vf);
+    e = ov_fopen(loaded_target_file, &vf);
     decoder_allocated = 1;
     if (e != 0){
       printf("pa: Error reading ogg file (expecting vorbis)\n");
@@ -615,7 +617,7 @@ int load_next(){
     case FLAC:
       if ( FLAC__stream_decoder_init_file(
         dec,
-        load_target_file,
+        loaded_target_file,
         &f_write,
         NULL, //&f_meta,
         &f_err,
@@ -630,7 +632,7 @@ int load_next(){
     
     case MPG:
 
-      mpg123_open(mh, load_target_file);
+      mpg123_open(mh, loaded_target_file);
       decoder_allocated = 1;
       mpg123_getformat(mh, &rate, &channels, &encoding);
       mpg123_scan(mh);
@@ -755,12 +757,13 @@ void pump_decode(){
     if (done == 0){
       
       // Check if file was appended to...   
-      stat(load_target_file, &st);
+      stat(loaded_target_file, &st);
       if (load_file_size != st.st_size){
         printf("pa: Ogg file size changed!\n");
+        printf("pa: target was: %s\n", loaded_target_file);
         int e = 0;
         op_free(opus_dec);
-        opus_dec = op_open_file(load_target_file, &e);
+        opus_dec = op_open_file(loaded_target_file, &e);
         op_pcm_seek(opus_dec, samples_decoded / 2); 
         return;
       }
@@ -885,7 +888,7 @@ void *out_thread(void *thread_id){
 
     }
     
-    if (buff_filled < 1000 && load_target_file[0] == 'h'){
+    if (buff_filled < 1000 && loaded_target_file[0] == 'h'){
 
         if (mode == PLAYING){
           disconnect_pulse();
@@ -1139,7 +1142,7 @@ void *main_loop(void *thread_id){
                 reset_set_value = 0;
                 
               }
-              //reset_set = 1;
+
             }
           } else {
           
