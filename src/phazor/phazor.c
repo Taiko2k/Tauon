@@ -200,11 +200,13 @@ void start_ffmpeg(char uri[], int start_ms){
   ffm = popen(exe_string, "r");
   if (ffm == NULL){
     printf("pa: Error starting FFMPEG\n");
+    return;
   } 
+  decoder_allocated = 1;
 }
 
 void stop_ffmpeg(){
-  printf("pa: Stop FFMPEG\n");
+  //printf("pa: Stop FFMPEG\n");
   pclose(ffm);
 }
 
@@ -341,7 +343,8 @@ void stop_decoder(){
     mpg123_close(mh);
     break;
   case FFMPEG:
-    pclose(ffm);
+    stop_ffmpeg();
+    break;
   }
   decoder_allocated = 0;
 }                                        
