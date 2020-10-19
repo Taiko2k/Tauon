@@ -498,7 +498,6 @@ int load_next(){
                 
   stat(loaded_target_file, &st);
   load_file_size = st.st_size;
-  printf("pa: target was: %s\n", loaded_target_file);
   
   fread(peak, sizeof (peak), 1, fptr); 
   
@@ -760,7 +759,6 @@ void pump_decode(){
       stat(loaded_target_file, &st);
       if (load_file_size != st.st_size){
         printf("pa: Ogg file size changed!\n");
-        printf("pa: target was: %s\n", loaded_target_file);
         int e = 0;
         op_free(opus_dec);
         opus_dec = op_open_file(loaded_target_file, &e);
