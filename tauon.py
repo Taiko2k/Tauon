@@ -33,7 +33,7 @@ import os
 import pickle
 import shutil
 
-n_version = "6.4.0"
+n_version = "6.4.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -3336,6 +3336,21 @@ if db_version > 0:
         print("Updating database to version 55")
         for key, value in master_library.items():
             setattr(master_library[key], 'lfm_scrobbles', 0)
+
+    # if db_version <= 55:
+    #     print("Update to db 56")
+    #     for key, value in master_library.items():
+    #
+    #         if hasattr(value, "track_gain"):
+    #             if value.track_gain != 0:
+    #                 value.misc["replaygain_track_gain"] = value.track_gain
+    #             del value.track_gain
+    #
+    #         if hasattr(value, "album_gain"):
+    #             if value.album_gain != 0:
+    #                 value.misc["replaygain_album_gain"] = value.album_gain
+    #             del value.album_gain
+
 
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
@@ -9854,20 +9869,14 @@ class ThumbTracks:
         pass
 
     def path(self, track):
-        image_name = track.album
-        if not image_name:
-            image_name = track.filename
-        if not image_name:
-            image_name = track.title
 
         source, offset = gall_ren.get_file_source(track)
 
-        if source is False:
-            # print("NO ART")
+        if source is False:  # No art
             return None
 
-        image_name += "-" + str(offset)
-        image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+        image_name = track.album + track.parent_folder_path + str(offset)
+        image_name = hashlib.md5(image_name.encode()).hexdigest()
 
         t_path = os.path.join(e_cache_dir, image_name + '.jpg')
 
@@ -9882,7 +9891,6 @@ class ThumbTracks:
         im.thumbnail((1000, 1000), Image.ANTIALIAS)
 
         im.save(t_path, 'JPEG')
-        # source_image.close()
 
         return t_path
 
