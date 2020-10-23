@@ -57,6 +57,37 @@ def player4(tauon):
     aud.init()
     aud.set_volume(int(pctl.player_volume))
 
+    def calc_rg(track):
+
+        if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
+            pctl.active_replaygain = 0
+            return 0
+
+        g = 0
+        p = 1
+
+        if track is not None:
+            tg = track.misc.get("replaygain_track_gain")
+            tp = track.misc.get("replaygain_track_peak")
+            ag = track.misc.get("replaygain_album_gain")
+            ap = track.misc.get("replaygain_album_peak")
+
+            if prefs.replay_gain > 0:
+                if (prefs.replay_gain == 1 and tg is not None) or (prefs.replay_gain == 2 and ag is None and tg is not None):
+                    g = tg
+                    if tp is not None:
+                        p = tp
+                elif ag is not None:
+                    g = ag
+                    if ap is not None:
+                        p = ap
+
+        # print("Replay gain")
+        # print("GAIN: " + str(g))
+        # print("PEAK: " + str(p))
+        # print("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
+        pctl.active_replaygain = g
+        return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
     class URLDownloader:
 
@@ -166,7 +197,7 @@ def player4(tauon):
                         pctl.playerCommandReady = True
                         break
                 else:
-                    aud.start(pctl.url.encode(), 0, 0)
+                    aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(calc_rg(None)))
                     state = 3
                     player_timer.hit()
 
@@ -268,7 +299,7 @@ def player4(tauon):
 
                     print("Transition gapless mode")
 
-                    aud.next(pctl.target_object.fullpath.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000)
+                    aud.next(pctl.target_object.fullpath.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
                     pctl.playing_time = pctl.jump_time
 
                     if remain > 0:
@@ -280,7 +311,7 @@ def player4(tauon):
                     fade = 0
                     if state == 1 and prefs.use_jump_crossfade:
                         fade = 1
-                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade)
+                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
                     loaded_track = target_object
                     pctl.playing_time = pctl.jump_time
                     state = 1
@@ -312,7 +343,7 @@ def player4(tauon):
 
                     if loaded_track.is_network and loaded_track.fullpath.endswith(".ogg"):
                         # The vorbis decoder doesn't like appended files
-                        aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0)
+                        aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
                     else:
                         aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
 

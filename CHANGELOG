@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.4.1
 
+ - Improved ReplayGain support
  - Reduced exported thumbnail collisions
 
 v6.4.0

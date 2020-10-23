@@ -1032,7 +1032,7 @@ class Prefs:    # Used to hold any kind of settings
         # "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
         line = ""
         if prefs.replay_gain:
-            line += "rgvolume pre-amp=0 fallback-gain=0 album-mode="
+            line += f"rgvolume pre-amp={prefs.replay_preamp} fallback-gain=0 album-mode="
             if prefs.replay_gain == 1:
                 line += "false"
             else:
@@ -1133,6 +1133,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.mkey = True
         self.replay_gain = 0  # 0=off 1=track 2=album
+        self.replay_preamp = 0  # db
         self.radio_page_lyrics = True
 
         self.show_gimage = False
@@ -2544,8 +2545,6 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.disc_number = ""
         self.disc_total = ""
         self.lyrics = ""
-        self.album_gain = None
-        self.track_gain = None
 
         self.lfm_friend_likes = set()
         self.lfm_scrobbles = 0
@@ -3337,19 +3336,19 @@ if db_version > 0:
         for key, value in master_library.items():
             setattr(master_library[key], 'lfm_scrobbles', 0)
 
-    # if db_version <= 55:
-    #     print("Update to db 56")
-    #     for key, value in master_library.items():
-    #
-    #         if hasattr(value, "track_gain"):
-    #             if value.track_gain != 0:
-    #                 value.misc["replaygain_track_gain"] = value.track_gain
-    #             del value.track_gain
-    #
-    #         if hasattr(value, "album_gain"):
-    #             if value.album_gain != 0:
-    #                 value.misc["replaygain_album_gain"] = value.album_gain
-    #             del value.album_gain
+    if db_version <= 55:
+        print("Update to db 56")
+        for key, value in master_library.items():
+
+            if hasattr(value, "track_gain"):
+                if value.track_gain != 0:
+                    value.misc["replaygain_track_gain"] = value.track_gain
+                del value.track_gain
+
+            if hasattr(value, "album_gain"):
+                if value.album_gain != 0:
+                    value.misc["replaygain_album_gain"] = value.album_gain
+                del value.album_gain
 
 
 if old_backend == 1:
@@ -3899,8 +3898,6 @@ def tag_scan(nt):
             nt.track_total = audio.track_total
             nt.disc_total = audio.disc_total
             nt.comment = audio.comment
-            nt.track_gain = audio.track_gain
-            nt.album_gain = audio.album_gain
             nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
 
@@ -3941,8 +3938,6 @@ def tag_scan(nt):
             nt.track_total = audio.track_total
             nt.disc_total = audio.disc_total
             nt.comment = audio.comment
-            nt.track_gain = audio.track_gain
-            nt.album_gain = audio.album_gain
             nt.misc = audio.misc
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
@@ -3969,8 +3964,6 @@ def tag_scan(nt):
             nt.album_artist = audio.album_artist
             nt.disc_number = audio.disc_number
             nt.lyrics = audio.lyrics
-            nt.track_gain = audio.track_gain
-            nt.album_gain = audio.album_gain
             if nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
@@ -4022,8 +4015,6 @@ def tag_scan(nt):
             #nt.track_total = audio.track_total
             #nt.disc_total = audio.disc_total
             nt.comment = audio.comment
-            #nt.track_gain = audio.track_gain
-            #nt.album_gain = audio.album_gain
             #nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
 
@@ -4098,10 +4089,16 @@ def tag_scan(nt):
                         if hasattr(item, 'description'):
                             if item.description.lower() == "fmps_rating":
                                 nt.misc['FMPS_Rating'] = float(item.value)
-                            if item.description == "replaygain_album_gain":
-                                nt.album_gain = float(item.value.strip(" dB"))
+
                             if item.description == "replaygain_track_gain":
-                                nt.track_gain = float(item.value.strip(" dB"))
+                                nt.misc["replaygain_track_gain"] = float(item.value.strip(" dB"))
+                            if item.description == "replaygain_track_peak":
+                                    nt.misc["replaygain_track_peak"] = float(item.value)
+                            if item.description == "replaygain_album_gain":
+                                nt.misc["replaygain_album_gain"] = float(item.value.strip(" dB"))
+                            if item.description == "replaygain_album_peak":
+                                    nt.misc["replaygain_album_peak"] = float(item.value)
+
                             if item.description == "MusicBrainz Release Track Id":
                                 nt.misc['musicbrainz_trackid'] = item.value
                             if item.description == "MusicBrainz Album Id":
@@ -16348,7 +16345,7 @@ def gen_replay(pl):
     playlist = []
 
     for item in pctl.multi_playlist[pl][2]:
-        if pctl.master_library[item].track_gain:
+        if pctl.master_library[item].misc.get("replaygain_track_gain"):
             playlist.append(item)
 
     if len(playlist) > 0:
@@ -24133,6 +24130,7 @@ class Over:
         self.view_view = 0
         self.chart_view = 0
         self.eq_view = False
+        self.rg_view = False
         self.sync_view = False
 
         self.account_text_field = -1
@@ -24270,6 +24268,80 @@ class Over:
             link_pa = draw_linked_text((x, y), _("Based on") + " " + "https://love.holllo.cc/", colours.box_text_label, 312, replace="love.holllo.cc")
             link_activate(x, y, link_pa, click=self.click)
 
+    def rg(self, x0, y0, w0, h0):
+        y = y0 + 55 * gui.scale
+        x = x0 + 130 * gui.scale
+
+        if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=75 * gui.scale):
+            self.rg_view = False
+
+        y = y0 + round(15 * gui.scale)
+        x = x0 + round(50 * gui.scale)
+
+        ddt.text((x, y), _("ReplayGain"), colours.box_text_label, 14)
+        y += round(25 * gui.scale)
+
+        self.toggle_square(x, y, switch_rg_off, _("Off"))
+        y += round(22 * gui.scale)
+        self.toggle_square(x, y, switch_rg_album, _("Preserve album dynamics"))
+        y += round(22 * gui.scale)
+        self.toggle_square(x, y, switch_rg_track, _("Tracks equal loudness"))
+
+        y += round(25 * gui.scale)
+        ddt.text((x, y), _("Will only have effect if ReplayGain metadata is present."), colours.box_text_label, 12)
+        y += round(26 * gui.scale)
+
+        ddt.text((x, y), _("Pre-amp"), colours.box_text_label, 14)
+        y += round(26 * gui.scale)
+
+        sw = round(170 * gui.scale)
+        sh = round(2 * gui.scale)
+
+        slider = (x, y, sw, sh)
+
+        gh = round(14 * gui.scale)
+        gw = round(8 * gui.scale)
+        grip = [0, y - (gh // 2), gw, gh]
+
+        grip[0] = x
+
+        bp = prefs.replay_preamp + 15
+
+        grip[0] += (bp / 30 * sw)
+
+        m1 = (x, y, sh, sh * 2)
+        m2 = ((x + sw // 2), y, sh, sh * 2)
+        m3 = ((x + sw), y, sh, sh * 2)
+
+        if coll(grow_rect(slider, 15)) and mouse_down:
+            bp = (mouse_position[0] - x) / sw * 30
+
+        bp = round(bp)
+        bp = max(bp, 0)
+        bp = min(bp, 30)
+        prefs.replay_preamp = bp - 15
+
+        # grip[0] += (bp / 30 * sw)
+
+        ddt.rect(slider, colours.box_text_border, True)
+        ddt.rect(m1, colours.box_text_border, True)
+        ddt.rect(m2, colours.box_text_border, True)
+        ddt.rect(m3, colours.box_text_border, True)
+        ddt.rect(grip, colours.box_text_label, True)
+
+        text = f"{prefs.replay_preamp} dB"
+        if prefs.replay_preamp > 0:
+            text = "+" + text
+
+        colour = colours.box_sub_text
+        if prefs.replay_preamp == 0:
+            colour = colours.box_text_label
+        ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colour, 11)
+        # print(prefs.replay_preamp)
+
+        y += round(18 * gui.scale)
+        ddt.text((x, y, 4, 310 * gui.scale, 300 * gui.scale), _("Lower pre-amp values improve normalisation but will require a higher system volume."), colours.box_text_label, 12)
+
     def eq(self, x0, y0, w0, h0):
 
         y = y0 + 55 * gui.scale
@@ -24333,12 +24405,18 @@ class Over:
 
     def audio(self, x0, y0, w0, h0):
 
+        global mouse_down
+
         ddt.text_background_colour = colours.box_background
         y = y0 + 40 * gui.scale
         x = x0 + 20 * gui.scale
 
         if self.eq_view:
             self.eq(x0, y0, w0, h0)
+            return
+
+        if self.rg_view:
+            self.rg(x0, y0, w0, h0)
             return
 
         colour = colours.box_sub_text
@@ -24372,19 +24450,24 @@ class Over:
             y += round(17 * gui.scale)
             ddt.text((x, y), "playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
 
-            y += round(26 * gui.scale)
+            y += round(35 * gui.scale)
             # ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
             # y += round(22 * gui.scale)
             #
             # prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
             # prefs.pa_fast_seek = self.toggle_square(x + 90 * gui.scale, y, prefs.pa_fast_seek, "Fast")
 
-            y += round(28 * gui.scale)
             self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
             y += round(23 * gui.scale)
             self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
 
-            y += round(74 * gui.scale)
+            y += round(35 * gui.scale)
+            if self.button(x, y, _("ReplayGain")):
+                mouse_down = False
+                self.rg_view = True
+
+
+            y += round(57 * gui.scale)
             ddt.text((x, y), "If you experience cracking audio, try ", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "increase output buffer.", colours.box_text_label, 12)
@@ -24456,15 +24539,12 @@ class Over:
             reload = False
             bk_gain = prefs.replay_gain
 
+            y += round(15 * gui.scale)
             if not prefs.gst_use_custom_output:
-                ddt.text((x, y), _("ReplayGain"), colours.box_text_label, 12)
-                y += round(22 * gui.scale)
+                if self.button(x, y, _("ReplayGain")):
+                    mouse_down = False
+                    self.rg_view = True
 
-                self.toggle_square(x, y, switch_rg_off, _("Off"))
-                y += round(22 * gui.scale)
-                self.toggle_square(x, y, switch_rg_album, _("Album gain"))
-                y += round(22 * gui.scale)
-                self.toggle_square(x, y, switch_rg_track, _("Track gain"))
             else:
                 y += round(66 * gui.scale)
 
@@ -38438,6 +38518,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+            gen_replay(pctl.active_playlist_viewing)
             pass
 
         if gui.mode < 3:
