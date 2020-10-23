@@ -207,10 +207,14 @@ class Flac:
                         print("      In file: " + self.filepath)
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
-                    elif 'replaygain_track_gain' == a:
-                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
-                    elif 'replaygain_album_gain' == a:
-                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_track_gain" == a:
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_track_peak" == a:
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
+                    elif "replaygain_album_gain" == a:
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_album_peak" == a:
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif 'composer' == a:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
@@ -496,14 +500,16 @@ class Opus:
                         print("      In file: " + self.filepath)
                         self.has_picture = True
                         self.picture = b
-                        #print(b)
-
-                        # To do
+                        # print(b)
 
                     elif 'replaygain_track_gain' == a:
-                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_track_peak' == a:
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif 'replaygain_album_gain' == a:
-                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_album_peak' == a:
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
                     elif a == 'disctotal' or a == 'totaldiscs':
@@ -712,12 +718,17 @@ class Ape:
                     self.label = value
                 elif key.lower() == "lyrics":
                     self.lyrics = value
+                elif "replaygain_track_gain" == key.lower():
+                    self.misc["replaygain_track_gain"] = float(value.strip(" dB"))
+                elif "replaygain_track_peak" == key.lower():
+                    self.misc["replaygain_track_peak"] = float(value)
+                elif "replaygain_album_gain" == key.lower():
+                    self.misc["replaygain_album_gain"] = float(value.strip(" dB"))
+                elif "replaygain_album_peak" == key.lower():
+                    self.misc["replaygain_album_peak"] = float(value)
                 elif parse_mbids_from_vorbis(self, key.lower(), value):
                     pass
-                elif 'replaygain_track_gain' == key.lower():
-                    self.track_gain = float(value.strip(" dB"))
-                elif 'replaygain_album_gain' == key.lower():
-                    self.album_gain = float(value.strip(" dB"))
+
                 elif key.lower() == "cover art (front)":
 
                     # Data appears to have a filename at the start of it, we need to remove to recover a valid picture

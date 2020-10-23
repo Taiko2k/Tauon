@@ -72,6 +72,12 @@ unsigned int reset_set = 0;
 unsigned int reset_set_value = 0;
 unsigned int reset_set_byte = 0;
 
+int rg_set = 0;
+int rg_byte = 0;
+float rg_value_want = 0.0;
+float rg_value_on = 0.0;
+
+
 char load_target_file[4096]; // 4069 bytes for max linux filepath
 char loaded_target_file[4096] = ""; // 4069 bytes for max linux filepath
 
@@ -314,7 +320,7 @@ void f_meta(const FLAC__StreamDecoder *decoder, const FLAC__StreamMetadata *meta
 }
  
 void f_err(const FLAC__StreamDecoder *decoder, FLAC__StreamDecoderErrorStatus status, void *client_data){
-  printf("GOT ERR\n");
+  printf("GOT FLAC ERR\n");
 }
 
 
@@ -467,6 +473,9 @@ int load_next(){
   samples_decoded = 0;
   
   if (loaded_target_file[0] == 'h') buffering = 1;
+  
+  rg_set = 1;
+  rg_byte = (buff_filled + buff_base) % BUFF_SIZE;
   
   char peak[35];
   
@@ -926,6 +935,25 @@ void *out_thread(void *thread_id){
             position_count = reset_set_value;
           }
           
+          // Set new gain value
+          if (config_fade_jump == 0){
+            if (rg_set == 1 && reset_set_byte == buff_base){
+              rg_value_on = rg_value_want;
+              rg_set = 0;
+            }
+          } else {
+            if (rg_set == 1) {
+              if (fabs(rg_value_on - rg_value_want) < 0.01){
+                // printf("pa: SET\n");
+                rg_value_on = rg_value_want;
+              }
+              if (rg_value_on < rg_value_want) rg_value_on += ramp_step(current_sample_rate, 2000);
+              if (rg_value_on > rg_value_want) rg_value_on -= ramp_step(current_sample_rate, 2000);
+              if (rg_value_on == rg_value_want) rg_set = 0;
+              // printf("%f\n", rg_value_on);
+            }
+          }
+                   
           // Ramp control ---
           if (mode == RAMP_DOWN){
             gate -= ramp_step(current_sample_rate, 5);
@@ -955,8 +983,27 @@ void *out_thread(void *thread_id){
           
           if (abs(buff16l[buff_base]) > peak_roll_l) peak_roll_l = abs(buff16l[buff_base]);
           if (abs(buff16r[buff_base]) > peak_roll_r) peak_roll_r = abs(buff16r[buff_base]);
-                                  
-          // Apply total volume adjustment (logarithmic)
+        
+          // Apply gain amp
+          if (rg_value_on != 0.0){
+            
+            // Left channel
+            if (buff16l[buff_base] > 0 && buff16l[buff_base] * rg_value_on <= 0){
+              printf("pa: Warning: Audio clipped!\n");
+            } else if (buff16l[buff_base] < 0 && buff16l[buff_base] * rg_value_on >= 0){
+              printf("pa: Warning: Audio clipped!\n");
+            } else buff16l[buff_base] *= rg_value_on;
+            
+            // Right channel
+            if (buff16r[buff_base] > 0 && buff16r[buff_base] * rg_value_on <= 0){
+              printf("pa: Warning: Audio clipped!\n");
+            } else if (buff16r[buff_base] < 0 && buff16r[buff_base] * rg_value_on >= 0){
+              printf("pa: Warning: Audio clipped!\n");
+            } else buff16r[buff_base] *= rg_value_on;                                     
+            
+          } // End amp
+        
+          // Apply final volume adjustment (logarithmic)
           buff16l[buff_base] *= pow(gate * volume_on, 2.0);
           buff16r[buff_base] *= pow(gate * volume_on, 2.0);
           
@@ -1297,12 +1344,13 @@ int get_status(){
   return mode;
 }
 
-int start(char *filename, int start_ms, int fade){
+int start(char *filename, int start_ms, int fade, float rg){
 
   while (command != NONE){
     usleep(1000);
   }
-                                                   
+                                                             
+  rg_value_want = rg;              
   config_fade_jump = fade;
   
   load_target_seek = start_ms;
@@ -1317,17 +1365,19 @@ int start(char *filename, int start_ms, int fade){
 }
 
 
-int next(char *filename, int start_ms){
+int next(char *filename, int start_ms, float rg){
 
   while (command != NONE){
     usleep(1000);
   }
+                                                  
 
   if (mode == STOPPED){
-    start(filename, start_ms, 0);
+    start(filename, start_ms, 0, rg);
   } else {
     load_target_seek = start_ms;
-    strcpy(load_target_file, filename);  
+    strcpy(load_target_file, filename);
+    rg_value_want = rg;
     next_ready = 1;
   }
                                         
