@@ -5,6 +5,7 @@ v6.4.1
 
  - Improved ReplayGain support
  - Reduced exported thumbnail collisions
+ - Added workaround for GStreamer EQ invert slider bug
 
 v6.4.0
 
