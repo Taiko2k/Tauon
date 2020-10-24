@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v6.4.1
 
+ - Added spotify icon button to track info box
  - Improved ReplayGain support
+ - Improved Airsonic scan error handling
  - Reduced exported thumbnail collisions
  - Added workaround for GStreamer EQ invert slider bug
 

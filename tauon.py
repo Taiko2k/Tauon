@@ -1810,6 +1810,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.backend_reloading = False
 
+        self.spot_info_icon = asset_loader("spot-info.png", True)
+
 gui = GuiVar()
 
 
@@ -7194,6 +7196,7 @@ class SubsonicService:
             a = self.r("getIndexes")
         except:
             show_message("Error connecting to Airsonic server", mode="error")
+            self.scanning = False
             return []
 
         b = a["subsonic-response"]["indexes"]["index"]
@@ -7212,8 +7215,12 @@ class SubsonicService:
 
         def get(folder_id, name):
 
-            d = self.r("getMusicDirectory", p={"id": folder_id})
-            if "child" not in d["subsonic-response"]["directory"]:
+            try:
+                d = self.r("getMusicDirectory", p={"id": folder_id})
+                if "child" not in d["subsonic-response"]["directory"]:
+                    return
+            except json.decoder.JSONDecodeError:
+                show_message("Error reading Airsonic directory!", mode="warning")
                 return
 
             items = d["subsonic-response"]["directory"]["child"]
@@ -9738,9 +9745,9 @@ class GallClass:
                 time.sleep(0.001)
 
             except:
-                #raise
+                # raise
                 print('ERROR: Image load failed on track: ' + key[0].fullpath)
-                console.print('ERROR: Image load failed on track: ' , level=3)
+                console.print('ERROR: Image load failed on track: ', level=3)
                 console.print("- " + key[0].fullpath, level=5)
                 order = [0, None, None, None]
                 self.gall[key] = order
@@ -40851,7 +40858,6 @@ while pctl.running:
                     y -= int(24 * gui.scale)
                     y1 = int(y + (40 * gui.scale))
 
-
                     ext_rect = [x + w - round(38 * gui.scale), y + round(44 * gui.scale), round(38 * gui.scale), round(12 * gui.scale)]
 
                     line = tc.file_ext
@@ -40860,16 +40866,40 @@ while pctl.running:
                     if line in format_colours:
                         ex_colour = format_colours[line]
 
-                    ddt.rect(ext_rect, ex_colour, True)
-                    ddt.text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), line, alpha_blend([10, 10, 10, 235], ex_colour), 211, bg=ex_colour)
+                    # Spotify icon rendering
+                    if line == "SPTY":
+                        h, l, s = rgb_to_hls(colours.box_background[0], colours.box_background[1], colours.box_background[2])
+                        l += 0.5
 
-                    if tc.is_cue:
-                        ext_rect[1] += 16 * gui.scale
-                        colour = [218, 222, 73, 255]
-                        if tc.is_embed_cue:
-                            colour = [252, 199, 55, 255]
-                        ddt.rect(ext_rect, colour, True)
-                        ddt.text((int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
+                        rect = (x + w - round(35 * gui.scale), y + round(30 * gui.scale), round(30 * gui.scale), round(30 * gui.scale))
+                        fields.add(rect)
+                        if coll(rect):
+                            l += 0.2
+                            gui.cursor_want = 3
+
+                            if inp.mouse_click:
+                                url = tc.misc.get("spotify-album-url")
+                                if url is None:
+                                    url = tc.misc.get("spotify-track-url")
+                                if url:
+                                    webbrowser.open(url, new=2, autoraise=True)
+
+                        colour = hls_to_rgb(h, l, s)
+                        #colour = [235, 235, 235, 255]
+                        gui.spot_info_icon.render(x + w - round(33 * gui.scale), y + round(35 * gui.scale), colour)
+
+                    # Codec tag rendering
+                    else:
+                        ddt.rect(ext_rect, ex_colour, True)
+                        ddt.text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), line, alpha_blend([10, 10, 10, 235], ex_colour), 211, bg=ex_colour)
+
+                        if tc.is_cue:
+                            ext_rect[1] += 16 * gui.scale
+                            colour = [218, 222, 73, 255]
+                            if tc.is_embed_cue:
+                                colour = [252, 199, 55, 255]
+                            ddt.rect(ext_rect, colour, True)
+                            ddt.text((int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
 
 
                     rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
