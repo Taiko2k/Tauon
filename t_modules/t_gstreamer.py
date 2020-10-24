@@ -121,7 +121,7 @@ def player3(tauon):  # GStreamer
             self.playbin.set_property('audio-filter', self.level)
             # # ------------------------------------
 
-            self._eq = Gst.ElementFactory.make("equalizer-10bands", "eq")
+            self._eq = Gst.ElementFactory.make("equalizer-nbands", "eq")
             self._vol = Gst.ElementFactory.make("volume", "volume")
 
             self._sink.add(self._eq)
@@ -130,12 +130,25 @@ def player3(tauon):  # GStreamer
             self._eq.link(self._vol)
             self._vol.link(self._output)
 
+            self._eq.set_property("num-bands", 10 + 2)
+
             # Set the equalizer based on user preferences
-            for i, level in enumerate(prefs.eq):
-                if prefs.use_eq:
-                    self._eq.set_property("band" + str(i), level * -1)
-                else:
-                    self._eq.set_property("band" + str(i), 0.0)
+
+            # Using workaround for "inverted slider" bug.
+            # Thanks to Lollypop and Clementine for discovering this.
+            # Ref https://github.com/Taiko2k/TauonMusicBox/issues/414
+
+            for i in range(10 + 2):
+                band = self._eq.get_child_by_index(i)
+                band.set_property("freq", 0)
+                band.set_property("bandwidth", 0)
+                band.set_property("gain", 0)
+
+            self.set_eq()
+            # if prefs.use_eq:
+            #     self._eq.set_property("band" + str(i), level * -1)
+            # else:
+            #     self._eq.set_property("band" + str(i), 0.0)
 
             # Set up sink pad for the intermediate bin via the
             # first element (volume)
@@ -184,6 +197,22 @@ def player3(tauon):  # GStreamer
 
             # Start GLib mainloop
             self.mainloop.run()
+
+        def set_eq(self):
+            last = 0
+            for i, level in enumerate(prefs.eq):
+                band = self._eq.get_child_by_index(i + 1)
+                if prefs.use_eq:
+                    band = self._eq.get_child_by_index(i + 1)
+                    freq = 31.25 * (2 ** i)
+                    band.set_property("freq", freq)
+                    band.set_property("bandwidth", freq - last)
+                    last = freq
+                    band.set_property("gain", level * -1)
+                else:
+                    band.set_property("freq", 0)
+                    band.set_property("bandwidth", 0)
+                    band.set_property("gain", 0)
 
         def about_to_finish(self, bin):
             self.end_timer.set()
@@ -674,11 +703,13 @@ def player3(tauon):  # GStreamer
                         self.player_timer.hit()
 
                 elif command == 'seteq':
-                    for i, level in enumerate(prefs.eq):
-                        if prefs.use_eq:
-                            self._eq.set_property("band" + str(i), level * -1)
-                        else:
-                            self._eq.set_property("band" + str(i), 0.0)
+                    self.set_eq()
+
+                    # for i, level in enumerate(prefs.eq):
+                    #     if prefs.use_eq:
+                    #         self._eq.set_property("band" + str(i), level * -1)
+                    #     else:
+                    #         self._eq.set_property("band" + str(i), 0.0)
 
                 elif command == 'volume':
 
