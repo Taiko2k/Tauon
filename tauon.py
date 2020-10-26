@@ -29,9 +29,6 @@
 # --------------------------------------------------------------------
 
 import sys
-import os
-import pickle
-import shutil
 
 n_version = "6.4.1"
 t_version = "v" + n_version
@@ -39,8 +36,54 @@ t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
 
+# Early arg processing
+def transfer_args_and_exit():
+    import urllib.request
+    base = "http://localhost:7813/"
+
+    for item in sys.argv:
+
+        if not item.endswith(".py") and not item.startswith("-") and (item.startswith("file://") or item.startswith("/")):
+            import base64
+            url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
+            urllib.request.urlopen(url)
+        if item == "--play-pause":
+            url = base + "playpause/"
+            urllib.request.urlopen(url)
+        if item == "--play":
+            url = base + "play/"
+            urllib.request.urlopen(url)
+        if item == "--pause":
+            url = base + "pause/"
+            urllib.request.urlopen(url)
+        if item == "--stop":
+            url = base + "stop/"
+            urllib.request.urlopen(url)
+        if item == "--next":
+            url = base + "next/"
+            urllib.request.urlopen(url)
+        if item == "--previous":
+            url = base + "previous/"
+            urllib.request.urlopen(url)
+        if item == "--shuffle":
+            url = base + "shuffle/"
+            urllib.request.urlopen(url)
+        if item == "--repeat":
+            url = base + "repeat/"
+            urllib.request.urlopen(url)
+
+    sys.exit()
+
+
+if "--no-start" in sys.argv:
+    transfer_args_and_exit()
+
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
+
+import os
+import pickle
+import shutil
 
 # Detect platform
 windows_native = False
@@ -255,7 +298,7 @@ if system == 'linux':
 if not os.path.isdir(music_directory):
     music_directory = None
 
-transfer_target = user_directory + "/transfer.p"
+#transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
 
@@ -303,7 +346,7 @@ if msys:
             sys.exit()
 
 elif system == 'linux':
-    if os.path.isfile('.gitignore'):
+    if os.path.isfile('.gitignore') and False:
         print("Dev mode, ignoring single instancing")
     else:
         pid_file = os.path.join(user_directory, 'program.pid')
@@ -313,8 +356,7 @@ elif system == 'linux':
         except IOError:
             # another instance is running
             print("Program is already running")
-            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-            sys.exit()
+            transfer_args_and_exit()
 
 
 if system == 'windows':
@@ -699,8 +741,6 @@ from t_modules.t_search import *
 
 if system == 'linux':
     from t_modules import t_topchart
-
-from t_modules import t_autodownload
 
 if system == "linux" and not macos and not msys:
     from t_modules.t_dbus import Gnome
@@ -1168,7 +1208,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.true_shuffle = True
         self.append_total_time = False
-        self.backend = 2
+        self.backend = 4
 
         self.album_repeat_mode = False # passed to pctl
         self.album_shuffle_mode = False # passed to pctl
@@ -1426,36 +1466,6 @@ def open_uri(uri):
 
     load_orders.append(copy.deepcopy(load_order))
     gui.update += 1
-
-
-def check_transfer_p():
-
-    if check_file_timer.get() > 1.1:
-        global arg_queue
-        check_file_timer.set()
-        if os.path.isfile(transfer_target):
-
-            r_arg_queue = pickle.load(open(transfer_target, "rb"))
-            os.remove(user_directory + "/transfer.p")
-            arg_queue = []
-            i = 0
-            for item in r_arg_queue:
-                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
-                    arg_queue.append(item)
-                    i += 1
-
-            if i == 0:
-                SDL_RaiseWindow(t_window)
-                SDL_RestoreWindow(t_window)
-
-        if arg_queue:
-
-            i = 0
-            while i < len(arg_queue):
-                open_uri(arg_queue[i])
-                i += 1
-
-            arg_queue.clear()
 
 
 class GuiVar:   # Use to hold any variables for use in relation to UI
@@ -7219,6 +7229,7 @@ class SubsonicService:
                 d = self.r("getMusicDirectory", p={"id": folder_id})
                 if "child" not in d["subsonic-response"]["directory"]:
                     return
+
             except json.decoder.JSONDecodeError:
                 show_message("Error reading Airsonic directory!", mode="warning")
                 return
@@ -12607,11 +12618,13 @@ class SubLyricsBox:
 sub_lyrics_box = SubLyricsBox()
 
 
-
 def toggle_repeat():
+    gui.update += 1
     pctl.repeat_mode ^= True
     if pctl.mpris is not None:
         pctl.mpris.update_loop()
+
+tauon.toggle_repeat = toggle_repeat
 
 def menu_repeat_off():
     pctl.repeat_mode = False
@@ -12640,9 +12653,12 @@ repeat_menu.add(_("Repeat Track"), menu_set_repeat)
 repeat_menu.add(_("Repeat Album"), menu_album_repeat)
 
 def toggle_random():
+    gui.update += 1
     pctl.random_mode ^= True
     if pctl.mpris is not None:
         pctl.mpris.update_shuffle()
+tauon.toggle_random = toggle_random
+
 def toggle_random_on():
     pctl.random_mode = True
     if pctl.mpris is not None:
@@ -15775,6 +15791,8 @@ def remove_duplicates(pl):
 
 def start_quick_add(pl):
     pctl.quick_add_target = pl_to_id(pl)
+    show_message("You can now add/remove albums to this playlist by right clicking in gallery of any playlist",
+                 "To exit this mode, click \"Disengage\" from main MENU")
 
 def auto_get_sync_targets():
 
@@ -19394,32 +19412,6 @@ x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 x_menu.add(_("Internet Radio…"), activate_radio_box)
 
 tauon.switch_playlist = switch_playlist
-auto_dl = t_autodownload.AutoDownload(tauon)
-downloaders = auto_dl.get_downloaders_list()
-
-def auto_download():
-    text = copy_from_clipboard()
-    if not text:
-        gui.show_message("No link in clipboard")
-        return
-    elif auto_dl.downloading:
-        gui.show_message("The downloader is already running")
-    else:
-        shoot_dl = threading.Thread(target=auto_dl.run, args=([text]))
-        shoot_dl.daemon = True
-        shoot_dl.start()
-
-def adl_test(_):
-    if downloaders:
-        return True
-    return False
-
-x_menu.add(_("Download URL"), auto_download, show_test=adl_test)
-
-def adl_test(_):
-    if downloaders:
-        return True
-    return False
 
 def import_spotify_playlist():
     clip = copy_from_clipboard()
@@ -23469,12 +23461,18 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
 
 from t_modules.t_webserve import webserve
 from t_modules.t_webserve import authserve
+from t_modules.t_webserve import controller
 from t_modules.t_webserve import stream_proxy
 
 if prefs.enable_web is True:
     webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
     webThread.daemon = True
     webThread.start()
+
+if prefs.enable_web is True:
+    ctlThread = threading.Thread(target=controller, args=[tauon])
+    ctlThread.daemon = True
+    ctlThread.start()
 
 # --------------------------------------------------------------
 
@@ -24432,13 +24430,16 @@ class Over:
         pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "lib/libphazor.so"))
         if pha_detected:
             x += round(20 * gui.scale)
+            #y += round(19 * gui.scale)
+
+            ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
+            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
+
+            x += round(100 * gui.scale)
             ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
             self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
-            #y += round(19 * gui.scale)
-            x += round(115 * gui.scale)
-            ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
-            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
+
 
         else:
             prefs.backend = 2
@@ -24451,11 +24452,11 @@ class Over:
             x = x0 + 20 * gui.scale
 
             x += round(2 * gui.scale)
-            ddt.text((x, y), "Phazor is an alternative backend", colours.box_text_label, 12)
+            #ddt.text((x, y), "Phazor is an alternative backend", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "in beta testing stage. Best suited for", colours.box_text_label, 12)
+            #ddt.text((x, y), "in beta testing stage. Best suited for", colours.box_text_label, 12)
             y += round(17 * gui.scale)
-            ddt.text((x, y), "playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
+            #ddt.text((x, y), "playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
 
             y += round(35 * gui.scale)
             # ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
@@ -27391,29 +27392,7 @@ class TopPanel:
         dl = len(dl_mon.ready)
         watching = len(dl_mon.watching)
 
-        if auto_dl.downloading:
-            gui.frame_callback_list.append(TestTimer(0.2))
-            x += 52 * gui.scale
-            rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
-            colour = colours.corner_button # [60, 60, 60, 255]
-            # if colours.lm:
-            #     colour = [180, 180, 180, 255]
-            self.dl_button.render(x, y + 1 * gui.scale, colour)
-            if coll(rect) and inp.mouse_click:
-                inp.mouse_click = False
-                show_message("Downloader is running...", "You may need to restart app if download stalls", mode='download')
-            if os.path.isdir(auto_dl.dl_dir):
-                s = get_folder_size(auto_dl.dl_dir)
-
-                if s < 1000:
-                    line = "" + "." * (round(core_timer.get()) % 4)
-                    gui.delay_frame(1)
-                else:
-                    line = get_filesize_string(s)
-
-                ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), line, [230, 100, 50, 255], 209)
-
-        elif (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
+        if (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
             x += 52 * gui.scale
             rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
             fields.add(rect)
@@ -38299,7 +38278,6 @@ while pctl.running:
             if sleep_timer.get() > 5:
                 time.sleep(0.30)
 
-            check_transfer_p()
         continue
 
     else:
@@ -38323,8 +38301,6 @@ while pctl.running:
         gui.pl_update = 2
 
     new_playlist_cooldown = False
-
-    check_transfer_p()
 
     if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
         #print(SDL_GetMouseState(None, None))

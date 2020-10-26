@@ -202,6 +202,45 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
     httpd.serve_forever()
     httpd.server_close()
 
+
+def controller(tauon):
+    import base64
+    class Server(BaseHTTPRequestHandler):
+        def do_GET(self):
+            path = self.path
+            if path == "/playpause/":
+                if tauon.pctl.playing_state == 0:
+                    tauon.pctl.play()
+                else:
+                    tauon.pctl.pause()
+            if path == "/play/":
+                tauon.pctl.play()
+            if path == "/pause/":
+                tauon.pctl.pause_only()
+            if path == "/stop/":
+                tauon.pctl.stop()
+            if path == "/next/":
+                tauon.pctl.advance()
+            if path == "/previous/":
+                tauon.pctl.back()
+            if path == "/shuffle/":
+                tauon.toggle_random()
+            if path == "/repeat/":
+                tauon.toggle_repeat()
+            if path.startswith("/open/"):
+                rest = path[6:]
+                path = base64.urlsafe_b64decode(rest.encode()).decode()
+                tauon.open_uri(path)
+
+            self.send_response(200)
+            self.end_headers()
+
+    print("Start controller server")
+    httpd = HTTPServer(("127.0.0.1", 7813), Server)
+    httpd.serve_forever()
+    httpd.server_close()
+
+
 def authserve(tauon):
 
     class Server(BaseHTTPRequestHandler):

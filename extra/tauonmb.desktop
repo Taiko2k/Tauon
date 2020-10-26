@@ -15,3 +15,17 @@ StartupWMClass=Tauon Music Box
 Terminal=false
 Type=Application
 Categories=AudioVideo;Player;Audio;
+Actions=PlayPause;Previous;Next
+
+[Desktop Action PlayPause]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --play-pause
+Name=Play/Pause
+
+[Desktop Action Previous]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --previous
+Name=Previous Track
+
+[Desktop Action Next]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --next
+Name=Next Track
+
