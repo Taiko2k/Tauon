@@ -2074,9 +2074,14 @@ class KeyMap:
                 items = p.split()
                 if 1 < len(items) < 5:
                     function = items[0]
-                    key = SDL_GetKeyFromName(items[1].encode())
-                    if key == 0:
-                        continue
+
+                    if items[1] in ("MB4", "MB5"):
+                        key = items[1]
+                    else:
+                        key = SDL_GetKeyFromName(items[1].encode())
+                        if key == 0:
+                            continue
+
                     mod = []
 
                     if len(items) > 2:
@@ -3362,6 +3367,10 @@ if db_version > 0:
                     value.misc["replaygain_album_gain"] = value.album_gain
                 del value.album_gain
 
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("toggle-right-panel MB5\n")
+                f.write("toggle-gallery MB4\n")
 
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
@@ -37357,7 +37366,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            55,  # Version, used for upgrading
+            56,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -37734,8 +37743,6 @@ while pctl.running:
         keymaps.hits.clear()
 
         d_mouse_click = False
-        mouse4 = False
-        mouse5 = False
         right_click = False
         level_2_right_click = False
         inp.mouse_click = False
@@ -37987,9 +37994,9 @@ while pctl.running:
                 middle_click = True
                 gui.update += 1
             elif event.button.button == SDL_BUTTON_X1:
-                mouse4 = True
+                keymaps.hits.append("MB4")
             elif event.button.button == SDL_BUTTON_X2:
-                mouse5 = True
+                keymaps.hits.append("MB5")
         elif event.type == SDL_MOUSEBUTTONUP:
             k_input = True
             power += 5
@@ -38514,10 +38521,10 @@ while pctl.running:
                     gui.reload_theme = True
                     gui.theme_temp_current = -1
 
-            if mouse4 or keymaps.test("toggle-gallery"):
+            if keymaps.test("toggle-gallery"):
                 toggle_album_mode()
 
-            if mouse5 or keymaps.test("toggle-right-panel"):
+            if keymaps.test("toggle-right-panel"):
                 if gui.combo_mode:
                     switch_showcase()
                 elif not album_mode:

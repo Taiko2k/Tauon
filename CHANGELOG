@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v6.4.1
 
- - Added spotify icon button to track info box
- - Added command line control arguments
  - Added desktop launcher actions for play/pause, next and previous
+ - Added command line control arguments
+ - Added spotify icon button to track info box
+ - Moved MB4 and MB5 shortcuts to input config
  - Improved ReplayGain support
  - Improved Airsonic scan error handling
  - Fixed issue with exported thumbnail collisions

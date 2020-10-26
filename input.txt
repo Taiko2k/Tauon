@@ -68,8 +68,8 @@ love-selected L Ctrl
 
 toggle-left-panel ~
 toggle-last-left-panel
-toggle-right-panel
-toggle-gallery
+toggle-right-panel MB5
+toggle-gallery MB4
 toggle-gallery-keycontrol Tab
 toggle-showcase F5
 toggle-minimode F8
