@@ -244,6 +244,7 @@ def controller(tauon):
         httpd.serve_forever()
         httpd.server_close()
     except OSError:
+        raise
         print("Not starting controller server, already running?")
 
 
