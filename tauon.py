@@ -36744,13 +36744,9 @@ mouse_moved = False
 
 power = 0
 
-r_arg_queue = copy.deepcopy(sys.argv)
-
-arg_queue = []
-for item in r_arg_queue:
+for item in sys.argv:
     if (os.path.isdir(item) or os.path.isfile(item) or "file://" in item) and '.py' not in item and 'tauon.exe' not in item:
-        arg_queue.append(item)
-
+        open_uri(item)
 
 sv = SDL_version()
 SDL_GetVersion(sv)
