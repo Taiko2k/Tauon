@@ -197,10 +197,13 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
     class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
         pass
 
-    httpd = ThreadedHTTPServer(("0.0.0.0", prefs.metadata_page_port), Server)
-    tauon.radio_server = httpd
-    httpd.serve_forever()
-    httpd.server_close()
+    try:
+        httpd = ThreadedHTTPServer(("0.0.0.0", prefs.metadata_page_port), Server)
+        tauon.radio_server = httpd
+        httpd.serve_forever()
+        httpd.server_close()
+    except OSError:
+        print("Not starting radio page server, already running?")
 
 
 def controller(tauon):
@@ -236,9 +239,12 @@ def controller(tauon):
             self.end_headers()
 
     print("Start controller server")
-    httpd = HTTPServer(("127.0.0.1", 7813), Server)
-    httpd.serve_forever()
-    httpd.server_close()
+    try:
+        httpd = HTTPServer(("127.0.0.1", 7813), Server)
+        httpd.serve_forever()
+        httpd.server_close()
+    except OSError:
+        print("Not starting controller server, already running?")
 
 
 def authserve(tauon):

@@ -80,6 +80,7 @@ parts:
       - ffmpeg
       - p7zip-full
       - unrar
+      - curl
     override-build: |
       snapcraftctl build
       # temp fix for https://github.com/marcusva/py-sdl2/issues/148
