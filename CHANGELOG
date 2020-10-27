@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.4.1
 
+ - Added option to use artist backgrounds (Accounts > Fanart.tv)
  - Added desktop launcher actions for play/pause, next and previous
  - Added command line control arguments
  - Added spotify icon button to track info box
