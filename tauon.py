@@ -264,6 +264,8 @@ n_cache_dir = os.path.join(cache_directory, "network")
 e_cache_dir = os.path.join(cache_directory, "export")
 g_cache_dir = os.path.join(cache_directory, "gallery")
 a_cache_dir = os.path.join(cache_directory, "artist")
+b_cache_dir = os.path.join(user_directory, "artist-backgrounds")
+
 if not os.path.isdir(n_cache_dir):
     os.makedirs(n_cache_dir)
 if not os.path.isdir(e_cache_dir):
@@ -272,6 +274,8 @@ if not os.path.isdir(g_cache_dir):
     os.makedirs(g_cache_dir)
 if not os.path.isdir(a_cache_dir):
     os.makedirs(a_cache_dir)
+if not os.path.isdir(b_cache_dir):
+    os.makedirs(b_cache_dir)
 
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
     os.makedirs(os.path.join(user_directory, "artist-pictures"))
@@ -1289,6 +1293,7 @@ class Prefs:    # Used to hold any kind of settings
         self.repeat_mode = False
 
         self.failed_artists = []
+        self.failed_background_artists = []
 
         self.artist_list = False
         self.auto_sort = False
@@ -1383,7 +1388,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.auto_dl_artist_data = True
 
-        self.enable_fanart_artist = True
+        self.enable_fanart_artist = False
+        self.enable_fanart_bg = False
         self.enable_fanart_cover = True
 
         self.always_auto_update_playlists = False
@@ -2960,6 +2966,8 @@ for t in range(2):
             prefs.artist_list_sort_mode = save[156]
         if save[157] is not None:
             prefs.phazor_device_selected = save[157]
+        if save[158] is not None:
+            prefs.failed_background_artists = save[158]
 
         state_file.close()
         del save
@@ -3496,6 +3504,7 @@ def save_prefs():
 
     cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
     cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
+    cf.update_value("fanart.tv-background", prefs.enable_fanart_bg)
     cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
     cf.update_value("write-ratings-to-tag", prefs.write_ratings)
     cf.update_value("enable-spotify", prefs.spot_mode)
@@ -3684,6 +3693,7 @@ def load_prefs():
     prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data, "Enable automatic downloading of thumbnails in artist list")
     prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
+    prefs.enable_fanart_bg = cf.sync_add("bool", "fanart.tv-background", prefs.enable_fanart_bg)
     prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generator playlists")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
     prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
@@ -9946,6 +9956,7 @@ def clear_img_cache(delete_disk=True):
     global album_art_gen
     album_art_gen.clear_cache()
     prefs.failed_artists.clear()
+    prefs.failed_background_artists.clear()
     gall_ren.key_list = []
 
     while len(gall_ren.queue) > 0:
@@ -10031,6 +10042,7 @@ class AlbumArt():
 
         self.blur_texture = None
         self.blur_rect = None
+        self.loaded_bg_type = 0
 
         self.download_in_progress = False
         self.downloaded_image = None
@@ -10408,19 +10420,92 @@ class AlbumArt():
         self.processing64on = None
         return sss
 
+    def get_background(self, track):
+        print("Find background...")
+        # Determine artist name to use
+        artist = track.album_artist
+        if not track.album:
+            return None
+        if not artist:
+            artist = track.artist
+        artist = filename_safe(artist)
+        if not artist:
+            return None
+
+        # Check cache for existing image
+        path = os.path.join(b_cache_dir, artist)
+        if os.path.isfile(path):
+            print("Load cached background")
+            return open(path, "rb")
+
+        # Check we've not already attempted a search for this artist
+        if artist in prefs.failed_background_artists:
+            return None
+
+        # Get artist MBID
+        try:
+            s = musicbrainzngs.search_artists(artist, limit=1)
+            artist_id = s['artist-list'][0]['id']
+        except:
+            print("Failed to find artist MBID for: %s" % artist)
+            prefs.failed_background_artists.append(artist)
+            return None
+
+        # Search fanart.tv for background
+        try:
+
+            r = requests.get("http://webservice.fanart.tv/v3/music/" \
+                             + artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
+
+            artlink = r.json()['artistbackground'][0]['url']
+
+            response = urllib.request.urlopen(artlink)
+            info = response.info()
+
+            assert info.get_content_maintype() == 'image'
+
+            t = io.BytesIO()
+            t.seek(0)
+            t.write(response.read())
+            t.seek(0, 2)
+            l = t.tell()
+            t.seek(0)
+
+            assert l > 1000
+
+            # Cache image for future use
+            f = open(path, "wb")
+            f.write(t.read())
+            f.close()
+
+            t.seek(0)
+            return t
+
+        except:
+            print("Failed to find fanart background for: %s" % artist)
+            prefs.failed_background_artists.append(artist)
+            return None
+
 
     def get_blur_im(self, track):
 
+        source_image = None
+        self.loaded_bg_type = 0
+        if prefs.enable_fanart_bg:
+            source_image = self.get_background(track)
+            if source_image:
+                self.loaded_bg_type = 1
 
-        filepath = track.fullpath
-        sources = self.get_sources(track)
+        if source_image is None:
+            filepath = track.fullpath
+            sources = self.get_sources(track)
 
-        if len(sources) == 0:
-            return False
+            if len(sources) == 0:
+                return False
 
-        offset = self.get_offset(filepath, sources)
+            offset = self.get_offset(filepath, sources)
 
-        source_image = self.get_source_raw(offset, sources, track)
+            source_image = self.get_source_raw(offset, sources, track)
 
         if source_image is None:
             return None
@@ -10920,6 +11005,9 @@ class StyleOverlay:
         self.b_texture = None
         self.b_rect = None
 
+        self.a_type = 0
+        self.b_type = 0
+
         self.window_size = None
         self.parent_path = None
 
@@ -11024,9 +11112,11 @@ class StyleOverlay:
             if self.a_texture is not None:
                 self.b_texture = self.a_texture
                 self.b_rect = self.a_rect
+                self.b_type = self.a_type
 
             self.a_texture = c
             self.a_rect = dst
+            self.a_type = album_art_gen.loaded_bg_type
 
             self.stage = 2
 
@@ -11067,6 +11157,8 @@ class StyleOverlay:
         if self.b_texture is not None:
 
             self.b_rect.y = 0 - self.b_rect.h // 4
+            if self.b_type == 1:
+                self.b_rect.y = 0
 
             if t < 0.4:
 
@@ -11081,6 +11173,8 @@ class StyleOverlay:
         if self.a_texture is not None:
 
             self.a_rect.y = 0 - self.a_rect.h // 4
+            if self.a_type == 1:
+                self.a_rect.y = 0
 
             if t < 0.4:
                 fade = round(t / 0.4 * 255)
@@ -13624,6 +13718,9 @@ def download_art1(tr):
 
     try:
         show_message(_("Looking up MusicBrainz ID..."))
+
+
+
         if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc['musicbrainz_artistids']:
 
             print("MusicBrainz ID lookup...")
@@ -13666,7 +13763,6 @@ def download_art1(tr):
                 t = io.BytesIO()
                 t.seek(0)
                 t.write(response.read())
-                l = 0
                 t.seek(0, 2)
                 l = t.tell()
                 t.seek(0)
@@ -25386,7 +25482,6 @@ class Over:
                      colours.box_text_label, 11)
             y += 17 * gui.scale
 
-
             y += 22 * gui.scale
             #. Limited space available. Limit 55 chars.
             link_pa2 = draw_linked_text((x + 0 * gui.scale, y), _("They encourage you to contribute at https://fanart.tv"),
@@ -25396,7 +25491,9 @@ class Over:
             y += 35 * gui.scale
             prefs.enable_fanart_cover = self.toggle_square(x, y, prefs.enable_fanart_cover, _("Cover art (Manual only)"))
             y += 25 * gui.scale
-            prefs.enable_fanart_artist = self.toggle_square(x, y, prefs.enable_fanart_artist, _("Artist images (May be automatic)"))
+            prefs.enable_fanart_artist = self.toggle_square(x, y, prefs.enable_fanart_artist, _("Artist images (Automatic)"))
+            y += 25 * gui.scale
+            prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg, _("Artist backgrounds (Automatic)"))
 
         if self.account_view == 3:
 
@@ -37503,6 +37600,7 @@ def save_state():
             playlist_box.scroll_on,
             prefs.artist_list_sort_mode,
             prefs.phazor_device_selected,
+            prefs.failed_background_artists,
         ]
 
 
