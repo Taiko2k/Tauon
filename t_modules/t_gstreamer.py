@@ -446,7 +446,9 @@ def player3(tauon):  # GStreamer
 
             if pctl.playerCommandReady:
                 command = pctl.playerCommand
+                pctl.playerCommand = ""
                 pctl.playerCommandReady = False
+
 
                 # print("RUN COMMAND")
                 # print(command)
@@ -485,7 +487,6 @@ def player3(tauon):  # GStreamer
                 if command == 'open' and pctl.target_object:
                     # print("Start track")
                     track = pctl.target_object
-                    # print(track.title)
 
                     if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not track.file_ext == "SPTY":
                         tauon.spot_ctl.control("stop")
@@ -527,7 +528,7 @@ def player3(tauon):  # GStreamer
                         track.found = True
                     else:
                         # File does not exist, force trigger an advance
-                        pctl.target_object.found = False
+                        track.found = False
                         tauon.console.print("Missing File: " + track.fullpath, 2)
                         pctl.playing_state = 0
                         pctl.jump_time = 0
@@ -643,7 +644,7 @@ def player3(tauon):  # GStreamer
                                 # Cancel the gapless transition
                                 print("Cancel transition")
                                 self.playbin.set_state(Gst.State.NULL)
-                                time.sleep(0.1)
+                                time.sleep(0.5)
                                 GLib.timeout_add(19, self.main_callback)
                                 return
 
@@ -675,6 +676,7 @@ def player3(tauon):  # GStreamer
 
                     self.check_duration()
                     self.player_timer.hit()
+                    time.sleep(0.5)
 
                 elif command == 'url':
 
