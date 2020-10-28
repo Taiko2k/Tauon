@@ -1447,6 +1447,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.phazor_device_selected = "Default"
         self.phazor_devices = {"Default": "Default"}
+        self.bg_flips = set()
 
 prefs = Prefs()
 
@@ -2968,6 +2969,8 @@ for t in range(2):
             prefs.phazor_device_selected = save[157]
         if save[158] is not None:
             prefs.failed_background_artists = save[158]
+        if save[159] is not None:
+            prefs.bg_flips = save[159]
 
         state_file.close()
         del save
@@ -10423,12 +10426,7 @@ class AlbumArt():
     def get_background(self, track):
         print("Find background...")
         # Determine artist name to use
-        artist = track.album_artist
-        if not track.album:
-            return None
-        if not artist:
-            artist = track.artist
-        artist = filename_safe(artist)
+        artist = get_artist_safe(track)
         if not artist:
             return None
 
@@ -10523,6 +10521,7 @@ class AlbumArt():
         if im.mode != "RGB":
             im = im.convert("RGB")
 
+
         ratio = window_size[0] / ox_size
         ratio += 0.2
 
@@ -10534,8 +10533,12 @@ class AlbumArt():
         new_x = round(ox_size * ratio)
         new_y = round(oy_size * ratio)
 
-
         im = im.resize((new_x, new_y))
+
+        if self.loaded_bg_type == 1:
+            artist = get_artist_safe(track)
+            if artist and artist in prefs.bg_flips:
+                im = im.transpose(Image.FLIP_LEFT_RIGHT)
 
         if ox_size < 500 or prefs.art_bg_always_blur:
             im = im.filter(ImageFilter.GaussianBlur(prefs.art_bg_blur))
@@ -25494,6 +25497,22 @@ class Over:
             prefs.enable_fanart_artist = self.toggle_square(x, y, prefs.enable_fanart_artist, _("Artist images (Automatic)"))
             y += 25 * gui.scale
             prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg, _("Artist backgrounds (Automatic)"))
+            y += 25 * gui.scale
+            x += 23 * gui.scale
+            if self.button(x, y, _("Flip current")):
+                if key_shift_down:
+                    prefs.bg_flips.clear()
+                    show_message("Reset flips", mode="done")
+                else:
+                    tr = pctl.playing_object()
+                    artist = get_artist_safe(tr)
+                    if artist:
+                        if artist not in prefs.bg_flips:
+                            prefs.bg_flips.add(artist)
+                        else:
+                            prefs.bg_flips.remove(artist)
+                    style_overlay.flush()
+                    show_message("OK", mode="done")
 
         if self.account_view == 3:
 
@@ -37601,6 +37620,7 @@ def save_state():
             prefs.artist_list_sort_mode,
             prefs.phazor_device_selected,
             prefs.failed_background_artists,
+            prefs.bg_flips,
         ]
 
 
@@ -38602,7 +38622,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            gen_replay(pctl.active_playlist_viewing)
             pass
 
         if gui.mode < 3:

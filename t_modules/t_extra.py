@@ -523,6 +523,18 @@ def get_artist_strip_feat(track_object):
                 artist_name = track_object.album_artist
     return artist_name
 
+def get_artist_safe(track):
+
+    if track:
+        artist = track.album_artist
+        if not artist:
+            artist = track.artist
+        artist = filename_safe(artist)
+        artist = artist.split("feat")[0]
+        artist = artist.split(", ")[0]
+        artist = artist.split("; ")[0]
+        return artist
+    return ""
 
 def coll_rect(rect1, rect2):
 
