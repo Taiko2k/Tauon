@@ -15,6 +15,7 @@ v6.4.1
  - Fixed issue is GStreamer backend playing wrong track
  - Set Phazor as default backend over GStreamer
  - Removed download URL feature
+ - Phazor: Added resampling (FLAC only)
 
 v6.4.0
 
