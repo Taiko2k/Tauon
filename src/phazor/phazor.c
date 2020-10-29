@@ -31,7 +31,7 @@
 #include "vorbis/vorbisfile.h"
 #include "opus/opusfile.h"
 #include <sys/stat.h>
-
+#include <samplerate.h>
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -53,6 +53,13 @@ unsigned int buff_base = 0;
 
 int16_t fade16l[BUFF_SIZE];
 int16_t fade16r[BUFF_SIZE];
+
+int16_t temp16l[BUFF_SIZE];
+int16_t temp16r[BUFF_SIZE];
+
+float re_in[BUFF_SIZE * 2];
+float re_out[BUFF_SIZE * 2];
+
 int fade_fill = 0;
 int fade_position = 0;
 
@@ -172,6 +179,11 @@ struct stat st;
 int load_file_size = 0;
 int samples_decoded = 0;
 
+// Secret Rabbit Code --------------------------------------------------
+
+SRC_DATA src_data;
+SRC_STATE *src;
+
 // Pulseaudio ---------------------------------------------------------
 
 pa_simple *s;
@@ -228,9 +240,16 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
 
   pthread_mutex_lock(&buffer_mutex);
   
-  if (frame->header.sample_rate != current_sample_rate){
-    if (want_sample_rate != frame->header.sample_rate){
-      want_sample_rate = frame->header.sample_rate;
+  /* if (frame->header.sample_rate != current_sample_rate){ */
+  /*   if (want_sample_rate != frame->header.sample_rate){ */
+  /*     want_sample_rate = frame->header.sample_rate; */
+  /*     sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE; */
+  /*   } */
+  /* } */
+  
+  if (44100 != current_sample_rate){
+    if (want_sample_rate != 44100){
+      want_sample_rate = 44100;
       sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
     }
   }
@@ -246,71 +265,138 @@ FLAC__StreamDecoderWriteStatus f_write(const FLAC__StreamDecoder *decoder, const
                                                                                                                                                                                                                                                                                                               
   unsigned int i = 0;
   int ran = 512;
+  int resample = 0;
+  if (frame->header.sample_rate != 44100){
+    resample = 1;
+  }
   
   if (frame->header.blocksize > (BUFF_SIZE - buff_filled)){
     printf("pa: critical: BUFFER OVERFLOW!");
   }
 
-  while (i < frame->header.blocksize){
+  int temp_fill = 0;                                                                                                                                                          
+  
+  if (resample == 0){
+    
+    // No resampling needed, transfer data to main buffer
 
-    // Read and handle 24bit audio
-    if (frame->header.bits_per_sample == 24){
+    while (i < frame->header.blocksize){
 
-      // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
-      
-      // left
-      ran = 512;
-      if (buffer[0][i] > 8388351) {
-        ran = (8388608 - buffer[0][i]) - 3;
-      }
+      // Read and handle 24bit audio
+      if (frame->header.bits_per_sample == 24){
+
+        // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
         
-      if (buffer[0][i] < -8388353) {
-        ran = (8388608 - abs(buffer[0][i])) - 3;
+        // left
+        ran = 512;
+        if (buffer[0][i] > 8388351) ran = (8388608 - buffer[0][i]) - 3;
+        if (buffer[0][i] < -8388353) ran = (8388608 - abs(buffer[0][i])) - 3;
+        
+        if (ran > 1) buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[0][i] + (rand() % ran) - (ran / 2)) / 256);
+        else buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[0][i] / 256);
+        
+        if (frame->header.channels == 1){
+          buff16r[(buff_filled + buff_base) % BUFF_SIZE] = buff16l[(buff_filled + buff_base) % BUFF_SIZE];
+        } else {
+          
+          //right
+          ran = 512;
+          if (buffer[1][i] > 8388351) ran = (8388608 - buffer[1][i]) - 3;
+          if (buffer[1][i] < -8388353) ran = (8388608 - abs(buffer[1][i])) - 3;
+   
+          if (ran > 1) buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[1][i] + (rand() % ran) - (ran / 2)) / 256);
+          else buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[1][i] / 256);
+        }                                                                            
+      } // end 24 bit audio
+           
+      // Read 16bit audio
+      else if (frame->header.bits_per_sample == 16){
+        buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
+        if (frame->header.channels == 1){
+          buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
+        } else {
+          buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[1][i];
+        }
+      }
+                                         
+      else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");                                                
+                                                      
+      if (fade_fill > 0){
+        fade_fx();
+      }
+                                         
+      buff_filled++;
+      i++;
+    }
+      
+  } else {
+    
+      // Transfer data to resampler for resampling
+    
+      while (i < frame->header.blocksize){
+        // Read and handle 24bit audio
+        if (frame->header.bits_per_sample == 24){
+
+          re_in[i * 2] = ((float)buffer[0][i]) / ((float) 8388608.0);
+          if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
+          else re_in[(i * 2) + 1] = ((float)buffer[1][i]) / ((float) 8388608.0);
+          
+        } // end 24 bit audio
+             
+        // Read 16bit audio
+        else if (frame->header.bits_per_sample == 16){
+          
+          re_in[i * 2] = ((float) buffer[0][i]) / (float) 32768.0;
+          if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
+          else re_in[(i * 2) + 1] = ((float) buffer[1][i]) / (float) 32768.0;
+          
+        }
+        else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");                                                
+                                                        
+        temp_fill++;
+        i++;
+    
       } 
       
-      if (ran > 1) buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[0][i] + (rand() % ran) - (ran / 2)) / 256);
-      else buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[0][i] / 256);
+      src_data.data_in = re_in;
+      src_data.data_out = re_out;
+      src_data.input_frames = temp_fill;
+      src_data.output_frames = BUFF_SIZE;
+      src_data.src_ratio = (double) 44100 / (double) frame->header.sample_rate;
+      src_data.end_of_input = 0;
+                                                                                                                                                                
+      src_process(src, &src_data);
+      //printf("pa: SRC error code: %d\n", src_result);
+      //printf("pa: SRC output frames: %lu\n", src_data.output_frames_gen);
+      //printf("pa: SRC input frames used: %lu\n", src_data.input_frames_used);
+      temp_fill = src_data.output_frames_gen;
       
-      if (frame->header.channels == 1){
-        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = buff16l[(buff_filled + buff_base) % BUFF_SIZE];
-      } else {
+      i = 0;
+      int32_t t = 0; 
+      while (i < temp_fill){
         
-        //right
-        ran = 512;
-
-        if (buffer[1][i] > 8388351) {
-          ran = (8388608 - buffer[1][i]) - 3;
+        t = (re_out[i * 2] + ( ((float)rand()/(float)(RAND_MAX)) * 0.00004) - 0.00002 ) * 32768;
+        if (t > 32767 ) t = 32767;
+        if (t < -32768) t = -32768;
+        buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) t;
+        
+        //t = re_out[(i * 2) + 1] * 32768;
+        t = (re_out[(i * 2) + 1] + ( ((float)rand()/(float)(RAND_MAX)) * 0.00004) - 0.00002 ) * 32768;
+        if (t > 32767 ) t = 32767;
+        if (t < -32768) t = -32768;
+        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) t;
+        
+        if (fade_fill > 0){
+          fade_fx();
         }
-          
-        if (buffer[1][i] < -8388353) {
-          ran = (8388608 - abs(buffer[1][i])) - 3;
-        } 
         
-        if (ran > 1) buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) ((buffer[1][i] + (rand() % ran) - (ran / 2)) / 256);
-        else buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) (buffer[1][i] / 256);
-      }                                                                            
-    } // end 24 bit audio
-         
-    // Read 16bit audio
-    else if (frame->header.bits_per_sample == 16){
-      buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
-      if (frame->header.channels == 1){
-        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[0][i];
-      } else {
-        buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) buffer[1][i];
-      }
-      
+        buff_filled++;
+        i ++;
+               
     }
-    else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
-    
-    if (fade_fill > 0){
-      fade_fx();
-    }
-                                       
-    buff_filled++;
-    i++;
-  }
 
+  }  
+  
   pthread_mutex_unlock(&buffer_mutex);
   return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
@@ -345,6 +431,7 @@ void stop_decoder(){
     break;
   case FLAC:
     FLAC__stream_decoder_finish(dec);
+    src_reset(src);
     break;
   case MPG:
     mpg123_close(mh);
@@ -629,8 +716,8 @@ int load_next(){
         &f_write,
         NULL, //&f_meta,
         &f_err,
-        0) == FLAC__STREAM_DECODER_INIT_STATUS_OK) { 
-          
+        0) == FLAC__STREAM_DECODER_INIT_STATUS_OK) {   
+        
         decoder_allocated = 1;
         return 0;
           
@@ -1098,6 +1185,12 @@ void *main_loop(void *thread_id){
     
   int load_result = 0;
   
+  // SRC ----------------------------
+  
+  src = src_new(0, 2, &error);                                    
+  printf("pa: SRC error code %d", error);
+  error = 0;
+                                                    
   // MP3 decoder --------------------------------------------------------------
 
   mpg123_init();
@@ -1320,6 +1413,7 @@ void *main_loop(void *thread_id){
   FLAC__stream_decoder_finish(dec);
   FLAC__stream_decoder_delete(dec);
   mpg123_delete(mh);
+  src_delete(src);
   
   pthread_mutex_unlock(&buffer_mutex);
                                   
