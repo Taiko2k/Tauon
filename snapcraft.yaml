@@ -99,12 +99,14 @@ parts:
       - libvorbis-dev
       - libopusfile-dev
       - libmpg123-dev
+      - libsamplerate0-dev
     stage-packages:
       - flac
       - libpulse0
       - libvorbis0a
       - libopusfile0
       - libmpg123-0
+      - libsamplerate0
       
     override-build: |
       chmod +x compile-translations.py
