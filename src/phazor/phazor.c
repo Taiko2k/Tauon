@@ -139,6 +139,7 @@ enum decoder_types {
   VORBIS,
   OPUS,
   FFMPEG,
+  WAVE,
 };
 
 int mode = STOPPED;
@@ -227,6 +228,144 @@ void start_ffmpeg(char uri[], int start_ms){
 void stop_ffmpeg(){
   //printf("pa: Stop FFMPEG\n");
   pclose(ffm);
+}
+
+// WAV Decoder ----------------------------------------------------------------
+
+FILE *wave_file;
+int wave_channels = 2;
+int wave_samplerate = 44100;
+int wave_depth = 16;
+int wave_size = 0;
+int wave_start = 0;
+int wave_error = 0;
+int16_t wave_16 = 0;
+
+int wave_open(char *filename){
+  
+  wave_file = fopen(filename, "rb");
+  
+  char b[16];
+  int i;
+  
+  b[15] = '\0';
+  fread(b, 4, 1, wave_file); 
+  //printf("pa: mark: %s\n", b)
+  
+  fread(&i, 4, 1, wave_file); 
+  //printf("pa: size: %d\n", i);
+  wave_size = i - 44;
+
+  fread(b, 4, 1, wave_file); 
+  //printf("pa: head: %s\n", b);
+  if (memcmp(b, "WAVE", 4) == 1) {
+    printf("pa: Invalid WAVE file\n");
+    return 1;
+  }
+  
+  fread(b, 4, 1, wave_file); 
+  //printf("pa: fmt : %s\n", b);
+  
+  fread(&i, 4, 1, wave_file); 
+  //printf("pa: abov: %d\n", i);
+  if (i != 16){
+    printf("pa: Unsupported WAVE file\n");
+    return 1;
+  }
+
+  fread(&i, 2, 1, wave_file); 
+  //printf("pa: type: %d\n", i);
+  if (i != 1){
+    printf("pa: Unsupported WAVE file\n");
+    return 1;
+  }
+
+  fread(&i, 2, 1, wave_file); 
+  //printf("pa: chan: %d\n", i);
+  if (i != 1 && i != 2){
+    printf("pa: Unsupported WAVE channels\n");
+    return 1;
+  }
+  wave_channels = i;
+
+  fread(&i, 4, 1, wave_file); 
+  //printf("pa: smpl: %d\n", i);
+  wave_samplerate = i;
+  
+  fseek(wave_file, 6, SEEK_CUR);
+
+  fread(&i, 2, 1, wave_file); 
+  //printf("pa: bitd: %d\n", i);
+  if (i != 16){
+    printf("pa: Unsupported WAVE depth\n");
+    return 1;
+  }
+  wave_depth = i;
+  
+  while (1){
+    
+    // Read data block label
+    wave_error = fread(b, 4, 1, wave_file);
+    if (wave_error != 1) {
+      fclose(wave_file);
+      return 1;
+    }
+    // Read data block length
+    wave_error = fread(&i, 4, 1, wave_file);
+    if (wave_error != 1) {
+      fclose(wave_file);
+      return 1;
+    }
+    // Is audio data?
+    if (memcmp(b, "data", 4) == 0){
+      wave_start = ftell(wave_file);
+      wave_size = i;
+      break;
+    }
+    // Skip to next block
+    fseek(wave_file, i, SEEK_CUR);
+  }
+                               
+  return 0;
+}
+
+int wave_decode(int read_frames){
+  
+  int i = 0;
+  while (i < read_frames) {
+    
+    wave_error = fread(&wave_16, 2, 1, wave_file);
+    if (wave_error != 1) return 1;
+    buff16l[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) wave_16;
+    
+    wave_error = fread(&wave_16, 2, 1, wave_file);
+    if (wave_error != 1) return 1;
+    buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) wave_16;
+    
+    buff_filled++;
+    samples_decoded++;
+    i++;
+    
+    if (fade_fill > 0){
+        fade_fx();
+    }
+    
+    if ((ftell(wave_file) - wave_start) > wave_size){
+      printf("pa: End of WAVE file data\n");
+      return 1;
+    }
+    
+  }
+  return 0;
+  
+}
+
+int wave_seek(int frame_position){
+  return fseek(wave_file, (frame_position * 4) + wave_start, SEEK_SET);
+}
+
+void wave_close(){
+  fclose(wave_file);
 }
 
 // FLAC related ---------------------------------------------------------------
@@ -439,6 +578,9 @@ void stop_decoder(){
   case FFMPEG:
     stop_ffmpeg();
     break;
+  case WAVE:
+    wave_close();
+    break;
   }
   decoder_allocated = 0;
 }                                        
@@ -535,8 +677,10 @@ void decode_seek(int abs_ms, int sample_rate){
     stop_ffmpeg();
     start_ffmpeg (loaded_target_file, abs_ms);
     break;
-    }
-  
+  case WAVE:
+    wave_seek((int) sample_rate * (abs_ms / 1000.0));
+    break;
+  }
 }
                             
 int load_next(){
@@ -570,7 +714,7 @@ int load_next(){
       strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
       strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
       strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
-      strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
+      //strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
       loaded_target_file[0] == 'h'){
         codec = FFMPEG;
         
@@ -599,6 +743,8 @@ int load_next(){
   
   if (memcmp(peak, "fLaC", 4) == 0) {
     codec = FLAC;
+  } else if (memcmp(peak, "RIFF", 4) == 0){
+    codec = WAVE;
   } else if (memcmp(peak, "OggS", 4) == 0) {
     codec = VORBIS;
     if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
@@ -634,11 +780,30 @@ int load_next(){
   
   fclose(fptr);
   
-                 
   switch(codec){
 
     // Unlock the output thread mutex cause loading could take a while?..
     // and we dont wanna interrupt the output for too long.
+    // 
+    case WAVE:
+      if (wave_open(loaded_target_file) != 0) return 1;
+      pthread_mutex_lock(&buffer_mutex);
+      if (current_sample_rate != wave_samplerate){
+        sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+        want_sample_rate = wave_samplerate;
+      }
+                 
+      if (load_target_seek > 0){
+        wave_seek((int) wave_samplerate * (load_target_seek / 1000.0));
+        reset_set_value = (int) wave_samplerate * (load_target_seek / 1000.0);
+        reset_set = 1;
+        reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+        load_target_seek = 0;
+      }
+      pthread_mutex_unlock(&buffer_mutex);
+      decoder_allocated = 1;
+      return 0;
+
     case OPUS:
     
     opus_dec = op_open_file (loaded_target_file, &e);
@@ -800,7 +965,15 @@ void decoder_eos(){
 void pump_decode(){
   // Here we get data from the decoders to fill the main buffer
   
-  if (codec == FLAC){
+  if (codec == WAVE){
+    int result;
+    pthread_mutex_lock(&buffer_mutex);
+    result = wave_decode(1024*2);
+    pthread_mutex_unlock(&buffer_mutex);
+    if (result == 1){
+      decoder_eos();
+    }
+  } else if (codec == FLAC){
     // FLAC decoding
 
     switch (FLAC__stream_decoder_get_state(dec)) {
