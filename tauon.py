@@ -1212,7 +1212,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.true_shuffle = True
         self.append_total_time = False
-        self.backend = 4
+        self.backend = 4  # 2 gstreamer, 4 phazor
 
         self.album_repeat_mode = False # passed to pctl
         self.album_shuffle_mode = False # passed to pctl

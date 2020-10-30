@@ -210,6 +210,7 @@ def controller(tauon):
     import base64
     class Server(BaseHTTPRequestHandler):
         def do_GET(self):
+
             path = self.path
             if path == "/playpause/":
                 if tauon.pctl.playing_state == 0:
@@ -244,7 +245,6 @@ def controller(tauon):
         httpd.serve_forever()
         httpd.server_close()
     except OSError:
-        raise
         print("Not starting controller server, already running?")
 
 
@@ -421,7 +421,7 @@ def stream_proxy(tauon):
                 else:
                     time.sleep(0.01)
 
-    httpd = HTTPServer(("localhost", 7812), Server)
+    httpd = HTTPServer(("127.0.0.1", 7812), Server)
     httpd.serve_forever()
     httpd.server_close()
 
