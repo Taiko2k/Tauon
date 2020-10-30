@@ -1360,7 +1360,7 @@ void *main_loop(void *thread_id){
   
   // SRC ----------------------------
   
-  src = src_new(0, 2, &error);                                    
+  src = src_new(SRC_SINC_MEDIUM_QUALITY, 2, &error);                                    
   printf("pa: SRC error code %d", error);
   error = 0;
                                                     
