@@ -789,6 +789,9 @@ int load_next(){
     // 
     case WAVE:
       if (wave_open(loaded_target_file) != 0) return 1;
+      if (load_target_seek > 0){
+        wave_seek((int) wave_samplerate * (load_target_seek / 1000.0));
+      }
       pthread_mutex_lock(&buffer_mutex);
       if (current_sample_rate != wave_samplerate){
         sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -796,7 +799,6 @@ int load_next(){
       }
                  
       if (load_target_seek > 0){
-        wave_seek((int) wave_samplerate * (load_target_seek / 1000.0));
         reset_set_value = (int) wave_samplerate * (load_target_seek / 1000.0);
         reset_set = 1;
         reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;

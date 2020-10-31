@@ -11026,6 +11026,10 @@ class StyleOverlay:
     def worker(self):
 
         if self.stage == 0:
+
+            if prefs.bg_showcase_only and not gui.combo_mode:
+                return
+
             if pctl.playing_ready() and self.min_on_timer.get() > 0:
 
                 track = pctl.playing_object()
@@ -22059,7 +22063,7 @@ def worker4():
         if prefs.art_bg:
             style_overlay.worker()
 
-        time.sleep(1)
+        time.sleep(0.5)
         gui.worker4_releases -= 1
         if gui.worker4_releases > 3:
             gui.worker4_releases = 3
