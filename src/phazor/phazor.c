@@ -215,7 +215,7 @@ char ffm_buffer[2048];
 
 void start_ffmpeg(char uri[], int start_ms){
   
-  sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -ss %dms -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ", uri, start_ms);
+  sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ", start_ms, uri);
   //printf(exe_string, uri, start_ms);
   ffm = popen(exe_string, "r");
   if (ffm == NULL){

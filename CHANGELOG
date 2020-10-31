@@ -16,7 +16,8 @@ v6.4.1
  - Fixed a possible crash with malformed generator codes
  - Set Phazor as default backend over GStreamer
  - Removed download URL feature
- - Phazor: Added resampling (FLAC only)
+ - Phazor: Added resampling for FLAC files
+ - Phazor: Fixed slow seeking with some formats
 
 v6.4.0
 
