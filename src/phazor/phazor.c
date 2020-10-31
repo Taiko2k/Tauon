@@ -342,13 +342,15 @@ int wave_decode(int read_frames){
     if (wave_error != 1) return 1;
     buff16r[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) wave_16;
     
+    if (fade_fill > 0){
+        fade_fx();
+    }
+    
     buff_filled++;
     samples_decoded++;
     i++;
     
-    if (fade_fill > 0){
-        fade_fx();
-    }
+
     
     if ((ftell(wave_file) - wave_start) > wave_size){
       printf("pa: End of WAVE file data\n");
@@ -1425,16 +1427,14 @@ void *main_loop(void *thread_id){
           command = LOAD;
         } else break;
       case LOAD:
-
+  
         load_result = load_next();
         if (load_result == 0){
           pthread_mutex_lock(&buffer_mutex);
-          
           // Prepare for a crossfade if enabled and suitable
           if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING){
             int reserve = current_sample_rate * 0.1;
             int l;
-            
             l = current_sample_rate * 0.7;
             if (buff_filled > l + reserve){
               int i = 0;
