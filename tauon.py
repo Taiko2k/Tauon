@@ -19372,7 +19372,11 @@ def toggle_album_mode(force_on=False):
 
 
 def check_auto_update_okay(code, pl=None):
-    cmds = shlex.split(code)
+    try:
+        cmds = shlex.split(code)
+    except:
+        print("Malformed generator code!")
+        return False
     return "auto" in cmds or (prefs.always_auto_update_playlists and
                           pctl.active_playlist_playing != pl and
                           not "sf" in cmds and
