@@ -8889,6 +8889,16 @@ def draw_linked_text(location, text, colour, font, force=False, replace=""):
 
     return left, right - left, target_link
 
+def draw_linked_text2(x, y, text, colour, font, click=False, replace=""):
+    link_pa = draw_linked_text((x, y), text,
+                               colour, font, replace=replace)
+    link_rect = [x + link_pa[0], y, link_pa[1], 18 * gui.scale]
+    if coll(link_rect):
+        if not click:
+            gui.cursor_want = 3
+        if click:
+            webbrowser.open(link_pa[2], new=2, autoraise=True)
+    fields.add(link_rect)
 
 def link_activate(x, y, link_pa, click=None):
 
@@ -26008,7 +26018,7 @@ class Over:
 
         self.title_image.render(x - 1, y, alpha_mod(colours.box_sub_text, 240))
 
-        credit_pages = 1
+        credit_pages = 5
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
             self.ani_cred = 1
@@ -26083,8 +26093,6 @@ class Over:
             ddt.text((x, y + 1 * gui.scale), "Created by", colours.box_text_label, 13)
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
-            #y += 25 * gui.scale
-
             y += 25 * gui.scale
 
             ddt.text((x, y), "Translations", colours.box_text_label, 13)
@@ -26105,27 +26113,139 @@ class Over:
             # ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
             # ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "", colours.box_sub_text, 13)
 
-        else:
-            pass
-            # y += 15 * gui.scale
-            #
-            # ddt.text((x, y), "Translations", colours.box_text_label, 13)
-            # yy = y
-            # ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.box_sub_text, 13)
-            # y += 19 * gui.scale
-            # ddt.text((x + 120 * gui.scale, y), "brunob", colours.box_sub_text, 13)
-            # y += 19 * gui.scale
-            # ddt.text((x + 120 * gui.scale, y), "msmafra", colours.box_sub_text, 13)
-            #
-            # y = yy
-            # ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
-            # y += 19 * gui.scale
-            # ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
-            # y += 19 * gui.scale
-            # ddt.text((x + 210 * gui.scale, y), "sk22", colours.box_sub_text, 13)
+
+        elif self.cred_page == 2:
+            xx = x + round(160 * gui.scale)
+            xxx = x + round(240 * gui.scale)
+            ddt.text((x, y), "Open source software used", colours.box_text_label, 13)
+            font = 12
+            spacing = round(18 * gui.scale)
+            y += spacing
+            ddt.text((x, y), "Simple DirectMedia Layer", colours.box_sub_text, font)
+            ddt.text((xx, y), "zlib", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://www.libsdl.org/", colours.box_sub_text, font, click=self.click, replace="libsdl.org")
+
+            y += spacing
+            ddt.text((x, y), "Cairo Graphics", colours.box_sub_text, font)
+            ddt.text((xx, y), "MPL", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://www.cairographics.org/", colours.box_sub_text, font, click=self.click, replace="cairographics.org")
+
+            y += spacing
+            ddt.text((x, y), "Pango", colours.box_sub_text, font)
+            ddt.text((xx, y), "LGPL", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://pango.gnome.org/", colours.box_sub_text, font, click=self.click, replace="pango.gnome.org")
+
+            y += spacing
+            ddt.text((x, y), "FFmpeg", colours.box_sub_text, font)
+            ddt.text((xx, y), "GPL", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://ffmpeg.org/", colours.box_sub_text, font, click=self.click, replace="ffmpeg.org")
+
+            y += spacing
+            ddt.text((x, y), "Pillow", colours.box_sub_text, font)
+            ddt.text((xx, y), "PIL License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://python-pillow.org/", colours.box_sub_text, font, click=self.click, replace="python-pillow.org")
 
 
-        ddt.rect((x, block_y, 369 * gui.scale, 110 * gui.scale), alpha_mod(colours.box_background, fade), True)
+        elif self.cred_page == 4:
+            xx = x + round(140 * gui.scale)
+            xxx = x + round(240 * gui.scale)
+            ddt.text((x, y), "Open source software used (cont'd)", colours.box_text_label, 13)
+            font = 12
+            spacing = round(18 * gui.scale)
+            y += spacing
+            ddt.text((x, y), "PySDL2", colours.box_sub_text, font)
+            ddt.text((xx, y), "Public Domain", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/marcusva/py-sdl2", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "Tekore", colours.box_sub_text, font)
+            ddt.text((xx, y), "MIT", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/felix-hilden/tekore", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "pyLast", colours.box_sub_text, font)
+            ddt.text((xx, y), "Apache 2.0", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/pylast/pylast", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "Noto Sans font", colours.box_sub_text, font)
+            ddt.text((xx, y), "Apache 2.0", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://fonts.google.com/specimen/Noto+Sans", colours.box_sub_text, font, click=self.click, replace="fonts.google.com")
+
+            y += spacing
+            ddt.text((x, y), "Stagger", colours.box_sub_text, font)
+            ddt.text((xx, y), "BSD 2-Clause", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/staggerpkg/stagger", colours.box_sub_text, font, click=self.click, replace="github")
+
+        elif self.cred_page == 3:
+            xx = x + round(130 * gui.scale)
+            xxx = x + round(240 * gui.scale)
+            ddt.text((x, y), "Open source software used (cont'd)", colours.box_text_label, 13)
+            font = 12
+            spacing = round(18 * gui.scale)
+            y += spacing
+            ddt.text((x, y), "libFLAC", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://xiph.org/flac/", colours.box_sub_text, font, click=self.click, replace="xiph.org")
+
+            y += spacing
+            ddt.text((x, y), "libvorbis", colours.box_sub_text, font)
+            ddt.text((xx, y), "BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://xiph.org/vorbis/", colours.box_sub_text, font, click=self.click, replace="xiph.org")
+
+            y += spacing
+            ddt.text((x, y), "opusfile", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD license", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://opus-codec.org/", colours.box_sub_text, font, click=self.click, replace="opus-codec.org")
+
+            y += spacing
+            ddt.text((x, y), "mpg123", colours.box_sub_text, font)
+            ddt.text((xx, y), "LGPL 2.1", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://www.mpg123.de/", colours.box_sub_text, font, click=self.click, replace="mpg123.de")
+
+            y += spacing
+            ddt.text((x, y), "Secret Rabbit Code", colours.box_sub_text, font)
+            ddt.text((xx, y), "BSD 2-Clause", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "http://www.mega-nerd.com/SRC/index.html", colours.box_sub_text, font, click=self.click, replace="mega-nerd.com")
+
+        elif self.cred_page == 5:
+            xx = x + round(130 * gui.scale)
+            xxx = x + round(240 * gui.scale)
+            ddt.text((x, y), "Open source software used (cont'd)", colours.box_text_label, 13)
+            font = 12
+            spacing = round(18 * gui.scale)
+            y += spacing
+            ddt.text((x, y), "hsaudiotag3k", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/hsoft/hsaudiotag", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "isounidecode", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/redvasily/isounidecode", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "pypresence", colours.box_sub_text, font)
+            ddt.text((xx, y), "MIT", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/qwertyquerty/pypresence", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "musicbrainzngs", colours.box_sub_text, font)
+            ddt.text((xx, y), "Simplified BSD", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/alastair/python-musicbrainzngs", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "Send2Trash", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/arsenetar/send2trash", colours.box_sub_text, font, click=self.click, replace="github")
+
+            y += spacing
+            ddt.text((x, y), "GTK/PyGObject", colours.box_sub_text, font)
+            ddt.text((xx, y), "LGPLv2.1+", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://gitlab.gnome.org/GNOME/pygobject", colours.box_sub_text, font, click=self.click, replace="gitlab.gnome.org")
+
+
+        ddt.rect((x, block_y, 369 * gui.scale, 140 * gui.scale), alpha_mod(colours.box_background, fade), True)
 
         y = y0 + h0 - round(33 * gui.scale)
         x = x0 + w0 - 0 * gui.scale
