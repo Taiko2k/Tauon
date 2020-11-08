@@ -9,7 +9,6 @@ if [ "$1" == "--no-start" ]; then
 	else python3 /opt/tauon-music-box/tauon.py "$@";
 	fi
 else
-	echo "two"
 	python3 /opt/tauon-music-box/tauon.py "$@"
 fi
 

@@ -18,9 +18,9 @@
     <p>Packed with features while maintaining simplicity. Use drag and drop for easy file importing and playlist management. Groups albums by folder and allows you to manage your music with built-in functions such as file and folder renaming, cover art downloading and file deleting.</p>
     <p>Features:</p>
     <ul>
-      <li>Playback local audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
-      <li>Add network tracks from Airsonic and koel servers</li>
+      <li>Playback local audio files including MP3, FLAC and OGG</li>
       <li>Import Spotify tracks and control Spotify playback</li>
+      <li>Add network tracks from Airsonic and koel servers</li>
       <li>Automatic CUE sheet detection</li>
       <li>Gapless playback</li>
       <li>Lookup artists on Rate Your Music and Bandcamp</li>
@@ -31,7 +31,6 @@
       <li>Transcode and sync to device functionality</li>
       <li>Support for lyrics including synced lrc files and guitar chords</li>
       <li>Multiple preset colour themes</li>
-      <li>Additional mini and micro UI modes</li>
     </ul>
   </description>
 
@@ -58,11 +57,10 @@
 
   <releases>
 
-    <release version="6.4.0" date="2020-10-19">
+    <release version="6.4.1" date="2020-11-08">
       <description>
         <ul>
-          <li>Added Maloja scrobble support</li>
-          <li>Various improvements to artist list view</li>
+          <li>Added background fanart support</li>
           <li>Various other tweaks and bug fixes</li>
         </ul>
       </description>
