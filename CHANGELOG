@@ -12,9 +12,11 @@ v6.4.1
  - Improved Airsonic scan error handling
  - Fixed issue with exported thumbnail collisions
  - Fixed GStreamer EQ invert slider bug (workaround)
- - Fixed issue is GStreamer backend playing wrong track
+ - Fixed GStreamer backend playing wrong track when switching fast
  - Fixed a possible crash with malformed generator codes
  - Set Phazor as default backend over GStreamer
+ - Set global search to locate artist with shift + enter
+ - Set transcode output .opus.ogg extension to just .ogg
  - Removed download URL feature
  - Phazor: Added resampling for FLAC files
  - Phazor: Fixed slow seeking with some formats
