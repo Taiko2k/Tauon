@@ -12443,9 +12443,9 @@ def toggle_left_last():
         gui.last_left_panel_mode = t
 
 #. Menu entry: A side panel view layout.
-lsp_menu.add(_("Queue"), enable_queue_panel, disable_test=lsp_menu_test_queue)
 
 lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist)
+lsp_menu.add(_("Queue"), enable_queue_panel, disable_test=lsp_menu_test_queue)
 #. Menu entry: Side panel view layout showing a list of artists with thumbnails.
 lsp_menu.add(_("Artist List"), enable_artist_list, disable_test=lsp_menu_test_artist)
 #. Menu entry: A side panel view layout. Alternative name: Folder Tree.
@@ -20753,9 +20753,9 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     subprocess.call(command, stdout=subprocess.PIPE, shell=False,
                     startupinfo=startupinfo)
 
-    print("ffmpeg finished")
+    print("FFmpeg finished")
     if codec == "opus" and prefs.transcode_opus_as:
-        codec = 'opus.ogg'
+        codec = 'ogg'
 
     #print(target_out)
 
@@ -21428,17 +21428,25 @@ class SearchOverlay:
                             else:
 
                                 self.click_artist(item[1])
+                                #pctl.show_current(index=item[2], playing=False)
                                 self.active = False
                                 self.search_text.text = ""
 
                         if level_2_right_click:
 
+                            #self.click_artist(item[1])
                             pctl.show_current(index=item[2], playing=False)
                             self.active = False
                             self.search_text.text = ""
 
                     if enter and fade == 1:
-                        self.click_artist(item[1])
+                        if key_shift_down or key_shiftr_down:
+                            #self.click_artist(item[1])
+                            pctl.show_current(index=item[2], playing=False)
+                        else:
+                            #pctl.show_current(index=item[2], playing=False)
+                            self.click_artist(item[1])
+
                         self.active = False
                         self.search_text.text = ""
 
