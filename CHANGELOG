@@ -1,8 +1,102 @@
 
 Changelog-------------------------------------
 
+v6.4.1
+
+ - Added option to use artist backgrounds (Accounts > Fanart.tv)
+ - Added desktop launcher actions for play/pause, next and previous
+ - Added command line control arguments
+ - Added spotify icon button to track info box
+ - Moved MB4 and MB5 shortcuts to input config
+ - Improved ReplayGain support
+ - Improved Airsonic scan error handling
+ - Fixed issue with exported thumbnail collisions
+ - Fixed GStreamer EQ invert slider bug (workaround)
+ - Fixed issue is GStreamer backend playing wrong track
+ - Fixed a possible crash with malformed generator codes
+ - Set Phazor as default backend over GStreamer
+ - Removed download URL feature
+ - Phazor: Added resampling for FLAC files
+ - Phazor: Fixed slow seeking with some formats
+
+v6.4.0
+
+ - Added artist list sorting options
+ - Added Maloja scrobble support
+ - Added function to import scrobble counts and column to display
+ - Added custom Listenbrainz server option
+ - Added "Launching Spotfiy" status text
+ - Added new sorting option "Sort by Imported"
+ - Tweaked playlists stats readout
+ - Tweaked artist list appearance
+ - Tweaked settings function tab page layout
+ - Tweaked playlist list to remember scroll position over restart
+ - Tweaked album art display to prioritise "folder.*" over other names
+ - Fixed compact mode play/pause button order
+ - Fixed column bar peak position
+ - Fixed a case where Spotify monitoring would stall
+ - Fixed UI draw when using "Return" from showcase view
+ - Fixed a bug with seek bar display when using "radio random"
+ - Fixed radio type album art not showing in compact layout
+ - Phazor: Added pulseaudio output selector
+ - Phazor: Added "Fade on pause/stop" setting
+ - Phazor: Added "Fade on jump" setting
+ - Phazor: Added OGG metadata parsing for internet radio
+ - Phazor: Fixed a crash when attempting to play mono FLACs
+ - Phazor: Fixed FFMPEG processes not being cleaned up
+
+v6.3.3
+
+ - Added config option to restart track on back press
+ - Added option to scrobble to Libre.fm instead of Last.fm
+ - Added regenerate network collections functionality
+ - Set default keybind for "love playing" as Ctrl+Shift+L
+ - Set auto regen playlist setting default to on
+ - Enabled option to disable "transcode folder" menu entry
+ - Added ctrl click to add track to selection
+ - Added "Add to Queue" to selection menu
+ - Added toast for love track shortcut
+ - Added counter to Airsonic library import
+ - Tweaked lyrics to use as sycned if detected
+ - Tweaked synced lyrics synchronisation accuracy
+ - Tweaked auto regenerate playlists behaviour
+ - Improved PLEX import speed
+ - Fixed a possible stall when importing corrupted flac files
+ - Fixed down key on search overly advancing past results
+ - Fixed bottom panel title hiding
+ - Fixed no lyric menu when only synced lyrics showing
+ - Fixed menu click triggering seek bar when over
+ - Fixed column sorting by filepath
+ - Fixed possible crash when loading network track with Phazor
+
+v6.3.2
+
+ - Improved broadcast page
+  - Redesigned layout to a centered style
+  - Added metadata delay to improve perceived synchronisation
+  - Added sourcing lyrics from lrc files (static)
+  - Fixed no spaces in text bug
+ - Fixed global search crash with Spotify when not enabled
+ - Fixed delay when restarting broadcast
+
+v6.3.1
+
+ - Enabled picture menu for showcase album art
+ - Fixed borked radio metadata page
+ - Fixed process not closing with active broadcast connection
+ - Phazor:
+   - Fixed audio not fading out on app exit
+   - Fixed no audio when start after pause
+   - Reduced possible glitches
+
+v6.3.0
+
+ - Added option to restore window position on restart
+ - Fixed spotify auth not working with tekore v3
+
 v6.2.6
 
+ - Fixed an upgrading issue causing some tracks to stall
  - Fixed a crash when using copy in an empty playlist
  - Fixed an issue with playback stalling after missing track or jump during transition
 

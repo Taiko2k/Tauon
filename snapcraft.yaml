@@ -9,14 +9,9 @@ base: core18
 architectures:
   - amd64
 
-layout:
-  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib:
-    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib
-
 apps:
   tauon:
     command: tauon.py
-    command-chain: ["snap/command-chain/alsa-launch"]
     common-id: tauonmb
     desktop: usr/share/applications/tauonmb.desktop
     environment:
@@ -85,8 +80,7 @@ parts:
       - ffmpeg
       - p7zip-full
       - unrar
-      - flac
-    after: [alsa-mixin]
+      - curl
     override-build: |
       snapcraftctl build
       # temp fix for https://github.com/marcusva/py-sdl2/issues/148
@@ -100,70 +94,25 @@ parts:
     parse-info: [extra/com.github.taiko2k.tauonmb.appdata.xml]
     build-packages:
       - gettext
+      - libflac-dev
+      - libpulse-dev
+      - libvorbis-dev
+      - libopusfile-dev
+      - libmpg123-dev
+      - libsamplerate0-dev
+    stage-packages:
+      - flac
+      - libpulse0
+      - libvorbis0a
+      - libopusfile0
+      - libmpg123-0
+      - libsamplerate0
+      
     override-build: |
       chmod +x compile-translations.py
       python3 compile-translations.py
+      bash compile-phazor.sh
       snapcraftctl build
       chmod +x tauon.py
 
-      
-  alsa-mixin:
-    plugin: nil
-    source: https://github.com/diddlesnaps/snapcraft-alsa.git
-    override-pull: |
-      cat > asound.conf <<EOF
-      pcm.!default {
-          type pulse
-          fallback "sysdefault"
-          hint {
-              show on
-              description "Default ALSA Output (currently PulseAudio Sound Server)"
-          }
-      }
-      ctl.!default {
-          type pulse
-          fallback "sysdefault"
-      }
-      EOF
-      cat > alsa-launch <<EOF
-      #!/bin/bash
-
-      function append_dir() {
-        local var="\$1"
-        local dir="\$2"
-        if [ -d "\$dir" ]; then
-          eval "export \$var=\"\\\$dir\${\$var:+:\\\$\$var}\""
-        fi
-      }
-
-      export ALSA_CONFIG_PATH="\$SNAP/etc/asound.conf"
-
-      if [ -d "\$SNAP/usr/lib/alsa-lib" ]; then
-          append_dir LD_LIBRARY_PATH "\$SNAP/usr/lib/alsa-lib"
-      elif [ -d "\$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib" ]; then
-          append_dir LD_LIBRARY_PATH "\$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib"
-      fi
-      append_dir LD_LIBRARY_PATH "\$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/pulseaudio"
-
-      # Make PulseAudio socket available inside the snap-specific $XDG_RUNTIME_DIR
-      if [ -n "\$XDG_RUNTIME_DIR" ]; then
-          pulsenative="pulse/native"
-          pulseaudio_sockpath="\$XDG_RUNTIME_DIR/../\$pulsenative"
-          if [ -S "\$pulseaudio_sockpath" ]; then
-              export PULSE_SERVER="unix:\${pulseaudio_sockpath}"
-          fi
-      fi
-
-      exec "\$@"
-      EOF
-      chmod +x alsa-launch
-    override-build: |
-      snapcraftctl build
-      install -m644 -D -t $SNAPCRAFT_PART_INSTALL/etc asound.conf
-      install -m755 -D -t $SNAPCRAFT_PART_INSTALL/snap/command-chain alsa-launch
-    build-packages:
-      - libasound2-dev
-    stage-packages:
-      - libasound2
-      - libasound2-plugins
-
+ 

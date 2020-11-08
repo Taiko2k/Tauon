@@ -11,3 +11,5 @@ pypresence
 isounidecode
 setproctitle
 tekore
+pulsectl
+

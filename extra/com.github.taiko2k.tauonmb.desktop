@@ -8,11 +8,24 @@ GenericName[ja]=音楽プレイヤー
 GenericName[zh_CN]=音乐播放器
 GenericName[de]=Musik-Player
 Icon=com.github.taiko2k.tauonmb
-MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u
+MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u
 Name=Tauon Music Box
 StartupNotify=false
 StartupWMClass=Tauon Music Box
 Terminal=false
 Type=Application
 Categories=AudioVideo;Player;Audio;
+Actions=PlayPause;Previous;Next
+
+[Desktop Action PlayPause]
+Exec=com.github.taiko2k.tauonmb.sh --no-start --play-pause
+Name=Play/Pause
+
+[Desktop Action Previous]
+Exec=com.github.taiko2k.tauonmb.sh --no-start --previous
+Name=Previous Track
+
+[Desktop Action Next]
+Exec=com.github.taiko2k.tauonmb.sh --no-start --next
+Name=Next Track
 

@@ -54,24 +54,23 @@ class SpotCtl:
         self.sender = None
         self.cache_saved_albums = []
         self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
+        self.launching_spotify = False
 
         self.progress_timer = Timer()
         self.update_timer = Timer()
 
-        self.token_path = os.path.join(self.tauon.user_directory, "spot_token-j")
-        self.token_path = os.path.join(self.tauon.user_directory, "spot-r-token")
+        self.token_path = os.path.join(self.tauon.user_directory, "spot-a-token")
 
     def prep_cred(self):
 
-        try:
-            rc = tk.RefreshingCredentials
-        except:
-            rc = tk.auth.RefreshingCredentials
+        rc = tk.RefreshingCredentials
         self.cred = rc(client_id=self.tauon.prefs.spot_client,
                                     client_secret=self.tauon.prefs.spot_secret,
                                     redirect_uri=self.redirect_uri)
 
     def connect(self):
+        if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
+            return
         if self.cred is None:
             self.prep_cred()
         if self.spotify is None:
@@ -85,46 +84,28 @@ class SpotCtl:
     def paste_code(self, code):
         if self.cred is None:
             self.prep_cred()
-        self.token = self.cred.request_user_token(code)
+
+        self.token = self.cred.request_user_token(code.strip().strip("\n"))
         if self.token:
             self.save_token()
             self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
 
     def save_token(self):
+
         if self.token:
-
-            pickle.dump(self.token, open(self.token_path, "wb"))
-
-            if os.path.getsize(self.token_path) > 10000:
-                print("PICKLE MALFUNCTION")
-                os.remove(self.token_path)
+            self.tauon.prefs.spotify_token = str(self.token.refresh_token)
 
     def load_token(self):
-        if os.path.isfile(self.token_path):
+        if self.tauon.prefs.spotify_token:
             try:
-
-                if os.path.getsize(self.token_path) > 10000:
-                    print("PICKLE MALFUNCTION")
-                    os.remove(self.token_path)
-                else:
-                    f = open(self.token_path, "rb")
-                    self.token = pickle.load(f)
-                    # Fix for memory leak
-                    self.token._token._scope = tk.Scope(self.scope.split(" "))
-                    f.close()
-                    print("Loaded token from file")
-                    return
+                self.token = tk.refresh_user_token(self.tauon.prefs.spot_client, self.tauon.prefs.spot_secret, self.tauon.prefs.spotify_token)
             except:
-                print("ERROR LOADING TOKEN.")
-
-        self.tauon.gui.show_message(self.tauon.strings.spotify_request_auth, mode="warning")
-        self.delete_token()
+                print("ERROR LOADING TOKEN")
+                self.tauon.prefs.spotify_token = ""
 
     def delete_token(self):
-        if os.path.isfile(self.token_path):
-            os.remove(self.token_path)
+        self.tauon.prefs.spotify_token = ""
         self.token = None
-
 
     def auth(self):
         if not tekore_imported:
@@ -303,18 +284,6 @@ class SpotCtl:
             print("No spotify devices found")
 
         if not devices:
-            # webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
-            # tries = 0
-            # while not devices:
-            #     time.sleep(2)
-            #     if tries == 0:
-            #         self.tauon.focus_window()
-            #     devices = self.spotify.playback_devices()
-            #     tries += 1
-            #     if tries > 4:
-            #         break
-            # if not devices:
-            #     return False
             return False
         for d in devices:
             if d.is_active:
@@ -325,18 +294,23 @@ class SpotCtl:
         return None
 
     def play_target(self, id):
+
         self.coasting = False
         self.connect()
         if not self.spotify:
+            self.tauon.gui.show_message("Error. You may need to click Authorise in Settings > Accounts > Spotify.", mode="warning")
             return
 
         d_id = self.prime_device()
         # if d_id is False:
         #     return
 
+
         #if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
         #try:
         if d_id is False:
+            self.launching_spotify = True
+            self.tauon.gui.update += 1
             if self.tauon.prefs.launch_spotify_web:
                 webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
                 tries = 0
@@ -353,6 +327,8 @@ class SpotCtl:
                     if tries > 6:
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
+                        self.launching_spotify = False
+                        self.tauon.gui.update += 1
                         return
             else:
                 subprocess.run(["xdg-open", "spotify:track"])
@@ -389,8 +365,13 @@ class SpotCtl:
                         print("TOO MANY TRIES")
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
+                        self.launching_spotify = False
+                        self.tauon.gui.update += 1
                         return
                     time.sleep(2)
+
+            self.launching_spotify = False
+            self.tauon.gui.update += 1
 
         else:
             try:
@@ -482,15 +463,11 @@ class SpotCtl:
         if not self.spotify:
             return
 
-        print(url)
-
         if url.startswith("spotify:album:"):
             id = url[14:]
         else:
             url = url.split("?")[0]
             id = url.strip("/").split("/")[-1]
-
-        print(id)
 
         album = self.spotify.album(id)
         playlist = []
@@ -853,6 +830,10 @@ class SpotCtl:
             self.append_album(tr.misc["spotify-album-url"], playlist_number)
 
     def coast_update(self, result):
+
+        if result is None or result.item is None:
+            print("Spotify returned unknown")
+            return
 
         self.tauon.dummy_track.artist = result.item.artists[0].name
         self.tauon.dummy_track.title = result.item.name

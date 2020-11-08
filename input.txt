@@ -63,13 +63,13 @@ quick-find \
 quick-find F Ctrl
 global-search G Ctrl
 add-to-queue Q Alt
-love-playing
+love-playing L Shift Ctrl
 love-selected L Ctrl
 
 toggle-left-panel ~
 toggle-last-left-panel
-toggle-right-panel
-toggle-gallery
+toggle-right-panel MB5
+toggle-gallery MB4
 toggle-gallery-keycontrol Tab
 toggle-showcase F5
 toggle-minimode F8

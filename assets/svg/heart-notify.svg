@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="25.262007"
+   height="24.121271"
+   viewBox="0 0 6.6839061 6.3820865"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="heart-notify.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#212121"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11.2"
+     inkscape:cx="12.809138"
+     inkscape:cy="14.18678"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1198"
+     inkscape:window-height="738"
+     inkscape:window-x="528"
+     inkscape:window-y="108"
+     inkscape:window-maximized="0"
+     inkscape:document-rotation="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-63.173718,-146.44006)">
+    <path
+       sodipodi:nodetypes="sscsscs"
+       inkscape:export-ydpi="95.004333"
+       inkscape:export-xdpi="95.004333"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/heart-notify.png"
+       inkscape:connector-curvature="0"
+       id="path4984"
+       d="m 63.747107,147.02377 c -0.764519,0.80058 -0.764519,2.0986 0,2.89918 l 2.768565,2.8992 2.768564,-2.8992 c 0.764517,-0.80058 0.764517,-2.0986 0,-2.89918 -0.764519,-0.8006 -2.004048,-0.76642 -2.768564,0.0341 -0.76452,-0.80061 -2.004048,-0.83478 -2.768565,-0.0341 z"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:4.30069;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill" />
+  </g>
+</svg>

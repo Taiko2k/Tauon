@@ -118,9 +118,12 @@ def get_filesize_string(file_bytes):
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000, 2)
         line = locale.str(file_kb) + " KB"
-    else:
+    elif file_bytes < 1000000000:
         file_mb = round(file_bytes / 1000000, 2)
         line = locale.str(file_mb) + " MB"
+    else:
+        file_mb = round(file_bytes / 1000000000, 1)
+        line = locale.str(file_mb) + " GB"
     return line
 
 def get_filesize_string_rounded(file_bytes):
@@ -520,6 +523,18 @@ def get_artist_strip_feat(track_object):
                 artist_name = track_object.album_artist
     return artist_name
 
+def get_artist_safe(track):
+
+    if track:
+        artist = track.album_artist
+        if not artist:
+            artist = track.artist
+        artist = filename_safe(artist)
+        artist = artist.split("feat")[0]
+        artist = artist.split(", ")[0]
+        artist = artist.split("; ")[0]
+        return artist
+    return ""
 
 def coll_rect(rect1, rect2):
 

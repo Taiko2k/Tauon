@@ -23,7 +23,7 @@
 import struct
 import wave
 import io
-
+import os
 
 def parse_mbids_from_vorbis(object, key, value):
 
@@ -207,10 +207,14 @@ class Flac:
                         print("      In file: " + self.filepath)
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
-                    elif 'replaygain_track_gain' == a:
-                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
-                    elif 'replaygain_album_gain' == a:
-                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_track_gain" == a:
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_track_peak" == a:
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
+                    elif "replaygain_album_gain" == a:
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_album_peak" == a:
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif 'composer' == a:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
@@ -252,13 +256,16 @@ class Flac:
     def read(self, get_picture=False):
 
         # Very helpful: https://xiph.org/flac/format.html
+        size = os.path.getsize(self.filepath) / 8
+        if size < 100:
+            return
 
         f = open(self.filepath, "rb")
         s = f.read(4)
 
         # Find start of FLAC stream
         if s != b'fLaC':
-            while f.tell() < 1000000:
+            while f.tell() < size + 100:
                 f.seek(-3, 1)
                 s = f.read(4)
                 if s == b'fLaC':
@@ -422,14 +429,14 @@ class Opus:
 
         s = v.read(4)
         l -= 4
-        a = int.from_bytes(s, byteorder='little')
-        s = v.read(a)
+        a = int.from_bytes(s, byteorder='little')  # Vendor string length
+        s = v.read(a)  # Vendor string
         l -= a
 
         s = v.read(4)
         l -= 4
 
-        number = int.from_bytes(s, byteorder='little')
+        number = int.from_bytes(s, byteorder='little')  # Number of comments
 
         artists = []
         genres = []
@@ -493,14 +500,16 @@ class Opus:
                         print("      In file: " + self.filepath)
                         self.has_picture = True
                         self.picture = b
-                        #print(b)
-
-                        # To do
+                        # print(b)
 
                     elif 'replaygain_track_gain' == a:
-                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_track_peak' == a:
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif 'replaygain_album_gain' == a:
-                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_album_peak' == a:
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
                     elif a == 'disctotal' or a == 'totaldiscs':
@@ -709,12 +718,17 @@ class Ape:
                     self.label = value
                 elif key.lower() == "lyrics":
                     self.lyrics = value
+                elif "replaygain_track_gain" == key.lower():
+                    self.misc["replaygain_track_gain"] = float(value.strip(" dB"))
+                elif "replaygain_track_peak" == key.lower():
+                    self.misc["replaygain_track_peak"] = float(value)
+                elif "replaygain_album_gain" == key.lower():
+                    self.misc["replaygain_album_gain"] = float(value.strip(" dB"))
+                elif "replaygain_album_peak" == key.lower():
+                    self.misc["replaygain_album_peak"] = float(value)
                 elif parse_mbids_from_vorbis(self, key.lower(), value):
                     pass
-                elif 'replaygain_track_gain' == key.lower():
-                    self.track_gain = float(value.strip(" dB"))
-                elif 'replaygain_album_gain' == key.lower():
-                    self.album_gain = float(value.strip(" dB"))
+
                 elif key.lower() == "cover art (front)":
 
                     # Data appears to have a filename at the start of it, we need to remove to recover a valid picture

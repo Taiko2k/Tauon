@@ -1,3 +1,4 @@
+
 body {
   background-color: #111;
   font-family: sans-serif;
@@ -12,28 +13,40 @@ p {
   display: flex;
   flex-wrap: wrap;
   padding-left: 15px;
-  padding-top: 20px;
+  padding-top: 40px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-#main {
-  flex: auto;
+#meta {
+  float: left;
+  margin-left: 20px;
 }
+
 
 #lyrics {
   color: #CCC;
   flex: auto;
+
   max-width: 600px;
   word-wrap: break-word;
-  padding-top: 0px;
-  padding-left: 35px;
+  padding-top: 25px;
+  padding-left: 2px;
+  padding-bottom: 50px;
 }
 
 #img-holder {
-  height: 300px;
-  width: 300px;
-  background-color: #222;
-  float: left;
-  clear: left;
+   height: 300px;
+   width: 300px;
+   background-color: rgb(27, 27, 27);
+   float: left;
+   justify-content:center;
+   display:flex;
+}
+
+#picture {
+  align-self:center;
 }
 
 #control-holder {
@@ -42,48 +55,43 @@ p {
 }
 
 #seekfront {
-  height: 20px;
+  height: 17px;
   width: 100px;
   background-color: rgb(50, 50, 150);
 }
 
 #seekback {
-  height: 20px;
-  width: 700px;
+  height: 17px;
+  width: 450px;
   background-color: rgb(40, 40, 40);
   clear: left;
+
 }
 
 #title-text {
   clear: left;
-  padding-top: 10px;
+  padding-top: 0px;
   font-family: sans-serif;
+  font-size: 1.4em;
+  font-weight: bold;
   color: rgb(230, 230, 230);
-  padding-bottom: 5px;
+  padding-bottom: 3px;
+  min-height: 30px;
+  max-width: 450px;
 }
 
-#tracklist {
-  padding-top: 50px;
+#artist-text {
   clear: left;
   font-family: sans-serif;
-  width: 600px;
-}
-
-#albumlist {
-  padding-top: 50px;
-  position: relative;
-  font-family: sans-serif;
-  width: 600px;
-  height: 500px;
-  left: 600px;
-  overflow: scroll;
-}
-
-#player {
-  padding-top: 50px;
+  font-size: 1.2em;
+  color: rgb(230, 230, 230);
+  padding-bottom: 30px;
+  min-height: 30px;
+  max-width: 450px;
 }
 
 .buttons {
+
   float: left;
   height: 50px;
   clear: left;
@@ -102,10 +110,12 @@ p {
 }
 
 #play-button {
+  float: left;
   padding-top: 8px;
   padding-bottom: 8px;
   width: 60px;
   height: 25px;
+
 }
 
 .button {
@@ -136,7 +146,15 @@ p {
   margin: auto;
 }
 
+#player {
+  padding-top: 10px;
+}
+
+
 .slidecontainer {
+  float: left;
+  padding-top: 10px;
+  padding-left: 15px;
   width: 120px;
 }
 
@@ -146,11 +164,9 @@ input[type=range] {
   background-color: transparent;
   -webkit-appearance: none;
 }
-
 input[type=range]:focus {
   outline: none;
 }
-
 input[type=range]::-webkit-slider-runnable-track {
   background: #343434;
   border: 0;
@@ -158,7 +174,6 @@ input[type=range]::-webkit-slider-runnable-track {
   height: 8.4px;
   cursor: pointer;
 }
-
 input[type=range]::-webkit-slider-thumb {
   margin-top: -4.3px;
   width: 11px;
@@ -169,11 +184,9 @@ input[type=range]::-webkit-slider-thumb {
   cursor: pointer;
   -webkit-appearance: none;
 }
-
 input[type=range]:focus::-webkit-slider-runnable-track {
   background: #343434;
 }
-
 input[type=range]::-moz-range-track {
   background: #343434;
   border: 0;
@@ -181,7 +194,6 @@ input[type=range]::-moz-range-track {
   height: 8.4px;
   cursor: pointer;
 }
-
 input[type=range]::-moz-range-thumb {
   width: 11px;
   height: 17px;
@@ -190,7 +202,6 @@ input[type=range]::-moz-range-thumb {
   border-radius: 1px;
   cursor: pointer;
 }
-
 input[type=range]::-ms-track {
   background: transparent;
   border-color: transparent;
@@ -200,17 +211,14 @@ input[type=range]::-ms-track {
   height: 8.4px;
   cursor: pointer;
 }
-
 input[type=range]::-ms-fill-lower {
   background: #343434;
   border: 0;
 }
-
 input[type=range]::-ms-fill-upper {
   background: #343434;
   border: 0;
 }
-
 input[type=range]::-ms-thumb {
   width: 11px;
   height: 17px;
@@ -221,15 +229,12 @@ input[type=range]::-ms-thumb {
   margin-top: 0px;
   /*Needed to keep the Edge thumb centred*/
 }
-
 input[type=range]:focus::-ms-fill-lower {
   background: #343434;
 }
-
 input[type=range]:focus::-ms-fill-upper {
   background: #343434;
 }
-
 /*TODO: Use one of the selectors from https://stackoverflow.com/a/20541859/7077589 and figure out
 how to remove the virtical space around the range input in IE*/
 @supports (-ms-ime-align:auto) {
