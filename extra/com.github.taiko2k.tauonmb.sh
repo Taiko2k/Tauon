@@ -13,6 +13,5 @@ if [ "$1" == "--no-start" ]; then
 	else python3 /app/bin/tauon.py "$@";
 	fi
 else
-	echo "two"
 	python3 /app/bin/tauon.py "$@"
-
+fi
