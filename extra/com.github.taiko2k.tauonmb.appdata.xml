@@ -57,7 +57,7 @@
 
   <releases>
 
-    <release version="6.4.1" date="2020-11-08">
+    <release version="6.4.2" date="2020-11-09">
       <description>
         <ul>
           <li>Added background fanart support</li>
