@@ -31,6 +31,8 @@ class Gnome:
         self.tauon = tauon
         self.indicator_launched = False
         self.indicator_mode = 0
+        self.update_tray_text = None
+        self.tray_text = ""
 
         self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
         self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
@@ -84,8 +86,8 @@ class Gnome:
 
         self.indicator = AppIndicator3.Indicator.new("Tauon", self.indicator_icon_default, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
+        self.indicator.set_title("Tauon Music Box")
         self.menu = Gtk.Menu()
-
 
         def restore(_):
             tauon.raise_window()
@@ -104,34 +106,40 @@ class Gnome:
             pctl.back()
 
         def update():
+            # This is done polling style in a single thread because calling
+            # from a different thread seems to cause text to sometimes stall
 
-            if pctl.playing_state in (1, 3):
-                if self.indicator_mode != 1:
-                    self.indicator_mode = 1
-                    self.indicator_play()
-            elif pctl.playing_state == 2:
-                if self.indicator_mode != 2:
-                    self.indicator_mode = 2
-                    self.indicator_pause()
-            else:
-                if self.indicator_mode != 0:
-                    self.indicator_mode = 0
-                    self.indicator_stop()
+            while True:
+                time.sleep(1)
+                if pctl.playing_state in (1, 3):
+                    if self.indicator_mode != 1:
+                        self.indicator_mode = 1
+                        self.indicator_play()
+                elif pctl.playing_state == 2:
+                    if self.indicator_mode != 2:
+                        self.indicator_mode = 2
+                        self.indicator_pause()
+                else:
+                    if self.indicator_mode != 0:
+                        self.indicator_mode = 0
+                        self.indicator_stop()
 
-            # text = ""
-            # tr = pctl.playing_object()
-            # if tr and tr.title and tr.artist:
-            #     text = tr.artist + " - " + tr.title
-            #
-            # if pctl.playing_state == 0:
-            #     text = ""
-            #
-            # if text:
-            #     self.indicator.set_label(" " + text, text)
-            # else:
-            #     self.indicator.set_label("", "")
+                text = ""
+                if self.tauon.prefs.tray_show_title:
+                    tr = pctl.playing_object()
+                    if tr and tr.title and tr.artist:
+                        text = tr.artist + " - " + tr.title
 
-        self.tauon.pctl.tray_update = update
+                    if pctl.playing_state == 0:
+                        text = ""
+
+                if self.indicator_launched:
+                    if text != self.tray_text:
+                        if text:
+                            self.indicator.set_label(" " + text, text)
+                        else:
+                            self.indicator.set_label("", "")
+                        self.tray_text = text
 
         item = Gtk.MenuItem("Open Tauon Music Box")
         item.connect("activate", restore)
@@ -169,8 +177,14 @@ class Gnome:
         self.menu.show()
 
         self.indicator.set_menu(self.menu)
+
         self.tauon.gui.tray_active = True
         self.indicator_launched = True
+
+        import threading
+        shoot = threading.Thread(target=update)
+        shoot.daemon = True
+        shoot.start()
 
     def main(self):
 
