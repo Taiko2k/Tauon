@@ -30,8 +30,10 @@ class Gnome:
         self.bus_object = None
         self.tauon = tauon
         self.indicator_launched = False
+        self.indicator_mode = 0
 
         self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
+        self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
         self.indicator_icon_default = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-default.svg")
 
     def focus(self):
@@ -62,6 +64,10 @@ class Gnome:
         if self.indicator_launched:
             self.indicator.set_icon_full(self.indicator_icon_play, "playing")
 
+    def indicator_pause(self):
+        if self.indicator_launched:
+            self.indicator.set_icon_full(self.indicator_icon_pause, "paused")
+
     def indicator_stop(self):
         if self.indicator_launched:
             self.indicator.set_icon_full(self.indicator_icon_default, "default")
@@ -80,6 +86,7 @@ class Gnome:
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
         self.menu = Gtk.Menu()
 
+
         def restore(_):
             tauon.raise_window()
 
@@ -97,10 +104,32 @@ class Gnome:
             pctl.back()
 
         def update():
+
             if pctl.playing_state in (1, 3):
-                self.indicator_play()
+                if self.indicator_mode != 1:
+                    self.indicator_mode = 1
+                    self.indicator_play()
+            elif pctl.playing_state == 2:
+                if self.indicator_mode != 2:
+                    self.indicator_mode = 2
+                    self.indicator_pause()
             else:
-                self.indicator_stop()
+                if self.indicator_mode != 0:
+                    self.indicator_mode = 0
+                    self.indicator_stop()
+
+            # text = ""
+            # tr = pctl.playing_object()
+            # if tr and tr.title and tr.artist:
+            #     text = tr.artist + " - " + tr.title
+            #
+            # if pctl.playing_state == 0:
+            #     text = ""
+            #
+            # if text:
+            #     self.indicator.set_label(" " + text, text)
+            # else:
+            #     self.indicator.set_label("", "")
 
         self.tauon.pctl.tray_update = update
 
