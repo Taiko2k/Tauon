@@ -29,6 +29,7 @@ class Gnome:
 
         self.bus_object = None
         self.tauon = tauon
+        self.indicator_launched = False
 
     def focus(self):
 
@@ -41,6 +42,86 @@ class Gnome:
                 # Error connecting to org.gnome.SettingsDaemon.MediaKeys
                 pass
 
+    def show_indicator(self):
+        if not self.indicator_launched:
+            self.start_indicator()
+        else:
+            self.indicator.set_status(1)
+
+    def hide_indicator(self):
+        if self.indicator_launched:
+            self.indicator.set_status(0)
+
+    def start_indicator(self):
+
+        pctl = self.tauon.pctl
+        tauon = self.tauon
+
+        import gi
+        gi.require_version('AppIndicator3', '0.1')
+        from gi.repository import Gtk
+        from gi.repository import AppIndicator3
+
+        self.indicator = AppIndicator3.Indicator.new("Tauon", os.path.abspath('assets/svg/v4-f.svg'), AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+        self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
+        self.menu = Gtk.Menu()
+
+        def restore(_):
+            tauon.raise_window()
+
+        def menu_quit(_):
+            self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
+            tauon.exit()
+
+        def play_pause(_):
+            pctl.play_pause()
+            #self.indicator.set_icon_full(os.path.abspath('assets/svg/v4-d.svg'), "test")
+
+        def next(_):
+            pctl.advance()
+
+        def back(_):
+            pctl.back()
+
+        item = Gtk.MenuItem("Open Tauon Music Box")
+        item.connect("activate", restore)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.SeparatorMenuItem()
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Play/Pause")
+        item.connect("activate", play_pause)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Next Track")
+        item.connect("activate", next)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Previous Track")
+        item.connect("activate", back)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.SeparatorMenuItem()
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Quit")
+        item.connect("activate", menu_quit)
+        item.show()
+        self.menu.append(item)
+
+        self.menu.show()
+
+        self.indicator.set_menu(self.menu)
+        self.tauon.gui.tray_active = True
+        self.indicator_launched = True
+
     def main(self):
 
         import dbus
@@ -51,6 +132,9 @@ class Gnome:
         gui = self.tauon.gui
         pctl = self.tauon.pctl
         tauon = self.tauon
+
+        if prefs.use_tray:
+            self.show_indicator()
 
         def on_mediakey(comes_from, what):
 
