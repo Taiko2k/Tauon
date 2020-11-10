@@ -44,7 +44,10 @@ class Gnome:
 
     def show_indicator(self):
         if not self.indicator_launched:
-            self.start_indicator()
+            try:
+                self.start_indicator()
+            except:
+                self.tauon.gui.show_message("Failed to start indicator", mode="error")
         else:
             self.indicator.set_status(1)
 
@@ -62,7 +65,8 @@ class Gnome:
         from gi.repository import Gtk
         from gi.repository import AppIndicator3
 
-        self.indicator = AppIndicator3.Indicator.new("Tauon", os.path.abspath('assets/svg/v4-f.svg'), AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+        icon_path = os.path.join(self.tauon.pctl.install_directory, "assets/svg/v4-f.svg")
+        self.indicator = AppIndicator3.Indicator.new("Tauon", icon_path, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
         self.menu = Gtk.Menu()
 

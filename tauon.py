@@ -1448,7 +1448,7 @@ class Prefs:    # Used to hold any kind of settings
         self.phazor_device_selected = "Default"
         self.phazor_devices = {"Default": "Default"}
         self.bg_flips = set()
-        self.use_tray = True
+        self.use_tray = False
 
 prefs = Prefs()
 
@@ -2973,8 +2973,6 @@ for t in range(2):
             prefs.failed_background_artists = save[158]
         if save[159] is not None:
             prefs.bg_flips = save[159]
-        if save[160] is not None:
-            prefs.use_tray = save[160]
 
         state_file.close()
         del save
@@ -3502,6 +3500,7 @@ def save_prefs():
     cf.update_value("sync-device-music-dir", prefs.sync_target)
     cf.update_value("add_download_directory", prefs.download_dir1)
 
+    cf.update_value("use-system-tray", prefs.use_tray)
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("restore-window-position", prefs.save_window_position)
@@ -3692,6 +3691,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[app]")
+    prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position, "Save and restore the last window position on desktop on open")
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
@@ -37783,7 +37783,6 @@ def save_state():
             prefs.phazor_device_selected,
             prefs.failed_background_artists,
             prefs.bg_flips,
-            prefs.use_tray,
         ]
 
 
