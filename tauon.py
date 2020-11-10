@@ -1449,6 +1449,7 @@ class Prefs:    # Used to hold any kind of settings
         self.phazor_devices = {"Default": "Default"}
         self.bg_flips = set()
         self.use_tray = False
+        self.tray_show_title = False
 
 prefs = Prefs()
 
@@ -2973,6 +2974,8 @@ for t in range(2):
             prefs.failed_background_artists = save[158]
         if save[159] is not None:
             prefs.bg_flips = save[159]
+        if save[160] is not None:
+            prefs.tray_show_title = save[160]
 
         state_file.close()
         del save
@@ -4359,6 +4362,7 @@ class PlayerCtl:
         self.wake_past_time = 0
 
         self.regen_in_progress = False
+        self.notify_in_progress = False
 
     def radio_progress(self):
 
@@ -4425,12 +4429,22 @@ class PlayerCtl:
         if pl_id in self.shuffle_pools:
             self.shuffle_pools[pl_id] += track_list
 
-    def notify_update(self):
-
+    def notify_update_fire(self):
         if self.mpris is not None:
             self.mpris.update()
-        if self.tray_update is not None:
-            self.tray_update()
+        # if self.tray_update is not None:
+        #     self.tray_update()
+        self.notify_in_progress = False
+
+    def notify_update(self):
+        if self.mpris is not None:
+            while self.notify_in_progress:
+                time.sleep(0.01)
+            self.notify_in_progress = True
+            shoot = threading.Thread(target=self.notify_update_fire)
+            shoot.daemon = True
+            shoot.start()
+
 
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
@@ -5098,7 +5112,7 @@ class PlayerCtl:
                 self.play_target()
 
         self.render_playlist()
-        self.notify_update()
+        #self.notify_update()
 
     def spot_test_progress(self):
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
@@ -23772,6 +23786,14 @@ def toggle_use_tray(mode=0):
     else:
         gnome.show_indicator()
 
+
+def toggle_text_tray(mode=0):
+    if mode == 1:
+        return prefs.tray_show_title
+    prefs.tray_show_title ^= True
+    if prefs.tray_show_title:
+        show_message("Note that not all environments support tray icon text.")
+
 def toggle_min_tray(mode=0):
     if mode == 1:
         return prefs.min_to_tray
@@ -24994,6 +25016,15 @@ class Over:
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
+            y += 38 * gui.scale
+            self.toggle_square(x, y, toggle_use_tray, _("Show icon in system tray"))
+
+            y += 25 * gui.scale
+            self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Minimize to tray"))
+
+            y += 25 * gui.scale
+            self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
+
         # Switcher
         pages = 3
         x = x0 + round(23 * gui.scale)
@@ -25936,18 +25967,13 @@ class Over:
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_use_tray, _("Show icon in system tray"))
-
-        y += 25 * gui.scale
-        self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Minimize to tray"))
-
+        y += 15 * gui.scale
         y += 25 * gui.scale
         if system != 'windows' and (flatpak_mode or snap_mode):
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
 
         # y += 25 * gui.scale
         # if prefs.backend == 1:
@@ -37787,6 +37813,7 @@ def save_state():
             prefs.phazor_device_selected,
             prefs.failed_background_artists,
             prefs.bg_flips,
+            prefs.tray_show_title,
         ]
 
 
