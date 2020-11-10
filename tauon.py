@@ -4331,6 +4331,7 @@ class PlayerCtl:
 
 
         self.mpris = None
+        self.tray_update = None
         self.eq = [0] * 2  # not used
         self.enable_eq = True  # not used
 
@@ -4428,6 +4429,8 @@ class PlayerCtl:
 
         if self.mpris is not None:
             self.mpris.update()
+        if self.tray_update is not None:
+            self.tray_update()
 
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
@@ -7268,6 +7271,7 @@ class SubsonicService:
             except json.decoder.JSONDecodeError:
                 show_message("Error reading Airsonic directory!", mode="warning")
                 return
+
 
             items = d["subsonic-response"]["directory"]["child"]
 
