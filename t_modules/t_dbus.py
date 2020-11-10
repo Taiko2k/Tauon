@@ -31,6 +31,9 @@ class Gnome:
         self.tauon = tauon
         self.indicator_launched = False
 
+        self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
+        self.indicator_icon_default = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+
     def focus(self):
 
         if self.bus_object is not None:
@@ -55,6 +58,14 @@ class Gnome:
         if self.indicator_launched:
             self.indicator.set_status(0)
 
+    def indicator_play(self):
+        if self.indicator_launched:
+            self.indicator.set_icon_full(self.indicator_icon_play, "playing")
+
+    def indicator_stop(self):
+        if self.indicator_launched:
+            self.indicator.set_icon_full(self.indicator_icon_default, "default")
+
     def start_indicator(self):
 
         pctl = self.tauon.pctl
@@ -65,8 +76,7 @@ class Gnome:
         from gi.repository import Gtk
         from gi.repository import AppIndicator3
 
-        icon_path = os.path.join(self.tauon.pctl.install_directory, "assets/svg/v4-f.svg")
-        self.indicator = AppIndicator3.Indicator.new("Tauon", icon_path, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+        self.indicator = AppIndicator3.Indicator.new("Tauon", self.indicator_icon_default, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
         self.menu = Gtk.Menu()
 
@@ -79,13 +89,20 @@ class Gnome:
 
         def play_pause(_):
             pctl.play_pause()
-            #self.indicator.set_icon_full(os.path.abspath('assets/svg/v4-d.svg'), "test")
 
         def next(_):
             pctl.advance()
 
         def back(_):
             pctl.back()
+
+        def update():
+            if pctl.playing_state in (1, 3):
+                self.indicator_play()
+            else:
+                self.indicator_stop()
+
+        self.tauon.pctl.tray_update = update
 
         item = Gtk.MenuItem("Open Tauon Music Box")
         item.connect("activate", restore)
