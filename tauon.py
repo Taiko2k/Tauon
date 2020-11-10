@@ -1448,6 +1448,7 @@ class Prefs:    # Used to hold any kind of settings
         self.phazor_device_selected = "Default"
         self.phazor_devices = {"Default": "Default"}
         self.bg_flips = set()
+        self.use_tray = True
 
 prefs = Prefs()
 
@@ -1828,6 +1829,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.backend_reloading = False
 
         self.spot_info_icon = asset_loader("spot-info.png", True)
+        self.tray_active = False
 
 gui = GuiVar()
 
@@ -2971,6 +2973,8 @@ for t in range(2):
             prefs.failed_background_artists = save[158]
         if save[159] is not None:
             prefs.bg_flips = save[159]
+        if save[160] is not None:
+            prefs.use_tray = save[160]
 
         state_file.close()
         del save
@@ -7010,6 +7014,15 @@ class Tauon:
     def exit(self):
         pctl.running = False
 
+    def min_to_tray(self):
+        SDL_HideWindow(t_window)
+
+    def raise_window(self):
+        SDL_ShowWindow(t_window)
+        SDL_RaiseWindow(t_window)
+        SDL_RestoreWindow(t_window)
+        gui.lowered = False
+
     def focus_window(self):
         SDL_RaiseWindow(t_window)
 
@@ -7581,7 +7594,6 @@ def koel_get_album_thread():
 if system == "windows" or msys:
     from infi.systray import SysTrayIcon
 
-
 class STray:
 
     def __init__(self):
@@ -7592,7 +7604,6 @@ class STray:
         SDL_ShowWindow(t_window)
         SDL_RaiseWindow(t_window)
         SDL_RestoreWindow(t_window)
-
         gui.lowered = False
 
     def down(self):
@@ -7628,6 +7639,7 @@ class STray:
         self.systray.shutdown()
         self.active = False
 
+tray = STray()
 
 if system == "linux" and not macos and not msys:
 
@@ -7640,7 +7652,7 @@ if system == "linux" and not macos and not msys:
     except:
         print("ERROR: Could not start Dbus thread")
 
-tray = STray()
+
 
 if system == "windows" or msys:
 
@@ -7989,6 +8001,8 @@ def draw_window_tools():
 
                 if tray.active and prefs.min_to_tray:
                     tray.down()
+                elif gui.tray_active and prefs.min_to_tray:
+                    tauon.min_to_tray()
                 else:
                     SDL_MinimizeWindow(t_window)
 
@@ -23744,6 +23758,16 @@ def scale125(mode=0):
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
 
+def toggle_use_tray(mode=0):
+    if mode == 1:
+        return prefs.use_tray
+    prefs.use_tray ^= True
+    if not prefs.use_tray:
+        prefs.min_to_tray = False
+        gnome.hide_indicator()
+    else:
+        gnome.show_indicator()
+
 def toggle_min_tray(mode=0):
     if mode == 1:
         return prefs.min_to_tray
@@ -25908,24 +25932,26 @@ class Over:
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        if msys:
-            y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_use_tray, _("Show icon in system tray"))
+
+        y += 25 * gui.scale
+        self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Minimize to tray"))
 
         y += 25 * gui.scale
         if system != 'windows' and (flatpak_mode or snap_mode):
             self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
+        # y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
 
         # y += 25 * gui.scale
         # if prefs.backend == 1:
         #     self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
 
         y += round(25 * gui.scale)
-        if not msys:
-            y += round(15 * gui.scale)
+        #if not msys:
+        #y += round(15 * gui.scale)
 
         ddt.text((x, y), _("UI scale for HiDPI displays"), colours.box_text_label, 12)
 
@@ -37757,6 +37783,7 @@ def save_state():
             prefs.phazor_device_selected,
             prefs.failed_background_artists,
             prefs.bg_flips,
+            prefs.use_tray,
         ]
 
 
