@@ -4437,6 +4437,13 @@ class PlayerCtl:
         self.notify_in_progress = False
 
     def notify_update(self):
+
+        tauon.tray_releases += 1
+        try:
+            tauon.tray_lock.release()
+        except:
+            pass
+
         if self.mpris is not None:
             while self.notify_in_progress:
                 time.sleep(0.01)
@@ -7027,6 +7034,9 @@ class Tauon:
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
         self.radio_server = None
+
+        self.tray_lock = threading.Lock()
+        self.tray_releases = 0
 
     def exit(self):
         pctl.running = False

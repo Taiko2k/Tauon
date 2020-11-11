@@ -110,7 +110,12 @@ class Gnome:
             # from a different thread seems to cause text to sometimes stall
 
             while True:
-                time.sleep(1)
+
+                time.sleep(0.25)
+                if tauon.tray_releases <= 0:
+                    tauon.tray_lock.acquire()
+                tauon.tray_releases -= 1
+
                 if pctl.playing_state in (1, 3):
                     if self.indicator_mode != 1:
                         self.indicator_mode = 1
