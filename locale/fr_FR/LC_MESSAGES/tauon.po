@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-10-10 00:00+1300\n"
 "PO-Revision-Date: 2020-11-12 09:25+0000\n"
-"Last-Translator: Louis Hermier <loulou76train+github@gmail.com>\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -21,7 +21,7 @@ msgstr ""
 
 #: tauon.py:1834 tauon.py:1836
 msgid "No artist image found."
-msgstr "Aucune image trouvée pour l'artiste"
+msgstr "Aucune image trouvée pour l’artiste."
 
 #: tauon.py:1836
 msgid "No providers are enabled in settings!"
@@ -44,9 +44,8 @@ msgid "You need to log in first"
 msgstr "Vous devez d'abord vous identifier"
 
 #: tauon.py:6176
-#, fuzzy
 msgid "Scanning scrobbles complete"
-msgstr "Réanalyser du dossier terminée."
+msgstr "Réanalyse du dossier terminée"
 
 #: tauon.py:6324
 msgid "Getting friend data..."
@@ -63,7 +62,7 @@ msgstr "Erreur lors de la création de la liste de lecture Spotify"
 
 #: tauon.py:6679
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Vérifiez peut-être votre connexion Internet et réessayer ?"
 
 #: tauon.py:6870
 msgid "Spotify Likes"
@@ -102,9 +101,8 @@ msgid "Error starting Spotify"
 msgstr "Erreur de démarrage Spotify"
 
 #: tauon.py:6879
-#, fuzzy
 msgid "Please authorise Spotify in settings!"
-msgstr "Veuillez autoriser Spotify dans les paramètres!"
+msgstr "Veuillez autoriser Spotify dans les paramètres !"
 
 #: tauon.py:6881
 msgid "day"
@@ -316,11 +314,11 @@ msgstr "Aucune source activée pour les paroles."
 
 #: tauon.py:13172
 msgid "Let's be polite and try later."
-msgstr "Soyons sympa et essayons plus tard."
+msgstr "Soyons sympas et essayons plus tard."
 
 #: tauon.py:13189 tauon.py:18362 tauon.py:31053
 msgid "Searching..."
-msgstr "Recherche en cours..."
+msgstr "Recherche en cours…"
 
 #: tauon.py:13222
 msgid "No lyrics for this track were found"
@@ -544,7 +542,7 @@ msgstr "Ajouter l'élément en cours de lecture"
 
 #: tauon.py:15634
 msgid "Misc…"
-msgstr "Divers..."
+msgstr "Divers…"
 
 #: tauon.py:15681
 msgid "No target folder selected"
@@ -1251,19 +1249,19 @@ msgstr "Recherche générale"
 
 #: tauon.py:19870
 msgid "Copy Album URL"
-msgstr ""
+msgstr "Copier l’URL de l’album"
 
 #: tauon.py:19874
 msgid "Lookup Spotify Album"
-msgstr ""
+msgstr "Chercher l’album Spotify"
 
 #: tauon.py:19883
 msgid "Locate Artist"
-msgstr "Trouver l'artiste"
+msgstr "Trouver l’artiste"
 
 #: tauon.py:19885
 msgid "Go To Playing"
-msgstr "Aller à l'élément en cours de lecture"
+msgstr "Aller à l’élément lu"
 
 #: tauon.py:20042
 msgid "ListenBrainz is Paused"
