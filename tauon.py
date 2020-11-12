@@ -7293,6 +7293,7 @@ class SubsonicService:
                     return
 
             except json.decoder.JSONDecodeError:
+                print("Error reading Airsonic directory")
                 show_message("Error reading Airsonic directory!", mode="warning")
                 return
 
@@ -23801,6 +23802,7 @@ def toggle_text_tray(mode=0):
     if mode == 1:
         return prefs.tray_show_title
     prefs.tray_show_title ^= True
+    pctl.notify_update()
     if prefs.tray_show_title:
         show_message("Note that not all environments support tray icon text.")
 
@@ -41167,13 +41169,13 @@ while pctl.running:
 
                     # Spotify icon rendering
                     if line == "SPTY":
-                        h, l, s = rgb_to_hls(colours.box_background[0], colours.box_background[1], colours.box_background[2])
-                        l += 0.5
+                        colour = [30, 215, 96, 255]
+                        h, l, s = rgb_to_hls(colour[0], colour[1], colour[2])
 
                         rect = (x + w - round(35 * gui.scale), y + round(30 * gui.scale), round(30 * gui.scale), round(30 * gui.scale))
                         fields.add(rect)
                         if coll(rect):
-                            l += 0.2
+                            l += 0.1
                             gui.cursor_want = 3
 
                             if inp.mouse_click:
@@ -41184,7 +41186,7 @@ while pctl.running:
                                     webbrowser.open(url, new=2, autoraise=True)
 
                         colour = hls_to_rgb(h, l, s)
-                        #colour = [235, 235, 235, 255]
+
                         gui.spot_info_icon.render(x + w - round(33 * gui.scale), y + round(35 * gui.scale), colour)
 
                     # Codec tag rendering
