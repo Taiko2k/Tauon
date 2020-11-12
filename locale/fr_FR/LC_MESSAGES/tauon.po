@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-10-10 00:00+1300\n"
-"PO-Revision-Date: 2020-08-22 00:18+0000\n"
+"PO-Revision-Date: 2020-11-12 09:25+0000\n"
 "Last-Translator: Louis Hermier <loulou76train+github@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.2.1-dev\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1834 tauon.py:1836
@@ -662,9 +662,8 @@ msgid "Tracks with lyrics"
 msgstr "Pistes comportant des paroles"
 
 #: tauon.py:16075
-#, fuzzy
 msgid "No tracks with lyrics were found."
-msgstr "Aucune paroles trouvées pour cette piste"
+msgstr "Aucune paroles trouvées pour cette piste."
 
 #: tauon.py:16124
 msgid ""
