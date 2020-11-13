@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-10-10 00:00+1300\n"
-"PO-Revision-Date: 2020-11-13 03:15+0000\n"
+"PO-Revision-Date: 2020-11-14 14:28+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
@@ -763,7 +763,7 @@ msgstr "Konfiguration neu geladen"
 
 #: tauon.py:16630
 msgid "Click \"Reload\" if you made any changes"
-msgstr "\"Neu laden\" klicken, wenn Änderungen vorgenommen worden sind"
+msgstr "„Neu laden“ klicken, wenn Änderungen vorgenommen worden sind"
 
 #: tauon.py:16630
 msgid "Config file opened."
@@ -1516,7 +1516,7 @@ msgstr "Mittig ausrichten"
 
 #: tauon.py:24468 tauon.py:24476
 msgid "Thumbnail size"
-msgstr "Thumbnail-Größe"
+msgstr "Größe der Miniaturansichten"
 
 #: tauon.py:24472
 msgid "Prefer thinner padding"
