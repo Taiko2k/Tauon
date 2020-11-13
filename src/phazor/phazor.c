@@ -1150,11 +1150,10 @@ void *out_thread(void *thread_id){
   
   while (out_thread_running == 1){
     
-    if (buffering == 1 && buff_filled > 9000){
+    if (buffering == 1 && buff_filled > 90000){
 
       buffering = 0;
       printf("pa: Buffering -> Playing\n");
-      sleep(1);
       connect_pulse();
 
     }
