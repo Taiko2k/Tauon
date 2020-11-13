@@ -4182,7 +4182,7 @@ def tag_scan(nt):
 def get_radio_art():
 
     if "ggdrasil" in radiobox.playing_title:
-        print("")
+        time.sleep(3)
         url = "https://yggdrasilradio.net/data.php?"
         response = requests.get(url)
         if response.status_code == 200:
@@ -4201,6 +4201,7 @@ def get_radio_art():
                     return
 
     elif "radio.plaza.one" in radiobox.loaded_url:
+        time.sleep(3)
         console.print("Fetching plaza art")
         response = requests.get("https://api.plaza.one/status")
         if response.status_code == 200:
@@ -4403,6 +4404,7 @@ class PlayerCtl:
                     radiobox.song_key = radiobox.dummy_track.artist + " - " + radiobox.dummy_track.title
 
                 pctl.radio_image_bin = None
+                print("NEXT RADIO TRACK")
 
                 try:
                     get_radio_art()
@@ -4415,7 +4417,6 @@ class PlayerCtl:
                     pctl.mpris.update(force=True)
 
                 lfm_scrobbler.listen_track(radiobox.dummy_track)
-
                 lfm_scrobbler.start_queue()
 
             if self.radio_scrobble_trip is False and self.radio_scrobble_timer.get() > 45:
@@ -23803,8 +23804,6 @@ def toggle_text_tray(mode=0):
         return prefs.tray_show_title
     prefs.tray_show_title ^= True
     pctl.notify_update()
-    if prefs.tray_show_title:
-        show_message("Note that not all environments support tray icon text.")
 
 def toggle_min_tray(mode=0):
     if mode == 1:
@@ -31388,6 +31387,7 @@ class RadioBox:
         self.dummy_track.artist = ""
         self.dummy_track.album = ""
         self.dummy_track.date = ""
+        pctl.radio_meta_on = ""
 
         album_art_gen.clear_cache()
 
