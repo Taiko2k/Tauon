@@ -134,9 +134,13 @@ class Gnome:
                     tr = pctl.playing_object()
                     if tr and tr.title and tr.artist:
                         text = tr.artist + " - " + tr.title
+                    elif tr and tr.filename:
+                        text = tr.filename
 
                     if pctl.playing_state == 0:
                         text = ""
+
+
 
                 if self.indicator_launched:
                     if text != self.tray_text:
