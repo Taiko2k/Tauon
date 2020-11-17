@@ -18041,9 +18041,8 @@ def reload_metadata(input, keep_star=True):
 
     else:
         for k in default_playlist:
-            if pctl.master_library[input].parent_folder_name == pctl.master_library[k].parent_folder_name:
-                #if pctl.master_library[k].is_cue == False:
-                    todo.append(pctl.master_library[k])
+            if pctl.master_library[input].parent_folder_path == pctl.master_library[k].parent_folder_path:
+                todo.append(pctl.master_library[k])
 
     for i in reversed(range(len(todo))):
         if todo[i].is_cue:
