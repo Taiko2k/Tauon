@@ -1450,6 +1450,7 @@ class Prefs:    # Used to hold any kind of settings
         self.bg_flips = set()
         self.use_tray = False
         self.tray_show_title = False
+        self.drag_to_unpin = True
 
 prefs = Prefs()
 
@@ -3484,6 +3485,7 @@ def save_prefs():
     cf.update_value("auto-show-playing", prefs.auto_goto_playing)
     cf.update_value("notify-include-album", prefs.notify_include_album)
     cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
+    cf.update_value("drag-tab-to-unpin", prefs.drag_to_unpin)
 
     cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
     cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
@@ -3648,6 +3650,8 @@ def load_prefs():
 
     prefs.notify_include_album = cf.sync_add("bool", "notify-include-album", prefs.notify_include_album, "Include album name in track change notifications")
     prefs.rating_playtime_stars = cf.sync_add("bool", "show-rating-hint", prefs.rating_playtime_stars, "Indicate playtime in rating stars")
+
+    prefs.drag_to_unpin = cf.sync_add("bool", "drag-tab-to-unpin", prefs.drag_to_unpin, "Dragging a tab off the top-panel un-pins it")
 
     cf.br()
     cf.add_text("[gallery]")
@@ -27261,14 +27265,14 @@ class TopPanel:
 
         if playlist_box.drag:
             if mouse_up:
-                    if mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and mouse_up_position[1] > gui.panelY:
-                        playlist_box.drag = False
-
+                if mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and mouse_up_position[1] > gui.panelY:
+                    playlist_box.drag = False
+                    if prefs.drag_to_unpin:
                         if playlist_box.drag_source == 0:
                             pctl.multi_playlist[playlist_box.drag_on][8] = True
                         else:
                             pctl.multi_playlist[playlist_box.drag_on][8] = False
-                        gui.update += 1
+                    gui.update += 1
 
 
         # List all tabs eligible to be shown
@@ -32282,10 +32286,8 @@ class PlaylistBox:
                 if mouse_up and self.drag and coll_point(mouse_up_position, (tab_start, yy - 1, tab_width, (self.tab_h + 1))):
 
                     # If drag from top bar to side panel, make hidden
-                    if self.drag_source == 0:
+                    if self.drag_source == 0 and prefs.drag_to_unpin:
                         pctl.multi_playlist[self.drag_on][8] = True
-                    #
-                    # else:
 
                     # Move playlist tab
                     if i != self.drag_on and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
@@ -32639,7 +32641,7 @@ class PlaylistBox:
                         self.drag = False
                     else:
                         # If drag from top bar to side panel, make hidden
-                        if self.drag_source == 0:
+                        if self.drag_source == 0 and prefs.drag_to_unpin:
                             pctl.multi_playlist[self.drag_on][8] = True
 
                         move_playlist(self.drag_on, i)
