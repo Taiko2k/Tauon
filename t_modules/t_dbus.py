@@ -21,7 +21,8 @@
 from gi.repository import GLib
 import urllib.parse
 from t_modules.t_extra import *
-
+import shutil
+import os
 
 class Gnome:
 
@@ -37,6 +38,31 @@ class Gnome:
         self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
         self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
         self.indicator_icon_default = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+
+        if tauon.prefs.flatpak_mode:
+
+            # This is a workaround to make tray icons visible from outside the sandbox
+
+            export_dir = os.path.join(self.tauon.cache_directory, "icon-export")
+            if not os.path.isdir(export_dir):
+                os.makedirs(export_dir)
+
+            print("Copy tray icons to data directory...")
+
+            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-play.svg")
+            if os.path.isfile(self.indicator_icon_play):
+                shutil.copy(self.indicator_icon_play, alt)
+                self.indicator_icon_play = alt
+
+            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-pause.svg")
+            if os.path.isfile(self.indicator_icon_pause):
+                shutil.copy(self.indicator_icon_pause, alt)
+                self.indicator_icon_pause = alt
+
+            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-default.svg")
+            if os.path.isfile(self.indicator_icon_default):
+                shutil.copy(self.indicator_icon_default, alt)
+                self.indicator_icon_default = alt
 
     def focus(self):
 

@@ -210,9 +210,9 @@ if install_mode and system == 'linux':
         os.makedirs(config_directory)
 
     if snap_mode:
-        print("Installed as Flatpak")
-    elif flatpak_mode:
         print("Installed as Snap")
+    elif flatpak_mode:
+        print("Installed as Flatpak")
     else:
         print("Running from installed location")
 
