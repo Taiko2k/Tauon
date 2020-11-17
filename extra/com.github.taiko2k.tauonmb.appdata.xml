@@ -57,11 +57,10 @@
 
   <releases>
 
-    <release version="6.4.2" date="2020-11-09">
+    <release version="6.4.3" date="2020-11-17">
       <description>
         <ul>
-          <li>Added background fanart support</li>
-          <li>Various other tweaks and bug fixes</li>
+          <li>Added desktop tray indicator</li>
         </ul>
       </description>
     </release>
