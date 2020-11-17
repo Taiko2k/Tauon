@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.4.4
+
+ - Phazor: Fixed an issue where rapidly pressing pause was cause jam
+
 v6.4.3
 
  - Added system tray support (AppIndicator)
