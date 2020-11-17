@@ -1166,7 +1166,7 @@ void *out_thread(void *thread_id){
           buffering = 1;
         } else buffering = 0;
     }
-      
+                                   
     // Process decoded audio data and send out
     if ((mode == PLAYING || mode == RAMP_DOWN || mode==ENDING) && buff_filled > 0 && buffering == 0){
       
@@ -1329,6 +1329,7 @@ void *out_thread(void *thread_id){
             }
             pa_simple_flush (s, &error);
             pa_simple_free(s);
+            usleep(100000);
           }
         }
                   
@@ -1655,7 +1656,8 @@ int next(char *filename, int start_ms, float rg){
 int pause(){
   while (command != NONE){
       usleep(1000);
-    }  
+  }
+  if (mode == PAUSED) return 0;
   if (mode == PLAYING){
     mode = RAMP_DOWN;
   }
