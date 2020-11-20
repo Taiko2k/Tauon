@@ -112,7 +112,7 @@ class Gnome:
 
         self.indicator = AppIndicator3.Indicator.new("Tauon", self.indicator_icon_default, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
-        self.indicator.set_title("Tauon Music Box")
+        self.indicator.set_title(tauon.t_title)
         self.menu = Gtk.Menu()
 
         def restore(_):
@@ -170,8 +170,10 @@ class Gnome:
                     if text != self.tray_text:
                         if text:
                             self.indicator.set_label(" " + text, text)
+                            self.indicator.set_title(text)
                         else:
                             self.indicator.set_label("", "")
+                            self.indicator.set_title(tauon.t_title)
                         self.tray_text = text
 
         item = Gtk.MenuItem("Open Tauon Music Box")

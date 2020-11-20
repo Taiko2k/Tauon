@@ -5050,9 +5050,11 @@ class PlayerCtl:
             self.notify_update()
 
     def play_pause(self):
+
         if self.playing_state > 0:
             self.pause()
         else:
+            self.notify_update()
             self.play()
 
     def seek_decimal(self, decimal):
