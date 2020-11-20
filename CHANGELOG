@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.4.4
 
+ - Added track title to tray tooltip
  - Changed minimize to tray to close to tray
  - Phazor: Fixed an issue where rapidly pressing pause was cause jam
  - Phazor: Added resampling for MP3, Vorbis and Opus
