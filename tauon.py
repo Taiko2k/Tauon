@@ -8033,12 +8033,10 @@ def draw_window_tools():
                        fg_on, True)
             if (mouse_up or ab_click) and coll_point(click_location, rect):
 
-                if tray.active and prefs.min_to_tray:
-                    tray.down()
-                elif gui.tray_active and prefs.min_to_tray:
-                    tauon.min_to_tray()
-                else:
-                    SDL_MinimizeWindow(t_window)
+                # if tray.active and prefs.min_to_tray:
+                #     tray.down()
+
+                SDL_MinimizeWindow(t_window)
 
                 mouse_down = False
                 inp.mouse_click = False
@@ -8076,7 +8074,9 @@ def draw_window_tools():
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
         if inp.mouse_click or ab_click:
-            if gui.sync_progress and not gui.stop_sync:
+            if gui.tray_active and prefs.min_to_tray and not key_shift_down:
+                tauon.min_to_tray()
+            elif gui.sync_progress and not gui.stop_sync:
                 show_message(_("Stop the sync before exiting!"))
             else:
                 pctl.running = False
@@ -25034,7 +25034,7 @@ class Over:
             self.toggle_square(x, y, toggle_use_tray, _("Show icon in system tray"))
 
             y += 25 * gui.scale
-            self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Minimize to tray"))
+            self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Close to tray"))
 
             y += 25 * gui.scale
             self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
@@ -38270,8 +38270,12 @@ while pctl.running:
 
         elif event.type == SDL_QUIT:
             power += 5
-            pctl.running = False
-            break
+
+            if gui.tray_active and prefs.min_to_tray and not key_shift_down:
+                tauon.min_to_tray()
+            else:
+                pctl.running = False
+                break
         elif event.type == SDL_TEXTEDITING:
             power += 5
             #print("edit text")
@@ -38473,8 +38477,8 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
                 gui.lowered = True
-                if prefs.min_to_tray:
-                    tray.down()
+                # if prefs.min_to_tray:
+                #     tray.down()
                 #tm.sleep()
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:

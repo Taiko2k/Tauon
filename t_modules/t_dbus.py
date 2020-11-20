@@ -166,8 +166,6 @@ class Gnome:
                     if pctl.playing_state == 0:
                         text = ""
 
-
-
                 if self.indicator_launched:
                     if text != self.tray_text:
                         if text:
