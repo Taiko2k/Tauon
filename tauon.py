@@ -6259,13 +6259,13 @@ class LastFMapi:
                 title = title.lower()
 
                 for track in pctl.master_library.values():
-                    artists = get_split_artists(track)
+                    artists = [x.lower() for x in get_split_artists(track)]
                     if track.artist.lower() in artists or (track.album_artist and track.album_artist.lower() == artist):
                         if track.title.lower() == title:
                             track.lfm_scrobbles = value
         except:
             gui.pl_update += 1
-            raise
+            #raise
             self.scanning_scrobbles = False
             show_message(_("Scanning failed. Try again?"), mode="error")
             return
