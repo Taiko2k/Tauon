@@ -5054,7 +5054,6 @@ class PlayerCtl:
         if self.playing_state > 0:
             self.pause()
         else:
-            self.notify_update()
             self.play()
 
     def seek_decimal(self, decimal):
@@ -5108,6 +5107,7 @@ class PlayerCtl:
             self.playerCommand = 'pauseoff'
             self.playerCommandReady = True
             self.playing_state = 1
+            self.notify_update()
 
         # If stopped...
         elif pctl.playing_state == 0:
@@ -5126,7 +5126,7 @@ class PlayerCtl:
                 self.play_target()
 
         self.render_playlist()
-        #self.notify_update()
+
 
     def spot_test_progress(self):
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
