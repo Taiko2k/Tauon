@@ -536,6 +536,11 @@ def get_artist_safe(track):
         return artist
     return ""
 
+def get_split_artists(track):
+    if 'artists' in track.misc:
+        return track.misc['artists']
+    return [x.strip() for x in track.artist.split(';')]
+
 def coll_rect(rect1, rect2):
 
     if rect1[0] + rect1[2] < rect2[0] or \
