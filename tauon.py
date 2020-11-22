@@ -6273,6 +6273,7 @@ class LastFMapi:
         print(perf_timer.get())
         gui.pl_update += 1
         self.scanning_scrobbles = False
+        tauon.worker_save_state = True
         show_message(_("Scanning scrobbles complete"), mode="done")
 
     def artist_info(self, artist):
@@ -38835,6 +38836,16 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+
+            for key, value in pctl.master_library.items():
+                if key != value.index:
+                    print("CORRUPTION DETECTED! a")
+
+            for pl in pctl.multi_playlist:
+                for id in pl[2]:
+                    if id not in pctl.master_library:
+                        print("Corrution detected! b")
+            print("Done")
             pass
 
         if gui.mode < 3:
