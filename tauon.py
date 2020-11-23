@@ -6248,21 +6248,28 @@ class LastFMapi:
 
             counts = {}
 
+            # Count up the unique pairs
             for track in tracks:
                 key = (str(track.track.artist), str(track.track.title))
                 c = counts.get(key, 0)
                 counts[key] = c + 1
 
+            # Clear existing values
+            for track in pctl.master_library.values():
+                track.lfm_scrobbles = 0
+
+            # Add counts to matching tracks
             for key, value in counts.items():
                 artist, title = key
                 artist = artist.lower()
                 title = title.lower()
 
                 for track in pctl.master_library.values():
-                    artists = [x.lower() for x in get_split_artists(track)]
-                    if track.artist.lower() in artists or (track.album_artist and track.album_artist.lower() == artist):
+                    t_artist = track.artist.lower()
+                    artists = get_split_artists(track)
+                    if t_artist == artist or artist in artists or (track.album_artist and track.album_artist.lower() == artist):
                         if track.title.lower() == title:
-                            track.lfm_scrobbles = value
+                            track.lfm_scrobbles += value
         except:
             gui.pl_update += 1
             #raise
@@ -38836,16 +38843,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-
-            for key, value in pctl.master_library.items():
-                if key != value.index:
-                    print("CORRUPTION DETECTED! a")
-
-            for pl in pctl.multi_playlist:
-                for id in pl[2]:
-                    if id not in pctl.master_library:
-                        print("Corrution detected! b")
-            print("Done")
             pass
 
         if gui.mode < 3:
