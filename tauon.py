@@ -6258,6 +6258,8 @@ class LastFMapi:
             for track in pctl.master_library.values():
                 track.lfm_scrobbles = 0
 
+            touched = []
+
             # Add counts to matching tracks
             for key, value in counts.items():
                 artist, title = key
@@ -6269,7 +6271,11 @@ class LastFMapi:
                     artists = [x.lower() for x in get_split_artists(track)]
                     if t_artist == artist or artist in artists or (track.album_artist and track.album_artist.lower() == artist):
                         if track.title.lower() == title:
-                            track.lfm_scrobbles += value
+                            if track.index in touched:
+                                track.lfm_scrobbles += value
+                            else:
+                                track.lfm_scrobbles = value
+                                touched.append(track.index)
         except:
             gui.pl_update += 1
             #raise
