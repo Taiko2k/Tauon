@@ -10638,20 +10638,6 @@ class AlbumArt():
             return False
 
         offset = self.get_offset(filepath, sources)
-
-        # # Get source IO
-        # if sources[offset][0] == 1:
-        #     # Target is a embedded image
-        #     source_image = io.BytesIO(self.get_embed(track_object))
-        # elif sources[offset][0] == 2:
-        #     try:
-        #         response = urllib.request.urlopen(get_network_thumbnail_url(track_object))
-        #         source_image = response
-        #     except:
-        #         print("IMAGE NETWORK LOAD ERROR")
-        #
-        # else:
-        #     source_image = open(sources[offset][1], 'rb')
         source_image = self.get_source_raw(offset, sources, track_object)
 
         im = Image.open(source_image)
@@ -23654,6 +23640,7 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
 # WEBSERVER
 
 from t_modules.t_webserve import webserve
+from t_modules.t_webserve import webserve2
 from t_modules.t_webserve import authserve
 from t_modules.t_webserve import controller
 from t_modules.t_webserve import stream_proxy
@@ -23667,6 +23654,11 @@ if prefs.enable_web is True:
     ctlThread = threading.Thread(target=controller, args=[tauon])
     ctlThread.daemon = True
     ctlThread.start()
+
+webThread2 = threading.Thread(target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+webThread2.daemon = True
+webThread2.start()
+
 
 # --------------------------------------------------------------
 

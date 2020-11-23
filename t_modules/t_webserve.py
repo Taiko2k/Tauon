@@ -206,6 +206,92 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
         print("Not starting radio page server, already running?")
 
 
+
+def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
+
+
+    class Server(BaseHTTPRequestHandler):
+
+        def send_file(self, path, mime):
+            self.send_response(200)
+            self.send_header("Content-type", mime)
+            self.end_headers()
+
+            with open(path, "rb") as f:
+                self.wfile.write(f.read())
+
+        def do_GET(self):
+
+            path = self.path
+
+            # print(self.headers)
+            if path.startswith("/api1/pic/"):
+                value = path[10:]
+                print(value)
+                if value.isalnum() and int(value) in pctl.master_library:
+                    track = pctl.g(int(value))
+                    raw = album_art_gen.save_thumb(track, (500, 500), "")
+                    print(raw)
+                    if raw:
+                        self.send_response(200)
+                        self.send_header("Content-type", "image/jpg")
+                        self.end_headers()
+                        self.wfile.write(raw.read())
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                        self.wfile.write(b"No image found")
+
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid parameter")
+
+            elif path == "/api1/status":
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = {
+                    "status": "stopped",
+                    "shuffle": False,
+                    "repeat": False,
+                    "progress": 0,
+                    "id": -1,
+                    "title": "",
+                    "artist": "",
+                    "album": "",
+                }
+                if pctl.playing_state == 1:
+                    data["status"] = "playing"
+                if pctl.playing_state == 2:
+                    data["status"] = "paused"
+                track = pctl.playing_object()
+                if track:
+                    data["id"] = track.index
+                    data["title"] = track.title
+                    data["artist"] = track.artist
+                    data["album"] = track.album
+                    data["progress"] = int(round(pctl.playing_time * 1000))
+
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"404 Not found")
+
+    class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+        pass
+
+    try:
+        httpd = ThreadedHTTPServer(("0.0.0.0", 7814), Server)
+        tauon.radio_server = httpd
+        httpd.serve_forever()
+        httpd.server_close()
+    except OSError:
+        print("Not starting web api server, already running?")
+
 def controller(tauon):
     import base64
     class Server(BaseHTTPRequestHandler):
