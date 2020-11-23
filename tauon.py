@@ -6254,10 +6254,6 @@ class LastFMapi:
                 c = counts.get(key, 0)
                 counts[key] = c + 1
 
-            # Clear existing values
-            for track in pctl.master_library.values():
-                track.lfm_scrobbles = 0
-
             touched = []
 
             # Add counts to matching tracks
