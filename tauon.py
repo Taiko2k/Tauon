@@ -6266,7 +6266,7 @@ class LastFMapi:
 
                 for track in pctl.master_library.values():
                     t_artist = track.artist.lower()
-                    artists = get_split_artists(track)
+                    artists = [x.lower() for x in get_split_artists(track)]
                     if t_artist == artist or artist in artists or (track.album_artist and track.album_artist.lower() == artist):
                         if track.title.lower() == title:
                             track.lfm_scrobbles += value
