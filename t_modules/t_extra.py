@@ -539,7 +539,8 @@ def get_artist_safe(track):
 def get_split_artists(track):
     if 'artists' in track.misc:
         return track.misc['artists']
-    return [x.strip() for x in track.artist.split(';')]
+    artist = track.artist.split("feat")[0].strip()
+    return re.split(r'; |, |& ', artist)
 
 def coll_rect(rect1, rect2):
 
