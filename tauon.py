@@ -7048,6 +7048,7 @@ class Tauon:
         self.pl_gen = pl_gen
         self.QuickThumbnail = QuickThumbnail
         self.pl_to_id = pl_to_id
+        self.id_to_pl = id_to_pl
         self.chunker = Chunker()
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
@@ -7070,6 +7071,10 @@ class Tauon:
 
     def focus_window(self):
         SDL_RaiseWindow(t_window)
+
+    def get_playing_playlist_id(self):
+        return pl_to_id(pctl.active_playlist_playing)
+
 
 
 tauon = Tauon()
@@ -23635,6 +23640,8 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     # Generate POWER BAR
     gui.power_bar = gen_power2()
     gui.pt = 0
+
+tauon.reload_albums = reload_albums
 
 # ------------------------------------------------------------------------------------
 # WEBSERVER
