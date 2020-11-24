@@ -212,6 +212,34 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
     class Server(BaseHTTPRequestHandler):
 
+        def run_command(self, callback):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            callback()
+            self.wfile.write(b"OK")
+
+        def get_track(self, track_position, playlist_index=None, track=None):
+            if track is None:
+                if playlist_index is None:
+                    playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
+                else:
+                    playlist = pctl.multi_playlist[playlist_index][2]
+                track_id = playlist[track_position]
+                track = pctl.g(track_id)
+
+            data = {}
+            data["title"] = track.title
+            data["artist"] = track.artist
+            data["album"] = track.album
+            data["album_artist"] = track.album_artist
+            if not track.album_artist:
+                data["album_artist"] = track.artist
+            data["duration"] = int(track.length * 1000)
+            data["id"] = track.index
+
+            return data
+
         def send_file(self, path, mime):
             self.send_response(200)
             self.send_header("Content-type", mime)
@@ -224,14 +252,12 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
             path = self.path
 
-            # print(self.headers)
-            if path.startswith("/api1/pic/"):
-                value = path[10:]
-                print(value)
+
+            if path.startswith("/api1/pic/small/"):
+                value = path[16:]
                 if value.isalnum() and int(value) in pctl.master_library:
                     track = pctl.g(int(value))
-                    raw = album_art_gen.save_thumb(track, (500, 500), "")
-                    print(raw)
+                    raw = album_art_gen.save_thumb(track, (75, 75), "")
                     if raw:
                         self.send_response(200)
                         self.send_header("Content-type", "image/jpg")
@@ -247,6 +273,81 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     self.end_headers()
                     self.wfile.write(b"Invalid parameter")
 
+            if path.startswith("/api1/pic/medium/"):
+                value = path[17:]
+                if value.isalnum() and int(value) in pctl.master_library:
+                    track = pctl.g(int(value))
+                    raw = album_art_gen.save_thumb(track, (500, 500), "")
+                    if raw:
+                        self.send_response(200)
+                        self.send_header("Content-type", "image/jpg")
+                        self.end_headers()
+                        self.wfile.write(raw.read())
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                        self.wfile.write(b"No image found")
+
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid parameter")
+
+            elif path.startswith("/api1/file/"):
+                param = path[11:]
+
+                if param.isdigit() and int(param) in pctl.master_library:
+                    track = pctl.master_library[int(param)]
+                    mime = "audio/mpeg"
+                    if track.file_ext == "FLAC":
+                        mime = "audio/flac"
+                    if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
+                        mime = "audio/ogg"
+                    self.send_file(track.fullpath, mime)
+
+            elif path == "/api1/play":
+                self.run_command(tauon.pctl.play)
+            elif path == "/api1/pause":
+                self.run_command(tauon.pctl.pause_only)
+            elif path == "/api1/next":
+                self.run_command(tauon.pctl.advance)
+            elif path == "/api1/back":
+                self.run_command(tauon.pctl.back)
+
+            elif path == "/api1/playlists":
+
+                l = []
+                for item in pctl.multi_playlist:
+                    p = {}
+                    p["name"] = item[0]
+                    p["id"] = str(item[6])
+                    l.append(p)
+                data = {"playlists": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path.startswith("/api1/albums/"):
+
+                key = path[13:]
+                l = []
+                if key.isdigit():
+                    pl = tauon.id_to_pl(int(key))
+                    if pl is not None:
+                        dex = tauon.reload_albums(True, pl)
+                        print(dex)
+                        for a in dex:
+                            l.append(self.get_track(a, pl))
+
+                data = {"albums": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
             elif path == "/api1/status":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
@@ -256,10 +357,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     "shuffle": False,
                     "repeat": False,
                     "progress": 0,
-                    "id": -1,
-                    "title": "",
-                    "artist": "",
-                    "album": "",
+                    "playlist": str(tauon.get_playing_playlist_id())
                 }
                 if pctl.playing_state == 1:
                     data["status"] = "playing"
@@ -272,6 +370,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     data["artist"] = track.artist
                     data["album"] = track.album
                     data["progress"] = int(round(pctl.playing_time * 1000))
+                    data["track"] = self.get_track(0, 0, track)
 
                 data = json.dumps(data).encode()
                 self.wfile.write(data)
