@@ -119,8 +119,9 @@ class Gnome:
             tauon.raise_window()
 
         def menu_quit(_):
-            self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
+            print("Exit via tray")
             tauon.exit()
+            self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
 
         def play_pause(_):
             pctl.play_pause()
