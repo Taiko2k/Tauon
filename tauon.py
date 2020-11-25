@@ -26877,7 +26877,7 @@ class Over:
         if window_size[0] < 700 * gui.scale:
             top_mode = True
             side_width = 0 * gui.scale
-            header_width = 48
+            header_width = round(48 * gui.scale) #48
 
         content_width = round(545 * gui.scale)
         content_height = round(275 * gui.scale)  # 275
@@ -26950,7 +26950,7 @@ class Over:
                 current_tab += 1
                 xx += tab_width
                 if current_tab == 6:
-                    yy += 24 #30
+                    yy += round(24 * gui.scale) #30
                     xx = x
 
         else:
