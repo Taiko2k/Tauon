@@ -23379,7 +23379,11 @@ album_info_cache = {}
 perfs = []
 album_info_cache_key = (-1, -1)
 
-def get_album_info(position):
+def get_album_info(position, pl=None):
+
+    playlist = default_playlist
+    if pl is not None:
+        playlist = pctl.multi_playlist[pl][2]
 
     global album_info_cache_key
 
@@ -23390,14 +23394,14 @@ def get_album_info(position):
     if position in album_info_cache:
         return album_info_cache[position]
 
-    if position > len(default_playlist) - 1:
-        position = len(default_playlist) - 1
+    if position > len(playlist) - 1:
+        position = len(playlist) - 1
     current = position
 
     while position > 0 and current > 0:
 
-        if pctl.master_library[default_playlist[position]].parent_folder_name == pctl.master_library[
-                default_playlist[current - 1]].parent_folder_name:
+        if pctl.master_library[playlist[position]].parent_folder_name == pctl.master_library[
+                playlist[current - 1]].parent_folder_name:
             current -= 1
             continue
         else:
@@ -23407,30 +23411,31 @@ def get_album_info(position):
     playing = 0
     select = False
 
-    first_track = pctl.master_library[default_playlist[current]]
-    while current < len(default_playlist):
+    first_track = pctl.master_library[playlist[current]]
+    while current < len(playlist):
         album.append(current)
-        if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
+        if len(pctl.track_queue) > 0 and playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
         if current == playlist_selected:
             select = True
 
-        if current < len(default_playlist) - 1 and first_track.parent_folder_name != pctl.master_library[default_playlist[current + 1]].parent_folder_name:
+        if current < len(playlist) - 1 and first_track.parent_folder_name != pctl.master_library[playlist[current + 1]].parent_folder_name:
 
-            if first_track.album and first_track.album == pctl.master_library[default_playlist[current + 1]].album:
+            if first_track.album and first_track.album == pctl.master_library[playlist[current + 1]].album:
                 current += 1
             else:
                 break
         else:
             current += 1
     if not album:
-        #album = [default_playlist[len(default_playlist) - 1]]
-        album = [len(default_playlist) - 1]
+        #album = [playlist[len(playlist) - 1]]
+        album = [len(playlist) - 1]
 
     album_info_cache[position] = playing, album, select
 
     return playing, album, select
 
+tauon.get_album_info = get_album_info
 
 def get_folder_list(index):
     playlist = []

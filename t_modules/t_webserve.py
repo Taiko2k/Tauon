@@ -219,6 +219,19 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             callback()
             self.wfile.write(b"OK")
 
+        def parse_trail(self, text):
+
+            params = {}
+            both = text.split("?")
+            levels = both[0].split("/")
+            if len(both) > 1:
+                pairs = both[2].split("&")
+                for p in pairs:
+                    aa, bb = p.split("=")
+                    params[aa] = bb
+
+            return levels, params
+
         def get_track(self, track_position, playlist_index=None, track=None):
             if track is None:
                 if playlist_index is None:
@@ -237,6 +250,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 data["album_artist"] = track.artist
             data["duration"] = int(track.length * 1000)
             data["id"] = track.index
+            data["position"] = track_position
 
             return data
 
@@ -251,7 +265,6 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
         def do_GET(self):
 
             path = self.path
-
 
             if path.startswith("/api1/pic/small/"):
                 value = path[16:]
@@ -305,6 +318,27 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         mime = "audio/ogg"
                     self.send_file(track.fullpath, mime)
 
+            elif path.startswith("/api1/start/"):
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
+
+                levels, _ = self.parse_trail(path)
+                if len(levels) == 5:
+                    playlist = levels[3]
+                    position = levels[4]
+                    if playlist.isdigit() and position.isdigit():
+                        position = int(position)
+                        playlist = int(playlist)
+                        pl = tauon.id_to_pl(int(playlist))
+                        if pl is not None and pl < len(pctl.multi_playlist):
+                            playlist = pctl.multi_playlist[pl][2]
+                            if position < len(playlist):
+                                tauon.switch_playlist(pl, cycle=False, quiet=True)
+                                pctl.jump(playlist[position], position)
+
+                self.wfile.write(b"OK")
+
             elif path == "/api1/play":
                 self.run_command(tauon.pctl.play)
             elif path == "/api1/pause":
@@ -323,6 +357,41 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     p["id"] = str(item[6])
                     l.append(p)
                 data = {"playlists": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path.startswith("/api1/albumtracks/"):
+                levels, _ = self.parse_trail(path)
+                l = []
+                if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
+                    pl = tauon.id_to_pl(int(levels[3]))
+                    if pl is not None:
+                        _, album, _ = tauon.get_album_info(int(levels[4]), pl)
+                        #print(album)
+                        for p in album:
+                            l.append(self.get_track(p, pl))
+
+                data = {"tracks": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path.startswith("/api1/tracklist/"):
+                key = path[16:]
+                l = []
+                if key.isdigit():
+                    pl = tauon.id_to_pl(int(key))
+                    if pl is not None and pl < len(pctl.multi_playlist):
+                        playlist = pctl.multi_playlist[pl][2]
+                        for i, id in enumerate(playlist):
+                            l.append(self.get_track(i, pl))
+
+                data = {"tracks": l}
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
@@ -371,6 +440,17 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     data["album"] = track.album
                     data["progress"] = int(round(pctl.playing_time * 1000))
                     data["track"] = self.get_track(0, 0, track)
+
+                p = pctl.playlist_playing_position
+                data["position"] = p
+
+                playlist = pctl.playing_playlist()
+                while True:
+                    if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                        p += 1
+                        break
+                    p -= 1
+                data["album_id"] = p
 
                 data = json.dumps(data).encode()
                 self.wfile.write(data)
