@@ -30,8 +30,8 @@
 
 import sys
 
-n_version = "6.4.3"
-t_version = "v" + n_version
+n_version = "6.4.4"
+t_version = "v" + n_version + " TMR Testing"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
