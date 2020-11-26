@@ -364,6 +364,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.wfile.write(data)
 
             elif path.startswith("/api1/albumtracks/"):
+                # Get tracks that appear in an album /albumtracks/plid/tid(must be a track id returned by /albums/)
                 levels, _ = self.parse_trail(path)
                 l = []
                 if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
@@ -381,7 +382,31 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 data = json.dumps(data).encode()
                 self.wfile.write(data)
 
+            elif path.startswith("/api1/trackposition/"):
+                # get track /trackposition/plid/playlistposition
+                levels, _ = self.parse_trail(path)
+                if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
+                    pl = tauon.id_to_pl(int(levels[3]))
+                    if pl:  # todo handle None
+                        data = self.get_track(int(levels[4]), pl)
+                        self.send_response(200)
+                        self.send_header("Content-type", "application/json")
+                        self.end_headers()
+                        data = json.dumps(data).encode()
+                        self.wfile.write(data)
+
+            elif path.startswith("/api1/seek1k/"):
+                key = path[13:]
+                if key.isdigit():
+                    pctl.seek_decimal(int(key) / 1000)
+
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
             elif path.startswith("/api1/tracklist/"):
+                # Return all tracks in a playlist /tracklist/plid
                 key = path[16:]
                 l = []
                 if key.isdigit():
@@ -399,7 +424,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.wfile.write(data)
 
             elif path.startswith("/api1/albums/"):
-
+                # Returns lists of tracks that are start of albums /albums/plid
                 key = path[13:]
                 l = []
                 if key.isdigit():
