@@ -17,13 +17,14 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-
+import fcntl
 import html
 import time
 import random
 import json
 import io
-
+import os
+import subprocess
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
@@ -256,11 +257,22 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
         def send_file(self, path, mime):
             self.send_response(200)
-            self.send_header("Content-type", mime)
-            self.end_headers()
 
             with open(path, "rb") as f:
-                self.wfile.write(f.read())
+
+                f.seek(0, 2)
+                length = f.tell()
+                f.seek(0, 0)
+
+                self.send_header("Content-type", mime)
+                self.send_header("Content-Length", str(length))
+                self.end_headers()
+
+                while True:
+                    data = f.read(5000)
+                    if not data:
+                        break
+                    self.wfile.write(data)
 
         def do_GET(self):
 
@@ -306,8 +318,30 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     self.end_headers()
                     self.wfile.write(b"Invalid parameter")
 
+            # elif path.startswith("/api1/stream/"):
+            #     param = path[13:]
+            #
+            #     if param.isdigit() and int(param) in pctl.master_library:
+            #         track = pctl.master_library[int(param)]
+            #         mime = "audio/mpeg"
+            #         #mime = "audio/ogg"
+            #         self.send_response(200)
+            #         self.send_header("Content-type", mime)
+            #         self.end_headers()
+            #
+            #         cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libopus", "-f", "ogg", "-"]
+            #         #cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libvorbis", "-f", "ogg", "-"]
+            #         #cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libmp3lame", "-f", "mp3", "-"]
+            #         encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            #         while True:
+            #             data = encoder.stdout.read(1024)
+            #             if data:
+            #                 self.wfile.write(data)
+
             elif path.startswith("/api1/file/"):
                 param = path[11:]
+
+                #print(self.headers)
 
                 if param.isdigit() and int(param) in pctl.master_library:
                     track = pctl.master_library[int(param)]
@@ -316,6 +350,8 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         mime = "audio/flac"
                     if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
                         mime = "audio/ogg"
+                    if track.file_ext == "M4A":
+                        mime = "audio/mp4"
                     self.send_file(track.fullpath, mime)
 
             elif path.startswith("/api1/start/"):
