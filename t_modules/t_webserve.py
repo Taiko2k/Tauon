@@ -256,7 +256,16 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             return data
 
         def send_file(self, path, mime):
-            self.send_response(200)
+
+            range_req = False
+            start = 0
+            end = 0
+
+            if "Range" in self.headers:
+                range_req = True
+                b = self.headers["Range"].split("=")[1]
+                start, end = b.split("-")
+                start = int(start)
 
             with open(path, "rb") as f:
 
@@ -264,8 +273,22 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 length = f.tell()
                 f.seek(0, 0)
 
-                self.send_header("Content-type", mime)
-                self.send_header("Content-Length", str(length))
+                l = str(length)
+
+                remain = length - start
+
+                if range_req:
+                    self.send_response(206)
+                    self.send_header("Content-type", mime)
+                    self.send_header("Content-Range", f"bytes={start}-/{l}")
+                    self.send_header("Content-Length", str(remain))
+                    f.seek(start)
+
+                else:
+                    self.send_response(200)
+                    self.send_header("Content-type", mime)
+                    self.send_header("Content-Length", l)
+
                 self.end_headers()
 
                 while True:
@@ -302,7 +325,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 value = path[17:]
                 if value.isalnum() and int(value) in pctl.master_library:
                     track = pctl.g(int(value))
-                    raw = album_art_gen.save_thumb(track, (500, 500), "")
+                    raw = album_art_gen.save_thumb(track, (1000, 1000), "")
                     if raw:
                         self.send_response(200)
                         self.send_header("Content-type", "image/jpg")
@@ -355,9 +378,6 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     self.send_file(track.fullpath, mime)
 
             elif path.startswith("/api1/start/"):
-                self.send_response(200)
-                self.send_header("Content-type", "image/jpg")
-                self.end_headers()
 
                 levels, _ = self.parse_trail(path)
                 if len(levels) == 5:
@@ -373,6 +393,9 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                                 tauon.switch_playlist(pl, cycle=False, quiet=True)
                                 pctl.jump(playlist[position], position)
 
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
                 self.wfile.write(b"OK")
 
             elif path == "/api1/play":
