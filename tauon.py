@@ -18035,8 +18035,6 @@ def vacuum_playtimes(index):
             print("ERROR KEY ALREADY HERE?")
 
 
-
-
 def reload_metadata(input, keep_star=True):
     global todo
 
