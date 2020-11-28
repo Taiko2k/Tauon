@@ -28,6 +28,7 @@ import subprocess
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
+from t_modules.t_extra import Timer
 
 def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
@@ -210,6 +211,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
 def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
+    play_timer = Timer()
 
     class Server(BaseHTTPRequestHandler):
 
@@ -361,11 +363,23 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             #             data = encoder.stdout.read(1024)
             #             if data:
             #                 self.wfile.write(data)
+            elif path.startswith("/api1/playinghit/"):
+                param = path[17:]
+                if param.isdigit() and int(param) in pctl.master_library:
+                    t = play_timer.hit()
+                    if 0 < t < 5:
+                        tauon.star_store.add(int(param), t)
+
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
+                self.wfile.write(b"OK")
 
             elif path.startswith("/api1/file/"):
                 param = path[11:]
 
                 #print(self.headers)
+                play_timer.hit()
 
                 if param.isdigit() and int(param) in pctl.master_library:
                     track = pctl.master_library[int(param)]
