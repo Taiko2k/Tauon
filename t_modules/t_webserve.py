@@ -505,7 +505,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     pl = tauon.id_to_pl(int(key))
                     if pl is not None:
                         dex = tauon.reload_albums(True, pl)
-                        print(dex)
+                        # print(dex)
                         for a in dex:
                             l.append(self.get_track(a, pl, album_id=a))
 
