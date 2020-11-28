@@ -233,7 +233,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
             return levels, params
 
-        def get_track(self, track_position, playlist_index=None, track=None):
+        def get_track(self, track_position, playlist_index=None, track=None, album_id=-1):
             if track is None:
                 if playlist_index is None:
                     playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
@@ -252,6 +252,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["duration"] = int(track.length * 1000)
             data["id"] = track.index
             data["position"] = track_position
+            data["album_id"] = album_id
 
             return data
 
@@ -492,7 +493,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         dex = tauon.reload_albums(True, pl)
                         print(dex)
                         for a in dex:
-                            l.append(self.get_track(a, pl))
+                            l.append(self.get_track(a, pl, album_id=a))
 
                 data = {"albums": l}
                 self.send_response(200)
