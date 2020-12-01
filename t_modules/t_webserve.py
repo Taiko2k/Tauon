@@ -429,6 +429,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     p = {}
                     p["name"] = item[0]
                     p["id"] = str(item[6])
+                    p["count"] = len(item[2])
                     l.append(p)
                 data = {"playlists": l}
                 self.send_response(200)
@@ -525,7 +526,8 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     "shuffle": False,
                     "repeat": False,
                     "progress": 0,
-                    "playlist": str(tauon.get_playing_playlist_id())
+                    "playlist": str(tauon.get_playing_playlist_id()),
+                    "playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2])
                 }
                 if pctl.playing_state == 1:
                     data["status"] = "playing"
