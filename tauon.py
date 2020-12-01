@@ -1397,6 +1397,7 @@ class Prefs:    # Used to hold any kind of settings
         self.subsonic_server = "http://localhost:4040"
         self.subsonic_user = ""
         self.subsonic_password = ""
+        self.subsonic_password_plain = False
 
         self.subsonic_playlists = {}
 
@@ -3423,6 +3424,7 @@ def save_prefs():
 
     cf.update_value("subsonic-username", prefs.subsonic_user)
     cf.update_value("subsonic-password", prefs.subsonic_password)
+    cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
     cf.update_value("subsonic-server-url", prefs.subsonic_server)
 
     cf.update_value("koel-username", prefs.koel_username)
@@ -3742,6 +3744,7 @@ def load_prefs():
     cf.add_text("[subsonic_account]")
     prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
     prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
+    prefs.subsonic_password_plain = cf.sync_add("bool", "subsonic-password-plain", prefs.subsonic_password_plain)
     prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
 
     cf.br()
@@ -7228,12 +7231,16 @@ class SubsonicService:
 
         params = {
             "u": prefs.subsonic_user,
-            "t": hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest(),
-            's': salt,
             'v': "1.13.0",
             'c': t_title,
             'f': "json"
         }
+
+        if prefs.subsonic_password_plain:
+            params["p"] = prefs.subsonic_password
+        else:
+            params["t"] = hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest()
+            params['s'] = salt
 
         if p:
             params.update(p)
@@ -7359,9 +7366,10 @@ class SubsonicService:
 
                 nt.index = id
 
-                nt.fullpath = song["path"]
                 nt.parent_folder_name = name
-                nt.parent_folder_path = os.path.dirname(song["path"])
+                if "path" in song:
+                    nt.fullpath = song["path"]
+                    nt.parent_folder_path = os.path.dirname(song["path"])
 
                 if "coverArt" in song:
                     nt.art_url_key = song["id"]
@@ -25454,6 +25462,9 @@ class Over:
             text_air_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
                               width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.subsonic_password = text_air_pas.text
+
+            y += round(30 * gui.scale)
+            prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text password authentication"))
 
             y += round(23 * gui.scale)
             ddt.text((x + 0 * gui.scale, y), _("Server URL"),
