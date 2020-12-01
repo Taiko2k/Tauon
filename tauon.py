@@ -27881,7 +27881,7 @@ class TopPanel:
             text = "Scanning Scrobbles..."
             bg = [219, 88, 18, 255]
         elif gui.buffering:
-            text = _("Buffering... %d%%" % gui.buffering)
+            text = _("Buffering... ") + gui.buffering + "%"
             bg = [18, 180, 180, 255]
 
         elif lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
