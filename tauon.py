@@ -25463,9 +25463,6 @@ class Over:
                               width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
             prefs.subsonic_password = text_air_pas.text
 
-            y += round(30 * gui.scale)
-            prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text password authentication"))
-
             y += round(23 * gui.scale)
             ddt.text((x + 0 * gui.scale, y), _("Server URL"),
                      colours.box_text_label, 11)
@@ -25482,6 +25479,9 @@ class Over:
 
             y += round(40 * gui.scale)
             self.button(x, y, _("Import music to playlist"), sub_get_album_thread)
+
+            y += round(35 * gui.scale)
+            prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text authentication"), subtitle=_("Needed for Nextcloud compatibility"))
 
 
         if self.account_view == 6:
