@@ -435,6 +435,12 @@ def player4(tauon):
                 pctl.playing_time += add_time
                 pctl.decode_time = pctl.playing_time
 
+                buffering = aud.is_buffering()
+                if gui.buffering != buffering:
+                    gui.buffering = buffering
+                    gui.update += 1
+
+
             if state == 1:
 
                 add_time = player_timer.hit()
@@ -465,5 +471,4 @@ def player4(tauon):
                     tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
                 if pctl.playing_time > 1:
                     pctl.test_progress()
-
 

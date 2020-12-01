@@ -1833,10 +1833,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.spot_info_icon = asset_loader("spot-info.png", True)
         self.tray_active = False
+        self.buffering = 0  # 0:false 1:true
 
 gui = GuiVar()
-
-
 
 
 def set_artist_preview(path, artist, x, y):
@@ -27881,6 +27880,9 @@ class TopPanel:
         elif lastfm.scanning_scrobbles:
             text = "Scanning Scrobbles..."
             bg = [219, 88, 18, 255]
+        elif gui.buffering:
+            text = _("Buffering... %d%%" % gui.buffering)
+            bg = [18, 180, 180, 255]
 
         elif lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
             text = "Network error. Will try again later."

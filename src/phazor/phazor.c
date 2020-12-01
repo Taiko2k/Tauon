@@ -1263,11 +1263,11 @@ void *out_thread(void *thread_id) {
 
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
-            connect_pulse();
+            if (mode == PLAYING) connect_pulse();
 
         }
 
-        if (buff_filled < 1000 && loaded_target_file[0] == 'h') {
+        if (buff_filled < 10 && loaded_target_file[0] == 'h') {
 
             if (mode == PLAYING) {
                 disconnect_pulse();
@@ -1855,6 +1855,10 @@ int get_level_peak_r() {
     return peak;
 }
 
+int is_buffering(){
+    if (buffering == 0) return 0;
+    return (int) (buff_filled / 90000.0 * 100);
+}
 /* int get_latency(){ */
 /*   return active_latency / 1000; */
 /* } */
