@@ -6,13 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-10-10 00:00+1300\n"
-"PO-Revision-Date: 2019-05-01 22:39+1200\n"
-"Last-Translator:  <captain.gxj@gmail.com>\n"
-"Language-Team: Language zh_CN\n"
+"PO-Revision-Date: 2020-11-09 21:28+0000\n"
+"Last-Translator: zero <497424664@qq.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/zh_Hans/>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1834 tauon.py:1836
@@ -48,7 +51,7 @@ msgstr "文件夹重扫描完成。"
 
 #: tauon.py:6324
 msgid "Getting friend data..."
-msgstr ""
+msgstr "正在获取好友数据..."
 
 #: tauon.py:6324
 msgid "This may take a very long time."

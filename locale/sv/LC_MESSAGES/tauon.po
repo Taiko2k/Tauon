@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-10-10 00:00+1300\n"
-"PO-Revision-Date: 2020-10-11 06:26+0000\n"
-"Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
+"PO-Revision-Date: 2020-11-13 03:15+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
 "Language: sv\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.3-dev\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1834 tauon.py:1836
@@ -44,9 +44,8 @@ msgid "You need to log in first"
 msgstr "Du måste logga in först"
 
 #: tauon.py:6176
-#, fuzzy
 msgid "Scanning scrobbles complete"
-msgstr "Skanna om mappar fullständigt."
+msgstr "Skanna om mappar fullständigt"
 
 #: tauon.py:6324
 msgid "Getting friend data..."
