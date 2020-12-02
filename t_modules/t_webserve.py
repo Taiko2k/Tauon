@@ -217,7 +217,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
         def run_command(self, callback):
             self.send_response(200)
-            self.send_header("Content-type", "application/json")
+            #self.send_header("Content-type", "application/json")
             self.end_headers()
             callback()
             self.wfile.write(b"OK")
@@ -255,6 +255,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["id"] = track.index
             data["position"] = track_position
             data["album_id"] = album_id
+            data["track_number"] = str(track.track_number).lstrip("0")
 
             return data
 
@@ -421,6 +422,17 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.run_command(tauon.pctl.advance)
             elif path == "/api1/back":
                 self.run_command(tauon.pctl.back)
+            elif path == "/api1/shuffle":
+                self.run_command(tauon.toggle_random)
+            elif path == "/api1/repeat":
+                self.run_command(tauon.toggle_repeat)
+            elif path == "/api1/version":
+                data = {"version": 1}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
 
             elif path == "/api1/playlists":
 
@@ -446,9 +458,9 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     pl = tauon.id_to_pl(int(levels[3]))
                     if pl is not None:
                         _, album, _ = tauon.get_album_info(int(levels[4]), pl)
-                        #print(album)
+                        # print(album)
                         for p in album:
-                            l.append(self.get_track(p, pl))
+                            l.append(self.get_track(p, pl, album_id=int(levels[4])))
 
                 data = {"tracks": l}
                 self.send_response(200)
@@ -463,7 +475,19 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
                     pl = tauon.id_to_pl(int(levels[3]))
                     if pl:  # todo handle None
+
                         data = self.get_track(int(levels[4]), pl)
+
+                        playlist = pctl.multi_playlist[pl][2]
+                        p = int(levels[4])
+                        track = pctl.g(playlist[p])
+                        while True:
+                            if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                                p += 1
+                                break
+                            p -= 1
+                        data["album_id"] = p
+
                         self.send_response(200)
                         self.send_header("Content-type", "application/json")
                         self.end_headers()
@@ -488,8 +512,17 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     pl = tauon.id_to_pl(int(key))
                     if pl is not None and pl < len(pctl.multi_playlist):
                         playlist = pctl.multi_playlist[pl][2]
+                        parent = ""
+                        album_id = 0
                         for i, id in enumerate(playlist):
-                            l.append(self.get_track(i, pl))
+                            tr = pctl.g(id)
+                            if i == 0:
+                                parent = tr.parent_folder_path
+                            elif parent != tr.parent_folder_path:
+                                parent = tr.parent_folder_path
+                                album_id = i
+
+                            l.append(self.get_track(i, pl, album_id=album_id))
 
                 data = {"tracks": l}
                 self.send_response(200)
@@ -523,8 +556,8 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.end_headers()
                 data = {
                     "status": "stopped",
-                    "shuffle": False,
-                    "repeat": False,
+                    "shuffle": pctl.random_mode == True,
+                    "repeat": pctl.repeat_mode == True,
                     "progress": 0,
                     "playlist": str(tauon.get_playing_playlist_id()),
                     "playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2])
