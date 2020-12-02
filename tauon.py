@@ -30,8 +30,8 @@
 
 import sys
 
-n_version = "6.4.3"
-t_version = "v" + n_version
+n_version = "6.4.4"
+t_version = "v" + n_version + " TMR Testing"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
@@ -7050,6 +7050,7 @@ class Tauon:
         self.pl_gen = pl_gen
         self.QuickThumbnail = QuickThumbnail
         self.pl_to_id = pl_to_id
+        self.id_to_pl = id_to_pl
         self.chunker = Chunker()
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
@@ -7072,6 +7073,10 @@ class Tauon:
 
     def focus_window(self):
         SDL_RaiseWindow(t_window)
+
+    def get_playing_playlist_id(self):
+        return pl_to_id(pctl.active_playlist_playing)
+
 
 
 tauon = Tauon()
@@ -10645,20 +10650,6 @@ class AlbumArt():
             return False
 
         offset = self.get_offset(filepath, sources)
-
-        # # Get source IO
-        # if sources[offset][0] == 1:
-        #     # Target is a embedded image
-        #     source_image = io.BytesIO(self.get_embed(track_object))
-        # elif sources[offset][0] == 2:
-        #     try:
-        #         response = urllib.request.urlopen(get_network_thumbnail_url(track_object))
-        #         source_image = response
-        #     except:
-        #         print("IMAGE NETWORK LOAD ERROR")
-        #
-        # else:
-        #     source_image = open(sources[offset][1], 'rb')
         source_image = self.get_source_raw(offset, sources, track_object)
 
         im = Image.open(source_image)
@@ -12845,6 +12836,7 @@ def toggle_random():
     pctl.random_mode ^= True
     if pctl.mpris is not None:
         pctl.mpris.update_shuffle()
+
 tauon.toggle_random = toggle_random
 
 def toggle_random_on():
@@ -18049,8 +18041,6 @@ def vacuum_playtimes(index):
             star_store.db[key] = value
         else:
             print("ERROR KEY ALREADY HERE?")
-
-
 
 
 def reload_metadata(input, keep_star=True):
@@ -23395,7 +23385,11 @@ album_info_cache = {}
 perfs = []
 album_info_cache_key = (-1, -1)
 
-def get_album_info(position):
+def get_album_info(position, pl=None):
+
+    playlist = default_playlist
+    if pl is not None:
+        playlist = pctl.multi_playlist[pl][2]
 
     global album_info_cache_key
 
@@ -23406,14 +23400,14 @@ def get_album_info(position):
     if position in album_info_cache:
         return album_info_cache[position]
 
-    if position > len(default_playlist) - 1:
-        position = len(default_playlist) - 1
+    if position > len(playlist) - 1:
+        position = len(playlist) - 1
     current = position
 
     while position > 0 and current > 0:
 
-        if pctl.master_library[default_playlist[position]].parent_folder_name == pctl.master_library[
-                default_playlist[current - 1]].parent_folder_name:
+        if pctl.master_library[playlist[position]].parent_folder_name == pctl.master_library[
+                playlist[current - 1]].parent_folder_name:
             current -= 1
             continue
         else:
@@ -23423,30 +23417,31 @@ def get_album_info(position):
     playing = 0
     select = False
 
-    first_track = pctl.master_library[default_playlist[current]]
-    while current < len(default_playlist):
+    first_track = pctl.master_library[playlist[current]]
+    while current < len(playlist):
         album.append(current)
-        if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
+        if len(pctl.track_queue) > 0 and playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
         if current == playlist_selected:
             select = True
 
-        if current < len(default_playlist) - 1 and first_track.parent_folder_name != pctl.master_library[default_playlist[current + 1]].parent_folder_name:
+        if current < len(playlist) - 1 and first_track.parent_folder_name != pctl.master_library[playlist[current + 1]].parent_folder_name:
 
-            if first_track.album and first_track.album == pctl.master_library[default_playlist[current + 1]].album:
+            if first_track.album and first_track.album == pctl.master_library[playlist[current + 1]].album:
                 current += 1
             else:
                 break
         else:
             current += 1
     if not album:
-        #album = [default_playlist[len(default_playlist) - 1]]
-        album = [len(default_playlist) - 1]
+        #album = [playlist[len(playlist) - 1]]
+        album = [len(playlist) - 1]
 
     album_info_cache[position] = playing, album, select
 
     return playing, album, select
 
+tauon.get_album_info = get_album_info
 
 def get_folder_list(index):
     playlist = []
@@ -23657,10 +23652,13 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     gui.power_bar = gen_power2()
     gui.pt = 0
 
+tauon.reload_albums = reload_albums
+
 # ------------------------------------------------------------------------------------
 # WEBSERVER
 
 from t_modules.t_webserve import webserve
+from t_modules.t_webserve import webserve2
 from t_modules.t_webserve import authserve
 from t_modules.t_webserve import controller
 from t_modules.t_webserve import stream_proxy
@@ -23674,6 +23672,11 @@ if prefs.enable_web is True:
     ctlThread = threading.Thread(target=controller, args=[tauon])
     ctlThread.daemon = True
     ctlThread.start()
+
+webThread2 = threading.Thread(target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+webThread2.daemon = True
+webThread2.start()
+
 
 # --------------------------------------------------------------
 
