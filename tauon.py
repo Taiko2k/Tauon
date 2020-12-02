@@ -12829,6 +12829,7 @@ def toggle_random():
     pctl.random_mode ^= True
     if pctl.mpris is not None:
         pctl.mpris.update_shuffle()
+
 tauon.toggle_random = toggle_random
 
 def toggle_random_on():
