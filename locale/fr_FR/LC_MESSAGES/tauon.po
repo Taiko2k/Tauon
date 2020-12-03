@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-12-02 01:21+1300\n"
-"PO-Revision-Date: 2020-11-14 14:28+0000\n"
+"PO-Revision-Date: 2020-12-03 00:34+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -45,7 +45,7 @@ msgstr "Vous devez d'abord vous identifier"
 
 #: tauon.py:6281
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "L'analyse a échoué. Réessayer ?"
 
 #: tauon.py:6288
 msgid "Scanning scrobbles complete"
@@ -60,9 +60,8 @@ msgid "This may take a very long time."
 msgstr "Cela peut prendre un certain temps."
 
 #: tauon.py:6791
-#, fuzzy
 msgid "Error updating love to last.fm!"
-msgstr "Erreur lors de la création de la liste de lecture Spotify"
+msgstr "Erreur lors de la mise à jour vers last.fm !"
 
 #: tauon.py:6791
 msgid "Maybe check your internet connection and try again?"
@@ -2152,7 +2151,7 @@ msgstr "Taille des lignes"
 
 #: tauon.py:26725
 msgid "Baseline offset"
-msgstr ""
+msgstr "Décalage de base"
 
 #: tauon.py:26729
 msgid "Thin default"
@@ -2164,7 +2163,7 @@ msgstr "Large par défaut"
 
 #: tauon.py:26737
 msgid "End of playlist action"
-msgstr "Action en fin de playlist"
+msgstr "Action en fin de liste de lecture"
 
 #: tauon.py:26740 tauon.py:26744
 msgid "Stop playback"
@@ -2183,9 +2182,8 @@ msgid "Cycle all playlists"
 msgstr "Boucler toutes les listes de lecture"
 
 #: tauon.py:27884
-#, fuzzy
 msgid "Buffering... "
-msgstr "Recherche en cours…"
+msgstr "Mise en mémoire tampon… "
 
 #: tauon.py:27999
 msgid "There are currently no connected clients"
