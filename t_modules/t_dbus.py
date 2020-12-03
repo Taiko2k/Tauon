@@ -18,7 +18,7 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from gi.repository import GLib
+from gi.repository import GLib, Gdk
 import urllib.parse
 from t_modules.t_extra import *
 import shutil
@@ -214,6 +214,8 @@ class Gnome:
 
         self.indicator.set_menu(self.menu)
 
+        self.indicator.connect("scroll-event", self.scroll)
+
         self.tauon.gui.tray_active = True
         self.indicator_launched = True
 
@@ -221,6 +223,20 @@ class Gnome:
         shoot = threading.Thread(target=update)
         shoot.daemon = True
         shoot.start()
+
+    def scroll(self, indicator, steps, direction):
+        if direction == Gdk.ScrollDirection.UP:
+            self.tauon.pctl.player_volume += 4
+            if self.tauon.pctl.player_volume > 100:
+                self.tauon.pctl.player_volume = 100
+            self.tauon.pctl.set_volume()
+        if direction == Gdk.ScrollDirection.DOWN:
+            if self.tauon.pctl.player_volume > 4:
+                self.tauon.pctl.player_volume -= 4
+            else:
+                self.tauon.pctl.player_volume = 0
+            self.tauon.pctl.set_volume()
+        self.tauon.gui.update += 1
 
     def main(self):
 
