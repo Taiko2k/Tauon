@@ -6,6 +6,7 @@ v6.4.4
  - Added track title to tray tooltip
  - Added buffering progress indicator (Phazor)
  - Added setting to use plain text airsonic authentication (For Nextcloud)
+ - Added volume control on scroll on tray
  - Changed minimize to tray to close to tray
  - Fixed UI scaling issue with settings tabs on top
  - Removed "Reset missing flags" function (now automatic)
