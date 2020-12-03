@@ -525,7 +525,8 @@ def player3(tauon):  # GStreamer
 
                     # If the target is a file, check that is exists
                     elif os.path.isfile(track.fullpath):
-                        track.found = True
+                        if not track.found:
+                            pctl.reset_missing_flags()
                     else:
                         # File does not exist, force trigger an advance
                         track.found = False
