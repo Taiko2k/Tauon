@@ -79,7 +79,9 @@ class StreamEnc:
         try:
             r = urllib.request.Request(url)
             r.add_header('Icy-MetaData', '1')
+            print("Open URL.....")
             r = urllib.request.urlopen(r)
+            print("URL opened.")
 
         except:
             print("Connection failed")

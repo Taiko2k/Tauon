@@ -31,7 +31,7 @@
 import sys
 
 n_version = "6.4.4"
-t_version = "v" + n_version + " TMR Testing"
+t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
@@ -1452,6 +1452,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_tray = False
         self.tray_show_title = False
         self.drag_to_unpin = True
+        #self.enable_remote = False
 
 prefs = Prefs()
 
@@ -3507,6 +3508,8 @@ def save_prefs():
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("use-system-tray", prefs.use_tray)
+    #cf.update_value("enable-remote-interface", prefs.enable_remote)
+
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("restore-window-position", prefs.save_window_position)
@@ -3699,6 +3702,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[app]")
+    #prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote, "For use with Tauon Music Remote for Android")
     prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position, "Save and restore the last window position on desktop on open")
@@ -23658,7 +23662,7 @@ tauon.reload_albums = reload_albums
 # WEBSERVER
 
 from t_modules.t_webserve import webserve
-from t_modules.t_webserve import webserve2
+#from t_modules.t_webserve import webserve2
 from t_modules.t_webserve import authserve
 from t_modules.t_webserve import controller
 from t_modules.t_webserve import stream_proxy
@@ -23668,14 +23672,14 @@ if prefs.enable_web is True:
     webThread.daemon = True
     webThread.start()
 
-if prefs.enable_web is True:
-    ctlThread = threading.Thread(target=controller, args=[tauon])
-    ctlThread.daemon = True
-    ctlThread.start()
+ctlThread = threading.Thread(target=controller, args=[tauon])
+ctlThread.daemon = True
+ctlThread.start()
 
-webThread2 = threading.Thread(target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
-webThread2.daemon = True
-webThread2.start()
+# if prefs.enable_remote:
+#     webThread2 = threading.Thread(target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+#     webThread2.daemon = True
+#     webThread2.start()
 
 
 # --------------------------------------------------------------
@@ -25061,6 +25065,25 @@ class Over:
 
             y += 25 * gui.scale
             self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
+
+
+        # elif self.func_page == 3:
+        #     y += 23 * gui.scale
+        #     prefs.enable_remote = self.toggle_square(x, y, prefs.enable_remote, _("Enable remote control"),
+        #                        subtitle=_("For use with Tauon Music Remote app. Change requires restart."))
+        #     y += 35 * gui.scale
+        #     link_pa2 = draw_linked_text((x, y),
+        #                                 f"Download Android apk here https://github.com/Taiko2k/TauonMusicBox",
+        #                                 colours.box_sub_text, 13)
+        #     link_rect2 = [x + link_pa2[0], y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
+        #     fields.add(link_rect2)
+        #
+        #     if coll(link_rect2):
+        #         if not self.click:
+        #             gui.cursor_want = 3
+        #
+        #         if self.click:
+        #             webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
         # Switcher
         pages = 3
@@ -27884,7 +27907,7 @@ class TopPanel:
             text = "Scanning Scrobbles..."
             bg = [219, 88, 18, 255]
         elif gui.buffering:
-            text = _("Buffering... ") + gui.buffering + "%"
+            text = _("Buffering... ") + str(gui.buffering) + "%"
             bg = [18, 180, 180, 255]
 
         elif lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
