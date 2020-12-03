@@ -57,10 +57,10 @@
 
   <releases>
 
-    <release version="6.4.3" date="2020-11-17">
+    <release version="6.4.4" date="2020-12-03">
       <description>
         <ul>
-          <li>Added desktop tray indicator</li>
+          <li>Various bug fixes</li>
         </ul>
       </description>
     </release>
