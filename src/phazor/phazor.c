@@ -1608,11 +1608,11 @@ void *main_loop(void *thread_id) {
 
                 mode = RAMP_DOWN;
 
-                if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
-                else decode_seek(seek_request_ms, current_sample_rate);
+                //if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
+                decode_seek(seek_request_ms, sample_rate_src);
 
                 if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
-                else position_count = current_sample_rate * (seek_request_ms / 1000.0);
+                else position_count  = current_sample_rate * (seek_request_ms / 1000.0);
 
             } else if (mode == PAUSED) {
 
@@ -1825,9 +1825,9 @@ int get_position_ms() {
 }
 
 int get_length_ms() {
-    if (reset_set == 0 && current_sample_rate > 0 && current_length_count > 0) {
+    if (reset_set == 0 && sample_rate_src > 0 && current_length_count > 0) {
 
-        return (int) ((current_length_count / (float) current_sample_rate) * 1000.0);
+        return (int) ((current_length_count / (float) sample_rate_src) * 1000.0);
     } else return 0;
 }
 
