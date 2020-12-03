@@ -7,14 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-12-02 01:21+1300\n"
-"PO-Revision-Date: \n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"PO-Revision-Date: 2020-12-02 17:29+0000\n"
+"Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
+"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.1\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.4-dev\n"
 
 #: tauon.py:1865 tauon.py:1867
 msgid "No artist image found."
@@ -42,7 +44,7 @@ msgstr "Necessário logar antes"
 
 #: tauon.py:6281
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Digitalização falhou. Tentar novamente?"
 
 #: tauon.py:6288
 msgid "Scanning scrobbles complete"
@@ -454,9 +456,8 @@ msgid "Rescanning folders..."
 msgstr "Reexaminando pastas..."
 
 #: tauon.py:15009 tauon.py:15021
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "Playlist está vazia"
+msgstr "Playlist está trancada"
 
 #: tauon.py:15120 tauon.py:41581
 msgid "Delete"
@@ -516,9 +517,8 @@ msgid "From Current…"
 msgstr "Daqui gere…"
 
 #: tauon.py:15943
-#, fuzzy
 msgid "Sort by Imported"
-msgstr "Ordenar por mais tocado"
+msgstr "Ordenar por importado"
 
 #: tauon.py:15944
 msgid "Sort by Filepath"
@@ -1442,25 +1442,27 @@ msgstr "Ganho de Reprodução"
 
 #: tauon.py:24509
 msgid "Preserve album dynamics"
-msgstr ""
+msgstr "Preservar dinâmicos do álbum"
 
 #: tauon.py:24511
 msgid "Tracks equal loudness"
-msgstr ""
+msgstr "Localiza volume equivalente"
 
 #: tauon.py:24514
 msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
+msgstr "Terá efeito somente se houver metadada de ReplayGain."
 
 #: tauon.py:24517
 msgid "Pre-amp"
-msgstr ""
+msgstr "Pré-amp"
 
 #: tauon.py:24566
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
+"Baixar valores pré-amp melhora normalização, mas requererá um volume de "
+"sistema mais alto."
 
 #: tauon.py:24582 tauon.py:25204 tauon.py:25210 tauon.py:25216 tauon.py:25248
 msgid "Enable"
@@ -1567,9 +1569,8 @@ msgid "Auto regenerate playlists"
 msgstr "Auto-regerar playlists"
 
 #: tauon.py:24992
-#, fuzzy
 msgid "Generated playlists reload when re-entering"
-msgstr "Gerador de playlists recarrega ao reentrar"
+msgstr "Playlists geradas recarregam ao reentrar"
 
 #: tauon.py:24996
 msgid "Disables the tab pin function"
@@ -1641,17 +1642,15 @@ msgstr "Extrair sempre para a pasta Música"
 
 #: tauon.py:25054
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Mostrar ícone na bandeja"
 
 #: tauon.py:25057
-#, fuzzy
 msgid "Close to tray"
-msgstr "Arquivo movido para lixeira"
+msgstr "Fechar para bandeja"
 
 #: tauon.py:25060
-#, fuzzy
 msgid "Show title text"
-msgstr "Mostrar títulos"
+msgstr "Mostrar texto do título"
 
 #: tauon.py:25251
 msgid "Show threshold marker"
@@ -1743,11 +1742,11 @@ msgstr "Importar música para playlist"
 
 #: tauon.py:25483
 msgid "Needed for Nextcloud compatibility"
-msgstr ""
+msgstr "Necessário para compatibilidade com Nextcloud"
 
 #: tauon.py:25483
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Usar autenticação em texto puro"
 
 #: tauon.py:25488
 msgid "koel network streaming"
@@ -1774,18 +1773,16 @@ msgid "Cover art (Manual only)"
 msgstr "Capa (Apenas Manual)"
 
 #: tauon.py:25619
-#, fuzzy
 msgid "Artist images (Automatic)"
-msgstr "Imagens do artista (Pode ser automático)"
+msgstr "Imagens do artista (automático)"
 
 #: tauon.py:25621
-#, fuzzy
 msgid "Artist backgrounds (Automatic)"
-msgstr "Imagens do artista (Pode ser automático)"
+msgstr "Fundos do Artista (automático)"
 
 #: tauon.py:25624
 msgid "Flip current"
-msgstr ""
+msgstr "Mudar atual"
 
 #: tauon.py:25644
 msgid ""
@@ -2146,9 +2143,8 @@ msgid "Cycle all playlists"
 msgstr "Rodar todas as playlists"
 
 #: tauon.py:27884
-#, fuzzy
 msgid "Buffering... "
-msgstr "Procurando..."
+msgstr "Carregando... "
 
 #: tauon.py:27999
 msgid "There are currently no connected clients"
@@ -2319,9 +2315,8 @@ msgid "Remove All After"
 msgstr "Remover Tudo Depois"
 
 #: tauon.py:32729
-#, fuzzy
 msgid "Set List Sorting..."
-msgstr "Parando..."
+msgstr "Definir Ordem de Lista..."
 
 #: tauon.py:32832
 msgid "Notice: Artist image sourced from fanart.tv"
