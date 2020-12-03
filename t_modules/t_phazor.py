@@ -275,6 +275,8 @@ def player4(tauon):
                         pctl.jump_time = 0
                         pctl.advance(inplace=True, play=True)
                     continue
+                elif not target_object.found:
+                    pctl.reset_missing_flags()
 
                 length = 0
                 remain = 0

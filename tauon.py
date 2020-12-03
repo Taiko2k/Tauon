@@ -5908,6 +5908,11 @@ class PlayerCtl:
         if play:
             notify_song(end_of_playlist, delay=1.3)
 
+    def reset_missing_flags(self):
+        for value in self.master_library.values():
+            value.found = True
+        gui.pl_update += 1
+
 pctl = PlayerCtl()
 
 
@@ -19718,11 +19723,6 @@ x_menu.add_to_sub(_("Play History to Playlist"), 0, q_to_playlist)
 x_menu.add_to_sub(_("Reset Image Cache"), 0, clear_img_cache)
 
 
-def reset_missing_flags():
-    for index in default_playlist:
-        pctl.master_library[index].found = True
-
-
 cm_clean_db = False
 
 def clean_db():
@@ -19738,7 +19738,7 @@ def clean_db2():
 x_menu.add_to_sub(_("Remove Network Tracks"), 0, clean_db2)
 x_menu.add_to_sub(_("Remove Missing Tracks"), 0, clean_db)
 
-x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
+# x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
 
 
 def import_fmps():
