@@ -6,42 +6,45 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-12-02 01:21+1300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2020-12-06 22:29+0000\n"
+"Last-Translator: Rau <drogaslord@gmail.com>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1865 tauon.py:1867
 msgid "No artist image found."
-msgstr ""
+msgstr "No se encontró ninguna imagen de artista."
 
 #: tauon.py:1867
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "¡No hay proveedores habilitados en la configuración!"
 
 #: tauon.py:6066
 msgid "End of playlist"
-msgstr ""
+msgstr "Fin de la lista de reproducción"
 
 #: tauon.py:6117
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Una vez autorizado, haga clic en el botón \"listo\"."
 
 #: tauon.py:6117
 msgid "Web auth page opened"
-msgstr ""
+msgstr "Se abrió la página de autenticación web"
 
 #: tauon.py:6125
 msgid "You need to log in first"
-msgstr ""
+msgstr "Primero debes iniciar sesión"
 
 #: tauon.py:6281
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Falló el escaneo. ¿Inténtar de nuevo?"
 
 #: tauon.py:6288
 msgid "Scanning scrobbles complete"
