@@ -30,7 +30,7 @@
 
 import sys
 
-n_version = "6.4.4"
+n_version = "6.4.5"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1453,6 +1453,8 @@ class Prefs:    # Used to hold any kind of settings
         self.tray_show_title = False
         self.drag_to_unpin = True
         #self.enable_remote = False
+
+        self.artist_list_style = 1
 
 prefs = Prefs()
 
@@ -2978,6 +2980,8 @@ for t in range(2):
             prefs.bg_flips = save[159]
         if save[160] is not None:
             prefs.tray_show_title = save[160]
+        if save[161] is not None:
+            prefs.artist_list_style = save[161]
 
         state_file.close()
         del save
@@ -8482,6 +8486,7 @@ if system == "linux":
     standard_font = prefs.linux_font_condensed_bold #"Noto Sans, ExtraCondensed Bold"
     if msys:
         standard_font = "Noto Sans ExtCond, Sans Bold"
+    #ddt.prime_font(standard_font, 9, 512)
     ddt.prime_font(standard_font, 10, 513)
     ddt.prime_font(standard_font, 11, 514)
     ddt.prime_font(standard_font, 12, 515)
@@ -32786,7 +32791,7 @@ def create_artist_pl(artist, replace=False):
 
 artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon)
 
-artist_list_menu.add_sub(_("Set List Sorting..."), 130)
+artist_list_menu.add_sub(_("View..."), 140)
 
 def aa_sort_alpha():
     prefs.artist_list_sort_mode = "alpha"
@@ -32798,9 +32803,16 @@ def aa_sort_play():
     prefs.artist_list_sort_mode = "play"
     artist_list_box.saves.clear()
 
-artist_list_menu.add_to_sub("Sort Alphabetically", 0, aa_sort_alpha)
-artist_list_menu.add_to_sub("Sort by Popularity", 0, aa_sort_popular)
-artist_list_menu.add_to_sub("Sort by Playtime", 0, aa_sort_play)
+def toggle_artist_list_style():
+    if prefs.artist_list_style == 1:
+        prefs.artist_list_style = 2
+    else:
+        prefs.artist_list_style = 1
+
+artist_list_menu.add_to_sub(_("Sort Alphabetically"), 0, aa_sort_alpha)
+artist_list_menu.add_to_sub(_("Sort by Popularity"), 0, aa_sort_popular)
+artist_list_menu.add_to_sub(_("Sort by Playtime"), 0, aa_sort_play)
+artist_list_menu.add_to_sub(_("Toggle Thumbnails"), 0, toggle_artist_list_style)
 
 
 def verify_discogs():
@@ -33192,48 +33204,39 @@ class ArtistList:
         if viewing_pl_id in self.saves:
             self.saves[viewing_pl_id][2] = self.scroll_position
 
-    def draw_card(self, artist, x, y, w):
+    def draw_card_text_only(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg):
 
-        global playlist_selected
+        album_mode = False
+        for albums in self.current_album_counts.values():
+            if len(albums) > 1:
+                album_mode = True
+                break
 
-        area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
-
-        light_mode = False
-        line1_colour = [235, 235, 235, 255]
-        # line2_colour = [150, 150, 150, 255]
-        line2_colour = [255, 255, 255, 120]
-        fade_max = 50
-
-
-        thin_mode = False
-        if gui.compact_artist_list:
-            thin_mode = True
-            line2_colour = [115, 115, 115, 255]
-
+        if not album_mode:
+            count = self.current_artist_track_counts[artist]
+            text = str(count) + " track"
+            if count > 1:
+                text += "s"
         else:
+            album_count = len(self.current_album_counts[artist])
+            text = str(album_count) + " album"
+            if album_count > 1:
+                text += "s"
 
-            if test_lumi(colours.side_panel_background) < 0.55 and not thin_mode:
-                light_mode = True
-                fade_max = 20
-                line1_colour = [35, 35, 35, 255]
-                line2_colour = [100, 100, 100, 255]
+        if gui.preview_artist_loading == artist:
+            # . Max 20 chars. Alt: Downloading image, Loading image
+            text = _("Downloading data...")
 
-        # Fade on click
-        bg = colours.side_panel_background
-        if not thin_mode:
-            fade = 0
-            t = self.click_highlight_timer.get()
-            if self.click_ref == artist and (t < 2.2 or artist_list_menu.active):
+        x_text = round(10 * gui.scale)
+        artist_font = 313
+        count_font = 312
+        extra_text_space = 0
+        ddt.text((x_text, y + round(2 * gui.scale)), artist, line1_colour, artist_font,
+                 extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
+        # ddt.text((x_text, y + self.tab_h // 2 - 2 * gui.scale), text, line2_colour, count_font,
+        #          extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
-                if t < 1.9 or artist_list_menu.active:
-                    fade = fade_max
-                else:
-                    fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
-
-                gui.update += 1
-                ddt.rect(area, [50, 50, 50, fade], True)
-
-            bg = alpha_blend([50, 50, 50, fade], colours.side_panel_background)
+    def draw_card_with_thumbnail(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg):
 
         if artist not in self.thumb_cache:
             self.load_img(artist)
@@ -33264,7 +33267,6 @@ class ArtistList:
 
         if thin_mode and coll(area) and is_level_zero() and y + self.tab_h < window_size[1] - gui.panelBY:
             tab_rect = (x, y - round(2 * gui.scale), round(190 * gui.scale), self.tab_h - round(1 * gui.scale))
-
 
             for r in subtract_rect(tab_rect, rect):
                 r = SDL_Rect(r[0], r[1], r[2], r[3])
@@ -33362,6 +33364,64 @@ class ArtistList:
             ddt.text((x_text, y + self.tab_h // 2 - 19 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
             ddt.text((x_text, y + self.tab_h // 2 - 2 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
+
+    def draw_card(self, artist, x, y, w):
+
+        global playlist_selected
+
+        area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
+        if prefs.artist_list_style == 2:
+            area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 1)
+        
+        fields.add(area)
+
+        light_mode = False
+        line1_colour = [235, 235, 235, 255]
+        line2_colour = [255, 255, 255, 120]
+        fade_max = 50
+
+        thin_mode = False
+        if gui.compact_artist_list:
+            thin_mode = True
+            line2_colour = [115, 115, 115, 255]
+
+        else:
+            if test_lumi(colours.side_panel_background) < 0.55 and not thin_mode:
+                light_mode = True
+                fade_max = 20
+                line1_colour = [35, 35, 35, 255]
+                line2_colour = [100, 100, 100, 255]
+
+        # Fade on click
+        bg = colours.side_panel_background
+        if not thin_mode:
+
+            if coll(area) and is_level_zero(True): #or pctl.g(default_playlist[pctl.playlist_view_position]).artist == artist:
+                ddt.rect(area, [50, 50, 50, 50], True)
+                bg = alpha_blend([50, 50, 50, 50], colours.side_panel_background)
+            else:
+
+                fade = 0
+                t = self.click_highlight_timer.get()
+                if self.click_ref == artist and (t < 2.2 or artist_list_menu.active):
+
+                    if t < 1.9 or artist_list_menu.active:
+                        fade = fade_max
+                    else:
+                        fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
+
+                    gui.update += 1
+                    ddt.rect(area, [50, 50, 50, fade], True)
+
+                bg = alpha_blend([50, 50, 50, fade], colours.side_panel_background)
+
+
+        if prefs.artist_list_style == 1:
+            self.draw_card_with_thumbnail(artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg)
+        else:
+            self.draw_card_text_only(artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg)
+
+
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if inp.mouse_click:
                 self.click_ref = artist
@@ -33441,6 +33501,12 @@ class ArtistList:
 
 
     def render(self, x, y ,w ,h):
+
+        if prefs.artist_list_style == 1:
+            self.tab_h = round(60 * gui.scale)
+        else:
+            self.tab_h = round(22 * gui.scale)
+
 
         viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
@@ -33553,6 +33619,8 @@ class ArtistList:
                     continue
 
             if prefetch_mode:
+                if prefs.artist_list_style == 2:
+                    break
                 prefetch_distance -= 1
                 if prefetch_distance < 1:
                     break
@@ -37272,7 +37340,7 @@ def update_layout_do():
         if pl_width < 700 * gui.scale:
             gui.lspw = 150 * gui.scale
 
-        if prefs.left_panel_mode == "artist list":
+        if prefs.left_panel_mode == "artist list" and prefs.artist_list_style == 1:
             gui.compact_artist_list = True
             gui.lspw = 75 * gui.scale
             if gui.force_side_on_drag:
@@ -37913,6 +37981,7 @@ def save_state():
             prefs.failed_background_artists,
             prefs.bg_flips,
             prefs.tray_show_title,
+            prefs.artist_list_style
         ]
 
 
