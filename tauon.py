@@ -6998,6 +6998,7 @@ class Strings:
         self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
         self.spotify_error_starting = _("Error starting Spotify")
         self.spotify_request_auth = _("Please authorise Spotify in settings!")
+        self.spotify_need_enable = _("Please authorise and click the enable toggle first!")
 
         self.day = _("day")
         self.days = _("days")
@@ -14547,17 +14548,20 @@ def move_playlist(source, dest):
     if dest > source:
         dest += 1
 
-    active = pctl.multi_playlist[pctl.active_playlist_playing]
-    view = pctl.multi_playlist[pctl.active_playlist_viewing]
+    try:
+        active = pctl.multi_playlist[pctl.active_playlist_playing]
+        view = pctl.multi_playlist[pctl.active_playlist_viewing]
 
-    temp = pctl.multi_playlist[source]
-    pctl.multi_playlist[source] = "old"
-    pctl.multi_playlist.insert(dest, temp)
-    pctl.multi_playlist.remove("old")
+        temp = pctl.multi_playlist[source]
+        pctl.multi_playlist[source] = "old"
+        pctl.multi_playlist.insert(dest, temp)
+        pctl.multi_playlist.remove("old")
 
-    pctl.active_playlist_playing = pctl.multi_playlist.index(active)
-    pctl.active_playlist_viewing = pctl.multi_playlist.index(view)
-    default_playlist = default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+        pctl.active_playlist_playing = pctl.multi_playlist.index(active)
+        pctl.active_playlist_viewing = pctl.multi_playlist.index(view)
+        default_playlist = default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    except:
+        print("Warning: Playlist move error")
 
 
 def delete_playlist(index):
@@ -18659,6 +18663,8 @@ def toggle_wiki(mode=0):
 def toggle_show_discord(mode=0):
     if mode == 1:
         return prefs.discord_show
+    if prefs.discord_show is False and discord_allow is False:
+        show_message("Warning: pypresence package not installed")
     prefs.discord_show ^= True
 
 def toggle_gen(mode=0):
@@ -21341,6 +21347,12 @@ class SearchOverlay:
             elif not self.results and len(self.search_text.text) > 1:
                 if self.input_timer.get() > 0.5 and not self.sip:
                     ddt.text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
+
+            # Spotify search text
+            if prefs.spot_mode and not self.spotify_mode:
+                text = _("Press Tab key to switch to Spotify search")
+                ddt.text((window_size[0] // 2, window_size[1] - 30 * gui.scale, 2), text, [250, 250, 250, 255], 212,
+                         bg=[12, 12, 12, 255])
 
             self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
@@ -25037,11 +25049,11 @@ class Over:
             self.toggle_square(x, y, toggle_gen, _("Genius track search"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_transcode, _("Transcode folder"))
-            if discord_allow:
-                y += 30 * gui.scale
-                ddt.text((x, y), _("Enable/Disable main MENU functions:"), colours.box_text_label, 11)
-                y += 25 * gui.scale
-                self.toggle_square(x, y, toggle_show_discord, _("Discord Rich Presence toggle"))
+
+            y += 30 * gui.scale
+            ddt.text((x, y), _("Enable/Disable main MENU functions:"), colours.box_text_label, 11)
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_show_discord, _("Discord Rich Presence toggle"))
 
         elif self.func_page == 2:
             y += 23 * gui.scale
@@ -28063,6 +28075,8 @@ class BottomBarType1:
         self.forward_button = asset_loader('ff.png', True)
         self.back_button = asset_loader('bb.png', True)
 
+        self.buffer_shard = asset_loader("shard.png", True)
+
         self.scrob_stick = 0
 
 
@@ -28223,6 +28237,26 @@ class BottomBarType1:
                        self.seek_bar_size[1])
             ddt.rect(gui.seek_bar_rect,
                      colours.seek_bar_fill, True)
+
+        if radiobox.load_connecting or gui.buffering:
+            x = self.seek_bar_position[0] - round(26 - gui.scale)
+            y = self.seek_bar_position[1]
+            while x < self.seek_bar_position[0] + self.seek_bar_size[0]:
+
+                offset = (math.floor(((core_timer.get() * 1) % 1) * 13) / 13) * self.buffer_shard.w
+                gui.delay_frame(0.01)
+
+                # colour = colours.seek_bar_fill
+                h, l, s = rgb_to_hls(colours.seek_bar_background[0], colours.seek_bar_background[1], colours.seek_bar_background[2])
+                l = min(1, l + 0.05)
+                colour = hls_to_rgb(h, l, s)
+                colour[3] = colours.seek_bar_background[3]
+
+                self.buffer_shard.render(x + offset, y, colour)
+                x += self.buffer_shard.w
+
+            ddt.rect((self.seek_bar_position[0] - self.buffer_shard.w, y, self.buffer_shard.w, self.buffer_shard.h),
+                     colours.bottom_panel_colour, True)
 
         if gui.seek_cur_show:
 
@@ -32488,7 +32522,7 @@ class PlaylistBox:
             #     bg = rgb_add_hls(colours.playlist_box_background, 0, 0.06, 0)
 
             # Draw highlight
-            ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, 25 * gui.scale), bg, True)
+            ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg, True)
 
             # Draw title text
             text_start = 10 * gui.scale

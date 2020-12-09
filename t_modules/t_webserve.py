@@ -413,6 +413,7 @@ def stream_proxy(tauon):
                     if position not in tauon.stream_proxy.chunks:
                         print("The buffer was deleted too soon!")
                         return
+
                     self.wfile.write(tauon.stream_proxy.chunks[position])
 
                     if tauon.prefs.backend == 4:

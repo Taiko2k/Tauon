@@ -214,6 +214,7 @@ class SpotCtl:
     def get_playlist_list(self):
         self.connect()
         if not self.spotify:
+            self.tauon.gui.show_message(self.strings.spotify_need_enable)
             return None
 
         playlists = []
@@ -430,6 +431,8 @@ class SpotCtl:
     def get_library_albums(self, return_list=False):
         self.connect()
         if not self.spotify:
+            self.spotify_com = False
+            self.tauon.gui.show_message(self.strings.spotify_need_enable)
             return []
 
         albums = self.spotify.saved_albums()
@@ -708,6 +711,8 @@ class SpotCtl:
     def get_library_likes(self, return_list=False):
         self.connect()
         if not self.spotify:
+            self.spotify_com = False
+            self.tauon.gui.show_message(self.strings.spotify_need_enable)
             return []
 
         self.update_existing_import_list()
@@ -732,6 +737,7 @@ class SpotCtl:
         for p in self.tauon.pctl.multi_playlist:
             if p[0] == self.tauon.strings.spotify_likes:
                 p[2][:] = playlist[:]
+                self.spotify_com = False
                 return
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist=playlist))
