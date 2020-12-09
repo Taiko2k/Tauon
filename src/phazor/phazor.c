@@ -1202,20 +1202,34 @@ void pump_decode() {
         int b = 0;
         int done = 0;
 
-        while (b < 2048) {
-            if (feof(ffm)) {
-                done = 1;
-                break;
-            }
-            ffm_buffer[b] = fgetc(ffm);
+        int c;
+        while(b < 2048 && (c = fgetc(ffm)) != EOF ){
+            ffm_buffer[b] = (char) c;
             b++;
         }
 
+        if (feof(ffm)) {
+            done = 1;
+            printf("pa: FFMPEG EOF\n");
+        }
+
+
+//        while (b < 2048) {
+//            if (feof(ffm)) {
+//                done = 1;
+//                printf("pa: FFMPEG EOF\n");
+//                break;
+//            }
+//            ffm_buffer[b] = fgetc(ffm);
+//            b++;
+//        }
+//
         if (b % 2 == 1) {
             printf("pa: Uneven data\n");
             decoder_eos();
             return;
         }
+
         pthread_mutex_lock(&buffer_mutex);
         while (i < b) {
 
