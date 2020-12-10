@@ -4438,7 +4438,6 @@ class PlayerCtl:
                 lfm_scrobbler.scrob_full_track(copy.deepcopy(radiobox.dummy_track))
 
 
-
     def update_shuffle_pool(self, pl_id, track_list):
 
         if pl_id in self.shuffle_pools:
@@ -31438,6 +31437,8 @@ class RadioBox:
         self.search_menu.add(_("Search Country"), self.search_country, pass_ref=True)
         self.search_menu.add(_("Search Title"), self.search_title, pass_ref=True)
 
+        self.websocket = None
+
     def search_country(self, text):
 
         if len(text) == 2 and text.isalpha():
@@ -31473,6 +31474,11 @@ class RadioBox:
         if spot_ctl.playing or spot_ctl.coasting:
             spot_ctl.control("stop")
 
+        try:
+            self.websocket.close()
+            print("Websocket closed")
+        except:
+            print("No socket to close?")
 
         self.playing_title = ""
         self.playing_title = item["title"]
@@ -31537,6 +31543,79 @@ class RadioBox:
         self.load_connecting = False
         self.load_failed = False
         gui.update += 1
+
+
+        wss = ""
+        if url == "https://listen.moe/kpop/stream":
+            wss = "wss://listen.moe/kpop/gateway_v2"
+        if url == "https://listen.moe/stream":
+            wss = "wss://listen.moe/gateway_v2"
+        if wss:
+            print("Connecting to Listen.moe")
+            import websocket
+            import _thread as th
+
+            def on_message(ws, message):
+                #print(message)
+                d = json.loads(message)
+                if d["op"] == 0:
+                    ws.send("{\"op\":9}")
+                    print("Send heatbeat")
+                if d["op"] == 1:
+                    try:
+                        #print(d["d"]["song"]["title"])
+                        #print(d["d"]["song"]["albums"])
+                        filename = d["d"]["song"]["albums"][0]["image"]
+                        fulllink = "https://cdn.listen.moe/covers/" + filename
+                        #print(fulllink)
+                        art_response = requests.get(fulllink)
+                        #print(art_response.status_code)
+                        if art_response.status_code == 200:
+                            if pctl.radio_image_bin:
+                                pctl.radio_image_bin.close()
+                                pctl.radio_image_bin = None
+                            pctl.radio_image_bin = io.BytesIO(art_response.content)
+                            pctl.radio_image_bin.seek(0)
+                            radiobox.dummy_track.art_url_key = "ok"
+                            #print("DONE")
+                    except:
+                        if pctl.radio_image_bin:
+                            pctl.radio_image_bin.close()
+                            pctl.radio_image_bin = None
+                    gui.clear_image_cache_next = True
+                    gui.update += 1
+
+            def on_error(ws, error):
+                pass
+                #print(error)
+
+            def on_close(ws):
+                pass
+                #print("### closed ###")
+
+            def on_open(ws):
+                def run(*args):
+                    pass
+                    # # for i in range(3):
+                    # #     time.sleep(1)
+                    # #     ws.send("Hello %d" % i)
+                    # time.sleep(10)
+                    # ws.close()
+                    #print("thread terminating...")
+
+                th.start_new_thread(run, ())
+
+            #websocket.enableTrace(True)
+            ws = websocket.WebSocketApp(wss,
+                                        on_message=on_message,
+                                        on_error=on_error,
+                                        on_close=on_close)
+            ws.on_open = on_open
+            self.websocket = ws
+            shoot = threading.Thread(target=ws.run_forever)
+            shoot.daemon = True
+            shoot.start()
+
 
 
     def delete_radio_entry(self, item):
@@ -31615,7 +31694,54 @@ class RadioBox:
                        press=gui.level_2_click):
             self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
 
+        ww = ddt.get_text_w(_("Get Top Voted"), 212)
+        if key_shift_down:
+            if draw.button("Taiko's Favorites", x + ww + round(35 * gui.scale), yy + round(30 * gui.scale),
+                       press=gui.level_2_click):
 
+                self.temp_list.clear()
+
+                radio = {}
+                radio["title"] = "Nightwave Plaza | Vaporwave"
+                radio["stream_url_unresolved"] = "http://radio.plaza.one/ogg"
+                radio["stream_url"] = "http://radio.plaza.one/ogg"
+                radio["website_url"] = "https://plaza.one/"
+                self.temp_list.append(radio)
+
+                radio = {}
+                radio["title"] = "Yggdrasil Radio | Anime & Jpop"
+                radio["stream_url_unresolved"] = "http://shirayuki.org:9200/"
+                radio["stream_url"] = "http://shirayuki.org:9200/"
+                radio["website_url"] = "https://yggdrasilradio.net/"
+                self.temp_list.append(radio)
+
+                radio = {}
+                radio["title"] = "Listen.moe | Jpop"
+                radio["stream_url_unresolved"] = "https://listen.moe/stream"
+                radio["stream_url"] = "https://listen.moe/stream"
+                radio["website_url"] = "https://listen.moe/"
+                self.temp_list.append(radio)
+
+                radio = {}
+                radio["title"] = "Listen.moe | Kpop"
+                radio["stream_url_unresolved"] = "https://listen.moe/kpop/stream"
+                radio["stream_url"] = "https://listen.moe/kpop/stream"
+                radio["website_url"] = "https://listen.moe/"
+                self.temp_list.append(radio)
+
+                radio = {}
+                radio["title"] = "DKFM | Shoegaze"
+                radio["stream_url_unresolved"] = "https://securestreams6.autopo.st:2102/"
+                radio["stream_url"] = "https://securestreams6.autopo.st:2102/"
+                radio["website_url"] = "https://decayfm.com/"
+                self.temp_list.append(radio)
+
+                radio = {}
+                radio["title"] = "HBR1 Dream Factory | Ambient"
+                radio["stream_url_unresolved"] = "http://radio.hbr1.com:19800/ambient.ogg"
+                radio["stream_url"] = "http://radio.hbr1.com:19800/ambient.ogg"
+                radio["website_url"] = "http://www.hbr1.com/"
+                self.temp_list.append(radio)
 
     def search_radio_browser(self, param):
         if self.searching:
@@ -31697,10 +31823,18 @@ class RadioBox:
             ddt.text((x + 495 * gui.scale, yy + 8 * gui.scale, 1), _("Searching..."), colours.box_title_text,
                      311)
         elif pctl.playing_state == 3:
+
+            text = ""
             if tauon.stream_proxy.s_format:
-                ddt.text((x + 425 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_format, colours.box_title_text, 311)
-            if tauon.stream_proxy.s_bitrate:
-                ddt.text((x + 454 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_bitrate + "kbps", colours.box_title_text, 311)
+                text = str(tauon.stream_proxy.s_format)
+            if tauon.stream_proxy.s_bitrate and tauon.stream_proxy.s_bitrate.isnumeric():
+                text += " " + tauon.stream_proxy.s_bitrate + "kbps"
+
+            ddt.text((x + 495 * gui.scale, yy + 8 * gui.scale, 1), text, colours.box_title_text, 311)
+            # if tauon.stream_proxy.s_format:
+            #     ddt.text((x + 425 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_format, colours.box_title_text, 311)
+            # if tauon.stream_proxy.s_bitrate:
+            #     ddt.text((x + 454 * gui.scale, yy + 8 * gui.scale,), tauon.stream_proxy.s_bitrate + "kbps", colours.box_title_text, 311)
 
         # --- ----------------------------------------------------------------------
         if self.tab == 1:

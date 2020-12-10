@@ -367,7 +367,8 @@ def player4(tauon):
                 time.sleep(2.5)
                 command = "stop"
             if command == "stop":
-                if prefs.use_pause_fade:
+
+                if prefs.use_pause_fade and state != 3:
                     if pctl.player_volume > 5:
                         speed = fade_time / (int(pctl.player_volume) / 100)
                     else:
