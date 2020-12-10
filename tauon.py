@@ -31438,6 +31438,7 @@ class RadioBox:
         self.search_menu.add(_("Search Title"), self.search_title, pass_ref=True)
 
         self.websocket = None
+        self.ws_interval = 4.5
 
     def search_country(self, text):
 
@@ -31555,12 +31556,26 @@ class RadioBox:
             import websocket
             import _thread as th
 
+            def send_heartbeat(ws):
+                print(self.ws_interval)
+                time.sleep(self.ws_interval)
+                ws.send("{\"op\":9}")
+                print("Send heatbeat")
+
             def on_message(ws, message):
                 #print(message)
                 d = json.loads(message)
+                if d["op"] == 10:
+                    shoot = threading.Thread(target=send_heartbeat, args=[ws])
+                    shoot.daemon = True
+                    shoot.start()
+
                 if d["op"] == 0:
+                    self.ws_interval = d["d"]["heartbeat"] / 1000
                     ws.send("{\"op\":9}")
                     print("Send heatbeat")
+
+
                 if d["op"] == 1:
                     try:
                         #print(d["d"]["song"]["title"])
@@ -31577,8 +31592,9 @@ class RadioBox:
                             pctl.radio_image_bin = io.BytesIO(art_response.content)
                             pctl.radio_image_bin.seek(0)
                             radiobox.dummy_track.art_url_key = "ok"
-                            #print("DONE")
+                            print("Got new art")
                     except:
+                        print("No image")
                         if pctl.radio_image_bin:
                             pctl.radio_image_bin.close()
                             pctl.radio_image_bin = None
@@ -31591,14 +31607,14 @@ class RadioBox:
 
             def on_close(ws):
                 pass
-                #print("### closed ###")
+                print("### closed ###")
 
             def on_open(ws):
                 def run(*args):
                     pass
-                    # # for i in range(3):
-                    # #     time.sleep(1)
-                    # #     ws.send("Hello %d" % i)
+                    # for i in range(3):
+                    #     time.sleep(4.5)
+                    #     ws.send("{\"op\":9}")
                     # time.sleep(10)
                     # ws.close()
                     #print("thread terminating...")
