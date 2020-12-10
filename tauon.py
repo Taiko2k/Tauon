@@ -4195,7 +4195,9 @@ def tag_scan(nt):
 
 def get_radio_art():
 
-    if "ggdrasil" in radiobox.playing_title:
+    if radiobox.loaded_url in ("https://listen.moe/kpop/stream", "https://listen.moe/stream"):
+        pass
+    elif "ggdrasil" in radiobox.playing_title:
         time.sleep(3)
         url = "https://yggdrasilradio.net/data.php?"
         response = requests.get(url)
@@ -4212,7 +4214,6 @@ def get_radio_art():
                     pctl.radio_image_bin = io.BytesIO(art_response.content)
                     pctl.radio_image_bin.seek(0)
                     radiobox.dummy_track.art_url_key = "ok"
-                    return
 
     elif "radio.plaza.one" in radiobox.loaded_url:
         time.sleep(3)
@@ -4237,14 +4238,13 @@ def get_radio_art():
                         pctl.radio_image_bin = io.BytesIO(art_response.content)
                         pctl.radio_image_bin.seek(0)
                         radiobox.dummy_track.art_url_key = "ok"
-                        return
 
     # Failure
-    if pctl.radio_image_bin:
+    elif pctl.radio_image_bin:
         pctl.radio_image_bin.close()
         pctl.radio_image_bin = None
 
-
+    gui.clear_image_cache_next = True
 # Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
 class PlayerCtl:
     # C-PC
@@ -4425,7 +4425,6 @@ class PlayerCtl:
                 except:
                     # raise
                     print("Get art error")
-                gui.clear_image_cache_next = True
 
                 if pctl.mpris:
                     pctl.mpris.update(force=True)
@@ -31545,7 +31544,6 @@ class RadioBox:
         self.load_failed = False
         gui.update += 1
 
-
         wss = ""
         if url == "https://listen.moe/kpop/stream":
             wss = "wss://listen.moe/kpop/gateway_v2"
@@ -31557,7 +31555,7 @@ class RadioBox:
             import _thread as th
 
             def send_heartbeat(ws):
-                print(self.ws_interval)
+                #print(self.ws_interval)
                 time.sleep(self.ws_interval)
                 ws.send("{\"op\":9}")
                 print("Send heatbeat")
@@ -31582,7 +31580,7 @@ class RadioBox:
                         #print(d["d"]["song"]["albums"])
                         filename = d["d"]["song"]["albums"][0]["image"]
                         fulllink = "https://cdn.listen.moe/covers/" + filename
-                        #print(fulllink)
+                        print(fulllink)
                         art_response = requests.get(fulllink)
                         #print(art_response.status_code)
                         if art_response.status_code == 200:
