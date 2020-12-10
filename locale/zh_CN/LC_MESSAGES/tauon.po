@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-12-02 01:21+1300\n"
-"PO-Revision-Date: 2020-11-09 21:28+0000\n"
-"Last-Translator: zero <497424664@qq.com>\n"
+"PO-Revision-Date: 2020-12-10 08:42+0000\n"
+"Last-Translator: 微别累特 <1365143958@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -19,13 +19,12 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1865 tauon.py:1867
-#, fuzzy
 msgid "No artist image found."
-msgstr "没有找到艺术家"
+msgstr "未找到艺术家图像。"
 
 #: tauon.py:1867
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "未设置供应商！"
 
 #: tauon.py:6066
 msgid "End of playlist"
@@ -40,13 +39,12 @@ msgid "Web auth page opened"
 msgstr "网络认证页面已打开"
 
 #: tauon.py:6125
-#, fuzzy
 msgid "You need to log in first"
-msgstr "您需要先登录"
+msgstr "你需要先登录"
 
 #: tauon.py:6281
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "扫描失败。再试试？"
 
 #: tauon.py:6288
 #, fuzzy
@@ -59,29 +57,28 @@ msgstr "正在获取好友数据..."
 
 #: tauon.py:6436
 msgid "This may take a very long time."
-msgstr ""
+msgstr "这可能需要很长时间。"
 
 #: tauon.py:6791
-#, fuzzy
 msgid "Error updating love to last.fm!"
-msgstr "播放列表末尾"
+msgstr "更新喜欢到 last.fm 失败！"
 
 #: tauon.py:6791
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "检查你的网络连接然后再试试？"
 
 #: tauon.py:6982
 msgid "Spotify Likes"
-msgstr ""
+msgstr "Spotify 喜欢"
 
 #: tauon.py:6983
-#, fuzzy
 msgid "Spotify Albums"
-msgstr "最长的专辑"
+msgstr "Spotify 专辑"
 
 #: tauon.py:6984
+#, fuzzy
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "从喜欢的音轨中移除音轨"
 
 #: tauon.py:6985
 msgid "Track was already un-liked"
