@@ -48,6 +48,13 @@ class StreamEnc:
         self.c = 0
 
     def stop(self):
+
+        try:
+            self.tauon.radiobox.websocket.close()
+            print("Websocket closed")
+        except:
+            print("No socket to close?")
+
         self.abort = True
         self.tauon.radiobox.loaded_url = None
 
@@ -78,6 +85,7 @@ class StreamEnc:
 
         try:
             r = urllib.request.Request(url)
+            #r.add_header('GET', '1')
             r.add_header('Icy-MetaData', '1')
             print("Open URL.....")
             r = urllib.request.urlopen(r)
@@ -270,7 +278,7 @@ class StreamEnc:
                         # We're sure its data Its data, send it on
                         self.chunks[self.c] = chunk
                         # Delete old data
-                        d = self.c - (30000)
+                        d = self.c - 90000
                         if d in self.chunks:
                             del self.chunks[d]
 
