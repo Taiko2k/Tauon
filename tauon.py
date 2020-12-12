@@ -4195,7 +4195,7 @@ def tag_scan(nt):
 
 def get_radio_art():
 
-    if radiobox.loaded_url in ("https://listen.moe/kpop/stream", "https://listen.moe/stream"):
+    if radiobox.loaded_url in radiobox.websocket_source_urls:
         pass
     elif "ggdrasil" in radiobox.playing_title:
         time.sleep(3)
@@ -31438,6 +31438,7 @@ class RadioBox:
 
         self.websocket = None
         self.ws_interval = 4.5
+        self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
 
     def search_country(self, text):
 
@@ -31571,16 +31572,25 @@ class RadioBox:
                 if d["op"] == 0:
                     self.ws_interval = d["d"]["heartbeat"] / 1000
                     ws.send("{\"op\":9}")
-                    print("Send heatbeat")
-
 
                 if d["op"] == 1:
                     try:
-                        #print(d["d"]["song"]["title"])
-                        #print(d["d"]["song"]["albums"])
+
+                        found_tags = {}
+                        found_tags["title"] = d["d"]["song"]["title"]
+                        if d["d"]["song"]["artists"]:
+                            found_tags["artist"] = d["d"]["song"]["artists"][0]["name"]
+                        line = ""
+                        if "title" in found_tags:
+                            line += found_tags["title"]
+                            if "artist" in found_tags:
+                                line = found_tags["artist"] + " - " + line
+                        pctl.found_tags = found_tags
+                        pctl.tag_meta = line
+
                         filename = d["d"]["song"]["albums"][0]["image"]
                         fulllink = "https://cdn.listen.moe/covers/" + filename
-                        print(fulllink)
+                        # print(fulllink)
                         art_response = requests.get(fulllink)
                         #print(art_response.status_code)
                         if art_response.status_code == 200:
@@ -33701,7 +33711,10 @@ class ArtistList:
         ddt.text_background_colour = colours.side_panel_background
 
         if coll(area) and mouse_wheel:
-            self.scroll_position -= mouse_wheel
+            mx = 1
+            if prefs.artist_list_style == 2:
+                mx = 3
+            self.scroll_position -= mouse_wheel * mx
         if self.scroll_position < 0:
             self.scroll_position = 0
 
@@ -35295,6 +35308,8 @@ class MetaBox:
                     if ext != "":
                         if ext == "SPTY":
                             ext = "Spotify"
+                        if ext == "RADIO":
+                            ext = radiobox.playing_title
                         sp = ddt.text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
                                       fonts.side_panel_line2, max_w=text_width)
 
