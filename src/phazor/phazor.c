@@ -61,6 +61,7 @@ float re_out[BUFF_SIZE * 2];
 
 int fade_fill = 0;
 int fade_position = 0;
+int fade_2_flag = 0;
 
 pthread_mutex_t buffer_mutex;
 pthread_mutex_t pulse_mutex;
@@ -158,6 +159,7 @@ float ramp_step(int sample_rate, int milliseconds) {
 }
 
 void fade_fx() {
+
     if (fade_fill > 0) {
         if (fade_fill == fade_position) {
             fade_fill = 0;
@@ -1557,7 +1559,29 @@ void *main_loop(void *thread_id) {
                     if (load_result == 0) {
                         pthread_mutex_lock(&buffer_mutex);
                         // Prepare for a crossfade if enabled and suitable
-                        if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
+
+                        if (config_fade_jump == 2 && want_sample_rate == 0 && mode == PLAYING){
+
+                            float l = current_sample_rate * 0.6;
+                            int i = 0;
+                            float v = 1.0;
+                            while (i < l){
+                                v = 1.0 - (i / l);
+                                printf("%f\n", v);
+                                buff16l[(buff_base + i) % BUFF_SIZE] *= v;
+                                buff16r[(buff_base + i) % BUFF_SIZE] *= v;
+                                i++;
+                            }
+                            buff_filled = l;
+                            reset_set_byte = (buff_base + i) % BUFF_SIZE;
+                            if (reset_set == 0) {
+                                reset_set = 1;
+                                reset_set_value = 0;
+                            }
+
+
+                        }
+                        else if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
                             int reserve = current_sample_rate * 0.1;
                             int l;
                             l = current_sample_rate * 0.7;
