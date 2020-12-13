@@ -1237,6 +1237,10 @@ class Prefs:    # Used to hold any kind of settings
         self.koel_password = "admin"
         self.koel_server_url = "http://localhost:8050"
 
+        self.jelly_username = ""
+        self.jelly_password = ""
+        self.jelly_server_url = "http://localhost:8050"
+
         self.auto_lyrics = False
         self.auto_lyrics_checked = []
 
@@ -3431,6 +3435,10 @@ def save_prefs():
     cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
     cf.update_value("subsonic-server-url", prefs.subsonic_server)
 
+    cf.update_value("jelly-username", prefs.jelly_username)
+    cf.update_value("jelly-password", prefs.jelly_password)
+    cf.update_value("jelly-server-url", prefs.jelly_server_url)
+
     cf.update_value("koel-username", prefs.koel_username)
     cf.update_value("koel-password", prefs.koel_password)
     cf.update_value("koel-server-url", prefs.koel_server_url)
@@ -3760,6 +3768,13 @@ def load_prefs():
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
     prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
+    
+    cf.br()
+    cf.add_text("[jellyfin_account]")
+    prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
+    prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
+    prefs.jelly_server_url = cf.sync_add("string", "jelly-server-url", prefs.jelly_server_url, "The IP:Port where the jellyfin server is hosted.")
+    prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
 
     cf.br()
     cf.add_text("[network]")
@@ -4469,6 +4484,9 @@ class PlayerCtl:
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
             return plex.resolve_stream(track_object.url_key), None
+
+        if track_object.file_ext == "JELY":
+            return jellyfin.resolve_stream(track_object.url_key), None
 
         if track_object.file_ext == "KOEL":
             return koel.resolve_stream(track_object.url_key)
@@ -7154,7 +7172,6 @@ class PlexService:
     def get_albums(self, return_list=False):
 
         gui.update += 1
-
         self.scanning = True
 
         if not self.connected:
@@ -7233,6 +7250,11 @@ class PlexService:
 
 plex = PlexService()
 tauon.plex = plex
+
+from t_modules.t_jellyfin import Jellyfin
+
+jellyfin = Jellyfin(tauon)
+tauon.jellyfin = jellyfin
 
 
 class SubsonicService:
@@ -7598,7 +7620,11 @@ def get_network_thumbnail_url(track_object):
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
         return url
-
+    if track_object.file_ext == "JELY":
+        url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+        assert url is not None
+        assert url != ""
+        return url
     if track_object.file_ext == "KOEL":
         url = track_object.art_url_key
         assert url
@@ -7606,12 +7632,22 @@ def get_network_thumbnail_url(track_object):
 
     return None
 
+def jellyfin_get_library_thread():
+
+    pref_box.close()
+    save_prefs()
+    if jellyfin.scanning:
+        inp.mouse_click = False
+        show_message("Already scanning!")
+        return
+    jellyfin.scanning = True
+
+    shoot_dl = threading.Thread(target=jellyfin.ingest_library)
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
 
 def plex_get_album_thread():
-
-    # if prefs.backend != 1:
-    #     show_message("This feature is currently only available with the BASS backend")
-    #     return
 
     pref_box.close()
     save_prefs()
@@ -9710,6 +9746,10 @@ if rename_files_previous:
 text_plex_usr = TextBox2()
 text_plex_pas = TextBox2()
 text_plex_ser = TextBox2()
+
+text_jelly_usr = TextBox2()
+text_jelly_pas = TextBox2()
+text_jelly_ser = TextBox2()
 
 text_koel_usr = TextBox2()
 text_koel_pas = TextBox2()
@@ -15380,6 +15420,10 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not plex.scanning:
                 playlist.extend(plex.get_albums(return_list=True))
 
+        elif cm == "jelly":
+            if not jellyfin.scanning:
+                playlist.extend(jellyfin.ingest_library(return_list=True))
+
         elif cm == "koel":
             if not koel.scanning:
                 playlist.extend(koel.get_albums(return_list=True))
@@ -19475,6 +19519,7 @@ def check_auto_update_okay(code, pl=None):
                           not "st" in cmds and
                           not "rt" in cmds and
                           not "plex" in cmds and
+                          not "jelly" in cmds and
                           not "koel" in cmds and
                           not "air" in cmds and
                           not "sal" in cmds and
@@ -23126,6 +23171,7 @@ def worker1():
                 not loading_in_progress and \
                 not to_scan and \
                 not plex.scanning and \
+                not jellyfin.scanning and \
                 not cm_clean_db and \
                 not lastfm.scanning_friends and \
                 not move_in_progress and \
@@ -25276,6 +25322,9 @@ class Over:
         if self.button2(x, y, "koel", width=84*gui.scale):
             self.account_view = 6
 
+        if self.button2(x + round(95 * gui.scale), y, "Jellyfin", width=84*gui.scale):
+            self.account_view = 10
+
         y += 28 * gui.scale
 
         if self.button2(x, y, "Airsonic", width=84*gui.scale):
@@ -25523,6 +25572,62 @@ class Over:
             y += round(35 * gui.scale)
             prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text authentication"), subtitle=_("Needed for Nextcloud compatibility"))
 
+        if self.account_view == 10:
+
+            ddt.text((x, y), _('Jellyfin network streaming'), colours.box_sub_text, 213)
+
+            if inp.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_jelly_usr.text = prefs.jelly_username
+            text_jelly_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                               width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.jelly_username = text_jelly_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_jelly_pas.text = prefs.jelly_password
+            text_jelly_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                               width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+            prefs.jelly_password = text_jelly_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_jelly_ser.text = prefs.jelly_server_url
+            text_jelly_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                               width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.jelly_server_url = text_jelly_ser.text
+
+            y += round(40 * gui.scale)
+
+            self.button(x, y, _("Import music to playlist"), jellyfin_get_library_thread)
 
         if self.account_view == 6:
 
@@ -25578,6 +25683,7 @@ class Over:
             prefs.koel_server_url = text_koel_ser.text
 
             y += round(40 * gui.scale)
+            
             self.button(x, y, _("Import music to playlist"), koel_get_album_thread)
 
 
