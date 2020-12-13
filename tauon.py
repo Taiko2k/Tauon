@@ -31508,6 +31508,8 @@ class RadioBox:
         pctl.tag_meta = ""
         pctl.found_tags = {}
         self.song_key = ""
+        pctl.playing_time = 0
+        pctl.decode_time = 0
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.abort = True
