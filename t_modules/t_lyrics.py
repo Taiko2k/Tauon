@@ -42,16 +42,30 @@ def lyricwiki(artist, title):
 
     return lyrics
 
+# def apiseeds(artist, title):
+#
+#     point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(artist) + \
+#             "/" + urllib.parse.quote(title) + "?apikey=" + "4daMG8Oas53LFqXEaeFh8mA8UNG" + \
+#             "Vg22JdJXCKxpxp8GtLcVJv29d3fAFYucaALk2"
+#
+#     r = requests.get(point)
+#     return r.json()['result']['track']['text'].replace("\r\n", "\n")
 
-def apiseeds(artist, title):
-
-    point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(artist) + \
-            "/" + urllib.parse.quote(title) + "?apikey=" + "4daMG8Oas53LFqXEaeFh8mA8UNG" + \
-            "Vg22JdJXCKxpxp8GtLcVJv29d3fAFYucaALk2"
-
+def happi(artist, title):
+    q = urllib.parse.quote(f"{artist} {title}")
+    point = f"https://api.happi.dev/v1/music?q={q}&limit=1&apikey=23b23b30Ca5nqZSe5JWJ8I4smmgO1JK6grVTEXpkBz1O8mNjTCmmCjnX&type=track"
     r = requests.get(point)
-    return r.json()['result']['track']['text'].replace("\r\n", "\n")
+    j = r.json()
+    if not j["result"][0]["haslyrics"]:
+        return ""
+    a_id = j["result"][0]["id_artist"]
+    t_id = j["result"][0]["id_track"]
+    al_id = j["result"][0]["id_album"]
 
+    point = f"https://api.happi.dev/v1/music/artists/{a_id}/albums/{al_id}/tracks/{t_id}/lyrics?apikey=23b23b30Ca5nqZSe5JWJ8I4smmgO1JK6grVTEXpkBz1O8mNjTCmmCjnX"
+    r = requests.get(point)
+    j = r.json()
+    return j["result"]["lyrics"]
 
 def genius(artist, title, return_url=False):
 
@@ -125,7 +139,8 @@ def genius(artist, title, return_url=False):
 
 
 lyric_sources = {
-    "Apiseeds": apiseeds,
+    # "Apiseeds": apiseeds,
+    "Happi": happi,
     "Genius": genius,
     "LyricWiki": lyricwiki,
 }

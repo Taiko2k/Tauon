@@ -5,6 +5,8 @@ Changelog-------------------------------------
 
  - Added text only view to artist list
  - Added buffering animation to seek bar
+ - Replaced Apiseeds lyric provider with Happi
+ - Removed "Auto search lyrics" option
 
 v6.4.4
 
