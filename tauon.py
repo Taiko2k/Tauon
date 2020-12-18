@@ -1237,7 +1237,7 @@ class Prefs:    # Used to hold any kind of settings
         self.koel_password = "admin"
         self.koel_server_url = "http://localhost:8050"
 
-        self.auto_lyrics = False
+        self.auto_lyrics = False  # Function has been disabled
         self.auto_lyrics_checked = []
 
         self.show_side_art = True
@@ -2861,10 +2861,10 @@ for t in range(2):
             prefs.last_fm_username = save[100]
         # if save[101] is not None:
         #     prefs.use_card_style = save[101]
-        if save[102] is not None:
-            prefs.auto_lyrics = save[102]
-        if save[103] is not None:
-            prefs.auto_lyrics_checked = save[103]
+        # if save[102] is not None:
+        #     prefs.auto_lyrics = save[102]
+        # if save[103] is not None:
+        #     prefs.auto_lyrics_checked = save[103]
         if save[104] is not None:
             prefs.show_side_art = save[104]
         if save[105] is not None:
@@ -13496,19 +13496,19 @@ def get_lyric_wiki_silent(track_object):
 
     print("..Done")
 
-def test_auto_lyrics(track_object):
-
-    if not track_object:
-        return
-
-    if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
-        if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
-            result = get_lyric_wiki_silent(track_object)
-            if result == "later":
-                pass
-            else:
-                lyrics_check_timer.set()
-                prefs.auto_lyrics_checked.append(track_object.index)
+# def test_auto_lyrics(track_object):
+#
+#     if not track_object:
+#         return
+#
+#     if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
+#         if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
+#             result = get_lyric_wiki_silent(track_object)
+#             if result == "later":
+#                 pass
+#             else:
+#                 lyrics_check_timer.set()
+#                 prefs.auto_lyrics_checked.append(track_object.index)
 
 
 def get_bio(track_object):
@@ -24038,10 +24038,10 @@ def toggle_guitar_chords(mode=0):
     prefs.guitar_chords ^= True
 
 
-def toggle_auto_lyrics(mode=0):
-    if mode == 1:
-        return prefs.auto_lyrics
-    prefs.auto_lyrics ^= True
+# def toggle_auto_lyrics(mode=0):
+#     if mode == 1:
+#         return prefs.auto_lyrics
+#     prefs.auto_lyrics ^= True
 
 
 def switch_single(mode=0):
@@ -24897,8 +24897,8 @@ class Over:
 
         ddt.text_background_colour = colours.box_background
 
-        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
-        y += 23 * gui.scale
+        # self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
+        # y += 23 * gui.scale
         self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
         y += 40 * gui.scale
@@ -35208,7 +35208,7 @@ class MetaBox:
             return
 
         # Check for lyrics if auto setting
-        test_auto_lyrics(track)
+        #test_auto_lyrics(track)
 
         # # Draw lyrics if avaliable
         # if prefs.show_lyrics_side and pctl.track_queue \
@@ -36270,7 +36270,7 @@ class Showcase:
                         right_click = False
 
             # Check for lyrics if auto setting
-            test_auto_lyrics(track)
+            #test_auto_lyrics(track)
 
             gui.draw_vis4_top = False
 
@@ -41037,7 +41037,7 @@ while pctl.running:
                         w = gui.rspw
 
                         ddt.rect((x, y, w, h), colours.side_panel_background, True)
-                        test_auto_lyrics(target_track)
+                        #test_auto_lyrics(target_track)
                         # Draw lyrics if avaliable
                         if prefs.show_lyrics_side and target_track and target_track.lyrics != "": # and not prefs.show_side_art:
                             #meta_box.lyrics(x, y, w, h, target_track)
