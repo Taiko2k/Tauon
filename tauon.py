@@ -38296,6 +38296,112 @@ for menu in Menu.instances:
     if w > menu.w:
         menu.w = w
 
+
+def drop_file(target):
+
+    global new_playlist_cooldown
+    global mouse_down
+    global drag_mode
+
+    if system != 'windows' and sdl_version >= 204:
+        gmp = get_global_mouse()
+        gwp = get_window_position()
+        i_x = gmp[0] - gwp[0]
+        if i_x < 0:
+            i_x = 0
+        if i_x > window_size[0]:
+            i_x = window_size[0]
+        i_y = gmp[1] - gwp[1]
+        if i_y < 0:
+            i_y = 0
+        if i_y > window_size[1]:
+            i_y = window_size[1]
+    else:
+        i_y = pointer(c_int(0))
+        i_x = pointer(c_int(0))
+
+        SDL_GetMouseState(i_x, i_y)
+        i_y = i_y.contents.value
+        i_x = i_x.contents.value
+
+    # print((i_x, i_y))
+    playlist_target = 0
+    # print(event.drop)
+
+    if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
+        x = top_panel.tabs_left_x
+        for tab in top_panel.shown_tabs:
+            wid = top_panel.tab_text_spaces[tab] + top_panel.tab_extra_width
+
+            if x < i_x < x + wid:
+                playlist_target = tab
+                tab_pulse.pulse()
+                gui.update += 1
+                gui.pl_pulse = True
+                print("Direct drop")
+                break
+
+            x += wid
+        else:
+            print("MISS")
+            if new_playlist_cooldown:
+                playlist_target = pctl.active_playlist_viewing
+            else:
+                if not target.lower().endswith(".xspf"):
+                    playlist_target = new_playlist()
+                new_playlist_cooldown = True
+
+    elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
+
+        y = gui.panelY
+        y += 5 * gui.scale
+        y += playlist_box.tab_h + playlist_box.gap
+
+        for i, pl in enumerate(pctl.multi_playlist):
+            if i_y < y:
+                playlist_target = i
+                tab_pulse.pulse()
+                gui.update += 1
+                gui.pl_pulse = True
+                print("Direct drop")
+                break
+            y += playlist_box.tab_h + playlist_box.gap
+        else:
+            if new_playlist_cooldown:
+                playlist_target = pctl.active_playlist_viewing
+            else:
+                if not target.lower().endswith(".xspf"):
+                    playlist_target = new_playlist()
+                new_playlist_cooldown = True
+
+
+    else:
+        playlist_target = pctl.active_playlist_viewing
+
+    if not os.path.exists(target) and flatpak_mode:
+        show_message(_("Could not access! Possible insufficient Flatpak permissions."),
+                     " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.",
+                     mode='bubble')
+
+    load_order = LoadClass()
+    load_order.target = target
+
+    if os.path.isdir(load_order.target):
+        quick_import_done.append(load_order.target)
+
+        # if not pctl.multi_playlist[playlist_target][7]:
+        pctl.multi_playlist[playlist_target][7].append(load_order.target)
+        reduce_paths(pctl.multi_playlist[playlist_target][7])
+
+    load_order.playlist = pctl.multi_playlist[playlist_target][6]
+    load_orders.append(copy.deepcopy(load_order))
+
+    # print('dropped: ' + str(dropped_file))
+    gui.update += 1
+    mouse_down = False
+    drag_mode = False
+
+
 if pctl.master_count < 10:  # We don't want new users to be too confused.
     a01 = False
 
@@ -38431,15 +38537,19 @@ while pctl.running:
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
         sleep_timer.set()
-        # print(event.type)
+        #print(event.type)
 
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
 
         if event.type == SDL_DROPTEXT:
 
+            power += 5
+
             link = event.drop.file.decode()
-            if pctl.playing_ready() and 'http' in link:
+            #print(link)
+
+            if pctl.playing_ready() and link.startswith('http'):
                 if system != 'windows' and sdl_version >= 204:
                     gmp = get_global_mouse()
                     gwp = get_window_position()
@@ -38464,7 +38574,7 @@ while pctl.running:
                 if coll_point((i_x, i_y), gui.main_art_box):
 
                     print('Drop picture...')
-                    print(link)
+                    #print(link)
                     gui.image_downloading = True
                     track = pctl.playing_object()
                     target_dir = track.parent_folder_path
@@ -38475,115 +38585,21 @@ while pctl.running:
 
                     gui.update = True
 
+            elif link.startswith("file:///"):
+                link = link.replace("\r", "")
+                for line in link.split("\n"):
+                    target = str(urllib.parse.unquote(line)).replace("file:///", "/")
+                    drop_file(target)
+
         if event.type == SDL_DROPFILE:
 
             power += 5
-            k = 0
-
-            if system != 'windows' and sdl_version >= 204:
-                gmp = get_global_mouse()
-                gwp = get_window_position()
-                i_x = gmp[0] - gwp[0]
-                if i_x < 0:
-                    i_x = 0
-                if i_x > window_size[0]:
-                    i_x = window_size[0]
-                i_y = gmp[1] - gwp[1]
-                if i_y < 0:
-                    i_y = 0
-                if i_y > window_size[1]:
-                    i_y = window_size[1]
-            else:
-                i_y = pointer(c_int(0))
-                i_x = pointer(c_int(0))
-
-                SDL_GetMouseState(i_x, i_y)
-                i_y = i_y.contents.value
-                i_x = i_x.contents.value
-
-            # print((i_x, i_y))
-            playlist_target = 0
-            #print(event.drop)
-
             dropped_file_sdl = event.drop.file
-            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
+            # print(dropped_file_sdl)
+            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r","")
+            drop_file(target)
 
 
-            if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
-                x = top_panel.tabs_left_x
-                for tab in top_panel.shown_tabs:
-                    wid = top_panel.tab_text_spaces[tab] + top_panel.tab_extra_width
-
-                    if x < i_x < x + wid:
-                        playlist_target = tab
-                        tab_pulse.pulse()
-                        gui.update += 1
-                        gui.pl_pulse = True
-                        print("Direct drop")
-                        break
-
-                    x += wid
-                else:
-                    print("MISS")
-                    if new_playlist_cooldown:
-                        playlist_target = pctl.active_playlist_viewing
-                    else:
-                        if not target.lower().endswith(".xspf"):
-                            playlist_target = new_playlist()
-                        new_playlist_cooldown = True
-
-            elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
-
-                y = gui.panelY
-                y += 5 * gui.scale
-                y += playlist_box.tab_h + playlist_box.gap
-
-                for i, pl in enumerate(pctl.multi_playlist):
-                    if i_y < y:
-                        playlist_target = i
-                        tab_pulse.pulse()
-                        gui.update += 1
-                        gui.pl_pulse = True
-                        print("Direct drop")
-                        break
-                    y += playlist_box.tab_h + playlist_box.gap
-                else:
-                    if new_playlist_cooldown:
-                        playlist_target = pctl.active_playlist_viewing
-                    else:
-                        if not target.lower().endswith(".xspf"):
-                            playlist_target = new_playlist()
-                        new_playlist_cooldown = True
-
-
-            else:
-                playlist_target = pctl.active_playlist_viewing
-
-            if not os.path.exists(target) and flatpak_mode:
-                show_message(_("Could not access! Possible insufficient Flatpak permissions."),
-                             " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.",
-                             mode='bubble')
-
-            load_order = LoadClass()
-            load_order.target = target
-
-
-            if os.path.isdir(load_order.target):
-                quick_import_done.append(load_order.target)
-
-                #if not pctl.multi_playlist[playlist_target][7]:
-                pctl.multi_playlist[playlist_target][7].append(load_order.target)
-                reduce_paths(pctl.multi_playlist[playlist_target][7])
-
-
-            load_order.playlist = pctl.multi_playlist[playlist_target][6]
-            load_orders.append(copy.deepcopy(load_order))
-
-            # print('dropped: ' + str(dropped_file))
-            gui.update += 1
-
-            mouse_down = False
-            drag_mode = False
         elif event.type == 8192:
             gui.pl_update = 1
             gui.update += 2
