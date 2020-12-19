@@ -220,9 +220,9 @@ char ffm_buffer[2048];
 
 void start_ffmpeg(char uri[], int start_ms) {
     if (start_ms > 0)
-        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ",
-                start_ms, uri);
-    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar 44100 - ", uri);
+        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
+                start_ms, uri, sample_rate_out);
+    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
 
     ffm = popen(exe_string, "r");
     if (ffm == NULL) {
@@ -547,9 +547,9 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
     /*   } */
     /* } */
 
-    if (44100 != current_sample_rate) {
-        if (want_sample_rate != 44100) {
-            want_sample_rate = 44100;
+    if (sample_rate_out != current_sample_rate) {
+        if (want_sample_rate != sample_rate_out) {
+            want_sample_rate = sample_rate_out;
             sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
         }
     }
@@ -751,7 +751,7 @@ void connect_pulse() {
         dev = config_output_sink;
     }
 
-    pab.maxlength = (uint32_t) - 1;
+    pab.maxlength = (current_sample_rate * 8 * (config_dev_buffer / 1000.0));
     pab.fragsize = (uint32_t) - 1;
     pab.minreq = (uint32_t) - 1;
     pab.prebuf = (uint32_t) - 1;
@@ -847,9 +847,9 @@ int load_next() {
 
         start_ffmpeg(loaded_target_file, load_target_seek);
         pthread_mutex_lock(&buffer_mutex);
-        if (current_sample_rate != 44100) {
+        if (current_sample_rate != sample_rate_out) {
             sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
-            want_sample_rate = 44100;
+            want_sample_rate = sample_rate_out;
         }
         pthread_mutex_unlock(&buffer_mutex);
         return 0;
