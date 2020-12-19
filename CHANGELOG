@@ -7,6 +7,7 @@ Changelog-------------------------------------
  - Added buffering animation to seek bar
  - Replaced Apiseeds lyric provider with Happi
  - Fixed drag and drop from pantheon not working
+ - Fixed a bug with tracks skipping when using radio random
  - Removed "Auto search lyrics" option
 
 v6.4.4
