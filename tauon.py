@@ -5227,6 +5227,8 @@ class PlayerCtl:
             # Allow some time for backend to provide a length
             if self.playing_time < 6 and self.playing_length == 0:
                 return
+            if pctl.a_time < 2:
+                return
 
             self.decode_time = 0
 
