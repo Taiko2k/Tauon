@@ -255,6 +255,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["position"] = track_position
             data["album_id"] = album_id
             data["track_number"] = str(track.track_number).lstrip("0")
+            data["can_download"] = not track.is_cue and not track.is_network
 
             return data
 
