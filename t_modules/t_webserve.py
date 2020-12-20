@@ -208,6 +208,404 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
         print("Not starting radio page server, already running?")
 
 
+def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
+
+    play_timer = Timer()
+
+    class Server(BaseHTTPRequestHandler):
+
+        def run_command(self, callback):
+            self.send_response(200)
+            #self.send_header("Content-type", "application/json")
+            self.end_headers()
+            callback()
+            self.wfile.write(b"OK")
+
+        def parse_trail(self, text):
+
+            params = {}
+            both = text.split("?")
+            levels = both[0].split("/")
+            if len(both) > 1:
+                pairs = both[2].split("&")
+                for p in pairs:
+                    aa, bb = p.split("=")
+                    params[aa] = bb
+
+            return levels, params
+
+        def get_track(self, track_position, playlist_index=None, track=None, album_id=-1):
+            if track is None:
+                if playlist_index is None:
+                    playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
+                else:
+                    playlist = pctl.multi_playlist[playlist_index][2]
+                track_id = playlist[track_position]
+                track = pctl.g(track_id)
+
+            data = {}
+            data["title"] = track.title
+            data["artist"] = track.artist
+            data["album"] = track.album
+            data["album_artist"] = track.album_artist
+            if not track.album_artist:
+                data["album_artist"] = track.artist
+            data["duration"] = int(track.length * 1000)
+            data["id"] = track.index
+            data["position"] = track_position
+            data["album_id"] = album_id
+            data["track_number"] = str(track.track_number).lstrip("0")
+
+            return data
+
+        def send_file(self, path, mime):
+
+            range_req = False
+            start = 0
+            end = 0
+
+            if "Range" in self.headers:
+                range_req = True
+                b = self.headers["Range"].split("=")[1]
+                start, end = b.split("-")
+                start = int(start)
+
+            with open(path, "rb") as f:
+
+                f.seek(0, 2)
+                length = f.tell()
+                f.seek(0, 0)
+
+                l = str(length)
+
+                remain = length - start
+
+                if range_req:
+                    self.send_response(206)
+                    self.send_header("Content-type", mime)
+                    self.send_header("Content-Range", f"bytes={start}-/{l}")
+                    self.send_header("Content-Length", str(remain))
+                    f.seek(start)
+
+                else:
+                    self.send_response(200)
+                    self.send_header("Content-type", mime)
+                    self.send_header("Content-Length", l)
+
+                self.end_headers()
+
+                while True:
+                    data = f.read(5000)
+                    if not data:
+                        break
+                    self.wfile.write(data)
+
+        def do_GET(self):
+
+            path = self.path
+
+            if path.startswith("/api1/pic/small/"):
+                value = path[16:]
+                if value.isalnum() and int(value) in pctl.master_library:
+                    track = pctl.g(int(value))
+                    raw = album_art_gen.save_thumb(track, (75, 75), "")
+                    if raw:
+                        self.send_response(200)
+                        self.send_header("Content-type", "image/jpg")
+                        self.end_headers()
+                        self.wfile.write(raw.read())
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                        self.wfile.write(b"No image found")
+
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid parameter")
+
+            if path.startswith("/api1/pic/medium/"):
+                value = path[17:]
+                if value.isalnum() and int(value) in pctl.master_library:
+                    track = pctl.g(int(value))
+                    raw = album_art_gen.save_thumb(track, (1000, 1000), "")
+                    if raw:
+                        self.send_response(200)
+                        self.send_header("Content-type", "image/jpg")
+                        self.end_headers()
+                        self.wfile.write(raw.read())
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                        self.wfile.write(b"No image found")
+
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid parameter")
+
+            # elif path.startswith("/api1/stream/"):
+            #     param = path[13:]
+            #
+            #     if param.isdigit() and int(param) in pctl.master_library:
+            #         track = pctl.master_library[int(param)]
+            #         mime = "audio/mpeg"
+            #         #mime = "audio/ogg"
+            #         self.send_response(200)
+            #         self.send_header("Content-type", mime)
+            #         self.end_headers()
+            #
+            #         cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libopus", "-f", "ogg", "-"]
+            #         #cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libvorbis", "-f", "ogg", "-"]
+            #         #cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libmp3lame", "-f", "mp3", "-"]
+            #         encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            #         while True:
+            #             data = encoder.stdout.read(1024)
+            #             if data:
+            #                 self.wfile.write(data)
+            elif path.startswith("/api1/playinghit/"):
+                param = path[17:]
+                if param.isdigit() and int(param) in pctl.master_library:
+                    t = play_timer.hit()
+                    if 0 < t < 5:
+                        tauon.star_store.add(int(param), t)
+
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
+            elif path.startswith("/api1/file/"):
+                param = path[11:]
+
+                #print(self.headers)
+                play_timer.hit()
+
+                if param.isdigit() and int(param) in pctl.master_library:
+                    track = pctl.master_library[int(param)]
+                    mime = "audio/mpeg"
+                    if track.file_ext == "FLAC":
+                        mime = "audio/flac"
+                    if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
+                        mime = "audio/ogg"
+                    if track.file_ext == "M4A":
+                        mime = "audio/mp4"
+                    self.send_file(track.fullpath, mime)
+
+            elif path.startswith("/api1/start/"):
+
+                levels, _ = self.parse_trail(path)
+                if len(levels) == 5:
+                    playlist = levels[3]
+                    position = levels[4]
+                    if playlist.isdigit() and position.isdigit():
+                        position = int(position)
+                        playlist = int(playlist)
+                        pl = tauon.id_to_pl(int(playlist))
+                        if pl is not None and pl < len(pctl.multi_playlist):
+                            playlist = pctl.multi_playlist[pl][2]
+                            if position < len(playlist):
+                                tauon.switch_playlist(pl, cycle=False, quiet=True)
+                                pctl.jump(playlist[position], position)
+
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
+            elif path == "/api1/play":
+                self.run_command(tauon.pctl.play)
+            elif path == "/api1/pause":
+                self.run_command(tauon.pctl.pause_only)
+            elif path == "/api1/next":
+                self.run_command(tauon.pctl.advance)
+            elif path == "/api1/back":
+                self.run_command(tauon.pctl.back)
+            elif path == "/api1/shuffle":
+                self.run_command(tauon.toggle_random)
+            elif path == "/api1/repeat":
+                self.run_command(tauon.toggle_repeat)
+            elif path == "/api1/version":
+                data = {"version": 1}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path == "/api1/playlists":
+
+                l = []
+                for item in pctl.multi_playlist:
+                    p = {}
+                    p["name"] = item[0]
+                    p["id"] = str(item[6])
+                    p["count"] = len(item[2])
+                    l.append(p)
+                data = {"playlists": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path.startswith("/api1/albumtracks/"):
+                # Get tracks that appear in an album /albumtracks/plid/albumid
+                levels, _ = self.parse_trail(path)
+                l = []
+                if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
+                    pl = tauon.id_to_pl(int(levels[3]))
+                    if pl is not None:
+                        _, album, _ = tauon.get_album_info(int(levels[4]), pl)
+                        # print(album)
+                        for p in album:
+                            l.append(self.get_track(p, pl, album_id=int(levels[4])))
+
+                data = {"tracks": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path.startswith("/api1/trackposition/"):
+                # get track /trackposition/plid/playlistposition
+                levels, _ = self.parse_trail(path)
+                if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
+                    pl = tauon.id_to_pl(int(levels[3]))
+                    if pl:  # todo handle None
+
+                        data = self.get_track(int(levels[4]), pl)
+
+                        playlist = pctl.multi_playlist[pl][2]
+                        p = int(levels[4])
+                        track = pctl.g(playlist[p])
+                        while True:
+                            if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                                p += 1
+                                break
+                            p -= 1
+                        data["album_id"] = p
+
+                        self.send_response(200)
+                        self.send_header("Content-type", "application/json")
+                        self.end_headers()
+                        data = json.dumps(data).encode()
+                        self.wfile.write(data)
+
+            elif path.startswith("/api1/seek1k/"):
+                key = path[13:]
+                if key.isdigit():
+                    pctl.seek_decimal(int(key) / 1000)
+
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpg")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
+            elif path.startswith("/api1/tracklist/"):
+                # Return all tracks in a playlist /tracklist/plid
+                key = path[16:]
+                l = []
+                if key.isdigit():
+                    pl = tauon.id_to_pl(int(key))
+                    if pl is not None and pl < len(pctl.multi_playlist):
+                        playlist = pctl.multi_playlist[pl][2]
+                        parent = ""
+                        album_id = 0
+                        for i, id in enumerate(playlist):
+                            tr = pctl.g(id)
+                            if i == 0:
+                                parent = tr.parent_folder_path
+                            elif parent != tr.parent_folder_path:
+                                parent = tr.parent_folder_path
+                                album_id = i
+
+                            l.append(self.get_track(i, pl, album_id=album_id))
+
+                data = {"tracks": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path.startswith("/api1/albums/"):
+                # Returns lists of tracks that are start of albums /albums/plid
+                key = path[13:]
+                l = []
+                if key.isdigit():
+                    pl = tauon.id_to_pl(int(key))
+                    if pl is not None:
+                        dex = tauon.reload_albums(True, pl)
+                        # print(dex)
+                        for a in dex:
+                            l.append(self.get_track(a, pl, album_id=a))
+
+                data = {"albums": l}
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            elif path == "/api1/status":
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                data = {
+                    "status": "stopped",
+                    "shuffle": pctl.random_mode == True,
+                    "repeat": pctl.repeat_mode == True,
+                    "progress": 0,
+                    "playlist": str(tauon.get_playing_playlist_id()),
+                    "playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2])
+                }
+                if pctl.playing_state == 1:
+                    data["status"] = "playing"
+                if pctl.playing_state == 2:
+                    data["status"] = "paused"
+                track = pctl.playing_object()
+                if track:
+                    data["id"] = track.index
+                    data["title"] = track.title
+                    data["artist"] = track.artist
+                    data["album"] = track.album
+                    data["progress"] = int(round(pctl.playing_time * 1000))
+                    data["track"] = self.get_track(0, 0, track)
+
+                p = pctl.playlist_playing_position
+                data["position"] = p
+                data["album_id"] = 0
+                playlist = pctl.playing_playlist()
+
+                if p < len(playlist):
+                    while True:
+                        if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                            p += 1
+                            break
+                        p -= 1
+                    data["album_id"] = p
+
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
+
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"404 Not found")
+
+    class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+        pass
+
+    try:
+        httpd = ThreadedHTTPServer(("0.0.0.0", 7814), Server)
+        httpd.serve_forever()
+        httpd.server_close()
+    except OSError:
+        print("Not starting web api server, already running?")
+
+
 def controller(tauon):
     import base64
     class Server(BaseHTTPRequestHandler):

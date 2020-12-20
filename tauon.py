@@ -1452,7 +1452,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_tray = False
         self.tray_show_title = False
         self.drag_to_unpin = True
-        #self.enable_remote = False
+        self.enable_remote = False
 
         self.artist_list_style = 1
 
@@ -3512,7 +3512,7 @@ def save_prefs():
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("use-system-tray", prefs.use_tray)
-    #cf.update_value("enable-remote-interface", prefs.enable_remote)
+    cf.update_value("enable-remote-interface", prefs.enable_remote)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
@@ -3706,7 +3706,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[app]")
-    #prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote, "For use with Tauon Music Remote for Android")
+    prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote, "For use with Tauon Music Remote for Android")
     prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position, "Save and restore the last window position on desktop on open")
@@ -23679,7 +23679,7 @@ tauon.reload_albums = reload_albums
 # WEBSERVER
 
 from t_modules.t_webserve import webserve
-#from t_modules.t_webserve import webserve2
+from t_modules.t_webserve import webserve2
 from t_modules.t_webserve import authserve
 from t_modules.t_webserve import controller
 from t_modules.t_webserve import stream_proxy
@@ -23693,10 +23693,10 @@ ctlThread = threading.Thread(target=controller, args=[tauon])
 ctlThread.daemon = True
 ctlThread.start()
 
-# if prefs.enable_remote:
-#     webThread2 = threading.Thread(target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
-#     webThread2.daemon = True
-#     webThread2.start()
+if prefs.enable_remote:
+    webThread2 = threading.Thread(target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+    webThread2.daemon = True
+    webThread2.start()
 
 
 # --------------------------------------------------------------
@@ -25084,26 +25084,33 @@ class Over:
             self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
 
 
-        # elif self.func_page == 3:
-        #     y += 23 * gui.scale
-        #     prefs.enable_remote = self.toggle_square(x, y, prefs.enable_remote, _("Enable remote control"),
-        #                        subtitle=_("For use with Tauon Music Remote app. Change requires restart."))
-        #     y += 35 * gui.scale
-        #     link_pa2 = draw_linked_text((x, y),
-        #                                 f"Download Android apk here https://github.com/Taiko2k/TauonMusicBox",
-        #                                 colours.box_sub_text, 13)
-        #     link_rect2 = [x + link_pa2[0], y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
-        #     fields.add(link_rect2)
-        #
-        #     if coll(link_rect2):
-        #         if not self.click:
-        #             gui.cursor_want = 3
-        #
-        #         if self.click:
-        #             webbrowser.open(link_pa2[2], new=2, autoraise=True)
+        elif self.func_page == 3:
+            y += 23 * gui.scale
+            old = prefs.enable_remote
+            prefs.enable_remote = self.toggle_square(x, y, prefs.enable_remote, _("Enable server for remote app [Alpha testing]"),
+                               subtitle=_("Change requires restart"))
+            y += 35 * gui.scale
+
+            if prefs.enable_remote and prefs.enable_remote != old:
+                show_message("Notice: This API is not security hardened.",
+                             "Only enable in a trusted LAN and do not expose port (7814) to the internet", mode="warning")
+
+            # y += 35 * gui.scale
+            # link_pa2 = draw_linked_text((x, y),
+            #                             f"Testing Android apk avaliable here https://github.com/Taiko2k/TauonMusicRemote/releases",
+            #                             colours.box_sub_text, 13)
+            # link_rect2 = [x + link_pa2[0], y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
+            # fields.add(link_rect2)
+            #
+            # if coll(link_rect2):
+            #     if not self.click:
+            #         gui.cursor_want = 3
+            #
+            #     if self.click:
+            #         webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
         # Switcher
-        pages = 3
+        pages = 4
         x = x0 + round(23 * gui.scale)
         y = (y0 + h0) - round(31 * gui.scale)
         ww = round(31 * gui.scale)
