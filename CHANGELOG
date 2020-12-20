@@ -5,6 +5,7 @@ Changelog-------------------------------------
 
  - Added text only view to artist list
  - Added buffering animation to seek bar
+ - Added alpha remote API
  - Replaced Apiseeds lyric provider with Happi
  - Fixed drag and drop from pantheon not working
  - Fixed a bug with tracks skipping when using radio random
