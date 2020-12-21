@@ -556,6 +556,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.end_headers()
                 data = {
                     "status": "stopped",
+                    "inc": pctl.db_inc,
                     "shuffle": pctl.random_mode == True,
                     "repeat": pctl.repeat_mode == True,
                     "progress": 0,
