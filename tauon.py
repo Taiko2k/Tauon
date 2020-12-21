@@ -15751,7 +15751,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
-            g_search = quote.lower().replace("-", "").replace(" ", "")
+            g_search = quote.lower().replace("-", "") #.replace(" ", "")
 
             search = g_search
             search_over.sip = True
@@ -15764,7 +15764,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 time.sleep(0.01)
 
             found_name = ""
-
+            print(search_over.results)
 
             if cm.startswith("g=\""):
                 for result in search_over.results:
@@ -29823,6 +29823,10 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             line = \
                 os.path.splitext((n_track.filename))[
                     0]
+
+        if p_track >= len(default_playlist):
+            gui.pl_update += 1
+            return
 
         index = default_playlist[p_track]
         star_x = 0
