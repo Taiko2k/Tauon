@@ -4263,6 +4263,7 @@ class PlayerCtl:
         self.master_count = master_count
         self.total_playtime = 0
         self.master_library = master_library
+        self.db_inc = random.randint(0, 10000)
         #self.star_library = star_library
         self.LoadClass = LoadClass
 
@@ -4378,6 +4379,10 @@ class PlayerCtl:
 
         self.regen_in_progress = False
         self.notify_in_progress = False
+
+    def notify_change(self):
+        self.db_inc += 1
+        tauon.worker_save_state = True
 
     def radio_progress(self):
 
@@ -12704,7 +12709,7 @@ class RenameTrackBox:
             else:
                 show_message(_("Rename complete."),
                              str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."), mode='done')
-            tauon.worker_save_state = True
+            pctl.notify_change()
 
 
 rename_track_box = RenameTrackBox()
@@ -14659,7 +14664,6 @@ def delete_playlist(index):
     for key in list(pctl.gen_codes.keys()):
         if key not in ids:
             del pctl.gen_codes[key]
-
 
 to_scan = []
 
@@ -17471,7 +17475,7 @@ def del_selected(force_delete=False):
     shift_selection = [playlist_selected]
     gui.pl_update += 1
     refind_playing()
-    tauon.worker_save_state = True
+    pctl.notify_change()
 
 
 def force_del_selected():
@@ -17688,7 +17692,7 @@ def delete_track(track_ref):
 
     reload()
     refind_playing()
-    tauon.worker_save_state = True
+    pctl.notify_change()
 
 
 track_menu.add(_('Delete Track File'), delete_track, pass_ref=True, icon=delete_icon, show_test=test_shift)
@@ -17776,9 +17780,9 @@ def delete_folder(index, force=False):
         else:
             show_message(_("Folder could not be trashed."), "Try again while holding shift to force delete.", mode='error')
 
-    tauon.worker_save_state = True
     tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
     gui.pl_update += 1
+    pctl.notify_change()
 
 
 def rename_parent(index, template):
@@ -17876,7 +17880,7 @@ def rename_parent(index, template):
         pctl.revert()
 
     tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
-    tauon.worker_save_state = True
+    pctl.notify_change()
 
 def rename_folders(index):
     global track_box
@@ -18097,7 +18101,7 @@ def reload_metadata(input, keep_star=True):
             if star is not None and (star[0] > 0 or star[1]):
                 star_store.insert(track.index, star)
 
-            tauon.worker_save_state = True
+            pctl.notify_change()
 
     gui.pl_update += 1
 
@@ -18265,7 +18269,7 @@ def editor(index):
 
     gui.pl_update = 1
     gui.update = 1
-    tauon.worker_save_state = True
+    pctl.notify_change()
 
 
 def launch_editor(index):
@@ -18820,7 +18824,7 @@ def drop_tracks_to_new_playlist(track_list, hidden=False):
     if tree_view_box.dragging_name:
         pctl.multi_playlist[pl][0] = tree_view_box.dragging_name
 
-    tauon.worker_save_state = True
+    pctl.notify_change()
 
 
 
@@ -23225,12 +23229,13 @@ def worker1():
 
             gui.update = 1
             gui.pl_update = 1
+            pctl.notify_change()
 
             search_dia_string_cache.clear()
             search_string_cache.clear()
             search_over.results.clear()
 
-            tauon.worker_save_state = True
+            pctl.notify_change()
 
 
         # FOLDER ENC
@@ -23668,10 +23673,10 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     if not quiet:
         goto_album(pctl.playlist_playing_position)
 
-
     # Generate POWER BAR
     gui.power_bar = gen_power2()
     gui.pt = 0
+
 
 tauon.reload_albums = reload_albums
 
@@ -27588,7 +27593,7 @@ class TopPanel:
 
                         if modified:
                             pctl.after_import_flag = True
-                            tauon.worker_save_state = True
+                            pctl.notify_change()
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
                             tree_view_box.clear_target_pl(i)
 
@@ -30522,7 +30527,7 @@ class StandardPlaylist:
                             gui.pl_update += 1
 
                         reload_albums(True)
-                        tauon.worker_save_state = True
+                        pctl.notify_change()
 
             # Test show drag indicator
             if mouse_down and playlist_hold and coll(input_box) and track_position not in shift_selection:
@@ -32603,7 +32608,7 @@ class PlaylistBox:
                             modified = True
                         if modified:
                             pctl.after_import_flag = True
-                            tauon.worker_save_state = True
+                            pctl.notify_change()
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
                             tree_view_box.clear_target_pl(i)
 
@@ -39543,7 +39548,7 @@ while pctl.running:
 
     elif loading_in_progress is True:
         loading_in_progress = False
-        tauon.worker_save_state = True
+        pctl.notify_change()
 
     if loaderCommand == LC_Done:
         loaderCommand = LC_None
@@ -40019,7 +40024,7 @@ while pctl.running:
                                             playlist_hold = False
 
                                             reload_albums(True)
-                                            tauon.worker_save_state = True
+                                            pctl.notify_change()
 
                                     elif not side_drag and is_level_zero():
 
@@ -40660,7 +40665,7 @@ while pctl.running:
 
                         if not load_orders:
                             loading_in_progress = False
-                            tauon.worker_save_state = True
+                            pctl.notify_change()
                             gui.auto_play_import = False
                             album_artist_dict.clear()
                         break
