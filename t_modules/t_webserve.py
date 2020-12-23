@@ -254,6 +254,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["id"] = track.index
             data["position"] = track_position
             data["album_id"] = album_id
+            data["has_lyrics"] = track.lyrics == True
             data["track_number"] = str(track.track_number).lstrip("0")
             data["can_download"] = not track.is_cue and not track.is_network
 
@@ -340,6 +341,24 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         self.end_headers()
                         self.wfile.write(b"No image found")
 
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid parameter")
+
+            if path.startswith("/api1/lyrics/"):
+                value = path[13:]
+                if value.isalnum() and int(value) in pctl.master_library:
+                    track = pctl.g(int(value))
+                    data = {}
+                    data["track_id"] = track.index
+                    data["lyrics_text"] = track.lyrics
+
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    data = json.dumps(data).encode()
+                    self.wfile.write(data)
                 else:
                     self.send_response(404)
                     self.end_headers()
