@@ -3394,6 +3394,12 @@ if db_version > 0:
                 f.write("toggle-right-panel MB5\n")
                 f.write("toggle-gallery MB4\n")
 
+    if db_version <= 56:
+        print("Update to db 57")
+        if "Apiseeds" in prefs.lyrics_enables:
+            prefs.lyrics_enables.remove("Apiseeds")
+            prefs.lyrics_enables.append("Happi")
+
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
 
@@ -38041,7 +38047,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            56,  # Version, used for upgrading
+            57,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
