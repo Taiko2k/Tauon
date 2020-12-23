@@ -31543,6 +31543,7 @@ class RadioBox:
         pctl.url = f"http://127.0.0.1:{7812}"
         self.loaded_url = None
         pctl.tag_meta = ""
+        pctl.radio_meta_on = ""
         pctl.found_tags = {}
         self.song_key = ""
         pctl.playing_time = 0
