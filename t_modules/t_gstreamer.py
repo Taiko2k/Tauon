@@ -246,7 +246,7 @@ def player3(tauon):  # GStreamer
 
             if self.play_state == 3 and name == "GstMessageTag":
 
-                if tauon.radiobox.loaded_url in tauon.radiobox.websocket_source_urls:
+                if not tauon.radiobox.parse_vorbis_okay():
                     return
 
                 data = struct.get_value("taglist").get_string("title")

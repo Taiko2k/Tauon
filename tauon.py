@@ -4222,6 +4222,12 @@ def get_radio_art():
         if response.status_code == 200:
             d = json.loads(response.text)
             if "playback" in d:
+                tr = d["playback"]["length"] - d["playback"]["position"]
+                tr += 1
+                if tr < 10:
+                    tr = 10
+                pctl.radio_poll_timer.force_set(tr * -1)
+
                 if "artist" in d["playback"]:
                     radiobox.dummy_track.artist = d["playback"]["artist"]
                 if "title" in d["playback"]:
@@ -4373,6 +4379,7 @@ class PlayerCtl:
 
         self.radio_image_bin = None
         self.radio_rate_timer = Timer(20)
+        self.radio_poll_timer = Timer(10)
 
         self.volume_update_timer = Timer()
         self.wake_past_time = 0
@@ -4385,6 +4392,15 @@ class PlayerCtl:
         tauon.worker_save_state = True
 
     def radio_progress(self):
+
+        if radiobox.loaded_url and "radio.plaza.one" in radiobox.loaded_url and self.radio_poll_timer.get() > 0:
+            self.radio_poll_timer.force_set(-10)
+            response = requests.get("https://api.plaza.one/status")
+            if response.status_code == 200:
+                d = json.loads(response.text)
+                if "playback" in d:
+                    if "artist" in d["playback"] and "title" in d["playback"]:
+                        self.tag_meta = d["playback"]["artist"] + " - " + d["playback"]["title"]
 
         if self.tag_meta:
 
@@ -31458,6 +31474,9 @@ class RadioBox:
         self.ws_interval = 4.5
         self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
 
+    def parse_vorbis_okay(self):
+        return (self.loaded_url not in self.websocket_source_urls) and "radio.plaza.one" not in self.loaded_url
+
     def search_country(self, text):
 
         if len(text) == 2 and text.isalpha():
@@ -31546,6 +31565,7 @@ class RadioBox:
             self.load_failed = True
             self.load_connecting = False
             gui.update += 1
+            print("Start radio failed")
             # show_message(_("Failed to establish a connection"), mode="error")
             return
 
