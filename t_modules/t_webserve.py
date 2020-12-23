@@ -776,7 +776,7 @@ class VorbisMonitor():
                     if "artist" in found_tags:
                         line = found_tags["artist"] + " - " + line
 
-                if self.tauon.radiobox.loaded_url not in self.tauon.radiobox.websocket_source_urls:
+                if self.tauon.radiobox.parse_vorbis_okay():
                     self.tauon.pctl.found_tags = found_tags
                     self.tauon.pctl.tag_meta = line
 
