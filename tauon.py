@@ -14687,6 +14687,8 @@ def delete_playlist(index):
         if key not in ids:
             del pctl.gen_codes[key]
 
+    pctl.db_inc += 1
+
 to_scan = []
 
 
