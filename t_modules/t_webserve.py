@@ -493,7 +493,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 levels, _ = self.parse_trail(path)
                 if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
                     pl = tauon.id_to_pl(int(levels[3]))
-                    if pl:  # todo handle None
+                    if pl is not None:
 
                         data = self.get_track(int(levels[4]), pl)
 
@@ -512,6 +512,16 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         self.end_headers()
                         data = json.dumps(data).encode()
                         self.wfile.write(data)
+                    else:
+                        self.send_response(404)
+                        self.send_header("Content-type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(b"404 playlist not found")
+                else:
+                    self.send_response(404)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(b"404 invalid track")
 
             elif path.startswith("/api1/seek1k/"):
                 key = path[13:]
