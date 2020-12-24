@@ -499,27 +499,33 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
                         playlist = pctl.multi_playlist[pl][2]
                         p = int(levels[4])
-                        track = pctl.g(playlist[p])
-                        while True:
-                            if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
-                                p += 1
-                                break
-                            p -= 1
-                        data["album_id"] = p
+                        if p < len(playlist):
+                            track = pctl.g(playlist[p])
+                            while True:
+                                if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                                    p += 1
+                                    break
+                                p -= 1
+                            data["album_id"] = p
 
-                        self.send_response(200)
-                        self.send_header("Content-type", "application/json")
-                        self.end_headers()
-                        data = json.dumps(data).encode()
-                        self.wfile.write(data)
+                            self.send_response(200)
+                            self.send_header("Content-type", "application/json")
+                            self.end_headers()
+                            data = json.dumps(data).encode()
+                            self.wfile.write(data)
+                        else:
+                            self.send_response(404)
+                            self.send_header("Content-type", "text/plain")
+                            self.end_headers()
+                            self.wfile.write(b"404 invalid track position")
                     else:
                         self.send_response(404)
-                        self.send_header("Content-type", "application/json")
+                        self.send_header("Content-type", "text/plain")
                         self.end_headers()
                         self.wfile.write(b"404 playlist not found")
                 else:
                     self.send_response(404)
-                    self.send_header("Content-type", "application/json")
+                    self.send_header("Content-type", "text/plain")
                     self.end_headers()
                     self.wfile.write(b"404 invalid track")
 
