@@ -391,7 +391,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         tauon.star_store.add(int(param), t)
 
                 self.send_response(200)
-                self.send_header("Content-type", "image/jpg")
+                self.send_header("Content-type", "text/plain")
                 self.end_headers()
                 self.wfile.write(b"OK")
 
@@ -429,7 +429,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                                 pctl.jump(playlist[position], position)
 
                 self.send_response(200)
-                self.send_header("Content-type", "image/jpg")
+                self.send_header("Content-type", "text/plain")
                 self.end_headers()
                 self.wfile.write(b"OK")
 
@@ -529,13 +529,27 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     self.end_headers()
                     self.wfile.write(b"404 invalid track")
 
+            elif path.startswith("/api1/setvolume/"):
+                key = path[16:]
+                if key.isdigit():
+                    volume = int(key)
+                    volume = max(volume, 0)
+                    volume = min(volume, 100)
+                    pctl.player_volume = volume
+                    pctl.set_volume()
+
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
             elif path.startswith("/api1/seek1k/"):
                 key = path[13:]
                 if key.isdigit():
                     pctl.seek_decimal(int(key) / 1000)
 
                 self.send_response(200)
-                self.send_header("Content-type", "image/jpg")
+                self.send_header("Content-type", "text/plain")
                 self.end_headers()
                 self.wfile.write(b"OK")
 
@@ -595,6 +609,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     "shuffle": pctl.random_mode == True,
                     "repeat": pctl.repeat_mode == True,
                     "progress": 0,
+                    "volume": pctl.player_volume,
                     "playlist": str(tauon.get_playing_playlist_id()),
                     "playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2])
                 }
