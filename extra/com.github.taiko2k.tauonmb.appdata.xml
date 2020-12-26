@@ -57,11 +57,10 @@
 
   <releases>
 
-    <release version="6.4.1" date="2020-11-08">
+    <release version="6.4.5" date="2020-12-23">
       <description>
         <ul>
-          <li>Added background fanart support</li>
-          <li>Various other tweaks and bug fixes</li>
+          <li>Added alternate artist list layout</li>
         </ul>
       </description>
     </release>

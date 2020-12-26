@@ -1,6 +1,35 @@
 
 Changelog-------------------------------------
 
+6.4.5
+
+ - Added text only view to artist list
+ - Added buffering animation to seek bar
+ - Added alpha remote API
+ - Replaced Apiseeds lyric provider with Happi
+ - Fixed drag and drop from pantheon not working
+ - Fixed a bug with tracks skipping when using radio random
+ - Removed "Auto search lyrics" option
+
+v6.4.4
+
+ - Added track title to tray tooltip
+ - Added buffering progress indicator (Phazor)
+ - Added setting to use plain text airsonic authentication (For Nextcloud)
+ - Added volume control on scroll on tray
+ - Changed minimize to tray to close to tray
+ - Fixed UI scaling issue with settings tabs on top
+ - Removed "Reset missing flags" function (now automatic)
+ - Phazor: Fixed an issue where rapidly pressing pause was cause jam
+ - Phazor: Added resampling for MP3, Vorbis and Opus
+
+v6.4.3
+
+ - Added system tray support (AppIndicator)
+ - Tweaked track info Spotify icon colour
+ - Fixed spotify resume after long pause
+ - Fixed a bug where radio art would not reload on resuming stream
+
 v6.4.2
 
  - Phazor: Fixed radio stations not playing

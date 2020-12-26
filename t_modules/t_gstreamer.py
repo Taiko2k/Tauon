@@ -246,6 +246,9 @@ def player3(tauon):  # GStreamer
 
             if self.play_state == 3 and name == "GstMessageTag":
 
+                if not tauon.radiobox.parse_vorbis_okay():
+                    return
+
                 data = struct.get_value("taglist").get_string("title")
                 data2 = struct.get_value("taglist").get_string("artist")
                 data3 = struct.get_value("taglist").get_string("year")
@@ -525,7 +528,8 @@ def player3(tauon):  # GStreamer
 
                     # If the target is a file, check that is exists
                     elif os.path.isfile(track.fullpath):
-                        track.found = True
+                        if not track.found:
+                            pctl.reset_missing_flags()
                     else:
                         # File does not exist, force trigger an advance
                         track.found = False
@@ -552,6 +556,9 @@ def player3(tauon):  # GStreamer
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                         current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
                         # print("We are " + str(current_duration - current_time) + " seconds from end.")
+
+                    if self.play_state != 1:
+                        self.loaded_track = None
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
@@ -650,7 +657,7 @@ def player3(tauon):  # GStreamer
 
 
                     add_time = max(min(self.player_timer.hit(), 3), 0)
-                    if self.loaded_track:
+                    if self.loaded_track and self.loaded_track in pctl.master_library.values():
                         star_store.add(self.loaded_track.index, add_time)
 
                     self.loaded_track = track

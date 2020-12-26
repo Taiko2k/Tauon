@@ -275,6 +275,8 @@ def player4(tauon):
                         pctl.jump_time = 0
                         pctl.advance(inplace=True, play=True)
                     continue
+                elif not target_object.found:
+                    pctl.reset_missing_flags()
 
                 length = 0
                 remain = 0
@@ -365,7 +367,8 @@ def player4(tauon):
                 time.sleep(2.5)
                 command = "stop"
             if command == "stop":
-                if prefs.use_pause_fade:
+
+                if prefs.use_pause_fade and state != 3:
                     if pctl.player_volume > 5:
                         speed = fade_time / (int(pctl.player_volume) / 100)
                     else:
@@ -435,6 +438,12 @@ def player4(tauon):
                 pctl.playing_time += add_time
                 pctl.decode_time = pctl.playing_time
 
+                buffering = aud.is_buffering()
+                if gui.buffering != buffering:
+                    gui.buffering = buffering
+                    gui.update += 1
+
+
             if state == 1:
 
                 add_time = player_timer.hit()
@@ -465,5 +474,4 @@ def player4(tauon):
                     tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
                 if pctl.playing_time > 1:
                     pctl.test_progress()
-
 

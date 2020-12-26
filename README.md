@@ -3,7 +3,7 @@
 
 ## Tauon Music Box
 
-**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer for playback. 
+**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection.
 
 <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
 
@@ -29,12 +29,6 @@
   - Linux desktop integration with MPRIS2.
   - Built-in topchart generator.
   - **Extract archives** and import your music downloads in **one click**! :zap:
-
-
-### File type compatibility :milky_way:
-
-- [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
-- [x] XSPF, CUE (automatic detection)
 
 
 ## Download and Install :dizzy:
