@@ -25097,7 +25097,7 @@ class Over:
                                subtitle=_("Extracts zip archives on drag and drop"))
             y += 38 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"),
-                               subtitle=("One click import new archives and folders from downloads folder"))
+                               subtitle=_("One click import new archives and folders from downloads folder"))
             y += 38 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
             y += 23 * gui.scale
