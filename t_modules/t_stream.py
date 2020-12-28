@@ -25,6 +25,7 @@ import os
 import fcntl
 import datetime
 import io
+import shutil
 from t_modules.t_extra import filename_safe
 
 class StreamEnc:
@@ -168,7 +169,7 @@ class StreamEnc:
                             save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
                             if os.path.exists(save_file):
                                 os.remove(save_file)
-                            os.rename(target_file, save_file)
+                            shutil.move(target_file, save_file)
                         else:
                             print("Discard small file")
                             os.remove(target_file)
@@ -202,7 +203,7 @@ class StreamEnc:
                                     os.remove(save_file)
                                 if not os.path.exists(self.tauon.prefs.encoder_output):
                                     os.makedirs(self.tauon.prefs.encoder_output)
-                                os.rename(target_file, save_file)
+                                shutil.move(target_file, save_file)
                             else:
                                 print("Discard small file")
                                 os.remove(target_file)
