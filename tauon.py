@@ -5165,10 +5165,13 @@ class PlayerCtl:
 
     def spot_test_progress(self):
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
-            th = 7
+            th = 5  # the rate to poll the spotify API
             if self.playing_time > self.playing_length:
                 th = 1
             if not spot_ctl.paused:
+                if spot_ctl.start_timer.get() < 0.5:
+                    spot_ctl.progress_timer.set()
+                    return
                 add_time = spot_ctl.progress_timer.get()
                 if add_time > 5:
                     add_time = 0
@@ -5254,7 +5257,7 @@ class PlayerCtl:
             # Allow some time for backend to provide a length
             if self.playing_time < 6 and self.playing_length == 0:
                 return
-            if pctl.a_time < 2:
+            if not spot_ctl.playing and pctl.a_time < 2:
                 return
 
             self.decode_time = 0
@@ -25150,8 +25153,6 @@ class Over:
             x += ww
 
         # self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
-
-
 
     def button(self, x, y, text, plug=None, width=0, bg=None):
 

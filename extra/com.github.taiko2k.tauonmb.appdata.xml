@@ -57,7 +57,7 @@
 
   <releases>
 
-    <release version="6.4.5" date="2020-12-23">
+    <release version="6.4.6" date="2020-12-28">
       <description>
         <ul>
           <li>Added alternate artist list layout</li>

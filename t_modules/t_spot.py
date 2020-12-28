@@ -426,6 +426,8 @@ class SpotCtl:
         self.started_once = True
 
         self.start_timer.set()
+        self.tauon.pctl.playing_time = 0
+        self.tauon.pctl.decode_time = 0
         self.tauon.gui.pl_update += 1
 
     def get_library_albums(self, return_list=False):
@@ -758,7 +760,7 @@ class SpotCtl:
                 self.tauon.gui.update += 1
 
         # Detect is playback has been modified
-        elif self.playing and self.start_timer.get() > 6 and self.tauon.pctl.playing_time + 5 < tr.length:
+        elif self.playing and self.start_timer.get() > 4 and self.tauon.pctl.playing_time + 5 < tr.length:
 
             if not result:
                 result = self.spotify.playback_currently_playing()
