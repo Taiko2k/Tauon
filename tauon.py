@@ -30,7 +30,7 @@
 
 import sys
 
-n_version = "6.4.5"
+n_version = "6.4.6"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
