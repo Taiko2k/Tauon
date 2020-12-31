@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+6.4.7
+
+ - Fixed radio recording not working on Flatpak
+ - Fixed an issue with artist list wont goto multi-artist
+
 6.4.6
 
  - Fixed a possible bug with Spotify playback
