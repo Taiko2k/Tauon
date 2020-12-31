@@ -30,7 +30,7 @@
 
 import sys
 
-n_version = "6.4.6"
+n_version = "6.4.7"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -3962,8 +3962,6 @@ def tag_scan(nt):
             nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
 
-            return nt
-
         elif nt.file_ext == "WAV":
 
             audio = Wav(nt.fullpath)
@@ -3971,8 +3969,6 @@ def tag_scan(nt):
 
             nt.samplerate = audio.sample_rate
             nt.length = audio.length
-
-            return nt
 
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
@@ -4002,7 +3998,6 @@ def tag_scan(nt):
             nt.misc = audio.misc
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-            return nt
 
         elif nt.file_ext == "APE" or nt.file_ext == "WV" or nt.file_ext == "TTA":
 
@@ -4048,8 +4043,6 @@ def tag_scan(nt):
                 except:
                     print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
 
-            return nt
-
         elif nt.file_ext == "M4A":
 
             audio = M4a(nt.fullpath)
@@ -4078,8 +4071,6 @@ def tag_scan(nt):
             nt.comment = audio.comment
             #nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
-
-            return nt
 
         else:
 
@@ -4186,8 +4177,6 @@ def tag_scan(nt):
                     print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
                     print(tag[SYLT][0].text)
 
-            return nt
-
     except stagger.errors.NoTagError as err:
         # print("Tag Scanner: " + str(err))
         # print("      In file: " + nt.fullpath)
@@ -4198,6 +4187,20 @@ def tag_scan(nt):
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
         return nt
+
+    # Parse any multiple artists into list
+    artists = nt.artist.split(";")
+    if len(artists) > 1:
+        for a in artists:
+            a = a.strip()
+            if a:
+                if "artists" not in nt.misc:
+                    nt.misc["artists"] = []
+                if a not in nt.misc["artists"]:
+                    nt.misc["artists"].append(a)
+
+    return nt
+
 
 def get_radio_art():
 
@@ -39216,6 +39219,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+            #print(pctl.g(default_playlist[playlist_selected]).misc)
             pass
 
         if gui.mode < 3:
