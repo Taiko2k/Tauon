@@ -41,6 +41,10 @@ def transfer_args_and_exit():
     import urllib.request
     base = "http://localhost:7813/"
 
+    if len(sys.argv) <= 1:
+        url = base + "raise/"
+        urllib.request.urlopen(url)
+
     for item in sys.argv:
 
         if not item.endswith(".py") and not item.startswith("-") and (item.startswith("file://") or item.startswith("/")):
@@ -6879,7 +6883,6 @@ def maloja_scrobble(track):
             show_message("There was an error submitting data to Maloja server", r.text, mode='warning')
             return False
     except:
-        raise
         show_message("There was an error submitting data to Maloja server", mode='warning')
         return False
     return True

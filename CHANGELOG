@@ -5,6 +5,7 @@ Changelog-------------------------------------
 
  - Fixed radio recording not working on Flatpak
  - Fixed an issue with artist list wont goto multi-artist
+ - Fixed window not restoring when relaunching while in tray
 
 6.4.6
 
