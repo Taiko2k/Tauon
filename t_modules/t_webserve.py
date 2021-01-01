@@ -664,6 +664,8 @@ def controller(tauon):
         def do_GET(self):
 
             path = self.path
+            if path == "/raise/":
+                tauon.raise_window()
             if path == "/playpause/":
                 if tauon.pctl.playing_state == 0:
                     tauon.pctl.play()
