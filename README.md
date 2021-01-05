@@ -3,7 +3,7 @@
 
 ## Tauon Music Box
 
-**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection.
+**A music player for the Linux desktop.** Designed to be powerful and streamlined, putting the user in control of their music collection.
 
 <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
 
@@ -37,12 +37,12 @@ Installation is available as a Flatpak.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
-For **Arch Linux** based distros, you can install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/). For **Ubuntu**, install is alternatively available from [Snapcraft](https://snapcraft.io/tauon). Flatpak and Snap versions use sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.
+Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes. While the Flatpak version is recommended, you can also install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
 ___
 
 I highly recommend reading the Tauon Music Box [manual](https://tauonmusicbox.rocks#manual).
 
-Feel free to submit any issues or suggestions. I'd love to hear your feedback.
+Feel free to submit any issues you encounter.
 
 [![Maintenance](https://img.shields.io/maintenance/yes/2020.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) ![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg?style=for-the-badge) [![Discord](https://img.shields.io/discord/687418493209018622.svg?color=a483ef&style=for-the-badge)](https://discord.gg/v4EmhES)
 
