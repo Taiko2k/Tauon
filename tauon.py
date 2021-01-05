@@ -21402,7 +21402,10 @@ class SearchOverlay:
                 search_over.spotify_mode ^= True
                 self.sip = True
                 search_over.searched_text = search_over.search_text.text
-                worker2_lock.release()
+                try:
+                    worker2_lock.release()
+                except:
+                    pass
 
             if input_text or key_backspace_press:
                 self.input_timer.set()
@@ -36150,7 +36153,6 @@ class GuitarChords:
 gc = GuitarChords()
 
 
-
 class Showcase:
 
     def __init__(self):
@@ -36158,43 +36160,25 @@ class Showcase:
         self.lastfm_artist = None
         self.artist_mode = False
 
-
-    # def get_artist_info(self):
-    #
-    #     track = pctl.playing_object()
-    #     if track is not None:
-    #         artist = track.artist
-
     def render(self):
 
         global right_click
-        #ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,255], True)
-
-        # album_art_gen.display_blur(pctl.playing_object().index, [200, 200])
-
-
-        # ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,100], True)
 
         box = int(window_size[1] * 0.4 + 120 * gui.scale)
-
-        #box = min(window_size[0] // 2, box)
+        box = min(window_size[0] // 2, box)
 
         hide_art = False
         if window_size[0] < 900 * gui.scale:
             hide_art = True
 
-
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10 * gui.scale
-
 
         if hide_art:
             box = 45 * gui.scale
         elif window_size[1] / window_size[0] > 0.7:
             x = int(window_size[0] * 0.07)
 
-        # bbg = colours.grey(30)
-        # bfg = colours.grey(40)
         bbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
         bfg = rgb_add_hls(colours.playlist_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
         bft = colours.grey(235)
