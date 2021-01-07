@@ -16253,9 +16253,6 @@ def key_rating(index):
 def key_scrobbles(index):
     return pctl.g(index).lfm_scrobbles
 
-def key_modified(index):
-    return pctl.master_library[index].modified_time
-
 def key_playcount(index):
     #key = pctl.master_library[index].title + pctl.master_library[index].filename
     if pctl.master_library[index].length < 1:
@@ -16529,6 +16526,19 @@ def gen_last_modified(index, custom_list=None, reverse=True):
     if source is None:
         source = pctl.multi_playlist[index][2]
 
+    a_cache = {}
+
+    def key_modified(index):
+
+        track = pctl.master_library[index]
+        cached = a_cache.get((track.album, track.parent_folder_name))
+        if cached is not None:
+            return cached
+
+        if track.album:
+            a_cache[(track.album, track.parent_folder_name)] =  pctl.master_library[index].modified_time
+        return pctl.master_library[index].modified_time
+
     playlist = copy.deepcopy(source)
     playlist = sorted(playlist, key=key_modified, reverse=reverse)
     sort_track_2(0, playlist)
@@ -16547,7 +16557,6 @@ extra_tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=Tru
 
 # tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
 # extra_tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
-
 
 
 def gen_love(pl, custom_list=None):
