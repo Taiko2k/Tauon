@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2020-12-27 17:30+1300\n"
-"PO-Revision-Date: 2020-12-27 04:29+0000\n"
+"PO-Revision-Date: 2021-01-04 17:29+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -107,9 +107,8 @@ msgid "Please authorise Spotify in settings!"
 msgstr "Por favor autorize o Spotify em configurações!"
 
 #: tauon.py:7032
-#, fuzzy
 msgid "Please authorise and click the enable toggle first!"
-msgstr "Uma vez autorizado clique no botão 'feito'."
+msgstr "Por favor autorize e clique em ativar alternar primeiro!"
 
 #: tauon.py:7034
 msgid "day"
@@ -1275,7 +1274,7 @@ msgstr "Desistir de Inclusão Rápida"
 
 #: tauon.py:21386
 msgid "Press Tab key to switch to Spotify search"
-msgstr ""
+msgstr "Pressione Tab para trocar para busca Spotify"
 
 #: tauon.py:21606
 msgid "Searching for albums by artist: "
@@ -1635,7 +1634,7 @@ msgstr "Ativar monitor de Download"
 
 #: tauon.py:25100
 msgid "One click import new archives and folders from downloads folder"
-msgstr ""
+msgstr "Um click para importar novos arquivos e pastas de downloads"
 
 #: tauon.py:25102
 msgid "Trash archive after extraction"
@@ -1659,12 +1658,11 @@ msgstr "Mostrar texto do título"
 
 #: tauon.py:25119
 msgid "Enable server for remote app [Alpha testing]"
-msgstr ""
+msgstr "Ativar servidor para app remoto [teste Alpha]"
 
 #: tauon.py:25120
-#, fuzzy
 msgid "Change requires restart"
-msgstr "As alterações serão aplicadas ao reiniciar."
+msgstr "Mudanças requerem reinício"
 
 #: tauon.py:25330
 msgid "Show threshold marker"
@@ -2329,28 +2327,24 @@ msgid "Remove All After"
 msgstr "Remover Tudo Depois"
 
 #: tauon.py:33001
-#, fuzzy
 msgid "View..."
-msgstr "Vista"
+msgstr "Visão..."
 
 #: tauon.py:33019
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Ordenação Alfabética"
 
 #: tauon.py:33020
-#, fuzzy
 msgid "Sort by Popularity"
-msgstr "Ordenar por mais tocado"
+msgstr "Ordenar por Popularidade"
 
 #: tauon.py:33021
-#, fuzzy
 msgid "Sort by Playtime"
-msgstr "Ordenar por mais tocado"
+msgstr "Ordenar por Tempo de Reprodução"
 
 #: tauon.py:33022
-#, fuzzy
 msgid "Toggle Thumbnails"
-msgstr "Alternar colunas"
+msgstr "Alternar Miniaturas"
 
 #: tauon.py:33111
 msgid "Notice: Artist image sourced from fanart.tv"
