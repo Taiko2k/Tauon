@@ -1582,6 +1582,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
 
+        for item in self.pl_st:
+            item[1] = item[1] * self.scale
+
         self.panelBY = round(51 * self.scale)
         self.panelY = round(30 * self.scale)
         self.panelY2 = round(30 * self.scale)
@@ -3887,10 +3890,21 @@ if scale_want != prefs.ui_scale or force_render:
 
     print("Done rendering icons")
 
+    diff_ratio = scale_want / prefs.ui_scale
     prefs.ui_scale = scale_want
     prefs.playlist_row_height = round(22 * prefs.ui_scale)
-    #prefs.playlist_font_size = 15
+
+    # Save user values
+    column_backup = gui.pl_st
+    rspw = gui.rspw
+
     gui.__init__()
+
+    # Scale saved values
+    gui.pl_st = column_backup
+    for item in gui.pl_st:
+        item[1] = item[1] * diff_ratio
+    gui.rspw = rspw * diff_ratio
 
 try:
     # star_lines = view_prefs['star-lines']
