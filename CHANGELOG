@@ -1,18 +1,23 @@
 
 Changelog-------------------------------------
 
-6.4.7
+v6.4.8
+
+ - Fixed keyboard shortcut trigger on window tab
+ - Fixed wrong radio URL displayed in compact view title
+
+v6.4.7
 
  - Improved File Modified sorter to better group albums
  - Fixed radio recording not working on Flatpak
  - Fixed an issue with artist list wont goto multi-artist
  - Fixed window not restoring when relaunching while in tray
 
-6.4.6
+v6.4.6
 
  - Fixed a possible bug with Spotify playback
 
-6.4.5
+v6.4.5
 
  - Added text only view to artist list
  - Added buffering animation to seek bar
