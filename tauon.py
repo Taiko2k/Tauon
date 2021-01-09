@@ -30,7 +30,7 @@
 
 import sys
 
-n_version = "6.4.7"
+n_version = "6.4.8"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -27296,7 +27296,7 @@ class TopPanel:
 
                 if pctl.playing_state == 3 and not radiobox.dummy_track.title:
                     title = pctl.tag_meta
-                    artist = pctl.url
+                    artist = radiobox.loaded_url #pctl.url
 
                 ddt.text_background_colour = colours.top_panel_background
 
@@ -39050,7 +39050,7 @@ while pctl.running:
         inp.key_return_press = False
         inp.key_tab_press = False
 
-    if k_input:
+    if k_input and key_focused == 0:
 
         if keymaps.hits:
             n = 1
