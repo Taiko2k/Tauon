@@ -29,6 +29,8 @@
 # --------------------------------------------------------------------
 
 import sys
+import sdl2
+import sdl2.ext
 
 n_version = "6.4.5"
 t_version = "v" + n_version
