@@ -32,7 +32,7 @@ import sys
 import sdl2
 import sdl2.ext
 
-n_version = "6.4.5"
+n_version = "6.4.7"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -42,6 +42,10 @@ t_agent = "TauonMusicBox/" + n_version
 def transfer_args_and_exit():
     import urllib.request
     base = "http://localhost:7813/"
+
+    if len(sys.argv) <= 1:
+        url = base + "raise/"
+        urllib.request.urlopen(url)
 
     for item in sys.argv:
 
@@ -1579,6 +1583,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.set_point = 0
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
+
+        for item in self.pl_st:
+            item[1] = item[1] * self.scale
 
         self.panelBY = round(51 * self.scale)
         self.panelY = round(30 * self.scale)
@@ -3885,10 +3892,21 @@ if scale_want != prefs.ui_scale or force_render:
 
     print("Done rendering icons")
 
+    diff_ratio = scale_want / prefs.ui_scale
     prefs.ui_scale = scale_want
     prefs.playlist_row_height = round(22 * prefs.ui_scale)
-    #prefs.playlist_font_size = 15
+
+    # Save user values
+    column_backup = gui.pl_st
+    rspw = gui.rspw
+
     gui.__init__()
+
+    # Scale saved values
+    gui.pl_st = column_backup
+    for item in gui.pl_st:
+        item[1] = item[1] * diff_ratio
+    gui.rspw = rspw * diff_ratio
 
 try:
     # star_lines = view_prefs['star-lines']
@@ -3964,8 +3982,6 @@ def tag_scan(nt):
             nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
 
-            return nt
-
         elif nt.file_ext == "WAV":
 
             audio = Wav(nt.fullpath)
@@ -3973,8 +3989,6 @@ def tag_scan(nt):
 
             nt.samplerate = audio.sample_rate
             nt.length = audio.length
-
-            return nt
 
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
@@ -4004,7 +4018,6 @@ def tag_scan(nt):
             nt.misc = audio.misc
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-            return nt
 
         elif nt.file_ext == "APE" or nt.file_ext == "WV" or nt.file_ext == "TTA":
 
@@ -4050,8 +4063,6 @@ def tag_scan(nt):
                 except:
                     print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
 
-            return nt
-
         elif nt.file_ext == "M4A":
 
             audio = M4a(nt.fullpath)
@@ -4080,8 +4091,6 @@ def tag_scan(nt):
             nt.comment = audio.comment
             #nt.cue_sheet = audio.cue_sheet
             nt.misc = audio.misc
-
-            return nt
 
         else:
 
@@ -4188,8 +4197,6 @@ def tag_scan(nt):
                     print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
                     print(tag[SYLT][0].text)
 
-            return nt
-
     except stagger.errors.NoTagError as err:
         # print("Tag Scanner: " + str(err))
         # print("      In file: " + nt.fullpath)
@@ -4200,6 +4207,20 @@ def tag_scan(nt):
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
         return nt
+
+    # Parse any multiple artists into list
+    artists = nt.artist.split(";")
+    if len(artists) > 1:
+        for a in artists:
+            a = a.strip()
+            if a:
+                if "artists" not in nt.misc:
+                    nt.misc["artists"] = []
+                if a not in nt.misc["artists"]:
+                    nt.misc["artists"].append(a)
+
+    return nt
+
 
 def get_radio_art():
 
@@ -5167,10 +5188,13 @@ class PlayerCtl:
 
     def spot_test_progress(self):
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
-            th = 7
+            th = 5  # the rate to poll the spotify API
             if self.playing_time > self.playing_length:
                 th = 1
             if not spot_ctl.paused:
+                if spot_ctl.start_timer.get() < 0.5:
+                    spot_ctl.progress_timer.set()
+                    return
                 add_time = spot_ctl.progress_timer.get()
                 if add_time > 5:
                     add_time = 0
@@ -5256,7 +5280,7 @@ class PlayerCtl:
             # Allow some time for backend to provide a length
             if self.playing_time < 6 and self.playing_length == 0:
                 return
-            if pctl.a_time < 2:
+            if not spot_ctl.playing and pctl.a_time < 2:
                 return
 
             self.decode_time = 0
@@ -6875,7 +6899,6 @@ def maloja_scrobble(track):
             show_message("There was an error submitting data to Maloja server", r.text, mode='warning')
             return False
     except:
-        raise
         show_message("There was an error submitting data to Maloja server", mode='warning')
         return False
     return True
@@ -16246,9 +16269,6 @@ def key_rating(index):
 def key_scrobbles(index):
     return pctl.g(index).lfm_scrobbles
 
-def key_modified(index):
-    return pctl.master_library[index].modified_time
-
 def key_playcount(index):
     #key = pctl.master_library[index].title + pctl.master_library[index].filename
     if pctl.master_library[index].length < 1:
@@ -16522,6 +16542,19 @@ def gen_last_modified(index, custom_list=None, reverse=True):
     if source is None:
         source = pctl.multi_playlist[index][2]
 
+    a_cache = {}
+
+    def key_modified(index):
+
+        track = pctl.master_library[index]
+        cached = a_cache.get((track.album, track.parent_folder_name))
+        if cached is not None:
+            return cached
+
+        if track.album:
+            a_cache[(track.album, track.parent_folder_name)] =  pctl.master_library[index].modified_time
+        return pctl.master_library[index].modified_time
+
     playlist = copy.deepcopy(source)
     playlist = sorted(playlist, key=key_modified, reverse=reverse)
     sort_track_2(0, playlist)
@@ -16540,7 +16573,6 @@ extra_tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=Tru
 
 # tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
 # extra_tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
-
 
 
 def gen_love(pl, custom_list=None):
@@ -21395,7 +21427,10 @@ class SearchOverlay:
                 search_over.spotify_mode ^= True
                 self.sip = True
                 search_over.searched_text = search_over.search_text.text
-                worker2_lock.release()
+                try:
+                    worker2_lock.release()
+                except:
+                    pass
 
             if input_text or key_backspace_press:
                 self.input_timer.set()
@@ -25099,7 +25134,7 @@ class Over:
                                subtitle=_("Extracts zip archives on drag and drop"))
             y += 38 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Enable download monitor"),
-                               subtitle=("One click import new archives and folders from downloads folder"))
+                               subtitle=_("One click import new archives and folders from downloads folder"))
             y += 38 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
             y += 23 * gui.scale
@@ -25152,8 +25187,6 @@ class Over:
             x += ww
 
         # self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
-
-
 
     def button(self, x, y, text, plug=None, width=0, bg=None):
 
@@ -36145,7 +36178,6 @@ class GuitarChords:
 gc = GuitarChords()
 
 
-
 class Showcase:
 
     def __init__(self):
@@ -36153,43 +36185,25 @@ class Showcase:
         self.lastfm_artist = None
         self.artist_mode = False
 
-
-    # def get_artist_info(self):
-    #
-    #     track = pctl.playing_object()
-    #     if track is not None:
-    #         artist = track.artist
-
     def render(self):
 
         global right_click
-        #ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,255], True)
-
-        # album_art_gen.display_blur(pctl.playing_object().index, [200, 200])
-
-
-        # ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,100], True)
 
         box = int(window_size[1] * 0.4 + 120 * gui.scale)
-
-        #box = min(window_size[0] // 2, box)
+        box = min(window_size[0] // 2, box)
 
         hide_art = False
         if window_size[0] < 900 * gui.scale:
             hide_art = True
 
-
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10 * gui.scale
-
 
         if hide_art:
             box = 45 * gui.scale
         elif window_size[1] / window_size[0] > 0.7:
             x = int(window_size[0] * 0.07)
 
-        # bbg = colours.grey(30)
-        # bfg = colours.grey(40)
         bbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
         bfg = rgb_add_hls(colours.playlist_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
         bft = colours.grey(235)
@@ -39217,6 +39231,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+            #print(pctl.g(default_playlist[playlist_selected]).misc)
             pass
 
         if gui.mode < 3:

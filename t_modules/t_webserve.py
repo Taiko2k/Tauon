@@ -254,7 +254,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["id"] = track.index
             data["position"] = track_position
             data["album_id"] = album_id
-            data["has_lyrics"] = track.lyrics == True
+            data["has_lyrics"] = track.lyrics != ""
             data["track_number"] = str(track.track_number).lstrip("0")
             data["can_download"] = not track.is_cue and not track.is_network
 
@@ -664,6 +664,8 @@ def controller(tauon):
         def do_GET(self):
 
             path = self.path
+            if path == "/raise/":
+                tauon.raise_window()
             if path == "/playpause/":
                 if tauon.pctl.playing_state == 0:
                     tauon.pctl.play()
