@@ -29,6 +29,7 @@
   - Linux desktop integration with MPRIS2.
   - Built-in topchart generator.
   - **Extract archives** and import your music downloads in **one click**! :zap:
+  - Remote control apps for Andorid [available](https://github.com/Taiko2k/TauonMusicBox/wiki/Andorid-Remote-Apps).
 
 
 ## Download and Install :dizzy:
