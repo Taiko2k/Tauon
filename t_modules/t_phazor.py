@@ -25,8 +25,6 @@ import threading
 from t_modules.t_extra import *
 from hsaudiotag import auto
 
-# todo - normal file into cue track
-
 
 def player4(tauon):
 
@@ -179,6 +177,8 @@ def player4(tauon):
         if pctl.playerCommandReady:
 
             command = pctl.playerCommand
+            subcommand = pctl.playerSubCommand
+            pctl.playerSubCommand = ""
             pctl.playerCommandReady = False
 
             if command == "reload":
@@ -297,7 +297,7 @@ def player4(tauon):
                     remain = length - position
 
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
-                        loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue:
+                        loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
 
                     print("Transition gapless mode")
 
@@ -305,7 +305,10 @@ def player4(tauon):
                     pctl.playing_time = pctl.jump_time
 
                     if remain > 0:
-                        time.sleep(remain)
+                        time.sleep(0.01)
+                        remain -= 0.01
+                        if pctl.playerCommandReady and pctl.playerCommand == "open":
+                            break
 
                     loaded_track = target_object
 
@@ -383,7 +386,7 @@ def player4(tauon):
                 time.sleep(0.1)
                 aud.set_volume(int(pctl.player_volume))
 
-                if pctl.playerSubCommand == "return":
+                if subcommand == "return":
                     pctl.playerSubCommand = "stopped"
                     pctl.playerCommandReady = True
 
