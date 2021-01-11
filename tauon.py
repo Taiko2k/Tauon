@@ -3407,6 +3407,16 @@ if db_version > 0:
             prefs.lyrics_enables.remove("Apiseeds")
             prefs.lyrics_enables.append("Happi")
 
+
+    if db_version <= 57:
+        print("Updating database to version 58")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("\nregenerate-playlist R Alt\n")
+                f.write("clear-queue Q Shift Alt\n")
+
+
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
 
@@ -4908,7 +4918,7 @@ class PlayerCtl:
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
-        if jump and not prefs.use_jump_crossfade:
+        if jump: # and not prefs.use_jump_crossfade:
             self.playerSubCommand = 'now'
 
         self.playerCommandReady = True
@@ -15993,7 +16003,7 @@ def regen_playlist_async(pl):
     shoot_dl.start()
 
 
-tab_menu.add(_("Regenerate"), regen_playlist_async, regenerate_deco, pass_ref=True, pass_ref_deco=True)
+tab_menu.add(_("Regenerate"), regen_playlist_async, regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R")
 tab_menu.add_sub(_("Generate…"), 150)
 tab_menu.add_sub(_("Sort…"), 170)
 extra_tab_menu.add_sub(_("From Current…"), 133)
@@ -19959,7 +19969,7 @@ def random_track():
         pctl.show_current()
 
 
-extra_menu.add(_('Random Track'), random_track, hint='COLON')
+extra_menu.add(_('Random Track'), random_track, hint=';')
 
 
 def radio_random():
@@ -19978,7 +19988,7 @@ extra_menu.add(_('Radio Random'), radio_random, hint='/', icon=radiorandom_icon)
 revert_icon.xoff = 1
 revert_icon.yoff = 0
 revert_icon.colour = [229, 102, 59, 255]
-extra_menu.add(_('Revert'), pctl.revert, hint='SHIFT + /', icon=revert_icon)
+extra_menu.add(_('Revert'), pctl.revert, hint='Shift+/', icon=revert_icon)
 
 
 # extra_menu.add('Toggle Repeat', toggle_repeat, hint='COMMA')
@@ -19986,7 +19996,7 @@ extra_menu.add(_('Revert'), pctl.revert, hint='SHIFT + /', icon=revert_icon)
 
 
 # extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
-extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
+extra_menu.add(_('Clear Queue'), clear_queue, queue_deco, hint="Alt+Shift+Q")
 
 def heart_menu_colour():
     if not (pctl.playing_state == 1 or pctl.playing_state == 2):
@@ -20222,7 +20232,7 @@ def activate_search_overlay():
     search_over.spotify_mode = False
 
 
-extra_menu.add(_('Global Search'), activate_search_overlay, hint="CTRL + G")
+extra_menu.add(_('Global Search'), activate_search_overlay, hint="Ctrl+G")
 
 def get_album_spot_url_active():
     tr = pctl.playing_object()
@@ -20251,7 +20261,7 @@ def goto_playing_extra():
 
 extra_menu.add(_("Locate Artist"), locate_artist)
 
-extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="QUOTE")
+extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="'")
 
 
 def toggle_auto_theme(mode=0):
@@ -34486,7 +34496,7 @@ class QueueBox:
         queue_menu.add("Auto-Stop Here", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show)
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
-        queue_menu.add(_("Clear Queue"), clear_queue, queue_deco)
+        queue_menu.add(_("Clear Queue"), clear_queue, queue_deco, hint="Alt+Shift+Q")
 
         queue_menu.add(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test)
 
@@ -38063,7 +38073,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            57,  # Version, used for upgrading
+            58,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -38731,7 +38741,7 @@ while pctl.running:
                     mouse_up_position[1] = event.motion.y
 
                 mouse_down = False
-        elif event.type == SDL_KEYDOWN:
+        elif event.type == SDL_KEYDOWN and key_focused == 0:
             k_input = True
             power += 5
             gui.update += 2
@@ -39519,6 +39529,12 @@ while pctl.running:
 
             if keymaps.test("add-to-queue") and pctl.selected_ready():
                 add_selected_to_queue()
+
+            if keymaps.test("clear-queue"):
+                clear_queue()
+
+            if keymaps.test("regenerate-playlist"):
+                regenerate_playlist(pctl.active_playlist_viewing)
 
             if keymaps.test("cycle-theme"):
                 gui.reload_theme = True
