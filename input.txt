@@ -98,7 +98,7 @@ opacity-up = Ctrl
 opacity-down - Ctrl
 
 toggle-show-art H Ctrl
-
+resize-window-16:9 F11 Alt
 toggle-console `
 
 jump-playlist-1 1 Ctrl
