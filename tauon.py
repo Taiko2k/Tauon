@@ -1011,6 +1011,8 @@ repeat_mode = False
 def uid_gen():
     return random.randrange(1, 100000000)
 
+notify_change = lambda : None
+
 def pl_gen(title='Default',
            playing=0,
            playlist=None,
@@ -1022,6 +1024,8 @@ def pl_gen(title='Default',
 
     if playlist == None:
         playlist = []
+
+    notify_change()
 
     return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent])
 
@@ -5980,6 +5984,7 @@ class PlayerCtl:
 
 pctl = PlayerCtl()
 
+notify_change = pctl.notify_change
 
 def auto_name_pl(target_pl):
 
