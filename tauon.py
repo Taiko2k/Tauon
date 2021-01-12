@@ -3407,7 +3407,6 @@ if db_version > 0:
             prefs.lyrics_enables.remove("Apiseeds")
             prefs.lyrics_enables.append("Happi")
 
-
     if db_version <= 57:
         print("Updating database to version 58")
 
@@ -3415,6 +3414,7 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\nregenerate-playlist R Alt\n")
                 f.write("clear-queue Q Shift Alt\n")
+                f.write("resize-window-16:9 F11 Alt\n")
 
 
 if old_backend == 1:
@@ -39085,6 +39085,14 @@ while pctl.running:
 
             if keymaps.test('toggle-console'):
                 console.show ^= True
+
+            if keymaps.test('resize-window-16:9'):
+                x = window_size[1] // 9
+                window_size[0] = x * 16
+                window_size[1] = x * 9
+                SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+                gui.update_layout()
+                gui.pl_update += 1
 
             if keymaps.test("toggle-fullscreen"):
                 if not fullscreen and not gui.mode == 3:
