@@ -5,6 +5,7 @@ v6.4.8
 
  - Added keyboard shortcuts "Clear Queue" and "Regenerate Playlist"
  - Various fixes for keyboard control
+ - Tweaked global generator playlists to ignore other generator playlists
  - Fixed keyboard shortcut trigger on window tab
  - Fixed wrong radio URL displayed in compact view title
  - Fixed delay in track change response near end of track [Phazor]
