@@ -6864,7 +6864,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
             try:
                 lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
             except:
-                print("Failed updating last.fm love status", mode='warning')
+                show_message(_("Failed updating last.fm love status"), mode='warning')
                 star = [star[0], star[1].strip("L"), star[2]]
                 star_store.insert(track_id, star)
                 show_message(_("Error updating love to last.fm!"), _("Maybe check your internet connection and try again?"), mode="error")
@@ -6879,7 +6879,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
             try:
                 lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
             except:
-                print("Failed updating last.fm love status", mode='warning')
+                show_message("Failed updating last.fm love status", mode='warning')
                 star = [star[0], star[1] + "L", star[2]]
                 star_store.insert(track_id, star)
 
