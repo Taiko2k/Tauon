@@ -63,8 +63,10 @@ quick-find \
 quick-find F Ctrl
 global-search G Ctrl
 add-to-queue Q Alt
+clear-queue Q Shift Alt
 love-playing L Shift Ctrl
 love-selected L Ctrl
+regenerate-playlist R Alt
 
 toggle-left-panel ~
 toggle-last-left-panel
@@ -96,7 +98,7 @@ opacity-up = Ctrl
 opacity-down - Ctrl
 
 toggle-show-art H Ctrl
-
+resize-window-16:9 F11 Alt
 toggle-console `
 
 jump-playlist-1 1 Ctrl
