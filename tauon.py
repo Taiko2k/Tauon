@@ -15785,7 +15785,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             search = quote
             search_over.all_folders = True
@@ -15817,7 +15819,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             g_search = quote.lower().replace("-", "") #.replace(" ", "")
 
@@ -15832,7 +15836,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 time.sleep(0.01)
 
             found_name = ""
-            print(search_over.results)
 
             if cm.startswith("g=\""):
                 for result in search_over.results:
@@ -15864,7 +15867,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             search = quote
             search_over.sip = True
@@ -15916,7 +15921,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             cooldown = 0
             dones = {}
@@ -15950,8 +15957,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                     break
             else:
                 for p in pctl.multi_playlist:
-                    print(p[0].lower())
-                    print(pl_name.lower())
+                    #print(p[0].lower())
+                    #print(pl_name.lower())
                     if p[0].lower().startswith(pl_name.lower()):
                         target = p[2]
                         break
