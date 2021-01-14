@@ -38860,7 +38860,7 @@ while pctl.running:
                 mouse_enter_window = True
                 focused = True
                 gui.lowered = False
-                key_focused = 2
+                key_focused = 1 
                 mouse_down = False
                 gui.album_tab_mode = False
                 gui.pl_update = 1
