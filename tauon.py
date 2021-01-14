@@ -15461,7 +15461,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "a":
             if not selections and not selections_searched:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             temp = []
             for selection in selections:
@@ -38859,6 +38861,7 @@ while pctl.running:
                 gui.pl_update = 1
                 gui.update += 1
 
+
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 close_all_menus()
 
@@ -39067,6 +39070,11 @@ while pctl.running:
         inp.key_return_press = False
         inp.key_tab_press = False
 
+    if k_input:
+        if inp.mouse_click or right_click or mouse_up:
+            last_click_location = copy.deepcopy(click_location)
+            click_location = copy.deepcopy(mouse_position)
+
     if k_input and key_focused == 0:
 
         if keymaps.hits:
@@ -39141,20 +39149,12 @@ while pctl.running:
         if mouse_enter_window:
             inp.key_return_press = False
 
-        if inp.mouse_click or right_click or mouse_up:
-            last_click_location = copy.deepcopy(click_location)
-            click_location = copy.deepcopy(mouse_position)
-
-
-
         if fullscreen and key_esc_press:
             fullscreen = False
             SDL_SetWindowFullscreen(t_window, 0)
 
-
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled:
-
 
             if not quick_search_mode and not search_over.active:
                 if album_mode and gui.album_tab_mode \
@@ -39240,8 +39240,6 @@ while pctl.running:
                         pctl.play()
                     else:
                         pctl.pause()
-
-
 
         if inp.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
             inp.key_return_press = False
