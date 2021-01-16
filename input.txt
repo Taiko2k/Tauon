@@ -50,6 +50,7 @@ pageup PageUp
 pagedown PageDown
 
 delete-playlist W Ctrl
+delete-playlist-force W Shift Ctrl
 rename-playlist R Ctrl
 new-playlist T Ctrl
 
