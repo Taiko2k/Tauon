@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.4.8
 
+ - Added delete playlist confirmation
  - Added keyboard shortcuts "Clear Queue" and "Regenerate Playlist"
  - Various fixes for keyboard control
  - Tweaked global generator playlists to ignore other generator playlists

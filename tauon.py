@@ -13536,6 +13536,7 @@ def get_lyric_fire(track_object, silent=False):
             prefs.show_lyrics_side = True
         gui.update += 1
         lyrics_ren.lyrics_position = 0
+        pctl.notify_change()
 
 
 def get_lyric_wiki(track_object):
@@ -14641,10 +14642,16 @@ def delete_playlist(index):
         show_message("Playlist is locked to prevent accidental deletion")
         return
 
+    gen = pctl.gen_codes.get(pl_to_id(index), "")
+    if (gen == "" or gen.startswith("self ")) and pctl.multi_playlist[index][2]:
+        if not (key_shift_down or key_shiftr_down):
+            show_message(_("Are you sure you want to delete this playlist?"), _("Try again while holding shift to confirm"))
+            return
+
     if gui.rename_playlist_box:
         return
 
-    # Set screen to be redwarn
+    # Set screen to be redrawn
     gui.pl_update = 1
     gui.update += 1
 
@@ -15468,7 +15475,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 temp += selection
 
             playlist += list(OrderedDict.fromkeys(temp))
-
             selections.clear()
 
         elif cm == "cue":
@@ -15987,6 +15993,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     pctl.regen_in_progress = False
     gui.pl_update = 1
     reload()
+    pctl.notify_change()
 
     # print(cmds)
 
