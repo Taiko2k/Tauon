@@ -14738,6 +14738,11 @@ def delete_playlist(index, force=False):
 
 to_scan = []
 
+def delete_playlist_force(index):
+    if pl_is_locked(index):
+        show_message("Playlist is locked to prevent accidental deletion")
+        return
+    delete_playlist(index, force=True)
 
 def rescan_tags(pl):
 
@@ -15202,7 +15207,7 @@ def pl_toggle_playlist_break(ref):
 delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
-tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+tab_menu.add(_('Delete'), delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 
 def gen_unique_pl_title(base, extra="", start=1):
 
