@@ -3419,6 +3419,7 @@ if db_version > 0:
                 f.write("\nregenerate-playlist R Alt\n")
                 f.write("clear-queue Q Shift Alt\n")
                 f.write("resize-window-16:9 F11 Alt\n")
+                f.write("delete-playlist-force W Shift Ctrl\n")
 
 
 if old_backend == 1:
@@ -14635,18 +14636,19 @@ def move_playlist(source, dest):
         print("Warning: Playlist move error")
 
 
-def delete_playlist(index):
+def delete_playlist(index, force=False):
     global default_playlist
 
-    if pl_is_locked(index):
-        show_message("Playlist is locked to prevent accidental deletion")
-        return
-
-    gen = pctl.gen_codes.get(pl_to_id(index), "")
-    if (gen == "" or gen.startswith("self ")) and pctl.multi_playlist[index][2]:
-        if not (key_shift_down or key_shiftr_down):
-            show_message(_("Are you sure you want to delete this playlist?"), _("Try again while holding shift to confirm"))
+    if not force:
+        if pl_is_locked(index):
+            show_message("Playlist is locked to prevent accidental deletion")
             return
+
+        gen = pctl.gen_codes.get(pl_to_id(index), "")
+        if (gen == "" or gen.startswith("self ")) and pctl.multi_playlist[index][2]:
+            if not (key_shift_down or key_shiftr_down):
+                show_message(_("Are you sure you want to delete this playlist?"), _("Try again while holding shift to confirm"))
+                return
 
     if gui.rename_playlist_box:
         return
@@ -39361,6 +39363,9 @@ while pctl.running:
 
         if keymaps.test("delete-playlist"):
             delete_playlist(pctl.active_playlist_viewing)
+
+        if keymaps.test("delete-playlist-force"):
+            delete_playlist(pctl.active_playlist_viewing, force=True)
 
         if keymaps.test("rename-playlist"):
             rename_playlist(pctl.active_playlist_viewing)
