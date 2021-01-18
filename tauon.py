@@ -29,6 +29,7 @@
 # --------------------------------------------------------------------
 
 import sys
+import socket
 
 n_version = "6.4.5"
 t_version = "v" + n_version
@@ -4486,7 +4487,7 @@ class PlayerCtl:
             return plex.resolve_stream(track_object.url_key), None
 
         if track_object.file_ext == "JELY":
-            return jellyfin.resolve_stream(track_object.url_key), None
+            return jellyfin.resolve_stream(track_object.url_key)
 
         if track_object.file_ext == "KOEL":
             return koel.resolve_stream(track_object.url_key)
@@ -7052,8 +7053,11 @@ class Tauon:
     def __init__(self):
 
         self.t_title = t_title
+        self.t_version = t_version
+        self.t_agent = t_agent
         self.t_id = t_id
         self.desktop = desktop
+        self.device = socket.gethostname()
 
         self.translate = _
         self.strings = strings
@@ -10494,6 +10498,8 @@ class AlbumArt():
                 else:
                     if track.file_ext == "SUB":
                         source_image = subsonic.get_cover(track)
+                    elif track.file_ext == "JELY":
+                        source_image = jellyfin.get_cover(track)
                     else:
                         response = urllib.request.urlopen(get_network_thumbnail_url(track))
                         source_image = io.BytesIO(response.read())
