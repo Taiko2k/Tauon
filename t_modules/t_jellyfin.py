@@ -73,21 +73,23 @@ class Jellyfin():
         if not self.connected:
             return ""
 
-        base_url = f"{self.prefs.jelly_server_url}/Audio/{id}/stream.mp3"
+        base_url = f"{self.prefs.jelly_server_url}/Audio/{id}/stream"
         headers = {
             "Token": self.accessToken,
             "X-Application": "Tauon/1.0",
             "x-emby-authorization": self._get_jellyfin_auth()
         }
         params = {
-            "UserId": self.userId
+            "UserId": self.userId,
+            "static": "true"
         }
 
         if self.prefs.network_stream_bitrate > 0:
             params["MaxStreamingBitrate"] = self.prefs.network_stream_bitrate
 
         url = base_url + "?" + requests.compat.urlencode(params)
-        return url, headers
+
+        return base_url, params
 
     def get_cover(self, track):
         if not self.connected or not self.accessToken:
