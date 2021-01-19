@@ -17,6 +17,11 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+import requests
+import json
+import itertools
+import io
+
 
 class Jellyfin():
 
@@ -29,100 +34,164 @@ class Jellyfin():
         self.scanning = False
         self.connected = False
 
-    def _authenticate(self):
-        # todo
+        self.accessToken = None
+        self.userId = None
+        self.currentId = None
 
+    def _get_jellyfin_auth(self):
+        auth_str = f"MediaBrowser Client={self.tauon.t_title}, Device={self.tauon.device}, DeviceId=-, Version={self.tauon.t_version}"
+        if self.accessToken:
+            auth_str += f", Token={self.accessToken}"
+        return auth_str
+
+    def _authenticate(self):
         username = self.prefs.jelly_username
         password = self.prefs.jelly_password
         server = self.prefs.jelly_server_url
 
-        self.connected = True
+        response = requests.post(
+            f"{server}/Users/AuthenticateByName", 
+            headers={
+                "Content-type": "application/json",
+                "X-Application": self.tauon.t_agent,
+                "x-emby-authorization": self._get_jellyfin_auth()
+            },
+            data=json.dumps({ "username": username, "Pw": password }),
+        )
+
+        if response.status_code == 200:
+            info = response.json()
+            self.accessToken = info["AccessToken"]
+            self.userId = info["User"]["Id"]
+            self.connected = True
+
 
     def resolve_stream(self, id):
-        # todo Return a raw http audio file/stream url for given id
-        # If theres a choice of raw file or transcode, just use the raw file for now
-        return ""
+        if not self.connected or not self.accessToken:
+            self._authenticate()
 
-    def resolve_thumbnail(self, id):
-        # todo Return an album art url for a given id
-        return ""
+        if not self.connected:
+            return ""
+
+        base_url = f"{self.prefs.jelly_server_url}/Audio/{id}/stream"
+        headers = {
+            "Token": self.accessToken,
+            "X-Application": "Tauon/1.0",
+            "x-emby-authorization": self._get_jellyfin_auth()
+        }
+        params = {
+            "UserId": self.userId,
+            "static": "true"
+        }
+
+        if self.prefs.network_stream_bitrate > 0:
+            params["MaxStreamingBitrate"] = self.prefs.network_stream_bitrate
+
+        url = base_url + "?" + requests.compat.urlencode(params)
+
+        return base_url, params
+
+    def get_cover(self, track):
+        if not self.connected or not self.accessToken:
+            self._authenticate()
+
+        if not self.connected:
+            return None
+
+        if not track.art_url_key:
+            return None
+
+        headers = {
+            "Token": self.accessToken,
+            "X-Application": "Tauon/1.0",
+            "x-emby-authorization": self._get_jellyfin_auth()
+        }
+        params = {}
+        base_url = f"{self.prefs.jelly_server_url}/Items/{track.art_url_key}/Images/Primary"
+        response = requests.get(base_url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            return io.BytesIO(response.content)
+        else:
+            print("Jellyfin album art api error:", response.status_code, response.text)
+            return None
 
     def ingest_library(self, return_list=False):
-        pass
-        # todo uncomment the below section...
+        self.gui.update += 1
+        self.scanning = True
+        if not self.connected or not self.accessToken:
+            self._authenticate()
 
-        # self.gui.update += 1
-        # self.scanning = True
-        # if not self.connected:
-        #     self._authenticate()
-        #
-        # if not self.connected:
-        #     self.scanning = False
-        #     return []
-        #
-        # playlist = []
-        #
-        # # This code is to identify if a track has already been imported
-        # existing = {}
-        # for track_id, track in self.pctl.master_library.items():
-        #     if track.is_network and track.file_ext == "JELY":
-        #         existing[track.url_key] = track_id
-        #
-        # # todo Here we want to populate a list with all tracks in the users library.
-        # # Maybe there is a function like "get whole library", for "get folders". Tracks will need to be in
-        # # order, in groups of folders (or albums)
-        #
-        # # for album in users_albums:
-        # #   ....
-        #
-        #     parent = # (album_artist + " - " + album_title).strip("- ")  # todo We want some sort of
-        #     # unique name for each folder. A proper folder path would be ideal, but we can make
-        #     # something from the existing album info as in this example.
-        #
-        # #    for track in album:
-        # #       ....
-        #
-        #         id = self.pctl.master_count  # id here is tauons track_id for the track
-        #         replace_existing = False
-        #
-        #         e = existing.get(track.key)
-        #         if e is not None:
-        #             id = e
-        #             replace_existing = True
-        #
-        #
-        #         nt = self.tauon.TrackClass()
-        #         nt.index = id  # this is tauons track id
-        #
-        #         # todo Here, fill in the metadata for the track
-        #         nt.track_number = str(track.index)
-        #         nt.file_ext = "JELY"
-        #         nt.parent_folder_path = parent
-        #         nt.parent_folder_name = parent
-        #         nt.album_artist = album_artist
-        #         nt.artist = track_artist
-        #         nt.title = title
-        #         nt.album = album_title
-        #         nt.length = track.duration / 1000  # needs to be in seconds
-        #         nt.date = str(year)
-        #         nt.is_network = True
-        #
-        #         # todo Here, fill in the servers UID's for the track
-        #         nt.url_key = # Here we want an identifier to get the raw url stream.
-        #         nt.art_url_key = # we want some sort of id for the album art, this could be
-        #                          # the same as the above stream id. Ignore / leave blank if none
-        #
-        #         self.pctl.master_library[id] = nt
-        #         if not replace_existing:
-        #             self.pctl.master_count += 1
-        #         playlist.append(nt.index)
-        #
-        #
-        # self.scanning = False
-        #
-        # if return_list:
-        #     return playlist
-        #
-        # self.pctl.multi_playlist.append(tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
-        # self.pctl.gen_codes[tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
-        # tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
+        if not self.connected:
+            self.scanning = False
+            return []
+
+        playlist = []
+
+        # This code is to identify if a track has already been imported
+        existing = {}
+        for track_id, track in self.pctl.master_library.items():
+            if track.is_network and track.file_ext == "JELY":
+                existing[track.url_key] = track_id
+
+        response = requests.get(
+            f"{self.prefs.jelly_server_url}/Users/{self.userId}/Items",
+            headers={
+                "Token": self.accessToken,
+                "X-Application": "Tauon/1.0",
+                "x-emby-authorization": self._get_jellyfin_auth()
+            },
+            params={
+                "recursive": True,
+                "filter": "music"
+            }
+        )
+
+        if response.status_code == 200:
+            # filter audio items only
+            audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
+            # sort by artist, then album, then track number
+            sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
+            # group by parent
+            grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
+
+        for parent, items in grouped_items:
+            for track in items:
+                id = self.pctl.master_count  # id here is tauons track_id for the track
+                existing_track = existing.get(track.get("Id"))
+                replace_existing = existing_track is not None
+
+                if replace_existing:
+                    id = existing_track
+
+                nt = self.tauon.TrackClass()
+                nt.index = id  # this is tauons track id
+
+                nt.track_number = str(track.get("IndexNumber", ""))
+                nt.file_ext = "JELY"
+                nt.parent_folder_path = parent
+                nt.parent_folder_name = parent
+                nt.album_artist = track.get("AlbumArtist", "")
+                nt.artist = track.get("AlbumArtist", "")
+                nt.title = track.get("Name", "")
+                nt.album = track.get("Album", "")
+                nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
+                nt.date = str(track.get("ProductionYear"))
+                nt.is_network = True
+
+                nt.url_key = track.get("Id")
+                nt.art_url_key = track.get("Id") if track.get("AlbumPrimaryImageTag", False) else None
+
+                self.pctl.master_library[id] = nt
+                if not replace_existing:
+                    self.pctl.master_count += 1
+                playlist.append(nt.index)
+
+        self.scanning = False
+
+        if return_list:
+            return playlist
+
+        self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
+        self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
+        self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
