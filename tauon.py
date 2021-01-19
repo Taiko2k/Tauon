@@ -38824,8 +38824,10 @@ while pctl.running:
                 key_end_press = True
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = True
+                key_focused = 1
 
         elif event.type == SDL_KEYUP:
+
             k_input = True
             power += 5
             gui.update += 2
@@ -38845,6 +38847,7 @@ while pctl.running:
                 key_lalt = False
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = False
+                key_focused = 1
 
         elif event.type == SDL_TEXTINPUT:
             k_input = True
@@ -38877,7 +38880,6 @@ while pctl.running:
                 gui.album_tab_mode = False
                 gui.pl_update = 1
                 gui.update += 1
-
 
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 close_all_menus()
