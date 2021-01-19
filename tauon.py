@@ -1249,7 +1249,7 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_lyrics = False  # Function has been disabled
         self.jelly_username = ""
         self.jelly_password = ""
-        self.jelly_server_url = "http://localhost:8050"
+        self.jelly_server_url = "http://localhost:8096"
 
         self.auto_lyrics_checked = []
 
@@ -25429,13 +25429,13 @@ class Over:
 
         y += 28 * gui.scale
 
-        if self.button2(x, y, "PLEX", width=84*gui.scale):
-            self.account_view = 5
 
-        y += 28 * gui.scale
+
+        y += 15 * gui.scale
 
         if self.button2(x, y, "koel", width=84*gui.scale):
             self.account_view = 6
+
 
         if self.button2(x + round(95 * gui.scale), y, "Jellyfin", width=84*gui.scale):
             self.account_view = 10
@@ -25445,7 +25445,10 @@ class Over:
         if self.button2(x, y, "Airsonic", width=84*gui.scale):
             self.account_view = 7
 
-        y += 28 * gui.scale
+        if self.button2(x + round(95 * gui.scale), y, "PLEX", width=84*gui.scale):
+            self.account_view = 5
+
+        y += 41 * gui.scale
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
