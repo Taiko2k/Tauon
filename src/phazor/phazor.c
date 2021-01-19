@@ -698,7 +698,6 @@ void stop_decoder() {
             break;
         case FLAC:
             FLAC__stream_decoder_finish(dec);
-            src_reset(src);
             break;
         case MPG:
             mpg123_close(mh);
@@ -710,6 +709,7 @@ void stop_decoder() {
             wave_close();
             break;
     }
+    src_reset(src);
     decoder_allocated = 0;
 }
 
@@ -780,6 +780,7 @@ void connect_pulse() {
         mode = STOPPED;
     } else pulse_connected = 1;
 
+    src_reset(src);
     pthread_mutex_unlock(&pulse_mutex);
 
 }
