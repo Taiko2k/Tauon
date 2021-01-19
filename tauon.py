@@ -38577,9 +38577,6 @@ pctl.total_playtime = star_store.get_total()
 mouse_up = False
 mouse_wheel = 0
 
-
-
-
 while pctl.running:
     # bm.get('main')
     #time.sleep(100)
@@ -38777,6 +38774,7 @@ while pctl.running:
 
             if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
                 inp.key_return_press = True
+
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
                 inp.key_return_press = True
             elif event.key.keysym.sym == SDLK_TAB:
@@ -38883,7 +38881,7 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 close_all_menus()
-
+                key_focused = 1
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
@@ -38933,12 +38931,13 @@ while pctl.running:
                 focused = True
                 gui.pl_update = 1
                 gui.update += 1
+                print("SHOW")
 
             # elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-            #
-            #     input.mouse_enter_event = True
-            #     gui.update += 1
-            #     k_input = True
+            #     print("FOCUS GAINED")
+            #     # input.mouse_enter_event = True
+            #     # gui.update += 1
+            #     # k_input = True
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
@@ -39093,6 +39092,39 @@ while pctl.running:
         if inp.mouse_click or right_click or mouse_up:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
+
+        if key_focused != 0:
+            keymaps.hits.clear()
+
+            d_mouse_click = False
+            right_click = False
+            level_2_right_click = False
+            inp.mouse_click = False
+            middle_click = False
+            mouse_up = False
+            inp.key_return_press = False
+            key_down_press = False
+            key_up_press = False
+            key_right_press = False
+            key_left_press = False
+            key_esc_press = False
+            key_del = False
+            inp.backspace_press = 0
+            key_backspace_press = False
+            inp.key_tab_press = False
+            key_c_press = False
+            key_v_press = False
+            # key_f_press = False
+            key_a_press = False
+            # key_t_press = False
+            key_z_press = False
+            key_x_press = False
+            key_home_press = False
+            key_end_press = False
+            mouse_wheel = 0
+            pref_box.scroll = 0
+            input_text = ''
+            inp.level_2_enter = False
 
     if k_input and key_focused == 0:
 
