@@ -38933,7 +38933,6 @@ while pctl.running:
                 focused = True
                 gui.pl_update = 1
                 gui.update += 1
-                print("SHOW")
 
             # elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
             #     print("FOCUS GAINED")
