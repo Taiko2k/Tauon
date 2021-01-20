@@ -49,15 +49,18 @@ class Jellyfin():
         password = self.prefs.jelly_password
         server = self.prefs.jelly_server_url
 
-        response = requests.post(
-            f"{server}/Users/AuthenticateByName", 
-            headers={
-                "Content-type": "application/json",
-                "X-Application": self.tauon.t_agent,
-                "x-emby-authorization": self._get_jellyfin_auth()
-            },
-            data=json.dumps({ "username": username, "Pw": password }),
-        )
+        try:
+            response = requests.post(
+                f"{server}/Users/AuthenticateByName",
+                headers={
+                    "Content-type": "application/json",
+                    "X-Application": self.tauon.t_agent,
+                    "x-emby-authorization": self._get_jellyfin_auth()
+                },
+                data=json.dumps({ "username": username, "Pw": password }),
+            )
+        except:
+            return
 
         if response.status_code == 200:
             info = response.json()
@@ -124,6 +127,8 @@ class Jellyfin():
 
         if not self.connected:
             self.scanning = False
+            if not return_list:
+                self.tauon.gui.show_message("Error connecting to Jellyfin")
             return []
 
         playlist = []
@@ -154,6 +159,10 @@ class Jellyfin():
             sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
             # group by parent
             grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
+        else:
+            self.scanning = False
+            self.tauon.gui.show_message("Error accessing Jellyfin")
+            return
 
         for parent, items in grouped_items:
             for track in items:
