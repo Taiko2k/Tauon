@@ -189,7 +189,8 @@ class Jellyfin():
                 nt.is_network = True
 
                 nt.url_key = track.get("Id")
-                nt.art_url_key = track.get("Id") if track.get("AlbumPrimaryImageTag", False) else None
+                # nt.art_url_key = track.get("Id") if track.get("AlbumPrimaryImageTag", False) else None
+                nt.art_url_key = track.get("AlbumId", "")
 
                 self.pctl.master_library[id] = nt
                 if not replace_existing:
