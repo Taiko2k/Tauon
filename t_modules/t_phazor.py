@@ -402,7 +402,7 @@ def player4(tauon):
 
                 if subcommand == "return":
                     pctl.playerSubCommand = "stopped"
-                    pctl.playerCommandReady = True
+                    #pctl.playerCommandReady = True
 
             if command == "pauseon":
                 if prefs.use_pause_fade:

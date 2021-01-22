@@ -24363,7 +24363,6 @@ def reload_backend():
     gui.backend_reloading = True
     print("Reload backend...")
     wait = 0
-
     pre_state = pctl.stop(True)
 
     while pctl.playerCommandReady:
@@ -24371,7 +24370,6 @@ def reload_backend():
         wait += 1
         if wait > 20:
             break
-
     try:
         tm.player_lock.release()
     except:
