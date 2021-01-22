@@ -57,10 +57,11 @@
 
   <releases>
 
-    <release version="6.4.7" date="2021-01-07">
+    <release version="6.4.8" date="2021-01-24">
       <description>
         <ul>
-          <li>Minor tweaks and fixes</li>
+          <li>Added Jellyfin streaming support</li>
+          <li>Various fixes for keyboard shortcuts</li>
         </ul>
       </description>
     </release>

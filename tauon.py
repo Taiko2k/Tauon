@@ -943,6 +943,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "KOEL": [111, 98, 190, 255],
     "SUB": [235, 140, 20, 255],
     "SPTY": [30, 215, 96, 255],
+    "JELY": [190, 100, 210, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -25702,7 +25703,7 @@ class Over:
             field_width = round(245 * gui.scale)
 
             y += round(25 * gui.scale)
-            ddt.text((x + 0 * gui.scale, y), _("Username / Email"),
+            ddt.text((x + 0 * gui.scale, y), _("Username"),
                      colours.box_text_label, 11)
             y += round(19 * gui.scale)
             rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
