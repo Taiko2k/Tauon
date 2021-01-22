@@ -15,7 +15,7 @@
   - Import tracks and create playlists by simple **drag and drop**.
   - Seamless support for CUE sheets.
   - Import and control playback of **Spotify** tracks. (Requires Spotify Premium) 
-  - Stream music from your **PLEX**, **koel** or **Airsonic** server.
+  - Stream music from your **PLEX**, **koel**, **Jellyfin** or **Airsonic** server.
   - Large album art and gallery displays!
   - Support for **gapless playback**.
   - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music.
