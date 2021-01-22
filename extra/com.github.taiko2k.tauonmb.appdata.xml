@@ -57,7 +57,7 @@
 
   <releases>
 
-    <release version="6.4.8" date="2021-01-24">
+    <release version="6.4.8" date="2021-01-23">
       <description>
         <ul>
           <li>Added Jellyfin streaming support</li>
