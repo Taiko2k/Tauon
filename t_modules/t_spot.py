@@ -161,7 +161,8 @@ class SpotCtl:
                         self.play_target(tr.url_key)
                         time.sleep(0.3)
                         self.spotify.playback_seek(int(p * 1000))
-
+                        self.tauon.gui.message_box = False
+                        self.tauon.gui.update += 1
                         return
                 except:
                     pass
