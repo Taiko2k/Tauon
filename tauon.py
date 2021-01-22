@@ -7712,8 +7712,8 @@ def jellyfin_get_library_thread():
         inp.mouse_click = False
         show_message("Already scanning!")
         return
-    jellyfin.scanning = True
 
+    jellyfin.scanning = True
     shoot_dl = threading.Thread(target=jellyfin.ingest_library)
     shoot_dl.daemon = True
     shoot_dl.start()
@@ -28128,6 +28128,9 @@ class TopPanel:
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
+        elif jellyfin.scanning:
+            text = "Accessing JELLYFIN library..."
+            bg = [90, 170, 240, 255]
         elif gui.sync_progress and not transcode_list:
             text = gui.sync_progress
             bg = [100, 200, 100, 255]
