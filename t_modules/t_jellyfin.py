@@ -155,7 +155,6 @@ class Jellyfin():
         if response.status_code == 200:
             # filter audio items only
             audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
-            print(response.json())
             # sort by artist, then album, then track number
             sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
             # group by parent
