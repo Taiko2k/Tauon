@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.4.8"
+n_version = "6.4.9"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -9855,6 +9855,7 @@ class GallClass:
         self.save_out = save_out
         self.i = 0
         self.lock = threading.Lock()
+        self.limit = 60
 
     def get_file_source(self, track_object):
 
@@ -10075,11 +10076,7 @@ class GallClass:
                 self.key_list.append((track, size, offset))
 
                 # Remove old images to conserve RAM usage
-                limit = 110
-                if size and size < 150:
-                    limit = 500
-
-                if len(self.key_list) > limit:
+                if len(self.key_list) > self.limit:
                     gui.update += 1
                     key = self.key_list[0]
                     # while key in self.queue:
@@ -16329,7 +16326,58 @@ def set_download_deco(pl):
         text = _("Un-set as Downloads Playlist")
     return [colours.menu_text, colours.menu_background, text]
 
+
+
+def csv_string(item):
+    item = str(item)
+    item.replace("\"", "\"\"")
+    return f"\"{item}\""
+
+def export_playlist_albums(pl):
+    p = pctl.multi_playlist[pl]
+    name = p[0]
+    playlist = p[2]
+
+    albums = []
+    playtimes = {}
+    last_folder = None
+    for i, id in enumerate(playlist):
+        track = pctl.g(id)
+        if last_folder != track.parent_folder_path:
+            last_folder = track.parent_folder_path
+            if id not in albums:
+                albums.append(id)
+
+        playtimes[last_folder] = playtimes.get(last_folder, 0) + int(star_store.get(id))
+
+    filename = f"{user_directory}/{name}.csv"
+    xport = open(filename, 'w')
+
+    xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
+
+    for id in albums:
+        track = pctl.g(id)
+        artist = track.album_artist
+        if not artist:
+            artist = track.artist
+
+        xport.write("\n")
+        xport.write(csv_string(track.album) + ",")
+        xport.write(csv_string(artist) + ",")
+        xport.write(csv_string(track.date) + ",")
+        xport.write(csv_string(track.genre) + ",")
+        xport.write(str(int(album_star_store.get_rating(track))))
+        xport.write(",")
+        xport.write(str(round(playtimes[track.parent_folder_path])))
+        xport.write(",")
+        xport.write(csv_string(track.parent_folder_path))
+
+    xport.close()
+    show_message("Export complete.", "Saved as: " + filename, mode='done')
+
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
+tab_menu.add_to_sub(_("Export Albums CSV"), 2, export_playlist_albums, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 # tab_menu.add_to_sub(_('Forget Import Folder'), 2, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
@@ -19832,40 +19880,37 @@ def stt2(sec):
 
     return s_day.rjust(3) + ' ' + s_hours.rjust(3) + ' ' + s_min.rjust(3)
 
+
 def export_database():
-    xport = open(user_directory + '/DatabaseExport.csv', 'wb')
+
+    path = user_directory + '/DatabaseExport.csv'
+    xport = open(path, 'w')
+
+    xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
+
     for index, track in pctl.master_library.items():
 
-        line = []
-        line.append(str(track.artist))
-        line.append(str(track.title))
-        line.append(str(track.album))
-        line.append(str(track.album_artist))
-        line.append(str(track.track_number))
-        if track.is_cue is False:
-            line.append('FILE')
-        else:
-            line.append('CUE')
-        line.append(str(track.length))
-        line.append(str(track.date))
-        line.append(track.genre)
-        line.append(str(int(star_store.get_by_object(track))))
-        line.append(track.fullpath)
+        xport.write("\n")
 
-        for g in range(len(line)):
-            line[g] = line[g].encode('utf-8')
-
-        # exporter.writerow(line)
-        outline = b""
-        for item in line:
-            outline += '"'.encode('utf-8')
-            outline += item
-            outline += '",'.encode('utf-8')
-        outline += '\r\n'.encode('utf-8')
-        xport.write(outline)
+        xport.write(csv_string(track.artist) + ",")
+        xport.write(csv_string(track.title) + ",")
+        xport.write(csv_string(track.album) + ",")
+        xport.write(csv_string(track.album_artist) + ",")
+        xport.write(csv_string(track.track_number) + ",")
+        type = "File"
+        if track.is_network:
+            type = "Network"
+        elif track.is_cue:
+            type = "CUE File"
+        xport.write(type + ",")
+        xport.write(str(track.length) + ",")
+        xport.write(csv_string(track.date) + ",")
+        xport.write(csv_string(track.genre) + ",")
+        xport.write(str(int(star_store.get_by_object(track))) + ",")
+        xport.write(csv_string(track.fullpath))
 
     xport.close()
-    show_message("Export complete.", "Saved as 'DatabaseExport.csv'.", mode='done')
+    show_message("Export complete.", "Saved as: " + path, mode='done')
 
 
 def q_to_playlist():
@@ -40391,6 +40436,7 @@ while pctl.running:
 
                     render_pos = 0
                     album_on = 0
+                    album_count = 0
 
                     if not pref_box.enabled or mouse_wheel != 0:
                         gui.first_in_grid = None
@@ -40550,6 +40596,9 @@ while pctl.running:
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
 
                                 # Draw album art
+                                album_count += 1
+                                if (album_count * 1.5) + 10 > gall_ren.limit:
+                                    gall_ren.limit = round((album_count * 1.5) + 30)
                                 drawn_art = gall_ren.render(track, (x, y))
 
                                 # Determine mouse collision
