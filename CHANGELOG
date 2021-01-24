@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v6.4.9
+
+ - Added export playlist albums as CSV
+ - Improved export database CSV format compliance
+ - Fixed a bug with flickering album art in gallery on large screens
+
 v6.4.8
 
  - Added Jellyfin streaming support
