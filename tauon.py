@@ -1525,6 +1525,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.message_mode = 'info'
         self.message_subtext = ""
         self.message_subtext2 = ""
+        self.message_box_confirm_reference = None
+        self.message_box_use_reference = True
+        self.message_box_confirm_callback = None
 
 
         self.save_size = [450, 310]
@@ -14683,8 +14686,12 @@ def move_playlist(source, dest):
         print("Warning: Playlist move error")
 
 
-def delete_playlist(index, force=False):
+def delete_playlist(index, force=False, check_lock=False):
     global default_playlist
+
+    if check_lock and pl_is_locked(index):
+        show_message("Playlist is locked to prevent accidental deletion")
+        return
 
     if not force:
         if pl_is_locked(index):
@@ -14786,10 +14793,20 @@ def delete_playlist(index, force=False):
 to_scan = []
 
 def delete_playlist_force(index):
-    if pl_is_locked(index):
-        show_message("Playlist is locked to prevent accidental deletion")
+    delete_playlist(index, force=True, check_lock=True)
+
+def delete_playlist_by_id(id, force=False, check_lock=False):
+    delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
+
+def delete_playlist_ask(index):
+    gen = pctl.gen_codes.get(pl_to_id(index), "")
+    if (gen and not gen.startswith("self ")) or not pctl.multi_playlist[index][2]:
+        delete_playlist(index)
         return
-    delete_playlist(index, force=True)
+
+    gui.message_box_confirm_callback = delete_playlist_by_id
+    gui.message_box_confirm_reference = (pl_to_id(index), True, True)
+    show_message(_("Are you sure you want to delete playlist: %s?") % pctl.multi_playlist[index][0], mode="confirm")
 
 def rescan_tags(pl):
 
@@ -22316,6 +22333,12 @@ class MessageBox:
             message_bubble_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
         elif gui.message_mode == 'link':
             message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
+        elif gui.message_mode == 'confirm':
+            message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+            ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.message_box_text, 15)
+            if draw.button("Confirm", (w - 62 * gui.scale) // 2 + x, y + 32 * gui.scale):
+                gui.message_box_confirm_callback(*gui.message_box_confirm_reference)
+            return
 
         if gui.message_subtext:
             ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
@@ -27816,7 +27839,7 @@ class TopPanel:
 
                         if key_shift_down:
                             pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
-                            delete_playlist(playlist_box.drag_on)
+                            delete_playlist(playlist_box.drag_on, check_lock=True)
                         else:
                             move_playlist(playlist_box.drag_on, i)
 
@@ -27825,7 +27848,8 @@ class TopPanel:
 
                 # Delete playlist on wheel click
                 elif tab_menu.active is False and middle_click:
-                    delete_playlist(i)
+                    #delete_playlist(i)
+                    delete_playlist_ask(i)
                     break
 
                 # Activate menu on right click
@@ -33156,7 +33180,8 @@ class PlaylistBox:
             yy += self.tab_h + self.gap
 
         if delete_pl is not None:
-            delete_playlist(delete_pl)
+            #delete_playlist(delete_pl)
+            delete_playlist_ask(delete_pl)
             gui.update += 1
 
         # Create new playlist if drag in blank space after tabs
