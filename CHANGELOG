@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v6.4.9
 
  - Added export playlist albums as CSV
+ - Added button conformation to delete playlist on middle click
  - Improved export database CSV format compliance
  - Fixed a bug with flickering album art in gallery on large screens
  - Fixed high CPU on mouse down
