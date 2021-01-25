@@ -481,7 +481,7 @@ if maximized:
     SDL_MaximizeWindow(t_window)
 
 
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
 # window_surface = SDL_GetWindowSurface(t_window)
 
@@ -1854,6 +1854,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.spot_info_icon = asset_loader("spot-info.png", True)
         self.tray_active = False
         self.buffering = 0  # 0:false 1:true
+
+        self.update_on_drag = False
+        self.pl_update_on_drag = False
 
 gui = GuiVar()
 
@@ -21516,7 +21519,6 @@ class SearchOverlay:
 
             # Search active animation
             if self.sip:
-
                 x = round(15 * gui.scale)
                 y = x
                 s = round(7 * gui.scale)
@@ -27454,7 +27456,8 @@ class TopPanel:
         self.height = hh
 
         if quick_drag is True:
-            gui.pl_update = 1
+            #gui.pl_update = 1
+            gui.update_on_drag = True
 
         # Draw the background
         ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background, True)
@@ -27605,6 +27608,7 @@ class TopPanel:
                         else:
                             pctl.multi_playlist[playlist_box.drag_on][8] = False
                     gui.update += 1
+            gui.update_on_drag = True
 
 
         # List all tabs eligible to be shown
@@ -31554,6 +31558,9 @@ class ScrollBox():
 
         if coll((fx, y, fw, h)):
 
+            if mouse_down:
+                gui.update += 1
+
             if r_click:
 
                 p = mouse_position[1] - half - y
@@ -32218,6 +32225,9 @@ class RadioBox:
         y = self.y
         w = self.w
         h = self.h
+
+        if self.drag:
+            gui.update_on_drag = True
 
         yy = y + round(100 * gui.scale)
         x += round(10 * gui.scale)
@@ -35009,6 +35019,9 @@ class QueueBox:
         # Get new copy of queue if not dragging
         if not self.dragging:
             self.fq = copy.deepcopy(pctl.force_queue)
+        else:
+            #gui.update += 1
+            gui.update_on_drag = True
 
         # End drag if mouse not in correct state for it
         if not mouse_down and not mouse_up:
@@ -35085,9 +35098,6 @@ class QueueBox:
                 break
 
             track = pctl.g(fq[i][0])
-
-
-
 
             rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
@@ -39172,8 +39182,12 @@ while pctl.running:
     if prefs.art_bg and core_timer.get() < 3:
         power = 1000
 
-    if mouse_down:
+    if mouse_down and mouse_moved:
         power = 1000
+        if gui.update_on_drag:
+            gui.update += 1
+        if gui.pl_update_on_drag:
+            gui.pl_update += 1
 
     if pctl.wake_past_time:
 
@@ -39211,20 +39225,6 @@ while pctl.running:
 
     else:
         power = 0
-
-    if mouse_down and not k_input:
-
-        # Force update (for smooth scrolling) when mouse down (A little hacky)
-
-        gui.update = 1
-
-        # We could impose a minimum frame time here...
-        # But waiting any time seems to cause scroll animations to be less smooth.
-        # Most computers now have many cores/threads so perhaps its not so bad to
-        # breiefly run a thread at 100% to ensure a smooth animation.
-
-        # time.sleep(0.002)
-
 
     if gui.pl_update > 2:
         gui.pl_update = 2
@@ -39948,6 +39948,8 @@ while pctl.running:
         SDL_RenderClear(renderer)
 
         # perf_timer.set()
+        gui.update_on_drag = False
+        gui.pl_update_on_drag = False
 
         mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
         gui.showed_title = False
@@ -40014,8 +40016,10 @@ while pctl.running:
                     and not artist_info_scroll.held \
                     and gui.layer_focus == 0 and gui.show_playlist:
 
-                if side_drag != True:
+                if side_drag is True:
                     draw_sep_hl = True
+                    #gui.update += 1
+                    gui.update_on_drag = True
 
                 if inp.mouse_click:
                     side_drag = True
@@ -41482,7 +41486,8 @@ while pctl.running:
 
                 if quick_drag and not coll_point(gui.drag_source_position_persist, panel_rect) and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
                     gui.force_side_on_drag = True
-                    update_layout_do()
+                    if mouse_up:
+                        update_layout_do()
 
 
                 if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
@@ -41545,6 +41550,12 @@ while pctl.running:
                     width = 11 * gui.scale
             if gui.set_mode and prefs.left_align_album_artist_title:
                 width = 11 * gui.scale
+
+            # x = gui.plw
+            # width = round(14 * gui.scale)
+            # if gui.lsp:
+            #     x += gui.lspw
+            # x -= width
 
             gui.scroll_hide_box = (
                 x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
@@ -42768,7 +42779,8 @@ while pctl.running:
                     long_block = round(25 * gui.scale)
                     ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), [160, 140, 235, 240], True)
 
-            gui.update += 1
+            #gui.update += 1
+            gui.update_on_drag = True
 
         # Drag pl tab next to cursor
         if (playlist_box.drag) and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
