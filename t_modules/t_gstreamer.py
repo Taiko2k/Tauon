@@ -424,7 +424,9 @@ def player3(tauon):  # GStreamer
         def main_callback(self):
 
             if not pctl.playerCommandReady and pctl.playing_state == 0 and not tauon.spot_ctl.playing and not tauon.spot_ctl.coasting:
-                tauon.tm.player_lock.acquire()
+                # tauon.tm.player_lock.acquire()  # Blocking the GLib thread blocks tray processing
+                GLib.timeout_add(50, self.main_callback)
+                return
 
             if gui.vis == 1:
                 if pctl.playing_state == 1:
@@ -781,7 +783,7 @@ def player3(tauon):  # GStreamer
                     if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                         tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
                         pctl.playing_time = pctl.new_time
-                        
+
                     elif self.play_state > 0:
                         if not self.using_cache and pctl.target_object.is_network and \
                                 not pctl.target_object.file_ext == "KOEL" and \
@@ -880,10 +882,9 @@ def player3(tauon):  # GStreamer
                     if self.play_state > 0:
                         self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.05)
-                    print("unload")
+                    print("Unload GStreamer")
                     self.mainloop.quit()
                     pctl.playerCommand = 'done'
-                    print("return")
                     return
 
             if self.play_state == 3:
