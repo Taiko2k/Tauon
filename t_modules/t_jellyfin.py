@@ -44,7 +44,7 @@ class Jellyfin():
             auth_str += f", Token={self.accessToken}"
         return auth_str
 
-    def _authenticate(self):
+    def _authenticate(self, debug=False):
         username = self.prefs.jelly_username
         password = self.prefs.jelly_password
         server = self.prefs.jelly_server_url
@@ -60,6 +60,7 @@ class Jellyfin():
                 data=json.dumps({ "username": username, "Pw": password }),
             )
         except:
+            self.gui.show_message("Could not establish connection to server.", "Check server is running and URL is correct.", mode="error")
             return
 
         if response.status_code == 200:
@@ -67,7 +68,16 @@ class Jellyfin():
             self.accessToken = info["AccessToken"]
             self.userId = info["User"]["Id"]
             self.connected = True
+            if debug:
+                self.gui.show_message("Connection and authorisation successful", mode="done")
+        else:
+            if response.status_code == 401:
+                self.gui.show_message("401 Authentication failed", "Check username and password.", mode="warning")
+            else:
+                self.gui.show_message("Jellyfin auth error", f"{response.status_code} {response.text}", mode="warning")
 
+    def test(self):
+        self._authenticate(debug=True)
 
     def resolve_stream(self, id):
         if not self.connected or not self.accessToken:
@@ -122,6 +132,10 @@ class Jellyfin():
     def ingest_library(self, return_list=False):
         self.gui.update += 1
         self.scanning = True
+        self.gui.to_got = 0
+
+        print("Prepare for Jellyfin library import...")
+
         if not self.connected or not self.accessToken:
             self._authenticate()
 
@@ -139,20 +153,29 @@ class Jellyfin():
             if track.is_network and track.file_ext == "JELY":
                 existing[track.url_key] = track_id
 
-        response = requests.get(
-            f"{self.prefs.jelly_server_url}/Users/{self.userId}/Items",
-            headers={
-                "Token": self.accessToken,
-                "X-Application": "Tauon/1.0",
-                "x-emby-authorization": self._get_jellyfin_auth()
-            },
-            params={
-                "recursive": True,
-                "filter": "music"
-            }
-        )
+        print("Get items...")
+
+        try:
+            response = requests.get(
+                f"{self.prefs.jelly_server_url}/Users/{self.userId}/Items",
+                headers={
+                    "Token": self.accessToken,
+                    "X-Application": "Tauon/1.0",
+                    "x-emby-authorization": self._get_jellyfin_auth()
+                },
+                params={
+                    "recursive": True,
+                    "filter": "music"
+                }
+            )
+        except:
+            self.gui.show_message("Error connecting to Jellyfin for Import", mode="error")
+            return
 
         if response.status_code == 200:
+
+            print("Connection successful, soring items...")
+
             # filter audio items only
             audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
             # sort by artist, then album, then track number
@@ -161,7 +184,7 @@ class Jellyfin():
             grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
         else:
             self.scanning = False
-            self.tauon.gui.show_message("Error accessing Jellyfin")
+            self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
             return
 
         for parent, items in grouped_items:
@@ -197,6 +220,7 @@ class Jellyfin():
                 playlist.append(nt.index)
 
         self.scanning = False
+        print("Jellyfin import complete")
 
         if return_list:
             return playlist
