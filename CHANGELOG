@@ -8,6 +8,7 @@ v6.4.9
  - Improved export database CSV format compliance
  - Fixed a bug with flickering album art in gallery on large screens
  - Fixed high CPU on mouse down
+ - Fixed a bug with system tray when using GStreamer backend
 
 v6.4.8
 

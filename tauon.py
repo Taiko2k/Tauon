@@ -25816,6 +25816,10 @@ class Over:
 
             self.button(x, y, _("Import music to playlist"), jellyfin_get_library_thread)
 
+            y += round(35 * gui.scale)
+            if self.button(x, y, _("Test connectivity")):
+                jellyfin.test()
+
         if self.account_view == 6:
 
             ddt.text((x, y), _('koel network streaming'), colours.box_sub_text, 213)
