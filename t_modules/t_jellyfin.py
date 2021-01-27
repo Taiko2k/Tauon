@@ -170,6 +170,7 @@ class Jellyfin():
             )
         except:
             self.gui.show_message("Error connecting to Jellyfin for Import", mode="error")
+            self.scanning = False
             return
 
         if response.status_code == 200:
