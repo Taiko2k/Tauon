@@ -9,6 +9,7 @@ v6.4.9
  - Fixed a bug with flickering album art in gallery on large screens
  - Fixed high CPU on mouse down
  - Fixed a bug with system tray when using GStreamer backend
+ - Fixed crash when drop files on tab
 
 v6.4.8
 
