@@ -1860,6 +1860,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.update_on_drag = False
         self.pl_update_on_drag = False
+        self.drop_playlist_target = 0
 
 gui = GuiVar()
 
@@ -26699,6 +26700,10 @@ class Over:
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
 
+        w = ddt.get_text_w(_("Donate"), 211)
+        x -= w + round(40 * gui.scale)
+        if self.button(x, y, _("Donate"), width = w + round(25 * gui.scale)):
+            webbrowser.open("https://ko-fi.com/taiko2k", new=2, autoraise=True)
 
     def topchart(self, x0, y0, w0, h0):
 
@@ -27971,7 +27976,7 @@ class TopPanel:
             ddt.text((x + self.tab_text_start_space, y + self.tab_text_y_offset), tab[0], fg, self.tab_text_font, bg=bg)
 
             # Drop pulse
-            if gui.pl_pulse and playlist_target == i:
+            if gui.pl_pulse and gui.drop_playlist_target == i:
                     if tab_pulse.render(x, y + self.height - 2, tab_width, 2, r=200, g=130) is False:
                         gui.pl_pulse = False
 
@@ -38625,7 +38630,7 @@ def drop_file(target):
         i_x = i_x.contents.value
 
     # print((i_x, i_y))
-    playlist_target = 0
+    gui.drop_playlist_target = 0
     # print(event.drop)
 
     if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
@@ -38634,7 +38639,7 @@ def drop_file(target):
             wid = top_panel.tab_text_spaces[tab] + top_panel.tab_extra_width
 
             if x < i_x < x + wid:
-                playlist_target = tab
+                gui.drop_playlist_target = tab
                 tab_pulse.pulse()
                 gui.update += 1
                 gui.pl_pulse = True
@@ -38645,10 +38650,10 @@ def drop_file(target):
         else:
             print("MISS")
             if new_playlist_cooldown:
-                playlist_target = pctl.active_playlist_viewing
+                gui.drop_playlist_target = pctl.active_playlist_viewing
             else:
                 if not target.lower().endswith(".xspf"):
-                    playlist_target = new_playlist()
+                    gui.drop_playlist_target = new_playlist()
                 new_playlist_cooldown = True
 
     elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
@@ -38659,7 +38664,7 @@ def drop_file(target):
 
         for i, pl in enumerate(pctl.multi_playlist):
             if i_y < y:
-                playlist_target = i
+                gui.drop_playlist_target = i
                 tab_pulse.pulse()
                 gui.update += 1
                 gui.pl_pulse = True
@@ -38668,15 +38673,15 @@ def drop_file(target):
             y += playlist_box.tab_h + playlist_box.gap
         else:
             if new_playlist_cooldown:
-                playlist_target = pctl.active_playlist_viewing
+                gui.drop_playlist_target = pctl.active_playlist_viewing
             else:
                 if not target.lower().endswith(".xspf"):
-                    playlist_target = new_playlist()
+                    gui.drop_playlist_target = new_playlist()
                 new_playlist_cooldown = True
 
 
     else:
-        playlist_target = pctl.active_playlist_viewing
+        gui.drop_playlist_target = pctl.active_playlist_viewing
 
     if not os.path.exists(target) and flatpak_mode:
         show_message(_("Could not access! Possible insufficient Flatpak permissions."),
@@ -38689,11 +38694,11 @@ def drop_file(target):
     if os.path.isdir(load_order.target):
         quick_import_done.append(load_order.target)
 
-        # if not pctl.multi_playlist[playlist_target][7]:
-        pctl.multi_playlist[playlist_target][7].append(load_order.target)
-        reduce_paths(pctl.multi_playlist[playlist_target][7])
+        # if not pctl.multi_playlist[gui.drop_playlist_target][7]:
+        pctl.multi_playlist[gui.drop_playlist_target][7].append(load_order.target)
+        reduce_paths(pctl.multi_playlist[gui.drop_playlist_target][7])
 
-    load_order.playlist = pctl.multi_playlist[playlist_target][6]
+    load_order.playlist = pctl.multi_playlist[gui.drop_playlist_target][6]
     load_orders.append(copy.deepcopy(load_order))
 
     # print('dropped: ' + str(dropped_file))
