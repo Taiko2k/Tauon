@@ -103,9 +103,19 @@ def player4(tauon):
 
             try:
                 self.part = requests.get(url, stream=True, params=params)
+
+                if self.part.status_code == 404:
+                    gui.show_message("Server: File not found", mode="error")
+                    self.dl_ready = "failure"
+                    return
+                elif self.part.status_code != 200:
+                    gui.show_message("Server Error", mode="error")
+                    self.dl_ready = "failure"
+                    return
+
             except:
                 gui.show_message("Could not connect to server", mode="error")
-                self.dl_ready = "Failure"
+                self.dl_ready = "failure"
                 return
 
             bitrate = 0
@@ -263,6 +273,10 @@ def player4(tauon):
                         time.sleep(0.02)
                     target_path = dl.save_temp
 
+                    if dl.dl_ready == "failure":
+                        state = 0
+                        aud.stop()
+                        continue
                 # if not target_object.is_network and target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
                 #     state = 0
                 #     aud.stop()
@@ -346,7 +360,7 @@ def player4(tauon):
                         if was_playing:
                             aud.resume()
 
-                    if loaded_track.is_network and loaded_track.fullpath.endswith(".ogg"):
+                    if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
                         # The vorbis decoder doesn't like appended files
                         aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
                     else:
@@ -388,7 +402,7 @@ def player4(tauon):
 
                 if subcommand == "return":
                     pctl.playerSubCommand = "stopped"
-                    pctl.playerCommandReady = True
+                    #pctl.playerCommandReady = True
 
             if command == "pauseon":
                 if prefs.use_pause_fade:

@@ -29,10 +29,14 @@
 # --------------------------------------------------------------------
 
 import sys
+<<<<<<< HEAD
 import sdl2
 import sdl2.ext
+=======
+import socket
+>>>>>>> 95f305369c1f552df3a0c15f3ee5e2c07fa41309
 
-n_version = "6.4.8"
+n_version = "6.4.9"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -482,7 +486,7 @@ if maximized:
     SDL_MaximizeWindow(t_window)
 
 
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
 # window_surface = SDL_GetWindowSurface(t_window)
 
@@ -944,6 +948,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "KOEL": [111, 98, 190, 255],
     "SUB": [235, 140, 20, 255],
     "SPTY": [30, 215, 96, 255],
+    "JELY": [190, 100, 210, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -1248,6 +1253,10 @@ class Prefs:    # Used to hold any kind of settings
         self.koel_server_url = "http://localhost:8050"
 
         self.auto_lyrics = False  # Function has been disabled
+        self.jelly_username = ""
+        self.jelly_password = ""
+        self.jelly_server_url = "http://localhost:8096"
+
         self.auto_lyrics_checked = []
 
         self.show_side_art = True
@@ -1521,6 +1530,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.message_mode = 'info'
         self.message_subtext = ""
         self.message_subtext2 = ""
+        self.message_box_confirm_reference = None
+        self.message_box_use_reference = True
+        self.message_box_confirm_callback = None
 
 
         self.save_size = [450, 310]
@@ -1850,6 +1862,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.spot_info_icon = asset_loader("spot-info.png", True)
         self.tray_active = False
         self.buffering = 0  # 0:false 1:true
+
+        self.update_on_drag = False
+        self.pl_update_on_drag = False
 
 gui = GuiVar()
 
@@ -3421,6 +3436,7 @@ if db_version > 0:
                 f.write("\nregenerate-playlist R Alt\n")
                 f.write("clear-queue Q Shift Alt\n")
                 f.write("resize-window-16:9 F11 Alt\n")
+                f.write("delete-playlist-force W Shift Ctrl\n")
 
 
 if old_backend == 1:
@@ -3459,6 +3475,10 @@ def save_prefs():
     cf.update_value("subsonic-password", prefs.subsonic_password)
     cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
     cf.update_value("subsonic-server-url", prefs.subsonic_server)
+
+    cf.update_value("jelly-username", prefs.jelly_username)
+    cf.update_value("jelly-password", prefs.jelly_password)
+    cf.update_value("jelly-server-url", prefs.jelly_server_url)
 
     cf.update_value("koel-username", prefs.koel_username)
     cf.update_value("koel-password", prefs.koel_password)
@@ -3789,6 +3809,13 @@ def load_prefs():
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
     prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
+    
+    cf.br()
+    cf.add_text("[jellyfin_account]")
+    prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
+    prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
+    prefs.jelly_server_url = cf.sync_add("string", "jelly-server-url", prefs.jelly_server_url, "The IP:Port where the jellyfin server is hosted.")
+    prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
 
     cf.br()
     cf.add_text("[network]")
@@ -4533,6 +4560,9 @@ class PlayerCtl:
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
             return plex.resolve_stream(track_object.url_key), None
+
+        if track_object.file_ext == "JELY":
+            return jellyfin.resolve_stream(track_object.url_key)
 
         if track_object.file_ext == "KOEL":
             return koel.resolve_stream(track_object.url_key)
@@ -7103,8 +7133,11 @@ class Tauon:
     def __init__(self):
 
         self.t_title = t_title
+        self.t_version = t_version
+        self.t_agent = t_agent
         self.t_id = t_id
         self.desktop = desktop
+        self.device = socket.gethostname()
 
         self.translate = _
         self.strings = strings
@@ -7223,7 +7256,6 @@ class PlexService:
     def get_albums(self, return_list=False):
 
         gui.update += 1
-
         self.scanning = True
 
         if not self.connected:
@@ -7302,6 +7334,11 @@ class PlexService:
 
 plex = PlexService()
 tauon.plex = plex
+
+from t_modules.t_jellyfin import Jellyfin
+
+jellyfin = Jellyfin(tauon)
+tauon.jellyfin = jellyfin
 
 
 class SubsonicService:
@@ -7667,7 +7704,11 @@ def get_network_thumbnail_url(track_object):
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
         return url
-
+    if track_object.file_ext == "JELY":
+        url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+        assert url is not None
+        assert url != ""
+        return url
     if track_object.file_ext == "KOEL":
         url = track_object.art_url_key
         assert url
@@ -7675,12 +7716,22 @@ def get_network_thumbnail_url(track_object):
 
     return None
 
+def jellyfin_get_library_thread():
+
+    pref_box.close()
+    save_prefs()
+    if jellyfin.scanning:
+        inp.mouse_click = False
+        show_message("Already scanning!")
+        return
+
+    jellyfin.scanning = True
+    shoot_dl = threading.Thread(target=jellyfin.ingest_library)
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
 
 def plex_get_album_thread():
-
-    # if prefs.backend != 1:
-    #     show_message("This feature is currently only available with the BASS backend")
-    #     return
 
     pref_box.close()
     save_prefs()
@@ -9780,6 +9831,10 @@ text_plex_usr = TextBox2()
 text_plex_pas = TextBox2()
 text_plex_ser = TextBox2()
 
+text_jelly_usr = TextBox2()
+text_jelly_pas = TextBox2()
+text_jelly_ser = TextBox2()
+
 text_koel_usr = TextBox2()
 text_koel_pas = TextBox2()
 text_koel_ser = TextBox2()
@@ -9811,6 +9866,7 @@ class GallClass:
         self.save_out = save_out
         self.i = 0
         self.lock = threading.Lock()
+        self.limit = 60
 
     def get_file_source(self, track_object):
 
@@ -10031,11 +10087,7 @@ class GallClass:
                 self.key_list.append((track, size, offset))
 
                 # Remove old images to conserve RAM usage
-                limit = 110
-                if size and size < 150:
-                    limit = 500
-
-                if len(self.key_list) > limit:
+                if len(self.key_list) > self.limit:
                     gui.update += 1
                     key = self.key_list[0]
                     # while key in self.queue:
@@ -10523,6 +10575,8 @@ class AlbumArt():
                 else:
                     if track.file_ext == "SUB":
                         source_image = subsonic.get_cover(track)
+                    elif track.file_ext == "JELY":
+                        source_image = jellyfin.get_cover(track)
                     else:
                         response = urllib.request.urlopen(get_network_thumbnail_url(track))
                         source_image = io.BytesIO(response.read())
@@ -13538,6 +13592,7 @@ def get_lyric_fire(track_object, silent=False):
             prefs.show_lyrics_side = True
         gui.update += 1
         lyrics_ren.lyrics_position = 0
+        pctl.notify_change()
 
 
 def get_lyric_wiki(track_object):
@@ -14636,17 +14691,28 @@ def move_playlist(source, dest):
         print("Warning: Playlist move error")
 
 
-def delete_playlist(index):
+def delete_playlist(index, force=False, check_lock=False):
     global default_playlist
 
-    if pl_is_locked(index):
+    if check_lock and pl_is_locked(index):
         show_message("Playlist is locked to prevent accidental deletion")
         return
+
+    if not force:
+        if pl_is_locked(index):
+            show_message("Playlist is locked to prevent accidental deletion")
+            return
+
+        gen = pctl.gen_codes.get(pl_to_id(index), "")
+        if (gen == "" or gen.startswith("self ")) and pctl.multi_playlist[index][2]:
+            if not (key_shift_down or key_shiftr_down):
+                show_message(_("Are you sure you want to delete this playlist?"), _("Try again while holding shift to confirm"))
+                return
 
     if gui.rename_playlist_box:
         return
 
-    # Set screen to be redwarn
+    # Set screen to be redrawn
     gui.pl_update = 1
     gui.update += 1
 
@@ -14731,6 +14797,21 @@ def delete_playlist(index):
 
 to_scan = []
 
+def delete_playlist_force(index):
+    delete_playlist(index, force=True, check_lock=True)
+
+def delete_playlist_by_id(id, force=False, check_lock=False):
+    delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
+
+def delete_playlist_ask(index):
+    gen = pctl.gen_codes.get(pl_to_id(index), "")
+    if (gen and not gen.startswith("self ")) or not pctl.multi_playlist[index][2]:
+        delete_playlist(index)
+        return
+
+    gui.message_box_confirm_callback = delete_playlist_by_id
+    gui.message_box_confirm_reference = (pl_to_id(index), True, True)
+    show_message(_("Are you sure you want to delete playlist: %s?") % pctl.multi_playlist[index][0], mode="confirm")
 
 def rescan_tags(pl):
 
@@ -15195,7 +15276,7 @@ def pl_toggle_playlist_break(ref):
 delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
-tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+tab_menu.add(_('Delete'), delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 
 def gen_unique_pl_title(base, extra="", start=1):
 
@@ -15450,6 +15531,10 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not plex.scanning:
                 playlist.extend(plex.get_albums(return_list=True))
 
+        elif cm == "jelly":
+            if not jellyfin.scanning:
+                playlist.extend(jellyfin.ingest_library(return_list=True))
+
         elif cm == "koel":
             if not koel.scanning:
                 playlist.extend(koel.get_albums(return_list=True))
@@ -15470,7 +15555,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 temp += selection
 
             playlist += list(OrderedDict.fromkeys(temp))
-
             selections.clear()
 
         elif cm == "cue":
@@ -15787,7 +15871,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             search = quote
             search_over.all_folders = True
@@ -15819,7 +15905,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             g_search = quote.lower().replace("-", "") #.replace(" ", "")
 
@@ -15834,7 +15922,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 time.sleep(0.01)
 
             found_name = ""
-            print(search_over.results)
 
             if cm.startswith("g=\""):
                 for result in search_over.results:
@@ -15866,7 +15953,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             search = quote
             search_over.sip = True
@@ -15918,7 +16007,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             if not selections:
                 for plist in pctl.multi_playlist:
-                    selections.append(plist[2])
+                    code = pctl.gen_codes.get(plist[6])
+                    if code is None or code == "" or code.startswith("self"):
+                        selections.append(plist[2])
 
             cooldown = 0
             dones = {}
@@ -15952,8 +16043,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                     break
             else:
                 for p in pctl.multi_playlist:
-                    print(p[0].lower())
-                    print(pl_name.lower())
+                    #print(p[0].lower())
+                    #print(pl_name.lower())
                     if p[0].lower().startswith(pl_name.lower()):
                         target = p[2]
                         break
@@ -15982,6 +16073,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     pctl.regen_in_progress = False
     gui.pl_update = 1
     reload()
+    pctl.notify_change()
 
     # print(cmds)
 
@@ -16259,7 +16351,58 @@ def set_download_deco(pl):
         text = _("Un-set as Downloads Playlist")
     return [colours.menu_text, colours.menu_background, text]
 
+
+
+def csv_string(item):
+    item = str(item)
+    item.replace("\"", "\"\"")
+    return f"\"{item}\""
+
+def export_playlist_albums(pl):
+    p = pctl.multi_playlist[pl]
+    name = p[0]
+    playlist = p[2]
+
+    albums = []
+    playtimes = {}
+    last_folder = None
+    for i, id in enumerate(playlist):
+        track = pctl.g(id)
+        if last_folder != track.parent_folder_path:
+            last_folder = track.parent_folder_path
+            if id not in albums:
+                albums.append(id)
+
+        playtimes[last_folder] = playtimes.get(last_folder, 0) + int(star_store.get(id))
+
+    filename = f"{user_directory}/{name}.csv"
+    xport = open(filename, 'w')
+
+    xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
+
+    for id in albums:
+        track = pctl.g(id)
+        artist = track.album_artist
+        if not artist:
+            artist = track.artist
+
+        xport.write("\n")
+        xport.write(csv_string(track.album) + ",")
+        xport.write(csv_string(artist) + ",")
+        xport.write(csv_string(track.date) + ",")
+        xport.write(csv_string(track.genre) + ",")
+        xport.write(str(int(album_star_store.get_rating(track))))
+        xport.write(",")
+        xport.write(str(round(playtimes[track.parent_folder_path])))
+        xport.write(",")
+        xport.write(csv_string(track.parent_folder_path))
+
+    xport.close()
+    show_message("Export complete.", "Saved as: " + filename, mode='done')
+
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
+tab_menu.add_to_sub(_("Export Albums CSV"), 2, export_playlist_albums, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 # tab_menu.add_to_sub(_('Forget Import Folder'), 2, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
@@ -19556,6 +19699,7 @@ def check_auto_update_okay(code, pl=None):
                           not "st" in cmds and
                           not "rt" in cmds and
                           not "plex" in cmds and
+                          not "jelly" in cmds and
                           not "koel" in cmds and
                           not "air" in cmds and
                           not "sal" in cmds and
@@ -19761,40 +19905,37 @@ def stt2(sec):
 
     return s_day.rjust(3) + ' ' + s_hours.rjust(3) + ' ' + s_min.rjust(3)
 
+
 def export_database():
-    xport = open(user_directory + '/DatabaseExport.csv', 'wb')
+
+    path = user_directory + '/DatabaseExport.csv'
+    xport = open(path, 'w')
+
+    xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
+
     for index, track in pctl.master_library.items():
 
-        line = []
-        line.append(str(track.artist))
-        line.append(str(track.title))
-        line.append(str(track.album))
-        line.append(str(track.album_artist))
-        line.append(str(track.track_number))
-        if track.is_cue is False:
-            line.append('FILE')
-        else:
-            line.append('CUE')
-        line.append(str(track.length))
-        line.append(str(track.date))
-        line.append(track.genre)
-        line.append(str(int(star_store.get_by_object(track))))
-        line.append(track.fullpath)
+        xport.write("\n")
 
-        for g in range(len(line)):
-            line[g] = line[g].encode('utf-8')
-
-        # exporter.writerow(line)
-        outline = b""
-        for item in line:
-            outline += '"'.encode('utf-8')
-            outline += item
-            outline += '",'.encode('utf-8')
-        outline += '\r\n'.encode('utf-8')
-        xport.write(outline)
+        xport.write(csv_string(track.artist) + ",")
+        xport.write(csv_string(track.title) + ",")
+        xport.write(csv_string(track.album) + ",")
+        xport.write(csv_string(track.album_artist) + ",")
+        xport.write(csv_string(track.track_number) + ",")
+        type = "File"
+        if track.is_network:
+            type = "Network"
+        elif track.is_cue:
+            type = "CUE File"
+        xport.write(type + ",")
+        xport.write(str(track.length) + ",")
+        xport.write(csv_string(track.date) + ",")
+        xport.write(csv_string(track.genre) + ",")
+        xport.write(str(int(star_store.get_by_object(track))) + ",")
+        xport.write(csv_string(track.fullpath))
 
     xport.close()
-    show_message("Export complete.", "Saved as 'DatabaseExport.csv'.", mode='done')
+    show_message("Export complete.", "Saved as: " + path, mode='done')
 
 
 def q_to_playlist():
@@ -21400,7 +21541,6 @@ class SearchOverlay:
 
             # Search active animation
             if self.sip:
-
                 x = round(15 * gui.scale)
                 y = x
                 s = round(7 * gui.scale)
@@ -22198,6 +22338,12 @@ class MessageBox:
             message_bubble_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
         elif gui.message_mode == 'link':
             message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
+        elif gui.message_mode == 'confirm':
+            message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+            ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.message_box_text, 15)
+            if draw.button("Confirm", (w - 62 * gui.scale) // 2 + x, y + 32 * gui.scale):
+                gui.message_box_confirm_callback(*gui.message_box_confirm_reference)
+            return
 
         if gui.message_subtext:
             ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
@@ -23210,6 +23356,7 @@ def worker1():
                 not loading_in_progress and \
                 not to_scan and \
                 not plex.scanning and \
+                not jellyfin.scanning and \
                 not cm_clean_db and \
                 not lastfm.scanning_friends and \
                 not move_in_progress and \
@@ -24291,7 +24438,6 @@ def reload_backend():
     gui.backend_reloading = True
     print("Reload backend...")
     wait = 0
-
     pre_state = pctl.stop(True)
 
     while pctl.playerCommandReady:
@@ -24299,7 +24445,6 @@ def reload_backend():
         wait += 1
         if wait > 20:
             break
-
     try:
         tm.player_lock.release()
     except:
@@ -25358,20 +25503,26 @@ class Over:
 
         y += 28 * gui.scale
 
-        if self.button2(x, y, "PLEX", width=84*gui.scale):
-            self.account_view = 5
 
-        y += 28 * gui.scale
+
+        y += 15 * gui.scale
 
         if self.button2(x, y, "koel", width=84*gui.scale):
             self.account_view = 6
+
+
+        if self.button2(x + round(95 * gui.scale), y, "Jellyfin", width=84*gui.scale):
+            self.account_view = 10
 
         y += 28 * gui.scale
 
         if self.button2(x, y, "Airsonic", width=84*gui.scale):
             self.account_view = 7
 
-        y += 28 * gui.scale
+        if self.button2(x + round(95 * gui.scale), y, "PLEX", width=84*gui.scale):
+            self.account_view = 5
+
+        y += 41 * gui.scale
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
@@ -25613,6 +25764,66 @@ class Over:
             y += round(35 * gui.scale)
             prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text authentication"), subtitle=_("Needed for Nextcloud compatibility"))
 
+        if self.account_view == 10:
+
+            ddt.text((x, y), _('Jellyfin network streaming'), colours.box_sub_text, 213)
+
+            if inp.key_tab_press:
+                self.account_text_field += 1
+                if self.account_text_field > 2:
+                    self.account_text_field = 0
+
+            field_width = round(245 * gui.scale)
+
+            y += round(25 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Username"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_jelly_usr.text = prefs.jelly_username
+            text_jelly_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                               width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.jelly_username = text_jelly_usr.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Password"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_jelly_pas.text = prefs.jelly_password
+            text_jelly_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                               width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+            prefs.jelly_password = text_jelly_pas.text
+
+            y += round(23 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Server URL"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 2
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_jelly_ser.text = prefs.jelly_server_url
+            text_jelly_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                               width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.jelly_server_url = text_jelly_ser.text
+
+            y += round(40 * gui.scale)
+
+            self.button(x, y, _("Import music to playlist"), jellyfin_get_library_thread)
+
+            y += round(35 * gui.scale)
+            if self.button(x, y, _("Test connectivity")):
+                jellyfin.test()
 
         if self.account_view == 6:
 
@@ -25668,6 +25879,7 @@ class Over:
             prefs.koel_server_url = text_koel_ser.text
 
             y += round(40 * gui.scale)
+            
             self.button(x, y, _("Import music to playlist"), koel_get_album_thread)
 
 
@@ -27276,7 +27488,8 @@ class TopPanel:
         self.height = hh
 
         if quick_drag is True:
-            gui.pl_update = 1
+            #gui.pl_update = 1
+            gui.update_on_drag = True
 
         # Draw the background
         ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background, True)
@@ -27427,6 +27640,7 @@ class TopPanel:
                         else:
                             pctl.multi_playlist[playlist_box.drag_on][8] = False
                     gui.update += 1
+            gui.update_on_drag = True
 
 
         # List all tabs eligible to be shown
@@ -27634,7 +27848,7 @@ class TopPanel:
 
                         if key_shift_down:
                             pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
-                            delete_playlist(playlist_box.drag_on)
+                            delete_playlist(playlist_box.drag_on, check_lock=True)
                         else:
                             move_playlist(playlist_box.drag_on, i)
 
@@ -27643,7 +27857,8 @@ class TopPanel:
 
                 # Delete playlist on wheel click
                 elif tab_menu.active is False and middle_click:
-                    delete_playlist(i)
+                    #delete_playlist(i)
+                    delete_playlist_ask(i)
                     break
 
                 # Activate menu on right click
@@ -27994,6 +28209,9 @@ class TopPanel:
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
+        elif jellyfin.scanning:
+            text = "Accessing JELLYFIN library..."
+            bg = [90, 170, 240, 255]
         elif gui.sync_progress and not transcode_list:
             text = gui.sync_progress
             bg = [100, 200, 100, 255]
@@ -31373,6 +31591,9 @@ class ScrollBox():
 
         if coll((fx, y, fw, h)):
 
+            if mouse_down:
+                gui.update += 1
+
             if r_click:
 
                 p = mouse_position[1] - half - y
@@ -32037,6 +32258,9 @@ class RadioBox:
         y = self.y
         w = self.w
         h = self.h
+
+        if self.drag:
+            gui.update_on_drag = True
 
         yy = y + round(100 * gui.scale)
         x += round(10 * gui.scale)
@@ -32965,7 +33189,8 @@ class PlaylistBox:
             yy += self.tab_h + self.gap
 
         if delete_pl is not None:
-            delete_playlist(delete_pl)
+            #delete_playlist(delete_pl)
+            delete_playlist_ask(delete_pl)
             gui.update += 1
 
         # Create new playlist if drag in blank space after tabs
@@ -34828,6 +35053,9 @@ class QueueBox:
         # Get new copy of queue if not dragging
         if not self.dragging:
             self.fq = copy.deepcopy(pctl.force_queue)
+        else:
+            #gui.update += 1
+            gui.update_on_drag = True
 
         # End drag if mouse not in correct state for it
         if not mouse_down and not mouse_up:
@@ -34904,9 +35132,6 @@ class QueueBox:
                 break
 
             track = pctl.g(fq[i][0])
-
-
-
 
             rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
@@ -38558,9 +38783,6 @@ pctl.total_playtime = star_store.get_total()
 mouse_up = False
 mouse_wheel = 0
 
-
-
-
 while pctl.running:
     # bm.get('main')
     #time.sleep(100)
@@ -38758,6 +38980,7 @@ while pctl.running:
 
             if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
                 inp.key_return_press = True
+
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
                 inp.key_return_press = True
             elif event.key.keysym.sym == SDLK_TAB:
@@ -38807,8 +39030,10 @@ while pctl.running:
                 key_end_press = True
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = True
+                key_focused = 1
 
         elif event.type == SDL_KEYUP:
+
             k_input = True
             power += 5
             gui.update += 2
@@ -38828,6 +39053,7 @@ while pctl.running:
                 key_lalt = False
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = False
+                key_focused = 1
 
         elif event.type == SDL_TEXTINPUT:
             k_input = True
@@ -38855,16 +39081,15 @@ while pctl.running:
                 mouse_enter_window = True
                 focused = True
                 gui.lowered = False
-                key_focused = 2
+                key_focused = 1 
                 mouse_down = False
                 gui.album_tab_mode = False
                 gui.pl_update = 1
                 gui.update += 1
 
-
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 close_all_menus()
-
+                key_focused = 1
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
@@ -38916,10 +39141,10 @@ while pctl.running:
                 gui.update += 1
 
             # elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-            #
-            #     input.mouse_enter_event = True
-            #     gui.update += 1
-            #     k_input = True
+            #     print("FOCUS GAINED")
+            #     # input.mouse_enter_event = True
+            #     # gui.update += 1
+            #     # k_input = True
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
@@ -38991,8 +39216,12 @@ while pctl.running:
     if prefs.art_bg and core_timer.get() < 3:
         power = 1000
 
-    if mouse_down:
+    if mouse_down and mouse_moved:
         power = 1000
+        if gui.update_on_drag:
+            gui.update += 1
+        if gui.pl_update_on_drag:
+            gui.pl_update += 1
 
     if pctl.wake_past_time:
 
@@ -39031,20 +39260,6 @@ while pctl.running:
     else:
         power = 0
 
-    if mouse_down and not k_input:
-
-        # Force update (for smooth scrolling) when mouse down (A little hacky)
-
-        gui.update = 1
-
-        # We could impose a minimum frame time here...
-        # But waiting any time seems to cause scroll animations to be less smooth.
-        # Most computers now have many cores/threads so perhaps its not so bad to
-        # breiefly run a thread at 100% to ensure a smooth animation.
-
-        # time.sleep(0.002)
-
-
     if gui.pl_update > 2:
         gui.pl_update = 2
 
@@ -39074,6 +39289,39 @@ while pctl.running:
         if inp.mouse_click or right_click or mouse_up:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
+
+        if key_focused != 0:
+            keymaps.hits.clear()
+
+            d_mouse_click = False
+            right_click = False
+            level_2_right_click = False
+            inp.mouse_click = False
+            middle_click = False
+            mouse_up = False
+            inp.key_return_press = False
+            key_down_press = False
+            key_up_press = False
+            key_right_press = False
+            key_left_press = False
+            key_esc_press = False
+            key_del = False
+            inp.backspace_press = 0
+            key_backspace_press = False
+            inp.key_tab_press = False
+            key_c_press = False
+            key_v_press = False
+            # key_f_press = False
+            key_a_press = False
+            # key_t_press = False
+            key_z_press = False
+            key_x_press = False
+            key_home_press = False
+            key_end_press = False
+            mouse_wheel = 0
+            pref_box.scroll = 0
+            input_text = ''
+            inp.level_2_enter = False
 
     if k_input and key_focused == 0:
 
@@ -39349,6 +39597,9 @@ while pctl.running:
 
         if keymaps.test("delete-playlist"):
             delete_playlist(pctl.active_playlist_viewing)
+
+        if keymaps.test("delete-playlist-force"):
+            delete_playlist(pctl.active_playlist_viewing, force=True)
 
         if keymaps.test("rename-playlist"):
             rename_playlist(pctl.active_playlist_viewing)
@@ -39731,6 +39982,8 @@ while pctl.running:
         SDL_RenderClear(renderer)
 
         # perf_timer.set()
+        gui.update_on_drag = False
+        gui.pl_update_on_drag = False
 
         mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
         gui.showed_title = False
@@ -39797,8 +40050,10 @@ while pctl.running:
                     and not artist_info_scroll.held \
                     and gui.layer_focus == 0 and gui.show_playlist:
 
-                if side_drag != True:
+                if side_drag is True:
                     draw_sep_hl = True
+                    #gui.update += 1
+                    gui.update_on_drag = True
 
                 if inp.mouse_click:
                     side_drag = True
@@ -40219,6 +40474,7 @@ while pctl.running:
 
                     render_pos = 0
                     album_on = 0
+                    album_count = 0
 
                     if not pref_box.enabled or mouse_wheel != 0:
                         gui.first_in_grid = None
@@ -40378,6 +40634,9 @@ while pctl.running:
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
 
                                 # Draw album art
+                                album_count += 1
+                                if (album_count * 1.5) + 10 > gall_ren.limit:
+                                    gall_ren.limit = round((album_count * 1.5) + 30)
                                 drawn_art = gall_ren.render(track, (x, y))
 
                                 # Determine mouse collision
@@ -41261,7 +41520,8 @@ while pctl.running:
 
                 if quick_drag and not coll_point(gui.drag_source_position_persist, panel_rect) and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
                     gui.force_side_on_drag = True
-                    update_layout_do()
+                    if mouse_up:
+                        update_layout_do()
 
 
                 if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
@@ -41324,6 +41584,12 @@ while pctl.running:
                     width = 11 * gui.scale
             if gui.set_mode and prefs.left_align_album_artist_title:
                 width = 11 * gui.scale
+
+            # x = gui.plw
+            # width = round(14 * gui.scale)
+            # if gui.lsp:
+            #     x += gui.lspw
+            # x -= width
 
             gui.scroll_hide_box = (
                 x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
@@ -42547,7 +42813,8 @@ while pctl.running:
                     long_block = round(25 * gui.scale)
                     ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), [160, 140, 235, 240], True)
 
-            gui.update += 1
+            #gui.update += 1
+            gui.update_on_drag = True
 
         # Drag pl tab next to cursor
         if (playlist_box.drag) and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):

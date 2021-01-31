@@ -1,13 +1,25 @@
 
 Changelog-------------------------------------
 
+v6.4.9
+
+ - Added export playlist albums as CSV
+ - Added button conformation to delete playlist on middle click
+ - Improved export database CSV format compliance
+ - Fixed a bug with flickering album art in gallery on large screens
+ - Fixed high CPU on mouse down
+ - Fixed a bug with system tray when using GStreamer backend
+
 v6.4.8
 
+ - Added Jellyfin streaming support
+ - Added delete playlist confirmation
  - Added keyboard shortcuts "Clear Queue" and "Regenerate Playlist"
  - Various fixes for keyboard control
  - Tweaked global generator playlists to ignore other generator playlists
  - Fixed keyboard shortcut trigger on window tab
  - Fixed wrong radio URL displayed in compact view title
+ - Fixed slow backend switching
  - Fixed delay in track change response near end of track [Phazor]
 
 v6.4.7
