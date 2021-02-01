@@ -1630,8 +1630,8 @@ void *main_loop(void *thread_id) {
 
                     } else {
                         printf("pa: Load file failed\n");
-                        command = STOP;
-                        //mode = STOPPED;
+                        command = NONE;
+                        mode = STOPPED;
                     }
 
                     break;

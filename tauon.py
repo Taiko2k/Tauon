@@ -3434,6 +3434,16 @@ if db_version > 0:
                 f.write("resize-window-16:9 F11 Alt\n")
                 f.write("delete-playlist-force W Shift Ctrl\n")
 
+    if db_version <= 58:
+        print("Updating database to version 59")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("\nrandom-album ; Alt\n")
+
+
+if playing_in_queue > len(QUE) - 1:
+    playing_in_queue = len(QUE) - 1
 
 if old_backend == 1:
     show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
@@ -20117,6 +20127,19 @@ def random_track():
 
 extra_menu.add(_('Random Track'), random_track, hint=';')
 
+def random_album():
+    folders = {}
+    playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
+    if playlist:
+        for i, id in enumerate(playlist):
+            track = pctl.g(id)
+            if track.parent_folder_path not in folders:
+                folders[track.parent_folder_path] = (id, i)
+
+        key = random.choice(list(folders.keys()))
+        result = folders[key]
+        pctl.jump(*result)
+        pctl.show_current()
 
 def radio_random():
     pctl.advance(rr=True)
@@ -38307,7 +38330,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            58,  # Version, used for upgrading
+            59,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -39742,6 +39765,9 @@ while pctl.running:
 
             if keymaps.test("random-track"):
                 random_track()
+
+            if keymaps.test("random-album"):
+                random_album()
 
             if keymaps.test('opacity-up'):
                 prefs.window_opacity += .05
