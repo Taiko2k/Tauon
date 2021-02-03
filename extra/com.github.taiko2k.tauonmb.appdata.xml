@@ -58,11 +58,10 @@
 
   <releases>
 
-    <release version="6.4.8" date="2021-01-23">
+    <release version="6.4.9" date="2021-02-03">
       <description>
         <ul>
-          <li>Added Jellyfin streaming support</li>
-          <li>Various fixes for keyboard shortcuts</li>
+          <li>Tweaks and bug fixes</li>
         </ul>
       </description>
     </release>
