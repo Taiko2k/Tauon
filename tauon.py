@@ -6992,6 +6992,10 @@ class LastScrob:
                     success = lb.listen_full(tr[0], tr[1])
                 elif tr[2] == "maloja":
                     success = maloja_scrobble(tr[0])
+                elif tr[2] == "air":
+                    success = subsonic.listen(tr[0], submit=True)
+                elif tr[2] == "koel":
+                    success = koel.listen(tr[0], submit=True)
 
                 if not success:
                     print("Re-queue scrobble")
@@ -7030,15 +7034,16 @@ class LastScrob:
 
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
-            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not prefs.scrobble_hold:
-                mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
-                mini_t.daemon = True
-                mini_t.start()
-
-            if lb.enable and not prefs.scrobble_hold:
-                mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
-                mini_t.daemon = True
-                mini_t.start()
+            self.listen_track(pctl.master_library[self.a_index])
+            # if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not prefs.scrobble_hold:
+            #     mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
+            #     mini_t.daemon = True
+            #     mini_t.start()
+            #
+            # if lb.enable and not prefs.scrobble_hold:
+            #     mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
+            #     mini_t.daemon = True
+            #     mini_t.start()
 
         if pctl.a_time > 6 and self.a_pt:
             pctl.b_time += add_time
@@ -7060,21 +7065,33 @@ class LastScrob:
             self.scrob_full_track(pctl.master_library[self.a_index])
 
     def listen_track(self, track_object):
+        #print("LISTEN")
 
-        if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-            mini_t = threading.Thread(target=lastfm.update, args=([track_object]))
-            mini_t.daemon = True
-            mini_t.start()
+        if track_object.is_network:
+            if track_object.file_ext == "SUB":
+                subsonic.listen(track_object, submit=False)
 
-        if lb.enable:
-            mini_t = threading.Thread(target=lb.listen_playing, args=([track_object]))
-            mini_t.daemon = True
-            mini_t.start()
+        if not prefs.scrobble_hold:
+            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+                mini_t = threading.Thread(target=lastfm.update, args=([track_object]))
+                mini_t.daemon = True
+                mini_t.start()
+
+            if lb.enable:
+                mini_t = threading.Thread(target=lb.listen_playing, args=([track_object]))
+                mini_t.daemon = True
+                mini_t.start()
 
     def scrob_full_track(self, track_object):
-
+        #print("SCROBBLE")
         track_object.lfm_scrobbles += 1
         gui.pl_update += 1
+
+        if track_object.is_network:
+            if track_object.file_ext == "SUB":
+                self.queue.append((track_object, int(time.time()), "air"))
+            if track_object.file_ext == "KOEL":
+                self.queue.append((track_object, int(time.time()), "koel"))
 
         if not prefs.scrobble_hold:
             if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
@@ -7406,6 +7423,15 @@ class SubsonicService:
         return self.r("stream", p={"id": key}, get_url=True)
         #print(responce.content)
 
+    def listen(self, track_object, submit=False):
+
+        try:
+            a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
+            print(a)
+        except:
+            print("Error connect for scrobble on airsonic")
+        return True
+
     def get_music2(self, return_list=False):
 
         self.scanning = True
@@ -7449,7 +7475,6 @@ class SubsonicService:
                 print("Error reading Airsonic directory")
                 show_message("Error reading Airsonic directory!", mode="warning")
                 return
-
 
             items = d["subsonic-response"]["directory"]["child"]
 
@@ -7564,7 +7589,12 @@ class KoelService:
             "password": password,
         }
 
-        r = requests.post(target, json=body, headers=headers)
+        try:
+            r = requests.post(target, json=body, headers=headers)
+        except:
+            gui.show_message(_("Could not establish connection"), mode="error")
+
+            return
 
         if r.status_code == 200:
             # print(r.json())
@@ -7600,6 +7630,21 @@ class KoelService:
 
         return target, params
 
+    def listen(self, track_object, submit=False):
+        if submit:
+            try:
+                target = self.server + "/api/interaction/play"
+                headers = {
+                    "Authorization": "Bearer " + self.token,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                }
+
+                r = requests.post(target, headers=headers, json={"song": track_object.url_key})
+                # print(r.status_code)
+                # print(r.text)
+            except:
+                print("error submitting listen to koel")
 
     def get_albums(self, return_list=False):
 
