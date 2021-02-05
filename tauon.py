@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.4.9"
+n_version = "6.4.10"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -11280,7 +11280,7 @@ class StyleOverlay:
         if self.b_texture is not None:
             SDL_DestroyTexture(self.b_texture)
             self.b_texture = None
-        self.min_on_timer.force_set(-1)
+        self.min_on_timer.force_set(-0.4)
         self.parent_path = "None"
         self.stage = 0
 
