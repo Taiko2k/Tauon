@@ -7427,12 +7427,12 @@ class SubsonicService:
 
         try:
             a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
-            print(a)
         except:
             print("Error connect for scrobble on airsonic")
         return True
 
-    def get_music2(self, return_list=False):
+
+    def get_music3(self, return_list=False):
 
         self.scanning = True
         gui.to_got = 0
@@ -7464,31 +7464,57 @@ class SubsonicService:
 
         playlist = []
 
-        def get(folder_id, name):
+        songsets = [[]] * len(folders)
+        statuses = [0] * len(folders)
 
+        def getsongs(index, folder_id, name, inner=False):
             try:
                 d = self.r("getMusicDirectory", p={"id": folder_id})
                 if "child" not in d["subsonic-response"]["directory"]:
+                    if not inner:
+                        statuses[index] = 2
                     return
 
             except json.decoder.JSONDecodeError:
                 print("Error reading Airsonic directory")
+                if not inner:
+                    statuses[index] = 2
                 show_message("Error reading Airsonic directory!", mode="warning")
                 return
 
             items = d["subsonic-response"]["directory"]["child"]
 
-            gui.update = 1
+            gui.update = 2
 
             for item in items:
 
                 gui.to_got += 1
-
                 if item["isDir"]:
-                    get(item["id"], item["title"])
+                    getsongs(index, item["id"], item["title"], inner=True)
                     continue
+                songsets[index].append((item, name))
 
-                song = item
+            if inner:
+                return
+            statuses[index] = 2
+
+        i = -1
+        for id, name in folders:
+            i += 1
+            while statuses.count(1) > 10:
+                time.sleep(0.1)
+
+            statuses[i] = 1
+            t = threading.Thread(target=getsongs, args=([i, id, name]))
+            t.daemon = True
+            t.start()
+
+        while statuses.count(2) != len(statuses):
+            time.sleep(0.1)
+
+        for sset in songsets:
+            for song, name in sset:
+
                 id = pctl.master_count
 
                 replace_existing = False
@@ -7516,30 +7542,20 @@ class SubsonicService:
                 #     nt.bitrate = song["bitRate"]
 
                 nt.file_ext = "SUB"
-
                 nt.index = id
-
                 nt.parent_folder_name = name
                 if "path" in song:
                     nt.fullpath = song["path"]
                     nt.parent_folder_path = os.path.dirname(song["path"])
-
                 if "coverArt" in song:
                     nt.art_url_key = song["id"]
-
                 nt.url_key = song["id"]
                 nt.is_network = True
-
                 pctl.master_library[id] = nt
-
                 if not replace_existing:
                     pctl.master_count += 1
 
                 playlist.append(nt.index)
-
-        for id, name in folders:
-
-            get(id, name)
 
         self.scanning = False
         if return_list:
@@ -7548,6 +7564,123 @@ class SubsonicService:
         pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
         switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+    # def get_music2(self, return_list=False):
+    #
+    #     self.scanning = True
+    #     gui.to_got = 0
+    #
+    #     existing = {}
+    #
+    #     for track_id, track in pctl.master_library.items():
+    #         if track.is_network and track.file_ext == "SUB":
+    #             existing[track.url_key] = track_id
+    #
+    #     try:
+    #         a = self.r("getIndexes")
+    #     except:
+    #         show_message("Error connecting to Airsonic server", mode="error")
+    #         self.scanning = False
+    #         return []
+    #
+    #     b = a["subsonic-response"]["indexes"]["index"]
+    #
+    #     folders = []
+    #
+    #     for letter in b:
+    #         artists = letter["artist"]
+    #         for artist in artists:
+    #             folders.append((
+    #                 artist["id"],
+    #                 artist["name"]
+    #             ))
+    #
+    #     playlist = []
+    #
+    #     def get(folder_id, name):
+    #
+    #         try:
+    #             d = self.r("getMusicDirectory", p={"id": folder_id})
+    #             if "child" not in d["subsonic-response"]["directory"]:
+    #                 return
+    #
+    #         except json.decoder.JSONDecodeError:
+    #             print("Error reading Airsonic directory")
+    #             show_message("Error reading Airsonic directory!", mode="warning")
+    #             return
+    #
+    #         items = d["subsonic-response"]["directory"]["child"]
+    #
+    #         gui.update = 1
+    #
+    #         for item in items:
+    #
+    #             gui.to_got += 1
+    #
+    #             if item["isDir"]:
+    #                 get(item["id"], item["title"])
+    #                 continue
+    #
+    #             song = item
+    #             id = pctl.master_count
+    #
+    #             replace_existing = False
+    #             ex = existing.get(song["id"])
+    #             if ex is not None:
+    #                 id = ex
+    #                 replace_existing = True
+    #
+    #             nt = TrackClass()
+    #
+    #             if "title" in song:
+    #                 nt.title = song["title"]
+    #             if "artist" in song:
+    #                 nt.artist = song["artist"]
+    #             if "album" in song:
+    #                 nt.album = song["album"]
+    #             if "track" in song:
+    #                 nt.track_number = song["track"]
+    #             if "year" in song:
+    #                 nt.date = str(song["year"])
+    #             if "duration" in song:
+    #                 nt.length = song["duration"]
+    #
+    #             # if "bitRate" in song:
+    #             #     nt.bitrate = song["bitRate"]
+    #
+    #             nt.file_ext = "SUB"
+    #
+    #             nt.index = id
+    #
+    #             nt.parent_folder_name = name
+    #             if "path" in song:
+    #                 nt.fullpath = song["path"]
+    #                 nt.parent_folder_path = os.path.dirname(song["path"])
+    #
+    #             if "coverArt" in song:
+    #                 nt.art_url_key = song["id"]
+    #
+    #             nt.url_key = song["id"]
+    #             nt.is_network = True
+    #
+    #             pctl.master_library[id] = nt
+    #
+    #             if not replace_existing:
+    #                 pctl.master_count += 1
+    #
+    #             playlist.append(nt.index)
+    #
+    #     for id, name in folders:
+    #         get(id, name)
+    #
+    #     self.scanning = False
+    #     if return_list:
+    #         return playlist
+    #
+    #     pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
+    #     pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
+    #     switch_playlist(len(pctl.multi_playlist) - 1)
 
 subsonic = SubsonicService()
 
@@ -7810,7 +7943,7 @@ def sub_get_album_thread():
         return
     subsonic.scanning = True
 
-    shoot_dl = threading.Thread(target=subsonic.get_music2)
+    shoot_dl = threading.Thread(target=subsonic.get_music3)
     shoot_dl.daemon = True
     shoot_dl.start()
 
@@ -15592,7 +15725,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
         elif cm == "air":
             if not subsonic.scanning:
-                playlist.extend(subsonic.get_music2(return_list=True))
+                playlist.extend(subsonic.get_music3(return_list=True))
 
         elif cm == "a":
             if not selections and not selections_searched:
