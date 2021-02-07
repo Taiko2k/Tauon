@@ -569,10 +569,10 @@ def player3(tauon):  # GStreamer
 
                         gapless = True
 
-                        if self.play_state == 1 and self.loaded_track and self.loaded_track.is_network:
-                            # Gst may report wrong length for network tracks, use known length instead
-                            if pctl.playing_time < self.loaded_track.length - 4:
-                                gapless = False
+                        # if self.play_state == 1 and self.loaded_track and self.loaded_track.is_network:
+                        #     # Gst may report wrong length for network tracks, use known length instead
+                        #     if pctl.playing_time < self.loaded_track.length - 4:
+                        #         gapless = False
 
 
                     # We're not at the end of the last track so reset the pipeline
