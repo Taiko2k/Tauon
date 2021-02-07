@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-12-27 17:30+1300\n"
-"PO-Revision-Date: 2020-11-14 14:28+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2021-02-07 22:45+0000\n"
+"Last-Translator: lyqide <jannikflipp@web.de>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
 "Language: de\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.5-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1868 tauon.py:1870
@@ -44,7 +44,7 @@ msgstr "Sie müssen sich zuerst einloggen"
 
 #: tauon.py:6321
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Scan fehlgeschlagen. Erneut versuchen?"
 
 #: tauon.py:6328
 msgid "Scanning scrobbles complete"
@@ -1278,7 +1278,7 @@ msgstr "Schnell-Hinzufügen deaktivieren"
 
 #: tauon.py:21386
 msgid "Press Tab key to switch to Spotify search"
-msgstr ""
+msgstr "Tab drücken um zur Spotify-Suche zu wechseln"
 
 #: tauon.py:21606
 msgid "Searching for albums by artist: "
@@ -1451,7 +1451,7 @@ msgstr "Replay-Gain"
 
 #: tauon.py:24562
 msgid "Preserve album dynamics"
-msgstr ""
+msgstr "Albumdynamik beibehalten"
 
 #: tauon.py:24564
 msgid "Tracks equal loudness"
@@ -1459,17 +1459,19 @@ msgstr ""
 
 #: tauon.py:24567
 msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
+msgstr "Nur möglich wenn ReplayGain Metadaten vorhanden sind."
 
 #: tauon.py:24570
 msgid "Pre-amp"
-msgstr ""
+msgstr "Vorverstärkung"
 
 #: tauon.py:24619
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
+"Niedrigere Vorverstärkung sorgt für bessere Normalisierung, benötigt "
+"allerdings eine höhere Systemlautstärke."
 
 #: tauon.py:24635 tauon.py:25283 tauon.py:25289 tauon.py:25295 tauon.py:25327
 msgid "Enable"
@@ -1641,6 +1643,8 @@ msgstr "Download-Monitor einschalten"
 #: tauon.py:25100
 msgid "One click import new archives and folders from downloads folder"
 msgstr ""
+"Aktiviert die Schaltfläche um Archive und Ordner aus dem Download-"
+"Verzeichnis mit einem Klick zu importieren"
 
 #: tauon.py:25102
 msgid "Trash archive after extraction"
@@ -1652,7 +1656,7 @@ msgstr "Musik-Ordner immer extrahieren"
 
 #: tauon.py:25107
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Icon in Systemleiste anzeigen"
 
 #: tauon.py:25110
 #, fuzzy
@@ -1666,7 +1670,7 @@ msgstr "Titel anzeigen"
 
 #: tauon.py:25119
 msgid "Enable server for remote app [Alpha testing]"
-msgstr ""
+msgstr "Server für Remote-App aktivieren [Alpha Testphase]"
 
 #: tauon.py:25120
 #, fuzzy
@@ -1764,11 +1768,11 @@ msgstr "Musik in Wiedergabeliste importieren"
 
 #: tauon.py:25562
 msgid "Needed for Nextcloud compatibility"
-msgstr ""
+msgstr "Benötigt für Nextcloud-Kompatibilität"
 
 #: tauon.py:25562
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Klartext Authentifizierung verwenden"
 
 #: tauon.py:25567
 msgid "koel network streaming"
@@ -2168,9 +2172,8 @@ msgid "Cycle all playlists"
 msgstr "Alle Wiedergabelisten durchlaufen"
 
 #: tauon.py:27963
-#, fuzzy
 msgid "Buffering... "
-msgstr "Suchen …"
+msgstr "Laden... "
 
 #: tauon.py:28078
 msgid "There are currently no connected clients"
@@ -2341,13 +2344,12 @@ msgid "Remove All After"
 msgstr "Alle entfernen nach"
 
 #: tauon.py:33001
-#, fuzzy
 msgid "View..."
 msgstr "Ansicht"
 
 #: tauon.py:33019
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Alphabetisch sortieren"
 
 #: tauon.py:33020
 #, fuzzy
