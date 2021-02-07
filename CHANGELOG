@@ -6,6 +6,8 @@ v6.4.10
  - Fixed background art on window resize
  - Added listen/scrobble support for Airsonic
  - Improved Airsonic import speed
+ - [GStreamer] Tweaked network transition behaviour
+ - [Phazor] Tweaked network download behaviour
 
 v6.4.9
 

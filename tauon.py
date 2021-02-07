@@ -5313,7 +5313,7 @@ class PlayerCtl:
             gui.update += 1
             self.playing_time_int = next_round
 
-        gap_extra = 2
+        gap_extra = 2 #2
 
         if spot_ctl.playing:
             gap_extra = 3

@@ -146,6 +146,13 @@ enum decoder_types {
     WAVE,
 };
 
+enum result_status_enum {
+  WAITING,
+  SUCCESS,
+  FAILURE
+};
+
+int result_status = WAITING;
 int mode = STOPPED;
 int command = NONE;
 
@@ -1094,7 +1101,10 @@ void decoder_eos() {
     printf("pa: End of stream\n");
     if (next_ready == 1) {
         printf("pa: Read next gapless\n");
-        load_next();
+        int result = load_next();
+        if (result == 1){
+          result_status = FAILURE;
+        }
         pthread_mutex_lock(&buffer_mutex);
         next_ready = 0;
         reset_set_value = 0;
@@ -1625,11 +1635,13 @@ void *main_loop(void *thread_id) {
 
                         mode = PLAYING;
                         command = NONE;
+                        result_status = SUCCESS;
                         pthread_mutex_unlock(&buffer_mutex);
 
 
                     } else {
                         printf("pa: Load file failed\n");
+                        result_status = FAILURE;
                         command = NONE;
                         mode = STOPPED;
                     }
@@ -1759,12 +1771,18 @@ int init() {
 int get_status() {
     return mode;
 }
+                                   
+int get_result() {
+  return result_status;
+}
 
 int start(char *filename, int start_ms, int fade, float rg) {
 
     while (command != NONE) {
         usleep(1000);
     }
+                                                              
+    result_status = WAITING;
 
     rg_value_want = rg;
     config_fade_jump = fade;
@@ -1787,6 +1805,7 @@ int next(char *filename, int start_ms, float rg) {
         usleep(1000);
     }
 
+    result_status = WAITING;                                         
 
     if (mode == STOPPED) {
         start(filename, start_ms, 0, rg);
@@ -1861,6 +1880,10 @@ int get_position_ms() {
     if (reset_set == 0 && current_sample_rate > 0) {
         return (int) ((position_count / (float) current_sample_rate) * 1000.0);
     } else return 0;
+}
+                                   
+void set_position_ms(int ms) {
+    position_count = ((float)(ms / 1000.0)) * current_sample_rate; 
 }
 
 int get_length_ms() {
