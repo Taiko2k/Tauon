@@ -5275,27 +5275,22 @@ class PlayerCtl:
                 tauon.spot_ctl.update()
 
     def purge_track(self, track_id):  # Remove a track from the database
-
         # Remove from all playlists
         for playlist in self.multi_playlist:
             while track_id in playlist[2]:
                 album_dex.clear()
                 playlist[2].remove(track_id)
-
         # Stop if track is playing track
         if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
             self.stop(block=True)
-
         # Remove from playback history
         while track_id in self.track_queue:
             self.track_queue.remove(track_id)
             self.queue_step -= 1
-
         # Remove track from force queue
         for i in reversed(range(len(self.force_queue))):
             if self.force_queue[i][0] == track_id:
                 del self.force_queue[i]
-
         del self.master_library[track_id]
 
     def test_progress(self):
@@ -7464,10 +7459,16 @@ class SubsonicService:
 
         playlist = []
 
-        songsets = [[]] * len(folders)
+        songsets = []
+        for i in range(len(folders)):
+            songsets.append([])
         statuses = [0] * len(folders)
+        dupes = []
+
+        print(len(songsets))
 
         def getsongs(index, folder_id, name, inner=False):
+
             try:
                 d = self.r("getMusicDirectory", p={"id": folder_id})
                 if "child" not in d["subsonic-response"]["directory"]:
@@ -7488,11 +7489,38 @@ class SubsonicService:
 
             for item in items:
 
-                gui.to_got += 1
                 if item["isDir"]:
                     getsongs(index, item["id"], item["title"], inner=True)
                     continue
-                songsets[index].append((item, name))
+
+                gui.to_got += 1
+                song = item
+                nt = TrackClass()
+
+                if "title" in song:
+                    nt.title = song["title"]
+                if "artist" in song:
+                    nt.artist = song["artist"]
+                if "album" in song:
+                    nt.album = song["album"]
+                if "track" in song:
+                    nt.track_number = song["track"]
+                if "year" in song:
+                    nt.date = str(song["year"])
+                if "duration" in song:
+                    nt.length = song["duration"]
+
+                nt.file_ext = "SUB"
+                nt.parent_folder_name = name
+                if "path" in song:
+                    nt.fullpath = song["path"]
+                    nt.parent_folder_path = os.path.dirname(song["path"])
+                if "coverArt" in song:
+                    nt.art_url_key = song["id"]
+                nt.url_key = song["id"]
+                nt.is_network = True
+
+                songsets[index].append((nt, name, song["id"]))
 
             if inner:
                 return
@@ -7513,44 +7541,17 @@ class SubsonicService:
             time.sleep(0.1)
 
         for sset in songsets:
-            for song, name in sset:
+            for nt, name, song_id in sset:
 
                 id = pctl.master_count
 
                 replace_existing = False
-                ex = existing.get(song["id"])
+                ex = existing.get(song_id)
                 if ex is not None:
                     id = ex
                     replace_existing = True
 
-                nt = TrackClass()
-
-                if "title" in song:
-                    nt.title = song["title"]
-                if "artist" in song:
-                    nt.artist = song["artist"]
-                if "album" in song:
-                    nt.album = song["album"]
-                if "track" in song:
-                    nt.track_number = song["track"]
-                if "year" in song:
-                    nt.date = str(song["year"])
-                if "duration" in song:
-                    nt.length = song["duration"]
-
-                # if "bitRate" in song:
-                #     nt.bitrate = song["bitRate"]
-
-                nt.file_ext = "SUB"
                 nt.index = id
-                nt.parent_folder_name = name
-                if "path" in song:
-                    nt.fullpath = song["path"]
-                    nt.parent_folder_path = os.path.dirname(song["path"])
-                if "coverArt" in song:
-                    nt.art_url_key = song["id"]
-                nt.url_key = song["id"]
-                nt.is_network = True
                 pctl.master_library[id] = nt
                 if not replace_existing:
                     pctl.master_count += 1
@@ -23618,6 +23619,7 @@ def worker1():
             for index in keys:
                 time.sleep(0.0001)
                 track = pctl.master_library[index]
+                print((track.title, track.artist))
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
