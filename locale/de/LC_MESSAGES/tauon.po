@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2020-12-27 17:30+1300\n"
-"PO-Revision-Date: 2021-02-07 22:45+0000\n"
+"PO-Revision-Date: 2021-02-09 08:37+0000\n"
 "Last-Translator: lyqide <jannikflipp@web.de>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
@@ -32,7 +32,7 @@ msgstr "Ende der Wiedergabeliste"
 
 #: tauon.py:6157
 msgid "Once authorised click the 'done' button."
-msgstr "Sobald authorisiert, den \"Fertig\"-Button drücken."
+msgstr "Sobald autorisiert, den \"Fertig\"-Button drücken."
 
 #: tauon.py:6157
 msgid "Web auth page opened"
@@ -105,12 +105,11 @@ msgstr "Fehler beim Starten von Spotify"
 
 #: tauon.py:7031
 msgid "Please authorise Spotify in settings!"
-msgstr "Bitte Spotify in den Einstellungen authorisieren!"
+msgstr "Bitte Spotify in den Einstellungen autorisieren!"
 
 #: tauon.py:7032
-#, fuzzy
 msgid "Please authorise and click the enable toggle first!"
-msgstr "Sobald authorisiert, den \"Fertig\"-Button drücken."
+msgstr "Bitte zuerst autorisieren und auf das Aktivierungsfeld klicken!"
 
 #: tauon.py:7034
 msgid "day"
@@ -134,7 +133,7 @@ msgstr "Fehler beim Verbinden zum PLEX-Server"
 
 #: tauon.py:7155
 msgid "Try check login credentials and that server is accessible."
-msgstr "Prüfen Sie die Anmeldungsdaten und die Verbindung zum Server."
+msgstr "Prüfen Sie die Anmeldedaten und die Verbindung zum Server."
 
 #: tauon.py:7459
 msgid "Missing username, password and/or server URL"
@@ -182,7 +181,7 @@ msgstr "DANACH"
 
 #: tauon.py:12732
 msgid "Rename complete."
-msgstr "Unbenennen abgeschlossen."
+msgstr "Umbenennen abgeschlossen."
 
 #: tauon.py:12733
 msgid " filenames were written."
@@ -462,9 +461,8 @@ msgid "Rescanning folders..."
 msgstr "Ordner neu scannen…"
 
 #: tauon.py:15047 tauon.py:15059
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "Wiedergabeliste ist leer"
+msgstr "Wiedergabeliste ist gesperrt"
 
 #: tauon.py:15158 tauon.py:41938
 msgid "Delete"
@@ -527,9 +525,8 @@ msgid "From Current…"
 msgstr "Aus Aktuellem…"
 
 #: tauon.py:15981
-#, fuzzy
 msgid "Sort by Imported"
-msgstr "Nach meistgespielten sortieren"
+msgstr "Nach Importdatum sortieren"
 
 #: tauon.py:15982
 msgid "Sort by Filepath"
@@ -1482,9 +1479,8 @@ msgid "Use fade on pause/stop"
 msgstr "Fade bei Pause/Stop"
 
 #: tauon.py:24741
-#, fuzzy
 msgid "Use fade on track jump"
-msgstr "Fade bei Pause/Stop"
+msgstr "Sanftes Überblenden bei Songwechsel"
 
 #: tauon.py:24754
 msgid "Output buffer"
@@ -1659,9 +1655,8 @@ msgid "Show icon in system tray"
 msgstr "Icon in Systemleiste anzeigen"
 
 #: tauon.py:25110
-#, fuzzy
 msgid "Close to tray"
-msgstr "Datei in den Papierkorb verschoben"
+msgstr "Beim schließen in die Systemleiste minimieren"
 
 #: tauon.py:25113
 #, fuzzy
