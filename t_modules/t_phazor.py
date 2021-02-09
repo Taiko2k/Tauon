@@ -108,6 +108,7 @@ def player4(tauon):
             self.downloaded_duration = -1
 
         def download(self):
+            print("Start download")
             try:
                 self.part = requests.get(self.network_url, stream=True, params=self.params)
 
@@ -654,6 +655,10 @@ def player4(tauon):
 
                 aud.stop()
                 aud.shutdown()
+
+                if os.path.exists(audio_cache):
+                    shutil.rmtree(audio_cache)
+
                 pctl.playerCommand = "done"
                 pctl.playerCommandReady = True
                 break

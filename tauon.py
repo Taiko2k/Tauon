@@ -28728,30 +28728,6 @@ class BottomBarType1:
 
             self.seek_time = pctl.playing_time
 
-        if pctl.playing_length > 0:
-
-            if pctl.download_time != 0:
-
-                if pctl.download_time == -1:
-                    pctl.download_time = pctl.playing_length
-
-                colour = (255, 255, 255, 10)
-                if gui.theme_name == "Lavender Light" or gui.theme_name == "Carbon":
-                    colour = (255, 255, 255, 40)
-
-
-                gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
-                                      int(pctl.download_time * self.seek_bar_size[0] / pctl.playing_length),
-                           self.seek_bar_size[1])
-                ddt.rect(gui.seek_bar_rect,
-                         colour, True)
-
-            gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
-                                  int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
-                       self.seek_bar_size[1])
-            ddt.rect(gui.seek_bar_rect,
-                     colours.seek_bar_fill, True)
-
         if radiobox.load_connecting or gui.buffering:
             x = self.seek_bar_position[0] - round(26 - gui.scale)
             y = self.seek_bar_position[1]
@@ -28771,6 +28747,31 @@ class BottomBarType1:
 
             ddt.rect((self.seek_bar_position[0] - self.buffer_shard.w, y, self.buffer_shard.w, self.buffer_shard.h),
                      colours.bottom_panel_colour, True)
+
+        if pctl.playing_length > 0:
+
+            if pctl.download_time != 0:
+
+                if pctl.download_time == -1:
+                    pctl.download_time = pctl.playing_length
+
+                colour = (255, 255, 255, 10)
+                if gui.theme_name == "Lavender Light" or gui.theme_name == "Carbon":
+                    colour = (255, 255, 255, 40)
+
+                gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
+                                      int(pctl.download_time * self.seek_bar_size[0] / pctl.playing_length),
+                           self.seek_bar_size[1])
+                ddt.rect(gui.seek_bar_rect,
+                         colour, True)
+
+            gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
+                                  int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
+                       self.seek_bar_size[1])
+            ddt.rect(gui.seek_bar_rect,
+                     colours.seek_bar_fill, True)
+
+
 
         if gui.seek_cur_show:
 
