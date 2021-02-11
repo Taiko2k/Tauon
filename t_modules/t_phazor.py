@@ -595,8 +595,9 @@ def player4(tauon):
                 # print("length: " + str(length))
                 # print("position: " + str(position))
                 # print("We are %s from end" % str(remain))
-                time.sleep(2.5)
+                time.sleep(3)
                 command = "stop"
+
             if command == "stop":
 
                 if prefs.use_pause_fade and state != 3:
