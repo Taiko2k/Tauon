@@ -749,7 +749,8 @@ def player3(tauon):  # GStreamer
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                         current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
                         if current_duration - current_time < 5.5:
-                            pass
+                            time.sleep((current_duration - current_time) + 1)
+                            self.playbin.set_state(Gst.State.READY)
                         else:
                             self.playbin.set_state(Gst.State.READY)
                     else:
