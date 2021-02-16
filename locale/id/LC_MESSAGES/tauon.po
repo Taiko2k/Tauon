@@ -6,524 +6,531 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-02-14 09:56+1300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2021-02-16 00:41+0000\n"
+"Last-Translator: Reza Almanda <rezaalmanda27@gmail.com>\n"
+"Language-Team: Indonesian <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/id/>\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.5-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1892 tauon.py:1894
 msgid "No artist image found."
-msgstr ""
+msgstr "Gambar artis tidak ditemukan."
 
 #: tauon.py:1894
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "Tidak ada penyedia yang diaktifkan di pengaturan!"
 
 #: tauon.py:6178
 msgid "End of playlist"
-msgstr ""
+msgstr "Akhir playlist"
 
 #: tauon.py:6229
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Setelah diotorisasi klik tombol 'selesai'."
 
 #: tauon.py:6229
 msgid "Web auth page opened"
-msgstr ""
+msgstr "Halaman autentikasi web dibuka"
 
 #: tauon.py:6237
 msgid "You need to log in first"
-msgstr ""
+msgstr "Kamu harus masuk terlebih dahulu"
 
 #: tauon.py:6393
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Pemindaian gagal. Coba lagi?"
 
 #: tauon.py:6400
 msgid "Scanning scrobbles complete"
-msgstr ""
+msgstr "Pemindaian scrobble selesai"
 
 #: tauon.py:6548
 msgid "Getting friend data..."
-msgstr ""
+msgstr "Mendapatkan data teman..."
 
 #: tauon.py:6548
 msgid "This may take a very long time."
-msgstr ""
+msgstr "Ini mungkin membutuhkan waktu yang lama."
 
 #: tauon.py:6900
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Gagal memperbarui love status last.fm"
 
 #: tauon.py:6903
 msgid "Error updating love to last.fm!"
-msgstr ""
+msgstr "Error saat memperbarui love di last.fm!"
 
 #: tauon.py:6903
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Mungkin periksa koneksi internet Anda dan coba lagi?"
 
 #: tauon.py:7110
 msgid "Spotify Likes"
-msgstr ""
+msgstr "Suka Spotify"
 
 #: tauon.py:7111
 msgid "Spotify Albums"
-msgstr ""
+msgstr "Album Spotify"
 
 #: tauon.py:7112
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Lagu dihapus dari trek yang disukai"
 
 #: tauon.py:7113
 msgid "Track was already un-liked"
-msgstr ""
+msgstr "Lagu sudah tidak disukai"
 
 #: tauon.py:7114
 msgid "Track is already liked"
-msgstr ""
+msgstr "Lagu sudah disukai"
 
 #: tauon.py:7115
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Lagu ditambahkan ke trek yang disukai"
 
 #: tauon.py:7116
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Akun Spotify terhubung"
 
 #: tauon.py:7117
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Akun Spotify ini sedang tidak memutar apa pun"
 
 #: tauon.py:7118
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Error saat memulai Spotify"
 
 #: tauon.py:7119
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Mohon izinkan Spotify di pengaturan!"
 
 #: tauon.py:7120
 msgid "Please authorise and click the enable toggle first!"
-msgstr ""
+msgstr "Harap beri otorisasi dan klik aktifkan toggle terlebih dahulu!"
 
 #: tauon.py:7122
 msgid "day"
-msgstr ""
+msgstr "hari"
 
 #: tauon.py:7123
 msgid "days"
-msgstr ""
+msgstr "Hari"
 
 #: tauon.py:7125
 msgid "Web server stopped."
-msgstr ""
+msgstr "Server web berhenti."
 
 #: tauon.py:7230
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Nama pengguna, kata sandi dan/atau nama server tidak ada"
 
 #: tauon.py:7245
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "Error saat menyambungkan ke server PLEX"
 
 #: tauon.py:7246
 msgid "Try check login credentials and that server is accessible."
-msgstr ""
+msgstr "Coba periksa kredensial masuk dan server itu dapat diakses."
 
 #: tauon.py:7701
 msgid "Missing username, password and/or server URL"
-msgstr ""
+msgstr "Nama pengguna, kata sandi dan/atau URL server tidak ada"
 
 #: tauon.py:7729
 msgid "Could not establish connection"
-msgstr ""
+msgstr "Tidak dapat membuat sambungan"
 
 #: tauon.py:7748
 msgid "Could not establish connection/authorisation"
-msgstr ""
+msgstr "Tidak dapat membuat koneksi/otorisasi"
 
 #: tauon.py:8422
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Hentikan sinkronisasi sebelum keluar!"
 
 #: tauon.py:12827
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Daftar Putar + Antrian"
 
 #: tauon.py:12828 tauon.py:35206
 msgid "Queue"
-msgstr ""
+msgstr "Antrian"
 
 #: tauon.py:12830
 msgid "Artist List"
-msgstr ""
+msgstr "Daftar Artis"
 
 #: tauon.py:12832
 msgid "Folder Navigator"
-msgstr ""
+msgstr "Navigator Folder"
 
 #: tauon.py:12893
 msgid "Track Renaming"
-msgstr ""
+msgstr "Mengganti nama Trek"
 
 #: tauon.py:12896 tauon.py:42436
 msgid "Default"
-msgstr ""
+msgstr "Default"
 
 #: tauon.py:12919
 msgid "BEFORE"
-msgstr ""
+msgstr "SEBELUM"
 
 #: tauon.py:12923
 msgid "AFTER"
-msgstr ""
+msgstr "SESUDAH"
 
 #: tauon.py:13011
 msgid "Rename complete."
-msgstr ""
+msgstr "Ganti nama selesai."
 
 #: tauon.py:13012
 msgid " filenames were written."
-msgstr ""
+msgstr " nama file telah ditulis."
 
 #: tauon.py:13075
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Pengganti Pencarian Lirik"
 
 #: tauon.py:13081 tauon.py:13101
 msgid "Substitute"
-msgstr ""
+msgstr "Pengganti"
 
 #: tauon.py:13087 tauon.py:13107
 msgid "with"
-msgstr ""
+msgstr "dengan"
 
 #: tauon.py:13151
 msgid "Repeat OFF"
-msgstr ""
+msgstr "Ulangi NONAKTIF"
 
 #: tauon.py:13152
 msgid "Repeat Track"
-msgstr ""
+msgstr "Ulangi Track"
 
 #: tauon.py:13153
 msgid "Repeat Album"
-msgstr ""
+msgstr "Ulangi Album"
 
 #: tauon.py:13191
 msgid "Shuffle OFF"
-msgstr ""
+msgstr "Acak NONAKTIF"
 
 #: tauon.py:13192
 msgid "Shuffle Tracks"
-msgstr ""
+msgstr "Acak Lagu"
 
 #: tauon.py:13193
 msgid "Random Albums"
-msgstr ""
+msgstr "Acak Album"
 
 #: tauon.py:13218
 msgid "Make Large Size"
-msgstr ""
+msgstr "Buat Ukuran Besar"
 
 #: tauon.py:13220
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Buat Ukuran Compact"
 
 #: tauon.py:13255
 msgid "Close Panel"
-msgstr ""
+msgstr "Tutup Panel"
 
 #: tauon.py:13256
 msgid "Make Large"
-msgstr ""
+msgstr "Jadikan Besar"
 
 #: tauon.py:13488
 msgid "Unlock Panel"
-msgstr ""
+msgstr "Buka Kunci Panel"
 
 #: tauon.py:13490
 msgid "Lock Panel"
-msgstr ""
+msgstr "Kunci Panel"
 
 #: tauon.py:13492 tauon.py:13493 tauon.py:13514 tauon.py:17900 tauon.py:18883
 msgid "Open Folder"
-msgstr ""
+msgstr "Buka Folder"
 
 #: tauon.py:13495 tauon.py:13496 tauon.py:13497 tauon.py:33480
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Filter ke Daftar Putar Baru"
 
 #: tauon.py:13498 tauon.py:16308
 msgid "Rescan Folder"
-msgstr ""
+msgstr "Pindai Ulang Folder"
 
 #: tauon.py:13499 tauon.py:13501
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Pindahkan Folder Pemutaran Di Sini"
 
 #: tauon.py:13507 tauon.py:18904
 msgid "Collapse All"
-msgstr ""
+msgstr "Ciutkan Semua"
 
 #: tauon.py:13516
 msgid "Show in Playlist"
-msgstr ""
+msgstr "Tampilkan di Daftar Putar"
 
 #: tauon.py:13592 tauon.py:18888 tauon.py:18900
 msgid "Add Album to Queue"
-msgstr ""
+msgstr "Tambahkan Album ke Antrean"
 
 #: tauon.py:13593 tauon.py:18889 tauon.py:18901
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Antrekan Album Berikutnya"
 
 #: tauon.py:13605 tauon.py:16495 tauon.py:26461
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Membatalkan Sinkronisasi"
 
 #: tauon.py:13608
 msgid "Cancel"
-msgstr ""
+msgstr "Batalkan"
 
 #: tauon.py:13618
 msgid "Hide Metadata Panel"
-msgstr ""
+msgstr "Sembunyikan Panel Metadata"
 
 #: tauon.py:13620
 msgid "Show Metadata Panel"
-msgstr ""
+msgstr "Tampilkan Panel Metadata"
 
 #: tauon.py:13630
 msgid "Panel Below Lyrics"
-msgstr ""
+msgstr "Panel Di Bawah Lirik"
 
 #: tauon.py:13632
 msgid "Panel Above Lyrics"
-msgstr ""
+msgstr "Panel Di Atas Lirik"
 
 #: tauon.py:13660 tauon.py:13670 tauon.py:13678
 msgid "Hide Lyrics"
-msgstr ""
+msgstr "Sembunyikan Lirik"
 
 #: tauon.py:13662 tauon.py:13672 tauon.py:13680
 msgid "Show Lyrics"
-msgstr ""
+msgstr "Tampilkan Lirik"
 
 #: tauon.py:13714
 msgid "There are no lyric sources enabled."
-msgstr ""
+msgstr "Tidak ada sumber lirik yang diaktifkan."
 
 #: tauon.py:13723
+#, fuzzy
 msgid "Let's be polite and try later."
-msgstr ""
+msgstr "Mari bersikap sopan dan coba nanti."
 
 #: tauon.py:13740 tauon.py:19105 tauon.py:32373
 msgid "Searching..."
-msgstr ""
+msgstr "Mencari..."
 
 #: tauon.py:13773
 msgid "No lyrics for this track were found"
-msgstr ""
+msgstr "Tidak ada lirik untuk lagu ini yang ditemukan"
 
 #: tauon.py:13837 tauon.py:13934 tauon.py:14413
 msgid "Search for Lyrics"
-msgstr ""
+msgstr "Mencari Lirik"
 
 #: tauon.py:13849
 msgid "Search GuitarParty"
-msgstr ""
+msgstr "Mencari GuitarParty"
 
 #: tauon.py:13884
 msgid "Paste Chord Lyrics"
-msgstr ""
+msgstr "Tempel Lirik Chord"
 
 #: tauon.py:13885
 msgid "Clear Chord Lyrics"
-msgstr ""
+msgstr "Bersihkan Lirik Chord"
 
 #: tauon.py:13924 tauon.py:13935 tauon.py:14414
 msgid "Toggle Lyrics"
-msgstr ""
+msgstr "Toggle Lirik"
 
 #: tauon.py:13926 tauon.py:13937
 msgid "Substitute Search..."
-msgstr ""
+msgstr "Cari Pengganti..."
 
 #: tauon.py:13927 tauon.py:13938
 msgid "Paste Lyrics"
-msgstr ""
+msgstr "Tempel Lirik"
 
 #: tauon.py:13928 tauon.py:13939
 msgid "Copy Lyrics"
-msgstr ""
+msgstr "Salin Lirik"
 
 #: tauon.py:13929 tauon.py:13940
 msgid "Clear Lyrics"
-msgstr ""
+msgstr "Bersihkan Lirik"
 
 #: tauon.py:14044
 msgid "Open Image"
-msgstr ""
+msgstr "Buka Gambar"
 
 #: tauon.py:14068
 msgid "Previous"
-msgstr ""
+msgstr "Sebelumnya"
 
 #: tauon.py:14071
 msgid "Extract Image"
-msgstr ""
+msgstr "Ekstrak Gambar"
 
 #: tauon.py:14084
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Tidak dapat mengunduh seni untuk trek jaringan."
 
 #: tauon.py:14108
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Sepertinya folder ini bukan milik satu album manapun, maaf"
 
 #: tauon.py:14119
 msgid "Looking up MusicBrainz ID..."
-msgstr ""
+msgstr "Mencari MusicBrainz ID..."
 
 #: tauon.py:14183
 msgid "Cover art downloaded from fanart.tv"
-msgstr ""
+msgstr "Gambar sampul diunduh dari fanart.tv"
 
 #: tauon.py:14204
 msgid "Cover art downloaded from MusicBrainz"
-msgstr ""
+msgstr "Gambar sampul diunduh dari MusicBrainz"
 
 #: tauon.py:14215
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Seni sampul atau ID yang cocok tidak dapat ditemukan."
 
 #: tauon.py:14311
 msgid "Image removal failed."
-msgstr ""
+msgstr "Penghapusan gambar gagal."
 
 #: tauon.py:14315
 msgid "Processed one FLAC files"
-msgstr ""
+msgstr "Memproses satu file FLAC"
 
 #: tauon.py:14317
 msgid "Deleted embedded picture from file"
-msgstr ""
+msgstr "Gambar yang disematkan dihapus dari file"
 
 #: tauon.py:14348 tauon.py:14355
 msgid "Delete Image File"
-msgstr ""
+msgstr "Hapus File Gambar"
 
 #: tauon.py:14363
 msgid "Delete Embedded | Folder"
-msgstr ""
+msgstr "Hapus Tersemat | Folder"
 
 #: tauon.py:14365
 msgid "Delete Embedded | Track"
-msgstr ""
+msgstr "Delete Embedded | Trek"
 
 #: tauon.py:14385
 msgid "Quick-Fetch Cover Art"
-msgstr ""
+msgstr "Ambil Cepat Gambar Sampul"
 
 #: tauon.py:14435
 msgid "Paste Spotify Album"
-msgstr ""
+msgstr "Tempel Album Spotify"
 
 #: tauon.py:14651 tauon.py:32667 tauon.py:42446
 msgid "Rename"
-msgstr ""
+msgstr "Ganti nama"
 
 #: tauon.py:14662
 msgid "Pin"
-msgstr ""
+msgstr "Pin"
 
 #: tauon.py:14664
 msgid "Unpin"
-msgstr ""
+msgstr "Buka Pin"
 
 #: tauon.py:14673
 msgid "Unlock"
-msgstr ""
+msgstr "Buka Kunci"
 
 #: tauon.py:14675 tauon.py:14709
 msgid "Lock"
-msgstr ""
+msgstr "Kunci"
 
 #: tauon.py:14855 tauon.py:19314 tauon.py:26229 tauon.py:26282 tauon.py:26287
 #: tauon.py:26295 tauon.py:26299 tauon.py:26309
 msgid "Clear"
-msgstr ""
+msgstr "Bersihkan"
 
 #: tauon.py:14894
 msgid "Are you sure you want to delete this playlist?"
-msgstr ""
+msgstr "Kamu yakin ingin menghapus daftar putar ini?"
 
 #: tauon.py:14894
 msgid "Try again while holding shift to confirm"
-msgstr ""
+msgstr "Coba lagi sambil menahan shift untuk mengonfirmasi"
 
 #: tauon.py:14999
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "Kamu yakin ingin menghapus daftar putar: %s?"
 
 #: tauon.py:15040
 msgid "Rescanning folders..."
-msgstr ""
+msgstr "Memindai ulang folder..."
 
 #: tauon.py:15353 tauon.py:15365
 msgid "Playlist is locked"
-msgstr ""
+msgstr "Daftar putar dikunci"
 
 #: tauon.py:15464 tauon.py:42455
 msgid "Delete"
-msgstr ""
+msgstr "Hapus"
 
 #: tauon.py:15521
 msgid "Add Spotify Album"
-msgstr ""
+msgstr "Tambah Album Spotify"
 
 #: tauon.py:15624
 msgid "Playlist contains non-Spotify tracks"
-msgstr ""
+msgstr "Daftar putar berisi trek non-Spotify"
 
 #: tauon.py:15630
 msgid "Created new Spotify playlist"
-msgstr ""
+msgstr "Membuat playlist Spotify baru"
 
 #: tauon.py:15636
 msgid "Error creating Spotify playlist"
-msgstr ""
+msgstr "Error membuat playlist Spotify"
 
 #: tauon.py:15639
 msgid "Updated Spotify playlist"
-msgstr ""
+msgstr "Daftar putar Spotify diperbarui"
 
 #: tauon.py:16270
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
+"BAIK. Mulai sekarang, playlist ini akan mengurutkan impor secara otomatis"
 
 #: tauon.py:16271
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
+"Kamu menghapus atau mengedit perilaku ini dengan membuka \"Lain-lain ...\"> "
+"\"Edit generator ...\""
 
 #: tauon.py:16275 tauon.py:20020
 msgid "New Playlist"
-msgstr ""
+msgstr "Daftar putar baru"
 
 #: tauon.py:16280
 msgid "Upload"
-msgstr ""
+msgstr "Unggah"
 
 #: tauon.py:16292
 msgid "Regenerate"
-msgstr ""
+msgstr "Regenerasi"
 
 #: tauon.py:16293
 msgid "Generate…"
@@ -531,87 +538,89 @@ msgstr ""
 
 #: tauon.py:16294
 msgid "Sort…"
-msgstr ""
+msgstr "Menyortir…"
 
 #: tauon.py:16295
 msgid "From Current…"
-msgstr ""
+msgstr "Dari Saat Ini…"
 
 #: tauon.py:16300
 msgid "Sort by Imported"
-msgstr ""
+msgstr "Sortir menurut yang Diimpor"
 
 #: tauon.py:16301
 msgid "Sort by Filepath"
-msgstr ""
+msgstr "Urutkan berdasarkan Filepath"
 
 #: tauon.py:16302
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Urutkan Nomor Trek"
 
 #: tauon.py:16303
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Urutan Tahun per Artis"
 
 #: tauon.py:16304
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Buat Pengurutan Otomatis Daftar Putar"
 
 #: tauon.py:16310 tauon.py:18059 tauon.py:19312
 msgid "Paste"
-msgstr ""
+msgstr "Tempel"
 
 #: tauon.py:16311
 msgid "Append Playing"
-msgstr ""
+msgstr "Tambahkan Sedang Memainkan"
 
 #: tauon.py:16316
 msgid "Misc…"
-msgstr ""
+msgstr "Lain-lain…"
 
 #: tauon.py:16365
 msgid "No target folder selected"
-msgstr ""
+msgstr "Tidak ada folder target yang dipilih"
 
 #: tauon.py:16371
 msgid "Target folder could not be found"
-msgstr ""
+msgstr "Folder target tidak dapat ditemukan"
 
 #: tauon.py:16411
 msgid "Deleting folders..."
-msgstr ""
+msgstr "Menghapus folder..."
 
 #: tauon.py:16430 tauon.py:16493
 msgid "Copying files to device"
-msgstr ""
+msgstr "Menyalin file ke perangkat"
 
 #: tauon.py:16436
 msgid "Sync aborted! Low disk space on target device"
-msgstr ""
+msgstr "Sinkronisasi dibatalkan! Ruang disk rendah pada perangkat target"
 
 #: tauon.py:16444 tauon.py:16475
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
+"Satu atau beberapa folder yang akan disinkronkan memiliki nama yang sama. "
+"Melewati."
 
 #: tauon.py:16444 tauon.py:16475
 msgid "Sync warning"
-msgstr ""
+msgstr "Peringatan sinkronisasi"
 
 #: tauon.py:16461 tauon.py:28504
 msgid "Folders Remaining"
-msgstr ""
+msgstr "Folder tersisa"
 
 #: tauon.py:16463 tauon.py:28502
 msgid "Folder Remaining"
-msgstr ""
+msgstr "Folder Tersisa"
 
 #: tauon.py:16503
 msgid "Sync completed"
-msgstr ""
+msgstr "Sinkronisasi selesai"
 
 #: tauon.py:16519 tauon.py:16599
 msgid "Set as Sync Playlist"
-msgstr ""
+msgstr "Setel sebagai daftar putar yang diselaraskan"
 
 #: tauon.py:16522
 msgid "Un-set as Sync Playlist"
@@ -619,31 +628,31 @@ msgstr ""
 
 #: tauon.py:16533 tauon.py:16600
 msgid "Set as Downloads Playlist"
-msgstr ""
+msgstr "Setel sebagai Daftar Putar Unduhan"
 
 #: tauon.py:16536
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Batal disetel sebagai Daftar Putar Unduhan"
 
 #: tauon.py:16589
 msgid "Export Playlist Stats"
-msgstr ""
+msgstr "Ekspor Statistik Daftar Putar"
 
 #: tauon.py:16590
 msgid "Export Albums CSV"
-msgstr ""
+msgstr "Ekspor Album CSV"
 
 #: tauon.py:16591
 msgid "Transcode All"
-msgstr ""
+msgstr "Transkode Semua"
 
 #: tauon.py:16592
 msgid "Rescan Tags"
-msgstr ""
+msgstr "Pindai Ulang Tag"
 
 #: tauon.py:16595
 msgid "Export XSPF"
-msgstr ""
+msgstr "Ekspor XSPF"
 
 #: tauon.py:16596
 msgid "Toggle Breaks"
@@ -651,7 +660,7 @@ msgstr ""
 
 #: tauon.py:16597
 msgid "Edit Generator..."
-msgstr ""
+msgstr "Sunting Generator..."
 
 #: tauon.py:16598
 msgid "Engage Gallery Quick Add"
@@ -659,31 +668,31 @@ msgstr ""
 
 #: tauon.py:16601
 msgid "Remove Duplicates"
-msgstr ""
+msgstr "Hapus Duplikat"
 
 #: tauon.py:16641 tauon.py:16733 tauon.py:16734
 msgid "Top Rated Tracks"
-msgstr ""
+msgstr "Trek dengan Nilai Tertinggi"
 
 #: tauon.py:16658 tauon.py:16665 tauon.py:16666
 msgid "Top Played Tracks"
-msgstr ""
+msgstr "Trek yang Dimainkan Teratas"
 
 #: tauon.py:16723 tauon.py:16730 tauon.py:16731
 msgid "Top Played Albums"
-msgstr ""
+msgstr "Album yang Diputar Teratas"
 
 #: tauon.py:16778 tauon.py:16809 tauon.py:16810
 msgid "Top Rated Albums"
-msgstr ""
+msgstr "Album Peringkat Teratas"
 
 #: tauon.py:16800
 msgid "Tracks with lyrics"
-msgstr ""
+msgstr "Lagu dengan lirik"
 
 #: tauon.py:16807
 msgid "No tracks with lyrics were found."
-msgstr ""
+msgstr "Tidak ada lagu dengan lirik."
 
 #: tauon.py:16856
 msgid ""
@@ -692,59 +701,59 @@ msgstr ""
 
 #: tauon.py:16857
 msgid "Incomplete Albums"
-msgstr ""
+msgstr "Album Tidak Lengkap"
 
 #: tauon.py:16864
 msgid "No incomplete albums were found."
-msgstr ""
+msgstr "Tidak menemukan album yang tidak lengkap."
 
 #: tauon.py:16878 tauon.py:19589
 msgid "Codec"
-msgstr ""
+msgstr "Codec"
 
 #: tauon.py:16910 tauon.py:16916 tauon.py:16917
 msgid "File Modified"
-msgstr ""
+msgstr "Berkas Diubah"
 
 #: tauon.py:16939 tauon.py:17324 tauon.py:17325 tauon.py:19596
 msgid "Loved"
-msgstr ""
+msgstr "Disukai"
 
 #: tauon.py:16969
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Komentar menarik"
 
 #: tauon.py:17013
 msgid "Duration Sorted"
-msgstr ""
+msgstr "Pengurutan durasi"
 
 #: tauon.py:17019 tauon.py:17020
 msgid "Longest Tracks"
-msgstr ""
+msgstr "Lagu terpanjang"
 
 #: tauon.py:17058 tauon.py:17063 tauon.py:17064
 msgid "Longest Albums"
-msgstr ""
+msgstr "Album terpanjang"
 
 #: tauon.py:17107
 msgid "Year Sorted"
-msgstr ""
+msgstr "Tahun Diurutkan"
 
 #: tauon.py:17123 tauon.py:17124
 msgid "Year by Oldest"
-msgstr ""
+msgstr "Tahun berdasarkan yang Tertua"
 
 #: tauon.py:17131 tauon.py:17132
 msgid "Year by Latest"
-msgstr ""
+msgstr "Tahun berdasarkan yang Terbaru"
 
 #: tauon.py:17144 tauon.py:17150 tauon.py:17151
 msgid "Shuffled Tracks"
-msgstr ""
+msgstr "Acak lagu"
 
 #: tauon.py:17180 tauon.py:17186 tauon.py:17187
 msgid "Shuffled Albums"
-msgstr ""
+msgstr "Album yang diacak"
 
 #: tauon.py:17204 tauon.py:17211 tauon.py:17212
 msgid "Lucky Random"
@@ -2570,4 +2579,4 @@ msgstr ""
 
 #: tauon.py:42850
 msgid "Un-Loved track"
-msgstr ""
+msgstr "Lagu yang tidak disukai"
