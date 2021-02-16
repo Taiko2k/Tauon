@@ -58,10 +58,11 @@
 
   <releases>
 
-    <release version="6.4.9" date="2021-02-03">
+    <release version="6.5.0" date="2021-02-17">
       <description>
         <ul>
-          <li>Tweaks and bug fixes</li>
+          <li>Added support for tracker files</li>
+          <li>Various stability improvements for network streaming</li>
         </ul>
       </description>
     </release>

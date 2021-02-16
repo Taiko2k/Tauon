@@ -26900,6 +26900,11 @@ class Over:
             ddt.text((xx, y), "BSD 2-Clause", colours.box_text_label, font)
             draw_linked_text2(xxx, y, "http://www.mega-nerd.com/SRC/index.html", colours.box_sub_text, font, click=self.click, replace="mega-nerd.com")
 
+            y += spacing
+            ddt.text((x, y), "libopenmpt", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://lib.openmpt.org/libopenmpt", colours.box_sub_text, font, click=self.click, replace="lib.openmpt.org")
+
         elif self.cred_page == 5:
             xx = x + round(130 * gui.scale)
             xxx = x + round(240 * gui.scale)
