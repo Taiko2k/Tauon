@@ -895,8 +895,19 @@ int load_next() {
             sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
             want_sample_rate = sample_rate_out;
                 }
+
+      if (load_target_seek > 0) {
+                    // printf("pa: Start at position %d\n", load_target_seek);
+          openmpt_module_set_position_seconds(mod, load_target_seek / 1000.0);
+          reset_set_value =  48000 * (load_target_seek / 1000.0);
+          samples_decoded = reset_set_value * 2;
+          reset_set = 1;
+          reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+          load_target_seek = 0;
+      }                                          
       pthread_mutex_unlock(&buffer_mutex);
       decoder_allocated = 1;
+                 
       return 0;
                  
     }
@@ -1049,7 +1060,7 @@ int load_next() {
                     //printf("pa: Start at position %d\n", load_target_seek);
                     ov_pcm_seek(&vf, (ogg_int64_t) vi.rate * (load_target_seek / 1000.0));
                     reset_set_value = vi.rate * (load_target_seek / 1000.0); // op_pcm_tell(opus_dec); that segfaults?
-                    reset_set_value = 0;
+                    //reset_set_value = 0;
                     reset_set = 1;
                     reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
                     load_target_seek = 0;
