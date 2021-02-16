@@ -3998,6 +3998,19 @@ def get_window_position():
     SDL_GetWindowPosition(t_window, i_x, i_y)
     return i_x.contents.value, i_y.contents.value
 
+# Access functions from libopenmpt for scanning tracker files
+class MOD(Structure):
+    _fields_ = [('ctl', c_char_p),
+                ('value', c_char_p)]
+
+mpt = None
+try:
+    mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+    mpt.openmpt_module_create_from_memory.restype = c_void_p
+    mpt.openmpt_module_get_metadata.restype = c_char_p
+    mpt.openmpt_module_get_duration_seconds.restype = c_double
+except:
+    print("WARNING: Missing library libopenmpt!")
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
@@ -4012,7 +4025,22 @@ def tag_scan(nt):
 
         nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
-        if nt.file_ext == "FLAC":
+        if nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
+            f = open(nt.fullpath, "rb")
+            data = f.read()
+            f.close()
+            MOD1 = MOD.from_address(
+                mpt.openmpt_module_create_from_memory(ctypes.c_char_p(data), ctypes.c_size_t(len(data)), None, None,
+                                                      None))
+            nt.length = mpt.openmpt_module_get_duration_seconds(byref(MOD1))
+            nt.title = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"title")).decode()
+            nt.artist = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"artist")).decode()
+            nt.comment = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"message_raw")).decode()
+
+            mpt.openmpt_module_destroy(byref(MOD1))
+            del MOD1
+
+        elif nt.file_ext == "FLAC":
 
             audio = Flac(nt.fullpath)
             audio.read()
