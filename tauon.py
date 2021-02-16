@@ -7342,7 +7342,7 @@ class PlexService:
             for track in album.tracks():
 
                 if not track.duration:
-                    print("Warning: Skipping track with invalid duration - " + track.title + " - " + track.track.grandparentTitle)
+                    print("Warning: Skipping track with invalid duration - " + track.title + " - " + track.grandparentTitle)
                     continue
 
                 id = pctl.master_count
