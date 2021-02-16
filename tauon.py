@@ -31,11 +31,12 @@
 import sys
 import socket
 
-n_version = "6.4.10"
+n_version = "6.5.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
+
 
 # Early arg processing
 def transfer_args_and_exit():
@@ -7301,6 +7302,7 @@ class PlexService:
                 existing[track.url_key] = track_id
 
         albums = self.resource.library.section('Music').albums()
+        gui.to_got = 0
 
         for album in albums:
             year = album.year
@@ -7310,6 +7312,10 @@ class PlexService:
             parent = (album_artist + " - " + album_title).strip("- ")
 
             for track in album.tracks():
+
+                if not track.duration:
+                    print("Warning: Skipping track with invalid duration - " + track.title + " - " + track.track.grandparentTitle)
+                    continue
 
                 id = pctl.master_count
                 replace_existing = False
@@ -7334,6 +7340,8 @@ class PlexService:
                 nt.title = title
                 nt.album = album_title
                 nt.length = duration
+                if track.locations:
+                    nt.fullpath = track.locations[0]
 
                 nt.is_network = True
 
@@ -7350,13 +7358,16 @@ class PlexService:
 
                 playlist.append(nt.index)
 
+            gui.to_got += 1
+            gui.update += 1
+
         self.scanning = False
 
         if return_list:
             return playlist
 
         pctl.multi_playlist.append(pl_gen(title="PLEX Collection", playlist=playlist))
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex"
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex path"
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -28407,6 +28418,8 @@ class TopPanel:
             bg = [100, 200, 100, 255]
         elif plex.scanning:
             text = "Accessing PLEX library..."
+            if gui.to_got:
+                text += f" {gui.to_got}"
             bg = [229, 160, 13, 255]
         elif spot_ctl.launching_spotify:
             text = "Launching Spotify..."
