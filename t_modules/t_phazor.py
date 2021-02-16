@@ -536,7 +536,19 @@ def player4(tauon):
 
                 player_timer.set()
                 pctl.jump_time = 0
-
+                if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.mod_formats:
+                    i = 0
+                    t = 0
+                    while t == 0:
+                        time.sleep(0.3)
+                        t = aud.get_length_ms() / 1000
+                        i += 1
+                        if i > 9:
+                            break
+                    loaded_track.length = t
+                    if loaded_track.length != 0:
+                        pctl.playing_length = loaded_track.length
+                        gui.pl_update += 1
 
             if command == "seek":
                 if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:

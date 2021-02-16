@@ -944,11 +944,20 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "SUB": [235, 140, 20, 255],
     "SPTY": [30, 215, 96, 255],
     "JELY": [190, 100, 210, 255],
+    "XM": [50, 50, 50, 255],
+    "MOD": [50, 50, 50, 255],
+    "S3M": [50, 50, 50, 255],
+    "IT": [50, 50, 50, 255],
+    "MPTM": [50, 50, 50, 255],
 }
 
 # These will be the extensions of files to be added when importing
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
               'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'}
+
+
+MOD_Formats = {'xm', 'mod', 's3m', 'it', 'mptm'}
+DA_Formats |= MOD_Formats
 
 Archive_Formats = {'zip'}
 
@@ -7187,6 +7196,7 @@ class Tauon:
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
         self.radio_server = None
+        self.mod_formats = MOD_Formats
 
         self.tray_lock = threading.Lock()
         self.tray_releases = 0
@@ -42097,7 +42107,10 @@ while pctl.running:
                     # Codec tag rendering
                     else:
                         ddt.rect(ext_rect, ex_colour, True)
-                        ddt.text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), line, alpha_blend([10, 10, 10, 235], ex_colour), 211, bg=ex_colour)
+                        colour = alpha_blend([10, 10, 10, 235], ex_colour)
+                        if colour_value(ex_colour) < 180:
+                            colour = alpha_blend([200, 200, 200, 235], ex_colour)
+                        ddt.text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), line, colour, 211, bg=ex_colour)
 
                         if tc.is_cue:
                             ext_rect[1] += 16 * gui.scale

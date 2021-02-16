@@ -342,7 +342,7 @@ def player3(tauon):  # GStreamer
             # Get current playing track object from player
             current_track = pctl.playing_object()
 
-            if current_track is not None and current_track.length < 1:
+            if current_track is not None and (current_track.length < 1 or current_track.file_ext.lower() in tauon.mod_formats):
 
                 time.sleep(0.25)
 
@@ -350,6 +350,8 @@ def player3(tauon):  # GStreamer
 
                 if result[0] is True:
                     current_track.length = result[1] / Gst.SECOND
+                    pctl.playing_length = current_track.length
+                    gui.pl_update += 1
 
                 else:  # still loading? I guess we wait and try again.
                     time.sleep(1.5)
