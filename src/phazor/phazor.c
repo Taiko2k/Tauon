@@ -32,6 +32,8 @@
 #include "opus/opusfile.h"
 #include <sys/stat.h>
 #include <samplerate.h>
+#include <libopenmpt/libopenmpt.h>
+#include <libopenmpt/libopenmpt_stream_callbacks_file.h>
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -71,7 +73,7 @@ unsigned char out_buf[2048 * 4]; // 4 bytes for 16bit stereo
 int position_count = 0;
 int current_length_count = 0;
 
-int sample_rate_out = 44100;
+int sample_rate_out = 48000;
 int sample_rate_src = 0;
 int src_channels = 2;
 
@@ -144,6 +146,7 @@ enum decoder_types {
     OPUS,
     FFMPEG,
     WAVE,
+    MPT,
 };
 
 enum result_status_enum {
@@ -218,6 +221,11 @@ int16_t opus_buffer[2048 * 2];
 
 mpg123_handle *mh;
 char parse_buffer[2048 * 2];
+
+// openMPT related ---------------
+
+FILE* mod_file = 0;
+openmpt_module* mod = 0;
 
 // FFMPEG related -----------------------------------------------------
 
@@ -715,6 +723,9 @@ void stop_decoder() {
         case WAVE:
             wave_close();
             break;
+        case MPT:
+            openmpt_module_destroy(mod);
+            break;
     }
     src_reset(src);
     decoder_allocated = 0;
@@ -815,6 +826,9 @@ void decode_seek(int abs_ms, int sample_rate) {
         case WAVE:
             wave_seek((int) sample_rate * (abs_ms / 1000.0));
             break;
+        case MPT:
+            openmpt_module_set_position_seconds(mod, abs_ms / 1000.0);
+            break;
     }
 }
 
@@ -849,6 +863,7 @@ int load_next() {
         strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
         strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
         strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
+        //strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
         //strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
         loaded_target_file[0] == 'h') {
         codec = FFMPEG;
@@ -861,6 +876,29 @@ int load_next() {
         }
         pthread_mutex_unlock(&buffer_mutex);
         return 0;
+    } else if (strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
+               strcmp(ext, ".s3m") == 0 || strcmp(ext, ".S3M") == 0 ||
+               strcmp(ext, ".it") == 0 || strcmp(ext, ".IT") == 0 ||
+               strcmp(ext, ".mptm") == 0 || strcmp(ext, ".MPTM") == 0 ||
+               strcmp(ext, ".mod") == 0 || strcmp(ext, ".MOD") == 0){
+      
+      codec = MPT;
+      mod_file = fopen(loaded_target_file, "rb");
+      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+      src_channels = 2;
+      fclose(mod_file);
+      pthread_mutex_lock(&buffer_mutex);
+      sample_rate_src = 48000;
+      current_length_count = openmpt_module_get_duration_seconds(mod) * 48000;
+
+      if (current_sample_rate != sample_rate_out) {
+            sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            want_sample_rate = sample_rate_out;
+                }
+      pthread_mutex_unlock(&buffer_mutex);
+      decoder_allocated = 1;
+      return 0;
+                 
     }
 
 
@@ -1127,6 +1165,19 @@ void pump_decode() {
         if (result == 1) {
             decoder_eos();
         }
+                         
+    } else if (codec == MPT) {
+      int count;  
+      count = openmpt_module_read_interleaved_stereo(mod, 48000, 4096, temp16l);
+      if (count == 0){
+        decoder_eos();
+      } else {
+        pthread_mutex_lock(&buffer_mutex);
+        read_to_buffer_s16int(temp16l, count * 2);
+        samples_decoded += count * 2;
+        pthread_mutex_unlock(&buffer_mutex);
+      }
+    
     } else if (codec == FLAC) {
         // FLAC decoding
 

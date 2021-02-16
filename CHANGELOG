@@ -1,8 +1,9 @@
 
 Changelog-------------------------------------
 
-v6.4.10
+v6.5.0
 
+ - Added support for playback of tracker files
  - Fixed background art on window resize
  - Added listen/scrobble support for Airsonic
  - Improved Airsonic import speed
