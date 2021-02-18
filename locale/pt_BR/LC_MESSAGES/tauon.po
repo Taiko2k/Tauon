@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-02-14 09:56+1300\n"
-"PO-Revision-Date: 2021-01-04 17:29+0000\n"
+"PO-Revision-Date: 2021-02-16 00:41+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.4.1-dev\n"
+"X-Generator: Weblate 4.5-dev\n"
 
 #: tauon.py:1892 tauon.py:1894
 msgid "No artist image found."
@@ -60,7 +60,7 @@ msgstr "Isto pode levar bastante tempo."
 
 #: tauon.py:6900
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Falha ao atualiza estado dos \"gostei\" do last.fm"
 
 #: tauon.py:6903
 msgid "Error updating love to last.fm!"
@@ -143,9 +143,8 @@ msgid "Missing username, password and/or server URL"
 msgstr "Faltando nome de usuário, senha e/ou URL do servidor"
 
 #: tauon.py:7729
-#, fuzzy
 msgid "Could not establish connection"
-msgstr "Não foi possível estabelecer conexão/autorização"
+msgstr "Não foi possível conectar"
 
 #: tauon.py:7748
 msgid "Could not establish connection/authorisation"
@@ -466,16 +465,15 @@ msgstr "Limpar"
 
 #: tauon.py:14894
 msgid "Are you sure you want to delete this playlist?"
-msgstr ""
+msgstr "Você tem certeza que quer apagar esta playlist?"
 
 #: tauon.py:14894
-#, fuzzy
 msgid "Try again while holding shift to confirm"
-msgstr "Pressione de novo segurando Shift, se você entendeu"
+msgstr "Tente novamente segurando shift para confirmar"
 
 #: tauon.py:14999
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "Você tem certeza que quer apagar esta playlist: %s?"
 
 #: tauon.py:15040
 msgid "Rescanning folders..."
@@ -635,9 +633,8 @@ msgid "Export Playlist Stats"
 msgstr "Exportar Estatísticas da Playlist"
 
 #: tauon.py:16590
-#, fuzzy
 msgid "Export Albums CSV"
-msgstr "Exportar como CSV"
+msgstr "Exportar Albuns como CSV"
 
 #: tauon.py:16591
 msgid "Transcode All"
@@ -1790,12 +1787,11 @@ msgstr "Usar autenticação em texto puro"
 #: tauon.py:25968
 #, fuzzy
 msgid "Jellyfin network streaming"
-msgstr "transmissão de rede koel"
+msgstr "Transmissão de rede Jellyfin"
 
 #: tauon.py:25978
-#, fuzzy
 msgid "Username"
-msgstr "Nome de utilizador:"
+msgstr "Nome de usuário"
 
 #: tauon.py:26029
 msgid "koel network streaming"
