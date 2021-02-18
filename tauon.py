@@ -7156,6 +7156,7 @@ class Strings:
         self.spotify_error_starting = _("Error starting Spotify")
         self.spotify_request_auth = _("Please authorise Spotify in settings!")
         self.spotify_need_enable = _("Please authorise and click the enable toggle first!")
+        self.spotify_import_complete = _("Spotify import complete")
 
         self.day = _("day")
         self.days = _("days")
@@ -22236,6 +22237,14 @@ class SearchOverlay:
                         artist = track.artist
                         xx += ddt.text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
+                        if track.album:
+                            xx += 9 * gui.scale
+                            xx += ddt.text((xx + (120 + 30) * gui.scale, yy), "FROM", [120, 120, 120, int(255 * fade)], 212,
+                                     bg=[12, 12, 12, 255])
+                            xx += 8 * gui.scale
+                            xx += ddt.text((xx + (120 + 30) * gui.scale, yy), track.album, [80, 80, 80, int(255 * fade)], 212,
+                                     bg=[12, 12, 12, 255])
+
                     ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
                     if fade == 1:
                         ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour, True)
@@ -25952,6 +25961,18 @@ class Over:
                             spotify_playlist_menu.activate(position=(x, y))
                 else:
                     show_message(_("Please wait until current job is finished"))
+
+            y += round(30 * gui.scale)
+
+            if self.button(x, y, _("Import all user playlists")):
+                if not spot_ctl.spotify_com:
+                    show_message(_("Importing Spotify playlists..."))
+                    shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
+                    shoot_dl.daemon = True
+                    shoot_dl.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
+
 
         if self.account_view == 7:
 

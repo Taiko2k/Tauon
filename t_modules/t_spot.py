@@ -222,6 +222,18 @@ class SpotCtl:
 
         return None
 
+    def import_all_playlists(self):
+        self.spotify_com = True
+
+        playlists = self.get_playlist_list()
+        if playlists:
+            for item in playlists:
+                self.playlist(item[1], silent=True)
+                self.tauon.gui.update += 1
+                time.sleep(0.1)
+        self.spotify_com = False
+        self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
+
     def get_playlist_list(self):
         self.connect()
         if not self.spotify:
@@ -514,7 +526,7 @@ class SpotCtl:
         self.tauon.pctl.multi_playlist[playlist_number][2].extend(playlist)
         self.tauon.gui.pl_update += 1
 
-    def playlist(self, url, return_list=False):
+    def playlist(self, url, return_list=False, silent=False):
 
         self.connect()
         if not self.spotify:
@@ -554,8 +566,8 @@ class SpotCtl:
             self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
 
         self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
-
-        self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+        if not silent:
+            self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]

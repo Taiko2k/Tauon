@@ -3,9 +3,9 @@ Changelog-------------------------------------
 
 v6.5.1
  - Simplified Spotify setup / remove need for key
-  - todo spotify search enter behavior fix
-  - todo add album info to global search track results
+ - Added album info to global search track results
   - todo bind generator shortcut keys
+ - Added import all spotify playlist button
 
 v6.5.0
 
