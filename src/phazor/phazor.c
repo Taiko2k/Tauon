@@ -869,6 +869,7 @@ int load_next() {
         codec = FFMPEG;
 
         start_ffmpeg(loaded_target_file, load_target_seek);
+        load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
         if (current_sample_rate != sample_rate_out) {
             sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -1208,7 +1209,7 @@ void pump_decode() {
             int rate = current_sample_rate;
             if (want_sample_rate > 0) rate = want_sample_rate;
 
-            FLAC__stream_decoder_seek_absolute(dec, (int) rate * (load_target_seek / 1000.0));
+            FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
             pthread_mutex_lock(&buffer_mutex);
             reset_set_value = rate * (load_target_seek / 1000.0);
             reset_set = 1;

@@ -25922,7 +25922,7 @@ class Over:
             #         text = text.split("=", 1)[1].strip()
             #     if len(text) > 50:
             #         spot_ctl.paste_code(text)
-            y += round(30 * gui.scale)
+            y += round(45 * gui.scale)
             prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
             y += round(30 * gui.scale)

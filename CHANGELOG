@@ -4,8 +4,8 @@ Changelog-------------------------------------
 v6.5.1
  - Simplified Spotify setup / remove need for key
  - Added album info to global search track results
-  - todo bind generator shortcut keys
  - Added import all spotify playlist button
+ - [Phazor] Fixed CUE sheets with FLAC
 
 v6.5.0
 
