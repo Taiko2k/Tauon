@@ -25854,43 +25854,43 @@ class Over:
             ddt.text((x, y), _('Spotify Premium account'), colours.box_sub_text, 213)
             if self.button(x + 260 * gui.scale, y, _("?")):
                 show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", mode="link")
+            #
+            # if inp.key_tab_press:
+            #     self.account_text_field += 1
+            #     if self.account_text_field > 2:
+            #         self.account_text_field = 0
+            #
+            # field_width = round(245 * gui.scale)
+            #
+            # y += round(25 * gui.scale)
+            # ddt.text((x + 0 * gui.scale, y), _("Client ID"),
+            #          colours.box_text_label, 11)
+            # y += round(19 * gui.scale)
+            # rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            # fields.add(rect1)
+            # if coll(rect1) and (self.click or level_2_right_click):
+            #     self.account_text_field = 0
+            # ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            # text_spot_client.text = prefs.spot_client
+            # text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+            #                   width=rect1[2] - 8 * gui.scale, click=self.click)
+            # prefs.spot_client = text_spot_client.text.strip()
+            #
+            # y += round(23 * gui.scale)
+            # ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
+            #          colours.box_text_label, 11)
+            # y += round(19 * gui.scale)
+            # rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            # fields.add(rect1)
+            # if coll(rect1) and (self.click or level_2_right_click):
+            #     self.account_text_field = 1
+            # ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            # text_spot_secret.text = prefs.spot_secret
+            # text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+            #                   width=rect1[2] - 8 * gui.scale, click=self.click)
+            # prefs.spot_secret = text_spot_secret.text.strip()
 
-            if inp.key_tab_press:
-                self.account_text_field += 1
-                if self.account_text_field > 2:
-                    self.account_text_field = 0
-
-            field_width = round(245 * gui.scale)
-
-            y += round(25 * gui.scale)
-            ddt.text((x + 0 * gui.scale, y), _("Client ID"),
-                     colours.box_text_label, 11)
-            y += round(19 * gui.scale)
-            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-            fields.add(rect1)
-            if coll(rect1) and (self.click or level_2_right_click):
-                self.account_text_field = 0
-            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-            text_spot_client.text = prefs.spot_client
-            text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
-            prefs.spot_client = text_spot_client.text.strip()
-
-            y += round(23 * gui.scale)
-            ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
-                     colours.box_text_label, 11)
-            y += round(19 * gui.scale)
-            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-            fields.add(rect1)
-            if coll(rect1) and (self.click or level_2_right_click):
-                self.account_text_field = 1
-            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-            text_spot_secret.text = prefs.spot_secret
-            text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-                              width=rect1[2] - 8 * gui.scale, click=self.click)
-            prefs.spot_secret = text_spot_secret.text.strip()
-
-            y += round(35 * gui.scale)
+            y += round(45 * gui.scale)
 
             if prefs.spotify_token:
                 if self.button(x, y, _("Forget Account")):
@@ -38697,8 +38697,8 @@ def save_state():
             top_panel.prime_tab,
             top_panel.prime_side,
             prefs.sync_playlist,
-            prefs.spot_client,
-            prefs.spot_secret,
+            None, #prefs.spot_client,
+            None, #prefs.spot_secret,
             prefs.show_band,
             prefs.download_playlist,
             spot_ctl.cache_saved_albums,
