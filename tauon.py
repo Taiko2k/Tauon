@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.5.1"
+n_version = "6.5.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -26659,9 +26659,10 @@ class Over:
         m2 = (x + ((2.0 - 0.5) / 3 * sw), y, sh, sh * 2)
         m3 = (x + ((3.0 - 0.5) / 3 * sw), y, sh, sh * 2)
 
-        if coll(grow_rect(slider, 15)) and mouse_down:
+        if coll(grow_rect(slider, round(16 * gui.scale))) and mouse_down:
             prefs.scale_want = ((mouse_position[0] - x) / sw * 3) + 0.5
             prefs.x_scale = False
+            gui.update_on_drag = True
         if prefs.scale_want < 0.5:
             prefs.scale_want = 0.5
         if prefs.scale_want > 3.5:
@@ -29394,13 +29395,13 @@ class BottomBarType1:
                 if shuffle_menu.active and not pctl.random_mode is True:
                     rpbc = colours.mode_button_over
 
-                y += 3 * gui.scale
+                y += round(3 * gui.scale)
                 ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 if pctl.album_shuffle_mode:
                     ddt.rect_a((x + 25 * gui.scale , y), (23 * gui.scale, 3 * gui.scale), rpbc, True)
 
-                y += 5 * gui.scale
+                y += round(5 * gui.scale)
                 ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 # REPEAT
@@ -29456,14 +29457,23 @@ class BottomBarType1:
 
                 y += round(3 * gui.scale)
                 w = round(3 * gui.scale)
+                y = round(y)
+                x = round(x)
+
+                ar = x + round(50 * gui.scale)
+                h = round(5 * gui.scale)
 
                 if pctl.album_repeat_mode:
                     ddt.rect_a((x + round(4 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
 
-                ddt.rect_a((x + round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
-                ddt.rect_a((x + round(4 * gui.scale), y + round(5 * gui.scale)), (math.floor(46 * gui.scale), w), rpbc, True)
+                ddt.rect_a((ar - round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
+                ddt.rect_a((ar - w, y), (w, h), rpbc, True)
+                ddt.rect_a((ar - round(50 * gui.scale), y + h), (round(50 * gui.scale), w), rpbc, True)
+
+                #ddt.rect_a((x + round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
+                #ddt.rect_a((x + round(4 * gui.scale), y + round(5 * gui.scale)), (math.floor(46 * gui.scale), w), rpbc, True)
                 #ddt.rect_a((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
-                ddt.rect_a((x + round(50 * gui.scale) - w, y + w), (w, 4 * gui.scale), rpbc, True)
+                #ddt.rect_a((x + round(50 * gui.scale) - w, y + w), (w, round(4 * gui.scale)), rpbc, True)
 
 
 bottom_bar1 = BottomBarType1()
@@ -41440,6 +41450,7 @@ while pctl.running:
                             gui.cursor_want = 1
                         if gui.set_hold != -1:
                             gui.cursor_want = 1
+                            gui.update_on_drag = True
 
 
                 # heart field test

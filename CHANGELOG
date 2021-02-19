@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.5.2
+
+ - Fixed widget drag in some locations
+ - Fixed repeat icon alignment with UI scaling
+
 v6.5.1
 
  - Simplified Spotify setup / remove need for key
