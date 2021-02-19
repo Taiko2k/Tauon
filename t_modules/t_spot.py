@@ -223,6 +223,7 @@ class SpotCtl:
         return None
 
     def import_all_playlists(self):
+
         self.spotify_com = True
 
         playlists = self.get_playlist_list()
@@ -231,7 +232,11 @@ class SpotCtl:
                 self.playlist(item[1], silent=True)
                 self.tauon.gui.update += 1
                 time.sleep(0.1)
+
         self.spotify_com = False
+        if not playlists:
+            self.tauon.gui.show_message(self.strings.spotify_need_enable)
+            return
         self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
 
     def get_playlist_list(self):
