@@ -58,11 +58,10 @@
 
   <releases>
 
-    <release version="6.5.0" date="2021-02-17">
+    <release version="6.5.1" date="2021-02-19">
       <description>
         <ul>
-          <li>Added support for tracker files</li>
-          <li>Various stability improvements for network streaming</li>
+          <li>Improved Spotify setup</li>
         </ul>
       </description>
     </release>
