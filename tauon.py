@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.5.0"
+n_version = "6.5.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -3451,6 +3451,12 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\nrandom-album ; Alt\n")
 
+    if db_version <= 59:
+        print("Updating database to version 60")
+
+        if prefs.spotify_token:
+            show_message("Upgrade to v6.5.1. It looks like you are using Spotify.", "Please click \"Authorise\" again in the settings", "A custom key is no longer required going forward" )
+        prefs.spotify_token = ""
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -25949,9 +25955,20 @@ class Over:
                     show_message(_("Please wait until current job is finished"))
 
 
-            y += round(30 * gui.scale)
+            y += round(35 * gui.scale)
 
-            if self.button(x, y, _("Import user playlist...")):
+
+            if self.button(x, y, _("Import all user playlists")):
+                if not spot_ctl.spotify_com:
+                    show_message(_("Importing Spotify playlists..."))
+                    shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
+                    shoot_dl.daemon = True
+                    shoot_dl.start()
+                else:
+                    show_message(_("Please wait until current job is finished"))
+
+            y += round(30 * gui.scale)
+            if self.button(x, y, _("Import single user playlist...")):
                 if not spot_ctl.spotify_com:
                     playlists = spot_ctl.get_playlist_list()
                     spotify_playlist_menu.items.clear()
@@ -25962,16 +25979,6 @@ class Over:
                 else:
                     show_message(_("Please wait until current job is finished"))
 
-            y += round(30 * gui.scale)
-
-            if self.button(x, y, _("Import all user playlists")):
-                if not spot_ctl.spotify_com:
-                    show_message(_("Importing Spotify playlists..."))
-                    shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
-                    shoot_dl.daemon = True
-                    shoot_dl.start()
-                else:
-                    show_message(_("Please wait until current job is finished"))
 
 
         if self.account_view == 7:
@@ -38588,7 +38595,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            59,  # Version, used for upgrading
+            60,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
