@@ -41429,7 +41429,7 @@ while pctl.running:
                                     gui.pl_st[h - 1][1] = 25
 
                                 gui.update = 1
-                                gui.pl_update = 1
+                                #gui.pl_update = 1
 
                                 total = 0
                                 for i in range(len(gui.pl_st) - 1):
@@ -41450,7 +41450,7 @@ while pctl.running:
                             gui.cursor_want = 1
                         if gui.set_hold != -1:
                             gui.cursor_want = 1
-                            gui.update_on_drag = True
+                            gui.pl_update_on_drag = True
 
 
                 # heart field test
@@ -41459,7 +41459,6 @@ while pctl.running:
                         fields.add(field, update_playlist_call)
 
                 if gui.pl_update > 0:
-
                     gui.rendered_playlist_position = playlist_view_position
 
                     gui.pl_update -= 1
@@ -43130,15 +43129,18 @@ while pctl.running:
             #ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[playlist_box.drag_on][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
 
-        if (gui.set_label_hold != -1) and mouse_down and not point_proximity_test(gui.set_label_point, mouse_position, 3):
-            i_x, i_y = get_sdl_input.mouse()
+        if (gui.set_label_hold != -1) and mouse_down:
 
-            gui.set_label_point = (0, 0)
+            gui.update_on_drag = True
 
-            w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
-            w = max(w, 45 * gui.scale)
-            ddt.rect((i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
-            ddt.text((i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+            if not point_proximity_test(gui.set_label_point, mouse_position, 3):
+                i_x, i_y = get_sdl_input.mouse()
+                gui.set_label_point = (0, 0)
+
+                w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
+                w = max(w, 45 * gui.scale)
+                ddt.rect((i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
+                ddt.text((i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
 
         input_text = ""
