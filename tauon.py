@@ -13771,7 +13771,7 @@ def get_lyric_fire(track_object, silent=False):
         lyrics_fetch_timer.set()
         t = 0
 
-    lyrics_fetch_timer.force_set(t - 20)
+    lyrics_fetch_timer.force_set(t - 10)
 
     if not silent:
         show_message(_("Searching..."))
