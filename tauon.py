@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.5.2"
+n_version = "6.5.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1479,6 +1479,7 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_remote = False
 
         self.artist_list_style = 1
+        self.discord_enable = False
 
 prefs = Prefs()
 
@@ -1871,6 +1872,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.update_on_drag = False
         self.pl_update_on_drag = False
         self.drop_playlist_target = 0
+        self.discord_status = "Standby"
 
 gui = GuiVar()
 
@@ -3598,6 +3600,7 @@ def save_prefs():
     cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
     cf.update_value("write-ratings-to-tag", prefs.write_ratings)
     cf.update_value("enable-spotify", prefs.spot_mode)
+    cf.update_value("enable-discord-rpc", prefs.discord_enable)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -3791,6 +3794,7 @@ def load_prefs():
     prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generator playlists")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
     prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
+    prefs.discord_enable = cf.sync_add("bool", "enable-discord-rpc", prefs.discord_enable, "Show track info in running Discord application")
 
 
     cf.br()
@@ -4960,30 +4964,6 @@ class PlayerCtl:
             update_title_do()
 
 
-    # def play_target_gapless(self, jump=False):
-    #     #tm.ready_playback()
-    #
-    #     queue_target = len(self.track_queue) - 1
-    #     self.target_open = pctl.master_library[self.track_queue[queue_target]].fullpath
-    #     self.target_object = pctl.master_library[self.track_queue[queue_target]]
-    #     self.start_time_target = pctl.master_library[self.track_queue[queue_target]].start_time
-    #
-    #     # dont set self.start_time yet
-    #     # dont set queue step yet
-    #
-    #     # if not gapless:
-    #     self.playerCommand = 'open'
-    #     if jump and not prefs.use_jump_crossfade:
-    #         self.playerSubCommand = 'now'
-    #     self.playerCommandReady = True
-    #     # else:
-    #     #     self.playerCommand = 'gapless'
-    #     self.playing_state = 1
-    #     #self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
-    #     self.last_playing_time = 0
-    #     self.finish_transition = True
-
-
     def play_target(self, gapless=False, jump=False):
 
         #tm.ready_playback()
@@ -5015,6 +4995,7 @@ class PlayerCtl:
         if update_title:
             update_title_do()
         self.notify_update()
+        hit_discord()
 
         if (album_mode or not gui.rsp) and (gui.theme_name == "Carbon" or prefs.colour_from_image):
 
@@ -19127,13 +19108,12 @@ def toggle_wiki(mode=0):
         return prefs.show_wiki
     prefs.show_wiki ^= True
 
-
-def toggle_show_discord(mode=0):
-    if mode == 1:
-        return prefs.discord_show
-    if prefs.discord_show is False and discord_allow is False:
-        show_message("Warning: pypresence package not installed")
-    prefs.discord_show ^= True
+# def toggle_show_discord(mode=0):
+#     if mode == 1:
+#         return prefs.discord_show
+#     if prefs.discord_show is False and discord_allow is False:
+#         show_message("Warning: pypresence package not installed")
+#     prefs.discord_show ^= True
 
 def toggle_gen(mode=0):
     if mode == 1:
@@ -20895,34 +20875,31 @@ def discord_loop():
     prefs.discord_active = True
 
     if not pctl.playing_ready():
-        show_message("Please start playing a track first")
+        #show_message("Please start playing a track first")
         return
 
     asyncio.set_event_loop(asyncio.new_event_loop())
 
     try:
-
-        print("Attempting to connect to Discord...")
-
+        #print("Attempting to connect to Discord...")
         client_id = '434627346574606351'
         RPC = Presence(client_id)
         RPC.connect()
 
         print("Discord RPC connection successful.")
-
-        time.sleep(8)
+        time.sleep(1)
         start_time = time.time()
         idle_time = Timer()
 
         state = 0
         index = -1
         br = False
-
+        gui.discord_status = "Connected"
+        gui.update += 1
         current_state = 0
 
         while True:
             while True:
-
 
                 current_index = pctl.playing_object().index
 
@@ -20942,6 +20919,7 @@ def discord_loop():
 
                 if current_state == 0 and idle_time.get() > 13:
                     print("Pause discord RPC...")
+                    gui.discord_status = "Idle"
                     RPC.clear(pid)
                     #RPC.close()
 
@@ -20951,6 +20929,7 @@ def discord_loop():
                         if pctl.playing_state == 1:
                             print("Reconnect discord...")
                             RPC.connect()
+                            gui.discord_status = "Connected"
                             break
                         time.sleep(2)
 
@@ -20963,6 +20942,7 @@ def discord_loop():
                     RPC.clear(pid)
                     RPC.close()
                     prefs.disconnect_discord = False
+                    gui.discord_status = "Not connected"
                     br = True
                     break
 
@@ -20982,10 +20962,8 @@ def discord_loop():
                 album = "Unknown Album"
 
             if state == 1:
-                print("PLAYING: " + title)
-
+                #print("PLAYING: " + title)
                 # print(start_time)
-
                 RPC.update(pid=pid,
                            state=album,
                            details=title,
@@ -20993,8 +20971,7 @@ def discord_loop():
                            large_image="tauon-standard",)
 
             else:
-                print("STOPPED")
-
+                #print("Discord RPC - Stop")
                 RPC.update(pid=pid,
                            state="Idle",
                            large_image="tauon-standard",)
@@ -21008,48 +20985,54 @@ def discord_loop():
                 break
 
     except:
-        show_message("Error connecting to Discord", mode='error')
+        #show_message("Error connecting to Discord", mode='error')
+        gui.discord_status = "Error - Discord not running?"
         prefs.disconnect_discord = False
 
     prefs.discord_active = False
 
 
-
-
-def activate_discord():
-
-    if not prefs.discord_active:
+def hit_discord():
+    if prefs.discord_enable and prefs.discord_allow and not prefs.discord_active:
         discord_t = threading.Thread(target=discord_loop)
         discord_t.daemon = True
         discord_t.start()
 
-    elif not prefs.disconnect_discord:
-        prefs.disconnect_discord = True
 
-
-def discord_deco():
-    tc = colours.menu_text
-
-    if prefs.disconnect_discord:
-        tc = colours.menu_text_disabled
-        return [tc, colours.menu_background, _("Disconnecting...")]
-    if prefs.discord_active:
-        return [tc, colours.menu_background, _("Disconnect Discord")]
-    else:
-        return [tc, colours.menu_background, _('Show playing in Discord')]
-
-
-
-def discord_show_test(_):
-    return prefs.discord_show
-
-
-discord_icon = MenuIcon(asset_loader('discord.png', True))
-discord_icon.colour = [115, 138, 219, 255]
-discord_icon.xoff = 3
-#discord_icon.colour_callback = broadcast_colour
-
-x_menu.add("Show Playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
+# def activate_discord():
+#
+#     if not prefs.discord_active:
+#         discord_t = threading.Thread(target=discord_loop)
+#         discord_t.daemon = True
+#         discord_t.start()
+#
+#     elif not prefs.disconnect_discord:
+#         prefs.disconnect_discord = True
+#
+#
+# def discord_deco():
+#     tc = colours.menu_text
+#
+#     if prefs.disconnect_discord:
+#         tc = colours.menu_text_disabled
+#         return [tc, colours.menu_background, _("Disconnecting...")]
+#     if prefs.discord_active:
+#         return [tc, colours.menu_background, _("Disconnect Discord")]
+#     else:
+#         return [tc, colours.menu_background, _('Show playing in Discord')]
+#
+#
+#
+# def discord_show_test(_):
+#     return prefs.discord_show
+#
+#
+# discord_icon = MenuIcon(asset_loader('discord.png', True))
+# discord_icon.colour = [115, 138, 219, 255]
+# discord_icon.xoff = 3
+# #discord_icon.colour_callback = broadcast_colour
+#
+# #x_menu.add("Show Playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
 
 def show_spot_playing_deco():
     if pctl.playing_state == 0:
@@ -25547,9 +25530,31 @@ class Over:
             self.toggle_square(x, y, toggle_transcode, _("Transcode folder"))
 
             y += 30 * gui.scale
-            ddt.text((x, y), _("Enable/Disable main MENU functions:"), colours.box_text_label, 11)
+            ddt.text((x, y), "Discord", colours.box_text_label, 11)
             y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_show_discord, _("Discord Rich Presence toggle"))
+            old = prefs.discord_enable
+            prefs.discord_enable = self.toggle_square(x, y, prefs.discord_enable, _("Enable Discord Rich Presence"))
+
+            if prefs.discord_enable and not old:
+                if snap_mode:
+                    show_message("Sorry, this feature is unavailable with snap", mode="error")
+                    prefs.discord_enable = False
+                elif not discord_allow:
+                    show_message("Missing dependency python-pypresence")
+                    prefs.discord_enable = False
+                else:
+                    hit_discord()
+
+            if old and not prefs.discord_enable:
+                if prefs.discord_active:
+                    prefs.disconnect_discord = True
+
+            y += 22 * gui.scale
+            text = "Disabled"
+            if prefs.discord_enable:
+                text = gui.discord_status
+            ddt.text((x, y), f"Status: {text}", colours.box_text, 11)
+
 
         elif self.func_page == 2:
             y += 23 * gui.scale

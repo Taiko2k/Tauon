@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.5.3
+
+ - Changed Discord presence control to persistent setting
+
 v6.5.2
 
  - Fixed widget drag in some locations
