@@ -39596,11 +39596,11 @@ while pctl.running:
         if key_focused != 0:
             keymaps.hits.clear()
 
-            d_mouse_click = False
-            right_click = False
-            level_2_right_click = False
-            inp.mouse_click = False
-            middle_click = False
+            #d_mouse_click = False
+            #right_click = False
+            #level_2_right_click = False
+            #inp.mouse_click = False
+            #middle_click = False
             mouse_up = False
             inp.key_return_press = False
             key_down_press = False

@@ -5,6 +5,7 @@ v6.5.3
 
  - Changed Discord presence control to persistent setting
  - Fixed rare crash when importing certain Spotify tracks
+ - Fixed click on focus on working
 
 v6.5.2
 
