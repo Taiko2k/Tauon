@@ -218,7 +218,8 @@ class SpotCtl:
 
         results = self.spotify.search(track_object.artist + " " + track_object.album, types=('album',), limit=1)
         for album in results[0].items:
-            return album.external_urls["spotify"]
+            if "spotify" in album.external_urls:
+                return album.external_urls["spotify"]
 
         return None
 
@@ -651,9 +652,11 @@ class SpotCtl:
             nt.is_network = True
             nt.file_ext = "SPTY"
             nt.url_key = track.id
-            nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
+            if track.artists and "spotify" in track.artists[0].external_urls:
+                nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
             nt.misc["spotify-album-url"] = album_url
-            nt.misc["spotify-track-url"] = track.external_urls["spotify"]
+            if "spotify" in track.external_urls:
+                nt.misc["spotify-track-url"] = track.external_urls["spotify"]
             nt.artist = track.artists[0].name
             nt.album_artist = album_artist
             nt.date = date
@@ -692,7 +695,8 @@ class SpotCtl:
         nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
         if include_album_url and "spotify-album-url" not in nt.misc:
             nt.misc["spotify-album-url"] = track.album.external_urls["spotify"]
-        nt.misc["spotify-track-url"] = track.external_urls["spotify"]
+        if "spotify" in track.external_urls:
+            nt.misc["spotify-track-url"] = track.external_urls["spotify"]
         nt.artist = track.artists[0].name
         nt.album_artist = track.album.artists[0].name
         nt.date = track.album.release_date
