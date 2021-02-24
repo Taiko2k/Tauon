@@ -3464,6 +3464,7 @@ if db_version > 0:
 
         token_path = os.path.join(user_directory, "spot-token-pkce")
         if os.path.exists(token_path):
+            prefs.spotify_token = ""
             os.remove(token_path)
             show_message("Upgrade to v6.5.3 complete", "It looks like you are using Spotify. Please re-setup Spotify again in the settings")
 
@@ -19174,11 +19175,7 @@ def clip_aar_al(index):
                pctl.master_library[index].album
     SDL_SetClipboardText(line.encode('utf-8'))
 
-
-def ser_gen(track_id, get_lyrics=False):
-    tr = pctl.master_library[track_id]
-    if len(tr.title) < 1:
-        return
+def ser_gen_thread(tr):
 
     s_artist = tr.artist
     s_title = tr.title
@@ -19189,7 +19186,28 @@ def ser_gen(track_id, get_lyrics=False):
         s_title = prefs.lyrics_subs[s_title]
 
     line = genius(s_artist, s_title, return_url=True)
-    webbrowser.open(line, new=2, autoraise=True)
+
+    r = requests.head(line)
+
+    if r.status_code != 404:
+        webbrowser.open(line, new=2, autoraise=True)
+        gui.message_box = False
+    else:
+        line = "https://genius.com/search?q=" + urllib.parse.quote(f"{s_artist} {s_title}")
+        webbrowser.open(line, new=2, autoraise=True)
+        gui.message_box = False
+
+
+def ser_gen(track_id, get_lyrics=False):
+    tr = pctl.master_library[track_id]
+    if len(tr.title) < 1:
+        return
+
+    show_message(_("Searching..."))
+
+    shoot = threading.Thread(target=ser_gen_thread, args=[tr])
+    shoot.daemon = True
+    shoot.start()
 
 
 def ser_wiki(index):
