@@ -5,6 +5,7 @@ v6.5.3
 
  - Changed Discord presence control to persistent setting
  - Changed Spotify auth to use user provided ID
+ - Changed Genius track lookup to fallback to standard search page
  - Fixed rare crash when importing certain Spotify tracks
  - Fixed click on focus on working
  - Fixed folder navigator not updating on regenerate
