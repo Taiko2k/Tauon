@@ -3456,8 +3456,18 @@ if db_version > 0:
         print("Updating database to version 60")
 
         if prefs.spotify_token:
-            show_message("Upgrade to v6.5.1. It looks like you are using Spotify.", "Please click \"Authorise\" again in the settings", "A custom key is no longer required going forward" )
+            show_message("Upgrade to v6.5.1. It looks like you are using Spotify.", "Please click \"Authorise\" again in the settings")
         prefs.spotify_token = ""
+
+    if db_version <= 60:
+        print("Updating database to version 61")
+
+        token_path = os.path.join(user_directory, "spot-token-pkce")
+        if os.path.exists(token_path):
+            os.remove(token_path)
+            show_message("Upgrade to v6.5.3 complete", "It looks like you are using Spotify. Please re-setup Spotify again in the settings")
+
+
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -16291,6 +16301,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     else:
         source_playlist[:] = playlist[:]
 
+    tree_view_box.clear_target_pl(pl)
     pctl.regen_in_progress = False
     gui.pl_update = 1
     reload()
@@ -34493,8 +34504,6 @@ class TreeView:
         else:
             if pl_id in self.trees:
                 del self.trees[pl_id]
-        # if self.rows_id == pl_id:
-        #     self.rows_id = ""
 
 
     def show_track(self, track):
@@ -38609,7 +38618,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            60,  # Version, used for upgrading
+            61,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
