@@ -58,10 +58,10 @@
 
   <releases>
 
-    <release version="6.5.2" date="2021-02-20">
+    <release version="6.5.3" date="2021-02-24">
       <description>
         <ul>
-          <li>Improved Spotify setup</li>
+          <li>Improved Discord RP setting</li>
         </ul>
       </description>
     </release>
