@@ -2987,7 +2987,6 @@ for t in range(2):
             gui.saved_prime_direction = save[145]
         if save[146] is not None:
             prefs.sync_playlist = save[146]
-
         if save[147] is not None:
             prefs.spot_client = save[147]
         if save[148] is not None:
@@ -25872,29 +25871,29 @@ class Over:
         if self.account_view == 8:
 
             ddt.text((x, y), _('Spotify Premium account'), colours.box_sub_text, 213)
-            if self.button(x + 260 * gui.scale, y, _("?")):
-                show_message("See here for detailed instructions", "https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", mode="link")
-            #
-            # if inp.key_tab_press:
-            #     self.account_text_field += 1
-            #     if self.account_text_field > 2:
-            #         self.account_text_field = 0
-            #
-            # field_width = round(245 * gui.scale)
-            #
-            # y += round(25 * gui.scale)
-            # ddt.text((x + 0 * gui.scale, y), _("Client ID"),
-            #          colours.box_text_label, 11)
-            # y += round(19 * gui.scale)
-            # rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-            # fields.add(rect1)
-            # if coll(rect1) and (self.click or level_2_right_click):
-            #     self.account_text_field = 0
-            # ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-            # text_spot_client.text = prefs.spot_client
-            # text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-            #                   width=rect1[2] - 8 * gui.scale, click=self.click)
-            # prefs.spot_client = text_spot_client.text.strip()
+
+            y += round(30 * gui.scale)
+
+
+            if self.button(x, y, _("View setup instructions")):
+                webbrowser.open("https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", new=2, autoraise=True)
+
+            field_width = round(245 * gui.scale)
+
+            y += round(26 * gui.scale)
+
+            ddt.text((x + 0 * gui.scale, y), _("Client ID"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_spot_client.text = prefs.spot_client
+            text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.spot_client = text_spot_client.text.strip()
             #
             # y += round(23 * gui.scale)
             # ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
@@ -25910,7 +25909,7 @@ class Over:
             #                   width=rect1[2] - 8 * gui.scale, click=self.click)
             # prefs.spot_secret = text_spot_secret.text.strip()
 
-            y += round(45 * gui.scale)
+            y += round(27 * gui.scale)
 
             if prefs.spotify_token:
                 if self.button(x, y, _("Forget Account")):
@@ -25933,7 +25932,7 @@ class Over:
             #         text = text.split("=", 1)[1].strip()
             #     if len(text) > 50:
             #         spot_ctl.paste_code(text)
-            y += round(45 * gui.scale)
+            y += round(31 * gui.scale)
             prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
             y += round(30 * gui.scale)
@@ -25960,7 +25959,7 @@ class Over:
                     show_message(_("Please wait until current job is finished"))
 
 
-            y += round(35 * gui.scale)
+            y += round(30 * gui.scale)
 
 
             if self.button(x, y, _("Import all user playlists")):
@@ -38740,7 +38739,7 @@ def save_state():
             top_panel.prime_tab,
             top_panel.prime_side,
             prefs.sync_playlist,
-            "", #prefs.spot_client,
+            prefs.spot_client,
             "", #prefs.spot_secret,
             prefs.show_band,
             prefs.download_playlist,
