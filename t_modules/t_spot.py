@@ -55,7 +55,6 @@ class SpotCtl:
         self.cache_saved_albums = []
         self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
         self.launching_spotify = False
-        self.id = "9e5aadd29bb34" + "e619863bef16f208671"
         self.progress_timer = Timer()
         self.update_timer = Timer()
 
@@ -65,11 +64,13 @@ class SpotCtl:
     def prep_cred(self):
 
         rc = tk.RefreshingCredentials
-        self.cred = rc(client_id=self.id,
+        self.cred = rc(client_id=self.tauon.prefs.spot_client,
                                     redirect_uri=self.redirect_uri)
 
     def connect(self):
         if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
+            return
+        if len(self.tauon.prefs.spot_client) != 32:
             return
         if self.cred is None:
             self.prep_cred()
@@ -106,7 +107,7 @@ class SpotCtl:
 
         if self.tauon.prefs.spotify_token:
             try:
-                self.token = tk.refresh_pkce_token(self.id, self.tauon.prefs.spotify_token)
+                self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
             except:
                 print("ERROR LOADING TOKEN")
                 self.tauon.prefs.spotify_token = ""
@@ -122,9 +123,9 @@ class SpotCtl:
             self.tauon.gui.show_message("python-tekore not installed",
                                         "If you installed via AUR, you'll need to install this optional dependency, then restart Tauon.", mode="error")
             return
-        # if len(self.tauon.prefs.spot_client) != 32 or len(self.tauon.prefs.spot_secret) != 32:
-        #     self.tauon.gui.show_message("Invalid client ID or secret", mode="error")
-        #     return
+        if len(self.tauon.prefs.spot_client) != 32:
+            self.tauon.gui.show_message("Invalid client ID. See Spotify tab in settings.", mode="error")
+            return
         if self.cred is None:
             self.prep_cred()
         url, self.pkce_code = self.cred.pkce_user_authorisation(scope=self.scope)
