@@ -709,17 +709,19 @@ class SpotCtl:
             nt.artist = track.artists[0].name
         if track.album.artists:
             nt.album_artist = track.album.artists[0].name
+        if track.album.release_date:
             nt.date = track.album.release_date
-            nt.album = track.album.name
-            nt.disc_number = track.disc_number
-            nt.length = track.duration_ms / 1000
-            nt.title = track.name
-            nt.track_number = track.track_number
-          # nt.track_total = total_tracks
+        nt.album = track.album.name
+        nt.disc_number = track.disc_number
+        nt.length = track.duration_ms / 1000
+        nt.title = track.name
+        nt.track_number = track.track_number
+        # nt.track_total = total_tracks
+        if track.album.images:
             nt.art_url_key = track.album.images[0].url
-            parent = (nt.album_artist + " - " + nt.album).strip("- ")
-            nt.parent_folder_path = parent
-            nt.parent_folder_name = parent
+        parent = (nt.album_artist + " - " + nt.album).strip("- ")
+        nt.parent_folder_path = parent
+        nt.parent_folder_name = parent
 
         if update_master_count and new:
             self.tauon.pctl.master_count += 1
