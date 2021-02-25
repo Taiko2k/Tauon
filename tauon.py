@@ -4094,6 +4094,10 @@ def tag_scan(nt):
 
             nt.samplerate = audio.sample_rate
             nt.length = audio.length
+            nt.title = audio.title
+            nt.artist = audio.artist
+            nt.album = audio.album
+            nt.track_number = audio.track_number
 
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
@@ -4307,6 +4311,7 @@ def tag_scan(nt):
         # print("      In file: " + nt.fullpath)
         return nt
     except:
+        raise
         # import traceback
         # traceback.print_exc()
         print("Warning: Tag read error")
