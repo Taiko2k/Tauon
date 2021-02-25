@@ -24,6 +24,7 @@ import struct
 import wave
 import io
 import os
+import math
 
 def parse_mbids_from_vorbis(object, key, value):
 
@@ -828,7 +829,50 @@ class Wav:
         self.sample_rate = 48000
         self.length = 0
 
+        self.title = ""
+        self.artist = ""
+        self.album = ""
+        self.genre = ""
+        self.track_number = ""
+
     def read(self):
+
+        with open(self.filepath, "rb") as f:
+            f.read(12)
+
+            while True:
+                type = f.read(4)
+                if not type:
+                    break
+                remain = int.from_bytes(f.read(4), 'little')
+
+                if type != b"LIST":
+                    f.seek(remain, io.SEEK_CUR)
+                else:
+
+                    INFO = f.read(4)
+                    if INFO == b"INFO":
+                        remain -= 4
+                        while remain > 0:
+                            id = f.read(4).decode()
+                            size = int.from_bytes(f.read(4), 'little')
+                            value = f.read(size)[:-1].decode("unicode_escape")
+                            if id == "ITRK":
+                                self.track_number = value
+                            if id == "IGNR":
+                                self.genre = value
+                            if id == "IART":
+                                self.artist = value
+                            if id == "INAM":
+                                self.title = value
+                            if id == "IPRD":
+                                self.album = value
+
+                            if size % 2 == 1:
+                                size += 1
+                                f.read(1)
+
+                            remain -= (8 + size)
 
         wav = wave.open(self.filepath, "rb")
         self.sample_rate = wav.getframerate()

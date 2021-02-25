@@ -285,15 +285,40 @@ int wave_open(char *filename) {
         return 1;
     }
 
-    fread(b, 4, 1, wave_file);
+    while (1) {
+
+        // Read data block label
+        wave_error = fread(b, 4, 1, wave_file);
+        if (wave_error != 1) {
+            fclose(wave_file);
+            return 1;
+        }
+        // Read data block length
+        wave_error = fread(&i, 4, 1, wave_file);
+        if (wave_error != 1) {
+            fclose(wave_file);
+            return 1;
+        }
+        // Is audio data?
+        if (memcmp(b, "fmt ", 4) == 0) {
+            wave_start = ftell(wave_file);
+            wave_size = i;
+            break;
+        }
+        // Skip to next block
+        fseek(wave_file, i, SEEK_CUR);
+    }
+
+                                
+    //fread(b, 4, 1, wave_file);
     //printf("pa: fmt : %s\n", b);
 
-    fread(&i, 4, 1, wave_file);
+    //fread(&i, 4, 1, wave_file);
     //printf("pa: abov: %d\n", i);
-    if (i != 16) {
-        printf("pa: Unsupported WAVE file\n");
-        return 1;
-    }
+    //if (i != 16) {
+    //    printf("pa: Unsupported WAVE file\n");
+    //    return 1;
+    //}
 
     fread(&i, 2, 1, wave_file);
     //printf("pa: type: %d\n", i);
@@ -313,6 +338,7 @@ int wave_open(char *filename) {
     fread(&i, 4, 1, wave_file);
     //printf("pa: smpl: %d\n", i);
     wave_samplerate = i;
+    sample_rate_src = i;
 
     fseek(wave_file, 6, SEEK_CUR);
 
@@ -323,6 +349,7 @@ int wave_open(char *filename) {
         return 1;
     }
     wave_depth = i;
+    fseek(wave_file, wave_start + wave_size, SEEK_SET);
 
     while (1) {
 
@@ -339,13 +366,15 @@ int wave_open(char *filename) {
             return 1;
         }
         // Is audio data?
-        if (memcmp(b, "data", 4) == 0) {
+      //printf("label %s\n", b);  
+      if (memcmp(b, "data", 4) == 0) {
             wave_start = ftell(wave_file);
             wave_size = i;
             break;
         }
         // Skip to next block
         fseek(wave_file, i, SEEK_CUR);
+        
     }
 
     return 0;
