@@ -20,13 +20,17 @@
 
 import sys
 from sdl2 import *
+from sdl2.sdlimage import IMG_Load_RW
 from t_modules.t_extra import *
 import ctypes
+from ctypes import pointer
+import io
+from PIL import Image
 
 system = "linux"
 if sys.platform == 'win32':
     system = "windows"
-
+system = "linux"
 if system == "linux":
     import cairo
     import gi
@@ -38,6 +42,72 @@ else:
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
     import win32con, win32api, win32gui, win32ui
     import struct
+
+
+class QuickThumbnail:
+
+    renderer = None
+    items = []
+    queue = []
+
+    def __init__(self):
+        self.rect = SDL_Rect(0, 0)
+        self.texture = None
+        self.surface = None
+        self.size = 50
+        self.alive = False
+        self.url = None
+
+    def destruct(self):
+        if self.surface:
+            SDL_FreeSurface(self.surface)
+            self.surface = None
+        if self.texture:
+            SDL_DestroyTexture(self.texture)
+            self.texture = None
+        self.alive = False
+
+    def read_and_thumbnail(self, f, w, h):
+
+        g = io.BytesIO()
+        g.seek(0)
+        im = Image.open(f)
+        im.thumbnail((w, h), Image.ANTIALIAS)
+        im.save(g, 'PNG')
+        g.seek(0)
+        wop = rw_from_object(g)
+        self.surface = IMG_Load_RW(wop, 0)
+        #self.items.append(self)
+        self.alive = True
+
+    def prime(self):
+
+        texture = SDL_CreateTextureFromSurface(self.renderer, self.surface)
+        SDL_FreeSurface(self.surface)
+        self.surface = None
+        tex_w = pointer(c_int(0))
+        tex_h = pointer(c_int(0))
+        SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+        self.rect.w = int(tex_w.contents.value)
+        self.rect.h = int(tex_h.contents.value)
+        self.texture = texture
+
+    def draw(self, x, y):
+        if len(self.items) > 30:
+            img = self.items[0]
+            img.destruct()
+            self.items.remove(img)
+        if not self.alive:
+            if self not in self.queue:
+                self.queue.append(self)
+            return False
+        if not self.texture:
+            self.prime()
+        self.rect.x = round(x)
+        self.rect.y = round(y)
+        SDL_RenderCopy(self.renderer, self.texture, None, self.rect)
+
+        return True
 
 if system == "windows":
 
@@ -243,6 +313,9 @@ class TDraw:
         self.text_background_colour = [0, 0, 0, 255]
         #self.pretty_rect = [0, 0, 0, 0]
         self.pretty_rect = None
+        self.real_bg = False
+        self.alpha_bg = False
+        self.force_gray = False
         self.f_dict = {}
         self.ttc = {}
         self.ttl = []
@@ -276,6 +349,21 @@ class TDraw:
             SDL_RenderFillRect(self.renderer, self.sdl_rect)
         else:
             SDL_RenderDrawRect(self.renderer, self.sdl_rect)
+
+    def bordered_rect(self, rectangle, fill_colour, outer_colour, border_size):
+
+        self.sdl_rect.x = round(rectangle[0]) - border_size
+        self.sdl_rect.y = round(rectangle[1]) - border_size
+        self.sdl_rect.w = round(rectangle[2]) + border_size + border_size
+        self.sdl_rect.h = round(rectangle[3]) + border_size + border_size
+        SDL_SetRenderDrawColor(self.renderer, outer_colour[0], outer_colour[1], outer_colour[2], outer_colour[3])
+        SDL_RenderFillRect(self.renderer, self.sdl_rect)
+        self.sdl_rect.x = round(rectangle[0])
+        self.sdl_rect.y = round(rectangle[1])
+        self.sdl_rect.w = round(rectangle[2])
+        self.sdl_rect.h = round(rectangle[3])
+        SDL_SetRenderDrawColor(self.renderer, fill_colour[0], fill_colour[1], fill_colour[2], fill_colour[3])
+        SDL_RenderFillRect(self.renderer, self.sdl_rect)
 
     def line(self, x1, y1, x2, y2, colour):
 
@@ -379,12 +467,15 @@ class TDraw:
 
     def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
+        #perf.set()
+
         self.was_truncated = False
 
         max_x += 12  # Hack
         max_x = round(max_x)
 
         real_bg = False
+        alpha_bg = self.alpha_bg
 
         x = round(location[0])
         y = round(location[1])
@@ -392,8 +483,6 @@ class TDraw:
         if self.pretty_rect:
 
             w, h = self.get_text_wh(text, font, max_x, wrap)
-
-
             quick_box = [x, y, w, h]
 
             if align == 1:
@@ -406,7 +495,13 @@ class TDraw:
                 # self.rect_r(quick_box, [0, 0, 0, 100], True)
                 # print("PT")
                 # print(text)
-                real_bg = True
+                if self.real_bg:
+                    real_bg = True
+            else:
+                alpha_bg = False
+
+        if alpha_bg:
+            bg = (0, 0, 0, 0)
 
         if max_y is not None:
             max_y = round(max_y)
@@ -438,7 +533,6 @@ class TDraw:
 
             w, h = self.get_text_wh(text, font, max_x, wrap)
 
-
         if w < 1:
             return 0
 
@@ -460,15 +554,21 @@ class TDraw:
 
             SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
 
-        perf.set()
-
-        surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
-        #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
+        if alpha_bg:
+            surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
+        else:
+            surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
 
         context = cairo.Context(surf)
 
-        if self.force_subpixel_text:
+        if self.force_gray:
             options = context.get_font_options()
+            options.set_antialias(cairo.ANTIALIAS_GRAY)
+            context.set_font_options(options)
+        elif self.force_subpixel_text:
+            options = context.get_font_options()
+            #options.set_antialias(cairo.ANTIALIAS_NONE)
+            #options.set_antialias(cairo.ANTIALIAS_GRAY)
             options.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
             context.set_font_options(options)
 
@@ -487,6 +587,9 @@ class TDraw:
                 extra = round(400000 * self.scale)
 
             layout.set_height(h * 1000 + extra)
+           
+        if not wrap and max_y is None:
+            layout.set_height(-1)
 
         # Attributes don't seem to be implemented in gi?
         # attrs = Pango.AttrList()
@@ -495,10 +598,11 @@ class TDraw:
 
         context.rectangle(0, 0, w, h)
 
-        if not real_bg:
+        if not real_bg and not alpha_bg:
             context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
             # context.set_source_rgba(0, 0, 0, 0)
             context.fill()
+
         context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
 
         if font not in self.f_dict:
@@ -518,16 +622,22 @@ class TDraw:
 
         self.was_truncated = layout.is_ellipsized()
 
-        sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w*4, SDL_PIXELFORMAT_RGB888)
-        #sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_ARGB8888)
+        if alpha_bg:
+            sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, SDL_PIXELFORMAT_ARGB8888)
+        else:
+            sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w * 4, SDL_PIXELFORMAT_RGB888)
 
         # Here the background colour is keyed out allowing lines to overlap slightly
-        if not real_bg:
+        if not real_bg and not alpha_bg:
             ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])
             SDL_SetColorKey(sdl_surface, True, ke)
 
         c = SDL_CreateTextureFromSurface(self.renderer, sdl_surface)
         SDL_FreeSurface(sdl_surface)
+
+        if alpha_bg:
+            blend_mode = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
+            SDL_SetTextureBlendMode(c, blend_mode)
 
         dst = SDL_Rect(round(x), round(y))
         dst.w = round(w)

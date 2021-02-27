@@ -7,12 +7,7 @@
 30,30,30	  	playlist panel
 17,17,17		side panel
 22,22,22		bottom panel
-
-#-Frame--------
-
-30,30,30		sep line
-20,20,20		bb line
-30,30,30		tb line
+18,18,18        queue panel
 
 #-Playlist-------
 
@@ -37,6 +32,13 @@
 255,255,255,9		playing highlight
 138,138,138,30		select highlight
 142,209,226		gallery highlight
+
+#-Menu-------------
+22,22,22        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
+
 #-Bottom panel------
 
 55,55,55		buttons off
@@ -55,6 +57,8 @@
 220,220,220		mode over
 160,160,160		mode on
 
+240,240,240		bottom title
+
 #-Top panel---------
 
 245,245,245		tab active line
@@ -72,5 +76,5 @@
 
 #-Mini Mode---------
 
-24,24,24        mini bg
+22,22,22        mini bg
 60,60,60        mini border

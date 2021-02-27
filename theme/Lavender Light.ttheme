@@ -8,6 +8,7 @@ light-mode
 245,245,245	  	playlist panel
 239,239,239		side panel
 35,35,35		bottom panel
+22,22,22        queue panel
 
 #-Frame--------
 
@@ -39,6 +40,15 @@ light-mode
 0,0,0,14		select highlight
 180,140,255,255	gallery highlight
 
+235,110,160     column bar background
+
+#-Menu-------------
+240,240,240     menu background
+200,200,200     menu highlight
+40,40,40        menu text
+180,180,180     menu disable text
+0,0,0,40        menu icons
+
 #-Bottom panel------
 
 75,75,75		buttons off
@@ -59,6 +69,8 @@ light-mode
 250,250,250		mode over
 230,230,230		mode on
 
+255,255,255		bottom title
+
 #-Top panel---------
 
 240,240,240		tab active line
@@ -67,6 +79,32 @@ light-mode
 230,230,230		tab over
 180,140,255,255	tab active background
 180,140,255,255	music vis
+
+240,240,240     window buttons background
+180,180,180     window buttons on
+190,190,190     window buttons icon off
+170,170,170     window buttons icon over
+255,255,255     window button x on
+# window button x off
+
+#-Dialog box---------
+
+30,30,30       box background
+#box border
+
+#box title text
+#box text label
+
+#box text normal
+#box sub text
+#box input text
+#box text border
+
+40,40,40       box button background normal
+50,50,50       box button background highlight
+#box button background normal
+#box button background highlight
+#box button border
 
 #-Side panel--------
 

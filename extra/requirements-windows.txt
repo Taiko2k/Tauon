@@ -1,0 +1,14 @@
+pylast>=3.1.0
+flask
+hsaudiotag3k
+pysdl2==0.9.6
+stagger
+send2trash
+pylyrics
+plexapi
+musicbrainzngs
+discogs_client
+pypresence
+isounidecode
+infi.systray
+keyboard

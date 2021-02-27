@@ -1,5 +1,6 @@
 ﻿#Tauon Music Box theme file
 
+draw-frame
 
 #-Backgrounds-----
 
@@ -7,13 +8,7 @@
 21,21,21	  	playlist panel
 18,18,18		side panel
 26,26,26		bottom panel
-
-#-Frame--------
-
-31,31,31		sep line
-40,40,40		bb line
-21,21,21		tb line
-19,19,19		menu background
+18,18,18        queue panel
 
 #-Playlist-------
 
@@ -39,6 +34,12 @@
 255,255,255,11		select highlight
 249,190,3		gallery highlight
 
+#-Menu-------------
+19,19,19        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
+
 #-Bottom panel------
 
 75,75,75		buttons off
@@ -56,6 +57,8 @@
 70,70,70		mode off
 200,200,200		mode over
 249,190,3		mode on
+
+240,240,240		bottom title
 
 #-Top panel---------
 
@@ -75,5 +78,5 @@
 
 #-Mini Mode---------
 
-24,24,24        mini bg
+20,20,20        mini bg
 60,60,60        mini border

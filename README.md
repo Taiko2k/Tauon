@@ -3,9 +3,9 @@
 
 ## Tauon Music Box
 
-**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer or optionally BASS Audio Library for playback. 
+**A music player for the Linux desktop.** Designed to be powerful and streamlined, putting the user in control of their music collection.
 
-<img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
+<img src="https://user-images.githubusercontent.com/19501722/104108719-2e148b80-52c7-11eb-92a1-8a1b48a0be1b.png" hspace="0px" vspace="160px">
 
 ## Features :sparkles:
 
@@ -13,6 +13,10 @@
 
   - Fast, comfortable and responsive UI.
   - Import tracks and create playlists by simple **drag and drop**.
+  - Supports most common codecs and **tracker** file types.  
+  - Seamless support for CUE sheets.
+  - Import and control playback of **Spotify** tracks. (Requires Spotify Premium) 
+  - Stream music from your **PLEX**, **koel**, **Jellyfin** or **Airsonic** server.
   - Large album art and gallery displays!
   - Support for **gapless playback**.
   - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music.
@@ -24,29 +28,24 @@
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Linux desktop integration with MPRIS2.
-  - Background **radio broadcasting**. :radio: :satellite: (Bass only)
+  - Built-in topchart generator.
   - **Extract archives** and import your music downloads in **one click**! :zap:
-
-
-### File type compatibility :milky_way:
-
-- [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
-- [x] XSPF, CUE (automatic detection)
+  - Remote control apps for Andorid [available](https://github.com/Taiko2k/TauonMusicBox/wiki/Android-Remote-Apps).
 
 
 ## Download and Install :dizzy:
 
-Installation is avaliable by Flatpak.
+Installation is available as a Flatpak.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
-For **Arch Linux** based distros, you can install via the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
+Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes. While the Flatpak version is recommended, you can also install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
 ___
 
-For manual and further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
+I highly recommend reading the Tauon Music Box [manual](https://tauonmusicbox.rocks#manual).
 
-Feel free to submit any issues or suggestions. I'd love to hear your feedback.
+Feel free to submit any issues you encounter.
 
-[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) ![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg?style=for-the-badge)
+[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) ![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg?style=for-the-badge) [![Discord](https://img.shields.io/discord/687418493209018622.svg?color=a483ef&style=for-the-badge)](https://discord.gg/v4EmhES)
 
 

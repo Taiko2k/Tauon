@@ -1,7 +1,7 @@
 
 # Tauon Music Box - Misc Functions Module
 
-# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -30,7 +30,6 @@ import glob
 import locale
 import re
 import math
-# import hashlib
 
 
 # A seconds based timer
@@ -78,7 +77,7 @@ def point_proximity_test(a, b, p):
 
 # Get distance between two points
 def point_distance(a, b):
-    return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] + b[1]) ** 2)
+    return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
 
 # Removes whatever this is from a line, I forgot
 def rm_16(line):
@@ -110,7 +109,7 @@ def get_hms_time(seconds):
         return f'{m:02d}:{s:02d}'
 
 
-# Creates a string from number of bytes to X MB/kB etc
+# Creates a string from number of bytes to X MB/kB etc with Locale adjustment
 def get_filesize_string(file_bytes):
     if not file_bytes:
         return "0"
@@ -119,16 +118,63 @@ def get_filesize_string(file_bytes):
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000, 2)
         line = locale.str(file_kb) + " KB"
-    else:
+    elif file_bytes < 1000000000:
         file_mb = round(file_bytes / 1000000, 2)
         line = locale.str(file_mb) + " MB"
+    else:
+        file_mb = round(file_bytes / 1000000000, 1)
+        line = locale.str(file_mb) + " GB"
     return line
 
+def get_filesize_string_rounded(file_bytes):
+    if not file_bytes:
+        return "0"
+    if file_bytes < 1000:
+        line = str(round(file_bytes)) + " B"
+    elif file_bytes < 1000000:
+        file_kb = round(file_bytes / 1000)
+        line = str(file_kb) + " KB"
+    else:
+        file_mb = round(file_bytes / 1000000, 1)
+        line = str(file_mb) + " MB"
+    return line
 
 # Estimates the perceived luminance of a colour
 def test_lumi(c1):
     return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
+def rel_luminance(colour):
+    r = colour[0] / 255
+    g = colour[1] / 255
+    b = colour[2] / 255
+
+    if r < 0.03928:
+        r = r / 12.90
+    else:
+        r = ((r + 0.055) / 1.055) ** 2.4
+
+    if g < 0.03928:
+        g = g / 12.90
+    else:
+        g = ((g + 0.055) / 1.055) ** 2.4
+
+    if b < 0.03928:
+        b = b / 12.90
+    else:
+        b = ((b + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast_ratio(c1, c2):
+
+    l1 = rel_luminance(c1)
+    l2 = rel_luminance(c2)
+
+    if l2 > l1:
+        l2, l1 = l1, l2
+
+    return (l1 + 0.05) / (l2 + 0.05)
 
 # Gives the sum of first 3 elements in a list
 def colour_value(c1):
@@ -156,30 +202,19 @@ def colour_slide(a, b, x, x_limit):
      min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255), 255)
 
 
-# Converts string containing colour in format x,x,x,x(optional) to list
-def get_colour_from_line(cline):
-    colour = ["", "", "", ""]
-
-    mode = 0
-
-    for i in cline:
-
-        if i.isdigit():
-            colour[mode] += i
-        elif i == ',':
-            mode += 1
-
-    for b in range(len(colour)):
-        if colour[b] == "":
-            colour[b] = "255"
-        colour[b] = int(colour[b])
-
-    return colour
+def hex_to_rgb(colour):
+    colour = colour.strip("#")
+    return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
 
 
-# Checks if the numbers in a list are the same
-def checkEqual(lst):
+# Checks if all the numbers in a list are the same
+def check_equal(lst):
     return not lst or lst.count(lst[0]) == len(lst)
+
+
+# Check if the first 3 elements of a list are the same
+def is_grey(lst):
+    return lst[0] == lst[1] == lst[2]
 
 
 # Gives a score from 0-7 based on number of seconds
@@ -202,6 +237,34 @@ def star_count(sec, dur):
     if sec > 60 * 60 * 15:
         stars += 1
     return stars
+
+
+def star_count3(sec, dur):
+    stars = 0
+    if dur and sec / dur > 0.95:
+        stars += 1
+    if dur and sec / dur > 1.95:
+        stars += 1
+    if sec > 60 * 5:
+        stars += 1
+    if sec > 60 * 10:
+        stars += 1
+    if sec > 60 * 15:
+        stars += 1
+    if sec > 60 * 20:
+        stars += 1
+    if sec > 60 * 30:
+        stars += 1
+    if sec > 60 * 60:
+        stars += 1
+    if sec > 60 * 60 * 1.5:
+        stars += 1
+    if sec > 60 * 60 * 1.75:
+        stars += 1
+    # if sec > 60 * 60 * 2:
+    #     stars += 1
+    return stars
+
 
 # Gives a score from 0.0 - 1.0 based on number of seconds
 def star_count2(sec):
@@ -238,11 +301,14 @@ def hls_to_rgb(h, l, s):
 def rgb_to_hls(r, g, b):
     return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def hls_mod_add(source, h=0, l=0, s=0):
+def rgb_add_hls(source, h=0, l=0, s=0):
     c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
-    colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + l, 0), 1))
+    colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
 
+
+def is_light(colour):
+    return test_lumi(colour) < 0.2
 
 class ColourGenCache:
 
@@ -317,8 +383,8 @@ def is_music_related(string):
 def archive_file_scan(path, extensions, launch_prefix=""):
 
     ext = os.path.splitext(path)[1][1:].lower()
-    print(path)
-    print(ext)
+    # print(path)
+    # print(ext)
     try:
         if ext == 'rar':
             matches = 0
@@ -339,16 +405,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                         matches += 5
                 count += 1
             if count > 200:
-                print("RAR archive has many files")
-                print("   --- " + path)
+                #print("RAR archive has many files")
+                #print("   --- " + path)
                 return 0
             if matches == 0:
-                print("RAR archive does not appear to contain audio files")
-                print("   --- " + path)
+                #print("RAR archive does not appear to contain audio files")
+                #print("   --- " + path)
                 return 0
             if count == 0:
-                print("Archive has no files")
-                print("   --- " + path)
+                #print("Archive has no files")
+                #print("   --- " + path)
                 return 0
 
         elif ext == '7z':
@@ -375,16 +441,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                 count += 1
 
             if count > 200:
-                print("7z archive has many files")
-                print("   --- " + path)
+                #print("7z archive has many files")
+                #print("   --- " + path)
                 return 0
             if matches == 0:
-                print("7z archive does not appear to contain audio files")
-                print("   --- " + path)
+                #print("7z archive does not appear to contain audio files")
+                #print("   --- " + path)
                 return 0
             if count == 0:
-                print("7z archive has no files")
-                print("   --- " + path)
+                #print("7z archive has no files")
+                #print("   --- " + path)
                 return 0
 
         elif ext == "zip":
@@ -392,7 +458,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
             zip_ref = zipfile.ZipFile(path, 'r')
             matches = 0
             count = 0
-            print(zip_ref.namelist())
+            #print(zip_ref.namelist())
             for fi in zip_ref.namelist():
                 for ty in extensions:
                     if fi[len(ty) * -1:].lower() == ty:
@@ -405,16 +471,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                         matches += 5
                 count += 1
             if count == 0:
-                print("Archive has no files")
-                print("   --- " + path)
+                #print("Archive has no files")
+                #print("   --- " + path)
                 return 0
             if count > 300:
-                print("Zip archive has many files")
-                print("   --- " + path)
+                #print("Zip archive has many files")
+                #print("   --- " + path)
                 return 0
             if matches == 0:
-                print("Zip archive does not appear to contain audio files")
-                print("   --- " + path)
+                #print("Zip archive does not appear to contain audio files")
+                #print("   --- " + path)
                 return 0
         else:
             return 0
@@ -442,6 +508,11 @@ def get_folder_size(path):
     return total_size
 
 
+def filename_safe(text, sub=""):
+    for cha in '/\\<>:"|?*':
+        text = text.replace(cha, sub)
+    return text
+
 def get_artist_strip_feat(track_object):
 
     artist_name = track_object.artist #.lower()
@@ -452,6 +523,24 @@ def get_artist_strip_feat(track_object):
                 artist_name = track_object.album_artist
     return artist_name
 
+def get_artist_safe(track):
+
+    if track:
+        artist = track.album_artist
+        if not artist:
+            artist = track.artist
+        artist = filename_safe(artist)
+        artist = artist.split("feat")[0]
+        artist = artist.split(", ")[0]
+        artist = artist.split("; ")[0]
+        return artist
+    return ""
+
+def get_split_artists(track):
+    if 'artists' in track.misc:
+        return track.misc['artists']
+    artist = track.artist.split("feat")[0].strip()
+    return re.split(r'; |, |& ', artist)
 
 def coll_rect(rect1, rect2):
 
@@ -741,3 +830,85 @@ def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with over
     south = base[0], hole[1] + hole[3], base[2], base[3] - hole[3] - 2
 
     return west, north, east, south
+
+genre_corrections = [
+    "J-Pop",
+    "J-Rock",
+    "K-Pop",
+    "Hip Hop",
+]
+
+genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
+
+def genre_correct(text):
+
+    parsed = text.lower().replace("-", "").replace(" ", "").strip()
+    if parsed.startswith("post"):
+        return ("Post-" + parsed[4:]).title()
+    if parsed in genre_corrections2:
+        return genre_corrections[genre_corrections2.index(parsed)]
+    return text.title().strip()
+
+
+def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of folder paths
+
+    paths[:] = list(set(paths))[:]  # remove duplicates
+
+    while "" in paths:
+        paths.remove("")
+
+    while True:
+        remove_path = False
+        for i in reversed(range(len(paths))):
+            path = paths[i].rstrip("/")
+
+            for b in reversed(range(len(paths))):
+                path2 = paths[b].rstrip("/")
+
+                if len(path) > len(path2) and path.startswith(path2) and path[len(path2)] == "/":
+                    del paths[i]
+                    remove_path = True
+                    break
+
+            if remove_path:
+                break
+        if not remove_path:
+            break
+
+def fit_box(inner, outer):
+
+    # find the largest side of the outer box
+    large = outer[0]
+    if outer[1] > large:
+        large = outer[1]
+
+    # find the aspect ratio of inner image
+    ratio = inner[0] / inner[1]
+
+    # scale up to largest potential
+    w = large
+    h = w * ratio
+
+    # constrain height
+    if h > outer[1]:
+        h = outer[1]
+        w = h / ratio
+
+    # constrain width
+    if w > outer[0]:
+        w = outer[0]
+        h = w * ratio
+
+    return round(w), round(h)
+
+
+def seconds_to_day_hms(seconds, s_day, s_days):
+
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minuites, seconds = divmod(seconds, 60)
+
+    if days == 1:
+        return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minuites))}:{str(int(seconds))}"
+    else:
+        return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minuites)).zfill(2)}:{str(int(seconds)).zfill(2)}"

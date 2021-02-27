@@ -1,15 +1,31 @@
 [Desktop Entry]
 Comment=Ultra player for your music collection
 Comment[ja]=音楽コレクションのウルトラプレーヤー
-Exec=python3 /opt/tauon-music-box/tauon.py %U
+Comment[de]=Ultra Player für deine Musiksammlung
+Exec=/opt/tauon-music-box/tauonmb.sh %U
 GenericName=Audio Player
 GenericName[ja]=音楽プレイヤー
 GenericName[zh_CN]=音乐播放器
+GenericName[de]=Musik-Player
 Icon=tauonmb
-MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player
+MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u
 Name=Tauon Music Box
 StartupNotify=false
 StartupWMClass=Tauon Music Box
 Terminal=false
 Type=Application
 Categories=AudioVideo;Player;Audio;
+Actions=PlayPause;Previous;Next
+
+[Desktop Action PlayPause]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --play-pause
+Name=Play/Pause
+
+[Desktop Action Previous]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --previous
+Name=Previous Track
+
+[Desktop Action Next]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --next
+Name=Next Track
+

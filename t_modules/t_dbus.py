@@ -17,10 +17,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import GLib
+
+from gi.repository import GLib, Gdk
 import urllib.parse
 from t_modules.t_extra import *
-
+import shutil
+import os
 
 class Gnome:
 
@@ -28,6 +30,39 @@ class Gnome:
 
         self.bus_object = None
         self.tauon = tauon
+        self.indicator_launched = False
+        self.indicator_mode = 0
+        self.update_tray_text = None
+        self.tray_text = ""
+
+        self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
+        self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
+        self.indicator_icon_default = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+
+        if tauon.prefs.flatpak_mode:
+
+            # This is a workaround to make tray icons visible from outside the sandbox
+
+            export_dir = os.path.join(self.tauon.cache_directory, "icon-export")
+            if not os.path.isdir(export_dir):
+                os.makedirs(export_dir)
+
+            print("Copy tray icons to data directory...")
+
+            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-play.svg")
+            if os.path.isfile(self.indicator_icon_play):
+                shutil.copy(self.indicator_icon_play, alt)
+                self.indicator_icon_play = alt
+
+            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-pause.svg")
+            if os.path.isfile(self.indicator_icon_pause):
+                shutil.copy(self.indicator_icon_pause, alt)
+                self.indicator_icon_pause = alt
+
+            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-default.svg")
+            if os.path.isfile(self.indicator_icon_default):
+                shutil.copy(self.indicator_icon_default, alt)
+                self.indicator_icon_default = alt
 
     def focus(self):
 
@@ -35,11 +70,173 @@ class Gnome:
             try:
                 # this is what gives us the multi media keys.
                 dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-                self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
-                                               dbus_interface=dbus_interface)
+                self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0, dbus_interface=dbus_interface)
             except:
                 # Error connecting to org.gnome.SettingsDaemon.MediaKeys
                 pass
+
+    def show_indicator(self):
+        if not self.indicator_launched:
+            try:
+                self.start_indicator()
+            except:
+                self.tauon.gui.show_message("Failed to start indicator", mode="error")
+        else:
+            self.indicator.set_status(1)
+
+    def hide_indicator(self):
+        if self.indicator_launched:
+            self.indicator.set_status(0)
+
+    def indicator_play(self):
+        if self.indicator_launched:
+            self.indicator.set_icon_full(self.indicator_icon_play, "playing")
+
+    def indicator_pause(self):
+        if self.indicator_launched:
+            self.indicator.set_icon_full(self.indicator_icon_pause, "paused")
+
+    def indicator_stop(self):
+        if self.indicator_launched:
+            self.indicator.set_icon_full(self.indicator_icon_default, "default")
+
+    def start_indicator(self):
+
+        pctl = self.tauon.pctl
+        tauon = self.tauon
+
+        import gi
+        gi.require_version('AppIndicator3', '0.1')
+        from gi.repository import Gtk
+        from gi.repository import AppIndicator3
+
+        self.indicator = AppIndicator3.Indicator.new("Tauon", self.indicator_icon_default, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+        self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
+        self.indicator.set_title(tauon.t_title)
+        self.menu = Gtk.Menu()
+
+        def restore(_):
+            tauon.raise_window()
+
+        def menu_quit(_):
+            print("Exit via tray")
+            tauon.exit()
+            self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
+
+        def play_pause(_):
+            pctl.play_pause()
+
+        def next(_):
+            pctl.advance()
+
+        def back(_):
+            pctl.back()
+
+        def update():
+            # This is done polling style in a single thread because calling
+            # from a different thread seems to cause text to sometimes stall
+
+            while True:
+
+                time.sleep(0.25)
+                if tauon.tray_releases <= 0:
+                    tauon.tray_lock.acquire()
+                tauon.tray_releases -= 1
+
+                if pctl.playing_state in (1, 3):
+                    if self.indicator_mode != 1:
+                        self.indicator_mode = 1
+                        self.indicator_play()
+                elif pctl.playing_state == 2:
+                    if self.indicator_mode != 2:
+                        self.indicator_mode = 2
+                        self.indicator_pause()
+                else:
+                    if self.indicator_mode != 0:
+                        self.indicator_mode = 0
+                        self.indicator_stop()
+
+                text = ""
+                if self.tauon.prefs.tray_show_title:
+                    tr = pctl.playing_object()
+                    if tr and tr.title and tr.artist:
+                        text = tr.artist + " - " + tr.title
+                    elif tr and tr.filename:
+                        text = tr.filename
+
+                    if pctl.playing_state == 0:
+                        text = ""
+
+                if self.indicator_launched:
+                    if text != self.tray_text:
+                        if text:
+                            self.indicator.set_label(" " + text, text)
+                            self.indicator.set_title(text)
+                        else:
+                            self.indicator.set_label("", "")
+                            self.indicator.set_title(tauon.t_title)
+                        self.tray_text = text
+
+        item = Gtk.MenuItem("Open Tauon Music Box")
+        item.connect("activate", restore)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.SeparatorMenuItem()
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Play/Pause")
+        item.connect("activate", play_pause)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Next Track")
+        item.connect("activate", next)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Previous Track")
+        item.connect("activate", back)
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.SeparatorMenuItem()
+        item.show()
+        self.menu.append(item)
+
+        item = Gtk.MenuItem("Quit")
+        item.connect("activate", menu_quit)
+        item.show()
+        self.menu.append(item)
+
+        self.menu.show()
+
+        self.indicator.set_menu(self.menu)
+
+        self.indicator.connect("scroll-event", self.scroll)
+
+        self.tauon.gui.tray_active = True
+        self.indicator_launched = True
+
+        import threading
+        shoot = threading.Thread(target=update)
+        shoot.daemon = True
+        shoot.start()
+
+    def scroll(self, indicator, steps, direction):
+        if direction == Gdk.ScrollDirection.UP:
+            self.tauon.pctl.player_volume += 4
+            if self.tauon.pctl.player_volume > 100:
+                self.tauon.pctl.player_volume = 100
+            self.tauon.pctl.set_volume()
+        if direction == Gdk.ScrollDirection.DOWN:
+            if self.tauon.pctl.player_volume > 4:
+                self.tauon.pctl.player_volume -= 4
+            else:
+                self.tauon.pctl.player_volume = 0
+            self.tauon.pctl.set_volume()
+        self.tauon.gui.update += 1
 
     def main(self):
 
@@ -52,28 +249,31 @@ class Gnome:
         pctl = self.tauon.pctl
         tauon = self.tauon
 
+        if prefs.use_tray:
+            self.show_indicator()
+
         def on_mediakey(comes_from, what):
 
             if what == 'Play':
-                self.tauon.input.media_key = 'Play'
+                self.tauon.inp.media_key = 'Play'
             elif what == 'Pause':
-                self.tauon.input.media_key = 'Pause'
+                self.tauon.inp.media_key = 'Pause'
             elif what == 'Stop':
-                self.tauon.input.media_key = 'Stop'
+                self.tauon.inp.media_key = 'Stop'
             elif what == 'Next':
-                self.tauon.input.media_key = 'Next'
+                self.tauon.inp.media_key = 'Next'
             elif what == 'Previous':
-                self.tauon.input.media_key = 'Previous'
+                self.tauon.inp.media_key = 'Previous'
             elif what == 'Rewind':
-                self.tauon.input.media_key = 'Rewind'
+                self.tauon.inp.media_key = 'Rewind'
             elif what == 'FastForward':
-                self.tauon.input.media_key = 'FastForward'
+                self.tauon.inp.media_key = 'FastForward'
             elif what == 'Repeat':
-                self.tauon.input.media_key = 'Repeat'
+                self.tauon.inp.media_key = 'Repeat'
             elif what == 'Shuffle':
-                self.tauon.input.media_key = 'Shuffle'
+                self.tauon.inp.media_key = 'Shuffle'
 
-            if self.tauon.input.media_key:
+            if self.tauon.inp.media_key:
                 gui.update = 1
 
         # set up the glib main loop.
@@ -99,6 +299,22 @@ class Gnome:
                 print("Could not connect to gnome media keys")
 
         # ----------
+
+        # t_bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+        # t_bus_name = dbus.service.BusName('com.github.taiko2k.tauonmb', t_bus)  # This object must be kept alive
+        #
+        # class T(dbus.service.Object):
+        #     @dbus.service.method("com.github.taiko2k.tauonmb",
+        #                          in_signature='a{sv}', out_signature='')
+        #     def start(self, options={}):
+        #         print("START")
+        #
+        #     def __init__(self, object_path):
+        #         dbus.service.Object.__init__(self, t_bus, object_path, bus_name=t_bus_name)
+        #
+        # pctl.sgl = T("/")
+
+        # ----------
         if prefs.enable_mpris:
             try:
                 bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
@@ -110,7 +326,7 @@ class Gnome:
 
                         changed = {}
 
-                        if pctl.playing_state == 1:
+                        if pctl.playing_state == 1 or pctl.playing_state == 3:
                             if self.player_properties['PlaybackStatus'] != 'Playing':
                                 self.player_properties['PlaybackStatus'] = 'Playing'
                                 changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
@@ -143,7 +359,10 @@ class Gnome:
                                 'xesam:asText': track.lyrics,
                                 'xesam:autoRating': star_count2(tauon.star_store.get(track.index)),
                                 'xesam:composer': dbus.Array([track.composer]),
-                                'tauon:loved': tauon.love(False, track.index)
+                                'tauon:loved': tauon.love(False, track.index),
+                                # added by msmafra
+                                'xesam:comment': dbus.Array([track.comment]),
+                                'xesam:genre': dbus.Array([track.genre])
 
                             }
 
@@ -151,13 +370,26 @@ class Gnome:
                                 i_path = tauon.thumb_tracks.path(track)
                                 if i_path is not None:
                                     d['mpris:artUrl'] = 'file://' + urllib.parse.quote(i_path)
-                            except:
+                            except Exception as e:
+                                print(str(e))
                                 print("Thumbnail error")
+                                print(track.fullpath)
 
                             self.update_progress()
 
                             self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                             changed['Metadata'] = self.player_properties['Metadata']
+
+                            if pctl.playing_state == 3 and self.player_properties['CanPause'] is True:
+                                self.player_properties['CanPause'] = False
+                                self.player_properties['CanSeek'] = False
+                                changed['CanPause'] = self.player_properties['CanPause']
+                                changed['CanSeek'] = self.player_properties['CanSeek']
+                            elif pctl.playing_state == 1 and self.player_properties['CanPause'] is False:
+                                self.player_properties['CanPause'] = True
+                                self.player_properties['CanSeek'] = True
+                                changed['CanPause'] = self.player_properties['CanPause']
+                                changed['CanSeek'] = self.player_properties['CanSeek']
 
                         if len(changed) > 0:
                             self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
@@ -174,7 +406,8 @@ class Gnome:
                         self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"LoopStatus": self.get_loop_status()}, [])
 
                     def __init__(self, object_path):
-                        dbus.service.Object.__init__(self, bus, object_path)
+                        # dbus.service.Object.__init__(self, bus_name, object_path)
+                        dbus.service.Object.__init__(self, bus, object_path, bus_name=bus_name)
 
                         self.playing_index = -1
 
@@ -292,7 +525,10 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def PlayPause(self):
-                        pctl.play_pause()
+                        if pctl.playing_state == 3:
+                            pctl.stop()  # Stop if playing radio
+                        else:
+                            pctl.play_pause()
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Stop(self):

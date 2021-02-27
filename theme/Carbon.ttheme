@@ -3,16 +3,11 @@
 
 #-Backgrounds-----
 
-30,30,30		player background (top panel)
-16,16,16	  	playlist panel
+30,30,30		top panel
+16,16,16	  	tracklist panel
 15,15,15		side panel
 92,75,185		bottom panel
-
-#-Frame--------
-
-21,21,21		sep line
-21,21,21		bb line
-21,21,21		tb line
+18,18,18        queue panel
 
 #-Playlist-------
 
@@ -57,6 +52,8 @@
 255,255,255		mode over
 255,255,255		mode on
 
+255,255,255		bottom title
+
 #-Top panel---------
 
 255,255,255		tab active line
@@ -66,10 +63,15 @@
 65,65,65		tab active background
 190,190,190		music vis
 
+#-Menu-------------
+20,20,20        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
+
 #-Misc--------------
 
-20,20,20		menu bg
-28,28,28		playlist box bg
+28,28,28		playlist background
 
 #-Side panel--------
 

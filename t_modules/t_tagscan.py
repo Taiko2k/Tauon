@@ -17,17 +17,19 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+
 # The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
 
 import struct
 import wave
 import io
-
+import os
+import math
 
 def parse_mbids_from_vorbis(object, key, value):
 
     if key == "musicbrainz_artistid":
-        if "'musicbrainz_artistids'" not in object.misc:
+        if "musicbrainz_artistids" not in object.misc:
             object.misc['musicbrainz_artistids'] = []
         object.misc['musicbrainz_artistids'].append(value)
         return True
@@ -206,12 +208,18 @@ class Flac:
                         print("      In file: " + self.filepath)
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
-                    elif 'replaygain_track_gain' == a:
-                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
-                    elif 'replaygain_album_gain' == a:
-                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_track_gain" == a:
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_track_peak" == a:
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
+                    elif "replaygain_album_gain" == a:
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif "replaygain_album_peak" == a:
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif 'composer' == a:
                         self.composer = b.decode("utf-8")
+                    elif "fmps_rating" == a:
+                        self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
                     # else:
                     #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
                     #     print(b)
@@ -249,11 +257,22 @@ class Flac:
     def read(self, get_picture=False):
 
         # Very helpful: https://xiph.org/flac/format.html
+        size = os.path.getsize(self.filepath) / 8
+        if size < 100:
+            return
 
         f = open(self.filepath, "rb")
         s = f.read(4)
+
+        # Find start of FLAC stream
         if s != b'fLaC':
-            return
+            while f.tell() < size + 100:
+                f.seek(-3, 1)
+                s = f.read(4)
+                if s == b'fLaC':
+                    break
+            else:
+                return
 
         i = 0
         while i < 20:
@@ -411,14 +430,14 @@ class Opus:
 
         s = v.read(4)
         l -= 4
-        a = int.from_bytes(s, byteorder='little')
-        s = v.read(a)
+        a = int.from_bytes(s, byteorder='little')  # Vendor string length
+        s = v.read(a)  # Vendor string
         l -= a
 
         s = v.read(4)
         l -= 4
 
-        number = int.from_bytes(s, byteorder='little')
+        number = int.from_bytes(s, byteorder='little')  # Number of comments
 
         artists = []
         genres = []
@@ -482,14 +501,16 @@ class Opus:
                         print("      In file: " + self.filepath)
                         self.has_picture = True
                         self.picture = b
-                        #print(b)
-
-                        # To do
+                        # print(b)
 
                     elif 'replaygain_track_gain' == a:
-                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_track_peak' == a:
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif 'replaygain_album_gain' == a:
-                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_album_peak' == a:
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
                     elif a == 'disctotal' or a == 'totaldiscs':
@@ -498,6 +519,8 @@ class Opus:
                         self.lyrics = b.decode("utf-8")
                     elif a == "composer":
                         self.composer = b.decode("utf-8")
+                    elif "fmps_rating" == a:
+                        self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
                     else:
                         print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
                         print(b.decode("utf-8"))
@@ -696,12 +719,17 @@ class Ape:
                     self.label = value
                 elif key.lower() == "lyrics":
                     self.lyrics = value
+                elif "replaygain_track_gain" == key.lower():
+                    self.misc["replaygain_track_gain"] = float(value.strip(" dB"))
+                elif "replaygain_track_peak" == key.lower():
+                    self.misc["replaygain_track_peak"] = float(value)
+                elif "replaygain_album_gain" == key.lower():
+                    self.misc["replaygain_album_gain"] = float(value.strip(" dB"))
+                elif "replaygain_album_peak" == key.lower():
+                    self.misc["replaygain_album_peak"] = float(value)
                 elif parse_mbids_from_vorbis(self, key.lower(), value):
                     pass
-                elif 'replaygain_track_gain' == key.lower():
-                    self.track_gain = float(value.strip(" dB"))
-                elif 'replaygain_album_gain' == key.lower():
-                    self.album_gain = float(value.strip(" dB"))
+
                 elif key.lower() == "cover art (front)":
 
                     # Data appears to have a filename at the start of it, we need to remove to recover a valid picture
@@ -801,7 +829,50 @@ class Wav:
         self.sample_rate = 48000
         self.length = 0
 
+        self.title = ""
+        self.artist = ""
+        self.album = ""
+        self.genre = ""
+        self.track_number = ""
+
     def read(self):
+
+        with open(self.filepath, "rb") as f:
+            f.read(12)
+
+            while True:
+                type = f.read(4)
+                if not type:
+                    break
+                remain = int.from_bytes(f.read(4), 'little')
+
+                if type != b"LIST":
+                    f.seek(remain, io.SEEK_CUR)
+                else:
+
+                    INFO = f.read(4)
+                    if INFO == b"INFO":
+                        remain -= 4
+                        while remain > 0:
+                            id = f.read(4).decode()
+                            size = int.from_bytes(f.read(4), 'little')
+                            value = f.read(size)[:-1].decode("unicode_escape")
+                            if id == "ITRK":
+                                self.track_number = value
+                            if id == "IGNR":
+                                self.genre = value
+                            if id == "IART":
+                                self.artist = value
+                            if id == "INAM":
+                                self.title = value
+                            if id == "IPRD":
+                                self.album = value
+
+                            if size % 2 == 1:
+                                size += 1
+                                f.read(1)
+
+                            remain -= (8 + size)
 
         wav = wave.open(self.filepath, "rb")
         self.sample_rate = wav.getframerate()
@@ -1139,5 +1210,3 @@ class M4a:
 
         while atom(f):
             pass
-
-

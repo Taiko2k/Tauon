@@ -4,6 +4,9 @@
 24,24,24	  	playlist panel
 18,18,18		side panel
 14,14,14		bottom panel
+18,18,18        queue panel
+
+235,235,235		bottom title
 
 210,210,210		track line
 255,195,50		track playing
@@ -38,8 +41,8 @@
 40,40,40		tab over
 3,104,147		tab active background
 
-220,220,220		title info
-195,195,195		extra info
+230,230,230		title info
+205,205,205		extra info
 20,20,20		art border
 
 223,223,223		seek bar
@@ -54,11 +57,13 @@
 
 129,145,246		music vis
 
-16,16,16		sep line
-50,50,50		bb line
-50,50,50		tb line
+#-Menu-------------
+18,18,18        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
 
 #-Mini Mode---------
 
-24,24,24        mini bg
+14,14,14        mini bg
 60,60,60        mini border

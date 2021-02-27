@@ -1,14 +1,562 @@
 
 Changelog-------------------------------------
 
-5.1.2
+v6.5.3
+
+ - Changed Discord presence control to persistent setting
+ - Changed Spotify auth to use user provided ID
+ - Changed Genius track lookup to fallback to standard search page
+ - Fixed rare crash when importing certain Spotify tracks
+ - Fixed click on focus on working
+ - Fixed folder navigator not updating on regenerate
+
+v6.5.2
+
+ - Fixed widget drag in some locations
+ - Fixed repeat icon alignment with UI scaling
+
+v6.5.1
+
+ - Simplified Spotify setup / remove need for key
+ - Added album info to global search track results
+ - Added import all spotify playlist button
+ - [Phazor] Fixed CUE sheets with FLAC
+
+v6.5.0
+
+ - Added support for playback of tracker files
+ - Fixed background art on window resize
+ - Added listen/scrobble support for Airsonic
+ - Added path metadata to plex tracks
+ - Improved Airsonic import speed
+ - [GStreamer] Tweaked network transition behaviour
+ - [Phazor] Tweaked network download behaviour
+
+v6.4.9
+
+ - Added export playlist albums as CSV
+ - Added button conformation to delete playlist on middle click
+ - Improved export database CSV format
+ - Fixed a bug with flickering album art in gallery on large screens
+ - Fixed high CPU on mouse down
+ - Fixed a bug with system tray when using GStreamer backend
+ - Fixed crash when drop files on tab
+
+v6.4.8
+
+ - Added Jellyfin streaming support
+ - Added delete playlist confirmation
+ - Added keyboard shortcuts "Clear Queue" and "Regenerate Playlist"
+ - Various fixes for keyboard control
+ - Tweaked global generator playlists to ignore other generator playlists
+ - Fixed keyboard shortcut trigger on window tab
+ - Fixed wrong radio URL displayed in compact view title
+ - Fixed slow backend switching
+ - Fixed delay in track change response near end of track [Phazor]
+
+v6.4.7
+
+ - Improved File Modified sorter to better group albums
+ - Fixed radio recording not working on Flatpak
+ - Fixed an issue with artist list wont goto multi-artist
+ - Fixed window not restoring when relaunching while in tray
+
+v6.4.6
+
+ - Fixed a possible bug with Spotify playback
+
+v6.4.5
+
+ - Added text only view to artist list
+ - Added buffering animation to seek bar
+ - Added alpha remote API
+ - Replaced Apiseeds lyric provider with Happi
+ - Fixed drag and drop from pantheon not working
+ - Fixed a bug with tracks skipping when using radio random
+ - Removed "Auto search lyrics" option
+
+v6.4.4
+
+ - Added track title to tray tooltip
+ - Added buffering progress indicator (Phazor)
+ - Added setting to use plain text airsonic authentication (For Nextcloud)
+ - Added volume control on scroll on tray
+ - Changed minimize to tray to close to tray
+ - Fixed UI scaling issue with settings tabs on top
+ - Removed "Reset missing flags" function (now automatic)
+ - Phazor: Fixed an issue where rapidly pressing pause was cause jam
+ - Phazor: Added resampling for MP3, Vorbis and Opus
+
+v6.4.3
+
+ - Added system tray support (AppIndicator)
+ - Tweaked track info Spotify icon colour
+ - Fixed spotify resume after long pause
+ - Fixed a bug where radio art would not reload on resuming stream
+
+v6.4.2
+
+ - Phazor: Fixed radio stations not playing
+
+v6.4.1
+
+ - Added option to use artist backgrounds (Accounts > Fanart.tv)
+ - Added desktop launcher actions for play/pause, next and previous
+ - Added command line control arguments
+ - Added spotify icon button to track info box
+ - Moved MB4 and MB5 shortcuts to input config
+ - Improved ReplayGain support
+ - Improved Airsonic scan error handling
+ - Fixed issue with exported thumbnail collisions
+ - Fixed GStreamer EQ invert slider bug (workaround)
+ - Fixed GStreamer backend playing wrong track when switching fast
+ - Fixed a possible crash with malformed generator codes
+ - Set Phazor as default backend over GStreamer
+ - Set global search to locate artist with shift + enter
+ - Set transcode output .opus.ogg extension to just .ogg
+ - Removed download URL feature
+ - Phazor: Added resampling for FLAC files
+ - Phazor: Fixed slow seeking with some formats
+
+v6.4.0
+
+ - Added artist list sorting options
+ - Added Maloja scrobble support
+ - Added function to import scrobble counts and column to display
+ - Added custom Listenbrainz server option
+ - Added "Launching Spotfiy" status text
+ - Added new sorting option "Sort by Imported"
+ - Tweaked playlists stats readout
+ - Tweaked artist list appearance
+ - Tweaked settings function tab page layout
+ - Tweaked playlist list to remember scroll position over restart
+ - Tweaked album art display to prioritise "folder.*" over other names
+ - Fixed compact mode play/pause button order
+ - Fixed column bar peak position
+ - Fixed a case where Spotify monitoring would stall
+ - Fixed UI draw when using "Return" from showcase view
+ - Fixed a bug with seek bar display when using "radio random"
+ - Fixed radio type album art not showing in compact layout
+ - Phazor: Added pulseaudio output selector
+ - Phazor: Added "Fade on pause/stop" setting
+ - Phazor: Added "Fade on jump" setting
+ - Phazor: Added OGG metadata parsing for internet radio
+ - Phazor: Fixed a crash when attempting to play mono FLACs
+ - Phazor: Fixed FFMPEG processes not being cleaned up
+
+v6.3.3
+
+ - Added config option to restart track on back press
+ - Added option to scrobble to Libre.fm instead of Last.fm
+ - Added regenerate network collections functionality
+ - Set default keybind for "love playing" as Ctrl+Shift+L
+ - Set auto regen playlist setting default to on
+ - Enabled option to disable "transcode folder" menu entry
+ - Added ctrl click to add track to selection
+ - Added "Add to Queue" to selection menu
+ - Added toast for love track shortcut
+ - Added counter to Airsonic library import
+ - Tweaked lyrics to use as sycned if detected
+ - Tweaked synced lyrics synchronisation accuracy
+ - Tweaked auto regenerate playlists behaviour
+ - Improved PLEX import speed
+ - Fixed a possible stall when importing corrupted flac files
+ - Fixed down key on search overly advancing past results
+ - Fixed bottom panel title hiding
+ - Fixed no lyric menu when only synced lyrics showing
+ - Fixed menu click triggering seek bar when over
+ - Fixed column sorting by filepath
+ - Fixed possible crash when loading network track with Phazor
+
+v6.3.2
+
+ - Improved broadcast page
+  - Redesigned layout to a centered style
+  - Added metadata delay to improve perceived synchronisation
+  - Added sourcing lyrics from lrc files (static)
+  - Fixed no spaces in text bug
+ - Fixed global search crash with Spotify when not enabled
+ - Fixed delay when restarting broadcast
+
+v6.3.1
+
+ - Enabled picture menu for showcase album art
+ - Fixed borked radio metadata page
+ - Fixed process not closing with active broadcast connection
+ - Phazor:
+   - Fixed audio not fading out on app exit
+   - Fixed no audio when start after pause
+   - Reduced possible glitches
+
+v6.3.0
+
+ - Added option to restore window position on restart
+ - Fixed spotify auth not working with tekore v3
+
+v6.2.6
+
+ - Fixed an upgrading issue causing some tracks to stall
+ - Fixed a crash when using copy in an empty playlist
+ - Fixed an issue with playback stalling after missing track or jump during transition
+
+v6.2.5
+
+ - Fixed Spotify remote not progressing
+
+v6.2.4
+
+ - Restored device selector
+
+v6.2.2
+
+ - Disabled device selector
+ - Fixed freeze on audio setting change
+ - Remove python-discogs_client dependency
+
+v6.2.1
+
+ - Improved internet radio
+   - Improved buffering and reliability
+   - Added drag to re-arrange for saved stations
+   - Added option for search type
+   - Added radio output codec setting in config file
+
+v6.2.0
+
+ - Added station search browser for internet radio
+ - Added detection of OGA file extension
+ - Added support pasting list of Spotify links
+ - Added support for pasting Spotify URI type
+ - Added radio stream metadata display
+ - Changed radio recording from button to setting
+ - Improved koel library import speed
+ - Fixed Spotify playlists not being imported in full
+ - Fixed some misc UI elements with scaling
+ - Fixed a crash when reading malformed lyrics files
+ - Fixed disabled menu items icon colour
+ - Fixed radio artist and title display for some cases
+ - Workaround for memory leak crash on startup
+ - Replaced BASS based broadcast backend with custom backend
+ - Improved GStreamer backend
+   - Added level meter visualiser
+   - Added audio equalizer
+   - Added pause/resume/volume fade
+   - Workaround for some network tracks not being seekable
+   - Workaround for poor audio quality on some radio streams
+   - Fixed start of CUE file audible on track jump
+   - Fixed a bug where playback would immediately jump to next track
+   - Fixed a possible crash on startup
+   - Removed auto output device option
+ - Removed BASS backend
+   - Lost spectrum visualiser
+
+v6.1.3
+
+ - Improved Spotify support
+   - Added support for saving albums to library
+   - Added regenerate library albums and liked track playlists
+   - Improved Spotify playback synchronisation
+   - Fixed un-like track not working
+
+v6.1.2
+
+ - Added "--nogdk" to bypass possible crash
+ - Fixed sync not working with first ordered playlist
+
+v6.1.1
+
+ - Added workaround for crash on KDE + Flatpak
+
+v6.1.0
+
+ - Added maximize window button
+ - Added setting "Zoom album art to fit"
+ - Added "Add Spotify album" function to end of playlist menu
+ - Added import and upload Spotify playlist functions
+ - Added import and search Spotify track function
+ - Added exit app keyboard shortcut as Ctrl + Q
+ - Moved "add to queue" shortcut to Alt + Q
+ - Fixed a possible crash when using artist info panel
+ - Fixed transcode status not showing correct remaining during sync
+ - Fixed synced lyrics not word wrapping
+ - Fixed pressing play button not un-pausing with Spotify
+ - Changed "remove network tracks" to not remove Spotify tracks
+ - Changed left panel button to exit showcase view
+
+v6.0.3
+
+ - Added UI scale slider in settings
+ - Added auto-scale based on xft dpi setting
+ - Added playlist setting "Set as downloads playlist"
+ - Fixed network track pausing with BASS
+ - Fixed crash on rescan music folder
+ - Fixed Spotify remote mode not showing track date
+ - Reduced chance of playtime database corruption
+ - Changed cover art downloader to abort if non-album folder
+
+v6.0.2
+
+ - Improved Airsonic library import
+ - Fixed lyrics searching all providers even if one was successful
+
+v6.0.1
+
+ - Added option to bypass transcode on sync
+ - Improved "set as sync playlist" function to be un-settable
+ - Fixed folder rescan to be able to rescan multiple imported folders
+ - Fixed import PLEX tracks not working
+ - Fixed setting account passwords not being hidden
+ - Fixed Spotify library import limit
+
+v6.0.0
+
+ - Added Spotify integration
+ - Added "Transcode and Sync" function
+ - Added Bandcamp artist search function
+ - Added visual theme selector to settings
+ - Added input fields for network accounts in settings
+ - Added setting for separate multi-value genre results (default is now off)
+ - Added "sort by top played" setting to chart generator
+ - Added "comment" and "genre" properties for MPRIS2
+ - Added "Remove Network Tracks" function in database menu
+ - Added custom controls to broadcast landing page
+ - Improved transcode handling of multi disc albums
+ - Improved genre result names for some genres
+ - Improved caching for network sourced album art
+ - Improved hidden columns bar to peak on mouse over
+ - Tweaked old playtime star colour
+ - Tweaked layout and description of various settings
+ - Tweaked tab double click to play click timing
+ - Fixed genius lyrics scrape for new layout version
+ - Fixed tracks showing as drop-able into a generator playlist
+ - Fixed dropping tracks then clicking playlist triggering play
+ - Fixed favicon not showing in broadcast page
+ - Fixed broadcast page not working without outside connection
+ - Fixed animation stutter when opening settings box
+ - Fixed global search scroll wheel behavior
+ - Fixed right click copy with text input fields
+ - Fixed artist image loading for some artist names
+ - Removed "auto update generated playlists" from in-app settings
+
+v5.5.5
+
+ - Added feature "Playlist gallery quick add mode"
+ - Changed about title font style
+ - Changed show minimize button to follow GTK setting
+ - Fixed a bug with radio page not loading album art
+ - Fixed a case with "Transcode All" resulting in stall
+ - Various fixes for custom light themes
+ - Various Windows fixes for use with MSYS
+
+v5.5.4
+
+ - Added "Find incomplete albums" function
+ - Fixed metadata not being read from some FLAC files
+ - Fixed crash when selecting GStreamer output device
+
+v5.5.3
+
+ - Fixed window opacity not persisting on restart
+ - Fixed auto theme colours on track switch sometimes not working
+ - Fixed double notification on playlist repeat
+ - Improved permission error message with Snap
+
+v5.5.2
+
+- Fixed menu closing after using layout shortcut
+- Fixed side panel synced lyrics scroll hitbox
+- Fixed possible crash when using "remove missing tracks" or "edit with picard"
+- Fixed a crash when using "vacuum playtimes"
+
+v5.5.1
+
+ - Fixed possible crash when auto lyrics enabled
+
+v5.5.0
+
+ - Added new theme "Neon Love"
+ - Added new theme "Sunken"
+ - Added "queue only" left panel type
+ - Added overflow menus for top panel tabs
+ - Added playlist results to global search
+ - Added playlist number keyboard shortcuts
+ - Added double click playlist to play
+ - Restored "gallery only" view layout (click gallery button twice)
+ - Improved "showcase only" background art compositing
+ - Improved colour blending with custom themes
+ - Changed playlist list layout to alt style
+ - Changed playlist lock indicator to pin indicator
+ - Fixed text with mascot bg in columns view
+ - Fixed lyrics source entries not showing asterisk
+ - Fixed rendering during view change click
+ - Fixed gallery jumping to top when deleting another playlist
+ - Fixed a bug where showcase would exit when switching track
+ - Fixed queue panel colours for non-dark themes
+ - Fixed audio device list not accepting mouse scrolling
+ - Fixed playtime not counting near end of track
+ - Fixed a bug where listenbrainz wouldn't work if last.fm was disabled
+ - Fixed a case where listenbrainz submission would fail (requires tag rescan)
+ - Fixed lyrics auto download not working if right panel was in centered mode
+ - Fixed a possible crash loading lrc files
+ - Removed config option "show playlist list" (now redundant)
+ - Removed playlist "auto" indicator
+ - Removed playlist pin buttons
+ - Removed bg art option "always center" (now automatic)
+
+v5.4.3
+
+ - Added Portuguese translation
+ - Added generator code "f" for find
+ - Added option to place lyrics metadata panel on top
+ - Added the following functions to keymap file: new-generator-playlist, edit-generator,
+   search-lyrics-selected and substitute-search-selected
+ - Changed folder path generator code from 'f' to 'p'
+ - Tweaked appearance of micro mini-mode
+ - Tweaked colours of some UI elements
+ - Tweaked theme files to specify bottom panel title text colour
+ - Improved adding column to add at selected location
+ - Fixed new-playlist shortcut not being re-bindable
+ - Fixed a possible crash after using "Remove missing tracks"
+ - Fixed background art not returning after playing a track with no album art (regression fix)
+ - Fixed IME input (regression fix + improvement)
+ - Fixed some .lrc files not loading
+ - Removed config option "Always show seek bar in mini-mode micro" (now always on)
+
+v5.4.2
+
+ - Added swedish translation
+ - Set love-selected default shortcut as ctrl+l
+ - Tweaked folder navigator panel to auto adjust size
+ - Fixed add to queue shortcut
+
+v5.4.1
+
+ - Fixed a possible crash if track has lyrics but no album art
+ - Fixed gallery arrow key control
+ - Fixed an issue where embedded album art sometimes wouldn't load
+
+v5.4.0
+
+ - Added reading of pls/m3u/xspf files for radios
+ - Added "Copy to clipboard" function to bottom panel area menu
+ - Added click column title to sort. Removed menu entries.
+ - Re-designed "open http stream box"
+ - Restored drag tab to end duplicate tab function (hold ctrl)
+ - Enabled http stream on GStreamer backend
+ - Enabled scrobbling for internet radio
+ - Fixed view jump on queue advance
+ - Fixed warning message on visualiser enable
+ - Fixed end of tracks being cut off when on repeat
+ - Fixed time counter not advancing when playing internet stream
+ - Fixed mini-mode with internet radio
+ - Fixed an issue with pasting tracks using ctrl+v
+ - Fixed not being able to use add to queue shortcut with quick find box open
+ - Fixed clear playlist not resetting view position
+ - Fixed paste menu function not working with external folder paste
+ - Fixed external folder paste not working from some file managers (Nemo)
+ - Fixed playlist paste menu non-activation zone being too large
+ - Fixed showcase view not being restored on app restart
+
+v5.3.1
+
+ - Added Genius lyrics scrape
+ - Added substitute lyric search function
+ - Added "Remove duplicates" function
+ - Added "Edit generator" shortcut function
+ - Added instructions to edit generator box
+ - Added 'auto' indicator to playlist list
+ - Added "Make playlist auto sorting" function
+ - Added column, 'comment', 'today', 'self' and 'path' generator codes
+ - Added easter egg 0401-2020
+ - Improved generator code entry to update on type
+ - Improved scroll edge animation
+ - Tweaked behavior of 'auto' generator code to also apply on track drag and drop
+ - Tweaked light theme and auto theme colours
+ - Tweaked auto show playing on track transition behavior
+ - Enabled synced lyrics in lyrics side panel
+ - Fixed generator code year filter
+ - Fixed cycle-playlist-left/right not being rebind-able
+ - Fixed transition fade not being disabled on previous
+ - Fixed mascot position in "tracks only" view
+ - Fixed click on menu break causing menu to close
+ - Fixed toast text sometimes overflowing box
+ - Fixed rating star colours when using auto theme
+ - Fixed text colour in lyrics metadata panel with auto theme
+ - Removed restriction on enabling both auto theme and background art
+
+v5.3.0
+
+ - Added user track ratings
+ - Added regenerate function to playlist tab menu
+ - Added playlist generator strings
+ - Added backup database file saving
+ - Added subsonic streaming support
+ - Tweaked search results to show more folders
+ - Changed love heart column title from emoji to icon
+ - Enabled network sources with GStreamer backend
+ - Moved last.fm error message to top panel
+ - Fixed XSPF importing filenames with certain characters
+ - Fixed XSPF importing not reporting errors on 2nd try
+ - Fixed column sorting not ignoring case
+ - Fixed column sort ascending not maintaining track order
+ - Fixed drag and dropping folders as new tab not working if top panel was full
+ - Fixed icons not reverting size when changing ui-scale back to 1.0
+ - Fixed a crash in showcase view with large portrait window size
+ - Fixed tracks not being marked as missing when broadcasting
+ - Fixed empty visualisers showing in GStreamer mode
+ - Fixes settings box buttons UI scaling
+ - Fixed playlist list not scrolling with arrow key navigation
+ - Fixed crash on exit on some desktops
+
+v5.2.1
+
+ - Tweaked layout of settings to allow for localisation
+ - Updated Discord RP with fixed app icon
+ - Fixed crash with remove embed image function
+ - Fixed system language detection
+
+v5.2.0
+
+ - Added global search filter keywords: composer, year, album
+ - Added border to artist thumbnail hover preview
+ - Added "lock folder tree to playlist" hidden menu option
+ - Improved global search speed
+ - Improved CUE sheet compatibility for multiple target file CUE sheets
+ - Improved "sort year per artist" function to consider album-artist tag
+ - Moved various options to config file
+ - Moved "lyrics side info panel" toggle setting to menu
+ - Fixed restore to maximized on app open smoothness
+ - Fixed mouse over state when mouse leaves window at non edge
+ - Fixed CUE sheet imports with APE files sometimes importing duplicate
+ - Fixed a bug with artist titles sometimes not appearing in gallery
+ - Removed option to disable diacritic mode searching
+ - Removed search images on Google function
+ - Removed lyrics function "Split Lines"
+
+v5.1.4
+
+ - Added toggle of automatic artist data downloading
+ - Added manual trigger for artist bio download to menu
+ - Added toggles for fanart.tv sourcing
+ - Added "Enqueue album next" entry to gallery menu
+ - Changed artist image preview to activate on hover
+ - Tweaked folder nodes in tree to be bold if contains many sub items
+ - Fixed crash on select GStreamer custom output setting
+ - Fixed artist bio panel not reducing to small size
+ - Fixed playlist tabs being incorrectly dragged during UI stall
+
+v5.1.3
+
+ - Fixed crash with renaming tracks
+
+v5.1.2
 
  - Added toggle to show album title in notification
  - Added loading screen on app start
  - Added picture preview to artist list
  - Fixed some UI scale issues
 
-5.1.1
+v5.1.1
 
  - Tweaked mini mode appearance
  - Fixed artist text not appearing in gallery after import

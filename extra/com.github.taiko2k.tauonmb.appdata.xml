@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2019 Taiko2k captain.gxj@gmail.com -->
 <component type="desktop-application">
-  <id type="desktop">com.github.taiko2k.tauonmb.desktop</id>
+  <id>com.github.taiko2k.tauonmb</id>
   <name>Tauon Music Box</name>
   <developer_name>Taiko2k</developer_name>
   <summary>Play your music collection with style</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
-  <url type="homepage">https://github.com/Taiko2k/TauonMusicBox</url>
+  <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/TauonMusicBox/issues</url>
-  <url type="help">https://github.com/Taiko2k/TauonMusicBox/wiki</url>
+  <url type="help">https://tauonmusicbox.rocks/#manual</url>
+  <url type="donation">https://ko-fi.com/taiko2k</url>
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/66533289-eb697e00-eb6e-11e9-8a93-513056a343f6.png</icon>
 
   <description>
@@ -18,34 +19,35 @@
     <p>Packed with features while maintaining simplicity. Use drag and drop for easy file importing and playlist management. Groups albums by folder and allows you to manage your music with built-in functions such as file and folder renaming, cover art downloading and file deleting.</p>
     <p>Features:</p>
     <ul>
-      <li>Playback common audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
+      <li>Playback local audio files including MP3, FLAC and OGG</li>
+      <li>Import Spotify tracks and control Spotify playback</li>
+      <li>Add network tracks from Airsonic and koel servers</li>
+      <li>Automatic CUE sheet detection</li>
       <li>Gapless playback</li>
-      <li>CUE sheet detection</li>
-      <li>Lookup artists on Rate Your Music</li>
+      <li>Lookup artists on Rate Your Music and Bandcamp</li>
       <li>Scrobble and love tracks to last.fm</li>
       <li>Support for Listenbrainz and launching the Musicbrainz Picard tag editor</li>
       <li>Import downloaded music archives in one click</li>
       <li>Large album art and gallery layouts</li>
-      <li>File transcoding</li>
+      <li>Transcode and sync to device functionality</li>
       <li>Support for lyrics including synced lrc files and guitar chords</li>
       <li>Multiple preset colour themes</li>
-      <li>Additional mini and micro UI modes</li>
     </ul>
   </description>
 
   <screenshots>
 
     <screenshot type="default">
-      <image type="source">https://user-images.githubusercontent.com/17271572/68988176-59a10f00-0898-11ea-9d5f-2b9852eace1e.jpg</image>
-      <caption>Main window showing folder-list and album grid</caption>
-    </screenshot>
-    <screenshot>
-      <image type="source">https://user-images.githubusercontent.com/17271572/61632863-f0dac900-ace1-11e9-9144-852fe2a40251.png</image>
+      <image type="source">https://user-images.githubusercontent.com/17271572/90944081-f40a3080-e470-11ea-8a52-ba20c6e7758f.png</image>
       <caption>Player window showing track-list and album art</caption>
     </screenshot>
     <screenshot>
       <image type="source">https://user-images.githubusercontent.com/17271572/68853658-61996b80-073f-11ea-9b64-21e0d5da18a6.png</image>
       <caption>Player window resized to a narrow width</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://user-images.githubusercontent.com/17271572/68988176-59a10f00-0898-11ea-9d5f-2b9852eace1e.jpg</image>
+      <caption>Main window showing folder-list and album grid</caption>
     </screenshot>
   </screenshots>
 
@@ -56,11 +58,10 @@
 
   <releases>
 
-    <release version="5.1.1" date="2019-11-23">
+    <release version="6.5.3" date="2021-02-24">
       <description>
         <ul>
-          <li>Fixed a possible crash in gallery view</li>
-          <li>Tweaked mini mode appearance</li>
+          <li>Improved Discord RP setting</li>
         </ul>
       </description>
     </release>

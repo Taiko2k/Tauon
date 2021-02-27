@@ -13,34 +13,41 @@ p {
   display: flex;
   flex-wrap: wrap;
   padding-left: 15px;
-  padding-top: 20px;
-
+  padding-top: 40px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-#main {
-  flex: auto;
+#meta {
+  float: left;
+  margin-left: 20px;
 }
+
 
 #lyrics {
   color: #CCC;
   flex: auto;
 
   max-width: 600px;
-
   word-wrap: break-word;
-  padding-top: 0px;
-  padding-left: 35px;
+  padding-top: 25px;
+  padding-left: 2px;
+  padding-bottom: 50px;
 }
 
 #img-holder {
    height: 300px;
    width: 300px;
-   background-color: #222;
+   background-color: rgb(27, 27, 27);
    float: left;
-   clear: left;
-
+   justify-content:center;
+   display:flex;
 }
 
+#picture {
+  align-self:center;
+}
 
 #control-holder {
   float: left;
@@ -48,53 +55,40 @@ p {
 }
 
 #seekfront {
-
-  height: 20px;
+  height: 17px;
   width: 100px;
   background-color: rgb(50, 50, 150);
-
 }
 
 #seekback {
-
-  height: 20px;
-  width: 700px;
+  height: 17px;
+  width: 450px;
   background-color: rgb(40, 40, 40);
-
   clear: left;
 
 }
 
 #title-text {
   clear: left;
-  padding-top: 10px;
+  padding-top: 0px;
   font-family: sans-serif;
+  font-size: 1.4em;
+  font-weight: bold;
   color: rgb(230, 230, 230);
-  padding-bottom: 5px;
+  padding-bottom: 3px;
+  min-height: 30px;
+  max-width: 450px;
 }
 
-#tracklist {
-  padding-top: 50px;
+#artist-text {
   clear: left;
   font-family: sans-serif;
-  width: 600px;
+  font-size: 1.2em;
+  color: rgb(230, 230, 230);
+  padding-bottom: 30px;
+  min-height: 30px;
+  max-width: 450px;
 }
-
-#albumlist {
-  padding-top: 50px;
-  position: relative;
-  font-family: sans-serif;
-  width: 600px;
-  height: 500px;
-  left: 600px;
-  overflow: scroll;
-}
-
-#player {
-  padding-top: 50px;
-}
-
-
 
 .buttons {
 
@@ -113,21 +107,140 @@ p {
   padding: 0;
   position: relative;
   top: 15px;
+}
 
-
+#play-button {
+  float: left;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  width: 60px;
+  height: 25px;
 
 }
 
-.buttons li{
-  display: inline;
-  font-family: sans-serif;
-  color: rgb(190, 190, 190);
-  background-color: rgb(10, 10, 10);
-  padding: 8px 35px;
+.button {
+  background-color: #222;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.button:hover{
+  background-color: #252525;
+}
+
+#play-icon{
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-left: 25px solid #444;
+  border-bottom: 12px solid transparent;
+  margin: auto;
+}
+
+#stop-icon {
+  display: none;
+  width: 20px;
+  height: 20px;
+  background: #444;
+  margin: auto;
+}
+
+#player {
+  padding-top: 10px;
+}
+
+
+.slidecontainer {
+  float: left;
+  padding-top: 10px;
+  padding-left: 15px;
+  width: 120px;
+}
+
+input[type=range] {
+  width: 100%;
+  margin: 4.3px 0;
+  background-color: transparent;
+  -webkit-appearance: none;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  background: #343434;
+  border: 0;
+  width: 100%;
+  height: 8.4px;
   cursor: pointer;
 }
-
-.buttons li:hover{
-  background-color: rgb(50, 50, 50);
-
+input[type=range]::-webkit-slider-thumb {
+  margin-top: -4.3px;
+  width: 11px;
+  height: 17px;
+  background: #5e5d5d;
+  border: 1px solid #000000;
+  border-radius: 1px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #343434;
+}
+input[type=range]::-moz-range-track {
+  background: #343434;
+  border: 0;
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 11px;
+  height: 17px;
+  background: #5e5d5d;
+  border: 1px solid #000000;
+  border-radius: 1px;
+  cursor: pointer;
+}
+input[type=range]::-ms-track {
+  background: transparent;
+  border-color: transparent;
+  border-width: 4.3px 0;
+  color: transparent;
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+}
+input[type=range]::-ms-fill-lower {
+  background: #343434;
+  border: 0;
+}
+input[type=range]::-ms-fill-upper {
+  background: #343434;
+  border: 0;
+}
+input[type=range]::-ms-thumb {
+  width: 11px;
+  height: 17px;
+  background: #5e5d5d;
+  border: 1px solid #000000;
+  border-radius: 1px;
+  cursor: pointer;
+  margin-top: 0px;
+  /*Needed to keep the Edge thumb centred*/
+}
+input[type=range]:focus::-ms-fill-lower {
+  background: #343434;
+}
+input[type=range]:focus::-ms-fill-upper {
+  background: #343434;
+}
+/*TODO: Use one of the selectors from https://stackoverflow.com/a/20541859/7077589 and figure out
+how to remove the virtical space around the range input in IE*/
+@supports (-ms-ime-align:auto) {
+  /* Pre-Chromium Edge only styles, selector taken from hhttps://stackoverflow.com/a/32202953/7077589 */
+  input[type=range] {
+    margin: 0;
+    /*Edge starts the margin from the thumb, not the track as other browsers do*/
+  }
 }

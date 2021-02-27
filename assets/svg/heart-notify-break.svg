@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="27.000311"
+   height="26.151999"
+   viewBox="0 0 7.1438324 6.9193831"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="heart-notify-break.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#212121"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11.2"
+     inkscape:cx="18.684677"
+     inkscape:cy="14.088041"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1198"
+     inkscape:window-height="738"
+     inkscape:window-x="528"
+     inkscape:window-y="108"
+     inkscape:window-maximized="0"
+     inkscape:document-rotation="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-62.908989,-145.99473)">
+    <g
+       id="g853"
+       transform="matrix(0.97904929,-0.14607248,0.14607248,0.97904929,-20.45898,12.465252)"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/heart-notify-break.png"
+       inkscape:export-xdpi="95.004333"
+       inkscape:export-ydpi="95.004333">
+      <path
+         id="path4984"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:16.2546;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+         d="M 6.7947998,0.24578585 C 4.9012126,0.21353231 3.0090876,0.93776792 1.5643311,2.4508639 c -2.8895207,3.0258142 -2.8895207,7.9312171 0,10.9570311 l 3.015625,3.158204 0.5527343,-4.583985 4.5664059,0.998047 1.1406247,-6.9257814 5.044922,0.7265625 1.744141,-6.5234375 C 15.613987,0.18685152 13.566,0.96852418 12.027221,2.5797702 10.582459,1.0668064 8.688387,0.2780394 6.7947998,0.24578585 Z"
+         transform="matrix(0.26458333,0,0,0.26458333,63.173718,146.44006)"
+         sodipodi:nodetypes="scccccccccs" />
+    </g>
+    <g
+       id="g857"
+       transform="matrix(0.98815262,0.05855829,-0.05855829,0.98815262,13.102446,0.50327971)"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/heart-notify-break.png"
+       inkscape:export-xdpi="95.004333"
+       inkscape:export-ydpi="95.004333">
+      <path
+         id="path855"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:4.3007;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+         d="m 65.246678,144.34907 -0.762744,2.38021 -1.113628,0.002 -0.505395,1.97559 -0.914156,-0.26355 -0.137459,0.8754 1.135331,1.18907 2.768823,-2.89905 c 0.764517,-0.80058 0.764517,-2.09846 0,-2.89904 -0.142434,-0.14916 -0.301507,-0.26906 -0.470772,-0.3607 z"
+         sodipodi:nodetypes="cccccccccc" />
+    </g>
+  </g>
+</svg>

@@ -8,6 +8,7 @@
 121,93,79		side panel
 15,15,15		bottom panel
 36,36,41		gallery background
+18,18,18        queue panel
 
 #-Frame--------
 
@@ -57,6 +58,14 @@
 180,180,180		mode over
 170,170,170		mode on
 
+250,250,250		bottom title
+
+#-Menu-------------
+15,15,15        menu background
+40,40,40        menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
+
 #-Top panel---------
 
 245,245,245		tab active line
@@ -74,5 +83,5 @@
 
 #-Mini Mode---------
 
-21,21,21        mini bg
+19,19,19        mini bg
 45,45,45        mini border
