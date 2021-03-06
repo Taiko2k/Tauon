@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.5.3"
+n_version = "6.5.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4039,7 +4039,12 @@ def tag_scan(nt):
         return nt
 
     try:
-        nt.modified_time = os.path.getmtime(nt.fullpath)
+        try:
+            nt.modified_time = os.path.getmtime(nt.fullpath)
+            nt.found = True
+        except FileNotFoundError:
+            nt.found = False
+            return nt
 
         nt.misc.clear()
 
@@ -4311,7 +4316,6 @@ def tag_scan(nt):
         # print("      In file: " + nt.fullpath)
         return nt
     except:
-        raise
         # import traceback
         # traceback.print_exc()
         print("Warning: Tag read error")
