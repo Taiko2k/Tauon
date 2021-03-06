@@ -2899,8 +2899,8 @@ for t in range(2):
         #     prefs.use_card_style = save[101]
         # if save[102] is not None:
         #     prefs.auto_lyrics = save[102]
-        # if save[103] is not None:
-        #     prefs.auto_lyrics_checked = save[103]
+        if save[103] is not None:
+            prefs.auto_lyrics_checked = save[103]
         if save[104] is not None:
             prefs.show_side_art = save[104]
         if save[105] is not None:
@@ -3611,6 +3611,7 @@ def save_prefs():
     cf.update_value("write-ratings-to-tag", prefs.write_ratings)
     cf.update_value("enable-spotify", prefs.spot_mode)
     cf.update_value("enable-discord-rpc", prefs.discord_enable)
+    cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -3805,6 +3806,7 @@ def load_prefs():
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
     prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
     prefs.discord_enable = cf.sync_add("bool", "enable-discord-rpc", prefs.discord_enable, "Show track info in running Discord application")
+    prefs.auto_lyrics = cf.sync_add("bool", "auto-search-lyrics", prefs.auto_lyrics, "Automatically search internet for lyrics when display is wanted")
 
 
     cf.br()
@@ -13861,19 +13863,19 @@ def get_lyric_wiki_silent(track_object):
 
     print("..Done")
 
-# def test_auto_lyrics(track_object):
-#
-#     if not track_object:
-#         return
-#
-#     if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
-#         if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
-#             result = get_lyric_wiki_silent(track_object)
-#             if result == "later":
-#                 pass
-#             else:
-#                 lyrics_check_timer.set()
-#                 prefs.auto_lyrics_checked.append(track_object.index)
+def test_auto_lyrics(track_object):
+
+    if not track_object:
+        return
+
+    if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
+        if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
+            result = get_lyric_wiki_silent(track_object)
+            if result == "later":
+                pass
+            else:
+                lyrics_check_timer.set()
+                prefs.auto_lyrics_checked.append(track_object.index)
 
 
 def get_bio(track_object):
@@ -25410,8 +25412,12 @@ class Over:
 
         ddt.text_background_colour = colours.box_background
 
-        # self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
-        # y += 23 * gui.scale
+        #self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
+        if prefs.auto_lyrics:
+            if prefs.auto_lyrics_checked:
+                if self.button(x, y, "Reset failed list"):
+                    prefs.auto_lyrics_checked.clear()
+            y += 30 * gui.scale
         self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
         y += 40 * gui.scale
@@ -35870,7 +35876,7 @@ class MetaBox:
             return
 
         # Check for lyrics if auto setting
-        #test_auto_lyrics(track)
+        test_auto_lyrics(track)
 
         # # Draw lyrics if avaliable
         # if prefs.show_lyrics_side and pctl.track_queue \
@@ -36913,7 +36919,7 @@ class Showcase:
                         right_click = False
 
             # Check for lyrics if auto setting
-            #test_auto_lyrics(track)
+            test_auto_lyrics(track)
 
             gui.draw_vis4_top = False
 
