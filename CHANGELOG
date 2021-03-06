@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.5.4
 
+ - Re-enabled auto search lyrics feature (moved setting to config file)
  - Fixed crash on reload metadata on removed file
 
 v6.5.3
