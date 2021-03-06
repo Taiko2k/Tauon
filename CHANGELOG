@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.5.4
+
+ - Fixed crash on reload metadata on removed file
+
 v6.5.3
 
  - Changed Discord presence control to persistent setting
