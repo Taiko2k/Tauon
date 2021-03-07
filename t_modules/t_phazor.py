@@ -716,6 +716,8 @@ def player4(tauon):
 
                 if t:
                     pctl.decode_time = t - loaded_track.start_time
+                    if abs(pctl.decode_time - pctl.playing_time) > 5:  # Eehh hack fix?
+                        pctl.decode_time = pctl.playing_time
                 else:
                     pctl.decode_time = pctl.playing_time
 

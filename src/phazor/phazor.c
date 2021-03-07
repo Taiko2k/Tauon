@@ -1969,7 +1969,7 @@ int ramp_volume(int percent, int speed) {
 }
 
 int get_position_ms() {
-    if (reset_set == 0 && current_sample_rate > 0) {
+    if (command != START && command != LOAD && reset_set == 0 && current_sample_rate > 0) {
         return (int) ((position_count / (float) current_sample_rate) * 1000.0);
     } else return 0;
 }
