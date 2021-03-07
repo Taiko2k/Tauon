@@ -640,7 +640,8 @@ class SpotCtl:
 
         # print(a.release_date, a.name)
         for track in album.tracks.items:
-            
+
+            pr = None
             if "spotify" in track.external_urls:
                 pr = self.current_imports.get(track.external_urls["spotify"])
             if pr:

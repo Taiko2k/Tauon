@@ -530,6 +530,7 @@ def player4(tauon):
                             else:
                                 aud.stop()
                                 gui.show_message("Error loading track", mode="warning")
+                                break
                         time.sleep(0.05)
 
                     state = 1
