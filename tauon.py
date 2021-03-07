@@ -23705,7 +23705,6 @@ def worker1():
             for index in keys:
                 time.sleep(0.0001)
                 track = pctl.master_library[index]
-                print((track.title, track.artist))
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
