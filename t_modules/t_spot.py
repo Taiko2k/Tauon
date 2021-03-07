@@ -640,8 +640,9 @@ class SpotCtl:
 
         # print(a.release_date, a.name)
         for track in album.tracks.items:
-
-            pr = self.current_imports.get(track.external_urls["spotify"])
+            
+            if "spotify" in track.external_urls:
+                pr = self.current_imports.get(track.external_urls["spotify"])
             if pr:
                 new = False
                 nt = pr
@@ -679,8 +680,12 @@ class SpotCtl:
 
 
     def load_track(self, track, update_master_count=True, include_album_url=False):
+        if "spotify" in track.external_urls:
+            pr = self.current_imports.get(track.external_urls["spotify"])
+        
+        else:
+            pr = False
 
-        pr = self.current_imports.get(track.external_urls["spotify"])
         if pr:
             new = False
             nt = pr
@@ -693,21 +698,27 @@ class SpotCtl:
         nt.file_ext = "SPTY"
         nt.url_key = track.id
         #if new:
-        nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
+        if "spotify" in track.artists[0].external_urls:
+            nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
         if include_album_url and "spotify-album-url" not in nt.misc:
-            nt.misc["spotify-album-url"] = track.album.external_urls["spotify"]
+            if "spotify" in track.album.external_urls:
+                nt.misc["spotify-album-url"] = track.album.external_urls["spotify"]
         if "spotify" in track.external_urls:
             nt.misc["spotify-track-url"] = track.external_urls["spotify"]
-        nt.artist = track.artists[0].name
-        nt.album_artist = track.album.artists[0].name
-        nt.date = track.album.release_date
+        if track.artists[0].name:
+            nt.artist = track.artists[0].name
+        if track.album.artists:
+            nt.album_artist = track.album.artists[0].name
+        if track.album.release_date:
+            nt.date = track.album.release_date
         nt.album = track.album.name
         nt.disc_number = track.disc_number
         nt.length = track.duration_ms / 1000
         nt.title = track.name
         nt.track_number = track.track_number
         # nt.track_total = total_tracks
-        nt.art_url_key = track.album.images[0].url
+        if track.album.images:
+            nt.art_url_key = track.album.images[0].url
         parent = (nt.album_artist + " - " + nt.album).strip("- ")
         nt.parent_folder_path = parent
         nt.parent_folder_name = parent
