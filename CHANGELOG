@@ -3,8 +3,10 @@ Changelog-------------------------------------
 
 v6.5.4
 
+ - Added setting to auto-stop on queue final track
  - Re-enabled auto search lyrics feature (moved setting to config file)
  - Fixed crash on reload metadata on removed file
+ - [Phazor] Fixed an issue with FLAC + CUE position when previous track had different samplerate
 
 v6.5.3
 
