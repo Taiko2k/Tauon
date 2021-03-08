@@ -162,6 +162,8 @@ int command = NONE;
 int decoder_allocated = 0;
 int buffering = 0;
 
+int flac_got_rate = 0;
+
 // Misc ----------------------------------------------------------
 
 float ramp_step(int sample_rate, int milliseconds) {
@@ -602,19 +604,21 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
         current_length_count = FLAC__stream_decoder_get_total_samples(decoder);
     }
 
-    if (load_target_seek > 0) {
-        pthread_mutex_unlock(&buffer_mutex);
-        return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
-    }
 
     unsigned int i = 0;
     int ran = 512;
     int resample = 0;
     sample_rate_src = frame->header.sample_rate;
+    flac_got_rate = 1;
     if (sample_rate_src != sample_rate_out) {
         resample = 1;
     }
 
+    if (load_target_seek > 0) {
+        pthread_mutex_unlock(&buffer_mutex);
+        return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
+    }
+                             
     if (frame->header.blocksize > (BUFF_SIZE - buff_filled)) {
         printf("pa: critical: BUFFER OVERFLOW!");
     }
@@ -1111,6 +1115,8 @@ int load_next() {
                     0) == FLAC__STREAM_DECODER_INIT_STATUS_OK) {
 
                 decoder_allocated = 1;
+                flac_got_rate = 0;
+
                 return 0;
 
             } else return 1;
@@ -1232,7 +1238,7 @@ void pump_decode() {
 
         }
 
-        if (load_target_seek > 0) {
+        if (load_target_seek > 0 && flac_got_rate == 1) {
             //printf("pa: Set start position %d\n", load_target_seek);
 
             int rate = current_sample_rate;

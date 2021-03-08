@@ -1480,6 +1480,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.artist_list_style = 1
         self.discord_enable = False
+        self.stop_end_queue = False
 
 prefs = Prefs()
 
@@ -3542,6 +3543,7 @@ def save_prefs():
     cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
     cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
     cf.update_value("back-restarts", prefs.back_restarts)
+    cf.update_value("end-queue-stop", prefs.stop_end_queue)
 
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("use-xft-dpi", prefs.x_scale)
@@ -3699,6 +3701,7 @@ def load_prefs():
     prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
     prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather then attempting to launch the desktop client.")
     prefs.back_restarts = cf.sync_add("bool", "back-restarts", prefs.back_restarts, "Pressing the back button restarts playing track on first press.")
+    prefs.stop_end_queue = cf.sync_add("bool", "end-queue-stop", prefs.stop_end_queue, "Queue will always enable auto-stop on last track")
 
     cf.br()
     cf.add_text("[HiDPI]")
@@ -5029,6 +5032,7 @@ class PlayerCtl:
     def jump(self, index, pl_position=None, jump=True):
 
         lfm_scrobbler.start_queue()
+        pctl.auto_stop = False
 
         if self.force_queue and not pctl.pause_queue:
             if self.force_queue[0][4] == 1:
@@ -5711,6 +5715,8 @@ class PlayerCtl:
 
                     if q[6]:
                         pctl.auto_stop = True
+                    if prefs.stop_end_queue and not self.force_queue:
+                        pctl.auto_stop = True
 
                     if queue_box.scroll_position > 0:
                         queue_box.scroll_position -= 1
@@ -5743,6 +5749,8 @@ class PlayerCtl:
                     self.play_target(jump= not end)
                 del self.force_queue[0]
                 if q[6]:
+                    pctl.auto_stop = True
+                if prefs.stop_end_queue and not self.force_queue:
                     pctl.auto_stop = True
                 if queue_box.scroll_position > 0:
                     queue_box.scroll_position -= 1
@@ -13601,7 +13609,8 @@ def add_album_to_queue(ref, position=None):
     queue_object = queue_item_gen(ref, position, pl_to_id(pctl.active_playlist_viewing), 1, partway)
     pctl.force_queue.append(queue_object)
     queue_timer_set(queue_object=queue_object)
-
+    if prefs.stop_end_queue:
+        pctl.auto_stop = False
 
 def add_album_to_queue_fc(ref):
 
@@ -13646,6 +13655,8 @@ def add_album_to_queue_fc(ref):
             pctl.force_queue.insert(len(pctl.force_queue), queue_item)
     if queue_item:
         queue_timer_set(queue_object=queue_item)
+    if prefs.stop_end_queue:
+        pctl.auto_stop = False
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 gallery_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)
@@ -18026,10 +18037,13 @@ track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 def add_to_queue(ref):
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
     queue_timer_set()
+    if prefs.stop_end_queue:
+        pctl.auto_stop = False
 
 def add_selected_to_queue():
     gui.pl_update += 1
-
+    if prefs.stop_end_queue:
+        pctl.auto_stop = False
     if gui.album_tab_mode:
         add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
         queue_timer_set()
@@ -18041,6 +18055,8 @@ def add_selected_to_queue():
 
 def add_selected_to_queue_multi():
 
+    if prefs.stop_end_queue:
+        pctl.auto_stop = False
     for index in shift_selection:
         pctl.force_queue.append(queue_item_gen(default_playlist[index],
                                                index,
@@ -18048,6 +18064,7 @@ def add_selected_to_queue_multi():
 
 
 def queue_timer_set(plural=False, queue_object=None):
+
     queue_add_timer.set()
     gui.frame_callback_list.append(TestTimer(2.51))
     gui.queue_toast_plural = plural
@@ -30954,6 +30971,8 @@ class StandardPlaylist:
                                         pctl.active_playlist_viewing)))
                                     i += 1
                                 queue_timer_set(plural=True)
+                                if prefs.stop_end_queue:
+                                    pctl.auto_stop = False
 
                             else:  # Add as grouped album
                                 add_album_to_queue(track_id, track_position)
@@ -31093,6 +31112,8 @@ class StandardPlaylist:
                 shift_selection = [playlist_selected]
                 gui.pl_update += 1
                 queue_timer_set()
+                if prefs.stop_end_queue:
+                    pctl.auto_stop = False
 
 
             # Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
@@ -40771,6 +40792,8 @@ while pctl.running:
                                                     pctl.force_queue.append(queue_item_gen(default_playlist[item], item, pl_to_id(
                                                         pctl.active_playlist_viewing)))
                                                 queue_timer_set(plural=True)
+                                                if prefs.stop_end_queue:
+                                                    pctl.auto_stop = False
                                             else:
                                                 # Add to queue grouped
                                                 add_album_to_queue(default_playlist[album_dex[album_on]])
