@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v6.5.4
 
+ - Added support for .WAV metadata
  - Added setting to auto-stop on queue final track
  - Re-enabled auto search lyrics feature (moved setting to config file)
  - Fixed crash on reload metadata on removed file
  - [Phazor] Fixed an issue with FLAC + CUE position when previous track had different samplerate
+ - [Phazor] Fixed loading of some types of .WAV files (24bit still unsupported)
 
 v6.5.3
 
