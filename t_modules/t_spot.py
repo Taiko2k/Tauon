@@ -55,21 +55,22 @@ class SpotCtl:
         self.cache_saved_albums = []
         self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
         self.launching_spotify = False
-
         self.progress_timer = Timer()
         self.update_timer = Timer()
 
-        self.token_path = os.path.join(self.tauon.user_directory, "spot-a-token")
+        self.token_path = os.path.join(self.tauon.user_directory, "spot-token-pkce")
+        self.pkce_code = None
 
     def prep_cred(self):
 
         rc = tk.RefreshingCredentials
         self.cred = rc(client_id=self.tauon.prefs.spot_client,
-                                    client_secret=self.tauon.prefs.spot_secret,
                                     redirect_uri=self.redirect_uri)
 
     def connect(self):
         if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
+            return
+        if len(self.tauon.prefs.spot_client) != 32:
             return
         if self.cred is None:
             self.prep_cred()
@@ -85,7 +86,7 @@ class SpotCtl:
         if self.cred is None:
             self.prep_cred()
 
-        self.token = self.cred.request_user_token(code.strip().strip("\n"))
+        self.token = self.cred.request_pkce_token(code.strip().strip("\n"), self.pkce_code)
         if self.token:
             self.save_token()
             self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
@@ -93,12 +94,20 @@ class SpotCtl:
     def save_token(self):
 
         if self.token:
+            f = open(self.token_path, "w")
+            f.write(str(self.token.refresh_token))
+            f.close()
             self.tauon.prefs.spotify_token = str(self.token.refresh_token)
 
     def load_token(self):
+        if os.path.isfile(self.token_path):
+            f = open(self.token_path, "r")
+            self.tauon.prefs.spotify_token = f.read().replace("\n", "").strip()
+            f.close()
+
         if self.tauon.prefs.spotify_token:
             try:
-                self.token = tk.refresh_user_token(self.tauon.prefs.spot_client, self.tauon.prefs.spot_secret, self.tauon.prefs.spotify_token)
+                self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
             except:
                 print("ERROR LOADING TOKEN")
                 self.tauon.prefs.spotify_token = ""
@@ -106,18 +115,20 @@ class SpotCtl:
     def delete_token(self):
         self.tauon.prefs.spotify_token = ""
         self.token = None
+        if os.path.exists(self.token_path):
+            os.remove(self.token_path)
 
     def auth(self):
         if not tekore_imported:
             self.tauon.gui.show_message("python-tekore not installed",
                                         "If you installed via AUR, you'll need to install this optional dependency, then restart Tauon.", mode="error")
             return
-        if len(self.tauon.prefs.spot_client) != 32 or len(self.tauon.prefs.spot_secret) != 32:
-            self.tauon.gui.show_message("Invalid client ID or secret", mode="error")
+        if len(self.tauon.prefs.spot_client) != 32:
+            self.tauon.gui.show_message("Invalid client ID. See Spotify tab in settings.", mode="error")
             return
         if self.cred is None:
             self.prep_cred()
-        url = self.cred.user_authorisation_url(scope=self.scope)
+        url, self.pkce_code = self.cred.pkce_user_authorisation(scope=self.scope)
         webbrowser.open(url, new=2, autoraise=True)
 
     def control(self, command, param=None):
@@ -208,9 +219,27 @@ class SpotCtl:
 
         results = self.spotify.search(track_object.artist + " " + track_object.album, types=('album',), limit=1)
         for album in results[0].items:
-            return album.external_urls["spotify"]
+            if "spotify" in album.external_urls:
+                return album.external_urls["spotify"]
 
         return None
+
+    def import_all_playlists(self):
+
+        self.spotify_com = True
+
+        playlists = self.get_playlist_list()
+        if playlists:
+            for item in playlists:
+                self.playlist(item[1], silent=True)
+                self.tauon.gui.update += 1
+                time.sleep(0.1)
+
+        self.spotify_com = False
+        if not playlists:
+            self.tauon.gui.show_message(self.strings.spotify_need_enable)
+            return
+        self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
 
     def get_playlist_list(self):
         self.connect()
@@ -504,7 +533,7 @@ class SpotCtl:
         self.tauon.pctl.multi_playlist[playlist_number][2].extend(playlist)
         self.tauon.gui.pl_update += 1
 
-    def playlist(self, url, return_list=False):
+    def playlist(self, url, return_list=False, silent=False):
 
         self.connect()
         if not self.spotify:
@@ -544,8 +573,8 @@ class SpotCtl:
             self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
 
         self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
-
-        self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+        if not silent:
+            self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]
@@ -612,7 +641,9 @@ class SpotCtl:
         # print(a.release_date, a.name)
         for track in album.tracks.items:
 
-            pr = self.current_imports.get(track.external_urls["spotify"])
+            pr = None
+            if "spotify" in track.external_urls:
+                pr = self.current_imports.get(track.external_urls["spotify"])
             if pr:
                 new = False
                 nt = pr
@@ -624,9 +655,11 @@ class SpotCtl:
             nt.is_network = True
             nt.file_ext = "SPTY"
             nt.url_key = track.id
-            nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
+            if track.artists and "spotify" in track.artists[0].external_urls:
+                nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
             nt.misc["spotify-album-url"] = album_url
-            nt.misc["spotify-track-url"] = track.external_urls["spotify"]
+            if "spotify" in track.external_urls:
+                nt.misc["spotify-track-url"] = track.external_urls["spotify"]
             nt.artist = track.artists[0].name
             nt.album_artist = album_artist
             nt.date = date
@@ -648,8 +681,12 @@ class SpotCtl:
 
 
     def load_track(self, track, update_master_count=True, include_album_url=False):
+        if "spotify" in track.external_urls:
+            pr = self.current_imports.get(track.external_urls["spotify"])
+        
+        else:
+            pr = False
 
-        pr = self.current_imports.get(track.external_urls["spotify"])
         if pr:
             new = False
             nt = pr
@@ -662,20 +699,27 @@ class SpotCtl:
         nt.file_ext = "SPTY"
         nt.url_key = track.id
         #if new:
-        nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
+        if "spotify" in track.artists[0].external_urls:
+            nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
         if include_album_url and "spotify-album-url" not in nt.misc:
-            nt.misc["spotify-album-url"] = track.album.external_urls["spotify"]
-        nt.misc["spotify-track-url"] = track.external_urls["spotify"]
-        nt.artist = track.artists[0].name
-        nt.album_artist = track.album.artists[0].name
-        nt.date = track.album.release_date
+            if "spotify" in track.album.external_urls:
+                nt.misc["spotify-album-url"] = track.album.external_urls["spotify"]
+        if "spotify" in track.external_urls:
+            nt.misc["spotify-track-url"] = track.external_urls["spotify"]
+        if track.artists[0].name:
+            nt.artist = track.artists[0].name
+        if track.album.artists:
+            nt.album_artist = track.album.artists[0].name
+        if track.album.release_date:
+            nt.date = track.album.release_date
         nt.album = track.album.name
         nt.disc_number = track.disc_number
         nt.length = track.duration_ms / 1000
         nt.title = track.name
         nt.track_number = track.track_number
         # nt.track_total = total_tracks
-        nt.art_url_key = track.album.images[0].url
+        if track.album.images:
+            nt.art_url_key = track.album.images[0].url
         parent = (nt.album_artist + " - " + nt.album).strip("- ")
         nt.parent_folder_path = parent
         nt.parent_folder_name = parent

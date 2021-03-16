@@ -22,6 +22,7 @@ import ctypes
 import time
 import requests
 import threading
+import shutil
 from t_modules.t_extra import *
 from hsaudiotag import auto
 
@@ -86,6 +87,161 @@ def player4(tauon):
         # print("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
         pctl.active_replaygain = g
         return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
+
+    audio_cache = tauon.cache_directory + "/network-audio1"
+
+    class DownloadObject:
+        def __init__(self, track):
+            self.timestamp = time.time()
+            self.status = "prep"
+            self.tauon_id = track.index
+            self.filepath = audio_cache
+            if not os.path.exists(self.filepath):
+                os.makedirs(self.filepath)
+            self.filepath += "/" + str(self.tauon_id) + ".mp3"
+            if os.path.exists(self.filepath):
+                os.remove(self.filepath)
+            self.network_url = ""
+            self.params = ""
+            self.part = None
+            self.cancel = False
+            self.downloaded_duration = -1
+
+        def download(self):
+            print("Start download")
+            try:
+                self.part = requests.get(self.network_url, stream=True, params=self.params)
+
+                if self.part.status_code == 404:
+                    gui.show_message("Server: File not found", mode="error")
+                    self.status = "error"
+                    return
+                elif self.part.status_code != 200:
+                    gui.show_message("Server Error", mode="error")
+                    self.status = "error"
+                    return
+
+            except:
+                gui.show_message("Could not connect to server", mode="error")
+                self.status = "error"
+                return
+
+            bitrate = 0
+            a = 0
+            z = 0
+
+            with open(self.filepath, 'wb') as f:
+                for chunk in self.part.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        a += 1
+                        if a == 300:  # kilobyes~
+                            self.status = "ready"
+                        if self.cancel is True:
+                            self.part.close()
+                            self.status = "failed"
+                            print("Abort download")
+                            return
+
+                        f.write(chunk)
+
+                        z += 1
+                        if z == 60:
+                            z = 0
+                            if bitrate == 0:
+                                audio = auto.File(self.filepath)
+                                bitrate = audio.bitrate
+                            if bitrate > 0:
+                                gui.update += 1
+                                self.downloaded_duration = a * 1024 / (bitrate / 8) / 1000
+                                #pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+
+            #pctl.download_time = -1
+
+            self.status = "done"
+            print("Download done")
+
+    class DownloadManager:
+
+        def __init__(self):
+            self.items = {}
+            if os.path.exists(audio_cache):
+                shutil.rmtree(audio_cache)
+
+        def get_filepath(self, track):
+            return self.items[track.index].filepath
+
+        def _prune(self):
+
+            items = list(self.items.values())
+            items.sort(key=lambda x: x.timestamp)
+            for item in items:
+                if item.status in ("ready", "prep"):
+                    item.cancel = True
+                elif item.status in ("failed", "error"):
+                    print("prune failed item")
+                    if os.path.exists(item.filepath):
+                        os.remove(item.filepath)
+                    del self.items[item.tauon_id]
+
+            items = list(self.items.values())
+            items.sort(key=lambda x: x.timestamp)
+            items = items[:-25]
+            for item in items:
+                print("prune old item")
+                if os.path.exists(item.filepath):
+                    os.remove(item.filepath)
+                del self.items[item.tauon_id]
+
+
+        def request(self, track, t=0, whole=False):
+
+            if track.index in self.items:
+                item = self.items[track.index]
+
+                if item.status == "ready":
+                    if whole:
+                        return "wait"
+                    if t == 0:
+                        return "go"
+                    elif item.downloaded_duration > t + 20:
+                        return "go"
+                    elif t:
+                        return "wait"
+
+                if item.status == "done":
+                    item.timestamp = time.time()
+                    print("Use cached audio")
+                    return "go"
+                if item.status == "prep":
+                    return "wait"
+                if item.status == "error":
+                    del self.items[track.index]
+                    return "error"
+                if item.status == "failed":
+                    del self.items[track.index]
+
+                if t:
+                    print(item.status)
+                    return "wait"
+
+            self._prune()
+
+            item = DownloadObject(track)
+
+            try:
+                item.network_url, item.params = pctl.get_url(target_object)
+            except:
+                return "error"
+
+            self.items[track.index] = item
+            shoot_dl = threading.Thread(target=item.download)
+            shoot_dl.daemon = True
+            shoot_dl.start()
+
+            return "wait"
+
+    dm = DownloadManager()
+
 
     class URLDownloader:
 
@@ -172,7 +328,6 @@ def player4(tauon):
     while True:
 
         time.sleep(0.016)
-
         # Level meter
         if state == 1 and gui.vis == 1:
             amp = aud.get_level_peak_l()
@@ -212,7 +367,6 @@ def player4(tauon):
                     player_timer.hit()
 
             if command == "open":
-
                 if state == 2:
                     aud.set_volume(int(pctl.player_volume))
 
@@ -240,43 +394,60 @@ def player4(tauon):
                             pctl.playerCommandReady = True
                         continue
 
-                    url = ""
-                    params = None
-
-                    try:
-                        url, params = pctl.get_url(target_object)
-                    except:
-                        gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
-                        pctl.stop()
-                        return
-
-                    if url is None:
-                        print(gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info'))
-                        pctl.stop()
-                        return
-
-                    dl.save_temp = prefs.cache_directory + "/" + dl.alt + "-temp.mp3"
-
-                    if dl.alt == 'a':
-                        dl.alt = 'b'
-                    else:
-                        dl.alt = 'a'
-
-                    dl.active_url = url
-                    dl.dl_ready = False
-
-                    shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params, target_object]))
-                    shoot_dl.daemon = True
-                    shoot_dl.start()
-
-                    while not dl.dl_ready:
-                        time.sleep(0.02)
-                    target_path = dl.save_temp
-
-                    if dl.dl_ready == "failure":
-                        state = 0
-                        aud.stop()
+                    target_path = None
+                    while True:
+                        s = dm.request(target_object)
+                        if s == "go":
+                            target_path = dm.get_filepath(target_object)
+                            break
+                        elif s == "wait":
+                            if pctl.playerCommandReady and pctl.playerCommand == "open":
+                                break
+                            #print("wait")
+                            time.sleep(0.01)
+                        else:
+                            print("Abort for error")
+                            break
+                    if target_path is None:
                         continue
+                    #
+                    # url = ""
+                    # params = None
+                    #
+                    # try:
+                    #     url, params = pctl.get_url(target_object)
+                    # except:
+                    #     gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
+                    #     pctl.stop()
+                    #     return
+                    #
+                    # if url is None:
+                    #     print(gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info'))
+                    #     pctl.stop()
+                    #     return
+                    #
+                    # dl.save_temp = prefs.cache_directory + "/" + dl.alt + "-temp.mp3"
+                    #
+                    # if dl.alt == 'a':
+                    #     dl.alt = 'b'
+                    # else:
+                    #     dl.alt = 'a'
+                    #
+                    # dl.active_url = url
+                    # dl.dl_ready = False
+                    #
+                    # shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params, target_object]))
+                    # shoot_dl.daemon = True
+                    # shoot_dl.start()
+                    #
+                    # while not dl.dl_ready:
+                    #     time.sleep(0.02)
+                    # target_path = dl.save_temp
+                    #
+                    # if dl.dl_ready == "failure":
+                    #     state = 0
+                    #     aud.stop()
+                    #     continue
                 # if not target_object.is_network and target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
                 #     state = 0
                 #     aud.stop()
@@ -306,16 +477,17 @@ def player4(tauon):
                     # print("position: " + str(position))
                     # print("We are %s from end" % str(remain))
 
-                if target_object.is_network and position:
-                    length = target_object.length
-                    remain = length - position
+                    if loaded_track.is_network:
+                        length = loaded_track.length
+                        remain = length - position
 
+                fade = 0
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
 
                     print("Transition gapless mode")
 
-                    aud.next(pctl.target_object.fullpath.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
+                    aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
                     pctl.playing_time = pctl.jump_time
 
                     if remain > 0:
@@ -327,16 +499,57 @@ def player4(tauon):
                     loaded_track = target_object
 
                 else:
-                    fade = 0
                     if state == 1 and prefs.use_jump_crossfade:
                         fade = 1
                     aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
                     loaded_track = target_object
                     pctl.playing_time = pctl.jump_time
+                    if pctl.jump_time:
+                        while aud.get_result() == 0:
+                            time.sleep(0.01)
+                        aud.set_position_ms(int(pctl.jump_time * 1000))
+
+                    # Restart track is failed to load (for some network tracks) (broken with gapless loading)
+                    while True:
+                        r = aud.get_result()
+                        if r == 1:
+                            break
+                        if r == 2:
+                            if loaded_track.is_network:
+                                gui.buffering = True
+                                while dm.request(loaded_track, whole=True) == "wait":
+                                    time.sleep(0.05)
+                                    if pctl.playerCommandReady:
+                                        break
+                                print("Retry start file")
+                                aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000,
+                                          fade, ctypes.c_float(calc_rg(target_object)))
+                                gui.buffering = False
+                                player_timer.set()
+                                break
+                            else:
+                                aud.stop()
+                                gui.show_message("Error loading track", mode="warning")
+                                break
+                        time.sleep(0.05)
+
                     state = 1
 
                 player_timer.set()
                 pctl.jump_time = 0
+                if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.mod_formats:
+                    i = 0
+                    t = 0
+                    while t == 0:
+                        time.sleep(0.3)
+                        t = aud.get_length_ms() / 1000
+                        i += 1
+                        if i > 9:
+                            break
+                    loaded_track.length = t
+                    if loaded_track.length != 0:
+                        pctl.playing_length = loaded_track.length
+                        gui.pl_update += 1
 
             if command == "seek":
                 if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
@@ -344,25 +557,39 @@ def player4(tauon):
                     pctl.playing_time = pctl.new_time
                 elif state > 0:
 
-                    if dl.dl_running and pctl.new_time > pctl.download_time - 20:
+                    if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
 
                         was_playing = False
                         if state == 1:
                             was_playing = True
                             aud.pause()
 
+                        abort = False
                         while True:
-                            print("Buffering...")
-                            if not dl.dl_running or pctl.new_time < pctl.download_time - 20 or pctl.playerCommandReady:
+                            s = dm.request(loaded_track, t=pctl.new_time)
+                            if s == "go":
                                 break
-                            time.sleep(0.1)
 
-                        if was_playing:
-                            aud.resume()
+                            if pctl.playerCommandReady:
+                                abort = True
+                                break
 
-                    if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
+                            if s == "wait":
+                                gui.buffering = True
+                                print("Can't seek yet")
+                                time.sleep(0.1)
+                                continue
+                            abort = True
+                            break
+                        gui.buffering = False
+                        if abort:
+                            continue
+
                         # The vorbis decoder doesn't like appended files
-                        aud.start(dl.save_temp.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
+                        aud.start(dm.get_filepath(loaded_track).encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
+                        while aud.get_result() == 0:
+                            time.sleep(0.01)
+                        aud.set_position_ms(int(pctl.new_time * 1000))
                     else:
                         aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
 
@@ -381,8 +608,9 @@ def player4(tauon):
                 # print("length: " + str(length))
                 # print("position: " + str(position))
                 # print("We are %s from end" % str(remain))
-                time.sleep(2.5)
+                time.sleep(3)
                 command = "stop"
+
             if command == "stop":
 
                 if prefs.use_pause_fade and state != 3:
@@ -441,6 +669,10 @@ def player4(tauon):
 
                 aud.stop()
                 aud.shutdown()
+
+                if os.path.exists(audio_cache):
+                    shutil.rmtree(audio_cache)
+
                 pctl.playerCommand = "done"
                 pctl.playerCommandReady = True
                 break
@@ -463,6 +695,13 @@ def player4(tauon):
 
             if state == 1:
 
+                if loaded_track.is_network and pctl.playing_time < 7:
+                    if aud.get_result() == 2:
+                        print("STALL, RETRY")
+                        time.sleep(0.5)
+                        pctl.playerCommandReady = True
+                        pctl.playerCommand = "open"
+
                 add_time = player_timer.hit()
                 if add_time > 2:
                     add_time = 2
@@ -476,9 +715,13 @@ def player4(tauon):
                 pctl.total_playtime += add_time
 
                 if t:
-                    pctl.decode_time = (aud.get_position_ms() / 1000) - loaded_track.start_time
+                    pctl.decode_time = t - loaded_track.start_time
+                    if abs(pctl.decode_time - pctl.playing_time) > 5:  # Eehh hack fix?
+                        pctl.decode_time = pctl.playing_time
                 else:
                     pctl.decode_time = pctl.playing_time
+
+                #print((pctl.playing_time, pctl.decode_time))
 
                 if pctl.playing_time < 3 and pctl.a_time < 3:
                     pctl.a_time = pctl.playing_time

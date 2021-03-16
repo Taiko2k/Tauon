@@ -33,6 +33,7 @@ toggle-repeat ,
 
 random-track ;
 random-track-start /
+random-album ; Alt
 revert / Shift
 
 cycle-playlist-left Left

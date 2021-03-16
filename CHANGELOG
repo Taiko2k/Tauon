@@ -1,14 +1,53 @@
 
 Changelog-------------------------------------
 
+v6.5.4
+
+ - Added setting to auto-stop on queue final track
+ - Re-enabled auto search lyrics feature (moved setting to config file)
+ - Fixed crash on reload metadata on removed file
+ - [Phazor] Fixed an issue with FLAC + CUE position when previous track had different samplerate
+
+v6.5.3
+
+ - Changed Discord presence control to persistent setting
+ - Changed Spotify auth to use user provided ID
+ - Changed Genius track lookup to fallback to standard search page
+ - Fixed rare crash when importing certain Spotify tracks
+ - Fixed click on focus on working
+ - Fixed folder navigator not updating on regenerate
+
+v6.5.2
+
+ - Fixed widget drag in some locations
+ - Fixed repeat icon alignment with UI scaling
+
+v6.5.1
+
+ - Simplified Spotify setup / remove need for key
+ - Added album info to global search track results
+ - Added import all spotify playlist button
+ - [Phazor] Fixed CUE sheets with FLAC
+
+v6.5.0
+
+ - Added support for playback of tracker files
+ - Fixed background art on window resize
+ - Added listen/scrobble support for Airsonic
+ - Added path metadata to plex tracks
+ - Improved Airsonic import speed
+ - [GStreamer] Tweaked network transition behaviour
+ - [Phazor] Tweaked network download behaviour
+
 v6.4.9
 
  - Added export playlist albums as CSV
  - Added button conformation to delete playlist on middle click
- - Improved export database CSV format compliance
+ - Improved export database CSV format
  - Fixed a bug with flickering album art in gallery on large screens
  - Fixed high CPU on mouse down
  - Fixed a bug with system tray when using GStreamer backend
+ - Fixed crash when drop files on tab
 
 v6.4.8
 

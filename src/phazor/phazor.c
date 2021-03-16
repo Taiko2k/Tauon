@@ -32,6 +32,8 @@
 #include "opus/opusfile.h"
 #include <sys/stat.h>
 #include <samplerate.h>
+#include <libopenmpt/libopenmpt.h>
+#include <libopenmpt/libopenmpt_stream_callbacks_file.h>
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -71,7 +73,7 @@ unsigned char out_buf[2048 * 4]; // 4 bytes for 16bit stereo
 int position_count = 0;
 int current_length_count = 0;
 
-int sample_rate_out = 44100;
+int sample_rate_out = 48000;
 int sample_rate_src = 0;
 int src_channels = 2;
 
@@ -144,13 +146,23 @@ enum decoder_types {
     OPUS,
     FFMPEG,
     WAVE,
+    MPT,
 };
 
+enum result_status_enum {
+  WAITING,
+  SUCCESS,
+  FAILURE
+};
+
+int result_status = WAITING;
 int mode = STOPPED;
 int command = NONE;
 
 int decoder_allocated = 0;
 int buffering = 0;
+
+int flac_got_rate = 0;
 
 // Misc ----------------------------------------------------------
 
@@ -212,6 +224,11 @@ int16_t opus_buffer[2048 * 2];
 mpg123_handle *mh;
 char parse_buffer[2048 * 2];
 
+// openMPT related ---------------
+
+FILE* mod_file = 0;
+openmpt_module* mod = 0;
+
 // FFMPEG related -----------------------------------------------------
 
 FILE *ffm;
@@ -270,15 +287,40 @@ int wave_open(char *filename) {
         return 1;
     }
 
-    fread(b, 4, 1, wave_file);
+    while (1) {
+
+        // Read data block label
+        wave_error = fread(b, 4, 1, wave_file);
+        if (wave_error != 1) {
+            fclose(wave_file);
+            return 1;
+        }
+        // Read data block length
+        wave_error = fread(&i, 4, 1, wave_file);
+        if (wave_error != 1) {
+            fclose(wave_file);
+            return 1;
+        }
+        // Is audio data?
+        if (memcmp(b, "fmt ", 4) == 0) {
+            wave_start = ftell(wave_file);
+            wave_size = i;
+            break;
+        }
+        // Skip to next block
+        fseek(wave_file, i, SEEK_CUR);
+    }
+
+                                
+    //fread(b, 4, 1, wave_file);
     //printf("pa: fmt : %s\n", b);
 
-    fread(&i, 4, 1, wave_file);
+    //fread(&i, 4, 1, wave_file);
     //printf("pa: abov: %d\n", i);
-    if (i != 16) {
-        printf("pa: Unsupported WAVE file\n");
-        return 1;
-    }
+    //if (i != 16) {
+    //    printf("pa: Unsupported WAVE file\n");
+    //    return 1;
+    //}
 
     fread(&i, 2, 1, wave_file);
     //printf("pa: type: %d\n", i);
@@ -298,6 +340,7 @@ int wave_open(char *filename) {
     fread(&i, 4, 1, wave_file);
     //printf("pa: smpl: %d\n", i);
     wave_samplerate = i;
+    sample_rate_src = i;
 
     fseek(wave_file, 6, SEEK_CUR);
 
@@ -308,6 +351,7 @@ int wave_open(char *filename) {
         return 1;
     }
     wave_depth = i;
+    fseek(wave_file, wave_start + wave_size, SEEK_SET);
 
     while (1) {
 
@@ -324,13 +368,15 @@ int wave_open(char *filename) {
             return 1;
         }
         // Is audio data?
-        if (memcmp(b, "data", 4) == 0) {
+      //printf("label %s\n", b);  
+      if (memcmp(b, "data", 4) == 0) {
             wave_start = ftell(wave_file);
             wave_size = i;
             break;
         }
         // Skip to next block
         fseek(wave_file, i, SEEK_CUR);
+        
     }
 
     return 0;
@@ -558,19 +604,21 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
         current_length_count = FLAC__stream_decoder_get_total_samples(decoder);
     }
 
-    if (load_target_seek > 0) {
-        pthread_mutex_unlock(&buffer_mutex);
-        return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
-    }
 
     unsigned int i = 0;
     int ran = 512;
     int resample = 0;
     sample_rate_src = frame->header.sample_rate;
+    flac_got_rate = 1;
     if (sample_rate_src != sample_rate_out) {
         resample = 1;
     }
 
+    if (load_target_seek > 0) {
+        pthread_mutex_unlock(&buffer_mutex);
+        return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
+    }
+                             
     if (frame->header.blocksize > (BUFF_SIZE - buff_filled)) {
         printf("pa: critical: BUFFER OVERFLOW!");
     }
@@ -708,6 +756,9 @@ void stop_decoder() {
         case WAVE:
             wave_close();
             break;
+        case MPT:
+            openmpt_module_destroy(mod);
+            break;
     }
     src_reset(src);
     decoder_allocated = 0;
@@ -808,6 +859,9 @@ void decode_seek(int abs_ms, int sample_rate) {
         case WAVE:
             wave_seek((int) sample_rate * (abs_ms / 1000.0));
             break;
+        case MPT:
+            openmpt_module_set_position_seconds(mod, abs_ms / 1000.0);
+            break;
     }
 }
 
@@ -842,11 +896,13 @@ int load_next() {
         strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
         strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
         strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
+        //strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
         //strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
         loaded_target_file[0] == 'h') {
         codec = FFMPEG;
 
         start_ffmpeg(loaded_target_file, load_target_seek);
+        load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
         if (current_sample_rate != sample_rate_out) {
             sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
@@ -854,6 +910,40 @@ int load_next() {
         }
         pthread_mutex_unlock(&buffer_mutex);
         return 0;
+    } else if (strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
+               strcmp(ext, ".s3m") == 0 || strcmp(ext, ".S3M") == 0 ||
+               strcmp(ext, ".it") == 0 || strcmp(ext, ".IT") == 0 ||
+               strcmp(ext, ".mptm") == 0 || strcmp(ext, ".MPTM") == 0 ||
+               strcmp(ext, ".mod") == 0 || strcmp(ext, ".MOD") == 0){
+      
+      codec = MPT;
+      mod_file = fopen(loaded_target_file, "rb");
+      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+      src_channels = 2;
+      fclose(mod_file);
+      pthread_mutex_lock(&buffer_mutex);
+      sample_rate_src = 48000;
+      current_length_count = openmpt_module_get_duration_seconds(mod) * 48000;
+
+      if (current_sample_rate != sample_rate_out) {
+            sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            want_sample_rate = sample_rate_out;
+                }
+
+      if (load_target_seek > 0) {
+                    // printf("pa: Start at position %d\n", load_target_seek);
+          openmpt_module_set_position_seconds(mod, load_target_seek / 1000.0);
+          reset_set_value =  48000 * (load_target_seek / 1000.0);
+          samples_decoded = reset_set_value * 2;
+          reset_set = 1;
+          reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+          load_target_seek = 0;
+      }                                          
+      pthread_mutex_unlock(&buffer_mutex);
+      decoder_allocated = 1;
+                 
+      return 0;
+                 
     }
 
 
@@ -1004,7 +1094,7 @@ int load_next() {
                     //printf("pa: Start at position %d\n", load_target_seek);
                     ov_pcm_seek(&vf, (ogg_int64_t) vi.rate * (load_target_seek / 1000.0));
                     reset_set_value = vi.rate * (load_target_seek / 1000.0); // op_pcm_tell(opus_dec); that segfaults?
-                    reset_set_value = 0;
+                    //reset_set_value = 0;
                     reset_set = 1;
                     reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
                     load_target_seek = 0;
@@ -1025,6 +1115,8 @@ int load_next() {
                     0) == FLAC__STREAM_DECODER_INIT_STATUS_OK) {
 
                 decoder_allocated = 1;
+                flac_got_rate = 0;
+
                 return 0;
 
             } else return 1;
@@ -1094,7 +1186,10 @@ void decoder_eos() {
     printf("pa: End of stream\n");
     if (next_ready == 1) {
         printf("pa: Read next gapless\n");
-        load_next();
+        int result = load_next();
+        if (result == 1){
+          result_status = FAILURE;
+        }
         pthread_mutex_lock(&buffer_mutex);
         next_ready = 0;
         reset_set_value = 0;
@@ -1117,6 +1212,19 @@ void pump_decode() {
         if (result == 1) {
             decoder_eos();
         }
+                         
+    } else if (codec == MPT) {
+      int count;  
+      count = openmpt_module_read_interleaved_stereo(mod, 48000, 4096, temp16l);
+      if (count == 0){
+        decoder_eos();
+      } else {
+        pthread_mutex_lock(&buffer_mutex);
+        read_to_buffer_s16int(temp16l, count * 2);
+        samples_decoded += count * 2;
+        pthread_mutex_unlock(&buffer_mutex);
+      }
+    
     } else if (codec == FLAC) {
         // FLAC decoding
 
@@ -1130,13 +1238,13 @@ void pump_decode() {
 
         }
 
-        if (load_target_seek > 0) {
+        if (load_target_seek > 0 && flac_got_rate == 1) {
             //printf("pa: Set start position %d\n", load_target_seek);
 
             int rate = current_sample_rate;
             if (want_sample_rate > 0) rate = want_sample_rate;
 
-            FLAC__stream_decoder_seek_absolute(dec, (int) rate * (load_target_seek / 1000.0));
+            FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
             pthread_mutex_lock(&buffer_mutex);
             reset_set_value = rate * (load_target_seek / 1000.0);
             reset_set = 1;
@@ -1625,13 +1733,15 @@ void *main_loop(void *thread_id) {
 
                         mode = PLAYING;
                         command = NONE;
+                        result_status = SUCCESS;
                         pthread_mutex_unlock(&buffer_mutex);
 
 
                     } else {
                         printf("pa: Load file failed\n");
-                        command = STOP;
-                        //mode = STOPPED;
+                        result_status = FAILURE;
+                        command = NONE;
+                        mode = STOPPED;
                     }
 
                     break;
@@ -1759,12 +1869,18 @@ int init() {
 int get_status() {
     return mode;
 }
+                                   
+int get_result() {
+  return result_status;
+}
 
 int start(char *filename, int start_ms, int fade, float rg) {
 
     while (command != NONE) {
         usleep(1000);
     }
+                                                              
+    result_status = WAITING;
 
     rg_value_want = rg;
     config_fade_jump = fade;
@@ -1787,6 +1903,7 @@ int next(char *filename, int start_ms, float rg) {
         usleep(1000);
     }
 
+    result_status = WAITING;                                         
 
     if (mode == STOPPED) {
         start(filename, start_ms, 0, rg);
@@ -1858,9 +1975,13 @@ int ramp_volume(int percent, int speed) {
 }
 
 int get_position_ms() {
-    if (reset_set == 0 && current_sample_rate > 0) {
+    if (command != START && command != LOAD && reset_set == 0 && current_sample_rate > 0) {
         return (int) ((position_count / (float) current_sample_rate) * 1000.0);
     } else return 0;
+}
+                                   
+void set_position_ms(int ms) {
+    position_count = ((float)(ms / 1000.0)) * current_sample_rate; 
 }
 
 int get_length_ms() {

@@ -342,7 +342,7 @@ def player3(tauon):  # GStreamer
             # Get current playing track object from player
             current_track = pctl.playing_object()
 
-            if current_track is not None and current_track.length < 1:
+            if current_track is not None and (current_track.length < 1 or current_track.file_ext.lower() in tauon.mod_formats):
 
                 time.sleep(0.25)
 
@@ -350,6 +350,8 @@ def player3(tauon):  # GStreamer
 
                 if result[0] is True:
                     current_track.length = result[1] / Gst.SECOND
+                    pctl.playing_length = current_track.length
+                    gui.pl_update += 1
 
                 else:  # still loading? I guess we wait and try again.
                     time.sleep(1.5)
@@ -569,10 +571,10 @@ def player3(tauon):  # GStreamer
 
                         gapless = True
 
-                        if self.play_state == 1 and self.loaded_track and self.loaded_track.is_network:
-                            # Gst may report wrong length for network tracks, use known length instead
-                            if pctl.playing_time < self.loaded_track.length - 4:
-                                gapless = False
+                        # if self.play_state == 1 and self.loaded_track and self.loaded_track.is_network:
+                        #     # Gst may report wrong length for network tracks, use known length instead
+                        #     if pctl.playing_time < self.loaded_track.length - 4:
+                        #         gapless = False
 
 
                     # We're not at the end of the last track so reset the pipeline
@@ -749,7 +751,8 @@ def player3(tauon):  # GStreamer
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                         current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
                         if current_duration - current_time < 5.5:
-                            pass
+                            time.sleep((current_duration - current_time) + 1)
+                            self.playbin.set_state(Gst.State.READY)
                         else:
                             self.playbin.set_state(Gst.State.READY)
                     else:
