@@ -58,10 +58,10 @@
 
   <releases>
 
-    <release version="6.5.3" date="2021-02-24">
+    <release version="6.5.4" date="2021-03-20">
       <description>
         <ul>
-          <li>Improved Discord RP setting</li>
+          <li>Various bug fixes</li>
         </ul>
       </description>
     </release>

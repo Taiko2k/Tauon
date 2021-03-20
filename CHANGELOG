@@ -7,6 +7,9 @@ v6.5.4
  - Added setting to auto-stop on queue final track
  - Re-enabled auto search lyrics feature (moved setting to config file)
  - Fixed crash on reload metadata on removed file
+ - Fixed a rare possible crash when tag scanning MP3 files
+ - Fixed MPRIS not updating on CUE track transition
+ - Tweaked 8 star playtime balance
  - [Phazor] Fixed an issue with FLAC + CUE position when previous track had different samplerate
  - [Phazor] Fixed loading of some types of .WAV files (24bit still unsupported)
 

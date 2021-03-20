@@ -230,11 +230,11 @@ def star_count(sec, dur):
         stars += 1
     if sec > 60 * 60 * 2:
         stars += 1
-    if sec > 60 * 60 * 5:
+    if sec > 60 * 60 * 4:
         stars += 1
-    if sec > 60 * 60 * 10:
+    if sec > 60 * 60 * 8:
         stars += 1
-    if sec > 60 * 60 * 15:
+    if sec > 60 * 60 * 16:
         stars += 1
     return stars
 
