@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.5.4"
+n_version = "6.5.5"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -21019,6 +21019,9 @@ def discord_loop():
                 album = tr.album
             else:
                 album = "Unknown Album"
+
+            if len(album) == 1:
+                album += " "
 
             if state == 1:
                 #print("PLAYING: " + title)
