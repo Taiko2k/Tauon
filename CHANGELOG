@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.5.5
+
+ - Fixed discord RPC not working when album is a single letter
+
 v6.5.4
 
  - Added support for .WAV metadata
