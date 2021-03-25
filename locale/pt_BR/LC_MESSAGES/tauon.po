@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-03-20 15:26+1300\n"
-"PO-Revision-Date: 2021-02-20 00:50+0000\n"
+"PO-Revision-Date: 2021-03-26 01:29+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.5\n"
+"X-Generator: Weblate 4.5.2-dev\n"
 
 #: tauon.py:1905 tauon.py:1907
 msgid "No artist image found."
@@ -115,9 +115,8 @@ msgid "Please authorise and click the enable toggle first!"
 msgstr "Por favor autorize e clique em ativar alternar primeiro!"
 
 #: tauon.py:7178
-#, fuzzy
 msgid "Spotify import complete"
-msgstr "Conta do Spotify conectada"
+msgstr "Importação Spotify completa"
 
 #: tauon.py:7180
 msgid "day"
@@ -1630,9 +1629,8 @@ msgid "Transcode folder"
 msgstr "Converter pasta"
 
 #: tauon.py:25598
-#, fuzzy
 msgid "Enable Discord Rich Presence"
-msgstr "Alternar RichPresence do Discord"
+msgstr "Ativar RichPresence do Discord"
 
 #: tauon.py:25625
 msgid "Extract archives"
@@ -1715,8 +1713,9 @@ msgid "Spotify Premium account"
 msgstr "Conta Premio Spotify"
 
 #: tauon.py:25941
+#, fuzzy
 msgid "View setup instructions"
-msgstr ""
+msgstr "Ver instruções de configuração"
 
 #: tauon.py:25948
 msgid "Client ID"
@@ -1747,19 +1746,16 @@ msgid "Import Liked Songs"
 msgstr "Importar Músicas Curtidas"
 
 #: tauon.py:26028
-#, fuzzy
 msgid "Import all user playlists"
-msgstr "Importar playlist do usuário..."
+msgstr "Importar todas as playlist de usuário"
 
 #: tauon.py:26030
-#, fuzzy
 msgid "Importing Spotify playlists..."
-msgstr "Erro ao criar a playlist do Spotify"
+msgstr "Importando playlist do Spotify..."
 
 #: tauon.py:26038
-#, fuzzy
 msgid "Import single user playlist..."
-msgstr "Importar playlist do usuário..."
+msgstr "Importar uma playlist de usuário..."
 
 #: tauon.py:26053
 msgid "Airsonic/Subsonic network streaming"
