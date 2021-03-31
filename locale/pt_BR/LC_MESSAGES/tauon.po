@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-03-20 15:26+1300\n"
-"PO-Revision-Date: 2021-03-26 01:29+0000\n"
+"PO-Revision-Date: 2021-04-01 02:26+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.5.2-dev\n"
+"X-Generator: Weblate 4.6-dev\n"
 
 #: tauon.py:1905 tauon.py:1907
 msgid "No artist image found."
@@ -1713,7 +1713,6 @@ msgid "Spotify Premium account"
 msgstr "Conta Premio Spotify"
 
 #: tauon.py:25941
-#, fuzzy
 msgid "View setup instructions"
 msgstr "Ver instruções de configuração"
 
