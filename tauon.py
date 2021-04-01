@@ -36,7 +36,7 @@ import sdl2.ext
 import socket
 >>>>>>> 95f305369c1f552df3a0c15f3ee5e2c07fa41309
 
-n_version = "6.5.4"
+n_version = "6.5.5"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4319,7 +4319,7 @@ def tag_scan(nt):
 
                 if SYLT in tag:
                     print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
-                    print(tag[SYLT][0].text)
+                    #print(tag[SYLT][0].text)
 
     except stagger.errors.NoTagError as err:
         # print("Tag Scanner: " + str(err))
@@ -5495,6 +5495,9 @@ class PlayerCtl:
                 gui.update += 1
                 gui.pl_update = 1
 
+                if update_title:
+                    update_title_do()
+                self.notify_update()
             else:
                 self.advance(quiet=True, end=True)
 
@@ -21021,6 +21024,9 @@ def discord_loop():
                 album = tr.album
             else:
                 album = "Unknown Album"
+
+            if len(album) == 1:
+                album += " "
 
             if state == 1:
                 #print("PLAYING: " + title)
