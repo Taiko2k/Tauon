@@ -29,12 +29,7 @@
 # --------------------------------------------------------------------
 
 import sys
-<<<<<<< HEAD
-import sdl2
-import sdl2.ext
-=======
 import socket
->>>>>>> 95f305369c1f552df3a0c15f3ee5e2c07fa41309
 
 n_version = "6.5.5"
 t_version = "v" + n_version
@@ -840,10 +835,10 @@ class DConsole:
         self.messages = []
         self.show = False
     def print(self, message, level=0):
-        
+
         if len(self.messages) > 50:
             del self.messages[0]
-        
+
         dtime = datetime.datetime.now()
         self.messages.append((message, level, dtime, Timer()))
         if level > 0:
@@ -1823,7 +1818,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.mouse_left_window = False
 
         self.rendered_playlist_position = 0
-        
+
         self.console = console
         self.show_album_ratings = False
         self.gen_code_errors = False
@@ -2086,7 +2081,7 @@ class Input:    # Used to keep track of button states (or should be)
         self.key_return_press = False
         self.key_tab_press = False
         self.backspace_press = 0
-        
+
 
         self.media_key = ""
 
@@ -2416,7 +2411,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.artist_bio_text = [230, 230, 230, 255]
 
     def post_config(self):
-        
+
         # Pre calculate alpha blend for spec background
         self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
         self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
@@ -3561,7 +3556,7 @@ def save_prefs():
     cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
     cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
     cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
-    
+
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
     cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
@@ -3855,7 +3850,7 @@ def load_prefs():
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
     prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
-    
+
     cf.br()
     cf.add_text("[jellyfin_account]")
     prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
@@ -4787,11 +4782,11 @@ class PlayerCtl:
 
         global playlist_selected
         global shift_selection
-      
+
         if spot_ctl.coasting:
             sptr = tauon.dummy_track.misc.get("spotify-track-url")
             if sptr:
-                
+
                 for p in default_playlist:
                     tr = pctl.g(p)
                     if tr.misc.get("spotify-track-url") == sptr:
@@ -8107,9 +8102,9 @@ if system == "linux" and not macos and not msys:
 if system == "windows" or msys:
 
     tray.start()
-    
+
     import keyboard
-    
+
     def key_callback(event):
         if event.event_type == "down":
             if event.scan_code == 179:
@@ -8121,7 +8116,7 @@ if system == "windows" or msys:
             elif event.scan_code == 176:
                 inp.media_key = 'forward'
             gui.update += 1
-        
+
     keyboard.hook_key(179, key_callback)
     keyboard.hook_key(178, key_callback)
     keyboard.hook_key(177, key_callback)
@@ -8796,7 +8791,7 @@ draw = Drawing()
 if system == "linux":
     standard_font = prefs.linux_font
     if msys:
-        standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working 
+        standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
     ddt.prime_font(standard_font, 8, 9)
     ddt.prime_font(standard_font, 8, 10)
     ddt.prime_font(standard_font, 8.5, 11)
@@ -8819,7 +8814,7 @@ if system == "linux":
     standard_font = prefs.linux_font_semibold
     if msys:
         standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
-    
+
     ddt.prime_font(standard_font, 8, 309)
     ddt.prime_font(standard_font, 8, 310)
     ddt.prime_font(standard_font, 8.5, 311)
@@ -10241,7 +10236,7 @@ class GallClass:
                     im.thumbnail((size, size), Image.ANTIALIAS)
 
                     im.save(g, 'BMP')
-                    
+
                     if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
                         im.save(os.path.join(g_cache_dir, img_name + '.jpg'), 'JPEG', quality=95)
 
@@ -23736,9 +23731,9 @@ def worker1():
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
-                    
+
                 if not prefs.remove_network_tracks and track.file_ext == "SPTY":
-                    
+
                     for playlist in pctl.multi_playlist:
                         if index in playlist[2]:
                             break
@@ -25864,7 +25859,7 @@ class Over:
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
-            
+
         prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
 
         if self.account_view in (9, 2, 1):
@@ -25915,7 +25910,7 @@ class Over:
             prefs.maloja_key = text_maloja_key.text.strip()
 
             y += round(35 * gui.scale)
- 
+
             if self.button(x, y, _("Test connectivity")):
 
                 if not prefs.maloja_url or not prefs.maloja_key:
@@ -26230,7 +26225,7 @@ class Over:
             prefs.koel_server_url = text_koel_ser.text
 
             y += round(40 * gui.scale)
-            
+
             self.button(x, y, _("Import music to playlist"), koel_get_album_thread)
 
 
@@ -27699,7 +27694,7 @@ class Over:
 
                 if coll(box2):
                     ddt.rect(box, tab_over, True)
-                    
+
                 yy = box[1] + 4 * gui.scale
 
                 if current_tab == self.tab_active:
@@ -32114,7 +32109,7 @@ class RadioBox:
         self.click_point = (0, 0)
 
         self.song_key = ""
-        
+
         self.drag = None
 
         self.tab = 0
@@ -32361,7 +32356,7 @@ class RadioBox:
         """
         Get all base urls of all currently available radiobrowser servers
 
-        Returns: 
+        Returns:
         list: a list of strings
 
         """
@@ -34233,7 +34228,7 @@ class ArtistList:
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
         if prefs.artist_list_style == 2:
             area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 1)
-        
+
         fields.add(area)
 
         light_mode = False
@@ -34791,13 +34786,13 @@ class TreeView:
                 elif right_click:
 
                     if item[3]:
-                        
+
                         for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
                             if msys:
                                 if pctl.g(id).fullpath.startswith(target.lstrip("/")):
                                     folder_tree_menu.activate(in_reference=id)
                                     self.menu_selected = full_folder_path
-                                    break                            
+                                    break
                             else:
                                 if pctl.g(id).fullpath.startswith(target):
                                     folder_tree_menu.activate(in_reference=id)
@@ -34840,7 +34835,7 @@ class TreeView:
                             else:
                                 if pctl.g(id).fullpath.startswith(target):
                                     track_id = id
-                                    break                            
+                                    break
                         else:  # Fallback to folder name if full-path not found (hack for networked items)
                             for p, id in enumerate(default_playlist):
                                 if pctl.g(id).parent_folder_name == item[0]:
@@ -39456,7 +39451,7 @@ while pctl.running:
                 mouse_enter_window = True
                 focused = True
                 gui.lowered = False
-                key_focused = 1 
+                key_focused = 1
                 mouse_down = False
                 gui.album_tab_mode = False
                 gui.pl_update = 1
@@ -43762,4 +43757,3 @@ while tm.check_playback_running() or lfm_scrobbler.running:
         break
 
 print("bye")
-
