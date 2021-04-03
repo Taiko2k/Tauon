@@ -40,6 +40,8 @@ Installation is available as a Flatpak.
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
 Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes. While the Flatpak version is recommended, you can also install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
+
+However once again, you can install from it's [SB](https://slackbuilds.org/repository/14.2/audio/tauonmb/) on **Slackware** distributions. (See, [here](https://youtu.be/kPqLctyBIag))
 ___
 
 I highly recommend reading the Tauon Music Box [manual](https://tauonmusicbox.rocks#manual).
