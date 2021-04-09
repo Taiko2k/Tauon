@@ -1,15 +1,21 @@
 [Desktop Entry]
+Version=1.1
 Comment=Ultra player for your music collection
 Comment[ja]=音楽コレクションのウルトラプレーヤー
 Comment[de]=Ultra Player für deine Musiksammlung
-Exec=/opt/tauon-music-box/tauonmb.sh %U
+Comment[pt_BR]=Ultra reprodutor para sua coleção de músicas
 GenericName=Audio Player
 GenericName[ja]=音楽プレイヤー
 GenericName[zh_CN]=音乐播放器
 GenericName[de]=Musik-Player
+GenericName[pt_BR]=Reprodutor de Áudio
+Keywords=Music;MP3;OGG;FLAC;OPUS;Convert;Stream;Podcast;Playlist;Last.fm;PHAzOR;Radio;
+Keywords[pt_BR]=Música;MP3;OGG;FLAC;OPUS;Converter;Transmissão;Podcast;Playlist;Last.fm;PHAzOR;Rádio;
+Name=Tauon Music Box
+Name[pt_BR]=Tauon Music Box
+Exec=/opt/tauon-music-box/tauonmb.sh %U
 Icon=tauonmb
 MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u
-Name=Tauon Music Box
 StartupNotify=false
 StartupWMClass=Tauon Music Box
 Terminal=false
@@ -29,3 +35,6 @@ Name=Previous Track
 Exec=/opt/tauon-music-box/tauonmb.sh --no-start --next
 Name=Next Track
 
+[Desktop Action Stop]
+Exec=/opt/tauon-music-box/tauonmb.sh --no-start --stop
+Name=Next Track
