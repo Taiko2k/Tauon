@@ -34,6 +34,7 @@
 #include <samplerate.h>
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
+#include "kissfft/kiss_fftr.h"
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -201,6 +202,12 @@ int samples_decoded = 0;
 
 SRC_DATA src_data;
 SRC_STATE *src;
+
+// kiss fft -----------------------------------------------------------
+
+kiss_fft_scalar * rbuf;
+kiss_fft_cpx * cbuf;
+kiss_fftr_cfg ffta;
 
 // Pulseaudio ---------------------------------------------------------
 
@@ -1589,6 +1596,11 @@ int main_running = 0;
 void *main_loop(void *thread_id) {
 
 
+    rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 1024 );
+    cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (1024/2+1) );
+    ffta = kiss_fftr_alloc(1024 ,0 ,0,0 );
+
+
     pthread_t out_thread_id;
     pthread_create(&out_thread_id, NULL, out_thread, NULL);
 
@@ -2014,6 +2026,42 @@ int get_level_peak_r() {
     peak_r = 0;
     return peak;
 }
+
+int get_spectrum(int n_bins, float* bins) {
+
+    int samples = 1024;
+    int base = buff_base;
+
+    int i = 0;
+    while (i < samples) {
+        rbuf[i] = (float) (buff16l[(base + i) % BUFF_SIZE] / 32768.0) * 0.5 * (1 - cos(2*3.1415926*i/samples));
+        i++;
+    }
+
+    kiss_fftr( ffta , rbuf , cbuf );
+
+    i = 0;
+    while (i < 512) {
+        rbuf[i] = sqrt((cbuf[i].r * cbuf[i].r) + (cbuf[i].i * cbuf[i].i));
+        i++;
+    }
+
+    int b0 = 0;
+    for (int x = 0; x < n_bins; x++) {
+        float peak = 0;
+        int b1 = pow(2, x * 10.0 / (n_bins - 1));
+        if (b1 > 511 - 1) b1 = 511;
+        if (b1 <= b0) b1 = b0 + 1;
+        for (; b0 < b1; b0++) {
+            if (peak < rbuf[1 + b0]) peak = rbuf[1 + b0];
+        }
+        bins[x] = sqrt(peak);
+    }
+
+    return 0;
+
+}
+
 
 int is_buffering(){
     if (buffering == 0) return 0;
