@@ -94,6 +94,7 @@ class StreamEnc:
 
         except:
             print("Connection failed")
+            #raise
             return False
 
         self.download_process = threading.Thread(target=self.run_download, args=([r]))

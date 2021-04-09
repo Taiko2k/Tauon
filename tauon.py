@@ -19436,7 +19436,7 @@ def spec_on():
     #     show_message("Not implemented")
     gui.update_layout()
 
-# vis_menu.add(_("Spectrum Visualizer"), spec_on)
+vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 
 def spec2_def():
@@ -38287,10 +38287,10 @@ def update_layout_do():
 
     gui.draw_vis4_top = False
 
-    # if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
-    #     gui.vis = 4
-    #     gui.turbo = True
-    if gui.vis_want == 0:
+    if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3 and prefs.backend == 4:
+        gui.vis = 4
+        gui.turbo = True
+    elif gui.vis_want == 0:
         gui.turbo = False
         gui.vis = 0
     else:

@@ -56,6 +56,9 @@ def player4(tauon):
     aud.init()
     aud.set_volume(int(pctl.player_volume))
 
+    bins1 = (ctypes.c_float * 24)()
+    bins2 = (ctypes.c_float * 45)()
+
     def calc_rg(track):
 
         if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
@@ -694,6 +697,30 @@ def player4(tauon):
 
 
             if state == 1:
+
+                if gui.turbo:
+                    if gui.vis == 2:
+                        p_spec = []
+                        aud.get_spectrum(24, bins1)
+                        bias = 1
+                        for b in list(bins1):
+                            p_spec.append(int(b * 2.6 * bias))
+                            bias += 0.05
+                        gui.spec = p_spec
+                        gui.level_update = True
+                        if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                            gui.update_spec = 1
+                    elif gui.vis == 4:
+                        p_spec = []
+                        aud.get_spectrum(45, bins2)
+                        bias = 1
+                        for b in list(bins2):
+                            p_spec.append(int(b * 3.0 * bias))
+                            bias += 0.01
+                        gui.spec4_array = p_spec
+                        gui.level_update = True
+                        if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                            gui.update_spec = 1
 
                 if loaded_track.is_network and pctl.playing_time < 7:
                     if aud.get_result() == 2:
