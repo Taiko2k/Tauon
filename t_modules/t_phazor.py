@@ -328,6 +328,32 @@ def player4(tauon):
 
     set_config()
 
+    def run_vis():
+        if gui.turbo:  # and pctl.playing_time > 0.5:
+            if gui.vis == 2:
+                p_spec = []
+                aud.get_spectrum(24, bins1)
+                bias = 1
+                for b in list(bins1):
+                    p_spec.append(int(b * 2.6 * bias))
+                    bias += 0.05
+                gui.spec = p_spec
+                gui.level_update = True
+                if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                    gui.update_spec = 1
+            elif gui.vis == 4:
+                p_spec = []
+                aud.get_spectrum(45, bins2)
+                bias = 1
+                for b in list(bins2):
+                    p_spec.append(int(b * 3.0 * bias))
+                    bias += 0.01
+                gui.spec4_array = p_spec
+                gui.level_update = True
+                if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                    gui.update_spec = 1
+
+
     while True:
 
         time.sleep(0.016)
@@ -494,7 +520,8 @@ def player4(tauon):
                     pctl.playing_time = pctl.jump_time
 
                     if remain > 0:
-                        time.sleep(0.01)
+                        time.sleep(0.016)
+                        run_vis()
                         remain -= 0.01
                         if pctl.playerCommandReady and pctl.playerCommand == "open":
                             break
@@ -509,7 +536,8 @@ def player4(tauon):
                     pctl.playing_time = pctl.jump_time
                     if pctl.jump_time:
                         while aud.get_result() == 0:
-                            time.sleep(0.01)
+                            time.sleep(0.016)
+                            run_vis()
                         aud.set_position_ms(int(pctl.jump_time * 1000))
 
                     # Restart track is failed to load (for some network tracks) (broken with gapless loading)
@@ -534,7 +562,8 @@ def player4(tauon):
                                 aud.stop()
                                 gui.show_message("Error loading track", mode="warning")
                                 break
-                        time.sleep(0.05)
+                        time.sleep(0.016)
+                        run_vis()
 
                     state = 1
 
@@ -697,30 +726,7 @@ def player4(tauon):
 
 
             if state == 1:
-
-                if gui.turbo:
-                    if gui.vis == 2:
-                        p_spec = []
-                        aud.get_spectrum(24, bins1)
-                        bias = 1
-                        for b in list(bins1):
-                            p_spec.append(int(b * 2.6 * bias))
-                            bias += 0.05
-                        gui.spec = p_spec
-                        gui.level_update = True
-                        if pctl.playing_time > 0.5 and pctl.playing_state == 1:
-                            gui.update_spec = 1
-                    elif gui.vis == 4:
-                        p_spec = []
-                        aud.get_spectrum(45, bins2)
-                        bias = 1
-                        for b in list(bins2):
-                            p_spec.append(int(b * 3.0 * bias))
-                            bias += 0.01
-                        gui.spec4_array = p_spec
-                        gui.level_update = True
-                        if pctl.playing_time > 0.5 and pctl.playing_state == 1:
-                            gui.update_spec = 1
+                run_vis()
 
                 if loaded_track.is_network and pctl.playing_time < 7:
                     if aud.get_result() == 2:
