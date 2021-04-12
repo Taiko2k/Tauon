@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.5.5
 
+ - Restored spectrum visualisers (Phazor only)
  - Fixed discord RPC not working when album is a single letter
 
 v6.5.4

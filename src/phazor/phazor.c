@@ -1596,9 +1596,9 @@ int main_running = 0;
 void *main_loop(void *thread_id) {
 
 
-    rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 1024 );
-    cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (1024/2+1) );
-    ffta = kiss_fftr_alloc(1024 ,0 ,0,0 );
+    rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
+    cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
+    ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
 
 
     pthread_t out_thread_id;
@@ -2029,7 +2029,7 @@ int get_level_peak_r() {
 
 int get_spectrum(int n_bins, float* bins) {
 
-    int samples = 1024;
+    int samples = 2048;
     int base = buff_base;
 
     int i = 0;
@@ -2041,7 +2041,7 @@ int get_spectrum(int n_bins, float* bins) {
     kiss_fftr( ffta , rbuf , cbuf );
 
     i = 0;
-    while (i < 512) {
+    while (i < samples / 2) {
         rbuf[i] = sqrt((cbuf[i].r * cbuf[i].r) + (cbuf[i].i * cbuf[i].i));
         i++;
     }
@@ -2050,7 +2050,7 @@ int get_spectrum(int n_bins, float* bins) {
     for (int x = 0; x < n_bins; x++) {
         float peak = 0;
         int b1 = pow(2, x * 10.0 / (n_bins - 1));
-        if (b1 > 511 - 1) b1 = 511;
+        if (b1 > (samples / 2) - 1) b1 = (samples / 2) - 1;
         if (b1 <= b0) b1 = b0 + 1;
         for (; b0 < b1; b0++) {
             if (peak < rbuf[1 + b0]) peak = rbuf[1 + b0];

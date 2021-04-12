@@ -21061,41 +21061,6 @@ def hit_discord():
         discord_t.start()
 
 
-# def activate_discord():
-#
-#     if not prefs.discord_active:
-#         discord_t = threading.Thread(target=discord_loop)
-#         discord_t.daemon = True
-#         discord_t.start()
-#
-#     elif not prefs.disconnect_discord:
-#         prefs.disconnect_discord = True
-#
-#
-# def discord_deco():
-#     tc = colours.menu_text
-#
-#     if prefs.disconnect_discord:
-#         tc = colours.menu_text_disabled
-#         return [tc, colours.menu_background, _("Disconnecting...")]
-#     if prefs.discord_active:
-#         return [tc, colours.menu_background, _("Disconnect Discord")]
-#     else:
-#         return [tc, colours.menu_background, _('Show playing in Discord')]
-#
-#
-#
-# def discord_show_test(_):
-#     return prefs.discord_show
-#
-#
-# discord_icon = MenuIcon(asset_loader('discord.png', True))
-# discord_icon.colour = [115, 138, 219, 255]
-# discord_icon.xoff = 3
-# #discord_icon.colour_callback = broadcast_colour
-#
-# #x_menu.add("Show Playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
-
 def show_spot_playing_deco():
     if pctl.playing_state == 0:
         return [colours.menu_text, colours.menu_background, None]
@@ -26693,17 +26658,16 @@ class Over:
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        y += 15 * gui.scale
         y += 25 * gui.scale
         if system != 'windows' and (flatpak_mode or snap_mode):
-            self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
+            self.toggle_square(x, y, toggle_force_subpixel, _("Force RGB text antialiasing (recommended)"))
 
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
 
-        # y += 25 * gui.scale
-        # if prefs.backend == 1:
-        #     self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+        y += 25 * gui.scale
+        if prefs.backend == 4:
+            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
 
         y += round(25 * gui.scale)
         #if not msys:
