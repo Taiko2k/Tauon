@@ -335,8 +335,8 @@ def player4(tauon):
                 aud.get_spectrum(24, bins1)
                 bias = 1
                 for b in list(bins1):
-                    p_spec.append(int(b * 2.6 * bias))
-                    bias += 0.05
+                    p_spec.append(int(b * 1.9 * bias))
+                    bias += 0.04
                 gui.spec = p_spec
                 gui.level_update = True
                 if pctl.playing_time > 0.5 and pctl.playing_state == 1:
@@ -346,7 +346,7 @@ def player4(tauon):
                 aud.get_spectrum(45, bins2)
                 bias = 1
                 for b in list(bins2):
-                    p_spec.append(int(b * 3.0 * bias))
+                    p_spec.append(int(b * 2.0 * bias))
                     bias += 0.01
                 gui.spec4_array = p_spec
                 gui.level_update = True
