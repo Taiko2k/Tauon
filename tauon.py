@@ -7257,7 +7257,6 @@ class Tauon:
     def min_to_tray(self):
         SDL_HideWindow(t_window)
         gui.mouse_unknown = True
-        gui.update += 1
 
     def raise_window(self):
         SDL_ShowWindow(t_window)
