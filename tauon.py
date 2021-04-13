@@ -15229,6 +15229,10 @@ def key_filepath(index):
     track = pctl.master_library[index]
     return track.parent_folder_path.lower(), track.filename
 
+def key_filename(index):
+    track = pctl.master_library[index]
+    return track.filename
+
 def sort_path_pl(pl, custom_list=None):
 
     if custom_list is not None:
@@ -15639,7 +15643,8 @@ column_names = (
     "Codec",
     "Lyrics",
     "Bitrate",
-    "S"
+    "S",
+    "Filename"
 )
 
 
@@ -19505,6 +19510,9 @@ def sa_genre():
 def sa_file():
     gui.pl_st.insert(set_menu.reference + 1, ["Filepath", 350, False])
     gui.update_layout()
+def sa_filename():
+    gui.pl_st.insert(set_menu.reference + 1, ["Filename", 300, False])
+    gui.update_layout()
 def sa_codec():
     gui.pl_st.insert(set_menu.reference + 1, ["Codec", 65, True])
     gui.update_layout()
@@ -19592,6 +19600,8 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 
     if name == "Filepath":
         key = key_filepath
+    if name == "Filename":
+        key = key_filename
     if name == "Artist":
         key = key_artist
     if name == "Album Artist":
@@ -19690,6 +19700,7 @@ set_menu.add("+ " + _("Bitrate"), sa_bitrate)
 set_menu.add("+ " + _("Has Lyrics"), sa_lyrics)
 set_menu.add("+ " + _("Comment"), sa_comment)
 set_menu.add("+ " + _("Filepath"), sa_file)
+set_menu.add("+ " + _("Filename"), sa_filename)
 set_menu.add("+ " + _("Starline"), sa_star)
 set_menu.add("+ " + _("Rating"), sa_rating)
 set_menu.add("+ " + _("Loved"), sa_love)
@@ -31612,6 +31623,10 @@ class StandardPlaylist:
                                 colour = colours.index_playing
                         elif item[0] == "Filepath":
                             text = n_track.fullpath
+                            colour = colours.index_text
+                            norm_colour = colour
+                        elif item[0] == "Filename":
+                            text = n_track.filename
                             colour = colours.index_text
                             norm_colour = colour
                         elif item[0] == "Codec":
