@@ -23156,6 +23156,7 @@ def worker1():
             cue_album = ""
             cue_genre = ""
             cue_main_performer = ""
+            cue_songwriter = ""
 
             cd = []
             cds = []
@@ -23187,6 +23188,8 @@ def worker1():
                         cue_performer = get_quoted_from_line(line)
                     if line.startswith("MAIN PERFORMER \""):
                         cue_main_performer = get_quoted_from_line(line)
+                    if line.startswith("SONGWRITER \""):
+                        cue_songwriter = get_quoted_from_line(line)
                     if line.startswith("GENRE \""):
                         cue_genre = line[5:].strip().replace("\"", "")
                     if line.startswith("DATE "):
@@ -23239,7 +23242,10 @@ def worker1():
                     nt.is_cue = True
 
                     nt.album_artist = cue_main_performer
+                    if not cue_main_performer:
+                        nt.album_artist = cue_performer
                     nt.artist = cue_performer
+                    nt.composer = cue_songwriter
                     nt.genre = cue_genre
                     nt.album = cue_album
                     nt.date = cue_date.replace('"', '')
@@ -23259,6 +23265,8 @@ def worker1():
                             nt.title = get_quoted_from_line(line)
                         if line.startswith("PERFORMER"):
                             nt.artist = get_quoted_from_line(line)
+                        if line.startswith("SONGWRITER"):
+                            nt.composer = get_quoted_from_line(line)
                         if line.startswith("INDEX 01 ") and ":" in line:
                             line = line[9:]
                             times = line.split(":")
