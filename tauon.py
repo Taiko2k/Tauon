@@ -1874,6 +1874,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.pl_update_on_drag = False
         self.drop_playlist_target = 0
         self.discord_status = "Standby"
+        self.mouse_unknown = False
 
 gui = GuiVar()
 
@@ -7255,12 +7256,16 @@ class Tauon:
 
     def min_to_tray(self):
         SDL_HideWindow(t_window)
+        gui.mouse_unknown = True
+        gui.update += 1
 
     def raise_window(self):
         SDL_ShowWindow(t_window)
         SDL_RaiseWindow(t_window)
         SDL_RestoreWindow(t_window)
         gui.lowered = False
+        gui.update += 1
+
 
     def focus_window(self):
         SDL_RaiseWindow(t_window)
@@ -8481,10 +8486,10 @@ def draw_window_tools():
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off, True)
     fields.add(rect)
-    if coll(rect):
+    if coll(rect) and not gui.mouse_unknown:
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on, True)
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
-        if inp.mouse_click or ab_click:
+        if mouse_up or ab_click:
             if gui.tray_active and prefs.min_to_tray and not key_shift_down:
                 tauon.min_to_tray()
             elif gui.sync_progress and not gui.stop_sync:
@@ -39270,6 +39275,7 @@ while pctl.running:
             mouse_position[0] = event.motion.x
             mouse_position[1] = event.motion.y
             mouse_moved = True
+            gui.mouse_unknown = False
         elif event.type == SDL_MOUSEBUTTONDOWN:
 
             k_input = True

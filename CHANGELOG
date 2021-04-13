@@ -6,6 +6,7 @@ v6.5.5
  - Restored spectrum visualisers (Phazor only)
  - Fixed discord RPC not working when album is a single letter
  - Fixed CUE sheet parsing missing composer and album artist fields
+ - Fixed click not registering after restore from tray
 
 v6.5.4
 
