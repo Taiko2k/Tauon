@@ -543,6 +543,20 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.end_headers()
                 self.wfile.write(b"OK")
 
+            elif path.startswith("/api1/setvolumerel/"):
+                key = path[19:]
+                if key.lstrip("-").isdigit() and key.count("-") < 2:
+                    volume = pctl.player_volume + int(key)
+                    volume = max(volume, 0)
+                    volume = min(volume, 100)
+                    pctl.player_volume = volume
+                    pctl.set_volume()
+
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
             elif path.startswith("/api1/seek1k/"):
                 key = path[13:]
                 if key.isdigit():

@@ -339,7 +339,7 @@ def player4(tauon):
                     bias += 0.04
                 gui.spec = p_spec
                 gui.level_update = True
-                if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
                     gui.update_spec = 1
             elif gui.vis == 4:
                 p_spec = []
@@ -350,7 +350,7 @@ def player4(tauon):
                     bias += 0.01
                 gui.spec4_array = p_spec
                 gui.level_update = True
-                if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
                     gui.update_spec = 1
 
 
@@ -358,7 +358,7 @@ def player4(tauon):
 
         time.sleep(0.016)
         # Level meter
-        if state == 1 and gui.vis == 1:
+        if (state == 1 or state == 3) and gui.vis == 1:
             amp = aud.get_level_peak_l()
             l = (amp / 32767) * 12
             amp = aud.get_level_peak_r()
@@ -708,13 +708,12 @@ def player4(tauon):
                 pctl.playerCommand = "done"
                 pctl.playerCommandReady = True
                 break
-
         else:
-
             pctl.spot_test_progress()
-
             if state == 3:
                 pctl.radio_progress()
+                run_vis()
+
                 add_time = player_timer.hit()
                 pctl.playing_time += add_time
                 pctl.decode_time = pctl.playing_time
@@ -723,7 +722,6 @@ def player4(tauon):
                 if gui.buffering != buffering:
                     gui.buffering = buffering
                     gui.update += 1
-
 
             if state == 1:
                 run_vis()
