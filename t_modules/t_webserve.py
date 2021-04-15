@@ -567,6 +567,16 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.end_headers()
                 self.wfile.write(b"OK")
 
+            elif path.startswith("/api1/seek/"):
+                key = path[11:]
+                if key.isdigit():
+                    pctl.seek_time(int(key) / 1000)
+
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
             elif path.startswith("/api1/tracklist/"):
                 # Return all tracks in a playlist /tracklist/plid
                 key = path[16:]
