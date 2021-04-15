@@ -26955,6 +26955,11 @@ class Over:
             ddt.text((xx, y), "BSD 2-Clause", colours.box_text_label, font)
             draw_linked_text2(xxx, y, "https://github.com/staggerpkg/stagger", colours.box_sub_text, font, click=self.click, replace="github")
 
+            y += spacing
+            ddt.text((x, y), "KISS FFT", colours.box_sub_text, font)
+            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/mborgerding/kissfft", colours.box_sub_text, font, click=self.click, replace="github")
+
         elif self.cred_page == 3:
             xx = x + round(130 * gui.scale)
             xxx = x + round(240 * gui.scale)
@@ -32247,7 +32252,7 @@ class RadioBox:
                 print("Send heatbeat")
 
             def on_message(ws, message):
-                #print(message)
+                print(message)
                 d = json.loads(message)
                 if d["op"] == 10:
                     shoot = threading.Thread(target=send_heartbeat, args=[ws])
@@ -32296,7 +32301,7 @@ class RadioBox:
 
             def on_error(ws, error):
                 pass
-                #print(error)
+                print(error)
 
             def on_close(ws):
                 pass
@@ -32314,7 +32319,8 @@ class RadioBox:
 
                 th.start_new_thread(run, ())
 
-            #websocket.enableTrace(True)
+            websocket.enableTrace(True)
+            #print(wss)
             ws = websocket.WebSocketApp(wss,
                                         on_message=on_message,
                                         on_error=on_error,
@@ -43415,7 +43421,7 @@ while pctl.running:
         if gui.vis == 1:
 
             if prefs.backend == 2 or True:
-                if pctl.playing_state == 1:
+                if pctl.playing_state == 1 or pctl.playing_state == 3:
                     #gui.level_update = True
                     while tauon.level_train and tauon.level_train[0][0] < time.time():
 

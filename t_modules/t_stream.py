@@ -92,9 +92,11 @@ class StreamEnc:
             r = urllib.request.urlopen(r)
             print("URL opened.")
 
-        except:
+        except Exception as e:
             print("Connection failed")
             #raise
+            self.tauon.gui.show_message("Failed to establish a connection", str(e), mode="error")
+
             return False
 
         self.download_process = threading.Thread(target=self.run_download, args=([r]))
