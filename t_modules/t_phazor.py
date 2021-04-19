@@ -335,7 +335,7 @@ def player4(tauon):
                 aud.get_spectrum(24, bins1)
                 bias = 1
                 for b in list(bins1):
-                    p_spec.append(int(b * 1.9 * bias))
+                    p_spec.append(int(b * 1.7 * bias))
                     bias += 0.04
                 gui.spec = p_spec
                 gui.level_update = True

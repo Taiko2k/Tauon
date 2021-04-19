@@ -58,10 +58,12 @@
 
   <releases>
 
-    <release version="6.5.4" date="2021-03-20">
+    <release version="6.6.0" date="2021-04-19">
       <description>
         <ul>
-          <li>Various bug fixes</li>
+          <li>Restored spectrum visualisers</li>
+          <li>Added filename type column</li>
+          <li>Various fixes</li>
         </ul>
       </description>
     </release>
