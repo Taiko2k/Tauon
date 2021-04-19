@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.5.5"
+n_version = "6.6.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4031,7 +4031,11 @@ class MOD(Structure):
 
 mpt = None
 try:
-    mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+    if snap_mode:
+        mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
+    else:
+        mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+
     mpt.openmpt_module_create_from_memory.restype = c_void_p
     mpt.openmpt_module_get_metadata.restype = c_char_p
     mpt.openmpt_module_get_duration_seconds.restype = c_double
@@ -10258,7 +10262,7 @@ class GallClass:
 
             except:
                 # raise
-                print('ERROR: Image load failed on track: ' + key[0].fullpath)
+                # print('ERROR: Image load failed on track: ' + key[0].fullpath)
                 console.print('ERROR: Image load failed on track: ', level=3)
                 console.print("- " + key[0].fullpath, level=5)
                 order = [0, None, None, None]
@@ -40082,94 +40086,94 @@ while pctl.running:
                     pctl.advance(rr=True)
 
 
-            if keymaps.test("vol-down"):
-                if pctl.player_volume > 3:
-                    pctl.player_volume -= 3
-                else:
-                    pctl.player_volume = 0
-                pctl.set_volume()
-
-            if keymaps.test("vol-up"):
-                pctl.player_volume += 3
-                if pctl.player_volume > 100:
-                    pctl.player_volume = 100
-                pctl.set_volume()
-
-            if keymaps.test("toggle-shuffle"):
-                #pctl.random_mode ^= True
-                toggle_random()
-
-            if keymaps.test("goto-playing"):
-                pctl.show_current()
-            if keymaps.test("goto-previous"):
-                if pctl.queue_step > 1:
-                    pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
-
-            if keymaps.test("toggle-repeat"):
-                toggle_repeat()
-
-            if keymaps.test("random-track"):
-                random_track()
-
-            if keymaps.test("random-album"):
-                random_album()
-
-            if keymaps.test('opacity-up'):
-                prefs.window_opacity += .05
-                if prefs.window_opacity > 1:
-                    prefs.window_opacity = 1
-                SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-            if keymaps.test('opacity-down'):
-                prefs.window_opacity -= .05
-                if prefs.window_opacity < .30:
-                    prefs.window_opacity = .30
-                SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-            if keymaps.test("seek-forward"):
-                pctl.seek_time(pctl.playing_time + 15)
-
-            if keymaps.test("seek-back"):
-                pctl.seek_time(pctl.playing_time - 15)
-
-            if keymaps.test("play"):
-                pctl.play()
-
-            if keymaps.test("stop"):
-                pctl.stop()
-
-            if keymaps.test("pause"):
-                pctl.pause_only()
-
-            if keymaps.test("love-playing"):
-                bar_love(notify=True)
-
-            if keymaps.test("love-selected"):
-                select_love(notify=True)
-
-            if keymaps.test("search-lyrics-selected"):
-                if pctl.selected_ready():
-                    track = pctl.g(default_playlist[playlist_selected])
-                    if track.lyrics:
-                        show_message("Track already has lyrics")
+                if keymaps.test("vol-down"):
+                    if pctl.player_volume > 3:
+                        pctl.player_volume -= 3
                     else:
-                        get_lyric_wiki(track)
+                        pctl.player_volume = 0
+                    pctl.set_volume()
 
-            if keymaps.test("substitute-search-selected"):
-                if pctl.selected_ready():
-                    show_sub_search(pctl.g(default_playlist[playlist_selected]))
+                if keymaps.test("vol-up"):
+                    pctl.player_volume += 3
+                    if pctl.player_volume > 100:
+                        pctl.player_volume = 100
+                    pctl.set_volume()
 
-            if keymaps.test("global-search"):
-                activate_search_overlay()
+                if keymaps.test("toggle-shuffle"):
+                    #pctl.random_mode ^= True
+                    toggle_random()
 
-            if keymaps.test("add-to-queue") and pctl.selected_ready():
-                add_selected_to_queue()
+                if keymaps.test("goto-playing"):
+                    pctl.show_current()
+                if keymaps.test("goto-previous"):
+                    if pctl.queue_step > 1:
+                        pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
 
-            if keymaps.test("clear-queue"):
-                clear_queue()
+                if keymaps.test("toggle-repeat"):
+                    toggle_repeat()
 
-            if keymaps.test("regenerate-playlist"):
-                regenerate_playlist(pctl.active_playlist_viewing)
+                if keymaps.test("random-track"):
+                    random_track()
+
+                if keymaps.test("random-album"):
+                    random_album()
+
+                if keymaps.test('opacity-up'):
+                    prefs.window_opacity += .05
+                    if prefs.window_opacity > 1:
+                        prefs.window_opacity = 1
+                    SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+                if keymaps.test('opacity-down'):
+                    prefs.window_opacity -= .05
+                    if prefs.window_opacity < .30:
+                        prefs.window_opacity = .30
+                    SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+                if keymaps.test("seek-forward"):
+                    pctl.seek_time(pctl.playing_time + 15)
+
+                if keymaps.test("seek-back"):
+                    pctl.seek_time(pctl.playing_time - 15)
+
+                if keymaps.test("play"):
+                    pctl.play()
+
+                if keymaps.test("stop"):
+                    pctl.stop()
+
+                if keymaps.test("pause"):
+                    pctl.pause_only()
+
+                if keymaps.test("love-playing"):
+                    bar_love(notify=True)
+
+                if keymaps.test("love-selected"):
+                    select_love(notify=True)
+
+                if keymaps.test("search-lyrics-selected"):
+                    if pctl.selected_ready():
+                        track = pctl.g(default_playlist[playlist_selected])
+                        if track.lyrics:
+                            show_message("Track already has lyrics")
+                        else:
+                            get_lyric_wiki(track)
+
+                if keymaps.test("substitute-search-selected"):
+                    if pctl.selected_ready():
+                        show_sub_search(pctl.g(default_playlist[playlist_selected]))
+
+                if keymaps.test("global-search"):
+                    activate_search_overlay()
+
+                if keymaps.test("add-to-queue") and pctl.selected_ready():
+                    add_selected_to_queue()
+
+                if keymaps.test("clear-queue"):
+                    clear_queue()
+
+                if keymaps.test("regenerate-playlist"):
+                    regenerate_playlist(pctl.active_playlist_viewing)
 
             if keymaps.test("cycle-theme"):
                 gui.reload_theme = True

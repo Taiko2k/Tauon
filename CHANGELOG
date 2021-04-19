@@ -1,12 +1,13 @@
 
 Changelog-------------------------------------
 
-v6.5.5
+v6.6.0
 
  - Restored spectrum visualisers (Phazor only)
  - Added "Filename" type column
  - Added relative volume adjust remote API point
  - Improved radio stream fail error reporting detail
+ - Fixed some shortcuts being possible while text input is active
  - Fixed discord RPC not working when album is a single letter
  - Fixed CUE sheet parsing missing composer and album artist fields
  - Fixed click not registering after restore from tray
