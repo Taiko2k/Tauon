@@ -3525,7 +3525,7 @@ def save_prefs():
     #cf.update_value("decode-search", prefs.diacritic_search)
 
     #cf.update_value("use-log-volume-scale", prefs.log_vol)
-    #cf.update_value("pause-fade-time", prefs.pause_fade_time)
+    cf.update_value("pause-fade-time", prefs.pause_fade_time)
     #cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
@@ -3653,7 +3653,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
-    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400.")
+    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
     if prefs.pause_fade_time < 100:
         prefs.pause_fade_time = 100
@@ -25592,6 +25592,11 @@ class Over:
             old = prefs.discord_enable
             prefs.discord_enable = self.toggle_square(x, y, prefs.discord_enable, _("Enable Discord Rich Presence"))
 
+            if flatpak_mode:
+                if self.button(x + 215 * gui.scale, y, _("?")):
+                    show_message(_("For troubleshooting Discord RP"),
+                                 "https://github.com/Taiko2k/TauonMusicBox/wiki/Discord-RP", mode="link")
+
             if prefs.discord_enable and not old:
                 if snap_mode:
                     show_message("Sorry, this feature is unavailable with snap", mode="error")
@@ -25640,7 +25645,7 @@ class Over:
         elif self.func_page == 3:
             y += 23 * gui.scale
             old = prefs.enable_remote
-            prefs.enable_remote = self.toggle_square(x, y, prefs.enable_remote, _("Enable server for remote app [Alpha testing]"),
+            prefs.enable_remote = self.toggle_square(x, y, prefs.enable_remote, _("Enable remote control"),
                                subtitle=_("Change requires restart"))
             y += 35 * gui.scale
 
