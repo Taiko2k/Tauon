@@ -6,6 +6,7 @@ v6.6.0
  - Restored spectrum visualisers (Phazor only)
  - Added "Filename" type column
  - Added relative volume adjust remote API point
+ - Added help link for Discord RP with Flatpak
  - Improved radio stream fail error reporting detail
  - Fixed some shortcuts being possible while text input is active
  - Fixed discord RPC not working when album is a single letter
