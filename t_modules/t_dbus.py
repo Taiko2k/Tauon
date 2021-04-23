@@ -292,9 +292,9 @@ class Gnome:
 
             def update_play_lock():
                 if prefs.block_suspend:
-                    if pctl.playing_state == 1 and tauon.play_lock is None:
+                    if pctl.playing_state in (1, 3) and tauon.play_lock is None:
                         tauon.play_lock = iface.Inhibit("sleep", "Tauon Music Box", "Audio is playing", "block")
-                    elif pctl.playing_state != 1 and tauon.play_lock is not None:
+                    elif pctl.playing_state not in (1, 3) and tauon.play_lock is not None:
                         del tauon.play_lock
                         tauon.play_lock = None
                 elif tauon.play_lock is not None:
