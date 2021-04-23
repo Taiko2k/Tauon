@@ -32249,8 +32249,10 @@ class RadioBox:
         pctl.decode_time = 0
         pctl.playing_length = 0
 
-        time.sleep(0.1)
+        if tauon.update_play_lock is not None:
+            tauon.update_play_lock()
 
+        time.sleep(0.1)
         self.load_connecting = False
         self.load_failed = False
         gui.update += 1
