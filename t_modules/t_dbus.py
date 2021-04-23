@@ -276,8 +276,42 @@ class Gnome:
             if self.tauon.inp.media_key:
                 gui.update = 1
 
-        # set up the glib main loop.
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        try:
+            # set up the glib main loop.
+            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+            bus = dbus.Bus(dbus.Bus.TYPE_SYSTEM)
+            bus_object = bus.get_object('org.freedesktop.login1',
+                                        '/org/freedesktop/login1')
+
+            iface = dbus.Interface(bus_object,
+                                   dbus_interface='org.freedesktop.login1.Manager')
+
+            tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
+            tauon.shutdown_lock = iface.Inhibit("shutdown", "Tauon Music Box", "Save data to disk", "delay")
+
+            def PrepareForSleep(active):
+
+                if active == 1 and tauon.sleep_lock is not None:
+                    print("System is suspending!")
+                    if pctl.playing_state in (1, 3):
+                        tauon.pctl.pause()
+                    del tauon.sleep_lock
+                    tauon.sleep_lock = None
+
+                elif active == 0 and tauon.sleep_lock is None:
+                    tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
+
+            def PrepareForShutdown(active):
+                print("The system is shutting down!")
+                tauon.quick_close = True
+                tauon.exit()
+
+            iface.connect_to_signal("PrepareForSleep", PrepareForSleep)
+            iface.connect_to_signal("PrepareForShutdown", PrepareForShutdown)
+
+        except:
+            print("Failure to connect to login1")
 
         if prefs.mkey:
             try:
