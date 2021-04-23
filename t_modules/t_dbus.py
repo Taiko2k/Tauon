@@ -290,6 +290,19 @@ class Gnome:
             tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
             tauon.shutdown_lock = iface.Inhibit("shutdown", "Tauon Music Box", "Save data to disk", "delay")
 
+            def update_play_lock():
+                if prefs.block_suspend:
+                    if pctl.playing_state == 1 and tauon.play_lock is None:
+                        tauon.play_lock = iface.Inhibit("sleep", "Tauon Music Box", "Audio is playing", "block")
+                    elif pctl.playing_state != 1 and tauon.play_lock is not None:
+                        del tauon.play_lock
+                        tauon.play_lock = None
+                elif tauon.play_lock is not None:
+                    del tauon.play_lock
+                    tauon.play_lock = None
+
+            tauon.update_play_lock = update_play_lock
+
             def PrepareForSleep(active):
 
                 if active == 1 and tauon.sleep_lock is not None:
@@ -309,6 +322,7 @@ class Gnome:
 
             iface.connect_to_signal("PrepareForSleep", PrepareForSleep)
             iface.connect_to_signal("PrepareForShutdown", PrepareForShutdown)
+
 
         except:
             print("Failure to connect to login1")

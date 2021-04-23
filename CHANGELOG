@@ -9,6 +9,7 @@ v6.6.0
  - Added help link for Discord RP with Flatpak
  - Added auto pause on suspend
  - Added auto write db changes on shutdown
+ - Added config option to block suspend during playback
  - Improved radio stream fail error reporting detail
  - Fixed some shortcuts being possible while text input is active
  - Fixed discord RPC not working when album is a single letter
