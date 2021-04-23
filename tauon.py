@@ -7255,6 +7255,10 @@ class Tauon:
         self.tray_lock = threading.Lock()
         self.tray_releases = 0
 
+        self.sleep_lock = None
+        self.shutdown_lock = None
+        self.quick_close = False
+
     def exit(self):
         pctl.running = False
 
@@ -43695,13 +43699,13 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
 
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
+
+gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
+save_state()
+
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
-
-gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
-
-save_state()
 
 if tauon.stream_proxy.download_running:
     print("Stopping stream...")
@@ -43756,12 +43760,19 @@ print("SDL unloaded")
 
 exit_timer = Timer()
 exit_timer.set()
-while tm.check_playback_running() or lfm_scrobbler.running:
-    time.sleep(0.2)
-    lfm_scrobbler.running = False
-    if exit_timer.get() > 11:
-        print("Unload timeout")
-        break
+
+if not tauon.quick_close:
+    while tm.check_playback_running() or lfm_scrobbler.running:
+        time.sleep(0.2)
+        lfm_scrobbler.running = False
+        if exit_timer.get() > 11:
+            print("Unload timeout")
+            break
+
+if tauon.sleep_lock is not None:
+    del tauon.sleep_lock
+if tauon.shutdown_lock is not None:
+    del tauon.shutdown_lock
 
 print("bye")
 
