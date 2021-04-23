@@ -6518,7 +6518,7 @@ class LastFMapi:
         try:
             if title != "" and artist != "":
                 if album != "":
-                    if album_artist != artist:
+                    if album_artist and album_artist != artist:
                         self.network.scrobble(artist=artist, title=title, album=album, album_artist=album_artist, timestamp=timestamp)
                     else:
                         self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
