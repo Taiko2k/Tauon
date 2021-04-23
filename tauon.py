@@ -1482,6 +1482,8 @@ class Prefs:    # Used to hold any kind of settings
         self.discord_enable = False
         self.stop_end_queue = False
 
+        self.block_suspend = False
+
 prefs = Prefs()
 
 
@@ -3545,6 +3547,7 @@ def save_prefs():
     cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
     cf.update_value("back-restarts", prefs.back_restarts)
     cf.update_value("end-queue-stop", prefs.stop_end_queue)
+    cf.update_value("block-suspend", prefs.block_suspend)
 
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("use-xft-dpi", prefs.x_scale)
@@ -3703,6 +3706,7 @@ def load_prefs():
     prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather then attempting to launch the desktop client.")
     prefs.back_restarts = cf.sync_add("bool", "back-restarts", prefs.back_restarts, "Pressing the back button restarts playing track on first press.")
     prefs.stop_end_queue = cf.sync_add("bool", "end-queue-stop", prefs.stop_end_queue, "Queue will always enable auto-stop on last track")
+    prefs.block_suspend = cf.sync_add("bool", "block-suspend", prefs.block_suspend, "Prevent system suspend during playback")
 
     cf.br()
     cf.add_text("[HiDPI]")
@@ -4619,12 +4623,13 @@ class PlayerCtl:
     def notify_update_fire(self):
         if self.mpris is not None:
             self.mpris.update()
+        if tauon.update_play_lock is not None:
+            tauon.update_play_lock()
         # if self.tray_update is not None:
         #     self.tray_update()
         self.notify_in_progress = False
 
     def notify_update(self):
-
         tauon.tray_releases += 1
         try:
             tauon.tray_lock.release()
@@ -7255,6 +7260,8 @@ class Tauon:
         self.tray_lock = threading.Lock()
         self.tray_releases = 0
 
+        self.play_lock = None
+        self.update_play_lock = None
         self.sleep_lock = None
         self.shutdown_lock = None
         self.quick_close = False
@@ -43773,6 +43780,8 @@ if tauon.sleep_lock is not None:
     del tauon.sleep_lock
 if tauon.shutdown_lock is not None:
     del tauon.shutdown_lock
+if tauon.play_lock is not None:
+    del tauon.play_lock
 
 print("bye")
 
