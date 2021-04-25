@@ -22252,6 +22252,8 @@ class SearchOverlay:
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
                             pctl.playlist_view_position = playlist_selected
+                            if album_mode:
+                                show_in_gal(0)
                             console.print("DEBUG: Position changed by global search")
                             self.active = False
                             self.search_text.text = ""
@@ -22316,6 +22318,8 @@ class SearchOverlay:
 
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
+                            if album_mode:
+                                show_in_gal(0)
                             self.active = False
                             self.search_text.text = ""
                     if enter and fade == 1:
@@ -25664,19 +25668,14 @@ class Over:
                 show_message("Notice: This API is not security hardened.",
                              "Only enable in a trusted LAN and do not expose port (7814) to the internet", mode="warning")
 
-            # y += 35 * gui.scale
-            # link_pa2 = draw_linked_text((x, y),
-            #                             f"Testing Android apk avaliable here https://github.com/Taiko2k/TauonMusicRemote/releases",
-            #                             colours.box_sub_text, 13)
-            # link_rect2 = [x + link_pa2[0], y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
-            # fields.add(link_rect2)
-            #
-            # if coll(link_rect2):
-            #     if not self.click:
-            #         gui.cursor_want = 3
-            #
-            #     if self.click:
-            #         webbrowser.open(link_pa2[2], new=2, autoraise=True)
+            y += 12 * gui.scale
+            old = prefs.block_suspend
+            prefs.block_suspend = self.toggle_square(x, y, prefs.block_suspend, _("Block suspend"),
+                                                     subtitle=_("Prevent system suspend during playback"))
+
+            if old != prefs.block_suspend:
+                tauon.update_play_lock()
+
 
         # Switcher
         pages = 4
