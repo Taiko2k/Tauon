@@ -62,6 +62,7 @@
       <description>
         <ul>
           <li>Restored spectrum visualisers</li>
+          <li>Added option to prevent system suspend</li>
           <li>Added filename type column</li>
           <li>Various fixes</li>
         </ul>

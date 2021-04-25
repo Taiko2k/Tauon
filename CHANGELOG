@@ -9,8 +9,9 @@ v6.6.0
  - Added help link for Discord RP with Flatpak
  - Added auto pause on suspend
  - Added auto write db changes on shutdown
- - Added config option to block suspend during playback
+ - Added option to block suspend during playback
  - Improved radio stream fail error reporting detail
+ - Tweaked search goto to pulse highlight album in gallery
  - Fixed some shortcuts being possible while text input is active
  - Fixed discord RPC not working when album is a single letter
  - Fixed CUE sheet parsing missing composer and album artist fields
