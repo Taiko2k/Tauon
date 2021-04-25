@@ -6515,6 +6515,7 @@ class LastFMapi:
         title = track_object.title
         album = track_object.album
         artist = get_artist_strip_feat(track_object)
+        album_artist = track_object.album_artist
 
         print("submitting scrobble...")
 
@@ -6522,7 +6523,10 @@ class LastFMapi:
         try:
             if title != "" and artist != "":
                 if album != "":
-                    self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
+                    if album_artist and album_artist != artist:
+                        self.network.scrobble(artist=artist, title=title, album=album, album_artist=album_artist, timestamp=timestamp)
+                    else:
+                        self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
                 else:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
                 # print('Scrobbled')
