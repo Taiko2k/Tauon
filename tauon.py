@@ -26119,7 +26119,7 @@ class Over:
             self.button(x, y, _("Import music to playlist"), sub_get_album_thread)
 
             y += round(35 * gui.scale)
-            prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text authentication"), subtitle=_("Needed for Nextcloud compatibility"))
+            prefs.subsonic_password_plain = self.toggle_square(x,y, prefs.subsonic_password_plain, _("Use plain text authentication"), subtitle=_("Needed for Nextcloud Music"))
 
         if self.account_view == 10:
 
