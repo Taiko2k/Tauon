@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-03-20 15:26+1300\n"
-"PO-Revision-Date: 2021-05-03 12:31+0000\n"
+"PO-Revision-Date: 2021-05-05 16:14+0000\n"
 "Last-Translator: ssantos <ssantos@web.de>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt/>\n"
@@ -40,7 +40,7 @@ msgstr "Página de autenticação web aberta"
 
 #: tauon.py:6294
 msgid "You need to log in first"
-msgstr "Você precisa fazer o login primeiro"
+msgstr "Precisa fazer o login primeiro"
 
 #: tauon.py:6450
 msgid "Scanning failed. Try again?"
