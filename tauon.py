@@ -18710,7 +18710,7 @@ def editor(index):
 
 
     if not ok:
-        show_message(_("Tag editior app does not appear to be installed."), mode='warning')
+        show_message(_("Tag editor app does not appear to be installed."), mode='warning')
 
         if flatpak_mode:
             show_message(_("App not found on host OR insufficient Flatpak permissions."),
