@@ -18,6 +18,7 @@ v6.6.0
  - Fixed CUE sheet parsing missing composer and album artist fields
  - Fixed click not registering after restore from tray
  - Fixed some MP3 fields not parsing
+ - Fixed gallery not updating after column sort
 
 v6.5.4
 
