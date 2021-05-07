@@ -4224,7 +4224,6 @@ def tag_scan(nt):
 
             # Use HSAUDIOTAG
             audio = auto.File(nt.fullpath)
-
             nt.length = audio.duration
             nt.title = rm_16(audio.title)
             nt.artist = rm_16(audio.artist)
@@ -4245,6 +4244,10 @@ def tag_scan(nt):
 
             if nt.file_ext == "MP3":
                 tag = stagger.read_tag(nt.fullpath)
+                nt.title = tag.title
+                nt.artist = tag.artist
+                nt.album = tag.album
+                nt.track_number = tag.track
                 nt.album_artist = tag.album_artist
                 nt.disc_number = str(tag.disc)
                 nt.disc_total = str(tag.disc_total)
@@ -19672,6 +19675,8 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 
     elif custom_list is not None:
             playlist.sort(key=key, reverse=invert)
+
+    reload()
 
 
 def sort_dec(h):
