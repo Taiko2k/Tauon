@@ -12,10 +12,12 @@ v6.6.0
  - Added option to block suspend during playback
  - Improved radio stream fail error reporting detail
  - Tweaked search goto to pulse highlight album in gallery
+ - Tweaked last.fm scrobble to include album-artist
  - Fixed some shortcuts being possible while text input is active
  - Fixed discord RPC not working when album is a single letter
  - Fixed CUE sheet parsing missing composer and album artist fields
  - Fixed click not registering after restore from tray
+ - Fixed some MP3 fields not parsing
 
 v6.5.4
 
