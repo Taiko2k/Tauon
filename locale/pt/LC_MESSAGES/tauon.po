@@ -6,10 +6,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-05-07 13:40+1200\n"
-"PO-Revision-Date: 2021-05-05 16:14+0000\n"
+"PO-Revision-Date: 2021-05-10 01:42+0000\n"
 "Last-Translator: ssantos <ssantos@web.de>\n"
-"Language-Team: Portuguese <https://hosted.weblate.org/projects/tauon-music-"
-"box/tauon-music-box/pt/>\n"
+"Language-Team: Portuguese <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt/>\n"
 "Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1033,7 +1033,7 @@ msgstr "Medidor de Nível"
 
 #: tauon.py:19470
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Visualizador Espectral"
 
 #: tauon.py:19698
 msgid "Time"
@@ -1667,7 +1667,8 @@ msgstr "Ativar monitor de descarregamentos"
 
 #: tauon.py:25653
 msgid "One click import new archives and folders from downloads folder"
-msgstr "Um click para importar novos arquivos e pastas de downloads"
+msgstr ""
+"Um clique para importar novos arquivos e pastas de pastas de descarregas"
 
 #: tauon.py:25655
 msgid "Trash archive after extraction"
@@ -2600,7 +2601,7 @@ msgstr "Renomeia a pasta física com base no modelo"
 
 #: tauon.py:42651
 msgid "Trash"
-msgstr "Lixeira"
+msgstr "Lixo"
 
 #: tauon.py:42652
 msgid "Moves folder to system trash"
