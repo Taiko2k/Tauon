@@ -58,7 +58,7 @@
 
   <releases>
 
-    <release version="6.6.0" date="2021-04-19">
+    <release version="6.6.0" date="2021-05-10">
       <description>
         <ul>
           <li>Restored spectrum visualisers</li>
