@@ -201,6 +201,7 @@ class Jellyfin():
                 nt.index = id  # this is tauons track id
 
                 nt.track_number = str(track.get("IndexNumber", ""))
+                nt.disc_number = str(track.get("ParentIndexNumber", ""))
                 nt.file_ext = "JELY"
                 nt.parent_folder_path = parent
                 nt.parent_folder_name = parent
