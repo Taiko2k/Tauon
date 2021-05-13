@@ -268,7 +268,7 @@ class Jellyfin():
             time.sleep(1)
             track = self.pctl.playing_object()
 
-            if track.file_ext != "JELY":
+            if track.file_ext != "JELY" or (self.session_status == 0 and self.pctl.playing_state == 0):
                 if self.session_status != 0:
                     data = self.session_last_item
                     self.session_send("Sessions/Playing/Stopped", data)
