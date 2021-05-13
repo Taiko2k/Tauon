@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.6.1
+
+ - Added Jellyfin playback status update
+
 v6.6.0
 
  - Restored spectrum visualisers (Phazor only)

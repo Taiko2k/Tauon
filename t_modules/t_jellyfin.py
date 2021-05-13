@@ -21,7 +21,9 @@ import requests
 import json
 import itertools
 import io
-
+import time
+import threading
+from t_modules.t_extra import Timer
 
 class Jellyfin():
 
@@ -37,6 +39,13 @@ class Jellyfin():
         self.accessToken = None
         self.userId = None
         self.currentId = None
+
+        self.session_thread_active = False
+        self.session_status = 0
+        self.session_item_id = None
+        self.session_update_timer = Timer()
+        self.session_last_item = None
+
 
     def _get_jellyfin_auth(self):
         auth_str = f"MediaBrowser Client={self.tauon.t_title}, Device={self.tauon.device}, DeviceId=-, Version={self.tauon.t_version}"
@@ -101,6 +110,11 @@ class Jellyfin():
             params["MaxStreamingBitrate"] = self.prefs.network_stream_bitrate
 
         url = base_url + "?" + requests.compat.urlencode(params)
+
+        if not self.session_thread_active:
+            shoot = threading.Thread(target=self.session)
+            shoot.daemon = True
+            shoot.start()
 
         return base_url, params
 
@@ -230,3 +244,74 @@ class Jellyfin():
         self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
         self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
+
+    def session_item(self, track):
+        return {
+            "QueueableMediaTypes": ["Audio"],
+            "CanSeek": True,
+            "ItemId": track.url_key,
+            "IsPaused": self.pctl.playing_state == 2,
+            "IsMuted": self.pctl.player_volume == 0,
+            "PositionTicks": int(self.pctl.playing_time * 10000000),
+            "PlayMethod": "DirectStream",
+            "PlaySessionId": "0",
+        }
+
+    def session(self):
+
+        if not self.connected:
+            return
+
+        self.session_thread_active = True
+
+        while True:
+            time.sleep(1)
+            track = self.pctl.playing_object()
+
+            if track.file_ext != "JELY":
+                if self.session_status != 0:
+                    data = self.session_last_item
+                    self.session_send("Sessions/Playing/Stopped", data)
+                    self.session_status = 0
+                self.session_thread_active = False
+                return
+
+            if (self.session_status == 0 or self.session_item_id != track.index) and self.pctl.playing_state == 1:
+                data = self.session_item(track)
+                self.session_send("Sessions/Playing", data)
+                self.session_update_timer.set()
+                self.session_status = 1
+                self.session_item_id = track.index
+                self.session_last_item = data
+            elif self.session_status == 1 and self.session_update_timer.get() >= 10:
+                data = self.session_item(track)
+                data["EventName"] = "TimeUpdate"
+                self.session_send("Sessions/Playing/Progress", data)
+                self.session_update_timer.set()
+            elif self.session_status in (1, 2) and self.pctl.playing_state in (0, 3):
+                data = self.session_last_item
+                self.session_send("Sessions/Playing/Stopped", data)
+                self.session_status = 0
+            elif self.session_status == 1 and self.pctl.playing_state == 2:
+                data = self.session_item(track)
+                data["EventName"] = "Pause"
+                self.session_send("Sessions/Playing/Progress", data)
+                self.session_update_timer.set()
+                self.session_status = 2
+            elif self.session_status == 2 and self.pctl.playing_state == 1:
+                data = self.session_item(track)
+                data["EventName"] = "Unpause"
+                self.session_send("Sessions/Playing/Progress", data)
+                self.session_update_timer.set()
+                self.session_status = 1
+
+    def session_send(self, point, data):
+
+        response = requests.post(
+            f"{self.prefs.jelly_server_url}/{point}", data=json.dumps(data),
+            headers={
+                "Token": self.accessToken,
+                "X-Application": "Tauon/1.0",
+                "x-emby-authorization": self._get_jellyfin_auth(),
+                "Content-Type": "application/json"
+            })
