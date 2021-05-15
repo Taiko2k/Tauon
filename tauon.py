@@ -25682,7 +25682,11 @@ class Over:
             prefs.block_suspend = self.toggle_square(x, y, prefs.block_suspend, _("Block suspend"),
                                                      subtitle=_("Prevent system suspend during playback"))
 
-            if old != prefs.block_suspend:
+            if tauon.update_play_lock is None:
+                prefs.block_suspend = False
+                if flatpak_mode:
+                    show_message("Sandbox support not implemented")
+            elif old != prefs.block_suspend:
                 tauon.update_play_lock()
 
 
