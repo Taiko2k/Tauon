@@ -11,7 +11,7 @@ if [ -e /opt/tauon-music-box/tauon.py ] || [ -e /usr/li*/tauon-music-box/tauon.p
 
     echo "Uhm.. Tauon already installed I guess."
     echo
-    echo "!!USE UNINSTALL ONLY IF YOU HAVE INSTALLED BY SCRIPT!!"
+    echo "!! USE UNINSTALL ONLY IF YOU HAVE INSTALLED BY SCRIPT !!"
     read -r -p "Wanna uninstall?[Y/n]: " VER
     case $VER in
     [yY][eE][sS]|[yY]|"")
@@ -65,10 +65,12 @@ while true; do
     [yY][eE][sS]|[yY])
         echo
         echo "Sorry, Installer is under maintain at moment for Debian/Ubuntu based distributions."
+        echo
         exit 1
         #apt update
         #apt install -y python3-pip
-    break;;
+    #break;;
+    ;;
     [nN][oO]|[nN])
         echo
     break;;
@@ -91,7 +93,13 @@ while true; do
     break;;
     [nN][oO]|[nN])
         echo
-    break;;
+        echo "You don't really wanna do this."
+        echo "If you're on Archlinux/Slackware based distribution, well.. use AUR/SBo!"
+        echo "You'll end up dependencies issues and I haven't worked on your distro properly yet."
+        echo
+        exit 1
+    #break;;
+    ;;
     *)
     echo
     read -r -p "Please.. Is this yes/no?: " VER
@@ -120,6 +128,7 @@ else
     echo
     echo "Please download latest official release from https://github.com/Taiko2k/TauonMusicBox/releases/"
     echo "extract the file and run again."
+    echo
     exit 1
 fi
 
