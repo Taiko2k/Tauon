@@ -482,7 +482,7 @@ class Gnome:
                             'Rate': 1.0,
                             'Shuffle': pctl.random_mode,
                             'Volume': pctl.player_volume / 100,
-                            'Position': 0,
+                            'Position': dbus.Int64(0),
                             'MinimumRate': 1.0,
                             'MaximumRate': 1.0,
                             'CanGoNext': True,
