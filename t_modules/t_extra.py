@@ -30,7 +30,7 @@ import glob
 import locale
 import re
 import math
-
+import threading
 
 # A seconds based timer
 class Timer:
@@ -912,3 +912,9 @@ def seconds_to_day_hms(seconds, s_day, s_days):
         return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minuites))}:{str(int(seconds))}"
     else:
         return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minuites)).zfill(2)}:{str(int(seconds)).zfill(2)}"
+
+
+def shooter(func, args=()):
+    shoot = threading.Thread(target=func, args=args)
+    shoot.daemon = True
+    shoot.start()

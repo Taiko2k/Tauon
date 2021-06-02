@@ -1483,6 +1483,7 @@ class Prefs:    # Used to hold any kind of settings
         self.stop_end_queue = False
 
         self.block_suspend = False
+        self.smart_bypass = True
 
 prefs = Prefs()
 
@@ -3503,6 +3504,7 @@ cf = Config()
 def save_prefs():
 
     cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
+    cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
     cf.update_value("radio-record-codec", prefs.radio_record_codec)
 
     cf.update_value("plex-username", prefs.plex_username)
@@ -3780,6 +3782,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[transcode]")
     prefs.bypass_transcode = cf.sync_add("bool", "sync-bypass-transcode", prefs.bypass_transcode, "Don't transcode files with sync function")
+    prefs.smart_bypass = cf.sync_add("bool", "sync-bypass-low-bitrate", prefs.smart_bypass, "Skip transcode of <=128kbs folders")
     prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec, "Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
 
 
@@ -6994,6 +6997,64 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
     gui.update += 1
     if pctl.mpris is not None:
         pctl.mpris.update(force=True)
+
+def maloja_get_scrobble_counts():
+
+    if lastfm.scanning_scrobbles is True or not prefs.maloja_url:
+        return
+
+    url = prefs.maloja_url
+    if not url.endswith("/"):
+        url += "/"
+    url += "apis/mlj_1/scrobbles"
+    lastfm.scanning_scrobbles = True
+    try:
+        r = requests.get(url)
+
+        if r.status_code != 200:
+            show_message("There was an error with the Maloja server", r.text, mode='warning')
+            lastfm.scanning_scrobbles = False
+            return
+    except:
+        show_message("There was an error reaching the Maloja server", mode='warning')
+        lastfm.scanning_scrobbles = False
+        return
+
+    try:
+        data = json.loads(r.text)
+        l = data["list"]
+
+        counts = {}
+
+        for item in l:
+            artists = item.get("artists")
+            title = item.get("title")
+            if title and artists:
+                key = (title, tuple(artists))
+                c = counts.get(key, 0)
+                counts[key] = c + 1
+
+        touched = []
+
+        for key, value in counts.items():
+            title, artists = key
+            artists = [x.lower() for x in artists]
+            title = title.lower()
+            for track in pctl.master_library.values():
+                if track.artist.lower() in artists and track.title.lower() == title:
+                    if track.index in touched:
+                        track.lfm_scrobbles += value
+                    else:
+                        track.lfm_scrobbles = value
+                        touched.append(track.index)
+        show_message(_("Scanning scrobbles complete"), mode="done")
+
+    except:
+        show_message("There was an error parsing the data", mode="warning")
+
+    gui.pl_update += 1
+    lastfm.scanning_scrobbles = False
+    tauon.worker_save_state = True
 
 
 def maloja_scrobble(track):
@@ -16540,7 +16601,8 @@ def auto_sync_thread(pl):
             show_message(_("Sync aborted! Low disk space on target device"), mode="warning")
             break
 
-        if prefs.bypass_transcode:
+        if prefs.bypass_transcode or (prefs.smart_bypass and 0 < pctl.g(folder_dict[item][0]).bitrate <= 128):
+            print("Smart bypass...")
 
             source_parent = pctl.g(folder_dict[item][0]).parent_folder_path
             if os.path.exists(source_parent):
@@ -25954,6 +26016,14 @@ class Over:
                     except:
                         show_message("Could not communicate with the Maloja server", mode='warning')
 
+            y += round(30 * gui.scale)
+
+            ws = ddt.get_text_w(_("Get scrobble counts"),211) + 10 * gui.scale
+            wcc = ddt.get_text_w(_("Clear"),211) + 15 * gui.scale
+            if self.button(x, y, _("Get scrobble counts")):
+                shooter(maloja_get_scrobble_counts)
+            self.button(x + ws + round(12 * gui.scale), y, _("Clear"), self.clear_scrobble_counts, width=wcc)
+
         if self.account_view == 8:
 
             ddt.text((x, y), _('Spotify Premium account'), colours.box_sub_text, 213)
@@ -26606,6 +26676,8 @@ class Over:
             prefs.sync_deletes = self.toggle_square(x, y, prefs.sync_deletes, _("Delete all other folders in target"))
             y += 25 * gui.scale
             prefs.bypass_transcode = self.toggle_square(x, y, prefs.bypass_transcode ^ True, _("Transcode files")) ^ True
+            y += 25 * gui.scale
+            prefs.smart_bypass = self.toggle_square(x + round(10 * gui.scale), y, prefs.smart_bypass ^ True, _("Bypass low bitrate")) ^ True
             y += 30 * gui.scale
 
             text = _("Start Transcode and Sync")
@@ -26627,7 +26699,7 @@ class Over:
                     gui.stop_sync = True
                     gui.sync_progress = _("Aborting Sync")
 
-            y += 85 * gui.scale
+            y += 60 * gui.scale
 
             if self.button(x, y, _("Return"), width=round(75*gui.scale)):
                 self.sync_view = False
