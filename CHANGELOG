@@ -4,6 +4,9 @@ Changelog-------------------------------------
 v6.6.1
 
  - Added Jellyfin playback status update
+ - Added get scrobble counts from Maloja
+ - Enabled "rescan folder" menu entry for album in folder navigator
+ - Fixed rescan folder function moving folder to end of playlist when scanning the first
 
 v6.6.0
 
