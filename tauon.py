@@ -13598,6 +13598,27 @@ def move_playing_folder_to_tag(tag_item):
     move_playing_folder_to_stem(tag_item.path)
 
 
+def re_import4(id):
+
+    p = None
+    for i, idd in enumerate(default_playlist):
+        if idd == id:
+            p = i
+            break
+
+    load_order = LoadClass()
+
+    if p is not None:
+        load_order.playlist_position = p
+
+    load_order.replace_stem = True
+    load_order.target = pctl.g(id).parent_folder_path
+    load_order.notify = True
+    load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+    load_orders.append(copy.deepcopy(load_order))
+    show_message("Rescanning folder...", pctl.g(id).parent_folder_path, mode='info')
+
+
 def re_import3(stem):
 
     p = None
@@ -13608,7 +13629,7 @@ def re_import3(stem):
 
     load_order = LoadClass()
 
-    if p:
+    if p is not None:
         load_order.playlist_position = p
 
     load_order.replace_stem = True
@@ -13652,6 +13673,7 @@ lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=Tr
 folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon)
 folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True, icon=filter_icon)
 folder_tree_stem_menu.add(_("Rescan Folder"), re_import3, pass_ref=True)
+folder_tree_menu.add(_("Rescan Folder"), re_import4, pass_ref=True)
 lightning_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_tag, pass_ref=True)
 
 folder_tree_stem_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_tree_stem, pass_ref=True)
@@ -25746,8 +25768,8 @@ class Over:
 
             if tauon.update_play_lock is None:
                 prefs.block_suspend = False
-                if flatpak_mode:
-                    show_message("Sandbox support not implemented")
+                # if flatpak_mode:
+                #     show_message("Sandbox support not implemented")
             elif old != prefs.block_suspend:
                 tauon.update_play_lock()
 
@@ -26597,6 +26619,8 @@ class Over:
 
         for track in pctl.master_library.values():
             track.lfm_scrobbles = 0
+
+        show_message(_("Cleared all scrobble counts"), mode="done")
 
     def get_friend_love(self):
 
@@ -41411,7 +41435,7 @@ while pctl.running:
 
                         # print(order.tracks)
                         if order.playlist_position is not None:
-                            # print(order.playlist_position)
+                            #print(order.playlist_position)
                             pctl.multi_playlist[target_pl][2][order.playlist_position:order.playlist_position] = order.tracks
                         #else:
 
