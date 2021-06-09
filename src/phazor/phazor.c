@@ -903,6 +903,7 @@ int load_next() {
         strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
         strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
         strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
+        strcmp(ext, ".wv") == 0 || strcmp(ext, ".WV") == 0 ||
         //strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
         //strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
         loaded_target_file[0] == 'h') {
