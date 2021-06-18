@@ -38252,6 +38252,13 @@ class Undo:
                 if not pctl.playlist_view_position < i < pctl.playlist_view_position + gui.playlist_view_length:
                     pctl.playlist_view_position = i
                     console.print("DEBUG: Position changed by undo")
+        elif job[0] == 'ptt':
+            star_store.remove(job[1])
+            if job[2]:
+                star_store.insert(job[1], job[2])
+            star_store.remove(job[3])
+            if job[4]:
+                star_store.insert(job[3], job[4])
 
         gui.pl_update = 1
 
@@ -38263,6 +38270,9 @@ class Undo:
 
         uid = pctl.multi_playlist[pl_index][6]
         self.e.append(("tracks", uid, indis))
+
+    def bk_playtime_transfer(self, source, target):
+        self.e.append(("ptt", source, copy.deepcopy(star_store.full_get(source)), target, copy.deepcopy(star_store.full_get(target))))
 
 undo = Undo()
 
@@ -40022,6 +40032,7 @@ while pctl.running:
 
             if keymaps.test("transfer-playtime-to"):
                 if len(cargo) == 1 and tauon.cargo_playtime and -1 < playlist_selected < len(default_playlist):
+                    undo.bk_playtime_transfer(cargo[0], default_playlist[playlist_selected])
                     star_store.remove(cargo[0])
                     star_store.add(default_playlist[playlist_selected], tauon.cargo_playtime)
                     tauon.cargo_playtime = None
