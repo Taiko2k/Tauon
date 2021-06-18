@@ -99,6 +99,7 @@ reload-theme F10
 opacity-up = Ctrl
 opacity-down - Ctrl
 
+transfer-playtime-to P Ctrl Shift
 toggle-show-art H Ctrl
 resize-window-16:9 F11 Alt
 toggle-console `

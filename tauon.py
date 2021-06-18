@@ -7334,6 +7334,8 @@ class Tauon:
         self.shutdown_lock = None
         self.quick_close = False
 
+        self.cargo_playtime = None
+
     def exit(self):
         pctl.running = False
 
@@ -17764,6 +17766,13 @@ def s_copy():
         for item in shift_selection:
             cargo.append(default_playlist[item])
 
+    if not cargo and -1 < playlist_selected < len(default_playlist):
+        cargo.append(default_playlist[playlist_selected])
+
+    tauon.cargo_playtime = None
+
+    if len(cargo) == 1:
+        tauon.cargo_playtime = star_store.get(cargo[0])
 
 def directory_size(path):
     total = 0
@@ -33051,10 +33060,10 @@ class RenamePlaylistBox:
             xx2 = hint_rect[0] + round(85 * gui.scale)
             yy = hint_rect[1] + round(10 * gui.scale)
 
-            text_colour =  [90, 90, 90, 255]
+            text_colour =  [150, 150, 150, 255]
             title_colour =  text_colour
             code_colour =  [250, 250, 250, 255]
-            hint_colour =  [60, 60, 60, 255]
+            hint_colour =  [110, 110, 110, 255]
 
             title_font = 311
             code_font = 311
@@ -40010,6 +40019,13 @@ while pctl.running:
                     show_message(_("Disabled auto theme"))
                     gui.reload_theme = True
                     gui.theme_temp_current = -1
+
+            if keymaps.test("transfer-playtime-to"):
+                if len(cargo) == 1 and tauon.cargo_playtime and -1 < playlist_selected < len(default_playlist):
+                    star_store.remove(cargo[0])
+                    star_store.add(default_playlist[playlist_selected], tauon.cargo_playtime)
+                    tauon.cargo_playtime = None
+                    gui.pl_update += 1
 
             if keymaps.test("toggle-gallery"):
                 toggle_album_mode()
