@@ -403,7 +403,6 @@ class Gnome:
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
                                 'xesam:artist': dbus.Array([track.artist]),
                                 'xesam:title': track.title,
-                                'xesam:url': "file://" + urllib.parse.quote(track.fullpath),
                                 'xesam:asText': track.lyrics,
                                 'xesam:autoRating': star_count2(tauon.star_store.get(track.index)),
                                 'xesam:composer': dbus.Array([track.composer]),
@@ -413,6 +412,10 @@ class Gnome:
                                 'xesam:genre': dbus.Array([track.genre])
 
                             }
+                            try:
+                                d['xesam:url'] = "file://" + urllib.parse.quote(track.fullpath)
+                            except:
+                                print("Uri encode error")
 
                             try:
                                 i_path = tauon.thumb_tracks.path(track)
