@@ -120,12 +120,12 @@ draw_min_button = True
 draw_max_button = True
 xdpi = 0
 
+gtk_settings = None
 try:
     gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk
     gtk_settings = Gtk.Settings().get_default()
     xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
-    # print(str(gtk_settings.get_property("gtk-decoration-layout")))
     if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
         draw_min_button = False
     if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
@@ -182,7 +182,7 @@ if install_directory.startswith("/opt/")\
         t_id = "com.github.taiko2k.tauonmb"
         print("Detected running as Flatpak")
 
-        # Symlink fontconfig from host system as workaround for poor font rendering
+        # [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
         if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
 
             host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
@@ -190,13 +190,14 @@ if install_directory.startswith("/opt/")\
 
             if os.path.exists(host_fcfg):
 
-                if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
-                    shutil.rmtree(flatpak_fcfg)
+                # if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
+                #     shutil.rmtree(flatpak_fcfg)
                 if os.path.islink(flatpak_fcfg):
-                    print("-- Symlink to user fonconfig exists")
-                else:
-                    print("-- Symlinking user fonconfig")
-                    os.symlink(host_fcfg, flatpak_fcfg)
+                    print("-- Symlink to fonconfig exists, removing")
+                    os.unlink(flatpak_fcfg)
+                # else:
+                #     print("-- Symlinking user fonconfig")
+                #     #os.symlink(host_fcfg, flatpak_fcfg)
 
         flatpak_mode = True
 
@@ -1176,9 +1177,10 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_del_zip = False
         self.pl_thumb = False
 
-        self.linux_font = "Noto Sans"
-        self.linux_font_semibold = "Noto Sans Medium"
-        self.linux_font_bold = "Noto Sans Bold"
+        self.use_custom_fonts = False
+        self.linux_font = "Noto Sans, Noto Sans CJK JP"
+        self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP Medium"
+        self.linux_font_bold = "Noto Sans, Noto Sans CJK JP Bold"
         self.linux_font_condensed = "Noto Sans ExtraCondensed"
         self.linux_font_condensed_bold = "Noto Sans ExtraCondensed Bold"
 
@@ -1362,6 +1364,9 @@ class Prefs:    # Used to hold any kind of settings
         self.show_current_on_transition = False
 
         self.force_subpixel_text = False
+        if gtk_settings:
+            if gtk_settings.get_property("gtk-xft-rgba") == "rgb":
+                self.force_subpixel_text = True
 
         self.chart_rows = 3
         self.chart_columns = 3
@@ -3588,9 +3593,11 @@ def save_prefs():
     cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
     cf.update_value("gallery-center-text", prefs.center_gallery_text)
 
+    cf.update_value("use-custom-fonts", prefs.use_custom_fonts)
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
     cf.update_value("font-main-bold", prefs.linux_font_bold)
+
     cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
 
     cf.update_value("double-digit-indices", prefs.dd_index)
@@ -3767,10 +3774,17 @@ def load_prefs():
         cf.br()
         cf.add_text("[fonts]")
         cf.add_comment("Changes will require app restart.")
-        prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "Recomended: Noto Sans, Sugested alternate: Liberation Sans")
-        prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "Recomended: Noto Sans Medium")
-        prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "Recomended: Noto Sans Bold")
-        prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
+        prefs.use_custom_fonts = cf.sync_add("bool", "use-custom-fonts", prefs.use_custom_fonts, "Setting to false will reset below settings to default on restart")
+        if prefs.use_custom_fonts:
+            prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "Sugested alternate: Liberation Sans")
+            prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+            prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+        else:
+            cf.sync_add("string", "font-main-standard", prefs.linux_font, "Sugested alternate: Liberation Sans")
+            cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+            cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+
+        #prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
 
     cf.br()
     cf.add_text("[tracklist]")
@@ -20970,14 +20984,14 @@ def toggle_level_meter(mode=0):
 
     gui.update_layout()
 
-def toggle_force_subpixel(mode=0):
-
-    if mode == 1:
-        return prefs.force_subpixel_text != 0
-
-    prefs.force_subpixel_text ^= True
-    ddt.force_subpixel_text = prefs.force_subpixel_text
-    ddt.clear_text_cache()
+# def toggle_force_subpixel(mode=0):
+#
+#     if mode == 1:
+#         return prefs.force_subpixel_text != 0
+#
+#     prefs.force_subpixel_text ^= True
+#     ddt.force_subpixel_text = prefs.force_subpixel_text
+#     ddt.clear_text_cache()
 
 
 def level_meter_special_2():
@@ -26819,8 +26833,8 @@ class Over:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
         y += 25 * gui.scale
-        if system != 'windows' and (flatpak_mode or snap_mode):
-            self.toggle_square(x, y, toggle_force_subpixel, _("Force RGB text antialiasing (recommended)"))
+        # if system != 'windows' and (flatpak_mode or snap_mode):
+        #     self.toggle_square(x, y, toggle_force_subpixel, _("Enable RGB text antialiasing"))
 
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
