@@ -18824,7 +18824,7 @@ def editor(index):
 
         if flatpak_mode:
             show_message(_("App not found on host OR insufficient Flatpak permissions."),
-                         'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.', mode='bubble')
+                         'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps for details.', mode='bubble')
 
         return
 
@@ -39215,7 +39215,7 @@ def drop_file(target):
 
     if not os.path.exists(target) and flatpak_mode:
         show_message(_("Could not access! Possible insufficient Flatpak permissions."),
-                     " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.",
+                     " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps for details.",
                      mode='bubble')
 
     load_order = LoadClass()
