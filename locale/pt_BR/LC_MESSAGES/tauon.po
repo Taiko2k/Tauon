@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-05-07 13:40+1200\n"
-"PO-Revision-Date: 2021-04-01 02:26+0000\n"
+"PO-Revision-Date: 2021-05-10 01:42+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.6-dev\n"
+"X-Generator: Weblate 4.7-dev\n"
 
 #: tauon.py:1908 tauon.py:1910
 msgid "No artist image found."
@@ -900,7 +900,6 @@ msgid "Modify Folder…"
 msgstr "Modificar Pasta…"
 
 #: tauon.py:18716
-#, fuzzy
 msgid "Tag editor app does not appear to be installed."
 msgstr "App de edição de etiquetas parece não estar instalada."
 
@@ -1109,9 +1108,8 @@ msgid "Comment"
 msgstr "Comentário"
 
 #: tauon.py:19727
-#, fuzzy
 msgid "Filename"
-msgstr "Renomear"
+msgstr "Nome de arquivo"
 
 #: tauon.py:19728
 msgid "Starline"
@@ -1648,7 +1646,7 @@ msgstr "?"
 
 #: tauon.py:25621
 msgid "For troubleshooting Discord RP"
-msgstr ""
+msgstr "Solução de problemas do Discord RP"
 
 #: tauon.py:25649
 msgid "Extract archives"
@@ -1688,7 +1686,7 @@ msgstr "Mostrar texto do título"
 
 #: tauon.py:25672
 msgid "Enable remote control"
-msgstr ""
+msgstr "Ativar controle remoto"
 
 #: tauon.py:25673
 msgid "Change requires restart"
@@ -1696,11 +1694,11 @@ msgstr "Mudanças requerem reinício"
 
 #: tauon.py:25682
 msgid "Block suspend"
-msgstr ""
+msgstr "Bloquear suspender"
 
 #: tauon.py:25683
 msgid "Prevent system suspend during playback"
-msgstr ""
+msgstr "Prevenir que o sistema entre em suspensão ao tocar"
 
 #: tauon.py:25882
 msgid "Show threshold marker"
@@ -1795,9 +1793,8 @@ msgid "Import music to playlist"
 msgstr "Importar música para playlist"
 
 #: tauon.py:26127
-#, fuzzy
 msgid "Needed for Nextcloud Music"
-msgstr "Necessário para compatibilidade com Nextcloud"
+msgstr "Necessário para Nextcloud Music"
 
 #: tauon.py:26127
 msgid "Use plain text authentication"
@@ -2031,7 +2028,7 @@ msgstr "Mostrar reproduzindo na barra de título"
 
 #: tauon.py:26714
 msgid "Force RGB text antialiasing (recommended)"
-msgstr ""
+msgstr "Forçar anti-serrilhado RGB para texto (recomendado)"
 
 #: tauon.py:26717
 msgid "Top-panel level meter"
