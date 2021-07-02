@@ -6,665 +6,658 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-05-07 13:40+1200\n"
-"PO-Revision-Date: 2021-05-07 10:05+0000\n"
-"Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
-"Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/"
-"tauon-music-box/tauon-music-box/nb_NO/>\n"
-"Language: nb_NO\n"
+"PO-Revision-Date: 2021-05-10 01:42+0000\n"
+"Last-Translator: Feel_again <pardoffspring@gmail.com>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/ru/>\n"
+"Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Weblate 4.7-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1908 tauon.py:1910
 msgid "No artist image found."
-msgstr "Fant ikke artistbilde."
+msgstr "Изображение исполнителя не найдено."
 
 #: tauon.py:1910
 msgid "No providers are enabled in settings!"
-msgstr "Ingen tilbydere lagt til i innstillingene."
+msgstr "Никакие поставщики не включены в настройках!"
 
 #: tauon.py:6248
 msgid "End of playlist"
-msgstr "Spilleliste slutt"
+msgstr "Конец плейлиста"
 
 #: tauon.py:6299
 msgid "Once authorised click the 'done' button."
-msgstr "Klikk \"Ferdig\" når identitetsbekreftet."
+msgstr "После авторизации нажмите кнопку \"Готово\"."
 
 #: tauon.py:6299
 msgid "Web auth page opened"
-msgstr "Side for nettbasert identitetsbekreftelse åpnet"
+msgstr "Открыта страница веб-аутентиф"
 
 #: tauon.py:6307
-#, fuzzy
 msgid "You need to log in first"
-msgstr "Du må logge inn først"
+msgstr "Сначала вам нужно войти в систему"
 
 #: tauon.py:6463
 msgid "Scanning failed. Try again?"
-msgstr "Skanning mislyktes. Prøv igjen?"
+msgstr "Скан не удался. Попробовать еще раз?"
 
 #: tauon.py:6470
 msgid "Scanning scrobbles complete"
-msgstr ""
+msgstr "Скан скроббл завершено"
 
 #: tauon.py:6622
-#, fuzzy
 msgid "Getting friend data..."
-msgstr "Henter vennedata…"
+msgstr "Получение данных о друзьях..."
 
 #: tauon.py:6622
 msgid "This may take a very long time."
-msgstr "Detta kan ta veldig lang tid."
+msgstr "Это может занять очень много времени."
 
 #: tauon.py:6974
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Не удалось обновить статус last.fm"
 
 #: tauon.py:6977
-#, fuzzy
 msgid "Error updating love to last.fm!"
-msgstr "Kan ikke opprette Spotify-spilleliste"
+msgstr "Ошибка обновления love на last.fm!"
 
 #: tauon.py:6977
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Может быть, проверить подключение к Интернету и попробовать еще раз?"
 
 #: tauon.py:7184
 msgid "Spotify Likes"
-msgstr "Spotify-gunst"
+msgstr "Лайк Spotify"
 
 #: tauon.py:7185
 msgid "Spotify Albums"
-msgstr "Spotify-album"
+msgstr "Альбомы Spotify"
 
 #: tauon.py:7186
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Трек удален из избранных"
 
 #: tauon.py:7187
 msgid "Track was already un-liked"
-msgstr "Sporet har allerede fått opphevet gunst"
+msgstr "Трек не нравится"
 
 #: tauon.py:7188
 msgid "Track is already liked"
-msgstr "Sporet har allerede blitt likt"
+msgstr "Трек нравится"
 
 #: tauon.py:7189
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Трек добавлен в избранное"
 
 #: tauon.py:7190
 msgid "Spotify account connected"
-msgstr "Spotify-konto tilkoblet"
+msgstr "Подключен аккаунт Spotify"
 
 #: tauon.py:7191
 msgid "This Spotify account isn't currently playing anything"
-msgstr "Denne Spotify-kontoen spiller ikke noe for øyeblikket"
+msgstr "Этот аккаунт Spotify в наст время ничего не воспр"
 
 #: tauon.py:7192
 msgid "Error starting Spotify"
-msgstr "Klarte ikke å starte Spotify"
+msgstr "Ошибка запуска Spotify"
 
 #: tauon.py:7193
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Пожалуйста, авторизуйте Spotify в настройках!"
 
 #: tauon.py:7194
-#, fuzzy
 msgid "Please authorise and click the enable toggle first!"
-msgstr "Klikk \"Ferdig\" når identitetsbekreftet."
+msgstr "Пожалуйста, авторизуйтесь и жмите кнопку вкл!"
 
 #: tauon.py:7195
-#, fuzzy
 msgid "Spotify import complete"
-msgstr "Spotify-konto tilkoblet"
+msgstr "Импорт Spotify завершен"
 
 #: tauon.py:7197
 msgid "day"
-msgstr "dag"
+msgstr "день"
 
 #: tauon.py:7198
 msgid "days"
-msgstr "dager"
+msgstr "дни"
 
 #: tauon.py:7200
 msgid "Web server stopped."
-msgstr "Vev-tjener stoppet."
+msgstr "Веб-сервер остановлен."
 
 #: tauon.py:7315
 msgid "Missing username, password and/or server name"
-msgstr "Mangler brukernavn, passord, og/eller tjenernavn"
+msgstr "Отсутствует имя пользователя, пароль и/или имя сервера"
 
 #: tauon.py:7330
 msgid "Error connecting to PLEX server"
-msgstr "Kunne ikke koble til PLEX-tjener"
+msgstr "Ошибка подключения к серверу PLEX"
 
 #: tauon.py:7331
 msgid "Try check login credentials and that server is accessible."
-msgstr ""
+msgstr "Попробуйте проверить учетные данные для входа и доступность сервера."
 
 #: tauon.py:7796
 msgid "Missing username, password and/or server URL"
-msgstr "Mangler brukernavn, passord og/eller tjenernettadresse"
+msgstr "Отсутствует имя пользователя, пароль и/или URL-адрес сервера"
 
 #: tauon.py:7824
-#, fuzzy
 msgid "Could not establish connection"
-msgstr "Kunne ikke etablere tilkobling/identitetsbekreftelse"
+msgstr "Не удалось установить соединение"
 
 #: tauon.py:7843
 msgid "Could not establish connection/authorisation"
-msgstr "Kunne ikke etablere tilkobling/identitetsbekreftelse"
+msgstr "Не удалось установить соединение/авторизоваться"
 
 #: tauon.py:8517
 msgid "Stop the sync before exiting!"
-msgstr "Stopp synkroniseringen før avslutning!"
+msgstr "Остановите синхронизацию перед выходом!"
 
 #: tauon.py:12922
 msgid "Playlists + Queue"
-msgstr "Spillelister+kø"
+msgstr "Плейлисты и очередь"
 
 #: tauon.py:12923 tauon.py:35399
 msgid "Queue"
-msgstr ""
+msgstr "Очередь"
 
 #: tauon.py:12925
 msgid "Artist List"
-msgstr "Artistliste"
+msgstr "Список исполнителей"
 
 #: tauon.py:12927
 msgid "Folder Navigator"
-msgstr "Mappenavigatør"
+msgstr "Навигатор папок"
 
 #: tauon.py:12988
 msgid "Track Renaming"
-msgstr ""
+msgstr "Переименование дорожек"
 
 #: tauon.py:12991 tauon.py:42635
 msgid "Default"
-msgstr "Forvalg"
+msgstr "По умолчанию"
 
 #: tauon.py:13014
 msgid "BEFORE"
-msgstr "FØR"
+msgstr "Перед"
 
 #: tauon.py:13018
 msgid "AFTER"
-msgstr "ETTER"
+msgstr "После"
 
 #: tauon.py:13106
 msgid "Rename complete."
-msgstr "Nytt navn i bruk."
+msgstr "Переименование завершено."
 
 #: tauon.py:13107
 msgid " filenames were written."
-msgstr " filnavn ble skrevet."
+msgstr " были записаны имена файлов."
 
 #: tauon.py:13170
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Поиск Lyric на замену"
 
 #: tauon.py:13176 tauon.py:13196
 msgid "Substitute"
-msgstr "Erstatt"
+msgstr "Заменить"
 
 #: tauon.py:13182 tauon.py:13202
 msgid "with"
-msgstr "med"
+msgstr "с"
 
 #: tauon.py:13246
 msgid "Repeat OFF"
-msgstr "Gjentagelse AV"
+msgstr "Повтор ВЫКЛ"
 
 #: tauon.py:13247
 msgid "Repeat Track"
-msgstr "Gjenta spor"
+msgstr "Повторить трек"
 
 #: tauon.py:13248
 msgid "Repeat Album"
-msgstr "Gjenta album"
+msgstr "Повторить альбом"
 
 #: tauon.py:13286
 msgid "Shuffle OFF"
-msgstr ""
+msgstr "Не перемешивать"
 
 #: tauon.py:13287
 msgid "Shuffle Tracks"
-msgstr ""
+msgstr "Перемешать треки"
 
 #: tauon.py:13288
 msgid "Random Albums"
-msgstr "Tilfeldige album"
+msgstr "Случайные альбомы"
 
 #: tauon.py:13313
 msgid "Make Large Size"
-msgstr ""
+msgstr "Сделать большой размер"
 
 #: tauon.py:13315
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Сделать компактным"
 
 #: tauon.py:13350
 msgid "Close Panel"
-msgstr "Lukk panel"
+msgstr "Закрыть панель"
 
 #: tauon.py:13351
 msgid "Make Large"
-msgstr ""
+msgstr "Сделать большим"
 
 #: tauon.py:13583
 msgid "Unlock Panel"
-msgstr "Lås opp panel"
+msgstr "Разблокировать панель"
 
 #: tauon.py:13585
 msgid "Lock Panel"
-msgstr "Lås panel"
+msgstr "Заблокировать панель"
 
 #: tauon.py:13587 tauon.py:13588 tauon.py:13609 tauon.py:18004 tauon.py:18993
 msgid "Open Folder"
-msgstr "Åpne mappe"
+msgstr "Открыть папку"
 
 #: tauon.py:13590 tauon.py:13591 tauon.py:13592 tauon.py:33675
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Отфильтровать в новый плейлист"
 
 #: tauon.py:13593 tauon.py:16412
 msgid "Rescan Folder"
-msgstr "Skann mappe på ny"
+msgstr "Повторное сканирование папки"
 
 #: tauon.py:13594 tauon.py:13596
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Переместить папку с воспроизведением сюда"
 
 #: tauon.py:13602 tauon.py:19014
 msgid "Collapse All"
-msgstr "Fold sammen alle"
+msgstr "Свернуть все"
 
 #: tauon.py:13611
 msgid "Show in Playlist"
-msgstr "Vis i spilleliste"
+msgstr "Показать в плейлисте"
 
 #: tauon.py:13690 tauon.py:18998 tauon.py:19010
 msgid "Add Album to Queue"
-msgstr "Legg album i kø"
+msgstr "Добавить альбом в очередь"
 
 #: tauon.py:13691 tauon.py:18999 tauon.py:19011
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Следующий альбом в очереди"
 
 #: tauon.py:13703 tauon.py:16599 tauon.py:26624
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Прерывание синхронизации"
 
 #: tauon.py:13706
 msgid "Cancel"
-msgstr "Avbryt"
+msgstr "Отмена"
 
 #: tauon.py:13716
 msgid "Hide Metadata Panel"
-msgstr "Skjul metadatapanel"
+msgstr "Скрыть панель метаданных"
 
 #: tauon.py:13718
 msgid "Show Metadata Panel"
-msgstr "Vis metadatapanel"
+msgstr "Показать панель метаданных"
 
 #: tauon.py:13728
 msgid "Panel Below Lyrics"
-msgstr "Panel under sangtekster"
+msgstr "Панель под текстами песен"
 
 #: tauon.py:13730
 msgid "Panel Above Lyrics"
-msgstr "Panel over sangtekster"
+msgstr "Панель над текстами песен"
 
 #: tauon.py:13758 tauon.py:13768 tauon.py:13776
 msgid "Hide Lyrics"
-msgstr "Skjul sangtekster"
+msgstr "Скрыть текст песни"
 
 #: tauon.py:13760 tauon.py:13770 tauon.py:13778
 msgid "Show Lyrics"
-msgstr "Vis sangtekster"
+msgstr "Показать текст песни"
 
 #: tauon.py:13812
 msgid "There are no lyric sources enabled."
-msgstr ""
+msgstr "Источники текста песен не включены."
 
 #: tauon.py:13821
 msgid "Let's be polite and try later."
-msgstr "La oss være hensynsfulle og prøve igjen senere."
+msgstr "Будем вежливы и попробуем позже."
 
 #: tauon.py:13838 tauon.py:19214 tauon.py:19268 tauon.py:32568
-#, fuzzy
 msgid "Searching..."
-msgstr "Søker…"
+msgstr "Поиск…"
 
 #: tauon.py:13871
 msgid "No lyrics for this track were found"
-msgstr ""
+msgstr "Тексты песен для этого трека не найдены"
 
 #: tauon.py:13935 tauon.py:14032 tauon.py:14511
 msgid "Search for Lyrics"
-msgstr "Søk etter sangtekster"
+msgstr "Поиск текстов песни"
 
 #: tauon.py:13947
 msgid "Search GuitarParty"
-msgstr "Søk på GuitarParty"
+msgstr "Поиск GuitarParty"
 
 #: tauon.py:13982
 msgid "Paste Chord Lyrics"
-msgstr ""
+msgstr "Вставить текст аккорда"
 
 #: tauon.py:13983
 msgid "Clear Chord Lyrics"
-msgstr ""
+msgstr "Очистить тексты аккордов"
 
 #: tauon.py:14022 tauon.py:14033 tauon.py:14512
 msgid "Toggle Lyrics"
-msgstr "Skru av/på sangtekster"
+msgstr "Переключить текст песни"
 
 #: tauon.py:14024 tauon.py:14035
 msgid "Substitute Search..."
-msgstr ""
+msgstr "Замена поиска..."
 
 #: tauon.py:14025 tauon.py:14036
 msgid "Paste Lyrics"
-msgstr "Lim inn sangtekst"
+msgstr "Вставить текст песни"
 
 #: tauon.py:14026 tauon.py:14037
 msgid "Copy Lyrics"
-msgstr "Kopier sangtekst"
+msgstr "Копировать текст песни"
 
 #: tauon.py:14027 tauon.py:14038
 msgid "Clear Lyrics"
-msgstr "Tøm sangtekst"
+msgstr "Очистить текст песни"
 
 #: tauon.py:14142
 msgid "Open Image"
-msgstr "Åpne bilde"
+msgstr "Открыть изображение"
 
 #: tauon.py:14166
 msgid "Previous"
-msgstr "Forrige"
+msgstr "Предыдущий"
 
 #: tauon.py:14169
 msgid "Extract Image"
-msgstr "Pakk ut bilde"
+msgstr "Извлечь изображение"
 
 #: tauon.py:14182
 msgid "Cannot download art for network tracks."
-msgstr "Kan ikke laste ned omslag for nettverksspor."
+msgstr "Невозможно загрузить обложку для сетевых треков."
 
 #: tauon.py:14206
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Не похоже, что эта папка принадлежит одному альбому, извините"
 
 #: tauon.py:14217
 msgid "Looking up MusicBrainz ID..."
-msgstr "Finner MusicBrainz-ID…"
+msgstr "Поиск по MusicBrainz ID..."
 
 #: tauon.py:14281
 msgid "Cover art downloaded from fanart.tv"
-msgstr "Omslag lastet ned fra fanart.tv"
+msgstr "Обложка скачана с сайта fanart.tv"
 
 #: tauon.py:14302
 msgid "Cover art downloaded from MusicBrainz"
-msgstr "Omslag lastet ned fra MusicBrainz"
+msgstr "Обложка загружена с сайта MusicBrainz"
 
 #: tauon.py:14313
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Не удалось найти подходящую обложку или идентификатор."
 
 #: tauon.py:14409
 msgid "Image removal failed."
-msgstr ""
+msgstr "Не удалось удалить изображение."
 
 #: tauon.py:14413
 msgid "Processed one FLAC files"
-msgstr ""
+msgstr "Обработан один файл FLAC"
 
 #: tauon.py:14415
 msgid "Deleted embedded picture from file"
-msgstr ""
+msgstr "Удаление встроенного изображения из файла"
 
 #: tauon.py:14446 tauon.py:14453
 msgid "Delete Image File"
-msgstr "Slett bildefil"
+msgstr "Удалить файл изображения"
 
 #: tauon.py:14461
 msgid "Delete Embedded | Folder"
-msgstr ""
+msgstr "Удалить встроенную | Папку"
 
 #: tauon.py:14463
 msgid "Delete Embedded | Track"
-msgstr ""
+msgstr "Удалить встроенный | трек"
 
 #: tauon.py:14483
 msgid "Quick-Fetch Cover Art"
-msgstr ""
+msgstr "Быстрая съемка обложки"
 
 #: tauon.py:14533
 msgid "Paste Spotify Album"
-msgstr ""
+msgstr "Вставьте Spotify Альбом"
 
 #: tauon.py:14749 tauon.py:32862 tauon.py:42645
 msgid "Rename"
-msgstr ""
+msgstr "Переименовать"
 
 #: tauon.py:14760
 msgid "Pin"
-msgstr ""
+msgstr "Прикрепить"
 
 #: tauon.py:14762
 msgid "Unpin"
-msgstr ""
+msgstr "Открепить"
 
 #: tauon.py:14771
 msgid "Unlock"
-msgstr ""
+msgstr "Разблокировать"
 
 #: tauon.py:14773 tauon.py:14807
 msgid "Lock"
-msgstr "Lås"
+msgstr "Заблокировать"
 
 #: tauon.py:14953 tauon.py:19440 tauon.py:26392 tauon.py:26445 tauon.py:26450
 #: tauon.py:26458 tauon.py:26462 tauon.py:26472
 msgid "Clear"
-msgstr "Tøm"
+msgstr "Очистить"
 
 #: tauon.py:14992
 msgid "Are you sure you want to delete this playlist?"
-msgstr ""
+msgstr "Вы уверены, что хотите удалить этот плейлист?"
 
 #: tauon.py:14992
 msgid "Try again while holding shift to confirm"
-msgstr ""
+msgstr "Повторите попытку, удерживая shift для подтверждения"
 
 #: tauon.py:15097
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "Вы уверены, что хотите удалить плейлист: %s?"
 
 #: tauon.py:15138
 msgid "Rescanning folders..."
-msgstr ""
+msgstr "Повторное сканирование папок..."
 
 #: tauon.py:15455 tauon.py:15467
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "Spillelister+kø"
+msgstr "Плейлист заблокирован"
 
 #: tauon.py:15566 tauon.py:42654
 msgid "Delete"
-msgstr "Slett"
+msgstr "Удалить"
 
 #: tauon.py:15623
 msgid "Add Spotify Album"
-msgstr "Legg til Spotify-album"
+msgstr "Добавить альбом Spotify"
 
 #: tauon.py:15727
 msgid "Playlist contains non-Spotify tracks"
-msgstr "Spillelisten inneholder spor som ikke er fra Spotify"
+msgstr "Плейлист содержит треки, не относящиеся к Spotify"
 
 #: tauon.py:15733
 msgid "Created new Spotify playlist"
-msgstr "Opprettet ny Spotify-spilleliste"
+msgstr "Создание нового плейлиста Spotify"
 
 #: tauon.py:15739
 msgid "Error creating Spotify playlist"
-msgstr "Kan ikke opprette Spotify-spilleliste"
+msgstr "Ошибка при создании плейлиста Spotify"
 
 #: tauon.py:15742
 msgid "Updated Spotify playlist"
-msgstr "Oppdaterte Spotify-spilleliste"
+msgstr "Плейлист Spotify обновлен"
 
 #: tauon.py:16374
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr ""
+msgstr "OK. Отныне этот плейлист будет автоматически сортироваться при импорте"
 
 #: tauon.py:16375
-msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+msgid "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
+"Вы можете удалить или изменить это действие, перейдя в меню \"Misc...\" > "
+"\"Edit generator...\""
 
 #: tauon.py:16379 tauon.py:20154
 msgid "New Playlist"
-msgstr "Ny spilleliste"
+msgstr "Новый плейлист"
 
 #: tauon.py:16384
 msgid "Upload"
-msgstr "Last opp"
+msgstr "Загрузить"
 
 #: tauon.py:16396
 msgid "Regenerate"
-msgstr ""
+msgstr "Создать заново"
 
 #: tauon.py:16397
 msgid "Generate…"
-msgstr ""
+msgstr "Создать…"
 
 #: tauon.py:16398
 msgid "Sort…"
-msgstr ""
+msgstr "Сортировать…"
 
 #: tauon.py:16399
 msgid "From Current…"
-msgstr ""
+msgstr "Из текущего…"
 
 #: tauon.py:16404
 msgid "Sort by Imported"
-msgstr ""
+msgstr "Сортировать по Импортировано"
 
 #: tauon.py:16405
 msgid "Sort by Filepath"
-msgstr ""
+msgstr "Сортировать по пути к файлу"
 
 #: tauon.py:16406
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Сортировать по номеру трека"
 
 #: tauon.py:16407
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Сортировать по годам по исполнителям"
 
 #: tauon.py:16408
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Сделать авто-сортировку плейлиста"
 
 #: tauon.py:16414 tauon.py:18169 tauon.py:19438
 msgid "Paste"
-msgstr "Lim inn"
+msgstr "Вставить"
 
 #: tauon.py:16415
 msgid "Append Playing"
-msgstr ""
+msgstr "Добавить плейлист"
 
 #: tauon.py:16420
-#, fuzzy
 msgid "Misc…"
-msgstr "Ymse…"
+msgstr "Разное…"
 
 #: tauon.py:16469
 msgid "No target folder selected"
-msgstr ""
+msgstr "Каталог не выбран"
 
 #: tauon.py:16475
 msgid "Target folder could not be found"
-msgstr ""
+msgstr "Не удалось найти каталог"
 
 #: tauon.py:16515
 msgid "Deleting folders..."
-msgstr ""
+msgstr "Удаление папок..."
 
 #: tauon.py:16534 tauon.py:16597
 msgid "Copying files to device"
-msgstr ""
+msgstr "Копирование файлов на устройство"
 
 #: tauon.py:16540
 msgid "Sync aborted! Low disk space on target device"
-msgstr ""
+msgstr "Синхронизация прервана! Мало места на устройстве"
 
 #: tauon.py:16548 tauon.py:16579
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
+"Одна или несколько папок для синхронизации имеют одинаковое имя. Пропуск."
 
 #: tauon.py:16548 tauon.py:16579
 msgid "Sync warning"
-msgstr ""
+msgstr "Предупреждение о синхронизации"
 
 #: tauon.py:16565 tauon.py:28679
 msgid "Folders Remaining"
-msgstr ""
+msgstr "Оставшиеся папки"
 
 #: tauon.py:16567 tauon.py:28677
 msgid "Folder Remaining"
-msgstr ""
+msgstr "Оставшаяся папка"
 
 #: tauon.py:16607
 msgid "Sync completed"
-msgstr ""
+msgstr "Синхронизация завершена"
 
 #: tauon.py:16623 tauon.py:16703
 msgid "Set as Sync Playlist"
-msgstr ""
+msgstr "Установить как синхронизация плейлиста"
 
 #: tauon.py:16626
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Не установлена как синхронизация плейлиста"
 
 #: tauon.py:16637 tauon.py:16704
 msgid "Set as Downloads Playlist"
-msgstr ""
+msgstr "Установить как плейлист для загрузок"
 
 #: tauon.py:16640
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Не установлен как плейлист для загрузок"
 
 #: tauon.py:16693
 msgid "Export Playlist Stats"
-msgstr ""
+msgstr "Экспорт статистики плейлиста"
 
 #: tauon.py:16694
-#, fuzzy
 msgid "Export Albums CSV"
-msgstr "Eksporter som CSV"
+msgstr "Экспорт альбомов CSV"
 
 #: tauon.py:16695
 msgid "Transcode All"
-msgstr ""
+msgstr "Перекодировать все"
 
 #: tauon.py:16696
 msgid "Rescan Tags"
-msgstr ""
+msgstr "Повторно сканировать теги"
 
 #: tauon.py:16699
 msgid "Export XSPF"
-msgstr ""
+msgstr "Экспорт XSPF"
 
 #: tauon.py:16700
 msgid "Toggle Breaks"
-msgstr ""
+msgstr "Переключить перерывы"
 
 #: tauon.py:16701
 msgid "Edit Generator..."
@@ -703,8 +696,7 @@ msgid "No tracks with lyrics were found."
 msgstr ""
 
 #: tauon.py:16960
-msgid ""
-"Note this may include albums that simply have tracks missing an album tag"
+msgid "Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
 
 #: tauon.py:16961
@@ -1116,9 +1108,8 @@ msgid "Comment"
 msgstr ""
 
 #: tauon.py:19727
-#, fuzzy
 msgid "Filename"
-msgstr "Tjenernavn"
+msgstr ""
 
 #: tauon.py:19728
 msgid "Starline"
@@ -1138,23 +1129,23 @@ msgstr ""
 
 #: tauon.py:20186
 msgid "Music"
-msgstr "Musikk"
+msgstr ""
 
 #: tauon.py:20196
 msgid "Import Music Folder"
-msgstr "Importer musikkmappe"
+msgstr ""
 
 #: tauon.py:20204
 msgid "Settings"
-msgstr "Innstillinger"
+msgstr ""
 
 #: tauon.py:20205
 msgid "Database…"
-msgstr "Database…"
+msgstr ""
 
 #: tauon.py:20271
 msgid "Export as CSV"
-msgstr "Eksporter som CSV"
+msgstr ""
 
 #: tauon.py:20272
 msgid "Play History to Playlist"
@@ -1166,11 +1157,11 @@ msgstr ""
 
 #: tauon.py:20288
 msgid "Remove Network Tracks"
-msgstr "Fjern nettverksspor"
+msgstr ""
 
 #: tauon.py:20289
 msgid "Remove Missing Tracks"
-msgstr "Fjern manglende spor"
+msgstr ""
 
 #: tauon.py:20308
 msgid "Import FMPS_Ratings from Tags"
@@ -1181,18 +1172,16 @@ msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
 
 #: tauon.py:20314 tauon.py:26497
-msgid ""
-"Press button again while holding shift key if you're sure you want to do "
-"that."
+msgid "Press button again while holding shift key if you're sure you want to do that."
 msgstr ""
 
 #: tauon.py:20322
 msgid "Reset User Ratings"
-msgstr "Tilbakestill brukervurderinger"
+msgstr ""
 
 #: tauon.py:20327
 msgid "Find Incomplete Albums"
-msgstr "Finn ufullstendige album"
+msgstr ""
 
 #: tauon.py:20333
 msgid "There are no tracks in this playlist to broadcast."
@@ -1204,53 +1193,51 @@ msgstr ""
 
 #: tauon.py:20358
 msgid "Stop Broadcast"
-msgstr "Stopp kringkasting"
+msgstr ""
 
 #: tauon.py:20374
 msgid "Start Broadcast"
-msgstr "Start kringkasting"
+msgstr ""
 
 #: tauon.py:20405
 msgid "Mini"
-msgstr "Mini"
+msgstr ""
 
 #: tauon.py:20407
 msgid "Square"
-msgstr "Firkant"
+msgstr ""
 
 #: tauon.py:20408
 msgid "Square Large"
-msgstr "Stor firkant"
+msgstr ""
 
 #: tauon.py:20409
 msgid "Micro"
-msgstr "Mikro"
+msgstr ""
 
 #: tauon.py:20420
 msgid "No metadata available to copy"
-msgstr "Ingen metadata å kopiere"
+msgstr ""
 
 #: tauon.py:20423
-#, fuzzy
 msgid "Copy Title to Clipboard"
-msgstr "Kopier til utklippstavle"
+msgstr ""
 
 #: tauon.py:20441
 msgid "Random Track"
-msgstr "Tilfeldig spor"
+msgstr ""
 
 #: tauon.py:20467
 msgid "Radio Random"
 msgstr ""
 
 #: tauon.py:20473
-#, fuzzy
 msgid "Revert"
-msgstr "Angre"
+msgstr ""
 
 #: tauon.py:20481 tauon.py:35130
 msgid "Clear Queue"
-msgstr "Tøm kø"
+msgstr ""
 
 #: tauon.py:20638
 msgid "Spotify Like Track"
@@ -1329,8 +1316,7 @@ msgid "Permission error accessing one or more files"
 msgstr ""
 
 #: tauon.py:24326
-msgid ""
-"Note that ratings are stored in the local database and not written to tags."
+msgid "Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 
 #: tauon.py:24375 tauon.py:24389 tauon.py:24424
@@ -1354,27 +1340,19 @@ msgid "One or more fields is missing."
 msgstr ""
 
 #: tauon.py:24656
-msgid ""
-"DANGER! This will delete the original files. Keeping a backup is recommended "
-"in case of malfunction."
+msgid "DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."
 msgstr ""
 
 #: tauon.py:24657
-msgid ""
-"For safety, this setting will default to off. Embedded thumbnails are not "
-"kept so you may want to extract them first."
+msgid "For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."
 msgstr ""
 
 #: tauon.py:24677
-msgid ""
-"DANGER! This will delete the original files. You may want to have backups in "
-"case of malfunction."
+msgid "DANGER! This will delete the original files. You may want to have backups in case of malfunction."
 msgstr ""
 
 #: tauon.py:24678
-msgid ""
-"For safety, this setting will reset on restart. Embedded thumbnails are not "
-"kept so you may want to extract them first."
+msgid "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."
 msgstr ""
 
 #: tauon.py:24840 tauon.py:24848
@@ -1455,7 +1433,7 @@ msgstr ""
 
 #: tauon.py:25066
 msgid "Based on"
-msgstr "Basert på"
+msgstr ""
 
 #: tauon.py:25073 tauon.py:25148 tauon.py:26628 tauon.py:27216 tauon.py:36902
 msgid "Return"
@@ -1482,9 +1460,7 @@ msgid "Pre-amp"
 msgstr ""
 
 #: tauon.py:25141
-msgid ""
-"Lower pre-amp values improve normalisation but will require a higher system "
-"volume."
+msgid "Lower pre-amp values improve normalisation but will require a higher system volume."
 msgstr ""
 
 #: tauon.py:25157 tauon.py:25829 tauon.py:25835 tauon.py:25841 tauon.py:25879
@@ -1500,9 +1476,8 @@ msgid "Use fade on track jump"
 msgstr ""
 
 #: tauon.py:25276
-#, fuzzy
 msgid "Output buffer"
-msgstr "Åpne utdatamappe"
+msgstr ""
 
 #: tauon.py:25287 tauon.py:25385
 msgid "Set audio output device"
@@ -1546,7 +1521,7 @@ msgstr ""
 
 #: tauon.py:25507 tauon.py:37503 tauon.py:37506
 msgid "Gallery"
-msgstr "Galleri"
+msgstr ""
 
 #: tauon.py:25511
 msgid "Single click to play"
@@ -1554,7 +1529,7 @@ msgstr ""
 
 #: tauon.py:25513
 msgid "Show titles"
-msgstr "Vis titler"
+msgstr ""
 
 #: tauon.py:25517
 msgid "Center alignment"
@@ -1562,16 +1537,15 @@ msgstr ""
 
 #: tauon.py:25525 tauon.py:25533
 msgid "Thumbnail size"
-msgstr "Miniatyrbildestørrelse"
+msgstr ""
 
 #: tauon.py:25529
 msgid "Prefer thinner padding"
 msgstr ""
 
 #: tauon.py:25549
-#, fuzzy
 msgid "Ready broadcaster"
-msgstr "Start kringkasting"
+msgstr ""
 
 #: tauon.py:25549
 msgid "Start web server for broadcasting"
@@ -1607,7 +1581,7 @@ msgstr ""
 
 #: tauon.py:25582 tauon.py:25594
 msgid "Open data folder"
-msgstr "Åpne datamappe"
+msgstr ""
 
 #: tauon.py:25598
 msgid "Enable/Disable track context menu functions:"
@@ -1639,16 +1613,15 @@ msgstr ""
 
 #: tauon.py:25620 tauon.py:25890 tauon.py:26631
 msgid "?"
-msgstr "?"
+msgstr ""
 
 #: tauon.py:25621
 msgid "For troubleshooting Discord RP"
 msgstr ""
 
 #: tauon.py:25649
-#, fuzzy
 msgid "Extract archives"
-msgstr "Pakk ut bilde"
+msgstr ""
 
 #: tauon.py:25650
 msgid "Extracts zip archives on drag and drop"
@@ -1679,9 +1652,8 @@ msgid "Close to tray"
 msgstr ""
 
 #: tauon.py:25666
-#, fuzzy
 msgid "Show title text"
-msgstr "Vis titler"
+msgstr ""
 
 #: tauon.py:25672
 msgid "Enable remote control"
@@ -1717,7 +1689,7 @@ msgstr ""
 
 #: tauon.py:25901 tauon.py:26110 tauon.py:26169 tauon.py:26230
 msgid "Server URL"
-msgstr "Tjener-nettadresse"
+msgstr ""
 
 #: tauon.py:25915
 msgid "API Key"
@@ -1737,11 +1709,11 @@ msgstr ""
 
 #: tauon.py:25967
 msgid "Client ID"
-msgstr "Klient-ID"
+msgstr ""
 
 #: tauon.py:25997
 msgid "Forget Account"
-msgstr "Glem konto"
+msgstr ""
 
 #: tauon.py:26001
 msgid "Authorise"
@@ -1753,30 +1725,27 @@ msgstr ""
 
 #: tauon.py:26022 tauon.py:26023
 msgid "Import Albums"
-msgstr "Importer album"
+msgstr ""
 
 #: tauon.py:26030 tauon.py:26041 tauon.py:26054 tauon.py:26066
 msgid "Please wait until current job is finished"
-msgstr "Vent til oppgaven utføres"
+msgstr ""
 
 #: tauon.py:26034
 msgid "Import Liked Songs"
-msgstr "Importer likte spor"
+msgstr ""
 
 #: tauon.py:26047
-#, fuzzy
 msgid "Import all user playlists"
-msgstr "Importer brukerspilleliste…"
+msgstr ""
 
 #: tauon.py:26049
-#, fuzzy
 msgid "Importing Spotify playlists..."
-msgstr "Kan ikke opprette Spotify-spilleliste"
+msgstr ""
 
 #: tauon.py:26057
-#, fuzzy
 msgid "Import single user playlist..."
-msgstr "Importer brukerspilleliste…"
+msgstr ""
 
 #: tauon.py:26072
 msgid "Airsonic/Subsonic network streaming"
@@ -1788,11 +1757,11 @@ msgstr ""
 
 #: tauon.py:26096 tauon.py:26155 tauon.py:26216 tauon.py:26274
 msgid "Password"
-msgstr "Passord"
+msgstr ""
 
 #: tauon.py:26124 tauon.py:26184 tauon.py:26245 tauon.py:26302
 msgid "Import music to playlist"
-msgstr "Importer musikk til spilleliste"
+msgstr ""
 
 #: tauon.py:26127
 msgid "Needed for Nextcloud Music"
@@ -1803,14 +1772,12 @@ msgid "Use plain text authentication"
 msgstr ""
 
 #: tauon.py:26131
-#, fuzzy
 msgid "Jellyfin network streaming"
-msgstr "PLEX-nettverksstrømming"
+msgstr ""
 
 #: tauon.py:26141
-#, fuzzy
 msgid "Username"
-msgstr "Tjenernavn"
+msgstr ""
 
 #: tauon.py:26192
 msgid "koel network streaming"
@@ -1818,11 +1785,11 @@ msgstr ""
 
 #: tauon.py:26250
 msgid "PLEX network streaming"
-msgstr "PLEX-nettverksstrømming"
+msgstr ""
 
 #: tauon.py:26288
 msgid "Server name"
-msgstr "Tjenernavn"
+msgstr ""
 
 #: tauon.py:26311
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
@@ -1850,8 +1817,7 @@ msgstr ""
 
 #: tauon.py:26349
 msgid ""
-"Discogs can be used for sourcing artist images. For this you will need a "
-"\"Personal Access Token\".\n"
+"Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n"
 "\n"
 "You can generate one with a Discogs account here:"
 msgstr ""
@@ -1877,9 +1843,7 @@ msgid "Use LibreFM"
 msgstr ""
 
 #: tauon.py:26428
-msgid ""
-"Click login to open the last.fm web authorisation page and follow prompt. "
-"Then return here and click \"Done\"."
+msgid "Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."
 msgstr ""
 
 #: tauon.py:26432
@@ -1915,9 +1879,7 @@ msgid "Press again while holding Shift if you understand"
 msgstr ""
 
 #: tauon.py:26530
-msgid ""
-"Warning: This process can take a long time to complete! (up to an hour or "
-"more)"
+msgid "Warning: This process can take a long time to complete! (up to an hour or more)"
 msgstr ""
 
 #: tauon.py:26531
@@ -1978,7 +1940,7 @@ msgstr ""
 
 #: tauon.py:26622
 msgid "Stop"
-msgstr "Stopp"
+msgstr ""
 
 #: tauon.py:26638
 msgid "Output codec setting:"
@@ -1986,19 +1948,19 @@ msgstr ""
 
 #: tauon.py:26640 tauon.py:26641
 msgid "Open output folder"
-msgstr "Åpne utdatamappe"
+msgstr ""
 
 #: tauon.py:26643 tauon.py:26644
 msgid "Sync..."
-msgstr "Synk…"
+msgstr ""
 
 #: tauon.py:26652
 msgid "Save opus as .ogg extension"
-msgstr "Lagre Opus som .ogg-utvidelse"
+msgstr ""
 
 #: tauon.py:26676
 msgid "Save to output folder"
-msgstr "Lagre i utdatamappe"
+msgstr ""
 
 #: tauon.py:26678
 msgid "Save and overwrite files inplace"
@@ -2066,11 +2028,11 @@ msgstr ""
 
 #: tauon.py:27122
 msgid "Rows"
-msgstr "Rader"
+msgstr ""
 
 #: tauon.py:27124
 msgid "Columns"
-msgstr "Kolonner"
+msgstr ""
 
 #: tauon.py:27131
 msgid "Cascade style"
@@ -2082,7 +2044,7 @@ msgstr ""
 
 #: tauon.py:27138
 msgid "Include album titles"
-msgstr "Inkluder albumtitler"
+msgstr ""
 
 #: tauon.py:27140
 msgid "Sort by top played"
@@ -2205,9 +2167,8 @@ msgid "Cycle all playlists"
 msgstr ""
 
 #: tauon.py:28611
-#, fuzzy
 msgid "Buffering... "
-msgstr "Søker…"
+msgstr ""
 
 #: tauon.py:28726
 msgid "There are currently no connected clients"
@@ -2278,29 +2239,24 @@ msgid "End of Playlist"
 msgstr ""
 
 #: tauon.py:32146
-#, fuzzy
 msgid "Search Tag"
-msgstr "Søker…"
+msgstr ""
 
 #: tauon.py:32147
-#, fuzzy
 msgid "Search Country"
-msgstr "Søk på GuitarParty"
+msgstr ""
 
 #: tauon.py:32148
-#, fuzzy
 msgid "Search Title"
-msgstr "Søker…"
+msgstr ""
 
 #: tauon.py:32424
-#, fuzzy
 msgid "Search text…"
-msgstr "Søker…"
+msgstr ""
 
 #: tauon.py:32431
-#, fuzzy
 msgid "Search"
-msgstr "Søker…"
+msgstr ""
 
 #: tauon.py:32438 tauon.py:32442
 msgid "Get Top Voted"
@@ -2311,14 +2267,12 @@ msgid "Internet Radio"
 msgstr ""
 
 #: tauon.py:32558
-#, fuzzy
 msgid "Connecting..."
-msgstr "Søker…"
+msgstr ""
 
 #: tauon.py:32561
-#, fuzzy
 msgid "Failed to connect!"
-msgstr "Kunne ikke etablere tilkobling/identitetsbekreftelse"
+msgstr ""
 
 #: tauon.py:32609
 msgid "Name / Title"
@@ -2397,14 +2351,12 @@ msgid "Sort by Popularity"
 msgstr ""
 
 #: tauon.py:33697
-#, fuzzy
 msgid "Sort by Playtime"
-msgstr "Spilletid"
+msgstr ""
 
 #: tauon.py:33698
-#, fuzzy
 msgid "Toggle Thumbnails"
-msgstr "Miniatyrbildestørrelse"
+msgstr ""
 
 #: tauon.py:33787
 msgid "Notice: Artist image sourced from fanart.tv"
@@ -2492,31 +2444,31 @@ msgstr ""
 
 #: tauon.py:36482
 msgid "Clear Bio"
-msgstr "Tøm biografi"
+msgstr ""
 
 #: tauon.py:36938
 msgid "Playing"
-msgstr "Spiller"
+msgstr ""
 
 #: tauon.py:36998
 msgid "Prefer synced"
-msgstr "Foretrekk synkronisert"
+msgstr ""
 
 #: tauon.py:37000
 msgid "Prefer static"
-msgstr "Foretrekk statisk"
+msgstr ""
 
 #: tauon.py:37011
 msgid "Auto-Scroll"
-msgstr "Automatisk rulling"
+msgstr ""
 
 #: tauon.py:37487
 msgid "Tracks + Art"
-msgstr "Spor+omslag"
+msgstr ""
 
 #: tauon.py:37520
 msgid "Tracks only"
-msgstr "Kun spor"
+msgstr ""
 
 #: tauon.py:37533
 msgid "Showcase + Lyrics"
@@ -2548,7 +2500,7 @@ msgstr ""
 
 #: tauon.py:41960
 msgid "Queue is Empty"
-msgstr "Køen er tom"
+msgstr ""
 
 #: tauon.py:42315 tauon.py:42335 tauon.py:42354 tauon.py:42374 tauon.py:42422
 #: tauon.py:42443 tauon.py:42484 tauon.py:42499 tauon.py:42515 tauon.py:42570
@@ -2557,7 +2509,7 @@ msgstr ""
 
 #: tauon.py:42372 tauon.py:42378
 msgid "Path"
-msgstr "Sti"
+msgstr ""
 
 #: tauon.py:42393
 msgid "Samplerate"
@@ -2569,23 +2521,23 @@ msgstr ""
 
 #: tauon.py:42455
 msgid "Track"
-msgstr "Spor"
+msgstr ""
 
 #: tauon.py:42463
 msgid "File size"
-msgstr "Filstørrelse"
+msgstr ""
 
 #: tauon.py:42472
 msgid "Disc"
-msgstr "Disk"
+msgstr ""
 
 #: tauon.py:42537
 msgid "Play count"
-msgstr "Avspilleringer"
+msgstr ""
 
 #: tauon.py:42550
 msgid "Play time"
-msgstr "Spilletid"
+msgstr ""
 
 #: tauon.py:42633
 msgid "Folder Modification"
@@ -2626,9 +2578,3 @@ msgstr ""
 #: tauon.py:43049
 msgid "Un-Loved track"
 msgstr ""
-
-#~ msgid "Client Secret"
-#~ msgstr "Klienthemmelighet"
-
-#~ msgid "Mark Missing as Found"
-#~ msgstr "Marker manglende som funnet"
