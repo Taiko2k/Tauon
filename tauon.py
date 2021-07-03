@@ -3478,7 +3478,12 @@ if db_version > 0:
             os.remove(token_path)
             show_message("Upgrade to v6.5.3 complete", "It looks like you are using Spotify. Please re-setup Spotify again in the settings")
 
+    if db_version <= 61:
+        print("Updating database to version 62")
 
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("\ntransfer-playtime-to P Ctrl Shift\n")
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -26836,14 +26841,14 @@ class Over:
         # if system != 'windows' and (flatpak_mode or snap_mode):
         #     self.toggle_square(x, y, toggle_force_subpixel, _("Enable RGB text antialiasing"))
 
-        y += 25 * gui.scale
+        y += 15 * gui.scale
         self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
 
         y += 25 * gui.scale
         if prefs.backend == 4:
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
 
-        y += round(25 * gui.scale)
+        y += round(35 * gui.scale)
         #if not msys:
         #y += round(15 * gui.scale)
 
@@ -38837,7 +38842,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            61,  # Version, used for upgrading
+            62,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -40051,6 +40056,8 @@ while pctl.running:
                     star_store.add(default_playlist[playlist_selected], tauon.cargo_playtime)
                     tauon.cargo_playtime = None
                     gui.pl_update += 1
+                elif tauon.cargo_playtime is None:
+                    show_message(_("First select a source track by copying it into clipboard"))
 
             if keymaps.test("toggle-gallery"):
                 toggle_album_mode()
