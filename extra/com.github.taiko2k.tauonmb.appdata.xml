@@ -58,13 +58,10 @@
 
   <releases>
 
-    <release version="6.6.0" date="2021-05-10">
+    <release version="6.6.1" date="2021-07-03">
       <description>
         <ul>
-          <li>Restored spectrum visualisers</li>
-          <li>Added option to prevent system suspend</li>
-          <li>Added filename type column</li>
-          <li>Various fixes</li>
+          <li>Various fixes, tweaks and housekeeping</li>
         </ul>
       </description>
     </release>
