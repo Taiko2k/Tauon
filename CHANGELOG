@@ -12,7 +12,6 @@ v6.6.1
  - Fixed rescan folder function moving folder to end of playlist when scanning the first
  - Removed text RGB AA override (now auto detected)
  - [Flatpak] Removed supplementary CJK font
- - [Flatpak] Moved non-free codecs to external runtime
 
 v6.6.0
 
