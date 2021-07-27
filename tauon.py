@@ -1326,7 +1326,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.transcode_inplace = False
 
-        self.bg_showcase_only = True
+        self.bg_showcase_only = False
 
         self.lyrics_enables = []
 
@@ -1335,7 +1335,7 @@ class Prefs:    # Used to hold any kind of settings
         self.fanart_notify = True
         self.discogs_pat = ""
 
-        self.artist_list_prefer_album_artist = False
+        self.artist_list_prefer_album_artist = True
 
         self.mini_mode_mode = 0
         self.dc_device_setting = "on"
@@ -7496,7 +7496,7 @@ class PlexService:
                 nt.title = title
                 nt.album = album_title
                 nt.length = duration
-                if track.locations:
+                if hasattr(track, "locations") and track.locations:
                     nt.fullpath = track.locations[0]
 
                 nt.is_network = True
