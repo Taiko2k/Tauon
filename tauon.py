@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.6.1"
+n_version = "6.6.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1982,9 +1982,13 @@ class StarStore:
             self.db[key] = self.new_object()
         self.db[key][2] = value
 
+        tr = pctl.g(index)
+        if tr.file_ext == "SUB":
+            self.db[key][2] = math.ceil(value / 2) * 2
+            shooter(subsonic.set_rating, (tr, value))
+
         if prefs.write_ratings and write:
             print("Writing rating..")
-            tr = pctl.g(index)
             assert value <= 10
             assert value >= 0
             if tr.file_ext == "MP3":
@@ -2058,6 +2062,15 @@ class AlbumStarStore:
 
     def set_rating(self, track_object, rating):
         self.db[self.get_key(track_object)] = rating
+        if track_object.file_ext == "SUB":
+            self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
+            subsonic.set_album_rating(track_object, rating)
+
+    def set_rating_artist_title(self, artist, album, rating):
+        self.db[artist + ":" + album] = rating
+
+    def get_rating_artist_title(self, artist, album):
+        return self.db.get(artist + ":" + album, 0)
 
 album_star_store = AlbumStarStore()
 
@@ -7603,6 +7616,22 @@ class SubsonicService:
             print("Error connect for scrobble on airsonic")
         return True
 
+    def set_rating(self, track_object, rating):
+
+        try:
+            a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
+        except:
+            print("Error connect for set rating on airsonic")
+        return True
+
+    def set_album_rating(self, track_object, rating):
+        id = track_object.misc.get("subsonic-folder-id")
+        if id is not None:
+            try:
+                a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
+            except:
+                print("Error connect for set rating on airsonic")
+        return True
 
     def get_music3(self, return_list=False):
 
@@ -7642,9 +7671,7 @@ class SubsonicService:
         statuses = [0] * len(folders)
         dupes = []
 
-        print(len(songsets))
-
-        def getsongs(index, folder_id, name, inner=False):
+        def getsongs(index, folder_id, name, inner=False, parent=None):
 
             try:
                 d = self.r("getMusicDirectory", p={"id": folder_id})
@@ -7667,12 +7694,23 @@ class SubsonicService:
             for item in items:
 
                 if item["isDir"]:
-                    getsongs(index, item["id"], item["title"], inner=True)
+
+                    if "userRating" in item and "artist" in item:
+                        rating = item["userRating"]
+                        if album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
+                            pass
+                        else:
+                            album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
+
+                    getsongs(index, item["id"], item["title"], inner=True, parent=item)
                     continue
 
                 gui.to_got += 1
                 song = item
                 nt = TrackClass()
+
+                if parent and "artist" in parent:
+                    nt.album_artist = parent["artist"]
 
                 if "title" in song:
                     nt.title = song["title"]
@@ -7695,9 +7733,14 @@ class SubsonicService:
                 if "coverArt" in song:
                     nt.art_url_key = song["id"]
                 nt.url_key = song["id"]
+                nt.misc["subsonic-folder-id"] = folder_id
                 nt.is_network = True
 
-                songsets[index].append((nt, name, song["id"]))
+                rating = 0
+                if "userRating" in song:
+                    rating = int(song["userRating"])
+
+                songsets[index].append((nt, name, song["id"], rating))
 
             if inner:
                 return
@@ -7718,7 +7761,7 @@ class SubsonicService:
             time.sleep(0.1)
 
         for sset in songsets:
-            for nt, name, song_id in sset:
+            for nt, name, song_id, rating in sset:
 
                 id = pctl.master_count
 
@@ -7734,6 +7777,11 @@ class SubsonicService:
                     pctl.master_count += 1
 
                 playlist.append(nt.index)
+
+                if star_store.get_rating(nt.index) == 0 and rating == 0:
+                    pass
+                else:
+                    star_store.set_rating(nt.index, rating * 2)
 
         self.scanning = False
         if return_list:

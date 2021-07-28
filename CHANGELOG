@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.6.2
+
+ - Added server rating support for Airsonic/Subsonic tracks
+ - Tweaked defaults of some settings
+
 v6.6.1
 
  - Added Jellyfin playback status update
