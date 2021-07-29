@@ -4996,6 +4996,10 @@ class PlayerCtl:
             self.playing_time = 0
             self.decode_time = 0
 
+        if not len(self.track_queue) > self.queue_step >= 0:
+            print("ERROR - there is no previous track?")
+            return
+
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
@@ -9626,6 +9630,8 @@ class TextBox2:
 
         if click is False:
             click = inp.mouse_click
+        if mouse_down:
+            gui.update = 2 # todo, more elegant fix
 
         rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
         select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
@@ -10233,6 +10239,11 @@ rename_files = TextBox2()
 sub_lyrics_a = TextBox2()
 sub_lyrics_b = TextBox2()
 sync_target = TextBox2()
+edit_artist = TextBox2()
+edit_album = TextBox2()
+edit_title = TextBox2()
+edit_album_artist = TextBox2()
+
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
@@ -13240,6 +13251,145 @@ class RenameTrackBox:
 
 rename_track_box = RenameTrackBox()
 
+class TransEditBox:
+
+    def __init__(self):
+        self.active = False
+        self.active_field = 1
+        self.selected = []
+        self.playlist = -1
+
+    def render(self):
+
+        if not self.active:
+            return
+
+        if gui.level_2_click:
+            inp.mouse_click = True
+        gui.level_2_click = False
+
+        w = 500 * gui.scale
+        h = 250  * gui.scale
+        x = int(window_size[0] / 2) - int(w / 2)
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border,
+                   True)
+        ddt.rect_a((x, y), (w, h), colours.box_background, True)
+        ddt.text_background_colour = colours.box_background
+
+        if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+            self.active = False
+
+        select = list(set(shift_selection))
+        if not select and pctl.selected_ready():
+            select = [playlist_selected]
+
+        titles = [pctl.g(default_playlist[s]).title for s in select]
+        artists = [pctl.g(default_playlist[s]).artist for s in select]
+        albums = [pctl.g(default_playlist[s]).album for s in select]
+        album_artists = [pctl.g(default_playlist[s]).album_artist for s in select]
+
+        #print(select)
+        if select != self.selected or pctl.active_playlist_viewing != self.playlist:
+            #print("reset")
+            self.selected = select
+            self.playlist = pctl.active_playlist_viewing
+            edit_album.clear()
+            edit_artist.clear()
+            edit_title.clear()
+            edit_album_artist.clear()
+
+            if len(select) == 0:
+                return
+
+            tr = pctl.g(default_playlist[select[0]])
+            edit_title.text = tr.title
+
+            if check_equal(artists):
+                edit_artist.text = artists[0]
+
+            if check_equal(albums):
+                edit_album.text = albums[0]
+
+            if check_equal(album_artists):
+                edit_album_artist.text = album_artists[0]
+
+        x += round(20 * gui.scale)
+        y += round(18 * gui.scale)
+
+        ddt.text((x, y), _("Edit local field display"), colours.box_title_text, 215)
+
+        y += round(24 * gui.scale)
+        ddt.text((x, y), _("Number of tracks selected: %d") % len(select), colours.box_title_text, 313)
+
+        y += round(24 * gui.scale)
+
+        if inp.key_tab_press:
+            if key_shift_down or key_shiftr_down:
+                self.active_field -= 1
+            else:
+                self.active_field += 1
+
+        if self.active_field < 0:
+            self.active_field = 3
+        if self.active_field == 4:
+            self.active_field = 0
+            if len(select) > 1:
+                self.active_field = 1
+
+        def field_edit(x, y, label, field_number, names, text_box):
+            ddt.text((x, y), label, colours.box_text_label, 11)
+            y += round(16 * gui.scale)
+            rect1 = (x, y, round(370 * gui.scale), round(17 * gui.scale))
+            fields.add(rect1)
+            if (coll(rect1) and inp.mouse_click) or (inp.key_tab_press and self.active_field == field_number):
+                self.active_field = field_number
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            tc = colours.box_input_text
+            if names and check_equal(names) and text_box.text == names[0]:
+                h, l, s = rgb_to_hls(tc[0], tc[1], tc[2])
+                l *= 0.7
+                tc = hls_to_rgb(h, l, s)
+            if not (names and check_equal(names)) and not text_box.text:
+                ddt.text((x + round(2 * gui.scale), y), _("<Multiple selected>"), colours.box_text_label, 12)
+            text_box.draw(x + round(3 * gui.scale), y, tc, self.active_field == field_number, width=370 * gui.scale)
+
+        if len(select) == 1:
+            field_edit(x, y, _("Track title"), 0, titles, edit_title)
+        y += round(40 * gui.scale)
+        field_edit(x, y, _("Album name"), 1, albums, edit_album)
+        y += round(40 * gui.scale)
+        field_edit(x, y, _("Artist name"), 2, artists, edit_artist)
+        y += round(40 * gui.scale)
+        field_edit(x, y, _("Album-artist name"), 3, album_artists, edit_album_artist)
+
+        y += round(40 * gui.scale)
+        for s in select:
+            tr = pctl.g(default_playlist[s])
+            if tr.is_network:
+                ddt.text((x, y), _("Editing network tracks is not recommended!"), [245, 90, 90, 255], 312)
+
+        if inp.key_return_press:
+            gui.pl_update += 1
+            if self.active_field == 0 and len(select) == 1:
+                for s in select:
+                    tr = pctl.g(default_playlist[s])
+                    tr.title = edit_title.text
+            if self.active_field == 1:
+                for s in select:
+                    tr = pctl.g(default_playlist[s])
+                    tr.album = edit_album.text
+            if self.active_field == 2:
+                for s in select:
+                    tr = pctl.g(default_playlist[s])
+                    tr.artist = edit_artist.text
+            if self.active_field == 3:
+                for s in select:
+                    tr = pctl.g(default_playlist[s])
+                    tr.album_artist = edit_album_artist.text
+
+trans_edit_box = TransEditBox()
 
 class SubLyricsBox:
 
@@ -18386,6 +18536,11 @@ rename_tracks_icon.colour = [204, 100, 205, 255]
 rename_tracks_icon.xoff = 1
 track_menu.add_to_sub("Rename Tracks…", 0, rename_track_box.activate, rename_tracks_deco, pass_ref=True, icon=rename_tracks_icon)
 
+def activate_trans_editor():
+    trans_edit_box.active = True
+
+track_menu.add_to_sub(_("Edit fields…"), 0, activate_trans_editor)
+
 
 def delete_folder(index, force=False):
 
@@ -19207,6 +19362,7 @@ def transcode_deco():
 
 
 folder_menu.add(_('Reload Metadata'), reload_metadata, pass_ref=True)
+folder_menu.add(_("Edit fields…"), activate_trans_editor)
 folder_menu.add(_('Vacuum Playtimes'), vacuum_playtimes, pass_ref=True, show_test=test_shift)
 folder_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 gallery_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
@@ -19304,6 +19460,10 @@ selection_menu.add(_('Add to queue'), add_selected_to_queue_multi, selection_que
 selection_menu.br()
 
 selection_menu.add(_('Reload Metadata'), reload_metadata_selection)
+
+
+selection_menu.add(_("Edit fields…"), activate_trans_editor)
+
 
 selection_menu.add("Edit with ", launch_editor_selection, pass_ref=True, icon=edit_icon, render_func=edit_deco)
 
@@ -21941,7 +22101,8 @@ class SearchOverlay:
                  not key_lalt and not key_ralt and \
                     not key_ctrl_down and not radiobox.active and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
-                    and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active:
+                    and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active\
+                    and not trans_edit_box.active:
 
                 # Divert to artist list if mouse over
                 if gui.lsp and prefs.left_panel_mode == "artist list" and 2 < mouse_position[0] < gui.lspw \
@@ -37240,7 +37401,7 @@ class Showcase:
 
                 if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
 
-                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active or radiobox.active:
+                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active or radiobox.active or trans_edit_box.active:
                         self.render_vis()
                     else:
                         gui.draw_vis4_top = True
@@ -39136,7 +39297,8 @@ def is_level_zero(include_menus=True):
             and not quick_search_mode \
             and not gui.rename_playlist_box \
             and not search_over.active \
-            and not sub_lyrics_box.active
+            and not sub_lyrics_box.active \
+            and not trans_edit_box.active
 
 
 # Hold the splash/loading screen for a minimum duration
@@ -39988,7 +40150,7 @@ while pctl.running:
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled:
 
-            if not quick_search_mode and not search_over.active:
+            if not quick_search_mode and not search_over.active and not trans_edit_box.active:
                 if album_mode and gui.album_tab_mode \
                         and not key_ctrl_down \
                         and not key_meta \
@@ -40047,7 +40209,7 @@ while pctl.running:
 
         if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
                 and not gui.rename_folder_box \
-                and not gui.rename_playlist_box and not search_over.active and not sub_lyrics_box.active:
+                and not gui.rename_playlist_box and not search_over.active and not sub_lyrics_box.active and not trans_edit_box.active:
 
             if quick_search_mode:
                 if keymaps.test("add-to-queue") and pctl.selected_ready():
@@ -40208,7 +40370,7 @@ while pctl.running:
                     inp.mouse_click = False
                     ab_click = True
 
-        if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
+        if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active) and not gui.message_box:
             inp.mouse_click = False
             gui.level_2_click = True
         else:
@@ -40288,7 +40450,7 @@ while pctl.running:
                     track_box = True
 
             # These need to be disabled when text fields are active
-            if not search_over.active and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box:
+            if not search_over.active and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
                 if keymaps.test("advance"):
                     key_right_press = False
                     pctl.advance()
@@ -42892,6 +43054,9 @@ while pctl.running:
             if sub_lyrics_box.active:
                 sub_lyrics_box.render()
 
+            if trans_edit_box.active:
+                trans_edit_box.render()
+
             if radiobox.active:
                 radiobox.render()
 
@@ -43185,7 +43350,7 @@ while pctl.running:
                     if playlist_selected < 0:
                         playlist_selected = 0
 
-                if inp.key_return_press and not pref_box.enabled and not radiobox.active:
+                if inp.key_return_press and not pref_box.enabled and not radiobox.active and not trans_edit_box.active:
                     gui.pl_update = 1
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
