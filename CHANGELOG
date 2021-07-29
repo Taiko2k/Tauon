@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.6.2
 
+ - Added field renaming
  - Added server rating support for Airsonic/Subsonic tracks
  - Tweaked defaults of some settings
 
