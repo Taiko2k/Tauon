@@ -33,7 +33,7 @@ from t_modules.t_extra import get_folder_size
 import threading
 import requests
 import urllib.parse
-from hsaudiotag import auto
+import mutagen
 
 def player3(tauon):  # GStreamer
 
@@ -412,14 +412,17 @@ def player3(tauon):  # GStreamer
                         if z == 60:
                             z = 0
                             if bitrate == 0:
-                                audio = auto.File(target)
-                                bitrate = audio.bitrate
+                                try:
+                                    audio = mutagen.File(target)
+                                    bitrate = audio.info.bitrate / 1000
+                                except:
+                                    pass
 
                             if bitrate > 0:
                                 gui.update += 1
                                 pctl.download_time = a * 1024 / (bitrate / 8) / 1000
             f.close()
-            pctl.download_time = -1
+            #pctl.download_time = -1
 
             self.dl_ready = True
 
@@ -489,7 +492,7 @@ def player3(tauon):  # GStreamer
                 # - Combined left and right channels
                 # - Binned to particular numbers of bars and passed onto UI after some scaling and truncating
 
-                pctl.download_time = 0
+                #pctl.download_time = 0
                 url = None
                 if command == 'open' and pctl.target_object:
                     # print("Start track")
