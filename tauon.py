@@ -9631,10 +9631,12 @@ class TextBox2:
         if click is False:
             click = inp.mouse_click
         if mouse_down:
-            gui.update = 2 # todo, more elegant fix
+            gui.update = 2  # todo, more elegant fix
 
         rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
         select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
+
+        fields.add(rect)
 
         # Activate Menu
         if coll(rect):
@@ -9716,8 +9718,6 @@ class TextBox2:
             #ddt.rect(rect, [255, 50, 50, 80], True)
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
-
-            fields.add(rect)
 
             # Delete key to remove text in front of cursor
             if key_del:
@@ -13318,7 +13318,11 @@ class TransEditBox:
         x += round(20 * gui.scale)
         y += round(18 * gui.scale)
 
-        ddt.text((x, y), _("Edit local field display"), colours.box_title_text, 215)
+        ddt.text((x, y), _("Edit local fields"), colours.box_title_text, 215)
+
+        if draw.button(_("?"), x + 440 * gui.scale, y ):
+            show_message(_("For details on this feature, see:"),
+                         "https://github.com/Taiko2k/TauonMusicBox/wiki/Edit-Fields", mode="link")
 
         y += round(24 * gui.scale)
         ddt.text((x, y), _("Number of tracks selected: %d") % len(select), colours.box_title_text, 313)
