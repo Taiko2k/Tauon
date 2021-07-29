@@ -729,7 +729,7 @@ elif not msys:
 # Other imports
 
 from PIL import Image, ImageDraw, ImageFilter
-from hsaudiotag import auto
+import mutagen
 import stagger
 from stagger.id3 import *
 
@@ -4257,26 +4257,34 @@ def tag_scan(nt):
 
         else:
 
-            # Use HSAUDIOTAG
-            audio = auto.File(nt.fullpath)
-            nt.length = audio.duration
-            nt.title = rm_16(audio.title)
-            nt.artist = rm_16(audio.artist)
-            nt.album = rm_16(audio.album)
-            nt.track_number = str(audio.track)
-            nt.bitrate = audio.bitrate
-            nt.date = audio.year
-            nt.genre = rm_16(audio.genre)
-            nt.samplerate = audio.sample_rate
-            nt.size = audio.size
-            if audio.comment != "":
-                if audio.comment[0:3] == '000':
-                    pass
-                elif len(audio.comment) > 4 and audio.comment[2] == '+':
-                    pass
-                else:
-                    nt.comment = audio.comment
+            # Use MUTAGEN
+            try:
 
+                audio = mutagen.File(nt.fullpath)
+                nt.title = audio.get("title", "")
+                nt.artist = audio.get("artist", "")
+                nt.album = audio.get("album", "")
+                nt.album_artist = audio.get("albumartist", "")
+                nt.track_number = str(audio.get("tracknumber", ""))
+                nt.date = str(audio.get("date", ""))
+                nt.genre = audio.get("genre", "")
+                nt.disc_number = str(audio.get("discnumber", ""))
+
+                nt.samplerate = audio.info.sample_rate
+                nt.bitrate = audio.info.bitrate
+                nt.length = audio.info.length
+
+                nt.size = os.path.getsize(nt.fullpath)
+                comment = audio.get("comment", "")
+                if comment != "":
+                    if comment[0:3] == '000':
+                        pass
+                    elif len(comment) > 4 and comment[2] == '+':
+                        pass
+                    else:
+                        nt.comment = comment
+            except Exception as e:
+                print(e)
             if nt.file_ext == "MP3":
                 tag = stagger.read_tag(nt.fullpath)
                 nt.title = tag.title
@@ -13269,7 +13277,7 @@ class TransEditBox:
         gui.level_2_click = False
 
         w = 500 * gui.scale
-        h = 250  * gui.scale
+        h = 255 * gui.scale
         x = int(window_size[0] / 2) - int(w / 2)
         y = int(window_size[1] / 2) - int(h / 2)
 
@@ -13318,7 +13326,7 @@ class TransEditBox:
         x += round(20 * gui.scale)
         y += round(18 * gui.scale)
 
-        ddt.text((x, y), _("Edit local fields"), colours.box_title_text, 215)
+        ddt.text((x, y), _("Edit tag fields"), colours.box_title_text, 215)
 
         if draw.button(_("?"), x + 440 * gui.scale, y ):
             show_message(_("For details on this feature, see:"),
@@ -13343,6 +13351,7 @@ class TransEditBox:
                 self.active_field = 1
 
         def field_edit(x, y, label, field_number, names, text_box):
+            changed = 0
             ddt.text((x, y), label, colours.box_text_label, 11)
             y += round(16 * gui.scale)
             rect1 = (x, y, round(370 * gui.scale), round(17 * gui.scale))
@@ -13355,18 +13364,23 @@ class TransEditBox:
                 h, l, s = rgb_to_hls(tc[0], tc[1], tc[2])
                 l *= 0.7
                 tc = hls_to_rgb(h, l, s)
+            else:
+                changed = 1
             if not (names and check_equal(names)) and not text_box.text:
+                changed = 0
                 ddt.text((x + round(2 * gui.scale), y), _("<Multiple selected>"), colours.box_text_label, 12)
             text_box.draw(x + round(3 * gui.scale), y, tc, self.active_field == field_number, width=370 * gui.scale)
+            return changed
 
+        changed = 0
         if len(select) == 1:
-            field_edit(x, y, _("Track title"), 0, titles, edit_title)
+            changed += field_edit(x, y, _("Track title"), 0, titles, edit_title)
         y += round(40 * gui.scale)
-        field_edit(x, y, _("Album name"), 1, albums, edit_album)
+        changed += field_edit(x, y, _("Album name"), 1, albums, edit_album)
         y += round(40 * gui.scale)
-        field_edit(x, y, _("Artist name"), 2, artists, edit_artist)
+        changed += field_edit(x, y, _("Artist name"), 2, artists, edit_artist)
         y += round(40 * gui.scale)
-        field_edit(x, y, _("Album-artist name"), 3, album_artists, edit_album_artist)
+        changed += field_edit(x, y, _("Album-artist name"), 3, album_artists, edit_album_artist)
 
         y += round(40 * gui.scale)
         for s in select:
@@ -13376,6 +13390,7 @@ class TransEditBox:
 
         if inp.key_return_press:
             gui.pl_update += 1
+            tauon.worker_save_state = True
             if self.active_field == 0 and len(select) == 1:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
@@ -13392,6 +13407,56 @@ class TransEditBox:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
                     tr.album_artist = edit_album_artist.text
+
+        ww = ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * gui.scale)
+        if draw.button(_("WRITE TAGS"), (x + w) - ww, y - round(0) * gui.scale):
+            if changed:
+                show_message(_("Press enter on fields to apply your changes first!"))
+                return
+            try:
+                import mutagen
+            except:
+                show_message("Please install package python-mutagen for this feature")
+                return
+            written = 0
+            for s in select:
+                tr = pctl.g(default_playlist[s])
+
+                if tr.is_network:
+                    show_message(_("Writing to a network track is not applicable!"), mode="error")
+                    return
+                if tr.is_cue:
+                    show_message(_("Cannot write CUE sheet types!"), mode="error")
+                    return
+
+                muta = mutagen.File(tr.fullpath, easy=True)
+                print(muta)
+
+                print(muta["artist"])
+
+                def write_tag(track, muta, field_name_tauon, field_name_muta):
+                    item = muta.get(field_name_muta)
+                    if item and len(item) > 1:
+                        show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
+                        return 0
+                    if not getattr(tr, field_name_tauon):  # Want delete tag field
+                        if item:
+                            del muta[field_name_muta]
+                    else:
+                        muta[field_name_muta] = getattr(tr, field_name_tauon)
+                    return 1
+
+                write_tag(tr, muta, "artist", "artist")
+                write_tag(tr, muta, "album", "album")
+                write_tag(tr, muta, "title", "title")
+                write_tag(tr, muta, "album_artist", "albumartist")
+
+                muta.save()
+                written += 1
+            tauon.worker_save_state = True
+            if not gui.message_box:
+                show_message(_("%d files rewritten") % written, mode="done")
+
 
 trans_edit_box = TransEditBox()
 
@@ -27372,9 +27437,9 @@ class Over:
             font = 12
             spacing = round(18 * gui.scale)
             y += spacing
-            ddt.text((x, y), "hsaudiotag3k", colours.box_sub_text, font)
-            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
-            draw_linked_text2(xxx, y, "https://github.com/hsoft/hsaudiotag", colours.box_sub_text, font, click=self.click, replace="github")
+            ddt.text((x, y), "Mutagen", colours.box_sub_text, font)
+            ddt.text((xx, y), "GPLv2+", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/quodlibet/mutagen", colours.box_sub_text, font, click=self.click, replace="github")
 
             y += spacing
             ddt.text((x, y), "isounidecode", colours.box_sub_text, font)

@@ -24,8 +24,7 @@ import requests
 import threading
 import shutil
 from t_modules.t_extra import *
-from hsaudiotag import auto
-
+import mutagen
 
 def player4(tauon):
 
@@ -112,6 +111,7 @@ def player4(tauon):
 
         def download(self):
             print("Start download")
+            self.downloaded_duration = -1
             try:
                 self.part = requests.get(self.network_url, stream=True, params=self.params)
 
@@ -149,10 +149,12 @@ def player4(tauon):
 
                         z += 1
                         if z == 60:
-                            z = 0
                             if bitrate == 0:
-                                audio = auto.File(self.filepath)
-                                bitrate = audio.bitrate
+                                try:
+                                    audio = mutagen.File(self.filepath)
+                                    bitrate = audio.info.bitrate / 1000
+                                except:
+                                    pass
                             if bitrate > 0:
                                 gui.update += 1
                                 self.downloaded_duration = a * 1024 / (bitrate / 8) / 1000
@@ -200,7 +202,6 @@ def player4(tauon):
 
             if track.index in self.items:
                 item = self.items[track.index]
-
                 if item.status == "ready":
                     if whole:
                         return "wait"
@@ -244,75 +245,6 @@ def player4(tauon):
             return "wait"
 
     dm = DownloadManager()
-
-
-    class URLDownloader:
-
-        def __init__(self):
-            self.active_url = ""
-            self.part = None
-            self.dl_ready = False
-            self.dl_running = False
-            self.save_temp = ""
-            self.alt = "b"
-
-        def download_part(self, url, target, params, item):
-
-            self.dl_running = True
-
-            try:
-                self.part = requests.get(url, stream=True, params=params)
-
-                if self.part.status_code == 404:
-                    gui.show_message("Server: File not found", mode="error")
-                    self.dl_ready = "failure"
-                    return
-                elif self.part.status_code != 200:
-                    gui.show_message("Server Error", mode="error")
-                    self.dl_ready = "failure"
-                    return
-
-            except:
-                gui.show_message("Could not connect to server", mode="error")
-                self.dl_ready = "failure"
-                return
-
-            bitrate = 0
-            a = 0
-            z = 0
-
-            if os.path.isfile(target):
-                os.remove(target)
-
-            with open(target, 'wb') as f:
-                for chunk in self.part.iter_content(chunk_size=1024):
-                    if chunk:  # filter out keep-alive new chunks
-                        a += 1
-                        if a == 300:  # kilobyes~
-                            self.dl_ready = True
-                        if url != self.active_url:
-                            self.part.close()
-                            print("Abort download")
-                            break
-
-                        f.write(chunk)
-
-                        z += 1
-                        if z == 60:
-                            z = 0
-                            if bitrate == 0:
-                                audio = auto.File(target)
-                                bitrate = audio.bitrate
-                            if bitrate > 0:
-                                gui.update += 1
-                                pctl.download_time = a * 1024 / (bitrate / 8) / 1000
-
-            pctl.download_time = -1
-
-            self.dl_ready = True
-            self.dl_running = False
-
-    dl = URLDownloader()
 
     def set_config():
         aud.config_set_dev_buffer(prefs.device_buffer)
@@ -408,8 +340,6 @@ def player4(tauon):
 
                 if target_object.is_network:
 
-                    dl.dl_running = False
-
                     if target_object.file_ext == "SPTY":
                         tauon.level_train.clear()
                         if state > 0:
@@ -425,7 +355,11 @@ def player4(tauon):
 
                     target_path = None
                     while True:
-                        s = dm.request(target_object)
+                        if int(pctl.start_time_target + pctl.jump_time):
+                            s = dm.request(target_object, t=int(pctl.start_time_target + pctl.jump_time))
+                        else:
+                            s = dm.request(target_object)
+
                         if s == "go":
                             target_path = dm.get_filepath(target_object)
                             break
@@ -439,48 +373,6 @@ def player4(tauon):
                             break
                     if target_path is None:
                         continue
-                    #
-                    # url = ""
-                    # params = None
-                    #
-                    # try:
-                    #     url, params = pctl.get_url(target_object)
-                    # except:
-                    #     gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
-                    #     pctl.stop()
-                    #     return
-                    #
-                    # if url is None:
-                    #     print(gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info'))
-                    #     pctl.stop()
-                    #     return
-                    #
-                    # dl.save_temp = prefs.cache_directory + "/" + dl.alt + "-temp.mp3"
-                    #
-                    # if dl.alt == 'a':
-                    #     dl.alt = 'b'
-                    # else:
-                    #     dl.alt = 'a'
-                    #
-                    # dl.active_url = url
-                    # dl.dl_ready = False
-                    #
-                    # shoot_dl = threading.Thread(target=dl.download_part, args=([url, dl.save_temp, params, target_object]))
-                    # shoot_dl.daemon = True
-                    # shoot_dl.start()
-                    #
-                    # while not dl.dl_ready:
-                    #     time.sleep(0.02)
-                    # target_path = dl.save_temp
-                    #
-                    # if dl.dl_ready == "failure":
-                    #     state = 0
-                    #     aud.stop()
-                    #     continue
-                # if not target_object.is_network and target_object.file_ext not in ("MP3", "FLAC", "OGG", "OPUS"):
-                #     state = 0
-                #     aud.stop()
-                #     continue
 
                 if not os.path.isfile(target_path):
                     target_object.found = False
