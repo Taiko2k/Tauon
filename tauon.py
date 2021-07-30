@@ -2033,15 +2033,26 @@ class StarStore:
         return self.db.get(self.key(index))
 
     def remove(self, index):
-
         key = self.key(index)
         if key in self.db:
             del self.db[key]
 
     def insert(self, index, object):
-
         key = self.key(index)
         self.db[key] = object
+
+    def merge(self, index, object):
+        if object is None or object == [0, "", 0]:
+            return
+        key = self.key(index)
+        if key not in self.db:
+            self.db[key] = object
+        else:
+            self.db[key][0] += object[0]
+            self.db[key][2] = object[2]
+            for cha in object[1]:
+                if cha not in self.db[key][1]:
+                    self.db[key][1] += cha
 
 
 star_store = StarStore()
@@ -13389,12 +13400,16 @@ class TransEditBox:
                 ddt.text((x, y), _("Editing network tracks is not recommended!"), [245, 90, 90, 255], 312)
 
         if inp.key_return_press:
+
             gui.pl_update += 1
-            tauon.worker_save_state = True
             if self.active_field == 0 and len(select) == 1:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
+                    star = star_store.full_get(tr.index)
+                    star_store.remove(tr.index)
                     tr.title = edit_title.text
+                    star_store.merge(tr.index, star)
+
             if self.active_field == 1:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
@@ -13402,11 +13417,15 @@ class TransEditBox:
             if self.active_field == 2:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
+                    star = star_store.full_get(tr.index)
+                    star_store.remove(tr.index)
                     tr.artist = edit_artist.text
+                    star_store.merge(tr.index, star)
             if self.active_field == 3:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
                     tr.album_artist = edit_album_artist.text
+            tauon.worker_save_state = True
 
         ww = ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * gui.scale)
         if draw.button(_("WRITE TAGS"), (x + w) - ww, y - round(0) * gui.scale):
@@ -18995,8 +19014,8 @@ def reload_metadata(input, keep_star=True):
         pctl.master_library[track.index] = tag_scan(track)
 
         if keep_star:
-            if star is not None and (star[0] > 0 or star[1]):
-                star_store.insert(track.index, star)
+            if star is not None and (star[0] > 0 or star[1] or star[2] > 0):
+                star_store.merge(track.index, star)
 
             pctl.notify_change()
 
@@ -24264,7 +24283,7 @@ def worker1():
                 else:
                     album_art_gen.save_thumb(pctl.g(folder_items[0]), (1080, 1080), output_dir + "cover")
 
-                print(transcode_list[0])
+                #print(transcode_list[0])
 
                 del transcode_list[0]
                 transcode_state = ""
