@@ -4271,7 +4271,7 @@ def tag_scan(nt):
                 nt.disc_number = str(audio.get("discnumber", ""))
 
                 nt.samplerate = audio.info.sample_rate
-                nt.bitrate = audio.info.bitrate
+                nt.bitrate = audio.info.bitrate // 1000
                 nt.length = audio.info.length
 
                 nt.size = os.path.getsize(nt.fullpath)
