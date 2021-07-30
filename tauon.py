@@ -2029,7 +2029,6 @@ class StarStore:
         return sum(item[0] for item in self.db.values())
 
     def full_get(self, index):
-
         return self.db.get(self.key(index))
 
     def remove(self, index):
@@ -19042,7 +19041,7 @@ def reload_metadata_selection():
         pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
         if star is not None and (star[0] > 0 or star[1]):
-            star_store.insert(track, star)
+            star_store.merge(track, star)
 
     gui.pl_update += 1
 
@@ -24315,7 +24314,10 @@ def worker1():
         if to_scan:
             while to_scan:
                 track = to_scan[0]
+                star = star_store.full_get(track)
+                star_store.remove(track)
                 pctl.master_library[track] = tag_scan(pctl.master_library[track])
+                star_store.merge(track, star)
                 del to_scan[0]
                 gui.update += 1
             album_artist_dict.clear()
