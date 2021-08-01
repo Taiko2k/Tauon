@@ -1,13 +1,15 @@
 
 Changelog-------------------------------------
 
-v6.6.2
+v6.7.0
 
  - Added basic tag editing
  - Added server rating support for Airsonic/Subsonic tracks
+ - Added image remove support for M4A, FLAC (now built in)
  - Tweaked defaults of some settings
  - Fixed a bug with text highlighting
  - Replaced Hsaudiotag with Mutagen
+ - Removed Stagger dependency
 
 v6.6.1
 

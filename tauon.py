@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.6.2"
+n_version = "6.7.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -730,8 +730,12 @@ elif not msys:
 
 from PIL import Image, ImageDraw, ImageFilter
 import mutagen
-import stagger
-from stagger.id3 import *
+import mutagen.id3
+import mutagen.flac
+import mutagen.mp4
+def no_padding(info):
+    # this will remove all padding
+    return 0
 
 if not os.environ.get('SDL_VIDEODRIVER') == "wayland":
     os.environ['GDK_BACKEND'] = "x11"
@@ -769,12 +773,6 @@ if import_cursors and system == "linux" and not macos and not msys:
     c_ts = cursor_get_gdk(9)
     c_ls = cursor_get_gdk(10)
     c_bs = cursor_get_gdk(11)
-
-
-# Mute some stagger warnings
-warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
-warnings.simplefilter('ignore', stagger.errors.FrameWarning)
-warnings.simplefilter('ignore', stagger.errors.Warning)
 
 # Setting various timers
 
@@ -1438,7 +1436,7 @@ class Prefs:    # Used to hold any kind of settings
         self.radio_urls = []
 
         self.lyric_metadata_panel_top = False
-        self.showcase_overlay_texture = True
+        self.showcase_overlay_texture = False
 
         self.sync_target = ""
         self.sync_deletes = False
@@ -1992,25 +1990,37 @@ class StarStore:
             assert value <= 10
             assert value >= 0
             if tr.file_ext == "MP3":
-                tag = stagger.read_tag(tr.fullpath)
+                tag = mutagen.id3.ID3(tr.fullpath)
                 if value == 0:
-                    #del tag[TXXX(description="FMPS_Rating")]
-                    if TXXX in tag:
-                        for item in tag[TXXX]:
-                            if hasattr(item, 'description'):
-                                if item.description.lower() == "fmps_rating":
-                                    tag[TXXX].remove(item)
+                    changed = False
+                    frames = tag.getall("TXXX")
+                    for i in reversed(range(len(frames))):
+                        if frames[i].desc.lower() == "fmps_rating":
+                            changed = True
+                    if changed:
+                        tag.delall("TXXX:FMPS_RATING")
+                        tag.save()
                 else:
-                    tag[TXXX] = TXXX(encoding="utf-8", description="FMPS_RATING", value='{:.2f}'.format(value / 10))
-                tag.write()
+                    changed = False
+                    frames = tag.getall("TXXX")
+                    for i in reversed(range(len(frames))):
+                        if frames[i].desc.lower() == "fmps_rating":
+                            frames[i].text = '{:.2f}'.format(value / 10)
+                            changed = True
+                    if not changed:
+                        tag.add(mutagen.id3.TXXX(encoding=mutagen.id3.Encoding.UTF8, text='{:.2f}'.format(value / 10), desc="FMPS_RATING"))
+                    tag.save()
+
             elif tr.file_ext == "FLAC":
-                if whicher("metaflac"):
-                    if value == 0:
-                        command = launch_prefix + "metaflac --remove-tag=FMPS_Rating " + tr.fullpath.replace('"', '\\"')
-                        subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
-                    else:
-                        command = launch_prefix + "metaflac --remove-tag=FMPS_Rating --set-tag=FMPS_Rating=\"" + '{:.2f}'.format(value / 10) + "\" " + tr.fullpath.replace('"', '\\"')
-                        subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
+                audio = mutagen.flac.FLAC(tr.fullpath)
+                tags = audio.tags
+                if value == 0:
+                    if "FMPS_Rating" in tags:
+                        del tags["FMPS_Rating"]
+                        audio.save()
+                else:
+                    tags["FMPS_Rating"] = '{:.2f}'.format(value / 10)
+                    audio.save()
 
             tr.misc["FMPS_Rating"] = float(value / 10)
             if value == 0:
@@ -4220,21 +4230,22 @@ def tag_scan(nt):
             nt.comment = audio.comment
             nt.misc = audio.misc
 
-            if audio.found_tag is False:
-                try:
-                    tag = stagger.read_tag(nt.fullpath)
-                    print("Tag Scan: Found ID3v2 tag")
-                    nt.album_artist = tag.album_artist
-                    nt.disc_number = str(tag.disc)
-                    nt.disc_total = str(tag.disc_total)
-                    nt.track_total = str(tag.track_total)
-                    nt.title = tag.title
-                    nt.artist = tag.artist
-                    nt.album = tag.album
-                    nt.genre = tag.genre
-                    nt.date = tag.date
-                except:
-                    print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
+            # if audio.found_tag is False:
+            #     try:
+            #         tag = stagger.read_tag(nt.fullpath)
+            #         print("Tag Scan: Found ID3v2 tag")
+            #         nt.album_artist = tag.album_artist
+            #         nt.disc_number = str(tag.disc)
+            #         nt.disc_total = str(tag.disc_total)
+            #         nt.track_total = str(tag.track_total)
+            #         nt.title = tag.title
+            #         nt.artist = tag.artist
+            #         nt.album = tag.album
+            #         nt.genre = tag.genre
+            #         nt.date = tag.date
+            #     except:
+            #         print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
+
 
         elif nt.file_ext == "M4A":
 
@@ -4271,18 +4282,101 @@ def tag_scan(nt):
             try:
 
                 audio = mutagen.File(nt.fullpath)
-                nt.title = audio.get("title", "")
-                nt.artist = audio.get("artist", "")
-                nt.album = audio.get("album", "")
-                nt.album_artist = audio.get("albumartist", "")
-                nt.track_number = str(audio.get("tracknumber", ""))
-                nt.date = str(audio.get("date", ""))
-                nt.genre = audio.get("genre", "")
-                nt.disc_number = str(audio.get("discnumber", ""))
 
                 nt.samplerate = audio.info.sample_rate
                 nt.bitrate = audio.info.bitrate // 1000
                 nt.length = audio.info.length
+
+                #print(type(audio.tags))
+
+
+                if type(audio.tags) == mutagen.id3.ID3:
+                    def natural_get(tag, track, frame, attr):
+                        frames = tag.getall(frame)
+                        if frames:
+                            if track is None:
+                                return str(frames[0].text[0])
+                            setattr(track, attr, str(frames[0].text[0]))
+                        elif track is None:
+                            return ""
+                        else:
+                            setattr(track, attr, "")
+
+                    tag = audio.tags
+                    print(tag.getall("COMM"))
+                    print(tag.pprint())
+
+                    natural_get(audio.tags, nt, "TIT2", "title")
+                    natural_get(audio.tags, nt, "TPE1", "artist")
+                    natural_get(audio.tags, nt, "TCON", "genre")  # content type
+                    natural_get(audio.tags, nt, "TALB", "album")
+                    natural_get(audio.tags, nt, "COMM", "comment")
+                    natural_get(audio.tags, nt, "TCOM", "composer")
+
+                    rct = natural_get(audio.tags, None, "TDRC", None) # record time
+
+                    frames = tag.getall("TPE1")
+                    if frames and len(frames[0].text) > 1:
+                        nt.misc['artists'] = copy.deepcopy(frames[0].text)
+                        nt.artist = "; ".join(frames[0].text)
+
+                    track_no = natural_get(audio.tags, None, "TRCK", None)
+                    nt.track_total = ""
+                    nt.track_number = ""
+                    if track_no:
+                        if "/" in track_no:
+                            a, b = track_no.split("/")
+                            nt.track_number = a
+                            nt.track_total = b
+                        else:
+                            nt.track_number = track_no
+
+                    disc = natural_get(audio.tags, None, "TPOS", None)  # set ? or ?/?
+                    nt.disc_total = ""
+                    nt.disc_number = ""
+                    if disc:
+                        if "/" in disc:
+                            a, b = disc.split("/")
+                            nt.disc_number = a
+                            nt.disc_total = b
+                        else:
+                            nt.disc_number = disc
+
+                    # more more more - capsule
+                    #UFID=http://musicbrainz.org=b'dc7adc0c-290e-4f89-b356-0ced016d9223'
+                    # TXXX=MusicBrainz Album Artist Id=d5ce36be-fa9b-4caa-b148-a8526dd8ed04
+                    # TXXX=MusicBrainz Album Id=7b5990d4-b401-47b4-8e9c-7fcd485509ca
+                    # TXXX=MusicBrainz Album Release Country=JP
+                    # TXXX=MusicBrainz Album Status=official
+                    # TXXX=MusicBrainz Album Type=album
+                    # TXXX=MusicBrainz Artist Id=d5ce36be-fa9b-4caa-b148-a8526dd8ed04
+                    # TXXX=MusicBrainz Release Group Id=1e3b45c7-6a39-3113-b2a4-e4f72ffe84c2
+                    # TXXX=MusicBrainz Release Track Id=ec90a2ab-f556-313f-aa1a-63fc18cdd831
+
+                #             if item.description == "MusicBrainz Release Track Id":
+                #                 nt.misc['musicbrainz_trackid'] = item.value
+                #             if item.description == "MusicBrainz Album Id":
+                #                 nt.misc['musicbrainz_albumid'] = item.value
+                #             if item.description == "MusicBrainz Artist Id":
+                #                 if "'musicbrainz_artistids'" not in nt.misc:
+                #                     nt.misc['musicbrainz_artistids'] = []
+                #                 ids = item.value.split("/")
+                #                 for id in ids:
+                #                     nt.misc['musicbrainz_artistids'].append(id)
+                #             if item.description == "MusicBrainz Release Group Id":
+                #                 nt.misc['musicbrainz_releasegroupid'] = item.value
+
+                #print(dir(audio))
+                #print(audio.tags.pprint())
+                # nt.title = audio.get("title", "")
+                # nt.artist = audio.get("artist", "")
+                # nt.album = audio.get("album", "")
+                # nt.album_artist = audio.get("albumartist", "")
+                # nt.track_number = str(audio.get("tracknumber", ""))
+                # nt.date = str(audio.get("date", ""))
+                # nt.genre = audio.get("genre", "")
+                # nt.disc_number = str(audio.get("discnumber", ""))
+
 
                 nt.size = os.path.getsize(nt.fullpath)
                 comment = audio.get("comment", "")
@@ -4294,97 +4388,98 @@ def tag_scan(nt):
                     else:
                         nt.comment = comment
             except Exception as e:
+                raise
                 print(e)
+
             if nt.file_ext == "MP3":
-                tag = stagger.read_tag(nt.fullpath)
-                nt.title = tag.title
-                nt.artist = tag.artist
-                nt.album = tag.album
-                nt.track_number = tag.track
-                nt.album_artist = tag.album_artist
-                nt.disc_number = str(tag.disc)
-                nt.disc_total = str(tag.disc_total)
-                nt.track_total = str(tag.track_total)
-                nt.genre = tag.genre
+                if audio is None:
+                    audio = mutagen.File(nt.fullpath)
 
-                if nt.genre.startswith("(") and not nt.genre.endswith(")") and ")" in nt.genre:
-                    value = nt.genre[nt.genre.find("(") + 1 : nt.genre.find(")")]
-                else:
-                    value = nt.genre.lstrip("(").rstrip(")")
+                # tag = stagger.read_tag(nt.fullpath)
+                # nt.title = tag.title
+                # nt.artist = tag.artist
+                # nt.album = tag.album
+                # nt.track_number = tag.track
+                # nt.album_artist = tag.album_artist
+                # nt.disc_number = str(tag.disc)
+                # nt.disc_total = str(tag.disc_total)
+                # nt.track_total = str(tag.track_total)
+                # nt.genre = tag.genre
+                #
+                # if nt.genre.startswith("(") and not nt.genre.endswith(")") and ")" in nt.genre:
+                #     value = nt.genre[nt.genre.find("(") + 1 : nt.genre.find(")")]
+                # else:
+                #     value = nt.genre.lstrip("(").rstrip(")")
+                #
+                # if value.isdigit():
+                #     value = int(value)
+                #     if 0 > value or value > 192:
+                #         print("Tag Scan: Unknown genre code: " + str(value))
+                #     else:
+                #         if 241 < value < 192:
+                #             print("Tag Scan: Winamp genre code detected")
+                #         nt.genre = id3_genre_dict[value]
+                #
+                # if tag.date:
+                #     nt.date = tag.date
+                #
+                # # Workaround for bug in Stagger date parsing for ID3v2.3
+                # if TDAT in tag and TYER in tag:
+                #     year = tag[TYER].text[0]
+                #     date = tag[TDAT].text[0]
+                #     day = date[0:2]
+                #     month = date[2:4]
+                #     nt.date = f"{year}-{month}-{day}"
+                #
+                # nt.composer = tag.composer
+                #
+                # if UFID in tag:
+                #     for item in tag[UFID]:
+                #         if hasattr(item, 'owner'):
+                #             if "musicbrainz.org" in item.owner:
+                #                 nt.misc['musicbrainz_recordingid'] = item.data.decode()
+                #
+                # if TXXX in tag:
+                #     for item in tag[TXXX]:
+                #         if hasattr(item, 'description'):
+                #             if item.description.lower() == "fmps_rating":
+                #                 nt.misc['FMPS_Rating'] = float(item.value)
+                #
+                #             if item.description == "replaygain_track_gain":
+                #                 nt.misc["replaygain_track_gain"] = float(item.value.strip(" dB"))
+                #             if item.description == "replaygain_track_peak":
+                #                     nt.misc["replaygain_track_peak"] = float(item.value)
+                #             if item.description == "replaygain_album_gain":
+                #                 nt.misc["replaygain_album_gain"] = float(item.value.strip(" dB"))
+                #             if item.description == "replaygain_album_peak":
+                #                     nt.misc["replaygain_album_peak"] = float(item.value)
+                #
+                #             if item.description == "MusicBrainz Release Track Id":
+                #                 nt.misc['musicbrainz_trackid'] = item.value
+                #             if item.description == "MusicBrainz Album Id":
+                #                 nt.misc['musicbrainz_albumid'] = item.value
+                #             if item.description == "MusicBrainz Artist Id":
+                #                 if "'musicbrainz_artistids'" not in nt.misc:
+                #                     nt.misc['musicbrainz_artistids'] = []
+                #                 ids = item.value.split("/")
+                #                 for id in ids:
+                #                     nt.misc['musicbrainz_artistids'].append(id)
+                #             if item.description == "MusicBrainz Release Group Id":
+                #                 nt.misc['musicbrainz_releasegroupid'] = item.value
+                #
+                # if USLT in tag:
+                #     lyrics = tag[USLT][0].text
+                #     if len(lyrics) > 30 and ".com" not in lyrics:
+                #         nt.lyrics = lyrics
+                #     elif len(lyrics) > 2:
+                #         console.print("Tag Scan: Possible spam found in lyric field")
+                #         console.print("     In file: " + nt.fullpath)
+                #         console.print("     Value: " + lyrics)
+                #
+                # if SYLT in tag:
+                #     print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
+                #     #print(tag[SYLT][0].text)
 
-                if value.isdigit():
-                    value = int(value)
-                    if 0 > value or value > 192:
-                        print("Tag Scan: Unknown genre code: " + str(value))
-                    else:
-                        if 241 < value < 192:
-                            print("Tag Scan: Winamp genre code detected")
-                        nt.genre = id3_genre_dict[value]
-
-                if tag.date:
-                    nt.date = tag.date
-
-                # Workaround for bug in Stagger date parsing for ID3v2.3
-                if TDAT in tag and TYER in tag:
-                    year = tag[TYER].text[0]
-                    date = tag[TDAT].text[0]
-                    day = date[0:2]
-                    month = date[2:4]
-                    nt.date = f"{year}-{month}-{day}"
-
-                nt.composer = tag.composer
-
-                if UFID in tag:
-                    for item in tag[UFID]:
-                        if hasattr(item, 'owner'):
-                            if "musicbrainz.org" in item.owner:
-                                nt.misc['musicbrainz_recordingid'] = item.data.decode()
-
-                if TXXX in tag:
-                    for item in tag[TXXX]:
-                        if hasattr(item, 'description'):
-                            if item.description.lower() == "fmps_rating":
-                                nt.misc['FMPS_Rating'] = float(item.value)
-
-                            if item.description == "replaygain_track_gain":
-                                nt.misc["replaygain_track_gain"] = float(item.value.strip(" dB"))
-                            if item.description == "replaygain_track_peak":
-                                    nt.misc["replaygain_track_peak"] = float(item.value)
-                            if item.description == "replaygain_album_gain":
-                                nt.misc["replaygain_album_gain"] = float(item.value.strip(" dB"))
-                            if item.description == "replaygain_album_peak":
-                                    nt.misc["replaygain_album_peak"] = float(item.value)
-
-                            if item.description == "MusicBrainz Release Track Id":
-                                nt.misc['musicbrainz_trackid'] = item.value
-                            if item.description == "MusicBrainz Album Id":
-                                nt.misc['musicbrainz_albumid'] = item.value
-                            if item.description == "MusicBrainz Artist Id":
-                                if "'musicbrainz_artistids'" not in nt.misc:
-                                    nt.misc['musicbrainz_artistids'] = []
-                                ids = item.value.split("/")
-                                for id in ids:
-                                    nt.misc['musicbrainz_artistids'].append(id)
-                            if item.description == "MusicBrainz Release Group Id":
-                                nt.misc['musicbrainz_releasegroupid'] = item.value
-
-                if USLT in tag:
-                    lyrics = tag[USLT][0].text
-                    if len(lyrics) > 30 and ".com" not in lyrics:
-                        nt.lyrics = lyrics
-                    elif len(lyrics) > 2:
-                        console.print("Tag Scan: Possible spam found in lyric field")
-                        console.print("     In file: " + nt.fullpath)
-                        console.print("     Value: " + lyrics)
-
-                if SYLT in tag:
-                    print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
-                    #print(tag[SYLT][0].text)
-
-    except stagger.errors.NoTagError as err:
-        # print("Tag Scanner: " + str(err))
-        # print("      In file: " + nt.fullpath)
-        return nt
     except:
         # import traceback
         # traceback.print_exc()
@@ -10944,15 +11039,12 @@ class AlbumArt():
         pic = None
 
         if track.file_ext == 'MP3':
-
-            tag = stagger.read_tag(filepath)
             try:
-                pic = tag[APIC][0].data
-            except:
-                try:
-                    pic = tag[PIC][0].data
-                except:
-                    pass
+                tag = mutagen.id3.ID3(filepath)
+                frame = tag.getall("APIC")
+                pic = frame[0].data
+            except Exception as e:
+                pass
 
             if len(pic) < 30:
                 pic = None
@@ -14441,34 +14533,7 @@ def save_embed_img(track_object):
 
     try:
         pic = album_art_gen.get_embed(track_object)
-        # if ext == 'MP3':
-        #     tag = stagger.read_tag(filepath)
-        #     try:
-        #         tt = tag[APIC][0]
-        #     except:
-        #         try:
-        #             tt = tag[PIC][0]
-        #         except:
-        #             show_message("Image save error.", "No embedded album art found in MP3 file", mode='warning')
-        #             return
-        #     pic = tt.data
-        #
-        # elif ext in ('FLAC', 'APE', 'TTA', 'WV'):
-        #
-        #     tt = Flac(filepath)
-        #     tt.read(True)
-        #     if tt.has_picture is False:
-        #         show_message("Image save error.", "No embedded album art found in FLAC file", mode='warning')
-        #         return
-        #     pic = tt.picture
-        #
-        # elif ext == 'M4A':
-        #     tt = M4a(filepath)
-        #     tt.read(True)
-        #     if tt.has_picture is False:
-        #         show_message("Image save error.", "No embedded album art found in M4A file", mode='warning')
-        #         return
-        #     pic = tt.picture
+
         if not pic:
             show_message("Image save error.", "No embedded album art found file.", mode='warning')
             return
@@ -14727,7 +14792,6 @@ def remove_embed_picture(track_object):
 
     removed = 0
     pr = pctl.stop(True)
-    processed = False
     try:
         for item in tracks:
 
@@ -14740,53 +14804,41 @@ def remove_embed_picture(track_object):
                 continue
 
             if "MP3" == tr.file_ext:
-                tag = stagger.read_tag(tr.fullpath)
-                remove = False
                 try:
-                    del tag[APIC]
-                    print("Delete APIC successful")
+                    tag = mutagen.id3.ID3(tr.fullpath)
+                    tag.delall("APIC")
                     remove = True
-                except:
+                    tag.save(padding=no_padding)
+                except Exception as e:
                     print("No APIC found")
-
-                try:
-                    del tag[PIC]
-                    print("Delete PIC successful")
-                    remove = True
-                except:
-                    print("No PIC found")
-
-                if remove is True:
-                    tag.write()
                     removed += 1
 
+            if tr.file_ext == "M4A":
+                try:
+                    tag = mutagen.mp4.MP4(tr.fullpath)
+                    del tag.tags["covr"]
+                    tag.save(padding=no_padding)
+                    removed += 1
+                except:
+                    pass
+
+            if tr.file_ext in ("OGA", "OPUS", "OGG"):
+                show_message("Removing vorbis image not implemented")
+                # try:
+                #     tag = mutagen.File(tr.fullpath).tags
+                #     print(tag)
+                #     removed += 1
+                # except:
+                #     pass
+
             if "FLAC" == tr.file_ext:
-
-                if flatpak_mode:
-                    print("Finding app from within Flatpak...")
-                    complete = subprocess.run(shlex.split("flatpak-spawn --host which metaflac"),
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE)
-
-                    r = complete.stdout.decode()
-
-                    if "/metaflac" in r:
-
-                        command = 'flatpak-spawn --host metaflac --remove --block-type=PICTURE "' \
-                                  + tr.fullpath.replace('"', '\\"') + '"'
-
-                    else:
-                        show_message("Please install Flac on your host system for this.", "e.g. sudo apt install flac",
-                                     mode='info')
-
-
-                else:
-                    command = 'metaflac --remove --block-type=PICTURE "' \
-                              + tr.fullpath.replace('"', '\\"') + '"'
-
-                subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
-                removed += 1
-                processed = True
+                try:
+                    tag = mutagen.flac.FLAC(tr.fullpath)
+                    tag.clear_pictures()
+                    tag.save(padding=no_padding)
+                    removed += 1
+                except:
+                    pass
 
             clear_track_image_cache(tr)
 
@@ -14798,15 +14850,9 @@ def remove_embed_picture(track_object):
         show_message(_("Image removal failed."), mode='error')
         return
     elif removed == 1:
-        if processed:
-            show_message(_("Processed one FLAC files"), mode='done')
-        else:
-            show_message(_("Deleted embedded picture from file"), mode='done')
+        show_message(_("Deleted embedded picture from file"), mode='done')
     else:
-        if processed:
-            show_message("Processed " + str(removed) + " files", mode='done')
-        else:
-            show_message("Deleted embedded picture from " + str(removed) + " files", mode='done')
+        show_message("Deleted embedded picture from " + str(removed) + " files", mode='done')
     if pr == 1:
         pctl.revert()
 
@@ -14842,7 +14888,7 @@ def delete_track_image_deco(track_object):
         text = _("Delete Image File")
 
     elif info and info[0] == 1:
-        if pctl.playing_state > 0 and (track_object.file_ext == "MP3" or track_object.file_ext == "FLAC"):
+        if pctl.playing_state > 0 and track_object.file_ext in ("MP3", "FLAC", "M4A"):
             line_colour = colours.menu_text
         else:
             line_colour = colours.menu_text_disabled
@@ -27405,10 +27451,10 @@ class Over:
             ddt.text((xx, y), "Apache 2.0", colours.box_text_label, font)
             draw_linked_text2(xxx, y, "https://fonts.google.com/specimen/Noto+Sans", colours.box_sub_text, font, click=self.click, replace="fonts.google.com")
 
-            y += spacing
-            ddt.text((x, y), "Stagger", colours.box_sub_text, font)
-            ddt.text((xx, y), "BSD 2-Clause", colours.box_text_label, font)
-            draw_linked_text2(xxx, y, "https://github.com/staggerpkg/stagger", colours.box_sub_text, font, click=self.click, replace="github")
+            # y += spacing
+            # ddt.text((x, y), "Stagger", colours.box_sub_text, font)
+            # ddt.text((xx, y), "BSD 2-Clause", colours.box_text_label, font)
+            # d"raw_linked_text2(xxx, y, "https://github.com/staggerpkg/stagger", colours.box_sub_text, font, click=self.click, replace="github")
 
             y += spacing
             ddt.text((x, y), "KISS FFT", colours.box_sub_text, font)
