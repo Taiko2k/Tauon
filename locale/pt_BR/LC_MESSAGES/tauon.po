@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-07-02 17:56+1200\n"
-"PO-Revision-Date: 2021-05-10 01:42+0000\n"
+"PO-Revision-Date: 2021-07-13 16:34+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.7-dev\n"
+"X-Generator: Weblate 4.7.2-dev\n"
 
 #: tauon.py:1914 tauon.py:1916
 msgid "No artist image found."
@@ -1918,9 +1918,8 @@ msgid "Press again while holding Shift if you understand"
 msgstr "Pressione de novo segurando Shift, se você entendeu"
 
 #: tauon.py:26646
-#, fuzzy
 msgid "Cleared all scrobble counts"
-msgstr "Obter contagem de scrobble"
+msgstr "Zerou todas as contagens scrobble"
 
 #: tauon.py:26651
 msgid ""
@@ -1968,7 +1967,7 @@ msgstr "Converter arquivos"
 
 #: tauon.py:26727
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Contornar baixa bitrate"
 
 #: tauon.py:26730
 msgid "Start Transcode and Sync"

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-07-02 17:56+1200\n"
-"PO-Revision-Date: 2021-02-09 08:37+0000\n"
-"Last-Translator: lyqide <jannikflipp@web.de>\n"
+"PO-Revision-Date: 2021-07-04 08:34+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
 "Language: de\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.5-dev\n"
+"X-Generator: Weblate 4.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1914 tauon.py:1916
@@ -1688,7 +1688,7 @@ msgstr "Musik-Ordner immer extrahieren"
 
 #: tauon.py:25767
 msgid "Show icon in system tray"
-msgstr "Icon in Systemleiste anzeigen"
+msgstr "Symbol in Systemleiste anzeigen"
 
 #: tauon.py:25770
 msgid "Close to tray"
@@ -2244,7 +2244,7 @@ msgstr "Alle Wiedergabelisten durchlaufen"
 
 #: tauon.py:28734
 msgid "Buffering... "
-msgstr "Laden... "
+msgstr "Wird geladen … "
 
 #: tauon.py:28849
 msgid "There are currently no connected clients"
@@ -2308,7 +2308,7 @@ msgstr "Wiedergabeliste ist leer"
 
 #: tauon.py:31020
 msgid "Drag and drop files to import"
-msgstr "Dateien drag-and-droppen zum Importieren"
+msgstr "Dateien ziehen und ablegen zum Importieren"
 
 #: tauon.py:31042
 msgid "End of Playlist"
@@ -2344,7 +2344,7 @@ msgstr "Internetradio"
 
 #: tauon.py:32681
 msgid "Connecting..."
-msgstr "Verbinden…"
+msgstr "Verbinden …"
 
 #: tauon.py:32684
 msgid "Failed to connect!"
