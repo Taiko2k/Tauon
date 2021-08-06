@@ -23657,7 +23657,6 @@ def worker1():
 
             cd = []
             cds = []
-            #files = []
 
             file_name = ""
             file_path = ""
@@ -23707,10 +23706,6 @@ def worker1():
                     file_path = os.path.join(os.path.dirname(path), file_name)
 
                     if not os.path.isfile(file_path):
-                        print("AA")
-                        print(files)
-                        print(files)
-                        print(files)
                         if files == 1:
                             print("CUE: The referenced source file wasn't found. Searching for matching file name...")
                             for item in os.listdir(os.path.dirname(path)):
