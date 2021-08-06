@@ -8,6 +8,7 @@ v6.7.0
  - Added image remove support for M4A, FLAC (now built in)
  - Tweaked defaults of some settings
  - Fixed a bug with text highlighting
+ - Fixed an issue with CUE importing
  - Replaced Hsaudiotag with Mutagen
  - Removed Stagger dependency
 
