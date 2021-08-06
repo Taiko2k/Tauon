@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2021-07-02 17:56+1200\n"
-"PO-Revision-Date: 2020-12-03 00:34+0000\n"
+"PO-Revision-Date: 2021-07-04 08:34+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1914 tauon.py:1916
@@ -53,11 +53,11 @@ msgstr "Réanalyse du dossier terminée"
 
 #: tauon.py:6639
 msgid "Getting friend data..."
-msgstr "Chargement des données des ami⋅e⋅s..."
+msgstr "Chargement des données des ami⋅e⋅s…"
 
 #: tauon.py:6639
 msgid "This may take a very long time."
-msgstr "Cela peut prendre un certain temps."
+msgstr "Ceci peut prendre un certain temps."
 
 #: tauon.py:6991
 msgid "Failed updating last.fm love status"
@@ -112,14 +112,12 @@ msgid "Please authorise Spotify in settings!"
 msgstr "Veuillez autoriser Spotify dans les paramètres !"
 
 #: tauon.py:7269
-#, fuzzy
 msgid "Please authorise and click the enable toggle first!"
-msgstr "Cliquez sur le bouton « Terminé » après avoir autorisé."
+msgstr "Cliquez sur le bouton « Terminé » après avoir autorisé !"
 
 #: tauon.py:7270
-#, fuzzy
 msgid "Spotify import complete"
-msgstr "Compte Spotify connecté"
+msgstr "Importation de Spotify terminée"
 
 #: tauon.py:7272
 msgid "day"
@@ -152,9 +150,8 @@ msgid "Missing username, password and/or server URL"
 msgstr "Nom d’utilisateur, mot de passe ou URL du serveur manquant"
 
 #: tauon.py:7901
-#, fuzzy
 msgid "Could not establish connection"
-msgstr "Impossible d’établir la connexion / l’autorisation"
+msgstr "Impossible d'établir la connexion"
 
 #: tauon.py:7920
 msgid "Could not establish connection/authorisation"
@@ -475,25 +472,23 @@ msgstr "Vider"
 
 #: tauon.py:15091
 msgid "Are you sure you want to delete this playlist?"
-msgstr ""
+msgstr "Êtes-vous sûr·e de vouloir supprimer cette liste de lecture ?"
 
 #: tauon.py:15091
-#, fuzzy
 msgid "Try again while holding shift to confirm"
-msgstr "Appuyez à nouveau tout en maintenant Maj si vous comprenez"
+msgstr "Réessayez tout en maintenant la touche Maj enfoncée pour confirmer"
 
 #: tauon.py:15196
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "Êtes-vous sûr·e de vouloir supprimer la liste de lecture : %s ?"
 
 #: tauon.py:15237
 msgid "Rescanning folders..."
 msgstr "Réanalyse des dossiers…"
 
 #: tauon.py:15554 tauon.py:15566
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "La liste de lecture est vide"
+msgstr "La liste de lecture est verrouillée"
 
 #: tauon.py:15665 tauon.py:42795
 msgid "Delete"
@@ -557,9 +552,8 @@ msgid "From Current…"
 msgstr "À partir de l’actuel…"
 
 #: tauon.py:16503
-#, fuzzy
 msgid "Sort by Imported"
-msgstr "Trier par chemin"
+msgstr "Trier par date d'importation"
 
 #: tauon.py:16504
 msgid "Sort by Filepath"
@@ -653,9 +647,8 @@ msgid "Export Playlist Stats"
 msgstr "Exporter les statistiques de la liste de lecture"
 
 #: tauon.py:16794
-#, fuzzy
 msgid "Export Albums CSV"
-msgstr "Exporter en CSV"
+msgstr "Exporter des albums CSV"
 
 #: tauon.py:16795
 msgid "Transcode All"
@@ -918,7 +911,6 @@ msgid "Modify Folder…"
 msgstr "Modifier le dossier…"
 
 #: tauon.py:18823
-#, fuzzy
 msgid "Tag editor app does not appear to be installed."
 msgstr "L’application d’édition des métadonnées ne semble pas être installée."
 
@@ -1128,9 +1120,8 @@ msgid "Comment"
 msgstr "Commentaire"
 
 #: tauon.py:19834
-#, fuzzy
 msgid "Filename"
-msgstr "Renommer"
+msgstr "Nom de fichier"
 
 #: tauon.py:19835
 msgid "Starline"
@@ -1320,7 +1311,7 @@ msgstr "Désactiver l’ajout rapide"
 
 #: tauon.py:21987
 msgid "Press Tab key to switch to Spotify search"
-msgstr ""
+msgstr "Appuyez sur la touche Tab pour passer à la recherche Spotify"
 
 #: tauon.py:22210
 msgid "Searching for albums by artist: "
@@ -1495,25 +1486,27 @@ msgstr "ReplayGain"
 
 #: tauon.py:25191
 msgid "Preserve album dynamics"
-msgstr ""
+msgstr "Préserver la dynamique de l'album"
 
 #: tauon.py:25193
 msgid "Tracks equal loudness"
-msgstr ""
+msgstr "Pistes de même intensité sonore"
 
 #: tauon.py:25196
 msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
+msgstr "N'aura d'effet que si la métadonnée ReplayGain est présente."
 
 #: tauon.py:25199
 msgid "Pre-amp"
-msgstr ""
+msgstr "Pré-ampli"
 
 #: tauon.py:25248
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
+"Des valeurs de préamplification plus faibles améliorent la normalisation "
+"mais nécessitent un volume système plus élevé."
 
 #: tauon.py:25264 tauon.py:25940 tauon.py:25946 tauon.py:25952 tauon.py:25990
 msgid "Enable"
@@ -1618,9 +1611,8 @@ msgid "Auto regenerate playlists"
 msgstr "Régénérer automatiquement les listes de lecture"
 
 #: tauon.py:25678
-#, fuzzy
 msgid "Generated playlists reload when re-entering"
-msgstr "Les listes de lecture Generator se rechargent lors de la réentrée"
+msgstr "Les listes de lecture générées se rechargent lors d'une nouvelle entrée"
 
 #: tauon.py:25682
 msgid "Disables the tab pin function"
@@ -1681,7 +1673,7 @@ msgstr "Extraire les archives"
 
 #: tauon.py:25757
 msgid "Extracts zip archives on drag and drop"
-msgstr "Extrait les archives zip par glisser-déposer"
+msgstr "Extrait les archives ZIP par glisser-déposer"
 
 #: tauon.py:25759
 msgid "Enable download monitor"
@@ -1701,26 +1693,23 @@ msgstr "Toujours extraire dans le dossier Musique"
 
 #: tauon.py:25767
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Afficher l'icône dans la barre d'état système"
 
 #: tauon.py:25770
-#, fuzzy
 msgid "Close to tray"
-msgstr "Fichier déplacé vers la corbeille"
+msgstr "Minimiser"
 
 #: tauon.py:25773
-#, fuzzy
 msgid "Show title text"
-msgstr "Afficher les titres"
+msgstr "Afficher le texte du titre"
 
 #: tauon.py:25779
 msgid "Enable remote control"
-msgstr ""
+msgstr "Activer le contrôle à distance"
 
 #: tauon.py:25780
-#, fuzzy
 msgid "Change requires restart"
-msgstr "Les changements seront appliqués au redémarrage."
+msgstr "Les changements seront appliqués au redémarrage"
 
 #: tauon.py:25789
 msgid "Block suspend"
@@ -1728,7 +1717,7 @@ msgstr ""
 
 #: tauon.py:25790
 msgid "Prevent system suspend during playback"
-msgstr ""
+msgstr "Empêcher la suspension du système pendant la lecture"
 
 #: tauon.py:25993
 msgid "Show threshold marker"
@@ -1768,7 +1757,7 @@ msgstr "Compte Spotify premium"
 
 #: tauon.py:26079
 msgid "View setup instructions"
-msgstr ""
+msgstr "Voir les instructions de configuration"
 
 #: tauon.py:26086
 msgid "Client ID"
@@ -1799,19 +1788,16 @@ msgid "Import Liked Songs"
 msgstr "Importer les chansons aimées"
 
 #: tauon.py:26166
-#, fuzzy
 msgid "Import all user playlists"
-msgstr "Importer la liste de lecture utilisateur…"
+msgstr "Importer la liste de lecture utilisateur"
 
 #: tauon.py:26168
-#, fuzzy
 msgid "Importing Spotify playlists..."
-msgstr "Erreur lors de la création de la liste de lecture Spotify"
+msgstr "Importation de listes de lecture Spotify…"
 
 #: tauon.py:26176
-#, fuzzy
 msgid "Import single user playlist..."
-msgstr "Importer la liste de lecture utilisateur…"
+msgstr "Importer une liste de lecture pour un seul utilisateur…"
 
 #: tauon.py:26191
 msgid "Airsonic/Subsonic network streaming"
@@ -1831,21 +1817,19 @@ msgstr "Importer la musique dans la liste"
 
 #: tauon.py:26246
 msgid "Needed for Nextcloud Music"
-msgstr ""
+msgstr "Nécessaire pour Nextcloud Music"
 
 #: tauon.py:26246
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Utiliser l'authentification en texte clair"
 
 #: tauon.py:26250
-#, fuzzy
 msgid "Jellyfin network streaming"
-msgstr "Streaming réseau koel"
+msgstr "Streaming sur le réseau Jellyfin"
 
 #: tauon.py:26260
-#, fuzzy
 msgid "Username"
-msgstr "Nom d’utilisateur :"
+msgstr "Nom d’utilisateur"
 
 #: tauon.py:26311
 msgid "koel network streaming"
@@ -1874,14 +1858,12 @@ msgid "Cover art (Manual only)"
 msgstr "Pochette (manuel)"
 
 #: tauon.py:26443
-#, fuzzy
 msgid "Artist images (Automatic)"
-msgstr "Image de l'artiste (peut être automatisé)"
+msgstr "Images d'artistes (automatique)"
 
 #: tauon.py:26445
-#, fuzzy
 msgid "Artist backgrounds (Automatic)"
-msgstr "Image de l'artiste (peut être automatisé)"
+msgstr "Arrière-plans d'artistes (automatique)"
 
 #: tauon.py:26448
 msgid "Flip current"
@@ -1909,7 +1891,7 @@ msgstr "Nom d’utilisateur :"
 
 #: tauon.py:26538 tauon.py:26540
 msgid "Login"
-msgstr "Identification"
+msgstr "Se connecter"
 
 #: tauon.py:26539 tauon.py:26541
 msgid "Done"
@@ -2274,18 +2256,17 @@ msgstr "Mise en mémoire tampon… "
 
 #: tauon.py:28849
 msgid "There are currently no connected clients"
-msgstr ""
+msgstr "Il n'y a actuellement aucun client connecté"
 
 #: tauon.py:28851
 msgid "There is 1 inbound connection."
-msgstr ""
+msgstr "Il y a 1 connexion entrante."
 
 #: tauon.py:28853
 msgid "There are %d inbound connections."
-msgstr ""
+msgstr "Il y a %d connexions entrantes."
 
 #: tauon.py:29429 tauon.py:30002
-#, fuzzy
 msgid "Play, RC: Go to playing"
 msgstr "Lecture, RC : aller à l'élément en cours"
 
@@ -2336,9 +2317,8 @@ msgid "Playlist is empty"
 msgstr "La liste de lecture est vide"
 
 #: tauon.py:31020
-#, fuzzy
 msgid "Drag and drop files to import"
-msgstr "Glisser-déposer des fichiers pour les importer"
+msgstr "Glisser-déposer les fichiers à importer"
 
 #: tauon.py:31042
 msgid "End of Playlist"
@@ -2349,13 +2329,12 @@ msgid "Search Tag"
 msgstr "Chercher une étiquette"
 
 #: tauon.py:32270
-#, fuzzy
 msgid "Search Country"
-msgstr "Rerchercher sur GuitarParty"
+msgstr "Recherche par pays"
 
 #: tauon.py:32271
 msgid "Search Title"
-msgstr "Chercher une piste"
+msgstr "Rechercher un titre"
 
 #: tauon.py:32547
 msgid "Search text…"
@@ -2374,9 +2353,8 @@ msgid "Internet Radio"
 msgstr "Webradio"
 
 #: tauon.py:32681
-#, fuzzy
 msgid "Connecting..."
-msgstr "Déconnexion..."
+msgstr "Connexion…"
 
 #: tauon.py:32684
 msgid "Failed to connect!"
@@ -2384,15 +2362,15 @@ msgstr "Impossible de se connecter !"
 
 #: tauon.py:32732
 msgid "Name / Title"
-msgstr ""
+msgstr "Nom / Titre"
 
 #: tauon.py:32750
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr ""
+msgstr "URL du flux brut http://exemple.stream:1234"
 
 #: tauon.py:32755 tauon.py:32984
 msgid "Save"
-msgstr "Enregistrer"
+msgstr "Sauvegarder"
 
 #: tauon.py:32758
 msgid "Enter a stream URL"
@@ -2425,16 +2403,15 @@ msgstr ""
 
 #: tauon.py:32930
 msgid "Browse"
-msgstr ""
+msgstr "Parcourir"
 
 #: tauon.py:32934
-#, fuzzy
 msgid "Saved"
-msgstr "Enregistrer"
+msgstr "Sauvegardé"
 
 #: tauon.py:32980
 msgid "Added to list of saved stations"
-msgstr ""
+msgstr "Ajouté à la liste des stations sauvegardées"
 
 #: tauon.py:32982
 msgid "Paste Website Link"
@@ -2449,13 +2426,12 @@ msgid "Remove All After"
 msgstr "Tout retirer après"
 
 #: tauon.py:33800
-#, fuzzy
 msgid "View..."
-msgstr "Affichage"
+msgstr "Affichage…"
 
 #: tauon.py:33818
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Trier par ordre alphabétique"
 
 #: tauon.py:33819
 #, fuzzy
