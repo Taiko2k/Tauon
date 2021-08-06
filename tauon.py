@@ -4286,9 +4286,7 @@ def tag_scan(nt):
                 nt.samplerate = audio.info.sample_rate
                 nt.bitrate = audio.info.bitrate // 1000
                 nt.length = audio.info.length
-
-                #print(type(audio.tags))
-
+                nt.size = os.path.getsize(nt.fullpath)
 
                 if type(audio.tags) == mutagen.id3.ID3:
                     def natural_get(tag, track, frame, attr):
@@ -4303,22 +4301,33 @@ def tag_scan(nt):
                             setattr(track, attr, "")
 
                     tag = audio.tags
-                    print(tag.getall("COMM"))
-                    print(tag.pprint())
 
                     natural_get(audio.tags, nt, "TIT2", "title")
                     natural_get(audio.tags, nt, "TPE1", "artist")
                     natural_get(audio.tags, nt, "TCON", "genre")  # content type
                     natural_get(audio.tags, nt, "TALB", "album")
-                    natural_get(audio.tags, nt, "COMM", "comment")
+                    natural_get(audio.tags, nt, "TDRC", "date")
                     natural_get(audio.tags, nt, "TCOM", "composer")
+                    natural_get(audio.tags, nt, "COMM", "comment")
 
-                    rct = natural_get(audio.tags, None, "TDRC", None) # record time
+                    if len(nt.comment) > 4 and nt.comment[2] == "+":
+                        nt.comment = ""
+                    if nt.comment[0:3] == "000":
+                        nt.comment = ""
+
+                    frames = tag.getall("USLT")
+                    if frames:
+                        nt.lyrics = frames[0].text
+                        if 0 < len(nt.lyrics) < 150:
+                            if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
+                                nt.lyrics = ""
 
                     frames = tag.getall("TPE1")
-                    if frames and len(frames[0].text) > 1:
-                        nt.misc['artists'] = copy.deepcopy(frames[0].text)
-                        nt.artist = "; ".join(frames[0].text)
+                    if frames and len(frames) > 1:
+                        nt.misc['artists'] = []
+                        for frame in frames:
+                            nt.misc['artists'].extend(frame.text)
+                        nt.artist = "; ".join(nt.misc['artists'])
 
                     track_no = natural_get(audio.tags, None, "TRCK", None)
                     nt.track_total = ""
@@ -4342,147 +4351,40 @@ def tag_scan(nt):
                         else:
                             nt.disc_number = disc
 
-                    # more more more - capsule
-                    #UFID=http://musicbrainz.org=b'dc7adc0c-290e-4f89-b356-0ced016d9223'
-                    # TXXX=MusicBrainz Album Artist Id=d5ce36be-fa9b-4caa-b148-a8526dd8ed04
-                    # TXXX=MusicBrainz Album Id=7b5990d4-b401-47b4-8e9c-7fcd485509ca
-                    # TXXX=MusicBrainz Album Release Country=JP
-                    # TXXX=MusicBrainz Album Status=official
-                    # TXXX=MusicBrainz Album Type=album
-                    # TXXX=MusicBrainz Artist Id=d5ce36be-fa9b-4caa-b148-a8526dd8ed04
-                    # TXXX=MusicBrainz Release Group Id=1e3b45c7-6a39-3113-b2a4-e4f72ffe84c2
-                    # TXXX=MusicBrainz Release Track Id=ec90a2ab-f556-313f-aa1a-63fc18cdd831
+                    tx = audio.tags.getall("UFID")
+                    if tx:
+                        for item in tx:
+                            if item.owner == "http://musicbrainz.org":
+                                nt.misc['musicbrainz_recordingid'] = item.data.decode()
 
-                #             if item.description == "MusicBrainz Release Track Id":
-                #                 nt.misc['musicbrainz_trackid'] = item.value
-                #             if item.description == "MusicBrainz Album Id":
-                #                 nt.misc['musicbrainz_albumid'] = item.value
-                #             if item.description == "MusicBrainz Artist Id":
-                #                 if "'musicbrainz_artistids'" not in nt.misc:
-                #                     nt.misc['musicbrainz_artistids'] = []
-                #                 ids = item.value.split("/")
-                #                 for id in ids:
-                #                     nt.misc['musicbrainz_artistids'].append(id)
-                #             if item.description == "MusicBrainz Release Group Id":
-                #                 nt.misc['musicbrainz_releasegroupid'] = item.value
+                    tx = audio.tags.getall("TXXX")
+                    if tx:
+                        for item in tx:
+                            if item.desc == "MusicBrainz Release Track Id":
+                                nt.misc['musicbrainz_trackid'] = item.text[0]
+                            if item.desc == "MusicBrainz Album Id":
+                                nt.misc['musicbrainz_albumid'] = item.text[0]
+                            if item.desc == "MusicBrainz Release Group Id":
+                                nt.misc['musicbrainz_releasegroupid'] = item.text[0]
+                            if item.desc == "MusicBrainz Artist Id":
+                                nt.misc['musicbrainz_artistids'] = copy.deepcopy(item.text)
 
-                #print(dir(audio))
-                #print(audio.tags.pprint())
-                # nt.title = audio.get("title", "")
-                # nt.artist = audio.get("artist", "")
-                # nt.album = audio.get("album", "")
-                # nt.album_artist = audio.get("albumartist", "")
-                # nt.track_number = str(audio.get("tracknumber", ""))
-                # nt.date = str(audio.get("date", ""))
-                # nt.genre = audio.get("genre", "")
-                # nt.disc_number = str(audio.get("discnumber", ""))
+                            if item.desc == "replaygain_track_gain":
+                                nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
+                            if item.desc == "replaygain_track_peak":
+                                nt.misc['replaygain_track_peak'] = float(item.text[0])
+                            if item.desc == "replaygain_album_gain":
+                                nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
+                            if item.desc == "replaygain_album_peak":
+                                nt.misc['replaygain_album_peak'] = float(item.text[0])
 
+                            if item.desc == "FMPS_RATING":
+                                nt.misc['FMPS_Rating'] = float(item.text[0])
 
-                nt.size = os.path.getsize(nt.fullpath)
-                comment = audio.get("comment", "")
-                if comment != "":
-                    if comment[0:3] == '000':
-                        pass
-                    elif len(comment) > 4 and comment[2] == '+':
-                        pass
-                    else:
-                        nt.comment = comment
             except Exception as e:
-                raise
                 print(e)
 
-            if nt.file_ext == "MP3":
-                if audio is None:
-                    audio = mutagen.File(nt.fullpath)
-
-                # tag = stagger.read_tag(nt.fullpath)
-                # nt.title = tag.title
-                # nt.artist = tag.artist
-                # nt.album = tag.album
-                # nt.track_number = tag.track
-                # nt.album_artist = tag.album_artist
-                # nt.disc_number = str(tag.disc)
-                # nt.disc_total = str(tag.disc_total)
-                # nt.track_total = str(tag.track_total)
-                # nt.genre = tag.genre
-                #
-                # if nt.genre.startswith("(") and not nt.genre.endswith(")") and ")" in nt.genre:
-                #     value = nt.genre[nt.genre.find("(") + 1 : nt.genre.find(")")]
-                # else:
-                #     value = nt.genre.lstrip("(").rstrip(")")
-                #
-                # if value.isdigit():
-                #     value = int(value)
-                #     if 0 > value or value > 192:
-                #         print("Tag Scan: Unknown genre code: " + str(value))
-                #     else:
-                #         if 241 < value < 192:
-                #             print("Tag Scan: Winamp genre code detected")
-                #         nt.genre = id3_genre_dict[value]
-                #
-                # if tag.date:
-                #     nt.date = tag.date
-                #
-                # # Workaround for bug in Stagger date parsing for ID3v2.3
-                # if TDAT in tag and TYER in tag:
-                #     year = tag[TYER].text[0]
-                #     date = tag[TDAT].text[0]
-                #     day = date[0:2]
-                #     month = date[2:4]
-                #     nt.date = f"{year}-{month}-{day}"
-                #
-                # nt.composer = tag.composer
-                #
-                # if UFID in tag:
-                #     for item in tag[UFID]:
-                #         if hasattr(item, 'owner'):
-                #             if "musicbrainz.org" in item.owner:
-                #                 nt.misc['musicbrainz_recordingid'] = item.data.decode()
-                #
-                # if TXXX in tag:
-                #     for item in tag[TXXX]:
-                #         if hasattr(item, 'description'):
-                #             if item.description.lower() == "fmps_rating":
-                #                 nt.misc['FMPS_Rating'] = float(item.value)
-                #
-                #             if item.description == "replaygain_track_gain":
-                #                 nt.misc["replaygain_track_gain"] = float(item.value.strip(" dB"))
-                #             if item.description == "replaygain_track_peak":
-                #                     nt.misc["replaygain_track_peak"] = float(item.value)
-                #             if item.description == "replaygain_album_gain":
-                #                 nt.misc["replaygain_album_gain"] = float(item.value.strip(" dB"))
-                #             if item.description == "replaygain_album_peak":
-                #                     nt.misc["replaygain_album_peak"] = float(item.value)
-                #
-                #             if item.description == "MusicBrainz Release Track Id":
-                #                 nt.misc['musicbrainz_trackid'] = item.value
-                #             if item.description == "MusicBrainz Album Id":
-                #                 nt.misc['musicbrainz_albumid'] = item.value
-                #             if item.description == "MusicBrainz Artist Id":
-                #                 if "'musicbrainz_artistids'" not in nt.misc:
-                #                     nt.misc['musicbrainz_artistids'] = []
-                #                 ids = item.value.split("/")
-                #                 for id in ids:
-                #                     nt.misc['musicbrainz_artistids'].append(id)
-                #             if item.description == "MusicBrainz Release Group Id":
-                #                 nt.misc['musicbrainz_releasegroupid'] = item.value
-                #
-                # if USLT in tag:
-                #     lyrics = tag[USLT][0].text
-                #     if len(lyrics) > 30 and ".com" not in lyrics:
-                #         nt.lyrics = lyrics
-                #     elif len(lyrics) > 2:
-                #         console.print("Tag Scan: Possible spam found in lyric field")
-                #         console.print("     In file: " + nt.fullpath)
-                #         console.print("     Value: " + lyrics)
-                #
-                # if SYLT in tag:
-                #     print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
-                #     #print(tag[SYLT][0].text)
-
     except:
-        # import traceback
-        # traceback.print_exc()
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
         return nt
@@ -13788,8 +13690,6 @@ def toggle_bio_size():
         update_layout_do()
         #bio_set_large()
     #gui.update_layout()
-
-
 
 
 def flush_artist_bio(artist):
