@@ -3,14 +3,15 @@ Changelog-------------------------------------
 
 v6.7.0
 
- - Added basic tag editing
+ - Added basic built in tag editor
  - Added server rating support for Airsonic/Subsonic tracks
  - Added image remove support for M4A, FLAC (now built in)
  - Tweaked defaults of some settings
  - Fixed a bug with text highlighting
  - Fixed an issue with CUE importing
- - Replaced Hsaudiotag with Mutagen
- - Removed Stagger dependency
+ - Fixed replay-gain slider setting movement
+ - Fixed a possible issue with Airsonic import stalling
+ - Replaced Hsaudiotag and Stagger with Mutagen
 
 v6.6.1
 
