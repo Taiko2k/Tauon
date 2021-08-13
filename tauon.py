@@ -4247,34 +4247,34 @@ def tag_scan(nt):
             #         print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
 
 
-        elif nt.file_ext == "M4A":
-
-            audio = M4a(nt.fullpath)
-            audio.read()
-
-            # print(audio.title)
-
-            nt.length = audio.length
-            nt.title = audio.title
-            nt.artist = audio.artist
-            nt.album = audio.album
-            nt.composer = audio.composer
-            nt.date = audio.date
-            nt.samplerate = audio.sample_rate
-            nt.size = os.path.getsize(nt.fullpath)
-            nt.track_number = audio.track_number
-            nt.genre = audio.genre
-            nt.album_artist = audio.album_artist
-            nt.disc_number = audio.disc_number
-            nt.lyrics = audio.lyrics
-            nt.bitrate = audio.bit_rate
-            if not nt.bitrate and nt.size and nt.length:
-                nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-            #nt.track_total = audio.track_total
-            #nt.disc_total = audio.disc_total
-            nt.comment = audio.comment
-            #nt.cue_sheet = audio.cue_sheet
-            nt.misc = audio.misc
+        # elif nt.file_ext == "M4A":
+        #
+        #     audio = M4a(nt.fullpath)
+        #     audio.read()
+        #
+        #     # print(audio.title)
+        #
+        #     nt.length = audio.length
+        #     nt.title = audio.title
+        #     nt.artist = audio.artist
+        #     nt.album = audio.album
+        #     nt.composer = audio.composer
+        #     nt.date = audio.date
+        #     nt.samplerate = audio.sample_rate
+        #     nt.size = os.path.getsize(nt.fullpath)
+        #     nt.track_number = audio.track_number
+        #     nt.genre = audio.genre
+        #     nt.album_artist = audio.album_artist
+        #     nt.disc_number = audio.disc_number
+        #     nt.lyrics = audio.lyrics
+        #     nt.bitrate = audio.bit_rate
+        #     if not nt.bitrate and nt.size and nt.length:
+        #         nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+        #     #nt.track_total = audio.track_total
+        #     #nt.disc_total = audio.disc_total
+        #     nt.comment = audio.comment
+        #     #nt.cue_sheet = audio.cue_sheet
+        #     nt.misc = audio.misc
 
         else:
 
@@ -4288,7 +4288,40 @@ def tag_scan(nt):
                 nt.length = audio.info.length
                 nt.size = os.path.getsize(nt.fullpath)
 
-                if type(audio.tags) == mutagen.id3.ID3:
+                if type(audio.tags) == mutagen.mp4.MP4Tags:
+                    tags = audio.tags
+                    def in_get(key, tags):
+                        if key in tags:
+                            return tags[key][0]
+                        return ""
+
+                    nt.title = in_get("\xa9nam", tags)
+                    nt.album = in_get("\xa9alb", tags)
+                    nt.artist = in_get("\xa9ART", tags)
+                    nt.album_artist = in_get("aART", tags)
+                    nt.composer = in_get("\xa9wrt", tags)
+                    nt.date = in_get("\xa9day", tags)
+                    nt.comment = in_get("\xa9cmt", tags)
+                    nt.genre = in_get("\xa9gen", tags)
+                    if "\xa9lyr" in tags:
+                        nt.lyrics = in_get("\xa9lyr", tags)
+                    nt.track_total = ""
+                    nt.track_number = ""
+                    t = in_get("trkn", tags)
+                    if t:
+                        nt.track_number = str(t[0])
+                        if t[1]:
+                            nt.track_total = str(t[1])
+
+                    nt.disc_total = ""
+                    nt.disc_number = ""
+                    t = in_get("disk", tags)
+                    if t:
+                        nt.disc_number = str(t[0])
+                        if t[1]:
+                            nt.disc_total = str(t[1])
+
+                elif type(audio.tags) == mutagen.id3.ID3:
                     def natural_get(tag, track, frame, attr):
                         frames = tag.getall(frame)
                         if frames:
@@ -4382,11 +4415,13 @@ def tag_scan(nt):
                                 nt.misc['FMPS_Rating'] = float(item.text[0])
 
             except Exception as e:
+                raise
                 print(e)
 
     except:
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
+        raise
         return nt
 
     # Parse any multiple artists into list
@@ -7768,7 +7803,7 @@ class SubsonicService:
         i = -1
         for id, name in folders:
             i += 1
-            while statuses.count(1) > 10:
+            while statuses.count(1) > 3:
                 time.sleep(0.1)
 
             statuses[i] = 1
@@ -13330,11 +13365,11 @@ class TransEditBox:
         x += round(20 * gui.scale)
         y += round(18 * gui.scale)
 
-        ddt.text((x, y), _("Edit tag fields"), colours.box_title_text, 215)
+        ddt.text((x, y), _("Simple tag editor"), colours.box_title_text, 215)
 
         if draw.button(_("?"), x + 440 * gui.scale, y ):
-            show_message(_("For details on this feature, see:"),
-                         "https://github.com/Taiko2k/TauonMusicBox/wiki/Edit-Fields", mode="link")
+            show_message(_("Press Enter in each field to apply its changes to local database."),
+                         _("When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"), mode="info")
 
         y += round(24 * gui.scale)
         ddt.text((x, y), _("Number of tracks selected: %d") % len(select), colours.box_title_text, 313)
@@ -25469,6 +25504,7 @@ class Over:
 
         if coll(grow_rect(slider, 15)) and mouse_down:
             bp = (mouse_position[0] - x) / sw * 30
+            gui.update += 1
 
         bp = round(bp)
         bp = max(bp, 0)
@@ -39619,7 +39655,6 @@ while pctl.running:
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
         sleep_timer.set()
-        #print(event.type)
 
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
@@ -40405,7 +40440,7 @@ while pctl.running:
                     inp.mouse_click = False
                     ab_click = True
 
-        if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active) and not gui.message_box:
+        if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
             inp.mouse_click = False
             gui.level_2_click = True
         else:
