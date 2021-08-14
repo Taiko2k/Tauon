@@ -13409,11 +13409,13 @@ class TransEditBox:
                 changed = 0
                 ddt.text((x + round(2 * gui.scale), y), _("<Multiple selected>"), colours.box_text_label, 12)
             text_box.draw(x + round(3 * gui.scale), y, tc, self.active_field == field_number, width=370 * gui.scale)
+            if changed:
+                ddt.text((x + 377 * gui.scale, y - 1 * gui.scale), "⮨", colours.box_title_text, 214)
             return changed
 
         changed = 0
         if len(select) == 1:
-            changed += field_edit(x, y, _("Track title"), 0, titles, edit_title)
+            changed = field_edit(x, y, _("Track title"), 0, titles, edit_title)
         y += round(40 * gui.scale)
         changed += field_edit(x, y, _("Album name"), 1, albums, edit_album)
         y += round(40 * gui.scale)
