@@ -17,7 +17,7 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-
+import math
 import sys
 from sdl2 import *
 from sdl2.sdlimage import IMG_Load_RW
@@ -322,19 +322,33 @@ class TDraw:
 
         self.was_truncated = False
 
+    def rect_s(self, rectangle, colour, thickness):
+        SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+        x, y, w, h = (round(x) for x in rectangle)
+        th = math.floor(thickness)
+        self.sdl_rect.x = x - th
+        self.sdl_rect.y = y - th
+        self.sdl_rect.w = th
+        self.sdl_rect.h = h + th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # left
+        self.sdl_rect.x = x - th
+        self.sdl_rect.y = y + h
+        self.sdl_rect.w = w + th
+        self.sdl_rect.h = th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # bottom
+        self.sdl_rect.x = x
+        self.sdl_rect.y = y - th
+        self.sdl_rect.w = w + th
+        self.sdl_rect.h = th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # top
+        self.sdl_rect.x = x + w
+        self.sdl_rect.y = y
+        self.sdl_rect.w = th
+        self.sdl_rect.h = h + th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # right
+
     def rect_a(self, location_xy, size_wh, colour, fill=False):
-
-        self.sdl_rect.x = round(location_xy[0])
-        self.sdl_rect.y = round(location_xy[1])
-        self.sdl_rect.w = round(size_wh[0])
-        self.sdl_rect.h = round(size_wh[1])
-
-        if fill is True:
-            SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderFillRect(self.renderer, self.sdl_rect)
-        else:
-            SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderDrawRect(self.renderer, self.sdl_rect)
+        self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour, fill)
 
     def rect(self, rectangle, colour, fill=False):
 

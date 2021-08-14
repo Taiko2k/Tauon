@@ -29109,7 +29109,7 @@ class TopPanel:
 
             progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100 * gui.scale)
             ddt.rect_a((x, y + 4), (progress, 9 * gui.scale), [65, 80, 220, 255], True)
-            ddt.rect_a((x, y + 4), (100 * gui.scale, 9 * gui.scale), colours.grey(30))
+            ddt.rect_s((x, y + 4, 100 * gui.scale, 9 * gui.scale), colours.grey(30), 1 * gui.scale)
 
             if inp.mouse_click and coll((x, y, 100 * gui.scale, 11)):
                 newtime = ((mouse_position[0] - x) / (100 * gui.scale)) * pctl.master_library[pctl.broadcast_index].length
@@ -32282,14 +32282,14 @@ class ArtBox:
         if tight_border:
             if result == 0 and gui.art_drawn_rect:
                 border = gui.art_drawn_rect
-                ddt.rect(gui.art_drawn_rect, colours.art_box)
+                ddt.rect_s(gui.art_drawn_rect, colours.art_box, 1 * gui.scale)
             elif default_border:
                 border = default_border
-                ddt.rect(default_border, colours.art_box)
+                ddt.rect_s(default_border, colours.art_box, 1 * gui.scale)
             else:
                 border = rect
         else:
-            ddt.rect(rect, colours.art_box)
+            ddt.rect_s(rect, colours.art_box, 1 * gui.scale)
             border = rect
 
         fields.add(border)

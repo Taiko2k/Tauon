@@ -11,6 +11,8 @@ v6.7.0
  - Fixed an issue with CUE importing
  - Fixed replay-gain slider setting movement
  - Fixed a possible issue with Airsonic import stalling
+ - Fixed UI scaling of some border elements
+ - Workaround for a rendering bug in SDL 2.0.16
  - Replaced Hsaudiotag and Stagger with Mutagen
 
 v6.6.1
