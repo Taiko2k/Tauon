@@ -4315,17 +4315,17 @@ def tag_scan(nt):
                     nt.track_number = ""
                     t = in_get("trkn", tags)
                     if t:
-                        nt.track_number = t[0]
+                        nt.track_number = str(t[0])
                         if t[1]:
-                            nt.track_total = t[1]
+                            nt.track_total = str(t[1])
 
                     nt.disc_total = ""
                     nt.disc_number = ""
                     t = in_get("disk", tags)
                     if t:
-                        nt.disc_number = t[0]
+                        nt.disc_number = str(t[0])
                         if t[1]:
-                            nt.disc_total = t[1]
+                            nt.disc_total = str(t[1])
 
                     if '----:com.apple.iTunes:MusicBrainz Track Id' in tags:
                         nt.misc['musicbrainz_recordingid'] = in_get("----:com.apple.iTunes:MusicBrainz Track Id", tags).decode()
