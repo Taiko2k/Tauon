@@ -347,10 +347,10 @@ class TDraw:
         self.sdl_rect.h = h + th
         SDL_RenderFillRect(self.renderer, self.sdl_rect) # right
 
-    def rect_a(self, location_xy, size_wh, colour, fill=False):
-        self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour, fill)
+    def rect_a(self, location_xy, size_wh, colour):
+        self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
-    def rect(self, rectangle, colour, fill=False):
+    def rect(self, rectangle, colour):
 
         self.sdl_rect.x = round(rectangle[0])
         self.sdl_rect.y = round(rectangle[1])
@@ -359,10 +359,10 @@ class TDraw:
 
         SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 
-        if fill:
-            SDL_RenderFillRect(self.renderer, self.sdl_rect)
-        else:
-            SDL_RenderDrawRect(self.renderer, self.sdl_rect)
+        #if fill:
+        SDL_RenderFillRect(self.renderer, self.sdl_rect)
+        # else:
+        #     SDL_RenderDrawRect(self.renderer, self.sdl_rect)
 
     def bordered_rect(self, rectangle, fill_colour, outer_colour, border_size):
 
