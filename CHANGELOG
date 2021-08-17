@@ -6,6 +6,7 @@ v6.7.0
  - Added basic built in tag editor
  - Added server rating support for Airsonic/Subsonic tracks
  - Added image remove support for M4A, FLAC (now built in)
+ - Added MBID reading for M4A
  - Tweaked defaults of some settings
  - Fixed a bug with text highlighting
  - Fixed an issue with CUE importing

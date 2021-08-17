@@ -4315,17 +4315,29 @@ def tag_scan(nt):
                     nt.track_number = ""
                     t = in_get("trkn", tags)
                     if t:
-                        nt.track_number = str(t[0])
+                        nt.track_number = t[0]
                         if t[1]:
-                            nt.track_total = str(t[1])
+                            nt.track_total = t[1]
 
                     nt.disc_total = ""
                     nt.disc_number = ""
                     t = in_get("disk", tags)
                     if t:
-                        nt.disc_number = str(t[0])
+                        nt.disc_number = t[0]
                         if t[1]:
-                            nt.disc_total = str(t[1])
+                            nt.disc_total = t[1]
+
+                    if '----:com.apple.iTunes:MusicBrainz Track Id' in tags:
+                        nt.misc['musicbrainz_recordingid'] = in_get("----:com.apple.iTunes:MusicBrainz Track Id", tags).decode()
+                    if '----:com.apple.iTunes:MusicBrainz Release Track Id' in tags:
+                        nt.misc['musicbrainz_trackid'] = in_get("----:com.apple.iTunes:MusicBrainz Release Track Id", tags).decode()
+                    if '----:com.apple.iTunes:MusicBrainz Album Id' in tags:
+                        nt.misc['musicbrainz_albumid'] = in_get("----:com.apple.iTunes:MusicBrainz Album Id", tags).decode()
+                    if '----:com.apple.iTunes:MusicBrainz Release Group Id' in tags:
+                        nt.misc['musicbrainz_releasegroupid'] = in_get("----:com.apple.iTunes:MusicBrainz Release Group Id", tags).decode()
+                    if '----:com.apple.iTunes:MusicBrainz Artist Id' in tags:
+                        nt.misc['musicbrainz_artistids'] = [x.decode() for x in tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
+
 
                 elif type(audio.tags) == mutagen.id3.ID3:
                     def natural_get(tag, track, frame, attr):
@@ -4406,7 +4418,7 @@ def tag_scan(nt):
                             if item.desc == "MusicBrainz Release Group Id":
                                 nt.misc['musicbrainz_releasegroupid'] = item.text[0]
                             if item.desc == "MusicBrainz Artist Id":
-                                nt.misc['musicbrainz_artistids'] = copy.deepcopy(item.text)
+                                nt.misc['musicbrainz_artistids'] = list(item.text)
 
                             if item.desc == "replaygain_track_gain":
                                 nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
