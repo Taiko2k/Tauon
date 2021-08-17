@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-08-06 23:36+1200\n"
-"PO-Revision-Date: 2021-07-13 16:34+0000\n"
+"PO-Revision-Date: 2021-08-16 02:36+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.7.2-dev\n"
+"X-Generator: Weblate 4.8-dev\n"
 
 #: tauon.py:1912 tauon.py:1914
 msgid "No artist image found."
@@ -200,73 +200,68 @@ msgstr " arquivos foram escritos."
 
 #: tauon.py:13333
 msgid "Edit tag fields"
-msgstr ""
+msgstr "Editar campos de tag"
 
 #: tauon.py:13335 tauon.py:25976 tauon.py:26250 tauon.py:27003
 msgid "?"
 msgstr "?"
 
 #: tauon.py:13336
-#, fuzzy
 msgid "For details on this feature, see:"
-msgstr "Veja aqui detalhes de uso da função de transmissão:"
+msgstr "Para detalhes de uso, veja:"
 
 #: tauon.py:13340
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Número de faixas selecionadas: %d"
 
 #: tauon.py:13375
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Múltiplos selecionados>"
 
 #: tauon.py:13381
-#, fuzzy
 msgid "Track title"
-msgstr "Faixas"
+msgstr "Título da Faixa"
 
 #: tauon.py:13383
-#, fuzzy
 msgid "Album name"
-msgstr "Ganho de Álbum"
+msgstr "Nome do Álbum"
 
 #: tauon.py:13385
-#, fuzzy
 msgid "Artist name"
-msgstr "Artista"
+msgstr "Nome do Artista"
 
 #: tauon.py:13387
-#, fuzzy
 msgid "Album-artist name"
 msgstr "Artista do Álbum"
 
 #: tauon.py:13393
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Editar faixas de rede não é recomendado!"
 
 #: tauon.py:13423 tauon.py:13424
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "ESCREVER TAGS"
 
 #: tauon.py:13426
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Pressione enter nos campos para aplicar suas alterações!"
 
 #: tauon.py:13438
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Escrever para uma faixa de rede não é aplicável!"
 
 #: tauon.py:13441
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Impossível escrever tipos de CUE sheet!"
 
 #: tauon.py:13452
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
+"Impossível lidar com multi-campo! Por favor, use um editor externo de tag"
 
 #: tauon.py:13470
-#, fuzzy
 msgid "%d files rewritten"
-msgstr " arquivos foram escritos."
+msgstr "%d arquivos re-escritos"
 
 #: tauon.py:13531
 msgid "Substitute Lyric Search"
@@ -947,7 +942,7 @@ msgstr "Renomear Faixas…"
 
 #: tauon.py:18575 tauon.py:19398 tauon.py:19498
 msgid "Edit fields…"
-msgstr ""
+msgstr "Editar campos…"
 
 #: tauon.py:18583
 msgid "Cannot physically delete"
@@ -2610,7 +2605,7 @@ msgstr "Autotema desativado"
 
 #: tauon.py:40305
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Primeiro seleciona uma faixa fonte copiando-a para a clipboard"
 
 #: tauon.py:41745
 msgid "Rescan folders complete."
