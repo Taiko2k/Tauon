@@ -138,15 +138,15 @@ except:
 install_directory = sys.path[0]
 
 # Workaround for PyInstaller
-pyinstaller_mode = False
-if 'base_library' in install_directory:
-    pyinstaller_mode = True
-if pyinstaller_mode:
-    install_directory = os.path.dirname(install_directory)
+# pyinstaller_mode = False
+# if 'base_library' in install_directory:
+#     pyinstaller_mode = True
+# if pyinstaller_mode:
+#     install_directory = os.path.dirname(install_directory)
 
 
-if system == "windows" or msys:
-    os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+# if system == "windows" or msys:
+#     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 
 # Set data folders (portable mode)
 user_directory = install_directory
@@ -227,16 +227,6 @@ if install_mode and system == 'linux':
 
     if not os.path.isdir(os.path.join(user_directory, "encoder")):
         os.makedirs(os.path.join(user_directory, "encoder"))
-
-    # Copy data from old location if needed (new location since v3.0.0)
-    if not flatpak_mode:
-        if os.path.isfile(os.path.join(old_user_directory, 'state.p')) and \
-            not os.path.isfile(os.path.join(user_directory, 'state.p')):
-                shutil.copy(os.path.join(old_user_directory, 'state.p'), os.path.join(user_directory, 'state.p'))
-
-        if os.path.isfile(os.path.join(old_user_directory, 'star.p')) and \
-            not os.path.isfile(os.path.join(user_directory, 'star.p')):
-                shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
 
 
 elif (system == 'windows' or msys) and ('Program Files' in install_directory or
@@ -401,8 +391,6 @@ if system == 'windows':
 # ------------------------------------
 # Continue startup
 
-os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
-
 from sdl2 import *
 from sdl2.sdlimage import *
 from ctypes import pointer
@@ -446,59 +434,60 @@ except:
 
 ## Init SDL2
 
-SDL_Init(SDL_INIT_VIDEO)
+# SDL_Init(SDL_INIT_VIDEO)
+#
+# err = SDL_GetError()
+# if err:
+#     print(f"SDL init error: {err.decode()}")
+#     SDL_ClearError()
+# #
+# window_title = t_title
+# window_title = window_title.encode('utf-8')
 
-err = SDL_GetError()
-if err:
-    print(f"SDL init error: {err.decode()}")
-    SDL_ClearError()
+# flags = SDL_WINDOW_RESIZABLE # SDL_WINDOW_HIDDEN |
+#
+# if draw_border:
+#     flags |= SDL_WINDOW_BORDERLESS
+#
+# if old_window_position is None:
+#     o_x = SDL_WINDOWPOS_UNDEFINED
+#     o_y = SDL_WINDOWPOS_UNDEFINED
+# else:
+#     o_x = old_window_position[0]
+#     o_y = old_window_position[1]
+#
+# t_window = SDL_CreateWindow(window_title,
+#                             o_x, o_y,
+#                             window_size[0], window_size[1],
+#                             flags)
 
-window_title = t_title
-window_title = window_title.encode('utf-8')
-
-flags = SDL_WINDOW_RESIZABLE # SDL_WINDOW_HIDDEN |
-
-if draw_border:
-    flags |= SDL_WINDOW_BORDERLESS
-
-if old_window_position is None:
-    o_x = SDL_WINDOWPOS_UNDEFINED
-    o_y = SDL_WINDOWPOS_UNDEFINED
-else:
-    o_x = old_window_position[0]
-    o_y = old_window_position[1]
-
-t_window = SDL_CreateWindow(window_title,
-                            o_x, o_y,
-                            window_size[0], window_size[1],
-                            flags)
-
-
-err = SDL_GetError()
-if err:
-    print(f"SDL window error: {err.decode()}")
-    SDL_ClearError()
-
-if maximized:
-    SDL_MaximizeWindow(t_window)
-
-
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+#
+# err = SDL_GetError()
+# if err:
+#     print(f"SDL window error: {err.decode()}")
+#     SDL_ClearError()
+#
+# if maximized:
+#     SDL_MaximizeWindow(t_window)
+#
+#
+# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
 # window_surface = SDL_GetWindowSurface(t_window)
 
-SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+#
+# err = SDL_GetError()
+# if err:
+#     print(f"SDL render error: {err.decode()}")
+#     SDL_ClearError()
 
-err = SDL_GetError()
-if err:
-    print(f"SDL render error: {err.decode()}")
-    SDL_ClearError()
-
-display_index = SDL_GetWindowDisplayIndex(t_window)
-display_bounds = SDL_Rect(0, 0)
-SDL_GetDisplayBounds(display_index, display_bounds)
+# display_index = SDL_GetWindowDisplayIndex(t_window)
+# display_bounds = SDL_Rect(0, 0)
+# SDL_GetDisplayBounds(display_index, display_bounds)
 
 icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
@@ -542,13 +531,13 @@ SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
 SDL_RenderClear(renderer)
 
 
-
-SDL_SetRenderTarget(renderer, None)
-SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
-SDL_RenderClear(renderer)
-#SDL_RenderPresent(renderer)
-
-SDL_SetWindowOpacity(t_window, window_opacity)
+#
+# SDL_SetRenderTarget(renderer, None)
+# SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
+# SDL_RenderClear(renderer)
+# #SDL_RenderPresent(renderer)
+#
+# SDL_SetWindowOpacity(t_window, window_opacity)
 
 
 class LoadImageAsset:
@@ -608,7 +597,7 @@ def asset_loader(name, mod=False):
     return LoadImageAsset(target)
 
 
-loading_image = asset_loader('loading.png')
+# loading_image = asset_loader('loading.png')
 
 if maximized:
     i_x = pointer(c_int(0))
@@ -620,8 +609,8 @@ if maximized:
     window_size[0] = i_x.contents.value
     window_size[1] = i_y.contents.value
 
-loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
-SDL_RenderPresent(renderer)
+# loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
+# SDL_RenderPresent(renderer)
 
 # if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
 #     print("Config file is missing... copying template from program files")
