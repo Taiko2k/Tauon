@@ -168,7 +168,7 @@ SDL_FreeSurface(raw_image)
 SDL_DestroyTexture(sdl_texture)
 
 big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
-f = open(big_boy_path)
+f = open(big_boy_path, "rb")
 main = compile(f.read(), big_boy_path, 'exec')
 f.close()
 
