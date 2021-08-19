@@ -54,6 +54,8 @@ if "--no-start" in sys.argv:
     transfer_args_and_exit()
 
 t_title = 'Tauon Music Box'
+os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
+
 
 install_directory = os.path.dirname(__file__)
 user_directory = install_directory
@@ -152,7 +154,6 @@ SDL_SetWindowOpacity(t_window, window_opacity)
 SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 SDL_RenderClear(renderer)
 
-
 raw_image = IMG_Load(os.path.join(asset_directory, "loading.png").encode())
 sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 w = raw_image.contents.w
@@ -166,13 +167,18 @@ SDL_RenderPresent(renderer)
 SDL_FreeSurface(raw_image)
 SDL_DestroyTexture(sdl_texture)
 
+big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
+f = open(big_boy_path)
+main = compile(f.read(), big_boy_path, 'exec')
+f.close()
+
 del raw_image
 del sdl_texture
 del w
 del h
 del rect
 del flags
+del big_boy_path
+del f
 
-big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
-code = compile(open(big_boy_path).read(), big_boy_path, 'exec')
-exec(code)
+exec(main)
