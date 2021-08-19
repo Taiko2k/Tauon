@@ -918,3 +918,17 @@ def shooter(func, args=()):
     shoot = threading.Thread(target=func, args=args)
     shoot.daemon = True
     shoot.start()
+
+def d_date_display(track):
+    if 'rdat' in track.misc:
+        return str(track.date) + " → " + track.misc["rdat"]
+    return str(track.date)
+
+def process_odat(nt, odat):
+    if odat and odat != nt.date and odat != nt.date[:4] and odat != nt.date[-4:] \
+            and nt.date != odat[:4] and nt.date != odat[-4:]:
+        if not nt.date:
+            nt.date = odat
+        else:
+            nt.misc["rdat"] = nt.date
+            nt.date = odat
