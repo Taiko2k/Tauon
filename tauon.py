@@ -1307,8 +1307,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
-        self.art_bg = True
-        self.art_bg_stronger = 2
+        self.art_bg = False
+        self.art_bg_stronger = 1
         self.art_bg_opacity = 10
         self.art_bg_blur = 9
         self.art_bg_always_blur = False
@@ -1413,7 +1413,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.notify_include_album = True
 
-        self.auto_dl_artist_data = True
+        self.auto_dl_artist_data = False
 
         self.enable_fanart_artist = False
         self.enable_fanart_bg = False
@@ -4360,6 +4360,9 @@ def tag_scan(nt):
                     natural_get(audio.tags, nt, "TDRC", "date")
                     natural_get(audio.tags, nt, "TCOM", "composer")
                     natural_get(audio.tags, nt, "COMM", "comment")
+
+                    process_odat(nt, natural_get(audio.tags, None, "TDOR", None))
+
 
                     if len(nt.comment) > 4 and nt.comment[2] == "+":
                         nt.comment = ""
@@ -25348,10 +25351,6 @@ class Over:
 
         y += 25 * gui.scale
 
-        self.toggle_square(x, y, toggle_auto_theme, _("Auto-theme from album art"))
-
-        y += 25 * gui.scale
-
         self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
 
         y += 23 * gui.scale
@@ -25370,6 +25369,11 @@ class Over:
         y += 23 * gui.scale
         #prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
         prefs.showcase_overlay_texture = self.toggle_square(x + 20 * gui.scale, y, prefs.showcase_overlay_texture, _("Pattern style"))
+
+        y += 25 * gui.scale
+
+        self.toggle_square(x, y, toggle_auto_theme, _("Auto-theme from album art"))
+
 
         y += 55 * gui.scale
 
@@ -25973,7 +25977,7 @@ class Over:
 
 
             y += 38 * gui.scale
-            self.toggle_square(x, y, toggle_top_tabs, _("Tabs in top panel"), subtitle=_("Disables the tab pin function"))
+            self.toggle_square(x, y, toggle_top_tabs, _("Tabs in top panel"), subtitle=_("Uncheck to disable the tab pin function"))
 
 
             y += 45 * gui.scale
@@ -31736,7 +31740,7 @@ class StandardPlaylist:
 
                 date = ""
                 if prefs.append_date and year_search.search(tr.date):
-                    date = "(" + tr.date + ")"
+                    date = "(" + d_date_display(tr) + ")"
 
 
                 if line.endswith(")"):
@@ -42937,7 +42941,7 @@ while pctl.running:
                             inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Date"), key_colour_off, 212)
-                    ddt.text((x2, y1), str(tc.date),
+                    ddt.text((x2, y1), d_date_display(tc),
                              value_colour, value_font)
 
 
