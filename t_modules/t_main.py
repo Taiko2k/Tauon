@@ -1799,7 +1799,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.last_left_panel_mode = "playlist"
         self.showing_l_panel = False
 
-        self.worker4_releases = 0
         self.downloading_bass = False
         self.d_click_ref = -1
 
@@ -4644,7 +4643,7 @@ class PlayerCtl:
 
     def notify_change(self):
         self.db_inc += 1
-        tauon.worker_save_state = True
+        tauon.bg_save()
 
     def radio_progress(self):
 
@@ -4741,6 +4740,8 @@ class PlayerCtl:
             shoot = threading.Thread(target=self.notify_update_fire)
             shoot.daemon = True
             shoot.start()
+        if prefs.art_bg:
+            tm.ready("style")
 
 
     def get_url(self, track_object):
@@ -5073,7 +5074,7 @@ class PlayerCtl:
         self.render_playlist()
 
     def play_target_rr(self):
-        # tm.ready_playback()
+        tm.ready_playback()
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
 
         if self.playing_length > 2:
@@ -5102,7 +5103,7 @@ class PlayerCtl:
 
     def play_target(self, gapless=False, jump=False):
 
-        #tm.ready_playback()
+        tm.ready_playback()
 
         # print(self.track_queue)
         self.playing_time = 0
@@ -5667,6 +5668,7 @@ class PlayerCtl:
             pctl.broadcastCommandReady = True
 
         gui.pl_update += 1
+        tm.ready("caster")
 
     def advance(self, rr=False, quiet=False, inplace=False, end=False, force=False, play=True, dry=False):
 
@@ -6565,7 +6567,7 @@ class LastFMapi:
         print(perf_timer.get())
         gui.pl_update += 1
         self.scanning_scrobbles = False
-        tauon.worker_save_state = True
+        tauon.bg_save()
         show_message(_("Scanning scrobbles complete"), mode="done")
 
     def artist_info(self, artist):
@@ -7150,7 +7152,7 @@ def maloja_get_scrobble_counts():
 
     gui.pl_update += 1
     lastfm.scanning_scrobbles = False
-    tauon.worker_save_state = True
+    tauon.bg_save()
 
 
 def maloja_scrobble(track):
@@ -7431,6 +7433,10 @@ class Tauon:
         self.quick_close = False
 
         self.cargo_playtime = None
+
+    def bg_save(self):
+        self.worker_save_state = True
+        tm.ready("worker")
 
     def exit(self):
         pctl.running = False
@@ -11756,24 +11762,9 @@ class StyleOverlay:
         self.parent_path = "None"
         self.stage = 0
 
-        if prefs.art_bg:
-            gui.worker4_releases += 2
-            try:
-                worker4_lock.release()
-            except:
-                pass
-
     def display(self):
 
         if self.min_on_timer.get() < 0:
-            return
-
-        if self.stage == 0 and (self.im is None or self.im is False):
-            gui.worker4_releases += 2
-            try:
-                worker4_lock.release()
-            except:
-                pass
             return
 
         if self.stage == 1:
@@ -11823,13 +11814,6 @@ class StyleOverlay:
                     self.current_track_id = track.index
                     if (self.parent_path != pctl.playing_object().parent_folder_path or self.current_track_album != pctl.playing_object().album):
                         self.stage = 0
-
-                if prefs.art_bg:
-                    gui.worker4_releases += 2
-                    try:
-                        worker4_lock.release()
-                    except:
-                        pass
 
         if prefs.bg_showcase_only:
             if not gui.combo_mode:
@@ -13454,7 +13438,7 @@ class TransEditBox:
                 for s in select:
                     tr = pctl.g(default_playlist[s])
                     tr.album_artist = edit_album_artist.text
-            tauon.worker_save_state = True
+            tauon.bg_save()
 
         ww = ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * gui.scale)
         if draw.button(_("WRITE TAGS"), (x + w) - ww, y - round(0) * gui.scale):
@@ -13501,7 +13485,7 @@ class TransEditBox:
 
                 muta.save()
                 written += 1
-            tauon.worker_save_state = True
+            tauon.bg_save()
             if not gui.message_box:
                 show_message(_("%d files rewritten") % written, mode="done")
 
@@ -13925,6 +13909,7 @@ def move_playing_folder_to_stem(path, pl_id=None):
     print(os.path.join(artist_folder, track.parent_folder_name))
     move_jobs.append((move_folder, os.path.join(artist_folder, track.parent_folder_name), True,
                       track.parent_folder_name, load_order))
+    tm.ready("worker")
 
 
 def move_playing_folder_to_tag(tag_item):
@@ -15471,6 +15456,7 @@ def rescan_tags(pl):
     for track in pctl.multi_playlist[pl][2]:
         if pctl.master_library[track].is_cue is False:
             to_scan.append(track)
+    tm.ready("worker")
 
 
 # def re_import(pl):
@@ -16937,6 +16923,7 @@ def auto_sync_thread(pl):
                 else:
                     gui.sync_progress = str(remain) + " " + _("Folder Remaining")
                 transcode_list.append(folder_dict[item])
+                tm.ready("worker")
                 while transcode_list:
                     time.sleep(1)
                 if gui.stop_sync:
@@ -17957,6 +17944,7 @@ def convert_folder(index):
 
     # print(folder)
     transcode_list.append(folder)
+    tm.ready("worker")
 
 
 def transfer(index, args):
@@ -18185,7 +18173,7 @@ def lightning_paste():
             load_order.playlist_position = insert
 
             move_jobs.append((move_path, os.path.join(artist_folder, move_track.parent_folder_name), move, move_track.parent_folder_name, load_order))
-
+            tm.ready("worker")
             # Remove all tracks with the old paths
             for pl in pctl.multi_playlist:
                 for i in reversed(range(len(pl[2]))):
@@ -19783,7 +19771,7 @@ def broadcast_select_track(track_id):
         pctl.broadcast_update_train.clear()
         pctl.broadcastCommand = "encstart"
         pctl.broadcastCommandReady = True
-
+    tm.ready("caster")
 
 track_menu.br()
 track_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
@@ -20474,6 +20462,7 @@ def switch_playlist(number, cycle=False, quiet=False):
     code = pctl.gen_codes.get(id)
     if code is not None and check_auto_update_okay(code, pctl.active_playlist_viewing):
         gui.regen_single_id = id
+        tm.ready("worker")
 
     if album_mode:
         reload_albums(True)
@@ -20736,6 +20725,7 @@ def toggle_broadcast():
 
         pctl.broadcastCommand = "encstop"
         pctl.broadcastCommandReady = True
+
 
 
 def broadcast_deco():
@@ -21157,6 +21147,7 @@ def toggle_auto_bg(mode=0):
         gui.update = 60
 
     style_overlay.flush()
+    tm.ready("style")
 
     # if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
     #     toggle_auto_theme()
@@ -23085,20 +23076,17 @@ def worker3():
         gall_ren.worker_render()
 
 
-worker4_lock = threading.Lock()
 def worker4():
-
+    active_timer = Timer()
     while True:
         if prefs.art_bg:
             style_overlay.worker()
 
         time.sleep(0.5)
-        gui.worker4_releases -= 1
-        if gui.worker4_releases > 3:
-            gui.worker4_releases = 3
-        if gui.worker4_releases < 1:
-            gui.worker4_releases = 0
-            worker4_lock.acquire()
+        if pctl.playing_state > 0 and pctl.playing_time < 5:
+            active_timer.set()
+        if active_timer.get() > 5:
+            return
 
 
 worker2_lock = threading.Lock()
@@ -23928,6 +23916,7 @@ def worker1():
                 tag_scan(nt)
             else:
                 after_scan.append(nt)
+                tm.ready("worker")
 
             pctl.master_count += 1
 
@@ -24007,12 +23996,24 @@ def worker1():
     global to_get
     global move_in_progress
 
+    active_timer = Timer()
     while True:
         time.sleep(0.2)
-
-        # if tm.exit_worker1:
-        #     tm.exit_worker1 = False
-        #     return
+        if after_scan or \
+                artist_list_box.load or \
+                artist_list_box.to_fetch or \
+                gui.regen_single_id or \
+                gui.regen_single > -1 or \
+                pctl.after_import_flag or \
+                tauon.worker_save_state or \
+                move_jobs or \
+                cm_clean_db or \
+                transcode_list or \
+                to_scan or \
+                loaderCommandReady:
+            active_timer.set()
+        elif active_timer.get() > 5:
+            return
 
         if after_scan:
             i = 0
@@ -24033,9 +24034,6 @@ def worker1():
             album_artist_dict.clear()
 
         artist_list_box.worker()
-
-        if prefs.auto_extract and prefs.monitor_downloads:
-            dl_mon.scan()
 
         # Update smart playlists
         if gui.regen_single_id is not None:
@@ -24304,7 +24302,6 @@ def worker1():
             album_artist_dict.clear()
 
         if loaderCommandReady is True:
-
 
             for order in load_orders:
                 if order.stage == 1:
@@ -28676,6 +28673,7 @@ class TopPanel:
                             pctl.notify_change()
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
                             tree_view_box.clear_target_pl(i)
+                            tm.ready("worker")
 
             x += tab_width + self.tab_spacing
 
@@ -30837,13 +30835,9 @@ def restore_full_mode():
         # print(window_size)
 
     gui.update_layout()
-
     if prefs.art_bg:
-        gui.worker4_releases += 2
-        try:
-            worker4_lock.release()
-        except:
-            pass
+        tm.ready('style')
+
 
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None ):
     timec = colours.bar_time
@@ -33302,6 +33296,7 @@ class RenamePlaylistBox:
             rename_text_area.highlight_none()
 
             gui.regen_single = rename_playlist_box.playlist_index
+            tm.ready("worker")
 
 
         else:
@@ -33345,6 +33340,8 @@ class RenamePlaylistBox:
 
             if input_text or key_backspace_press:
                 gui.regen_single = rename_playlist_box.playlist_index
+                tm.ready("worker")
+
                 #regenerate_playlist(rename_playlist_box.playlist_index)
             # if gui.gen_code_errors:
             #     del_icon.render(rect[0] + rect[2] - 21 * gui.scale, rect[1] + 10 * gui.scale, (255, 70, 70, 255))
@@ -33721,6 +33718,7 @@ class PlaylistBox:
                             modified = True
                         if modified:
                             pctl.after_import_flag = True
+                            tm.ready("worker")
                             pctl.notify_change()
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
                             tree_view_box.clear_target_pl(i)
@@ -34301,6 +34299,8 @@ class ArtistList:
 
                 if prefs.auto_dl_artist_data:
                     self.to_fetch = artist
+                    tm.ready("worker")
+
                 else:
                     self.thumb_cache[artist] = None
 
@@ -34840,6 +34840,7 @@ class ArtistList:
                 self.current_album_counts = []
                 self.current_artist_track_counts = {}
                 self.load = True
+                tm.ready("worker")
 
 
         area = (x, y, w, h)
@@ -38000,7 +38001,7 @@ class DLMon:
             if self.ticker.get() < 10:
                 return
         else:
-            if self.ticker.get() < 2:
+            if self.ticker.get() < 3:
                 return
 
         self.ticker.set()
@@ -38417,8 +38418,6 @@ c_hit_callback = SDL_HitTest(hit_callback)
 SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
 
-
-
 class ThreadManager:
 
     def __init__(self):
@@ -38429,15 +38428,20 @@ class ThreadManager:
         self.playback = None
         self.player_lock = threading.Lock()
 
+        self.d = {}
+
+    def ready(self, type):
+        if self.d[type][2] is None or not self.d[type][2].is_alive():
+            shoot = threading.Thread(target=self.d[type][0], args=self.d[type][1])
+            shoot.daemon = True
+            shoot.start()
+            self.d[type][2] = shoot
+
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
             if prefs.backend == 4:
                 from t_modules.t_phazor import player4
                 self.playback = threading.Thread(target=player4, args=[tauon])
-            if prefs.backend == 1:
-                pass
-                # from t_modules.t_bass import player
-                # self.playback = threading.Thread(target=bass_player_thread, args=[player])
             elif prefs.backend == 2:
                 from t_modules.t_gstreamer import player3
                 self.playback = threading.Thread(target=player3, args=[tauon])
@@ -38449,29 +38453,39 @@ class ThreadManager:
             return False
         return self.playback.is_alive()
 
-caster = threading.Thread(target=enc, args=[tauon])
-caster.daemon = True
-caster.start()
+#caster = threading.Thread(target=enc, args=[tauon])
+# caster.daemon = True
+# caster.start()
 
 tm = ThreadManager()
 tauon.tm = tm
 tm.ready_playback()
 
-thread = threading.Thread(target=worker1)
-thread.daemon = True
-thread.start()
-#
-thread = threading.Thread(target=worker2)
-thread.daemon = True
-thread.start()
-#
-thread = threading.Thread(target=worker3)
-thread.daemon = True
-thread.start()
+tm.d['caster'] = [enc, [tauon], None]
+tm.d['worker'] = [worker1, (), None]
+tm.d['search'] = [worker2, (), None]
+tm.d['gallery'] = [worker3, (), None]
+tm.d['style'] = [worker4, (), None]
 
-thread = threading.Thread(target=worker4)
-thread.daemon = True
-thread.start()
+tm.ready("search")
+tm.ready("gallery")
+tm.ready("worker")
+
+# thread = threading.Thread(target=worker1)
+# thread.daemon = True
+# thread.start()
+# # #
+# thread = threading.Thread(target=worker2)
+# thread.daemon = True
+# thread.start()
+# # #
+# thread = threading.Thread(target=worker3)
+# thread.daemon = True
+# thread.start()
+#
+# thread = threading.Thread(target=worker4)
+# thread.daemon = True
+# thread.start()
 
 # MAIN LOOP---------------------------------------------------------------------------
 
@@ -40080,6 +40094,9 @@ while pctl.running:
 
     new_playlist_cooldown = False
 
+    if prefs.auto_extract and prefs.monitor_downloads:
+        dl_mon.scan()
+
     if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
         #print(SDL_GetMouseState(None, None))
         if SDL_GetGlobalMouseState(None, None) == 0:
@@ -40680,6 +40697,7 @@ while pctl.running:
     if len(load_orders) > 0:
         loading_in_progress = True
         pctl.after_import_flag = True
+        tm.ready("worker")
         if loaderCommand == LC_None:
             for order in load_orders:
                 if order.stage == 0:
@@ -40696,6 +40714,7 @@ while pctl.running:
                             to_got = 1
                             to_get = 1
                     loaderCommandReady = True
+                    tm.ready("worker")
                     break
 
     elif loading_in_progress is True:

@@ -9,6 +9,7 @@ v6.7.0
  - Added MBID reading for M4A
  - Changed date display to use original date
  - Improved window startup speed
+ - Improved idle performance
  - Tweaked defaults of some settings
  - Fixed a bug with text highlighting
  - Fixed an issue with CUE importing

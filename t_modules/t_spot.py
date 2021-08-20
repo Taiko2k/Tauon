@@ -459,6 +459,7 @@ class SpotCtl:
         self.tauon.pctl.playing_time = 0
         self.tauon.pctl.decode_time = 0
         self.tauon.gui.pl_update += 1
+        self.tauon.tm.ready_playback()
 
     def get_library_albums(self, return_list=False):
         self.connect()

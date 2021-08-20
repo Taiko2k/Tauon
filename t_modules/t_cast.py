@@ -63,9 +63,10 @@ def enc(tauon):
                     "48000", "-"]
 
         def main(self):
+
             while True:
-                if not pctl.broadcast_active:
-                    time.sleep(0.1)
+                if not pctl.broadcast_active and not pctl.broadcastCommandReady:
+                    return
                 if pctl.broadcastCommandReady:
                     command = pctl.broadcastCommand
                     pctl.playerCommand = ""

@@ -58,6 +58,8 @@ def player4(tauon):
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
 
+    active_timer = Timer()
+
     def calc_rg(track):
 
         if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
@@ -289,6 +291,14 @@ def player4(tauon):
     while True:
 
         time.sleep(0.016)
+
+        if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
+            active_timer.set()
+        if active_timer.get() > 5:
+            aud.stop()
+            aud.shutdown()
+            break
+
         # Level meter
         if (state == 1 or state == 3) and gui.vis == 1:
             amp = aud.get_level_peak_l()
