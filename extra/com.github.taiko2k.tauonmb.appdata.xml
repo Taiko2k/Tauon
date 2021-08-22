@@ -58,10 +58,11 @@
 
   <releases>
 
-    <release version="6.6.1" date="2021-07-04">
+    <release version="6.7.0" date="2021-08-22">
       <description>
         <ul>
-          <li>Various fixes and tweaks</li>
+          <li>Added simple built in tag editor</li>
+          <li>Various other fixes and tweaks</li>
         </ul>
       </description>
     </release>
