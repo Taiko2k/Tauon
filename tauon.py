@@ -61,7 +61,6 @@ os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title unde
 
 
 install_directory = os.path.dirname(__file__)
-user_directory = install_directory
 user_directory = os.path.join(install_directory, "user-data")
 config_directory = user_directory
 
@@ -78,8 +77,8 @@ if install_directory.startswith("/opt/")\
 
 if install_mode:
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
-    if not os.path.isdir(user_directory):
-        os.makedirs(user_directory)
+if not os.path.isdir(user_directory):
+    os.makedirs(user_directory)
 
 if os.path.isfile('.gitignore') and False:
     print("Dev mode, ignoring single instancing")
