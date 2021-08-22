@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.7.0"
+n_version = "6.7.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4224,52 +4224,6 @@ def tag_scan(nt):
             nt.comment = audio.comment
             nt.misc = audio.misc
 
-            # if audio.found_tag is False:
-            #     try:
-            #         tag = stagger.read_tag(nt.fullpath)
-            #         print("Tag Scan: Found ID3v2 tag")
-            #         nt.album_artist = tag.album_artist
-            #         nt.disc_number = str(tag.disc)
-            #         nt.disc_total = str(tag.disc_total)
-            #         nt.track_total = str(tag.track_total)
-            #         nt.title = tag.title
-            #         nt.artist = tag.artist
-            #         nt.album = tag.album
-            #         nt.genre = tag.genre
-            #         nt.date = tag.date
-            #     except:
-            #         print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
-
-
-        # elif nt.file_ext == "M4A":
-        #
-        #     audio = M4a(nt.fullpath)
-        #     audio.read()
-        #
-        #     # print(audio.title)
-        #
-        #     nt.length = audio.length
-        #     nt.title = audio.title
-        #     nt.artist = audio.artist
-        #     nt.album = audio.album
-        #     nt.composer = audio.composer
-        #     nt.date = audio.date
-        #     nt.samplerate = audio.sample_rate
-        #     nt.size = os.path.getsize(nt.fullpath)
-        #     nt.track_number = audio.track_number
-        #     nt.genre = audio.genre
-        #     nt.album_artist = audio.album_artist
-        #     nt.disc_number = audio.disc_number
-        #     nt.lyrics = audio.lyrics
-        #     nt.bitrate = audio.bit_rate
-        #     if not nt.bitrate and nt.size and nt.length:
-        #         nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-        #     #nt.track_total = audio.track_total
-        #     #nt.disc_total = audio.disc_total
-        #     nt.comment = audio.comment
-        #     #nt.cue_sheet = audio.cue_sheet
-        #     nt.misc = audio.misc
-
         else:
 
             # Use MUTAGEN
@@ -4330,7 +4284,7 @@ def tag_scan(nt):
                 elif type(audio.tags) == mutagen.id3.ID3:
                     def natural_get(tag, track, frame, attr):
                         frames = tag.getall(frame)
-                        if frames:
+                        if frames and frames[0].text:
                             if track is None:
                                 return str(frames[0].text[0])
                             setattr(track, attr, str(frames[0].text[0]))
@@ -4411,14 +4365,18 @@ def tag_scan(nt):
                             if item.desc == "MusicBrainz Artist Id":
                                 nt.misc['musicbrainz_artistids'] = list(item.text)
 
-                            if item.desc == "replaygain_track_gain":
-                                nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
-                            if item.desc == "replaygain_track_peak":
-                                nt.misc['replaygain_track_peak'] = float(item.text[0])
-                            if item.desc == "replaygain_album_gain":
-                                nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
-                            if item.desc == "replaygain_album_peak":
-                                nt.misc['replaygain_album_peak'] = float(item.text[0])
+                            try:
+                                if item.desc == "replaygain_track_gain":
+                                    nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
+                                if item.desc == "replaygain_track_peak":
+                                    nt.misc['replaygain_track_peak'] = float(item.text[0])
+                                if item.desc == "replaygain_album_gain":
+                                    nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
+                                if item.desc == "replaygain_album_peak":
+                                    nt.misc['replaygain_album_peak'] = float(item.text[0])
+                            except:
+                                print("Tag Scan: Read Replay Gain MP3 error")
+                                print(nt.fullpath)
 
                             if item.desc == "FMPS_RATING":
                                 nt.misc['FMPS_Rating'] = float(item.text[0])
@@ -4430,7 +4388,7 @@ def tag_scan(nt):
     except:
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
-        raise
+        #raise
         return nt
 
     # Parse any multiple artists into list
@@ -23998,7 +23956,9 @@ def worker1():
 
     active_timer = Timer()
     while True:
-        time.sleep(0.2)
+        if not after_scan:
+            time.sleep(0.1)
+
         if after_scan or \
                 artist_list_box.load or \
                 artist_list_box.to_fetch or \
@@ -24019,7 +23979,7 @@ def worker1():
             i = 0
             while after_scan:
                 i += 1
-                if i > 100:
+                if i > 123:
                         break
 
                 tag_scan(after_scan[0])
@@ -24111,8 +24071,6 @@ def worker1():
             else:
                 show_message("Folder copy complete.", "Folder name: " + job[3], mode='done')
 
-
-
             move_in_progress = False
             load_orders.append(job[4])
             gui.update += 1
@@ -24132,6 +24090,7 @@ def worker1():
                 time.sleep(0.0001)
                 track = pctl.master_library[index]
                 to_got += 1
+
                 if to_got % 100 == 0:
                     gui.update = 1
                     
@@ -24302,7 +24261,6 @@ def worker1():
             album_artist_dict.clear()
 
         if loaderCommandReady is True:
-
             for order in load_orders:
                 if order.stage == 1:
                     if loaderCommand == LC_Folder:
@@ -30591,9 +30549,9 @@ class MiniMode:
             draw_window_tools()
 
         if w != h:
-            ddt.rect((0, 0, w, h), colours.mini_mode_border)
+            ddt.rect_s((1, 1, w - 2, h - 2), colours.mini_mode_border, 1 * gui.scale)
             if gui.scale == 2:
-                ddt.rect((1, 1, w - 2, h - 2), colours.mini_mode_border)
+                ddt.rect_s((2, 2, w - 4, h - 4), colours.mini_mode_border, 1 * gui.scale)
 
 mini_mode = MiniMode()
 
@@ -34369,7 +34327,6 @@ class ArtistList:
             self.to_fetch = ""
 
     def prep(self):
-
         self.scroll_position = 0
 
         curren_pl_no = id_to_pl(self.id_to_load)
