@@ -40332,7 +40332,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            #print(pctl.g(default_playlist[playlist_selected]).misc)
             pass
 
         if gui.mode < 3:
@@ -44217,7 +44216,7 @@ try:
 except:
     print("No lock object to close")
 
-print("Unloading SDL...")
+#print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
 SDL_DestroyTexture(gui.tracklist_texture)
 SDL_DestroyTexture(gui.spec2_tex)
@@ -44229,7 +44228,7 @@ clear_img_cache(False)
 IMG_Quit()
 SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
 SDL_Quit()
-print("SDL unloaded")
+#print("SDL unloaded")
 
 exit_timer = Timer()
 exit_timer.set()

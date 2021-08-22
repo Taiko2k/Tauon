@@ -1843,7 +1843,7 @@ void *main_loop(void *thread_id) {
         usleep(5000);
     }
 
-    printf("pa: Cleanup and exit\n");
+    //printf("pa: Cleanup and exit\n");
 
     pthread_mutex_lock(&buffer_mutex);
 
@@ -1870,7 +1870,7 @@ void *main_loop(void *thread_id) {
 // Begin exported functions
 
 int init() {
-    printf("ph: PHAzOR starting up\n");
+    //printf("ph: PHAzOR starting up\n");
     if (main_running == 0) {
         main_running = 1;
         pthread_t main_thread_id;

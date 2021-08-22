@@ -852,6 +852,7 @@ class SpotCtl:
             return
 
         result = self.spotify.playback_currently_playing()
+        self.tauon.tm.ready_playback()
 
         if self.playing or (not self.coasting and not start):
             return
