@@ -294,7 +294,7 @@ def player4(tauon):
 
         if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
             active_timer.set()
-        if active_timer.get() > 5:
+        if active_timer.get() > 7:
             aud.stop()
             aud.shutdown()
             break

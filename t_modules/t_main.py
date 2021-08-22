@@ -665,7 +665,7 @@ import urllib.request
 import datetime
 import shlex
 import math
-import locale
+import locale as py_locale
 import webbrowser
 import base64
 import re
@@ -702,7 +702,7 @@ def _(message):
     return message
 
 try:
-    locale.setlocale(locale.LC_ALL, '')
+    py_locale.setlocale(py_locale.LC_ALL, '')
 except:
     print("SET LOCALE ERROR")
 
@@ -27685,7 +27685,7 @@ class Over:
         line = seconds_to_day_hms(self.stats_pl_length, strings.day, strings.days)
 
         ddt.text((x1, y1), _("Tracks in playlist"), lt_colour, lt_font)
-        ddt.text((x2, y1), locale.format_string('%d', len(default_playlist), True), colours.box_sub_text, 12)
+        ddt.text((x2, y1), py_locale.format_string('%d', len(default_playlist), True), colours.box_sub_text, 12)
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Albums in playlist"), lt_colour, lt_font)
         ddt.text((x2, y1), str(self.stats_pl_albums), colours.box_sub_text, 12)
@@ -27720,7 +27720,7 @@ class Over:
 
         y1 += 40 * gui.scale
         ddt.text((x1, y1), _("Tracks in database"), lt_colour, lt_font)
-        ddt.text((x2, y1), locale.format_string('%d', len(pctl.master_library), True), colours.box_sub_text, 12)
+        ddt.text((x2, y1), py_locale.format_string('%d', len(pctl.master_library), True), colours.box_sub_text, 12)
         y1 += 20 * gui.scale
         ddt.text((x1, y1), _("Total albums"), lt_colour, lt_font)
         ddt.text((x2, y1), str(self.total_albums), colours.box_sub_text, 12)
