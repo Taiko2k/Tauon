@@ -38001,7 +38001,7 @@ class DLMon:
             if self.ticker.get() < 10:
                 return
         else:
-            if self.ticker.get() < 3:
+            if self.ticker.get() < 2:
                 return
 
         self.ticker.set()
