@@ -58,7 +58,7 @@
 
   <releases>
 
-    <release version="6.7.0" date="2021-08-22">
+    <release version="6.7.1" date="2021-08-22">
       <description>
         <ul>
           <li>Added simple built in tag editor</li>
