@@ -4297,6 +4297,7 @@ def tag_scan(nt):
 
                     natural_get(audio.tags, nt, "TIT2", "title")
                     natural_get(audio.tags, nt, "TPE1", "artist")
+                    natural_get(audio.tags, nt, "TPE2", "album_artist")
                     natural_get(audio.tags, nt, "TCON", "genre")  # content type
                     natural_get(audio.tags, nt, "TALB", "album")
                     natural_get(audio.tags, nt, "TDRC", "date")
