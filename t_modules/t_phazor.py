@@ -291,7 +291,8 @@ def player4(tauon):
     while True:
 
         time.sleep(0.016)
-
+        if state == 2:
+            time.sleep(0.05)
         if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
             active_timer.set()
         if active_timer.get() > 7:

@@ -48,6 +48,8 @@ double get_time_ms() {
 
 double t_start, t_end;
 
+int out_thread_running = 0; // bool
+
 int16_t buff16l[BUFF_SIZE];
 int16_t buff16r[BUFF_SIZE];
 unsigned int buff_filled = 0;
@@ -779,6 +781,7 @@ int disconnect_pulse() {
         pthread_mutex_lock(&pulse_mutex);
         pa_simple_free(s);
         pthread_mutex_unlock(&pulse_mutex);
+        out_thread_running = 0;
         //printf("pa: Disconnect from PulseAudio\n");
     }
     pulse_connected = 0;
@@ -840,6 +843,8 @@ void connect_pulse() {
 
     src_reset(src);
     pthread_mutex_unlock(&pulse_mutex);
+  
+
 
 }
 
@@ -1380,8 +1385,6 @@ void pump_decode() {
 
 float gate = 1.0;  // Used for ramping
 
-int out_thread_running = 0; // bool
-
 void *out_thread(void *thread_id) {
 
     out_thread_running = 1;
@@ -1392,6 +1395,7 @@ void *out_thread(void *thread_id) {
 
     while (out_thread_running == 1) {
 
+      
         if (buffering == 1 && buff_filled > 90000) {
 
             buffering = 0;
@@ -1581,7 +1585,7 @@ void *out_thread(void *thread_id) {
             } // sent data
 
         } // close if data
-        else usleep(500);
+        else usleep(1000);
 
     } // close main loop
 
@@ -1602,8 +1606,8 @@ void *main_loop(void *thread_id) {
     ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
 
 
-    pthread_t out_thread_id;
-    pthread_create(&out_thread_id, NULL, out_thread, NULL);
+    //pthread_t out_thread_id;
+    //pthread_create(&out_thread_id, NULL, out_thread, NULL);
 
 
     int error = 0;
@@ -1642,11 +1646,14 @@ void *main_loop(void *thread_id) {
                 break;
             }
             switch (command) {
+
                 case PAUSE:
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
-
-                        //disconnect_pulse();
+                      usleep(20000);
+                      out_thread_running = 0;  
+                      usleep(20000);  
+                        
                         command = NONE;
                     }
 
@@ -1654,6 +1661,10 @@ void *main_loop(void *thread_id) {
                 case RESUME:
                     if (mode == PAUSED) {
                         if (pulse_connected == 0) connect_pulse();
+                        if (out_thread_running == 0) {
+                              pthread_t out_thread_id;
+                              pthread_create(&out_thread_id, NULL, out_thread, NULL);
+                        }
                         mode = PLAYING;
                     }
                     command = NONE;
@@ -1675,6 +1686,10 @@ void *main_loop(void *thread_id) {
                     if (mode == RAMP_DOWN && gate == 0) {
                         command = LOAD;
                     } else break;
+                   if (out_thread_running == 0) {
+                              pthread_t out_thread_id;
+                              pthread_create(&out_thread_id, NULL, out_thread, NULL);
+                        }
                 case LOAD:
 
                     load_result = load_next();
@@ -1748,6 +1763,10 @@ void *main_loop(void *thread_id) {
                         command = NONE;
                         result_status = SUCCESS;
                         pthread_mutex_unlock(&buffer_mutex);
+                                              if (out_thread_running == 0) {
+                              pthread_t out_thread_id;
+                              pthread_create(&out_thread_id, NULL, out_thread, NULL);
+                        }
 
 
                     } else {
@@ -1961,6 +1980,7 @@ int stop() {
     return 0;
 }
 
+                                   
 int seek(int ms_absolute, int flag) {
 
     while (command != NONE) {
