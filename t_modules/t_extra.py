@@ -932,3 +932,6 @@ def process_odat(nt, odat):
         else:
             nt.misc["rdat"] = nt.date
             nt.date = odat
+
+def clean_string(s):
+    return s.encode('utf-8', 'surrogatepass').decode('utf-8', 'replace')
