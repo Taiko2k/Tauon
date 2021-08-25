@@ -295,9 +295,9 @@ def player4(tauon):
         if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
             active_timer.set()
         if active_timer.get() > 7:
-            aud.stop()
-            aud.shutdown()
-            break
+           aud.stop()
+           aud.shutdown()
+           break
 
         # Level meter
         if (state == 1 or state == 3) and gui.vis == 1:

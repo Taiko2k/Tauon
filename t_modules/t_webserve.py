@@ -670,6 +670,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.send_response(404)
                 self.end_headers()
                 self.wfile.write(b"404 Not found")
+            tauon.wake()
 
     class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
         pass
@@ -716,7 +717,7 @@ def controller(tauon):
 
             self.send_response(200)
             self.end_headers()
-
+            tauon.wake()
     print("Start controller server")
     try:
         httpd = HTTPServer(("127.0.0.1", 7813), Server)
@@ -741,6 +742,7 @@ def authserve(tauon):
                 if len(code) > 1:
                     code = code[1]
                     self.wfile.write(b"You can close this now and return to Tauon Music Box")
+                tauon.wake()
 
             else:
                 self.send_response(400)

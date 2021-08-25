@@ -7350,6 +7350,7 @@ class Tauon:
         self.desktop = desktop
         self.device = socket.gethostname()
 
+        self.dummy_event = SDL_Event()
         self.translate = _
         self.strings = strings
         self.pctl = pctl
@@ -7418,6 +7419,8 @@ class Tauon:
     def get_playing_playlist_id(self):
         return pl_to_id(pctl.active_playlist_playing)
 
+    def wake(self):
+        SDL_PushEvent(ctypes.byref(self.dummy_event))
 
 
 tauon = Tauon()
@@ -40043,7 +40046,7 @@ while pctl.running:
         else:
             sleep_timer.set()
         if sleep_timer.get() > 2:
-            SDL_WaitEventTimeout(None, 2000)
+            SDL_WaitEventTimeout(None, 20000)
         continue
 
     else:
