@@ -4812,7 +4812,7 @@ class PlayerCtl:
             artist = track.artist
 
             if not title:
-                line = track.filename
+                line = clean_string(track.filename)
             else:
                 if artist != "":
                     line += artist
@@ -6293,7 +6293,7 @@ def notify_song(notify_of_end=False, delay=0.0):
 
         top_line = track.title
         if not top_line:
-            top_line = track.filename
+            top_line = clean_string(track.filename)
 
         if prefs.notify_include_album:
             bottom_line = (track.artist + " | " + track.album).strip("| ")
@@ -32019,11 +32019,11 @@ class StandardPlaylist:
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Filepath":
-                            text = n_track.fullpath
+                            text = clean_string(n_track.fullpath)
                             colour = colours.index_text
                             norm_colour = colour
                         elif item[0] == "Filename":
-                            text = n_track.filename
+                            text = clean_string(n_track.filename)
                             colour = colours.index_text
                             norm_colour = colour
                         elif item[0] == "Codec":
@@ -35707,7 +35707,7 @@ class QueueBox:
             line = track.title
 
         if not line:
-            line = track.filename
+            line = clean_string(track.filename)
 
         line2y = yy + 14 * gui.scale
 
@@ -37404,7 +37404,7 @@ class Showcase:
 
                 if track.artist == "" and track.title == "":
 
-                    ddt.text((x, y, 2), track.filename, t1, 216, w)
+                    ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w)
 
                 else:
 
@@ -42271,7 +42271,7 @@ while pctl.running:
                                 else:
                                     title = target_track.title
                                     if not title:
-                                        title = target_track.filename
+                                        title = clean_string(target_track.filename)
 
                                 if small_mode:
                                     ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist,
@@ -42787,13 +42787,13 @@ while pctl.running:
                     else:
                         ddt.text((x1, y1), _("Path"), key_colour_off, 212)
 
-                    q = ddt.text((x2, y1 - int(3 * gui.scale)), tc.fullpath,
+                    q = ddt.text((x2, y1 - int(3 * gui.scale)), clean_string(tc.fullpath),
                                  path_colour, 210, max_w=425*gui.scale)
 
                     if coll(rect):
                         gui.frame_callback_list.append(TestTimer(0.71))
                         if track_box_path_tool_timer.get() > 0.7:
-                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.fullpath, 210)
+                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, clean_string(tc.fullpath), 210)
                     else:
                         track_box_path_tool_timer.set()
 
@@ -43090,10 +43090,12 @@ while pctl.running:
                 ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.box_text_label, 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420 * gui.scale)
+                line = clean_string(line)
                 ddt.text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(220), 211)
 
                 ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.box_text_label, 212)
                 line = pctl.master_library[rename_index].parent_folder_name
+                line = clean_string(line)
                 ddt.text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
 
                 ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.box_text_label, 212)
