@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.7.2
+
+ - Fixed album artist field reading for MP3
+ - Further improved idle CPU usage
+
 v6.7.1
 
  - Fixed mini mode border
