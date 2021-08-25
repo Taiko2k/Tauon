@@ -40041,7 +40041,7 @@ while pctl.running:
 
         time.sleep(0.03)
 
-        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
+        if (pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
             pass
         else:
             sleep_timer.set()
