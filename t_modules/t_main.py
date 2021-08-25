@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.7.1"
+n_version = "6.7.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -39625,7 +39625,6 @@ while pctl.running:
     # gui.update = 2
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
-        sleep_timer.set()
 
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
@@ -40038,10 +40037,13 @@ while pctl.running:
     if power < 500:
 
         time.sleep(0.03)
-        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
-            if sleep_timer.get() > 5:
-                time.sleep(0.30)
 
+        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
+            pass
+        else:
+            sleep_timer.set()
+        if sleep_timer.get() > 2:
+            SDL_WaitEventTimeout(None, 2000)
         continue
 
     else:
