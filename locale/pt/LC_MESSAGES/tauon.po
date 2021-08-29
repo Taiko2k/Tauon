@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-08-17 14:12+1200\n"
-"PO-Revision-Date: 2021-05-10 01:42+0000\n"
+"PO-Revision-Date: 2021-08-29 15:29+0000\n"
 "Last-Translator: ssantos <ssantos@web.de>\n"
-"Language-Team: Portuguese <https://hosted.weblate.org/projects/tauon-music-"
-"box/tauon-music-box/pt/>\n"
+"Language-Team: Portuguese <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt/>\n"
 "Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.7-dev\n"
+"X-Generator: Weblate 4.8.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1912 tauon.py:1914
@@ -200,7 +200,7 @@ msgstr " nomes de ficheiros foram escritos."
 
 #: tauon.py:13363
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Editor de tags simples"
 
 #: tauon.py:13365 tauon.py:26009 tauon.py:26284 tauon.py:27037
 msgid "?"
@@ -209,69 +209,69 @@ msgstr "?"
 #: tauon.py:13366
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Pressione Enter em cada campo para aplicar as suas alterações no banco de "
+"dados local."
 
 #: tauon.py:13367
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"Quando terminar, pressione WRITE TAGS para gravar em tags em ficheiros "
+"reais. (Opcional, mas recomendado)"
 
 #: tauon.py:13370
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Quantidade de faixas selecionadas: %d"
 
 #: tauon.py:13405
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Múltiplos selecionados>"
 
 #: tauon.py:13413
-#, fuzzy
 msgid "Track title"
-msgstr "Lista de Faixas"
+msgstr "Título da Faixa"
 
 #: tauon.py:13415
-#, fuzzy
 msgid "Album name"
-msgstr "Album gain"
+msgstr "Nome do Álbum"
 
 #: tauon.py:13417
-#, fuzzy
 msgid "Artist name"
-msgstr "Artista"
+msgstr "Nome do Artista"
 
 #: tauon.py:13419
-#, fuzzy
 msgid "Album-artist name"
 msgstr "Artista do Álbum"
 
 #: tauon.py:13425
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Editar faixas de rede não é recomendado!"
 
 #: tauon.py:13455 tauon.py:13456
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "ESCREVER TAGS"
 
 #: tauon.py:13458
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Pressione enter nos campos para aplicar as suas alterações!"
 
 #: tauon.py:13470
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Escrever para uma faixa de rede não é aplicável!"
 
 #: tauon.py:13473
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Impossível escrever tipos de CUE sheet!"
 
 #: tauon.py:13484
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
+"Impossível lidar com multi-campo! Por favor, use um editor externo de tag"
 
 #: tauon.py:13502
-#, fuzzy
 msgid "%d files rewritten"
-msgstr " nomes de ficheiros foram escritos."
+msgstr "%d ficheiros re-escritos"
 
 #: tauon.py:13562
 msgid "Substitute Lyric Search"
@@ -955,7 +955,7 @@ msgstr "Renomear Faixas…"
 
 #: tauon.py:18606 tauon.py:19429 tauon.py:19529
 msgid "Edit fields…"
-msgstr ""
+msgstr "Editar campos…"
 
 #: tauon.py:18614
 msgid "Cannot physically delete"
@@ -978,9 +978,8 @@ msgid "Modify Folder…"
 msgstr "Modificar Pasta…"
 
 #: tauon.py:19095
-#, fuzzy
 msgid "Tag editor app does not appear to be installed."
-msgstr "App de edição de etiquetas aparenta não estar instalada."
+msgstr "App de edição de etiquetas parece não estar instalada."
 
 #: tauon.py:19098
 msgid "App not found on host OR insufficient Flatpak permissions."
@@ -1187,9 +1186,8 @@ msgid "Comment"
 msgstr "Comentário"
 
 #: tauon.py:20111
-#, fuzzy
 msgid "Filename"
-msgstr "Renomear"
+msgstr "Nome do ficheiro"
 
 #: tauon.py:20112
 msgid "Starline"
@@ -1722,7 +1720,7 @@ msgstr "Ativar RichPresence do Discord"
 
 #: tauon.py:26010
 msgid "For troubleshooting Discord RP"
-msgstr ""
+msgstr "Solução de problemas do Discord RP"
 
 #: tauon.py:26038
 msgid "Extract archives"
@@ -1763,7 +1761,7 @@ msgstr "Mostrar texto do título"
 
 #: tauon.py:26061
 msgid "Enable remote control"
-msgstr ""
+msgstr "Ativar controle remoto"
 
 #: tauon.py:26062
 msgid "Change requires restart"
@@ -1771,11 +1769,11 @@ msgstr "Mudanças requerem reinício"
 
 #: tauon.py:26071
 msgid "Block suspend"
-msgstr ""
+msgstr "Bloquear suspender"
 
 #: tauon.py:26072
 msgid "Prevent system suspend during playback"
-msgstr ""
+msgstr "Prevenir que o sistema entre em suspensão ao tocar"
 
 #: tauon.py:26276
 msgid "Show threshold marker"
@@ -1874,9 +1872,8 @@ msgid "Import music to playlist"
 msgstr "Importar música para playlist"
 
 #: tauon.py:26529
-#, fuzzy
 msgid "Needed for Nextcloud Music"
-msgstr "Necessário para compatibilidade com Nextcloud"
+msgstr "Necessário para Nextcloud Music"
 
 #: tauon.py:26529
 msgid "Use plain text authentication"
@@ -1996,9 +1993,8 @@ msgid "Press again while holding Shift if you understand"
 msgstr "Pressione de novo a segurar Shift, se entendeu"
 
 #: tauon.py:26929
-#, fuzzy
 msgid "Cleared all scrobble counts"
-msgstr "Obter contagem de scrobble"
+msgstr "Zerou todas as contagens scrobble"
 
 #: tauon.py:26934
 msgid ""
@@ -2046,7 +2042,7 @@ msgstr "Converter ficheiros"
 
 #: tauon.py:27010
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Contornar baixa bitrate"
 
 #: tauon.py:27013
 msgid "Start Transcode and Sync"
@@ -2118,9 +2114,8 @@ msgid "Top-panel level meter"
 msgstr "Medidor de nível do painel superior"
 
 #: tauon.py:27127
-#, fuzzy
 msgid "Showcase visualisation"
-msgstr "Apenas mostrar"
+msgstr "Visão de Vitrine"
 
 #: tauon.py:27133
 msgid "UI scale for HiDPI displays"
@@ -2625,6 +2620,7 @@ msgstr "Auto tema desativado"
 #: tauon.py:40334
 msgid "First select a source track by copying it into clipboard"
 msgstr ""
+"Primeiro seleciona uma faixa fonte copiando-a para a área de transferencia"
 
 #: tauon.py:41773
 msgid "Rescan folders complete."
