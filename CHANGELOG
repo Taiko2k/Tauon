@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.7.2
 
+ - Added option to config file "seek-interval"
  - Fixed album artist field reading for MP3
  - Fixed crash when displaying filenames with non utf8 data
  - Further improved idle CPU usage
