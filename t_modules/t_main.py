@@ -1476,6 +1476,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.block_suspend = False
         self.smart_bypass = True
+        self.seek_interval = 15
 
 prefs = Prefs()
 
@@ -3566,6 +3567,7 @@ def save_prefs():
     #cf.update_value("decode-search", prefs.diacritic_search)
 
     #cf.update_value("use-log-volume-scale", prefs.log_vol)
+    cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     #cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
@@ -3697,6 +3699,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
+    prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "Interval to seek when using shortcut. In seconds. Default is 15.")
     prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
     if prefs.pause_fade_time < 100:
@@ -18681,7 +18684,7 @@ def rename_parent(index, template):
 
         if old == object.parent_folder_path:
 
-            new_fullpath = os.path.join(new_parent_path, object.filename)
+            new_fullpath = os.path.join(new_parent_path, object)
 
             if os.path.normpath(new_parent_path) == os.path.normpath(old):
                 show_message("The folder already has that name.")
@@ -40563,10 +40566,10 @@ while pctl.running:
                     SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
                 if keymaps.test("seek-forward"):
-                    pctl.seek_time(pctl.playing_time + 15)
+                    pctl.seek_time(pctl.playing_time + prefs.seek_interval)
 
                 if keymaps.test("seek-back"):
-                    pctl.seek_time(pctl.playing_time - 15)
+                    pctl.seek_time(pctl.playing_time - prefs.seek_interval)
 
                 if keymaps.test("play"):
                     pctl.play()
