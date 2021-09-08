@@ -13991,7 +13991,6 @@ def finish_current():
 
 
 def add_album_to_queue(ref, position=None):
-
     if position is None:
         position = r_menu_position
 
@@ -41268,6 +41267,7 @@ while pctl.running:
                                                 #playlist_position = playlist_selected
                                                 shift_selection = [playlist_selected]
                                                 gallery_menu.activate(default_playlist[playlist_selected])
+                                                r_menu_position = playlist_selected
 
                                                 shift_selection = []
                                                 u = playlist_selected
