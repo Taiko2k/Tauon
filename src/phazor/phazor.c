@@ -23,13 +23,19 @@
 #include <math.h>
 #include <pthread.h>
 #include <time.h>
+
+#ifdef AO
+#include <ao/ao.h>
+#else
 #include <pulse/simple.h>
 #include <pulse/error.h>
+#endif
+
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
 #include "vorbis/codec.h"
 #include "vorbis/vorbisfile.h"
-#include "opus/opusfile.h"
+#include "opusfile.h"
 #include <sys/stat.h>
 #include <samplerate.h>
 #include <libopenmpt/libopenmpt.h>
@@ -40,11 +46,11 @@
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
 // before writing
 
-double get_time_ms() {
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return (t.tv_sec + (t.tv_usec / 1000000.0)) * 1000.0;
-}
+//double get_time_ms() {
+//    struct timeval t;
+//    gettimeofday(&t, NULL);
+//    return (t.tv_sec + (t.tv_usec / 1000000.0)) * 1000.0;
+//}
 
 double t_start, t_end;
 
@@ -200,6 +206,12 @@ struct stat st;
 int load_file_size = 0;
 int samples_decoded = 0;
 
+// AO --------------
+
+#ifdef AO
+ao_device *device;
+ao_sample_format format;
+#endif
 // Secret Rabbit Code --------------------------------------------------
 
 SRC_DATA src_data;
@@ -212,12 +224,11 @@ kiss_fft_cpx * cbuf;
 kiss_fftr_cfg ffta;
 
 // Pulseaudio ---------------------------------------------------------
-
+#ifndef AO
 pa_simple *s;
 pa_sample_spec ss;
-
 pa_buffer_attr pab;
-
+#endif
 // Vorbis related --------------------------------------------------------
 
 OggVorbis_File vf;
@@ -776,13 +787,15 @@ void stop_decoder() {
 
 int disconnect_pulse() {
     if (pulse_connected == 1) {
-        //pa_simple_drain(s, NULL);
-        //pa_simple_flush(s, NULL);
+        #ifdef AO
+        ao_close(device);
+        #else
         pthread_mutex_lock(&pulse_mutex);
         pa_simple_free(s);
         pthread_mutex_unlock(&pulse_mutex);
         out_thread_running = 0;
         //printf("pa: Disconnect from PulseAudio\n");
+        #endif
     }
     pulse_connected = 0;
     return 0;
@@ -805,8 +818,8 @@ void connect_pulse() {
         return;
     }
 
+    #ifndef AO
     int error = 0;
-
     char *dev = NULL;
     if (strcmp(config_output_sink, "Default") != 0) {
         dev = config_output_sink;
@@ -841,6 +854,26 @@ void connect_pulse() {
         mode = STOPPED;
     } else pulse_connected = 1;
 
+    #else
+
+	ao_initialize();
+
+	int default_driver = ao_default_driver_id();
+
+    memset(&format, 0, sizeof(format));
+	format.bits = 16;
+	format.channels = 2;
+	format.rate = 44100;
+	format.byte_format = AO_FMT_LITTLE;
+
+	/* -- Open driver -- */
+	device = ao_open_live(default_driver, &format, NULL /* no options */);
+	if (device == NULL) {
+		fprintf(stderr, "Error opening device.\n");
+	}
+    pulse_connected = 1;
+
+    #endif
     src_reset(src);
     pthread_mutex_unlock(&pulse_mutex);
   
@@ -1189,7 +1222,9 @@ void end() {
     buff_base = 0;
     buff_filled = 0;
     pthread_mutex_unlock(&buffer_mutex);
-    //pa_simple_flush (s, &error);
+    #ifndef AO
+        pa_simple_flush (s, &error);
+    #endif
     disconnect_pulse();
     current_sample_rate = 0;
 }
@@ -1391,7 +1426,7 @@ void *out_thread(void *thread_id) {
     int b = 0;
     //double testa, testb;
 
-    t_start = get_time_ms();
+    //t_start = get_time_ms();
 
     while (out_thread_running == 1) {
 
@@ -1544,22 +1579,11 @@ void *out_thread(void *thread_id) {
                     printf("pa: Error, not connected to any output!\n");
                 } else {
 
-                    /* t_end = get_time_ms(); */
-                    /* testa = (t_end - t_start); */
-                    /* t_start = t_end; */
-
-                    pa_simple_write(s, out_buf, b, &error);
-                    /* active_latency = (int) pa_simple_get_latency(s, &error); */
-
-                    /* t_end = get_time_ms(); */
-                    /* testb = (t_end - t_start); */
-                    /* t_start = t_end; */
-
-                    /* if (testa + testb > config_dev_buffer - 5){ */
-                    /*   printf("Write at: %f\n", testa); */
-                    /*   printf("Took: %f\n", testb); */
-                    /*   printf("Buffer: %d\n", buff_filled); */
-                    /* } */
+                    #ifndef AO
+                        pa_simple_write(s, out_buf, b, &error);
+                    #else
+                        ao_play(device, out_buf, b);
+                    #endif
 
                     // Flush buffer with 0s to avoid popping noise on close
                     if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)) {
@@ -1569,6 +1593,7 @@ void *out_thread(void *thread_id) {
                             out_buf[b] = 0 & 0xFF;
                             b += 1;
                         }
+                        #ifndef AO
                         int g = 0;
                         while (g < 12) {
                             g++;
@@ -1576,6 +1601,9 @@ void *out_thread(void *thread_id) {
                         }
                         pa_simple_flush(s, &error);
                         pa_simple_free(s);
+                        #else
+                        ao_close(device);
+                        #endif
                         usleep(100000);
                     }
                 }
@@ -1810,7 +1838,9 @@ void *main_loop(void *thread_id) {
                 buff_filled = 0;
                 if (pulse_connected == 1) {
                     pthread_mutex_lock(&pulse_mutex);
+                    #ifndef AO
                     pa_simple_flush(s, &error);
+                    #endif
                     pthread_mutex_unlock(&pulse_mutex);
                 }
 
@@ -1829,7 +1859,9 @@ void *main_loop(void *thread_id) {
                 buff_filled = 0;
                 if (command == SEEK && config_fast_seek == 1) {
                     pthread_mutex_lock(&pulse_mutex);
+                    #ifndef AO
                     pa_simple_flush(s, &error);
+                    #endif
                     pthread_mutex_unlock(&pulse_mutex);
                 }
                 mode = PLAYING;

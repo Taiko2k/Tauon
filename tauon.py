@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import copy
 import os
 import pickle
 import sys
@@ -98,8 +98,11 @@ SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 draw_border = True
 window_default_size = [1120, 600]
 window_size = window_default_size
+logical_size = [1120, 600]
 window_opacity = 1
 scale = 1
+if sys.platform == "darwin":
+    scale = 2
 maximized = False
 old_window_position = None
 
@@ -109,6 +112,7 @@ try:
 
     draw_border = save[0]
     window_size = save[1]
+    logical_size = copy.deepcopy(save[1])
     window_opacity = save[2]
     scale = save[3]
     maximized = save[4]
@@ -134,6 +138,9 @@ flags = SDL_WINDOW_RESIZABLE
 if draw_border:
     flags |= SDL_WINDOW_BORDERLESS
 
+if sys.platform == "darwin":
+    flags |= SDL_WINDOW_ALLOW_HIGHDPI
+
 if old_window_position is None:
     o_x = SDL_WINDOWPOS_UNDEFINED
     o_y = SDL_WINDOWPOS_UNDEFINED
@@ -143,7 +150,7 @@ else:
 
 t_window = SDL_CreateWindow(window_title,
                             o_x, o_y,
-                            window_size[0], window_size[1],
+                            logical_size[0], logical_size[1],
                             flags)
 
 if maximized:
@@ -155,6 +162,12 @@ SDL_SetWindowOpacity(t_window, window_opacity)
 
 SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 SDL_RenderClear(renderer)
+
+i_x = pointer(c_int(0))
+i_y = pointer(c_int(0))
+SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+window_size[0] = i_x.contents.value
+window_size[1] = i_y.contents.value
 
 raw_image = IMG_Load(os.path.join(asset_directory, "loading.png").encode())
 sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)

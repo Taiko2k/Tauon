@@ -406,29 +406,32 @@ try:
 except:
     print("old version of SDL detected")
 
-draw_border = True
-window_default_size = [1120, 600]
-window_size = window_default_size
-window_opacity = 1
-scale = 1
-maximized = False
-old_window_position = None
-
-try:
-    state_file = open(user_directory + "/window.p", "rb")
-    save = pickle.load(state_file)
-
-    draw_border = save[0]
-    window_size = save[1]
-    window_opacity = save[2]
-    scale = save[3]
-    maximized = save[4]
-    old_window_position = save[5]
-
-    del save
-
-except:
-    print('No previous window state')
+# draw_border = True
+# window_default_size = [1120, 600]
+# window_size = window_default_size
+# logical_size = [0, 0]
+# window_opacity = 1
+# scale = 1
+# maximized = False
+# old_window_position = None
+#
+# try:
+#
+#     state_file = open(user_directory + "/window.p", "rb")
+#     save = pickle.load(state_file)
+#
+#     draw_border = save[0]
+#     window_size = save[1]
+#     logical_size = save[1]
+#     window_opacity = save[2]
+#     scale = save[3]
+#     maximized = save[4]
+#     old_window_position = save[5]
+#
+#     del save
+#
+# except:
+#     print('No previous window state')
 
 
 
@@ -491,7 +494,10 @@ icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
-SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+if macos:
+    SDL_SetWindowMinimumSize(t_window, 560, 330)
+else:
+    SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
 
 
 max_window_tex = 1000
@@ -710,7 +716,7 @@ except:
 
 if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
-elif not msys:
+elif not msys and not macos:
     gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
     from gi.repository import Notify
 
@@ -1345,6 +1351,9 @@ class Prefs:    # Used to hold any kind of settings
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
         self.x_scale = True
+        if macos:
+            self.x_scale = False
+            self.scale_want = 2
         self.hide_queue = True
         self.show_playlist_list = True
         self.thin_gallery_borders = False
@@ -8545,48 +8554,8 @@ def draw_window_tools():
     global mouse_down
     global drag_mode
 
-    # if gui.mode == 1:
-    #     off_icon_colour = colours.window_button_icon_off # [255, 255, 255, 30] #[100, 100, 100, 100]
-    # else:
-    #     off_icon_colour = [120, 120, 120, 45]
-    #
-    # if colours.lm:
-    #     off_icon_colour = [180, 180, 180, 200]
-
     rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
     fields.add(rect)
-
-    #
-    # ref = colours.top_panel_background
-    # if gui.mode == 3:
-    #     ref = [20, 20, 20, 255]
-    #
-    # # light = test_lumi(colours.top_panel_background) < 0.2
-    # if light:
-    #     colours.window_buttons_bg_over = rgb_add_hls(ref, 0, -0.06, 0)
-    # else:
-    #     colours.window_buttons_bg_over = rgb_add_hls(ref, 0, 0.06, 0)
-    #
-    # if light:
-    #     colours.window_buttons_icon = rgb_add_hls(ref, 0, -0.3, 0)
-    # else:
-    #     colours.window_buttons_icon = rgb_add_hls(ref, 0, 0.3, 0)
-    #
-    # if light:
-    #     colours.window_buttons_bg = rgb_add_hls(ref, 0, 0.02, 0)
-    # else:
-    #     colours.window_buttons_bg = rgb_add_hls(ref, 0, -0.04, 0)
-    #
-    #
-    # #colours.window_buttons_icon = alpha_mod(colours.window_buttons_bg, 100)
-    #
-    # if not gui.mode == 3:
-    #     colours.window_buttons_bg = alpha_mod(colours.window_buttons_bg, 100)
-    # else:
-    #     colours.window_buttons_bg_over = alpha_mod(colours.window_buttons_bg_over, 140)
-    #     colours.window_buttons_bg = alpha_mod(colours.window_buttons_bg, 160)
-    #     colours.window_buttons_icon = [170, 170, 170, 255]
-    #     off_icon_colour = [150, 150, 150, 255]
 
     bg_off = colours.window_buttons_bg
     bg_on = colours.window_buttons_bg_over
@@ -38296,6 +38265,9 @@ def display_friend_heart(x, yy, name, just=0):
 # if system != 'windows':
 
 def hit_callback(win, point, data):
+    
+    x = point.contents.x / logical_size[0] * window_size[0]
+    y = point.contents.y / logical_size[0] * window_size[0]
 
     # Special layout modes
     if gui.mode == 3:
@@ -38306,10 +38278,10 @@ def hit_callback(win, point, data):
         if prefs.mini_mode_mode == 5:
             return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] - 5 * gui.scale and point.contents.y > window_size[1] - 12 * gui.scale:
+        if prefs.mini_mode_mode == 4 and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
             return SDL_HITTEST_NORMAL
 
-        if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[
+        if y < gui.window_control_hit_area_h and x > window_size[
             0] - gui.window_control_hit_area_w:
             return SDL_HITTEST_NORMAL
 
@@ -38317,59 +38289,59 @@ def hit_callback(win, point, data):
         y1 = window_size[0]
         if window_size[0] == window_size[1]:
             y1 = window_size[1] - 79 * gui.scale
-        if point.contents.y < y1:
+        if y < y1:
             return SDL_HITTEST_DRAGGABLE
 
         return SDL_HITTEST_NORMAL
 
     # Standard player mode
     if not gui.maximized:
-        if point.contents.y < 0 and point.contents.x > window_size[0]:
+        if y < 0 and x > window_size[0]:
             return SDL_HITTEST_RESIZE_TOPRIGHT
 
-        if point.contents.y < 0 and point.contents.x < 1:
+        if y < 0 and x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        if draw_border and point.contents.y < 2 * gui.scale and point.contents.x < window_size[0] - 40 * gui.scale and not gui.maximized:
+        if draw_border and y < 2 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
-    if point.contents.y < gui.panelY:
+    if y < gui.panelY:
 
         if gui.top_bar_mode2:
 
-            if point.contents.y < gui.panelY - gui.panelY2:
+            if y < gui.panelY - gui.panelY2:
 
-                if point.contents.x > window_size[0] - 100 * gui.scale and point.contents.y < 30 * gui.scale:
+                if x > window_size[0] - 100 * gui.scale and y < 30 * gui.scale:
                     return SDL_HITTEST_NORMAL
                 else:
                     return SDL_HITTEST_DRAGGABLE
             else:
-                if top_panel.drag_zone_start_x > point.contents.x or tab_menu.active:
+                if top_panel.drag_zone_start_x > x or tab_menu.active:
                     return SDL_HITTEST_NORMAL
                 else:
                     return SDL_HITTEST_DRAGGABLE
 
-        elif top_panel.drag_zone_start_x < point.contents.x < window_size[0] - (gui.offset_extra + 5):
+        elif top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
 
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
 
-            if gui.vis != 0 and point.contents.x > window_size[0] - 160 and (system == "windows" or  msys):
+            if gui.vis != 0 and x > window_size[0] - 160 and (system == "windows" or  msys):
                 return SDL_HITTEST_NORMAL
 
             return SDL_HITTEST_DRAGGABLE
 
     if not gui.maximized:
-        if point.contents.x > window_size[0] - 20 * gui.scale and point.contents.y > window_size[1] - 20 * gui.scale:
+        if x > window_size[0] - 20 * gui.scale and y > window_size[1] - 20 * gui.scale:
             return SDL_HITTEST_RESIZE_BOTTOMRIGHT
-        elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
+        elif x < 5 and y > window_size[1] - 5:
             return SDL_HITTEST_RESIZE_BOTTOMLEFT
-        elif point.contents.y > window_size[1] - 7 * gui.scale:
+        elif y > window_size[1] - 7 * gui.scale:
             return SDL_HITTEST_RESIZE_BOTTOM
 
-        elif point.contents.x > window_size[0] - 2 * gui.scale and point.contents.y > 20 * gui.scale:
+        elif x > window_size[0] - 2 * gui.scale and y > 20 * gui.scale:
             return SDL_HITTEST_RESIZE_RIGHT
-        elif point.contents.x < 5 * gui.scale and point.contents.y > 10 * gui.scale:
+        elif x < 5 * gui.scale and y > 10 * gui.scale:
             return SDL_HITTEST_RESIZE_LEFT
         else:
             return SDL_HITTEST_NORMAL
@@ -38726,10 +38698,9 @@ def update_layout_do():
             gui.turbo = False
 
     if gui.mode == 1:
-
         if not gui.maximized and not gui.lowered and not gui.mode == 3:
-            gui.save_size[0] = window_size[0]
-            gui.save_size[1] = window_size[1]
+            gui.save_size[0] = logical_size[0]
+            gui.save_size[1] = logical_size[1]
 
         bottom_bar1.update()
 
@@ -39040,7 +39011,7 @@ class GetSDLInput:
     def mouse(self):
         SDL_PumpEvents()
         SDL_GetMouseState(self.i_x, self.i_y)
-        return self.i_x.contents.value, self.i_y.contents.value
+        return int(self.i_x.contents.value / logical_size[0] * window_size[0]), int(self.i_y.contents.value / logical_size[0] * window_size[0])
 
 
     def test_capture_mouse(self):
@@ -39418,8 +39389,8 @@ def drop_file(target):
         i_x = pointer(c_int(0))
 
         SDL_GetMouseState(i_x, i_y)
-        i_y = i_y.contents.value
-        i_x = i_x.contents.value
+        i_y = i_y.contents.value / logical_size[0] * window_size[0]
+        i_x = i_x.contents.value / logical_size[0] * window_size[0]
 
     # print((i_x, i_y))
     gui.drop_playlist_target = 0
@@ -39660,8 +39631,8 @@ while pctl.running:
                     i_x = pointer(c_int(0))
 
                     SDL_GetMouseState(i_x, i_y)
-                    i_y = i_y.contents.value
-                    i_x = i_x.contents.value
+                    i_y = i_y.contents.value / logical_size[0] * window_size[0]
+                    i_x = i_x.contents.value / logical_size[0] * window_size[0]
 
                 if coll_point((i_x, i_y), gui.main_art_box):
 
@@ -39715,8 +39686,8 @@ while pctl.running:
 
         elif event.type == SDL_MOUSEMOTION:
 
-            mouse_position[0] = event.motion.x
-            mouse_position[1] = event.motion.y
+            mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
+            mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
             mouse_moved = True
             gui.mouse_unknown = False
         elif event.type == SDL_MOUSEBUTTONDOWN:
@@ -39759,8 +39730,8 @@ while pctl.running:
             elif event.button.button == SDL_BUTTON_LEFT:
                 if mouse_down:
                     mouse_up = True
-                    mouse_up_position[0] = event.motion.x
-                    mouse_up_position[1] = event.motion.y
+                    mouse_up_position[0] = event.motion.x / logical_size[0] * window_size[0]
+                    mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
 
                 mouse_down = False
         elif event.type == SDL_KEYDOWN and key_focused == 0:
@@ -39887,12 +39858,19 @@ while pctl.running:
 
                 if restore_ignore_timer.get() > 1:  # Hacky
                     gui.update = 2
-                    window_size[0] = event.window.data1
-                    window_size[1] = event.window.data2
+
+                    logical_size[0] = event.window.data1
+                    logical_size[1] = event.window.data2
 
                     if gui.mode != 3:
-                        window_size[0] = max(300, window_size[0])
-                        window_size[1] = max(300, window_size[1])
+                        logical_size[0] = max(300, logical_size[0])
+                        logical_size[1] = max(300, logical_size[1])
+
+                    i_x = pointer(c_int(0))
+                    i_y = pointer(c_int(0))
+                    SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+                    window_size[0] = i_x.contents.value
+                    window_size[1] = i_y.contents.value
 
                     update_layout = True
 
@@ -40145,14 +40123,6 @@ while pctl.running:
 
             if keymaps.test('toggle-console'):
                 console.show ^= True
-
-            if keymaps.test('resize-window-16:9'):
-                x = window_size[1] // 9
-                window_size[0] = x * 16
-                window_size[1] = x * 9
-                SDL_SetWindowSize(t_window, window_size[0], window_size[1])
-                gui.update_layout()
-                gui.pl_update += 1
 
             if keymaps.test("toggle-fullscreen"):
                 if not fullscreen and not gui.mode == 3:
@@ -40796,7 +40766,7 @@ while pctl.running:
         gui.update_on_drag = False
         gui.pl_update_on_drag = False
 
-        mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
+        #mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
         gui.showed_title = False
 
         if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
