@@ -8,6 +8,7 @@ v6.7.2
  - Fixed crash when displaying filenames with non utf8 data
  - Fixed gallery add album to queue
  - Further improved idle CPU usage
+ - Updated macOS support
 
 v6.7.1
 
