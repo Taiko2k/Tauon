@@ -2064,6 +2064,10 @@ void config_set_dev_buffer(int ms) {
     config_dev_buffer = ms;
 }
 
+void config_set_samplerate(int hz) {
+    sample_rate_out = hz;
+}
+
 void config_set_dev_name(char *device) {
     if (device == NULL) {
         strcpy(config_output_sink, "Default");

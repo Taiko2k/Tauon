@@ -35,7 +35,7 @@ def player4(tauon):
     #print("Start PHAzOR backend...")
 
     # Get output device names
-    if len(prefs.phazor_devices) < 2:
+    if len(prefs.phazor_devices) < 2 and not tauon.macos:
         try:
             import pulsectl
             pulse = pulsectl.Pulse('Tauon Music Box')
@@ -54,6 +54,8 @@ def player4(tauon):
     aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
     aud.init()
     aud.set_volume(int(pctl.player_volume))
+    if prefs.power_save:
+        aud.config_set_samplerate(44100)
 
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
