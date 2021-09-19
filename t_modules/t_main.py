@@ -1487,6 +1487,10 @@ class Prefs:    # Used to hold any kind of settings
         self.smart_bypass = True
         self.seek_interval = 15
 
+        self.power_save = False
+        if macos:
+            self.power_save = True
+
 prefs = Prefs()
 
 
@@ -2127,7 +2131,7 @@ class Input:    # Used to keep track of button states (or should be)
 
     def m_key_play(self):
         self.media_key = "Play"
-        gui.update += 1
+        date += 1
     def m_key_pause(self):
         self.media_key = "Pause"
         gui.update += 1
@@ -5437,10 +5441,11 @@ class PlayerCtl:
             self.a_time = 0
 
         # Update the UI if playing time changes a whole number
-        next_round = int(pctl.playing_time)
-        if self.playing_time_int != next_round:
-            gui.update += 1
-            self.playing_time_int = next_round
+        # next_round = int(pctl.playing_time)
+        # if self.playing_time_int != next_round:
+        #     #if not prefs.power_save:
+        #     #gui.update += 1
+        #     self.playing_time_int = next_round
 
         gap_extra = 2 #2
 
@@ -7405,6 +7410,7 @@ class Tauon:
         self.quick_close = False
 
         self.cargo_playtime = None
+        self.macos = macos
 
     def bg_save(self):
         self.worker_save_state = True
@@ -43642,7 +43648,8 @@ while pctl.running:
 
         input_text = ""
         gui.update -= 1
-        # print("FRAME " + str(core_timer.get()))
+
+        #print("FRAME " + str(core_timer.get()))
         if gui.update > 1:
             gui.update = 1
         gui.present = True
@@ -44065,7 +44072,8 @@ while pctl.running:
         if int(pctl.playing_time) != int(pctl.last_playing_time):
             pctl.last_playing_time = pctl.playing_time
             bottom_bar1.seek_time = pctl.playing_time
-            gui.update = 1
+            if not prefs.power_save or window_is_focused():
+                gui.update = 1
 
     # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
