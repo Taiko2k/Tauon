@@ -8611,8 +8611,13 @@ def draw_window_tools():
 
                 # if tray.active and prefs.min_to_tray:
                 #     tray.down()
-
-                SDL_MinimizeWindow(t_window)
+                if macos:
+                    #hack
+                    SDL_SetWindowBordered(t_window, True)
+                    SDL_MinimizeWindow(t_window)
+                    SDL_SetWindowBordered(t_window, False)
+                else:
+                    SDL_MinimizeWindow(t_window)
 
                 mouse_down = False
                 inp.mouse_click = False
