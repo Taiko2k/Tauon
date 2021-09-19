@@ -787,15 +787,18 @@ void stop_decoder() {
 
 int disconnect_pulse() {
     if (pulse_connected == 1) {
+        pthread_mutex_lock(&pulse_mutex);
         #ifdef AO
         ao_close(device);
+        out_thread_running = 0;
         #else
-        pthread_mutex_lock(&pulse_mutex);
+
         pa_simple_free(s);
-        pthread_mutex_unlock(&pulse_mutex);
         out_thread_running = 0;
         //printf("pa: Disconnect from PulseAudio\n");
         #endif
+        pthread_mutex_unlock(&pulse_mutex);
+
     }
     pulse_connected = 0;
     return 0;
@@ -856,14 +859,12 @@ void connect_pulse() {
 
     #else
 
-	ao_initialize();
-
 	int default_driver = ao_default_driver_id();
 
     memset(&format, 0, sizeof(format));
 	format.bits = 16;
 	format.channels = 2;
-	format.rate = 44100;
+	format.rate = current_sample_rate;
 	format.byte_format = AO_FMT_LITTLE;
 
 	/* -- Open driver -- */
@@ -872,6 +873,7 @@ void connect_pulse() {
 		fprintf(stderr, "Error opening device.\n");
 	}
     pulse_connected = 1;
+    usleep(50000);
 
     #endif
     src_reset(src);
@@ -1628,7 +1630,9 @@ int main_running = 0;
 
 void *main_loop(void *thread_id) {
 
-
+    #ifdef AO
+    	ao_initialize();
+    #endif
     rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
     cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
     ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
