@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-08-17 14:12+1200\n"
-"PO-Revision-Date: 2021-08-16 02:36+0000\n"
+"PO-Revision-Date: 2021-09-22 12:32+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.8-dev\n"
+"X-Generator: Weblate 4.9-dev\n"
 
 #: tauon.py:1912 tauon.py:1914
 msgid "No artist image found."
@@ -200,22 +200,25 @@ msgstr " arquivos foram escritos."
 
 #: tauon.py:13363
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Editor simples de tag"
 
 #: tauon.py:13365 tauon.py:26009 tauon.py:26284 tauon.py:27037
 msgid "?"
 msgstr "?"
 
 #: tauon.py:13366
-#, fuzzy
 msgid "Press Enter in each field to apply its changes to local database."
-msgstr "Pressione enter nos campos para aplicar suas alterações!"
+msgstr ""
+"Pressione Enter em cada campo para aplicar suas alterações ao banco de dados "
+"local."
 
 #: tauon.py:13367
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"Ao terminar, pressione ESCREVER TAGS para confirmar o salvamento das tags. ("
+"Opcional, mas recomendado)"
 
 #: tauon.py:13370
 msgid "Number of tracks selected: %d"
