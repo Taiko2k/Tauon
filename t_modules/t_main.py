@@ -37,55 +37,23 @@ t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
 
-
-# Early arg processing
-def transfer_args_and_exit():
-    import urllib.request
-    base = "http://localhost:7813/"
-
-    if len(sys.argv) <= 1:
-        url = base + "raise/"
-        urllib.request.urlopen(url)
-
-    for item in sys.argv:
-
-        if not item.endswith(".py") and not item.startswith("-") and (item.startswith("file://") or item.startswith("/")):
-            import base64
-            url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
-            urllib.request.urlopen(url)
-        if item == "--play-pause":
-            url = base + "playpause/"
-            urllib.request.urlopen(url)
-        if item == "--play":
-            url = base + "play/"
-            urllib.request.urlopen(url)
-        if item == "--pause":
-            url = base + "pause/"
-            urllib.request.urlopen(url)
-        if item == "--stop":
-            url = base + "stop/"
-            urllib.request.urlopen(url)
-        if item == "--next":
-            url = base + "next/"
-            urllib.request.urlopen(url)
-        if item == "--previous":
-            url = base + "previous/"
-            urllib.request.urlopen(url)
-        if item == "--shuffle":
-            url = base + "shuffle/"
-            urllib.request.urlopen(url)
-        if item == "--repeat":
-            url = base + "repeat/"
-            urllib.request.urlopen(url)
-
-    sys.exit()
-
-
-if "--no-start" in sys.argv:
-    transfer_args_and_exit()
-
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
+
+from t_modules import t_bootstrap
+h = t_bootstrap.holder
+t_window = h.w
+renderer = h.r
+logical_size = h.wl
+window_size = h.wr
+maximized = h.m
+scale = h.s
+window_opacity = h.o
+draw_border = h.d
+transfer_args_and_exit = h.e
+old_window_position = h.ow
+install_directory = h.id
+pyinstaller_mode = h.py
 
 import os
 import pickle
@@ -133,16 +101,6 @@ try:
 
 except:
     print("Error accessing GTK settings")
-
-# Find the directory we are running from
-install_directory = sys.path[0]
-
-# Workaround for PyInstaller
-# pyinstaller_mode = False
-# if 'base_library' in install_directory:
-#     pyinstaller_mode = True
-# if pyinstaller_mode:
-#     install_directory = os.path.dirname(install_directory)
 
 
 # if system == "windows" or msys:
@@ -202,9 +160,7 @@ if install_directory.startswith("/opt/")\
         flatpak_mode = True
 
 # If we're installed, use home data locations
-if install_mode and system == 'linux':
-
-    old_user_directory = os.path.expanduser('~') + "/.tauonmb-user"
+if (install_mode and system == 'linux') or macos:
 
     cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
@@ -325,6 +281,10 @@ def whicher(target):
 launch_prefix = ""
 if flatpak_mode:
     launch_prefix = "flatpak-spawn --host "
+
+ffmpeg = "ffmpeg"
+# if pyinstaller_mode: # todo, replace all instances
+#     ffmpeg = sys._MEIPASS + "/ffmpeg"
 
 # -------------------------------
 # Single Instancing
@@ -489,7 +449,10 @@ except:
 # display_bounds = SDL_Rect(0, 0)
 # SDL_GetDisplayBounds(display_index, display_bounds)
 
-icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+if not macos:
+    icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+else:
+    icon = IMG_Load(os.path.join(asset_directory, "tau-mac.png").encode())
 
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
@@ -657,6 +620,7 @@ try:
     import pylast
     last_fm_enable = True
 except:
+    raise
     print("PyLast moduel not found, last fm will be disabled.")
 import time
 import ctypes
@@ -861,7 +825,7 @@ album_v_gap = 66
 album_h_gap = 30
 album_v_slide_value = 50
 
-album_mode_art_size = 200
+album_mode_art_size = int(200 * scale)
 
 time_last_save = 0
 
@@ -1709,9 +1673,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.web_running = False
 
         self.rsp = True
-        self.rspw = 300
+        self.rspw = round(300 * self.scale)
         self.lsp = False
-        self.lspw = 220 * self.scale
+        self.lspw = round(220 * self.scale)
         self.plw = None
 
         self.pref_rspw = 300
@@ -15202,7 +15166,7 @@ def convert_playlist(pl, get_list=False):
         #     show_message("Error: Missing lame.exe from '/encoder' directory")
         #     return
     else:
-        if shutil.which('ffmpeg') is None:
+        if shutil.which(ffmpeg) is None:
             show_message("Error: ffmpeg does not appear to be installed")
             return
         # if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
@@ -17843,7 +17807,7 @@ def convert_folder(index):
             return
 
     else:
-        if shutil.which('ffmpeg') is None:
+        if shutil.which(ffmpeg) is None:
             show_message("Error: ffmpeg does not appear to be installed")
             return
 
@@ -19693,7 +19657,7 @@ def queue_deco():
 
 def broadcast_select_track(track_id):
 
-    if shutil.which('ffmpeg') is None:
+    if shutil.which(ffmpeg) is None:
         show_message(_("FFmpeg does not appear to be installed"), mode="error")
         return
 
@@ -21627,7 +21591,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
 
     if system != 'windows' and not msys:
-        command = "ffmpeg "
+        command = ffmpeg + " "
     else:
         command = command.replace("/", "\\")
 
@@ -24018,7 +23982,8 @@ def worker1():
                 not move_in_progress and \
                 (gui.lowered or not window_is_focused() or not gui.mouse_in_window):
 
-            save_state()
+            if not macos:
+                save_state()
             cue_list.clear()
             tauon.worker_save_state = False
 
@@ -27019,7 +26984,7 @@ class Over:
             y -= 1 * gui.scale
             x += 280 * gui.scale
             if (msys and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
-                    not msys and shutil.which('ffmpeg') is None):
+                    not msys and shutil.which(ffmpeg) is None):
                 ddt.text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
         x = x0 + round(20 * gui.scale)
@@ -32552,7 +32517,7 @@ class RadioBox:
 
         album_art_gen.clear_cache()
 
-        if shutil.which('ffmpeg') is None:
+        if shutil.which(ffmpeg) is None:
             show_message(_("FFmpeg does not appear to be installed"), mode="error")
             prefs.auto_rec = False
 
@@ -35297,7 +35262,7 @@ class TreeView:
 
             # Draw indicator box and +/- icons next to folder name
             if item[3]:
-                rect = (xx + inset - 9, yy + 7, 4, 4)
+                rect = (xx + inset - round(9 * gui.scale), yy + round(7 * gui.scale), round(4 * gui.scale), round(4 * gui.scale))
                 if light_mode or semilight_mode:
                     border = round(1 * gui.scale)
                     ddt.rect((rect[0] - border, rect[1] - border, rect[2] + border * 2, rect[3] + border * 2),
@@ -39669,8 +39634,9 @@ while pctl.running:
 
             power += 5
             dropped_file_sdl = event.drop.file
-            # print(dropped_file_sdl)
+            #print(dropped_file_sdl)
             target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r","")
+            #print(target)
             drop_file(target)
 
 
@@ -40278,6 +40244,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+
             pass
 
         if gui.mode < 3:
