@@ -59,8 +59,15 @@ if "--no-start" in sys.argv:
 t_title = 'Tauon Music Box'
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
 
-
 install_directory = os.path.dirname(__file__)
+
+pyinstaller_mode = False
+if 'base_library' in install_directory:
+    pyinstaller_mode = True
+    install_directory = os.path.dirname(install_directory)
+if hasattr(sys, "_MEIPASS"):
+    pyinstaller_mode = True
+
 user_directory = os.path.join(install_directory, "user-data")
 config_directory = user_directory
 
@@ -72,7 +79,7 @@ install_mode = False
 if install_directory.startswith("/opt/")\
         or install_directory.startswith("/usr/")\
         or install_directory.startswith("/app/")\
-        or install_directory.startswith("/snap/"):
+        or install_directory.startswith("/snap/") or sys.platform == "darwin":
     install_mode = True
 
 if install_mode:
@@ -182,10 +189,25 @@ SDL_RenderPresent(renderer)
 SDL_FreeSurface(raw_image)
 SDL_DestroyTexture(sdl_texture)
 
-big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
-f = open(big_boy_path, "rb")
-main = compile(f.read(), big_boy_path, 'exec')
-f.close()
+from t_modules import t_bootstrap
+h = t_bootstrap.holder
+h.w = t_window
+h.r = renderer
+h.wl = logical_size
+h.wr = window_size
+h.s = scale
+h.m = maximized
+h.e = transfer_args_and_exit
+h.d = draw_border
+h.o = window_opacity
+h.ow = old_window_position
+h.id = install_directory
+h.py = pyinstaller_mode
+
+# big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
+# f = open(big_boy_path, "rb")
+# main = compile(f.read(), big_boy_path, 'exec')
+# f.close()
 
 del raw_image
 del sdl_texture
@@ -193,7 +215,9 @@ del w
 del h
 del rect
 del flags
-del big_boy_path
-del f
+#del big_boy_path
+#del f
 
-exec(main)
+#exec(main)
+
+from t_modules import t_main
