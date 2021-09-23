@@ -3046,8 +3046,6 @@ for t in range(2):
 core_timer.set()
 print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
-
-
 # temporary
 if window_size is None:
     window_size = window_default_size
