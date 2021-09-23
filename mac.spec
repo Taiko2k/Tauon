@@ -9,7 +9,7 @@ prefix = subprocess.run(['brew', '--prefix'], capture_output=True, text=True).st
 a = Analysis(['tauon.py'],
              pathex=['/Users/kai/TauonMusicBox'],
              binaries=[('lib/libphazor.so', 'lib/'),
-              (prefix + '/bin/ffmpeg', '.'),
+              #(prefix + '/bin/ffmpeg', '.'),
               (prefix + '/lib/libao*.dylib', '.'),
               (prefix + '/lib/libsamplerate*.dylib', '.'),
               (prefix + '/lib/libvorbis*.dylib', '.'),

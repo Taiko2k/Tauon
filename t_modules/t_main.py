@@ -6194,7 +6194,7 @@ def open_encode_out():
     else:
         line = prefs.encoder_output
         line += "/"
-        if system == 'mac':
+        if macos:
             subprocess.Popen(['open', line])
         else:
             subprocess.Popen(['xdg-open', line])
@@ -10844,7 +10844,7 @@ class AlbumArt():
 
         if system == "windows" or msys:
             os.startfile(source[offset][1])
-        elif system == 'mac':
+        elif macos:
             subprocess.call(["open", source[offset][1]])
         else:
             subprocess.call(["xdg-open", source[offset][1]])
@@ -13670,7 +13670,7 @@ def open_folder_stem(path):
     else:
         line = path
         line += "/"
-        if system == 'mac':
+        if macos:
             subprocess.Popen(['open', line])
         else:
             subprocess.Popen(['xdg-open', line])
@@ -13689,7 +13689,7 @@ def open_folder(index):
     else:
         line = track.parent_folder_path
         line += "/"
-        if system == 'mac':
+        if macos:
             subprocess.Popen(['open', line])
         else:
             subprocess.Popen(['xdg-open', line])
@@ -15104,7 +15104,7 @@ def export_xspf(pl):
     line += "/"
     if system == "windows" or msys:
         os.startfile(line)
-    elif system == 'mac':
+    elif macos:
         subprocess.Popen(['open', line])
     else:
         subprocess.Popen(['xdg-open', line])
@@ -15705,7 +15705,7 @@ def export_stats(pl):
     target = os.path.join(user_directory, "stats.txt")
     if system == "windows" or msys:
         os.startfile(target)
-    elif system == 'mac':
+    elif macos:
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
@@ -17735,7 +17735,7 @@ def open_config_file():
     target = os.path.join(config_directory, "tauon.conf")
     if system == "windows" or msys:
         os.startfile(target)
-    elif system == 'mac':
+    elif macos:
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
@@ -17754,7 +17754,7 @@ def open_keymap_file():
 
     if system == "windows" or msys:
         os.startfile(target)
-    elif system == 'mac':
+    elif macos:
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
@@ -17767,7 +17767,7 @@ def open_file(target):
 
     if system == "windows" or msys:
         os.startfile(target)
-    elif system == 'mac':
+    elif macos:
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
@@ -17777,7 +17777,7 @@ def open_data_directory():
     target = user_directory
     if system == "windows" or msys:
         os.startfile(target)
-    elif system == 'mac':
+    elif macos:
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
@@ -32565,6 +32565,7 @@ class RadioBox:
         pctl.playing_time = 0
         pctl.decode_time = 0
         pctl.playing_length = 0
+        tm.ready_playback()
 
         if tauon.update_play_lock is not None:
             tauon.update_play_lock()
