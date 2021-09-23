@@ -790,11 +790,9 @@ int disconnect_pulse() {
         pthread_mutex_lock(&pulse_mutex);
         #ifdef AO
         ao_close(device);
-        out_thread_running = 0;
         #else
 
         pa_simple_free(s);
-        out_thread_running = 0;
         //printf("pa: Disconnect from PulseAudio\n");
         #endif
         pthread_mutex_unlock(&pulse_mutex);
@@ -878,8 +876,6 @@ void connect_pulse() {
     #endif
     src_reset(src);
     pthread_mutex_unlock(&pulse_mutex);
-  
-
 
 }
 
@@ -1432,7 +1428,6 @@ void *out_thread(void *thread_id) {
 
     while (out_thread_running == 1) {
 
-      
         if (buffering == 1 && buff_filled > 90000) {
 
             buffering = 0;
@@ -1683,8 +1678,8 @@ void *main_loop(void *thread_id) {
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
                       usleep(20000);
-                      out_thread_running = 0;  
-                      usleep(20000);  
+                      out_thread_running = 0;
+                      usleep(20000);
                         
                         command = NONE;
                     }
@@ -1694,6 +1689,7 @@ void *main_loop(void *thread_id) {
                     if (mode == PAUSED) {
                         if (pulse_connected == 0) connect_pulse();
                         if (out_thread_running == 0) {
+                              out_thread_running = 1;
                               pthread_t out_thread_id;
                               pthread_create(&out_thread_id, NULL, out_thread, NULL);
                         }
@@ -1718,12 +1714,13 @@ void *main_loop(void *thread_id) {
                     if (mode == RAMP_DOWN && gate == 0) {
                         command = LOAD;
                     } else break;
+
+                case LOAD:
                    if (out_thread_running == 0) {
+                              out_thread_running = 1;
                               pthread_t out_thread_id;
                               pthread_create(&out_thread_id, NULL, out_thread, NULL);
                         }
-                case LOAD:
-
                     load_result = load_next();
                     if (load_result == 0) {
                         pthread_mutex_lock(&buffer_mutex);
