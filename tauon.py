@@ -204,20 +204,23 @@ h.ow = old_window_position
 h.id = install_directory
 h.py = pyinstaller_mode
 
-# big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
-# f = open(big_boy_path, "rb")
-# main = compile(f.read(), big_boy_path, 'exec')
-# f.close()
-
 del raw_image
 del sdl_texture
 del w
 del h
 del rect
 del flags
-#del big_boy_path
-#del f
 
-#exec(main)
+if pyinstaller_mode or sys.platform == "darwin":
+    from t_modules import t_main
+else:
+    # Using the above import method breaks previous pickles. Could be fixed
+    # but yet to decide what best method is.
+    big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
+    f = open(big_boy_path, "rb")
+    main = compile(f.read(), big_boy_path, 'exec')
+    f.close()
+    del big_boy_path
+    del f
+    exec(main)
 
-from t_modules import t_main
