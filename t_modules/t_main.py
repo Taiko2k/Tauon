@@ -2095,7 +2095,7 @@ class Input:    # Used to keep track of button states (or should be)
 
     def m_key_play(self):
         self.media_key = "Play"
-        date += 1
+        gui.update += 1
     def m_key_pause(self):
         self.media_key = "Pause"
         gui.update += 1
@@ -8353,13 +8353,14 @@ if system == "windows" or msys:
 #    keyboardHookThread.daemon = True
 #    keyboardHookThread.start()
 
+# macos multimedia keys
 # if macos:
 #     try:
 #         import osxmmkeys
 #         tap = osxmmkeys.Tap()
-#         tap.on('play_pause', input.m_key_play)
-#         tap.on('next_track', input.m_key_next)
-#         tap.on('prev_track', input.m_key_previous)
+#         tap.on('play_pause', inp.m_key_play)
+#         tap.on('next_track', inp.m_key_next)
+#         tap.on('prev_track', inp.m_key_previous)
 #         tap.start()
 #     except ImportError:
 #         print("Could not import osxmmkeys")
@@ -30663,39 +30664,36 @@ def set_mini_mode():
     mini_mode.was_borderless = draw_border
     SDL_SetWindowBordered(t_window, False)
 
-    window_size[0] = int(350 * gui.scale)
-    window_size[1] = int(429 * gui.scale)
-
+    size = (350, 429)
     if prefs.mini_mode_mode == 1:
-
-        window_size[0] = int(330 * gui.scale)
-        window_size[1] = int(330 * gui.scale)
-
+        size = (330, 330)
     if prefs.mini_mode_mode == 2:
-        window_size[0] = int((350 * gui.scale) * 1.2)
-        window_size[1] = int((window_size[0] + 79 * gui.scale))
-
+        size = (420, 499)
     if prefs.mini_mode_mode == 3:
-
-        window_size[0] = int(430 * gui.scale)
-        window_size[1] = int(430 * gui.scale)
-
+        size = (430, 430)
     if prefs.mini_mode_mode == 4:
-
-        window_size[0] = int(330 * gui.scale)
-        window_size[1] = int(80 * gui.scale)
-
+        size = (330, 80)
     if prefs.mini_mode_mode == 5:
+        size = (400, 600)
 
-        window_size[0] = int(400 * gui.scale)
-        window_size[1] = int(600 * gui.scale)
+    if logical_size == window_size:
+        size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
 
-    SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+    logical_size[0] = size[0]
+    logical_size[1] = size[1]
+
+    SDL_SetWindowMinimumSize(t_window, logical_size[0], logical_size[1])
     SDL_SetWindowResizable(t_window, False)
-    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+    SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
     if mini_mode.save_position:
         SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
+
+    i_x = pointer(c_int(0))
+    i_y = pointer(c_int(0))
+    SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+    window_size[0] = i_x.contents.value
+    window_size[1] = i_y.contents.value
 
     gui.update += 3
 
@@ -30712,14 +30710,17 @@ def restore_full_mode():
     if not mini_mode.was_borderless:
         SDL_SetWindowBordered(t_window, True)
 
-    window_size[0] = gui.save_size[0]
-    window_size[1] = gui.save_size[1]
+    logical_size[0] = gui.save_size[0]
+    logical_size[1] = gui.save_size[1]
 
     SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
-    SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
-    SDL_SetWindowResizable(t_window, True)
-    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+    if macos:
+        SDL_SetWindowMinimumSize(t_window, 560, 330)
+    else:
+        SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
 
+    SDL_SetWindowResizable(t_window, True)
+    SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
     restore_ignore_timer.set()  # Hacky
 
@@ -30736,10 +30737,15 @@ def restore_full_mode():
         time.sleep(0.05)
         SDL_PumpEvents()
         SDL_GetWindowSize(t_window, i_x, i_y)
-        window_size[0] = i_x.contents.value
-        window_size[1] = i_y.contents.value
+        logical_size[0] = i_x.contents.value
+        logical_size[1] = i_y.contents.value
 
         # print(window_size)
+    i_x = pointer(c_int(0))
+    i_y = pointer(c_int(0))
+    SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+    window_size[0] = i_x.contents.value
+    window_size[1] = i_y.contents.value
 
     gui.update_layout()
     if prefs.art_bg:

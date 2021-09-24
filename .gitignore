@@ -24,3 +24,6 @@ prime/
 pygettext.py
 *.po~
 lib/
+*.DS_Store
+dist/
+
