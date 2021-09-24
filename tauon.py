@@ -59,7 +59,7 @@ if "--no-start" in sys.argv:
 t_title = 'Tauon Music Box'
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
 
-install_directory = os.path.dirname(__file__)
+install_directory = os.path.dirname(os.path.abspath(__file__))
 
 pyinstaller_mode = False
 if 'base_library' in install_directory:
@@ -169,6 +169,7 @@ SDL_SetWindowOpacity(t_window, window_opacity)
 
 SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 SDL_RenderClear(renderer)
+
 
 i_x = pointer(c_int(0))
 i_y = pointer(c_int(0))
