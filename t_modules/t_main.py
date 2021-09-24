@@ -575,6 +575,9 @@ if maximized:
     time.sleep(0.02)
     SDL_PumpEvents()
     SDL_GetWindowSize(t_window, i_x, i_y)
+    logical_size[0] = i_x.contents.value
+    logical_size[1] = i_y.contents.value
+    SDL_GL_GetDrawableSize(t_window, i_x, i_y)
     window_size[0] = i_x.contents.value
     window_size[1] = i_y.contents.value
 
@@ -624,6 +627,7 @@ except:
     print("PyLast moduel not found, last fm will be disabled.")
 import time
 import ctypes
+import ctypes.util
 import random
 import threading
 import logging
@@ -4062,11 +4066,8 @@ class MOD(Structure):
 
 mpt = None
 try:
-    if snap_mode:
-        mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
-    else:
-        mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
 
+    mpt = ctypes.cdll.LoadLibrary(ctypes.util.find_library("libopenmpt"))
     mpt.openmpt_module_create_from_memory.restype = c_void_p
     mpt.openmpt_module_get_metadata.restype = c_char_p
     mpt.openmpt_module_get_duration_seconds.restype = c_double
@@ -30741,8 +30742,7 @@ def restore_full_mode():
         logical_size[1] = i_y.contents.value
 
         # print(window_size)
-    i_x = pointer(c_int(0))
-    i_y = pointer(c_int(0))
+
     SDL_GL_GetDrawableSize(t_window, i_x, i_y)
     window_size[0] = i_x.contents.value
     window_size[1] = i_y.contents.value
