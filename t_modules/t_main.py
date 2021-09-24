@@ -30687,6 +30687,7 @@ def set_mini_mode():
     SDL_SetWindowResizable(t_window, False)
     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
+
     if mini_mode.save_position:
         SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
 
@@ -39898,7 +39899,8 @@ while pctl.running:
             #     # k_input = True
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
-                gui.maximized = True
+                if gui.mode != 3:  # workaround. sdl bug? gives event on window size set
+                    gui.maximized = True
                 update_layout = True
                 gui.pl_update = 1
                 gui.update += 1
