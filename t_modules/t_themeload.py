@@ -38,9 +38,7 @@ def get_colour_from_line(cline):
 
 
 def load_theme(colours, path):
-    a = open("/Users/kai/tttb.txt", "w")
-    a.write(path)
-    a.close()
+
     f = open(path, encoding="utf-8")
     content = f.readlines()
 
