@@ -283,8 +283,12 @@ if flatpak_mode:
     launch_prefix = "flatpak-spawn --host "
 
 ffmpeg = "ffmpeg"
-# if pyinstaller_mode: # todo, replace all instances
-#     ffmpeg = sys._MEIPASS + "/ffmpeg"
+if pyinstaller_mode:
+     os.environ["PATH"] = os.environ["PATH"] + ":" + sys._MEIPASS
+
+# ffmpeg = sys._MEIPASS + "/ffmpeg"
+# import subprocess
+# subprocess.call("ffmpeg", stdout=subprocess.PIPE, shell=False)
 
 # -------------------------------
 # Single Instancing
@@ -23909,7 +23913,7 @@ def worker1():
         if not after_scan:
             time.sleep(0.1)
 
-        if after_scan or \
+        if after_scan or load_orders or \
                 artist_list_box.load or \
                 artist_list_box.to_fetch or \
                 gui.regen_single_id or \
