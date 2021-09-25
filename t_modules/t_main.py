@@ -4070,13 +4070,17 @@ class MOD(Structure):
 
 mpt = None
 try:
+    p = ctypes.util.find_library("libopenmpt")
+    if p:
+        mpt = ctypes.cdll.LoadLibrary(p)
+    else:
+        mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
 
-    mpt = ctypes.cdll.LoadLibrary(ctypes.util.find_library("libopenmpt"))
     mpt.openmpt_module_create_from_memory.restype = c_void_p
     mpt.openmpt_module_get_metadata.restype = c_char_p
     mpt.openmpt_module_get_duration_seconds.restype = c_double
 except:
-    print("WARNING: Missing library libopenmpt!")
+    print("Failed to load libopenmpt!")
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
