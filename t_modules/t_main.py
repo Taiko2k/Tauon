@@ -23546,7 +23546,7 @@ def worker1():
                             print("CUE: The referenced source file wasn't found. Searching for matching file name...")
                             for item in os.listdir(os.path.dirname(path)):
                                 if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
-                                    if ".cue" not in item.lower():
+                                    if ".cue" not in item.lower() and os.path.split(".")[-1].lower() in DA_Formats:
                                         file_name = item
                                         file_path = os.path.join(os.path.dirname(path), file_name)
                                         print("CUE: Source found")
