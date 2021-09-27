@@ -2740,7 +2740,8 @@ for t in range(2):
 
             gui.__init__()
 
-        master_library = save[0]
+        if save[0] is not None:
+            master_library = save[0]
         master_count = save[1]
         playlist_playing = save[2]
         playlist_active = save[3]
@@ -3040,6 +3041,13 @@ for t in range(2):
             prefs.tray_show_title = save[160]
         if save[161] is not None:
             prefs.artist_list_style = save[161]
+        if save[162] is not None:
+            ds = save[162]
+
+        for d in ds:
+            nt = TrackClass()
+            nt.__dict__.update(d)
+            master_library[d["index"]] = nt
 
         state_file.close()
         del save
@@ -39042,7 +39050,11 @@ def save_state():
     # view_prefs['dd-index'] = dd_index
     view_prefs['append-date'] = prefs.append_date
 
-    save = [pctl.master_library,
+    ds = []
+    for v in pctl.master_library.values():
+        ds.append(v.__dict__)
+
+    save = [None,
             pctl.master_count,
             pctl.playlist_playing_position,
             pctl.active_playlist_viewing,
@@ -39203,7 +39215,8 @@ def save_state():
             prefs.failed_background_artists,
             prefs.bg_flips,
             prefs.tray_show_title,
-            prefs.artist_list_style
+            prefs.artist_list_style,
+            ds
         ]
 
 
@@ -39223,7 +39236,6 @@ def save_state():
             gui.scale,
             gui.maximized,
             old_position,
-
         ]
 
         pickle.dump(save, open(user_directory + "/window.p", "wb"))
