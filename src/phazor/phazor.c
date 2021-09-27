@@ -786,14 +786,14 @@ void stop_decoder() {
 
 
 int disconnect_pulse() {
+
     if (pulse_connected == 1) {
         pthread_mutex_lock(&pulse_mutex);
         #ifdef AO
-        ao_close(device);
+            ao_close(device);
         #else
-
-        pa_simple_free(s);
-        //printf("pa: Disconnect from PulseAudio\n");
+            pa_simple_free(s);
+            //printf("pa: Disconnect from PulseAudio\n");
         #endif
         pthread_mutex_unlock(&pulse_mutex);
 
@@ -804,6 +804,7 @@ int disconnect_pulse() {
 
 
 void connect_pulse() {
+            	printf("1\n");
 
     if (pulse_connected == 1) disconnect_pulse();
     //printf("pa: Connect pulse\n");
@@ -865,8 +866,15 @@ void connect_pulse() {
 	format.rate = current_sample_rate;
 	format.byte_format = AO_FMT_LITTLE;
 
+
+
+    ao_option option;
+    option.key = "buffer_time";
+    option.value = "100";
+
 	/* -- Open driver -- */
-	device = ao_open_live(default_driver, &format, NULL /* no options */);
+	device = ao_open_live(default_driver, &format, &option);
+
 	if (device == NULL) {
 		fprintf(stderr, "Error opening device.\n");
 	}
@@ -1584,22 +1592,23 @@ void *out_thread(void *thread_id) {
 
                     // Flush buffer with 0s to avoid popping noise on close
                     if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)) {
-                        pulse_connected = 0;
+
                         b = 0;
                         while (b < 256 * 4) {
                             out_buf[b] = 0 & 0xFF;
                             b += 1;
                         }
                         #ifndef AO
-                        int g = 0;
-                        while (g < 12) {
-                            g++;
-                            pa_simple_write(s, out_buf, b, &error);
-                        }
-                        pa_simple_flush(s, &error);
-                        pa_simple_free(s);
+                            int g = 0;
+                            while (g < 12) {
+                                g++;
+                                pa_simple_write(s, out_buf, b, &error);
+                            }
+                            pa_simple_flush(s, &error);
+                            pa_simple_free(s);
+                            pulse_connected = 0;
                         #else
-                        ao_close(device);
+
                         #endif
                         usleep(100000);
                     }
