@@ -99,6 +99,11 @@ else:
         print("Program is already running")
         transfer_args_and_exit()
 
+phone = False
+if os.environ.get('XDG_CURRENT_DESKTOP') in ("phosh"):
+    os.environ["SDL_VIDEODRIVER"] = "wayland"
+    phone = True
+
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 
@@ -141,12 +146,9 @@ window_title = t_title
 window_title = window_title.encode('utf-8')
 
 flags = SDL_WINDOW_RESIZABLE
-
+flags |= SDL_WINDOW_ALLOW_HIGHDPI
 if draw_border:
     flags |= SDL_WINDOW_BORDERLESS
-
-if sys.platform == "darwin":
-    flags |= SDL_WINDOW_ALLOW_HIGHDPI
 
 if old_window_position is None:
     o_x = SDL_WINDOWPOS_UNDEFINED
@@ -204,6 +206,7 @@ h.o = window_opacity
 h.ow = old_window_position
 h.id = install_directory
 h.py = pyinstaller_mode
+h.p = phone
 
 del raw_image
 del sdl_texture
