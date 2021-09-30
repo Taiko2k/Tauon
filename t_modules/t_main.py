@@ -54,6 +54,7 @@ transfer_args_and_exit = h.e
 old_window_position = h.ow
 install_directory = h.id
 pyinstaller_mode = h.py
+phone = h.p
 
 import os
 import pickle
@@ -461,10 +462,11 @@ else:
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
-if macos:
-    SDL_SetWindowMinimumSize(t_window, 560, 330)
-else:
-    SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+if not phone:
+    if macos:
+        SDL_SetWindowMinimumSize(t_window, 560, 330)
+    else:
+        SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
 
 
 max_window_tex = 1000
