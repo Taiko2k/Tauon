@@ -24000,8 +24000,7 @@ def worker1():
                 not move_in_progress and \
                 (gui.lowered or not window_is_focused() or not gui.mouse_in_window):
 
-            if not macos:
-                save_state()
+            save_state()
             cue_list.clear()
             tauon.worker_save_state = False
 
@@ -31323,6 +31322,7 @@ class StandardPlaylist:
                     # Detect folder title click
                     if click_title and mouse_position[1] < window_size[1] - gui.panelBY:
 
+                        gui.pl_update += 1
                         # Add folder to queue if middle click
                         if middle_click and is_level_zero():
                             if key_ctrl_down:  # Add as ungrouped tracks
@@ -31436,6 +31436,8 @@ class StandardPlaylist:
                 line_over = True
                 if (inp.mouse_click or right_click or (middle_click and is_level_zero())):
                     line_hit = True
+                    gui.pl_update += 1
+
                 else:
                     line_hit = False
             else:
@@ -38326,7 +38328,7 @@ def hit_callback(win, point, data):
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
 
-            if gui.vis != 0 and x > window_size[0] - 160 and (system == "windows" or  msys):
+            if x > window_size[0] - (160 * gui.scale) and (macos or system == "windows" or msys):
                 return SDL_HITTEST_NORMAL
 
             return SDL_HITTEST_DRAGGABLE
