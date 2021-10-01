@@ -3,7 +3,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2021, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
 
 print(f"{t_title} {t_version}")
-print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2021 Taiko2k captain.gxj@gmail.com\n')
 
 from t_modules import t_bootstrap
 h = t_bootstrap.holder
@@ -55,6 +55,9 @@ old_window_position = h.ow
 install_directory = h.id
 pyinstaller_mode = h.py
 phone = h.p
+window_default_size = h.wdf
+
+print(f"Window size: {window_size}")
 
 import os
 import pickle
@@ -39041,7 +39044,7 @@ def window_is_focused():  # thread safe?
 
 def save_state():
 
-    print("Writing database to disk.")
+    print("Writing database to disk... ", end="")
 
     # view_prefs['star-lines'] = star_lines
     view_prefs['update-title'] = update_title
@@ -39250,6 +39253,7 @@ def save_state():
             json.dump(prefs.lyrics_subs, f,)
 
         save_prefs()
+        print("done")
 
     except PermissionError:
         show_message("Permission error encountered while writing database", "error")
@@ -44165,7 +44169,6 @@ try:
 except:
     print("No lock object to close")
 
-#print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
 SDL_DestroyTexture(gui.tracklist_texture)
 SDL_DestroyTexture(gui.spec2_tex)
