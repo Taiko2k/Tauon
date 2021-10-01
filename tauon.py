@@ -100,7 +100,7 @@ else:
         transfer_args_and_exit()
 
 phone = False
-if os.environ.get('XDG_CURRENT_DESKTOP') in ("phosh"):
+if os.environ.get('XDG_CURRENT_DESKTOP') in ["GNOME:phosh"]:
     os.environ["SDL_VIDEODRIVER"] = "wayland"
     phone = True
 
@@ -108,13 +108,16 @@ SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 
 draw_border = True
-window_default_size = [1120, 600]
-window_size = window_default_size
-logical_size = [1120, 600]
+w = 1120
+h = 600
+window_default_size = [w, h]
+window_size = [w, h]
+logical_size = [w, h]
 window_opacity = 1
 scale = 1
 if sys.platform == "darwin":
     scale = 2
+
 maximized = False
 old_window_position = None
 
@@ -198,6 +201,7 @@ h.w = t_window
 h.r = renderer
 h.wl = logical_size
 h.wr = window_size
+h.wdf = window_default_size
 h.s = scale
 h.m = maximized
 h.e = transfer_args_and_exit
