@@ -4,7 +4,7 @@
   <id>com.github.taiko2k.tauonmb</id>
   <name>Tauon Music Box</name>
   <developer_name>Taiko2k</developer_name>
-  <summary>Play your music collection with style</summary>
+  <summary>Play your music with style</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
@@ -13,6 +13,11 @@
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
   <url type="donation">https://ko-fi.com/taiko2k</url>
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/66533289-eb697e00-eb6e-11e9-8a93-513056a343f6.png</icon>
+
+  <requires>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </requires>
 
   <description>
     <p>Tauon Music Box is a modern, comfortable and streamlined music player for the playback of your music collection.</p>
@@ -58,7 +63,7 @@
 
   <releases>
 
-    <release version="6.7.1" date="2021-08-22">
+    <release version="6.7.2" date="2021-09-08">
       <description>
         <ul>
           <li>Added simple built in tag editor</li>
