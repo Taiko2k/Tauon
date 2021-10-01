@@ -100,7 +100,8 @@ else:
         transfer_args_and_exit()
 
 phone = False
-if os.environ.get('XDG_CURRENT_DESKTOP') in ["GNOME:phosh"]:
+d = os.environ.get('XDG_CURRENT_DESKTOP')
+if d in ["GNOME:Phosh"]:
     os.environ["SDL_VIDEODRIVER"] = "wayland"
     phone = True
 
@@ -110,6 +111,9 @@ SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 draw_border = True
 w = 1120
 h = 600
+if phone:
+    w = 720
+    h = 1100
 window_default_size = [w, h]
 window_size = [w, h]
 logical_size = [w, h]
