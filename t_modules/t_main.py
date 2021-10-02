@@ -29320,6 +29320,7 @@ class BottomBarType1:
 
             h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
             if coll(h_rect) and mouse_down:
+                gui.update_on_drag = False
                 pctl.player_volume = 0
 
             step = round(1 * gui.scale)
@@ -29344,7 +29345,7 @@ class BottomBarType1:
 
                 if coll(h_rect):
                     if mouse_down or mouse_up:
-
+                        gui.update_on_drag = False
                         if bar == 0:
                             pctl.player_volume = 5
                         if bar == 1:
@@ -29999,6 +30000,7 @@ class BottomBarType_ao1:
 
             h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
             if coll(h_rect) and mouse_down:
+                gui.update_on_drag = False
                 pctl.player_volume = 0
 
             step = round(1 * gui.scale)
@@ -30023,7 +30025,7 @@ class BottomBarType_ao1:
 
                 if coll(h_rect):
                     if mouse_down:
-
+                        gui.update_on_drag = False
                         if bar == 0:
                             pctl.player_volume = 5
                         if bar == 1:
