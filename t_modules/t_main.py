@@ -17759,7 +17759,7 @@ def open_config_file():
     if system == "windows" or msys:
         os.startfile(target)
     elif macos:
-        subprocess.call(['open', target])
+        subprocess.call(['open', "-t", target])
     else:
         subprocess.call(["xdg-open", target])
     show_message(_("Config file opened."), _('Click "Reload" if you made any changes'), mode='arrow')
