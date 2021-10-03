@@ -13713,7 +13713,8 @@ def open_folder(index):
         line = track.parent_folder_path
         line += "/"
         if macos:
-            subprocess.Popen(['open', line])
+            line = track.fullpath
+            subprocess.Popen(['open', '-R', line])
         else:
             subprocess.Popen(['xdg-open', line])
 
