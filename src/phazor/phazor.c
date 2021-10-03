@@ -804,7 +804,6 @@ int disconnect_pulse() {
 
 
 void connect_pulse() {
-            	printf("1\n");
 
     if (pulse_connected == 1) disconnect_pulse();
     //printf("pa: Connect pulse\n");
