@@ -27148,9 +27148,9 @@ class Over:
         ddt.text((xx, yy, 2), "Supporter Corner", colours.box_sub_text, 213)
 
         yy += round(20 * gui.scale)
-        link_pa = draw_linked_text((xx - 180 * gui.scale, yy), "Become a https://ko-fi.com/taiko2k and get access to a secret feature!", colours.box_sub_text, 12,
-                                   replace="ko-fi monthly supporter")
-        link_activate(xx - 180 * gui.scale, yy, link_pa, click=self.click)
+        link_pa = draw_linked_text((xx - 140 * gui.scale, yy), "Become a https://www.patreon.com/taiko2k and get access to a secret feature!", colours.box_sub_text, 12,
+                                   replace="patron")
+        link_activate(xx - 140 * gui.scale, yy, link_pa, click=self.click)
         yy += round(30 * gui.scale)
 
         ddt.text((xx, yy, 2), "• Shuffle lockdown mode!", colours.box_sub_text, 313)
@@ -27481,11 +27481,6 @@ class Over:
         if self.button(x, y, text, width = w + round(25 * gui.scale)):
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
-
-        w = ddt.get_text_w(_("Donate"), 211)
-        x -= w + round(40 * gui.scale)
-        if self.button(x, y, _("Donate"), width = w + round(25 * gui.scale)):
-            webbrowser.open("https://ko-fi.com/taiko2k", new=2, autoraise=True)
 
         if self.button(x0 + round(20 * gui.scale), y, "Supporter Corner"):
             self.view_supporters = True
