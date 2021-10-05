@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v6.7.2
+v6.8.0
 
  - Added option to config file "seek-interval"
  - Fixed album artist field reading for MP3
