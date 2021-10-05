@@ -4319,6 +4319,13 @@ def tag_scan(nt):
                             nt.misc['artists'].extend(frame.text)
                         nt.artist = "; ".join(nt.misc['artists'])
 
+                    frames = tag.getall("TCON")
+                    if frames and len(frames) > 0:
+                        nt.misc['genres'] = []
+                        for frame in frames:
+                            nt.misc['genres'].extend(frame.text)
+                        nt.genre = " / ".join(nt.misc['genres'])
+
                     track_no = natural_get(audio.tags, None, "TRCK", None)
                     nt.track_total = ""
                     nt.track_number = ""
