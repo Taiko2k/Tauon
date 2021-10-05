@@ -7,6 +7,7 @@ v6.8.0
  - Fixed album artist field reading for MP3
  - Fixed crash when displaying filenames with non utf8 data
  - Fixed gallery add album to queue
+ - Fixed MP3 multi genre scan
  - Further improved idle CPU usage
  - Updated macOS support
 
