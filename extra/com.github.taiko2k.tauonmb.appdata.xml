@@ -11,7 +11,6 @@
   <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/TauonMusicBox/issues</url>
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
-  <url type="donation">https://www.patreon.com/taiko2k</url>
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/66533289-eb697e00-eb6e-11e9-8a93-513056a343f6.png</icon>
 
   <requires>
