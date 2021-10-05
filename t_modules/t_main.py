@@ -27145,16 +27145,16 @@ class Over:
         yy = y0 + (125 * gui.scale)
         xx = x0 + w0 // 2
 
-        ddt.text((xx, yy, 2), "Supporter Corner", colours.box_sub_text, 213)
+        ddt.text((xx, yy, 2), "Supporters Corner", colours.box_sub_text, 213)
 
         yy += round(20 * gui.scale)
-        link_pa = draw_linked_text((xx - 140 * gui.scale, yy), "Become a https://www.patreon.com/taiko2k and get access to a secret feature!", colours.box_sub_text, 12,
+        link_pa = draw_linked_text((xx - 140 * gui.scale, yy), "Become a https://www.patreon.com/taiko2k and get access to a bonus feature!", colours.box_sub_text, 12,
                                    replace="patron")
         link_activate(xx - 140 * gui.scale, yy, link_pa, click=self.click)
         yy += round(30 * gui.scale)
 
         ddt.text((xx, yy, 2), "• Shuffle lockdown mode!", colours.box_sub_text, 313)
-        if prefs.premium and self.button(xx + round(100 * gui.scale), yy, "Activate",):
+        if prefs.premium and self.button(xx + round(100 * gui.scale), yy, "Activate now",):
             toggle_shuffle_layout()
             pref_box.close()
 
