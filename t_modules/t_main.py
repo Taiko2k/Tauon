@@ -4299,7 +4299,6 @@ def tag_scan(nt):
 
                     process_odat(nt, natural_get(audio.tags, None, "TDOR", None))
 
-
                     if len(nt.comment) > 4 and nt.comment[2] == "+":
                         nt.comment = ""
                     if nt.comment[0:3] == "000":
@@ -13618,15 +13617,13 @@ def toggle_shuffle_layout():
             if gui.lyrics_was_album:
                 force_album_view()
 
-def show_shuffle_layout(_):
-    return prefs.premium
 def exit_shuffle_layout(_):
     return prefs.shuffle_lock
 
 shuffle_menu.add(_("Shuffle OFF"), menu_shuffle_off)
 shuffle_menu.add(_("Shuffle Tracks"), menu_set_random)
 shuffle_menu.add(_("Random Albums"), menu_album_random)
-shuffle_menu.add(_("Shuffle Lockdown"), toggle_shuffle_layout, show_test=show_shuffle_layout)
+shuffle_menu.add(_("Shuffle Lockdown"), toggle_shuffle_layout)
 
 def bio_set_large():
     #if window_size[0] >= round(1000 * gui.scale):
@@ -25273,7 +25270,6 @@ class Over:
 
         self.themes = []
         self.view_supporters = False
-        self.sunset = asset_loader("sunset.png")
         self.key_box = TextBox2()
         self.key_box_focused = False
 
@@ -25312,7 +25308,6 @@ class Over:
         y += 25 * gui.scale
 
         self.toggle_square(x, y, toggle_auto_theme, _("Auto-theme from album art"))
-
 
         y += 55 * gui.scale
 
@@ -27151,71 +27146,12 @@ class Over:
         prefs.x_scale ^= True
         prefs.scale_want = 1.0
 
-    def supporters_corner(self, x0, y0, w0, h0):
-
-        self.sunset.render((x0 + (w0 // 2) - self.sunset.w // 2), y0 + round(15 * gui.scale))
-
-        yy = y0 + (125 * gui.scale)
-        xx = x0 + w0 // 2
-
-        ddt.text((xx, yy, 2), "Supporters Corner", colours.box_sub_text, 213)
-
-        yy += round(20 * gui.scale)
-        link_pa = draw_linked_text((xx - 140 * gui.scale, yy), "Become a https://www.patreon.com/taiko2k and get access to a bonus feature!", colours.box_sub_text, 12,
-                                   replace="patron")
-        link_activate(xx - 140 * gui.scale, yy, link_pa, click=self.click)
-        yy += round(30 * gui.scale)
-
-        ddt.text((xx, yy, 2), "• Shuffle lockdown mode!", colours.box_sub_text, 313)
-        if prefs.premium and self.button(xx + round(100 * gui.scale), yy, "Activate now",):
-            toggle_shuffle_layout()
-            pref_box.close()
-
-        if prefs.premium:
-            colour = None
-        else:
-            colour = colours.box_text_border
-
-        x = x0 + round(125 * gui.scale)
-        yy += round(22 * gui.scale)
-
-        yy += round(30 * gui.scale)
-        rect = (x + round(50 * gui.scale), yy - round(2 * gui.scale), round(190 * gui.scale), 20 * gui.scale)
-        if not prefs.premium:
-            if self.click:
-                if coll(rect):
-                    self.key_box_focused = True
-                else:
-                    self.key_box_focused = False
-            if not self.key_box.text and not editline:
-                ddt.text((rect[0] + rect[2] // 2, yy, 2), "Enter supporter password", colours.box_text_label, 312)
-            self.key_box.draw(rect[0] + round(3 * gui.scale), yy, colours.box_sub_text, self.key_box_focused, click=self.click, width=rect[2])
-            ddt.rect(rect, alpha_mod(colours.box_text_border, 80))
-        else:
-            ddt.text((rect[0] + rect[2] // 2, yy, 2), "Unlocked! Thanks for being a supporter!", [15, 160, 240, 255], 312)
-
-        if self.button(x0 + round(20 * gui.scale), (y0 + h0) - round(33 * gui.scale), _("Return"),):
-            self.view_supporters = False
-
-        if self.key_box.text == "reset" or key_shift_down:
-            prefs.premium = False
-
-        # Validate key
-        if self.key_box.text:
-            if self.key_box.text.replace(" ", "").replace("'", "").lower() == "imawesome":
-                prefs.premium = True
-                self.key_box.text = ""
-
     def about(self, x0, y0, w0, h0):
 
         x = x0 + int(w0 * 0.3) - 10 * gui.scale
         y = y0 + 85 * gui.scale
 
         ddt.text_background_colour = colours.box_background
-
-        if self.view_supporters:
-            self.supporters_corner(x0, y0, w0, h0)
-            return
 
         icon_rect = (x - 110 * gui.scale, y - 15 * gui.scale, self.about_image.w, self.about_image.h)
 
@@ -27494,9 +27430,6 @@ class Over:
         if self.button(x, y, text, width = w + round(25 * gui.scale)):
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
-
-        if self.button(x0 + round(20 * gui.scale), y, "Supporter Corner"):
-            self.view_supporters = True
 
     def topchart(self, x0, y0, w0, h0):
 
