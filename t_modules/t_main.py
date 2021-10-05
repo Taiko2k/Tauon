@@ -4321,10 +4321,12 @@ def tag_scan(nt):
 
                     frames = tag.getall("TCON")
                     if frames and len(frames) > 0:
-                        nt.misc['genres'] = []
+                        d = []
                         for frame in frames:
-                            nt.misc['genres'].extend(frame.text)
-                        nt.genre = " / ".join(nt.misc['genres'])
+                            d.append(frame.text)
+                        if len(frames) > 1:
+                            nt.misc['genres'] = d
+                        nt.genre = " / ".join(d)
 
                     track_no = natural_get(audio.tags, None, "TRCK", None)
                     nt.track_total = ""
