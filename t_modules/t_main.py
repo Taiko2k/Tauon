@@ -790,12 +790,6 @@ search_dia_string_cache = {}
 
 vis_update = False
 
-d = datetime.date.today()
-a01 = False
-if "--a01" in str(sys.argv):  # or (d.month == 4 and d.day == 1):
-    a01 = True
-
-
 
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -1463,7 +1457,8 @@ class Prefs:    # Used to hold any kind of settings
         self.block_suspend = False
         self.smart_bypass = True
         self.seek_interval = 15
-
+        self.shuffle_lock = False
+        self.premium = False
         self.power_save = False
         if macos:
             self.power_save = True
@@ -3048,11 +3043,12 @@ for t in range(2):
             prefs.artist_list_style = save[161]
         if save[162] is not None:
             ds = save[162]
-
-        for d in ds:
-            nt = TrackClass()
-            nt.__dict__.update(d)
-            master_library[d["index"]] = nt
+            for d in ds:
+                nt = TrackClass()
+                nt.__dict__.update(d)
+                master_library[d["index"]] = nt
+        if save[163] is not None:
+            prefs.premium = save[163]
 
         state_file.close()
         del save
@@ -3383,9 +3379,6 @@ if db_version > 0:
 
     if db_version <= 42:
         print("Updating database to version 43")
-        # show_message(
-        #     "Upgrade to version 5.5.0 complete.",
-        #     "If you enjoy using this software, please consider making a donation at https://ko-fi.com/taiko2k", mode='link')
 
     if db_version <= 43:
         print("Updating database to version 44")
@@ -13593,9 +13586,38 @@ def menu_album_random():
     if pctl.mpris is not None:
         pctl.mpris.update_shuffle()
 
+
+def toggle_shuffle_layout():
+    prefs.shuffle_lock ^= True
+    if prefs.shuffle_lock:
+
+        gui.shuffle_was_showcase = gui.combo_mode
+        gui.shuffle_was_random = pctl.random_mode
+        gui.shuffle_was_repeat = pctl.repeat_mode
+
+        if not gui.combo_mode:
+            view_box.lyrics(hit=True)
+        pctl.random_mode = True
+        pctl.repeat_mode = False
+        if pctl.playing_state == 0:
+            pctl.advance()
+    else:
+        pctl.random_mode = gui.shuffle_was_random
+        pctl.repeat_mode = gui.shuffle_was_repeat
+        if not gui.shuffle_was_showcase:
+            switch_showcase()
+            if gui.lyrics_was_album:
+                force_album_view()
+
+def show_shuffle_layout(_):
+    return prefs.premium
+def exit_shuffle_layout(_):
+    return prefs.shuffle_lock
+
 shuffle_menu.add(_("Shuffle OFF"), menu_shuffle_off)
 shuffle_menu.add(_("Shuffle Tracks"), menu_set_random)
 shuffle_menu.add(_("Random Albums"), menu_album_random)
+shuffle_menu.add(_("Shuffle Lockdown"), toggle_shuffle_layout, show_test=show_shuffle_layout)
 
 def bio_set_large():
     #if window_size[0] >= round(1000 * gui.scale):
@@ -20403,7 +20425,7 @@ def switch_playlist(number, cycle=False, quiet=False):
     if prefs.auto_goto_playing:
         pctl.show_current(this_only=True, playing=False, highlight=True, no_switch=True)
 
-    if a01:
+    if prefs.shuffle_lock:
         view_box.lyrics(hit=True)
         if pctl.active_playlist_viewing:
             pctl.active_playlist_playing = pctl.active_playlist_viewing
@@ -21419,19 +21441,7 @@ def show_spot_playing():
         spot_ctl.update(start=True)
 x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test, icon=spot_icon)
 
-
-def stop_a01():
-    global a01
-    a01 = False
-    date = datetime.date.today()
-    show_message(f"Upgrade complete. Happy {str(date)}!", mode="done")
-
-def show_a01(_):
-    return a01
-
-if a01:
-    x_menu.add("Upgrade to PREMIUM", stop_a01, show_test=show_a01)
-
+x_menu.add(_("Exit Shuffle Lockdown"), toggle_shuffle_layout, show_test=exit_shuffle_layout)
 x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4", )
 
 def stop_quick_add():
@@ -25252,6 +25262,10 @@ class Over:
         self.account_text_field = -1
 
         self.themes = []
+        self.view_supporters = False
+        self.sunset = asset_loader("sunset.png")
+        self.key_box = TextBox2()
+        self.key_box_focused = False
 
     def theme(self, x0, y0, w0, h0):
 
@@ -27127,12 +27141,71 @@ class Over:
         prefs.x_scale ^= True
         prefs.scale_want = 1.0
 
+    def supporters_corner(self, x0, y0, w0, h0):
+
+        self.sunset.render((x0 + (w0 // 2) - self.sunset.w // 2), y0 + round(15 * gui.scale))
+
+        yy = y0 + (125 * gui.scale)
+        xx = x0 + w0 // 2
+
+        ddt.text((xx, yy, 2), "Supporters Corner", colours.box_sub_text, 213)
+
+        yy += round(20 * gui.scale)
+        link_pa = draw_linked_text((xx - 140 * gui.scale, yy), "Become a https://www.patreon.com/taiko2k and get access to a bonus feature!", colours.box_sub_text, 12,
+                                   replace="patron")
+        link_activate(xx - 140 * gui.scale, yy, link_pa, click=self.click)
+        yy += round(30 * gui.scale)
+
+        ddt.text((xx, yy, 2), "• Shuffle lockdown mode!", colours.box_sub_text, 313)
+        if prefs.premium and self.button(xx + round(100 * gui.scale), yy, "Activate now",):
+            toggle_shuffle_layout()
+            pref_box.close()
+
+        if prefs.premium:
+            colour = None
+        else:
+            colour = colours.box_text_border
+
+        x = x0 + round(125 * gui.scale)
+        yy += round(22 * gui.scale)
+
+        yy += round(30 * gui.scale)
+        rect = (x + round(50 * gui.scale), yy - round(2 * gui.scale), round(190 * gui.scale), 20 * gui.scale)
+        if not prefs.premium:
+            if self.click:
+                if coll(rect):
+                    self.key_box_focused = True
+                else:
+                    self.key_box_focused = False
+            if not self.key_box.text and not editline:
+                ddt.text((rect[0] + rect[2] // 2, yy, 2), "Enter supporter password", colours.box_text_label, 312)
+            self.key_box.draw(rect[0] + round(3 * gui.scale), yy, colours.box_sub_text, self.key_box_focused, click=self.click, width=rect[2])
+            ddt.rect(rect, alpha_mod(colours.box_text_border, 80))
+        else:
+            ddt.text((rect[0] + rect[2] // 2, yy, 2), "Unlocked! Thanks for being a supporter!", [15, 160, 240, 255], 312)
+
+        if self.button(x0 + round(20 * gui.scale), (y0 + h0) - round(33 * gui.scale), _("Return"),):
+            self.view_supporters = False
+
+        if self.key_box.text == "reset" or key_shift_down:
+            prefs.premium = False
+
+        # Validate key
+        if self.key_box.text:
+            if self.key_box.text.replace(" ", "").replace("'", "").lower() == "imawesome":
+                prefs.premium = True
+                self.key_box.text = ""
+
     def about(self, x0, y0, w0, h0):
 
         x = x0 + int(w0 * 0.3) - 10 * gui.scale
         y = y0 + 85 * gui.scale
 
         ddt.text_background_colour = colours.box_background
+
+        if self.view_supporters:
+            self.supporters_corner(x0, y0, w0, h0)
+            return
 
         icon_rect = (x - 110 * gui.scale, y - 15 * gui.scale, self.about_image.w, self.about_image.h)
 
@@ -27412,10 +27485,8 @@ class Over:
             self.ani_cred = 1
             self.ani_fade_on_timer.set()
 
-        w = ddt.get_text_w(_("Donate"), 211)
-        x -= w + round(40 * gui.scale)
-        if self.button(x, y, _("Donate"), width = w + round(25 * gui.scale)):
-            webbrowser.open("https://ko-fi.com/taiko2k", new=2, autoraise=True)
+        if self.button(x0 + round(20 * gui.scale), y, "Supporter Corner"):
+            self.view_supporters = True
 
     def topchart(self, x0, y0, w0, h0):
 
@@ -28208,12 +28279,13 @@ class TopPanel:
         # Draw the background
         ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
 
-        if a01 and not gui.compact_bar:
+        if prefs.shuffle_lock and not gui.compact_bar:
             colour = [250, 250, 250, 255]
             if colours.lm:
                 colour = [10, 10, 10, 255]
-            ddt.text((window_size[0] // 2, 8 * gui.scale, 2), "Tauon Music Box SHUFFLE!", colour, 212, bg=colours.top_panel_background)
-
+            if not pctl.broadcast_active:
+                ddt.text((window_size[0] // 2, 8 * gui.scale, 2), "Tauon Music Box SHUFFLE!", colour,
+                                          212, bg=colours.top_panel_background)
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
             if tr:
@@ -28285,7 +28357,7 @@ class TopPanel:
         if gui.lsp:
             colour = colours.corner_button_active
 
-        if not a01:
+        if not prefs.shuffle_lock:
             if prefs.left_panel_mode == "artist list":
                 self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
             elif prefs.left_panel_mode == "folder view":
@@ -28379,7 +28451,7 @@ class TopPanel:
 
             left_tabs = []
             right_tabs = []
-            if a01:
+            if prefs.shuffle_lock:
                 for p in ready_tabs:
                     left_tabs.append(p)
 
@@ -28498,7 +28570,7 @@ class TopPanel:
         # TAB INPUT PROCESSING
         for i, tab in enumerate(pctl.multi_playlist):
 
-            if not prefs.tabs_on_top or a01:
+            if not prefs.tabs_on_top or prefs.shuffle_lock:
                 break
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
@@ -28637,7 +28709,7 @@ class TopPanel:
         shown = []
         for i, tab in enumerate(pctl.multi_playlist):
 
-            if not prefs.tabs_on_top or a01:
+            if not prefs.tabs_on_top or prefs.shuffle_lock:
                 break
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
@@ -29349,6 +29421,7 @@ class BottomBarType1:
                 if coll(h_rect):
                     if mouse_down or mouse_up:
                         gui.update_on_drag = False
+
                         if bar == 0:
                             pctl.player_volume = 5
                         if bar == 1:
@@ -30005,6 +30078,7 @@ class BottomBarType_ao1:
             if coll(h_rect) and mouse_down:
                 gui.update_on_drag = False
                 pctl.player_volume = 0
+                gui.update_on_drag = False
 
             step = round(1 * gui.scale)
             min_h = round(4 * gui.scale)
@@ -30028,7 +30102,8 @@ class BottomBarType_ao1:
 
                 if coll(h_rect):
                     if mouse_down:
-                        gui.update_on_drag = False
+                        gui.update_on_drag = True
+
                         if bar == 0:
                             pctl.player_volume = 5
                         if bar == 1:
@@ -37246,7 +37321,7 @@ class Showcase:
             ddt.force_gray = True
 
 
-        if not a01:
+        if not prefs.shuffle_lock:
             if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
                            text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
                            background_highlight_colour=bfg):
@@ -37784,7 +37859,7 @@ class ViewBox:
 
     def render(self):
 
-        if a01:
+        if prefs.shuffle_lock:
             self.active = False
             return
 
@@ -39225,7 +39300,8 @@ def save_state():
             prefs.bg_flips,
             prefs.tray_show_title,
             prefs.artist_list_style,
-            ds
+            ds,
+            prefs.premium
         ]
 
 
@@ -39481,41 +39557,7 @@ def drop_file(target):
     mouse_down = False
     drag_mode = False
 
-
-if pctl.master_count < 10:  # We don't want new users to be too confused.
-    a01 = False
-
-if a01:
-    view_box.lyrics(hit=True)
-    pctl.random_mode = True
-    pctl.repeat_mode = False
-    show_message("Your FREE TRIAL of Tauon Music Box has come to an end!",
-                 "Upgrade to a Tauon PREMIUM subscription to play tracks in any order.")
-    #prefs.tabs_on_top = True
-
-    # target = None
-    # for pl in pctl.multi_playlist:
-    #     if pl[0] == "0401":
-    #         target = pl[2]
-    #         break
-    # else:
-    #
-    #     pctl.multi_playlist.append(pl_gen(title="0401",
-    #                                       playlist=[],
-    #                                       hide_title=0))
-    #
-    #     target = pctl.multi_playlist[len(pctl.multi_playlist) - 1][2]
-    #
-    #     if target is not None:
-    #         for pl in pctl.multi_playlist:
-    #             target += pl[2]
-    #
-    # for i, pl in enumerate(pctl.multi_playlist):
-    #     if pl[0] == "0401":
-    #         switch_playlist(i)
-    #         break
-
-elif gui.restore_showcase_view:
+if gui.restore_showcase_view:
     toggle_combo_view(showcase=True)
 
 #switch_playlist(len(pctl.multi_playlist) - 1)
@@ -42542,7 +42584,7 @@ while pctl.running:
 
             ddt.text_background_colour = colours.bottom_panel_colour
 
-            if a01:
+            if prefs.shuffle_lock:
                 bottom_bar_ao1.render()
             else:
                 bottom_bar1.render()
