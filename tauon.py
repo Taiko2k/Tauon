@@ -113,7 +113,7 @@ w = 1120
 h = 600
 if phone:
     w = 720
-    h = 1100
+    h = 1800
 window_default_size = [w, h]
 window_size = [w, h]
 logical_size = [w, h]
@@ -121,6 +121,8 @@ window_opacity = 1
 scale = 1
 if sys.platform == "darwin":
     scale = 2
+if phone:
+    scale = 1.3
 
 maximized = False
 old_window_position = None
