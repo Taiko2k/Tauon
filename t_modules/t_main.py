@@ -1460,7 +1460,7 @@ class Prefs:    # Used to hold any kind of settings
         self.shuffle_lock = False
         self.premium = False
         self.power_save = False
-        if macos:
+        if macos or phone:
             self.power_save = True
 
 prefs = Prefs()
@@ -1681,6 +1681,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.web_running = False
 
         self.rsp = True
+        if phone:
+            self.rsp = False
         self.rspw = round(300 * self.scale)
         self.lsp = False
         self.lspw = round(220 * self.scale)
