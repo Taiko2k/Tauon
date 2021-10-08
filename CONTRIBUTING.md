@@ -2,6 +2,18 @@
 
 Wanna contribute? Theres a few ways you can:
 
+
+## Questions
+
+You feel free to ask questions as a new Github issue. Please do not comment in an existing or old issue unless you're the author or you're sure its directly releated.
+
+You can also use the github discussions feature. 
+
+If you use Discord it may be faster to ask on the official server.
+
+If your question is implicitly a bug/feature request then please create an *issue* with your question.
+
+
 ## Issues
 
 If you encounter an issue, feel free to create new issues on github.
@@ -11,7 +23,7 @@ If you encounter an issue, feel free to create new issues on github.
  - What method did you use to install Tauon? 
     - Flatpak? Snap? AUR? Other/Manual?
  - What version number is shown under MENU > Settings... > About
- - For audio/transition related issues, what backend do you have selected under MENU > Settings... > About. Does the issue happen on both backends? Are you playing local files, or files from a particuar network server?
+ - For audio/transition related issues, what backend do you have selected under MENU > Settings... > Audio. Does the issue happen on both backends? Are you playing local files, or files from a particuar network server?
  - For crashes, it would be most helpful if you could replicate the crash and capture the error from terminal output.
     - To run manually for AUR install: `tauon`. For Flatpak: `flatpak run com.github.taiko2k.tauonmb`
 
