@@ -4314,18 +4314,22 @@ def tag_scan(nt):
                                 nt.lyrics = ""
 
                     frames = tag.getall("TPE1")
-                    if frames and len(frames) > 1:
-                        nt.misc['artists'] = []
-                        for frame in frames:
-                            nt.misc['artists'].extend(frame.text)
-                        nt.artist = "; ".join(nt.misc['artists'])
-
-                    frames = tag.getall("TCON")
-                    if frames and len(frames) > 0:
+                    if frames:
                         d = []
                         for frame in frames:
-                            d.append(frame.text)
-                        if len(frames) > 1:
+                            for t in frame.text:
+                                d.append(t)
+                        if len(d) > 1:
+                            nt.misc['artists'] = d
+                            nt.artist = "; ".join(d)
+
+                    frames = tag.getall("TCON")
+                    if frames:
+                        d = []
+                        for frame in frames:
+                            for t in frame.text:
+                                d.append(t)
+                        if len(d) > 1:
                             nt.misc['genres'] = d
                         nt.genre = " / ".join(d)
 
@@ -4392,7 +4396,6 @@ def tag_scan(nt):
     except:
         print("Warning: Tag read error")
         print("     On file: " + nt.fullpath)
-        #raise
         return nt
 
     # Parse any multiple artists into list
