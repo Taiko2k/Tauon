@@ -93,7 +93,13 @@ draw_max_button = True
 left_window_control = False
 xdpi = 0
 
+from t_modules.t_extra import *
+
+detect_macstyle = False
 gtk_settings = None
+mac_close = (253, 70, 70, 255)
+mac_maximize = (254, 176, 36, 255)
+mac_minimize = (42, 189, 49, 255)
 try:
     gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk
@@ -105,6 +111,15 @@ try:
         draw_max_button = False
     if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
         left_window_control = True
+    gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
+    #print(f"GTK theme is: {gtk_theme}")
+    for k, v in mac_styles.items():
+        if k in gtk_theme:
+            detect_macstyle = True
+            if v is not None:
+                mac_close = v[0]
+                mac_maximize = v[1]
+                mac_minimize = v[2]
 
 except:
     print("Error accessing GTK settings")
@@ -721,7 +736,6 @@ from t_modules.t_tagscan import Ape
 from t_modules.t_tagscan import Wav
 from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
-from t_modules.t_extra import *
 from t_modules.t_cast import *
 from t_modules.t_stream import *
 from t_modules.t_lyrics import *
@@ -1466,7 +1480,7 @@ class Prefs:    # Used to hold any kind of settings
         if macos or phone:
             self.power_save = True
         self.left_window_control = macos or left_window_control
-        self.macstyle = macos
+        self.macstyle = macos or detect_macstyle
 
 prefs = Prefs()
 
@@ -3759,7 +3773,9 @@ def load_prefs():
     cf.add_text("[ui]")
 
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-    prefs.macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
+    macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
+    if not detect_macstyle:
+        prefs.macstyle = macstyle
     prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
@@ -8638,7 +8654,7 @@ def draw_window_tools():
             xx = round(4 * gui.scale)
         rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
         fields.add(rect)
-        colour = (253, 70, 70, 255)
+        colour = mac_close
         if not focused:
             colour = (86, 85, 86, 255)
         mac_circle.render(xx + 6 * gui.scale, y, colour)
@@ -8689,7 +8705,7 @@ def draw_window_tools():
             rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
             fields.add(rect)
-            colour = (254, 176, 36, 255)
+            colour = mac_maximize
             if not focused:
                 colour = (86, 85, 86, 255)
             mac_circle.render(xx + 6 * gui.scale, y, colour)
@@ -8728,7 +8744,7 @@ def draw_window_tools():
             rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
             fields.add(rect)
-            colour = (42, 189, 49, 255)
+            colour = mac_minimize
             if not focused:
                 colour = (86, 85, 86, 255)
             mac_circle.render(xx + 6 * gui.scale, y, colour)
