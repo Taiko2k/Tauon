@@ -3,6 +3,8 @@ Changelog-------------------------------------
 
 v6.8.0
 
+ - Added left window decoration style
+ - Added macOS style window control style
  - Added option to config file "seek-interval"
  - Added shuffle lockdown as feature
  - Fixed album artist field reading for MP3
