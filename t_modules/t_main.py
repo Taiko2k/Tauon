@@ -3590,6 +3590,7 @@ def save_prefs():
     cf.update_value("use-xft-dpi", prefs.x_scale)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
+    cf.update_value("mac-style", prefs.macstyle)
     cf.update_value("allow-art-zoom", prefs.zoom_art)
 
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
@@ -3696,7 +3697,7 @@ def load_prefs():
     cf.add_text("[audio]")
 
     prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "Interval to seek when using shortcut. In seconds. Default is 15.")
-    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
+    #prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
     if prefs.pause_fade_time < 100:
         prefs.pause_fade_time = 100
@@ -3758,6 +3759,7 @@ def load_prefs():
     cf.add_text("[ui]")
 
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
+    prefs.macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
     prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
