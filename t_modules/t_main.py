@@ -25719,8 +25719,9 @@ class Over:
             self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
 
             x += round(100 * gui.scale)
-            ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+            if not macos:
+                ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
+                self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
 
 
