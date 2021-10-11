@@ -935,3 +935,13 @@ def process_odat(nt, odat):
 
 def clean_string(s):
     return s.encode('utf-8', 'surrogatepass').decode('utf-8', 'replace')
+
+mac_styles = {
+    "mac": None,
+    "whitesir": None,
+    "vimix": None,
+    "sweet": None,
+    "dracula": None,
+    "nordic": None,
+    "juno": None
+}
