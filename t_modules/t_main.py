@@ -8600,7 +8600,7 @@ def draw_window_tools():
     #rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
     #fields.add(rect)
     # prefs.left_window_control = not key_shift_down
-    # macstyle = prefs.macstyle = not key_ctrl_down
+    macstyle = prefs.macstyle
 
     bg_off = colours.window_buttons_bg
     bg_on = colours.window_buttons_bg_over
