@@ -90,6 +90,7 @@ desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 de_notify_support = False
 draw_min_button = True
 draw_max_button = True
+left_window_control = False
 xdpi = 0
 
 gtk_settings = None
@@ -102,6 +103,8 @@ try:
         draw_min_button = False
     if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
         draw_max_button = False
+    if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
+        left_window_control = True
 
 except:
     print("Error accessing GTK settings")
@@ -1462,6 +1465,8 @@ class Prefs:    # Used to hold any kind of settings
         self.power_save = False
         if macos or phone:
             self.power_save = True
+        self.left_window_control = macos or left_window_control
+        self.macstyle = macos
 
 prefs = Prefs()
 
@@ -8545,14 +8550,57 @@ class GStats:
 
 stats_gen = GStats()
 
+def do_exit_button():
+    if mouse_up or ab_click:
+        if gui.tray_active and prefs.min_to_tray and not key_shift_down:
+            tauon.min_to_tray()
+        elif gui.sync_progress and not gui.stop_sync:
+            show_message(_("Stop the sync before exiting!"))
+        else:
+            pctl.running = False
+
+def do_maximixe_button():
+    global mouse_down
+    global drag_mode
+    if gui.maximized:
+        gui.maximized = False
+        SDL_RestoreWindow(t_window)
+    else:
+        gui.maximized = True
+        SDL_MaximizeWindow(t_window)
+
+    mouse_down = False
+    inp.mouse_click = False
+    drag_mode = False
+
+def do_minimize_button():
+    # if tray.active and prefs.min_to_tray:
+    #     tray.down()
+    global mouse_down
+    global drag_mode
+    if macos:
+        # hack
+        SDL_SetWindowBordered(t_window, True)
+        SDL_MinimizeWindow(t_window)
+        SDL_SetWindowBordered(t_window, False)
+    else:
+        SDL_MinimizeWindow(t_window)
+
+    mouse_down = False
+    inp.mouse_click = False
+    drag_mode = False
+
+mac_circle = asset_loader("macstyle.png", True)
 
 def draw_window_tools():
 
     global mouse_down
     global drag_mode
 
-    rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
-    fields.add(rect)
+    #rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
+    #fields.add(rect)
+    # prefs.left_window_control = not key_shift_down
+    # macstyle = prefs.macstyle = not key_ctrl_down
 
     bg_off = colours.window_buttons_bg
     bg_on = colours.window_buttons_bg_over
@@ -8561,98 +8609,178 @@ def draw_window_tools():
     x_on = colours.window_button_x_on
     x_off = colours.window_button_x_off
 
+    h = round(28 * gui.scale)
+    y = round(1 * gui.scale)
+    if macstyle:
+        y = round(9 * gui.scale)
 
+    x_width = round(26 * gui.scale)
+    ma_width = round(33 * gui.scale)
+    mi_width = round(35 * gui.scale)
+    re_width = round(30 * gui.scale)
+    last_width = 0
 
-    if gui.mode == 3:
+    xx = 0
+    l = prefs.left_window_control
+    r = not l
+    focused = window_is_focused()
 
-        bg_off = [0, 0, 0, 50]
-        bg_on = [255, 255, 255, 10]
-        fg_off =(255, 255, 255, 40)
-        fg_on = (255, 255, 255, 60)
-        x = window_size[0] - 96 * gui.scale
-        if not draw_min_button:
-            x += 35 * gui.scale
-        rect = (x, 1 * gui.scale, 30 * gui.scale, 28 * gui.scale)
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off)
+    # Close
+    if r:
+        xx = window_size[0] - x_width
+        xx -= round(2 * gui.scale)
+
+    if macstyle:
+        xx = window_size[0] - 27 * gui.scale
+        if l:
+            xx = round(4 * gui.scale)
+        rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
         fields.add(rect)
-        if coll(rect):
-            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on)
-            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
-            if (inp.mouse_click or ab_click) and coll_point(click_location, rect):
-
-                restore_full_mode()
-                gui.update += 2
-
+        colour = (253, 70, 70, 255)
+        if not focused:
+            colour = (86, 85, 86, 255)
+        mac_circle.render(xx + 6 * gui.scale, y, colour)
+        if coll(rect) and not gui.mouse_unknown:
+            if coll_point(last_click_location, rect):
+                do_exit_button()
+    else:
+        rect = (xx, y, x_width, h)
+        last_width = x_width
+        ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_off)
+        fields.add(rect)
+        if coll(rect) and not gui.mouse_unknown:
+            ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_on)
+            top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
+            if coll_point(last_click_location, rect):
+                do_exit_button()
         else:
-            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
+            top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
+
+
+    # Macstyle restore
+    if gui.mode == 3:
+        if macstyle:
+            if r:
+                xx -= round(20 * gui.scale)
+            if l:
+                xx += round(20 * gui.scale)
+            rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
+
+            fields.add(rect)
+            colour = (160, 55, 225, 255)
+            if not focused:
+                colour = (86, 85, 86, 255)
+            mac_circle.render(xx + 6 * gui.scale, y, colour)
+            if coll(rect) and not gui.mouse_unknown:
+                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+                    restore_full_mode()
+                    gui.update += 2
+
+    # maximize
+
+    if draw_max_button and not gui.mode == 3:
+        if macstyle:
+            if r:
+                xx -= round(20 * gui.scale)
+            if l:
+                xx += round(20 * gui.scale)
+            rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
+
+            fields.add(rect)
+            colour = (254, 176, 36, 255)
+            if not focused:
+                colour = (86, 85, 86, 255)
+            mac_circle.render(xx + 6 * gui.scale, y, colour)
+            if coll(rect) and not gui.mouse_unknown:
+                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+                    do_maximixe_button()
+        else:
+            if r:
+                xx -= ma_width
+            if l:
+                xx += last_width
+            rect = (xx, y, ma_width, h)
+            last_width = ma_width
+            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+            fields.add(rect)
+            if coll(rect):
+                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+                top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
+                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+                    do_maximize_button()
+            else:
+                top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
+
+    # minimize
 
     if draw_min_button:
 
-        x = window_size[0] - round(65 * gui.scale)
-        if draw_max_button and not gui.mode == 3:
-            x -= round(34 * gui.scale)
+        # x = window_size[0] - round(65 * gui.scale)
+        # if draw_max_button and not gui.mode == 3:
+        #     x -= round(34 * gui.scale)
+        if macstyle:
+            if r:
+                xx -= round(20 * gui.scale)
+            if l:
+                xx += round(20 * gui.scale)
+            rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
-        rect = (x, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off)
-        fields.add(rect)
-        if coll(rect):
-            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on)
-            ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_on)
-            if (mouse_up or ab_click) and coll_point(click_location, rect):
-
-                # if tray.active and prefs.min_to_tray:
-                #     tray.down()
-                if macos:
-                    #hack
-                    SDL_SetWindowBordered(t_window, True)
-                    SDL_MinimizeWindow(t_window)
-                    SDL_SetWindowBordered(t_window, False)
-                else:
-                    SDL_MinimizeWindow(t_window)
-
-                mouse_down = False
-                inp.mouse_click = False
-                drag_mode = False
+            fields.add(rect)
+            colour = (42, 189, 49, 255)
+            if not focused:
+                colour = (86, 85, 86, 255)
+            mac_circle.render(xx + 6 * gui.scale, y, colour)
+            if coll(rect) and not gui.mouse_unknown:
+                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+                    do_minimize_button()
         else:
-            ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_off)
+            if r:
+                xx -= mi_width
+            if l:
+                xx += last_width
 
-    if draw_max_button and not gui.mode == 3:
-        x = window_size[0] - round(63 * gui.scale)
-        rect = (x, 1 * gui.scale, 33 * gui.scale, 28 * gui.scale)
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_off)
-        fields.add(rect)
-        if coll(rect):
-            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on)
-            top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
-            if (mouse_up or ab_click) and coll_point(click_location, rect):
-                if gui.maximized:
-                    gui.maximized = False
-                    SDL_RestoreWindow(t_window)
-                else:
-                    gui.maximized = True
-                    SDL_MaximizeWindow(t_window)
-
-                mouse_down = False
-                inp.mouse_click = False
-                drag_mode = False
-        else:
-            top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
-
-    rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
-    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), bg_off)
-    fields.add(rect)
-    if coll(rect) and not gui.mouse_unknown:
-        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), bg_on)
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
-        if mouse_up or ab_click:
-            if gui.tray_active and prefs.min_to_tray and not key_shift_down:
-                tauon.min_to_tray()
-            elif gui.sync_progress and not gui.stop_sync:
-                show_message(_("Stop the sync before exiting!"))
+            rect = (xx, y, mi_width, h)
+            last_width = mi_width
+            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+            fields.add(rect)
+            if coll(rect):
+                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_on)
+                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+                    do_minimize_button()
             else:
-                pctl.running = False
-    else:
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
+                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_off)
+
+    # restore
+
+    if gui.mode == 3:
+
+        # bg_off = [0, 0, 0, 50]
+        # bg_on = [255, 255, 255, 10]
+        # fg_off =(255, 255, 255, 40)
+        # fg_on = (255, 255, 255, 60)
+        if macstyle:
+            pass
+        else:
+            if r:
+                xx -= re_width
+            if l:
+                xx += last_width
+
+            rect = (xx, y, re_width, h)
+            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+            fields.add(rect)
+            if coll(rect):
+                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+                top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
+                if (inp.mouse_click or ab_click) and coll_point(click_location, rect):
+                    restore_full_mode()
+                    gui.update += 2
+            else:
+                top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
+
+
+
 
 
 def draw_window_border():
@@ -8886,10 +9014,10 @@ if (system == 'windows' or msys) and taskbar_progress:
 
 def coll_point(l, r):
     # rect point collision detection
-    return r[0] <= l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
+    return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
 def coll(r):
-    return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
+    return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
 
 ddt = TDraw(renderer)
@@ -28270,7 +28398,14 @@ class TopPanel:
                 ddt.text((round(14 * gui.scale), round(15 * gui.scale)), title, title_colour, 215, max_w=maxx)
                 ddt.text((round(14 * gui.scale), round(40 * gui.scale)), artist, colours.grey(120), 315, max_w=maxx)
 
-        rect = (9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
+        wwx = 0
+        if prefs.left_window_control:
+            if prefs.macstyle:
+                wwx = round(64 * gui.scale)
+            else:
+                wwx = round(90 * gui.scale)
+
+        rect = (wwx + 9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
 
         if coll(rect):
@@ -28307,11 +28442,11 @@ class TopPanel:
 
         if not prefs.shuffle_lock:
             if prefs.left_panel_mode == "artist list":
-                self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+                self.artist_list_icon.render(wwx + 13 * gui.scale, yy + 8 * gui.scale, colour)
             elif prefs.left_panel_mode == "folder view":
-                self.folder_list_icon.render(14 * gui.scale, yy + 8 * gui.scale, colour)
+                self.folder_list_icon.render(wwx + 14 * gui.scale, yy + 8 * gui.scale, colour)
             else:
-                self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+                self.playlist_icon.render(wwx + 13 * gui.scale, yy + 8 * gui.scale, colour)
 
         # if prefs.artist_list:
         #     self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
@@ -28328,12 +28463,12 @@ class TopPanel:
             le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
             self.tab_text_spaces.append(le)
 
-        x = self.start_space_left
+        x = self.start_space_left + wwx
         y = yy #self.ty
 
         # Calculate position for playing text and text
         offset = 15 * gui.scale
-        if draw_border:
+        if draw_border and not prefs.left_window_control:
             offset += 61 * gui.scale
             if draw_max_button:
                 offset += 61 * gui.scale
@@ -30539,7 +30674,9 @@ class MiniMode:
 
 
         # Show exit/min buttons when mosue over
-        tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
+        tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
+        if prefs.left_window_control:
+            tool_rect[0] = 0
         fields.add(tool_rect)
         if coll(tool_rect):
             draw_window_tools()
@@ -30640,7 +30777,9 @@ class MiniMode2:
 
 
         # Show exit/min buttons when mosue over
-        tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
+        tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
+        if prefs.left_window_control:
+            tool_rect[0] = 0
         fields.add(tool_rect)
         if coll(tool_rect):
             draw_window_tools()
@@ -38317,9 +38456,12 @@ def hit_callback(win, point, data):
 
         # Square modes
         y1 = window_size[0]
+        y0 = 0
+        if macos:
+            y0 = round(35 * gui.scale)
         if window_size[0] == window_size[1]:
             y1 = window_size[1] - 79 * gui.scale
-        if y < y1:
+        if y0 < y < y1:
             return SDL_HITTEST_DRAGGABLE
 
         return SDL_HITTEST_NORMAL
@@ -38356,7 +38498,9 @@ def hit_callback(win, point, data):
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
 
-            if x > window_size[0] - (160 * gui.scale) and (macos or system == "windows" or msys):
+            if prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (macos or system == "windows" or msys):
+                return SDL_HITTEST_NORMAL
+            elif not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (macos or system == "windows" or msys):
                 return SDL_HITTEST_NORMAL
 
             return SDL_HITTEST_DRAGGABLE
@@ -38751,13 +38895,15 @@ def update_layout_do():
             gui.playlist_top += gui.artist_panel_height
 
         gui.offset_extra = 0
-        if draw_border:
+        if draw_border and not prefs.left_window_control:
 
             offset = 61 * gui.scale
             if not draw_min_button:
                 offset -= 35 * gui.scale
             if draw_max_button:
                 offset += 33 * gui.scale
+            if prefs.macstyle:
+                offset = round(63 * gui.scale)
             gui.offset_extra = offset
 
         global album_v_gap
@@ -42983,7 +43129,9 @@ while pctl.running:
 
             if draw_border and not gui.mode == 3:
 
-                tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
+                tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
+                if prefs.left_window_control:
+                    tool_rect[0] = 0
                 fields.add(tool_rect)
                 if not gui.top_bar_mode2 or coll(tool_rect):
                     draw_window_tools()
