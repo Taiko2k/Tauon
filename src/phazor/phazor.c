@@ -259,7 +259,7 @@ void start_ffmpeg(char uri[], int start_ms) {
     if (start_ms > 0)
         sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
                 start_ms, uri, sample_rate_out);
-    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
+    else sprintf(exe_string, "ffmpeg -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
 
     ffm = popen(exe_string, "r");
     if (ffm == NULL) {
