@@ -1378,7 +1378,7 @@ void pump_decode() {
         }
 
         if (feof(ffm)) {
-            done = 0;
+            done = 1;
             printf("pa: FFMPEG EOF\n");
         }
 
