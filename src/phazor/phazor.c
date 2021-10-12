@@ -1231,7 +1231,9 @@ void end() {
     buff_filled = 0;
     pthread_mutex_unlock(&buffer_mutex);
     #ifndef AO
-        pa_simple_flush (s, &error);
+        if (pulse_connected == 1){
+            pa_simple_flush (s, &error);
+        }
     #endif
     disconnect_pulse();
     current_sample_rate = 0;
@@ -1850,13 +1852,14 @@ void *main_loop(void *thread_id) {
 
                 buff_base = 0;
                 buff_filled = 0;
+
+                #ifndef AO
+                pthread_mutex_lock(&pulse_mutex);
                 if (pulse_connected == 1) {
-                    pthread_mutex_lock(&pulse_mutex);
-                    #ifndef AO
-                    //pa_simple_flush(s, &error);
-                    #endif
-                    pthread_mutex_unlock(&pulse_mutex);
+                    pa_simple_flush(s, &error);
                 }
+                pthread_mutex_unlock(&pulse_mutex);
+                #endif
 
                 command = NONE;
 
