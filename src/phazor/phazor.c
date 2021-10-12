@@ -787,18 +787,21 @@ void stop_decoder() {
 
 int disconnect_pulse() {
 
+    pthread_mutex_lock(&pulse_mutex);
     if (pulse_connected == 1) {
-        pthread_mutex_lock(&pulse_mutex);
+
         #ifdef AO
             ao_close(device);
         #else
-            pa_simple_free(s);
             //printf("pa: Disconnect from PulseAudio\n");
+            pa_simple_free(s);
+
         #endif
-        pthread_mutex_unlock(&pulse_mutex);
+
 
     }
     pulse_connected = 0;
+    pthread_mutex_unlock(&pulse_mutex);
     return 0;
 }
 
@@ -1605,7 +1608,9 @@ void *out_thread(void *thread_id) {
                             }
                             pa_simple_flush(s, &error);
                             pa_simple_free(s);
+                            //printf("Auto free\n");
                             pulse_connected = 0;
+
                         #else
 
                         #endif
@@ -1848,7 +1853,7 @@ void *main_loop(void *thread_id) {
                 if (pulse_connected == 1) {
                     pthread_mutex_lock(&pulse_mutex);
                     #ifndef AO
-                    pa_simple_flush(s, &error);
+                    //pa_simple_flush(s, &error);
                     #endif
                     pthread_mutex_unlock(&pulse_mutex);
                 }
