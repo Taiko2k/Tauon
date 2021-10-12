@@ -652,6 +652,14 @@ try:
 except:
     raise
     print("PyLast moduel not found, last fm will be disabled.")
+
+use_natsort = False
+try:
+    import natsort
+    use_natsort = True
+except:
+    print("Warning: Python module natsort not found")
+
 import time
 import ctypes
 import ctypes.util
@@ -24044,6 +24052,10 @@ def worker1():
 
         try:
             items_in_dir = os.listdir(direc)
+            if use_natsort:
+                items_in_dir = natsort.os_sorted(items_in_dir)
+            else:
+                items_in_dir.sort()
         except PermissionError:
 
             if snap_mode:
