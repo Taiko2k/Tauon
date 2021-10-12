@@ -11,5 +11,6 @@ setproctitle
 tekore
 pulsectl
 mutagen
+natsort
 
 
