@@ -12,6 +12,7 @@ v6.8.0
  - Fixed gallery add album to queue
  - Fixed MP3 multi genre scan
  - Fixed default sorting of imported tracks
+ - Fixed jellyfin album/artist tagging
  - Further improved idle CPU usage
  - Updated macOS support
 
