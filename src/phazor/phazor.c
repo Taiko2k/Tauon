@@ -75,7 +75,7 @@ int fade_position = 0;
 int fade_2_flag = 0;
 
 pthread_mutex_t buffer_mutex;
-pthread_mutex_t pulse_mutex;
+//pthread_mutex_t pulse_mutex;
 
 unsigned char out_buf[2048 * 4]; // 4 bytes for 16bit stereo
 
@@ -787,30 +787,30 @@ void stop_decoder() {
 
 int disconnect_pulse() {
 
-    pthread_mutex_lock(&pulse_mutex);
     if (pulse_connected == 1) {
 
         #ifdef AO
             ao_close(device);
         #else
-            //printf("pa: Disconnect from PulseAudio\n");
+            printf("pa: Disconnect from PulseAudio\n");
             pa_simple_free(s);
-
         #endif
 
 
     }
     pulse_connected = 0;
-    pthread_mutex_unlock(&pulse_mutex);
     return 0;
 }
 
 
 void connect_pulse() {
 
-    if (pulse_connected == 1) disconnect_pulse();
-    //printf("pa: Connect pulse\n");
-    pthread_mutex_lock(&pulse_mutex);
+    if (pulse_connected == 1) {
+        printf("pa: reconnect pulse\n");
+        disconnect_pulse();
+    }
+    printf("pa: Connect pulse\n");
+
     if (want_sample_rate > 0) {
         current_sample_rate = want_sample_rate;
         want_sample_rate = 0;
@@ -818,7 +818,6 @@ void connect_pulse() {
 
     if (current_sample_rate <= 1) {
         printf("pa: Samplerate detection warning.\n");
-        pthread_mutex_unlock(&pulse_mutex);
         return;
     }
 
@@ -884,8 +883,8 @@ void connect_pulse() {
     usleep(50000);
 
     #endif
-    src_reset(src);
-    pthread_mutex_unlock(&pulse_mutex);
+    //src_reset(src);
+    //pthread_mutex_unlock(&pulse_mutex);
 
 }
 
@@ -1230,12 +1229,12 @@ void end() {
     buff_base = 0;
     buff_filled = 0;
     pthread_mutex_unlock(&buffer_mutex);
-    #ifndef AO
-        if (pulse_connected == 1){
-            pa_simple_flush (s, &error);
-        }
-    #endif
-    disconnect_pulse();
+//    #ifndef AO
+//        if (pulse_connected == 1){
+//            pa_simple_flush (s, &error);
+//        }
+//    #endif
+    //disconnect_pulse();
     current_sample_rate = 0;
 }
 
@@ -1437,6 +1436,7 @@ void *out_thread(void *thread_id) {
     //double testa, testb;
 
     //t_start = get_time_ms();
+    printf("pa: Start out thread\n");
 
     while (out_thread_running == 1) {
 
@@ -1476,11 +1476,11 @@ void *out_thread(void *thread_id) {
                 // Truncate data if gate is closed anyway
                 if (mode == RAMP_DOWN && gate == 0) break;
 
-                if (want_sample_rate > 0 && sample_change_byte == buff_base) {
-                    //printf("pa: Set new sample rate\n");
-                    connect_pulse();
-                    break;
-                }
+//                if (want_sample_rate > 0 && sample_change_byte == buff_base) {
+//                    //printf("pa: Set new sample rate\n");
+//                    connect_pulse();
+//                    break;
+//                }
 
                 if (reset_set == 1 && reset_set_byte == buff_base) {
                     //printf("pa: Reset position counter\n");
@@ -1583,7 +1583,11 @@ void *out_thread(void *thread_id) {
                 if (peak_roll_l > peak_l) peak_l = peak_roll_l;
                 if (peak_roll_r > peak_r) peak_r = peak_roll_r;
 
-                pthread_mutex_lock(&pulse_mutex);
+                if (pulse_connected == 0) {
+                    connect_pulse();
+                }
+
+                //pthread_mutex_lock(&pulse_mutex);
                 if (pulse_connected == 0) {
                     printf("pa: Error, not connected to any output!\n");
                 } else {
@@ -1610,7 +1614,7 @@ void *out_thread(void *thread_id) {
                             }
                             pa_simple_flush(s, &error);
                             pa_simple_free(s);
-                            //printf("Auto free\n");
+                            printf("Auto free\n");
                             pulse_connected = 0;
 
                         #else
@@ -1620,15 +1624,18 @@ void *out_thread(void *thread_id) {
                     }
                 }
 
-                pthread_mutex_unlock(&pulse_mutex);
+                //pthread_mutex_unlock(&pulse_mutex);
 
             } // sent data
 
         } // close if data
-        else usleep(1000);
+        else {
+            usleep(1000);
+        }
 
     } // close main loop
-
+    out_thread_running = 0;
+    printf("Exit out thread\n");
     return thread_id;
 } // close thread
 
@@ -1692,8 +1699,8 @@ void *main_loop(void *thread_id) {
                 case PAUSE:
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
-                      usleep(20000);
-                      out_thread_running = 0;
+
+                      out_thread_running = 2;
                       usleep(20000);
                         
                         command = NONE;
@@ -1702,7 +1709,10 @@ void *main_loop(void *thread_id) {
                     break;
                 case RESUME:
                     if (mode == PAUSED) {
-                        if (pulse_connected == 0) connect_pulse();
+                        //if (pulse_connected == 0) connect_pulse();
+                        while (out_thread_running == 2){
+                            usleep(1000);
+                        }
                         if (out_thread_running == 0) {
                               out_thread_running = 1;
                               pthread_t out_thread_id;
@@ -1731,6 +1741,9 @@ void *main_loop(void *thread_id) {
                     } else break;
 
                 case LOAD:
+                    while (out_thread_running == 2){
+                            usleep(1000);
+                    }
                    if (out_thread_running == 0) {
                               out_thread_running = 1;
                               pthread_t out_thread_id;
@@ -1798,16 +1811,19 @@ void *main_loop(void *thread_id) {
 
                         }
 
-                        if (want_sample_rate == 0 && pulse_connected == 0) {
-                            connect_pulse();
-
-                        }
+//                        if (want_sample_rate == 0 && pulse_connected == 0) {
+//                            connect_pulse();
+//
+//                        }
 
                         mode = PLAYING;
                         command = NONE;
                         result_status = SUCCESS;
                         pthread_mutex_unlock(&buffer_mutex);
-                                              if (out_thread_running == 0) {
+                        while (out_thread_running == 2){
+                            usleep(1000);
+                        }
+                        if (out_thread_running == 0) {
                               pthread_t out_thread_id;
                               pthread_create(&out_thread_id, NULL, out_thread, NULL);
                         }
@@ -1853,13 +1869,13 @@ void *main_loop(void *thread_id) {
                 buff_base = 0;
                 buff_filled = 0;
 
-                #ifndef AO
-                pthread_mutex_lock(&pulse_mutex);
-                if (pulse_connected == 1) {
-                    pa_simple_flush(s, &error);
-                }
-                pthread_mutex_unlock(&pulse_mutex);
-                #endif
+//                #ifndef AO
+//                pthread_mutex_lock(&pulse_mutex);
+//                if (pulse_connected == 1) {
+//                    pa_simple_flush(s, &error);
+//                }
+//                pthread_mutex_unlock(&pulse_mutex);
+//                #endif
 
                 command = NONE;
 
@@ -1874,13 +1890,13 @@ void *main_loop(void *thread_id) {
                 pthread_mutex_lock(&buffer_mutex);
                 buff_base = (buff_base + buff_filled) & BUFF_SIZE;
                 buff_filled = 0;
-                if (command == SEEK && config_fast_seek == 1) {
-                    pthread_mutex_lock(&pulse_mutex);
-                    #ifndef AO
-                    pa_simple_flush(s, &error);
-                    #endif
-                    pthread_mutex_unlock(&pulse_mutex);
-                }
+//                if (command == SEEK && config_fast_seek == 1) {
+//                    pthread_mutex_lock(&pulse_mutex);
+//                    #ifndef AO
+//                    pa_simple_flush(s, &error);
+//                    #endif
+//                    pthread_mutex_unlock(&pulse_mutex);
+//                }
                 mode = PLAYING;
                 command = NONE;
                 pthread_mutex_unlock(&buffer_mutex);
@@ -1911,7 +1927,7 @@ void *main_loop(void *thread_id) {
         usleep(5000);
     }
 
-    //printf("pa: Cleanup and exit\n");
+    printf("pa: Cleanup and exit\n");
 
     pthread_mutex_lock(&buffer_mutex);
 
@@ -1922,7 +1938,7 @@ void *main_loop(void *thread_id) {
     buff_base = 0;
     buff_filled = 0;
 
-    disconnect_pulse();
+    //disconnect_pulse();
     FLAC__stream_decoder_finish(dec);
     FLAC__stream_decoder_delete(dec);
     mpg123_delete(mh);
