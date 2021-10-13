@@ -816,10 +816,11 @@ void connect_pulse() {
         want_sample_rate = 0;
     }
 
-    if (current_sample_rate <= 1) {
-        printf("pa: Samplerate detection warning.\n");
-        return;
-    }
+//    if (current_sample_rate <= 1) {
+//        printf("pa: Samplerate detection warning.\n");
+//        return;
+//    }
+    current_sample_rate = sample_rate_out;
 
     #ifndef AO
     int error = 0;
@@ -1649,6 +1650,7 @@ void *main_loop(void *thread_id) {
 
     #ifdef AO
     	ao_initialize();
+    	connect_pulse();
     #endif
     rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
     cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
