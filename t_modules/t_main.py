@@ -40448,7 +40448,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-
             pass
 
         if gui.mode < 3:

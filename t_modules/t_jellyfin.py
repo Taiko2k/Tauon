@@ -202,6 +202,7 @@ class Jellyfin():
             self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
             return
 
+        mem_folder = {}
         for parent, items in grouped_items:
             for track in items:
                 id = self.pctl.master_count  # id here is tauons track_id for the track
@@ -213,19 +214,37 @@ class Jellyfin():
 
                 nt = self.tauon.TrackClass()
                 nt.index = id  # this is tauons track id
-
                 nt.track_number = str(track.get("IndexNumber", ""))
                 nt.disc_number = str(track.get("ParentIndexNumber", ""))
                 nt.file_ext = "JELY"
-                nt.parent_folder_path = parent
-                nt.parent_folder_name = parent
                 nt.album_artist = track.get("AlbumArtist", "")
-                nt.artist = track.get("AlbumArtist", "")
+                artists = track.get("Artists", [])
+                nt.artist = "; ".join(artists)
+                if len(artists) > 1:
+                    nt.misc["artists"] = artists
                 nt.title = track.get("Name", "")
                 nt.album = track.get("Album", "")
                 nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
                 nt.date = str(track.get("ProductionYear"))
+
+                folder_name = nt.album_artist
+                if folder_name and nt.album:
+                    folder_name += " / "
+                folder_name += nt.album
+
+                if track.get("AlbumId") and folder_name:
+                    key = track.get("AlbumId") + nt.album
+                    if key not in mem_folder:
+                        mem_folder[key] = folder_name
+                    folder_name = mem_folder[key]
+                elif nt.album:
+                    folder_name = nt.album
+
+                nt.parent_folder_path = folder_name
+                nt.parent_folder_name = nt.parent_folder_path
                 nt.is_network = True
+                if "ONE PIECE" in nt.album:
+                    print(track)
 
                 nt.url_key = track.get("Id")
                 nt.art_url_key = track.get("AlbumId") if track.get("AlbumPrimaryImageTag", False) else None
@@ -237,6 +256,8 @@ class Jellyfin():
 
         self.scanning = False
         print("Jellyfin import complete")
+
+        playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
 
         if return_list:
             return playlist
