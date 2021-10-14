@@ -941,7 +941,7 @@ mac_styles = {
     "whitesir": None,
     "vimix": None,
     "sweet": None,
-    "dracula": None,
+    "dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
     "nordic": None,
     "juno": None
 }
