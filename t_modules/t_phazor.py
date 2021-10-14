@@ -526,7 +526,7 @@ def player4(tauon):
                         aud.start(dm.get_filepath(loaded_track).encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
                         while aud.get_result() == 0:
                             time.sleep(0.01)
-                        aud.set_position_ms(int(pctl.new_time * 1000))
+                        #aud.set_position_ms(int(pctl.new_time * 1000))
                     else:
                         aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
 
