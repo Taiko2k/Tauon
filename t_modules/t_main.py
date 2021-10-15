@@ -112,7 +112,7 @@ try:
     if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
         left_window_control = True
     gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-    #print(f"GTK theme is: {gtk_theme}")
+    print(f"GTK theme is: {gtk_theme}")
     for k, v in mac_styles.items():
         if k in gtk_theme:
             detect_macstyle = True
@@ -1884,6 +1884,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.drop_playlist_target = 0
         self.discord_status = "Standby"
         self.mouse_unknown = False
+        self.macstyle = prefs.macstyle
+        if macos or detect_macstyle:
+            self.macstyle = True
+
 
 gui = GuiVar()
 
@@ -3782,8 +3786,6 @@ def load_prefs():
 
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
     macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
-    if not detect_macstyle:
-        prefs.macstyle = macstyle
     prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
@@ -8585,7 +8587,7 @@ def do_exit_button():
         else:
             pctl.running = False
 
-def do_maximixe_button():
+def do_maximize_button():
     global mouse_down
     global drag_mode
     if gui.maximized:
@@ -8626,7 +8628,7 @@ def draw_window_tools():
     #rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
     #fields.add(rect)
     # prefs.left_window_control = not key_shift_down
-    macstyle = prefs.macstyle
+    macstyle = gui.macstyle
 
     bg_off = colours.window_buttons_bg
     bg_on = colours.window_buttons_bg_over
@@ -8719,7 +8721,7 @@ def draw_window_tools():
             mac_circle.render(xx + 6 * gui.scale, y, colour)
             if coll(rect) and not gui.mouse_unknown:
                 if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_maximixe_button()
+                    do_maximize_button()
         else:
             if r:
                 xx -= ma_width
@@ -28351,6 +28353,7 @@ class TopPanel:
         self.exit_button = asset_loader('ex.png', True)
         self.maximize_button = asset_loader('max.png', True)
         self.restore_button = asset_loader('restore.png', True)
+        self.restore_button = asset_loader('restore.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
         self.artist_list_icon = asset_loader('artist-list.png', True)
         self.folder_list_icon = asset_loader('folder-list.png', True)
@@ -28435,10 +28438,23 @@ class TopPanel:
 
         wwx = 0
         if prefs.left_window_control:
-            if prefs.macstyle:
-                wwx = round(64 * gui.scale)
+            if gui.macstyle:
+                wwx = 24
+                #wwx = round(64 * gui.scale)
+                if draw_min_button:
+                    wwx += 20
+                if draw_max_button:
+                    wwx += 20
+                wwx = round(wwx * gui.scale)
             else:
-                wwx = round(90 * gui.scale)
+                wwx = 26
+                #wwx = round(90 * gui.scale)
+                if draw_min_button:
+                    wwx += 35
+                if draw_max_button:
+                    wwx += 33
+                wwx = round(wwx * gui.scale)
+
 
         rect = (wwx + 9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
@@ -38937,8 +38953,13 @@ def update_layout_do():
                 offset -= 35 * gui.scale
             if draw_max_button:
                 offset += 33 * gui.scale
-            if prefs.macstyle:
-                offset = round(63 * gui.scale)
+            if gui.macstyle:
+                offset = 24
+                if draw_min_button:
+                    offset += 20
+                if draw_max_button:
+                    offset += 20
+                offset = round(offset * gui.scale)
             gui.offset_extra = offset
 
         global album_v_gap
