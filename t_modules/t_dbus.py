@@ -397,7 +397,7 @@ class Gnome:
                             id = f"/com/tauon/{track.index}/{pctl.playlist_playing_position}"
 
                             d = {
-                                'mpris:trackid': id,
+                                'mpris:trackid': dbus.ObjectPath(id),
                                 'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
                                 'xesam:album': track.album,
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
@@ -493,7 +493,8 @@ class Gnome:
                             'CanPlay': True,
                             'CanPause': True,
                             'CanSeek': True,
-                            'CanControl': True
+                            'CanControl': True,
+                            'Metadata': dbus.Dictionary({}, signature='sv')
                         }
 
                     def get_loop_status(self):
