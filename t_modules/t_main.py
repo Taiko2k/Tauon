@@ -24068,12 +24068,16 @@ def worker1():
             return
 
         for q in range(len(items_in_dir)):
+            if items_in_dir[q][0] == ".":
+                continue
             if os.path.isdir(os.path.join(direc, items_in_dir[q])):
                 gets(os.path.join(direc, items_in_dir[q]))
             if gui.im_cancel:
                 return
 
         for q in range(len(items_in_dir)):
+            if items_in_dir[q][0] == ".":
+                continue
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
                 if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
