@@ -15719,7 +15719,7 @@ def sort_track_2(pl, custom_list=None):
 
     gui.pl_update += 1
 
-
+tauon.sort_track_2 = sort_track_2
 
 
 def key_filepath(index):
