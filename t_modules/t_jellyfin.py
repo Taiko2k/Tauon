@@ -258,12 +258,13 @@ class Jellyfin():
         print("Jellyfin import complete")
 
         playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
+        self.tauon.sort_track_2(0, playlist)
 
         if return_list:
             return playlist
 
         self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
-        self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly tn"
+        self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
     def session_item(self, track):
