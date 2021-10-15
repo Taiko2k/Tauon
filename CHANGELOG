@@ -13,6 +13,7 @@ v6.8.0
  - Fixed MP3 multi genre scan
  - Fixed default sorting of imported tracks
  - Fixed jellyfin album/artist tagging
+ - Changed importer to ignore dotfiles
  - Further improved idle CPU usage
  - Updated macOS support
 
