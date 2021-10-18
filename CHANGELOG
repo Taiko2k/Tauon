@@ -16,6 +16,7 @@ v6.8.0
  - Fixed jellyfin album/artist tagging
  - Changed importer to ignore dotfiles
  - Further improved idle CPU usage
+ - Improved MPRIS2 compliance
  - Updated macOS support
 
 v6.7.1

@@ -43,8 +43,6 @@ Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wik
 
 You can also install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
 
-For macOS see build instructions [here](https://github.com/Taiko2k/TauonMusicBox/issues/577).
-
 #### Unofficial packages
 
  - [SlackBuilds](https://slackbuilds.org/repository/14.2/audio/tauonmb/)
