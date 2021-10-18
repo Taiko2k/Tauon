@@ -7,6 +7,7 @@ v6.8.0
  - Added macOS style window control style
  - Added option to config file "seek-interval"
  - Added shuffle lockdown as feature
+ - Added queue and show shortcuts to global search
  - Fixed album artist field reading for MP3
  - Fixed crash when displaying filenames with non utf8 data
  - Fixed gallery add album to queue
