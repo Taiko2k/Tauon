@@ -14145,9 +14145,11 @@ def finish_current():
 
 
 
-def add_album_to_queue(ref, position=None):
+def add_album_to_queue(ref, position=None, playlist_id=None):
     if position is None:
         position = r_menu_position
+    if playlist_id is None:
+        playlist_id = pl_to_id(pctl.active_playlist_viewing)
 
     partway = 0
     playing_object = pctl.playing_object()
@@ -14155,11 +14157,12 @@ def add_album_to_queue(ref, position=None):
         if pctl.g(ref).parent_folder_path == playing_object.parent_folder_path:
             partway = 1
 
-    queue_object = queue_item_gen(ref, position, pl_to_id(pctl.active_playlist_viewing), 1, partway)
+    queue_object = queue_item_gen(ref, position, playlist_id, 1, partway)
     pctl.force_queue.append(queue_object)
     queue_timer_set(queue_object=queue_object)
     if prefs.stop_end_queue:
         pctl.auto_stop = False
+
 
 def add_album_to_queue_fc(ref):
 
@@ -22504,6 +22507,7 @@ class SearchOverlay:
                     if fade == 1:
                         ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
 
+                    show = False
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
                     if coll(rect) and mouse_change:
@@ -22524,13 +22528,11 @@ class SearchOverlay:
                                 self.search_text.text = ""
 
                         if level_2_right_click:
+                            show = True
 
-                            #self.click_artist(item[1])
-                            pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-
-                    if enter and fade == 1:
+                    if enter and key_shift_down and fade == 1:
+                        show = True
+                    elif enter and fade == 1:
                         if key_shift_down or key_shiftr_down:
                             #self.click_artist(item[1])
                             pctl.show_current(index=item[2], playing=False)
@@ -22538,6 +22540,10 @@ class SearchOverlay:
                             #pctl.show_current(index=item[2], playing=False)
                             self.click_artist(item[1])
 
+                        self.active = False
+                        self.search_text.text = ""
+                    if show:
+                        pctl.show_current(index=item[2], playing=False)
                         self.active = False
                         self.search_text.text = ""
 
@@ -22724,6 +22730,7 @@ class SearchOverlay:
                         rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                         fields.add(rect)
 
+                    show = False
                     if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
@@ -22747,21 +22754,27 @@ class SearchOverlay:
                                 self.search_text.text = ""
 
                         if level_2_right_click:
-                            pctl.show_current(index=item[2], playing=False)
-                            pctl.playlist_view_position = playlist_selected
-                            if album_mode:
-                                show_in_gal(0)
-                            console.print("DEBUG: Position changed by global search")
-                            self.active = False
-                            self.search_text.text = ""
+                            show = True
 
-                    if enter and fade == 1:
+                    if enter and key_shift_down and fade == 1:
+                        show = True
+                    elif enter and fade == 1:
                         self.click_album(item[2])
                         pctl.show_current(index=item[2])
                         pctl.playlist_view_position = playlist_selected
                         console.print("DEBUG: Position changed by global search")
                         self.active = False
                         self.search_text.text = ""
+                    if show:
+                        pctl.show_current(index=item[2], playing=False)
+                        pctl.playlist_view_position = playlist_selected
+                        if album_mode:
+                            show_in_gal(0)
+                        self.active = False
+                        self.search_text.text = ""
+                    if keymaps.test("add-to-queue") and fade == 1:
+                        add_album_to_queue(item[2], pctl.multi_playlist[id_to_pl(item[3])][2].index(item[2]), item[3])
+
 
                     if full:
                         yy += 47 * gui.scale
@@ -22797,14 +22810,15 @@ class SearchOverlay:
                     if key_ctrl_down and item[2] in default_playlist:
                         ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour)
 
+                    show = False
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
                     if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
-                        if gui.level_2_click:
 
+                        if gui.level_2_click:
                             if key_ctrl_down:
                                 default_playlist.append(item[2])
                                 gui.pl_update += 1
@@ -22814,15 +22828,28 @@ class SearchOverlay:
                                 self.search_text.text = ""
 
                         if level_2_right_click:
-                            pctl.show_current(index=item[2], playing=False)
-                            if album_mode:
-                                show_in_gal(0)
-                            self.active = False
-                            self.search_text.text = ""
-                    if enter and fade == 1:
+                            show = True
+
+
+                    if enter and key_shift_down and fade == 1:
+                        show = True
+                    elif enter and fade == 1:
                         self.click_album(item[2])
                         self.active = False
                         self.search_text.text = ""
+                    if show:
+                        pctl.show_current(index=item[2], playing=False)
+                        if album_mode:
+                            show_in_gal(0)
+                        self.active = False
+                        self.search_text.text = ""
+
+                    if keymaps.test("add-to-queue") and fade == 1:
+                        queue_object = queue_item_gen(item[2],
+                                                      pctl.multi_playlist[id_to_pl(item[3])][2].index(item[2]),
+                                                      item[3])
+                        pctl.force_queue.append(queue_object)
+                        queue_timer_set(queue_object=queue_object)
 
                 # spotify track
                 if item[0] == 12:
@@ -22918,6 +22945,7 @@ class SearchOverlay:
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
+                    show = False
                     if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
@@ -22931,11 +22959,16 @@ class SearchOverlay:
                                 self.active = False
                                 self.search_text.text = ""
                         if level_2_right_click:
-                            pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-                    if enter and fade == 1:
+                            show = True
+
+                    if enter and key_shift_down and fade == 1:
+                        show = True
+                    elif enter and fade == 1:
                         self.click_meta(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+                    if show:
+                        pctl.show_current(index=item[2], playing=False)
                         self.active = False
                         self.search_text.text = ""
 
@@ -43660,6 +43693,8 @@ while pctl.running:
             ww = 0
             if gui.lsp:
                 ww = gui.lspw
+            if search_over.active:
+                ww = window_size[0] // 2 - (215 * gui.scale // 2)
 
             rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
             fields.add(rect)
