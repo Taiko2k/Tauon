@@ -394,7 +394,9 @@ class Gnome:
                         if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
                             track = pctl.playing_object()
                             self.playing_index = track.index
-                            id = f"/com/tauon/{track.index}/{pctl.playlist_playing_position}"
+                            id = f"/com/tauon/{track.index}/{abs(pctl.playlist_playing_position)}"
+                            if pctl.playing_state == 3:
+                                id = "/com/tauon/radio"
 
                             d = {
                                 'mpris:trackid': dbus.ObjectPath(id),

@@ -62,10 +62,11 @@
 
   <releases>
 
-    <release version="6.8.0" date="2021-10-05">
+    <release version="6.8.0" date="2021-10-19">
       <description>
         <ul>
-          <li>Further improvements to idle cpu usage</li>
+          <li>Added shuffle lockdown feature</li>
+          <li>Added mac style window control option</li>
           <li>Various other fixes and tweaks</li>
         </ul>
       </description>
