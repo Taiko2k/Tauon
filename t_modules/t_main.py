@@ -20778,6 +20778,10 @@ def clean_db():
     global cm_clean_db
     prefs.remove_network_tracks = False
     cm_clean_db = True
+    try:
+        worker2_lock.release()
+    except:
+        pass
 
 def clean_db2():
     global cm_clean_db
