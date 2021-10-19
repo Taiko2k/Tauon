@@ -28494,7 +28494,7 @@ class TopPanel:
         rect = (wwx + 9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
 
-        if coll(rect):
+        if coll(rect) and not prefs.shuffle_lock:
             if inp.mouse_click:
 
                 if gui.combo_mode:
