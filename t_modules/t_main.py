@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.8.0"
+n_version = "6.8.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -22266,7 +22266,7 @@ class SearchOverlay:
         inp.key_return_press = False
 
     def render(self):
-
+        global input_text
         if self.active is False:
 
             # Activate search overlay on key presses
@@ -22293,6 +22293,9 @@ class SearchOverlay:
             y = 0
             w = window_size[0]
             h = window_size[1]
+
+            if keymaps.test("add-to-queue"):
+                input_text = ""
 
             if inp.backspace_press:
                 # self.searched_text = ""
@@ -39957,7 +39960,8 @@ while pctl.running:
 
                 mouse_down = True
             elif event.button.button == SDL_BUTTON_MIDDLE:
-                middle_click = True
+                if not search_over.active:
+                    middle_click = True
                 gui.update += 1
             elif event.button.button == SDL_BUTTON_X1:
                 keymaps.hits.append("MB4")
@@ -40478,6 +40482,7 @@ while pctl.running:
             if quick_search_mode:
                 if keymaps.test("add-to-queue") and pctl.selected_ready():
                     add_selected_to_queue()
+                    input_text = ""
 
             else:
 
