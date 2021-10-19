@@ -615,7 +615,9 @@ def player4(tauon):
                 break
         else:
             pctl.spot_test_progress()
+
             if state == 3:
+
                 pctl.radio_progress()
                 run_vis()
 
