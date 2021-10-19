@@ -29562,9 +29562,13 @@ class BottomBarType1:
             x = window_size[0] - right_offset - 207 * gui.scale
             y = window_size[1] - round(14 * gui.scale)
 
+            rect = (x - 8 * gui.scale, y - 17 * gui.scale, 55 * gui.scale, 23 * gui.scale)
+            #ddt.rect(rect, [255,255,255,25])
+            if coll(rect) and mouse_down:
+                gui.update_on_drag = True
+
             h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
             if coll(h_rect) and mouse_down:
-                gui.update_on_drag = False
                 pctl.player_volume = 0
 
             step = round(1 * gui.scale)
@@ -29589,7 +29593,7 @@ class BottomBarType1:
 
                 if coll(h_rect):
                     if mouse_down or mouse_up:
-                        gui.update_on_drag = False
+                        gui.update_on_drag = True
 
                         if bar == 0:
                             pctl.player_volume = 5
@@ -30243,11 +30247,14 @@ class BottomBarType_ao1:
             if gui.compact_bar:
                 x -= 90 * gui.scale
 
+            rect = (x - 8 * gui.scale, y - 17 * gui.scale, 55 * gui.scale, 23 * gui.scale)
+            #ddt.rect(rect, [255,255,255,25])
+            if coll(rect) and mouse_down:
+                gui.update_on_drag = True
+
             h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
             if coll(h_rect) and mouse_down:
-                gui.update_on_drag = False
                 pctl.player_volume = 0
-                gui.update_on_drag = False
 
             step = round(1 * gui.scale)
             min_h = round(4 * gui.scale)
