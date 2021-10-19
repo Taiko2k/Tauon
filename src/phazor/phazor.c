@@ -1432,12 +1432,11 @@ float gate = 1.0;  // Used for ramping
 
 void *out_thread(void *thread_id) {
 
-    out_thread_running = 1;
     int b = 0;
     //double testa, testb;
 
     //t_start = get_time_ms();
-    printf("pa: Start out thread\n");
+    //printf("pa: Start out thread\n");
 
     while (out_thread_running == 1) {
 
@@ -1615,7 +1614,7 @@ void *out_thread(void *thread_id) {
                             }
                             pa_simple_flush(s, &error);
                             pa_simple_free(s);
-                            printf("Auto free\n");
+                            //printf("Auto free\n");
                             pulse_connected = 0;
 
                         #else
@@ -1636,7 +1635,7 @@ void *out_thread(void *thread_id) {
 
     } // close main loop
     out_thread_running = 0;
-    printf("Exit out thread\n");
+    //printf("Exit out thread\n");
     return thread_id;
 } // close thread
 
@@ -1701,9 +1700,10 @@ void *main_loop(void *thread_id) {
                 case PAUSE:
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
-
-                      out_thread_running = 2;
-                      usleep(20000);
+                        if (out_thread_running == 1){
+                          out_thread_running = 2;
+                          usleep(20000);
+                          }
                         
                         command = NONE;
                     }
@@ -1714,6 +1714,7 @@ void *main_loop(void *thread_id) {
                         //if (pulse_connected == 0) connect_pulse();
                         while (out_thread_running == 2){
                             usleep(1000);
+
                         }
                         if (out_thread_running == 0) {
                               out_thread_running = 1;
@@ -1743,14 +1744,7 @@ void *main_loop(void *thread_id) {
                     } else break;
 
                 case LOAD:
-                    while (out_thread_running == 2){
-                            usleep(1000);
-                    }
-                   if (out_thread_running == 0) {
-                              out_thread_running = 1;
-                              pthread_t out_thread_id;
-                              pthread_create(&out_thread_id, NULL, out_thread, NULL);
-                        }
+
                     load_result = load_next();
                     if (load_result == 0) {
                         pthread_mutex_lock(&buffer_mutex);
@@ -1819,16 +1813,17 @@ void *main_loop(void *thread_id) {
 //                        }
 
                         mode = PLAYING;
-                        command = NONE;
                         result_status = SUCCESS;
                         pthread_mutex_unlock(&buffer_mutex);
                         while (out_thread_running == 2){
                             usleep(1000);
                         }
                         if (out_thread_running == 0) {
+                             out_thread_running = 1;
                               pthread_t out_thread_id;
                               pthread_create(&out_thread_id, NULL, out_thread, NULL);
                         }
+                        command = NONE;
 
 
                     } else {
