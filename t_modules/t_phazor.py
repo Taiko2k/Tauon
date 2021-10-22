@@ -141,7 +141,7 @@ def player4(tauon):
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
                         a += 1
-                        if a == 300:  # kilobyes~
+                        if a == 900:  # kilobyes~
                             self.status = "ready"
                         if self.cancel is True:
                             self.part.close()
