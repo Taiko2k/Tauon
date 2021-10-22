@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.8.1
+
+ - Fixed add to queue shortcut in search applying text
+ - Fixed left window control in compact mode
+
 v6.8.0
 
  - Added left window decoration style
