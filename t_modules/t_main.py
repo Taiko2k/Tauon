@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.8.0"
+n_version = "6.8.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -750,6 +750,7 @@ from t_modules.t_lyrics import *
 from t_modules.t_themeload import load_theme
 from t_modules.t_spot import SpotCtl
 from t_modules.t_search import *
+
 
 if system == 'linux':
     from t_modules import t_topchart
@@ -9052,6 +9053,9 @@ ddt = TDraw(renderer)
 ddt.scale = gui.scale
 ddt.force_subpixel_text = prefs.force_subpixel_text
 
+
+from t_modules.t_launch import *
+launch = Launch(tauon, pctl, gui, ddt)
 
 class Drawing:
 
@@ -22264,7 +22268,7 @@ class SearchOverlay:
         inp.key_return_press = False
 
     def render(self):
-
+        global input_text
         if self.active is False:
 
             # Activate search overlay on key presses
@@ -22291,6 +22295,9 @@ class SearchOverlay:
             y = 0
             w = window_size[0]
             h = window_size[1]
+
+            if keymaps.test("add-to-queue"):
+                input_text = ""
 
             if inp.backspace_press:
                 # self.searched_text = ""
@@ -28472,7 +28479,7 @@ class TopPanel:
                 ddt.text((round(14 * gui.scale), round(40 * gui.scale)), artist, colours.grey(120), 315, max_w=maxx)
 
         wwx = 0
-        if prefs.left_window_control:
+        if prefs.left_window_control and not gui.compact_bar:
             if gui.macstyle:
                 wwx = 24
                 #wwx = round(64 * gui.scale)
@@ -38575,6 +38582,8 @@ def hit_callback(win, point, data):
         if gui.top_bar_mode2:
 
             if y < gui.panelY - gui.panelY2:
+                if prefs.left_window_control and x < 100 * gui.scale:
+                    return SDL_HITTEST_NORMAL
 
                 if x > window_size[0] - 100 * gui.scale and y < 30 * gui.scale:
                     return SDL_HITTEST_NORMAL
@@ -39962,7 +39971,8 @@ while pctl.running:
 
                 mouse_down = True
             elif event.button.button == SDL_BUTTON_MIDDLE:
-                middle_click = True
+                if not search_over.active:
+                    middle_click = True
                 gui.update += 1
             elif event.button.button == SDL_BUTTON_X1:
                 keymaps.hits.append("MB4")
@@ -40483,6 +40493,7 @@ while pctl.running:
             if quick_search_mode:
                 if keymaps.test("add-to-queue") and pctl.selected_ready():
                     add_selected_to_queue()
+                    input_text = ""
 
             else:
 
@@ -40515,6 +40526,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
+            gui.mode = 4
             pass
 
         if gui.mode < 3:
@@ -41053,7 +41065,9 @@ while pctl.running:
                 gbc.enable()
                 # print("Enabling garbage collecting")
 
-        if gui.mode == 1 or gui.mode == 2:
+        if gui.mode == 4:
+            launch.render()
+        elif gui.mode == 1 or gui.mode == 2:
 
             ddt.text_background_colour = colours.playlist_panel_background
 
@@ -43226,7 +43240,7 @@ while pctl.running:
 
             if draw_border and not gui.mode == 3:
 
-                tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
+                tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
                 if prefs.left_window_control:
                     tool_rect[0] = 0
                 fields.add(tool_rect)
