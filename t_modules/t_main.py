@@ -40529,6 +40529,10 @@ while pctl.running:
             gui.mode = 4
             pass
 
+        if key_esc_press:  # Exit test mode..
+            if (gui.mode == 4):
+                gui.mode = 1
+
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
                 prefs.colour_from_image ^= True
