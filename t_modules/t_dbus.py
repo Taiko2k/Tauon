@@ -445,7 +445,13 @@ class Gnome:
                                 changed['CanSeek'] = self.player_properties['CanSeek']
 
                         if len(changed) > 0:
-                            self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+                            try:
+                                self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+                            except Exception as e:
+                                print("Error updating MPRIS")
+                                print(str(e))
+                                print(changed)
+                                print(pctl.playing_object().fullpath)
 
                     def update_progress(self):
                         self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
