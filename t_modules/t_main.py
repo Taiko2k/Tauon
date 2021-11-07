@@ -40766,7 +40766,7 @@ while pctl.running:
                 if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_up_press:
                     gui.pl_update += 1
                     if not shift_selection and playlist_selected < len(default_playlist):
-                        shift_selection.insert(playlist_selected)
+                        shift_selection.insert(playlist_selected,0)
                     if shift_selection:
                         s = min(shift_selection) - 1
                         if s >= 0:
