@@ -40765,21 +40765,33 @@ while pctl.running:
 
                 if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_up_press:
                     gui.pl_update += 1
-                    if not shift_selection and playlist_selected < len(default_playlist):
-                        shift_selection.insert(playlist_selected,0)
-                    if shift_selection:
-                        s = min(shift_selection) - 1
-                        if s >= 0:
-                            shift_selection.append(s)
+                    first_selected = playlist_selected
+                    try:
+                        if playlist_selected != last_selected:
+                            last_selected += playlist_selected
+                            for tester in range(first_selected, last_selected):
+                                shift_selection.remove(tester)
+                    except:
+                        if playlist_selected not in shift_selection:
+                            shift_selection.append(playlist_selected)
+                            playlist_selected -= 1
+                        elif first_selected in shift_selection:
+                            shift_selection.remove(first_selected)
 
                 if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_down_press:
                     gui.pl_update += 1
-                    if not shift_selection and playlist_selected < len(default_playlist):
-                        shift_selection.append(playlist_selected)
-                    if shift_selection:
-                        s = max(shift_selection) + 1
-                        if s < len(default_playlist):
-                            shift_selection.append(s)
+                    last_selected = playlist_selected
+                    try:
+                        if playlist_selected != first_selected:
+                            first_selected += playlist_selected
+                            for tester in range(last_selected, first_selected):
+                                shift_selection.remove(tester)
+                    except:
+                        if playlist_selected not in shift_selection:
+                            shift_selection.append(playlist_selected)
+                            playlist_selected += 1
+                        elif last_selected in shift_selection:
+                            shift_selection.remove(last_selected)
 
                 if keymaps.test("toggle-shuffle"):
                     #pctl.random_mode ^= True
