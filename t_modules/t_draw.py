@@ -587,6 +587,7 @@ class TDraw:
             context.set_font_options(options)
 
         layout = PangoCairo.create_layout(context)
+        layout.set_auto_dir(False)
 
         if max_y is not None:
             layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -601,7 +602,7 @@ class TDraw:
                 extra = round(400000 * self.scale)
 
             layout.set_height(h * 1000 + extra)
-           
+
         if not wrap and max_y is None:
             layout.set_height(-1)
 
@@ -628,6 +629,7 @@ class TDraw:
 
         layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
         layout.set_text(text, -1)
+        #print(layout.get_direction(0))
 
         y_off = layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work

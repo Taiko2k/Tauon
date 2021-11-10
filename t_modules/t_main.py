@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.8.1"
+n_version = "6.8.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -40784,6 +40784,24 @@ while pctl.running:
                     if pctl.player_volume > 100:
                         pctl.player_volume = 100
                     pctl.set_volume()
+
+                if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_up_press:
+                    gui.pl_update += 1
+                    if not shift_selection and playlist_selected < len(default_playlist):
+                        shift_selection.insert(playlist_selected,0)
+                    if shift_selection:
+                        s = min(shift_selection) - 1
+                        if s >= 0:
+                            shift_selection.append(s)
+
+                if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_down_press:
+                    gui.pl_update += 1
+                    if not shift_selection and playlist_selected < len(default_playlist):
+                        shift_selection.append(playlist_selected)
+                    if shift_selection:
+                        s = max(shift_selection) + 1
+                        if s < len(default_playlist):
+                            shift_selection.append(s)
 
                 if keymaps.test("toggle-shuffle"):
                     #pctl.random_mode ^= True

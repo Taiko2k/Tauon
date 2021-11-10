@@ -938,7 +938,7 @@ def clean_string(s):
 
 mac_styles = {
     "mac": None,
-    "whitesir": None,
+    "whitesur": None,
     "vimix": None,
     "sweet": None,
     "dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
