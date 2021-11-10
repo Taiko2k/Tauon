@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v6.8.2
 
- - Fixed RTL language text not rendering
+ - Enabled open image for embedded
+ - Fixed RTL language text not rendering (still broken)
+
 
 v6.8.1
 
