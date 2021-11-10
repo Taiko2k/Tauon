@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.8.2
+
+ - Fixed RTL language text not rendering
+
 v6.8.1
 
  - Fixed add to queue shortcut in search applying text

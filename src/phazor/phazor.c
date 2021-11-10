@@ -1444,14 +1444,18 @@ void *out_thread(void *thread_id) {
 
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
+            #ifndef AO
             if (mode == PLAYING) connect_pulse();
+            #endif
 
         }
 
         if (buff_filled < 10 && loaded_target_file[0] == 'h') {
 
             if (mode == PLAYING) {
+                #ifndef AO
                 disconnect_pulse();
+                #endif
                 if (buffering == 0) printf("pa: Buffering...\n");
                 buffering = 1;
             } else buffering = 0;
