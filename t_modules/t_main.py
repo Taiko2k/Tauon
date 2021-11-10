@@ -11028,15 +11028,40 @@ class AlbumArt():
 
         offset = self.get_offset(track_object.fullpath, source)
 
-        if source[offset][0] > 0:
+        if track_object.is_network:
+            show_message("Saving network images not implemented")
             return 0
+        if source[offset][0] > 0:
+            pic = album_art_gen.get_embed(track_object)
+            if not pic:
+                show_message("Image save error.", "No embedded album art found file.", mode='warning')
+                return 0
+
+            source_image = io.BytesIO(pic)
+            im = Image.open(source_image)
+            source_image.close()
+
+            ext = "." + im.format.lower()
+            if im.format == "JPEG":
+                ext = ".jpg"
+            target = os.path.join(cache_directory, "open-image")
+            if not os.path.exists(target):
+                os.makedirs(target)
+            target = os.path.join(target, "embed-" + str(im.height) + "px-" + str(track_object.index) + ext)
+
+            if len(pic) > 30:
+                with open(target, 'wb') as w:
+                    w.write(pic)
+
+        else:
+            target = source[offset][1]
 
         if system == "windows" or msys:
-            os.startfile(source[offset][1])
+            os.startfile(target)
         elif macos:
-            subprocess.call(["open", source[offset][1]])
+            subprocess.call(["open", target])
         else:
-            subprocess.call(["xdg-open", source[offset][1]])
+            subprocess.call(["xdg-open", target])
 
         return 0
 
@@ -14613,10 +14638,7 @@ def open_image_deco(track_object):
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if info[0] == 0:
-        line_colour = colours.menu_text
-    else:
-        line_colour = colours.menu_text_disabled
+    line_colour = colours.menu_text
 
     return [line_colour, colours.menu_background, None]
 
