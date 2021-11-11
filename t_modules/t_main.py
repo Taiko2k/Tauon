@@ -8730,7 +8730,8 @@ def draw_window_tools():
             mac_circle.render(xx + 6 * gui.scale, y, colour)
             if coll(rect) and not gui.mouse_unknown:
                 if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_maximize_button()
+                    do_minimize_button()
+
         else:
             if r:
                 xx -= ma_width
@@ -8769,7 +8770,8 @@ def draw_window_tools():
             mac_circle.render(xx + 6 * gui.scale, y, colour)
             if coll(rect) and not gui.mouse_unknown:
                 if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_minimize_button()
+                    do_maximize_button()
+
         else:
             if r:
                 xx -= mi_width
