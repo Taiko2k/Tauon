@@ -564,7 +564,11 @@ class LoadImageAsset:
 
 
 class WhiteModImageAsset:
-    def __init__(self, path):
+    assets = []
+    def __init__(self, path, reload=False):
+        if not reload:
+            self.assets.append(self)
+        self.path = path
         raw_image = IMG_Load(path.encode())
         self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
         self.colour = [255, 255, 255, 255]
@@ -575,6 +579,10 @@ class WhiteModImageAsset:
         SDL_FreeSurface(raw_image)
         self.w = p_w.contents.value
         self.h = p_h.contents.value
+
+    def reload(self):
+        SDL_DestroyTexture(self.sdl_texture)
+        self.__init__(self.path, reload=True)
 
     def render(self, x, y, colour):
         if colour != self.colour:
@@ -39882,6 +39890,13 @@ while pctl.running:
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
 
+        if event.type == SDL_RENDER_TARGETS_RESET:
+            print("Reset render targets!")
+            clear_img_cache(delete_disk=False)
+            ddt.clear_text_cache()
+            for item in WhiteModImageAsset.assets:
+                item.reload()
+
         if event.type == SDL_DROPTEXT:
 
             power += 5
@@ -40548,7 +40563,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            gui.mode = 4
+            #gui.mode = 4
             pass
 
         if gui.mode < 3:
