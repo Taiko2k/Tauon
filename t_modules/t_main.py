@@ -12559,9 +12559,9 @@ class ToolTip:
 
             if self.timer.get() > self.trigger:
 
-                ddt.rect((self.x, self.y, self.w, self.h), colours.menu_background)
-                ddt.rect((self.x, self.y, self.w, self.h), colours.grey(45))
-                ddt.text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.menu_text, self.font, bg=colours.menu_background)
+                ddt.rect((self.x, self.y, self.w, self.h), colours.box_button_background)
+                #ddt.rect((self.x, self.y, self.w, self.h), colours.grey(45))
+                ddt.text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.menu_text, self.font, bg=colours.box_button_background)
             else:
                 #gui.update += 1
                 pass

@@ -5,6 +5,7 @@ v6.8.2
 
  - Enabled open image for embedded
  - Fixed possible UI glitch with some video drivers
+ - Fixed tooltip text on light theme
  - Fixed RTL language text not rendering (still broken)
 
 
