@@ -1896,6 +1896,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.macstyle = prefs.macstyle
         if macos or detect_macstyle:
             self.macstyle = True
+        self.radio_view = True
 
 
 gui = GuiVar()
@@ -37510,6 +37511,16 @@ class GuitarChords:
 # guitar chords def
 gc = GuitarChords()
 
+class RadioView:
+    def __init__(self):
+        pass
+    def render(self):
+        box = int(window_size[1] * 0.4 + 120 * gui.scale)
+        box = min(window_size[0] // 2, box)
+
+        ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background)
+
+radio_view = RadioView()
 
 class Showcase:
 
@@ -42331,8 +42342,11 @@ while pctl.running:
 
                     gui.pl_update -= 1
                     if gui.combo_mode:
-                        if gui.showcase_mode:
+                        if gui.radio_view:
+                            radio_view.render()
+                        elif gui.showcase_mode:
                             showcase.render()
+
                         # else:
                         #     combo_pl_render.full_render()
                     else:
@@ -42341,7 +42355,9 @@ while pctl.running:
 
                 else:
                     if gui.combo_mode:
-                        if gui.showcase_mode:
+                        if gui.radio_view:
+                            radio_view.render()
+                        elif gui.showcase_mode:
                             showcase.render()
                         # else:
                         #     combo_pl_render.cache_render()
