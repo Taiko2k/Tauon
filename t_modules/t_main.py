@@ -34305,6 +34305,17 @@ def create_artist_pl(artist, replace=False):
         if album_mode:
             reload_albums()
 
+        # Transfer playing track back to original playlist
+        if pctl.multi_playlist[this_pl][10]:
+            new = id_to_pl(pctl.multi_playlist[this_pl][10])
+            tr = pctl.playing_object()
+            if new is not None and tr and pctl.active_playlist_playing == this_pl:
+                if tr.index not in pctl.multi_playlist[this_pl][2] and tr.index in pctl.multi_playlist[source_pl][2]:
+                    print("Transfer back playing")
+                    pctl.active_playlist_playing = source_pl
+                    pctl.playlist_playing_position = pctl.multi_playlist[source_pl][2].index(tr.index)
+
+
     else:
 
         pctl.multi_playlist.append(pl_gen(title="Artist: " + artist,
