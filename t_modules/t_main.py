@@ -40769,13 +40769,17 @@ while pctl.running:
                         shift_selection.insert(playlist_selected,0)
                     if shift_selection:
                         if key_up_press:
-                            playlist_selected = min(shift_selection) - 1
+                            shift_selection.append(playlist_selected)
                             if playlist_selected >= 0:
-                                shift_selection.append(playlist_selected)
+                                playlist_selected -= 1
+                            else:
+                                playlist_selected = min(shift_selection) - 1
                         if key_down_press:
-                            playlist_selected = max(shift_selection) + 1
+                            shift_selection.append(playlist_selected)
                             if playlist_selected < len(default_playlist):
-                                shift_selection.append(playlist_selected)
+                                playlist_selected += 1
+                            else:
+                                playlist_selected = max(shift_selection) + 1
 
                 if keymaps.test("toggle-shuffle"):
                     #pctl.random_mode ^= True
