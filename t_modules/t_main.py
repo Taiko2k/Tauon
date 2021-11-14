@@ -33078,13 +33078,12 @@ class RadioBox:
                 radio["website_url"] = "https://listen.moe/"
                 self.temp_list.append(radio)
 
-                #  API's revoked, couldn't find replacement..
-                # radio = {}
-                # radio["title"] = "DKFM | Shoegaze"
-                # radio["stream_url_unresolved"] = "https://securestreams6.autopo.st:2102/"
-                # radio["stream_url"] = "https://securestreams6.autopo.st:2102/"
-                # radio["website_url"] = "https://decayfm.com/"
-                # self.temp_list.append(radio)
+                radio = {}
+                radio["title"] = "DKFM | Shoegaze"
+                radio["stream_url_unresolved"] = "https://maggie.torontocast.com:8090/live.mp3"
+                radio["stream_url"] = "https://maggie.torontocast.com:8090/live.mp3"
+                radio["website_url"] = "https://decayfm.com/"
+                self.temp_list.append(radio)
 
                 radio = {}
                 radio["title"] = "HBR1 Dream Factory | Ambient"
