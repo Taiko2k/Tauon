@@ -33112,8 +33112,8 @@ class RadioBox:
 
                 radio = {}
                 radio["title"] = "DKFM | Shoegaze"
-                radio["stream_url_unresolved"] = "https://securestreams6.autopo.st:2102/"
-                radio["stream_url"] = "https://securestreams6.autopo.st:2102/"
+                radio["stream_url_unresolved"] = "https://maggie.torontocast.com:8090/live.mp3"
+                radio["stream_url"] = "https://maggie.torontocast.com:8090/live.mp3"
                 radio["website_url"] = "https://decayfm.com/"
                 self.temp_list.append(radio)
 
@@ -40813,23 +40813,23 @@ while pctl.running:
                         pctl.player_volume = 100
                     pctl.set_volume()
 
-                if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_up_press:
+                if key_ctrl_down and (key_shift_down or key_shiftr_down):
                     gui.pl_update += 1
                     if not shift_selection and playlist_selected < len(default_playlist):
                         shift_selection.insert(playlist_selected,0)
                     if shift_selection:
-                        s = min(shift_selection) - 1
-                        if s >= 0:
-                            shift_selection.append(s)
-
-                if key_ctrl_down and (key_shift_down or key_shiftr_down) and key_down_press:
-                    gui.pl_update += 1
-                    if not shift_selection and playlist_selected < len(default_playlist):
-                        shift_selection.append(playlist_selected)
-                    if shift_selection:
-                        s = max(shift_selection) + 1
-                        if s < len(default_playlist):
-                            shift_selection.append(s)
+                        if key_up_press:
+                            shift_selection.append(playlist_selected)
+                            if playlist_selected >= 0:
+                                playlist_selected -= 1
+                            else:
+                                playlist_selected = min(shift_selection) - 1
+                        if key_down_press:
+                            shift_selection.append(playlist_selected)
+                            if playlist_selected < len(default_playlist):
+                                playlist_selected += 1
+                            else:
+                                playlist_selected = max(shift_selection) + 1
 
                 if keymaps.test("toggle-shuffle"):
                     #pctl.random_mode ^= True
