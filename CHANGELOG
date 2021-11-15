@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v6.8.2
 
+ - Added ctrl + shift + up/down for track selection
  - Enabled open image for embedded
  - Tweaked filtered artist list to transfer back playing when switching artist
  - Fixed possible UI glitch with some video drivers
