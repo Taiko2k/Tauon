@@ -482,12 +482,12 @@ void read_to_buffer_char16_resample(char src[], int n_bytes) {
 
     // Convert bytes16 to float
     while (i < n_bytes) {
-        re_in[f * 2] = ((float) (int16_t)((src[i + 1] << 8) | (src[i + 0] & 0xFF))) / (float) 32768.0;
+        re_in[f * 2] = ((float) ((src[i + 1] << 8) | (src[i + 0] & 0xFF))) / (float) 32768.0;
         if (src_channels == 1) {
             re_in[(f * 2) + 1] = re_in[f * 2];
             i += 2;
         } else {
-            re_in[(f * 2) + 1] = ((float) (int16_t)((src[i + 3] << 8) | (src[i + 2] & 0xFF))) / (float) 32768.0;
+            re_in[(f * 2) + 1] = ((float) ((src[i + 3] << 8) | (src[i + 2] & 0xFF))) / (float) 32768.0;
             i += 4;
         }
 
@@ -510,7 +510,7 @@ void read_to_buffer_char16(char src[], int n_bytes) {
     int i = 0;
     if (src_channels == 1){
         while (i < n_bytes) {
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((int16_t)((src[i + 1] << 8) | (src[i + 0] & 0xFF))) / 32768.0);
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
             buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
             if (fade_fill > 0) {
                 fade_fx();
@@ -520,8 +520,8 @@ void read_to_buffer_char16(char src[], int n_bytes) {
         }
     } else {
         while (i < n_bytes) {
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((int16_t)((src[i + 1] << 8) | (src[i + 0] & 0xFF))) / 32768.0);
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((int16_t)((src[i + 3] << 8) | (src[i + 2] & 0xFF))) / 32768.0);
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
+            buffr[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
             if (fade_fill > 0) {
                 fade_fx();
             }
@@ -1590,7 +1590,7 @@ void *out_thread(void *thread_id) {
                     if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)) {
 
                         b = 0;
-                        while (b < 256 * 4) {
+                        while (b < 256 * 2) {
                             out_buff[b] = 0.0;
                             b += 1;
                         }
@@ -1598,7 +1598,7 @@ void *out_thread(void *thread_id) {
                             int g = 0;
                             while (g < 12) {
                                 g++;
-                                pa_simple_write(s, out_buff, b * 4, &error);
+                                pa_simple_write(s, out_buff, b * 8, &error);
                             }
                             pa_simple_flush(s, &error);
                             pa_simple_free(s);
