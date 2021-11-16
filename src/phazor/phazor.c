@@ -258,9 +258,9 @@ char ffm_buffer[2048];
 
 void start_ffmpeg(char uri[], int start_ms) {
     if (start_ms > 0)
-        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
+        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_f32le -f f32le -ac 2 -ar %d - ",
                 start_ms, uri, sample_rate_out);
-    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
+    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_f32le -f f32le -ac 2 -ar %d - ", uri, sample_rate_out);
 
     ffm = popen(exe_string, "r");
     if (ffm == NULL) {
@@ -410,11 +410,11 @@ int wave_decode(int read_frames) {
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        buffl[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) wave_16;
+        buffl[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        buffr[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t) wave_16;
+        buffr[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
 
         if (fade_fill > 0) {
             fade_fx();
@@ -482,12 +482,12 @@ void read_to_buffer_char16_resample(char src[], int n_bytes) {
 
     // Convert bytes16 to float
     while (i < n_bytes) {
-        re_in[f * 2] = ((float) ((src[i + 1] << 8) | (src[i + 0] & 0xFF))) / (float) 32768.0;
+        re_in[f * 2] = ( ((src[i + 1] << 8) | (src[i + 0] & 0xFF))) / 32768.0;
         if (src_channels == 1) {
             re_in[(f * 2) + 1] = re_in[f * 2];
             i += 2;
         } else {
-            re_in[(f * 2) + 1] = ((float) ((src[i + 3] << 8) | (src[i + 2] & 0xFF))) / (float) 32768.0;
+            re_in[(f * 2) + 1] = (((src[i + 3] << 8) | (src[i + 2] & 0xFF))) / 32768.0;
             i += 4;
         }
 
@@ -510,7 +510,7 @@ void read_to_buffer_char16(char src[], int n_bytes) {
     int i = 0;
     if (src_channels == 1){
         while (i < n_bytes) {
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = ((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0;
             buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
             if (fade_fill > 0) {
                 fade_fx();
@@ -520,8 +520,8 @@ void read_to_buffer_char16(char src[], int n_bytes) {
         }
     } else {
         while (i < n_bytes) {
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = (float)(((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
+            buffr[(buff_filled + buff_base) % BUFF_SIZE] = (((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
             if (fade_fill > 0) {
                 fade_fx();
             }
@@ -538,12 +538,12 @@ void read_to_buffer_s16int_resample(int16_t src[], int n_samples) {
 
     // Convert int16 to float
     while (i < n_samples) {
-        re_in[f * 2] = ((float) src[i]) / (float) 32768.0;
+        re_in[f * 2] = (src[i]) / 32768.0;
         if (src_channels == 1) {
             re_in[(f * 2) + 1] = re_in[f * 2];
             i += 1;
         } else {
-            re_in[(f * 2) + 1] = ((float) src[i + 1]) / (float) 32768.0;
+            re_in[(f * 2) + 1] = (src[i + 1]) / 32768.0;
             i += 2;
         }
 
@@ -564,7 +564,7 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
     int i = 0;
     if (src_channels == 1){
         while (i < n_samples){
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = src[i];
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = src[i] / 32768.0;
             buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
             if (fade_fill > 0) {
                 fade_fx();
@@ -575,8 +575,8 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
 
     } else {
         while (i < n_samples){
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = src[i];
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = src[i + 1];
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = src[i] / 32768.0;
+            buffr[(buff_filled + buff_base) % BUFF_SIZE] = src[i + 1] / 32768.0;
             if (fade_fill > 0) {
                 fade_fx();
             }
@@ -651,24 +651,24 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 
 
 
-                buffl[(buff_filled + buff_base) % BUFF_SIZE] = ((float) buffer[0][i]) / ((float) 8388608.0);
+                buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 8388608.0;
 
                 if (frame->header.channels == 1) {
                     buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
                 } else {
 
-                    buffl[(buff_filled + buff_base) % BUFF_SIZE] = ((float) buffer[1][i]) / ((float) 8388608.0);
+                    buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[1][i]) / 8388608.0;
 
                 }
             } // end 24 bit audio
 
                 // Read 16bit audio
             else if (frame->header.bits_per_sample == 16) {
-                buffl[(buff_filled + buff_base) % BUFF_SIZE] = ((float) buffer[0][i]) / (float) 32768.0;
+                buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 32768.0;
                 if (frame->header.channels == 1) {
-                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = ((float) buffer[0][i]) / (float) 32768.0;
+                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 32768.0;
                 } else {
-                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = ((float) buffer[1][i]) / (float) 32768.0;
+                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[1][i]) / 32768.0;
                 }
             } else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
 
@@ -688,18 +688,18 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
             // Read and handle 24bit audio
             if (frame->header.bits_per_sample == 24) {
 
-                re_in[i * 2] = ((float) buffer[0][i]) / ((float) 8388608.0);
+                re_in[i * 2] = (buffer[0][i]) / (8388608.0);
                 if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
-                else re_in[(i * 2) + 1] = ((float) buffer[1][i]) / ((float) 8388608.0);
+                else re_in[(i * 2) + 1] = (buffer[1][i]) / 8388608.0;
 
             } // end 24 bit audio
 
                 // Read 16bit audio
             else if (frame->header.bits_per_sample == 16) {
 
-                re_in[i * 2] = ((float) buffer[0][i]) / (float) 32768.0;
+                re_in[i * 2] = (buffer[0][i]) / 32768.0;
                 if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
-                else re_in[(i * 2) + 1] = ((float) buffer[1][i]) / (float) 32768.0;
+                else re_in[(i * 2) + 1] = (buffer[1][i]) / 32768.0;
 
             } else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
 
@@ -1374,7 +1374,7 @@ void pump_decode() {
 //            b++;
 //        }
 //
-        if (b % 2 == 1) {
+        if (b % 4 != 0) {
             printf("pa: Uneven data\n");
             decoder_eos();
             return;
@@ -1383,15 +1383,14 @@ void pump_decode() {
         pthread_mutex_lock(&buffer_mutex);
         while (i < b) {
 
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t)(
-                    (ffm_buffer[i + 1] << 8) | (ffm_buffer[i] & 0xFF));
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = (int16_t)(
-                    (ffm_buffer[i + 3] << 8) | (ffm_buffer[i + 2] & 0xFF));
+            memcpy(&buffl[((buff_filled + buff_base) % BUFF_SIZE)], &ffm_buffer[i], 4);
+            memcpy(&buffr[((buff_filled + buff_base) % BUFF_SIZE)], &ffm_buffer[i + 4], 4);
+            
             if (fade_fill > 0) {
                 fade_fx();
             }
             buff_filled++;
-            i += 4;
+            i += 8;
         }
         pthread_mutex_unlock(&buffer_mutex);
         if (done == 1) {
