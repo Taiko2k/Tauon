@@ -60,6 +60,10 @@ def player4(tauon):
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
 
+    aud.get_level_peak_l.restype = ctypes.c_float
+    aud.get_level_peak_r.restype = ctypes.c_float
+
+
     active_timer = Timer()
 
     def calc_rg(track):
@@ -305,9 +309,9 @@ def player4(tauon):
         # Level meter
         if (state == 1 or state == 3) and gui.vis == 1:
             amp = aud.get_level_peak_l()
-            l = (amp / 32767) * 12
+            l = amp * 12
             amp = aud.get_level_peak_r()
-            r = (amp / 32767) * 12
+            r = amp * 12
 
             tauon.level_train.append((0, l, r))
             gui.level_update = True
