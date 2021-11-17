@@ -117,10 +117,10 @@ float volume_ramp_speed = 750;  // ms for 1 to 0
 int codec = 0;
 int error = 0;
 
-int peak_l = 0;
-int peak_roll_l = 0;
-int peak_r = 0;
-int peak_roll_r = 0;
+float peak_l = 0.;
+float peak_roll_l = 0.;
+float peak_r = 0.;
+float peak_roll_r = 0.;
 
 int config_fast_seek = 0;
 int config_dev_buffer = 40;
@@ -1385,7 +1385,7 @@ void pump_decode() {
 
             memcpy(&buffl[((buff_filled + buff_base) % BUFF_SIZE)], &ffm_buffer[i], 4);
             memcpy(&buffr[((buff_filled + buff_base) % BUFF_SIZE)], &ffm_buffer[i + 4], 4);
-            
+
             if (fade_fill > 0) {
                 fade_fx();
             }
@@ -1519,8 +1519,8 @@ void *out_thread(void *thread_id) {
                     }
                 }
 
-                if (abs(buffl[buff_base]) > peak_roll_l) peak_roll_l = abs(buffl[buff_base]);
-                if (abs(buffr[buff_base]) > peak_roll_r) peak_roll_r = abs(buffr[buff_base]);
+                if (fabs(buffl[buff_base]) > peak_roll_l) peak_roll_l = fabs(buffl[buff_base]);
+                if (fabs(buffr[buff_base]) > peak_roll_r) peak_roll_r = fabs(buffr[buff_base]);
 
                 // Apply gain amp
                 if (rg_value_on != 0.0) {
@@ -2089,15 +2089,16 @@ void config_set_dev_name(char *device) {
     }
 }
 
-int get_level_peak_l() {
-    int peak = peak_l;
-    peak_l = 0;
+float get_level_peak_l() {
+
+    float peak = peak_l;
+    peak_l = 0.0;
     return peak;
 }
 
-int get_level_peak_r() {
-    int peak = peak_r;
-    peak_r = 0;
+float get_level_peak_r() {
+    float peak = peak_r;
+    peak_r = 0.0;
     return peak;
 }
 
@@ -2108,7 +2109,7 @@ int get_spectrum(int n_bins, float* bins) {
 
     int i = 0;
     while (i < samples) {
-        rbuf[i] = (float) (buffl[(base + i) % BUFF_SIZE]) * 0.5 * (1 - cos(2*3.1415926*i/samples));
+        rbuf[i] = (buffl[(base + i) % BUFF_SIZE]) * 0.5 * (1 - cos(2*3.1415926*i/samples));
         i++;
     }
 
