@@ -62,11 +62,10 @@
 
   <releases>
 
-    <release version="6.8.0" date="2021-10-19">
+    <release version="6.8.1" date="2021-11-18">
       <description>
         <ul>
-          <li>Added shuffle lockdown feature</li>
-          <li>Added mac style window control option</li>
+          <li>Added open embedded image function</li>
           <li>Various other fixes and tweaks</li>
         </ul>
       </description>

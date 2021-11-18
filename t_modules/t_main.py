@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.8.2"
+n_version = "6.8.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -40578,6 +40578,7 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             #gui.mode = 4
+            print(pctl.active_playlist_playing)
             pass
 
         if gui.mode < 3:

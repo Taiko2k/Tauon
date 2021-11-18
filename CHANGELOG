@@ -1,18 +1,15 @@
 
 Changelog-------------------------------------
 
-v6.8.2
+v6.8.1
 
  - Added ctrl + shift + up/down for track selection
  - Enabled open image for embedded
  - Tweaked filtered artist list to transfer back playing when switching artist
  - Fixed possible UI glitch with some video drivers
  - Fixed tooltip text on light theme
- - Fixed mac window tool function order (todo obey setting)
- - Fixed RTL language text not rendering (still broken todo)
-
-v6.8.1
-
+ - Fixed mac window tool function order
+ - Fixed RTL language text not rendering (RTL still todo)
  - Fixed add to queue shortcut in search applying text
  - Fixed left window control in compact mode
 
