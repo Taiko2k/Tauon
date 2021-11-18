@@ -649,16 +649,12 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 
                 // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
 
-
-
                 buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 8388608.0;
 
                 if (frame->header.channels == 1) {
                     buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
                 } else {
-
-                    buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[1][i]) / 8388608.0;
-
+                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[1][i]) / 8388608.0;
                 }
             } // end 24 bit audio
 
