@@ -405,32 +405,51 @@ int wave_open(char *filename) {
 
 int wave_decode(int read_frames) {
 
+    int frames_read = 0;
+    int end = 0;
     int i = 0;
     while (i < read_frames) {
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        buffl[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
+        //buffl[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
+        re_in[i * 2] = wave_16 / 32768.0
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        buffr[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
+        //buffr[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
+        re_in[i * 2 + 1] = wave_16 / 32768.0
 
-        if (fade_fill > 0) {
-            fade_fx();
-        }
-
-        buff_filled++;
-        samples_decoded++;
         i++;
-
-
+        frames_read++;
         if ((ftell(wave_file) - wave_start) > wave_size) {
             printf("pa: End of WAVE file data\n");
-            return 1;
+            end = 1;
+            break;
         }
 
     }
+
+    if (sample_rate_src != sample_rate_out){
+        resample_to_buffer(frames_read)
+    } else {
+
+        i = 0;
+        while (i < frames_read){
+
+            buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_in[i * 2];
+            buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_in[i * 2 + 1];
+
+            if (fade_fill > 0) {
+                fade_fx();
+            }
+
+            buff_filled++;
+            samples_decoded++;
+            i++;
+        }
+    }
+    if (end == 1) return 1;
     return 0;
 
 }
