@@ -412,12 +412,10 @@ int wave_decode(int read_frames) {
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        //buffl[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
         re_in[i * 2] = wave_16 / 32768.0
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        //buffr[(buff_filled + buff_base) % BUFF_SIZE] = wave_16 / 32768.0;
         re_in[i * 2 + 1] = wave_16 / 32768.0
 
         i++;
