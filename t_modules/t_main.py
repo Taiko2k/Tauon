@@ -23901,6 +23901,7 @@ def worker1():
                     track.length = last_end - track.start_time
                     track.samplerate = end_track.samplerate
                     track.bitrate = end_track.bitrate
+                    track.bit_depth = end_track.bit_depth
                     last_end = track.start_time
 
             # Add all tracks for import to playlist
@@ -32322,6 +32323,8 @@ class StandardPlaylist:
                             text = str(n_track.bitrate)
                             if text == "0":
                                 text = ""
+                            if n_track.file_ext == "FLAC" or n_track.file_ext == "WAV" or n_track.file_ext == "APE":
+                                text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(n_track.bit_depth)
                             colour = colours.index_text
                             norm_colour = colour
                             if this_line_playing is True:
