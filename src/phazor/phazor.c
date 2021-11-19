@@ -275,6 +275,39 @@ void stop_ffmpeg() {
     pclose(ffm);
 }
 
+
+void resample_to_buffer(int in_frames) {
+
+    src_data.data_in = re_in;
+    src_data.data_out = re_out;
+    src_data.input_frames = in_frames;
+    src_data.output_frames = BUFF_SIZE;
+    src_data.src_ratio = (double) sample_rate_out / (double) sample_rate_src;
+    src_data.end_of_input = 0;
+
+    src_process(src, &src_data);
+    //printf("pa: SRC error code: %d\n", src_result);
+    //printf("pa: SRC output frames: %lu\n", src_data.output_frames_gen);
+    //printf("pa: SRC input frames used: %lu\n", src_data.input_frames_used);
+    int out_frames = src_data.output_frames_gen;
+
+    int i = 0;
+    while (i < out_frames) {
+
+        buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_out[i * 2];
+        buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_out[(i * 2) + 1];
+
+        if (fade_fill > 0) {
+            fade_fx();
+        }
+
+        buff_filled++;
+        i++;
+    }
+
+}
+
+
 // WAV Decoder ----------------------------------------------------------------
 
 FILE *wave_file;
@@ -412,11 +445,11 @@ int wave_decode(int read_frames) {
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        re_in[i * 2] = wave_16 / 32768.0
+        re_in[i * 2] = wave_16 / 32768.0;
 
         wave_error = fread(&wave_16, 2, 1, wave_file);
         if (wave_error != 1) return 1;
-        re_in[i * 2 + 1] = wave_16 / 32768.0
+        re_in[i * 2 + 1] = wave_16 / 32768.0;
 
         i++;
         frames_read++;
@@ -429,7 +462,7 @@ int wave_decode(int read_frames) {
     }
 
     if (sample_rate_src != sample_rate_out){
-        resample_to_buffer(frames_read)
+        resample_to_buffer(frames_read);
     } else {
 
         i = 0;
@@ -460,37 +493,6 @@ void wave_close() {
     fclose(wave_file);
 }
 
-
-void resample_to_buffer(int in_frames) {
-
-    src_data.data_in = re_in;
-    src_data.data_out = re_out;
-    src_data.input_frames = in_frames;
-    src_data.output_frames = BUFF_SIZE;
-    src_data.src_ratio = (double) sample_rate_out / (double) sample_rate_src;
-    src_data.end_of_input = 0;
-
-    src_process(src, &src_data);
-    //printf("pa: SRC error code: %d\n", src_result);
-    //printf("pa: SRC output frames: %lu\n", src_data.output_frames_gen);
-    //printf("pa: SRC input frames used: %lu\n", src_data.input_frames_used);
-    int out_frames = src_data.output_frames_gen;
-
-    int i = 0;
-    while (i < out_frames) {
-
-        buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_out[i * 2];
-        buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_out[(i * 2) + 1];
-
-        if (fade_fill > 0) {
-            fade_fx();
-        }
-
-        buff_filled++;
-        i++;
-    }
-
-}
 
 void read_to_buffer_char16_resample(char src[], int n_bytes) {
 
