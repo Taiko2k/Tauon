@@ -12,6 +12,8 @@ v6.8.1
  - Fixed RTL language text not rendering (RTL still todo)
  - Fixed add to queue shortcut in search applying text
  - Fixed left window control in compact mode
+ - [Phazor] Fixed incorrect playback speed with WAV files
+ - [Phazor] Improved output quality with 24bit tracks
 
 v6.8.0
 
