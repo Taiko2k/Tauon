@@ -6,30 +6,33 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-08-17 14:12+1200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2021-11-21 09:08+0000\n"
+"Last-Translator: Daniel Uhrinyi <daniel.uhrinyi@gmail.com>\n"
+"Language-Team: Hungarian <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/hu/>\n"
 "Language: hu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.9.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: tauon.py:1912 tauon.py:1914
 msgid "No artist image found."
-msgstr ""
+msgstr "Nem talált előadó képet."
 
 #: tauon.py:1914
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "A beállításokban nincs szolgáltató engedélyezve!"
 
 #: tauon.py:6343
 msgid "End of playlist"
-msgstr ""
+msgstr "Lejátszási lista vége"
 
 #: tauon.py:6394
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Engedélyezés után nyomd meg a 'Kész' gombot."
 
 #: tauon.py:6394
 msgid "Web auth page opened"
@@ -37,11 +40,11 @@ msgstr ""
 
 #: tauon.py:6402
 msgid "You need to log in first"
-msgstr ""
+msgstr "Először jelentkezz be"
 
 #: tauon.py:6558
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Szkennelés sikertelen. Újra?"
 
 #: tauon.py:6565 tauon.py:7142
 msgid "Scanning scrobbles complete"
@@ -53,7 +56,7 @@ msgstr ""
 
 #: tauon.py:6717
 msgid "This may take a very long time."
-msgstr ""
+msgstr "Ez hosszú ideig tarthat."
 
 #: tauon.py:7069
 msgid "Failed updating last.fm love status"
@@ -65,47 +68,47 @@ msgstr ""
 
 #: tauon.py:7072
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Ellenőrzöd a kapcsolatod és megpróbálod újra?"
 
 #: tauon.py:7337
 msgid "Spotify Likes"
-msgstr ""
+msgstr "Spotify kedvencek"
 
 #: tauon.py:7338
 msgid "Spotify Albums"
-msgstr ""
+msgstr "Spotify albumok"
 
 #: tauon.py:7339
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Szám eltávolítva a kedveltek közül"
 
 #: tauon.py:7340
 msgid "Track was already un-liked"
-msgstr ""
+msgstr "A szám már nem kedvelt"
 
 #: tauon.py:7341
 msgid "Track is already liked"
-msgstr ""
+msgstr "A számot már kedveled"
 
 #: tauon.py:7342
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Szám hozzáadva a kedveltekhez"
 
 #: tauon.py:7343
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Spotify fiók hozzákötve"
 
 #: tauon.py:7344
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Ez a Spotify fiók jelenleg nem játszik le semmit"
 
 #: tauon.py:7345
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Hiba a Spotify inditásakor"
 
 #: tauon.py:7346
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Engedélyezd a Spotify-t a beállításokban!"
 
 #: tauon.py:7347
 msgid "Please authorise and click the enable toggle first!"
@@ -113,43 +116,46 @@ msgstr ""
 
 #: tauon.py:7348
 msgid "Spotify import complete"
-msgstr ""
+msgstr "Spotify importálás kész"
 
 #: tauon.py:7350
 msgid "day"
-msgstr ""
+msgstr "nap"
 
 #: tauon.py:7351
 msgid "days"
-msgstr ""
+msgstr "napok"
 
 #: tauon.py:7353
 msgid "Web server stopped."
-msgstr ""
+msgstr "Webszerver megállt."
 
 #: tauon.py:7470
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Hiányzó név, jelszó és/vagy szervernév"
 
 #: tauon.py:7485
+#, fuzzy
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "Kapcsolódási hiba: Plex szerver"
 
 #: tauon.py:7486
 msgid "Try check login credentials and that server is accessible."
-msgstr ""
+msgstr "Ellenőrizd a bejelentkezési információkat és a szerver elérhetőségét."
 
 #: tauon.py:7986
 msgid "Missing username, password and/or server URL"
-msgstr ""
+msgstr "Hiányzó név, jelszó és/vagy szerver URL"
 
 #: tauon.py:8014
+#, fuzzy
 msgid "Could not establish connection"
-msgstr ""
+msgstr "Kapcsolat létrehozása sikertelen"
 
 #: tauon.py:8033
+#, fuzzy
 msgid "Could not establish connection/authorisation"
-msgstr ""
+msgstr "Kapcsolat létrehozása/Engedélyezés sikertelen"
 
 #: tauon.py:8705
 msgid "Stop the sync before exiting!"
@@ -157,39 +163,39 @@ msgstr ""
 
 #: tauon.py:13107
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Lejátszási lista + Sor"
 
 #: tauon.py:13108 tauon.py:35806
 msgid "Queue"
-msgstr ""
+msgstr "Sor"
 
 #: tauon.py:13110
 msgid "Artist List"
-msgstr ""
+msgstr "Előadó lista"
 
 #: tauon.py:13112
 msgid "Folder Navigator"
-msgstr ""
+msgstr "Mappa navigáció"
 
 #: tauon.py:13172
 msgid "Track Renaming"
-msgstr ""
+msgstr "Szám átnevezése"
 
 #: tauon.py:13175 tauon.py:43060
 msgid "Default"
-msgstr ""
+msgstr "Alapértelmezett"
 
 #: tauon.py:13198
 msgid "BEFORE"
-msgstr ""
+msgstr "ELŐTTE"
 
 #: tauon.py:13202
 msgid "AFTER"
-msgstr ""
+msgstr "UTÁNA"
 
 #: tauon.py:13290
 msgid "Rename complete."
-msgstr ""
+msgstr "Az átnevezés lefutott."
 
 #: tauon.py:13291
 msgid " filenames were written."
@@ -197,15 +203,17 @@ msgstr ""
 
 #: tauon.py:13363
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Egyszerű címkeszerkesztő"
 
 #: tauon.py:13365 tauon.py:26009 tauon.py:26284 tauon.py:27037
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: tauon.py:13366
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Nyomj Enter-t minden mezőben a változtatás alkalmazásához a helyi "
+"adatbázisban."
 
 #: tauon.py:13367
 msgid "When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"
@@ -213,27 +221,27 @@ msgstr ""
 
 #: tauon.py:13370
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Kiválasztott számok mennyisége: %d"
 
 #: tauon.py:13405
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Több kiválasztva>"
 
 #: tauon.py:13413
 msgid "Track title"
-msgstr ""
+msgstr "Számcím"
 
 #: tauon.py:13415
 msgid "Album name"
-msgstr ""
+msgstr "Album címe"
 
 #: tauon.py:13417
 msgid "Artist name"
-msgstr ""
+msgstr "Előadó neve"
 
 #: tauon.py:13419
 msgid "Album-artist name"
-msgstr ""
+msgstr "Album előadójának neve"
 
 #: tauon.py:13425
 msgid "Editing network tracks is not recommended!"
@@ -1897,7 +1905,7 @@ msgstr ""
 
 #: tauon.py:26822 tauon.py:26824
 msgid "Done"
-msgstr ""
+msgstr "Kész"
 
 #: tauon.py:26827
 msgid "Use LibreFM"
