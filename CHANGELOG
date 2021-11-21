@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v6.8.1
 
- - Added ctrl + shift + up/down for track selection
+ - Added shift + up/down for track selection
+ - Moved ctrl + up/down for volume level
  - Enabled open image for embedded
  - Tweaked filtered artist list to transfer back playing when switching artist
  - Tweaked bitrate column to show samplerate/bitdepth for lossless
