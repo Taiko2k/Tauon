@@ -25,8 +25,8 @@ previous Left Shift
 advance Right Shift
 advance End
 
-vol-up Up Shift
-vol-down Down Shift
+vol-up Up Ctrl
+vol-down Down Ctrl
 
 toggle-shuffle .
 toggle-repeat ,
@@ -43,6 +43,9 @@ goto-playing '
 goto-previous ' Ctrl
 goto-top Home Shift
 goto-bottom End Shift
+
+shift-up Up Shift
+shift-down Down Shift
 
 info-show I Ctrl
 info-playing P Ctrl

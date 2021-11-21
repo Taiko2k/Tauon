@@ -40818,14 +40818,14 @@ while pctl.running:
                         pctl.player_volume = 100
                     pctl.set_volume()
 
-                if key_ctrl_down and (key_shift_down or key_shiftr_down) and len(default_playlist) > 0:
+                if keymaps.test("shift-down") and len(default_playlist) > 0:
                     gui.pl_update += 1
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
 
                     if not shift_selection:
                         shift_selection.append(playlist_selected)
-                    if key_down_press and playlist_selected < len(default_playlist) - 1:
+                    if playlist_selected < len(default_playlist) - 1:
                         r = playlist_selected
                         playlist_selected += 1
                         if playlist_selected not in shift_selection:
@@ -40833,8 +40833,14 @@ while pctl.running:
                         else:
                             shift_selection.remove(r)
 
-                    elif key_up_press and playlist_selected > -1:
+                if keymaps.test("shift-up") and playlist_selected > -1:
+                    gui.pl_update += 1
+                    if playlist_selected > len(default_playlist) - 1:
+                        playlist_selected = 0
 
+                    if not shift_selection:
+                        shift_selection.append(playlist_selected)
+                    if playlist_selected < len(default_playlist) - 1:
                         r = playlist_selected
                         playlist_selected -= 1
                         if playlist_selected not in shift_selection:
@@ -43675,12 +43681,13 @@ while pctl.running:
                         and not key_rctrl_down\
                         and not key_meta\
                         and not key_lalt\
-                        and not key_ralt) or (key_ctrl_down and (key_shift_down or key_shiftr_down))):
+                        and not key_ralt) or (keymaps.test("shift-down"))):
 
 
                     pctl.show_selected()
                     gui.pl_update = 1
-                    if not key_ctrl_down:
+
+                    if not keymaps.test("shift-down"):
                         if playlist_selected > 0:
                             playlist_selected -= 1
                         shift_selection = []
@@ -43696,20 +43703,20 @@ while pctl.running:
                         playlist_selected = len(default_playlist)
 
 
-                if key_down_press and playlist_selected < len(default_playlist) and ((\
+                if key_down_press and playlist_selected < len(default_playlist) and ((
                         not key_shiftr_down \
-                                and not key_shift_down \
-                                and not key_ctrl_down \
-                                and not key_rctrl_down \
-                                and not key_meta \
-                                and not key_lalt \
-                                and not key_ralt) or (key_ctrl_down and (key_shift_down or key_shiftr_down))):
+                        and not key_shift_down \
+                        and not key_ctrl_down\
+                        and not key_rctrl_down\
+                        and not key_meta\
+                        and not key_lalt\
+                        and not key_ralt) or (keymaps.test("shift-up"))):
 
 
                     pctl.show_selected()
                     gui.pl_update = 1
 
-                    if not key_ctrl_down:
+                    if not keymaps.test("shift-up"):
                         if playlist_selected < len(default_playlist) - 1:
                             playlist_selected += 1
                         shift_selection = []
