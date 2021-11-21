@@ -3544,6 +3544,23 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\ntransfer-playtime-to P Ctrl Shift\n")
 
+    if db_version <= 62:
+        print("Updating database to version 63")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'r') as f:
+                lines = f.readlines()
+            with open(os.path.join(config_directory, "input.txt"), 'w') as f:
+                for line in lines:
+                    if line == "vol-up Up Shift\n" or line == "vol-down Down Shift\n":
+                        continue
+                    f.write(line)
+                f.write("\n")
+                f.write("shift-up Up Shift\n")
+                f.write("shift-down Down Shift\n")
+                f.write("vol-up Up Ctrl\n")
+                f.write("vol-down Down Ctrl\n")
+
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
 
@@ -39403,7 +39420,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            62,  # Version, used for upgrading
+            63,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -43681,13 +43698,13 @@ while pctl.running:
                         and not key_rctrl_down\
                         and not key_meta\
                         and not key_lalt\
-                        and not key_ralt) or (keymaps.test("shift-down"))):
+                        and not key_ralt) or (keymaps.test("shift-up"))):
 
 
                     pctl.show_selected()
                     gui.pl_update = 1
 
-                    if not keymaps.test("shift-down"):
+                    if not keymaps.test("shift-up"):
                         if playlist_selected > 0:
                             playlist_selected -= 1
                         shift_selection = []
@@ -43703,20 +43720,20 @@ while pctl.running:
                         playlist_selected = len(default_playlist)
 
 
-                if key_down_press and playlist_selected < len(default_playlist) and ((
+                if playlist_selected < len(default_playlist) and ((key_down_press and \
                         not key_shiftr_down \
                         and not key_shift_down \
                         and not key_ctrl_down\
                         and not key_rctrl_down\
                         and not key_meta\
                         and not key_lalt\
-                        and not key_ralt) or (keymaps.test("shift-up"))):
+                        and not key_ralt) or keymaps.test("shift-down")):
 
 
                     pctl.show_selected()
                     gui.pl_update = 1
 
-                    if not keymaps.test("shift-up"):
+                    if not keymaps.test("shift-down"):
                         if playlist_selected < len(default_playlist) - 1:
                             playlist_selected += 1
                         shift_selection = []
