@@ -2281,7 +2281,7 @@ def auto_size_columns():
             item[1] = round(58 * gui.scale)
             total -= round(58 * gui.scale)
 
-        if item[0] == "T" or item[0] == "P" or item[0] == "S":
+        if item[0] == "P" or item[0] == "S" or item[0] == "#":
             item[1] = round(32 * gui.scale)
             total -= round(32 * gui.scale)
 
@@ -3546,6 +3546,9 @@ if db_version > 0:
 
     if db_version <= 62:
         print("Updating database to version 63")
+        for item in gui.pl_st:
+            if item[0] == "T":
+                item[0] = "#"
 
         if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
             with open(os.path.join(config_directory, "input.txt"), 'r') as f:
@@ -3560,6 +3563,7 @@ if db_version > 0:
                 f.write("shift-down Down Shift\n")
                 f.write("vol-up Up Ctrl\n")
                 f.write("vol-down Down Ctrl\n")
+
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -16188,7 +16192,7 @@ column_names = (
     "Time",
     "Date",
     "Genre",
-    "T",
+    "#",
     "P",
     "Starline",
     "Rating",
@@ -20063,7 +20067,7 @@ def sa_comment():
     gui.pl_st.insert(set_menu.reference + 1, ["Comment", 300, False])
     gui.update_layout()
 def sa_track():
-    gui.pl_st.insert(set_menu.reference + 1, ["T", 25, True])
+    gui.pl_st.insert(set_menu.reference + 1, ["#", 25, True])
     gui.update_layout()
 def sa_count():
     gui.pl_st.insert(set_menu.reference + 1, ["P", 25, True])
@@ -20191,7 +20195,7 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
         key = key_date
     if name == "Genre":
         key = key_genre
-    if name == "T":
+    if name == "#":
         key = key_t
     if name == "S":
         key = key_scrobbles
@@ -32291,7 +32295,7 @@ class StandardPlaylist:
                             norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
-                        elif item[0] == "T":
+                        elif item[0] == "#":
 
                             if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing][4] == 1:
                                 text = str(p_track)
