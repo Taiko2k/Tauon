@@ -37739,7 +37739,7 @@ class Showcase:
 
                 if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
 
-                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active or radiobox.active or trans_edit_box.active:
+                    if gui.message_box or not is_level_zero(include_menus=True):
                         self.render_vis()
                     else:
                         gui.draw_vis4_top = True
