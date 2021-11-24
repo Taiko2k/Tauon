@@ -8,6 +8,7 @@ v6.8.1
  - Enabled open image for embedded
  - Tweaked filtered artist list to transfer back playing when switching artist
  - Tweaked bitrate column to show samplerate/bitdepth for lossless
+ - Tweaked filepath sort to use natural sort
  - Fixed possible UI glitch with some video drivers
  - Fixed tooltip text on light theme
  - Fixed mac window tool function order
