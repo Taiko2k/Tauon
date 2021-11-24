@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2021-08-17 14:12+1200\n"
+"POT-Creation-Date: 2021-11-24 20:18+1300\n"
 "PO-Revision-Date: 2020-11-13 03:15+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -19,2736 +19,1910 @@ msgstr ""
 "X-Generator: Weblate 4.4-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
-#: tauon.py:1912 tauon.py:1914
-msgid "No artist image found."
-msgstr "Ingen artistbild hittades."
+#~ msgid "No artist image found."
+#~ msgstr "Ingen artistbild hittades."
 
-#: tauon.py:1914
-msgid "No providers are enabled in settings!"
-msgstr "Inga leverantörer aktiverade i inställningarna!"
+#~ msgid "No providers are enabled in settings!"
+#~ msgstr "Inga leverantörer aktiverade i inställningarna!"
 
-#: tauon.py:6343
-msgid "End of playlist"
-msgstr "Slut på spelningslistan"
+#~ msgid "End of playlist"
+#~ msgstr "Slut på spelningslistan"
 
-#: tauon.py:6394
-msgid "Once authorised click the 'done' button."
-msgstr "Klicka på \"Klar\" efter auktorisering."
+#~ msgid "Once authorised click the 'done' button."
+#~ msgstr "Klicka på \"Klar\" efter auktorisering."
 
-#: tauon.py:6394
-msgid "Web auth page opened"
-msgstr "Webbautentisering öppnad"
+#~ msgid "Web auth page opened"
+#~ msgstr "Webbautentisering öppnad"
 
-#: tauon.py:6402
-msgid "You need to log in first"
-msgstr "Du måste logga in först"
+#~ msgid "You need to log in first"
+#~ msgstr "Du måste logga in först"
 
-#: tauon.py:6558
-msgid "Scanning failed. Try again?"
-msgstr ""
+#~ msgid "Scanning scrobbles complete"
+#~ msgstr "Skanna om mappar fullständigt"
 
-#: tauon.py:6565 tauon.py:7142
-msgid "Scanning scrobbles complete"
-msgstr "Skanna om mappar fullständigt"
+#~ msgid "Getting friend data..."
+#~ msgstr "Hämtar kompisdata..."
 
-#: tauon.py:6717
-msgid "Getting friend data..."
-msgstr "Hämtar kompisdata..."
+#~ msgid "This may take a very long time."
+#~ msgstr "Detta kan ta mycket lång tid."
 
-#: tauon.py:6717
-msgid "This may take a very long time."
-msgstr "Detta kan ta mycket lång tid."
-
-#: tauon.py:7069
-msgid "Failed updating last.fm love status"
-msgstr ""
-
-#: tauon.py:7072
 #, fuzzy
-msgid "Error updating love to last.fm!"
-msgstr "Kan inte skapa Spotify-lista"
+#~ msgid "Error updating love to last.fm!"
+#~ msgstr "Kan inte skapa Spotify-lista"
 
-#: tauon.py:7072
-msgid "Maybe check your internet connection and try again?"
-msgstr "Kanske kontrollera din internetuppkoppling och försöka igen?"
+#~ msgid "Maybe check your internet connection and try again?"
+#~ msgstr "Kanske kontrollera din internetuppkoppling och försöka igen?"
 
-#: tauon.py:7337
-msgid "Spotify Likes"
-msgstr "Spotify-gillade"
+#~ msgid "Spotify Likes"
+#~ msgstr "Spotify-gillade"
 
-#: tauon.py:7338
-msgid "Spotify Albums"
-msgstr "Spotify-album"
+#~ msgid "Spotify Albums"
+#~ msgstr "Spotify-album"
 
-#: tauon.py:7339
-msgid "Track removed from liked tracks"
-msgstr "Spår borttagna från gillade spår"
+#~ msgid "Track removed from liked tracks"
+#~ msgstr "Spår borttagna från gillade spår"
 
-#: tauon.py:7340
-msgid "Track was already un-liked"
-msgstr "Spåret har redan av-gillats"
+#~ msgid "Track was already un-liked"
+#~ msgstr "Spåret har redan av-gillats"
 
-#: tauon.py:7341
-msgid "Track is already liked"
-msgstr "Spåret är redan gillat"
+#~ msgid "Track is already liked"
+#~ msgstr "Spåret är redan gillat"
 
-#: tauon.py:7342
-msgid "Track added to liked tracks"
-msgstr "Spår tillagda i gillade spår"
+#~ msgid "Track added to liked tracks"
+#~ msgstr "Spår tillagda i gillade spår"
 
-#: tauon.py:7343
-msgid "Spotify account connected"
-msgstr "Spotify-konto anslutet"
+#~ msgid "Spotify account connected"
+#~ msgstr "Spotify-konto anslutet"
 
-#: tauon.py:7344
-msgid "This Spotify account isn't currently playing anything"
-msgstr "Spotify-kontot spelar för närvarande inget"
+#~ msgid "This Spotify account isn't currently playing anything"
+#~ msgstr "Spotify-kontot spelar för närvarande inget"
 
-#: tauon.py:7345
-msgid "Error starting Spotify"
-msgstr "Kan inte starta Spotify"
+#~ msgid "Error starting Spotify"
+#~ msgstr "Kan inte starta Spotify"
 
-#: tauon.py:7346
-msgid "Please authorise Spotify in settings!"
-msgstr "Auktorisera Spotify i inställningarna!"
+#~ msgid "Please authorise Spotify in settings!"
+#~ msgstr "Auktorisera Spotify i inställningarna!"
 
-#: tauon.py:7347
 #, fuzzy
-msgid "Please authorise and click the enable toggle first!"
-msgstr "Klicka på \"Klar\" efter auktorisering."
+#~ msgid "Please authorise and click the enable toggle first!"
+#~ msgstr "Klicka på \"Klar\" efter auktorisering."
 
-#: tauon.py:7348
 #, fuzzy
-msgid "Spotify import complete"
-msgstr "Spotify-konto anslutet"
+#~ msgid "Spotify import complete"
+#~ msgstr "Spotify-konto anslutet"
 
-#: tauon.py:7350
-msgid "day"
-msgstr "dag"
+#~ msgid "day"
+#~ msgstr "dag"
 
-#: tauon.py:7351
-msgid "days"
-msgstr "dagar"
+#~ msgid "days"
+#~ msgstr "dagar"
 
-#: tauon.py:7353
-msgid "Web server stopped."
-msgstr "Webbserver stoppad."
+#~ msgid "Web server stopped."
+#~ msgstr "Webbserver stoppad."
 
-#: tauon.py:7470
-msgid "Missing username, password and/or server name"
-msgstr "Användarnamn, lösenord och/eller servernamn saknas"
+#~ msgid "Missing username, password and/or server name"
+#~ msgstr "Användarnamn, lösenord och/eller servernamn saknas"
 
-#: tauon.py:7485
-msgid "Error connecting to PLEX server"
-msgstr "Kunde inte ansluta till PLEX-server"
+#~ msgid "Error connecting to PLEX server"
+#~ msgstr "Kunde inte ansluta till PLEX-server"
 
-#: tauon.py:7486
-msgid "Try check login credentials and that server is accessible."
-msgstr ""
-"Försök kontrollera inloggningsuppgifterna och att servern är tillgänglig."
+#~ msgid "Try check login credentials and that server is accessible."
+#~ msgstr ""
+#~ "Försök kontrollera inloggningsuppgifterna och att servern är tillgänglig."
 
-#: tauon.py:7986
-msgid "Missing username, password and/or server URL"
-msgstr "Användarnamn, lösenord och/eller server-URL saknas"
+#~ msgid "Missing username, password and/or server URL"
+#~ msgstr "Användarnamn, lösenord och/eller server-URL saknas"
 
-#: tauon.py:8014
 #, fuzzy
-msgid "Could not establish connection"
-msgstr "Kunde inte etablera anslutning/auktorisation"
+#~ msgid "Could not establish connection"
+#~ msgstr "Kunde inte etablera anslutning/auktorisation"
 
-#: tauon.py:8033
-msgid "Could not establish connection/authorisation"
-msgstr "Kunde inte etablera anslutning/auktorisation"
+#~ msgid "Could not establish connection/authorisation"
+#~ msgstr "Kunde inte etablera anslutning/auktorisation"
 
-#: tauon.py:8705
-msgid "Stop the sync before exiting!"
-msgstr "Stoppa synkronisering före avslut!"
+#~ msgid "Stop the sync before exiting!"
+#~ msgstr "Stoppa synkronisering före avslut!"
 
-#: tauon.py:13107
-msgid "Playlists + Queue"
-msgstr "Spelningslistor + Kö"
+#~ msgid "Playlists + Queue"
+#~ msgstr "Spelningslistor + Kö"
 
-#: tauon.py:13108 tauon.py:35806
-msgid "Queue"
-msgstr "Köa"
+#~ msgid "Queue"
+#~ msgstr "Köa"
 
-#: tauon.py:13110
-msgid "Artist List"
-msgstr "Artistlista"
+#~ msgid "Artist List"
+#~ msgstr "Artistlista"
 
-#: tauon.py:13112
-msgid "Folder Navigator"
-msgstr "Mappnavigator"
+#~ msgid "Folder Navigator"
+#~ msgstr "Mappnavigator"
 
-#: tauon.py:13172
-msgid "Track Renaming"
-msgstr "Spårnamnändring"
+#~ msgid "Track Renaming"
+#~ msgstr "Spårnamnändring"
 
-#: tauon.py:13175 tauon.py:43060
-msgid "Default"
-msgstr "Standard"
+#~ msgid "Default"
+#~ msgstr "Standard"
 
-#: tauon.py:13198
-msgid "BEFORE"
-msgstr "FÖRE"
+#~ msgid "BEFORE"
+#~ msgstr "FÖRE"
 
-#: tauon.py:13202
-msgid "AFTER"
-msgstr "EFTER"
+#~ msgid "AFTER"
+#~ msgstr "EFTER"
 
-#: tauon.py:13290
-msgid "Rename complete."
-msgstr "Namnbyte slutfört."
+#~ msgid "Rename complete."
+#~ msgstr "Namnbyte slutfört."
 
-#: tauon.py:13291
-msgid " filenames were written."
-msgstr " filnamn skrevs."
+#~ msgid " filenames were written."
+#~ msgstr " filnamn skrevs."
 
-#: tauon.py:13363
-msgid "Simple tag editor"
-msgstr ""
+#~ msgid "?"
+#~ msgstr "?"
 
-#: tauon.py:13365 tauon.py:26009 tauon.py:26284 tauon.py:27037
-msgid "?"
-msgstr "?"
-
-#: tauon.py:13366
-msgid "Press Enter in each field to apply its changes to local database."
-msgstr ""
-
-#: tauon.py:13367
-msgid ""
-"When done, press WRITE TAGS to save to tags in actual files. (Optional but "
-"recommended)"
-msgstr ""
-
-#: tauon.py:13370
-msgid "Number of tracks selected: %d"
-msgstr ""
-
-#: tauon.py:13405
-msgid "<Multiple selected>"
-msgstr ""
-
-#: tauon.py:13413
 #, fuzzy
-msgid "Track title"
-msgstr "Spårlista"
+#~ msgid "Track title"
+#~ msgstr "Spårlista"
 
-#: tauon.py:13415
 #, fuzzy
-msgid "Album name"
-msgstr "Album gain"
+#~ msgid "Album name"
+#~ msgstr "Album gain"
 
-#: tauon.py:13417
 #, fuzzy
-msgid "Artist name"
-msgstr "Artist"
+#~ msgid "Artist name"
+#~ msgstr "Artist"
 
-#: tauon.py:13419
 #, fuzzy
-msgid "Album-artist name"
-msgstr "Albumartist"
+#~ msgid "Album-artist name"
+#~ msgstr "Albumartist"
 
-#: tauon.py:13425
-msgid "Editing network tracks is not recommended!"
-msgstr ""
-
-#: tauon.py:13455 tauon.py:13456
-msgid "WRITE TAGS"
-msgstr ""
-
-#: tauon.py:13458
-msgid "Press enter on fields to apply your changes first!"
-msgstr ""
-
-#: tauon.py:13470
-msgid "Writing to a network track is not applicable!"
-msgstr ""
-
-#: tauon.py:13473
-msgid "Cannot write CUE sheet types!"
-msgstr ""
-
-#: tauon.py:13484
-msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr ""
-
-#: tauon.py:13502
 #, fuzzy
-msgid "%d files rewritten"
-msgstr " filnamn skrevs."
-
-#: tauon.py:13562
-msgid "Substitute Lyric Search"
-msgstr "Ersättningssök"
-
-#: tauon.py:13568 tauon.py:13588
-msgid "Substitute"
-msgstr "Ersätt"
-
-#: tauon.py:13574 tauon.py:13594
-msgid "with"
-msgstr "med"
-
-#: tauon.py:13638
-msgid "Repeat OFF"
-msgstr "Repetition AV"
-
-#: tauon.py:13639
-msgid "Repeat Track"
-msgstr "Repetera spår"
-
-#: tauon.py:13640
-msgid "Repeat Album"
-msgstr "Repetera album"
-
-#: tauon.py:13678
-msgid "Shuffle OFF"
-msgstr "Blanda AV"
-
-#: tauon.py:13679
-msgid "Shuffle Tracks"
-msgstr "Blanda spår"
-
-#: tauon.py:13680
-msgid "Random Albums"
-msgstr "Slumpmässiga album"
-
-#: tauon.py:13705
-msgid "Make Large Size"
-msgstr "Gör stor storlek"
-
-#: tauon.py:13707
-msgid "Make Compact Size"
-msgstr "Gör kompakt storlek"
-
-#: tauon.py:13740
-msgid "Close Panel"
-msgstr "Stäng panel"
-
-#: tauon.py:13741
-msgid "Make Large"
-msgstr "Gör stor"
-
-#: tauon.py:13994
-msgid "Unlock Panel"
-msgstr "Lås upp panel"
-
-#: tauon.py:13996
-msgid "Lock Panel"
-msgstr "Lås panel"
-
-#: tauon.py:13998 tauon.py:13999 tauon.py:14021 tauon.py:18378 tauon.py:19372
-msgid "Open Folder"
-msgstr "Öppna mapp"
-
-#: tauon.py:14001 tauon.py:14002 tauon.py:14003 tauon.py:34082
-msgid "Filter to New Playlist"
-msgstr "Filtrera till ny spelningslista"
-
-#: tauon.py:14004 tauon.py:14005 tauon.py:16778
-msgid "Rescan Folder"
-msgstr "Skanna om mappen"
-
-#: tauon.py:14006 tauon.py:14008
-msgid "Move Playing Folder Here"
-msgstr "Flytta spelande mapp hit"
-
-#: tauon.py:14014 tauon.py:19393
-msgid "Collapse All"
-msgstr "Komprimera alla"
-
-#: tauon.py:14023
-msgid "Show in Playlist"
-msgstr "Visa i spelningslista"
-
-#: tauon.py:14102 tauon.py:19377 tauon.py:19389
-msgid "Add Album to Queue"
-msgstr "Lägg till album i kön"
-
-#: tauon.py:14103 tauon.py:19378 tauon.py:19390
-msgid "Enqueue Album Next"
-msgstr "Köa album som nästa"
-
-#: tauon.py:14115 tauon.py:16966 tauon.py:27030
-msgid "Aborting Sync"
-msgstr "Avbryter synkronisering"
-
-#: tauon.py:14118
-msgid "Cancel"
-msgstr "Avbryt"
-
-#: tauon.py:14128
-msgid "Hide Metadata Panel"
-msgstr "Dölj metadatapanel"
-
-#: tauon.py:14130
-msgid "Show Metadata Panel"
-msgstr "Visa metadatapanel"
-
-#: tauon.py:14140
-msgid "Panel Below Lyrics"
-msgstr "Panel under låttext"
-
-#: tauon.py:14142
-msgid "Panel Above Lyrics"
-msgstr "Panel ovanför låttext"
-
-#: tauon.py:14170 tauon.py:14180 tauon.py:14188
-msgid "Hide Lyrics"
-msgstr "Dölj sångtext"
-
-#: tauon.py:14172 tauon.py:14182 tauon.py:14190
-msgid "Show Lyrics"
-msgstr "Visa sångtext"
-
-#: tauon.py:14224
-msgid "There are no lyric sources enabled."
-msgstr "Inga textkällor är aktiverade."
-
-#: tauon.py:14233
-msgid "Let's be polite and try later."
-msgstr "Var lite artig och försök senare."
-
-#: tauon.py:14250 tauon.py:19598 tauon.py:19652 tauon.py:32970
-msgid "Searching..."
-msgstr "Söker..."
-
-#: tauon.py:14283
-msgid "No lyrics for this track were found"
-msgstr "Ingen sångtext hittades för det här spåret"
-
-#: tauon.py:14347 tauon.py:14444 tauon.py:14877
-msgid "Search for Lyrics"
-msgstr "Sök efter sångtext"
-
-#: tauon.py:14359
-msgid "Search GuitarParty"
-msgstr "Sök på GuitarParty"
-
-#: tauon.py:14394
-msgid "Paste Chord Lyrics"
-msgstr "Klistra in ackordstext"
-
-#: tauon.py:14395
-msgid "Clear Chord Lyrics"
-msgstr "Ta bort ackordstext"
-
-#: tauon.py:14434 tauon.py:14445 tauon.py:14878
-msgid "Toggle Lyrics"
-msgstr "Sångtext på/av"
-
-#: tauon.py:14436 tauon.py:14447
-msgid "Substitute Search..."
-msgstr "Ersättningssök..."
-
-#: tauon.py:14437 tauon.py:14448
-msgid "Paste Lyrics"
-msgstr "Klistra in sångtext"
-
-#: tauon.py:14438 tauon.py:14449
-msgid "Copy Lyrics"
-msgstr "Kopiera sångtext"
-
-#: tauon.py:14439 tauon.py:14450
-msgid "Clear Lyrics"
-msgstr "Ta bort sångtext"
-
-#: tauon.py:14527
-msgid "Open Image"
-msgstr "Öppna bild"
-
-#: tauon.py:14551
-msgid "Previous"
-msgstr "Föregående"
-
-#: tauon.py:14554
-msgid "Extract Image"
-msgstr "Extrahera bild"
-
-#: tauon.py:14567
-msgid "Cannot download art for network tracks."
-msgstr "Kan inte ladda ner bilder för nätverksspår."
-
-#: tauon.py:14591
-msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr "Det verkar inte som om denna mapp tillhör ett enskilt album"
-
-#: tauon.py:14602
-msgid "Looking up MusicBrainz ID..."
-msgstr "Slår upp MusicBrainz-ID..."
-
-#: tauon.py:14666
-msgid "Cover art downloaded from fanart.tv"
-msgstr "Omslagsbild nerladdad från fanart.tv"
-
-#: tauon.py:14687
-msgid "Cover art downloaded from MusicBrainz"
-msgstr "Omslagsbild nerladdad från MusicBrainz"
-
-#: tauon.py:14698
-msgid "Matching cover art or ID could not be found."
-msgstr "Matchande omslagsbild eller ID kunde inte hittas."
-
-#: tauon.py:14781
-msgid "Image removal failed."
-msgstr "Kunde inte bort bilden."
-
-#: tauon.py:14784
-msgid "Deleted embedded picture from file"
-msgstr "Tog bort inbäddad bild från filen"
-
-#: tauon.py:14812 tauon.py:14819
-msgid "Delete Image File"
-msgstr "Ta bort bildfil"
-
-#: tauon.py:14827
-msgid "Delete Embedded | Folder"
-msgstr "Ta bort inbäddad | Mapp"
-
-#: tauon.py:14829
-msgid "Delete Embedded | Track"
-msgstr "Ta bort inbäddad | Spår"
-
-#: tauon.py:14849
-msgid "Quick-Fetch Cover Art"
-msgstr "Snabbhämta omslagsbild"
-
-#: tauon.py:14899
-msgid "Paste Spotify Album"
-msgstr "Klistra in Spotify-album"
-
-#: tauon.py:15115 tauon.py:33266 tauon.py:43070
-msgid "Rename"
-msgstr "Byt namn"
-
-#: tauon.py:15126
-msgid "Pin"
-msgstr "Fäst"
-
-#: tauon.py:15128
-msgid "Unpin"
-msgstr "Lösgör"
-
-#: tauon.py:15137
-msgid "Unlock"
-msgstr "Lås upp"
-
-#: tauon.py:15139 tauon.py:15173
-msgid "Lock"
-msgstr "Lås"
-
-#: tauon.py:15319 tauon.py:19824 tauon.py:26350 tauon.py:26353 tauon.py:26794
-#: tauon.py:26847 tauon.py:26852 tauon.py:26860 tauon.py:26864 tauon.py:26874
-msgid "Clear"
-msgstr "Rensa"
-
-#: tauon.py:15358
-msgid "Are you sure you want to delete this playlist?"
-msgstr ""
-
-#: tauon.py:15358
+#~ msgid "%d files rewritten"
+#~ msgstr " filnamn skrevs."
+
+#~ msgid "Substitute Lyric Search"
+#~ msgstr "Ersättningssök"
+
+#~ msgid "Substitute"
+#~ msgstr "Ersätt"
+
+#~ msgid "with"
+#~ msgstr "med"
+
+#~ msgid "Repeat OFF"
+#~ msgstr "Repetition AV"
+
+#~ msgid "Repeat Track"
+#~ msgstr "Repetera spår"
+
+#~ msgid "Repeat Album"
+#~ msgstr "Repetera album"
+
+#~ msgid "Shuffle OFF"
+#~ msgstr "Blanda AV"
+
+#~ msgid "Shuffle Tracks"
+#~ msgstr "Blanda spår"
+
+#~ msgid "Random Albums"
+#~ msgstr "Slumpmässiga album"
+
+#~ msgid "Make Large Size"
+#~ msgstr "Gör stor storlek"
+
+#~ msgid "Make Compact Size"
+#~ msgstr "Gör kompakt storlek"
+
+#~ msgid "Close Panel"
+#~ msgstr "Stäng panel"
+
+#~ msgid "Make Large"
+#~ msgstr "Gör stor"
+
+#~ msgid "Unlock Panel"
+#~ msgstr "Lås upp panel"
+
+#~ msgid "Lock Panel"
+#~ msgstr "Lås panel"
+
+#~ msgid "Open Folder"
+#~ msgstr "Öppna mapp"
+
+#~ msgid "Filter to New Playlist"
+#~ msgstr "Filtrera till ny spelningslista"
+
+#~ msgid "Rescan Folder"
+#~ msgstr "Skanna om mappen"
+
+#~ msgid "Move Playing Folder Here"
+#~ msgstr "Flytta spelande mapp hit"
+
+#~ msgid "Collapse All"
+#~ msgstr "Komprimera alla"
+
+#~ msgid "Show in Playlist"
+#~ msgstr "Visa i spelningslista"
+
+#~ msgid "Add Album to Queue"
+#~ msgstr "Lägg till album i kön"
+
+#~ msgid "Enqueue Album Next"
+#~ msgstr "Köa album som nästa"
+
+#~ msgid "Aborting Sync"
+#~ msgstr "Avbryter synkronisering"
+
+#~ msgid "Cancel"
+#~ msgstr "Avbryt"
+
+#~ msgid "Hide Metadata Panel"
+#~ msgstr "Dölj metadatapanel"
+
+#~ msgid "Show Metadata Panel"
+#~ msgstr "Visa metadatapanel"
+
+#~ msgid "Panel Below Lyrics"
+#~ msgstr "Panel under låttext"
+
+#~ msgid "Panel Above Lyrics"
+#~ msgstr "Panel ovanför låttext"
+
+#~ msgid "Hide Lyrics"
+#~ msgstr "Dölj sångtext"
+
+#~ msgid "Show Lyrics"
+#~ msgstr "Visa sångtext"
+
+#~ msgid "There are no lyric sources enabled."
+#~ msgstr "Inga textkällor är aktiverade."
+
+#~ msgid "Let's be polite and try later."
+#~ msgstr "Var lite artig och försök senare."
+
+#~ msgid "Searching..."
+#~ msgstr "Söker..."
+
+#~ msgid "No lyrics for this track were found"
+#~ msgstr "Ingen sångtext hittades för det här spåret"
+
+#~ msgid "Search for Lyrics"
+#~ msgstr "Sök efter sångtext"
+
+#~ msgid "Search GuitarParty"
+#~ msgstr "Sök på GuitarParty"
+
+#~ msgid "Paste Chord Lyrics"
+#~ msgstr "Klistra in ackordstext"
+
+#~ msgid "Clear Chord Lyrics"
+#~ msgstr "Ta bort ackordstext"
+
+#~ msgid "Toggle Lyrics"
+#~ msgstr "Sångtext på/av"
+
+#~ msgid "Substitute Search..."
+#~ msgstr "Ersättningssök..."
+
+#~ msgid "Paste Lyrics"
+#~ msgstr "Klistra in sångtext"
+
+#~ msgid "Copy Lyrics"
+#~ msgstr "Kopiera sångtext"
+
+#~ msgid "Clear Lyrics"
+#~ msgstr "Ta bort sångtext"
+
+#~ msgid "Open Image"
+#~ msgstr "Öppna bild"
+
+#~ msgid "Previous"
+#~ msgstr "Föregående"
+
+#~ msgid "Extract Image"
+#~ msgstr "Extrahera bild"
+
+#~ msgid "Cannot download art for network tracks."
+#~ msgstr "Kan inte ladda ner bilder för nätverksspår."
+
+#~ msgid "It doesn't look like this folder belongs to a single album, sorry"
+#~ msgstr "Det verkar inte som om denna mapp tillhör ett enskilt album"
+
+#~ msgid "Looking up MusicBrainz ID..."
+#~ msgstr "Slår upp MusicBrainz-ID..."
+
+#~ msgid "Cover art downloaded from fanart.tv"
+#~ msgstr "Omslagsbild nerladdad från fanart.tv"
+
+#~ msgid "Cover art downloaded from MusicBrainz"
+#~ msgstr "Omslagsbild nerladdad från MusicBrainz"
+
+#~ msgid "Matching cover art or ID could not be found."
+#~ msgstr "Matchande omslagsbild eller ID kunde inte hittas."
+
+#~ msgid "Image removal failed."
+#~ msgstr "Kunde inte bort bilden."
+
+#~ msgid "Deleted embedded picture from file"
+#~ msgstr "Tog bort inbäddad bild från filen"
+
+#~ msgid "Delete Image File"
+#~ msgstr "Ta bort bildfil"
+
+#~ msgid "Delete Embedded | Folder"
+#~ msgstr "Ta bort inbäddad | Mapp"
+
+#~ msgid "Delete Embedded | Track"
+#~ msgstr "Ta bort inbäddad | Spår"
+
+#~ msgid "Quick-Fetch Cover Art"
+#~ msgstr "Snabbhämta omslagsbild"
+
+#~ msgid "Paste Spotify Album"
+#~ msgstr "Klistra in Spotify-album"
+
+#~ msgid "Rename"
+#~ msgstr "Byt namn"
+
+#~ msgid "Pin"
+#~ msgstr "Fäst"
+
+#~ msgid "Unpin"
+#~ msgstr "Lösgör"
+
+#~ msgid "Unlock"
+#~ msgstr "Lås upp"
+
+#~ msgid "Lock"
+#~ msgstr "Lås"
+
+#~ msgid "Clear"
+#~ msgstr "Rensa"
+
 #, fuzzy
-msgid "Try again while holding shift to confirm"
-msgstr ""
-"Tryck på knappen igen, medan du håller ner Shift-tangenten, om du verkligen "
-"vill göra det."
+#~ msgid "Try again while holding shift to confirm"
+#~ msgstr ""
+#~ "Tryck på knappen igen, medan du håller ner Shift-tangenten, om du "
+#~ "verkligen vill göra det."
 
-#: tauon.py:15463
-msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+#~ msgid "Rescanning folders..."
+#~ msgstr "Skannar om mappar..."
 
-#: tauon.py:15504
-msgid "Rescanning folders..."
-msgstr "Skannar om mappar..."
-
-#: tauon.py:15821 tauon.py:15833
 #, fuzzy
-msgid "Playlist is locked"
-msgstr "Spelningslistan är tom"
+#~ msgid "Playlist is locked"
+#~ msgstr "Spelningslistan är tom"
 
-#: tauon.py:15932 tauon.py:43079
-msgid "Delete"
-msgstr "Ta bort"
+#~ msgid "Delete"
+#~ msgstr "Ta bort"
 
-#: tauon.py:15989
-msgid "Add Spotify Album"
-msgstr "Lägg till Spotify-album"
+#~ msgid "Add Spotify Album"
+#~ msgstr "Lägg till Spotify-album"
 
-#: tauon.py:16093
-msgid "Playlist contains non-Spotify tracks"
-msgstr "Spelningslistan innehåller icke-spotify-spår"
+#~ msgid "Playlist contains non-Spotify tracks"
+#~ msgstr "Spelningslistan innehåller icke-spotify-spår"
 
-#: tauon.py:16099
-msgid "Created new Spotify playlist"
-msgstr "Skapa ny Spotify-lista"
+#~ msgid "Created new Spotify playlist"
+#~ msgstr "Skapa ny Spotify-lista"
 
-#: tauon.py:16105
-msgid "Error creating Spotify playlist"
-msgstr "Kan inte skapa Spotify-lista"
+#~ msgid "Error creating Spotify playlist"
+#~ msgstr "Kan inte skapa Spotify-lista"
 
-#: tauon.py:16108
-msgid "Updated Spotify playlist"
-msgstr "Uppdaterade Spotify-lista"
+#~ msgid "Updated Spotify playlist"
+#~ msgstr "Uppdaterade Spotify-lista"
 
-#: tauon.py:16740
-msgid "OK. This playlist will automatically sort on import from now on"
-msgstr ""
-"OK. Den här spelningslistan kommer från och med nu, att sorteras automatiskt "
-"vid import."
+#~ msgid "OK. This playlist will automatically sort on import from now on"
+#~ msgstr ""
+#~ "OK. Den här spelningslistan kommer från och med nu, att sorteras "
+#~ "automatiskt vid import."
 
-#: tauon.py:16741
-msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
-msgstr ""
-"Du kan ta bort eller redigera detta beteende genom att gå till \"Diverse..."
-"\" > \"Redigera generator...\""
+#~ msgid ""
+#~ "You remove or edit this behavior by going \"Misc...\" > \"Edit "
+#~ "generator...\""
+#~ msgstr ""
+#~ "Du kan ta bort eller redigera detta beteende genom att gå till "
+#~ "\"Diverse...\" > \"Redigera generator...\""
 
-#: tauon.py:16745 tauon.py:20538
-msgid "New Playlist"
-msgstr "Ny spelningslista"
+#~ msgid "New Playlist"
+#~ msgstr "Ny spelningslista"
 
-#: tauon.py:16750
-msgid "Upload"
-msgstr "Ladda upp"
+#~ msgid "Upload"
+#~ msgstr "Ladda upp"
 
-#: tauon.py:16762
-msgid "Regenerate"
-msgstr "Generera om"
+#~ msgid "Regenerate"
+#~ msgstr "Generera om"
 
-#: tauon.py:16763
-msgid "Generate…"
-msgstr "Generera…"
+#~ msgid "Generate…"
+#~ msgstr "Generera…"
 
-#: tauon.py:16764
-msgid "Sort…"
-msgstr "Sortera…"
+#~ msgid "Sort…"
+#~ msgstr "Sortera…"
 
-#: tauon.py:16765
-msgid "From Current…"
-msgstr "Från aktuell…"
+#~ msgid "From Current…"
+#~ msgstr "Från aktuell…"
 
-#: tauon.py:16770
 #, fuzzy
-msgid "Sort by Imported"
-msgstr "Sortera efter mest spelad"
+#~ msgid "Sort by Imported"
+#~ msgstr "Sortera efter mest spelad"
 
-#: tauon.py:16771
-msgid "Sort by Filepath"
-msgstr "Sortera efter filsökväg"
+#~ msgid "Sort by Filepath"
+#~ msgstr "Sortera efter filsökväg"
 
-#: tauon.py:16772
-msgid "Sort Track Numbers"
-msgstr "Sortera efter spårnummer"
+#~ msgid "Sort Track Numbers"
+#~ msgstr "Sortera efter spårnummer"
 
-#: tauon.py:16773
-msgid "Sort Year per Artist"
-msgstr "Sortera år per artist"
+#~ msgid "Sort Year per Artist"
+#~ msgstr "Sortera år per artist"
 
-#: tauon.py:16774
-msgid "Make Playlist Auto-Sorting"
-msgstr "Gör spelningslistan automatiskt sorteringsbar"
+#~ msgid "Make Playlist Auto-Sorting"
+#~ msgstr "Gör spelningslistan automatiskt sorteringsbar"
 
-#: tauon.py:16780 tauon.py:18543 tauon.py:19822
-msgid "Paste"
-msgstr "Klistra in"
+#~ msgid "Paste"
+#~ msgstr "Klistra in"
 
-#: tauon.py:16781
-msgid "Append Playing"
-msgstr "Lägg till låten som spelas nu"
+#~ msgid "Append Playing"
+#~ msgstr "Lägg till låten som spelas nu"
 
-#: tauon.py:16786
-msgid "Misc…"
-msgstr "Diverse…"
+#~ msgid "Misc…"
+#~ msgstr "Diverse…"
 
-#: tauon.py:16835
-msgid "No target folder selected"
-msgstr "Ingen målmapp vald"
+#~ msgid "No target folder selected"
+#~ msgstr "Ingen målmapp vald"
 
-#: tauon.py:16841
-msgid "Target folder could not be found"
-msgstr "Målmappen kunde inte hittas"
+#~ msgid "Target folder could not be found"
+#~ msgstr "Målmappen kunde inte hittas"
 
-#: tauon.py:16881
-msgid "Deleting folders..."
-msgstr "Tar bort mappar..."
+#~ msgid "Deleting folders..."
+#~ msgstr "Tar bort mappar..."
 
-#: tauon.py:16900 tauon.py:16964
-msgid "Copying files to device"
-msgstr "Kopierar filer till enhet"
+#~ msgid "Copying files to device"
+#~ msgstr "Kopierar filer till enhet"
 
-#: tauon.py:16906
-msgid "Sync aborted! Low disk space on target device"
-msgstr "Synkronisering avbruten! För lite diskutrymme på målenheten."
+#~ msgid "Sync aborted! Low disk space on target device"
+#~ msgstr "Synkronisering avbruten! För lite diskutrymme på målenheten."
 
-#: tauon.py:16915 tauon.py:16946
-msgid "One or more folders to sync has the same name. Skipping."
-msgstr ""
-"En eller flera mappar som ska synkroniseras har samma namn. Hoppar över."
+#~ msgid "One or more folders to sync has the same name. Skipping."
+#~ msgstr ""
+#~ "En eller flera mappar som ska synkroniseras har samma namn. Hoppar över."
 
-#: tauon.py:16915 tauon.py:16946
-msgid "Sync warning"
-msgstr "Synkroniseringsvarning"
+#~ msgid "Sync warning"
+#~ msgstr "Synkroniseringsvarning"
 
-#: tauon.py:16932 tauon.py:29087
-msgid "Folders Remaining"
-msgstr "Återstående mappar"
+#~ msgid "Folders Remaining"
+#~ msgstr "Återstående mappar"
 
-#: tauon.py:16934 tauon.py:29085
-msgid "Folder Remaining"
-msgstr "Återstående mapp"
+#~ msgid "Folder Remaining"
+#~ msgstr "Återstående mapp"
 
-#: tauon.py:16974
-msgid "Sync completed"
-msgstr "Synkronisering slutförd"
+#~ msgid "Sync completed"
+#~ msgstr "Synkronisering slutförd"
 
-#: tauon.py:16990 tauon.py:17070
-msgid "Set as Sync Playlist"
-msgstr "Ange som synkroniserad spelningslista"
+#~ msgid "Set as Sync Playlist"
+#~ msgstr "Ange som synkroniserad spelningslista"
 
-#: tauon.py:16993
-msgid "Un-set as Sync Playlist"
-msgstr "Ta bort som synkad lista"
+#~ msgid "Un-set as Sync Playlist"
+#~ msgstr "Ta bort som synkad lista"
 
-#: tauon.py:17004 tauon.py:17071
-msgid "Set as Downloads Playlist"
-msgstr "Ange som nerladdad spelningslista"
+#~ msgid "Set as Downloads Playlist"
+#~ msgstr "Ange som nerladdad spelningslista"
 
-#: tauon.py:17007
-msgid "Un-set as Downloads Playlist"
-msgstr "Ta bort som nerladdad spelningslista"
+#~ msgid "Un-set as Downloads Playlist"
+#~ msgstr "Ta bort som nerladdad spelningslista"
 
-#: tauon.py:17060
-msgid "Export Playlist Stats"
-msgstr "Exportera liststatistik"
+#~ msgid "Export Playlist Stats"
+#~ msgstr "Exportera liststatistik"
 
-#: tauon.py:17061
 #, fuzzy
-msgid "Export Albums CSV"
-msgstr "Exportera som CSV"
-
-#: tauon.py:17062
-msgid "Transcode All"
-msgstr "Koda om alla"
-
-#: tauon.py:17063
-msgid "Rescan Tags"
-msgstr "Skanna om taggar"
-
-#: tauon.py:17066
-msgid "Export XSPF"
-msgstr "Exportera XSPF"
-
-#: tauon.py:17067
-msgid "Toggle Breaks"
-msgstr "Albumavgränsning på/av"
-
-#: tauon.py:17068
-msgid "Edit Generator..."
-msgstr "Redigera generator..."
-
-#: tauon.py:17069
-msgid "Engage Gallery Quick Add"
-msgstr "Aktivera snabbtillägg för galleri"
-
-#: tauon.py:17072
-msgid "Remove Duplicates"
-msgstr "Ta bort dubbletter"
-
-#: tauon.py:17112 tauon.py:17204 tauon.py:17205
-msgid "Top Rated Tracks"
-msgstr "Topprankade spår"
-
-#: tauon.py:17129 tauon.py:17136 tauon.py:17137
-msgid "Top Played Tracks"
-msgstr "Mest spelade spår"
-
-#: tauon.py:17194 tauon.py:17201 tauon.py:17202
-msgid "Top Played Albums"
-msgstr "Mest spelade album"
-
-#: tauon.py:17249 tauon.py:17280 tauon.py:17281
-msgid "Top Rated Albums"
-msgstr "Topprankade album"
-
-#: tauon.py:17271
-msgid "Tracks with lyrics"
-msgstr "Spår med låttext"
-
-#: tauon.py:17278
-msgid "No tracks with lyrics were found."
-msgstr "Ingen spår med text hittades."
-
-#: tauon.py:17327
-msgid ""
-"Note this may include albums that simply have tracks missing an album tag"
-msgstr ""
-"Notera att detta kan inkludera album som helt enkelt har spår som saknar en "
-"albumtagg"
-
-#: tauon.py:17328
-msgid "Incomplete Albums"
-msgstr "Ofullständiga album"
-
-#: tauon.py:17335
-msgid "No incomplete albums were found."
-msgstr "Inga ofullständiga album hittades."
-
-#: tauon.py:17349 tauon.py:20106
-msgid "Codec"
-msgstr "Kodek"
-
-#: tauon.py:17381 tauon.py:17387 tauon.py:17388
-msgid "File Modified"
-msgstr "Filen ändrad"
-
-#: tauon.py:17410 tauon.py:17795 tauon.py:17796 tauon.py:20114
-msgid "Loved"
-msgstr "Älskad"
-
-#: tauon.py:17440
-msgid "Interesting Comments"
-msgstr "Intressanta kommentarer"
-
-#: tauon.py:17484
-msgid "Duration Sorted"
-msgstr "Sorterad efter varaktighet"
-
-#: tauon.py:17490 tauon.py:17491
-msgid "Longest Tracks"
-msgstr "Längsta spår"
-
-#: tauon.py:17529 tauon.py:17534 tauon.py:17535
-msgid "Longest Albums"
-msgstr "Längsta album"
-
-#: tauon.py:17578
-msgid "Year Sorted"
-msgstr "Sorterad efter år"
-
-#: tauon.py:17594 tauon.py:17595
-msgid "Year by Oldest"
-msgstr "År efter äldst"
-
-#: tauon.py:17602 tauon.py:17603
-msgid "Year by Latest"
-msgstr "År efter senaste"
-
-#: tauon.py:17615 tauon.py:17621 tauon.py:17622
-msgid "Shuffled Tracks"
-msgstr "Blandade spår"
-
-#: tauon.py:17651 tauon.py:17657 tauon.py:17658
-msgid "Shuffled Albums"
-msgstr "Blandade album"
-
-#: tauon.py:17675 tauon.py:17682 tauon.py:17683
-msgid "Lucky Random"
-msgstr "Tursam slumpmässig"
-
-#: tauon.py:17697
-msgid "Reversed"
-msgstr "Omvänd"
-
-#: tauon.py:17703 tauon.py:17704
-msgid "Reverse Tracks"
-msgstr "Omvända spår"
-
-#: tauon.py:17731
-msgid "Reversed Albums"
-msgstr "Omvända album"
-
-#: tauon.py:17737 tauon.py:17738
-msgid "Reverse Albums"
-msgstr "Omvända album"
-
-#: tauon.py:17743 tauon.py:17750 tauon.py:17751
-msgid "Duplicate"
-msgstr "Duplicera"
-
-#: tauon.py:17761
-msgid "Filepath Sorted"
-msgstr "Sorterad efter filsökväg"
-
-#: tauon.py:17776
-msgid "Artist Sorted"
-msgstr "Sorterad efter artist"
-
-#: tauon.py:17790
-msgid "Album Sorted"
-msgstr "Sorterad efter album"
-
-#: tauon.py:17797 tauon.py:17798
-msgid "Has Comment"
-msgstr "Har kommentar"
-
-#: tauon.py:17799 tauon.py:17800 tauon.py:20108
-msgid "Has Lyrics"
-msgstr "Har sångtext"
-
-#: tauon.py:17833
-msgid "Configuration reloaded"
-msgstr "Konfiguration uppdaterad"
-
-#: tauon.py:17845
-msgid "Click \"Reload\" if you made any changes"
-msgstr "Klicka på \"Uppdatera\" om du gjorde några ändringar"
+#~ msgid "Export Albums CSV"
+#~ msgstr "Exportera som CSV"
 
-#: tauon.py:17845
-msgid "Config file opened."
-msgstr "Konfigurationsfil öppnad."
+#~ msgid "Transcode All"
+#~ msgstr "Koda om alla"
 
-#: tauon.py:17919 tauon.py:17939
-msgid "Transcoding tracks from network locations is not supported"
-msgstr "Omkodning av spår från nätverksplatser stöds inte"
+#~ msgid "Rescan Tags"
+#~ msgstr "Skanna om taggar"
 
-#: tauon.py:18290
-msgid "Add Playing Spotify Album"
-msgstr "Lägg till aktuellt Spotify-album"
+#~ msgid "Export XSPF"
+#~ msgstr "Exportera XSPF"
 
-#: tauon.py:18379
-msgid "Track Info…"
-msgstr "Spårinfo…"
+#~ msgid "Toggle Breaks"
+#~ msgstr "Albumavgränsning på/av"
 
-#: tauon.py:18424 tauon.py:20969
-msgid "Un-Love Track"
-msgstr "Av-älska spår"
+#~ msgid "Edit Generator..."
+#~ msgstr "Redigera generator..."
 
-#: tauon.py:18426 tauon.py:20972 tauon.py:20974
-msgid "Love Track"
-msgstr "Älska spår"
+#~ msgid "Engage Gallery Quick Add"
+#~ msgstr "Aktivera snabbtillägg för galleri"
 
-#: tauon.py:18527 tauon.py:35804
-msgid "Add to Queue"
-msgstr "Lägg till i kön"
+#~ msgid "Remove Duplicates"
+#~ msgstr "Ta bort dubbletter"
 
-#: tauon.py:18529
-msgid "↳ After Current Track"
-msgstr "↳ Efter aktuellt spår"
+#~ msgid "Top Rated Tracks"
+#~ msgstr "Topprankade spår"
 
-#: tauon.py:18531
-msgid "Show in Gallery"
-msgstr "Visa i galleri"
+#~ msgid "Top Played Tracks"
+#~ msgstr "Mest spelade spår"
 
-#: tauon.py:18534
-msgid "Meta…"
-msgstr "Meta…"
+#~ msgid "Top Played Albums"
+#~ msgstr "Mest spelade album"
 
-#: tauon.py:18539 tauon.py:19540 tauon.py:19545 tauon.py:19546 tauon.py:19820
-msgid "Copy"
-msgstr "Kopiera"
+#~ msgid "Top Rated Albums"
+#~ msgstr "Topprankade album"
 
-#: tauon.py:18555
-msgid "Cannot delete a network track"
-msgstr "Kan inte ta bort ett nätverksspår"
+#~ msgid "Tracks with lyrics"
+#~ msgstr "Spår med låttext"
 
-#: tauon.py:18567 tauon.py:18576
-msgid "File deleted"
-msgstr "Fil borttagen"
+#~ msgid "No tracks with lyrics were found."
+#~ msgstr "Ingen spår med text hittades."
 
-#: tauon.py:18569 tauon.py:18578
-msgid "Error deleting file"
-msgstr "Kunde inte ta bort filen"
+#~ msgid ""
+#~ "Note this may include albums that simply have tracks missing an album tag"
+#~ msgstr ""
+#~ "Notera att detta kan inkludera album som helt enkelt har spår som saknar "
+#~ "en albumtagg"
 
-#: tauon.py:18571
-msgid "File moved to trash"
-msgstr "Fil flyttad till papperskorgen"
+#~ msgid "Incomplete Albums"
+#~ msgstr "Ofullständiga album"
 
-#: tauon.py:18585
-msgid "Delete Track File"
-msgstr "Ta bort spårfil"
+#~ msgid "No incomplete albums were found."
+#~ msgstr "Inga ofullständiga album hittades."
 
-#: tauon.py:18593
-msgid "Rename (Single track)"
-msgstr "Byt namn (enskilt spår)"
+#~ msgid "Codec"
+#~ msgstr "Kodek"
 
-#: tauon.py:18595 tauon.py:19382 tauon.py:19383
-msgid "Rename Tracks…"
-msgstr "Namnändra spår…"
+#~ msgid "File Modified"
+#~ msgstr "Filen ändrad"
 
-#: tauon.py:18606 tauon.py:19429 tauon.py:19529
-msgid "Edit fields…"
-msgstr ""
+#~ msgid "Loved"
+#~ msgstr "Älskad"
 
-#: tauon.py:18614
-msgid "Cannot physically delete"
-msgstr "Kan inte fysiskt ta bort"
+#~ msgid "Interesting Comments"
+#~ msgstr "Intressanta kommentarer"
 
-#: tauon.py:18614
-msgid "One or more tracks is from a network location!"
-msgstr "Ett eller flera spår kommer från en nätverksplats!"
+#~ msgid "Duration Sorted"
+#~ msgstr "Sorterad efter varaktighet"
 
-#: tauon.py:18635
-msgid "Delete size safety limit reached!"
-msgstr "Säkerhetsgränsen för borttagningsstorlek uppnådd!"
+#~ msgid "Longest Tracks"
+#~ msgstr "Längsta spår"
 
-#: tauon.py:18673
-msgid "Folder could not be trashed."
-msgstr "Mappen kunde inte flyttas till papperskorgen."
+#~ msgid "Longest Albums"
+#~ msgstr "Längsta album"
 
-#: tauon.py:18800 tauon.py:19374 tauon.py:19375 tauon.py:19380
-msgid "Modify Folder…"
-msgstr "Ändra mapp…"
+#~ msgid "Year Sorted"
+#~ msgstr "Sorterad efter år"
 
-#: tauon.py:19095
+#~ msgid "Year by Oldest"
+#~ msgstr "År efter äldst"
+
+#~ msgid "Year by Latest"
+#~ msgstr "År efter senaste"
+
+#~ msgid "Shuffled Tracks"
+#~ msgstr "Blandade spår"
+
+#~ msgid "Shuffled Albums"
+#~ msgstr "Blandade album"
+
+#~ msgid "Lucky Random"
+#~ msgstr "Tursam slumpmässig"
+
+#~ msgid "Reversed"
+#~ msgstr "Omvänd"
+
+#~ msgid "Reverse Tracks"
+#~ msgstr "Omvända spår"
+
+#~ msgid "Reversed Albums"
+#~ msgstr "Omvända album"
+
+#~ msgid "Reverse Albums"
+#~ msgstr "Omvända album"
+
+#~ msgid "Duplicate"
+#~ msgstr "Duplicera"
+
+#~ msgid "Filepath Sorted"
+#~ msgstr "Sorterad efter filsökväg"
+
+#~ msgid "Artist Sorted"
+#~ msgstr "Sorterad efter artist"
+
+#~ msgid "Album Sorted"
+#~ msgstr "Sorterad efter album"
+
+#~ msgid "Has Comment"
+#~ msgstr "Har kommentar"
+
+#~ msgid "Has Lyrics"
+#~ msgstr "Har sångtext"
+
+#~ msgid "Configuration reloaded"
+#~ msgstr "Konfiguration uppdaterad"
+
+#~ msgid "Click \"Reload\" if you made any changes"
+#~ msgstr "Klicka på \"Uppdatera\" om du gjorde några ändringar"
+
+#~ msgid "Config file opened."
+#~ msgstr "Konfigurationsfil öppnad."
+
+#~ msgid "Transcoding tracks from network locations is not supported"
+#~ msgstr "Omkodning av spår från nätverksplatser stöds inte"
+
+#~ msgid "Add Playing Spotify Album"
+#~ msgstr "Lägg till aktuellt Spotify-album"
+
+#~ msgid "Track Info…"
+#~ msgstr "Spårinfo…"
+
+#~ msgid "Un-Love Track"
+#~ msgstr "Av-älska spår"
+
+#~ msgid "Love Track"
+#~ msgstr "Älska spår"
+
+#~ msgid "Add to Queue"
+#~ msgstr "Lägg till i kön"
+
+#~ msgid "↳ After Current Track"
+#~ msgstr "↳ Efter aktuellt spår"
+
+#~ msgid "Show in Gallery"
+#~ msgstr "Visa i galleri"
+
+#~ msgid "Meta…"
+#~ msgstr "Meta…"
+
+#~ msgid "Copy"
+#~ msgstr "Kopiera"
+
+#~ msgid "Cannot delete a network track"
+#~ msgstr "Kan inte ta bort ett nätverksspår"
+
+#~ msgid "File deleted"
+#~ msgstr "Fil borttagen"
+
+#~ msgid "Error deleting file"
+#~ msgstr "Kunde inte ta bort filen"
+
+#~ msgid "File moved to trash"
+#~ msgstr "Fil flyttad till papperskorgen"
+
+#~ msgid "Delete Track File"
+#~ msgstr "Ta bort spårfil"
+
+#~ msgid "Rename (Single track)"
+#~ msgstr "Byt namn (enskilt spår)"
+
+#~ msgid "Rename Tracks…"
+#~ msgstr "Namnändra spår…"
+
+#~ msgid "Cannot physically delete"
+#~ msgstr "Kan inte fysiskt ta bort"
+
+#~ msgid "One or more tracks is from a network location!"
+#~ msgstr "Ett eller flera spår kommer från en nätverksplats!"
+
+#~ msgid "Delete size safety limit reached!"
+#~ msgstr "Säkerhetsgränsen för borttagningsstorlek uppnådd!"
+
+#~ msgid "Folder could not be trashed."
+#~ msgstr "Mappen kunde inte flyttas till papperskorgen."
+
+#~ msgid "Modify Folder…"
+#~ msgstr "Ändra mapp…"
+
 #, fuzzy
-msgid "Tag editor app does not appear to be installed."
-msgstr "Taggredigeringsprogram verkar inte vara installerat."
+#~ msgid "Tag editor app does not appear to be installed."
+#~ msgstr "Taggredigeringsprogram verkar inte vara installerat."
 
-#: tauon.py:19098
-msgid "App not found on host OR insufficient Flatpak permissions."
-msgstr ""
-"Program hittades inte på värddatorn ELLER otillräcklig Flatpak-behörighet."
+#~ msgid "App not found on host OR insufficient Flatpak permissions."
+#~ msgstr ""
+#~ "Program hittades inte på värddatorn ELLER otillräcklig Flatpak-behörighet."
 
-#: tauon.py:19193 tauon.py:19428 tauon.py:19526
-msgid "Reload Metadata"
-msgstr "Uppdatera metadata"
+#~ msgid "Reload Metadata"
+#~ msgstr "Uppdatera metadata"
 
-#: tauon.py:19214
-msgid "Edit with "
-msgstr "Redigera med "
+#~ msgid "Edit with "
+#~ msgstr "Redigera med "
 
-#: tauon.py:19226
-msgid "Lyrics..."
-msgstr "Sångtexter..."
+#~ msgid "Lyrics..."
+#~ msgstr "Sångtexter..."
 
-#: tauon.py:19329
-msgid "Fix Mojibake"
-msgstr "Fixa Mojibake"
+#~ msgid "Fix Mojibake"
+#~ msgstr "Fixa Mojibake"
 
-#: tauon.py:19423
-msgid "Transcode Single"
-msgstr "Koda om singel"
+#~ msgid "Transcode Single"
+#~ msgstr "Koda om singel"
 
-#: tauon.py:19425 tauon.py:19431 tauon.py:19432 tauon.py:19785
-msgid "Transcode Folder"
-msgstr "Koda om mapp"
+#~ msgid "Transcode Folder"
+#~ msgstr "Koda om mapp"
 
-#: tauon.py:19430
-msgid "Vacuum Playtimes"
-msgstr "Dammsug speltider"
+#~ msgid "Vacuum Playtimes"
+#~ msgstr "Dammsug speltider"
 
-#: tauon.py:19441
-msgid "Copy \"Artist - Album\""
-msgstr "Kopiera \"Artist - Album\""
+#~ msgid "Copy \"Artist - Album\""
+#~ msgstr "Kopiera \"Artist - Album\""
 
-#: tauon.py:19448 tauon.py:21109
-msgid "URL copied to clipboard"
-msgstr "URL kopierad till urklipp"
+#~ msgid "URL copied to clipboard"
+#~ msgstr "URL kopierad till urklipp"
 
-#: tauon.py:19450 tauon.py:21111
-msgid "No results found"
-msgstr "Inga träffar"
+#~ msgid "No results found"
+#~ msgstr "Inga träffar"
 
-#: tauon.py:19457
-msgid "Copy Spotify Album URL"
-msgstr "Kopiera Spotify album-URL"
+#~ msgid "Copy Spotify Album URL"
+#~ msgstr "Kopiera Spotify album-URL"
 
-#: tauon.py:19459
-msgid "Lookup Spotify Album URL"
-msgstr "Sök Spotify-album-URL"
+#~ msgid "Lookup Spotify Album URL"
+#~ msgstr "Sök Spotify-album-URL"
 
-#: tauon.py:19467
-msgid "Save to Spotify Library"
-msgstr "Spara i Spotify-biblioteket"
+#~ msgid "Save to Spotify Library"
+#~ msgstr "Spara i Spotify-biblioteket"
 
-#: tauon.py:19473
-msgid "Remove from Spotify Library"
-msgstr "Ta bort från Spotify-biblioteket"
+#~ msgid "Remove from Spotify Library"
+#~ msgstr "Ta bort från Spotify-biblioteket"
 
-#: tauon.py:19517
 #, fuzzy
-msgid "Queue %d"
-msgstr "Köa"
+#~ msgid "Queue %d"
+#~ msgstr "Köa"
 
-#: tauon.py:19522
 #, fuzzy
-msgid "Add to queue"
-msgstr "Lägg till i kön"
+#~ msgid "Add to queue"
+#~ msgstr "Lägg till i kön"
 
-#: tauon.py:19541
-msgid "Cut"
-msgstr "Klipp ut"
+#~ msgid "Cut"
+#~ msgstr "Klipp ut"
 
-#: tauon.py:19542 tauon.py:19550 tauon.py:19551 tauon.py:33267
-msgid "Remove"
-msgstr "Ta bort"
+#~ msgid "Remove"
+#~ msgstr "Ta bort"
 
-#: tauon.py:19543
-msgid "Delete Files"
-msgstr "Ta bort filer"
+#~ msgid "Delete Files"
+#~ msgstr "Ta bort filer"
 
-#: tauon.py:19589
-msgid "No matching artist result found"
-msgstr "Ingen matchande artist hittades"
+#~ msgid "No matching artist result found"
+#~ msgstr "Ingen matchande artist hittades"
 
-#: tauon.py:19667
-msgid "Search Artist on Wikipedia"
-msgstr "Sök artist på Wikipedia"
+#~ msgid "Search Artist on Wikipedia"
+#~ msgstr "Sök artist på Wikipedia"
 
-#: tauon.py:19669
-msgid "Search Track on Genius"
-msgstr "Sök spår på Genius"
+#~ msgid "Search Track on Genius"
+#~ msgstr "Sök spår på Genius"
 
-#: tauon.py:19675
-msgid "Search Artist on Sonemic"
-msgstr "Sök artist på Sonemic"
+#~ msgid "Search Artist on Sonemic"
+#~ msgstr "Sök artist på Sonemic"
 
-#: tauon.py:19682
-msgid "Search Artist on Bandcamp"
-msgstr "Sök artist på Bandcamp"
+#~ msgid "Search Artist on Bandcamp"
+#~ msgstr "Sök artist på Bandcamp"
 
-#: tauon.py:19694
-msgid "Copy \"Artist - Track\""
-msgstr "Kopiera \"Artist - Spår\""
+#~ msgid "Copy \"Artist - Track\""
+#~ msgstr "Kopiera \"Artist - Spår\""
 
-#: tauon.py:19712
-msgid "Copy Spotify Track URL"
-msgstr "Kopiera Spotify spår-URL"
+#~ msgid "Copy Spotify Track URL"
+#~ msgstr "Kopiera Spotify spår-URL"
 
-#: tauon.py:19761 tauon.py:32613
-msgid "FFmpeg does not appear to be installed"
-msgstr "FFmpeg verkar inte vara installerat"
+#~ msgid "FFmpeg does not appear to be installed"
+#~ msgstr "FFmpeg verkar inte vara installerat"
 
-#: tauon.py:19797
-msgid "Broadcast This"
-msgstr "Sänd detta"
+#~ msgid "Broadcast This"
+#~ msgstr "Sänd detta"
 
-#: tauon.py:19832 tauon.py:25470
-msgid "Off"
-msgstr "Av"
+#~ msgid "Off"
+#~ msgstr "Av"
 
-#: tauon.py:19845
-msgid "Level Meter"
-msgstr "Nivåmätare"
+#~ msgid "Level Meter"
+#~ msgstr "Nivåmätare"
 
-#: tauon.py:19854
-msgid "Spectrum Visualizer"
-msgstr "Spektrumvisualiserare"
+#~ msgid "Spectrum Visualizer"
+#~ msgstr "Spektrumvisualiserare"
 
-#: tauon.py:20082
-msgid "Time"
-msgstr "Tid"
+#~ msgid "Time"
+#~ msgstr "Tid"
 
-#: tauon.py:20083 tauon.py:20110
-msgid "Filepath"
-msgstr "Filsökväg"
+#~ msgid "Filepath"
+#~ msgstr "Filsökväg"
 
-#: tauon.py:20089
-msgid "Auto Resize"
-msgstr "Storleksändra automatiskt"
+#~ msgid "Auto Resize"
+#~ msgstr "Storleksändra automatiskt"
 
-#: tauon.py:20090
-msgid "Hide bar"
-msgstr "Dölj fält"
+#~ msgid "Hide bar"
+#~ msgstr "Dölj fält"
 
-#: tauon.py:20091
-msgid "Show bar"
-msgstr "Visa fält"
+#~ msgid "Show bar"
+#~ msgstr "Visa fält"
 
-#: tauon.py:20093 tauon.py:35534
-msgid "Remove This"
-msgstr "Ta bor detta"
+#~ msgid "Remove This"
+#~ msgstr "Ta bor detta"
 
-#: tauon.py:20095 tauon.py:42757 tauon.py:42763
-msgid "Artist"
-msgstr "Artist"
+#~ msgid "Artist"
+#~ msgstr "Artist"
 
-#: tauon.py:20096 tauon.py:42737 tauon.py:42743
-msgid "Title"
-msgstr "Titel"
+#~ msgid "Title"
+#~ msgstr "Titel"
 
-#: tauon.py:20097 tauon.py:42776 tauon.py:42782
-msgid "Album"
-msgstr "Album"
+#~ msgid "Album"
+#~ msgstr "Album"
 
-#: tauon.py:20098 tauon.py:42844 tauon.py:42850
-msgid "Album Artist"
-msgstr "Albumartist"
+#~ msgid "Album Artist"
+#~ msgstr "Albumartist"
 
-#: tauon.py:20099 tauon.py:42937 tauon.py:42943
-msgid "Composer"
-msgstr "Kompositör"
+#~ msgid "Composer"
+#~ msgstr "Kompositör"
 
-#: tauon.py:20100 tauon.py:42864 tauon.py:42870
-msgid "Duration"
-msgstr "Varaktighet"
+#~ msgid "Duration"
+#~ msgstr "Varaktighet"
 
-#: tauon.py:20101 tauon.py:42921 tauon.py:42927
-msgid "Date"
-msgstr "Datum"
+#~ msgid "Date"
+#~ msgstr "Datum"
 
-#: tauon.py:20102 tauon.py:42906 tauon.py:42912
-msgid "Genre"
-msgstr "Genre"
+#~ msgid "Genre"
+#~ msgstr "Genre"
 
-#: tauon.py:20103
-msgid "Track Number"
-msgstr "Spårnummer"
+#~ msgid "Track Number"
+#~ msgstr "Spårnummer"
 
-#: tauon.py:20104
-msgid "Play Count"
-msgstr "Spelad"
+#~ msgid "Play Count"
+#~ msgstr "Spelad"
 
-#: tauon.py:20105
-msgid "Scrobble Count"
-msgstr ""
+#~ msgid "Bitrate"
+#~ msgstr "Bithastighet"
 
-#: tauon.py:20107 tauon.py:27071 tauon.py:42831
-msgid "Bitrate"
-msgstr "Bithastighet"
+#~ msgid "Comment"
+#~ msgstr "Kommentar"
 
-#: tauon.py:20109 tauon.py:42992 tauon.py:42998
-msgid "Comment"
-msgstr "Kommentar"
-
-#: tauon.py:20111
 #, fuzzy
-msgid "Filename"
-msgstr "Byt namn"
+#~ msgid "Filename"
+#~ msgstr "Byt namn"
 
-#: tauon.py:20112
-msgid "Starline"
-msgstr "Starline"
+#~ msgid "Starline"
+#~ msgstr "Starline"
 
-#: tauon.py:20113
-msgid "Rating"
-msgstr "Ranking"
+#~ msgid "Rating"
+#~ msgstr "Ranking"
 
-#: tauon.py:20541
-msgid "Internet Radio…"
-msgstr "Internetradio…"
+#~ msgid "Internet Radio…"
+#~ msgstr "Internetradio…"
 
-#: tauon.py:20562
-msgid "Paste Spotify Playlist"
-msgstr "Klistra in Spotify-spelningslista"
+#~ msgid "Paste Spotify Playlist"
+#~ msgstr "Klistra in Spotify-spelningslista"
 
-#: tauon.py:20570
-msgid "Music"
-msgstr "Musik"
+#~ msgid "Music"
+#~ msgstr "Musik"
 
-#: tauon.py:20580
-msgid "Import Music Folder"
-msgstr "Importera musikmappen"
+#~ msgid "Import Music Folder"
+#~ msgstr "Importera musikmappen"
 
-#: tauon.py:20588
-msgid "Settings"
-msgstr "Inställningar"
+#~ msgid "Settings"
+#~ msgstr "Inställningar"
 
-#: tauon.py:20589
-msgid "Database…"
-msgstr "Databas…"
+#~ msgid "Database…"
+#~ msgstr "Databas…"
 
-#: tauon.py:20655
-msgid "Export as CSV"
-msgstr "Exportera som CSV"
+#~ msgid "Export as CSV"
+#~ msgstr "Exportera som CSV"
 
-#: tauon.py:20656
-msgid "Play History to Playlist"
-msgstr "Spelningshistorik till spelningslista"
+#~ msgid "Play History to Playlist"
+#~ msgstr "Spelningshistorik till spelningslista"
 
-#: tauon.py:20657
-msgid "Reset Image Cache"
-msgstr "Återställ bildcache"
+#~ msgid "Reset Image Cache"
+#~ msgstr "Återställ bildcache"
 
-#: tauon.py:20672
-msgid "Remove Network Tracks"
-msgstr "Ta bort nätverksspår"
+#~ msgid "Remove Network Tracks"
+#~ msgstr "Ta bort nätverksspår"
 
-#: tauon.py:20673
-msgid "Remove Missing Tracks"
-msgstr "Ta bort saknade spår"
+#~ msgid "Remove Missing Tracks"
+#~ msgstr "Ta bort saknade spår"
 
-#: tauon.py:20692
-msgid "Import FMPS_Ratings from Tags"
-msgstr "Importera FMPS-ranking från taggar"
+#~ msgid "Import FMPS_Ratings from Tags"
+#~ msgstr "Importera FMPS-ranking från taggar"
 
-#: tauon.py:20697
-msgid "This will delete all track and album ratings from the local database!"
-msgstr "Detta tar bort all spår- och albumranking från den lokala databasen!"
+#~ msgid ""
+#~ "This will delete all track and album ratings from the local database!"
+#~ msgstr ""
+#~ "Detta tar bort all spår- och albumranking från den lokala databasen!"
 
-#: tauon.py:20698 tauon.py:26899
-msgid ""
-"Press button again while holding shift key if you're sure you want to do "
-"that."
-msgstr ""
-"Tryck på knappen igen, medan du håller ner Shift-tangenten, om du verkligen "
-"vill göra det."
+#~ msgid ""
+#~ "Press button again while holding shift key if you're sure you want to do "
+#~ "that."
+#~ msgstr ""
+#~ "Tryck på knappen igen, medan du håller ner Shift-tangenten, om du "
+#~ "verkligen vill göra det."
 
-#: tauon.py:20706
-msgid "Reset User Ratings"
-msgstr "Återställ användarranking"
+#~ msgid "Reset User Ratings"
+#~ msgstr "Återställ användarranking"
 
-#: tauon.py:20711
-msgid "Find Incomplete Albums"
-msgstr "Sök ofullständiga album"
+#~ msgid "Find Incomplete Albums"
+#~ msgstr "Sök ofullständiga album"
 
-#: tauon.py:20717
-msgid "There are no tracks in this playlist to broadcast."
-msgstr "Det finns inga spår att sända i den här spelningslistan."
+#~ msgid "There are no tracks in this playlist to broadcast."
+#~ msgstr "Det finns inga spår att sända i den här spelningslistan."
 
-#: tauon.py:20720
-msgid "You need to start the broadcast web server in settings."
-msgstr "Du måste starta sändningswebbservern i inställningarna."
+#~ msgid "You need to start the broadcast web server in settings."
+#~ msgstr "Du måste starta sändningswebbservern i inställningarna."
 
-#: tauon.py:20742
-msgid "Stop Broadcast"
-msgstr "Stoppa sändning"
+#~ msgid "Stop Broadcast"
+#~ msgstr "Stoppa sändning"
 
-#: tauon.py:20758
-msgid "Start Broadcast"
-msgstr "Starta sändning"
+#~ msgid "Start Broadcast"
+#~ msgstr "Starta sändning"
 
-#: tauon.py:20789
-msgid "Mini"
-msgstr "Mini"
+#~ msgid "Mini"
+#~ msgstr "Mini"
 
-#: tauon.py:20791
-msgid "Square"
-msgstr "Ruta"
+#~ msgid "Square"
+#~ msgstr "Ruta"
 
-#: tauon.py:20792
-msgid "Square Large"
-msgstr "Stor ruta"
+#~ msgid "Square Large"
+#~ msgstr "Stor ruta"
 
-#: tauon.py:20793
-msgid "Micro"
-msgstr "Mikro"
+#~ msgid "Micro"
+#~ msgstr "Mikro"
 
-#: tauon.py:20804
-msgid "No metadata available to copy"
-msgstr "Ingen metadata tillgänglig för kopiering"
+#~ msgid "No metadata available to copy"
+#~ msgstr "Ingen metadata tillgänglig för kopiering"
 
-#: tauon.py:20807
 #, fuzzy
-msgid "Copy Title to Clipboard"
-msgstr "Kopiera till urklipp"
-
-#: tauon.py:20825
-msgid "Random Track"
-msgstr "Slumpmässigt spår"
-
-#: tauon.py:20851
-msgid "Radio Random"
-msgstr "Radio slumpmässig"
-
-#: tauon.py:20857
-msgid "Revert"
-msgstr "Återställ"
-
-#: tauon.py:20865 tauon.py:35539
-msgid "Clear Queue"
-msgstr "Rensa kön"
-
-#: tauon.py:21022
-msgid "Spotify Like Track"
-msgstr "Spotify gilla-spår"
-
-#: tauon.py:21027
-msgid "Un-like Spotify Track"
-msgstr "Av-gilla Spotify-spår"
-
-#: tauon.py:21101
-msgid "Global Search"
-msgstr "Global sökning"
-
-#: tauon.py:21115
-msgid "Copy Album URL"
-msgstr "Kopiera album-URL"
-
-#: tauon.py:21119
-msgid "Lookup Spotify Album"
-msgstr "Sök Spotify-album"
-
-#: tauon.py:21128
-msgid "Locate Artist"
-msgstr "Hitta artist"
-
-#: tauon.py:21130
-msgid "Go To Playing"
-msgstr "Gå till spelas nu"
-
-#: tauon.py:21287
-msgid "ListenBrainz is Paused"
-msgstr "ListenBrainz är pausad"
-
-#: tauon.py:21289
-msgid "Scrobbling is Paused"
-msgstr "Scrobbling är pausad"
-
-#: tauon.py:21293
-msgid "ListenBrainz is Active"
-msgstr "ListenBrainz är aktiv"
-
-#: tauon.py:21295
-msgid "Scrobbling is Active"
-msgstr "Scrobbling är aktiv"
-
-#: tauon.py:21511
-msgid "Exit"
-msgstr "Avsluta"
-
-#: tauon.py:21519
-msgid "Disengage Quick Add"
-msgstr "Avaktivera snabbtillägg"
-
-#: tauon.py:22265
-msgid "Press Tab key to switch to Spotify search"
-msgstr ""
-
-#: tauon.py:22489
-msgid "Searching for albums by artist: "
-msgstr "Söker album efter artist: "
-
-#: tauon.py:22489
-msgid "This may take a moment"
-msgstr "Detta kan ta en stund"
-
-#: tauon.py:23960
-msgid "Permission error accessing one or more files."
-msgstr "Behörighetsfel vid åtkomst till en eller flera filer."
-
-#: tauon.py:23961
-msgid "If this location is on external media, see"
-msgstr "Om denna plats finns på extern media, se"
-
-#: tauon.py:23964
-msgid "Permission error accessing one or more files"
-msgstr "Behörighetsfel vid åtkomst till en eller flera filer"
-
-#: tauon.py:24714
-msgid ""
-"Note that ratings are stored in the local database and not written to tags."
-msgstr ""
-"Notera att rankingen bara är lagrad i lokal databas och inte skriven i "
-"taggar."
-
-#: tauon.py:24763 tauon.py:24777 tauon.py:24812
-msgid "Change will be applied on restart."
-msgstr "Ändringar tillämpas efter omstart."
-
-#: tauon.py:24864
-msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr "Tips: Du kan också ändra detta från en högerklicksmeny"
-
-#: tauon.py:24903
-msgid "External connections will be accepted."
-msgstr "Externa anslutningar kommer att accepteras."
-
-#: tauon.py:24903
-msgid "Web server starting"
-msgstr "Webbserver startar"
-
-#: tauon.py:24940 tauon.py:26327
-msgid "One or more fields is missing."
-msgstr ""
-
-#: tauon.py:25044
-msgid ""
-"DANGER! This will delete the original files. Keeping a backup is recommended "
-"in case of malfunction."
-msgstr ""
-"FARA! Detta kommer att ta bort originalfilerna. Säkerhetskopiering "
-"rekommenderas vid risk för funktionsfel."
-
-#: tauon.py:25045
-msgid ""
-"For safety, this setting will default to off. Embedded thumbnails are not "
-"kept so you may want to extract them first."
-msgstr ""
-"Av säkerhetsskäl är denna inställning av som standard. Inbäddade miniatyrer "
-"sparas inte, så du kanske vill extrahera dem först."
-
-#: tauon.py:25065
-msgid ""
-"DANGER! This will delete the original files. You may want to have backups in "
-"case of malfunction."
-msgstr ""
-"FARA! Detta kommer att ta bort originalfilerna. Säkerhetskopiering "
-"rekommenderas vid risk för funktionsfel."
-
-#: tauon.py:25066
-msgid ""
-"For safety, this setting will reset on restart. Embedded thumbnails are not "
-"kept so you may want to extract them first."
-msgstr ""
-"Av säkerhetsskäl återställs denna inställning vid omstart. Inbäddade "
-"miniatyrer sparas inte, så du kanske vill extrahera dem först."
-
-#: tauon.py:25228 tauon.py:25236
-msgid "There was an error generating the chart"
-msgstr "Ett fel uppstod när diagrammet skulle skapas"
-
-#: tauon.py:25239
-msgid "Chart generated"
-msgstr "Diagram skapat"
-
-#: tauon.py:25285
-msgid "Function"
-msgstr "Funktion"
-
-#: tauon.py:25286
-msgid "Audio"
-msgstr "Ljud"
-
-#: tauon.py:25287
-msgid "Tracklist"
-msgstr "Spårlista"
-
-#: tauon.py:25288 tauon.py:25335
-msgid "Theme"
-msgstr "Tema"
-
-#: tauon.py:25289
-msgid "Window"
-msgstr "Fönster"
-
-#: tauon.py:25290
-msgid "View"
-msgstr "Visa"
-
-#: tauon.py:25291
-msgid "Transcode"
-msgstr "Koda om"
-
-#: tauon.py:25292 tauon.py:42980
-msgid "Lyrics"
-msgstr "Sångtext"
-
-#: tauon.py:25293
-msgid "Accounts"
-msgstr "Konton"
-
-#: tauon.py:25294
-msgid "Stats"
-msgstr "Statistik"
-
-#: tauon.py:25295
-msgid "About"
-msgstr "Om"
-
-#: tauon.py:25339
-msgid "Auto-theme from album art"
-msgstr "Generera tema från omslagsbild automatiskt"
-
-#: tauon.py:25343
-msgid "Use album art as background"
-msgstr "Använd omslagsbild som bakgrund"
-
-#: tauon.py:25347
-msgid "Stronger"
-msgstr "Starkare"
-
-#: tauon.py:25353
-msgid "Blur"
-msgstr "Oskärpa"
-
-#: tauon.py:25356
-msgid "Showcase only"
-msgstr "Endast demonstration"
-
-#: tauon.py:25360
-msgid "Pattern style"
-msgstr "Mönsterstil"
-
-#: tauon.py:25454
-msgid "Based on"
-msgstr "Baserat på"
-
-#: tauon.py:25461 tauon.py:25537 tauon.py:27034 tauon.py:27621 tauon.py:37305
-msgid "Return"
-msgstr "Tillbaka"
-
-#: tauon.py:25467 tauon.py:25655 tauon.py:25734
-msgid "ReplayGain"
-msgstr "ReplayGain"
-
-#: tauon.py:25472
-msgid "Preserve album dynamics"
-msgstr ""
-
-#: tauon.py:25474
-msgid "Tracks equal loudness"
-msgstr ""
-
-#: tauon.py:25477
-msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
-
-#: tauon.py:25480
-msgid "Pre-amp"
-msgstr ""
-
-#: tauon.py:25530
-msgid ""
-"Lower pre-amp values improve normalisation but will require a higher system "
-"volume."
-msgstr ""
-
-#: tauon.py:25546 tauon.py:26223 tauon.py:26229 tauon.py:26235 tauon.py:26273
-msgid "Enable"
-msgstr "Aktivera"
-
-#: tauon.py:25650 tauon.py:25748
-msgid "Use fade on pause/stop"
-msgstr "Tona ut vid paus/stopp"
-
-#: tauon.py:25652
-msgid "Use fade on track jump"
-msgstr "Tona ut/in vid spårbyte"
-
-#: tauon.py:25665
-msgid "Output buffer"
-msgstr "Öppna utdatamappen"
-
-#: tauon.py:25676 tauon.py:25774
-msgid "Set audio output device"
-msgstr "Ange ljudenhet"
-
-#: tauon.py:25754
-msgid "Customise GStreamer output"
-msgstr "Anpassa GStreamer utdata"
-
-#: tauon.py:25766 tauon.py:25979
-msgid "Reload"
-msgstr "Uppdatera"
-
-#: tauon.py:25848
-msgid "Enable chord lyrics"
-msgstr "Aktivera ackordstext"
-
-#: tauon.py:25851
-msgid "Sources:"
-msgstr "Källor:"
-
-#: tauon.py:25868
-msgid "*Uses scraping. Enable at your own discretion."
-msgstr "*Använder skrapning. Aktivera efter eget gottfinnande."
-
-#: tauon.py:25871
-msgid "Tip: The order enabled will be the order searched."
-msgstr "Tips: Aktiveringsordning blir sökordning."
-
-#: tauon.py:25883
-msgid "Metadata side panel"
-msgstr "Metadata sidopanel"
-
-#: tauon.py:25886
-msgid "Use centered style"
-msgstr "Använd centrerad stil"
-
-#: tauon.py:25889
-msgid "Zoom album art to fit"
-msgstr "Zooma in skivomslag så att de passar"
-
-#: tauon.py:25896 tauon.py:37907 tauon.py:37910
-msgid "Gallery"
-msgstr "Galleri"
-
-#: tauon.py:25900
-msgid "Single click to play"
-msgstr "Enkelklick för att spela upp"
-
-#: tauon.py:25902
-msgid "Show titles"
-msgstr "Visa titlar"
-
-#: tauon.py:25906
-msgid "Center alignment"
-msgstr "Centrera justering"
-
-#: tauon.py:25914 tauon.py:25922
-msgid "Thumbnail size"
-msgstr "Miniatyrstorlek"
-
-#: tauon.py:25918
-msgid "Prefer thinner padding"
-msgstr "Föredra tunnare omslutning"
-
-#: tauon.py:25938
+#~ msgid "Copy Title to Clipboard"
+#~ msgstr "Kopiera till urklipp"
+
+#~ msgid "Random Track"
+#~ msgstr "Slumpmässigt spår"
+
+#~ msgid "Radio Random"
+#~ msgstr "Radio slumpmässig"
+
+#~ msgid "Revert"
+#~ msgstr "Återställ"
+
+#~ msgid "Clear Queue"
+#~ msgstr "Rensa kön"
+
+#~ msgid "Spotify Like Track"
+#~ msgstr "Spotify gilla-spår"
+
+#~ msgid "Un-like Spotify Track"
+#~ msgstr "Av-gilla Spotify-spår"
+
+#~ msgid "Global Search"
+#~ msgstr "Global sökning"
+
+#~ msgid "Copy Album URL"
+#~ msgstr "Kopiera album-URL"
+
+#~ msgid "Lookup Spotify Album"
+#~ msgstr "Sök Spotify-album"
+
+#~ msgid "Locate Artist"
+#~ msgstr "Hitta artist"
+
+#~ msgid "Go To Playing"
+#~ msgstr "Gå till spelas nu"
+
+#~ msgid "ListenBrainz is Paused"
+#~ msgstr "ListenBrainz är pausad"
+
+#~ msgid "Scrobbling is Paused"
+#~ msgstr "Scrobbling är pausad"
+
+#~ msgid "ListenBrainz is Active"
+#~ msgstr "ListenBrainz är aktiv"
+
+#~ msgid "Scrobbling is Active"
+#~ msgstr "Scrobbling är aktiv"
+
+#~ msgid "Exit"
+#~ msgstr "Avsluta"
+
+#~ msgid "Disengage Quick Add"
+#~ msgstr "Avaktivera snabbtillägg"
+
+#~ msgid "Searching for albums by artist: "
+#~ msgstr "Söker album efter artist: "
+
+#~ msgid "This may take a moment"
+#~ msgstr "Detta kan ta en stund"
+
+#~ msgid "Permission error accessing one or more files."
+#~ msgstr "Behörighetsfel vid åtkomst till en eller flera filer."
+
+#~ msgid "If this location is on external media, see"
+#~ msgstr "Om denna plats finns på extern media, se"
+
+#~ msgid "Permission error accessing one or more files"
+#~ msgstr "Behörighetsfel vid åtkomst till en eller flera filer"
+
+#~ msgid ""
+#~ "Note that ratings are stored in the local database and not written to "
+#~ "tags."
+#~ msgstr ""
+#~ "Notera att rankingen bara är lagrad i lokal databas och inte skriven i "
+#~ "taggar."
+
+#~ msgid "Change will be applied on restart."
+#~ msgstr "Ändringar tillämpas efter omstart."
+
+#~ msgid "Tip: You can also toggle this from a right-click context menu"
+#~ msgstr "Tips: Du kan också ändra detta från en högerklicksmeny"
+
+#~ msgid "External connections will be accepted."
+#~ msgstr "Externa anslutningar kommer att accepteras."
+
+#~ msgid "Web server starting"
+#~ msgstr "Webbserver startar"
+
+#~ msgid ""
+#~ "DANGER! This will delete the original files. Keeping a backup is "
+#~ "recommended in case of malfunction."
+#~ msgstr ""
+#~ "FARA! Detta kommer att ta bort originalfilerna. Säkerhetskopiering "
+#~ "rekommenderas vid risk för funktionsfel."
+
+#~ msgid ""
+#~ "For safety, this setting will default to off. Embedded thumbnails are not "
+#~ "kept so you may want to extract them first."
+#~ msgstr ""
+#~ "Av säkerhetsskäl är denna inställning av som standard. Inbäddade "
+#~ "miniatyrer sparas inte, så du kanske vill extrahera dem först."
+
+#~ msgid ""
+#~ "DANGER! This will delete the original files. You may want to have backups "
+#~ "in case of malfunction."
+#~ msgstr ""
+#~ "FARA! Detta kommer att ta bort originalfilerna. Säkerhetskopiering "
+#~ "rekommenderas vid risk för funktionsfel."
+
+#~ msgid ""
+#~ "For safety, this setting will reset on restart. Embedded thumbnails are "
+#~ "not kept so you may want to extract them first."
+#~ msgstr ""
+#~ "Av säkerhetsskäl återställs denna inställning vid omstart. Inbäddade "
+#~ "miniatyrer sparas inte, så du kanske vill extrahera dem först."
+
+#~ msgid "There was an error generating the chart"
+#~ msgstr "Ett fel uppstod när diagrammet skulle skapas"
+
+#~ msgid "Chart generated"
+#~ msgstr "Diagram skapat"
+
+#~ msgid "Function"
+#~ msgstr "Funktion"
+
+#~ msgid "Audio"
+#~ msgstr "Ljud"
+
+#~ msgid "Tracklist"
+#~ msgstr "Spårlista"
+
+#~ msgid "Theme"
+#~ msgstr "Tema"
+
+#~ msgid "Window"
+#~ msgstr "Fönster"
+
+#~ msgid "View"
+#~ msgstr "Visa"
+
+#~ msgid "Transcode"
+#~ msgstr "Koda om"
+
+#~ msgid "Lyrics"
+#~ msgstr "Sångtext"
+
+#~ msgid "Accounts"
+#~ msgstr "Konton"
+
+#~ msgid "Stats"
+#~ msgstr "Statistik"
+
+#~ msgid "About"
+#~ msgstr "Om"
+
+#~ msgid "Auto-theme from album art"
+#~ msgstr "Generera tema från omslagsbild automatiskt"
+
+#~ msgid "Use album art as background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#~ msgid "Stronger"
+#~ msgstr "Starkare"
+
+#~ msgid "Blur"
+#~ msgstr "Oskärpa"
+
+#~ msgid "Showcase only"
+#~ msgstr "Endast demonstration"
+
+#~ msgid "Pattern style"
+#~ msgstr "Mönsterstil"
+
+#~ msgid "Based on"
+#~ msgstr "Baserat på"
+
+#~ msgid "Return"
+#~ msgstr "Tillbaka"
+
+#~ msgid "ReplayGain"
+#~ msgstr "ReplayGain"
+
+#~ msgid "Enable"
+#~ msgstr "Aktivera"
+
+#~ msgid "Use fade on pause/stop"
+#~ msgstr "Tona ut vid paus/stopp"
+
+#~ msgid "Use fade on track jump"
+#~ msgstr "Tona ut/in vid spårbyte"
+
+#~ msgid "Output buffer"
+#~ msgstr "Öppna utdatamappen"
+
+#~ msgid "Set audio output device"
+#~ msgstr "Ange ljudenhet"
+
+#~ msgid "Customise GStreamer output"
+#~ msgstr "Anpassa GStreamer utdata"
+
+#~ msgid "Reload"
+#~ msgstr "Uppdatera"
+
+#~ msgid "Enable chord lyrics"
+#~ msgstr "Aktivera ackordstext"
+
+#~ msgid "Sources:"
+#~ msgstr "Källor:"
+
+#~ msgid "*Uses scraping. Enable at your own discretion."
+#~ msgstr "*Använder skrapning. Aktivera efter eget gottfinnande."
+
+#~ msgid "Tip: The order enabled will be the order searched."
+#~ msgstr "Tips: Aktiveringsordning blir sökordning."
+
+#~ msgid "Metadata side panel"
+#~ msgstr "Metadata sidopanel"
+
+#~ msgid "Use centered style"
+#~ msgstr "Använd centrerad stil"
+
+#~ msgid "Zoom album art to fit"
+#~ msgstr "Zooma in skivomslag så att de passar"
+
+#~ msgid "Gallery"
+#~ msgstr "Galleri"
+
+#~ msgid "Single click to play"
+#~ msgstr "Enkelklick för att spela upp"
+
+#~ msgid "Show titles"
+#~ msgstr "Visa titlar"
+
+#~ msgid "Center alignment"
+#~ msgstr "Centrera justering"
+
+#~ msgid "Thumbnail size"
+#~ msgstr "Miniatyrstorlek"
+
+#~ msgid "Prefer thinner padding"
+#~ msgstr "Föredra tunnare omslutning"
+
 #, fuzzy
-msgid "Ready broadcaster"
-msgstr "Starta sändning"
+#~ msgid "Ready broadcaster"
+#~ msgstr "Starta sändning"
 
-#: tauon.py:25938
 #, fuzzy
-msgid "Start web server for broadcasting"
-msgstr "Kör webbserver för sändning"
+#~ msgid "Start web server for broadcasting"
+#~ msgstr "Kör webbserver för sändning"
 
-#: tauon.py:25956
-msgid "Auto fetch artist data"
-msgstr "Hämta artistdata automatiskt"
+#~ msgid "Auto fetch artist data"
+#~ msgstr "Hämta artistdata automatiskt"
 
-#: tauon.py:25956
-msgid "Downloads data in background when artist panel is open"
-msgstr ""
-
-#: tauon.py:25959
 #, fuzzy
-msgid "Auto regenerate playlists"
-msgstr "Uppdatera genererade listor automatiskt"
+#~ msgid "Auto regenerate playlists"
+#~ msgstr "Uppdatera genererade listor automatiskt"
 
-#: tauon.py:25960
-msgid "Generated playlists reload when re-entering"
-msgstr ""
-
-#: tauon.py:25964
-msgid "Disables the tab pin function"
-msgstr ""
-
-#: tauon.py:25964
 #, fuzzy
-msgid "Tabs in top panel"
-msgstr "Aktivera flikar i toppanelen"
+#~ msgid "Tabs in top panel"
+#~ msgstr "Aktivera flikar i toppanelen"
 
-#: tauon.py:25969 tauon.py:25975
-msgid "Open config file"
-msgstr "Öppna konfigurationsfilen"
+#~ msgid "Open config file"
+#~ msgstr "Öppna konfigurationsfilen"
 
-#: tauon.py:25971 tauon.py:25983
-msgid "Open data folder"
-msgstr "Öppna datamappen"
+#~ msgid "Open data folder"
+#~ msgstr "Öppna datamappen"
 
-#: tauon.py:25987
-msgid "Enable/Disable track context menu functions:"
-msgstr ""
-
-#: tauon.py:25990
 #, fuzzy
-msgid "Wikipedia artist search"
-msgstr "Wikipedia sök"
+#~ msgid "Wikipedia artist search"
+#~ msgstr "Wikipedia sök"
 
-#: tauon.py:25992
 #, fuzzy
-msgid "Sonemic artist search"
-msgstr "Sonemic sök"
+#~ msgid "Sonemic artist search"
+#~ msgstr "Sonemic sök"
 
-#: tauon.py:25994
 #, fuzzy
-msgid "Bandcamp artist page search"
-msgstr "Bandcamp-sök"
+#~ msgid "Bandcamp artist page search"
+#~ msgstr "Bandcamp-sök"
 
-#: tauon.py:25998
 #, fuzzy
-msgid "Genius track search"
-msgstr "Genius sök"
+#~ msgid "Genius track search"
+#~ msgstr "Genius sök"
 
-#: tauon.py:26000
 #, fuzzy
-msgid "Transcode folder"
-msgstr "Koda om mapp"
+#~ msgid "Transcode folder"
+#~ msgstr "Koda om mapp"
 
-#: tauon.py:26006
 #, fuzzy
-msgid "Enable Discord Rich Presence"
-msgstr "Discord RP Toggle"
+#~ msgid "Enable Discord Rich Presence"
+#~ msgstr "Discord RP Toggle"
 
-#: tauon.py:26010
-msgid "For troubleshooting Discord RP"
-msgstr ""
-
-#: tauon.py:26038
 #, fuzzy
-msgid "Extract archives"
-msgstr "Extrahera arkiv vid import"
+#~ msgid "Extract archives"
+#~ msgstr "Extrahera arkiv vid import"
 
-#: tauon.py:26039
 #, fuzzy
-msgid "Extracts zip archives on drag and drop"
-msgstr "Extrahera arkiv vid import"
+#~ msgid "Extracts zip archives on drag and drop"
+#~ msgstr "Extrahera arkiv vid import"
 
-#: tauon.py:26041
-msgid "Enable download monitor"
-msgstr "Aktivera nerladdningövervakning"
+#~ msgid "Enable download monitor"
+#~ msgstr "Aktivera nerladdningövervakning"
 
-#: tauon.py:26042
-msgid "One click import new archives and folders from downloads folder"
-msgstr ""
+#~ msgid "Trash archive after extraction"
+#~ msgstr "Ta bort arkiv efter extrahering"
 
-#: tauon.py:26044
-msgid "Trash archive after extraction"
-msgstr "Ta bort arkiv efter extrahering"
+#~ msgid "Always extract to Music folder"
+#~ msgstr "Extrahera alltid till musikmappen"
 
-#: tauon.py:26046
-msgid "Always extract to Music folder"
-msgstr "Extrahera alltid till musikmappen"
-
-#: tauon.py:26049
-msgid "Show icon in system tray"
-msgstr ""
-
-#: tauon.py:26052
 #, fuzzy
-msgid "Close to tray"
-msgstr "Fil flyttad till papperskorgen"
+#~ msgid "Close to tray"
+#~ msgstr "Fil flyttad till papperskorgen"
 
-#: tauon.py:26055
 #, fuzzy
-msgid "Show title text"
-msgstr "Visa titlar"
+#~ msgid "Show title text"
+#~ msgstr "Visa titlar"
 
-#: tauon.py:26061
-msgid "Enable remote control"
-msgstr ""
-
-#: tauon.py:26062
 #, fuzzy
-msgid "Change requires restart"
-msgstr "Ändringar tillämpas efter omstart."
+#~ msgid "Change requires restart"
+#~ msgstr "Ändringar tillämpas efter omstart."
 
-#: tauon.py:26071
-msgid "Block suspend"
-msgstr ""
+#~ msgid "Show threshold marker"
+#~ msgstr "Visa tröskelmarkering"
 
-#: tauon.py:26072
-msgid "Prevent system suspend during playback"
-msgstr ""
+#~ msgid "Server URL"
+#~ msgstr "Server-URL"
 
-#: tauon.py:26276
-msgid "Show threshold marker"
-msgstr "Visa tröskelmarkering"
+#~ msgid "Spotify Premium account"
+#~ msgstr "Spotify premiumkonto"
 
-#: tauon.py:26283
-msgid "Maloja Server"
-msgstr ""
+#~ msgid "Client ID"
+#~ msgstr "Klient-ID"
 
-#: tauon.py:26285
-msgid "Maloja is a self-hosted scrobble server."
-msgstr ""
+#~ msgid "Forget Account"
+#~ msgstr "Glöm kontot"
 
-#: tauon.py:26285
-msgid "See here to lean more: %s"
-msgstr ""
+#~ msgid "Authorise"
+#~ msgstr "Auktorisera"
 
-#: tauon.py:26295 tauon.py:26512 tauon.py:26571 tauon.py:26632
-msgid "Server URL"
-msgstr "Server-URL"
+#~ msgid "Prefer launching web player"
+#~ msgstr "Föredrar att starta webbspelare"
 
-#: tauon.py:26309
-msgid "API Key"
-msgstr ""
+#~ msgid "Import Albums"
+#~ msgstr "Importera album"
 
-#: tauon.py:26324 tauon.py:26589
-msgid "Test connectivity"
-msgstr ""
+#~ msgid "Please wait until current job is finished"
+#~ msgstr "Vänta tills pågående arbete är klart"
 
-#: tauon.py:26349 tauon.py:26351 tauon.py:26846 tauon.py:26863
-msgid "Get scrobble counts"
-msgstr ""
+#~ msgid "Import Liked Songs"
+#~ msgstr "Importera gillade låtar"
 
-#: tauon.py:26357
-msgid "Spotify Premium account"
-msgstr "Spotify premiumkonto"
-
-#: tauon.py:26362
-msgid "View setup instructions"
-msgstr ""
-
-#: tauon.py:26369
-msgid "Client ID"
-msgstr "Klient-ID"
-
-#: tauon.py:26399
-msgid "Forget Account"
-msgstr "Glöm kontot"
-
-#: tauon.py:26403
-msgid "Authorise"
-msgstr "Auktorisera"
-
-#: tauon.py:26420
-msgid "Prefer launching web player"
-msgstr "Föredrar att starta webbspelare"
-
-#: tauon.py:26424 tauon.py:26425
-msgid "Import Albums"
-msgstr "Importera album"
-
-#: tauon.py:26432 tauon.py:26443 tauon.py:26456 tauon.py:26468
-msgid "Please wait until current job is finished"
-msgstr "Vänta tills pågående arbete är klart"
-
-#: tauon.py:26436
-msgid "Import Liked Songs"
-msgstr "Importera gillade låtar"
-
-#: tauon.py:26449
 #, fuzzy
-msgid "Import all user playlists"
-msgstr "Importera användarlista..."
+#~ msgid "Import all user playlists"
+#~ msgstr "Importera användarlista..."
 
-#: tauon.py:26451
 #, fuzzy
-msgid "Importing Spotify playlists..."
-msgstr "Kan inte skapa Spotify-lista"
+#~ msgid "Importing Spotify playlists..."
+#~ msgstr "Kan inte skapa Spotify-lista"
 
-#: tauon.py:26459
 #, fuzzy
-msgid "Import single user playlist..."
-msgstr "Importera användarlista..."
+#~ msgid "Import single user playlist..."
+#~ msgstr "Importera användarlista..."
 
-#: tauon.py:26474
-msgid "Airsonic/Subsonic network streaming"
-msgstr "Airsonic/Subsonic nätverksströmning"
+#~ msgid "Airsonic/Subsonic network streaming"
+#~ msgstr "Airsonic/Subsonic nätverksströmning"
 
-#: tauon.py:26484 tauon.py:26604 tauon.py:26662
-msgid "Username / Email"
-msgstr "Användarnamn / E-post"
+#~ msgid "Username / Email"
+#~ msgstr "Användarnamn / E-post"
 
-#: tauon.py:26498 tauon.py:26557 tauon.py:26618 tauon.py:26676
-msgid "Password"
-msgstr "Lösenord"
+#~ msgid "Password"
+#~ msgstr "Lösenord"
 
-#: tauon.py:26526 tauon.py:26586 tauon.py:26647 tauon.py:26704
-msgid "Import music to playlist"
-msgstr "Importera musik till spelningslista"
+#~ msgid "Import music to playlist"
+#~ msgstr "Importera musik till spelningslista"
 
-#: tauon.py:26529
-msgid "Needed for Nextcloud Music"
-msgstr ""
-
-#: tauon.py:26529
-msgid "Use plain text authentication"
-msgstr ""
-
-#: tauon.py:26533
 #, fuzzy
-msgid "Jellyfin network streaming"
-msgstr "koel nätverksströmning"
+#~ msgid "Jellyfin network streaming"
+#~ msgstr "koel nätverksströmning"
 
-#: tauon.py:26543
 #, fuzzy
-msgid "Username"
-msgstr "Användarnamn:"
+#~ msgid "Username"
+#~ msgstr "Användarnamn:"
 
-#: tauon.py:26594
-msgid "koel network streaming"
-msgstr "koel nätverksströmning"
+#~ msgid "koel network streaming"
+#~ msgstr "koel nätverksströmning"
 
-#: tauon.py:26652
-msgid "PLEX network streaming"
-msgstr "PLEX nätverksströmning"
+#~ msgid "PLEX network streaming"
+#~ msgstr "PLEX nätverksströmning"
 
-#: tauon.py:26690
-msgid "Server name"
-msgstr "Servernamn"
+#~ msgid "Server name"
+#~ msgstr "Servernamn"
 
-#: tauon.py:26713
-msgid "Fanart.tv can be used for sourcing of artist images and cover art."
-msgstr "Fanart.tv kan användas som källa för artistbilder och omslagsbilder."
+#~ msgid "Fanart.tv can be used for sourcing of artist images and cover art."
+#~ msgstr ""
+#~ "Fanart.tv kan användas som källa för artistbilder och omslagsbilder."
 
-#: tauon.py:26719 tauon.py:34195
-msgid "They encourage you to contribute at https://fanart.tv"
-msgstr "De uppmuntrar dig till att bidra på https://fanart.tv"
+#~ msgid "They encourage you to contribute at https://fanart.tv"
+#~ msgstr "De uppmuntrar dig till att bidra på https://fanart.tv"
 
-#: tauon.py:26724
-msgid "Cover art (Manual only)"
-msgstr "Omslagsbilder (Endast manuellt)"
+#~ msgid "Cover art (Manual only)"
+#~ msgstr "Omslagsbilder (Endast manuellt)"
 
-#: tauon.py:26726
 #, fuzzy
-msgid "Artist images (Automatic)"
-msgstr "Artistbilder (Kan vara automatiskt)"
+#~ msgid "Artist images (Automatic)"
+#~ msgstr "Artistbilder (Kan vara automatiskt)"
 
-#: tauon.py:26728
 #, fuzzy
-msgid "Artist backgrounds (Automatic)"
-msgstr "Artistbilder (Kan vara automatiskt)"
+#~ msgid "Artist backgrounds (Automatic)"
+#~ msgstr "Artistbilder (Kan vara automatiskt)"
 
-#: tauon.py:26731
-msgid "Flip current"
-msgstr ""
+#~ msgid ""
+#~ "Discogs can be used for sourcing artist images. For this you will need a "
+#~ "\"Personal Access Token\".\n"
+#~ "\n"
+#~ "You can generate one with a Discogs account here:"
+#~ msgstr ""
+#~ "Discogs kan användas som källa för artistbilder. För detta behöver du en "
+#~ "\"Personlig åtkomst-token\".\n"
+#~ "\n"
+#~ "Du kan generera en med ett Discogs-konto här:"
 
-#: tauon.py:26751
-msgid ""
-"Discogs can be used for sourcing artist images. For this you will need a "
-"\"Personal Access Token\".\n"
-"\n"
-"You can generate one with a Discogs account here:"
-msgstr ""
-"Discogs kan användas som källa för artistbilder. För detta behöver du en "
-"\"Personlig åtkomst-token\".\n"
-"\n"
-"Du kan generera en med ett Discogs-konto här:"
+#~ msgid "Paste Token"
+#~ msgstr "Klistra in token"
 
-#: tauon.py:26767 tauon.py:26872 tauon.py:26874
-msgid "Paste Token"
-msgstr "Klistra in token"
+#~ msgid "Username:"
+#~ msgstr "Användarnamn:"
 
-#: tauon.py:26814 tauon.py:26815
-msgid "Username:"
-msgstr "Användarnamn:"
+#~ msgid "Login"
+#~ msgstr "Logga in"
 
-#: tauon.py:26821 tauon.py:26823
-msgid "Login"
-msgstr "Logga in"
+#~ msgid "Done"
+#~ msgstr "Klart"
 
-#: tauon.py:26822 tauon.py:26824
-msgid "Done"
-msgstr "Klart"
+#~ msgid ""
+#~ "Click login to open the last.fm web authorisation page and follow prompt. "
+#~ "Then return here and click \"Done\"."
+#~ msgstr ""
+#~ "Klicka på \"Logga in\" för att öppna last.fm:s auktoriseringssida och "
+#~ "följ instruktionen. Återvänd sedan hit och klicka på \"Klart\"."
 
-#: tauon.py:26827
-msgid "Use LibreFM"
-msgstr ""
+#~ msgid "Forget account"
+#~ msgstr "Glöm kontot"
 
-#: tauon.py:26830
-msgid ""
-"Click login to open the last.fm web authorisation page and follow prompt. "
-"Then return here and click \"Done\"."
-msgstr ""
-"Klicka på \"Logga in\" för att öppna last.fm:s auktoriseringssida och följ "
-"instruktionen. Återvänd sedan hit och klicka på \"Klart\"."
+#~ msgid "Get user loves"
+#~ msgstr "Hämta användarkärlek"
 
-#: tauon.py:26834
-msgid "Forget account"
-msgstr "Glöm kontot"
+#~ msgid "Clear local loves"
+#~ msgstr "Rensa lokal kärlek"
 
-#: tauon.py:26843 tauon.py:26851
-msgid "Get user loves"
-msgstr "Hämta användarkärlek"
+#~ msgid "Get friend loves"
+#~ msgstr "Hämta kompiskärlek"
 
-#: tauon.py:26844
-msgid "Clear local loves"
-msgstr "Rensa lokal kärlek"
+#~ msgid "This will mark all tracks in local database as unloved!"
+#~ msgstr ""
+#~ "Detta kommer att märka alla spår i den lokala databasen som oälskade!"
 
-#: tauon.py:26845 tauon.py:26859
-msgid "Get friend loves"
-msgstr "Hämta kompiskärlek"
+#~ msgid "Cleared all loves"
+#~ msgstr "Rensade bort all kärlek"
 
-#: tauon.py:26898
-msgid "This will mark all tracks in local database as unloved!"
-msgstr "Detta kommer att märka alla spår i den lokala databasen som oälskade!"
-
-#: tauon.py:26907
-msgid "Cleared all loves"
-msgstr "Rensade bort all kärlek"
-
-#: tauon.py:26914 tauon.py:26936
 #, fuzzy
-msgid "Press again while holding Shift if you understand"
-msgstr ""
-"Tryck på knappen igen, medan du håller ner Shift-tangenten, om du verkligen "
-"vill göra det."
+#~ msgid "Press again while holding Shift if you understand"
+#~ msgstr ""
+#~ "Tryck på knappen igen, medan du håller ner Shift-tangenten, om du "
+#~ "verkligen vill göra det."
 
-#: tauon.py:26929
 #, fuzzy
-msgid "Cleared all scrobble counts"
-msgstr "Rensade bort all kärlek"
-
-#: tauon.py:26934
-msgid ""
-"Warning: This process can take a long time to complete! (up to an hour or "
-"more)"
-msgstr ""
-
-#: tauon.py:26935
-msgid "This feature is not recommended for accounts that have many friends."
-msgstr ""
-
-#: tauon.py:26974
-msgid "Selected playlist:"
-msgstr "Vald spelningslista:"
-
-#: tauon.py:26978
-msgid "No sync playlist selected!"
-msgstr "Ingen synkroniseringsspellista vald!"
-
-#: tauon.py:26981
-msgid "Path to device music folder:   "
-msgstr "Sökväg till enhetens musikmapp:   "
-
-#: tauon.py:26999
-msgid "A mounted music folder was found!"
-msgstr "En monterad musikmapp hittades!"
-
-#: tauon.py:27001
-msgid "Could not auto-detect mounted device path."
-msgstr "Lunde inte identifiera monterad enhetssökväg automatiskt."
-
-#: tauon.py:27001
-msgid "Make sure the device is mounted and path is accessible."
-msgstr "Tillse att enheten är monterad och att sökvägen är åtkomlig."
-
-#: tauon.py:27006
-msgid "Delete all other folders in target"
-msgstr "Ta bort alla andra mappar från målet"
-
-#: tauon.py:27008
-msgid "Transcode files"
-msgstr "Koda om filer"
-
-#: tauon.py:27010
-msgid "Bypass low bitrate"
-msgstr ""
-
-#: tauon.py:27013
-msgid "Start Transcode and Sync"
-msgstr "Starta omkodning och synkronisera"
-
-#: tauon.py:27016
-msgid "Start Sync"
-msgstr "Starta synkronisering"
-
-#: tauon.py:27020
-msgid "Stopping..."
-msgstr "Stoppar..."
-
-#: tauon.py:27026
-msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr "Högerklick tab > Div... Ange som synkad spelningslista"
-
-#: tauon.py:27026
-msgid "Select a source playlist"
-msgstr "Välj en spelningslist"
-
-#: tauon.py:27028
-msgid "Stop"
-msgstr "Stopp"
-
-#: tauon.py:27044
-msgid "Output codec setting:"
-msgstr "Inställning för utdatakodek:"
-
-#: tauon.py:27046 tauon.py:27047
-msgid "Open output folder"
-msgstr "Öppna utdatamappen"
-
-#: tauon.py:27049 tauon.py:27050
-msgid "Sync..."
-msgstr "Synk..."
-
-#: tauon.py:27058
-msgid "Save opus as .ogg extension"
-msgstr "Spara opus i filformat .ogg"
-
-#: tauon.py:27082
-msgid "Save to output folder"
-msgstr "Spara i en utdatamapp"
-
-#: tauon.py:27084
-msgid "Save and overwrite files inplace"
-msgstr "Spara och skriv över ursprungliga filer"
-
-#: tauon.py:27106
-msgid "Emit track change notifications"
-msgstr "Visa meddelanden om spårändring"
-
-#: tauon.py:27109
-msgid "Draw own window decorations"
-msgstr "Rita egen fönsterdekoration"
+#~ msgid "Cleared all scrobble counts"
+#~ msgstr "Rensade bort all kärlek"
 
-#: tauon.py:27112
-msgid "Restore window position on restart"
-msgstr "Återställ fönsterposition vid omstart"
+#~ msgid "Selected playlist:"
+#~ msgstr "Vald spelningslista:"
 
-#: tauon.py:27116
-msgid "Show playing in titlebar"
-msgstr "Visa \"spelas nu\" i titelfältet"
+#~ msgid "No sync playlist selected!"
+#~ msgstr "Ingen synkroniseringsspellista vald!"
 
-#: tauon.py:27123
-msgid "Top-panel level meter"
-msgstr "Nivåmätare på översta panelen"
+#~ msgid "Path to device music folder:   "
+#~ msgstr "Sökväg till enhetens musikmapp:   "
 
-#: tauon.py:27127
-msgid "Showcase visualisation"
-msgstr "Demonstrationsvisualisering"
+#~ msgid "A mounted music folder was found!"
+#~ msgstr "En monterad musikmapp hittades!"
 
-#: tauon.py:27133
-msgid "UI scale for HiDPI displays"
-msgstr "UI-skalning för HiDPI-skärmar"
+#~ msgid "Could not auto-detect mounted device path."
+#~ msgstr "Lunde inte identifiera monterad enhetssökväg automatiskt."
 
-#: tauon.py:27182
-msgid "Restart app to apply any changes"
-msgstr "Starta om programmet för att tillämpa ändringar"
+#~ msgid "Make sure the device is mounted and path is accessible."
+#~ msgstr "Tillse att enheten är monterad och att sökvägen är åtkomlig."
 
-#: tauon.py:27191
-msgid "Auto scale based on xft-dpi"
-msgstr "Autoskalning baserat på xft-dpi"
+#~ msgid "Delete all other folders in target"
+#~ msgstr "Ta bort alla andra mappar från målet"
 
-#: tauon.py:27474 tauon.py:27477
-msgid "Credits"
-msgstr "Tack"
+#~ msgid "Transcode files"
+#~ msgstr "Koda om filer"
 
-#: tauon.py:27474 tauon.py:27479
-msgid "Next"
-msgstr ""
+#~ msgid "Start Transcode and Sync"
+#~ msgstr "Starta omkodning och synkronisera"
 
-#: tauon.py:27484 tauon.py:27486
-msgid "Donate"
-msgstr "Donera"
+#~ msgid "Start Sync"
+#~ msgstr "Starta synkronisering"
 
-#: tauon.py:27496
-msgid "Chart Grid Generator"
-msgstr "Albumkarta"
+#~ msgid "Stopping..."
+#~ msgstr "Stoppar..."
 
-#: tauon.py:27499
-msgid "Target playlist:   "
-msgstr "Målspelningslista:   "
+#~ msgid "Right click tab > Misc... > Set as sync playlist"
+#~ msgstr "Högerklick tab > Div... Ange som synkad spelningslista"
 
-#: tauon.py:27527
-msgid "Rows"
-msgstr "Rader"
+#~ msgid "Select a source playlist"
+#~ msgstr "Välj en spelningslist"
 
-#: tauon.py:27529
-msgid "Columns"
-msgstr "Kolumner"
+#~ msgid "Stop"
+#~ msgstr "Stopp"
 
-#: tauon.py:27536
-msgid "Cascade style"
-msgstr "Kaskadstil"
+#~ msgid "Output codec setting:"
+#~ msgstr "Inställning för utdatakodek:"
 
-#: tauon.py:27538
-msgid "Use padding"
-msgstr "Använd mellanrum"
+#~ msgid "Open output folder"
+#~ msgstr "Öppna utdatamappen"
 
-#: tauon.py:27543
-msgid "Include album titles"
-msgstr "Inkludera albumtitel"
+#~ msgid "Sync..."
+#~ msgstr "Synk..."
 
-#: tauon.py:27545
-msgid "Sort by top played"
-msgstr "Sortera efter mest spelad"
+#~ msgid "Save opus as .ogg extension"
+#~ msgstr "Spara opus i filformat .ogg"
 
-#: tauon.py:27552
-msgid "Randomise BG"
-msgstr "Slumpa bg"
+#~ msgid "Save to output folder"
+#~ msgstr "Spara i en utdatamapp"
 
-#: tauon.py:27588
-msgid "Generate"
-msgstr "Generera"
+#~ msgid "Save and overwrite files inplace"
+#~ msgstr "Spara och skriv över ursprungliga filer"
 
-#: tauon.py:27602
-msgid "Generating..."
-msgstr "Genererar..."
+#~ msgid "Emit track change notifications"
+#~ msgstr "Visa meddelanden om spårändring"
 
-#: tauon.py:27610
-msgid "Album chart"
-msgstr "Albumdiagram"
+#~ msgid "Draw own window decorations"
+#~ msgstr "Rita egen fönsterdekoration"
 
-#: tauon.py:27615
-msgid "Not enough albums in the playlist!"
-msgstr "Inte tillräckligt med album!"
+#~ msgid "Restore window position on restart"
+#~ msgstr "Återställ fönsterposition vid omstart"
 
-#: tauon.py:27635 tauon.py:27636
-msgid "Chart generator..."
-msgstr "Kartgenerator..."
+#~ msgid "Show playing in titlebar"
+#~ msgstr "Visa \"spelas nu\" i titelfältet"
 
-#: tauon.py:27644 tauon.py:27685
-msgid "Tracks in playlist"
-msgstr "Spår i spelningslistan"
+#~ msgid "Top-panel level meter"
+#~ msgstr "Nivåmätare på översta panelen"
 
-#: tauon.py:27645 tauon.py:27688
-msgid "Albums in playlist"
-msgstr "Album i spelningslistan"
+#~ msgid "Showcase visualisation"
+#~ msgstr "Demonstrationsvisualisering"
 
-#: tauon.py:27646 tauon.py:27691
-msgid "Playlist duration"
-msgstr "Spelningslistans varaktighet"
+#~ msgid "UI scale for HiDPI displays"
+#~ msgstr "UI-skalning för HiDPI-skärmar"
 
-#: tauon.py:27647 tauon.py:27720
-msgid "Tracks in database"
-msgstr "Spår i databasen"
+#~ msgid "Restart app to apply any changes"
+#~ msgstr "Starta om programmet för att tillämpa ändringar"
 
-#: tauon.py:27648 tauon.py:27723
-msgid "Total albums"
-msgstr "Sammanlagt antal album"
+#~ msgid "Auto scale based on xft-dpi"
+#~ msgstr "Autoskalning baserat på xft-dpi"
 
-#: tauon.py:27649 tauon.py:27727
-msgid "Total playtime"
-msgstr "Sammanlagd speltid"
+#~ msgid "Credits"
+#~ msgstr "Tack"
 
-#: tauon.py:27789
-msgid "Track ratings"
-msgstr "Spårranking"
+#~ msgid "Donate"
+#~ msgstr "Donera"
 
-#: tauon.py:27791
-msgid "Album ratings"
-msgstr "Albumranking"
+#~ msgid "Chart Grid Generator"
+#~ msgstr "Albumkarta"
 
-#: tauon.py:27799
-msgid "Show track loves"
-msgstr "Visa spårkärlek"
+#~ msgid "Target playlist:   "
+#~ msgstr "Målspelningslista:   "
 
-#: tauon.py:27807
-msgid "Represent playtime as stars"
-msgstr "Visa speltid som stjärnor"
+#~ msgid "Rows"
+#~ msgstr "Rader"
 
-#: tauon.py:27816
-msgid "Represent playcount as lines"
-msgstr "Visa uppspelningstid som linjer"
+#~ msgid "Columns"
+#~ msgstr "Kolumner"
 
-#: tauon.py:27836
-msgid "Show album release year"
-msgstr "Visa albums publiceringsår"
+#~ msgid "Cascade style"
+#~ msgstr "Kaskadstil"
 
-#: tauon.py:27839
-msgid "Show album duration"
-msgstr "Visa albums varaktighet"
+#~ msgid "Use padding"
+#~ msgstr "Använd mellanrum"
 
-#: tauon.py:27846
-msgid "Font Size"
-msgstr "Teckenstorlek"
+#~ msgid "Include album titles"
+#~ msgstr "Inkludera albumtitel"
 
-#: tauon.py:27848
-msgid "Row Size"
-msgstr "Radstorlek"
+#~ msgid "Sort by top played"
+#~ msgstr "Sortera efter mest spelad"
 
-#: tauon.py:27850
-msgid "Baseline offset"
-msgstr "Baslinjeförskjutning"
+#~ msgid "Randomise BG"
+#~ msgstr "Slumpa bg"
 
-#: tauon.py:27854
-msgid "Thin default"
-msgstr "Tunn standard"
+#~ msgid "Generate"
+#~ msgstr "Generera"
 
-#: tauon.py:27856
-msgid "Thick default"
-msgstr "Tjock standard"
+#~ msgid "Generating..."
+#~ msgstr "Genererar..."
 
-#: tauon.py:27862
-msgid "End of playlist action"
-msgstr "Åtgärd vid spelningslistans slut"
+#~ msgid "Album chart"
+#~ msgstr "Albumdiagram"
 
-#: tauon.py:27865 tauon.py:27869
-msgid "Stop playback"
-msgstr "Stoppa uppspelning"
+#~ msgid "Not enough albums in the playlist!"
+#~ msgstr "Inte tillräckligt med album!"
 
-#: tauon.py:27866 tauon.py:27871
-msgid "Repeat playlist"
-msgstr "Repetera spelningslistan"
+#~ msgid "Chart generator..."
+#~ msgstr "Kartgenerator..."
 
-#: tauon.py:27875
-msgid "Play next playlist"
-msgstr "Spela nästa spelningslista"
+#~ msgid "Tracks in playlist"
+#~ msgstr "Spår i spelningslistan"
 
-#: tauon.py:27877
-msgid "Cycle all playlists"
-msgstr "Upprepa alla spelningslistor"
+#~ msgid "Albums in playlist"
+#~ msgstr "Album i spelningslistan"
 
-#: tauon.py:29019
+#~ msgid "Playlist duration"
+#~ msgstr "Spelningslistans varaktighet"
+
+#~ msgid "Tracks in database"
+#~ msgstr "Spår i databasen"
+
+#~ msgid "Total albums"
+#~ msgstr "Sammanlagt antal album"
+
+#~ msgid "Total playtime"
+#~ msgstr "Sammanlagd speltid"
+
+#~ msgid "Track ratings"
+#~ msgstr "Spårranking"
+
+#~ msgid "Album ratings"
+#~ msgstr "Albumranking"
+
+#~ msgid "Show track loves"
+#~ msgstr "Visa spårkärlek"
+
+#~ msgid "Represent playtime as stars"
+#~ msgstr "Visa speltid som stjärnor"
+
+#~ msgid "Represent playcount as lines"
+#~ msgstr "Visa uppspelningstid som linjer"
+
+#~ msgid "Show album release year"
+#~ msgstr "Visa albums publiceringsår"
+
+#~ msgid "Show album duration"
+#~ msgstr "Visa albums varaktighet"
+
+#~ msgid "Font Size"
+#~ msgstr "Teckenstorlek"
+
+#~ msgid "Row Size"
+#~ msgstr "Radstorlek"
+
+#~ msgid "Baseline offset"
+#~ msgstr "Baslinjeförskjutning"
+
+#~ msgid "Thin default"
+#~ msgstr "Tunn standard"
+
+#~ msgid "Thick default"
+#~ msgstr "Tjock standard"
+
+#~ msgid "End of playlist action"
+#~ msgstr "Åtgärd vid spelningslistans slut"
+
+#~ msgid "Stop playback"
+#~ msgstr "Stoppa uppspelning"
+
+#~ msgid "Repeat playlist"
+#~ msgstr "Repetera spelningslistan"
+
+#~ msgid "Play next playlist"
+#~ msgstr "Spela nästa spelningslista"
+
+#~ msgid "Cycle all playlists"
+#~ msgstr "Upprepa alla spelningslistor"
+
 #, fuzzy
-msgid "Buffering... "
-msgstr "Söker..."
+#~ msgid "Buffering... "
+#~ msgstr "Söker..."
 
-#: tauon.py:29134
-msgid "There are currently no connected clients"
-msgstr "Det finns för närvarande inga anslutna klienter"
+#~ msgid "There are currently no connected clients"
+#~ msgstr "Det finns för närvarande inga anslutna klienter"
 
-#: tauon.py:29136
-msgid "There is 1 inbound connection."
-msgstr "Det finns en inkommande anslutning."
+#~ msgid "There is 1 inbound connection."
+#~ msgstr "Det finns en inkommande anslutning."
 
-#: tauon.py:29138
-msgid "There are %d inbound connections."
-msgstr "Det finns %d inkommande anslutningar."
+#~ msgid "There are %d inbound connections."
+#~ msgstr "Det finns %d inkommande anslutningar."
 
-#: tauon.py:29712 tauon.py:30284
-msgid "Play, RC: Go to playing"
-msgstr "Spela, RC: Gå till spelas nu"
+#~ msgid "Play, RC: Go to playing"
+#~ msgstr "Spela, RC: Gå till spelas nu"
 
-#: tauon.py:29740 tauon.py:30312
-msgid "Pause"
-msgstr "Paus"
+#~ msgid "Pause"
+#~ msgstr "Paus"
 
-#: tauon.py:29757
-msgid "Stop, RC: Toggle auto-stop"
-msgstr "Stopp, RC: Autostopp av/på"
+#~ msgid "Stop, RC: Toggle auto-stop"
+#~ msgstr "Stopp, RC: Autostopp av/på"
 
-#: tauon.py:29779 tauon.py:30333
-msgid "Shuffle On"
-msgstr "Blanda på"
+#~ msgid "Shuffle On"
+#~ msgstr "Blanda på"
 
-#: tauon.py:29782 tauon.py:30336
-msgid "Shuffle Off"
-msgstr "Blanda av"
+#~ msgid "Shuffle Off"
+#~ msgstr "Blanda av"
 
-#: tauon.py:29811
-msgid "Repeat On"
-msgstr "Repetera på"
+#~ msgid "Repeat On"
+#~ msgstr "Repetera på"
 
-#: tauon.py:29814
-msgid "Repeat Off"
-msgstr "Repetera av"
+#~ msgid "Repeat Off"
+#~ msgstr "Repetera av"
 
-#: tauon.py:29821
-msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr "Tillbaka, RC: Repetera av/på, MC: Återställ"
+#~ msgid "Back, RC: Toggle repeat, MC: Revert"
+#~ msgstr "Tillbaka, RC: Repetera av/på, MC: Återställ"
 
-#: tauon.py:29877 tauon.py:29879
-msgid "Shuffle"
-msgstr "Blanda"
+#~ msgid "Shuffle"
+#~ msgstr "Blanda"
 
-#: tauon.py:29926 tauon.py:29934
-msgid "Repeat album"
-msgstr "Repetera album"
+#~ msgid "Repeat album"
+#~ msgstr "Repetera album"
 
-#: tauon.py:29928 tauon.py:29936
-msgid "Repeat track"
-msgstr "Repetera spår"
+#~ msgid "Repeat track"
+#~ msgstr "Repetera spår"
 
-#: tauon.py:31300
-msgid "Playlist is empty"
-msgstr "Spelningslistan är tom"
+#~ msgid "Playlist is empty"
+#~ msgstr "Spelningslistan är tom"
 
-#: tauon.py:31302
-msgid "Drag and drop files to import"
-msgstr "Dra och släpp filer för att importera"
+#~ msgid "Drag and drop files to import"
+#~ msgstr "Dra och släpp filer för att importera"
 
-#: tauon.py:31324
-msgid "End of Playlist"
-msgstr "Slut på spelningslista"
+#~ msgid "End of Playlist"
+#~ msgstr "Slut på spelningslista"
 
-#: tauon.py:32549
-msgid "Search Tag"
-msgstr "Sök tagg"
+#~ msgid "Search Tag"
+#~ msgstr "Sök tagg"
 
-#: tauon.py:32550
-msgid "Search Country"
-msgstr "Sök land"
+#~ msgid "Search Country"
+#~ msgstr "Sök land"
 
-#: tauon.py:32551
-msgid "Search Title"
-msgstr "Sök titel"
+#~ msgid "Search Title"
+#~ msgstr "Sök titel"
 
-#: tauon.py:32827
-msgid "Search text…"
-msgstr "Sök text…"
+#~ msgid "Search text…"
+#~ msgstr "Sök text…"
 
-#: tauon.py:32834
-msgid "Search"
-msgstr "Sök"
+#~ msgid "Search"
+#~ msgstr "Sök"
 
-#: tauon.py:32841 tauon.py:32845
-msgid "Get Top Voted"
-msgstr "Hämta toppröstade"
+#~ msgid "Get Top Voted"
+#~ msgstr "Hämta toppröstade"
 
-#: tauon.py:32956
-msgid "Internet Radio"
-msgstr "Internetradio"
+#~ msgid "Internet Radio"
+#~ msgstr "Internetradio"
 
-#: tauon.py:32960
-msgid "Connecting..."
-msgstr "Ansluter..."
+#~ msgid "Connecting..."
+#~ msgstr "Ansluter..."
 
-#: tauon.py:32963
-msgid "Failed to connect!"
-msgstr "Kunde inte ansluta!"
+#~ msgid "Failed to connect!"
+#~ msgstr "Kunde inte ansluta!"
 
-#: tauon.py:33011
-msgid "Name / Title"
-msgstr "Namn / Titel"
+#~ msgid "Name / Title"
+#~ msgstr "Namn / Titel"
 
-#: tauon.py:33029
-msgid "Raw Stream URL http://example.stream:1234"
-msgstr "Raw Ström-URL https://exempel.stream:1234"
+#~ msgid "Raw Stream URL http://example.stream:1234"
+#~ msgstr "Raw Ström-URL https://exempel.stream:1234"
 
-#: tauon.py:33034 tauon.py:33265
-msgid "Save"
-msgstr "Spara"
+#~ msgid "Save"
+#~ msgstr "Spara"
 
-#: tauon.py:33037
-msgid "Enter a stream URL"
-msgstr "Ange en ström-URL"
+#~ msgid "Enter a stream URL"
+#~ msgstr "Ange en ström-URL"
 
-#: tauon.py:33054
-msgid "Could not validate URL. Must start with https:// or http://"
-msgstr "Kunde inte validera URL. Den måste börja med https:// eller http://"
+#~ msgid "Could not validate URL. Must start with https:// or http://"
+#~ msgstr "Kunde inte validera URL. Den måste börja med https:// eller http://"
 
-#: tauon.py:33194 tauon.py:33200 tauon.py:33205
-msgid "Record and auto split songs"
-msgstr "Spela in och separera låtar automatiskt"
+#~ msgid "Record and auto split songs"
+#~ msgstr "Spela in och separera låtar automatiskt"
 
-#: tauon.py:33196
-msgid "Please stop playback first before toggling this setting"
-msgstr "Stoppa uppspelning först, för att ändra denna inställning"
+#~ msgid "Please stop playback first before toggling this setting"
+#~ msgstr "Stoppa uppspelning först, för att ändra denna inställning"
 
-#: tauon.py:33201
-msgid "Please stop playback first to end current recording"
-msgstr "Stoppa uppspelning först för att avsluta aktuell inspelning"
+#~ msgid "Please stop playback first to end current recording"
+#~ msgstr "Stoppa uppspelning först för att avsluta aktuell inspelning"
 
-#: tauon.py:33207
-msgid "Tip: You can press F9 to view the output folder."
-msgstr "Tips: Du kan trycka F9 för att visa utdatamappen."
+#~ msgid "Tip: You can press F9 to view the output folder."
+#~ msgstr "Tips: Du kan trycka F9 för att visa utdatamappen."
 
-#: tauon.py:33207
-msgid "Tracks will now be recorded."
-msgstr "Spår kommer nu att spelas in."
+#~ msgid "Tracks will now be recorded."
+#~ msgstr "Spår kommer nu att spelas in."
 
-#: tauon.py:33211
-msgid "Browse"
-msgstr "Bläddra"
+#~ msgid "Browse"
+#~ msgstr "Bläddra"
 
-#: tauon.py:33215
-msgid "Saved"
-msgstr "Sparat"
+#~ msgid "Saved"
+#~ msgstr "Sparat"
 
-#: tauon.py:33261
-msgid "Added to list of saved stations"
-msgstr "Tillagd i lista över sparade stationer"
+#~ msgid "Added to list of saved stations"
+#~ msgstr "Tillagd i lista över sparade stationer"
 
-#: tauon.py:33263
-msgid "Paste Website Link"
-msgstr "Klistra in webblänk"
+#~ msgid "Paste Website Link"
+#~ msgstr "Klistra in webblänk"
 
-#: tauon.py:33264
-msgid "Visit Website"
-msgstr "Besök webbsidan"
+#~ msgid "Visit Website"
+#~ msgstr "Besök webbsidan"
 
-#: tauon.py:33268
-msgid "Remove All After"
-msgstr "Ta bort alla efter"
+#~ msgid "Remove All After"
+#~ msgstr "Ta bort alla efter"
 
-#: tauon.py:34084
 #, fuzzy
-msgid "View..."
-msgstr "Visa"
+#~ msgid "View..."
+#~ msgstr "Visa"
 
-#: tauon.py:34102
-msgid "Sort Alphabetically"
-msgstr ""
-
-#: tauon.py:34103
 #, fuzzy
-msgid "Sort by Popularity"
-msgstr "Sortera efter mest spelad"
+#~ msgid "Sort by Popularity"
+#~ msgstr "Sortera efter mest spelad"
 
-#: tauon.py:34104
 #, fuzzy
-msgid "Sort by Playtime"
-msgstr "Sortera efter mest spelad"
+#~ msgid "Sort by Playtime"
+#~ msgstr "Sortera efter mest spelad"
 
-#: tauon.py:34105
 #, fuzzy
-msgid "Toggle Thumbnails"
-msgstr "Kolumner på/av"
+#~ msgid "Toggle Thumbnails"
+#~ msgstr "Kolumner på/av"
 
-#: tauon.py:34194
-msgid "Notice: Artist image sourced from fanart.tv"
-msgstr "Notera: Artistbild från fanart.tv"
+#~ msgid "Notice: Artist image sourced from fanart.tv"
+#~ msgstr "Notera: Artistbild från fanart.tv"
 
-#: tauon.py:34518 tauon.py:34653
-msgid "Downloading data..."
-msgstr "Laddar ner data..."
+#~ msgid "Downloading data..."
+#~ msgstr "Laddar ner data..."
 
-#: tauon.py:34879
-msgid "No artists in playlist"
-msgstr "Inga artister i spelningslistan"
+#~ msgid "No artists in playlist"
+#~ msgstr "Inga artister i spelningslistan"
 
-#: tauon.py:34882
-msgid "Artist threshold not met"
-msgstr "Artisttröskelvärde inte uppnått"
+#~ msgid "Artist threshold not met"
+#~ msgstr "Artisttröskelvärde inte uppnått"
 
-#: tauon.py:34884
-msgid "Loading Artist List..."
-msgstr "Läser in artistlista..."
+#~ msgid "Loading Artist List..."
+#~ msgstr "Läser in artistlista..."
 
-#: tauon.py:34886
-msgid "Busy..."
-msgstr "Upptagen..."
+#~ msgid "Busy..."
+#~ msgstr "Upptagen..."
 
-#: tauon.py:35095
-msgid "Loading Folder Tree..."
-msgstr "Läser in mappträd..."
+#~ msgid "Loading Folder Tree..."
+#~ msgstr "Läser in mappträd..."
 
-#: tauon.py:35103 tauon.py:35119
-msgid "Folder Tree"
-msgstr "Mappträd"
+#~ msgid "Folder Tree"
+#~ msgstr "Mappträd"
 
-#: tauon.py:35504
-msgid "Resume Queue"
-msgstr "Återuppta kön"
+#~ msgid "Resume Queue"
+#~ msgstr "Återuppta kön"
 
-#: tauon.py:35506
-msgid "Pause Queue"
-msgstr "Pausa kön"
+#~ msgid "Pause Queue"
+#~ msgstr "Pausa kön"
 
-#: tauon.py:35535
-msgid "Play Now"
-msgstr "Spela nu"
+#~ msgid "Play Now"
+#~ msgstr "Spela nu"
 
-#: tauon.py:35541
-msgid "↳ Except for This"
-msgstr "↳ Med undantag för detta"
+#~ msgid "↳ Except for This"
+#~ msgstr "↳ Med undantag för detta"
 
-#: tauon.py:35543
-msgid "Queue to New Playlist"
-msgstr "Köa i ny spelningslista"
+#~ msgid "Queue to New Playlist"
+#~ msgstr "Köa i ny spelningslista"
 
-#: tauon.py:35688
-msgid "Cancel Auto-Stop"
-msgstr "Avbryt autostopp"
+#~ msgid "Cancel Auto-Stop"
+#~ msgstr "Avbryt autostopp"
 
-#: tauon.py:35690
-msgid "Auto-Stop"
-msgstr "Autostopp"
+#~ msgid "Auto-Stop"
+#~ msgstr "Autostopp"
 
-#: tauon.py:36549 tauon.py:36786
-msgid "Looking up..."
-msgstr "Slår upp..."
+#~ msgid "Looking up..."
+#~ msgstr "Slår upp..."
 
-#: tauon.py:36593
-msgid "Cooldown..."
-msgstr "Cooldown..."
+#~ msgid "Cooldown..."
+#~ msgstr "Cooldown..."
 
-#: tauon.py:36608
-msgid "Loading..."
-msgstr "Läser in..."
+#~ msgid "Loading..."
+#~ msgstr "Läser in..."
 
-#: tauon.py:36778
-msgid "No artist data downloaded"
-msgstr "Ingen artistdata nerladdad"
+#~ msgid "No artist data downloaded"
+#~ msgstr "Ingen artistdata nerladdad"
 
-#: tauon.py:36792
-msgid "No artist bio found"
-msgstr "Ingen artistbiografi hittades"
+#~ msgid "No artist bio found"
+#~ msgstr "Ingen artistbiografi hittades"
 
-#: tauon.py:36884
-msgid "Download Artist Data"
-msgstr "Ladda ner artistdata"
+#~ msgid "Download Artist Data"
+#~ msgstr "Ladda ner artistdata"
 
-#: tauon.py:36885
-msgid "Clear Bio"
-msgstr "Ta bort biografi"
+#~ msgid "Clear Bio"
+#~ msgstr "Ta bort biografi"
 
-#: tauon.py:37341
-msgid "Playing"
-msgstr "Spelar"
+#~ msgid "Playing"
+#~ msgstr "Spelar"
 
-#: tauon.py:37402
-msgid "Prefer synced"
-msgstr "Föredra synkroniserat"
+#~ msgid "Prefer synced"
+#~ msgstr "Föredra synkroniserat"
 
-#: tauon.py:37404
-msgid "Prefer static"
-msgstr "Föredra statiskt"
+#~ msgid "Prefer static"
+#~ msgstr "Föredra statiskt"
 
-#: tauon.py:37415
-msgid "Auto-Scroll"
-msgstr "Skrolla automatiskt"
+#~ msgid "Auto-Scroll"
+#~ msgstr "Skrolla automatiskt"
 
-#: tauon.py:37891
-msgid "Tracks + Art"
-msgstr "Spår + omslag"
+#~ msgid "Tracks + Art"
+#~ msgstr "Spår + omslag"
 
-#: tauon.py:37924
-msgid "Tracks only"
-msgstr "Endast spår"
+#~ msgid "Tracks only"
+#~ msgstr "Endast spår"
 
-#: tauon.py:37937
-msgid "Showcase + Lyrics"
-msgstr "Showcase + sångtext"
+#~ msgid "Showcase + Lyrics"
+#~ msgstr "Showcase + sångtext"
 
-#: tauon.py:37950
-msgid "Toggle columns"
-msgstr "Kolumner på/av"
+#~ msgid "Toggle columns"
+#~ msgstr "Kolumner på/av"
 
-#: tauon.py:37966
-msgid "Toggle artist info"
-msgstr "Artistinfo på/av"
+#~ msgid "Toggle artist info"
+#~ msgstr "Artistinfo på/av"
 
-#: tauon.py:39497
-msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr "Åtkomst nekad! Möjligen otillräcklig Flatpak-behörighet."
+#~ msgid "Could not access! Possible insufficient Flatpak permissions."
+#~ msgstr "Åtkomst nekad! Möjligen otillräcklig Flatpak-behörighet."
 
-#: tauon.py:40320
-msgid "Enabled auto theme"
-msgstr "Aktivera automatiskt tema"
+#~ msgid "Enabled auto theme"
+#~ msgstr "Aktivera automatiskt tema"
 
-#: tauon.py:40322
-msgid "Disabled auto theme"
-msgstr "Avaktivera automatiskt tema"
+#~ msgid "Disabled auto theme"
+#~ msgstr "Avaktivera automatiskt tema"
 
-#: tauon.py:40334
-msgid "First select a source track by copying it into clipboard"
-msgstr ""
+#~ msgid "Rescan folders complete."
+#~ msgstr "Skanna om mappar fullständigt."
 
-#: tauon.py:41773
-msgid "Rescan folders complete."
-msgstr "Skanna om mappar fullständigt."
+#~ msgid "Queue is Empty"
+#~ msgstr "Kön är tom"
 
-#: tauon.py:42380
-msgid "Queue is Empty"
-msgstr "Kön är tom"
+#~ msgid "Copied text to clipboard"
+#~ msgstr "Kopierade text till urklipp"
 
-#: tauon.py:42739 tauon.py:42759 tauon.py:42778 tauon.py:42798 tauon.py:42846
-#: tauon.py:42867 tauon.py:42908 tauon.py:42923 tauon.py:42939 tauon.py:42994
-msgid "Copied text to clipboard"
-msgstr "Kopierade text till urklipp"
+#~ msgid "Path"
+#~ msgstr "Sökväg"
 
-#: tauon.py:42796 tauon.py:42802
-msgid "Path"
-msgstr "Sökväg"
+#~ msgid "Samplerate"
+#~ msgstr "Samplingsfrekvens"
 
-#: tauon.py:42817
-msgid "Samplerate"
-msgstr "Samplingsfrekvens"
+#~ msgid " of "
+#~ msgstr " av "
 
-#: tauon.py:42877 tauon.py:42894
-msgid " of "
-msgstr " av "
+#~ msgid "Track"
+#~ msgstr "Spår"
 
-#: tauon.py:42879
-msgid "Track"
-msgstr "Spår"
+#~ msgid "File size"
+#~ msgstr "Filstorlek"
 
-#: tauon.py:42887
-msgid "File size"
-msgstr "Filstorlek"
+#~ msgid "Disc"
+#~ msgstr "Disk"
 
-#: tauon.py:42896
-msgid "Disc"
-msgstr "Disk"
+#~ msgid "Play count"
+#~ msgstr "Antal spelningar"
 
-#: tauon.py:42961
-msgid "Play count"
-msgstr "Antal spelningar"
+#~ msgid "Play time"
+#~ msgstr "Speltid"
 
-#: tauon.py:42974
-msgid "Play time"
-msgstr "Speltid"
+#~ msgid "Folder Modification"
+#~ msgstr "Mappändring"
 
-#: tauon.py:43058
-msgid "Folder Modification"
-msgstr "Mappändring"
+#~ msgid "Trash"
+#~ msgstr "Skräp"
 
-#: tauon.py:43071
-msgid "Renames the physical folder based on the template"
-msgstr ""
+#~ msgid "Raise"
+#~ msgstr "Höj"
 
-#: tauon.py:43076
-msgid "Trash"
-msgstr "Skräp"
-
-#: tauon.py:43077
-msgid "Moves folder to system trash"
-msgstr ""
-
-#: tauon.py:43080
-msgid "Physically deletes folder from disk"
-msgstr ""
-
-#: tauon.py:43092
-msgid "Raise"
-msgstr "Höj"
-
-#: tauon.py:43093
-msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
-
-#: tauon.py:43100
-msgid "Deletes some unnecessary files from folder"
-msgstr ""
-
-#: tauon.py:43474
 #, fuzzy
-msgid "Loved track"
-msgstr "Älska spår"
+#~ msgid "Loved track"
+#~ msgstr "Älska spår"
 
-#: tauon.py:43477
 #, fuzzy
-msgid "Un-Loved track"
-msgstr "Av-älska spår"
+#~ msgid "Un-Loved track"
+#~ msgstr "Av-älska spår"
 
 #, fuzzy
 #~ msgid "For details on this feature, see:"
