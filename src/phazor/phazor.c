@@ -77,8 +77,12 @@ int fade_2_flag = 0;
 pthread_mutex_t buffer_mutex;
 //pthread_mutex_t pulse_mutex;
 
-unsigned char out_buf[2048 * 4]; // 4 bytes for 16bit stereo
 float out_buff[2048 * 2];
+
+#ifdef AO
+char out_buffc[2048 * 4];
+int32_t temp32 = 0;
+#endif
 
 int position_count = 0;
 int current_length_count = 0;
@@ -859,12 +863,10 @@ void connect_pulse() {
 	int default_driver = ao_default_driver_id();
 
     memset(&format, 0, sizeof(format));
-	format.bits = 16;
+	format.bits = 32;
 	format.channels = 2;
 	format.rate = current_sample_rate;
 	format.byte_format = AO_FMT_LITTLE;
-
-
 
     ao_option option;
     option.key = "buffer_time";
@@ -1566,10 +1568,26 @@ void *out_thread(void *thread_id) {
 //                out_buf[b + 2] = (buffr[buff_base]) & 0xFF;
 //                out_buf[b + 3] = (buffr[buff_base] >> 8) & 0xFF;
                 //printf("%f\n",out_buff[b]);
+
+                #ifndef AO
                 out_buff[b] = buffl[buff_base];
                 out_buff[b + 1] = buffr[buff_base];
-
                 b += 2;
+                #else
+                temp32 = buffl[buff_base] * 2147483648;
+                out_buffc[b] = (temp32) & 0xFF;
+                out_buffc[b + 1] = (temp32 >> 8) & 0xFF;
+                out_buffc[b + 2] = (temp32 >> 16) & 0xFF;
+                out_buffc[b + 3] = (temp32 >> 24) & 0xFF;
+                temp32 = buffr[buff_base] * 2147483648;
+                out_buffc[b + 4] = (temp32) & 0xFF;
+                out_buffc[b + 5] = (temp32 >> 8) & 0xFF;
+                out_buffc[b + 6] = (temp32 >> 16) & 0xFF;
+                out_buffc[b + 7] = (temp32 >> 24) & 0xFF;
+                b += 8;
+                #endif
+
+
                 buff_filled--;
                 buff_base = (buff_base + 1) % BUFF_SIZE;
 
@@ -1597,7 +1615,7 @@ void *out_thread(void *thread_id) {
                     #ifndef AO
                         pa_simple_write(s, &out_buff, b * 4, &error);
                     #else
-                        ao_play(device, out_buf, b);
+                        ao_play(device, out_buffc, b);
                     #endif
 
                     // Flush buffer with 0s to avoid popping noise on close
