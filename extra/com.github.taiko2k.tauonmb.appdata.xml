@@ -62,7 +62,7 @@
 
   <releases>
 
-    <release version="6.8.1" date="2021-11-25">
+    <release version="6.8.1" date="2021-11-24">
       <description>
         <ul>
           <li>Added open embedded image function</li>
