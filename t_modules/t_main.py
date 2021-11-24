@@ -2290,8 +2290,8 @@ def auto_size_columns():
             total -= round(55 * gui.scale)
 
         if item[0] == "Bitrate":
-            item[1] = round(57 * gui.scale)
-            total -= round(57 * gui.scale)
+            item[1] = round(67 * gui.scale)
+            total -= round(67 * gui.scale)
 
         if item[0] == "❤":
             item[1] = round(27 * gui.scale)
@@ -15793,7 +15793,10 @@ def sort_path_pl(pl, custom_list=None):
     else:
         target = pctl.multi_playlist[pl][2]
 
-    target.sort(key=key_filepath)
+    if use_natsort:
+        target[:] = natsort.os_sorted(target)
+    else:
+        target.sort(key=key_filepath)
 
 def append_current_playing(index):
 
@@ -20173,8 +20176,12 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 
     if name == "Filepath":
         key = key_filepath
+        if use_natsort:
+            key = natsort.natsort_keygen()
     if name == "Filename":
         key = key_filename
+        if use_natsort:
+            key = natsort.natsort_keygen()
     if name == "Artist":
         key = key_artist
     if name == "Album Artist":
