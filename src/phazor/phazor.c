@@ -1436,7 +1436,6 @@ void *out_thread(void *thread_id) {
     //printf("pa: Start out thread\n");
 
     while (out_thread_running == 1) {
-
         if (buffering == 1 && buff_filled > 90000) {
 
             buffering = 0;
@@ -1559,8 +1558,8 @@ void *out_thread(void *thread_id) {
                 } // End amp
 
                 // Apply final volume adjustment (logarithmic)
-                buffl[buff_base] *= pow(gate * volume_on, 2.0);
-                buffr[buff_base] *= pow(gate * volume_on, 2.0);
+                buffl[buff_base] *= powf(gate * volume_on, 2.0);
+                buffr[buff_base] *= powf(gate * volume_on, 2.0);
 
                 // Pack integer audio data to bytes
 //                out_buf[b] = (buffl[buff_base]) & 0xFF;
@@ -1622,15 +1621,15 @@ void *out_thread(void *thread_id) {
                     if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)) {
 
                         b = 0;
-                        while (b < 256 * 2) {
+                        while (b < 256 * 8) {
                             out_buff[b] = 0.0;
                             b += 1;
                         }
                         #ifndef AO
                             int g = 0;
-                            while (g < 12) {
+                            while (g < 8) {
                                 g++;
-                                pa_simple_write(s, out_buff, b * 8, &error);
+                                pa_simple_write(s, out_buff, b, &error);
                             }
                             pa_simple_flush(s, &error);
                             pa_simple_free(s);
@@ -1654,6 +1653,7 @@ void *out_thread(void *thread_id) {
         }
 
     } // close main loop
+    printf("%d\n", out_thread_running);
     out_thread_running = 0;
     //printf("Exit out thread\n");
     return thread_id;
@@ -1666,8 +1666,9 @@ void *out_thread(void *thread_id) {
 int main_running = 0;
 
 void *main_loop(void *thread_id) {
+    
 
-    #ifdef AO
+#ifdef AO
     	ao_initialize();
     	connect_pulse();
     #endif
@@ -1722,7 +1723,9 @@ void *main_loop(void *thread_id) {
                         mode = PAUSED;
                         if (out_thread_running == 1){
                           out_thread_running = 2;
-                          usleep(20000);
+                            printf("sleep\n");
+
+                            usleep(20000);
                           }
                         
                         command = NONE;
