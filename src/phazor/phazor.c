@@ -1558,8 +1558,9 @@ void *out_thread(void *thread_id) {
                 } // End amp
 
                 // Apply final volume adjustment (logarithmic)
-                buffl[buff_base] *= powf(gate * volume_on, 2.0);
-                buffr[buff_base] *= powf(gate * volume_on, 2.0);
+                float final_vol = (gate * volume_on) * (gate * volume_on);
+                buffl[buff_base] = buffl[buff_base] * final_vol;
+                buffr[buff_base] = buffr[buff_base] * final_vol;
 
                 // Pack integer audio data to bytes
 //                out_buf[b] = (buffl[buff_base]) & 0xFF;
@@ -1666,7 +1667,7 @@ void *out_thread(void *thread_id) {
 int main_running = 0;
 
 void *main_loop(void *thread_id) {
-    
+
 
 #ifdef AO
     	ao_initialize();
