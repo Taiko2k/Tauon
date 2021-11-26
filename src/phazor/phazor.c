@@ -1909,7 +1909,7 @@ void *main_loop(void *thread_id) {
 
             if (mode == RAMP_DOWN && gate == 0) {
                 pthread_mutex_lock(&buffer_mutex);
-                buff_base = (buff_base + buff_filled) & BUFF_SIZE;
+                buff_base = 0; //(buff_base + buff_filled) % BUFF_SIZE;
                 buff_filled = 0;
 //                if (command == SEEK && config_fast_seek == 1) {
 //                    pthread_mutex_lock(&pulse_mutex);
