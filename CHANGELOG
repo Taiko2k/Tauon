@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v6.8.2
+
+ - Fixed del key deleting tracks with tag editor box open
+ - [Phazor] Fixed a bug where small chance backend crash on seek
+
 v6.8.1
 
  - Added shift + up/down for track selection

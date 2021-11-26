@@ -40509,9 +40509,9 @@ while pctl.running:
             SDL_SetWindowFullscreen(t_window, 0)
 
         # Disable keys for text cursor control
-        if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled:
+        if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not trans_edit_box.active:
 
-            if not quick_search_mode and not search_over.active and not trans_edit_box.active:
+            if not quick_search_mode and not search_over.active:
                 if album_mode and gui.album_tab_mode \
                         and not key_ctrl_down \
                         and not key_meta \
@@ -40529,17 +40529,15 @@ while pctl.running:
                         gal_down = True
                         key_down_press = False
 
-            if key_del:
-                # Close any active menus
-                close_all_menus()
-                del_selected()
+            if not search_over.active:
+                if key_del:
+                    close_all_menus()
+                    del_selected()
 
-            # Arrow keys to change playlist
-            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 \
-                    and not search_over.active:
-
-                gui.pl_update = 1
-                gui.update += 1
+                # Arrow keys to change playlist
+                if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+                    gui.pl_update = 1
+                    gui.update += 1
 
 
             if keymaps.test("start"):
