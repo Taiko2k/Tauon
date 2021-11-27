@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v6.8.2
 
  - Fixed del key deleting tracks with tag editor box open
+ - Reverted natsort filepath change
  - [Phazor] Fixed a bug where small chance backend crash on seek
 
 v6.8.1
