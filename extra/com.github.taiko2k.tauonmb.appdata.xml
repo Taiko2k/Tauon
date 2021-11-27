@@ -62,11 +62,10 @@
 
   <releases>
 
-    <release version="6.8.1" date="2021-11-24">
+    <release version="6.8.2" date="2021-11-27">
       <description>
         <ul>
-          <li>Added open embedded image function</li>
-          <li>Various other fixes and tweaks</li>
+          <li>Fixed some bugs</li>
         </ul>
       </description>
     </release>

@@ -15797,10 +15797,10 @@ def sort_path_pl(pl, custom_list=None):
     else:
         target = pctl.multi_playlist[pl][2]
 
-    if use_natsort:
-        target[:] = natsort.os_sorted(target)
-    else:
-        target.sort(key=key_filepath)
+    # if use_natsort and False:
+    #     target[:] = natsort.os_sorted(target, key=key_fullpath)
+    # else:
+    target.sort(key=key_filepath)
 
 def append_current_playing(index):
 
@@ -20180,8 +20180,8 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 
     if name == "Filepath":
         key = key_filepath
-        if use_natsort:
-            key = natsort.natsort_keygen()
+        # if use_natsort:
+        #     key = natsort.natsort_keygen()
     if name == "Filename":
         key = key_filename
         if use_natsort:
