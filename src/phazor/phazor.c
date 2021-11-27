@@ -1781,7 +1781,6 @@ void *main_loop(void *thread_id) {
                             float v = 1.0;
                             while (i < l){
                                 v = 1.0 - (i / l);
-                                printf("%f\n", v);
                                 buffl[(buff_base + i) % BUFF_SIZE] *= v;
                                 buffr[(buff_base + i) % BUFF_SIZE] *= v;
                                 i++;
