@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2021-11-24 20:31+1300\n"
-"PO-Revision-Date: 2021-07-04 08:34+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2021-12-02 07:53+0000\n"
+"Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.8-dev\n"
+"X-Generator: Weblate 4.10-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1928 t_modules/t_main.py:1930
@@ -61,7 +61,7 @@ msgstr "Ceci peut prendre un certain temps."
 
 #: t_modules/t_main.py:7104
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Échec lors de la mis à jour du status j'aime sur last.fm"
 
 #: t_modules/t_main.py:7107
 msgid "Error updating love to last.fm!"
@@ -159,7 +159,7 @@ msgstr "Impossible d’établir la connexion / l’autorisation"
 
 #: t_modules/t_main.py:8616
 msgid "Stop the sync before exiting!"
-msgstr "Arrêter la synchro avant de quitter !"
+msgstr "Arrêtez la synchro avant de quitter !"
 
 #: t_modules/t_main.py:13247
 msgid "Playlists + Queue"
@@ -203,7 +203,7 @@ msgstr " fichiers renommés."
 
 #: t_modules/t_main.py:13503
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Simple éditeur d'étiquettes"
 
 #: t_modules/t_main.py:13505 t_modules/t_main.py:26232
 #: t_modules/t_main.py:26507 t_modules/t_main.py:27260
@@ -213,6 +213,8 @@ msgstr "?"
 #: t_modules/t_main.py:13506
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Pressez Entrée dans chaque champ pour appliquer les modifications dans la "
+"base de données locale."
 
 #: t_modules/t_main.py:13507
 msgid ""
@@ -222,11 +224,11 @@ msgstr ""
 
 #: t_modules/t_main.py:13510
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Nombre de pistes sélectionnées : %d"
 
 #: t_modules/t_main.py:13545
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Plusieurs sélectionnés>"
 
 #: t_modules/t_main.py:13553
 #, fuzzy
@@ -250,19 +252,22 @@ msgstr "Artiste de l'album"
 
 #: t_modules/t_main.py:13565
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "L'édition de pistes en réseau n'est pas recommandée !"
 
 #: t_modules/t_main.py:13595 t_modules/t_main.py:13596
 msgid "WRITE TAGS"
 msgstr ""
 
 #: t_modules/t_main.py:13598
+#, fuzzy
 msgid "Press enter on fields to apply your changes first!"
 msgstr ""
+"Commencez par presse Entrée dans les champs pour appliquer les modifications "
+"!"
 
 #: t_modules/t_main.py:13610
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Écrire dans une piste en réseau n'est pas disponible !"
 
 #: t_modules/t_main.py:13613
 msgid "Cannot write CUE sheet types!"
@@ -271,11 +276,13 @@ msgstr ""
 #: t_modules/t_main.py:13624
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
+"L'édition de plusieurs champs n'est pas supporté ! Veuillez utiliser un "
+"éditeur externe"
 
 #: t_modules/t_main.py:13642
 #, fuzzy
 msgid "%d files rewritten"
-msgstr " fichiers renommés."
+msgstr "%d fichiers renommés."
 
 #: t_modules/t_main.py:13702
 msgid "Substitute Lyric Search"
@@ -1003,7 +1010,7 @@ msgstr "Renommer les pistes…"
 #: t_modules/t_main.py:18780 t_modules/t_main.py:19603
 #: t_modules/t_main.py:19703
 msgid "Edit fields…"
-msgstr ""
+msgstr "Modifier les champs…"
 
 #: t_modules/t_main.py:18788
 msgid "Cannot physically delete"
@@ -2118,7 +2125,7 @@ msgstr "Chemin d’accès au dossier de musique de l’appareil :   "
 
 #: t_modules/t_main.py:27222
 msgid "A mounted music folder was found!"
-msgstr ""
+msgstr "Un dossier de musique monté a été trouvé !"
 
 #: t_modules/t_main.py:27224
 msgid "Could not auto-detect mounted device path."
@@ -2126,7 +2133,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27224
 msgid "Make sure the device is mounted and path is accessible."
-msgstr ""
+msgstr "Vérifiez que l'appareil est monté et son chemin est accessible."
 
 #: t_modules/t_main.py:27229
 msgid "Delete all other folders in target"
@@ -2155,6 +2162,8 @@ msgstr "Arrêt en cours…"
 #: t_modules/t_main.py:27249
 msgid "Right click tab > Misc... > Set as sync playlist"
 msgstr ""
+"Cliquez-droit sur l'onglet > Divers... > Définir comme liste de lecture de "
+"synchronisation"
 
 #: t_modules/t_main.py:27249
 #, fuzzy
@@ -2200,7 +2209,7 @@ msgstr "Utiliser la décoration native des fenêtres"
 
 #: t_modules/t_main.py:27335
 msgid "Restore window position on restart"
-msgstr ""
+msgstr "Rétablir la position de la fenêtre au redémarrage"
 
 #: t_modules/t_main.py:27339
 msgid "Show playing in titlebar"
@@ -2216,15 +2225,15 @@ msgstr "Visualisation en mode présentation"
 
 #: t_modules/t_main.py:27356
 msgid "UI scale for HiDPI displays"
-msgstr ""
+msgstr "Mise à l'échelle de l'interface pour les écrans HiDPI"
 
 #: t_modules/t_main.py:27405
 msgid "Restart app to apply any changes"
-msgstr ""
+msgstr "Redémarrez l'appli pour appliquer les changements"
 
 #: t_modules/t_main.py:27414
 msgid "Auto scale based on xft-dpi"
-msgstr ""
+msgstr "Mise à l'échelle auto suivant xft-dpi"
 
 #: t_modules/t_main.py:27697 t_modules/t_main.py:27700
 msgid "Credits"
@@ -2232,7 +2241,7 @@ msgstr "Crédits"
 
 #: t_modules/t_main.py:27697 t_modules/t_main.py:27702
 msgid "Next"
-msgstr ""
+msgstr "Suivant"
 
 #: t_modules/t_main.py:27714
 msgid "Chart Grid Generator"
@@ -2526,23 +2535,24 @@ msgstr ""
 #: t_modules/t_main.py:33459 t_modules/t_main.py:33465
 #: t_modules/t_main.py:33470
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Enregistrer et découper automatiquement les sons"
 
 #: t_modules/t_main.py:33461
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Veuillez arrêter la lecture avant de changer cette préférence"
 
 #: t_modules/t_main.py:33466
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
 
 #: t_modules/t_main.py:33472
+#, fuzzy
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Astuce : Pressez F9 pour voir le dossier de sortie."
 
 #: t_modules/t_main.py:33472
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Les pistes vont maintenant être enregistrées."
 
 #: t_modules/t_main.py:33476
 msgid "Browse"
@@ -2741,6 +2751,7 @@ msgstr "Thème automatique désactivé"
 #: t_modules/t_main.py:40633
 msgid "First select a source track by copying it into clipboard"
 msgstr ""
+"Sélectionnez d'abord une piste source en la copiant dans le presse-papier"
 
 #: t_modules/t_main.py:42108
 #, fuzzy
