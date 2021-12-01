@@ -2538,7 +2538,8 @@ msgstr "Veuillez arrêter la lecture avant de changer cette préférence"
 
 #: t_modules/t_main.py:33466
 msgid "Please stop playback first to end current recording"
-msgstr "Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
+msgstr ""
+"Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
 
 #: t_modules/t_main.py:33472
 #, fuzzy
