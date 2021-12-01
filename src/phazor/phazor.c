@@ -1654,7 +1654,6 @@ void *out_thread(void *thread_id) {
         }
 
     } // close main loop
-    printf("%d\n", out_thread_running);
     out_thread_running = 0;
     //printf("Exit out thread\n");
     return thread_id;
@@ -1724,8 +1723,6 @@ void *main_loop(void *thread_id) {
                         mode = PAUSED;
                         if (out_thread_running == 1){
                           out_thread_running = 2;
-                            printf("sleep\n");
-
                             usleep(20000);
                           }
                         
