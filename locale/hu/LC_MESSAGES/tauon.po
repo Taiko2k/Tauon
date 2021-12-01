@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-11-24 20:31+1300\n"
-"PO-Revision-Date: 2021-11-21 09:08+0000\n"
+"PO-Revision-Date: 2021-11-28 18:53+0000\n"
 "Last-Translator: Daniel Uhrinyi <daniel.uhrinyi@gmail.com>\n"
-"Language-Team: Hungarian <https://hosted.weblate.org/projects/tauon-music-"
-"box/tauon-music-box/hu/>\n"
+"Language-Team: Hungarian <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/hu/>\n"
 "Language: hu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.9.1\n"
+"X-Generator: Weblate 4.10-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1928 t_modules/t_main.py:1930
@@ -111,9 +111,8 @@ msgid "Please authorise Spotify in settings!"
 msgstr "Engedélyezd a Spotify-t a beállításokban!"
 
 #: t_modules/t_main.py:7382
-#, fuzzy
 msgid "Please authorise and click the enable toggle first!"
-msgstr "Engedélyezés után nyomd meg a 'Kész' gombot."
+msgstr "Engedélyezés után nyomd meg a 'Kész' gombot!"
 
 #: t_modules/t_main.py:7383
 msgid "Spotify import complete"
@@ -213,9 +212,7 @@ msgstr "?"
 
 #: t_modules/t_main.py:13506
 msgid "Press Enter in each field to apply its changes to local database."
-msgstr ""
-"Nyomj Enter-t minden mezőben a változtatás alkalmazásához a helyi "
-"adatbázisban."
+msgstr "Nyomj Enter-t minden mezőben a változtatáshoz a helyi adatbázisban."
 
 #: t_modules/t_main.py:13507
 msgid ""
@@ -256,11 +253,8 @@ msgid "WRITE TAGS"
 msgstr ""
 
 #: t_modules/t_main.py:13598
-#, fuzzy
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
-"Nyomj Enter-t minden mezőben a változtatás alkalmazásához a helyi "
-"adatbázisban."
+msgstr "Először nyomj Enter-t a mezőben a változtatás alkalmazásához!"
 
 #: t_modules/t_main.py:13610
 msgid "Writing to a network track is not applicable!"
@@ -719,9 +713,8 @@ msgid "Folder Remaining"
 msgstr "Mappa navigáció"
 
 #: t_modules/t_main.py:17147
-#, fuzzy
 msgid "Sync completed"
-msgstr "Az átnevezés lefutott."
+msgstr "Az átnevezés lefutott"
 
 #: t_modules/t_main.py:17163 t_modules/t_main.py:17243
 msgid "Set as Sync Playlist"
@@ -1082,9 +1075,8 @@ msgid "URL copied to clipboard"
 msgstr ""
 
 #: t_modules/t_main.py:19624 t_modules/t_main.py:21293
-#, fuzzy
 msgid "No results found"
-msgstr "Nem talált előadó képet."
+msgstr "Nem talált előadó képet"
 
 #: t_modules/t_main.py:19631
 #, fuzzy
@@ -1127,9 +1119,8 @@ msgid "Delete Files"
 msgstr ""
 
 #: t_modules/t_main.py:19763
-#, fuzzy
 msgid "No matching artist result found"
-msgstr "Nem talált előadó képet."
+msgstr "Nem talált előadó képet"
 
 #: t_modules/t_main.py:19841
 msgid "Search Artist on Wikipedia"
@@ -1468,9 +1459,8 @@ msgid "Searching for albums by artist: "
 msgstr ""
 
 #: t_modules/t_main.py:22666
-#, fuzzy
 msgid "This may take a moment"
-msgstr "Ez hosszú ideig tarthat."
+msgstr "Ez eltarthat egy ideig"
 
 #: t_modules/t_main.py:24167
 msgid "Permission error accessing one or more files."
@@ -1503,9 +1493,8 @@ msgid "External connections will be accepted."
 msgstr ""
 
 #: t_modules/t_main.py:25122
-#, fuzzy
 msgid "Web server starting"
-msgstr "Webszerver megállt."
+msgstr "Webszerver megállt"
 
 #: t_modules/t_main.py:25159 t_modules/t_main.py:26550
 msgid "One or more fields is missing."
@@ -2090,9 +2079,8 @@ msgid "This feature is not recommended for accounts that have many friends."
 msgstr ""
 
 #: t_modules/t_main.py:27197
-#, fuzzy
 msgid "Selected playlist:"
-msgstr "Lejátszási lista vége"
+msgstr "Kiválasztott lista:"
 
 #: t_modules/t_main.py:27201
 msgid "No sync playlist selected!"
@@ -2591,9 +2579,8 @@ msgid "Artist threshold not met"
 msgstr ""
 
 #: t_modules/t_main.py:35166
-#, fuzzy
 msgid "Loading Artist List..."
-msgstr "Előadó lista"
+msgstr "Előadó lista betöltése..."
 
 #: t_modules/t_main.py:35168
 msgid "Busy..."
@@ -2649,14 +2636,12 @@ msgid "Loading..."
 msgstr ""
 
 #: t_modules/t_main.py:37060
-#, fuzzy
 msgid "No artist data downloaded"
-msgstr "Nem talált előadó képet."
+msgstr "Előadó adatai nem töltődtek le"
 
 #: t_modules/t_main.py:37074
-#, fuzzy
 msgid "No artist bio found"
-msgstr "Nem talált előadó képet."
+msgstr "Nem talált előadó biot"
 
 #: t_modules/t_main.py:37166
 msgid "Download Artist Data"
