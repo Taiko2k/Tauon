@@ -1234,7 +1234,7 @@ void end() {
 //        }
 //    #endif
     //disconnect_pulse();
-    current_sample_rate = 0;
+    //current_sample_rate = 0;
 }
 
 void decoder_eos() {
@@ -1952,8 +1952,10 @@ void *main_loop(void *thread_id) {
     pthread_mutex_lock(&buffer_mutex);
 
     main_running = 0;
-    out_thread_running = 0;
-    command = NONE;
+    if (out_thread_running == 1) {
+        out_thread_running = 2;
+    }
+
     position_count = 0;
     buff_base = 0;
     buff_filled = 0;
@@ -1965,6 +1967,12 @@ void *main_loop(void *thread_id) {
     src_delete(src);
 
     pthread_mutex_unlock(&buffer_mutex);
+
+    while (out_thread_running != 0){
+        usleep(10000);
+    }
+    disconnect_pulse();
+    command = NONE;
 
     return thread_id;
 }

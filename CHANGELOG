@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.8.3
+
+ - Fixed phazor related bugs related to idling
+
 v6.8.2
 
  - Fixed del key deleting tracks with tag editor box open
