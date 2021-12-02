@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2021-11-24 20:31+1300\n"
-"PO-Revision-Date: 2020-12-06 22:29+0000\n"
-"Last-Translator: Rau <drogaslord@gmail.com>\n"
+"PO-Revision-Date: 2021-12-01 01:11+0000\n"
+"Last-Translator: legion 1978 <legion1978@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
 "Language: es\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.10-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1928 t_modules/t_main.py:1930
@@ -48,15 +48,15 @@ msgstr "Falló el escaneo. ¿Inténtar de nuevo?"
 
 #: t_modules/t_main.py:6600 t_modules/t_main.py:7177
 msgid "Scanning scrobbles complete"
-msgstr ""
+msgstr "Escaneo de scrobbles completado"
 
 #: t_modules/t_main.py:6752
 msgid "Getting friend data..."
-msgstr ""
+msgstr "Obteniendo información de amigos..."
 
 #: t_modules/t_main.py:6752
 msgid "This may take a very long time."
-msgstr ""
+msgstr "Esto puede tardar mucho tiempo."
 
 #: t_modules/t_main.py:7104
 msgid "Failed updating last.fm love status"
