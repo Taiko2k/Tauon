@@ -1061,10 +1061,10 @@ int load_next() {
                 wave_seek((int) wave_samplerate * (load_target_seek / 1000.0));
             }
             pthread_mutex_lock(&buffer_mutex);
-            if (current_sample_rate != wave_samplerate) {
-                sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
-                want_sample_rate = wave_samplerate;
-            }
+            //if (current_sample_rate != wave_samplerate) {
+            //    sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            //    want_sample_rate = wave_samplerate;
+            //}
 
             if (load_target_seek > 0) {
                 reset_set_value = (int) wave_samplerate * (load_target_seek / 1000.0);
