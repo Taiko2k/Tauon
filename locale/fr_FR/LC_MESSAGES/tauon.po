@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
 "PO-Revision-Date: 2025-05-04 09:06+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -4341,8 +4341,7 @@ msgstr "Veuillez arrêter la lecture avant de changer cette préférence"
 
 #: src/tauon/t_modules/t_main.py:36532
 msgid "Please stop playback first to end current recording"
-msgstr ""
-"Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
+msgstr "Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
 
 #: src/tauon/t_modules/t_main.py:36539
 msgid "Tracks will now be recorded."
