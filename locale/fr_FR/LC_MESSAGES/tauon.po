@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2021-11-24 20:31+1300\n"
-"PO-Revision-Date: 2021-12-02 07:53+0000\n"
+"PO-Revision-Date: 2021-12-04 00:57+0000\n"
 "Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -221,6 +221,8 @@ msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"Quand terminé, pressez ENREGISTRER ÉTIQUETTES pour sauvegarder ces "
+"étiquettes dans des fichiers. (Optionnel mais recommandé)"
 
 #: t_modules/t_main.py:13510
 msgid "Number of tracks selected: %d"
@@ -231,24 +233,20 @@ msgid "<Multiple selected>"
 msgstr "<Plusieurs sélectionnés>"
 
 #: t_modules/t_main.py:13553
-#, fuzzy
 msgid "Track title"
-msgstr "Liste de pistes"
+msgstr "Titre de piste"
 
 #: t_modules/t_main.py:13555
-#, fuzzy
 msgid "Album name"
-msgstr "Gain par album"
+msgstr "Nom d'album"
 
 #: t_modules/t_main.py:13557
-#, fuzzy
 msgid "Artist name"
-msgstr "Artiste"
+msgstr "Nom de l'artiste"
 
 #: t_modules/t_main.py:13559
-#, fuzzy
 msgid "Album-artist name"
-msgstr "Artiste de l'album"
+msgstr "Nom de l'artiste de l'album"
 
 #: t_modules/t_main.py:13565
 msgid "Editing network tracks is not recommended!"
@@ -256,14 +254,12 @@ msgstr "L'édition de pistes en réseau n'est pas recommandée !"
 
 #: t_modules/t_main.py:13595 t_modules/t_main.py:13596
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "ENREGISTRER ÉTIQUETTES"
 
 #: t_modules/t_main.py:13598
-#, fuzzy
 msgid "Press enter on fields to apply your changes first!"
 msgstr ""
-"Commencez par presse Entrée dans les champs pour appliquer les modifications "
-"!"
+"Pressez d'abord Entrée dans les champs pour appliquer les modifications !"
 
 #: t_modules/t_main.py:13610
 msgid "Writing to a network track is not applicable!"
@@ -280,9 +276,8 @@ msgstr ""
 "éditeur externe"
 
 #: t_modules/t_main.py:13642
-#, fuzzy
 msgid "%d files rewritten"
-msgstr "%d fichiers renommés."
+msgstr "%d fichiers renommés"
 
 #: t_modules/t_main.py:13702
 msgid "Substitute Lyric Search"
@@ -321,9 +316,8 @@ msgid "Random Albums"
 msgstr "Albums aléatoires"
 
 #: t_modules/t_main.py:13847
-#, fuzzy
 msgid "Shuffle Lockdown"
-msgstr "Aléatoire activé"
+msgstr "Mode aléatoire verrouillé"
 
 #: t_modules/t_main.py:13872
 msgid "Make Large Size"
@@ -1439,7 +1433,7 @@ msgstr "Scrobbling en cours"
 
 #: t_modules/t_main.py:21681
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Déverrouiller le mode aléatoire"
 
 #: t_modules/t_main.py:21682
 msgid "Exit"
@@ -1804,13 +1798,12 @@ msgid "Transcode folder"
 msgstr "Transcoder le dossier"
 
 #: t_modules/t_main.py:26229
-#, fuzzy
 msgid "Enable Discord Rich Presence"
-msgstr "Activer/désactiver Discord Rich Presence"
+msgstr "Activer Discord Rich Presence"
 
 #: t_modules/t_main.py:26233
 msgid "For troubleshooting Discord RP"
-msgstr ""
+msgstr "Pour les problèmes avec Discord Rich Presence"
 
 #: t_modules/t_main.py:26261
 msgid "Extract archives"
@@ -1827,6 +1820,8 @@ msgstr "Activer le moniteur de téléchargement"
 #: t_modules/t_main.py:26265
 msgid "One click import new archives and folders from downloads folder"
 msgstr ""
+"L'importation en un clic des nouvelles archives et dossiers depuis les "
+"téléchargements"
 
 #: t_modules/t_main.py:26267
 msgid "Trash archive after extraction"
@@ -2086,7 +2081,7 @@ msgstr ""
 #: t_modules/t_main.py:27130
 #, fuzzy
 msgid "Cleared all loves"
-msgstr "Charger les favoris locaux"
+msgstr "Retirer tous les favoris"
 
 #: t_modules/t_main.py:27137 t_modules/t_main.py:27159
 msgid "Press again while holding Shift if you understand"
@@ -2497,7 +2492,7 @@ msgstr "Chercher"
 
 #: t_modules/t_main.py:33106 t_modules/t_main.py:33110
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Récupérer les Mieux Votés"
 
 #: t_modules/t_main.py:33221
 msgid "Internet Radio"
