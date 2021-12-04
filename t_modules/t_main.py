@@ -2946,7 +2946,7 @@ for t in range(2):
         if save[92] is not None:
             prefs.append_total_time = save[92]
         if save[93] is not None:
-            prefs.backend = save[93]
+            prefs.backend = save[93]  # moved to config file
         if save[94] is not None:
             prefs.album_shuffle_mode = save[94]
         if save[95] is not None:
@@ -3568,8 +3568,6 @@ if db_version > 0:
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
 
-if old_backend == 1:
-    show_message("It looks like you were previously using the BASS backend.", "Just letting you know that BASS has been removed in this version going forward.")
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -3619,6 +3617,7 @@ def save_prefs():
     #cf.update_value("decode-search", prefs.diacritic_search)
 
     #cf.update_value("use-log-volume-scale", prefs.log_vol)
+    cf.update_value("audio-backend", prefs.backend)
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     #cf.update_value("cross-fade-time", prefs.cross_fade_time)
@@ -3752,6 +3751,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
+    prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
     prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "Interval to seek when using shortcut. In seconds. Default is 15.")
     #prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
@@ -19364,7 +19364,7 @@ def launch_editor_selection(index):
     mini_t.start()
 
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
-track_menu.add_to_sub(_("Reload Metadata"), 0, reload_metadata, pass_ref=True)
+track_menu.add_to_sub(_("Rescan Tags"), 0, reload_metadata, pass_ref=True)
 
 
 mbp_icon = MenuIcon(asset_loader('mbp-g.png'))
@@ -19599,7 +19599,7 @@ def transcode_deco():
         return [colours.menu_text, colours.menu_background, _('Transcode Folder')]
 
 
-folder_menu.add(_('Reload Metadata'), reload_metadata, pass_ref=True)
+folder_menu.add(_('Rescan Tags'), reload_metadata, pass_ref=True)
 folder_menu.add(_("Edit fields…"), activate_trans_editor)
 folder_menu.add(_('Vacuum Playtimes'), vacuum_playtimes, pass_ref=True, show_test=test_shift)
 folder_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
@@ -19697,7 +19697,7 @@ selection_menu.add(_('Add to queue'), add_selected_to_queue_multi, selection_que
 
 selection_menu.br()
 
-selection_menu.add(_('Reload Metadata'), reload_metadata_selection)
+selection_menu.add(_('Rescan Tags'), reload_metadata_selection)
 
 
 selection_menu.add(_("Edit fields…"), activate_trans_editor)
@@ -39507,7 +39507,7 @@ def save_state():
             pctl.force_queue, # 90
             prefs.use_pause_fade, # 91
             prefs.append_total_time, # 92
-            prefs.backend,
+            None, #prefs.backend,
             pctl.album_shuffle_mode,
             pctl.album_repeat_mode, # 95
             prefs.finish_current,  # Not used
