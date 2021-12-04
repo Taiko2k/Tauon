@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v6.8.4
+
+ - Added generator code "find string" fs
+
 v6.8.3
 
  - Fixed phazor related bugs related to idling

@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "6.8.3"
+n_version = "6.8.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -16829,7 +16829,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                     del playlist[i]
 
 
-        elif cm.startswith("find\"") or cm.startswith("f\""):
+        elif cm.startswith("find\"") or cm.startswith("f\"") or cm.startswith("fs\""):
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -16843,13 +16843,21 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for track_id in selection:
                     if track_id not in dones:
                         tr = pctl.g(track_id)
-                        line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
-                        # if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
-                        #     line = str(unidecode(line))
+                        if cm.startswith("fs\""):
+                            line = "|".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
+                                             tr.album_artist]).lower()
+                            if quote.lower() in line:
+                                playlist.append(track_id)
 
-                        if search_magic(quote.lower(), line):
-                            playlist.append(track_id)
+                        else:
+                            line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+
+                            # if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
+                            #     line = str(unidecode(line))
+
+                            if search_magic(quote.lower(), line):
+                                playlist.append(track_id)
 
                         cooldown += 1
                         if cooldown > 300:
