@@ -1896,7 +1896,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.macstyle = prefs.macstyle
         if macos or detect_macstyle:
             self.macstyle = True
-        self.radio_view = True
+        self.radio_view = False
 
 
 gui = GuiVar()
@@ -4669,6 +4669,9 @@ class PlayerCtl:
 
         self.regen_in_progress = False
         self.notify_in_progress = False
+
+        self.radio_playlists = []
+        self.radio_playlist_viewing = 0
 
     def notify_change(self):
         self.db_inc += 1
@@ -20412,8 +20415,11 @@ def toggle_combo_view(mode=0, showcase=False, off=False):
             toggle_album_mode()
         if gui.rsp:
             gui.rsp = False
+        if key_shift_down:
+            gui.radio_view = True
     else:
         gui.combo_mode = False
+        gui.radio_view = False
 
         gall_ren.size = album_mode_art_size
         if prefs.prefer_side:
@@ -28623,9 +28629,14 @@ class TopPanel:
         # Need to test length
         self.tab_text_spaces = []
 
-        for i, item in enumerate(pctl.multi_playlist):
-            le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
-            self.tab_text_spaces.append(le)
+        if gui.radio_view:
+            for item in pctl.radio_playlists:
+                le = ddt.get_text_w(item["name"], self.tab_text_font)
+                self.tab_text_spaces.append(le)
+        else:
+            for i, item in enumerate(pctl.multi_playlist):
+                le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
+                self.tab_text_spaces.append(le)
 
         x = self.start_space_left + wwx
         y = yy #self.ty
@@ -28664,7 +28675,7 @@ class TopPanel:
 
         x_start = x
 
-        if playlist_box.drag:
+        if playlist_box.drag and not gui.radio_view:
             if mouse_up:
                 if mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and mouse_up_position[1] > gui.panelY:
                     playlist_box.drag = False
@@ -28682,18 +28693,20 @@ class TopPanel:
         ready_tabs = []
         show_tabs = []
 
-        if prefs.tabs_on_top:
-            for i, tab in enumerate(pctl.multi_playlist):
-
-                # Skip if hide flag is set
-                if tab[8] is True:
-                    continue
-
-                ready_tabs.append(i)
-
-            if self.prime_tab > len(pctl.multi_playlist) - 1:
-                self.prime_tab = len(pctl.multi_playlist) - 1
-
+        if prefs.tabs_on_top or gui.radio_view:
+            if gui.radio_view:
+                for i, tab in enumerate(pctl.radio_playlists):
+                    ready_tabs.append(i)
+                if self.prime_tab > len(pctl.radio_playlists) - 1:
+                    self.prime_tab = len(pctl.radio_playlists) - 1
+            else:
+                for i, tab in enumerate(pctl.multi_playlist):
+                    # Skip if hide flag is set
+                    if tab[8] is True:
+                        continue
+                    ready_tabs.append(i)
+                if self.prime_tab > len(pctl.multi_playlist) - 1:
+                    self.prime_tab = len(pctl.multi_playlist) - 1
             max_w = window_size[0] - (x + right_space_es + round(34 * gui.scale))
 
             left_tabs = []
@@ -28770,7 +28783,10 @@ class TopPanel:
                 if inp.mouse_click and coll(rect):
                     overflow_menu.items.clear()
                     for tab in reversed(left_overflow):
-                        overflow_menu.add(pctl.multi_playlist[tab][0], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab)
+                        if gui.radio_view:
+                            overflow_menu.add(pctl.radio_playlists[tab]["name"], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab)
+                        else:
+                            overflow_menu.add(pctl.multi_playlist[tab][0], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab)
                     overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
 
             xx = x + (max_w - run) #+ round(6 * gui.scale)
@@ -28784,16 +28800,30 @@ class TopPanel:
                 if inp.mouse_click and coll(rect):
                     overflow_menu.items.clear()
                     for tab in right_overflow:
-                        overflow_menu.add(pctl.multi_playlist[tab][0], self.right_overflow_switch_playlist, pass_ref=True, set_ref=tab)
+                        if gui.radio_view:
+                            overflow_menu.add(pctl.radio_playlists[tab]["name"], self.left_overflow_switch_playlist,
+                                              pass_ref=True, set_ref=tab)
+                        else:
+                            overflow_menu.add(pctl.multi_playlist[tab][0], self.left_overflow_switch_playlist,
+                                              pass_ref=True, set_ref=tab)
                     overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
 
-            if not mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
-                if pctl.active_playlist_viewing < self.prime_tab:
-                    self.prime_side = 0
-                elif pctl.active_playlist_viewing > self.prime_tab:
-                    self.prime_side = 1
-                self.prime_tab = pctl.active_playlist_viewing
-                gui.update += 1
+            if gui.radio_view:
+                if not mouse_down and pctl.radio_playlist_viewing not in show_tabs and pctl.radio_playlist_viewing in ready_tabs:
+                    if pctl.radio_playlist_viewing < self.prime_tab:
+                        self.prime_side = 0
+                    elif pctl.radio_playlist_viewing > self.prime_tab:
+                        self.prime_side = 1
+                    self.prime_tab = pctl.radio_playlist_viewing
+                    gui.update += 1
+            else:
+                if not mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
+                    if pctl.active_playlist_viewing < self.prime_tab:
+                        self.prime_side = 0
+                    elif pctl.active_playlist_viewing > self.prime_tab:
+                        self.prime_side = 1
+                    self.prime_tab = pctl.active_playlist_viewing
+                    gui.update += 1
 
             if playlist_box.drag and mouse_position[0] > xx and mouse_position[1] < gui.panelY:
                 gui.update += 1
@@ -28815,24 +28845,20 @@ class TopPanel:
 
 
         # TAB INPUT PROCESSING
-        for i, tab in enumerate(pctl.multi_playlist):
+        target = pctl.multi_playlist
+        if gui.radio_view:
+            target = pctl.radio_playlists
+        for i, tab in enumerate(target):
 
-            if not prefs.tabs_on_top or prefs.shuffle_lock:
-                break
+            if not gui.radio_view:
+                if not prefs.tabs_on_top or prefs.shuffle_lock:
+                    break
 
-            if len(pctl.multi_playlist) != len(self.tab_text_spaces):
-                break
+                if len(pctl.multi_playlist) != len(self.tab_text_spaces):
+                    break
 
             if i not in show_tabs:
                 continue
-            # # Skip if hide flag is set
-            # if tab[8] is True:
-            #     continue
-
-            # # Truncate early if we run out of room
-            # # (maybe not the best solution, but im not sure if a scroll bar would be either)
-            # if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
-            #     break
 
             # Determine the tab width
             tab_width = self.tab_text_spaces[i] + self.tab_extra_width
@@ -28846,18 +28872,18 @@ class TopPanel:
 
             # Tab functions
             if tab_hit:
+                if not gui.radio_view:
+                    # Double click to play
+                    if mouse_up and pl_to_id(i) == self.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
+                        self.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
 
-                # Double click to play
-                if mouse_up and pl_to_id(i) == self.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-                    self.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location, mouse_up_position) < 5 * gui.scale:
-
-                    if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
-                        pctl.play()
-                    elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
-                        pctl.jump(default_playlist[playlist_selected], pl_position=playlist_selected)
-                if mouse_up:
-                    self.tab_d_click_timer.set()
-                    self.tab_d_click_ref = pl_to_id(i)
+                        if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
+                            pctl.play()
+                        elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
+                            pctl.jump(default_playlist[playlist_selected], pl_position=playlist_selected)
+                    if mouse_up:
+                        self.tab_d_click_timer.set()
+                        self.tab_d_click_ref = pl_to_id(i)
 
                 # Click to change playlist
                 if inp.mouse_click:
@@ -28865,12 +28891,15 @@ class TopPanel:
                     playlist_box.drag = True
                     playlist_box.drag_source = 0
                     playlist_box.drag_on = i
-                    switch_playlist(i)
+                    if gui.radio_view:
+                        pctl.radio_playlist_viewing = i
+                    else:
+                        switch_playlist(i)
                     set_drag_source()
 
 
                 # Drag to move playlist
-                if mouse_up and playlist_box.drag and coll_point(mouse_up_position, f_rect):
+                if mouse_up and playlist_box.drag and coll_point(mouse_up_position, f_rect) and not gui.radio_view:
 
                     if playlist_box.drag_source == 1:
                         pctl.multi_playlist[playlist_box.drag_on][8] = False
@@ -28943,24 +28972,31 @@ class TopPanel:
             playlist_box.drag = False
 
         # Need to test length again
+        # Need to test length
         self.tab_text_spaces = []
 
-        for i, item in enumerate(pctl.multi_playlist):
-            le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
-            self.tab_text_spaces.append(le)
+        if gui.radio_view:
+            for item in pctl.radio_playlists:
+                le = ddt.get_text_w(item["name"], self.tab_text_font)
+                self.tab_text_spaces.append(le)
+        else:
+            for i, item in enumerate(pctl.multi_playlist):
+                le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
+                self.tab_text_spaces.append(le)
 
         # Reset X draw position
         x = x_start
 
         # TAB DRAWING
         shown = []
-        for i, tab in enumerate(pctl.multi_playlist):
+        for i, tab in enumerate(target):
 
-            if not prefs.tabs_on_top or prefs.shuffle_lock:
-                break
+            if not gui.radio_view:
+                if not prefs.tabs_on_top or prefs.shuffle_lock:
+                    break
 
-            if len(pctl.multi_playlist) != len(self.tab_text_spaces):
-                break
+                if len(pctl.multi_playlist) != len(self.tab_text_spaces):
+                    break
 
             # if tab[8] is True:
             #     continue
@@ -28984,14 +29020,17 @@ class TopPanel:
             active = False
 
             # Determine tab background colour
-            if i == pctl.active_playlist_viewing:
-                bg = colours.tab_background_active
-                active = True
-            elif (tab_menu.active is True and tab_menu.reference == i) or tab_menu.active is False and tab_hit and not playlist_box.drag:
-                bg = colours.tab_highlight
-            elif i == pctl.active_playlist_playing:
-                bg = colours.tab_background
-                playing_hint = True
+            if not gui.radio_view:
+                if i == pctl.active_playlist_viewing:
+                    bg = colours.tab_background_active
+                    active = True
+                elif (tab_menu.active is True and tab_menu.reference == i) or tab_menu.active is False and tab_hit and not playlist_box.drag:
+                    bg = colours.tab_highlight
+                elif i == pctl.active_playlist_playing:
+                    bg = colours.tab_background
+                    playing_hint = True
+                else:
+                    bg = colours.tab_background
             else:
                 bg = colours.tab_background
 
@@ -29008,7 +29047,11 @@ class TopPanel:
                 fg = colours.tab_text
 
             # Draw tab text
-            ddt.text((x + self.tab_text_start_space, y + self.tab_text_y_offset), tab[0], fg, self.tab_text_font, bg=bg)
+            if gui.radio_view:
+                text = tab["name"]
+            else:
+                text = tab[0]
+            ddt.text((x + self.tab_text_start_space, y + self.tab_text_y_offset), text, fg, self.tab_text_font, bg=bg)
 
             # Drop pulse
             if gui.pl_pulse and gui.drop_playlist_target == i:
@@ -29030,17 +29073,18 @@ class TopPanel:
                 elif quick_drag is True and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
                     ddt.rect((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255])
 
-            if len(self.adds) > 0:
-                for k in reversed(range(len(self.adds))):
-                    if pctl.multi_playlist[i][6] == self.adds[k][0]:
-                        if self.adds[k][2].get() > 0.3:
-                            del self.adds[k]
-                        else:
-                            ay = y + 4
-                            ay -= 6 * self.adds[k][2].get() / 0.3
+            if not gui.radio_view:
+                if len(self.adds) > 0:
+                    for k in reversed(range(len(self.adds))):
+                        if pctl.multi_playlist[i][6] == self.adds[k][0]:
+                            if self.adds[k][2].get() > 0.3:
+                                del self.adds[k]
+                            else:
+                                ay = y + 4
+                                ay -= 6 * self.adds[k][2].get() / 0.3
 
-                            ddt.text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.pluse_colour, 212, bg=bg)
-                            gui.update += 1
+                                ddt.text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.pluse_colour, 212, bg=bg)
+                                gui.update += 1
 
 
             x += tab_width + self.tab_spacing
@@ -33197,9 +33241,11 @@ class RadioBox:
 
         for station in data:
             radio = {}
+            print(station)
             radio["title"] = station["name"]
             radio["stream_url_unresolved"] = station["url"]
             radio["stream_url"] = station["url_resolved"]
+            radio["icon"] = station["favicon"]
             radio["website_url"] = ""
             if "homepage" in station:
                 radio["website_url"] = station["homepage"]
@@ -37519,6 +37565,23 @@ class RadioView:
         box = min(window_size[0] // 2, box)
 
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background)
+        #print(prefs.radio_urls)
+
+        x = round(30 * gui.scale)
+        y = gui.panelY + round(30 * gui.scale)
+        yy = y
+
+        radios = None
+        if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
+            pctl.radio_playlist_viewing = 0
+        if not pctl.radio_playlists:
+            return
+        radios = pctl.radio_playlists[pctl.radio_playlist_viewing]["items"]
+
+        for radio in radios:
+
+            ddt.text((x, yy), radio["title"], colours.side_bar_line2, 315)
+            yy += round(17 * gui.scale)
 
 radio_view = RadioView()
 
@@ -40629,8 +40692,11 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            #gui.mode = 4
-            print(pctl.active_playlist_playing)
+            r = {}
+            r["uid"] = uid_gen()
+            r["name"] = "Test"
+            r["items"] = copy.copy(prefs.radio_urls)
+            pctl.radio_playlists.append(r)
             pass
 
         if gui.mode < 3:
