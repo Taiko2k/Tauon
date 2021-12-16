@@ -21393,6 +21393,7 @@ def toggle_auto_bg_blur(mode=0):
         return prefs.art_bg_always_blur
     prefs.art_bg_always_blur ^= True
     style_overlay.flush()
+    tm.ready("style")
 
 
 def toggle_auto_bg_showcase(mode=0):
