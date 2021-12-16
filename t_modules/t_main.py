@@ -39180,6 +39180,9 @@ def update_layout_do():
             gui.art_unlock_ratio = True
             gui.art_max_ratio_lock = 5
 
+        gui.rspw = gui.pref_rspw
+        if album_mode:
+            gui.rspw = gui.pref_gallery_w
 
         # Limit the right side panel width to height of area
         if gui.rsp and prefs.side_panel_layout == 0:
@@ -39217,8 +39220,8 @@ def update_layout_do():
                         l = gui.lspw
 
                     gui.rspw = max(window_size[0] - l - 300, 110)
-                    if album_mode and window_size[0] > 750 * gui.scale:
-                        gui.pref_gallery_w = gui.rspw
+                    # if album_mode and window_size[0] > 750 * gui.scale:
+                    #     gui.pref_gallery_w = gui.rspw
 
 
         # Determine how wide the playlist need to be (again)
@@ -41259,23 +41262,23 @@ while pctl.running:
                     gui.rsp_full_lock = False
 
                 if album_mode:
-                    gui.rspw = target
+                    pass
+                    #gui.rspw = target
 
                 if album_mode and gui.rspw < album_mode_art_size + 50 * gui.scale:
-                    gui.rspw = album_mode_art_size + 50 * gui.scale
+                    target = album_mode_art_size + 50 * gui.scale
 
                 # Prevent side bar getting too small
-                if gui.rspw < 120 * gui.scale:
-                    gui.rspw = 120 * gui.scale
-
-
-                update_layout_do()
+                if target < 120 * gui.scale:
+                    target = 120 * gui.scale
 
                 # Remember size for this view mode
                 if not album_mode:
-                    gui.pref_rspw = gui.rspw
+                    gui.pref_rspw = target
                 else:
-                    gui.pref_gallery_w = gui.rspw
+                    gui.pref_gallery_w = target
+
+                update_layout_do()
 
 
             # ALBUM GALLERY RENDERING:
