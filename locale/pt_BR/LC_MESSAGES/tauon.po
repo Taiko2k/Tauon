@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2021-11-24 20:31+1300\n"
-"PO-Revision-Date: 2021-09-22 12:32+0000\n"
+"PO-Revision-Date: 2021-12-11 06:53+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.9-dev\n"
+"X-Generator: Weblate 4.10-dev\n"
 
 #: t_modules/t_main.py:1928 t_modules/t_main.py:1930
 msgid "No artist image found."
@@ -311,9 +311,8 @@ msgid "Random Albums"
 msgstr "Álbuns Aleatórios"
 
 #: t_modules/t_main.py:13847
-#, fuzzy
 msgid "Shuffle Lockdown"
-msgstr "Embaralhar Ligado"
+msgstr "Trava de Embaralho"
 
 #: t_modules/t_main.py:13872
 msgid "Make Large Size"
@@ -1419,7 +1418,7 @@ msgstr "Scrobbling está Ativo"
 
 #: t_modules/t_main.py:21681
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Sair de Trava de Embaralho"
 
 #: t_modules/t_main.py:21682
 msgid "Exit"
@@ -1741,9 +1740,8 @@ msgid "Tabs in top panel"
 msgstr "Abas no painel do topo"
 
 #: t_modules/t_main.py:26187
-#, fuzzy
 msgid "Uncheck to disable the tab pin function"
-msgstr "Desativa a função Fixar Aba"
+msgstr "Desmarque para desativar a função Fixar Aba"
 
 #: t_modules/t_main.py:26192 t_modules/t_main.py:26198
 msgid "Open config file"
