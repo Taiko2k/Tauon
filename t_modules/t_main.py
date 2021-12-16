@@ -15490,12 +15490,22 @@ def test_pl_tab_locked(pl):
 # Clear playlist
 tab_menu.add(_('Clear'), clear_playlist, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 
+def move_radio_playlist(source, dest):
+    if dest > source:
+        dest += 1
+    try:
+        temp = pctl.radio_playlists[source]
+        pctl.radio_playlists[source] = "old"
+        pctl.radio_playlists.insert(dest, temp)
+        pctl.radio_playlists.remove("old")
+        pctl.radio_playlist_viewing = pctl.radio_playlists.index(temp)
+    except:
+        print("Warning: Playlist move error")
 
 def move_playlist(source, dest):
     global default_playlist
     if dest > source:
         dest += 1
-
     try:
         active = pctl.multi_playlist[pctl.active_playlist_playing]
         view = pctl.multi_playlist[pctl.active_playlist_viewing]
@@ -15513,6 +15523,11 @@ def move_playlist(source, dest):
 
 
 def delete_playlist(index, force=False, check_lock=False):
+
+    if gui.radio_view:
+        del pctl.radio_playlists[index]
+        return
+
     global default_playlist
 
     if check_lock and pl_is_locked(index):
@@ -16127,6 +16142,14 @@ def gen_unique_pl_title(base, extra="", start=1):
 
 
 def new_playlist(switch=True):
+
+    if gui.radio_view:
+        r = {}
+        r["uid"] = uid_gen()
+        r["name"] = "New Radio Playlist"
+        r["items"] = [] #copy.copy(prefs.radio_urls)
+        pctl.radio_playlists.append(r)
+        return
 
     title = gen_unique_pl_title("New Playlist")
 
@@ -20729,7 +20752,14 @@ add_icon.xoff = 3
 add_icon.yoff = 0
 add_icon.colour = [237, 80, 221, 255]
 
-x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
+def new_playlist_deco():
+    if gui.radio_view:
+        text = _("New Radio Playlist")
+    else:
+        text = _("New Playlist")
+    return [colours.menu_text, colours.menu_background, text]
+
+x_menu.add(_("New Playlist"), new_playlist, new_playlist_deco,  icon=add_icon)
 
 
 x_menu.add(_("Internet Radio…"), activate_radio_box)
@@ -28899,21 +28929,24 @@ class TopPanel:
 
 
                 # Drag to move playlist
-                if mouse_up and playlist_box.drag and coll_point(mouse_up_position, f_rect) and not gui.radio_view:
+                if mouse_up and playlist_box.drag and coll_point(mouse_up_position, f_rect):
 
-                    if playlist_box.drag_source == 1:
-                        pctl.multi_playlist[playlist_box.drag_on][8] = False
+                    if gui.radio_view:
+                        move_radio_playlist(playlist_box.drag_on, i)
+                    else:
+                        if playlist_box.drag_source == 1:
+                            pctl.multi_playlist[playlist_box.drag_on][8] = False
 
-                    if i != playlist_box.drag_on:
+                        if i != playlist_box.drag_on:
 
-                        # # Reveal the tab in case it has been hidden
-                        # pctl.multi_playlist[playlist_box.drag_on][8] = False
+                            # # Reveal the tab in case it has been hidden
+                            # pctl.multi_playlist[playlist_box.drag_on][8] = False
 
-                        if key_shift_down:
-                            pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
-                            delete_playlist(playlist_box.drag_on, check_lock=True)
-                        else:
-                            move_playlist(playlist_box.drag_on, i)
+                            if key_shift_down:
+                                pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
+                                delete_playlist(playlist_box.drag_on, check_lock=True)
+                            else:
+                                move_playlist(playlist_box.drag_on, i)
 
                     playlist_box.drag = False
                     gui.update += 1
@@ -28960,15 +28993,17 @@ class TopPanel:
             fields.add(rect)
 
         if mouse_up and playlist_box.drag and mouse_position[0] > x and mouse_position[1] < self.height:
-
-            if key_ctrl_down:
-                gen_dupe(playlist_box.drag_on)
-
+            if gui.radio_view:
+                pass
             else:
-                if playlist_box.drag_source == 1:
-                    pctl.multi_playlist[playlist_box.drag_on][8] = False
+                if key_ctrl_down:
+                    gen_dupe(playlist_box.drag_on)
 
-                move_playlist(playlist_box.drag_on, i)
+                else:
+                    if playlist_box.drag_source == 1:
+                        pctl.multi_playlist[playlist_box.drag_on][8] = False
+
+                    move_playlist(playlist_box.drag_on, i)
             playlist_box.drag = False
 
         # Need to test length again
@@ -29032,7 +29067,11 @@ class TopPanel:
                 else:
                     bg = colours.tab_background
             else:
-                bg = colours.tab_background
+                if pctl.radio_playlist_viewing == i:
+                    bg = colours.tab_background_active
+                    active = True
+                else:
+                    bg = colours.tab_background
 
             # Draw tab background
             ddt.rect(rect, bg)
@@ -37578,10 +37617,33 @@ class RadioView:
             return
         radios = pctl.radio_playlists[pctl.radio_playlist_viewing]["items"]
 
+        w = round(460 * gui.scale)
+        h = round(45 * gui.scale)
         for radio in radios:
 
-            ddt.text((x, yy), radio["title"], colours.side_bar_line2, 315)
-            yy += round(17 * gui.scale)
+
+            rect = (x, yy, w, h)
+            ddt.rect(rect, [30, 30, 30, 255])
+            yyy = yy
+            pic_rect = (x + round(5 * gui.scale), yy + round(5 * gui.scale), round(35 * gui.scale), round(35 * gui.scale))
+            ddt.rect(pic_rect, [45, 45, 45, 255])
+
+
+            toff = round(47 * gui.scale)
+            yyy += round(7 * gui.scale)
+            ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line2, 313, max_w=w-(toff + round(10 * gui.scale)))
+            yy += round(h + 8 * gui.scale)
+
+        c = ((window_size[0] - w) / 2) + w
+        boxx = round(200 * gui.scale)
+        art_rect = (c - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
+        ddt.rect(art_rect, [40, 40, 40, 255])
+
+        yy = window_size[1] / 3 - boxx / 2
+        yy += boxx + round(30 * gui.scale)
+        ddt.text((c, yy, 2), "Now playing station", [230, 230, 230, 255], 213)
+        yy += round(25 * gui.scale)
+        ddt.text((c, yy, 2), "Now playing track", [230, 230, 230, 255], 313)
 
 radio_view = RadioView()
 
