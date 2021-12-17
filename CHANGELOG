@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v6.8.4
 
  - Added generator code "find string" fs
+ - Tweaked right side panel size behavior on window resize
+ - Fixed toggle background "Blur" setting not triggering update
 
 v6.8.3
 
