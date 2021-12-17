@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2021-11-24 20:31+1300\n"
-"PO-Revision-Date: 2021-12-04 00:57+0000\n"
+"PO-Revision-Date: 2021-12-11 06:53+0000\n"
 "Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -267,7 +267,7 @@ msgstr "Écrire dans une piste en réseau n'est pas disponible !"
 
 #: t_modules/t_main.py:13613
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Impossible d'écrire les types des fichiers CUE !"
 
 #: t_modules/t_main.py:13624
 msgid "Cannot handle multi-field! Please use external tag editor"
@@ -1761,9 +1761,8 @@ msgid "Tabs in top panel"
 msgstr "Onglets dans le panneau supérieur"
 
 #: t_modules/t_main.py:26187
-#, fuzzy
 msgid "Uncheck to disable the tab pin function"
-msgstr "Désactive la fonction de broche de tabulation"
+msgstr "Décocher pour désactiver la fonction de brochage des onglets"
 
 #: t_modules/t_main.py:26192 t_modules/t_main.py:26198
 msgid "Open config file"
@@ -1852,8 +1851,9 @@ msgid "Change requires restart"
 msgstr "Les changements seront appliqués au redémarrage"
 
 #: t_modules/t_main.py:26294
+#, fuzzy
 msgid "Block suspend"
-msgstr ""
+msgstr "Bloquer ceux en attente"
 
 #: t_modules/t_main.py:26295
 msgid "Prevent system suspend during playback"
@@ -2012,8 +2012,9 @@ msgid "Artist backgrounds (Automatic)"
 msgstr "Arrière-plans d'artistes (automatique)"
 
 #: t_modules/t_main.py:26954
+#, fuzzy
 msgid "Flip current"
-msgstr ""
+msgstr "Pivoter l'actuel"
 
 #: t_modules/t_main.py:26974
 msgid ""
@@ -2079,18 +2080,16 @@ msgstr ""
 "désaimées !"
 
 #: t_modules/t_main.py:27130
-#, fuzzy
 msgid "Cleared all loves"
-msgstr "Retirer tous les favoris"
+msgstr "Tous les favoris effacés"
 
 #: t_modules/t_main.py:27137 t_modules/t_main.py:27159
 msgid "Press again while holding Shift if you understand"
 msgstr "Appuyez à nouveau tout en maintenant Maj si vous comprenez"
 
 #: t_modules/t_main.py:27152
-#, fuzzy
 msgid "Cleared all scrobble counts"
-msgstr "Obtenir des comptes de scrobble"
+msgstr "Comptes de scrobble effacés"
 
 #: t_modules/t_main.py:27157
 msgid ""
@@ -2124,7 +2123,7 @@ msgstr "Un dossier de musique monté a été trouvé !"
 
 #: t_modules/t_main.py:27224
 msgid "Could not auto-detect mounted device path."
-msgstr ""
+msgstr "Ne peut détecter automatiquement le chemin de l'appareil monté."
 
 #: t_modules/t_main.py:27224
 msgid "Make sure the device is mounted and path is accessible."
@@ -2139,8 +2138,9 @@ msgid "Transcode files"
 msgstr "Transcoder les fichiers"
 
 #: t_modules/t_main.py:27233
+#, fuzzy
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Ignorer les débits faibles"
 
 #: t_modules/t_main.py:27236
 msgid "Start Transcode and Sync"
@@ -2161,14 +2161,12 @@ msgstr ""
 "synchronisation"
 
 #: t_modules/t_main.py:27249
-#, fuzzy
 msgid "Select a source playlist"
-msgstr "Lancer la prochaine liste de lecture"
+msgstr "Sélectionner une source de liste de lecture"
 
 #: t_modules/t_main.py:27251
-#, fuzzy
 msgid "Stop"
-msgstr "Arrêt automatique"
+msgstr "Arrêt"
 
 #: t_modules/t_main.py:27267
 msgid "Output codec setting:"
@@ -2211,8 +2209,9 @@ msgid "Show playing in titlebar"
 msgstr "Afficher la piste en cours dans la barre de titre"
 
 #: t_modules/t_main.py:27346
+#, fuzzy
 msgid "Top-panel level meter"
-msgstr ""
+msgstr "Mesure de niveau du panneau du haut"
 
 #: t_modules/t_main.py:27350
 msgid "Showcase visualisation"
@@ -2263,14 +2262,12 @@ msgid "Use padding"
 msgstr "Espacer"
 
 #: t_modules/t_main.py:27761
-#, fuzzy
 msgid "Include album titles"
-msgstr "Inclure le titre de l'album"
+msgstr "Inclure le titre des albums"
 
 #: t_modules/t_main.py:27763
-#, fuzzy
 msgid "Sort by top played"
-msgstr "Trier par chemin"
+msgstr "Trier par les plus joués"
 
 #: t_modules/t_main.py:27770
 msgid "Randomise BG"
@@ -2287,7 +2284,7 @@ msgstr "Génération en cours..."
 #: t_modules/t_main.py:27828
 #, fuzzy
 msgid "Album chart"
-msgstr "Artiste de l'album"
+msgstr "Classement de l'album"
 
 #: t_modules/t_main.py:27833
 msgid "Not enough albums in the playlist!"
@@ -2322,39 +2319,32 @@ msgid "Total playtime"
 msgstr "Durée totale"
 
 #: t_modules/t_main.py:28007
-#, fuzzy
 msgid "Track ratings"
-msgstr "Gain par piste"
+msgstr "Votes de la piste"
 
 #: t_modules/t_main.py:28009
-#, fuzzy
 msgid "Album ratings"
-msgstr "Artiste de l'album"
+msgstr "Votes de l'album"
 
 #: t_modules/t_main.py:28017
-#, fuzzy
 msgid "Show track loves"
-msgstr "Recherche la piste sur Genius"
+msgstr "Afficher les pistes favorites"
 
 #: t_modules/t_main.py:28025
-#, fuzzy
 msgid "Represent playtime as stars"
-msgstr "Étoiles nb écoutes"
+msgstr "Représenter le temps de lecture par des étoiles"
 
 #: t_modules/t_main.py:28034
-#, fuzzy
 msgid "Represent playcount as lines"
-msgstr "Répéter la liste de lecture"
+msgstr "Représenter le nombre de lectures par des lignes"
 
 #: t_modules/t_main.py:28054
-#, fuzzy
 msgid "Show album release year"
-msgstr "Artiste de l'album"
+msgstr "Afficher l'année de sortie de l'album"
 
 #: t_modules/t_main.py:28057
-#, fuzzy
 msgid "Show album duration"
-msgstr "Artiste de l'album"
+msgstr "Afficher la durée de l'album"
 
 #: t_modules/t_main.py:28064
 msgid "Font Size"
@@ -2433,12 +2423,10 @@ msgid "Shuffle Off"
 msgstr "Aléatoire désactivé"
 
 #: t_modules/t_main.py:30058
-#, fuzzy
 msgid "Repeat On"
-msgstr "Répétition désactivée"
+msgstr "Répétition activée"
 
 #: t_modules/t_main.py:30061
-#, fuzzy
 msgid "Repeat Off"
 msgstr "Répétition désactivée"
 
@@ -2542,7 +2530,6 @@ msgstr ""
 "Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
 
 #: t_modules/t_main.py:33472
-#, fuzzy
 msgid "Tip: You can press F9 to view the output folder."
 msgstr "Astuce : Pressez F9 pour voir le dossier de sortie."
 
@@ -2583,24 +2570,20 @@ msgid "Sort Alphabetically"
 msgstr "Trier par ordre alphabétique"
 
 #: t_modules/t_main.py:34383
-#, fuzzy
 msgid "Sort by Popularity"
-msgstr "Trier par chemin"
+msgstr "Trier par popularité"
 
 #: t_modules/t_main.py:34384
-#, fuzzy
 msgid "Sort by Playtime"
-msgstr "Trier par chemin"
+msgstr "Trier par durée de lecture"
 
 #: t_modules/t_main.py:34385
-#, fuzzy
 msgid "Toggle Thumbnails"
-msgstr "Afficher/Masquer les paroles"
+msgstr "Afficher/Masquer les miniatures"
 
 #: t_modules/t_main.py:34474
-#, fuzzy
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr "Pochette téléchargée depuis fanart.tv"
+msgstr "Info : L'image de l'artiste sera téléchargée depuis fanart.tv"
 
 #: t_modules/t_main.py:34799 t_modules/t_main.py:34934
 msgid "Downloading data..."
@@ -2611,9 +2594,8 @@ msgid "No artists in playlist"
 msgstr "Aucun artiste dans la liste de lecture"
 
 #: t_modules/t_main.py:35164
-#, fuzzy
 msgid "Artist threshold not met"
-msgstr "Seuil d'artistes non atteind"
+msgstr "Seuil d'artistes non atteint"
 
 #: t_modules/t_main.py:35166
 msgid "Loading Artist List..."
@@ -2668,14 +2650,12 @@ msgid "Cooldown..."
 msgstr "Tranquille..."
 
 #: t_modules/t_main.py:36890
-#, fuzzy
 msgid "Loading..."
-msgstr "Recherche en cours..."
+msgstr "Chargement..."
 
 #: t_modules/t_main.py:37060
-#, fuzzy
 msgid "No artist data downloaded"
-msgstr "Aucune image trouvée pour l'artiste"
+msgstr "Aucune donnée trouvée pour l'artiste"
 
 #: t_modules/t_main.py:37074
 msgid "No artist bio found"
@@ -2686,9 +2666,8 @@ msgid "Download Artist Data"
 msgstr "Télécharger les données de l'artiste"
 
 #: t_modules/t_main.py:37167
-#, fuzzy
 msgid "Clear Bio"
-msgstr "Vider"
+msgstr "Effacer bio"
 
 #: t_modules/t_main.py:37623
 msgid "Playing"
@@ -2707,29 +2686,25 @@ msgid "Auto-Scroll"
 msgstr "Scroll automatique"
 
 #: t_modules/t_main.py:38173
-#, fuzzy
 msgid "Tracks + Art"
-msgstr "Liste de pistes"
+msgstr "Pistes et Art"
 
 #: t_modules/t_main.py:38206
-#, fuzzy
 msgid "Tracks only"
-msgstr "Pistes dans la liste de lecture"
+msgstr "Pistes seulement"
 
 #: t_modules/t_main.py:38219
 #, fuzzy
 msgid "Showcase + Lyrics"
-msgstr "Afficher les paroles"
+msgstr "Showcase + Paroles"
 
 #: t_modules/t_main.py:38232
-#, fuzzy
 msgid "Toggle columns"
-msgstr "Afficher/Masquer les paroles"
+msgstr "Afficher/Masquer les colonnes"
 
 #: t_modules/t_main.py:38248
-#, fuzzy
 msgid "Toggle artist info"
-msgstr "Aucune biographie trouvée"
+msgstr "Afficher/Masquer infos de l'artiste"
 
 #: t_modules/t_main.py:39814
 msgid "Could not access! Possible insufficient Flatpak permissions."
@@ -2750,9 +2725,8 @@ msgstr ""
 "Sélectionnez d'abord une piste source en la copiant dans le presse-papier"
 
 #: t_modules/t_main.py:42108
-#, fuzzy
 msgid "Rescan folders complete."
-msgstr "Réanalyser du dossier terminée."
+msgstr "Réanalyse des dossiers terminée."
 
 #: t_modules/t_main.py:42715
 msgid "Queue is Empty"
