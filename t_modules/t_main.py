@@ -20422,7 +20422,6 @@ def enter_combo():
         if gui.rsp:
             gui.rsp = False
         gui.combo_mode = True
-        update_layout = True
 
 def exit_combo(restore=False):
     if gui.combo_mode:
@@ -20446,7 +20445,6 @@ def enter_showcase_view(track_id=None):
     else:
         gui.force_showcase_index = track_id
     inp.mouse_click = False
-    update_layout = True
 
 def enter_radio_view():
     if not gui.combo_mode:
@@ -20454,7 +20452,6 @@ def enter_radio_view():
     gui.showcase_mode = False
     gui.radio_view = True
     inp.mouse_click = False
-    update_layout = True
 
 
 def standard_size():
