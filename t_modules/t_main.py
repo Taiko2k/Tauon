@@ -857,7 +857,7 @@ spec_smoothing = True
 # gui.offset_extra = 0
 
 old_album_pos = -55
-old_side_pos = 200
+
 album_dex = []
 album_artist_dict = {}
 row_len = 5
@@ -1742,7 +1742,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.power_bar = None
         self.gallery_scroll_field_left = 1
-        self.lyrics_was_album = False
+        self.combo_was_album = False
 
         self.gallery_positions = {}
 
@@ -13824,7 +13824,7 @@ def toggle_shuffle_layout():
     prefs.shuffle_lock ^= True
     if prefs.shuffle_lock:
 
-        gui.shuffle_was_showcase = gui.combo_mode
+        gui.shuffle_was_showcase = gui.showcase_mode
         gui.shuffle_was_random = pctl.random_mode
         gui.shuffle_was_repeat = pctl.repeat_mode
 
@@ -13838,9 +13838,7 @@ def toggle_shuffle_layout():
         pctl.random_mode = gui.shuffle_was_random
         pctl.repeat_mode = gui.shuffle_was_repeat
         if not gui.shuffle_was_showcase:
-            switch_showcase()
-            if gui.lyrics_was_album:
-                force_album_view()
+            exit_combo()
 
 def exit_shuffle_layout(_):
     return prefs.shuffle_lock
@@ -19429,7 +19427,7 @@ track_menu.add_to_sub("Edit with", 0, launch_editor, pass_ref=True, icon=edit_ic
 def show_lyrics_menu(index):
     global track_box
     track_box = False
-    switch_showcase(r_menu_index)
+    enter_showcase_view(track_id=r_menu_index)
     inp.mouse_click = False
 
 track_menu.add_to_sub(_("Lyrics..."), 0, show_lyrics_menu, pass_ref=True)
@@ -20411,43 +20409,51 @@ def toggle_side_panel(mode=0):
     if prefs.prefer_side:
         gui.rspw = gui.pref_rspw
 
+def force_album_view():
+    toggle_album_mode(True)
 
-def toggle_combo_view(mode=0, showcase=False, off=False):
-    global update_layout
-    global old_side_pos
-
-    if mode == 1:
-        return gui.combo_mode
-
-    if not off:
-        if showcase:
-            gui.showcase_mode = True
-        else:
-            if gui.combo_mode and gui.showcase_mode:
-                gui.showcase_mode = False
-                return
-            gui.showcase_mode = False
-
-    if gui.combo_mode is False:
-        if not album_mode:
-            old_side_pos = gui.rspw
-        gui.combo_mode = True
-        reload_albums()
-
+def enter_combo():
+    if not gui.combo_mode:
+        gui.combo_was_album = album_mode
+        gui.showcase_mode = False
+        gui.radio_view = False
         if album_mode:
             toggle_album_mode()
         if gui.rsp:
             gui.rsp = False
-        if key_shift_down:
-            gui.radio_view = True
-    else:
-        gui.combo_mode = False
-        gui.radio_view = False
+        gui.combo_mode = True
+        update_layout = True
 
-        gall_ren.size = album_mode_art_size
+def exit_combo(restore=False):
+    if gui.combo_mode:
+        if gui.combo_was_album and restore:
+            force_album_view()
+        gui.showcase_mode = False
+        gui.radio_view = False
         if prefs.prefer_side:
             gui.rsp = True
-        gui.rspw = old_side_pos
+        update_layout = True
+        gui.combo_mode = False
+
+
+def enter_showcase_view(track_id=None):
+    if not gui.combo_mode:
+        enter_combo()
+    gui.showcase_mode = True
+    gui.radio_view = False
+    if track_id is None or pctl.playing_object() is None or pctl.playing_object().index == track_id:
+        pass
+    else:
+        gui.force_showcase_index = track_id
+    inp.mouse_click = False
+    update_layout = True
+
+def enter_radio_view():
+    if not gui.combo_mode:
+        enter_combo()
+    gui.showcase_mode = False
+    gui.radio_view = True
+    inp.mouse_click = False
     update_layout = True
 
 
@@ -20560,7 +20566,6 @@ def toggle_album_mode(force_on=False):
     global album_mode
     global window_size
     global update_layout
-    global old_side_pos
     global album_playlist_width
     global old_album_pos
 
@@ -20573,15 +20578,14 @@ def toggle_album_mode(force_on=False):
         #old_album_pos = gui.album_scroll_px
         gui.rspw = gui.pref_rspw
         gui.rsp = prefs.prefer_side
-        #gui.rspw = old_side_pos
         gui.album_tab_mode = False
     else:
-        if gui.combo_mode:
-            toggle_combo_view(off=True)
         album_mode = True
+        if gui.combo_mode:
+            exit_combo()
+
         gui.rsp = True
 
-        #old_side_pos = gui.rspw
         gui.rspw = gui.pref_gallery_w
 
     space = window_size[0] - gui.rspw
@@ -20754,7 +20758,7 @@ add_icon.colour = [237, 80, 221, 255]
 
 def new_playlist_deco():
     if gui.radio_view:
-        text = _("New Radio Playlist")
+        text = _("New Radio List")
     else:
         text = _("New Playlist")
     return [colours.menu_text, colours.menu_background, text]
@@ -21741,7 +21745,7 @@ def view_tracks():
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
-        toggle_combo_view(off=True)
+        exit_combo()
     if gui.rsp:
         toggle_side_panel()
 
@@ -21768,7 +21772,7 @@ def view_standard_meta():
         toggle_album_mode()
 
     if gui.combo_mode:
-        toggle_combo_view(off=True)
+        exit_combo()
 
     if not gui.rsp:
         toggle_side_panel()
@@ -21784,7 +21788,7 @@ def view_standard():
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
-        toggle_combo_view(off=True)
+        exit_combo()
     if not gui.rsp:
         toggle_side_panel()
 
@@ -21810,26 +21814,6 @@ def standard_view_deco():
 #     album_playlist_width = gui.playlist_width
 #     #gui.playlist_width = -19
 
-
-def force_album_view():
-    toggle_album_mode(True)
-
-def switch_showcase(index=-1):
-
-    if not gui.combo_mode:
-        gui.lyrics_was_album = album_mode
-    else:
-        if gui.lyrics_was_album:
-            force_album_view()
-
-    if pctl.playing_object() is None or pctl.playing_object().index == index:
-        pass
-    else:
-        gui.force_showcase_index = index
-    if gui.combo_mode:
-        toggle_combo_view()
-    toggle_combo_view(showcase=True)
-    inp.mouse_click = False
 
 def toggle_library_mode():
     if gui.set_mode:
@@ -28614,7 +28598,7 @@ class TopPanel:
                 if gui.combo_mode:
                     if not gui.lsp:
                         gui.lsp = True
-                    switch_showcase()
+                    exit_combo()
                 else:
                     gui.lsp ^= True
 
@@ -36817,7 +36801,7 @@ class MetaBox:
                         if tr and tr.lyrics:
                             if draw_internel_link(margin + sp + 6 * gui.scale, block_y + 40 * gui.scale, "Lyrics", colours.side_bar_line2, fonts.side_panel_line2):
                                 prefs.show_lyrics_showcase = True
-                                switch_showcase(tr.index)
+                                enter_showcase_view(track_id=tr.index)
 
 
 meta_box = MetaBox()
@@ -38066,7 +38050,7 @@ class ViewBox:
         self.x = 0
         self.y = gui.panelY
         self.w = 52 * gui.scale
-        self.h = 257 * gui.scale
+        self.h = 295 * gui.scale #257
         self.active = False
 
         self.border = 3 * gui.scale
@@ -38085,6 +38069,7 @@ class ViewBox:
         self.tracks_colour = ColourPulse2() #(0.5) # .5 .6 .75
         self.side_colour = ColourPulse2() #(0.55) # .55 .6 .75
         self.gallery1_colour = ColourPulse2() #(0.6) # .6 .6 .75
+        self.radio_colour = ColourPulse2() #(0.6) # .6 .6 .75
         #self.combo_colour = ColourPulse(0.75)
         self.lyrics_colour = ColourPulse2() #(0.7)
         #self.gallery2_colour = ColourPulse(0.65)
@@ -38095,7 +38080,7 @@ class ViewBox:
         self.over_colour = [255, 190, 50, 255]
         self.off_colour = colours.grey(40)
 
-        gui.lyrics_was_album = False
+        gui.combo_was_album = False
 
     def activate(self, x):
         self.x = x
@@ -38104,6 +38089,7 @@ class ViewBox:
         self.tracks_colour.out_timer.force_set(10)
         self.side_colour.out_timer.force_set(10)
         self.gallery1_colour.out_timer.force_set(10)
+        self.radio_colour.out_timer.force_set(10)
         #self.combo_colour.out_timer.force_set(10)
         self.lyrics_colour.out_timer.force_set(10)
         #self.gallery2_colour.out_timer.force_set(10)
@@ -38113,6 +38099,7 @@ class ViewBox:
         self.tracks_colour.active = False
         self.side_colour.active = False
         self.gallery1_colour.active = False
+        self.radio_colour.active = False
         #self.combo_colour.active = False
         self.lyrics_colour.active = False
         #self.gallery2_colour.active = False
@@ -38214,33 +38201,30 @@ class ViewBox:
 
         force_album_view()
 
-
-
-    def lyrics(self, hit=False):
+    def radio(self, hit=False):
 
         if hit is False:
-            return album_mode is False and \
-                   gui.combo_mode is True and \
-                   gui.showcase_mode is True
+            return gui.radio_view
 
-        if not gui.combo_mode:
-            gui.lyrics_was_album = album_mode
-            switch_showcase()
+        if not gui.radio_view:
+            enter_radio_view()
         else:
-            switch_showcase()
-            if gui.lyrics_was_album:
-                force_album_view()
+            exit_combo(restore=True)
 
         if x_menu.active:
             x_menu.close_next_frame = True
 
-    # def gallery2(self, hit=False):
-    #
-    #     if hit is False:
-    #         return album_mode is True and \
-    #                gui.combo_mode is False and \
-    #                gui.show_playlist is False
-    #     gallery_only_view()
+    def lyrics(self, hit=False):
+
+        if hit is False:
+            return gui.showcase_mode
+
+        if not gui.showcase_mode:
+            enter_showcase_view()
+        else:
+            exit_combo(restore=True)
+        if x_menu.active:
+            x_menu.close_next_frame = True
 
     def col(self, hit=False):
 
@@ -38249,7 +38233,7 @@ class ViewBox:
 
         if not gui.set_mode:
             if gui.combo_mode:
-                switch_showcase()
+                exit_combo()
 
         if album_mode and gui.plw < 550 * gui.scale:
             toggle_album_mode()
@@ -38362,6 +38346,19 @@ class ViewBox:
             high = [63, 63, 63, 255]
 
         test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, _("Showcase + Lyrics"), low=low, high=high)
+        if test is not None:
+            func = test
+
+        # --
+
+        y += 45 * gui.scale
+
+        high = [92, 86, 255, 255]
+        if colours.lm:
+            #high = (.7, .75, .75)
+            high = [63, 63, 63, 255]
+
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
         if test is not None:
             func = test
 
@@ -39028,9 +39025,7 @@ def update_layout_do():
     if gui.switch_showcase_off:
         ddt.force_gray = False
         gui.switch_showcase_off = False
-        switch_showcase()
-        if gui.lyrics_was_album:
-            force_album_view()
+        exit_combo(restore=True)
 
     global draw_max_button
     if draw_max_button and prefs.force_hide_max_button:
@@ -39982,7 +39977,7 @@ def drop_file(target):
     drag_mode = False
 
 if gui.restore_showcase_view:
-    toggle_combo_view(showcase=True)
+    enter_showcase_view()
 
 #switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -40786,7 +40781,7 @@ while pctl.running:
 
             if keymaps.test("toggle-right-panel"):
                 if gui.combo_mode:
-                    switch_showcase()
+                    exit_combo()
                 elif not album_mode:
                     toggle_side_panel()
                 else:
@@ -43469,7 +43464,7 @@ while pctl.running:
                         if draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
                             prefs.show_lyrics_showcase = True
                             track_box = False
-                            switch_showcase(r_menu_index)
+                            enter_showcase_view(track_id=r_menu_index)
                             inp.mouse_click = False
 
                     if len(tc.comment) > 0:
