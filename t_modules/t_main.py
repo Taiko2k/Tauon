@@ -239,6 +239,7 @@ n_cache_dir = os.path.join(cache_directory, "network")
 e_cache_dir = os.path.join(cache_directory, "export")
 g_cache_dir = os.path.join(cache_directory, "gallery")
 a_cache_dir = os.path.join(cache_directory, "artist")
+r_cache_dir = os.path.join(cache_directory, "radio-thumbs")
 b_cache_dir = os.path.join(user_directory, "artist-backgrounds")
 
 if not os.path.isdir(n_cache_dir):
@@ -251,6 +252,8 @@ if not os.path.isdir(a_cache_dir):
     os.makedirs(a_cache_dir)
 if not os.path.isdir(b_cache_dir):
     os.makedirs(b_cache_dir)
+if not os.path.isdir(r_cache_dir):
+    os.makedirs(r_cache_dir)
 
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
     os.makedirs(os.path.join(user_directory, "artist-pictures"))
@@ -2464,13 +2467,17 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.box_button_text_highlight = self.grey(250)
         self.box_button_text = self.grey(225)
         self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
+        self.box_thumb_background = None
         self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
 
         self.artist_bio_background = [27, 27, 27, 255]
         self.artist_bio_text = [230, 230, 230, 255]
 
     def post_config(self):
-        
+
+        if self.box_thumb_background is None:
+            self.box_thumb_background = alpha_mod(self.box_button_background, 175)
+
         # Pre calculate alpha blend for spec background
         self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
         self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
@@ -4670,7 +4677,7 @@ class PlayerCtl:
         self.regen_in_progress = False
         self.notify_in_progress = False
 
-        self.radio_playlists = []
+        self.radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
         self.radio_playlist_viewing = 0
 
     def notify_change(self):
@@ -33266,7 +33273,18 @@ class RadioBox:
             radio["stream_url_unresolved"] = station["url"]
             radio["stream_url"] = station["url_resolved"]
             radio["icon"] = station["favicon"]
-            radio["website_url"] = ""
+            radio["country"] = station["country"]
+            if radio["country"] == "The Russian Federation":
+                radio["country"] = "Russia"
+            elif radio["country"] == "The United States Of America":
+                radio["country"] = "USA"
+            elif radio["country"] == "The United Kingdom Of Great Britain And Northern Ireland":
+                radio["country"] = "United Kingdom"
+            elif radio["country"] == "Islamic Republic Of Iran":
+                radio["country"] = "Iran"
+            elif len(station["country"]) > 20:
+                radio["country"] = station["countrycode"]
+            radio["website_url"] = station["homepage"]
             if "homepage" in station:
                 radio["website_url"] = station["homepage"]
             self.temp_list.append(radio)
@@ -33435,7 +33453,7 @@ class RadioBox:
             xx = x + offset
             item = radio_list[p]
 
-            rect = (xx, yy, round(233 * gui.scale), round(19 * gui.scale))
+            rect = (xx, yy, round(233 * gui.scale), round(40 * gui.scale))
             fields.add(rect)
 
             bg = colours.box_background
@@ -33454,7 +33472,7 @@ class RadioBox:
             if (radio_entry_menu.active and radio_entry_menu.reference == p) or \
                 (not radio_entry_menu.active and coll(rect)) and not playing:
                 text_colour = colours.box_sub_text
-                bg = [255, 255, 255, 12]
+                bg = [255, 255, 255, 10]
                 ddt.rect(rect, bg)
 
             if coll(rect):
@@ -33477,16 +33495,27 @@ class RadioBox:
 
             bg = alpha_blend(bg, colours.box_background)
 
+            boxx = round(32 * gui.scale)
+            toff = boxx + round(10 * gui.scale)
             if item["title"]:
-                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["title"], text_colour, 212, bg=bg, max_w=rect[2] - 15 * gui.scale)
+                ddt.text((xx + toff, yy + round(3 * gui.scale)), item["title"], text_colour, 212, bg=bg, max_w=rect[2] - (15 * gui.scale + toff))
             else:
-                ddt.text((xx + round(5 * gui.scale), yy + round(1 * gui.scale)), item["stream_url"], text_colour, 312, bg=bg, max_w=rect[2] - 15 * gui.scale)
+                ddt.text((xx + toff, yy + round(3 * gui.scale)), item["stream_url"], text_colour, 212, bg=bg, max_w=rect[2] - (15 * gui.scale + toff))
+
+            country = item.get("country")
+            if country:
+                ddt.text((xx + toff, yy + round(18 * gui.scale)), country, text_colour, 11, bg=bg, max_w=rect[2] - (15 * gui.scale + toff))
+
+
+            b_rect = (xx + round(4 * gui.scale), yy + round(4 * gui.scale), boxx, boxx)
+            ddt.rect(b_rect, colours.box_thumb_background)
+            radio_thumb_gen.draw(item, b_rect[0], b_rect[1], b_rect[2])
 
             if offset == 0:
                 offset = rect[2] + round(4 * gui.scale)
             else:
                 offset = 0
-                yy += round(22 * gui.scale)
+                yy += round(43 * gui.scale)
 
             if yy > y + 300 * gui.scale:
                 break
@@ -37577,6 +37606,107 @@ class GuitarChords:
 # guitar chords def
 gc = GuitarChords()
 
+
+class RadioThumbGen:
+    def __init__(self):
+        self.cache = {}
+        self.requests = []
+        self.size = 100
+    def loader(self):
+
+        while self.requests:
+            item = self.requests[0]
+            del self.requests[0]
+            station = item[0]
+            size = item[1]
+            key = (station["title"], size)
+            src = None
+            filename = filename_safe(station["title"])
+
+            cache_path = os.path.join(r_cache_dir, filename + ".jpg")
+            if os.path.isfile(cache_path):
+                src = open(cache_path, "rb")
+            else:
+                cache_path = os.path.join(r_cache_dir, filename + ".png")
+                if os.path.isfile(cache_path):
+                    src = open(cache_path, "rb")
+                else:
+                    cache_path = os.path.join(r_cache_dir, filename)
+                    if os.path.isfile(cache_path):
+                        src = open(cache_path, "rb")
+
+            if src:
+                print("found cached")
+            elif station.get("icon"):
+                r = requests.get(station.get("icon"), headers={'User-Agent': t_agent}, timeout=5, stream=True)
+                if r.status_code != 200 or int(r.headers.get('Content-Length', 0)) > 2000000:
+                    print("error get radio thumb")
+                    self.cache[key] = [0,]
+                    continue
+                src = io.BytesIO()
+                length = 0
+                for chunk in r.iter_content(1024):
+                    src.write(chunk)
+                    length += len(chunk)
+                    if length > 2000000:
+                        scr = None
+                if src is None:
+                    self.cache[key] = [0, ]
+                    continue
+                src.seek(0)
+                f = open(cache_path, "wb")
+                f.write(src.read())
+                f.close()
+                src.seek(0)
+            else:
+                print("no icon")
+                self.cache[key] = [0, ]
+                continue
+            try:
+                im = Image.open(src)
+                if im.mode != "RGBA":
+                    im = im.convert("RGBA")
+            except:
+                print("malform get radio thumb")
+                self.cache[key] = [0, ]
+                continue
+
+            im = im.resize((size, size), Image.ANTIALIAS)
+            g = io.BytesIO()
+            g.seek(0)
+            im.save(g, 'PNG')
+            g.seek(0)
+            wop = rw_from_object(g)
+            s_image = IMG_Load_RW(wop, 0)
+            texture = SDL_CreateTextureFromSurface(renderer, s_image)
+            SDL_FreeSurface(s_image)
+            tex_w = pointer(c_int(0))
+            tex_h = pointer(c_int(0))
+            SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+            sdl_rect = SDL_Rect(0, 0)
+            sdl_rect.w = int(tex_w.contents.value)
+            sdl_rect.h = int(tex_h.contents.value)
+            self.cache[key] = [1, sdl_rect, texture]
+            gui.update += 1
+
+    def draw(self, station, x, y, w):
+        if not station.get("title"):
+            return
+        key = (station["title"], w)
+
+        r = self.cache.get(key)
+        if r is None:
+            if len(self.requests) < 3:
+                self.requests.append((station, w))
+                self.loader()
+            return
+        elif r[0] == 1:
+            r[1].x = round(x)
+            r[1].y = round(y)
+            SDL_RenderCopy(renderer, r[2], None, r[1])
+
+radio_thumb_gen = RadioThumbGen()
+
 class RadioView:
     def __init__(self):
         pass
@@ -37598,22 +37728,26 @@ class RadioView:
             return
         radios = pctl.radio_playlists[pctl.radio_playlist_viewing]["items"]
 
-        w = round(460 * gui.scale)
-        h = round(45 * gui.scale)
+        bg = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, -0.03)
+        tbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.07, -0.05)
+        w = round(400 * gui.scale)
+        h = round(55 * gui.scale)
         for radio in radios:
 
-
             rect = (x, yy, w, h)
-            ddt.rect(rect, [30, 30, 30, 255])
+            ddt.rect(rect, bg)
             yyy = yy
-            pic_rect = (x + round(5 * gui.scale), yy + round(5 * gui.scale), round(35 * gui.scale), round(35 * gui.scale))
-            ddt.rect(pic_rect, [45, 45, 45, 255])
+            pic_rect = (x + round(5 * gui.scale), yy + round(5 * gui.scale), h - round(10 * gui.scale), h - round(10 * gui.scale))
+            ddt.rect(pic_rect, tbg)
+            radio_thumb_gen.draw(radio, pic_rect[0], pic_rect[1], pic_rect[2])
 
+            toff = h + round(2 * gui.scale)
+            yyy += round(9 * gui.scale)
+            ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line1, 212, max_w=w-(toff + round(15 * gui.scale)))
+            yyy += round(19 * gui.scale)
+            ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312, max_w=w-(toff + round(15 * gui.scale)))
 
-            toff = round(47 * gui.scale)
-            yyy += round(7 * gui.scale)
-            ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line2, 313, max_w=w-(toff + round(10 * gui.scale)))
-            yy += round(h + 8 * gui.scale)
+            yy += round(h + 7 * gui.scale)
 
         c = ((window_size[0] - w) / 2) + w
         boxx = round(200 * gui.scale)
@@ -38059,6 +38193,7 @@ class ViewBox:
         self.combo_img = asset_loader("combo.png", True)
         self.lyrics_img = asset_loader("lyrics.png", True)
         self.gallery2_img = asset_loader("gallery2.png", True)
+        self.radio_img = asset_loader("radio.png", True)
         self.col_img = asset_loader("col.png", True)
         self.artist_img = asset_loader("artist.png", True)
 
@@ -38348,14 +38483,14 @@ class ViewBox:
 
         # --
 
-        y += 45 * gui.scale
+        y += 40 * gui.scale
 
         high = [92, 86, 255, 255]
         if colours.lm:
             #high = (.7, .75, .75)
             high = [63, 63, 63, 255]
 
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
+        test = self.button(x + 3 * gui.scale, y, self.radio_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
         if test is not None:
             func = test
 
@@ -38891,6 +39026,7 @@ tm.d['worker'] = [worker1, (), None]
 tm.d['search'] = [worker2, (), None]
 tm.d['gallery'] = [worker3, (), None]
 tm.d['style'] = [worker4, (), None]
+#tm.d['radio-thumb'] = [radio_thumb_gen.loader, (), None]
 
 tm.ready("search")
 tm.ready("gallery")
@@ -41094,19 +41230,19 @@ while pctl.running:
                 if keymaps.test("regenerate-playlist"):
                     regenerate_playlist(pctl.active_playlist_viewing)
 
-            if keymaps.test("cycle-theme"):
-                gui.reload_theme = True
-                gui.theme_temp_current = -1
-                gui.temp_themes.clear()
-                theme += 1
+        if keymaps.test("cycle-theme"):
+            gui.reload_theme = True
+            gui.theme_temp_current = -1
+            gui.temp_themes.clear()
+            theme += 1
 
-            if keymaps.test("cycle-theme-reverse"):
-                gui.theme_temp_current = -1
-                gui.temp_themes.clear()
-                pref_box.devance_theme()
+        if keymaps.test("cycle-theme-reverse"):
+            gui.theme_temp_current = -1
+            gui.temp_themes.clear()
+            pref_box.devance_theme()
 
-            if keymaps.test("reload-theme"):
-                gui.reload_theme = True
+        if keymaps.test("reload-theme"):
+            gui.reload_theme = True
 
     # if mouse_position[1] < 1:
     #     mouse_down = False
