@@ -1501,6 +1501,7 @@ class Prefs:    # Used to hold any kind of settings
             self.power_save = True
         self.left_window_control = macos or left_window_control
         self.macstyle = macos or detect_macstyle
+        self.radio_thumb_bans = []
 
 prefs = Prefs()
 
@@ -1859,6 +1860,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.column_sort_ani_x = 0
 
         self.restore_showcase_view = False
+        self.restore_radio_view = False
 
         self.tracklist_center_mode = False
         self.tracklist_inset_left = 0
@@ -3099,6 +3101,8 @@ for t in range(2):
                 master_library[d["index"]] = nt
         if save[163] is not None:
             prefs.premium = save[163]
+        if save[164] is not None:
+            gui.restore_radio_view = save[164]
 
         state_file.close()
         del save
@@ -37612,6 +37616,7 @@ class RadioThumbGen:
         self.cache = {}
         self.requests = []
         self.size = 100
+
     def loader(self):
 
         while self.requests:
@@ -37637,11 +37642,16 @@ class RadioThumbGen:
 
             if src:
                 print("found cached")
-            elif station.get("icon"):
-                r = requests.get(station.get("icon"), headers={'User-Agent': t_agent}, timeout=5, stream=True)
-                if r.status_code != 200 or int(r.headers.get('Content-Length', 0)) > 2000000:
+            elif station.get("icon") and station["icon"] not in prefs.radio_thumb_bans:
+                try:
+                    r = requests.get(station.get("icon"), headers={'User-Agent': t_agent}, timeout=5, stream=True)
+                    if r.status_code != 200 or int(r.headers.get('Content-Length', 0)) > 2000000:
+                        raise Exception("Error get radio thumb")
+                except:
                     print("error get radio thumb")
-                    self.cache[key] = [0,]
+                    self.cache[key] = [0, ]
+                    if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
+                        prefs.radio_thumb_bans.append(station.get("icon"))
                     continue
                 src = io.BytesIO()
                 length = 0
@@ -37652,6 +37662,8 @@ class RadioThumbGen:
                         scr = None
                 if src is None:
                     self.cache[key] = [0, ]
+                    if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
+                        prefs.radio_thumb_bans.append(station.get("icon"))
                     continue
                 src.seek(0)
                 f = open(cache_path, "wb")
@@ -37662,6 +37674,7 @@ class RadioThumbGen:
                 print("no icon")
                 self.cache[key] = [0, ]
                 continue
+
             try:
                 im = Image.open(src)
                 if im.mode != "RGBA":
@@ -37669,6 +37682,8 @@ class RadioThumbGen:
             except:
                 print("malform get radio thumb")
                 self.cache[key] = [0, ]
+                if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
+                    prefs.radio_thumb_bans.append(station.get("icon"))
                 continue
 
             im = im.resize((size, size), Image.ANTIALIAS)
@@ -37678,15 +37693,7 @@ class RadioThumbGen:
             g.seek(0)
             wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
-            texture = SDL_CreateTextureFromSurface(renderer, s_image)
-            SDL_FreeSurface(s_image)
-            tex_w = pointer(c_int(0))
-            tex_h = pointer(c_int(0))
-            SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-            sdl_rect = SDL_Rect(0, 0)
-            sdl_rect.w = int(tex_w.contents.value)
-            sdl_rect.h = int(tex_h.contents.value)
-            self.cache[key] = [1, sdl_rect, texture]
+            self.cache[key] = [2, None, None, s_image]
             gui.update += 1
 
     def draw(self, station, x, y, w):
@@ -37698,9 +37705,21 @@ class RadioThumbGen:
         if r is None:
             if len(self.requests) < 3:
                 self.requests.append((station, w))
-                self.loader()
+                tm.ready("radio-thumb")
             return
-        elif r[0] == 1:
+        if r[0] == 2:
+            texture = SDL_CreateTextureFromSurface(renderer, r[3])
+            SDL_FreeSurface(r[3])
+            tex_w = pointer(c_int(0))
+            tex_h = pointer(c_int(0))
+            SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+            sdl_rect = SDL_Rect(0, 0)
+            sdl_rect.w = int(tex_w.contents.value)
+            sdl_rect.h = int(tex_h.contents.value)
+            r[2] = texture
+            r[1] = sdl_rect
+            r[0] = 1
+        if r[0] == 1:
             r[1].x = round(x)
             r[1].y = round(y)
             SDL_RenderCopy(renderer, r[2], None, r[1])
@@ -37732,8 +37751,11 @@ class RadioView:
         tbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.07, -0.05)
         w = round(400 * gui.scale)
         h = round(55 * gui.scale)
+        c = 0
         for radio in radios:
-
+            if yy > window_size[1] - (gui.panelBY + h + round(10 * gui.scale)):
+                break
+            c += 1
             rect = (x, yy, w, h)
             ddt.rect(rect, bg)
             yyy = yy
@@ -37746,6 +37768,22 @@ class RadioView:
             ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line1, 212, max_w=w-(toff + round(15 * gui.scale)))
             yyy += round(19 * gui.scale)
             ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312, max_w=w-(toff + round(15 * gui.scale)))
+
+            hit_rect = (x + (w - round(45 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
+            #ddt.rect(hit_rect, [255, 255, 255, 3])
+            fields.add(hit_rect)
+            colour = alpha_mod(colours.side_bar_line1, 27)
+            if coll(hit_rect):
+                colour = colours.side_bar_line1
+            bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
+
+            hit_rect = (x + (w - round(85 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
+            ddt.rect(hit_rect, [255, 255, 255, 2])
+            fields.add(hit_rect)
+            colour = alpha_mod(colours.side_bar_line1, 27)
+            if coll(hit_rect):
+                colour = colours.side_bar_line1
+            #bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
             yy += round(h + 7 * gui.scale)
 
@@ -39026,7 +39064,7 @@ tm.d['worker'] = [worker1, (), None]
 tm.d['search'] = [worker2, (), None]
 tm.d['gallery'] = [worker3, (), None]
 tm.d['style'] = [worker4, (), None]
-#tm.d['radio-thumb'] = [radio_thumb_gen.loader, (), None]
+tm.d['radio-thumb'] = [radio_thumb_gen.loader, (), None]
 
 tm.ready("search")
 tm.ready("gallery")
@@ -39833,7 +39871,7 @@ def save_state():
             gui.show_ratings,
             gui.show_album_ratings,
             prefs.radio_urls,
-            gui.combo_mode,
+            gui.showcase_mode, #gui.combo_mode,
             top_panel.prime_tab,
             top_panel.prime_side,
             prefs.sync_playlist,
@@ -39853,7 +39891,8 @@ def save_state():
             prefs.tray_show_title,
             prefs.artist_list_style,
             ds,
-            prefs.premium
+            prefs.premium,
+            gui.radio_view
         ]
 
 
@@ -40111,6 +40150,8 @@ def drop_file(target):
 
 if gui.restore_showcase_view:
     enter_showcase_view()
+if gui.restore_radio_view:
+    enter_radio_view()
 
 #switch_playlist(len(pctl.multi_playlist) - 1)
 
