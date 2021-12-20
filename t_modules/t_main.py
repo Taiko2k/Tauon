@@ -13200,6 +13200,7 @@ folder_tree_menu = Menu(175, show_icons=True)
 folder_tree_stem_menu = Menu(190, show_icons=True)
 overflow_menu = Menu(175)
 spotify_playlist_menu = Menu(175)
+radio_context_menu = Menu(175)
 
 
 def enable_artist_list():
@@ -20774,7 +20775,7 @@ def new_playlist_deco():
 x_menu.add(_("New Playlist"), new_playlist, new_playlist_deco,  icon=add_icon)
 
 
-x_menu.add(_("Internet Radio…"), activate_radio_box)
+# x_menu.add(_("Internet Radio…"), activate_radio_box)
 
 tauon.switch_playlist = switch_playlist
 
@@ -32859,6 +32860,9 @@ class RadioBox:
     def __init__(self):
 
         self.active = False
+        self.station_editing = None
+        self.edit_mode = True
+        self.add_mode = False
         self.radio_field_active = 1
         self.radio_field = TextBox2()
         self.radio_field_title = TextBox2()
@@ -33296,6 +33300,35 @@ class RadioBox:
 
     def render(self):
 
+        if self.edit_mode:
+            w = round(510 * gui.scale)
+            h = round(120 * gui.scale)  # + sh
+            # x = int(window_size[0] / 2) - int(w / 2)
+            # y = int(window_size[1] / 2) - int(h / 2)
+            self.w = w
+            self.h = h
+            # self.x = x
+            # self.y = y
+            width = w
+            yy = self.y
+            y = self.y
+            x = self.x
+            ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
+                       colours.box_border)
+            ddt.rect_a((x, y), (w, h), colours.box_background)
+            ddt.text_background_colour = colours.box_background
+            if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
+                self.active = False
+
+            if self.add_mode:
+                ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Add Station"), colours.box_title_text, 213)
+            else:
+                ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Edit Station"), colours.box_title_text, 213)
+
+            self.saved()
+            return
+
+
         w = round(510 * gui.scale)
         h = round(356 * gui.scale)  # + sh
         x = int(window_size[0] / 2) - int(w / 2)
@@ -33378,7 +33411,6 @@ class RadioBox:
 
         ddt.rect_s(rect, colours.box_text_border, 1 * gui.scale)
 
-
         yy += round(30 * gui.scale)
 
         rect = (x + 8 * gui.scale, yy - round(2 * gui.scale), width, 22 * gui.scale)
@@ -33393,26 +33425,23 @@ class RadioBox:
         self.radio_field.draw(x + 14 * gui.scale, yy, colours.box_input_text, active=self.radio_field_active == 2,
                               width=width, click=gui.level_2_click)
 
-
         if draw.button(_("Save"), x + width + round(21 * gui.scale), yy - round(20 * gui.scale), press=gui.level_2_click):
 
             if not self.radio_field.text:
                 show_message(_("Enter a stream URL"))
             elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
-                radio = {}
+                radio = self.station_editing
+                if self.add_mode:
+                    radio = {}
                 radio["title"] = self.radio_field_title.text
                 radio["stream_url"] = self.radio_field.text
                 radio["website_url"] = ""
 
-                for i, r in enumerate(prefs.radio_urls):
-                    if r["stream_url"] == radio["stream_url"]:
-                        prefs.radio_urls[i] = radio
-                        break
-                else:
+                if self.add_mode:
                     prefs.radio_urls.append(radio)
 
-                self.radio_field_title.text = ""
-                self.radio_field.text = ""
+                # self.radio_field_title.text = ""
+                # self.radio_field.text = ""
             else:
                 show_message(_("Could not validate URL. Must start with https:// or http://"))
 
@@ -37726,6 +37755,15 @@ class RadioThumbGen:
 
 radio_thumb_gen = RadioThumbGen()
 
+def rename_station(station):
+    radiobox.active = True
+    radiobox.edit_mode = True
+    radiobox.radio_field.text = station["stream_url"]
+    radiobox.radio_field_title.text = station.get("title", "")
+    radiobox.station_editing = station
+
+radio_context_menu.add(_("Edit..."), rename_station, pass_ref=True)
+
 class RadioView:
     def __init__(self):
         pass
@@ -37783,6 +37821,10 @@ class RadioView:
             colour = alpha_mod(colours.side_bar_line1, 27)
             if coll(hit_rect):
                 colour = colours.side_bar_line1
+                if inp.mouse_click:
+                    radiobox.x = hit_rect[0] + hit_rect[2]
+                    radiobox.y = hit_rect[1]
+                    radio_context_menu.activate(radio, position=(radiobox.x, yy + round(20 * gui.scale)))
             #bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
             yy += round(h + 7 * gui.scale)
