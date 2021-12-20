@@ -245,6 +245,6 @@ def load_theme(colours, path):
         # if "panel button on" in p:
         #     colours.corner_button_active = get_colour_from_line(p)
 
-        colours.post_config()
-        if colours.lm:
-            colours.light_mode()
+    colours.post_config()
+    if colours.lm:
+        colours.light_mode()
