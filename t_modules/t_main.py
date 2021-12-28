@@ -13184,7 +13184,7 @@ def menu_standard_or_grey(bool):
 
 # Create empty area menu
 playlist_menu = Menu(130)
-radio_entry_menu = Menu(110)
+radio_entry_menu = Menu(125)
 showcase_menu = Menu(125)
 center_info_menu = Menu(125)
 cancel_menu = Menu(100)
@@ -32868,6 +32868,10 @@ class RadioBox:
         self.radio_field_title = TextBox2()
         self.radio_field_search = TextBox2()
 
+        self.x = None
+        self.y = None
+        self.center = False
+
         self.scroll_position = 0
         self.scroll = ScrollBox()
 
@@ -32900,7 +32904,7 @@ class RadioBox:
 
         self.search_menu = Menu(170)
         self.search_menu.add(_("Search Tag"), self.search_tag, pass_ref=True)
-        self.search_menu.add(_("Search Country"), self.search_country, pass_ref=True)
+        self.search_menu.add(_("Search Country Code"), self.search_country, pass_ref=True)
         self.search_menu.add(_("Search Title"), self.search_title, pass_ref=True)
 
         self.websocket = None
@@ -33303,16 +33307,22 @@ class RadioBox:
         if self.edit_mode:
             w = round(510 * gui.scale)
             h = round(120 * gui.scale)  # + sh
-            # x = int(window_size[0] / 2) - int(w / 2)
-            # y = int(window_size[1] / 2) - int(h / 2)
+
             self.w = w
             self.h = h
             # self.x = x
             # self.y = y
             width = w
-            yy = self.y
-            y = self.y
-            x = self.x
+            if self.center:
+                x = int(window_size[0] / 2) - int(w / 2)
+                y = int(window_size[1] / 2) - int(h / 2)
+                yy = y
+                self.y = y
+                self.x = x
+            else:
+                yy = self.y
+                y = self.y
+                x = self.x
             ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
                        colours.box_border)
             ddt.rect_a((x, y), (w, h), colours.box_background)
@@ -33349,7 +33359,7 @@ class RadioBox:
         if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
             self.active = False
 
-        ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Internet Radio"), colours.box_title_text, 213)
+        ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Station Browser"), colours.box_title_text, 213)
 
         # ---
         if self.load_connecting:
@@ -33385,7 +33395,7 @@ class RadioBox:
         elif self.tab == 0:
             self.saved()
         self.draw_list()
-        self.footer()
+        #self.footer()
         return
 
     def saved(self):
@@ -33438,10 +33448,9 @@ class RadioBox:
                 radio["website_url"] = ""
 
                 if self.add_mode:
-                    prefs.radio_urls.append(radio)
+                    pctl.radio_playlists[pctl.radio_playlist_viewing]["items"].append(radio)
+                self.active = False
 
-                # self.radio_field_title.text = ""
-                # self.radio_field.text = ""
             else:
                 show_message(_("Could not validate URL. Must start with https:// or http://"))
 
@@ -33641,34 +33650,16 @@ def visit_radio_site(item):
     if "website_url" in item and item["website_url"]:
         webbrowser.open(item["website_url"], new=2, autoraise=True)
 
-def paste_radio_site(item):
-    item["website_url"] = copy_from_clipboard()
-
-def radio_item_saved_test(_):
-    for saved in prefs.radio_urls:
-        if saved["stream_url"] == radiobox.right_clicked_station["stream_url"]:
-            return True
-    return False
-
 def radio_saved_panel_test(_):
     return radiobox.tab == 0
 
-def not_radio_item_saved_test(_):
-    for saved in prefs.radio_urls:
-        if saved["stream_url"] == radiobox.right_clicked_station["stream_url"]:
-            return False
-    return True
 
 def save_to_radios(item):
-    prefs.radio_urls.append(item)
+    pctl.radio_playlists[pctl.radio_playlist_viewing]["items"].append(item)
     show_message(_("Added to list of saved stations"), mode="done")
 
-radio_entry_menu.add(_("Paste Website Link"), paste_radio_site, show_test=test_shift, pass_ref=True, pass_ref_deco=True)
 radio_entry_menu.add(_("Visit Website"), visit_radio_site, visit_radio_site_deco, pass_ref=True, pass_ref_deco=True)
-radio_entry_menu.add(_("Save"), save_to_radios, pass_ref=True, show_test=not_radio_item_saved_test)
-radio_entry_menu.add(_("Rename"), radiobox.edit_entry, pass_ref=True, show_test=radio_saved_panel_test)
-radio_entry_menu.add(_("Remove"), radiobox.delete_radio_entry, pass_ref=True, show_test=radio_item_saved_test)
-radio_entry_menu.add(_("Remove All After"), radiobox.delete_radio_entry_after, pass_ref=True, show_test=radio_saved_panel_test)
+radio_entry_menu.add(_("Save"), save_to_radios, pass_ref=True)
 
 class RenamePlaylistBox:
 
@@ -37755,9 +37746,27 @@ class RadioThumbGen:
 
 radio_thumb_gen = RadioThumbGen()
 
-def rename_station(station):
+def station_browse():
+    radiobox.active = True
+    radiobox.edit_mode = False
+    radiobox.add_mode = False
+    radiobox.center = True
+    radiobox.tab = 1
+
+def add_station():
     radiobox.active = True
     radiobox.edit_mode = True
+    radiobox.add_mode = True
+    radiobox.radio_field.text = ""
+    radiobox.radio_field_title.text = ""
+    radiobox.station_editing = None
+    radiobox.center = True
+
+def rename_station(station):
+    radiobox.active = True
+    radiobox.center = False
+    radiobox.edit_mode = True
+    radiobox.add_mode = False
     radiobox.radio_field.text = station["stream_url"]
     radiobox.radio_field_title.text = station.get("title", "")
     radiobox.station_editing = station
@@ -37766,13 +37775,38 @@ radio_context_menu.add(_("Edit..."), rename_station, pass_ref=True)
 
 class RadioView:
     def __init__(self):
-        pass
+        self.add_icon = asset_loader("add-station.png", True)
+        self.search_icon = asset_loader("station-search.png", True)
     def render(self):
         box = int(window_size[1] * 0.4 + 120 * gui.scale)
         box = min(window_size[0] // 2, box)
 
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background)
         #print(prefs.radio_urls)
+
+        # Add station button
+        x = window_size[0] - round(60 * gui.scale)
+        y = gui.panelY + round(30 * gui.scale)
+        rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
+        fields.add(rect)
+        colour = colours.box_button_text_highlight
+        if coll(rect):
+            if inp.mouse_click:
+                add_station()
+        else:
+            colour = alpha_mod(colour, 40)
+        self.add_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
+
+        y += round(33 * gui.scale)
+        rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
+        fields.add(rect)
+        colour = colours.box_button_text_highlight
+        if not coll(rect):
+            colour = alpha_mod(colour, 40)
+        else:
+            if inp.mouse_click:
+                station_browse()
+        self.search_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
 
         x = round(30 * gui.scale)
         y = gui.panelY + round(30 * gui.scale)
@@ -37812,6 +37846,8 @@ class RadioView:
             fields.add(hit_rect)
             colour = alpha_mod(colours.side_bar_line1, 27)
             if coll(hit_rect):
+                if inp.mouse_click:
+                    radiobox.start(radio)
                 colour = colours.side_bar_line1
             bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
