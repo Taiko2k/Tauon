@@ -142,10 +142,22 @@ class StreamEnc:
 
             position = 0
             old_metadata = self.tauon.radiobox.song_key
+            old_tags = self.tauon.pctl.found_tags
 
             ##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
             cmd = ["ffmpeg", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
             encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            def save_track():
+                save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                save_file += filename_safe(old_metadata)
+                save_file = save_file.strip() + ext
+                save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                if not os.path.exists(self.tauon.prefs.encoder_output):
+                    os.makedirs(self.tauon.prefs.encoder_output)
+                shutil.move(target_file, save_file)
 
             while True:
 
@@ -164,7 +176,8 @@ class StreamEnc:
 
                     if os.path.exists(target_file):
                         if os.path.getsize(target_file) > 256000:
-
+                            song = ()
+                            self.tauon.recorded_songs.append(song)
                             print("Save file")
                             save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
                             save_file += filename_safe(old_metadata)
@@ -261,7 +274,7 @@ class StreamEnc:
 
         maybe = b""
 
-        if self.tauon.prefs.auto_rec:
+        if True: #self.tauon.prefs.auto_rec:
             self.download_process = threading.Thread(target=self.encode)
             self.download_process.daemon = True
             self.download_process.start()

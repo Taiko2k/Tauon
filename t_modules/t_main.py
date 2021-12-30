@@ -2762,6 +2762,9 @@ except:
 
 perf_timer.set()
 
+radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+radio_playlist_viewing = 0
+
 for t in range(2):
     try:
 
@@ -3103,6 +3106,12 @@ for t in range(2):
             prefs.premium = save[163]
         if save[164] is not None:
             gui.restore_radio_view = save[164]
+        if save[165] is not None:
+            radio_playlists = save[165]
+        if save[166] is not None:
+            radio_playlist_viewing = save[166]
+        if save[167] is not None:
+            prefs.radio_thumb_bans = save[167]
 
         state_file.close()
         del save
@@ -3576,6 +3585,11 @@ if db_version > 0:
                 f.write("vol-up Up Ctrl\n")
                 f.write("vol-down Down Ctrl\n")
 
+    if db_version <= 63:
+        print("Updating database to version 64")
+        if prefs.radio_urls:
+            radio_playlists[0]["items"].extend(prefs.radio_urls)
+            prefs.radio_urls = []
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -4681,8 +4695,8 @@ class PlayerCtl:
         self.regen_in_progress = False
         self.notify_in_progress = False
 
-        self.radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
-        self.radio_playlist_viewing = 0
+        self.radio_playlists = radio_playlists
+        self.radio_playlist_viewing = radio_playlist_viewing
 
     def notify_change(self):
         self.db_inc += 1
@@ -7479,6 +7493,8 @@ class Tauon:
 
         self.cargo_playtime = None
         self.macos = macos
+
+        self.recorded_songs = []
 
     def bg_save(self):
         self.worker_save_state = True
@@ -16158,6 +16174,7 @@ def new_playlist(switch=True):
         r["uid"] = uid_gen()
         r["name"] = "New Radio Playlist"
         r["items"] = [] #copy.copy(prefs.radio_urls)
+        r["scroll"] = 0
         pctl.radio_playlists.append(r)
         return
 
@@ -32853,6 +32870,7 @@ device_scroll = ScrollBox()
 artist_list_scroll = ScrollBox()
 gallery_scroll = ScrollBox()
 tree_view_scroll = ScrollBox()
+radio_view_scroll = ScrollBox()
 
 
 class RadioBox:
@@ -32868,8 +32886,10 @@ class RadioBox:
         self.radio_field_title = TextBox2()
         self.radio_field_search = TextBox2()
 
-        self.x = None
-        self.y = None
+        self.x = 1
+        self.y = 1
+        self.w = 1
+        self.h = 1
         self.center = False
 
         self.scroll_position = 0
@@ -32884,6 +32904,7 @@ class RadioBox:
 
         self.proxy_started = False
         self.loaded_url = None
+        self.loaded_station = None
         self.load_connecting = False
         self.load_failed = False
         self.searching = False
@@ -32985,6 +33006,7 @@ class RadioBox:
         self.song_key = ""
         pctl.playing_time = 0
         pctl.decode_time = 0
+        self.loaded_station = item
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.abort = True
@@ -33511,7 +33533,12 @@ class RadioBox:
                 text_colour = colours.tab_text_active
                 ddt.rect(rect, bg)
 
-            if (radio_entry_menu.active and radio_entry_menu.reference == p) or \
+            if radio_view.drag:
+                if item == radio_view.drag:
+                    text_colour = colours.box_sub_text
+                    bg = [255, 255, 255, 10]
+                    ddt.rect(rect, bg)
+            elif (radio_entry_menu.active and radio_entry_menu.reference == p) or \
                 (not radio_entry_menu.active and coll(rect)) and not playing:
                 text_colour = colours.box_sub_text
                 bg = [255, 255, 255, 10]
@@ -33520,13 +33547,15 @@ class RadioBox:
             if coll(rect):
 
                 if gui.level_2_click:
-                    self.drag = p
-                    self.click_point = copy.copy(mouse_position)
+                    # self.drag = p
+                    # self.click_point = copy.copy(mouse_position)
+                    radio_view.drag = item
+                    radio_view.click_point = copy.copy(mouse_position)
                 if mouse_up: #gui.level_2_click:
                     gui.update += 1
-                    if self.drag is not None and p != self.drag:
-                        swap = p
-                    elif point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
+                    # if self.drag is not None and p != self.drag:
+                    #     swap = p
+                    if point_proximity_test(radio_view.click_point, mouse_position, round(4 * gui.scale)):
                         self.start(item)
                 if middle_click:
                     to_delete = p
@@ -33564,33 +33593,33 @@ class RadioBox:
 
             p += 1
 
-        if to_delete is not None:
-            del radio_list[to_delete]
+        # if to_delete is not None:
+        #     del radio_list[to_delete]
+        #
+        # if mouse_up and self.drag and mouse_position[1] > yy + round(22 * gui.scale):
+        #     swap = len(radio_list)
 
-        if mouse_up and self.drag and mouse_position[1] > yy + round(22 * gui.scale):
-            swap = len(radio_list)
+        # if self.drag and not point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
+        #     ddt.rect((
+        #              mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 45 * gui.scale,
+        #              13 * gui.scale), colours.grey(70))
 
-        if self.drag and not point_proximity_test(self.click_point, mouse_position, round(4 * gui.scale)):
-            ddt.rect((
-                     mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 45 * gui.scale,
-                     13 * gui.scale), colours.grey(70))
+        # if swap is not None:
+        #
+        #     old = radio_list[self.drag]
+        #     radio_list[self.drag] = None
+        #
+        #     if swap > self.drag:
+        #         swap += 1
+        #
+        #     radio_list.insert(swap, old)
+        #     radio_list.remove(None)
+        #
+        #     self.drag = None
+        #     gui.update += 1
 
-        if swap is not None:
-
-            old = radio_list[self.drag]
-            radio_list[self.drag] = None
-
-            if swap > self.drag:
-                swap += 1
-
-            radio_list.insert(swap, old)
-            radio_list.remove(None)
-
-            self.drag = None
-            gui.update += 1
-
-        if not mouse_down:
-            self.drag = None
+        # if not mouse_down:
+        #     self.drag = None
 
 
     def footer(self):
@@ -37718,7 +37747,7 @@ class RadioThumbGen:
 
     def draw(self, station, x, y, w):
         if not station.get("title"):
-            return
+            return 0
         key = (station["title"], w)
 
         r = self.cache.get(key)
@@ -37726,7 +37755,7 @@ class RadioThumbGen:
             if len(self.requests) < 3:
                 self.requests.append((station, w))
                 tm.ready("radio-thumb")
-            return
+            return 0
         if r[0] == 2:
             texture = SDL_CreateTextureFromSurface(renderer, r[3])
             SDL_FreeSurface(r[3])
@@ -37743,7 +37772,8 @@ class RadioThumbGen:
             r[1].x = round(x)
             r[1].y = round(y)
             SDL_RenderCopy(renderer, r[2], None, r[1])
-
+            return 1
+        return 0
 radio_thumb_gen = RadioThumbGen()
 
 def station_browse():
@@ -37762,7 +37792,8 @@ def add_station():
     radiobox.station_editing = None
     radiobox.center = True
 
-def rename_station(station):
+def rename_station(item):
+    station = item[1]
     radiobox.active = True
     radiobox.center = False
     radiobox.edit_mode = True
@@ -37773,13 +37804,23 @@ def rename_station(station):
 
 radio_context_menu.add(_("Edit..."), rename_station, pass_ref=True)
 
+def remove_station(item):
+    index = item[0]
+    del pctl.radio_playlists[pctl.radio_playlist_viewing]["items"][index]
+
+radio_context_menu.add(_("Remove"), remove_station, pass_ref=True)
+
+
 class RadioView:
     def __init__(self):
         self.add_icon = asset_loader("add-station.png", True)
         self.search_icon = asset_loader("station-search.png", True)
+        self.drag = None
+        self.click_point = (0, 0)
+
     def render(self):
-        box = int(window_size[1] * 0.4 + 120 * gui.scale)
-        box = min(window_size[0] // 2, box)
+        # box = int(window_size[1] * 0.4 + 120 * gui.scale)
+        # box = min(window_size[0] // 2, box)
 
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background)
         #print(prefs.radio_urls)
@@ -37823,11 +37864,30 @@ class RadioView:
         tbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.07, -0.05)
         w = round(400 * gui.scale)
         h = round(55 * gui.scale)
-        c = 0
-        for radio in radios:
-            if yy > window_size[1] - (gui.panelBY + h + round(10 * gui.scale)):
+        gap = round(7 * gui.scale)
+
+        mm = (window_size[1] - (gui.panelBY + yy + h + round(15 * gui.scale))) // (h + gap) + 1
+
+        count = 0
+        scroll = pctl.radio_playlists[pctl.radio_playlist_viewing].get("scroll", 0)
+        if not radiobox.active or (radiobox.active and not coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
+            scroll += mouse_wheel * -1
+        scroll = min(scroll, len(radios) - mm + 1)
+        scroll = max(scroll, 0)
+        if len(radios) > mm:
+            scroll = radio_view_scroll.draw(round(7 * gui.scale), yy, round(15 * gui.scale), (mm * (h + gap)) - gap, scroll, len(radios) - mm + 1)
+        else:
+            scroll = 0
+
+        pctl.radio_playlists[pctl.radio_playlist_viewing]["scroll"] = scroll
+        insert = None
+
+        for i, radio in enumerate(radios):
+            if count == mm:
                 break
-            c += 1
+            if i < scroll:
+                continue
+            count += 1
             rect = (x, yy, w, h)
             ddt.rect(rect, bg)
             yyy = yy
@@ -37841,40 +37901,77 @@ class RadioView:
             yyy += round(19 * gui.scale)
             ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312, max_w=w-(toff + round(15 * gui.scale)))
 
-            hit_rect = (x + (w - round(45 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
+            hit = False
+            start_rect = (x + (w - round(45 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
             #ddt.rect(hit_rect, [255, 255, 255, 3])
-            fields.add(hit_rect)
+            fields.add(start_rect)
             colour = alpha_mod(colours.side_bar_line1, 27)
-            if coll(hit_rect):
+            if coll(start_rect):
                 if inp.mouse_click:
                     radiobox.start(radio)
+                    hit = True
                 colour = colours.side_bar_line1
             bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
-            hit_rect = (x + (w - round(85 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
-            ddt.rect(hit_rect, [255, 255, 255, 2])
-            fields.add(hit_rect)
+            extra_rect = (x + (w - round(85 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
+            ddt.rect(extra_rect, [255, 255, 255, 2])
+            fields.add(extra_rect)
             colour = alpha_mod(colours.side_bar_line1, 27)
-            if coll(hit_rect):
+            if coll(extra_rect):
                 colour = colours.side_bar_line1
                 if inp.mouse_click:
-                    radiobox.x = hit_rect[0] + hit_rect[2]
-                    radiobox.y = hit_rect[1]
-                    radio_context_menu.activate(radio, position=(radiobox.x, yy + round(20 * gui.scale)))
+                    hit = True
+                    radiobox.x = extra_rect[0] + extra_rect[2]
+                    radiobox.y = extra_rect[1]
+                    radio_context_menu.activate((i, radio), position=(radiobox.x, yy + round(20 * gui.scale)))
             #bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
+            if mouse_up and self.drag and coll(rect):
+                if radiobox.active and coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h)):
+                    pass
+                else:
+                    insert = i
+                if not radiobox.active and self.drag in radios and radios.index(self.drag) < i:
+                    insert += 1
+            elif coll(rect) and not hit and inp.mouse_click:
+                self.drag = radio
+                self.click_point = copy.copy(mouse_position)
 
-            yy += round(h + 7 * gui.scale)
+            yy += round(h + gap)
 
-        c = ((window_size[0] - w) / 2) + w
+        count = ((window_size[0] - w) / 2) + w
         boxx = round(200 * gui.scale)
-        art_rect = (c - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
-        ddt.rect(art_rect, [40, 40, 40, 255])
+        art_rect = (count - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
+
+        if pctl.playing_state == 3 and radiobox.loaded_station:
+            r = album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+            if not r:
+                r = radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
+                # if not r:
+                #     ddt.rect(art_rect, colours.b)
+        # else:
+        #     ddt.rect(art_rect, [40, 40, 40, 255])
 
         yy = window_size[1] / 3 - boxx / 2
         yy += boxx + round(30 * gui.scale)
-        ddt.text((c, yy, 2), "Now playing station", [230, 230, 230, 255], 213)
-        yy += round(25 * gui.scale)
-        ddt.text((c, yy, 2), "Now playing track", [230, 230, 230, 255], 313)
+
+        if radiobox.loaded_station and pctl.playing_state == 3:
+            ddt.text((count, yy, 2), radiobox.loaded_station.get("title", ""), [230, 230, 230, 255], 213)
+            yy += round(25 * gui.scale)
+            ddt.text((count, yy, 2), radiobox.song_key, [230, 230, 230, 255], 313)
+
+        if self.drag:
+            gui.update_on_drag = True
+
+        if insert is not None:
+            radios.insert(insert, "New")
+            if self.drag in radios:
+                radios.remove(self.drag)
+            radios[radios.index("New")] = self.drag
+            self.drag = None
+            gui.update += 1
+        if not mouse_down:
+            self.drag = None
+
 
 radio_view = RadioView()
 
@@ -39823,7 +39920,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            63,  # Version, used for upgrading
+            64,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -39970,7 +40067,10 @@ def save_state():
             prefs.artist_list_style,
             ds,
             prefs.premium,
-            gui.radio_view
+            gui.radio_view,
+            pctl.radio_playlists,
+            pctl.radio_playlist_viewing,
+            prefs.radio_thumb_bans,
         ]
 
 
@@ -41005,6 +41105,7 @@ while pctl.running:
             r["uid"] = uid_gen()
             r["name"] = "Test"
             r["items"] = copy.copy(prefs.radio_urls)
+            r["scroll"] = 0
             pctl.radio_playlists.append(r)
             pass
 
@@ -44408,8 +44509,10 @@ while pctl.running:
                      [50, 50, 50, 225])
             #ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
             #ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[playlist_box.drag_on][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
-
-
+        if radio_view.drag and not point_proximity_test(radio_view.click_point, mouse_position, round(4 * gui.scale)):
+            ddt.rect((
+                mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
+                14 * gui.scale), colours.grey(70))
         if (gui.set_label_hold != -1) and mouse_down:
 
             gui.update_on_drag = True
