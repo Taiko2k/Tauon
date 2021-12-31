@@ -8,7 +8,7 @@
    version="1.1"
    id="svg8"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20, custom)"
-   sodipodi:docname="gallery1 (copy).svg"
+   sodipodi:docname="radio.svg"
    inkscape:export-filename="/home/kai/Tauon/dev/assets/radio.png"
    inkscape:export-xdpi="198.25999"
    inkscape:export-ydpi="198.25999"
@@ -28,9 +28,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="7.9195959"
-     inkscape:cx="-24.685603"
-     inkscape:cy="17.488266"
+     inkscape:zoom="3.959798"
+     inkscape:cx="5.1770318"
+     inkscape:cy="74.62502"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -61,17 +61,6 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-66.276335,-147.90736)">
-    <path
-       id="rect1011"
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.280048;paint-order:markers stroke fill"
-       d="m 66.858071,156.3885 c -0.185624,0 -0.334864,0.14976 -0.334864,0.33538 v 1.73788 c 0,0.18562 0.14924,0.33538 0.334864,0.33538 h 4.252453 c 0.185624,0 0.33538,-0.14976 0.33538,-0.33538 v -1.73788 c 0,-0.18562 -0.149756,-0.33538 -0.33538,-0.33538 z m 3.076814,0.35244 a 0.91000335,0.91000335 0 0 1 0.910022,0.91002 0.91000335,0.91000335 0 0 1 -0.910022,0.91002 0.91000335,0.91000335 0 0 1 -0.910021,-0.91002 0.91000335,0.91000335 0 0 1 0.910021,-0.91002 z" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.0850609;paint-order:markers stroke fill"
-       id="rect1137"
-       width="3.2044203"
-       height="0.3413204"
-       x="66.81575"
-       y="155.85046" />
     <path
        id="rect2878"
        style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.98612;paint-order:markers stroke fill"
