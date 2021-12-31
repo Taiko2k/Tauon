@@ -37851,6 +37851,7 @@ class RadioView:
     def __init__(self):
         self.add_icon = asset_loader("add-station.png", True)
         self.search_icon = asset_loader("station-search.png", True)
+        self.menu_icon = asset_loader("radio-menu.png", True)
         self.drag = None
         self.click_point = (0, 0)
 
@@ -37889,7 +37890,6 @@ class RadioView:
         y = gui.panelY + round(30 * gui.scale)
         yy = y
 
-        radios = None
         if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
             pctl.radio_playlist_viewing = 0
         if not pctl.radio_playlists:
@@ -37939,7 +37939,7 @@ class RadioView:
             ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312, max_w=w-(toff + round(15 * gui.scale)))
 
             hit = False
-            start_rect = (x + (w - round(45 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
+            start_rect = (x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
             #ddt.rect(hit_rect, [255, 255, 255, 3])
             fields.add(start_rect)
             colour = alpha_mod(colours.side_bar_line1, 27)
@@ -37950,8 +37950,8 @@ class RadioView:
                 colour = colours.side_bar_line1
             bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
-            extra_rect = (x + (w - round(85 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
-            ddt.rect(extra_rect, [255, 255, 255, 2])
+            extra_rect = (x + (w - round(82 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(35 * gui.scale))
+            #ddt.rect(extra_rect, [255, 255, 255, 2])
             fields.add(extra_rect)
             colour = alpha_mod(colours.side_bar_line1, 27)
             if coll(extra_rect):
@@ -37961,6 +37961,8 @@ class RadioView:
                     radiobox.x = extra_rect[0] + extra_rect[2]
                     radiobox.y = extra_rect[1]
                     radio_context_menu.activate((i, radio), position=(radiobox.x, yy + round(20 * gui.scale)))
+            self.menu_icon.render(x + (w - round(75 * gui.scale)), yy + round(26 * gui.scale), colour)
+
             #bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
             if mouse_up and self.drag and coll(rect):
                 if radiobox.active and coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h)):
