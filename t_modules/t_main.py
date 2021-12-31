@@ -15279,6 +15279,7 @@ def parse_template(string, track_object, up_ext=False, strict=False):
 
 # Create playlist tab menu
 tab_menu = Menu(160, show_icons=True)
+radio_tab_menu = Menu(160, show_icons=True)
 
 def rename_playlist(index, generator=False):
 
@@ -15298,7 +15299,10 @@ def rename_playlist(index, generator=False):
     if rename_playlist_box.y < gui.panelY:
         rename_playlist_box.y = gui.panelY + 10 * gui.scale
 
-    rename_text_area.set_text(pctl.multi_playlist[index][0])
+    if gui.radio_view:
+        rename_text_area.set_text(pctl.radio_playlists[index]["name"])
+    else:
+        rename_text_area.set_text(pctl.multi_playlist[index][0])
     rename_text_area.highlight_all()
     gui.gen_code_errors = False
 
@@ -15311,6 +15315,7 @@ def edit_generator_box(index):
 
 
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
+radio_tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
 def pin_playlist_toggle(pl):
@@ -15510,6 +15515,8 @@ def get_folder_tracks_local(pl_in):
 
 
 def test_pl_tab_locked(pl):
+    if gui.radio_view:
+        return False
     return pctl.multi_playlist[pl][9]
 
 
@@ -15666,6 +15673,9 @@ def delete_playlist_by_id(id, force=False, check_lock=False):
     delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
 
 def delete_playlist_ask(index):
+    if gui.radio_view:
+        delete_playlist_force(index)
+        return
     gen = pctl.gen_codes.get(pl_to_id(index), "")
     if (gen and not gen.startswith("self ")) or not pctl.multi_playlist[index][2]:
         delete_playlist(index)
@@ -16147,6 +16157,7 @@ delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
 tab_menu.add(_('Delete'), delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+radio_tab_menu.add(_('Delete'), delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 
 def gen_unique_pl_title(base, extra="", start=1):
 
@@ -20667,6 +20678,14 @@ def switch_playlist(number, cycle=False, quiet=False):
     # for instance in Menu.instances:
     #     instance.active = False
     close_all_menus()
+    if gui.radio_view:
+        if cycle:
+            pctl.radio_playlist_viewing += number
+        else:
+            pctl.radio_playlist_viewing = number
+        if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
+            pctl.radio_playlist_viewing = 0
+        return
 
     gui.previous_playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
@@ -20691,9 +20710,7 @@ def switch_playlist(number, cycle=False, quiet=False):
         gui.gallery_positions.clear()
     gall_pl_switch_timer.set()
 
-
     gui.gallery_positions[gui.previous_playlist_id] = gui.album_scroll_px
-
 
     if cycle:
         pctl.active_playlist_viewing += number
@@ -20735,6 +20752,15 @@ def switch_playlist(number, cycle=False, quiet=False):
             random_track()
 
 def cycle_playlist_pinned(step):
+
+    if gui.radio_view:
+
+        pctl.radio_playlist_viewing += step * -1
+        if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
+            pctl.radio_playlist_viewing = 0
+        if pctl.radio_playlist_viewing < 0:
+            pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
+        return
 
     if step > 0:
         p = pctl.active_playlist_viewing
@@ -28969,7 +28995,10 @@ class TopPanel:
 
                 # Activate menu on right click
                 elif right_click:
-                    tab_menu.activate(copy.deepcopy(i))
+                    if gui.radio_view:
+                        radio_tab_menu.activate(copy.deepcopy(i))
+                    else:
+                        tab_menu.activate(copy.deepcopy(i))
                     gui.tab_menu_pl = i
 
                 # Quick drop tracks
@@ -33302,7 +33331,7 @@ class RadioBox:
 
         for station in data:
             radio = {}
-            print(station)
+            #print(station)
             radio["title"] = station["name"]
             radio["stream_url_unresolved"] = station["url"]
             radio["stream_url"] = station["url_resolved"]
@@ -33956,7 +33985,10 @@ class RenamePlaylistBox:
                 pass
             else:
                 if len(rename_text_area.text) > 0:
-                    pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
+                    if gui.radio_view:
+                        pctl.radio_playlists[self.playlist_index]["name"] = rename_text_area.text
+                    else:
+                        pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
             inp.key_return_press = False
 
 
@@ -34078,7 +34110,10 @@ class PlaylistBox:
 
             if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
                 if right_click:
-                    tab_menu.activate(i, mouse_position)
+                    if gui.radio_view:
+                        radio_tab_menu.activate(i, mouse_position)
+                    else:
+                        tab_menu.activate(i, mouse_position)
                     gui.tab_menu_pl = i
 
                 if tab_menu.active is False and middle_click:
@@ -37690,7 +37725,8 @@ class RadioThumbGen:
                         src = open(cache_path, "rb")
 
             if src:
-                print("found cached")
+                pass
+                #print("found cached")
             elif station.get("icon") and station["icon"] not in prefs.radio_thumb_bans:
                 try:
                     r = requests.get(station.get("icon"), headers={'User-Agent': t_agent}, timeout=5, stream=True)
@@ -37720,7 +37756,7 @@ class RadioThumbGen:
                 f.close()
                 src.seek(0)
             else:
-                print("no icon")
+                #print("no icon")
                 self.cache[key] = [0, ]
                 continue
 
@@ -37871,7 +37907,8 @@ class RadioView:
         count = 0
         scroll = pctl.radio_playlists[pctl.radio_playlist_viewing].get("scroll", 0)
         if not radiobox.active or (radiobox.active and not coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
-            scroll += mouse_wheel * -1
+            if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY and mouse_position[0] < w + round(70 * gui.scale):
+                scroll += mouse_wheel * -1
         scroll = min(scroll, len(radios) - mm + 1)
         scroll = max(scroll, 0)
         if len(radios) > mm:
