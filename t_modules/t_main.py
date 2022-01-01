@@ -4529,21 +4529,21 @@ def get_radio_art():
         response = requests.get("https://api.plaza.one/status")
         if response.status_code == 200:
             d = json.loads(response.text)
-            if "playback" in d:
-                tr = d["playback"]["length"] - d["playback"]["position"]
+            if "song" in d:
+                tr = d["song"]["length"] - d["song"]["position"]
                 tr += 1
                 if tr < 10:
                     tr = 10
                 pctl.radio_poll_timer.force_set(tr * -1)
 
-                if "artist" in d["playback"]:
-                    radiobox.dummy_track.artist = d["playback"]["artist"]
-                if "title" in d["playback"]:
-                    radiobox.dummy_track.title = d["playback"]["title"]
-                if "album" in d["playback"]:
-                    radiobox.dummy_track.album = d["playback"]["album"]
-                if "artwork_src" in d["playback"]:
-                    art_url = d["playback"]["artwork_src"]
+                if "artist" in d["song"]:
+                    radiobox.dummy_track.artist = d["song"]["artist"]
+                if "title" in d["song"]:
+                    radiobox.dummy_track.title = d["song"]["title"]
+                if "album" in d["song"]:
+                    radiobox.dummy_track.album = d["song"]["album"]
+                if "artwork_src" in d["song"]:
+                    art_url = d["song"]["artwork_src"]
                     art_response = requests.get(art_url)
                     if art_response.status_code == 200:
                         if pctl.radio_image_bin:
@@ -4687,7 +4687,7 @@ class PlayerCtl:
 
         self.radio_image_bin = None
         self.radio_rate_timer = Timer(20)
-        self.radio_poll_timer = Timer(10)
+        self.radio_poll_timer = Timer(4)
 
         self.volume_update_timer = Timer()
         self.wake_past_time = 0
@@ -4703,18 +4703,17 @@ class PlayerCtl:
         tauon.bg_save()
 
     def radio_progress(self):
-
         if radiobox.loaded_url and "radio.plaza.one" in radiobox.loaded_url and self.radio_poll_timer.get() > 0:
             self.radio_poll_timer.force_set(-10)
             response = requests.get("https://api.plaza.one/status")
+
             if response.status_code == 200:
                 d = json.loads(response.text)
-                if "playback" in d:
-                    if "artist" in d["playback"] and "title" in d["playback"]:
-                        self.tag_meta = d["playback"]["artist"] + " - " + d["playback"]["title"]
+                if "song" in d:
+                    if "artist" in d["song"] and "title" in d["song"]:
+                        self.tag_meta = d["song"]["artist"] + " - " + d["song"]["title"]
 
         if self.tag_meta:
-
             if self.radio_rate_timer.get() > 10 and self.radio_meta_on != self.tag_meta:
                 self.radio_rate_timer.set()
                 self.radio_scrobble_trip = False
