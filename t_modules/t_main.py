@@ -27878,7 +27878,7 @@ class Over:
         rect = (x, y, 70 * gui.scale, 70 * gui.scale)
         ddt.rect(rect, display_colour)
 
-        ddt.rect(rect, (50, 50, 50, 255))
+        ddt.rect_s(rect, (50, 50, 50, 255), round(1 * gui.scale))
 
         # x = self.box_x + self.item_x_offset + 200 * gui.scale
         # y = self.box_y + 180 * gui.scale
