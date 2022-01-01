@@ -16183,7 +16183,7 @@ def new_playlist(switch=True):
     if gui.radio_view:
         r = {}
         r["uid"] = uid_gen()
-        r["name"] = "New Radio Playlist"
+        r["name"] = "New Radio List"
         r["items"] = [] #copy.copy(prefs.radio_urls)
         r["scroll"] = 0
         pctl.radio_playlists.append(r)
@@ -20803,10 +20803,17 @@ def activate_radio_box():
     radiobox.radio_field.clear()
     radiobox.radio_field_title.clear()
 
+def new_playlist_colour_callback():
+
+    if gui.radio_view:
+        return [120, 90, 245, 255]
+    else:
+        return [237, 80, 221, 255]
 
 add_icon.xoff = 3
 add_icon.yoff = 0
 add_icon.colour = [237, 80, 221, 255]
+add_icon.colour_callback = new_playlist_colour_callback
 
 def new_playlist_deco():
     if gui.radio_view:
@@ -29238,7 +29245,6 @@ class TopPanel:
                 x_menu.activate(position=(xx + round(12 * gui.scale), gui.panelY))
                 view_box.activate(xx)
 
-        view_box.render()
 
         # if True:
         #     border = round(3 * gui.scale)
@@ -38469,6 +38475,7 @@ class ViewBox:
     def activate(self, x):
         self.x = x
         self.active = True
+        self.clicked = False
 
         self.tracks_colour.out_timer.force_set(10)
         self.side_colour.out_timer.force_set(10)
@@ -38636,19 +38643,17 @@ class ViewBox:
 
         if prefs.shuffle_lock:
             self.active = False
+            self.clicked = False
             return
-
-        if not x_menu.active:
-            self.active = False
 
         if not self.active:
             return
 
         #rect = [self.x, self.y, self.w, self.h]
-
-        if x_menu.clicked:
+        #if x_menu.clicked or inp.mouse_click:
+        if self.clicked:
             gui.level_2_click = True
-
+        self.clicked = False
 
         x = self.x - 40 * gui.scale
 
@@ -38782,6 +38787,8 @@ class ViewBox:
             x_menu.clicked = False
 
         gui.level_2_click = False
+        if not x_menu.active:
+            self.active = False
 
 view_box = ViewBox()
 
@@ -41268,6 +41275,8 @@ while pctl.running:
                     instance.click()
                     inp.mouse_click = False
                     ab_click = True
+            if view_box.active:
+                view_box.clicked = True
 
         if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
             inp.mouse_click = False
@@ -44433,6 +44442,7 @@ while pctl.running:
 
         if view_box.active:
             view_box.render()
+
 
         tool_tip.render()
         tool_tip2.render()
