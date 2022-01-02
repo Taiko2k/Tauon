@@ -8,6 +8,7 @@ v7.0.0
  - Added generator code "find string" fs
  - Tweaked right side panel size behavior on window resize
  - Fixed toggle background "Blur" setting not triggering update
+ - Fixed radio broadcast page periodically terminating
 
 v6.8.3
 

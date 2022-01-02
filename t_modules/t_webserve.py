@@ -50,7 +50,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
         else:
             return tr[0], tr[1]
 
-
     chunker = tauon.chunker
     gui.web_running = True
 
@@ -89,7 +88,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             elif path == "/radio/update_radio":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-                self.end_headers()
 
                 track_id, p = get_broadcast_track()
                 if track_id is not None:
@@ -102,19 +100,24 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     data = {"position": position,
                             "index": track.index,
                             "port": str(prefs.broadcast_port)}
+
                     data = json.dumps(data).replace(" ", "").encode()
+                    self.send_header("Content-length", str(len(data)))
+                    self.end_headers()
                     self.wfile.write(data)
 
                 else:
                     data = {"position": 0,
                             "index": -1}
                     data = json.dumps(data).replace(" ", "").encode()
+                    self.send_header("Content-length", str(len(data)))
+                    self.end_headers()
                     self.wfile.write(data)
 
             elif path == "/radio/getpic":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-                self.end_headers()
+
 
                 track_id, p = get_broadcast_track()
 
@@ -140,6 +143,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "lyrics": lyrics}
 
                         data = json.dumps(data).encode()
+                        self.send_header("Content-length", str(len(data)))
+                        self.end_headers()
                         self.wfile.write(data)
                     except:
                         # Failed getting image
@@ -152,6 +157,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "lyrics": lyrics}
 
                         data = json.dumps(data).encode()
+                        self.send_header("Content-length", str(len(data)))
+                        self.end_headers()
                         self.wfile.write(data)
                 else:
                     # Broadcast is not active
@@ -164,6 +171,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "lyrics": ""}
 
                     data = json.dumps(data).encode()
+                    self.send_header("Content-length", str(len(data)))
+                    self.end_headers()
                     self.wfile.write(data)
 
             elif path == "/stream.ogg":
@@ -172,13 +181,17 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
                 self.send_response(200)
                 self.send_header("Content-type", "audio/ogg")
+                self.send_header("Transfer-Encoding", "chunked")
                 self.end_headers()
 
                 position = max(chunker.master_count - 7, 1)
                 id = random.random()
 
                 for header in chunker.headers:
+                    self.wfile.write(hex(len(header))[2:].encode())
+                    self.wfile.write("\r\n".encode())
                     self.wfile.write(header)
+                    self.wfile.write("\r\n".encode())
                 while True:
                     if not pctl.broadcast_active:
                         return
@@ -186,7 +199,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         while 1 < position < chunker.master_count:
                             if not pctl.broadcast_active:
                                 return
+                            self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
+
+                            self.wfile.write("\r\n".encode())
                             self.wfile.write(chunker.chunks[position])
+                            self.wfile.write("\r\n".encode())
+
                             position += 1
                     else:
                         time.sleep(0.01)
