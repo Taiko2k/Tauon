@@ -16,7 +16,7 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-
+import mimetypes
 import urllib.request
 import threading
 import time
@@ -26,6 +26,11 @@ import fcntl
 import datetime
 import io
 import shutil
+import mutagen
+import copy
+from PIL import Image
+from mutagen.flac import Picture
+import base64
 from t_modules.t_extra import filename_safe
 
 class StreamEnc:
@@ -150,6 +155,8 @@ class StreamEnc:
             encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             def save_track():
+                #self.tauon.recorded_songs.append(song)
+
                 save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
                 save_file += filename_safe(old_metadata)
                 save_file = save_file.strip() + ext
@@ -159,6 +166,56 @@ class StreamEnc:
                 if not os.path.exists(self.tauon.prefs.encoder_output):
                     os.makedirs(self.tauon.prefs.encoder_output)
                 shutil.move(target_file, save_file)
+
+                print(self.tauon.pctl.tag_history)
+                print(old_metadata)
+                tags = self.tauon.pctl.tag_history.get(old_metadata, None)
+                if tags:
+                    print("Save metadata to file")
+                    print(tags)
+                    muta = mutagen.File(save_file, easy=True)
+                    muta["artist"] = tags.get("artist", "")
+                    muta["title"] = tags.get("title", "")
+                    muta["album"] = tags.get("album", "")
+                    # if tags["image"]:
+                    #     tags["image"].seek(0)
+                    #     im = Image.open(tags["image"])
+                    #     width, height = im.size
+                    #     tags["image"].seek(0)
+                    #
+                    #     picture = Picture()
+                    #     tags["image"].seek(0)
+                    #     picture.data = tags["image"].read()
+                    #     picture.type = 3
+                    #     picture.desc = ""
+                    #     picture.mime = "image/jpeg"
+                    #     picture.width = width
+                    #     picture.height = height
+                    #
+                    #     mode_to_bpp = {'1': 1, 'L': 8, 'P': 8, 'RGB': 24, 'RGBA': 32, 'CMYK': 32, 'YCbCr': 24, 'I': 32,
+                    #                    'F': 32}
+                    #     picture.depth = mode_to_bpp[im.mode]
+                    #
+                    #     picture_data = picture.write()
+                    #     encoded_data = base64.b64encode(picture_data)
+                    #     vcomment_value = encoded_data.decode("ascii")
+                    #     muta["metadata_block_picture"] = [vcomment_value]
+
+                    muta.save()
+
+                target_pl = None
+                for i, pl in enumerate(self.tauon.pctl.multi_playlist):
+                    if pl[0] == "Saved Radio Tracks":
+                        target_pl = i
+                if target_pl is None:
+                    self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Saved Radio Tracks"))
+                    target_pl = len(self.tauon.pctl.multi_playlist) - 1
+
+                load_order = self.tauon.pctl.LoadClass()
+                load_order.playlist = self.tauon.pctl.multi_playlist[target_pl][6]
+                load_order.target = save_file
+                self.tauon.load_orders.append(copy.deepcopy(load_order))
+                self.tauon.gui.update += 1
 
             while True:
 
@@ -177,21 +234,14 @@ class StreamEnc:
 
                     if os.path.exists(target_file):
                         if os.path.getsize(target_file) > 256000:
-                            song = ()
-                            self.tauon.recorded_songs.append(song)
                             print("Save file")
-                            save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                            save_file += filename_safe(old_metadata)
-                            save_file = save_file.strip() + ext
-                            save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                            if os.path.exists(save_file):
-                                os.remove(save_file)
-                            shutil.move(target_file, save_file)
+                            save_track()
                         else:
                             print("Discard small file")
                             os.remove(target_file)
 
                     self.encode_running = False
+                    self.tauon.pctl.tag_history.clear()
                     return
 
                 if old_metadata != self.tauon.radiobox.song_key:
@@ -212,15 +262,7 @@ class StreamEnc:
                             pass
                         if os.path.exists(target_file):
                             if os.path.getsize(target_file) > 256000:
-                                save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                                save_file += filename_safe(old_metadata)
-                                save_file = save_file.strip() + ext
-                                save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                                if os.path.exists(save_file):
-                                    os.remove(save_file)
-                                if not os.path.exists(self.tauon.prefs.encoder_output):
-                                    os.makedirs(self.tauon.prefs.encoder_output)
-                                shutil.move(target_file, save_file)
+                                save_track()
                             else:
                                 print("Discard small file")
                                 os.remove(target_file)
@@ -237,8 +279,10 @@ class StreamEnc:
                 else:
                     time.sleep(0.005)
 
-        except:
+        except Exception as e:
             print("Encoder thread crashed!")
+            print(str(e))
+            #raise
             self.encode_running = False
             return
 

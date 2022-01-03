@@ -1906,6 +1906,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
 gui = GuiVar()
 
+def toast(text):
+    gui.mode_toast_text = text
+    toast_mode_timer.set()
+    gui.frame_callback_list.append(TestTimer(1.25))
 
 def set_artist_preview(path, artist, x, y):
     m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
@@ -4522,7 +4526,7 @@ def get_radio_art():
                     pctl.radio_image_bin = io.BytesIO(art_response.content)
                     pctl.radio_image_bin.seek(0)
                     radiobox.dummy_track.art_url_key = "ok"
-
+            pctl.update_tag_history()
     elif "radio.plaza.one" in radiobox.loaded_url:
         time.sleep(3)
         console.print("Fetching plaza art")
@@ -4552,6 +4556,8 @@ def get_radio_art():
                         pctl.radio_image_bin = io.BytesIO(art_response.content)
                         pctl.radio_image_bin.seek(0)
                         radiobox.dummy_track.art_url_key = "ok"
+                pctl.update_tag_history()
+
 
     # Failure
     elif pctl.radio_image_bin:
@@ -4697,10 +4703,20 @@ class PlayerCtl:
 
         self.radio_playlists = radio_playlists
         self.radio_playlist_viewing = radio_playlist_viewing
+        self.tag_history = {}
 
     def notify_change(self):
         self.db_inc += 1
         tauon.bg_save()
+
+    def update_tag_history(self):
+        if prefs.auto_rec:
+            self.tag_history[radiobox.song_key] = {
+                "title": radiobox.dummy_track.title,
+                "artist": radiobox.dummy_track.artist,
+                "album": radiobox.dummy_track.album,
+                #"image": pctl.radio_image_bin
+            }
 
     def radio_progress(self):
         if radiobox.loaded_url and "radio.plaza.one" in radiobox.loaded_url and self.radio_poll_timer.get() > 0:
@@ -4743,11 +4759,13 @@ class PlayerCtl:
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
 
+
                 if self.tag_meta:
                     radiobox.song_key = self.tag_meta
                 else:
                     radiobox.song_key = radiobox.dummy_track.artist + " - " + radiobox.dummy_track.title
 
+                self.update_tag_history()
                 pctl.radio_image_bin = None
                 print("NEXT RADIO TRACK")
 
@@ -29027,6 +29045,12 @@ class TopPanel:
                             tree_view_box.clear_target_pl(i)
                             tm.ready("worker")
 
+                if mouse_up and radio_view.drag:
+                    pctl.radio_playlists[i]["items"].append(radio_view.drag)
+                    toast(_("Added station to: ") + pctl.radio_playlists[i]["name"])
+
+                    radio_view.drag = None
+
             x += tab_width + self.tab_spacing
 
         # Test dupelicate tab function
@@ -29194,6 +29218,7 @@ class TopPanel:
         if mouse_up:
             quick_drag = False
             playlist_box.drag = False
+            radio_view.drag = None
 
         # Scroll anywhere on panel to cycle playlist
         # (This is a bit complicated because we need to skip over hidden playlists)
@@ -33119,8 +33144,6 @@ class RadioBox:
                             line += found_tags["title"]
                             if "artist" in found_tags:
                                 line = found_tags["artist"] + " - " + line
-                        pctl.found_tags = found_tags
-                        pctl.tag_meta = line
 
                         filename = d["d"]["song"]["albums"][0]["image"]
                         fulllink = "https://cdn.listen.moe/covers/" + filename
@@ -33135,6 +33158,8 @@ class RadioBox:
                             pctl.radio_image_bin.seek(0)
                             radiobox.dummy_track.art_url_key = "ok"
                             print("Got new art")
+                        pctl.found_tags = found_tags
+                        pctl.tag_meta = line
                     except:
                         print("No image")
                         if pctl.radio_image_bin:
@@ -34160,7 +34185,6 @@ class PlaylistBox:
                         self.drag = True
                         self.drag_source = 1
                         set_drag_source()
-
 
                 # Process input of dragging tracks onto tab
                 if quick_drag is True and mouse_up:
@@ -38010,8 +38034,6 @@ class RadioView:
             radios[radios.index("New")] = self.drag
             self.drag = None
             gui.update += 1
-        if not mouse_down:
-            self.drag = None
 
 
 radio_view = RadioView()
