@@ -13645,9 +13645,6 @@ class TransEditBox:
                     return
 
                 muta = mutagen.File(tr.fullpath, easy=True)
-                print(muta)
-
-                print(muta["artist"])
 
                 def write_tag(track, muta, field_name_tauon, field_name_muta):
                     item = muta.get(field_name_muta)
