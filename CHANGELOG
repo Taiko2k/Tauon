@@ -6,6 +6,7 @@ v7.0.0
  - Added new radio layout view
  - Added icon thumbnails to radio stations
  - Added generator code "find string" fs
+ - Added auto recorded radio tracks import
  - Tweaked right side panel size behavior on window resize
  - Fixed toggle background "Blur" setting not triggering update
  - Fixed radio broadcast page periodically terminating
