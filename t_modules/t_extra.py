@@ -31,6 +31,7 @@ import locale
 import re
 import math
 import threading
+import urllib.parse
 
 # A seconds based timer
 class Timer:
@@ -935,6 +936,11 @@ def process_odat(nt, odat):
 
 def clean_string(s):
     return s.encode('utf-8', 'surrogatepass').decode('utf-8', 'replace')
+
+def uri_parse(s):
+    if s.startswith("file://"):
+        s = str(urllib.parse.unquote(s)).replace("file://", "").replace("\r", "")
+    return s
 
 mac_styles = {
     "mac": None,
