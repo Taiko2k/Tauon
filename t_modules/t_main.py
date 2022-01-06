@@ -28805,6 +28805,10 @@ class TopPanel:
 
         if gui.lsp:
             colour = colours.corner_button_active
+        if gui.combo_mode:
+            colour = colours.corner_button
+            if coll(rect):
+                colour = colours.corner_button_active
 
         if not prefs.shuffle_lock:
             if gui.combo_mode:
