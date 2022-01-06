@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v7.0.0
 
+ - Added M3U support for playlist import/export
  - Added new radio layout view
  - Added icon thumbnails to radio stations
  - Added generator code "find string" fs

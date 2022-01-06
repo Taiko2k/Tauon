@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="12.615821"
-   height="12.688178"
-   viewBox="0 0 3.337936 3.3570801"
+   width="9.9999997e-06"
+   height="16.999937"
+   viewBox="0 0 2.6458333e-06 4.4978995"
    version="1.1"
    id="svg8"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20, custom)"
@@ -29,8 +29,8 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="7.9195959"
-     inkscape:cx="-17.614535"
-     inkscape:cy="7.8918168"
+     inkscape:cx="-15.467961"
+     inkscape:cy="-0.063134534"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -42,8 +42,8 @@
      units="px"
      inkscape:window-width="2275"
      inkscape:window-height="792"
-     inkscape:window-x="27"
-     inkscape:window-y="109"
+     inkscape:window-x="203"
+     inkscape:window-y="77"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata5">
@@ -60,23 +60,23 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-67.97223,-148.43092)">
+     transform="translate(-67.405069,-147.8605)">
     <circle
-       style="fill:none;stroke:#ffffff;stroke-width:0.456754;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       style="fill:none;stroke:#ffffff;stroke-width:0.611971;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
        id="path1143"
-       cx="70.101112"
-       cy="149.63997"
-       r="0.98067617"
+       cx="70.257401"
+       cy="149.48042"
+       r="1.313935"
        inkscape:export-filename="/home/kai/Tauon/dev/assets/station-search.png"
        inkscape:export-xdpi="129.36139"
        inkscape:export-ydpi="129.36139" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.636053;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.8522;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
        id="rect1337"
-       width="0.56032217"
-       height="1.9175661"
-       x="155.11378"
-       y="57.06897"
+       width="0.75073397"
+       height="2.5692041"
+       x="155.02087"
+       y="57.126507"
        transform="rotate(45)"
        inkscape:export-filename="/home/kai/Tauon/dev/assets/station-search.png"
        inkscape:export-xdpi="129.36139"
