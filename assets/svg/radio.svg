@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="16.150391"
-   height="11.136683"
-   viewBox="0 0 4.2731243 2.9465805"
+   width="33.355"
+   height="23.000292"
+   viewBox="0 0 8.8251772 6.0854932"
    version="1.1"
    id="svg8"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20, custom)"
@@ -29,8 +29,8 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="3.959798"
-     inkscape:cx="5.1770318"
-     inkscape:cy="74.62502"
+     inkscape:cx="13.763328"
+     inkscape:cy="80.433396"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -42,8 +42,8 @@
      units="px"
      inkscape:window-width="2275"
      inkscape:window-height="792"
-     inkscape:window-x="27"
-     inkscape:window-y="109"
+     inkscape:window-x="207"
+     inkscape:window-y="101"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata5">
@@ -60,22 +60,21 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-66.276335,-147.90736)">
+     transform="translate(-64.000308,-146.33791)">
     <path
        id="rect2878"
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.98612;paint-order:markers stroke fill"
-       d="M 4.6601562,1.8574219 C 4.0777611,1.8867535 3.6171875,2.3651437 3.6171875,2.9550781 V 9.859375 c 0,0.608965 0.4906448,1.099609 1.0996094,1.099609 H 18.667969 c 0.608964,0 1.099609,-0.490644 1.099609,-1.099609 V 2.9550781 c 0,-0.6089645 -0.490645,-1.0976562 -1.099609,-1.0976562 H 4.7167969 c -0.01903,0 -0.037854,-9.462e-4 -0.056641,0 z m 10.5175778,1.53125 a 3.1770705,3.1770705 0 0 1 3.177735,3.1757812 3.1770705,3.1770705 0 0 1 -3.177735,3.1777344 3.1770705,3.1770705 0 0 1 -3.175781,-3.1777344 3.1770705,3.1770705 0 0 1 3.175781,-3.1757812 z"
-       transform="matrix(0.26458333,0,0,0.26458333,65.319287,147.95438)"
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.538853;paint-order:markers stroke fill"
+       d="m 64.570225,147.44997 c -0.318242,0.016 -0.569917,0.27744 -0.569917,0.5998 v 3.77277 c 0,0.33276 0.268107,0.60086 0.600868,0.60086 h 7.623442 c 0.33276,0 0.600867,-0.2681 0.600867,-0.60086 v -3.77277 c 0,-0.33276 -0.268107,-0.5998 -0.600867,-0.5998 h -7.623442 c -0.0104,0 -0.02069,-5.2e-4 -0.03095,0 z m 5.747198,0.83673 a 1.7360701,1.7360701 0 0 1 1.736433,1.73537 1.7360701,1.7360701 0 0 1 -1.736433,1.73643 1.7360701,1.7360701 0 0 1 -1.735366,-1.73643 1.7360701,1.7360701 0 0 1 1.735366,-1.73537 z"
        inkscape:export-filename="/home/kai/Tauon/dev/assets/radio.png"
        inkscape:export-xdpi="190.21211"
        inkscape:export-ydpi="190.21211" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.0792484;paint-order:markers stroke fill"
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.16367;paint-order:markers stroke fill"
        id="rect2880"
-       width="2.7814469"
-       height="0.3413204"
-       x="66.530655"
-       y="147.90736"
+       width="5.7444534"
+       height="0.70492053"
+       x="64.525551"
+       y="146.33791"
        inkscape:export-filename="/home/kai/Tauon/dev/assets/radio.png"
        inkscape:export-xdpi="190.21211"
        inkscape:export-ydpi="190.21211" />

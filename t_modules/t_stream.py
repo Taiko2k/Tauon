@@ -141,7 +141,7 @@ class StreamEnc:
             if os.path.isfile(target_file):
                 os.remove(target_file)
 
-            cmd = ['ffmpeg', "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
+            cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
             decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
@@ -151,7 +151,7 @@ class StreamEnc:
             old_tags = self.tauon.pctl.found_tags
 
             ##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-            cmd = ["ffmpeg", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
+            cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
             encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             def save_track():

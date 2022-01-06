@@ -1849,7 +1849,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.regen_single_id = None
 
         self.tracklist_bg_is_light = False
-        self.clear_image_cache_next = False
+        self.clear_image_cache_next = 0
 
         self.column_d_click_timer = Timer(10)
         self.column_d_click_on = -1
@@ -4508,7 +4508,7 @@ def tag_scan(nt):
 def get_radio_art():
 
     if radiobox.loaded_url in radiobox.websocket_source_urls:
-        pass
+        return
     elif "ggdrasil" in radiobox.playing_title:
         time.sleep(3)
         url = "https://yggdrasilradio.net/data.php?"
@@ -4558,13 +4558,13 @@ def get_radio_art():
                         radiobox.dummy_track.art_url_key = "ok"
                 pctl.update_tag_history()
 
-
     # Failure
     elif pctl.radio_image_bin:
         pctl.radio_image_bin.close()
         pctl.radio_image_bin = None
 
-    gui.clear_image_cache_next = True
+    gui.clear_image_cache_next += 1
+
 # Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
 class PlayerCtl:
     # C-PC
@@ -4692,8 +4692,8 @@ class PlayerCtl:
         self.radio_scrobble_timer = Timer()
 
         self.radio_image_bin = None
-        self.radio_rate_timer = Timer(20)
-        self.radio_poll_timer = Timer(4)
+        self.radio_rate_timer = Timer(2)
+        self.radio_poll_timer = Timer(2)
 
         self.volume_update_timer = Timer()
         self.wake_past_time = 0
@@ -4759,14 +4759,14 @@ class PlayerCtl:
                     radiobox.dummy_track.title = title.strip()
                     radiobox.dummy_track.artist = artist.strip()
 
-
                 if self.tag_meta:
                     radiobox.song_key = self.tag_meta
                 else:
                     radiobox.song_key = radiobox.dummy_track.artist + " - " + radiobox.dummy_track.title
 
                 self.update_tag_history()
-                pctl.radio_image_bin = None
+                if radiobox.loaded_url not in radiobox.websocket_source_urls:
+                    pctl.radio_image_bin = None
                 print("NEXT RADIO TRACK")
 
                 try:
@@ -12263,38 +12263,110 @@ def prep_gal():
 
 def load_m3u(path):
 
-    if os.path.isfile(path):
+    name = os.path.basename(path)[:-4]
+    playlist = []
+    stations = []
 
-        ids = []
-        urls = {}
-        titles = {}
+    location_dict = {}
+    titles = {}
 
-        f = open(path)
-        lines = f.readlines()
-        f.close()
+    if not os.path.isfile(path):
+        return
 
-        for i, line in enumerate(lines):
+    f = open(path)
+    lines = f.readlines()
+    f.close()
+
+    for i, line in enumerate(lines):
+        line = line.strip("\r\n").strip()
+        if not line.startswith("#"): #line.startswith("http"):
+
+            # Get title if present
+            line_title = ""
+            if i > 0:
+                bline = lines[i - 1]
+                if "," in bline and bline.startswith("#EXTINF:"):
+                    line_title = bline.split(",", 1)[1].strip("\r\n").strip()
+
             if line.startswith("http"):
                 radio = {}
-                radio["title"] = os.path.splitext(os.path.basename(path))[0].strip("\r\n").strip()
-                radio["stream_url"] = line.strip("\r\n").strip()
+                radio["stream_url"] = line
 
-                if i > 0:
-                    line = lines[i - 1]
-                    if "," in line and line.startswith("#EXTINF:"):
-                        radio["title"] = line.split(",", 1)[1].strip()
-
-                # Only add if not saved already
-                for item in prefs.radio_urls:
-                    if item["stream_url"] == radio["stream_url"]:
-                        break
+                if line_title:
+                    radio["title"] = line_title
                 else:
-                    prefs.radio_urls.append(radio)
+                    radio["title"] = os.path.splitext(os.path.basename(path))[0].strip()
+
+                stations.append(radio)
 
                 if gui.auto_play_import:
                     gui.auto_play_import = False
                     radiobox.start(radio)
+            else:
+                # Join file path if possibly relative
+                if not line.startswith("/"):
+                    line = os.path.join(os.path.dirname(path), line)
 
+                # Cache datbase file paths for quick lookup
+                if not location_dict:
+                    for key, value in pctl.master_library.items():
+                        if value.fullpath:
+                            location_dict[value.fullpath] = value
+                        if value.title:
+                            titles[value.artist + " - " + value.title] = value
+
+                # Is file path already imported?
+                print(line)
+                if line in location_dict:
+                    playlist.append(location_dict[line].index)
+                    print("found imported")
+                # Or... does the file exist? Then import it
+                elif os.path.isfile(line):
+                    nt = TrackClass()
+                    nt.index = pctl.master_count
+                    nt.fullpath = line
+                    nt = tag_scan(nt)
+                    pctl.master_library[pctl.master_count] = nt
+                    playlist.append(pctl.master_count)
+                    pctl.master_count += 1
+                    print("found file")
+                # Last resort, guess based on title
+                elif line_title in titles:
+                        playlist.append(titles[line_title].index)
+                        print("found title")
+                else:
+                    print("not found")
+
+    if playlist:
+        pctl.multi_playlist.append(pl_gen(title=name,
+                                          playlist=playlist))
+    if stations:
+        if len(stations) == 1:
+            for i, s in enumerate(pctl.radio_playlists):
+                if s["name"] == "Default":
+                    s["items"].insert(0, stations[0])
+                    s["scroll"] = 0
+                    pctl.radio_playlist_viewing = i
+                    break
+            else:
+                r = {}
+                r["uid"] = uid_gen()
+                r["name"] = 'Default'
+                r["items"] = stations
+                r["scroll"] = 0
+                pctl.radio_playlists.append(r)
+                pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
+        else:
+            r = {}
+            r["uid"] = uid_gen()
+            r["name"] = name
+            r["items"] = stations
+            r["scroll"] = 0
+            pctl.radio_playlists.append(r)
+            pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
+        if not gui.radio_view:
+            enter_radio_view()
+    gui.update = 1
 
 def read_pls(lines, path, followed=False):
 
@@ -15389,6 +15461,41 @@ lock_icon.yoff = -1
 
 tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_ref_deco=True, icon=lock_icon)
 
+def export_m3u(pl):
+    if len(pctl.multi_playlist[pl][2]) < 1:
+        show_message("There are no tracks in this playlist. Nothing to export")
+        return
+
+    direc = os.path.join(user_directory, 'playlists')
+    if not os.path.exists(direc):
+        os.makedirs(direc)
+    target = os.path.join(direc, pctl.multi_playlist[pl][0] + '.m3u')
+
+    f = open(target, 'w', encoding='utf-8')
+    f.write("#EXTM3U")
+    for number in pctl.multi_playlist[pl][2]:
+        track = pctl.master_library[number]
+        title = track.artist
+        if title:
+            title += " - "
+        title += track.title
+
+        if not track.is_network:
+            f.write("\n#EXTINF:")
+            f.write(str(round(track.length)))
+            if title:
+                f.write(f",{title}")
+            f.write(f"\n{track.fullpath}")
+    f.close()
+
+    line = direc
+    line += "/"
+    if system == "windows" or msys:
+        os.startfile(line)
+    elif macos:
+        subprocess.Popen(['open', line])
+    else:
+        subprocess.Popen(['xdg-open', line])
 
 def export_xspf(pl):
     if len(pctl.multi_playlist[pl][2]) < 1:
@@ -17324,6 +17431,7 @@ tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 # tab_menu.add_to_sub(_('Forget Import Folder'), 2, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
 # tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
+tab_menu.add_to_sub(_('Export M3U'), 2, export_m3u, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
 tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Engage Gallery Quick Add"), 2, start_quick_add, pass_ref=True)
@@ -24066,7 +24174,7 @@ def worker1():
             load_xspf(path)
             return 0
 
-        if path.endswith(".m3u"):
+        if path.lower().endswith(".m3u"):
             load_m3u(path)
             return 0
 
@@ -33145,11 +33253,16 @@ class RadioBox:
                             if "artist" in found_tags:
                                 line = found_tags["artist"] + " - " + line
 
+                        pctl.found_tags = found_tags
+                        pctl.tag_meta = line
+
                         filename = d["d"]["song"]["albums"][0]["image"]
                         fulllink = "https://cdn.listen.moe/covers/" + filename
+
                         # print(fulllink)
                         art_response = requests.get(fulllink)
                         #print(art_response.status_code)
+
                         if art_response.status_code == 200:
                             if pctl.radio_image_bin:
                                 pctl.radio_image_bin.close()
@@ -33158,14 +33271,14 @@ class RadioBox:
                             pctl.radio_image_bin.seek(0)
                             radiobox.dummy_track.art_url_key = "ok"
                             print("Got new art")
-                        pctl.found_tags = found_tags
-                        pctl.tag_meta = line
+
+
                     except:
                         print("No image")
                         if pctl.radio_image_bin:
                             pctl.radio_image_bin.close()
                             pctl.radio_image_bin = None
-                    gui.clear_image_cache_next = True
+                    gui.clear_image_cache_next += 1
                     gui.update += 1
 
             def on_error(ws, error):
@@ -33188,7 +33301,7 @@ class RadioBox:
 
                 th.start_new_thread(run, ())
 
-            websocket.enableTrace(True)
+            #websocket.enableTrace(True)
             #print(wss)
             ws = websocket.WebSocketApp(wss,
                                         on_message=on_message,
@@ -33199,7 +33312,6 @@ class RadioBox:
             shoot = threading.Thread(target=ws.run_forever)
             shoot.daemon = True
             shoot.start()
-
 
 
     def delete_radio_entry(self, item):
@@ -41711,7 +41823,7 @@ while pctl.running:
             mouse_position[1] = -300
 
         if gui.clear_image_cache_next:
-            gui.clear_image_cache_next = False
+            gui.clear_image_cache_next -= 1
             album_art_gen.clear_cache()
 
         fields.clear()
