@@ -167,12 +167,12 @@ class StreamEnc:
                     os.makedirs(self.tauon.prefs.encoder_output)
                 shutil.move(target_file, save_file)
 
-                print(self.tauon.pctl.tag_history)
-                print(old_metadata)
+                # print(self.tauon.pctl.tag_history)
+                # print(old_metadata)
                 tags = self.tauon.pctl.tag_history.get(old_metadata, None)
                 if tags:
                     print("Save metadata to file")
-                    print(tags)
+                    #print(tags)
                     muta = mutagen.File(save_file, easy=True)
                     muta["artist"] = tags.get("artist", "")
                     muta["title"] = tags.get("title", "")
