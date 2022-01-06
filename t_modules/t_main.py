@@ -12261,6 +12261,33 @@ def prep_gal():
             albums.append([index, 0])
             folder = pctl.master_library[index].parent_folder_name
 
+def add_stations(stations, name):
+    if len(stations) == 1:
+        for i, s in enumerate(pctl.radio_playlists):
+            if s["name"] == "Default":
+                s["items"].insert(0, stations[0])
+                s["scroll"] = 0
+                pctl.radio_playlist_viewing = i
+                break
+        else:
+            r = {}
+            r["uid"] = uid_gen()
+            r["name"] = 'Default'
+            r["items"] = stations
+            r["scroll"] = 0
+            pctl.radio_playlists.append(r)
+            pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
+    else:
+        r = {}
+        r["uid"] = uid_gen()
+        r["name"] = name
+        r["items"] = stations
+        r["scroll"] = 0
+        pctl.radio_playlists.append(r)
+        pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
+    if not gui.radio_view:
+        enter_radio_view()
+
 def load_m3u(path):
 
     name = os.path.basename(path)[:-4]
@@ -12303,6 +12330,7 @@ def load_m3u(path):
                     gui.auto_play_import = False
                     radiobox.start(radio)
             else:
+                line = uri_parse(line)
                 # Join file path if possibly relative
                 if not line.startswith("/"):
                     line = os.path.join(os.path.dirname(path), line)
@@ -12341,31 +12369,8 @@ def load_m3u(path):
         pctl.multi_playlist.append(pl_gen(title=name,
                                           playlist=playlist))
     if stations:
-        if len(stations) == 1:
-            for i, s in enumerate(pctl.radio_playlists):
-                if s["name"] == "Default":
-                    s["items"].insert(0, stations[0])
-                    s["scroll"] = 0
-                    pctl.radio_playlist_viewing = i
-                    break
-            else:
-                r = {}
-                r["uid"] = uid_gen()
-                r["name"] = 'Default'
-                r["items"] = stations
-                r["scroll"] = 0
-                pctl.radio_playlists.append(r)
-                pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
-        else:
-            r = {}
-            r["uid"] = uid_gen()
-            r["name"] = name
-            r["items"] = stations
-            r["scroll"] = 0
-            pctl.radio_playlists.append(r)
-            pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
-        if not gui.radio_view:
-            enter_radio_view()
+        add_sations(stations, name)
+
     gui.update = 1
 
 def read_pls(lines, path, followed=False):
@@ -12392,11 +12397,13 @@ def read_pls(lines, path, followed=False):
                     ids.append(n)
                 titles[n] = line.split("=", 1)[1].strip()
 
+    stations = []
     for id in ids:
         if id in urls:
             radio = {}
             radio["stream_url"] = urls[id]
             radio["title"] = os.path.splitext(os.path.basename(path))[0]
+            radio["scroll"] = 0
             if id in titles:
                 radio["title"] = titles[id]
 
@@ -12410,30 +12417,20 @@ def read_pls(lines, path, followed=False):
                     except:
                         print("Failed to retrieve .pls")
             else:
-
-                # Only add if not saved already
-                for item in prefs.radio_urls:
-                    if item["stream_url"] == radio["stream_url"]:
-                        break
-                else:
-                    prefs.radio_urls.append(radio)
-                    if not gui.auto_play_import:
-                        show_message("Radio station imported", mode="done")
-
+                stations.append(radio)
                 if gui.auto_play_import:
                     gui.auto_play_import = False
                     radiobox.start(radio)
+    if stations:
+        add_stations(stations, os.path.basename(path))
+
 
 def load_pls(path):
-
     if os.path.isfile(path):
-
         f = open(path)
         lines = f.readlines()
         read_pls(lines, path)
         f.close()
-
-
 
 
 def load_xspf(path):
@@ -12471,7 +12468,7 @@ def load_xspf(path):
                                     l = l.replace('file:', "")
                                     l = l.lstrip("/")
                                     l = "/" + l
-                                    l = str(urllib.parse.unquote(unescape(l)))
+                                    l = str(urllib.parse.unquote(l))
 
                                 b['location'] = l
                             if 'creator' in field.tag and field.text:
@@ -12493,29 +12490,26 @@ def load_xspf(path):
         return
 
     # Extract internet streams first
+    stations = []
     for i in reversed(range(len(a))):
         item = a[i]
         if item["location"].startswith("http"):
             radio = {}
             radio["stream_url"] = item["location"]
             radio["title"] = item["name"]
+            radio["scroll"] = 0
             if item["info"].startswith("http"):
                 radio["website_url"] = item["info"]
-            # Only add if not saved already
-            for item in prefs.radio_urls:
-                if item["stream_url"] == radio["stream_url"]:
-                    break
-            else:
-                prefs.radio_urls.append(radio)
 
-                if not gui.auto_play_import:
-                    show_message("Radio station imported", mode="done")
-                else:
-                    gui.auto_play_import = False
-                    radiobox.start(radio)
+            stations.append(radio)
+
+            if gui.auto_play_import:
+                gui.auto_play_import = False
+                radiobox.start(radio)
 
             del a[i]
-
+    if stations:
+        add_stations(stations, os.path.basename(path))
     playlist = []
     missing = 0
 
