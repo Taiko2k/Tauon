@@ -21792,10 +21792,12 @@ def discord_loop():
             while True:
 
                 current_index = pctl.playing_object().index
+                if pctl.playing_state == 3:
+                    current_index = radiobox.song_key
 
-                if current_state == 0 and pctl.playing_state == 1:
+                if current_state == 0 and pctl.playing_state in (1, 3):
                     current_state = 1
-                elif current_state == 1 and pctl.playing_state != 1:
+                elif current_state == 1 and pctl.playing_state not in (1, 3):
                     current_state = 0
                     idle_time.set()
 
@@ -21850,6 +21852,8 @@ def discord_loop():
                 album = tr.album
             else:
                 album = "Unknown Album"
+                if pctl.playing_state == 3:
+                    album = radiobox.loaded_station["title"]
 
             if len(album) == 1:
                 album += " "
@@ -33210,6 +33214,7 @@ class RadioBox:
         pctl.decode_time = 0
         pctl.playing_length = 0
         tm.ready_playback()
+        hit_discord()
 
         if tauon.update_play_lock is not None:
             tauon.update_play_lock()
