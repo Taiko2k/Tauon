@@ -26499,12 +26499,12 @@ class Over:
             prefs.block_suspend = self.toggle_square(x, y, prefs.block_suspend, _("Block suspend"),
                                                      subtitle=_("Prevent system suspend during playback"))
 
-            y += 12 * gui.scale
+            y += 46 * gui.scale
             old = prefs.auto_rec
-            prefs.auto_rec = self.toggle_square(x, yy, prefs.auto_rec, _("Record Radio"),
+            prefs.auto_rec = self.toggle_square(x, y, prefs.auto_rec, _("Record Radio"),
                                                     subtitle=_("Record and split songs when playing internet radio"))
             if prefs.auto_rec != old and prefs.auto_rec:
-                show_message(_("Tracks will now be recorded. Restart any playback for change to take effect"), _("Tracks will be saved to \"Saved Radio Tracks\" playlist"),
+                show_message(_("Tracks will now be recorded. Restart any playback for change to take effect."), _("Tracks will be saved to \"Saved Radio Tracks\" playlist."),
                              mode="info")
 
             if tauon.update_play_lock is None:
