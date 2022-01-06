@@ -319,7 +319,7 @@ class StreamEnc:
 
         maybe = b""
 
-        if True: #self.tauon.prefs.auto_rec:
+        if self.tauon.prefs.auto_rec:
             self.download_process = threading.Thread(target=self.encode)
             self.download_process.daemon = True
             self.download_process.start()

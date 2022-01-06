@@ -1909,7 +1909,7 @@ gui = GuiVar()
 def toast(text):
     gui.mode_toast_text = text
     toast_mode_timer.set()
-    gui.frame_callback_list.append(TestTimer(1.25))
+    gui.frame_callback_list.append(TestTimer(1.5))
 
 def set_artist_preview(path, artist, x, y):
     m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
@@ -26499,6 +26499,14 @@ class Over:
             prefs.block_suspend = self.toggle_square(x, y, prefs.block_suspend, _("Block suspend"),
                                                      subtitle=_("Prevent system suspend during playback"))
 
+            y += 12 * gui.scale
+            old = prefs.auto_rec
+            prefs.auto_rec = self.toggle_square(x, yy, prefs.auto_rec, _("Record Radio"),
+                                                    subtitle=_("Record and split songs when playing internet radio"))
+            if prefs.auto_rec != old and prefs.auto_rec:
+                show_message(_("Tracks will now be recorded. Restart any playback for change to take effect"), _("Tracks will be saved to \"Saved Radio Tracks\" playlist"),
+                             mode="info")
+
             if tauon.update_play_lock is None:
                 prefs.block_suspend = False
                 # if flatpak_mode:
@@ -28663,6 +28671,7 @@ class TopPanel:
         self.restore_button = asset_loader('restore.png', True)
         self.restore_button = asset_loader('restore.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
+        self.return_icon = asset_loader('return.png', True)
         self.artist_list_icon = asset_loader('artist-list.png', True)
         self.folder_list_icon = asset_loader('folder-list.png', True)
         self.dl_button = asset_loader('dl.png', True)
@@ -28771,9 +28780,7 @@ class TopPanel:
             if inp.mouse_click:
 
                 if gui.combo_mode:
-                    if not gui.lsp:
-                        gui.lsp = True
-                    exit_combo()
+                    gui.switch_showcase_off = True
                 else:
                     gui.lsp ^= True
 
@@ -28800,7 +28807,9 @@ class TopPanel:
             colour = colours.corner_button_active
 
         if not prefs.shuffle_lock:
-            if prefs.left_panel_mode == "artist list":
+            if gui.combo_mode:
+                self.return_icon.render(wwx + 14 * gui.scale, yy + 8 * gui.scale, colour)
+            elif prefs.left_panel_mode == "artist list":
                 self.artist_list_icon.render(wwx + 13 * gui.scale, yy + 8 * gui.scale, colour)
             elif prefs.left_panel_mode == "folder view":
                 self.folder_list_icon.render(wwx + 14 * gui.scale, yy + 8 * gui.scale, colour)
@@ -33836,10 +33845,15 @@ def visit_radio_site_deco(item):
     else:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
+def visit_radio_station_site_deco(item):
+    return visit_radio_site_deco(item[1])
 
 def visit_radio_site(item):
     if "website_url" in item and item["website_url"]:
         webbrowser.open(item["website_url"], new=2, autoraise=True)
+
+def visit_radio_station(item):
+    visit_radio_site(item[1])
 
 def radio_saved_panel_test(_):
     return radiobox.tab == 0
@@ -33847,7 +33861,7 @@ def radio_saved_panel_test(_):
 
 def save_to_radios(item):
     pctl.radio_playlists[pctl.radio_playlist_viewing]["items"].append(item)
-    show_message(_("Added to list of saved stations"), mode="done")
+    toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
 
 radio_entry_menu.add(_("Visit Website"), visit_radio_site, visit_radio_site_deco, pass_ref=True, pass_ref_deco=True)
 radio_entry_menu.add(_("Save"), save_to_radios, pass_ref=True)
@@ -37971,6 +37985,7 @@ def rename_station(item):
     radiobox.station_editing = station
 
 radio_context_menu.add(_("Edit..."), rename_station, pass_ref=True)
+radio_context_menu.add(_("Visit Website"), visit_radio_station, visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True)
 
 def remove_station(item):
     index = item[0]
@@ -38109,6 +38124,11 @@ class RadioView:
 
             yy += round(h + gap)
 
+        if mouse_up and self.drag and not insert and not self.drag in radios:
+            if not (radiobox.active and coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
+                if mouse_position[1] > gui.panelY:
+                    insert = len(radios)
+
         count = ((window_size[0] - w) / 2) + w
         boxx = round(200 * gui.scale)
         art_rect = (count - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
@@ -38139,6 +38159,7 @@ class RadioView:
                 radios.remove(self.drag)
             radios[radios.index("New")] = self.drag
             self.drag = None
+            toast(_("Added station to: " + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"]))
             gui.update += 1
 
 
@@ -38225,13 +38246,13 @@ class Showcase:
             ddt.force_gray = True
 
 
-        if not prefs.shuffle_lock:
-            if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
-                           text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
-                           background_highlight_colour=bfg):
-                gui.switch_showcase_off = True
-                gui.update += 1
-                gui.update_layout()
+        # if not prefs.shuffle_lock:
+        #     if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale,
+        #                    text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+        #                    background_highlight_colour=bfg):
+        #         gui.switch_showcase_off = True
+        #         gui.update += 1
+        #         gui.update_layout()
 
 
         #ddt.force_gray = True
@@ -41388,7 +41409,10 @@ while pctl.running:
             delete_playlist(pctl.active_playlist_viewing, force=True)
 
         if keymaps.test("rename-playlist"):
-            rename_playlist(pctl.active_playlist_viewing)
+            if gui.radio_view:
+                rename_playlist(pctl.radio_playlist_viewing)
+            else:
+                rename_playlist(pctl.active_playlist_viewing)
             rename_playlist_box.x = 60 * gui.scale
             rename_playlist_box.y = 60 * gui.scale
 
