@@ -7152,11 +7152,14 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
                 star_store.insert(track_id, star)
                 show_message(_("Error updating love to last.fm!"), _("Maybe check your internet connection and try again?"), mode="error")
 
+        if pctl.master_library[track_id].file_ext == "JELY":
+            jellyfin.favorite(pctl.master_library[track_id])
+
     else:
         time.sleep(delay)
         gui.update += 1
         gui.pl_update += 1
-        star = [star[0], star[1].strip("L"), star[2]]
+        star = [star[0], star[1].replace("L", ""), star[2]]
         star_store.insert(track_id, star)
         if prefs.last_fm_token:
             try:
@@ -7165,6 +7168,8 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
                 show_message("Failed updating last.fm love status", mode='warning')
                 star = [star[0], star[1] + "L", star[2]]
                 star_store.insert(track_id, star)
+        if pctl.master_library[track_id].file_ext == "JELY":
+            jellyfin.favorite(pctl.master_library[track_id], un=True)
 
     gui.pl_update = 2
     gui.update += 1
@@ -17084,7 +17089,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     else:
         source_playlist[:] = playlist[:]
 
-    tree_view_box.clear_target_pl(pl)
+    tree_view_box.clear_target_pl(0, id)
     pctl.regen_in_progress = False
     gui.pl_update = 1
     reload()
@@ -35613,9 +35618,10 @@ class TreeView:
         opens.clear()
         self.rows_id = ""
 
-    def clear_target_pl(self, pl_number):
+    def clear_target_pl(self, pl_number, pl_id=None):
 
-        pl_id = pl_to_id(pl_number)
+        if pl_id is None:
+            pl_id = pl_to_id(pl_number)
 
         if gui.lsp and prefs.left_panel_mode == "folder view":
 
