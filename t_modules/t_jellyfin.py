@@ -143,6 +143,35 @@ class Jellyfin():
             print("Jellyfin album art api error:", response.status_code, response.text)
             return None
 
+    def favorite(self, track, un=False):
+        try:
+            if not self.connected or not self.accessToken:
+                self._authenticate()
+
+            if not self.connected:
+                return None
+
+            headers = {
+                "Token": self.accessToken,
+                "X-Application": "Tauon/1.0",
+                "x-emby-authorization": self._get_jellyfin_auth()
+            }
+
+            params = {}
+            base_url = f"{self.prefs.jelly_server_url}/Users/{self.userId}/FavoriteItems/{track.url_key}"
+            if un:
+                response = requests.delete(base_url, headers=headers, params=params)
+            else:
+                response = requests.post(base_url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                return
+            else:
+                print("Jellyfin fav api error")
+
+        except:
+            print("Failed to submit favorite to Jellyfin server")
+
     def ingest_library(self, return_list=False):
         self.gui.update += 1
         self.scanning = True
@@ -208,7 +237,7 @@ class Jellyfin():
                 id = self.pctl.master_count  # id here is tauons track_id for the track
                 existing_track = existing.get(track.get("Id"))
                 replace_existing = existing_track is not None
-
+                #print(track.items())
                 if replace_existing:
                     id = existing_track
 
@@ -243,8 +272,6 @@ class Jellyfin():
                 nt.parent_folder_path = folder_name
                 nt.parent_folder_name = nt.parent_folder_path
                 nt.is_network = True
-                if "ONE PIECE" in nt.album:
-                    print(track)
 
                 nt.url_key = track.get("Id")
                 nt.art_url_key = track.get("AlbumId") if track.get("AlbumPrimaryImageTag", False) else None
@@ -253,6 +280,23 @@ class Jellyfin():
                 if not replace_existing:
                     self.pctl.master_count += 1
                 playlist.append(nt.index)
+
+                # Sync favorite
+                star = self.tauon.star_store.full_get(nt.index)
+                user_data = track.get("UserData")
+                if user_data:
+                    if user_data.get("IsFavorite"):
+                        if star is None:
+                            star = self.tauon.star_store.new_object()
+                        if 'L' not in star[1]:
+                            star[1] += "L"
+                        self.tauon.star_store.insert(nt.index, star)
+                    else:
+                        if star is None:
+                            pass
+                        else:
+                            star = [star[0], star[1].replace("L", ""), star[2]]
+                            self.tauon.star_store.insert(nt.index, star)
 
         self.scanning = False
         print("Jellyfin import complete")

@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v7.0.0
 
+ - Added track favorite support for Jellyfin
  - Added M3U support for playlist import/export
  - Added new radio layout view
  - Added icon thumbnails to radio stations
