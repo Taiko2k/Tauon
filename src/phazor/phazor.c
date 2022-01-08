@@ -2008,7 +2008,7 @@ int start(char *filename, int start_ms, int fade, float rg) {
     config_fade_jump = fade;
 
     load_target_seek = start_ms;
-    strncpy(load_target_file, filename, 4096);
+    strcpy(load_target_file, filename);
 
     if (mode == PLAYING) {
         if (fade == 1) command = LOAD;
@@ -2031,7 +2031,7 @@ int next(char *filename, int start_ms, float rg) {
         start(filename, start_ms, 0, rg);
     } else {
         load_target_seek = start_ms;
-        strncpy(load_target_file, filename, 4096);
+        strcpy(load_target_file, filename);
         rg_value_want = rg;
         next_ready = 1;
     }
