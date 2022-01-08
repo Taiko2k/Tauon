@@ -11526,7 +11526,7 @@ class AlbumArt():
         source = self.get_sources(track)
 
         if len(source) == 0:
-            return False
+            return 1
 
         offset = self.get_offset(filepath, source)
 
@@ -33360,13 +33360,16 @@ class RadioBox:
         ips = socket.getaddrinfo('all.api.radio-browser.info',
                                  80, 0, 0, socket.IPPROTO_TCP)
         for ip_tupple in ips:
-            ip = ip_tupple[4][0]
+            try:
+                ip = ip_tupple[4][0]
 
-            # do a reverse lookup on every one of the ips to have a nice name for it
-            host_addr = socket.gethostbyaddr(ip)
-            # add the name to a list if not already in there
-            if host_addr[0] not in hosts:
-                hosts.append(host_addr[0])
+                # do a reverse lookup on every one of the ips to have a nice name for it
+                host_addr = socket.gethostbyaddr(ip)
+                # add the name to a list if not already in there
+                if host_addr[0] not in hosts:
+                    hosts.append(host_addr[0])
+            except:
+                print("Ip lookup fail")
 
         # sort list of names
         hosts.sort()
@@ -33415,10 +33418,12 @@ class RadioBox:
                 self.temp_list.clear()
 
                 radio = {}
-                radio["title"] = "Nightwave Plaza | Vaporwave"
+                radio["title"] = "Nightwave Plaza"
                 radio["stream_url_unresolved"] = "http://radio.plaza.one/ogg"
                 radio["stream_url"] = "http://radio.plaza.one/ogg"
                 radio["website_url"] = "https://plaza.one/"
+                radio["icon"] = "https://plaza.one//img/icons/mstile-144x144.png?v=7knqx0aR5k"
+                radio["country"] = "Japan"
                 self.temp_list.append(radio)
 
                 radio = {}
@@ -33433,6 +33438,8 @@ class RadioBox:
                 radio["stream_url_unresolved"] = "https://listen.moe/stream"
                 radio["stream_url"] = "https://listen.moe/stream"
                 radio["website_url"] = "https://listen.moe/"
+                radio["icon"] = "https://avatars.githubusercontent.com/u/26034028?s=200&v=4"
+                radio["country"] = "Japan"
                 self.temp_list.append(radio)
 
                 radio = {}
@@ -33440,13 +33447,18 @@ class RadioBox:
                 radio["stream_url_unresolved"] = "https://listen.moe/kpop/stream"
                 radio["stream_url"] = "https://listen.moe/kpop/stream"
                 radio["website_url"] = "https://listen.moe/"
+                radio["icon"] = "https://avatars.githubusercontent.com/u/26034028?s=200&v=4"
+                radio["country"] = "Korea"
+
                 self.temp_list.append(radio)
 
                 radio = {}
-                radio["title"] = "DKFM | Shoegaze"
+                radio["title"] = "DKFM Shoegaze Radio"
                 radio["stream_url_unresolved"] = "https://maggie.torontocast.com:8090/live.mp3"
                 radio["stream_url"] = "https://maggie.torontocast.com:8090/live.mp3"
                 radio["website_url"] = "https://decayfm.com/"
+                radio["icon"] = "https://decayfm.com/wp-content/uploads/2018/12/cropped-512-1-192x192.jpg"
+                radio["country"] = "California"
                 self.temp_list.append(radio)
 
                 radio = {}
@@ -38150,7 +38162,7 @@ class RadioView:
 
         if pctl.playing_state == 3 and radiobox.loaded_station:
             r = album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
-            if not r:
+            if r:
                 r = radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
                 # if not r:
                 #     ddt.rect(art_rect, colours.b)
@@ -38172,9 +38184,11 @@ class RadioView:
             radios.insert(insert, "New")
             if self.drag in radios:
                 radios.remove(self.drag)
+            else:
+                toast(_("Added station to: " + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"]))
+
             radios[radios.index("New")] = self.drag
             self.drag = None
-            toast(_("Added station to: " + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"]))
             gui.update += 1
 
 
