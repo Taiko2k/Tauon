@@ -4527,6 +4527,34 @@ def get_radio_art():
                     pctl.radio_image_bin.seek(0)
                     radiobox.dummy_track.art_url_key = "ok"
             pctl.update_tag_history()
+
+    elif "gensokyoradio.net" in radiobox.loaded_url:
+
+        response = requests.get("https://gensokyoradio.net/api/station/playing/")
+
+        if response.status_code == 200:
+            d = json.loads(response.text)
+            song_info = d.get("SONGINFO")
+            if song_info:
+                radiobox.dummy_track.artist = song_info.get("ARTIST", "")
+                radiobox.dummy_track.title = song_info.get("TITLE", "")
+                radiobox.dummy_track.album = song_info.get("ALBUM", "")
+
+            misc = d.get("MISC")
+            if misc:
+                art = misc.get("ALBUMART")
+                if art:
+                    art_url = "https://gensokyoradio.net/images/albums/500/" + art
+                    art_response = requests.get(art_url)
+                    if art_response.status_code == 200:
+                        if pctl.radio_image_bin:
+                            pctl.radio_image_bin.close()
+                            pctl.radio_image_bin = None
+                        pctl.radio_image_bin = io.BytesIO(art_response.content)
+                        pctl.radio_image_bin.seek(0)
+                        radiobox.dummy_track.art_url_key = "ok"
+            pctl.update_tag_history()
+
     elif "radio.plaza.one" in radiobox.loaded_url:
         time.sleep(3)
         console.print("Fetching plaza art")
@@ -33113,7 +33141,9 @@ class RadioBox:
         self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
 
     def parse_vorbis_okay(self):
-        return (self.loaded_url not in self.websocket_source_urls) and "radio.plaza.one" not in self.loaded_url
+        return (self.loaded_url not in self.websocket_source_urls) and \
+               "radio.plaza.one" not in self.loaded_url and \
+                "gensokyoradio.net" not in self.loaded_url
 
     def search_country(self, text):
 
@@ -33411,8 +33441,8 @@ class RadioBox:
             self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
 
         ww = ddt.get_text_w(_("Get Top Voted"), 212)
-        if key_shift_down:
-            if draw.button("Taiko's Favorites", x + ww + round(35 * gui.scale), yy + round(30 * gui.scale),
+        if key_shift_down or True:
+            if draw.button(_("Developer Picks"), x + ww + round(35 * gui.scale), yy + round(30 * gui.scale),
                        press=gui.level_2_click):
 
                 self.temp_list.clear()
@@ -33426,11 +33456,14 @@ class RadioBox:
                 radio["country"] = "Japan"
                 self.temp_list.append(radio)
 
+
                 radio = {}
-                radio["title"] = "Yggdrasil Radio | Anime & Jpop"
-                radio["stream_url_unresolved"] = "http://shirayuki.org:9200/"
-                radio["stream_url"] = "http://shirayuki.org:9200/"
-                radio["website_url"] = "https://yggdrasilradio.net/"
+                radio["title"] = "Gensokyo Radio"
+                radio["stream_url_unresolved"] = " 	https://stream.gensokyoradio.net/GensokyoRadio-enhanced.m3u"
+                radio["stream_url"] = "https://stream.gensokyoradio.net/1"
+                radio["website_url"] = "https://gensokyoradio.net/"
+                radio["icon"] = "https://gensokyoradio.net/favicon.ico"
+                radio["country"] = "Japan"
                 self.temp_list.append(radio)
 
                 radio = {}
@@ -33466,6 +33499,13 @@ class RadioBox:
                 radio["stream_url_unresolved"] = "http://radio.hbr1.com:19800/ambient.ogg"
                 radio["stream_url"] = "http://radio.hbr1.com:19800/ambient.ogg"
                 radio["website_url"] = "http://www.hbr1.com/"
+                self.temp_list.append(radio)
+
+                radio = {}
+                radio["title"] = "Yggdrasil Radio | Anime & Jpop"
+                radio["stream_url_unresolved"] = "http://shirayuki.org:9200/"
+                radio["stream_url"] = "http://shirayuki.org:9200/"
+                radio["website_url"] = "https://yggdrasilradio.net/"
                 self.temp_list.append(radio)
 
     def search_radio_browser(self, param):
@@ -41321,12 +41361,8 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            r = {}
-            r["uid"] = uid_gen()
-            r["name"] = "Test"
-            r["items"] = copy.copy(prefs.radio_urls)
-            r["scroll"] = 0
-            pctl.radio_playlists.append(r)
+
+
             pass
 
         if gui.mode < 3:
