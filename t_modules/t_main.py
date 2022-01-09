@@ -23567,7 +23567,6 @@ class NagBox:
 
 nagbox = NagBox()
 
-
 def worker3():
 
     while True:
@@ -33539,14 +33538,14 @@ class RadioBox:
 
                 self.temp_list.append(radio)
 
-                radio = {}
-                radio["title"] = "DKFM Shoegaze Radio"
-                radio["stream_url_unresolved"] = "https://maggie.torontocast.com:8090/live.mp3"
-                radio["stream_url"] = "https://maggie.torontocast.com:8090/live.mp3"
-                radio["website_url"] = "https://decayfm.com/"
-                radio["icon"] = "https://decayfm.com/wp-content/uploads/2018/12/cropped-512-1-192x192.jpg"
-                radio["country"] = "California"
-                self.temp_list.append(radio)
+                # radio = {}
+                # radio["title"] = "DKFM Shoegaze Radio"
+                # radio["stream_url_unresolved"] = "https://maggie.torontocast.com:8090/live.mp3"
+                # radio["stream_url"] = "https://maggie.torontocast.com:8090/live.mp3"
+                # radio["website_url"] = "https://decayfm.com/"
+                # radio["icon"] = "https://decayfm.com/wp-content/uploads/2018/12/cropped-512-1-192x192.jpg"
+                # radio["country"] = "California"
+                # self.temp_list.append(radio)
 
                 radio = {}
                 radio["title"] = "HBR1 Dream Factory | Ambient"
@@ -38119,6 +38118,7 @@ class RadioView:
     def __init__(self):
         self.add_icon = asset_loader("add-station.png", True)
         self.search_icon = asset_loader("station-search.png", True)
+        self.save_icon = asset_loader("save-station.png", True)
         self.menu_icon = asset_loader("radio-menu.png", True)
         self.drag = None
         self.click_point = (0, 0)
@@ -38160,15 +38160,35 @@ class RadioView:
                 station_browse()
         self.search_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
 
-        x = round(30 * gui.scale)
-        y = gui.panelY + round(30 * gui.scale)
-        yy = y
-
         if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
             pctl.radio_playlist_viewing = 0
         if not pctl.radio_playlists:
             return
         radios = pctl.radio_playlists[pctl.radio_playlist_viewing]["items"]
+
+
+        y += round(32 * gui.scale)
+        if pctl.playing_state == 3 and radiobox.loaded_station not in radios:
+            rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
+            fields.add(rect)
+            colour = colours.box_button_text_highlight
+            if colours.lm:
+                colour = colours.vis_colour
+            if not coll(rect):
+                if not colours.lm:
+                    colour = alpha_mod(colour, 40)
+            else:
+                if inp.mouse_click:
+                    radios.append(radiobox.loaded_station)
+                    toast(_("Added station to: " + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"]))
+
+            self.save_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colour)
+
+
+
+        x = round(30 * gui.scale)
+        y = gui.panelY + round(30 * gui.scale)
+        yy = y
 
         bg = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, -0.03)
         tbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.07, -0.05)
@@ -38208,9 +38228,9 @@ class RadioView:
 
             toff = h + round(2 * gui.scale)
             yyy += round(9 * gui.scale)
-            ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line1, 212, max_w=w-(toff + round(15 * gui.scale)))
+            ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line1, 212, max_w=w-(toff + round(90 * gui.scale)))
             yyy += round(19 * gui.scale)
-            ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312, max_w=w-(toff + round(15 * gui.scale)))
+            ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312, max_w=w-(toff + round(90 * gui.scale)))
 
             hit = False
             start_rect = (x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale), round(42 * gui.scale))
