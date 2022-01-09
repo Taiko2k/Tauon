@@ -1502,6 +1502,7 @@ class Prefs:    # Used to hold any kind of settings
         self.left_window_control = macos or left_window_control
         self.macstyle = macos or detect_macstyle
         self.radio_thumb_bans = []
+        self.show_nag = False
 
 prefs = Prefs()
 
@@ -3594,6 +3595,8 @@ if db_version > 0:
         if prefs.radio_urls:
             radio_playlists[0]["items"].extend(prefs.radio_urls)
             prefs.radio_urls = []
+        prefs.show_nag = True
+#prefs.show_nag = True
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -9172,7 +9175,7 @@ launch = Launch(tauon, pctl, gui, ddt)
 class Drawing:
 
     def button(self, text, x, y, w=None, h=None, font=212, text_highlight_colour=None, text_colour=None,
-               backgound_colour=None, background_highlight_colour=None, press=None, tooltip=""):
+               background_colour=None, background_highlight_colour=None, press=None, tooltip=""):
 
         if w is None:
             w = ddt.get_text_w(text, font) + 18 * gui.scale
@@ -9186,8 +9189,8 @@ class Drawing:
             text_highlight_colour = colours.box_button_text_highlight
         if text_colour is None:
             text_colour = colours.box_button_text
-        if backgound_colour is None:
-            backgound_colour = colours.box_button_background
+        if background_colour is None:
+            background_colour = colours.box_button_background
         if background_highlight_colour is None:
             background_highlight_colour = colours.box_button_background_highlight
 
@@ -9210,11 +9213,11 @@ class Drawing:
             if press:
                 click = True
         else:
-            ddt.rect(rect, backgound_colour)
+            ddt.rect(rect, background_colour)
             if background_highlight_colour[3] != 255:
-                backgound_colour = None
+                background_colour = None
             ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_colour, font,
-                     bg=backgound_colour)
+                     bg=background_colour)
         return click
 
 draw = Drawing()
@@ -23512,7 +23515,58 @@ class MessageBox:
 
 message_box = MessageBox()
 
-# LOADER----------------------------------------------------------------------
+class NagBox:
+    def __init__(self):
+        self.wiggle_timer = Timer(10)
+    def draw(self):
+
+        w = 485 * gui.scale
+        h = 170 * gui.scale
+        x = int(window_size[0] / 2) - int(w / 2)
+        if self.wiggle_timer.get() < 0.5:
+            gui.update += 1
+            x += math.sin(core_timer.get() * 40) * 4
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
+                   colours.box_text_border)
+        ddt.rect_a((x, y), (w, h), colours.message_box_bg)
+
+        if gui.level_2_click and not coll((x, y, w, h)):
+            self.wiggle_timer.set()
+            gui.update += 1
+
+        ddt.text_background_colour = colours.message_box_bg
+
+        x += round(10 * gui.scale)
+        y += round(13 * gui.scale)
+        ddt.text((x, y), "Welcome to v7.0.0", colours.message_box_text, 212)
+        y += round(20 * gui.scale)
+
+        ddt.text((x, y), "The time has come to open thy heart and thy wallet!", colours.message_box_text, 312)
+        heart_notify_icon.render(x + round(400 * gui.scale), y - round(10 * gui.scale), [255, 90, 90, 255])
+
+        y += round(30 * gui.scale)
+        ddt.text((x, y), "Hi, developer Taiko2k here. I hope you like Tauon Music Box!", colours.message_box_text, 312)
+        y += round(20 * gui.scale)
+        ddt.text((x, y), "If you do please consider showing your appreciation by becoming a monthly", colours.message_box_text, 312)
+        y += round(20 * gui.scale)
+        ddt.text((x, y), "supporter on Github. Even if its only for a few months, it would mean a lot!", colours.message_box_text, 312)
+        y += round(30 * gui.scale)
+
+        if draw.button("Nope!", x, y, press=gui.level_2_click):
+            prefs.show_nag = False
+            show_message("Oh... :( 💔")
+        if draw.button("Show supporter page", x + round(70 * gui.scale), y, background_colour=[60, 140, 60, 255], background_highlight_colour=[60, 150, 60, 255], press=gui.level_2_click):
+            webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
+            prefs.show_nag = False
+        if draw.button("I already am!", x + round(360), y, press=gui.level_2_click):
+            show_message("Oh hey, thanks! :)")
+            prefs.show_nag = False
+
+
+nagbox = NagBox()
+
 
 def worker3():
 
@@ -38361,7 +38415,7 @@ class Showcase:
 
             if gui.force_showcase_index >= 0:
                 if draw.button(_("Playing"), 25 * gui.scale, gui.panelY + 20 * gui.scale, text_highlight_colour=bft,
-                               text_colour=bbt, backgound_colour=bbg, background_highlight_colour=bfg):
+                               text_colour=bbt, background_colour=bbg, background_highlight_colour=bfg):
                     gui.force_showcase_index = -1
                     ddt.force_gray = False
 
@@ -38425,7 +38479,7 @@ class Showcase:
                     if prefs.prefer_synced_lyrics:
                         line = _("Prefer static")
                     if draw.button(line, 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-                                   text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+                                   text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
                                    background_highlight_colour=bfg):
                         prefs.prefer_synced_lyrics ^= True
 
@@ -38435,7 +38489,7 @@ class Showcase:
 
                 if not gc.auto_scroll:
                     if draw.button(_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-                                   text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+                                   text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
                                    background_highlight_colour=bfg):
                         gc.auto_scroll = True
 
@@ -41499,7 +41553,7 @@ while pctl.running:
             if view_box.active:
                 view_box.clicked = True
 
-        if inp.mouse_click and (sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
+        if inp.mouse_click and (prefs.show_nag or sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
             inp.mouse_click = False
             gui.level_2_click = True
         else:
@@ -44239,6 +44293,8 @@ while pctl.running:
 
             if gui.message_box:
                 message_box.render()
+            if prefs.show_nag:
+                nagbox.draw()
 
             # SEARCH
             # if key_ctrl_down and key_v_press:
