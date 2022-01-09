@@ -30289,7 +30289,7 @@ class BottomBarType1:
 
                 rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
                 fields.add(rect)
-                if coll(rect):
+                if coll(rect) and not pctl.playing_state == 3:
                     pause_colour = colours.media_buttons_over
                     if inp.mouse_click:
                         pctl.pause()
@@ -30323,7 +30323,7 @@ class BottomBarType1:
             # FORWARD---
             rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll(rect):
+            if coll(rect) and not pctl.playing_state == 3:
                 forward_colour = colours.media_buttons_over
                 if inp.mouse_click:
                     pctl.advance()
@@ -30356,7 +30356,7 @@ class BottomBarType1:
             # BACK---
             rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll(rect):
+            if coll(rect) and not pctl.playing_state == 3:
                 back_colour = colours.media_buttons_over
                 if inp.mouse_click:
                     pctl.back()
@@ -30867,7 +30867,7 @@ class BottomBarType_ao1:
 
                 rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
                 fields.add(rect)
-                if coll(rect):
+                if coll(rect) and not pctl.playing_state == 3:
                     pause_colour = colours.media_buttons_over
                     if inp.mouse_click:
                         pctl.pause()
@@ -30883,7 +30883,7 @@ class BottomBarType_ao1:
             # FORWARD---
             rect = (buttons_x_offset + 125 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll(rect):
+            if coll(rect) and not pctl.playing_state == 3:
                 forward_colour = colours.media_buttons_over
                 if inp.mouse_click:
                     pctl.advance()
@@ -38082,19 +38082,25 @@ class RadioView:
         rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
         fields.add(rect)
         colour = colours.box_button_text_highlight
+        if colours.lm:
+            colour = colours.vis_colour
         if coll(rect):
             if inp.mouse_click:
                 add_station()
         else:
-            colour = alpha_mod(colour, 40)
+            if not colours.lm:
+                colour = alpha_mod(colour, 40)
         self.add_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
 
         y += round(33 * gui.scale)
         rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
         fields.add(rect)
         colour = colours.box_button_text_highlight
+        if colours.lm:
+            colour = colours.vis_colour
         if not coll(rect):
-            colour = alpha_mod(colour, 40)
+            if not colours.lm:
+                colour = alpha_mod(colour, 40)
         else:
             if inp.mouse_click:
                 station_browse()
@@ -38216,7 +38222,9 @@ class RadioView:
             ddt.text((count, yy, 2), radiobox.loaded_station.get("title", ""), [230, 230, 230, 255], 213)
             yy += round(25 * gui.scale)
             ddt.text((count, yy, 2), radiobox.song_key, [230, 230, 230, 255], 313)
-
+            if radiobox.dummy_track.album:
+                yy += round(21 * gui.scale)
+                ddt.text((count, yy, 2), radiobox.dummy_track.album, [230, 230, 230, 255], 313)
         if self.drag:
             gui.update_on_drag = True
 
@@ -38480,7 +38488,7 @@ class Showcase:
                 gui.spec4_rec.y = y + round(50 * gui.scale)
 
 
-                if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
+                if prefs.showcase_vis and window_size[1] > 369 and not search_over.active and not (spot_ctl.coasting or spot_ctl.playing):
 
                     if gui.message_box or not is_level_zero(include_menus=True):
                         self.render_vis()
