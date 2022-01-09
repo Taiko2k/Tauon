@@ -38184,8 +38184,6 @@ class RadioView:
 
             self.save_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colour)
 
-
-
         x = round(30 * gui.scale)
         y = gui.panelY + round(30 * gui.scale)
         yy = y
