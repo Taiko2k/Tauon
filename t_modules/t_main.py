@@ -3,7 +3,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2021, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2022, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
 
 print(f"{t_title} {t_version}")
-print('Copyright 2015-2021 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2022 Taiko2k captain.gxj@gmail.com\n')
 
 from t_modules import t_bootstrap
 h = t_bootstrap.holder
@@ -27798,7 +27798,7 @@ class Over:
 
             ddt.text((x, y - 6 * gui.scale), t_version, colours.box_text_label, 313)
             y += 19 * gui.scale
-            ddt.text((x, y), "Copyright © 2015-2020 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
+            ddt.text((x, y), "Copyright © 2015-2022 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
 
             y += 19 * gui.scale
             link_pa = draw_linked_text((x, y), "https://tauonmusicbox.rocks", colours.box_sub_text, 12, replace="tauonmusicbox.rocks")

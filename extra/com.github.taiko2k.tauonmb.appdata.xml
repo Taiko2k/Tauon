@@ -62,10 +62,13 @@
 
   <releases>
 
-    <release version="6.8.3" date="2021-12-01">
+    <release version="7.0.0" date="2022-01-10">
       <description>
         <ul>
-          <li>Fixed some bugs</li>
+          <li>Added new radio station view layout</li>
+          <li>Added M3U playlist import/export</li>
+          <li>Added favorite Jellyfin tracks support</li>
+          <li>Various bug fixes</li>
         </ul>
       </description>
     </release>
