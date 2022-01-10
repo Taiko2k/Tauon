@@ -15710,6 +15710,8 @@ def delete_playlist(index, force=False, check_lock=False):
 
     if gui.radio_view:
         del pctl.radio_playlists[index]
+        if not pctl.radio_playlists:
+            pctl.radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
         return
 
     global default_playlist
@@ -38278,25 +38280,28 @@ class RadioView:
         boxx = round(200 * gui.scale)
         art_rect = (count - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
 
-        if pctl.playing_state == 3 and radiobox.loaded_station:
-            r = album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
-            if r:
-                r = radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
-                # if not r:
-                #     ddt.rect(art_rect, colours.b)
-        # else:
-        #     ddt.rect(art_rect, [40, 40, 40, 255])
+        if window_size[0] > round(700 * gui.scale):
+            if pctl.playing_state == 3 and radiobox.loaded_station:
+                r = album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+                if r:
+                    r = radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
+                    # if not r:
+                    #     ddt.rect(art_rect, colours.b)
+            # else:
+            #     ddt.rect(art_rect, [40, 40, 40, 255])
 
-        yy = window_size[1] / 3 - boxx / 2
-        yy += boxx + round(30 * gui.scale)
+            yy = window_size[1] / 3 - boxx / 2
+            yy += boxx + round(30 * gui.scale)
 
-        if radiobox.loaded_station and pctl.playing_state == 3:
-            ddt.text((count, yy, 2), radiobox.loaded_station.get("title", ""), [230, 230, 230, 255], 213)
-            yy += round(25 * gui.scale)
-            ddt.text((count, yy, 2), radiobox.song_key, [230, 230, 230, 255], 313)
-            if radiobox.dummy_track.album:
-                yy += round(21 * gui.scale)
-                ddt.text((count, yy, 2), radiobox.dummy_track.album, [230, 230, 230, 255], 313)
+            if radiobox.loaded_station and pctl.playing_state == 3:
+                space = window_size[0] - round(500 * gui.scale)
+                ddt.text((count, yy, 2), radiobox.loaded_station.get("title", ""), [230, 230, 230, 255], 213, max_w=space)
+                yy += round(25 * gui.scale)
+                ddt.text((count, yy, 2), radiobox.song_key, [230, 230, 230, 255], 313, max_w=space)
+                if radiobox.dummy_track.album:
+                    yy += round(21 * gui.scale)
+                    ddt.text((count, yy, 2), radiobox.dummy_track.album, [230, 230, 230, 255], 313, max_w=space)
+
         if self.drag:
             gui.update_on_drag = True
 

@@ -1227,6 +1227,7 @@ void end() {
     command = NONE;
     buff_base = 0;
     buff_filled = 0;
+    buffering = 0;
     pthread_mutex_unlock(&buffer_mutex);
 //    #ifndef AO
 //        if (pulse_connected == 1){
