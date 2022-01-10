@@ -33496,7 +33496,7 @@ class RadioBox:
             self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
 
         ww = ddt.get_text_w(_("Get Top Voted"), 212)
-        if key_shift_down or True:
+        if key_shift_down:
             if draw.button(_("Developer Picks"), x + ww + round(35 * gui.scale), yy + round(30 * gui.scale),
                        press=gui.level_2_click):
 
