@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2021-11-24 20:31+1300\n"
+"POT-Creation-Date: 2022-01-10 17:19+1300\n"
 "PO-Revision-Date: 2020-12-10 08:42+0000\n"
 "Last-Translator: 微别累特 <1365143958@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
@@ -18,2076 +18,2096 @@ msgstr ""
 "X-Generator: Weblate 4.4-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
-#: t_modules/t_main.py:1928 t_modules/t_main.py:1930
+#: t_modules/t_main.py:1939 t_modules/t_main.py:1941
 msgid "No artist image found."
 msgstr "未找到艺术家图像。"
 
-#: t_modules/t_main.py:1930
+#: t_modules/t_main.py:1941
 msgid "No providers are enabled in settings!"
 msgstr "未设置供应商！"
 
-#: t_modules/t_main.py:6378
+#: t_modules/t_main.py:6455
 msgid "End of playlist"
 msgstr "播放列表末尾"
 
-#: t_modules/t_main.py:6429
+#: t_modules/t_main.py:6506
 msgid "Once authorised click the 'done' button."
 msgstr "认证后请点击'完成'按钮。"
 
-#: t_modules/t_main.py:6429
+#: t_modules/t_main.py:6506
 msgid "Web auth page opened"
 msgstr "网络认证页面已打开"
 
-#: t_modules/t_main.py:6437
+#: t_modules/t_main.py:6514
 msgid "You need to log in first"
 msgstr "你需要先登录"
 
-#: t_modules/t_main.py:6593
+#: t_modules/t_main.py:6670
 msgid "Scanning failed. Try again?"
 msgstr "扫描失败。再试试？"
 
-#: t_modules/t_main.py:6600 t_modules/t_main.py:7177
+#: t_modules/t_main.py:6677 t_modules/t_main.py:7259
 #, fuzzy
 msgid "Scanning scrobbles complete"
 msgstr "文件夹重扫描完成。"
 
-#: t_modules/t_main.py:6752
+#: t_modules/t_main.py:6829
 msgid "Getting friend data..."
 msgstr "正在获取好友数据..."
 
-#: t_modules/t_main.py:6752
+#: t_modules/t_main.py:6829
 msgid "This may take a very long time."
 msgstr "这可能需要很长时间。"
 
-#: t_modules/t_main.py:7104
+#: t_modules/t_main.py:7181
 msgid "Failed updating last.fm love status"
 msgstr ""
 
-#: t_modules/t_main.py:7107
+#: t_modules/t_main.py:7184
 msgid "Error updating love to last.fm!"
 msgstr "更新喜欢到 last.fm 失败！"
 
-#: t_modules/t_main.py:7107
+#: t_modules/t_main.py:7184
 msgid "Maybe check your internet connection and try again?"
 msgstr "检查你的网络连接然后再试试？"
 
-#: t_modules/t_main.py:7372
+#: t_modules/t_main.py:7454
 msgid "Spotify Likes"
 msgstr "Spotify 喜欢"
 
-#: t_modules/t_main.py:7373
+#: t_modules/t_main.py:7455
 msgid "Spotify Albums"
 msgstr "Spotify 专辑"
 
-#: t_modules/t_main.py:7374
+#: t_modules/t_main.py:7456
 #, fuzzy
 msgid "Track removed from liked tracks"
 msgstr "从喜欢的音轨中移除音轨"
 
-#: t_modules/t_main.py:7375
+#: t_modules/t_main.py:7457
 #, fuzzy
 msgid "Track was already un-liked"
 msgstr "播放列表曲目数"
 
-#: t_modules/t_main.py:7376
+#: t_modules/t_main.py:7458
 #, fuzzy
 msgid "Track is already liked"
 msgstr "播放列表曲目数"
 
-#: t_modules/t_main.py:7377
+#: t_modules/t_main.py:7459
 #, fuzzy
 msgid "Track added to liked tracks"
 msgstr "从喜欢的音轨中移除音轨"
 
-#: t_modules/t_main.py:7378
+#: t_modules/t_main.py:7460
 msgid "Spotify account connected"
 msgstr ""
 
-#: t_modules/t_main.py:7379
+#: t_modules/t_main.py:7461
 msgid "This Spotify account isn't currently playing anything"
 msgstr ""
 
-#: t_modules/t_main.py:7380
+#: t_modules/t_main.py:7462
 #, fuzzy
 msgid "Error starting Spotify"
 msgstr "播放列表末尾"
 
-#: t_modules/t_main.py:7381
+#: t_modules/t_main.py:7463
 msgid "Please authorise Spotify in settings!"
 msgstr ""
 
-#: t_modules/t_main.py:7382
+#: t_modules/t_main.py:7464
 #, fuzzy
 msgid "Please authorise and click the enable toggle first!"
 msgstr "认证后请点击'完成'按钮。"
 
-#: t_modules/t_main.py:7383
+#: t_modules/t_main.py:7465
 msgid "Spotify import complete"
 msgstr ""
 
-#: t_modules/t_main.py:7385
+#: t_modules/t_main.py:7467
 msgid "day"
 msgstr ""
 
-#: t_modules/t_main.py:7386
+#: t_modules/t_main.py:7468
 msgid "days"
 msgstr ""
 
-#: t_modules/t_main.py:7388
+#: t_modules/t_main.py:7470
 msgid "Web server stopped."
 msgstr ""
 
-#: t_modules/t_main.py:7513
+#: t_modules/t_main.py:7597
 msgid "Missing username, password and/or server name"
 msgstr ""
 
-#: t_modules/t_main.py:7528
+#: t_modules/t_main.py:7612
 msgid "Error connecting to PLEX server"
 msgstr "连接到PLEX服务器出错"
 
-#: t_modules/t_main.py:7529
+#: t_modules/t_main.py:7613
 msgid "Try check login credentials and that server is accessible."
 msgstr ""
 
-#: t_modules/t_main.py:8029
+#: t_modules/t_main.py:8113
 msgid "Missing username, password and/or server URL"
 msgstr ""
 
-#: t_modules/t_main.py:8057
+#: t_modules/t_main.py:8141
 msgid "Could not establish connection"
 msgstr ""
 
-#: t_modules/t_main.py:8076
+#: t_modules/t_main.py:8160
 msgid "Could not establish connection/authorisation"
 msgstr ""
 
-#: t_modules/t_main.py:8616
+#: t_modules/t_main.py:8700
 msgid "Stop the sync before exiting!"
 msgstr ""
 
-#: t_modules/t_main.py:13247
+#: t_modules/t_main.py:13398
 #, fuzzy
 msgid "Playlists + Queue"
 msgstr "播放列表为空"
 
-#: t_modules/t_main.py:13248 t_modules/t_main.py:36088
+#: t_modules/t_main.py:13399 t_modules/t_main.py:36549
 #, fuzzy
 msgid "Queue"
 msgstr "清空队列"
 
-#: t_modules/t_main.py:13250
+#: t_modules/t_main.py:13401
 #, fuzzy
 msgid "Artist List"
 msgstr "艺术家"
 
-#: t_modules/t_main.py:13252
+#: t_modules/t_main.py:13403
 #, fuzzy
 msgid "Folder Navigator"
 msgstr "文件夹更改"
 
-#: t_modules/t_main.py:13312
+#: t_modules/t_main.py:13463
 msgid "Track Renaming"
 msgstr "曲目重命名"
 
-#: t_modules/t_main.py:13315 t_modules/t_main.py:43397
+#: t_modules/t_main.py:13466 t_modules/t_main.py:44245
 msgid "Default"
 msgstr "默认"
 
-#: t_modules/t_main.py:13338
+#: t_modules/t_main.py:13489
 msgid "BEFORE"
 msgstr "之前"
 
-#: t_modules/t_main.py:13342
+#: t_modules/t_main.py:13493
 msgid "AFTER"
 msgstr "之后"
 
-#: t_modules/t_main.py:13430
+#: t_modules/t_main.py:13581
 msgid "Rename complete."
 msgstr "重命名完成。"
 
-#: t_modules/t_main.py:13431
+#: t_modules/t_main.py:13582
 msgid " filenames were written."
 msgstr "　文件名已写入。"
 
-#: t_modules/t_main.py:13503
+#: t_modules/t_main.py:13654
 msgid "Simple tag editor"
 msgstr ""
 
-#: t_modules/t_main.py:13505 t_modules/t_main.py:26232
-#: t_modules/t_main.py:26507 t_modules/t_main.py:27260
+#: t_modules/t_main.py:13656 t_modules/t_main.py:26529
+#: t_modules/t_main.py:26812 t_modules/t_main.py:27565
 msgid "?"
 msgstr ""
 
-#: t_modules/t_main.py:13506
+#: t_modules/t_main.py:13657
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
 
-#: t_modules/t_main.py:13507
+#: t_modules/t_main.py:13658
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
 
-#: t_modules/t_main.py:13510
+#: t_modules/t_main.py:13661
 msgid "Number of tracks selected: %d"
 msgstr ""
 
-#: t_modules/t_main.py:13545
+#: t_modules/t_main.py:13696
 msgid "<Multiple selected>"
 msgstr ""
 
-#: t_modules/t_main.py:13553
+#: t_modules/t_main.py:13704
 #, fuzzy
 msgid "Track title"
 msgstr "曲目列表"
 
-#: t_modules/t_main.py:13555
+#: t_modules/t_main.py:13706
 #, fuzzy
 msgid "Album name"
 msgstr "专辑艺术家"
 
-#: t_modules/t_main.py:13557
+#: t_modules/t_main.py:13708
 #, fuzzy
 msgid "Artist name"
 msgstr "艺术家"
 
-#: t_modules/t_main.py:13559
+#: t_modules/t_main.py:13710
 #, fuzzy
 msgid "Album-artist name"
 msgstr "专辑艺术家"
 
-#: t_modules/t_main.py:13565
+#: t_modules/t_main.py:13716
 msgid "Editing network tracks is not recommended!"
 msgstr ""
 
-#: t_modules/t_main.py:13595 t_modules/t_main.py:13596
+#: t_modules/t_main.py:13746 t_modules/t_main.py:13747
 msgid "WRITE TAGS"
 msgstr ""
 
-#: t_modules/t_main.py:13598
+#: t_modules/t_main.py:13749
 msgid "Press enter on fields to apply your changes first!"
 msgstr ""
 
-#: t_modules/t_main.py:13610
+#: t_modules/t_main.py:13761
 msgid "Writing to a network track is not applicable!"
 msgstr ""
 
-#: t_modules/t_main.py:13613
+#: t_modules/t_main.py:13764
 msgid "Cannot write CUE sheet types!"
 msgstr ""
 
-#: t_modules/t_main.py:13624
+#: t_modules/t_main.py:13772
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
 
-#: t_modules/t_main.py:13642
+#: t_modules/t_main.py:13790
 #, fuzzy
 msgid "%d files rewritten"
 msgstr "　文件名已写入。"
 
-#: t_modules/t_main.py:13702
+#: t_modules/t_main.py:13850
 msgid "Substitute Lyric Search"
 msgstr ""
 
-#: t_modules/t_main.py:13708 t_modules/t_main.py:13728
+#: t_modules/t_main.py:13856 t_modules/t_main.py:13876
 msgid "Substitute"
 msgstr ""
 
-#: t_modules/t_main.py:13714 t_modules/t_main.py:13734
+#: t_modules/t_main.py:13862 t_modules/t_main.py:13882
 msgid "with"
 msgstr ""
 
-#: t_modules/t_main.py:13778
+#: t_modules/t_main.py:13926
 msgid "Repeat OFF"
 msgstr "关闭循环"
 
-#: t_modules/t_main.py:13779
+#: t_modules/t_main.py:13927
 msgid "Repeat Track"
 msgstr "单曲循环"
 
-#: t_modules/t_main.py:13780
+#: t_modules/t_main.py:13928
 msgid "Repeat Album"
 msgstr "专辑循环"
 
-#: t_modules/t_main.py:13844
+#: t_modules/t_main.py:13990
 msgid "Shuffle OFF"
 msgstr "关闭随机"
 
-#: t_modules/t_main.py:13845
+#: t_modules/t_main.py:13991
 msgid "Shuffle Tracks"
 msgstr "随机曲目"
 
-#: t_modules/t_main.py:13846
+#: t_modules/t_main.py:13992
 msgid "Random Albums"
 msgstr "随机专辑"
 
-#: t_modules/t_main.py:13847
+#: t_modules/t_main.py:13993
 #, fuzzy
 msgid "Shuffle Lockdown"
 msgstr "随机开"
 
-#: t_modules/t_main.py:13872
+#: t_modules/t_main.py:14018
 msgid "Make Large Size"
 msgstr "大尺寸"
 
-#: t_modules/t_main.py:13874
+#: t_modules/t_main.py:14020
 msgid "Make Compact Size"
 msgstr "小尺寸"
 
-#: t_modules/t_main.py:13907
+#: t_modules/t_main.py:14053
 msgid "Close Panel"
 msgstr "关闭面板"
 
-#: t_modules/t_main.py:13908
+#: t_modules/t_main.py:14054
 msgid "Make Large"
 msgstr "大尺寸"
 
-#: t_modules/t_main.py:14163
+#: t_modules/t_main.py:14309
 #, fuzzy
 msgid "Unlock Panel"
 msgstr "关闭面板"
 
-#: t_modules/t_main.py:14165
+#: t_modules/t_main.py:14311
 #, fuzzy
 msgid "Lock Panel"
 msgstr "关闭面板"
 
-#: t_modules/t_main.py:14167 t_modules/t_main.py:14168
-#: t_modules/t_main.py:14190 t_modules/t_main.py:18552
-#: t_modules/t_main.py:19546
+#: t_modules/t_main.py:14313 t_modules/t_main.py:14314
+#: t_modules/t_main.py:14336 t_modules/t_main.py:18779
+#: t_modules/t_main.py:19773
 msgid "Open Folder"
 msgstr "打开文件夹"
 
-#: t_modules/t_main.py:14170 t_modules/t_main.py:14171
-#: t_modules/t_main.py:14172 t_modules/t_main.py:34362
+#: t_modules/t_main.py:14316 t_modules/t_main.py:14317
+#: t_modules/t_main.py:14318 t_modules/t_main.py:34822
 msgid "Filter to New Playlist"
 msgstr "过滤到新播放列表"
 
-#: t_modules/t_main.py:14173 t_modules/t_main.py:14174
-#: t_modules/t_main.py:16950
+#: t_modules/t_main.py:14319 t_modules/t_main.py:14320
+#: t_modules/t_main.py:17176
 msgid "Rescan Folder"
 msgstr "重扫描文件夹"
 
-#: t_modules/t_main.py:14175 t_modules/t_main.py:14177
+#: t_modules/t_main.py:14321 t_modules/t_main.py:14323
 #, fuzzy
 msgid "Move Playing Folder Here"
 msgstr "转码文件夹到这里"
 
-#: t_modules/t_main.py:14183 t_modules/t_main.py:19567
+#: t_modules/t_main.py:14329 t_modules/t_main.py:19794
 msgid "Collapse All"
 msgstr ""
 
-#: t_modules/t_main.py:14192
+#: t_modules/t_main.py:14338
 msgid "Show in Playlist"
 msgstr "在播放列表中表示"
 
-#: t_modules/t_main.py:14273 t_modules/t_main.py:19551
-#: t_modules/t_main.py:19563
+#: t_modules/t_main.py:14419 t_modules/t_main.py:19778
+#: t_modules/t_main.py:19790
 msgid "Add Album to Queue"
 msgstr "加入专辑到队列"
 
-#: t_modules/t_main.py:14274 t_modules/t_main.py:19552
-#: t_modules/t_main.py:19564
+#: t_modules/t_main.py:14420 t_modules/t_main.py:19779
+#: t_modules/t_main.py:19791
 msgid "Enqueue Album Next"
 msgstr ""
 
-#: t_modules/t_main.py:14286 t_modules/t_main.py:17139
-#: t_modules/t_main.py:27253
+#: t_modules/t_main.py:14432 t_modules/t_main.py:17365
+#: t_modules/t_main.py:27558
 msgid "Aborting Sync"
 msgstr ""
 
-#: t_modules/t_main.py:14289
+#: t_modules/t_main.py:14435
 msgid "Cancel"
 msgstr "取消"
 
-#: t_modules/t_main.py:14299
+#: t_modules/t_main.py:14445
 msgid "Hide Metadata Panel"
 msgstr ""
 
-#: t_modules/t_main.py:14301
+#: t_modules/t_main.py:14447
 msgid "Show Metadata Panel"
 msgstr ""
 
-#: t_modules/t_main.py:14311
+#: t_modules/t_main.py:14457
 #, fuzzy
 msgid "Panel Below Lyrics"
 msgstr "粘贴和弦歌词"
 
-#: t_modules/t_main.py:14313
+#: t_modules/t_main.py:14459
 #, fuzzy
 msgid "Panel Above Lyrics"
 msgstr "粘贴歌词"
 
-#: t_modules/t_main.py:14341 t_modules/t_main.py:14351
-#: t_modules/t_main.py:14359
+#: t_modules/t_main.py:14487 t_modules/t_main.py:14497
+#: t_modules/t_main.py:14505
 #, fuzzy
 msgid "Hide Lyrics"
 msgstr "隐藏歌词"
 
-#: t_modules/t_main.py:14343 t_modules/t_main.py:14353
-#: t_modules/t_main.py:14361
+#: t_modules/t_main.py:14489 t_modules/t_main.py:14499
+#: t_modules/t_main.py:14507
 #, fuzzy
 msgid "Show Lyrics"
 msgstr "显示歌词"
 
-#: t_modules/t_main.py:14395
+#: t_modules/t_main.py:14541
 msgid "There are no lyric sources enabled."
 msgstr "没有有效的歌词源。"
 
-#: t_modules/t_main.py:14404
+#: t_modules/t_main.py:14550
 msgid "Let's be polite and try later."
 msgstr "让我们调整一下，以后再试。"
 
-#: t_modules/t_main.py:14421 t_modules/t_main.py:19772
-#: t_modules/t_main.py:19826 t_modules/t_main.py:33235
+#: t_modules/t_main.py:14567 t_modules/t_main.py:19999
+#: t_modules/t_main.py:20053 t_modules/t_main.py:33690
 msgid "Searching..."
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:14454
+#: t_modules/t_main.py:14600
 msgid "No lyrics for this track were found"
 msgstr ""
 
-#: t_modules/t_main.py:14518 t_modules/t_main.py:14615
-#: t_modules/t_main.py:15045
+#: t_modules/t_main.py:14664 t_modules/t_main.py:14761
+#: t_modules/t_main.py:15191
 #, fuzzy
 msgid "Search for Lyrics"
 msgstr "搜索歌词"
 
-#: t_modules/t_main.py:14530
+#: t_modules/t_main.py:14676
 msgid "Search GuitarParty"
 msgstr "搜索GuitarParty"
 
-#: t_modules/t_main.py:14565
+#: t_modules/t_main.py:14711
 msgid "Paste Chord Lyrics"
 msgstr "粘贴和弦歌词"
 
-#: t_modules/t_main.py:14566
+#: t_modules/t_main.py:14712
 msgid "Clear Chord Lyrics"
 msgstr "清空和弦歌词"
 
-#: t_modules/t_main.py:14605 t_modules/t_main.py:14616
-#: t_modules/t_main.py:15046
+#: t_modules/t_main.py:14751 t_modules/t_main.py:14762
+#: t_modules/t_main.py:15192
 msgid "Toggle Lyrics"
 msgstr "切换歌词"
 
-#: t_modules/t_main.py:14607 t_modules/t_main.py:14618
+#: t_modules/t_main.py:14753 t_modules/t_main.py:14764
 msgid "Substitute Search..."
 msgstr ""
 
-#: t_modules/t_main.py:14608 t_modules/t_main.py:14619
+#: t_modules/t_main.py:14754 t_modules/t_main.py:14765
 msgid "Paste Lyrics"
 msgstr "粘贴歌词"
 
-#: t_modules/t_main.py:14609 t_modules/t_main.py:14620
+#: t_modules/t_main.py:14755 t_modules/t_main.py:14766
 msgid "Copy Lyrics"
 msgstr "复制歌词"
 
-#: t_modules/t_main.py:14610 t_modules/t_main.py:14621
+#: t_modules/t_main.py:14756 t_modules/t_main.py:14767
 msgid "Clear Lyrics"
 msgstr "清空歌词"
 
-#: t_modules/t_main.py:14695
+#: t_modules/t_main.py:14841
 msgid "Open Image"
 msgstr "打开图片"
 
-#: t_modules/t_main.py:14719
+#: t_modules/t_main.py:14865
 msgid "Previous"
 msgstr "前一个"
 
-#: t_modules/t_main.py:14722
+#: t_modules/t_main.py:14868
 msgid "Extract Image"
 msgstr "提取图片"
 
-#: t_modules/t_main.py:14735
+#: t_modules/t_main.py:14881
 msgid "Cannot download art for network tracks."
 msgstr ""
 
-#: t_modules/t_main.py:14759
+#: t_modules/t_main.py:14905
 msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
 
-#: t_modules/t_main.py:14770
+#: t_modules/t_main.py:14916
 #, fuzzy
 msgid "Looking up MusicBrainz ID..."
 msgstr "正在查找"
 
-#: t_modules/t_main.py:14834
+#: t_modules/t_main.py:14980
 msgid "Cover art downloaded from fanart.tv"
 msgstr ""
 
-#: t_modules/t_main.py:14855
+#: t_modules/t_main.py:15001
 msgid "Cover art downloaded from MusicBrainz"
 msgstr ""
 
-#: t_modules/t_main.py:14866
+#: t_modules/t_main.py:15012
 msgid "Matching cover art or ID could not be found."
 msgstr ""
 
-#: t_modules/t_main.py:14949
+#: t_modules/t_main.py:15095
 msgid "Image removal failed."
 msgstr "图片删除失败。"
 
-#: t_modules/t_main.py:14952
+#: t_modules/t_main.py:15098
 msgid "Deleted embedded picture from file"
 msgstr "删除文件的内置图片"
 
-#: t_modules/t_main.py:14980 t_modules/t_main.py:14987
+#: t_modules/t_main.py:15126 t_modules/t_main.py:15133
 msgid "Delete Image File"
 msgstr "删除图像文件"
 
-#: t_modules/t_main.py:14995
+#: t_modules/t_main.py:15141
 msgid "Delete Embedded | Folder"
 msgstr "删除内置图片 | 文件夹图片"
 
-#: t_modules/t_main.py:14997
+#: t_modules/t_main.py:15143
 msgid "Delete Embedded | Track"
 msgstr "删除内置图片 | 曲目图片"
 
-#: t_modules/t_main.py:15017
+#: t_modules/t_main.py:15163
 msgid "Quick-Fetch Cover Art"
 msgstr "快速取得封面图"
 
-#: t_modules/t_main.py:15067
+#: t_modules/t_main.py:15213
 #, fuzzy
 msgid "Paste Spotify Album"
 msgstr "Spotify 专辑"
 
-#: t_modules/t_main.py:15283 t_modules/t_main.py:33531
-#: t_modules/t_main.py:43407
+#: t_modules/t_main.py:15433 t_modules/t_main.py:15434
+#: t_modules/t_main.py:44255
 msgid "Rename"
 msgstr "重命名"
 
-#: t_modules/t_main.py:15294
+#: t_modules/t_main.py:15445
 #, fuzzy
 msgid "Pin"
 msgstr "转到正在播放"
 
-#: t_modules/t_main.py:15296
+#: t_modules/t_main.py:15447
 msgid "Unpin"
 msgstr ""
 
-#: t_modules/t_main.py:15305
+#: t_modules/t_main.py:15456
 msgid "Unlock"
 msgstr "解锁"
 
-#: t_modules/t_main.py:15307 t_modules/t_main.py:15341
+#: t_modules/t_main.py:15458 t_modules/t_main.py:15492
 msgid "Lock"
 msgstr "锁定"
 
-#: t_modules/t_main.py:15487 t_modules/t_main.py:19998
-#: t_modules/t_main.py:26573 t_modules/t_main.py:26576
-#: t_modules/t_main.py:27017 t_modules/t_main.py:27070
-#: t_modules/t_main.py:27075 t_modules/t_main.py:27083
-#: t_modules/t_main.py:27087 t_modules/t_main.py:27097
+#: t_modules/t_main.py:15675 t_modules/t_main.py:20225
+#: t_modules/t_main.py:26878 t_modules/t_main.py:26881
+#: t_modules/t_main.py:27322 t_modules/t_main.py:27375
+#: t_modules/t_main.py:27380 t_modules/t_main.py:27388
+#: t_modules/t_main.py:27392 t_modules/t_main.py:27402
 msgid "Clear"
 msgstr "清空"
 
-#: t_modules/t_main.py:15526
+#: t_modules/t_main.py:15731
 msgid "Are you sure you want to delete this playlist?"
 msgstr ""
 
-#: t_modules/t_main.py:15526
+#: t_modules/t_main.py:15731
 msgid "Try again while holding shift to confirm"
 msgstr ""
 
-#: t_modules/t_main.py:15631
+#: t_modules/t_main.py:15839
 msgid "Are you sure you want to delete playlist: %s?"
 msgstr ""
 
-#: t_modules/t_main.py:15673
+#: t_modules/t_main.py:15881
 #, fuzzy
 msgid "Rescanning folders..."
 msgstr "重扫描文件夹"
 
-#: t_modules/t_main.py:15993 t_modules/t_main.py:16005
+#: t_modules/t_main.py:16201 t_modules/t_main.py:16213
 #, fuzzy
 msgid "Playlist is locked"
 msgstr "播放列表为空"
 
-#: t_modules/t_main.py:16104 t_modules/t_main.py:43416
+#: t_modules/t_main.py:16312 t_modules/t_main.py:16313
+#: t_modules/t_main.py:44264
 msgid "Delete"
 msgstr "删除"
 
-#: t_modules/t_main.py:16161
+#: t_modules/t_main.py:16379
 #, fuzzy
 msgid "Add Spotify Album"
 msgstr "Spotify 专辑"
 
-#: t_modules/t_main.py:16265
+#: t_modules/t_main.py:16483
 msgid "Playlist contains non-Spotify tracks"
 msgstr ""
 
-#: t_modules/t_main.py:16271
+#: t_modules/t_main.py:16489
 #, fuzzy
 msgid "Created new Spotify playlist"
 msgstr "播放下一个播放列表"
 
-#: t_modules/t_main.py:16277
+#: t_modules/t_main.py:16495
 #, fuzzy
 msgid "Error creating Spotify playlist"
 msgstr "播放列表末尾"
 
-#: t_modules/t_main.py:16280
+#: t_modules/t_main.py:16498
 #, fuzzy
 msgid "Updated Spotify playlist"
 msgstr "播放列表末尾"
 
-#: t_modules/t_main.py:16912
+#: t_modules/t_main.py:17138
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
 
-#: t_modules/t_main.py:16913
+#: t_modules/t_main.py:17139
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
 
-#: t_modules/t_main.py:16917 t_modules/t_main.py:20717
+#: t_modules/t_main.py:17143 t_modules/t_main.py:20976
+#: t_modules/t_main.py:20979
 msgid "New Playlist"
 msgstr "新播放列表"
 
-#: t_modules/t_main.py:16922
+#: t_modules/t_main.py:17148
 #, fuzzy
 msgid "Upload"
 msgstr "重载信息"
 
-#: t_modules/t_main.py:16934
+#: t_modules/t_main.py:17160
 #, fuzzy
 msgid "Regenerate"
 msgstr "生成"
 
-#: t_modules/t_main.py:16935
+#: t_modules/t_main.py:17161
 msgid "Generate…"
 msgstr "生成..."
 
-#: t_modules/t_main.py:16936
+#: t_modules/t_main.py:17162
 msgid "Sort…"
 msgstr "排序..."
 
-#: t_modules/t_main.py:16937
+#: t_modules/t_main.py:17163
 msgid "From Current…"
 msgstr "从当前..."
 
-#: t_modules/t_main.py:16942
+#: t_modules/t_main.py:17168
 #, fuzzy
 msgid "Sort by Imported"
 msgstr "以路径排序"
 
-#: t_modules/t_main.py:16943
+#: t_modules/t_main.py:17169
 msgid "Sort by Filepath"
 msgstr "以路径排序"
 
-#: t_modules/t_main.py:16944
+#: t_modules/t_main.py:17170
 msgid "Sort Track Numbers"
 msgstr "排序曲目编号"
 
-#: t_modules/t_main.py:16945
+#: t_modules/t_main.py:17171
 msgid "Sort Year per Artist"
 msgstr "以艺术家单位重排年份"
 
-#: t_modules/t_main.py:16946
+#: t_modules/t_main.py:17172
 #, fuzzy
 msgid "Make Playlist Auto-Sorting"
 msgstr "播放列表时长"
 
-#: t_modules/t_main.py:16952 t_modules/t_main.py:18717
-#: t_modules/t_main.py:19996
+#: t_modules/t_main.py:17178 t_modules/t_main.py:18944
+#: t_modules/t_main.py:20223
 msgid "Paste"
 msgstr "粘贴"
 
-#: t_modules/t_main.py:16953
+#: t_modules/t_main.py:17179
 msgid "Append Playing"
 msgstr "追加到当前播放之后"
 
-#: t_modules/t_main.py:16958
+#: t_modules/t_main.py:17184
 msgid "Misc…"
 msgstr "其他..."
 
-#: t_modules/t_main.py:17007
+#: t_modules/t_main.py:17233
 msgid "No target folder selected"
 msgstr ""
 
-#: t_modules/t_main.py:17013
+#: t_modules/t_main.py:17239
 msgid "Target folder could not be found"
 msgstr ""
 
-#: t_modules/t_main.py:17053
+#: t_modules/t_main.py:17279
 #, fuzzy
 msgid "Deleting folders..."
 msgstr "重扫描文件夹"
 
-#: t_modules/t_main.py:17072 t_modules/t_main.py:17137
+#: t_modules/t_main.py:17298 t_modules/t_main.py:17363
 #, fuzzy
 msgid "Copying files to device"
 msgstr "设定文件已打开。"
 
-#: t_modules/t_main.py:17078
+#: t_modules/t_main.py:17304
 msgid "Sync aborted! Low disk space on target device"
 msgstr ""
 
-#: t_modules/t_main.py:17087 t_modules/t_main.py:17119
+#: t_modules/t_main.py:17313 t_modules/t_main.py:17345
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
 
-#: t_modules/t_main.py:17087 t_modules/t_main.py:17119
+#: t_modules/t_main.py:17313 t_modules/t_main.py:17345
 msgid "Sync warning"
 msgstr ""
 
-#: t_modules/t_main.py:17104 t_modules/t_main.py:29328
+#: t_modules/t_main.py:17330 t_modules/t_main.py:29694
 #, fuzzy
 msgid "Folders Remaining"
 msgstr "文件夹更改"
 
-#: t_modules/t_main.py:17106 t_modules/t_main.py:29326
+#: t_modules/t_main.py:17332 t_modules/t_main.py:29692
 #, fuzzy
 msgid "Folder Remaining"
 msgstr "文件夹更改"
 
-#: t_modules/t_main.py:17147
+#: t_modules/t_main.py:17373
 #, fuzzy
 msgid "Sync completed"
 msgstr "重命名完成。"
 
-#: t_modules/t_main.py:17163 t_modules/t_main.py:17243
+#: t_modules/t_main.py:17389 t_modules/t_main.py:17470
 #, fuzzy
 msgid "Set as Sync Playlist"
 msgstr "在播放列表中表示"
 
-#: t_modules/t_main.py:17166
+#: t_modules/t_main.py:17392
 #, fuzzy
 msgid "Un-set as Sync Playlist"
 msgstr "在播放列表中表示"
 
-#: t_modules/t_main.py:17177 t_modules/t_main.py:17244
+#: t_modules/t_main.py:17403 t_modules/t_main.py:17471
 #, fuzzy
 msgid "Set as Downloads Playlist"
 msgstr "在播放列表中表示"
 
-#: t_modules/t_main.py:17180
+#: t_modules/t_main.py:17406
 #, fuzzy
 msgid "Un-set as Downloads Playlist"
 msgstr "在播放列表中表示"
 
-#: t_modules/t_main.py:17233
+#: t_modules/t_main.py:17459
 msgid "Export Playlist Stats"
 msgstr "到处播放列表统计"
 
-#: t_modules/t_main.py:17234
+#: t_modules/t_main.py:17460
 #, fuzzy
 msgid "Export Albums CSV"
 msgstr "导出CSV"
 
-#: t_modules/t_main.py:17235
+#: t_modules/t_main.py:17461
 msgid "Transcode All"
 msgstr "转码全部"
 
-#: t_modules/t_main.py:17236
+#: t_modules/t_main.py:17462 t_modules/t_main.py:19594
+#: t_modules/t_main.py:19829 t_modules/t_main.py:19927
 msgid "Rescan Tags"
 msgstr "重扫描标签"
 
-#: t_modules/t_main.py:17239
+#: t_modules/t_main.py:17465
 msgid "Export XSPF"
 msgstr "导出XSPF"
 
-#: t_modules/t_main.py:17240
+#: t_modules/t_main.py:17466
+#, fuzzy
+msgid "Export M3U"
+msgstr "导出XSPF"
+
+#: t_modules/t_main.py:17467
 msgid "Toggle Breaks"
 msgstr "切换间隙"
 
-#: t_modules/t_main.py:17241
+#: t_modules/t_main.py:17468
 #, fuzzy
 msgid "Edit Generator..."
 msgstr "图表"
 
-#: t_modules/t_main.py:17242
+#: t_modules/t_main.py:17469
 msgid "Engage Gallery Quick Add"
 msgstr ""
 
-#: t_modules/t_main.py:17245
+#: t_modules/t_main.py:17472
 #, fuzzy
 msgid "Remove Duplicates"
 msgstr "重复的"
 
-#: t_modules/t_main.py:17285 t_modules/t_main.py:17377
-#: t_modules/t_main.py:17378
+#: t_modules/t_main.py:17512 t_modules/t_main.py:17604
+#: t_modules/t_main.py:17605
 #, fuzzy
 msgid "Top Rated Tracks"
 msgstr "最多播放的曲目"
 
-#: t_modules/t_main.py:17302 t_modules/t_main.py:17309
-#: t_modules/t_main.py:17310
+#: t_modules/t_main.py:17529 t_modules/t_main.py:17536
+#: t_modules/t_main.py:17537
 msgid "Top Played Tracks"
 msgstr "最多播放的曲目"
 
-#: t_modules/t_main.py:17367 t_modules/t_main.py:17374
-#: t_modules/t_main.py:17375
+#: t_modules/t_main.py:17594 t_modules/t_main.py:17601
+#: t_modules/t_main.py:17602
 msgid "Top Played Albums"
 msgstr "最多播放的专辑"
 
-#: t_modules/t_main.py:17422 t_modules/t_main.py:17453
-#: t_modules/t_main.py:17454
+#: t_modules/t_main.py:17649 t_modules/t_main.py:17680
+#: t_modules/t_main.py:17681
 #, fuzzy
 msgid "Top Rated Albums"
 msgstr "最多播放的专辑"
 
-#: t_modules/t_main.py:17444
+#: t_modules/t_main.py:17671
 #, fuzzy
 msgid "Tracks with lyrics"
 msgstr "播放列表曲目数"
 
-#: t_modules/t_main.py:17451
+#: t_modules/t_main.py:17678
 #, fuzzy
 msgid "No tracks with lyrics were found."
 msgstr "播放列表曲目数"
 
-#: t_modules/t_main.py:17500
+#: t_modules/t_main.py:17727
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
 
-#: t_modules/t_main.py:17501
+#: t_modules/t_main.py:17728
 #, fuzzy
 msgid "Incomplete Albums"
 msgstr "随机专辑"
 
-#: t_modules/t_main.py:17508
+#: t_modules/t_main.py:17735
 #, fuzzy
 msgid "No incomplete albums were found."
 msgstr "随机专辑"
 
-#: t_modules/t_main.py:17522 t_modules/t_main.py:20284
+#: t_modules/t_main.py:17749 t_modules/t_main.py:20511
 msgid "Codec"
 msgstr "编解码器"
 
-#: t_modules/t_main.py:17554 t_modules/t_main.py:17560
-#: t_modules/t_main.py:17561
+#: t_modules/t_main.py:17781 t_modules/t_main.py:17787
+#: t_modules/t_main.py:17788
 msgid "File Modified"
 msgstr "文件已修改"
 
-#: t_modules/t_main.py:17583 t_modules/t_main.py:17968
-#: t_modules/t_main.py:17969 t_modules/t_main.py:20292
+#: t_modules/t_main.py:17810 t_modules/t_main.py:18195
+#: t_modules/t_main.py:18196 t_modules/t_main.py:20519
 msgid "Loved"
 msgstr "喜爱"
 
-#: t_modules/t_main.py:17613
+#: t_modules/t_main.py:17840
 msgid "Interesting Comments"
 msgstr ""
 
-#: t_modules/t_main.py:17657
+#: t_modules/t_main.py:17884
 #, fuzzy
 msgid "Duration Sorted"
 msgstr "时长"
 
-#: t_modules/t_main.py:17663 t_modules/t_main.py:17664
+#: t_modules/t_main.py:17890 t_modules/t_main.py:17891
 msgid "Longest Tracks"
 msgstr "最长的曲目"
 
-#: t_modules/t_main.py:17702 t_modules/t_main.py:17707
-#: t_modules/t_main.py:17708
+#: t_modules/t_main.py:17929 t_modules/t_main.py:17934
+#: t_modules/t_main.py:17935
 msgid "Longest Albums"
 msgstr "最长的专辑"
 
-#: t_modules/t_main.py:17751
+#: t_modules/t_main.py:17978
 #, fuzzy
 msgid "Year Sorted"
 msgstr "路径"
 
-#: t_modules/t_main.py:17767 t_modules/t_main.py:17768
+#: t_modules/t_main.py:17994 t_modules/t_main.py:17995
 msgid "Year by Oldest"
 msgstr "年份(倒序)"
 
-#: t_modules/t_main.py:17775 t_modules/t_main.py:17776
+#: t_modules/t_main.py:18002 t_modules/t_main.py:18003
 msgid "Year by Latest"
 msgstr "年份"
 
-#: t_modules/t_main.py:17788 t_modules/t_main.py:17794
-#: t_modules/t_main.py:17795
+#: t_modules/t_main.py:18015 t_modules/t_main.py:18021
+#: t_modules/t_main.py:18022
 msgid "Shuffled Tracks"
 msgstr "随机的曲目"
 
-#: t_modules/t_main.py:17824 t_modules/t_main.py:17830
-#: t_modules/t_main.py:17831
+#: t_modules/t_main.py:18051 t_modules/t_main.py:18057
+#: t_modules/t_main.py:18058
 msgid "Shuffled Albums"
 msgstr "随机的专辑"
 
-#: t_modules/t_main.py:17848 t_modules/t_main.py:17855
-#: t_modules/t_main.py:17856
+#: t_modules/t_main.py:18075 t_modules/t_main.py:18082
+#: t_modules/t_main.py:18083
 msgid "Lucky Random"
 msgstr "幸运随机"
 
-#: t_modules/t_main.py:17870
+#: t_modules/t_main.py:18097
 #, fuzzy
 msgid "Reversed"
 msgstr "返回"
 
-#: t_modules/t_main.py:17876 t_modules/t_main.py:17877
+#: t_modules/t_main.py:18103 t_modules/t_main.py:18104
 msgid "Reverse Tracks"
 msgstr "反转曲目"
 
-#: t_modules/t_main.py:17904
+#: t_modules/t_main.py:18131
 #, fuzzy
 msgid "Reversed Albums"
 msgstr "反转专辑"
 
-#: t_modules/t_main.py:17910 t_modules/t_main.py:17911
+#: t_modules/t_main.py:18137 t_modules/t_main.py:18138
 msgid "Reverse Albums"
 msgstr "反转专辑"
 
-#: t_modules/t_main.py:17916 t_modules/t_main.py:17923
-#: t_modules/t_main.py:17924
+#: t_modules/t_main.py:18143 t_modules/t_main.py:18150
+#: t_modules/t_main.py:18151
 msgid "Duplicate"
 msgstr "重复的"
 
-#: t_modules/t_main.py:17934
+#: t_modules/t_main.py:18161
 #, fuzzy
 msgid "Filepath Sorted"
 msgstr "路径"
 
-#: t_modules/t_main.py:17949
+#: t_modules/t_main.py:18176
 #, fuzzy
 msgid "Artist Sorted"
 msgstr "艺术家"
 
-#: t_modules/t_main.py:17963
+#: t_modules/t_main.py:18190
 #, fuzzy
 msgid "Album Sorted"
 msgstr "专辑艺术家"
 
-#: t_modules/t_main.py:17970 t_modules/t_main.py:17971
+#: t_modules/t_main.py:18197 t_modules/t_main.py:18198
 msgid "Has Comment"
 msgstr "有注释的"
 
-#: t_modules/t_main.py:17972 t_modules/t_main.py:17973
-#: t_modules/t_main.py:20286
+#: t_modules/t_main.py:18199 t_modules/t_main.py:18200
+#: t_modules/t_main.py:20513
 msgid "Has Lyrics"
 msgstr "有歌词的"
 
-#: t_modules/t_main.py:18006
+#: t_modules/t_main.py:18233
 msgid "Configuration reloaded"
 msgstr "设定已重载"
 
-#: t_modules/t_main.py:18018
+#: t_modules/t_main.py:18245
 #, fuzzy
 msgid "Click \"Reload\" if you made any changes"
 msgstr "变更后请点击\"重载设定文件\""
 
-#: t_modules/t_main.py:18018
+#: t_modules/t_main.py:18245
 msgid "Config file opened."
 msgstr "设定文件已打开。"
 
-#: t_modules/t_main.py:18092 t_modules/t_main.py:18112
+#: t_modules/t_main.py:18319 t_modules/t_main.py:18339
 msgid "Transcoding tracks from network locations is not supported"
 msgstr ""
 
-#: t_modules/t_main.py:18464
+#: t_modules/t_main.py:18691
 #, fuzzy
 msgid "Add Playing Spotify Album"
 msgstr "Spotify 专辑"
 
-#: t_modules/t_main.py:18553
+#: t_modules/t_main.py:18780
 msgid "Track Info…"
 msgstr "曲目信息..."
 
-#: t_modules/t_main.py:18598 t_modules/t_main.py:21151
+#: t_modules/t_main.py:18825 t_modules/t_main.py:21413
 msgid "Un-Love Track"
 msgstr "取消喜爱曲目"
 
-#: t_modules/t_main.py:18600 t_modules/t_main.py:21154
-#: t_modules/t_main.py:21156
+#: t_modules/t_main.py:18827 t_modules/t_main.py:21416
+#: t_modules/t_main.py:21418
 msgid "Love Track"
 msgstr "喜爱曲目"
 
-#: t_modules/t_main.py:18701 t_modules/t_main.py:36086
+#: t_modules/t_main.py:18928 t_modules/t_main.py:36547
 msgid "Add to Queue"
 msgstr "追加到队列"
 
-#: t_modules/t_main.py:18703
+#: t_modules/t_main.py:18930
 msgid "↳ After Current Track"
 msgstr "追加到当前曲目后"
 
-#: t_modules/t_main.py:18705
+#: t_modules/t_main.py:18932
 msgid "Show in Gallery"
 msgstr "在收藏中显示"
 
-#: t_modules/t_main.py:18708
+#: t_modules/t_main.py:18935
 msgid "Meta…"
 msgstr "Meta信息..."
 
-#: t_modules/t_main.py:18713 t_modules/t_main.py:19714
-#: t_modules/t_main.py:19719 t_modules/t_main.py:19720
-#: t_modules/t_main.py:19994
+#: t_modules/t_main.py:18940 t_modules/t_main.py:19941
+#: t_modules/t_main.py:19946 t_modules/t_main.py:19947
+#: t_modules/t_main.py:20221
 msgid "Copy"
 msgstr "复制"
 
-#: t_modules/t_main.py:18729
+#: t_modules/t_main.py:18956
 msgid "Cannot delete a network track"
 msgstr ""
 
-#: t_modules/t_main.py:18741 t_modules/t_main.py:18750
+#: t_modules/t_main.py:18968 t_modules/t_main.py:18977
 #, fuzzy
 msgid "File deleted"
 msgstr "文件已修改"
 
-#: t_modules/t_main.py:18743 t_modules/t_main.py:18752
+#: t_modules/t_main.py:18970 t_modules/t_main.py:18979
 msgid "Error deleting file"
 msgstr ""
 
-#: t_modules/t_main.py:18745
+#: t_modules/t_main.py:18972
 #, fuzzy
 msgid "File moved to trash"
 msgstr "反转曲目"
 
-#: t_modules/t_main.py:18759
+#: t_modules/t_main.py:18986
 msgid "Delete Track File"
 msgstr "删除曲目文件"
 
-#: t_modules/t_main.py:18767
+#: t_modules/t_main.py:18994
 #, fuzzy
 msgid "Rename (Single track)"
 msgstr "移除找不到的曲目"
 
-#: t_modules/t_main.py:18769 t_modules/t_main.py:19556
-#: t_modules/t_main.py:19557
+#: t_modules/t_main.py:18996 t_modules/t_main.py:19783
+#: t_modules/t_main.py:19784
 msgid "Rename Tracks…"
 msgstr "重命名曲目..."
 
-#: t_modules/t_main.py:18780 t_modules/t_main.py:19603
-#: t_modules/t_main.py:19703
+#: t_modules/t_main.py:19007 t_modules/t_main.py:19830
+#: t_modules/t_main.py:19930
 msgid "Edit fields…"
 msgstr ""
 
-#: t_modules/t_main.py:18788
+#: t_modules/t_main.py:19015
 msgid "Cannot physically delete"
 msgstr ""
 
-#: t_modules/t_main.py:18788
+#: t_modules/t_main.py:19015
 msgid "One or more tracks is from a network location!"
 msgstr ""
 
-#: t_modules/t_main.py:18809
+#: t_modules/t_main.py:19036
 msgid "Delete size safety limit reached!"
 msgstr ""
 
-#: t_modules/t_main.py:18847
+#: t_modules/t_main.py:19074
 msgid "Folder could not be trashed."
 msgstr ""
 
-#: t_modules/t_main.py:18974 t_modules/t_main.py:19548
-#: t_modules/t_main.py:19549 t_modules/t_main.py:19554
+#: t_modules/t_main.py:19201 t_modules/t_main.py:19775
+#: t_modules/t_main.py:19776 t_modules/t_main.py:19781
 msgid "Modify Folder…"
 msgstr "修改文件夹"
 
-#: t_modules/t_main.py:19269
+#: t_modules/t_main.py:19496
 #, fuzzy
 msgid "Tag editor app does not appear to be installed."
 msgstr "看起来并没有安装标签编辑器。"
 
-#: t_modules/t_main.py:19272
+#: t_modules/t_main.py:19499
 msgid "App not found on host OR insufficient Flatpak permissions."
 msgstr "没有在远程找到应用，或者Flatpak的权限不完全。"
 
-#: t_modules/t_main.py:19367 t_modules/t_main.py:19602
-#: t_modules/t_main.py:19700
-msgid "Reload Metadata"
-msgstr "重载Metadata"
-
-#: t_modules/t_main.py:19388
+#: t_modules/t_main.py:19615
 msgid "Edit with "
 msgstr "编辑:"
 
-#: t_modules/t_main.py:19400
+#: t_modules/t_main.py:19627
 msgid "Lyrics..."
 msgstr "歌词..."
 
-#: t_modules/t_main.py:19503
+#: t_modules/t_main.py:19730
 msgid "Fix Mojibake"
 msgstr "修正乱码"
 
-#: t_modules/t_main.py:19597
+#: t_modules/t_main.py:19824
 msgid "Transcode Single"
 msgstr "转码单个"
 
-#: t_modules/t_main.py:19599 t_modules/t_main.py:19605
-#: t_modules/t_main.py:19606 t_modules/t_main.py:19959
+#: t_modules/t_main.py:19826 t_modules/t_main.py:19832
+#: t_modules/t_main.py:19833 t_modules/t_main.py:20186
 msgid "Transcode Folder"
 msgstr "转码文件夹"
 
-#: t_modules/t_main.py:19604
+#: t_modules/t_main.py:19831
 msgid "Vacuum Playtimes"
 msgstr "空白播放次数"
 
-#: t_modules/t_main.py:19615
+#: t_modules/t_main.py:19842
 msgid "Copy \"Artist - Album\""
 msgstr "复制\"艺术家 - 专辑\""
 
-#: t_modules/t_main.py:19622 t_modules/t_main.py:21291
+#: t_modules/t_main.py:19849 t_modules/t_main.py:21553
 msgid "URL copied to clipboard"
 msgstr ""
 
-#: t_modules/t_main.py:19624 t_modules/t_main.py:21293
+#: t_modules/t_main.py:19851 t_modules/t_main.py:21555
 #, fuzzy
 msgid "No results found"
 msgstr "没有找到艺术家"
 
-#: t_modules/t_main.py:19631
+#: t_modules/t_main.py:19858
 #, fuzzy
 msgid "Copy Spotify Album URL"
 msgstr "复制\"艺术家 - 专辑\""
 
-#: t_modules/t_main.py:19633
+#: t_modules/t_main.py:19860
 #, fuzzy
 msgid "Lookup Spotify Album URL"
 msgstr "复制\"艺术家 - 专辑\""
 
-#: t_modules/t_main.py:19641
+#: t_modules/t_main.py:19868
 msgid "Save to Spotify Library"
 msgstr ""
 
-#: t_modules/t_main.py:19647
+#: t_modules/t_main.py:19874
 msgid "Remove from Spotify Library"
 msgstr ""
 
-#: t_modules/t_main.py:19691
+#: t_modules/t_main.py:19918
 #, fuzzy
 msgid "Queue %d"
 msgstr "清空队列"
 
-#: t_modules/t_main.py:19696
+#: t_modules/t_main.py:19923
 #, fuzzy
 msgid "Add to queue"
 msgstr "追加到队列"
 
-#: t_modules/t_main.py:19715
+#: t_modules/t_main.py:19942
 msgid "Cut"
 msgstr "剪切"
 
-#: t_modules/t_main.py:19716 t_modules/t_main.py:19724
-#: t_modules/t_main.py:19725 t_modules/t_main.py:33532
+#: t_modules/t_main.py:19943 t_modules/t_main.py:19951
+#: t_modules/t_main.py:19952 t_modules/t_main.py:38116
 msgid "Remove"
 msgstr "移除"
 
-#: t_modules/t_main.py:19717
+#: t_modules/t_main.py:19944
 msgid "Delete Files"
 msgstr "删除文件"
 
-#: t_modules/t_main.py:19763
+#: t_modules/t_main.py:19990
 #, fuzzy
 msgid "No matching artist result found"
 msgstr "没有找到艺术家"
 
-#: t_modules/t_main.py:19841
+#: t_modules/t_main.py:20068
 msgid "Search Artist on Wikipedia"
 msgstr "在维基上搜索艺术家"
 
-#: t_modules/t_main.py:19843
+#: t_modules/t_main.py:20070
 msgid "Search Track on Genius"
 msgstr "在Genius上搜索曲目"
 
-#: t_modules/t_main.py:19849
+#: t_modules/t_main.py:20076
 msgid "Search Artist on Sonemic"
 msgstr "在Sonemic上搜索艺术家"
 
-#: t_modules/t_main.py:19856
+#: t_modules/t_main.py:20083
 #, fuzzy
 msgid "Search Artist on Bandcamp"
 msgstr "在Sonemic上搜索艺术家"
 
-#: t_modules/t_main.py:19868
+#: t_modules/t_main.py:20095
 msgid "Copy \"Artist - Track\""
 msgstr "复制\"艺术家 - 曲目\""
 
-#: t_modules/t_main.py:19886
+#: t_modules/t_main.py:20113
 #, fuzzy
 msgid "Copy Spotify Track URL"
 msgstr "复制\"艺术家 - 曲目\""
 
-#: t_modules/t_main.py:19935 t_modules/t_main.py:32877
+#: t_modules/t_main.py:20162 t_modules/t_main.py:33256
 #, fuzzy
 msgid "FFmpeg does not appear to be installed"
 msgstr "看起来并没有安装标签编辑器。"
 
-#: t_modules/t_main.py:19971
+#: t_modules/t_main.py:20198
 msgid "Broadcast This"
 msgstr "开始推流此曲"
 
-#: t_modules/t_main.py:20006 t_modules/t_main.py:25692
+#: t_modules/t_main.py:20233 t_modules/t_main.py:25989
 msgid "Off"
 msgstr "关闭"
 
-#: t_modules/t_main.py:20019
+#: t_modules/t_main.py:20246
 msgid "Level Meter"
 msgstr "电平指示灯"
 
-#: t_modules/t_main.py:20028
+#: t_modules/t_main.py:20255
 msgid "Spectrum Visualizer"
 msgstr "Spectrum可视化"
 
-#: t_modules/t_main.py:20260
+#: t_modules/t_main.py:20487
 msgid "Time"
 msgstr "时长"
 
-#: t_modules/t_main.py:20261 t_modules/t_main.py:20288
+#: t_modules/t_main.py:20488 t_modules/t_main.py:20515
 msgid "Filepath"
 msgstr "路径"
 
-#: t_modules/t_main.py:20267
+#: t_modules/t_main.py:20494
 msgid "Auto Resize"
 msgstr "自动重调尺寸"
 
-#: t_modules/t_main.py:20268
+#: t_modules/t_main.py:20495
 msgid "Hide bar"
 msgstr "隐藏分栏"
 
-#: t_modules/t_main.py:20269
+#: t_modules/t_main.py:20496
 msgid "Show bar"
 msgstr "显示分栏"
 
-#: t_modules/t_main.py:20271 t_modules/t_main.py:35816
+#: t_modules/t_main.py:20498 t_modules/t_main.py:36277
 msgid "Remove This"
 msgstr "删除"
 
-#: t_modules/t_main.py:20273 t_modules/t_main.py:43092
-#: t_modules/t_main.py:43098
+#: t_modules/t_main.py:20500 t_modules/t_main.py:43940
+#: t_modules/t_main.py:43946
 msgid "Artist"
 msgstr "艺术家"
 
-#: t_modules/t_main.py:20274 t_modules/t_main.py:43072
-#: t_modules/t_main.py:43078
+#: t_modules/t_main.py:20501 t_modules/t_main.py:43920
+#: t_modules/t_main.py:43926
 msgid "Title"
 msgstr "标题"
 
-#: t_modules/t_main.py:20275 t_modules/t_main.py:43111
-#: t_modules/t_main.py:43117
+#: t_modules/t_main.py:20502 t_modules/t_main.py:43959
+#: t_modules/t_main.py:43965
 msgid "Album"
 msgstr "专辑"
 
-#: t_modules/t_main.py:20276 t_modules/t_main.py:43179
-#: t_modules/t_main.py:43185
+#: t_modules/t_main.py:20503 t_modules/t_main.py:44027
+#: t_modules/t_main.py:44033
 msgid "Album Artist"
 msgstr "专辑艺术家"
 
-#: t_modules/t_main.py:20277 t_modules/t_main.py:43272
-#: t_modules/t_main.py:43278
+#: t_modules/t_main.py:20504 t_modules/t_main.py:44120
+#: t_modules/t_main.py:44126
 msgid "Composer"
 msgstr "作曲家"
 
-#: t_modules/t_main.py:20278 t_modules/t_main.py:43199
-#: t_modules/t_main.py:43205
+#: t_modules/t_main.py:20505 t_modules/t_main.py:44047
+#: t_modules/t_main.py:44053
 msgid "Duration"
 msgstr "时长"
 
-#: t_modules/t_main.py:20279 t_modules/t_main.py:43256
-#: t_modules/t_main.py:43262
+#: t_modules/t_main.py:20506 t_modules/t_main.py:44104
+#: t_modules/t_main.py:44110
 msgid "Date"
 msgstr "日期"
 
-#: t_modules/t_main.py:20280 t_modules/t_main.py:43241
-#: t_modules/t_main.py:43247
+#: t_modules/t_main.py:20507 t_modules/t_main.py:44089
+#: t_modules/t_main.py:44095
 msgid "Genre"
 msgstr "流派"
 
-#: t_modules/t_main.py:20281
+#: t_modules/t_main.py:20508
 msgid "Track Number"
 msgstr "曲编号"
 
-#: t_modules/t_main.py:20282
+#: t_modules/t_main.py:20509
 msgid "Play Count"
 msgstr "播放次数"
 
-#: t_modules/t_main.py:20283
+#: t_modules/t_main.py:20510
 msgid "Scrobble Count"
 msgstr ""
 
-#: t_modules/t_main.py:20285 t_modules/t_main.py:27294
-#: t_modules/t_main.py:43166
+#: t_modules/t_main.py:20512 t_modules/t_main.py:27599
+#: t_modules/t_main.py:44014
 msgid "Bitrate"
 msgstr "比特率"
 
-#: t_modules/t_main.py:20287 t_modules/t_main.py:43327
-#: t_modules/t_main.py:43333
+#: t_modules/t_main.py:20514 t_modules/t_main.py:44175
+#: t_modules/t_main.py:44181
 msgid "Comment"
 msgstr "注释"
 
-#: t_modules/t_main.py:20289
+#: t_modules/t_main.py:20516
 #, fuzzy
 msgid "Filename"
 msgstr "重命名"
 
-#: t_modules/t_main.py:20290
+#: t_modules/t_main.py:20517
 msgid "Starline"
 msgstr "星"
 
-#: t_modules/t_main.py:20291
+#: t_modules/t_main.py:20518
 msgid "Rating"
 msgstr ""
 
-#: t_modules/t_main.py:20720
-msgid "Internet Radio…"
-msgstr ""
+#: t_modules/t_main.py:20974
+#, fuzzy
+msgid "New Radio List"
+msgstr "新播放列表"
 
-#: t_modules/t_main.py:20741
+#: t_modules/t_main.py:21003
 #, fuzzy
 msgid "Paste Spotify Playlist"
 msgstr "播放历史到播放列表"
 
-#: t_modules/t_main.py:20749
+#: t_modules/t_main.py:21011
 msgid "Music"
 msgstr ""
 
-#: t_modules/t_main.py:20759
+#: t_modules/t_main.py:21021
 msgid "Import Music Folder"
 msgstr "导入音乐文件夹"
 
-#: t_modules/t_main.py:20767
+#: t_modules/t_main.py:21029
 msgid "Settings"
 msgstr "设定"
 
-#: t_modules/t_main.py:20768
+#: t_modules/t_main.py:21030
 msgid "Database…"
 msgstr "数据库..."
 
-#: t_modules/t_main.py:20834
+#: t_modules/t_main.py:21096
 msgid "Export as CSV"
 msgstr "导出CSV"
 
-#: t_modules/t_main.py:20835
+#: t_modules/t_main.py:21097
 msgid "Play History to Playlist"
 msgstr "播放历史到播放列表"
 
-#: t_modules/t_main.py:20836
+#: t_modules/t_main.py:21098
 msgid "Reset Image Cache"
 msgstr "重置图像缓存"
 
-#: t_modules/t_main.py:20853
+#: t_modules/t_main.py:21115
 #, fuzzy
 msgid "Remove Network Tracks"
 msgstr "反转曲目"
 
-#: t_modules/t_main.py:20854
+#: t_modules/t_main.py:21116
 msgid "Remove Missing Tracks"
 msgstr "移除找不到的曲目"
 
-#: t_modules/t_main.py:20873
+#: t_modules/t_main.py:21135
 msgid "Import FMPS_Ratings from Tags"
 msgstr ""
 
-#: t_modules/t_main.py:20878
+#: t_modules/t_main.py:21140
 msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
 
-#: t_modules/t_main.py:20879 t_modules/t_main.py:27122
+#: t_modules/t_main.py:21141 t_modules/t_main.py:27427
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
 msgstr ""
 
-#: t_modules/t_main.py:20887
+#: t_modules/t_main.py:21149
 msgid "Reset User Ratings"
 msgstr ""
 
-#: t_modules/t_main.py:20892
+#: t_modules/t_main.py:21154
 #, fuzzy
 msgid "Find Incomplete Albums"
 msgstr "随机专辑"
 
-#: t_modules/t_main.py:20898
+#: t_modules/t_main.py:21160
 msgid "There are no tracks in this playlist to broadcast."
 msgstr ""
 
-#: t_modules/t_main.py:20901
+#: t_modules/t_main.py:21163
 msgid "You need to start the broadcast web server in settings."
 msgstr ""
 
-#: t_modules/t_main.py:20924
+#: t_modules/t_main.py:21186
 #, fuzzy
 msgid "Stop Broadcast"
 msgstr "开始推流"
 
-#: t_modules/t_main.py:20940
+#: t_modules/t_main.py:21202
 msgid "Start Broadcast"
 msgstr "开始推流"
 
-#: t_modules/t_main.py:20971
+#: t_modules/t_main.py:21233
 msgid "Mini"
 msgstr "迷你"
 
-#: t_modules/t_main.py:20973
+#: t_modules/t_main.py:21235
 msgid "Square"
 msgstr "方形"
 
-#: t_modules/t_main.py:20974
+#: t_modules/t_main.py:21236
 msgid "Square Large"
 msgstr "方形(大)"
 
-#: t_modules/t_main.py:20975
+#: t_modules/t_main.py:21237
 msgid "Micro"
 msgstr "微型"
 
-#: t_modules/t_main.py:20986
+#: t_modules/t_main.py:21248
 msgid "No metadata available to copy"
 msgstr ""
 
-#: t_modules/t_main.py:20989
+#: t_modules/t_main.py:21251
 msgid "Copy Title to Clipboard"
 msgstr ""
 
-#: t_modules/t_main.py:21007
+#: t_modules/t_main.py:21269
 msgid "Random Track"
 msgstr "随机曲目"
 
-#: t_modules/t_main.py:21033
+#: t_modules/t_main.py:21295
 msgid "Radio Random"
 msgstr "收音机式随机"
 
-#: t_modules/t_main.py:21039
+#: t_modules/t_main.py:21301
 msgid "Revert"
 msgstr "返回"
 
-#: t_modules/t_main.py:21047 t_modules/t_main.py:35821
+#: t_modules/t_main.py:21309 t_modules/t_main.py:36282
 msgid "Clear Queue"
 msgstr "清空队列"
 
-#: t_modules/t_main.py:21204
+#: t_modules/t_main.py:21466
 #, fuzzy
 msgid "Spotify Like Track"
 msgstr "Spotify 喜欢"
 
-#: t_modules/t_main.py:21209
+#: t_modules/t_main.py:21471
 #, fuzzy
 msgid "Un-like Spotify Track"
 msgstr "复制\"艺术家 - 曲目\""
 
-#: t_modules/t_main.py:21283
+#: t_modules/t_main.py:21545
 msgid "Global Search"
 msgstr "全局搜索"
 
-#: t_modules/t_main.py:21297
+#: t_modules/t_main.py:21559
 #, fuzzy
 msgid "Copy Album URL"
 msgstr "复制\"专辑标题\""
 
-#: t_modules/t_main.py:21301
+#: t_modules/t_main.py:21563
 #, fuzzy
 msgid "Lookup Spotify Album"
 msgstr "Spotify 专辑"
 
-#: t_modules/t_main.py:21310
+#: t_modules/t_main.py:21572
 #, fuzzy
 msgid "Locate Artist"
 msgstr "艺术家"
 
-#: t_modules/t_main.py:21312
+#: t_modules/t_main.py:21574
 msgid "Go To Playing"
 msgstr "转到正在播放"
 
-#: t_modules/t_main.py:21470
+#: t_modules/t_main.py:21733
 msgid "ListenBrainz is Paused"
 msgstr "ListenBrainz已暂停"
 
-#: t_modules/t_main.py:21472
+#: t_modules/t_main.py:21735
 msgid "Scrobbling is Paused"
 msgstr "Scrobbling已暂停"
 
-#: t_modules/t_main.py:21476
+#: t_modules/t_main.py:21739
 msgid "ListenBrainz is Active"
 msgstr "ListenBrainz活跃"
 
-#: t_modules/t_main.py:21478
+#: t_modules/t_main.py:21741
 msgid "Scrobbling is Active"
 msgstr "Scrobbling活跃"
 
-#: t_modules/t_main.py:21681
+#: t_modules/t_main.py:21948
 msgid "Exit Shuffle Lockdown"
 msgstr ""
 
-#: t_modules/t_main.py:21682
+#: t_modules/t_main.py:21949
 msgid "Exit"
 msgstr "退出"
 
-#: t_modules/t_main.py:21690
+#: t_modules/t_main.py:21957
 msgid "Disengage Quick Add"
 msgstr ""
 
-#: t_modules/t_main.py:22439
+#: t_modules/t_main.py:22686
 msgid "Press Tab key to switch to Spotify search"
 msgstr ""
 
-#: t_modules/t_main.py:22666
+#: t_modules/t_main.py:22913
 #, fuzzy
 msgid "Searching for albums by artist: "
 msgstr "搜索歌词"
 
-#: t_modules/t_main.py:22666
+#: t_modules/t_main.py:22913
 #, fuzzy
 msgid "This may take a moment"
 msgstr "这可能需要很长时间。"
 
-#: t_modules/t_main.py:24167
+#: t_modules/t_main.py:24464
 msgid "Permission error accessing one or more files."
 msgstr ""
 
-#: t_modules/t_main.py:24168
+#: t_modules/t_main.py:24465
 msgid "If this location is on external media, see"
 msgstr ""
 
-#: t_modules/t_main.py:24171
+#: t_modules/t_main.py:24468
 msgid "Permission error accessing one or more files"
 msgstr ""
 
-#: t_modules/t_main.py:24933
+#: t_modules/t_main.py:25230
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 
-#: t_modules/t_main.py:24982 t_modules/t_main.py:24996
-#: t_modules/t_main.py:25031
+#: t_modules/t_main.py:25279 t_modules/t_main.py:25293
+#: t_modules/t_main.py:25328
 msgid "Change will be applied on restart."
 msgstr "变更将在下次启动应用。"
 
-#: t_modules/t_main.py:25083
+#: t_modules/t_main.py:25380
 msgid "Tip: You can also toggle this from a right-click context menu"
 msgstr ""
 
-#: t_modules/t_main.py:25122
+#: t_modules/t_main.py:25419
 msgid "External connections will be accepted."
 msgstr ""
 
-#: t_modules/t_main.py:25122
+#: t_modules/t_main.py:25419
 msgid "Web server starting"
 msgstr ""
 
-#: t_modules/t_main.py:25159 t_modules/t_main.py:26550
+#: t_modules/t_main.py:25456 t_modules/t_main.py:26855
 msgid "One or more fields is missing."
 msgstr ""
 
-#: t_modules/t_main.py:25263
+#: t_modules/t_main.py:25560
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
 msgstr ""
 
-#: t_modules/t_main.py:25264
+#: t_modules/t_main.py:25561
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
 
-#: t_modules/t_main.py:25284
+#: t_modules/t_main.py:25581
 msgid ""
 "DANGER! This will delete the original files. You may want to have backups in "
 "case of malfunction."
 msgstr ""
 
-#: t_modules/t_main.py:25285
+#: t_modules/t_main.py:25582
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
 
-#: t_modules/t_main.py:25447 t_modules/t_main.py:25455
+#: t_modules/t_main.py:25744 t_modules/t_main.py:25752
 msgid "There was an error generating the chart"
 msgstr ""
 
-#: t_modules/t_main.py:25458
+#: t_modules/t_main.py:25755
 #, fuzzy
 msgid "Chart generated"
 msgstr "图表"
 
-#: t_modules/t_main.py:25504
+#: t_modules/t_main.py:25801
 msgid "Function"
 msgstr "函数"
 
-#: t_modules/t_main.py:25505
+#: t_modules/t_main.py:25802
 msgid "Audio"
 msgstr "音频"
 
-#: t_modules/t_main.py:25506
+#: t_modules/t_main.py:25803
 msgid "Tracklist"
 msgstr "曲目列表"
 
-#: t_modules/t_main.py:25507 t_modules/t_main.py:25557
+#: t_modules/t_main.py:25804 t_modules/t_main.py:25854
 msgid "Theme"
 msgstr "主题"
 
-#: t_modules/t_main.py:25508
+#: t_modules/t_main.py:25805
 msgid "Window"
 msgstr "窗口"
 
-#: t_modules/t_main.py:25509
+#: t_modules/t_main.py:25806
 msgid "View"
 msgstr "视图 "
 
-#: t_modules/t_main.py:25510
+#: t_modules/t_main.py:25807
 msgid "Transcode"
 msgstr "转码"
 
-#: t_modules/t_main.py:25511 t_modules/t_main.py:43315
+#: t_modules/t_main.py:25808 t_modules/t_main.py:44163
 msgid "Lyrics"
 msgstr "歌词"
 
-#: t_modules/t_main.py:25512
+#: t_modules/t_main.py:25809
 msgid "Accounts"
 msgstr "帐户"
 
-#: t_modules/t_main.py:25513
+#: t_modules/t_main.py:25810
 msgid "Stats"
 msgstr "统计"
 
-#: t_modules/t_main.py:25514
+#: t_modules/t_main.py:25811
 msgid "About"
 msgstr "关于"
 
-#: t_modules/t_main.py:25561
+#: t_modules/t_main.py:25858
 msgid "Use album art as background"
 msgstr "将专辑艺术图作为背景"
 
-#: t_modules/t_main.py:25565
+#: t_modules/t_main.py:25862
 msgid "Stronger"
 msgstr "加强"
 
-#: t_modules/t_main.py:25571
+#: t_modules/t_main.py:25868
 msgid "Blur"
 msgstr "模糊"
 
-#: t_modules/t_main.py:25574
+#: t_modules/t_main.py:25871
 msgid "Showcase only"
 msgstr "只展示"
 
-#: t_modules/t_main.py:25578
+#: t_modules/t_main.py:25875
 #, fuzzy
 msgid "Pattern style"
 msgstr "Cascade风格"
 
-#: t_modules/t_main.py:25582
+#: t_modules/t_main.py:25879
 #, fuzzy
 msgid "Auto-theme from album art"
 msgstr "从专辑艺术图生成主题"
 
-#: t_modules/t_main.py:25676
+#: t_modules/t_main.py:25973
 msgid "Based on"
 msgstr ""
 
-#: t_modules/t_main.py:25683 t_modules/t_main.py:25759
-#: t_modules/t_main.py:27257 t_modules/t_main.py:27839
-#: t_modules/t_main.py:37587
+#: t_modules/t_main.py:25980 t_modules/t_main.py:26056
+#: t_modules/t_main.py:27562 t_modules/t_main.py:28144
 msgid "Return"
 msgstr "返回"
 
-#: t_modules/t_main.py:25689 t_modules/t_main.py:25878
-#: t_modules/t_main.py:25957
+#: t_modules/t_main.py:25986 t_modules/t_main.py:26175
+#: t_modules/t_main.py:26254
 msgid "ReplayGain"
 msgstr ""
 
-#: t_modules/t_main.py:25694
+#: t_modules/t_main.py:25991
 msgid "Preserve album dynamics"
 msgstr ""
 
-#: t_modules/t_main.py:25696
+#: t_modules/t_main.py:25993
 msgid "Tracks equal loudness"
 msgstr ""
 
-#: t_modules/t_main.py:25699
+#: t_modules/t_main.py:25996
 msgid "Will only have effect if ReplayGain metadata is present."
 msgstr ""
 
-#: t_modules/t_main.py:25702
+#: t_modules/t_main.py:25999
 msgid "Pre-amp"
 msgstr ""
 
-#: t_modules/t_main.py:25752
+#: t_modules/t_main.py:26049
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
 
-#: t_modules/t_main.py:25768 t_modules/t_main.py:26446
-#: t_modules/t_main.py:26452 t_modules/t_main.py:26458
-#: t_modules/t_main.py:26496
+#: t_modules/t_main.py:26065 t_modules/t_main.py:26751
+#: t_modules/t_main.py:26757 t_modules/t_main.py:26763
+#: t_modules/t_main.py:26801
 msgid "Enable"
 msgstr "启用"
 
-#: t_modules/t_main.py:25873 t_modules/t_main.py:25971
+#: t_modules/t_main.py:26170 t_modules/t_main.py:26268
 msgid "Use fade on pause/stop"
 msgstr "暂停/停止时淡化"
 
-#: t_modules/t_main.py:25875
+#: t_modules/t_main.py:26172
 msgid "Use fade on track jump"
 msgstr "曲目跳转时淡化"
 
-#: t_modules/t_main.py:25888
+#: t_modules/t_main.py:26185
 #, fuzzy
 msgid "Output buffer"
 msgstr "打开输出文件夹"
 
-#: t_modules/t_main.py:25899 t_modules/t_main.py:25997
+#: t_modules/t_main.py:26196 t_modules/t_main.py:26294
 msgid "Set audio output device"
 msgstr "设置音频输出设备"
 
-#: t_modules/t_main.py:25977
+#: t_modules/t_main.py:26274
 msgid "Customise GStreamer output"
 msgstr ""
 
-#: t_modules/t_main.py:25989 t_modules/t_main.py:26202
+#: t_modules/t_main.py:26286 t_modules/t_main.py:26499
 #, fuzzy
 msgid "Reload"
 msgstr "重载信息"
 
-#: t_modules/t_main.py:26071
+#: t_modules/t_main.py:26368
 msgid "Enable chord lyrics"
 msgstr "启用和弦歌词"
 
-#: t_modules/t_main.py:26074
+#: t_modules/t_main.py:26371
 msgid "Sources:"
 msgstr "来源"
 
-#: t_modules/t_main.py:26091
+#: t_modules/t_main.py:26388
 msgid "*Uses scraping. Enable at your own discretion."
 msgstr "使用抽取.根据需要启用。"
 
-#: t_modules/t_main.py:26094
+#: t_modules/t_main.py:26391
 msgid "Tip: The order enabled will be the order searched."
 msgstr "提示:启用的顺序将用来作为搜索顺序。"
 
-#: t_modules/t_main.py:26106
+#: t_modules/t_main.py:26403
 msgid "Metadata side panel"
 msgstr ""
 
-#: t_modules/t_main.py:26109
+#: t_modules/t_main.py:26406
 msgid "Use centered style"
 msgstr ""
 
-#: t_modules/t_main.py:26112
+#: t_modules/t_main.py:26409
 msgid "Zoom album art to fit"
 msgstr ""
 
-#: t_modules/t_main.py:26119 t_modules/t_main.py:38189
-#: t_modules/t_main.py:38192
+#: t_modules/t_main.py:26416 t_modules/t_main.py:39006
+#: t_modules/t_main.py:39009
 msgid "Gallery"
 msgstr "收藏"
 
-#: t_modules/t_main.py:26123
+#: t_modules/t_main.py:26420
 msgid "Single click to play"
 msgstr "单击以播放"
 
-#: t_modules/t_main.py:26125
+#: t_modules/t_main.py:26422
 #, fuzzy
 msgid "Show titles"
 msgstr "显示许可"
 
-#: t_modules/t_main.py:26129
+#: t_modules/t_main.py:26426
 #, fuzzy
 msgid "Center alignment"
 msgstr "包括文字"
 
-#: t_modules/t_main.py:26137 t_modules/t_main.py:26145
+#: t_modules/t_main.py:26434 t_modules/t_main.py:26442
 #, fuzzy
 msgid "Thumbnail size"
 msgstr "文件尺寸"
 
-#: t_modules/t_main.py:26141
+#: t_modules/t_main.py:26438
 msgid "Prefer thinner padding"
 msgstr "更小的间隙"
 
-#: t_modules/t_main.py:26161
+#: t_modules/t_main.py:26458
 #, fuzzy
 msgid "Ready broadcaster"
 msgstr "开始推流"
 
-#: t_modules/t_main.py:26161
+#: t_modules/t_main.py:26458
 #, fuzzy
 msgid "Start web server for broadcasting"
 msgstr "架设网页来推送metadata"
 
-#: t_modules/t_main.py:26179
+#: t_modules/t_main.py:26476
 #, fuzzy
 msgid "Auto fetch artist data"
 msgstr "自动检索歌词"
 
-#: t_modules/t_main.py:26179
+#: t_modules/t_main.py:26476
 msgid "Downloads data in background when artist panel is open"
 msgstr ""
 
-#: t_modules/t_main.py:26182
+#: t_modules/t_main.py:26479
 #, fuzzy
 msgid "Auto regenerate playlists"
 msgstr "循环播放列表"
 
-#: t_modules/t_main.py:26183
+#: t_modules/t_main.py:26480
 msgid "Generated playlists reload when re-entering"
 msgstr ""
 
-#: t_modules/t_main.py:26187
+#: t_modules/t_main.py:26484
 #, fuzzy
 msgid "Tabs in top panel"
 msgstr "在顶层面板使用tabs"
 
-#: t_modules/t_main.py:26187
+#: t_modules/t_main.py:26484
 msgid "Uncheck to disable the tab pin function"
 msgstr ""
 
-#: t_modules/t_main.py:26192 t_modules/t_main.py:26198
+#: t_modules/t_main.py:26489 t_modules/t_main.py:26495
 msgid "Open config file"
 msgstr "打开设定文件"
 
-#: t_modules/t_main.py:26194 t_modules/t_main.py:26206
+#: t_modules/t_main.py:26491 t_modules/t_main.py:26503
 msgid "Open data folder"
 msgstr "打开数据文件夹"
 
-#: t_modules/t_main.py:26210
+#: t_modules/t_main.py:26507
 msgid "Enable/Disable track context menu functions:"
 msgstr ""
 
-#: t_modules/t_main.py:26213
+#: t_modules/t_main.py:26510
 msgid "Wikipedia artist search"
 msgstr ""
 
-#: t_modules/t_main.py:26215
+#: t_modules/t_main.py:26512
 msgid "Sonemic artist search"
 msgstr ""
 
-#: t_modules/t_main.py:26217
+#: t_modules/t_main.py:26514
 msgid "Bandcamp artist page search"
 msgstr ""
 
-#: t_modules/t_main.py:26221
+#: t_modules/t_main.py:26518
 msgid "Genius track search"
 msgstr ""
 
-#: t_modules/t_main.py:26223
+#: t_modules/t_main.py:26520
 #, fuzzy
 msgid "Transcode folder"
 msgstr "转码文件夹"
 
-#: t_modules/t_main.py:26229
+#: t_modules/t_main.py:26526
 #, fuzzy
 msgid "Enable Discord Rich Presence"
 msgstr "启用和弦歌词"
 
-#: t_modules/t_main.py:26233
+#: t_modules/t_main.py:26530
 msgid "For troubleshooting Discord RP"
 msgstr ""
 
-#: t_modules/t_main.py:26261
+#: t_modules/t_main.py:26558
 #, fuzzy
 msgid "Extract archives"
 msgstr "导入时解压缩"
 
-#: t_modules/t_main.py:26262
+#: t_modules/t_main.py:26559
 #, fuzzy
 msgid "Extracts zip archives on drag and drop"
 msgstr "导入时解压缩"
 
-#: t_modules/t_main.py:26264
+#: t_modules/t_main.py:26561
 msgid "Enable download monitor"
 msgstr ""
 
-#: t_modules/t_main.py:26265
+#: t_modules/t_main.py:26562
 msgid "One click import new archives and folders from downloads folder"
 msgstr ""
 
-#: t_modules/t_main.py:26267
+#: t_modules/t_main.py:26564
 msgid "Trash archive after extraction"
 msgstr "解压后删除压缩包"
 
-#: t_modules/t_main.py:26269
+#: t_modules/t_main.py:26566
 msgid "Always extract to Music folder"
 msgstr "总是导出到音乐文件夹"
 
-#: t_modules/t_main.py:26272
+#: t_modules/t_main.py:26569
 msgid "Show icon in system tray"
 msgstr ""
 
-#: t_modules/t_main.py:26275
+#: t_modules/t_main.py:26572
 msgid "Close to tray"
 msgstr ""
 
-#: t_modules/t_main.py:26278
+#: t_modules/t_main.py:26575
 #, fuzzy
 msgid "Show title text"
 msgstr "显示许可"
 
-#: t_modules/t_main.py:26284
+#: t_modules/t_main.py:26581
 msgid "Enable remote control"
 msgstr ""
 
-#: t_modules/t_main.py:26285
+#: t_modules/t_main.py:26582
 #, fuzzy
 msgid "Change requires restart"
 msgstr "变更将在下次启动应用。"
 
-#: t_modules/t_main.py:26294
+#: t_modules/t_main.py:26591
 msgid "Block suspend"
 msgstr ""
 
-#: t_modules/t_main.py:26295
+#: t_modules/t_main.py:26592
 msgid "Prevent system suspend during playback"
 msgstr ""
 
-#: t_modules/t_main.py:26499
+#: t_modules/t_main.py:26596
+msgid "Record Radio"
+msgstr ""
+
+#: t_modules/t_main.py:26597
+msgid "Record and split songs when playing internet radio"
+msgstr ""
+
+#: t_modules/t_main.py:26599
+msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
+msgstr ""
+
+#: t_modules/t_main.py:26599
+msgid ""
+"Tracks will now be recorded. Restart any playback for change to take effect."
+msgstr ""
+
+#: t_modules/t_main.py:26804
 msgid "Show threshold marker"
 msgstr "显示起点"
 
-#: t_modules/t_main.py:26506
+#: t_modules/t_main.py:26811
 msgid "Maloja Server"
 msgstr ""
 
-#: t_modules/t_main.py:26508
+#: t_modules/t_main.py:26813
 msgid "Maloja is a self-hosted scrobble server."
 msgstr ""
 
-#: t_modules/t_main.py:26508
+#: t_modules/t_main.py:26813
 msgid "See here to lean more: %s"
 msgstr ""
 
-#: t_modules/t_main.py:26518 t_modules/t_main.py:26735
-#: t_modules/t_main.py:26794 t_modules/t_main.py:26855
+#: t_modules/t_main.py:26823 t_modules/t_main.py:27040
+#: t_modules/t_main.py:27099 t_modules/t_main.py:27160
 #, fuzzy
 msgid "Server URL"
 msgstr "用户名"
 
-#: t_modules/t_main.py:26532
+#: t_modules/t_main.py:26837
 msgid "API Key"
 msgstr ""
 
-#: t_modules/t_main.py:26547 t_modules/t_main.py:26812
+#: t_modules/t_main.py:26852 t_modules/t_main.py:27117
 msgid "Test connectivity"
 msgstr ""
 
-#: t_modules/t_main.py:26572 t_modules/t_main.py:26574
-#: t_modules/t_main.py:27069 t_modules/t_main.py:27086
+#: t_modules/t_main.py:26877 t_modules/t_main.py:26879
+#: t_modules/t_main.py:27374 t_modules/t_main.py:27391
 #, fuzzy
 msgid "Get scrobble counts"
 msgstr "清空本地喜爱"
 
-#: t_modules/t_main.py:26580
+#: t_modules/t_main.py:26885
 msgid "Spotify Premium account"
 msgstr ""
 
-#: t_modules/t_main.py:26585
+#: t_modules/t_main.py:26890
 msgid "View setup instructions"
 msgstr ""
 
-#: t_modules/t_main.py:26592
+#: t_modules/t_main.py:26897
 msgid "Client ID"
 msgstr ""
 
-#: t_modules/t_main.py:26622
+#: t_modules/t_main.py:26927
 #, fuzzy
 msgid "Forget Account"
 msgstr "消除账户"
 
-#: t_modules/t_main.py:26626
+#: t_modules/t_main.py:26931
 msgid "Authorise"
 msgstr ""
 
-#: t_modules/t_main.py:26643
+#: t_modules/t_main.py:26948
 msgid "Prefer launching web player"
 msgstr ""
 
-#: t_modules/t_main.py:26647 t_modules/t_main.py:26648
+#: t_modules/t_main.py:26952 t_modules/t_main.py:26953
 #, fuzzy
 msgid "Import Albums"
 msgstr "最长的专辑"
 
-#: t_modules/t_main.py:26655 t_modules/t_main.py:26666
-#: t_modules/t_main.py:26679 t_modules/t_main.py:26691
+#: t_modules/t_main.py:26960 t_modules/t_main.py:26971
+#: t_modules/t_main.py:26984 t_modules/t_main.py:26996
 msgid "Please wait until current job is finished"
 msgstr ""
 
-#: t_modules/t_main.py:26659
+#: t_modules/t_main.py:26964
 msgid "Import Liked Songs"
 msgstr ""
 
-#: t_modules/t_main.py:26672
+#: t_modules/t_main.py:26977
 #, fuzzy
 msgid "Import all user playlists"
 msgstr "导入音乐文件夹"
 
-#: t_modules/t_main.py:26674
+#: t_modules/t_main.py:26979
 #, fuzzy
 msgid "Importing Spotify playlists..."
 msgstr "播放列表末尾"
 
-#: t_modules/t_main.py:26682
+#: t_modules/t_main.py:26987
 #, fuzzy
 msgid "Import single user playlist..."
 msgstr "导入音乐文件夹"
 
-#: t_modules/t_main.py:26697
+#: t_modules/t_main.py:27002
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:26707 t_modules/t_main.py:26827
-#: t_modules/t_main.py:26885
+#: t_modules/t_main.py:27012 t_modules/t_main.py:27132
+#: t_modules/t_main.py:27190
 #, fuzzy
 msgid "Username / Email"
 msgstr "用户名"
 
-#: t_modules/t_main.py:26721 t_modules/t_main.py:26780
-#: t_modules/t_main.py:26841 t_modules/t_main.py:26899
+#: t_modules/t_main.py:27026 t_modules/t_main.py:27085
+#: t_modules/t_main.py:27146 t_modules/t_main.py:27204
 msgid "Password"
 msgstr ""
 
-#: t_modules/t_main.py:26749 t_modules/t_main.py:26809
-#: t_modules/t_main.py:26870 t_modules/t_main.py:26927
+#: t_modules/t_main.py:27054 t_modules/t_main.py:27114
+#: t_modules/t_main.py:27175 t_modules/t_main.py:27232
 #, fuzzy
 msgid "Import music to playlist"
 msgstr "导入音乐文件夹"
 
-#: t_modules/t_main.py:26752
+#: t_modules/t_main.py:27057
 msgid "Needed for Nextcloud Music"
 msgstr ""
 
-#: t_modules/t_main.py:26752
+#: t_modules/t_main.py:27057
 msgid "Use plain text authentication"
 msgstr ""
 
-#: t_modules/t_main.py:26756
+#: t_modules/t_main.py:27061
 msgid "Jellyfin network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:26766
+#: t_modules/t_main.py:27071
 #, fuzzy
 msgid "Username"
 msgstr "用户名"
 
-#: t_modules/t_main.py:26817
+#: t_modules/t_main.py:27122
 msgid "koel network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:26875
+#: t_modules/t_main.py:27180
 msgid "PLEX network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:26913
+#: t_modules/t_main.py:27218
 #, fuzzy
 msgid "Server name"
 msgstr "用户名"
 
-#: t_modules/t_main.py:26936
+#: t_modules/t_main.py:27241
 #, fuzzy
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr "Discogs可以用来寻找艺术家图像"
 
-#: t_modules/t_main.py:26942 t_modules/t_main.py:34475
+#: t_modules/t_main.py:27247 t_modules/t_main.py:34935
 msgid "They encourage you to contribute at https://fanart.tv"
 msgstr ""
 
-#: t_modules/t_main.py:26947
+#: t_modules/t_main.py:27252
 msgid "Cover art (Manual only)"
 msgstr ""
 
-#: t_modules/t_main.py:26949
+#: t_modules/t_main.py:27254
 msgid "Artist images (Automatic)"
 msgstr ""
 
-#: t_modules/t_main.py:26951
+#: t_modules/t_main.py:27256
 msgid "Artist backgrounds (Automatic)"
 msgstr ""
 
-#: t_modules/t_main.py:26954
+#: t_modules/t_main.py:27259
 msgid "Flip current"
 msgstr ""
 
-#: t_modules/t_main.py:26974
+#: t_modules/t_main.py:27279
 msgid ""
 "Discogs can be used for sourcing artist images. For this you will need a "
 "\"Personal Access Token\".\n"
@@ -2095,818 +2115,837 @@ msgid ""
 "You can generate one with a Discogs account here:"
 msgstr ""
 
-#: t_modules/t_main.py:26990 t_modules/t_main.py:27095
-#: t_modules/t_main.py:27097
+#: t_modules/t_main.py:27295 t_modules/t_main.py:27400
+#: t_modules/t_main.py:27402
 msgid "Paste Token"
 msgstr "粘贴Token"
 
-#: t_modules/t_main.py:27037 t_modules/t_main.py:27038
+#: t_modules/t_main.py:27342 t_modules/t_main.py:27343
 msgid "Username:"
 msgstr "用户名"
 
-#: t_modules/t_main.py:27044 t_modules/t_main.py:27046
+#: t_modules/t_main.py:27349 t_modules/t_main.py:27351
 msgid "Login"
 msgstr "登录"
 
-#: t_modules/t_main.py:27045 t_modules/t_main.py:27047
+#: t_modules/t_main.py:27350 t_modules/t_main.py:27352
 msgid "Done"
 msgstr "完成"
 
-#: t_modules/t_main.py:27050
+#: t_modules/t_main.py:27355
 msgid "Use LibreFM"
 msgstr ""
 
-#: t_modules/t_main.py:27053
+#: t_modules/t_main.py:27358
 msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
 
-#: t_modules/t_main.py:27057
+#: t_modules/t_main.py:27362
 msgid "Forget account"
 msgstr "消除账户"
 
-#: t_modules/t_main.py:27066 t_modules/t_main.py:27074
+#: t_modules/t_main.py:27371 t_modules/t_main.py:27379
 msgid "Get user loves"
 msgstr "取得喜爱"
 
-#: t_modules/t_main.py:27067
+#: t_modules/t_main.py:27372
 msgid "Clear local loves"
 msgstr "清空本地喜爱"
 
-#: t_modules/t_main.py:27068 t_modules/t_main.py:27082
+#: t_modules/t_main.py:27373 t_modules/t_main.py:27387
 msgid "Get friend loves"
 msgstr "取得朋友喜爱"
 
-#: t_modules/t_main.py:27121
+#: t_modules/t_main.py:27426
 msgid "This will mark all tracks in local database as unloved!"
 msgstr ""
 
-#: t_modules/t_main.py:27130
+#: t_modules/t_main.py:27435
 #, fuzzy
 msgid "Cleared all loves"
 msgstr "清空本地喜爱"
 
-#: t_modules/t_main.py:27137 t_modules/t_main.py:27159
+#: t_modules/t_main.py:27442 t_modules/t_main.py:27464
 msgid "Press again while holding Shift if you understand"
 msgstr ""
 
-#: t_modules/t_main.py:27152
+#: t_modules/t_main.py:27457
 #, fuzzy
 msgid "Cleared all scrobble counts"
 msgstr "清空本地喜爱"
 
-#: t_modules/t_main.py:27157
+#: t_modules/t_main.py:27462
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
 msgstr ""
 
-#: t_modules/t_main.py:27158
+#: t_modules/t_main.py:27463
 msgid "This feature is not recommended for accounts that have many friends."
 msgstr ""
 
-#: t_modules/t_main.py:27197
+#: t_modules/t_main.py:27502
 #, fuzzy
 msgid "Selected playlist:"
 msgstr "循环播放列表"
 
-#: t_modules/t_main.py:27201
+#: t_modules/t_main.py:27506
 msgid "No sync playlist selected!"
 msgstr ""
 
-#: t_modules/t_main.py:27204
+#: t_modules/t_main.py:27509
 msgid "Path to device music folder:   "
 msgstr ""
 
-#: t_modules/t_main.py:27222
+#: t_modules/t_main.py:27527
 msgid "A mounted music folder was found!"
 msgstr ""
 
-#: t_modules/t_main.py:27224
+#: t_modules/t_main.py:27529
 msgid "Could not auto-detect mounted device path."
 msgstr ""
 
-#: t_modules/t_main.py:27224
+#: t_modules/t_main.py:27529
 msgid "Make sure the device is mounted and path is accessible."
 msgstr ""
 
-#: t_modules/t_main.py:27229
+#: t_modules/t_main.py:27534
 msgid "Delete all other folders in target"
 msgstr ""
 
-#: t_modules/t_main.py:27231
+#: t_modules/t_main.py:27536
 #, fuzzy
 msgid "Transcode files"
 msgstr "转码单个"
 
-#: t_modules/t_main.py:27233
+#: t_modules/t_main.py:27538
 msgid "Bypass low bitrate"
 msgstr ""
 
-#: t_modules/t_main.py:27236
+#: t_modules/t_main.py:27541
 #, fuzzy
 msgid "Start Transcode and Sync"
 msgstr "转码单个"
 
-#: t_modules/t_main.py:27239
+#: t_modules/t_main.py:27544
 msgid "Start Sync"
 msgstr ""
 
-#: t_modules/t_main.py:27243
+#: t_modules/t_main.py:27548
 #, fuzzy
 msgid "Stopping..."
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:27249
+#: t_modules/t_main.py:27554
 msgid "Right click tab > Misc... > Set as sync playlist"
 msgstr ""
 
-#: t_modules/t_main.py:27249
+#: t_modules/t_main.py:27554
 #, fuzzy
 msgid "Select a source playlist"
 msgstr "播放下一个播放列表"
 
-#: t_modules/t_main.py:27251
+#: t_modules/t_main.py:27556
 #, fuzzy
 msgid "Stop"
 msgstr "自动停止"
 
-#: t_modules/t_main.py:27267
+#: t_modules/t_main.py:27572
 msgid "Output codec setting:"
 msgstr "输出编码器设置："
 
-#: t_modules/t_main.py:27269 t_modules/t_main.py:27270
+#: t_modules/t_main.py:27574 t_modules/t_main.py:27575
 msgid "Open output folder"
 msgstr "打开输出文件夹"
 
-#: t_modules/t_main.py:27272 t_modules/t_main.py:27273
+#: t_modules/t_main.py:27577 t_modules/t_main.py:27578
 msgid "Sync..."
 msgstr ""
 
-#: t_modules/t_main.py:27281
+#: t_modules/t_main.py:27586
 msgid "Save opus as .ogg extension"
 msgstr "将opus以.ogg扩展名保存"
 
-#: t_modules/t_main.py:27305
+#: t_modules/t_main.py:27610
 msgid "Save to output folder"
 msgstr "保存到输出文件夹"
 
-#: t_modules/t_main.py:27307
+#: t_modules/t_main.py:27612
 msgid "Save and overwrite files inplace"
 msgstr "保存并覆盖"
 
-#: t_modules/t_main.py:27329
+#: t_modules/t_main.py:27634
 msgid "Emit track change notifications"
 msgstr "通知曲目改变"
 
-#: t_modules/t_main.py:27332
+#: t_modules/t_main.py:27637
 msgid "Draw own window decorations"
 msgstr "只描画内部窗口"
 
-#: t_modules/t_main.py:27335
+#: t_modules/t_main.py:27640
 msgid "Restore window position on restart"
 msgstr ""
 
-#: t_modules/t_main.py:27339
+#: t_modules/t_main.py:27644
 msgid "Show playing in titlebar"
 msgstr "在标题栏显示正在播放"
 
-#: t_modules/t_main.py:27346
+#: t_modules/t_main.py:27651
 msgid "Top-panel level meter"
 msgstr ""
 
-#: t_modules/t_main.py:27350
+#: t_modules/t_main.py:27655
 msgid "Showcase visualisation"
 msgstr "可视化２"
 
-#: t_modules/t_main.py:27356
+#: t_modules/t_main.py:27661
 msgid "UI scale for HiDPI displays"
 msgstr ""
 
-#: t_modules/t_main.py:27405
+#: t_modules/t_main.py:27710
 msgid "Restart app to apply any changes"
 msgstr ""
 
-#: t_modules/t_main.py:27414
+#: t_modules/t_main.py:27719
 msgid "Auto scale based on xft-dpi"
 msgstr ""
 
-#: t_modules/t_main.py:27697 t_modules/t_main.py:27700
+#: t_modules/t_main.py:28002 t_modules/t_main.py:28005
 msgid "Credits"
 msgstr "贡献者"
 
-#: t_modules/t_main.py:27697 t_modules/t_main.py:27702
+#: t_modules/t_main.py:28002 t_modules/t_main.py:28007
 msgid "Next"
 msgstr "下一个"
 
-#: t_modules/t_main.py:27714
+#: t_modules/t_main.py:28019
 msgid "Chart Grid Generator"
 msgstr "图表生成"
 
-#: t_modules/t_main.py:27717
+#: t_modules/t_main.py:28022
 msgid "Target playlist:   "
 msgstr "目标播放列表:   "
 
-#: t_modules/t_main.py:27745
+#: t_modules/t_main.py:28050
 msgid "Rows"
 msgstr "行"
 
-#: t_modules/t_main.py:27747
+#: t_modules/t_main.py:28052
 msgid "Columns"
 msgstr "列"
 
-#: t_modules/t_main.py:27754
+#: t_modules/t_main.py:28059
 msgid "Cascade style"
 msgstr "Cascade风格"
 
-#: t_modules/t_main.py:27756
+#: t_modules/t_main.py:28061
 msgid "Use padding"
 msgstr "使用间隔"
 
-#: t_modules/t_main.py:27761
+#: t_modules/t_main.py:28066
 #, fuzzy
 msgid "Include album titles"
 msgstr "包括文字"
 
-#: t_modules/t_main.py:27763
+#: t_modules/t_main.py:28068
 #, fuzzy
 msgid "Sort by top played"
 msgstr "以路径排序"
 
-#: t_modules/t_main.py:27770
+#: t_modules/t_main.py:28075
 msgid "Randomise BG"
 msgstr "随机背景"
 
-#: t_modules/t_main.py:27806
+#: t_modules/t_main.py:28111
 msgid "Generate"
 msgstr "生成"
 
-#: t_modules/t_main.py:27820
+#: t_modules/t_main.py:28125
 msgid "Generating..."
 msgstr "生成中..."
 
-#: t_modules/t_main.py:27828
+#: t_modules/t_main.py:28133
 #, fuzzy
 msgid "Album chart"
 msgstr "专辑艺术家"
 
-#: t_modules/t_main.py:27833
+#: t_modules/t_main.py:28138
 msgid "Not enough albums in the playlist!"
 msgstr "播放列表中没有足够的专辑！"
 
-#: t_modules/t_main.py:27853 t_modules/t_main.py:27854
+#: t_modules/t_main.py:28158 t_modules/t_main.py:28159
 msgid "Chart generator..."
 msgstr "图表"
 
-#: t_modules/t_main.py:27862 t_modules/t_main.py:27903
+#: t_modules/t_main.py:28167 t_modules/t_main.py:28208
 msgid "Tracks in playlist"
 msgstr "播放列表曲目数"
 
-#: t_modules/t_main.py:27863 t_modules/t_main.py:27906
+#: t_modules/t_main.py:28168 t_modules/t_main.py:28211
 msgid "Albums in playlist"
 msgstr "播放列表专辑数"
 
-#: t_modules/t_main.py:27864 t_modules/t_main.py:27909
+#: t_modules/t_main.py:28169 t_modules/t_main.py:28214
 msgid "Playlist duration"
 msgstr "播放列表时长"
 
-#: t_modules/t_main.py:27865 t_modules/t_main.py:27938
+#: t_modules/t_main.py:28170 t_modules/t_main.py:28243
 msgid "Tracks in database"
 msgstr "总曲目数"
 
-#: t_modules/t_main.py:27866 t_modules/t_main.py:27941
+#: t_modules/t_main.py:28171 t_modules/t_main.py:28246
 msgid "Total albums"
 msgstr "总专辑数"
 
-#: t_modules/t_main.py:27867 t_modules/t_main.py:27945
+#: t_modules/t_main.py:28172 t_modules/t_main.py:28250
 msgid "Total playtime"
 msgstr "总播放时间"
 
-#: t_modules/t_main.py:28007
+#: t_modules/t_main.py:28312
 #, fuzzy
 msgid "Track ratings"
 msgstr "曲目重命名"
 
-#: t_modules/t_main.py:28009
+#: t_modules/t_main.py:28314
 #, fuzzy
 msgid "Album ratings"
 msgstr "专辑艺术家"
 
-#: t_modules/t_main.py:28017
+#: t_modules/t_main.py:28322
 #, fuzzy
 msgid "Show track loves"
 msgstr "在Genius搜索曲目"
 
-#: t_modules/t_main.py:28025
+#: t_modules/t_main.py:28330
 #, fuzzy
 msgid "Represent playtime as stars"
 msgstr "显示星标"
 
-#: t_modules/t_main.py:28034
+#: t_modules/t_main.py:28339
 #, fuzzy
 msgid "Represent playcount as lines"
 msgstr "循环播放列表"
 
-#: t_modules/t_main.py:28054
+#: t_modules/t_main.py:28359
 #, fuzzy
 msgid "Show album release year"
 msgstr "播放列表时长"
 
-#: t_modules/t_main.py:28057
+#: t_modules/t_main.py:28362
 #, fuzzy
 msgid "Show album duration"
 msgstr "播放列表时长"
 
-#: t_modules/t_main.py:28064
+#: t_modules/t_main.py:28369
 msgid "Font Size"
 msgstr "字体大小"
 
-#: t_modules/t_main.py:28066
+#: t_modules/t_main.py:28371
 msgid "Row Size"
 msgstr "行大小"
 
-#: t_modules/t_main.py:28068
+#: t_modules/t_main.py:28373
 msgid "Baseline offset"
 msgstr ""
 
-#: t_modules/t_main.py:28072
+#: t_modules/t_main.py:28377
 msgid "Thin default"
 msgstr "窄默认"
 
-#: t_modules/t_main.py:28074
+#: t_modules/t_main.py:28379
 msgid "Thick default"
 msgstr "宽默认"
 
-#: t_modules/t_main.py:28080
+#: t_modules/t_main.py:28385
 msgid "End of playlist action"
 msgstr "播放列表结束时动作"
 
-#: t_modules/t_main.py:28083 t_modules/t_main.py:28087
+#: t_modules/t_main.py:28388 t_modules/t_main.py:28392
 msgid "Stop playback"
 msgstr "停止播放"
 
-#: t_modules/t_main.py:28084 t_modules/t_main.py:28089
+#: t_modules/t_main.py:28389 t_modules/t_main.py:28394
 msgid "Repeat playlist"
 msgstr "循环播放列表"
 
-#: t_modules/t_main.py:28093
+#: t_modules/t_main.py:28398
 msgid "Play next playlist"
 msgstr "播放下一个播放列表"
 
-#: t_modules/t_main.py:28095
+#: t_modules/t_main.py:28400
 msgid "Cycle all playlists"
 msgstr "循环所有播放列表"
 
-#: t_modules/t_main.py:29260
+#: t_modules/t_main.py:29257 t_modules/t_main.py:33985
+msgid "Added station to: "
+msgstr ""
+
+#: t_modules/t_main.py:29626
 #, fuzzy
 msgid "Buffering... "
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:29375
+#: t_modules/t_main.py:29741
 msgid "There are currently no connected clients"
 msgstr ""
 
-#: t_modules/t_main.py:29377
+#: t_modules/t_main.py:29743
 msgid "There is 1 inbound connection."
 msgstr ""
 
-#: t_modules/t_main.py:29379
+#: t_modules/t_main.py:29745
 msgid "There are %d inbound connections."
 msgstr ""
 
-#: t_modules/t_main.py:29959 t_modules/t_main.py:30537
+#: t_modules/t_main.py:30325 t_modules/t_main.py:30903
 msgid "Play, RC: Go to playing"
 msgstr "播放，右键：转到当前播放"
 
-#: t_modules/t_main.py:29987 t_modules/t_main.py:30565
+#: t_modules/t_main.py:30353 t_modules/t_main.py:30931
 msgid "Pause"
 msgstr "暂停"
 
-#: t_modules/t_main.py:30004
+#: t_modules/t_main.py:30370
 msgid "Stop, RC: Toggle auto-stop"
 msgstr "停止，右键：切换自动停止"
 
-#: t_modules/t_main.py:30026 t_modules/t_main.py:30586
+#: t_modules/t_main.py:30392 t_modules/t_main.py:30952
 msgid "Shuffle On"
 msgstr "随机开"
 
-#: t_modules/t_main.py:30029 t_modules/t_main.py:30589
+#: t_modules/t_main.py:30395 t_modules/t_main.py:30955
 msgid "Shuffle Off"
 msgstr "随机关"
 
-#: t_modules/t_main.py:30058
+#: t_modules/t_main.py:30424
 #, fuzzy
 msgid "Repeat On"
 msgstr "关闭循环"
 
-#: t_modules/t_main.py:30061
+#: t_modules/t_main.py:30427
 #, fuzzy
 msgid "Repeat Off"
 msgstr "关闭循环"
 
-#: t_modules/t_main.py:30068
+#: t_modules/t_main.py:30434
 msgid "Back, RC: Toggle repeat, MC: Revert"
 msgstr "后退，右键:切换循环，中键:返回"
 
-#: t_modules/t_main.py:30124 t_modules/t_main.py:30126
+#: t_modules/t_main.py:30490 t_modules/t_main.py:30492
 msgid "Shuffle"
 msgstr "随机"
 
-#: t_modules/t_main.py:30173 t_modules/t_main.py:30181
+#: t_modules/t_main.py:30539 t_modules/t_main.py:30547
 msgid "Repeat album"
 msgstr "重复专辑"
 
-#: t_modules/t_main.py:30175 t_modules/t_main.py:30183
+#: t_modules/t_main.py:30541 t_modules/t_main.py:30549
 msgid "Repeat track"
 msgstr "重复单曲"
 
-#: t_modules/t_main.py:31558
+#: t_modules/t_main.py:31924
 msgid "Playlist is empty"
 msgstr "播放列表为空"
 
-#: t_modules/t_main.py:31560
+#: t_modules/t_main.py:31926
 msgid "Drag and drop files to import"
 msgstr "拖曳文件到此以导入"
 
-#: t_modules/t_main.py:31582
+#: t_modules/t_main.py:31948
 msgid "End of Playlist"
 msgstr "播放列表末尾"
 
-#: t_modules/t_main.py:32813
+#: t_modules/t_main.py:33190
 #, fuzzy
 msgid "Search Tag"
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:32814
+#: t_modules/t_main.py:33191
 #, fuzzy
-msgid "Search Country"
+msgid "Search Country Code"
 msgstr "搜索GuitarParty"
 
-#: t_modules/t_main.py:32815
+#: t_modules/t_main.py:33192
 #, fuzzy
 msgid "Search Title"
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:33092
+#: t_modules/t_main.py:33480
 #, fuzzy
 msgid "Search text…"
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:33099
+#: t_modules/t_main.py:33487
 #, fuzzy
 msgid "Search"
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:33106 t_modules/t_main.py:33110
+#: t_modules/t_main.py:33494 t_modules/t_main.py:33498
 msgid "Get Top Voted"
 msgstr ""
 
-#: t_modules/t_main.py:33221
-msgid "Internet Radio"
+#: t_modules/t_main.py:33500
+msgid "Developer Picks"
 msgstr ""
 
-#: t_modules/t_main.py:33225
+#: t_modules/t_main.py:33648
+msgid "Add Station"
+msgstr ""
+
+#: t_modules/t_main.py:33650
+msgid "Edit Station"
+msgstr ""
+
+#: t_modules/t_main.py:33676
+#, fuzzy
+msgid "Station Browser"
+msgstr "开始推流"
+
+#: t_modules/t_main.py:33680
 #, fuzzy
 msgid "Connecting..."
 msgstr "断开中。。。"
 
-#: t_modules/t_main.py:33228
+#: t_modules/t_main.py:33683
 msgid "Failed to connect!"
 msgstr ""
 
-#: t_modules/t_main.py:33276
+#: t_modules/t_main.py:33731
 msgid "Name / Title"
 msgstr ""
 
-#: t_modules/t_main.py:33294
+#: t_modules/t_main.py:33748
 msgid "Raw Stream URL http://example.stream:1234"
 msgstr ""
 
-#: t_modules/t_main.py:33299 t_modules/t_main.py:33530
+#: t_modules/t_main.py:33752 t_modules/t_main.py:33988
 msgid "Save"
 msgstr ""
 
-#: t_modules/t_main.py:33302
+#: t_modules/t_main.py:33755
 msgid "Enter a stream URL"
 msgstr ""
 
-#: t_modules/t_main.py:33319
+#: t_modules/t_main.py:33769
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
 
-#: t_modules/t_main.py:33459 t_modules/t_main.py:33465
-#: t_modules/t_main.py:33470
+#: t_modules/t_main.py:33927 t_modules/t_main.py:33933
+#: t_modules/t_main.py:33938
 msgid "Record and auto split songs"
 msgstr ""
 
-#: t_modules/t_main.py:33461
+#: t_modules/t_main.py:33929
 msgid "Please stop playback first before toggling this setting"
 msgstr ""
 
-#: t_modules/t_main.py:33466
+#: t_modules/t_main.py:33934
 msgid "Please stop playback first to end current recording"
 msgstr ""
 
-#: t_modules/t_main.py:33472
+#: t_modules/t_main.py:33940
 msgid "Tip: You can press F9 to view the output folder."
 msgstr ""
 
-#: t_modules/t_main.py:33472
+#: t_modules/t_main.py:33940
 msgid "Tracks will now be recorded."
 msgstr ""
 
-#: t_modules/t_main.py:33476
+#: t_modules/t_main.py:33944
 msgid "Browse"
 msgstr ""
 
-#: t_modules/t_main.py:33480
+#: t_modules/t_main.py:33948
 msgid "Saved"
 msgstr ""
 
-#: t_modules/t_main.py:33526
-msgid "Added to list of saved stations"
-msgstr ""
-
-#: t_modules/t_main.py:33528
-msgid "Paste Website Link"
-msgstr ""
-
-#: t_modules/t_main.py:33529
+#: t_modules/t_main.py:33987 t_modules/t_main.py:38110
 msgid "Visit Website"
 msgstr ""
 
-#: t_modules/t_main.py:33533
-#, fuzzy
-msgid "Remove All After"
-msgstr "重复的"
-
-#: t_modules/t_main.py:34364
+#: t_modules/t_main.py:34824
 #, fuzzy
 msgid "View..."
 msgstr "视图 "
 
-#: t_modules/t_main.py:34382
+#: t_modules/t_main.py:34842
 msgid "Sort Alphabetically"
 msgstr ""
 
-#: t_modules/t_main.py:34383
+#: t_modules/t_main.py:34843
 #, fuzzy
 msgid "Sort by Popularity"
 msgstr "以路径排序"
 
-#: t_modules/t_main.py:34384
+#: t_modules/t_main.py:34844
 #, fuzzy
 msgid "Sort by Playtime"
 msgstr "以路径排序"
 
-#: t_modules/t_main.py:34385
+#: t_modules/t_main.py:34845
 #, fuzzy
 msgid "Toggle Thumbnails"
 msgstr "切换歌词"
 
-#: t_modules/t_main.py:34474
+#: t_modules/t_main.py:34934
 msgid "Notice: Artist image sourced from fanart.tv"
 msgstr ""
 
-#: t_modules/t_main.py:34799 t_modules/t_main.py:34934
+#: t_modules/t_main.py:35259 t_modules/t_main.py:35394
 #, fuzzy
 msgid "Downloading data..."
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:35161
+#: t_modules/t_main.py:35621
 msgid "No artists in playlist"
 msgstr "没有艺术家"
 
-#: t_modules/t_main.py:35164
+#: t_modules/t_main.py:35624
 msgid "Artist threshold not met"
 msgstr "艺术家界定值有误"
 
-#: t_modules/t_main.py:35166
+#: t_modules/t_main.py:35626
 #, fuzzy
 msgid "Loading Artist List..."
 msgstr "读取中"
 
-#: t_modules/t_main.py:35168
+#: t_modules/t_main.py:35628
 msgid "Busy..."
 msgstr "正忙"
 
-#: t_modules/t_main.py:35377
+#: t_modules/t_main.py:35838
 #, fuzzy
 msgid "Loading Folder Tree..."
 msgstr "读取中"
 
-#: t_modules/t_main.py:35385 t_modules/t_main.py:35401
+#: t_modules/t_main.py:35846 t_modules/t_main.py:35862
 #, fuzzy
 msgid "Folder Tree"
 msgstr "读取中"
 
-#: t_modules/t_main.py:35786
+#: t_modules/t_main.py:36247
 msgid "Resume Queue"
 msgstr "继续队列"
 
-#: t_modules/t_main.py:35788
+#: t_modules/t_main.py:36249
 msgid "Pause Queue"
 msgstr "暂停队列"
 
-#: t_modules/t_main.py:35817
+#: t_modules/t_main.py:36278
 msgid "Play Now"
 msgstr "现在播放"
 
-#: t_modules/t_main.py:35823
+#: t_modules/t_main.py:36284
 msgid "↳ Except for This"
 msgstr "↳　除了这个"
 
-#: t_modules/t_main.py:35825
+#: t_modules/t_main.py:36286
 msgid "Queue to New Playlist"
 msgstr "添加到队列和新播放列表"
 
-#: t_modules/t_main.py:35970
+#: t_modules/t_main.py:36431
 msgid "Cancel Auto-Stop"
 msgstr "取消自动停止"
 
-#: t_modules/t_main.py:35972
+#: t_modules/t_main.py:36433
 msgid "Auto-Stop"
 msgstr "自动停止"
 
-#: t_modules/t_main.py:36831 t_modules/t_main.py:37068
+#: t_modules/t_main.py:37292 t_modules/t_main.py:37529
 msgid "Looking up..."
 msgstr "正在查找"
 
-#: t_modules/t_main.py:36875
+#: t_modules/t_main.py:37336
 msgid "Cooldown..."
 msgstr "冷却..."
 
-#: t_modules/t_main.py:36890
+#: t_modules/t_main.py:37351
 #, fuzzy
 msgid "Loading..."
 msgstr "搜索中..."
 
-#: t_modules/t_main.py:37060
+#: t_modules/t_main.py:37521
 #, fuzzy
 msgid "No artist data downloaded"
 msgstr "没有找到艺术家"
 
-#: t_modules/t_main.py:37074
+#: t_modules/t_main.py:37535
 msgid "No artist bio found"
 msgstr "没有找到艺术家"
 
-#: t_modules/t_main.py:37166
+#: t_modules/t_main.py:37627
 msgid "Download Artist Data"
 msgstr ""
 
-#: t_modules/t_main.py:37167
+#: t_modules/t_main.py:37628
 #, fuzzy
 msgid "Clear Bio"
 msgstr "清空"
 
-#: t_modules/t_main.py:37623
+#: t_modules/t_main.py:38109
+msgid "Edit..."
+msgstr ""
+
+#: t_modules/t_main.py:38440
 msgid "Playing"
 msgstr "转到正在播放"
 
-#: t_modules/t_main.py:37684
+#: t_modules/t_main.py:38501
 msgid "Prefer synced"
 msgstr ""
 
-#: t_modules/t_main.py:37686
+#: t_modules/t_main.py:38503
 msgid "Prefer static"
 msgstr ""
 
-#: t_modules/t_main.py:37697
+#: t_modules/t_main.py:38514
 msgid "Auto-Scroll"
 msgstr "自动滚屏"
 
-#: t_modules/t_main.py:38173
+#: t_modules/t_main.py:38990
 #, fuzzy
 msgid "Tracks + Art"
 msgstr "曲目列表"
 
-#: t_modules/t_main.py:38206
+#: t_modules/t_main.py:39023
 #, fuzzy
 msgid "Tracks only"
 msgstr "播放列表曲目数"
 
-#: t_modules/t_main.py:38219
+#: t_modules/t_main.py:39036
 #, fuzzy
 msgid "Showcase + Lyrics"
 msgstr "显示歌词"
 
-#: t_modules/t_main.py:38232
+#: t_modules/t_main.py:39049
+msgid "Radio"
+msgstr ""
+
+#: t_modules/t_main.py:39062
 #, fuzzy
 msgid "Toggle columns"
 msgstr "切换歌词"
 
-#: t_modules/t_main.py:38248
+#: t_modules/t_main.py:39078
 #, fuzzy
 msgid "Toggle artist info"
 msgstr "切换艺术图"
 
-#: t_modules/t_main.py:39814
+#: t_modules/t_main.py:40652
 msgid "Could not access! Possible insufficient Flatpak permissions."
 msgstr "无法访问，可能是Flatpak权限不完全。"
 
-#: t_modules/t_main.py:40619
+#: t_modules/t_main.py:41457
 msgid "Enabled auto theme"
 msgstr "启用自动主题"
 
-#: t_modules/t_main.py:40621
+#: t_modules/t_main.py:41459
 msgid "Disabled auto theme"
 msgstr "禁用自动主题"
 
-#: t_modules/t_main.py:40633
+#: t_modules/t_main.py:41471
 msgid "First select a source track by copying it into clipboard"
 msgstr ""
 
-#: t_modules/t_main.py:42108
+#: t_modules/t_main.py:42951
 #, fuzzy
 msgid "Rescan folders complete."
 msgstr "文件夹重扫描完成。"
 
-#: t_modules/t_main.py:42715
+#: t_modules/t_main.py:43563
 msgid "Queue is Empty"
 msgstr ""
 
-#: t_modules/t_main.py:43074 t_modules/t_main.py:43094
-#: t_modules/t_main.py:43113 t_modules/t_main.py:43133
-#: t_modules/t_main.py:43181 t_modules/t_main.py:43202
-#: t_modules/t_main.py:43243 t_modules/t_main.py:43258
-#: t_modules/t_main.py:43274 t_modules/t_main.py:43329
+#: t_modules/t_main.py:43922 t_modules/t_main.py:43942
+#: t_modules/t_main.py:43961 t_modules/t_main.py:43981
+#: t_modules/t_main.py:44029 t_modules/t_main.py:44050
+#: t_modules/t_main.py:44091 t_modules/t_main.py:44106
+#: t_modules/t_main.py:44122 t_modules/t_main.py:44177
 msgid "Copied text to clipboard"
 msgstr ""
 
-#: t_modules/t_main.py:43131 t_modules/t_main.py:43137
+#: t_modules/t_main.py:43979 t_modules/t_main.py:43985
 msgid "Path"
 msgstr "路径"
 
-#: t_modules/t_main.py:43152
+#: t_modules/t_main.py:44000
 msgid "Samplerate"
 msgstr "采样数"
 
-#: t_modules/t_main.py:43212 t_modules/t_main.py:43229
+#: t_modules/t_main.py:44060 t_modules/t_main.py:44077
 msgid " of "
 msgstr " ／ "
 
-#: t_modules/t_main.py:43214
+#: t_modules/t_main.py:44062
 msgid "Track"
 msgstr "曲目"
 
-#: t_modules/t_main.py:43222
+#: t_modules/t_main.py:44070
 msgid "File size"
 msgstr "文件尺寸"
 
-#: t_modules/t_main.py:43231
+#: t_modules/t_main.py:44079
 msgid "Disc"
 msgstr "碟片"
 
-#: t_modules/t_main.py:43296
+#: t_modules/t_main.py:44144
 msgid "Play count"
 msgstr "播放次数"
 
-#: t_modules/t_main.py:43309
+#: t_modules/t_main.py:44157
 msgid "Play time"
 msgstr "播放时间"
 
-#: t_modules/t_main.py:43395
+#: t_modules/t_main.py:44243
 msgid "Folder Modification"
 msgstr "文件夹更改"
 
-#: t_modules/t_main.py:43408
+#: t_modules/t_main.py:44256
 msgid "Renames the physical folder based on the template"
 msgstr ""
 
-#: t_modules/t_main.py:43413
+#: t_modules/t_main.py:44261
 msgid "Trash"
 msgstr "移动到垃圾箱"
 
-#: t_modules/t_main.py:43414
+#: t_modules/t_main.py:44262
 msgid "Moves folder to system trash"
 msgstr ""
 
-#: t_modules/t_main.py:43417
+#: t_modules/t_main.py:44265
 msgid "Physically deletes folder from disk"
 msgstr ""
 
-#: t_modules/t_main.py:43429
+#: t_modules/t_main.py:44277
 msgid "Raise"
 msgstr "升高"
 
-#: t_modules/t_main.py:43430
+#: t_modules/t_main.py:44278
 msgid "Moves folder up 2 levels and deletes the old container folder"
 msgstr ""
 
-#: t_modules/t_main.py:43437
+#: t_modules/t_main.py:44285
 msgid "Deletes some unnecessary files from folder"
 msgstr ""
 
-#: t_modules/t_main.py:43817
+#: t_modules/t_main.py:44667
 #, fuzzy
 msgid "Loved track"
 msgstr "喜爱曲目"
 
-#: t_modules/t_main.py:43820
+#: t_modules/t_main.py:44670
 #, fuzzy
 msgid "Un-Loved track"
 msgstr "取消喜爱曲目"
+
+#~ msgid "Reload Metadata"
+#~ msgstr "重载Metadata"
+
+#, fuzzy
+#~ msgid "Remove All After"
+#~ msgstr "重复的"
 
 #~ msgid "Processed one FLAC files"
 #~ msgstr "FLAC文件处理完成"
