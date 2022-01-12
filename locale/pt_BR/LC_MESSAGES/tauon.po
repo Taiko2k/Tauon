@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2022-01-10 17:19+1300\n"
-"PO-Revision-Date: 2021-12-11 06:53+0000\n"
+"PO-Revision-Date: 2022-01-11 15:55+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.10-dev\n"
+"X-Generator: Weblate 4.10.1\n"
 
 #: t_modules/t_main.py:1939 t_modules/t_main.py:1941
 msgid "No artist image found."
@@ -749,9 +749,8 @@ msgid "Export XSPF"
 msgstr "Exportar XSPF"
 
 #: t_modules/t_main.py:17466
-#, fuzzy
 msgid "Export M3U"
-msgstr "Exportar XSPF"
+msgstr "Exportar M3U"
 
 #: t_modules/t_main.py:17467
 msgid "Toggle Breaks"
@@ -1251,9 +1250,8 @@ msgid "Rating"
 msgstr "Avaliação"
 
 #: t_modules/t_main.py:20974
-#, fuzzy
 msgid "New Radio List"
-msgstr "Nova playlist"
+msgstr "Nova Lista de Rádio"
 
 #: t_modules/t_main.py:21003
 msgid "Paste Spotify Playlist"
@@ -1839,22 +1837,23 @@ msgid "Prevent system suspend during playback"
 msgstr "Prevenir que o sistema entre em suspensão ao tocar"
 
 #: t_modules/t_main.py:26596
-#, fuzzy
 msgid "Record Radio"
-msgstr "Rádio da Internet"
+msgstr "Gravar Rádio"
 
 #: t_modules/t_main.py:26597
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "Grave e divida músicas enquanto ao tocar radio da internet"
 
 #: t_modules/t_main.py:26599
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Faixas serão salvas para a playlist \"Faixas de Rádio Salvas\"."
 
 #: t_modules/t_main.py:26599
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Faixas agora serão gravadas. Reinicie alguma tocando para a mudança ter "
+"efeito."
 
 #: t_modules/t_main.py:26804
 msgid "Show threshold marker"
@@ -2375,7 +2374,7 @@ msgstr "Rodar todas as playlists"
 
 #: t_modules/t_main.py:29257 t_modules/t_main.py:33985
 msgid "Added station to: "
-msgstr ""
+msgstr "Estação adicionada à: "
 
 #: t_modules/t_main.py:29626
 msgid "Buffering... "
@@ -2454,9 +2453,8 @@ msgid "Search Tag"
 msgstr "Buscar etiqueta"
 
 #: t_modules/t_main.py:33191
-#, fuzzy
 msgid "Search Country Code"
-msgstr "Buscar País"
+msgstr "Buscar Código de País"
 
 #: t_modules/t_main.py:33192
 msgid "Search Title"
@@ -2476,20 +2474,19 @@ msgstr "Obter Mais Votado"
 
 #: t_modules/t_main.py:33500
 msgid "Developer Picks"
-msgstr ""
+msgstr "Escolhas do Dev"
 
 #: t_modules/t_main.py:33648
 msgid "Add Station"
-msgstr ""
+msgstr "Adicionar Estação"
 
 #: t_modules/t_main.py:33650
 msgid "Edit Station"
-msgstr ""
+msgstr "Editar Estação"
 
 #: t_modules/t_main.py:33676
-#, fuzzy
 msgid "Station Browser"
-msgstr "Começar Transmissão"
+msgstr "Navegador de Estação"
 
 #: t_modules/t_main.py:33680
 msgid "Connecting..."
@@ -2662,7 +2659,7 @@ msgstr "Limpar Bio"
 
 #: t_modules/t_main.py:38109
 msgid "Edit..."
-msgstr ""
+msgstr "Editar..."
 
 #: t_modules/t_main.py:38440
 msgid "Playing"
@@ -2694,7 +2691,7 @@ msgstr "Vitrine + Letras"
 
 #: t_modules/t_main.py:39049
 msgid "Radio"
-msgstr ""
+msgstr "Rádio"
 
 #: t_modules/t_main.py:39062
 msgid "Toggle columns"
