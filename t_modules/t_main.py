@@ -20651,7 +20651,7 @@ def enter_radio_view():
     gui.showcase_mode = False
     gui.radio_view = True
     inp.mouse_click = False
-    gui.update_layout = True
+    gui.update_layout()
 
 
 def standard_size():
