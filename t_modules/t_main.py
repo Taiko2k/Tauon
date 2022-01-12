@@ -39868,7 +39868,7 @@ def update_layout_do():
 
     gui.draw_vis4_top = False
 
-    if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3 and prefs.backend == 4:
+    if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and not gui.mode == 3 and prefs.backend == 4:
         gui.vis = 4
         gui.turbo = True
     elif gui.vis_want == 0:
