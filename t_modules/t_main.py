@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.0.0"
+n_version = "7.0.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -20616,6 +20616,9 @@ def enter_combo():
         if gui.rsp:
             gui.rsp = False
         gui.combo_mode = True
+        gui.update_layout()
+
+
 
 def exit_combo(restore=False):
     if gui.combo_mode:
@@ -20625,7 +20628,7 @@ def exit_combo(restore=False):
         gui.radio_view = False
         if prefs.prefer_side:
             gui.rsp = True
-        update_layout = True
+        gui.update_layout()
         gui.combo_mode = False
 
 
@@ -20639,6 +20642,8 @@ def enter_showcase_view(track_id=None):
     else:
         gui.force_showcase_index = track_id
     inp.mouse_click = False
+    gui.update_layout()
+
 
 def enter_radio_view():
     if not gui.combo_mode:
@@ -20646,6 +20651,7 @@ def enter_radio_view():
     gui.showcase_mode = False
     gui.radio_view = True
     inp.mouse_click = False
+    gui.update_layout = True
 
 
 def standard_size():

@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v7.0.1
+
+ - Fixed showcase visualiser glitch
+
 v7.0.0
 
  - Added track favorite support for Jellyfin
