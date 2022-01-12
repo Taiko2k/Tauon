@@ -24116,7 +24116,7 @@ def worker1():
                         cue_main_performer = get_quoted_from_line(line)
                     if line.startswith("SONGWRITER \""):
                         cue_songwriter = get_quoted_from_line(line)
-                    if line.startswith("GENRE \""):
+                    if line.startswith("GENRE "):
                         cue_genre = line[5:].strip().replace("\"", "")
                     if line.startswith("DATE "):
                         cue_date = line[5:].strip().replace("\"", "")
