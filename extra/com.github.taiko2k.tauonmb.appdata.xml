@@ -62,7 +62,7 @@
 
   <releases>
 
-    <release version="7.0.0" date="2022-01-10">
+    <release version="7.0.1" date="2022-01-12">
       <description>
         <ul>
           <li>Added new radio station view layout</li>

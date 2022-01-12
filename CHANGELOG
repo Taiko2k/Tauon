@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.0.1
 
  - Fixed showcase visualiser glitch
+ - Fixed GENRE field in CUE sheet parsing
 
 v7.0.0
 
