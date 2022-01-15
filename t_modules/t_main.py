@@ -1504,6 +1504,8 @@ class Prefs:    # Used to hold any kind of settings
         self.radio_thumb_bans = []
         self.show_nag = False
 
+        self.playlist_exports = {}
+
 prefs = Prefs()
 
 
@@ -1903,6 +1905,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         if macos or detect_macstyle:
             self.macstyle = True
         self.radio_view = False
+        self.box_over = False
 
 
 gui = GuiVar()
@@ -13803,6 +13806,7 @@ class SubLyricsBox:
     def activate(self, track):
 
         self.active = True
+        gui.box_over = True
         self.target_track = track
 
 
@@ -13834,6 +13838,7 @@ class SubLyricsBox:
 
         if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
             self.active = False
+            gui.box_over = False
 
             if sub_lyrics_a.text and sub_lyrics_a.text != self.target_track.artist:
                 prefs.lyrics_subs[self.target_track.artist] = sub_lyrics_a.text
@@ -13892,6 +13897,101 @@ class SubLyricsBox:
 
 sub_lyrics_box = SubLyricsBox()
 
+
+
+class ExportPlaylistBox:
+
+    def __init__(self):
+
+        self.active = False
+        self.id = None
+        self.directory_text_box = TextBox2()
+        self.default = {
+            "path": music_directory if music_directory else os.path.join(user_directory, 'playlists'),
+            "type": "xspf",
+            "relative": False,
+            "auto": False,
+        }
+
+
+    def activate(self, playlist):
+
+        self.active = True
+        gui.box_over = True
+        self.id = pl_to_id(playlist)
+
+        # Prune old enteries
+        ids = []
+        for playlist in pctl.multi_playlist:
+            ids.append(playlist[6])
+        for key in list(prefs.playlist_exports.keys()):
+            if key not in ids:
+                del prefs.playlist_exports[key]
+
+    def render(self):
+
+        if not self.active:
+            return
+
+        w = 500 * gui.scale
+        h = 220 * gui.scale
+        x = int(window_size[0] / 2) - int(w / 2)
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
+        ddt.rect_a((x, y), (w, h), colours.box_background)
+        ddt.text_background_colour = colours.box_background
+
+        if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+            self.active = False
+            gui.box_over = False
+
+
+        current = prefs.playlist_exports.get(self.id)
+        if not current:
+            current = copy.copy(self.default)
+
+        ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Export Playlist"), colours.grey(230), 213)
+
+        x += round(15 * gui.scale)
+        y += round(25 * gui.scale)
+
+
+        ddt.text((x, y + 8 * gui.scale,), _("Save directory"), colours.grey(230), 11)
+        y += round(30 * gui.scale)
+
+        rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
+        fields.add(rect1)
+        #ddt.rect(rect1, [40, 40, 40, 255], True)
+        ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+        self.directory_text_box.text = current["path"]
+        self.directory_text_box.draw(x + round(4 * gui.scale), y, colours.box_input_text, True, width=rect1[2] - 8 * gui.scale)
+        current["path"] = self.directory_text_box.text
+
+        y += round(30 * gui.scale)
+        if pref_box.toggle_square(x, y, current["type"] == "xspf", "XSPF", gui.level_2_click):
+            current["type"] = "xspf"
+        if gui.level_2_click:
+            print("OKOK")
+        if pref_box.toggle_square(x + round(80 * gui.scale), y, current["type"] == "m3u", "M3U", gui.level_2_click):
+            current["type"] = "m3u"
+            print("go")
+        #pref_box.toggle_square(x + round(160 * gui.scale), y, False, "PLS", gui.level_2_click)
+        y += round(35 * gui.scale)
+        pref_box.toggle_square(x, y, False, _("Use relative paths"), gui.level_2_click)
+        y += round(60 * gui.scale)
+        pref_box.toggle_square(x, y, False, _("Auto-export"), gui.level_2_click)
+
+        y += round(0 * gui.scale)
+        ww = ddt.get_text_w(_("Export"), 211)
+        x = ((int(window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+
+        prefs.playlist_exports[self.id] = current
+
+        draw.button(_("Export"), x, y)
+
+
+export_playlist_box = ExportPlaylistBox()
 
 def toggle_repeat():
     gui.update += 1
@@ -17180,6 +17280,9 @@ tab_menu.add(_("Append Playing"), append_current_playing, append_deco, pass_ref=
 tab_menu.br()
 
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
+
+tab_menu.add(_("Export…"), export_playlist_box.activate, pass_ref=True)
+
 
 tab_menu.add_sub(_("Misc…"), 175)
 
@@ -22589,7 +22692,7 @@ class SearchOverlay:
                  not key_lalt and not key_ralt and \
                     not key_ctrl_down and not radiobox.active and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
-                    and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active\
+                    and not gui.rename_folder_box and input_text.isalnum() and not gui.box_over \
                     and not trans_edit_box.active:
 
                 # Divert to artist list if mouse over
@@ -40523,7 +40626,7 @@ def is_level_zero(include_menus=True):
             and not quick_search_mode \
             and not gui.rename_playlist_box \
             and not search_over.active \
-            and not sub_lyrics_box.active \
+            and not gui.box_over \
             and not trans_edit_box.active
 
 
@@ -41414,7 +41517,7 @@ while pctl.running:
 
         if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
                 and not gui.rename_folder_box \
-                and not gui.rename_playlist_box and not search_over.active and not sub_lyrics_box.active and not trans_edit_box.active:
+                and not gui.rename_playlist_box and not search_over.active and not gui.box_over and not trans_edit_box.active:
 
             if quick_search_mode:
                 if keymaps.test("add-to-queue") and pctl.selected_ready():
@@ -41452,8 +41555,8 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-
-
+            #from watchpoints import watch
+            #watch(gui.update)
             pass
 
         if gui.mode < 3:
@@ -41582,7 +41685,7 @@ while pctl.running:
             if view_box.active:
                 view_box.clicked = True
 
-        if inp.mouse_click and (prefs.show_nag or sub_lyrics_box.active or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
+        if inp.mouse_click and (prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
             inp.mouse_click = False
             gui.level_2_click = True
         else:
@@ -41662,7 +41765,7 @@ while pctl.running:
                     track_box = True
 
             # These need to be disabled when text fields are active
-            if not search_over.active and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
+            if not search_over.active and not gui.box_over and radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
                 if keymaps.test("advance"):
                     key_right_press = False
                     pctl.advance()
@@ -41680,7 +41783,6 @@ while pctl.running:
 
                 if keymaps.test("random-track-start"):
                     pctl.advance(rr=True)
-
 
                 if keymaps.test("vol-down"):
                     if pctl.player_volume > 3:
@@ -44314,6 +44416,9 @@ while pctl.running:
             if sub_lyrics_box.active:
                 sub_lyrics_box.render()
 
+            if export_playlist_box.active:
+                export_playlist_box.render()
+
             if trans_edit_box.active:
                 trans_edit_box.render()
 
@@ -44333,7 +44438,7 @@ while pctl.running:
             search_over.render()
 
             if keymaps.test("quick-find") and quick_search_mode is False:
-                if not search_over.active:
+                if not search_over.active and not gui.box_over:
                     quick_search_mode = True
                 if search_clear_timer.get() > 3:
                     search_text.text = ""
