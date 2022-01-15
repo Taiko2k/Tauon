@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v7.0.2
+
+ - [Phazor] Improved performance when CPU under heavy load
+
 v7.0.1
 
  - Fixed showcase visualiser glitch

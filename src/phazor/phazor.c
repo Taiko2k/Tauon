@@ -44,6 +44,34 @@
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
+
+
+float bfl[BUFF_SIZE];
+float bfr[BUFF_SIZE];
+int low = 0;
+int high = 0;
+int high_mark = BUFF_SIZE - BUFF_SAFE;
+int watermark = BUFF_SIZE - BUFF_SAFE;
+
+int get_buff_fill(){
+    if (low <= high) return high - low;
+    return (watermark - low) + high;
+}
+
+void buff_cycle(){
+    if (high > high_mark){
+        watermark = high;
+        high = 0;
+    }
+    if (low >= watermark) low = 0;
+}
+
+void buff_reset(){
+    low = 0;
+    high = 0;
+    watermark = high_mark;
+}
+
 // before writing
 
 //double get_time_ms() {
@@ -56,10 +84,10 @@ double t_start, t_end;
 
 int out_thread_running = 0; // bool
 
-float buffl[BUFF_SIZE];
-float buffr[BUFF_SIZE];
-unsigned int buff_filled = 0;
-unsigned int buff_base = 0;
+//float buffl[BUFF_SIZE];
+//float buffr[BUFF_SIZE];
+//unsigned int buff_filled = 0;
+//unsigned int buff_base = 0;
 
 float fadefl[BUFF_SIZE];
 float fadefr[BUFF_SIZE];
@@ -195,11 +223,11 @@ void fade_fx() {
             float cross = fade_position / (float) fade_fill;
             float cross_i = 1.0 - cross;
 
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] *= cross;
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] += fadefl[fade_position] * cross_i;
+            bfl[high] *= cross;
+            bfl[high] += fadefl[fade_position] * cross_i;
 
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] *= cross;
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] += fadefr[fade_position] * cross_i;
+            bfr[high] *= cross;
+            bfr[high] += fadefr[fade_position] * cross_i;
             fade_position++;
         }
     }
@@ -285,7 +313,7 @@ void resample_to_buffer(int in_frames) {
     src_data.data_in = re_in;
     src_data.data_out = re_out;
     src_data.input_frames = in_frames;
-    src_data.output_frames = BUFF_SIZE;
+    src_data.output_frames = BUFF_SIZE - BUFF_SAFE;
     src_data.src_ratio = (double) sample_rate_out / (double) sample_rate_src;
     src_data.end_of_input = 0;
 
@@ -298,16 +326,20 @@ void resample_to_buffer(int in_frames) {
     int i = 0;
     while (i < out_frames) {
 
-        buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_out[i * 2];
-        buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_out[(i * 2) + 1];
+        //buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_out[i * 2];
+        //buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_out[(i * 2) + 1];
+        bfl[high] = re_out[i * 2];
+        bfr[high] = re_out[(i * 2) + 1];
 
         if (fade_fill > 0) {
             fade_fx();
         }
 
-        buff_filled++;
+        high += 1;
+        //buff_filled++;
         i++;
     }
+    buff_cycle();
 
 }
 
@@ -472,17 +504,19 @@ int wave_decode(int read_frames) {
         i = 0;
         while (i < frames_read){
 
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_in[i * 2];
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_in[i * 2 + 1];
+            bfl[high] = re_in[i * 2];
+            bfr[high] = re_in[i * 2 + 1];
 
             if (fade_fill > 0) {
                 fade_fx();
             }
 
-            buff_filled++;
+            //buff_filled++;
+            high++;
             samples_decoded++;
             i++;
         }
+        buff_cycle();
     }
     if (end == 1) return 1;
     return 0;
@@ -533,25 +567,26 @@ void read_to_buffer_char16(char src[], int n_bytes) {
     int i = 0;
     if (src_channels == 1){
         while (i < n_bytes) {
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = ((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0;
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
+            bfl[high] = ((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0;
+            bfr[high] = bfl[high];
             if (fade_fill > 0) {
                 fade_fx();
             }
-            buff_filled++;
+            high++;
             i += 2;
         }
     } else {
         while (i < n_bytes) {
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = (((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = (((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
+            bfl[high] = (((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
+            bfr[high] = (((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
             if (fade_fill > 0) {
                 fade_fx();
             }
-            buff_filled++;
+            high++;
             i += 4;
         }
     }
+    buff_cycle();
 }
 
 void read_to_buffer_s16int_resample(int16_t src[], int n_samples) {
@@ -587,25 +622,28 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
     int i = 0;
     if (src_channels == 1){
         while (i < n_samples){
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = src[i] / 32768.0;
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
+            bfl[high] = src[i] / 32768.0;
+            bfr[high] = bfl[high];
             if (fade_fill > 0) {
                 fade_fx();
             }
             i+=1;
-            buff_filled++;
+            //buff_filled++;
+            high++;
         }
+        buff_cycle();
 
     } else {
         while (i < n_samples){
-            buffl[(buff_filled + buff_base) % BUFF_SIZE] = src[i] / 32768.0;
-            buffr[(buff_filled + buff_base) % BUFF_SIZE] = src[i + 1] / 32768.0;
+            bfl[high] = src[i] / 32768.0;
+            bfr[high] = src[i + 1] / 32768.0;
             if (fade_fill > 0) {
                 fade_fx();
             }
             i+=2;
-            buff_filled++;
+            high++;
         }
+        buff_cycle();
     }
 
 }
@@ -633,7 +671,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
     if (sample_rate_out != current_sample_rate) {
         if (want_sample_rate != sample_rate_out) {
             want_sample_rate = sample_rate_out;
-            sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            sample_change_byte = high;
         }
     }
 
@@ -655,7 +693,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
         return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
     }
                              
-    if (frame->header.blocksize > (BUFF_SIZE - buff_filled)) {
+    if (frame->header.blocksize > (BUFF_SIZE - get_buff_fill())) {
         printf("pa: critical: BUFFER OVERFLOW!");
     }
 
@@ -672,22 +710,22 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 
                 // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
 
-                buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 8388608.0;
+                bfl[high] = (buffer[0][i]) / 8388608.0;
 
                 if (frame->header.channels == 1) {
-                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = buffl[(buff_filled + buff_base) % BUFF_SIZE];
+                    bfr[high] = bfl[high];
                 } else {
-                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[1][i]) / 8388608.0;
+                    bfr[high] = (buffer[1][i]) / 8388608.0;
                 }
             } // end 24 bit audio
 
                 // Read 16bit audio
             else if (frame->header.bits_per_sample == 16) {
-                buffl[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 32768.0;
+                bfl[high] = (buffer[0][i]) / 32768.0;
                 if (frame->header.channels == 1) {
-                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[0][i]) / 32768.0;
+                    bfr[high] = (buffer[0][i]) / 32768.0;
                 } else {
-                    buffr[(buff_filled + buff_base) % BUFF_SIZE] = (buffer[1][i]) / 32768.0;
+                    bfr[high] = (buffer[1][i]) / 32768.0;
                 }
             } else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
 
@@ -695,9 +733,11 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
                 fade_fx();
             }
 
-            buff_filled++;
+            high++;
             i++;
         }
+
+        buff_cycle();
 
     } else {
 
@@ -939,7 +979,7 @@ int load_next() {
     if (loaded_target_file[0] == 'h') buffering = 1;
 
     rg_set = 1;
-    rg_byte = (buff_filled + buff_base) % BUFF_SIZE;
+    rg_byte = high;
 
     char peak[35];
 
@@ -957,7 +997,7 @@ int load_next() {
         load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
         if (current_sample_rate != sample_rate_out) {
-            sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            sample_change_byte = high;
             want_sample_rate = sample_rate_out;
         }
         pthread_mutex_unlock(&buffer_mutex);
@@ -978,7 +1018,7 @@ int load_next() {
       current_length_count = openmpt_module_get_duration_seconds(mod) * 48000;
 
       if (current_sample_rate != sample_rate_out) {
-            sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            sample_change_byte = high;
             want_sample_rate = sample_rate_out;
                 }
 
@@ -988,7 +1028,7 @@ int load_next() {
           reset_set_value =  48000 * (load_target_seek / 1000.0);
           samples_decoded = reset_set_value * 2;
           reset_set = 1;
-          reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+          reset_set_byte = high;
           load_target_seek = 0;
       }                                          
       pthread_mutex_unlock(&buffer_mutex);
@@ -1069,7 +1109,7 @@ int load_next() {
             if (load_target_seek > 0) {
                 reset_set_value = (int) wave_samplerate * (load_target_seek / 1000.0);
                 reset_set = 1;
-                reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                reset_set_byte = high;
                 load_target_seek = 0;
             }
             pthread_mutex_unlock(&buffer_mutex);
@@ -1094,7 +1134,7 @@ int load_next() {
                 src_channels = op_channel_count(opus_dec, -1);
 
                 if (current_sample_rate != sample_rate_out) {
-                    sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                    sample_change_byte = high;
                     want_sample_rate = sample_rate_out;
                 }
 
@@ -1106,7 +1146,7 @@ int load_next() {
                     reset_set_value = op_raw_tell(opus_dec);
                     samples_decoded = reset_set_value * 2;
                     reset_set = 1;
-                    reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                    reset_set_byte = high;
                     load_target_seek = 0;
                 }
                 pthread_mutex_unlock(&buffer_mutex);
@@ -1136,7 +1176,7 @@ int load_next() {
                 src_channels = vi.channels;
 
                 if (current_sample_rate != sample_rate_out) {
-                    sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                    sample_change_byte = high;
                     want_sample_rate = sample_rate_out;
                 }
 
@@ -1148,7 +1188,7 @@ int load_next() {
                     reset_set_value = vi.rate * (load_target_seek / 1000.0); // op_pcm_tell(opus_dec); that segfaults?
                     //reset_set_value = 0;
                     reset_set = 1;
-                    reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                    reset_set_byte = high;
                     load_target_seek = 0;
                 }
                 pthread_mutex_unlock(&buffer_mutex);
@@ -1188,7 +1228,7 @@ int load_next() {
             sample_rate_src = rate;
             src_channels = channels;
             if (current_sample_rate != sample_rate_out) {
-                sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                sample_change_byte = high;
                 want_sample_rate = sample_rate_out;
             }
             current_length_count = (u_int) mpg123_length(mh);
@@ -1200,7 +1240,7 @@ int load_next() {
                     mpg123_seek(mh, (int) rate * (load_target_seek / 1000.0), SEEK_SET);
                     reset_set_value = mpg123_tell(mh);
                     reset_set = 1;
-                    reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+                    reset_set_byte = high;
                     load_target_seek = 0;
                 }
                 pthread_mutex_unlock(&buffer_mutex);
@@ -1225,8 +1265,9 @@ void end() {
     pthread_mutex_lock(&buffer_mutex);
     mode = STOPPED;
     command = NONE;
-    buff_base = 0;
-    buff_filled = 0;
+    //buff_base = 0;
+    //buff_filled = 0;
+    buff_reset();
     buffering = 0;
     pthread_mutex_unlock(&buffer_mutex);
 //    #ifndef AO
@@ -1251,7 +1292,7 @@ void decoder_eos() {
         next_ready = 0;
         reset_set_value = 0;
         reset_set = 1;
-        reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+        reset_set_byte = high;
         pthread_mutex_unlock(&buffer_mutex);
 
     } else mode = ENDING;
@@ -1305,7 +1346,7 @@ void pump_decode() {
             pthread_mutex_lock(&buffer_mutex);
             reset_set_value = rate * (load_target_seek / 1000.0);
             reset_set = 1;
-            reset_set_byte = (buff_filled + buff_base) % BUFF_SIZE;
+            reset_set_byte = high;
             load_target_seek = 0;
             pthread_mutex_unlock(&buffer_mutex);
         }
@@ -1401,15 +1442,16 @@ void pump_decode() {
         pthread_mutex_lock(&buffer_mutex);
         while (i < b) {
 
-            memcpy(&buffl[((buff_filled + buff_base) % BUFF_SIZE)], &ffm_buffer[i], 4);
-            memcpy(&buffr[((buff_filled + buff_base) % BUFF_SIZE)], &ffm_buffer[i + 4], 4);
+            memcpy(&bfl[high], &ffm_buffer[i], 4);
+            memcpy(&bfr[high], &ffm_buffer[i + 4], 4);
 
             if (fade_fill > 0) {
                 fade_fx();
             }
-            buff_filled++;
+            high++;
             i += 8;
         }
+        buff_cycle();
         pthread_mutex_unlock(&buffer_mutex);
         if (done == 1) {
             printf("pa: FFMPEG has finished\n");
@@ -1437,7 +1479,7 @@ void *out_thread(void *thread_id) {
     //printf("pa: Start out thread\n");
 
     while (out_thread_running == 1) {
-        if (buffering == 1 && buff_filled > 90000) {
+        if (buffering == 1 && get_buff_fill() > 90000) {
 
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
@@ -1447,7 +1489,7 @@ void *out_thread(void *thread_id) {
 
         }
 
-        if (buff_filled < 10 && loaded_target_file[0] == 'h') {
+        if (get_buff_fill() < 10 && loaded_target_file[0] == 'h') {
 
             if (mode == PLAYING) {
                 #ifndef AO
@@ -1459,9 +1501,9 @@ void *out_thread(void *thread_id) {
         }
 
         // Process decoded audio data and send out
-        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && buff_filled > 0 && buffering == 0) {
+        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
 
-            pthread_mutex_lock(&buffer_mutex);
+            //pthread_mutex_lock(&buffer_mutex);
 
             b = 0; // byte number
 
@@ -1471,7 +1513,7 @@ void *out_thread(void *thread_id) {
             //printf("pa: Buffer is at %d\n", buff_filled);
 
             // Fill the out buffer...
-            while (buff_filled > 0) {
+            while (get_buff_fill() > 0) {
 
 
                 // Truncate data if gate is closed anyway
@@ -1483,7 +1525,7 @@ void *out_thread(void *thread_id) {
 //                    break;
 //                }
 
-                if (reset_set == 1 && reset_set_byte == buff_base) {
+                if (reset_set == 1 && reset_set_byte == low) {
                     //printf("pa: Reset position counter\n");
                     reset_set = 0;
                     position_count = reset_set_value;
@@ -1491,7 +1533,7 @@ void *out_thread(void *thread_id) {
 
                 // Set new gain value
                 if (config_fade_jump == 0) {
-                    if (rg_set == 1 && reset_set_byte == buff_base) {
+                    if (rg_set == 1 && reset_set_byte == low) {
                         rg_value_on = rg_value_want;
                         rg_set = 0;
                     }
@@ -1536,32 +1578,35 @@ void *out_thread(void *thread_id) {
                     }
                 }
 
-                if (fabs(buffl[buff_base]) > peak_roll_l) peak_roll_l = fabs(buffl[buff_base]);
-                if (fabs(buffr[buff_base]) > peak_roll_r) peak_roll_r = fabs(buffr[buff_base]);
+                float l = bfl[low];
+                float r = bfr[low];
+
+                if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
+                if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
 
                 // Apply gain amp
                 if (rg_value_on != 0.0) {
 
                     // Left channel
-                    if (buffl[buff_base] > 0 && buffl[buff_base] * rg_value_on <= 0) {
+                    if (l > 0 && l * rg_value_on <= 0) {
                         printf("pa: Warning: Audio clipped!\n");
-                    } else if (buffl[buff_base] < 0 && buffl[buff_base] * rg_value_on >= 0) {
+                    } else if (l < 0 && l * rg_value_on >= 0) {
                         printf("pa: Warning: Audio clipped!\n");
-                    } else buffl[buff_base] *= rg_value_on;
+                    } else l *= rg_value_on;
 
                     // Right channel
-                    if (buffr[buff_base] > 0 && buffr[buff_base] * rg_value_on <= 0) {
+                    if (r > 0 && r * rg_value_on <= 0) {
                         printf("pa: Warning: Audio clipped!\n");
-                    } else if (buffr[buff_base] < 0 && buffr[buff_base] * rg_value_on >= 0) {
+                    } else if (r < 0 && r * rg_value_on >= 0) {
                         printf("pa: Warning: Audio clipped!\n");
-                    } else buffr[buff_base] *= rg_value_on;
+                    } else r *= rg_value_on;
 
                 } // End amp
 
                 // Apply final volume adjustment (logarithmic)
                 float final_vol = (gate * volume_on) * (gate * volume_on);
-                buffl[buff_base] = buffl[buff_base] * final_vol;
-                buffr[buff_base] = buffr[buff_base] * final_vol;
+                l = l * final_vol;
+                r = r * final_vol;
 
                 // Pack integer audio data to bytes
 //                out_buf[b] = (buffl[buff_base]) & 0xFF;
@@ -1571,16 +1616,16 @@ void *out_thread(void *thread_id) {
                 //printf("%f\n",out_buff[b]);
 
                 #ifndef AO
-                out_buff[b] = buffl[buff_base];
-                out_buff[b + 1] = buffr[buff_base];
+                out_buff[b] = l;
+                out_buff[b + 1] = r;
                 b += 2;
                 #else
-                temp32 = buffl[buff_base] * 2147483648;
+                temp32 = l * 2147483648;
                 out_buffc[b] = (temp32) & 0xFF;
                 out_buffc[b + 1] = (temp32 >> 8) & 0xFF;
                 out_buffc[b + 2] = (temp32 >> 16) & 0xFF;
                 out_buffc[b + 3] = (temp32 >> 24) & 0xFF;
-                temp32 = buffr[buff_base] * 2147483648;
+                temp32 = r * 2147483648;
                 out_buffc[b + 4] = (temp32) & 0xFF;
                 out_buffc[b + 5] = (temp32 >> 8) & 0xFF;
                 out_buffc[b + 6] = (temp32 >> 16) & 0xFF;
@@ -1589,15 +1634,17 @@ void *out_thread(void *thread_id) {
                 #endif
 
 
-                buff_filled--;
-                buff_base = (buff_base + 1) % BUFF_SIZE;
+                //buff_filled--;
+                //buff_base = (buff_base + 1) % BUFF_SIZE;
+                low += 1;
+                buff_cycle();
 
                 position_count++;
 
 
                 if (b >= 256 * 2) break; // Buffer is now full
             }
-            pthread_mutex_unlock(&buffer_mutex);
+            //pthread_mutex_unlock(&buffer_mutex);
             // Send data to pulseaudio server
             if (b > 0) {
 
@@ -1651,7 +1698,7 @@ void *out_thread(void *thread_id) {
 
         } // close if data
         else {
-            usleep(1000);
+            usleep(2000);
         }
 
     } // close main loop
@@ -1776,15 +1823,20 @@ void *main_loop(void *thread_id) {
 
                             float l = current_sample_rate * 0.6;
                             int i = 0;
+                            int p = low;
                             float v = 1.0;
                             while (i < l){
                                 v = 1.0 - (i / l);
-                                buffl[(buff_base + i) % BUFF_SIZE] *= v;
-                                buffr[(buff_base + i) % BUFF_SIZE] *= v;
+                                bfl[p] *= v;
+                                bfr[p] *= v;
                                 i++;
+                                p++;
+                                if (p > watermark){
+                                    p = 0;
+                                }
                             }
-                            buff_filled = l;
-                            reset_set_byte = (buff_base + i) % BUFF_SIZE;
+                            high = p;
+                            reset_set_byte = p;
                             if (reset_set == 0) {
                                 reset_set = 1;
                                 reset_set_value = 0;
@@ -1794,20 +1846,36 @@ void *main_loop(void *thread_id) {
                         }
                         else if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
                             int reserve = current_sample_rate * 0.1;
-                            int l;
-                            l = current_sample_rate * 0.7;
-                            if (buff_filled > l + reserve) {
+                            int l = current_sample_rate * 0.7;
+
+                            if (get_buff_fill() > l + reserve) {
                                 int i = 0;
-                                while (i < l) {
-                                    fadefl[i] = buffl[(buff_base + i + reserve) % BUFF_SIZE];
-                                    fadefr[i] = buffr[(buff_base + i + reserve) % BUFF_SIZE];
+                                int p = low;
+                                while (i < reserve){
+                                    p++;
                                     i++;
+                                    if (p >= watermark){
+                                        p = 0;
+                                    }
+                                }
+                                int mark = p;
+                                i = 0;
+
+                                while (i < l) {
+                                    fadefl[i] = bfl[p]; //buffl[(buff_base + i + reserve) % BUFF_SIZE];
+                                    fadefr[i] = bfr[p]; //buffr[(buff_base + i + reserve) % BUFF_SIZE];
+                                    i++;
+                                    p++;
+                                    if (p >= watermark){
+                                        p = 0;
+                                    }
                                 }
                                 fade_position = 0;
                                 fade_fill = l;
-                                buff_filled = reserve;
+                                high = mark;
+                                //buff_filled = reserve;
 
-                                reset_set_byte = (buff_base + reserve) % BUFF_SIZE;
+                                reset_set_byte = p;
                                 if (reset_set == 0) {
                                     reset_set = 1;
                                     reset_set_value = 0;
@@ -1819,8 +1887,7 @@ void *main_loop(void *thread_id) {
 
                             // Jump immediately
                             position_count = 0;
-                            buff_base = 0;
-                            buff_filled = 0;
+                            buff_reset();
                             gate = 0;
                             sample_change_byte = 0;
                             reset_set_byte = 0;
@@ -1884,8 +1951,7 @@ void *main_loop(void *thread_id) {
 
                 pthread_mutex_lock(&buffer_mutex);
 
-                buff_base = 0;
-                buff_filled = 0;
+                buff_reset();
 
 //                #ifndef AO
 //                pthread_mutex_lock(&pulse_mutex);
@@ -1906,8 +1972,9 @@ void *main_loop(void *thread_id) {
 
             if (mode == RAMP_DOWN && gate == 0) {
                 pthread_mutex_lock(&buffer_mutex);
-                buff_base = 0; //(buff_base + buff_filled) % BUFF_SIZE;
-                buff_filled = 0;
+                buff_reset();
+                //buff_base = 0; //(buff_base + buff_filled) % BUFF_SIZE;
+                //buff_filled = 0;
 //                if (command == SEEK && config_fast_seek == 1) {
 //                    pthread_mutex_lock(&pulse_mutex);
 //                    #ifndef AO
@@ -1925,20 +1992,20 @@ void *main_loop(void *thread_id) {
 
         // Refill the buffer
         if (mode == PLAYING) {
-            while (buff_filled < BUFF_SAFE && mode != ENDING) {
+            while (get_buff_fill() < BUFF_SAFE && mode != ENDING) {
                 pump_decode();
 
             }
         }
 
-        if (mode == ENDING && buff_filled == 0) {
+        if (mode == ENDING && get_buff_fill() == 0) {
             printf("pa: Buffer ran out at end of track\n");
             end();
 
         }
         if (mode == ENDING && next_ready == 1) {
             printf("pa: Next registered while buffer was draining\n");
-            printf("pa: -- remaining was %d\n", buff_filled);
+            printf("pa: -- remaining was %d\n", get_buff_fill());
             mode = PLAYING;
         }
 
@@ -1955,8 +2022,7 @@ void *main_loop(void *thread_id) {
     }
 
     position_count = 0;
-    buff_base = 0;
-    buff_filled = 0;
+    buff_reset();
 
     //disconnect_pulse();
     FLAC__stream_decoder_finish(dec);
@@ -2147,12 +2213,16 @@ float get_level_peak_r() {
 int get_spectrum(int n_bins, float* bins) {
 
     int samples = 2048;
-    int base = buff_base;
+    int base = low;
 
     int i = 0;
     while (i < samples) {
-        rbuf[i] = (buffl[(base + i) % BUFF_SIZE]) * 0.5 * (1 - cos(2*3.1415926*i/samples));
+        if (base >= watermark){
+            base = 0;
+        }
+        rbuf[i] = bfl[base] * 0.5 * (1 - cos(2*3.1415926*i/samples));
         i++;
+        base += 1;
     }
 
     kiss_fftr( ffta , rbuf , cbuf );
@@ -2182,7 +2252,7 @@ int get_spectrum(int n_bins, float* bins) {
 
 int is_buffering(){
     if (buffering == 0) return 0;
-    return (int) (buff_filled / 90000.0 * 100);
+    return (int) (get_buff_fill() / 90000.0 * 100);
 }
 /* int get_latency(){ */
 /*   return active_latency / 1000; */
