@@ -13964,7 +13964,7 @@ class ExportPlaylistBox:
         #ddt.rect(rect1, [40, 40, 40, 255], True)
         ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
         self.directory_text_box.text = current["path"]
-        self.directory_text_box.draw(x + round(4 * gui.scale), y, colours.box_input_text, True, width=rect1[2] - 8 * gui.scale)
+        self.directory_text_box.draw(x + round(4 * gui.scale), y, colours.box_input_text, True, width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
         current["path"] = self.directory_text_box.text
 
         y += round(30 * gui.scale)
@@ -41803,7 +41803,7 @@ while pctl.running:
                     track_box = True
 
             # These need to be disabled when text fields are active
-            if not search_over.active and not gui.box_over and radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
+            if not search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
                 if keymaps.test("advance"):
                     key_right_press = False
                     pctl.advance()
