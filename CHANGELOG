@@ -5,7 +5,6 @@ v7.0.2
 
  - Added lyric provider lyrics.ovh
  - Removed lyric provider LyricWiki
- - Fixed bug causing many shortcuts to not work
  - [Phazor] Improved performance when CPU under heavy load
 
 v7.0.1
