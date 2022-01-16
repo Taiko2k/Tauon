@@ -3,6 +3,8 @@ Changelog-------------------------------------
 
 v7.0.2
 
+ - Added lyric provider lyrics.ovh
+ - Removed lyric provider LyricWiki
  - [Phazor] Improved performance when CPU under heavy load
 
 v7.0.1
