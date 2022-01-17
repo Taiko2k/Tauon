@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.0.2"
+n_version = "7.1.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4660,6 +4660,7 @@ class PlayerCtl:
         self.repeat_mode = prefs.repeat_mode
         self.album_repeat_mode = prefs.album_repeat_mode
         self.album_shuffle_mode = prefs.album_shuffle_mode
+        self.album_shuffle_lock_mode = False
         # self.album_shuffle_pool = []
         # self.album_shuffle_id = ""
         self.last_playing_time = 0
@@ -6007,7 +6008,7 @@ class PlayerCtl:
                 self.play_target(jump=not end)
 
         # If random, jump to random track
-        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not self.album_shuffle_mode:
+        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not (self.album_shuffle_mode or self.album_shuffle_lock_mode):
             #self.queue_step += 1
             new_step = self.queue_step + 1
 
@@ -6205,7 +6206,7 @@ class PlayerCtl:
 
         else:
 
-            if self.random_mode and self.album_shuffle_mode:
+            if self.random_mode and (self.album_shuffle_mode or self.album_shuffle_lock_mode):
 
                 # Album shuffle mode
                 print("Album shuffle mode")
@@ -6223,9 +6224,11 @@ class PlayerCtl:
                     # If the next track is a new album, go to a new album
                     elif po.parent_folder_path != pctl.g(self.playing_playlist()[self.playlist_playing_position + 1]).parent_folder_path:
                         redraw = True
+                    # Always redraw on press in album shuffle lockdown
+                    if self.album_shuffle_lock_mode and not end:
+                        redraw = True
 
                     if not redraw:
-                        print("Trigger Pass")
                         self.playlist_playing_position += 1
                         self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                         self.queue_step = len(self.track_queue) - 1
@@ -14077,7 +14080,7 @@ def menu_album_random():
         pctl.mpris.update_shuffle()
 
 
-def toggle_shuffle_layout():
+def toggle_shuffle_layout(albums=False):
     prefs.shuffle_lock ^= True
     if prefs.shuffle_lock:
 
@@ -14089,21 +14092,31 @@ def toggle_shuffle_layout():
             view_box.lyrics(hit=True)
         pctl.random_mode = True
         pctl.repeat_mode = False
+        if albums:
+            print("GO")
+            pctl.album_shuffle_lock_mode = True
         if pctl.playing_state == 0:
             pctl.advance()
     else:
         pctl.random_mode = gui.shuffle_was_random
         pctl.repeat_mode = gui.shuffle_was_repeat
+        pctl.album_shuffle_lock_mode = False
         if not gui.shuffle_was_showcase:
             exit_combo()
+
+def toggle_shuffle_layout_albums():
+    toggle_shuffle_layout(albums=True)
+
 
 def exit_shuffle_layout(_):
     return prefs.shuffle_lock
 
+shuffle_menu.add(_("Shuffle Lockdown"), toggle_shuffle_layout)
+shuffle_menu.add(_("Shuffle Lockdown Albums"), toggle_shuffle_layout_albums)
+shuffle_menu.br()
 shuffle_menu.add(_("Shuffle OFF"), menu_shuffle_off)
 shuffle_menu.add(_("Shuffle Tracks"), menu_set_random)
 shuffle_menu.add(_("Random Albums"), menu_album_random)
-shuffle_menu.add(_("Shuffle Lockdown"), toggle_shuffle_layout)
 
 def bio_set_large():
     #if window_size[0] >= round(1000 * gui.scale):
@@ -28944,7 +28957,10 @@ class TopPanel:
             if colours.lm:
                 colour = [10, 10, 10, 255]
             if not pctl.broadcast_active:
-                ddt.text((window_size[0] // 2, 8 * gui.scale, 2), "Tauon Music Box SHUFFLE!", colour,
+                text = "Tauon Music Box SHUFFLE!"
+                if pctl.album_shuffle_lock_mode:
+                    text = "Tauon Music Box ALBUM SHUFFLE!"
+                ddt.text((window_size[0] // 2, 8 * gui.scale, 2), text, colour,
                                           212, bg=colours.top_panel_background)
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
