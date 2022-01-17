@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-01-10 17:19+1300\n"
-"PO-Revision-Date: 2021-12-28 20:50+0000\n"
+"PO-Revision-Date: 2022-01-13 01:56+0000\n"
 "Last-Translator: Pablo Estigarribia Davyt <pablodav@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -527,32 +527,32 @@ msgstr "Eliminar Incrustado | Pista"
 
 #: t_modules/t_main.py:15163
 msgid "Quick-Fetch Cover Art"
-msgstr ""
+msgstr "Buscar búsqueda de Portada"
 
 #: t_modules/t_main.py:15213
 msgid "Paste Spotify Album"
-msgstr ""
+msgstr "Pegar álbum de Spotify"
 
 #: t_modules/t_main.py:15433 t_modules/t_main.py:15434
 #: t_modules/t_main.py:44255
 msgid "Rename"
-msgstr ""
+msgstr "Renombrar"
 
 #: t_modules/t_main.py:15445
 msgid "Pin"
-msgstr ""
+msgstr "Anclar"
 
 #: t_modules/t_main.py:15447
 msgid "Unpin"
-msgstr ""
+msgstr "Desanclar"
 
 #: t_modules/t_main.py:15456
 msgid "Unlock"
-msgstr ""
+msgstr "Desbloquear"
 
 #: t_modules/t_main.py:15458 t_modules/t_main.py:15492
 msgid "Lock"
-msgstr ""
+msgstr "Bloquear"
 
 #: t_modules/t_main.py:15675 t_modules/t_main.py:20225
 #: t_modules/t_main.py:26878 t_modules/t_main.py:26881
@@ -560,122 +560,125 @@ msgstr ""
 #: t_modules/t_main.py:27380 t_modules/t_main.py:27388
 #: t_modules/t_main.py:27392 t_modules/t_main.py:27402
 msgid "Clear"
-msgstr ""
+msgstr "Limpiar"
 
 #: t_modules/t_main.py:15731
 msgid "Are you sure you want to delete this playlist?"
-msgstr ""
+msgstr "¿Seguro que quieres eliminar esta lista de reproducción?"
 
 #: t_modules/t_main.py:15731
 msgid "Try again while holding shift to confirm"
 msgstr ""
+"Vuelve a intentarlo mientras mantienes presionada la tecla Mayús para "
+"confirmar"
 
 #: t_modules/t_main.py:15839
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "¿Está seguro de que desea eliminar la lista de reproducción: %s?"
 
 #: t_modules/t_main.py:15881
 msgid "Rescanning folders..."
-msgstr ""
+msgstr "Volviendo a escanear carpetas..."
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
 msgid "Playlist is locked"
-msgstr ""
+msgstr "La lista de reproducción está bloqueada"
 
 #: t_modules/t_main.py:16312 t_modules/t_main.py:16313
 #: t_modules/t_main.py:44264
 msgid "Delete"
-msgstr ""
+msgstr "Eliminar"
 
 #: t_modules/t_main.py:16379
 msgid "Add Spotify Album"
-msgstr ""
+msgstr "Agregar álbum de Spotify"
 
 #: t_modules/t_main.py:16483
 msgid "Playlist contains non-Spotify tracks"
-msgstr ""
+msgstr "La lista de reproducción contiene pistas que no son de Spotify"
 
 #: t_modules/t_main.py:16489
-#, fuzzy
 msgid "Created new Spotify playlist"
-msgstr "Fin de la lista de reproducción"
+msgstr "Creada nueva lista de reproducción de Spotify"
 
 #: t_modules/t_main.py:16495
-#, fuzzy
 msgid "Error creating Spotify playlist"
-msgstr "Fin de la lista de reproducción"
+msgstr "Error al crear la lista de reproducción de Spotify"
 
 #: t_modules/t_main.py:16498
-#, fuzzy
 msgid "Updated Spotify playlist"
-msgstr "Fin de la lista de reproducción"
+msgstr "Lista de reproducción de Spotify actualizada"
 
 #: t_modules/t_main.py:17138
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
+"OK. A partir de ahora, esta lista de reproducción se ordenará "
+"automáticamente al importarla"
 
 #: t_modules/t_main.py:17139
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
+"Puedes eliminar o editar este comportamiento en \"Varios...\" > \"Editar "
+"generador...\""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
 #: t_modules/t_main.py:20979
 msgid "New Playlist"
-msgstr ""
+msgstr "Nueva lista de reproducción"
 
 #: t_modules/t_main.py:17148
 msgid "Upload"
-msgstr ""
+msgstr "Subir"
 
 #: t_modules/t_main.py:17160
 msgid "Regenerate"
-msgstr ""
+msgstr "Regenerar"
 
 #: t_modules/t_main.py:17161
 msgid "Generate…"
-msgstr ""
+msgstr "Generar…"
 
 #: t_modules/t_main.py:17162
 msgid "Sort…"
-msgstr ""
+msgstr "Ordenar…"
 
 #: t_modules/t_main.py:17163
 msgid "From Current…"
-msgstr ""
+msgstr "Desde Actual…"
 
 #: t_modules/t_main.py:17168
 msgid "Sort by Imported"
-msgstr ""
+msgstr "Ordenar por Importado"
 
 #: t_modules/t_main.py:17169
 msgid "Sort by Filepath"
-msgstr ""
+msgstr "Ordenar por ruta de archivo"
 
 #: t_modules/t_main.py:17170
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Ordenar los números de pista"
 
 #: t_modules/t_main.py:17171
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Ordenar año por Artista"
 
 #: t_modules/t_main.py:17172
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Hacer que la lista de reproducción se ordene automáticamente"
 
 #: t_modules/t_main.py:17178 t_modules/t_main.py:18944
 #: t_modules/t_main.py:20223
 msgid "Paste"
-msgstr ""
+msgstr "Pegar"
 
 #: t_modules/t_main.py:17179
 msgid "Append Playing"
-msgstr ""
+msgstr "Agregar a Reproducción"
 
 #: t_modules/t_main.py:17184
 msgid "Misc…"
-msgstr ""
+msgstr "Varios…"
 
 #: t_modules/t_main.py:17233
 msgid "No target folder selected"
