@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2022-01-10 17:19+1300\n"
-"PO-Revision-Date: 2021-12-21 21:50+0000\n"
+"PO-Revision-Date: 2022-01-14 05:56+0000\n"
 "Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.10\n"
+"X-Generator: Weblate 4.10.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1939 t_modules/t_main.py:1941
@@ -761,9 +761,8 @@ msgid "Export XSPF"
 msgstr "Exporter en XSPF"
 
 #: t_modules/t_main.py:17466
-#, fuzzy
 msgid "Export M3U"
-msgstr "Exporter en XSPF"
+msgstr "Exporter en M3U"
 
 #: t_modules/t_main.py:17467
 msgid "Toggle Breaks"
@@ -1265,9 +1264,8 @@ msgid "Rating"
 msgstr "Évaluation"
 
 #: t_modules/t_main.py:20974
-#, fuzzy
 msgid "New Radio List"
-msgstr "Nouvelle liste de lecture"
+msgstr "Nouvelle liste de radio"
 
 #: t_modules/t_main.py:21003
 msgid "Paste Spotify Playlist"
@@ -1854,31 +1852,33 @@ msgid "Change requires restart"
 msgstr "Les changements seront appliqués au redémarrage"
 
 #: t_modules/t_main.py:26591
-#, fuzzy
 msgid "Block suspend"
-msgstr "Bloquer ceux en attente"
+msgstr "Empêcher la mise en veille"
 
 #: t_modules/t_main.py:26592
 msgid "Prevent system suspend during playback"
 msgstr "Empêcher la suspension du système pendant la lecture"
 
 #: t_modules/t_main.py:26596
-#, fuzzy
 msgid "Record Radio"
-msgstr "Webradio"
+msgstr "Enregistrer la radio"
 
 #: t_modules/t_main.py:26597
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "Enregistrer et découper les musiques lors de la lecture d'une webradio"
 
 #: t_modules/t_main.py:26599
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
+"Les pistes seront enregistrées dans la liste de lecture \"Enregistrements "
+"Radio\"."
 
 #: t_modules/t_main.py:26599
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Les pistes vont être enregistrées. Veuillez redémarrer la lecture pour "
+"appliquer les modifications."
 
 #: t_modules/t_main.py:26804
 msgid "Show threshold marker"
@@ -2408,7 +2408,7 @@ msgstr "Boucler toutes les listes de lecture"
 
 #: t_modules/t_main.py:29257 t_modules/t_main.py:33985
 msgid "Added station to: "
-msgstr ""
+msgstr "Station ajoutée à : "
 
 #: t_modules/t_main.py:29626
 msgid "Buffering... "
@@ -2487,9 +2487,8 @@ msgid "Search Tag"
 msgstr "Chercher une étiquette"
 
 #: t_modules/t_main.py:33191
-#, fuzzy
 msgid "Search Country Code"
-msgstr "Recherche par pays"
+msgstr "Rechercher un code de pays"
 
 #: t_modules/t_main.py:33192
 msgid "Search Title"
@@ -2509,20 +2508,19 @@ msgstr "Récupérer les Mieux Votés"
 
 #: t_modules/t_main.py:33500
 msgid "Developer Picks"
-msgstr ""
+msgstr "Sélection du développeur"
 
 #: t_modules/t_main.py:33648
 msgid "Add Station"
-msgstr ""
+msgstr "Ajouter une station"
 
 #: t_modules/t_main.py:33650
 msgid "Edit Station"
-msgstr ""
+msgstr "Modifier la station"
 
 #: t_modules/t_main.py:33676
-#, fuzzy
 msgid "Station Browser"
-msgstr "Lancer la diffusion"
+msgstr "Explorer les stations"
 
 #: t_modules/t_main.py:33680
 msgid "Connecting..."
@@ -2697,7 +2695,7 @@ msgstr "Effacer bio"
 
 #: t_modules/t_main.py:38109
 msgid "Edit..."
-msgstr ""
+msgstr "Modifier..."
 
 #: t_modules/t_main.py:38440
 msgid "Playing"
@@ -2730,7 +2728,7 @@ msgstr "Showcase + Paroles"
 
 #: t_modules/t_main.py:39049
 msgid "Radio"
-msgstr ""
+msgstr "Radio"
 
 #: t_modules/t_main.py:39062
 msgid "Toggle columns"
