@@ -14093,7 +14093,6 @@ def toggle_shuffle_layout(albums=False):
         pctl.random_mode = True
         pctl.repeat_mode = False
         if albums:
-            print("GO")
             pctl.album_shuffle_lock_mode = True
         if pctl.playing_state == 0:
             pctl.advance()
