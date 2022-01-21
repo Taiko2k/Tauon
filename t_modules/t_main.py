@@ -1905,11 +1905,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         if macos or detect_macstyle:
             self.macstyle = True
         self.radio_view = False
-<<<<<<< HEAD
         self.window_size = window_size
-=======
         self.box_over = False
->>>>>>> e95596a28fe564c5acbc61ffdf74f1fa42a989de
 
 
 gui = GuiVar()
@@ -7603,7 +7600,6 @@ try:
 except:
     print("Pychromecast not found")
 
-print(chrome)
 
 class PlexService:
 
