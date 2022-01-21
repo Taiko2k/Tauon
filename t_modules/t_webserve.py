@@ -181,17 +181,17 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
                 self.send_response(200)
                 self.send_header("Content-type", "audio/ogg")
-                self.send_header("Transfer-Encoding", "chunked")
+                #self.send_header("Transfer-Encoding", "chunked")
                 self.end_headers()
 
                 position = max(chunker.master_count - 7, 1)
                 id = random.random()
 
                 for header in chunker.headers:
-                    self.wfile.write(hex(len(header))[2:].encode())
-                    self.wfile.write("\r\n".encode())
+                    #self.wfile.write(hex(len(header))[2:].encode())
+                    #self.wfile.write("\r\n".encode())
                     self.wfile.write(header)
-                    self.wfile.write("\r\n".encode())
+                    #self.wfile.write("\r\n".encode())
                 while True:
                     if not pctl.broadcast_active:
                         return
@@ -199,11 +199,11 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         while 1 < position < chunker.master_count:
                             if not pctl.broadcast_active:
                                 return
-                            self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
+                            #self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
 
-                            self.wfile.write("\r\n".encode())
+                            #self.wfile.write("\r\n".encode())
                             self.wfile.write(chunker.chunks[position])
-                            self.wfile.write("\r\n".encode())
+                            #self.wfile.write("\r\n".encode())
 
                             position += 1
                     else:

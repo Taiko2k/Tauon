@@ -1903,6 +1903,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         if macos or detect_macstyle:
             self.macstyle = True
         self.radio_view = False
+        self.window_size = window_size
 
 
 gui = GuiVar()
@@ -7583,6 +7584,15 @@ tauon = Tauon()
 if prefs.backend == 1:
     prefs.backend = 2
 
+chrome = None
+
+try:
+    from t_modules.t_chrome import Chrome
+    chrome = Chrome(tauon)
+except:
+    print("Pychromecast not found")
+
+print(chrome)
 
 class PlexService:
 
@@ -13336,7 +13346,9 @@ folder_tree_stem_menu = Menu(190, show_icons=True)
 overflow_menu = Menu(175)
 spotify_playlist_menu = Menu(175)
 radio_context_menu = Menu(175)
+chrome_menu = Menu(175)
 
+tauon.chrome_menu = chrome_menu
 
 def enable_artist_list():
     if prefs.left_panel_mode != "artist list":
@@ -20182,6 +20194,8 @@ def broadcast_select_track(track_id):
         pctl.broadcastCommandReady = True
     tm.ready("caster")
 
+tauon.broadcast_select_track = broadcast_select_track
+
 track_menu.br()
 track_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
@@ -20194,8 +20208,19 @@ def gstreamer_test(_):
     # return True
     return prefs.backend == 2
 
+def chromecast_select_track(track_id):
+    if not prefs.enable_web:
+        show_message('Please first enable the setting "Ready Broadcaster" in MENU > settings > function')
+    if not chrome:
+        show_message("pychromecast not found")
+    if pctl.broadcast_active:
+        broadcast_select_track(track_id)
+        return
+
+    shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
 
 track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
+track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -21178,7 +21203,8 @@ def toggle_broadcast():
         #     pctl.broadcastCommand = "encpause"
         #     pctl.broadcastCommandReady = True
         #     return
-
+        if chrome:
+            chrome.stop()
         pctl.broadcastCommand = "encstop"
         pctl.broadcastCommandReady = True
 
@@ -41452,8 +41478,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-
-
             pass
 
         if gui.mode < 3:
