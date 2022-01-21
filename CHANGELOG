@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.1.0
 
  - Added export playlist settings box
+ - Added chromecast support (Experimental)
  - Added lyric provider lyrics.ovh
  - Added "albums" mode to shuffle lockdown
  - Removed lyric provider LyricWiki
