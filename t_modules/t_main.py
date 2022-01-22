@@ -1505,6 +1505,7 @@ class Prefs:    # Used to hold any kind of settings
         self.show_nag = False
 
         self.playlist_exports = {}
+        self.show_chromecast = False
 
 prefs = Prefs()
 
@@ -3123,6 +3124,8 @@ for t in range(2):
             prefs.radio_thumb_bans = save[167]
         if save[168] is not None:
             prefs.playlist_exports = save[168]
+        if save[169] is not None:
+            prefs.show_chromecast = save[169]
 
         state_file.close()
         del save
@@ -7475,6 +7478,10 @@ class Strings:
 
         self.day = _("day")
         self.days = _("days")
+
+        self.scan_chrome = _("Scanning for Chromecasts...")
+        self.cast_to = _("Cast to: %s")
+        self.no_chromecasts = _("No Chromecast devices found")
 
         self.web_server_stopped = _("Web server stopped.")
 
@@ -19960,6 +19967,11 @@ def toggle_transcode(mode=0):
         return prefs.enable_transcode
     prefs.enable_transcode ^= True
 
+def toggle_chromecast(mode=0):
+    if mode == 1:
+        return prefs.show_chromecast
+    prefs.show_chromecast ^= True
+
 def toggle_transfer(mode=0):
     if mode == 1:
         return prefs.show_transfer
@@ -20351,10 +20363,14 @@ def gstreamer_test(_):
     return prefs.backend == 2
 
 def chromecast_select_track(track_id):
+    gui.delay_frame(8)
+
     if not prefs.enable_web:
         show_message('Please first enable the setting "Ready Broadcaster" in MENU > settings > function')
+        return
     if not chrome:
         show_message("pychromecast not found")
+        return
     if pctl.broadcast_active:
         broadcast_select_track(track_id)
         return
@@ -20362,7 +20378,7 @@ def chromecast_select_track(track_id):
     shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
 
 track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
-track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True)
+track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -26692,37 +26708,8 @@ class Over:
             self.toggle_square(x, y, toggle_gen, _("Genius track search"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_transcode, _("Transcode folder"))
-
-            y += 30 * gui.scale
-            ddt.text((x, y), "Discord", colours.box_text_label, 11)
-            y += 25 * gui.scale
-            old = prefs.discord_enable
-            prefs.discord_enable = self.toggle_square(x, y, prefs.discord_enable, _("Enable Discord Rich Presence"))
-
-            if flatpak_mode:
-                if self.button(x + 215 * gui.scale, y, _("?")):
-                    show_message(_("For troubleshooting Discord RP"),
-                                 "https://github.com/Taiko2k/TauonMusicBox/wiki/Discord-RP", mode="link")
-
-            if prefs.discord_enable and not old:
-                if snap_mode:
-                    show_message("Sorry, this feature is unavailable with snap", mode="error")
-                    prefs.discord_enable = False
-                elif not discord_allow:
-                    show_message("Missing dependency python-pypresence")
-                    prefs.discord_enable = False
-                else:
-                    hit_discord()
-
-            if old and not prefs.discord_enable:
-                if prefs.discord_active:
-                    prefs.disconnect_discord = True
-
-            y += 22 * gui.scale
-            text = "Disabled"
-            if prefs.discord_enable:
-                text = gui.discord_status
-            ddt.text((x, y), f"Status: {text}", colours.box_text, 11)
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_chromecast, _("Chromecast this"))
 
 
         elif self.func_page == 2:
@@ -26780,6 +26767,36 @@ class Over:
             elif old != prefs.block_suspend:
                 tauon.update_play_lock()
 
+            y += 50 * gui.scale
+            ddt.text((x, y), "Discord", colours.box_text_label, 11)
+            y += 25 * gui.scale
+            old = prefs.discord_enable
+            prefs.discord_enable = self.toggle_square(x, y, prefs.discord_enable, _("Enable Discord Rich Presence"))
+
+            if flatpak_mode:
+                if self.button(x + 215 * gui.scale, y, _("?")):
+                    show_message(_("For troubleshooting Discord RP"),
+                                 "https://github.com/Taiko2k/TauonMusicBox/wiki/Discord-RP", mode="link")
+
+            if prefs.discord_enable and not old:
+                if snap_mode:
+                    show_message("Sorry, this feature is unavailable with snap", mode="error")
+                    prefs.discord_enable = False
+                elif not discord_allow:
+                    show_message("Missing dependency python-pypresence")
+                    prefs.discord_enable = False
+                else:
+                    hit_discord()
+
+            if old and not prefs.discord_enable:
+                if prefs.discord_active:
+                    prefs.disconnect_discord = True
+
+            y += 22 * gui.scale
+            text = "Disabled"
+            if prefs.discord_enable:
+                text = gui.discord_status
+            ddt.text((x, y), f"Status: {text}", colours.box_text, 11)
 
         # Switcher
         pages = 4
@@ -40594,6 +40611,7 @@ def save_state():
             pctl.radio_playlist_viewing,
             prefs.radio_thumb_bans,
             prefs.playlist_exports,
+            prefs.show_chromecast,
         ]
 
 
