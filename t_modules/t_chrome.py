@@ -1,7 +1,9 @@
+
 import pychromecast
 from t_modules.t_extra import shooter
 import time
 import socket
+
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
@@ -14,6 +16,7 @@ def get_ip():
     finally:
         s.close()
     return IP
+
 
 class Chrome:
     def __init__(self, tauon):
@@ -29,21 +32,23 @@ class Chrome:
 
         if True: #not self.services:
             try:
-                self.tauon.gui.show_message("Scanning for Chromecasts...")
+                self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
                 services, browser = pychromecast.discovery.discover_chromecasts()
                 pychromecast.discovery.stop_discovery(browser)
                 menu = self.tauon.chrome_menu
                 menu.items.clear()
                 for item in services:
                     self.services.append([str(item.uuid), str(item.friendly_name)])
-                    menu.add(str(item.friendly_name), self.three, pass_ref=True, set_ref=[str(item.uuid), str(item.friendly_name)])
+                    menu.add(self.tauon.strings.cast_to % str(item.friendly_name), self.three, pass_ref=True, set_ref=[str(item.uuid), str(item.friendly_name)])
 
                 if self.services:
                     self.tauon.gui.message_box = False
                     menu.activate(position=(self.tauon.gui.window_size[0] // 2, self.tauon.gui.window_size[1] // 2))
                     self.tauon.gui.update += 1
                 else:
-                    self.tauon.gui.show_message("No Chromecast devices found")
+                    self.tauon.gui.show_message(self.tauon.strings.no_chromecasts)
+                    self.tauon.gui.update += 1
+
                     return
                 print(services)
                 print(self.services)
