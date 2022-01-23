@@ -16797,6 +16797,12 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "tn":
             sort_track_2(0, playlist)
 
+        elif cm == "ia>":
+            playlist = gen_last_imported_folders(0, playlist)
+
+        elif cm == "ia<":
+            playlist = gen_last_imported_folders(0, playlist, reverse=True)
+
         elif cm == "m>":
             playlist = gen_last_modified(0, playlist)
 
@@ -17904,6 +17910,32 @@ def gen_codec_pl(codec):
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+
+
+def gen_last_imported_folders(index, custom_list=None, reverse=True):
+    source = custom_list
+    if source is None:
+        source = pctl.multi_playlist[index][2]
+
+    a_cache = {}
+
+    def key_import(index):
+
+        track = pctl.master_library[index]
+        cached = a_cache.get((track.album, track.parent_folder_name))
+        if cached is not None:
+            return cached
+
+        if track.album:
+            a_cache[(track.album, track.parent_folder_name)] = index
+        return index
+
+    playlist = copy.deepcopy(source)
+    playlist = sorted(playlist, key=key_import, reverse=reverse)
+    sort_track_2(0, playlist)
+
+    if custom_list is not None:
+        return playlist
 
 
 def gen_last_modified(index, custom_list=None, reverse=True):
