@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2022-01-10 17:19+1300\n"
-"PO-Revision-Date: 2022-01-14 05:56+0000\n"
+"PO-Revision-Date: 2022-01-20 23:52+0000\n"
 "Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.10.1\n"
+"X-Generator: Weblate 4.11-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1939 t_modules/t_main.py:1941
@@ -61,11 +61,11 @@ msgstr "Ceci peut prendre un certain temps."
 
 #: t_modules/t_main.py:7181
 msgid "Failed updating last.fm love status"
-msgstr "Échec lors de la mis à jour du status j'aime sur last.fm"
+msgstr "Échec de la mis à jour du status « j'aime » sur last.fm"
 
 #: t_modules/t_main.py:7184
 msgid "Error updating love to last.fm!"
-msgstr "Erreur lors de la mise à jour vers last.fm !"
+msgstr "Échec de la mise à jour sur last.fm !"
 
 #: t_modules/t_main.py:7184
 msgid "Maybe check your internet connection and try again?"
