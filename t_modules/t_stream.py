@@ -339,6 +339,7 @@ class StreamEnc:
                     if not icy or m_remain > len(chunk):
                         # We're sure its data Its data, send it on
                         self.chunks[self.c] = chunk
+
                         # Delete old data
                         d = self.c - 90000
                         if d in self.chunks:
@@ -372,7 +373,7 @@ class StreamEnc:
 
                         self.chunks[self.c] = data1 + data2
                         # Delete old data
-                        d = self.c - 512
+                        d = self.c - 90000
                         if d in self.chunks:
                             del self.chunks[d]
 
