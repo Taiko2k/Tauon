@@ -8,6 +8,7 @@ v7.1.0
  - Added lyric provider lyrics.ovh
  - Added "albums" mode to shuffle lockdown
  - Added gen code 'ia' for albums imported
+ - Added flag "--tray" to hide window on startup
  - Removed lyric provider LyricWiki
 
 v7.0.1

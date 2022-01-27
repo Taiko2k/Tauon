@@ -167,10 +167,14 @@ else:
     o_x = old_window_position[0]
     o_y = old_window_position[1]
 
+if "--tray" in sys.argv:
+    flags |= SDL_WINDOW_HIDDEN
+
 t_window = SDL_CreateWindow(window_title,
                             o_x, o_y,
                             logical_size[0], logical_size[1],
                             flags)
+
 
 if maximized:
     SDL_MaximizeWindow(t_window)
