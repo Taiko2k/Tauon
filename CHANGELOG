@@ -9,6 +9,7 @@ v7.1.0
  - Added "albums" mode to shuffle lockdown
  - Added gen code 'ia' for albums imported
  - Added flag "--tray" to hide window on startup
+ - Fixed some radio stations not working
  - Removed lyric provider LyricWiki
 
 v7.0.1
