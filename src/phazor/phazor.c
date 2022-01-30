@@ -983,16 +983,14 @@ int load_next() {
 
     char peak[35];
 
-    if (strcmp(ext, ".ape") == 0 || strcmp(ext, ".APE") == 0 ||
-        strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
-        strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
-        strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
-        strcmp(ext, ".wv") == 0 || strcmp(ext, ".WV") == 0 ||
-        //strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
-        //strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0 ||
-        loaded_target_file[0] == 'h') {
-        codec = FFMPEG;
+    if ((fptr = fopen(loaded_target_file, "rb")) == NULL) {
+        printf("pa: Error opening file\n");
+        return 1;
+    }
 
+    // If target is url, use FFMPEG
+    if (loaded_target_file[0] == 'h') {
+        codec = FFMPEG;
         start_ffmpeg(loaded_target_file, load_target_seek);
         load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
@@ -1002,13 +1000,104 @@ int load_next() {
         }
         pthread_mutex_unlock(&buffer_mutex);
         return 0;
-    } else if (strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
-               strcmp(ext, ".s3m") == 0 || strcmp(ext, ".S3M") == 0 ||
-               strcmp(ext, ".it") == 0 || strcmp(ext, ".IT") == 0 ||
-               strcmp(ext, ".mptm") == 0 || strcmp(ext, ".MPTM") == 0 ||
-               strcmp(ext, ".mod") == 0 || strcmp(ext, ".MOD") == 0){
-      
-      codec = MPT;
+    }
+
+    // We need to identify the file type
+    // Peak into file and try to detect signature
+
+    stat(loaded_target_file, &st);
+    load_file_size = st.st_size;
+    fread(peak, sizeof(peak), 1, fptr);
+    fclose(fptr);
+
+    if (memcmp(peak, "fLaC", 4) == 0) {
+        codec = FLAC;
+    } else if (memcmp(peak, "RIFF", 4) == 0) {
+        codec = WAVE;
+    } else if (memcmp(peak, "OggS", 4) == 0) {
+        codec = VORBIS;
+        if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
+    } else if (memcmp(peak, "\0\0\0\x20" "ftypM4A", 11) == 0) {
+        codec = FFMPEG;
+        printf("Detected m4a\n");
+    } else if (memcmp(peak, "\xff\xfb", 2) == 0) {
+        codec = MPG;
+        printf("Detected mp3\n");
+    } else if (memcmp(peak, "\xff\xf3", 2) == 0) {
+        codec = MPG;
+        printf("Detected mp3\n");
+    } else if (memcmp(peak, "\xff\xf2", 2) == 0) {
+        codec = MPG;
+        printf("Detected mp3\n");
+    } else if (memcmp(peak, "\x30\x26\xb2\x75\x8e\x66\xcf\x11", 8) == 0) {
+        codec = FFMPEG;
+        printf("Detected wma\n");
+    } else if (memcmp(peak, "MAC\x20", 4) == 0) {
+        codec = FFMPEG;
+        printf("Detected ape\n");
+    } else if (memcmp(peak, "TTA1", 4) == 0) {
+        codec = FFMPEG;
+        printf("Detected tta\n");
+    } else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
+        codec = MPG;
+        printf("Detected mp3 id3\n");
+    }
+
+    // Fallback to detecting using file extension
+    if (codec == UNKNOWN && (
+            strcmp(ext, ".ape") == 0 || strcmp(ext, ".APE") == 0 ||
+            strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
+            strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
+            strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
+            strcmp(ext, ".wv") == 0 || strcmp(ext, ".WV")
+                            )
+        ) codec = FFMPEG;
+
+    if (codec == UNKNOWN && (
+            (strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
+             strcmp(ext, ".s3m") == 0 || strcmp(ext, ".S3M") == 0 ||
+             strcmp(ext, ".it") == 0 || strcmp(ext, ".IT") == 0 ||
+             strcmp(ext, ".mptm") == 0 || strcmp(ext, ".MPTM") == 0 ||
+             strcmp(ext, ".mod") == 0 || strcmp(ext, ".MOD") == 0)
+                            )
+            ) codec = MPT;
+
+    if (codec == UNKNOWN) {
+        if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
+            codec = FLAC;
+        }
+        if (strcmp(ext, ".mp3") == 0 || strcmp(ext, ".MP3") == 0) {
+            codec = MPG;
+        }
+        if (strcmp(ext, ".ogg") == 0 || strcmp(ext, ".OGG") == 0 ||
+            strcmp(ext, ".oga") == 0 || strcmp(ext, ".OGA") == 0) {
+            codec = VORBIS;
+        }
+        if (strcmp(ext, ".opus") == 0 || strcmp(ext, ".OPUS") == 0) {
+            codec = OPUS;
+        }
+    }
+
+    if (codec == UNKNOWN) {
+        codec = FFMPEG;
+        printf("pa: Codec could not be identified, trying FFMPEG\n");
+    }
+
+    // Start decoders
+    if (codec == FFMPEG){
+        start_ffmpeg(loaded_target_file, load_target_seek);
+        load_target_seek = 0;
+        pthread_mutex_lock(&buffer_mutex);
+        if (current_sample_rate != sample_rate_out) {
+            sample_change_byte = high;
+            want_sample_rate = sample_rate_out;
+        }
+        pthread_mutex_unlock(&buffer_mutex);
+        return 0;
+    }
+
+    if (codec == MPT){
+
       mod_file = fopen(loaded_target_file, "rb");
       mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
       src_channels = 2;
@@ -1038,57 +1127,6 @@ int load_next() {
                  
     }
 
-
-    if ((fptr = fopen(loaded_target_file, "rb")) == NULL) {
-
-        printf("pa: Error opening file\n");
-        return 1;
-    }
-
-
-    stat(loaded_target_file, &st);
-    load_file_size = st.st_size;
-
-    fread(peak, sizeof(peak), 1, fptr);
-
-    if (memcmp(peak, "fLaC", 4) == 0) {
-        codec = FLAC;
-    } else if (memcmp(peak, "RIFF", 4) == 0) {
-        codec = WAVE;
-    } else if (memcmp(peak, "OggS", 4) == 0) {
-        codec = VORBIS;
-        if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
-    }
-
-    if (codec == UNKNOWN) {
-
-        if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
-            codec = FLAC;
-            //printf("pa: Set codec as FLAC\n");
-        }
-        if (strcmp(ext, ".mp3") == 0 || strcmp(ext, ".MP3") == 0) {
-            //printf("pa: Set codec as MP3\n");
-            codec = MPG;
-        }
-        if (strcmp(ext, ".ogg") == 0 || strcmp(ext, ".OGG") == 0 ||
-            strcmp(ext, ".oga") == 0 || strcmp(ext, ".OGA") == 0) {
-            //printf("pa: Set codec as OGG Vorbis\n");
-            codec = VORBIS;
-        }
-        if (strcmp(ext, ".opus") == 0 || strcmp(ext, ".OPUS") == 0) {
-            //printf("pa: Set codec as OGG Opus\n");
-            codec = OPUS;
-        }
-    }
-
-    // todo - search further into file for identification
-
-    if (codec == UNKNOWN) {
-        codec = MPG;
-        printf("pa: Codec could not be identified, assuming MP3\n");
-    }
-
-    fclose(fptr);
 
     switch (codec) {
 
