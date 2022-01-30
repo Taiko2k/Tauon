@@ -41529,13 +41529,13 @@ while pctl.running:
                 if gui.album_tab_mode and key_left_press:
                     pass
                 else:
-                    if is_level_zero():
+                    if is_level_zero() or quick_search_mode:
                         cycle_playlist_pinned(1)
             if keymaps.test('cycle-playlist-right'):
                 if gui.album_tab_mode and key_right_press:
                     pass
                 else:
-                    if is_level_zero():
+                    if is_level_zero() or quick_search_mode:
                         cycle_playlist_pinned(-1)
 
             if keymaps.test('toggle-console'):
