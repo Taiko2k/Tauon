@@ -1019,28 +1019,28 @@ int load_next() {
         if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
     } else if (memcmp(peak, "\0\0\0\x20" "ftypM4A", 11) == 0) {
         codec = FFMPEG;
-        printf("Detected m4a\n");
+        //printf("Detected m4a\n");
     } else if (memcmp(peak, "\xff\xfb", 2) == 0) {
         codec = MPG;
-        printf("Detected mp3\n");
+        //printf("Detected mp3\n");
     } else if (memcmp(peak, "\xff\xf3", 2) == 0) {
         codec = MPG;
-        printf("Detected mp3\n");
+        //printf("Detected mp3\n");
     } else if (memcmp(peak, "\xff\xf2", 2) == 0) {
         codec = MPG;
-        printf("Detected mp3\n");
+        //printf("Detected mp3\n");
     } else if (memcmp(peak, "\x30\x26\xb2\x75\x8e\x66\xcf\x11", 8) == 0) {
         codec = FFMPEG;
-        printf("Detected wma\n");
+        //printf("Detected wma\n");
     } else if (memcmp(peak, "MAC\x20", 4) == 0) {
         codec = FFMPEG;
-        printf("Detected ape\n");
+        //printf("Detected ape\n");
     } else if (memcmp(peak, "TTA1", 4) == 0) {
         codec = FFMPEG;
-        printf("Detected tta\n");
+        //printf("Detected tta\n");
     } else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
         codec = MPG;
-        printf("Detected mp3 id3\n");
+        //printf("Detected mp3 id3\n");
     }
 
     // Fallback to detecting using file extension
