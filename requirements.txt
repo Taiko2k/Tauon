@@ -2,7 +2,8 @@ pillow
 pylast>=3.1.0
 pysdl2
 send2trash
-pylyrics
+requests
+beautifulsoup4
 plexapi
 musicbrainzngs
 pypresence
