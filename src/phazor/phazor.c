@@ -983,11 +983,6 @@ int load_next() {
 
     char peak[35];
 
-    if ((fptr = fopen(loaded_target_file, "rb")) == NULL) {
-        printf("pa: Error opening file\n");
-        return 1;
-    }
-
     // If target is url, use FFMPEG
     if (loaded_target_file[0] == 'h') {
         codec = FFMPEG;
@@ -1004,6 +999,10 @@ int load_next() {
 
     // We need to identify the file type
     // Peak into file and try to detect signature
+    if ((fptr = fopen(loaded_target_file, "rb")) == NULL) {
+        printf("pa: Error opening file\n");
+        return 1;
+    }
 
     stat(loaded_target_file, &st);
     load_file_size = st.st_size;
