@@ -1,10 +1,6 @@
 #!/bin/bash
 #
-# Uninstalls the app-repo, keeping the user-data and becoming just the good ol' repo
-
-RepoDir=$(realpath $(dirname "$0")/..)
-cd $RepoDir
-
-git reset --hard
+# Removes the '.desktop' and '.svg's files from their deployed location.
 
 rm -f ~/.local/share/{applications/tauonmb.desktop,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
+sudo update-desktop-database
