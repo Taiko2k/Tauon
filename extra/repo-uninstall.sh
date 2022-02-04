@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-# Removes the '.desktop' and '.svg's files from their deployed location.
+# Removes everything 'extra/repo-install.sh' creates.
 
-rm -f ~/.local/share/{applications/tauonmb.desktop,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
+RepoDir=$(realpath $(dirname "$0")/..)
+cd $RepoDir
+
+rm -f extra/tauonmb.tmp.* ~/.local/share/{applications/tauonmb.desktop,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
 sudo update-desktop-database
