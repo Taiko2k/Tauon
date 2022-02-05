@@ -4479,13 +4479,14 @@ def tag_scan(nt):
                                 nt.misc['musicbrainz_artistids'] = list(item.text)
 
                             try:
-                                if item.desc == "replaygain_track_gain":
+                                desc = item.desc.lower()
+                                if desc == "replaygain_track_gain":
                                     nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
-                                if item.desc == "replaygain_track_peak":
+                                if desc == "replaygain_track_peak":
                                     nt.misc['replaygain_track_peak'] = float(item.text[0])
-                                if item.desc == "replaygain_album_gain":
+                                if desc == "replaygain_album_gain":
                                     nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
-                                if item.desc == "replaygain_album_peak":
+                                if desc == "replaygain_album_peak":
                                     nt.misc['replaygain_album_peak'] = float(item.text[0])
                             except:
                                 print("Tag Scan: Read Replay Gain MP3 error")
@@ -6382,6 +6383,7 @@ def open_encode_out():
 def g_open_encode_out(a, b, c):
     open_encode_out()
 #
+
 if system == 'linux' and not macos and not msys:
 
     try:
