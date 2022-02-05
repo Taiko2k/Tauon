@@ -26,4 +26,5 @@ pygettext.py
 lib/
 *.DS_Store
 dist/
+*.tmp.*
 
