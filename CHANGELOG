@@ -10,6 +10,7 @@ v7.1.0
  - Added gen code 'ia' for albums imported
  - Added flag "--tray" to hide window on startup
  - Fixed some radio stations not working
+ - Fixed replay gain not being read from MP3
  - [Phazor] Fixed some file types not playing with network
  - Removed lyric provider LyricWiki
 
