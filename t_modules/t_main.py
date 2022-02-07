@@ -5186,6 +5186,9 @@ class PlayerCtl:
         self.playerCommandReady = True
         self.playing_state = 1
 
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
+
         self.show_current()
         self.render_playlist()
 
@@ -5211,7 +5214,8 @@ class PlayerCtl:
         self.playerCommandReady = True
         self.playing_state = 1
 
-        #self.last_playing_time = random_start
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
 
         if update_title:
             update_title_do()
@@ -7451,7 +7455,7 @@ class LastScrob:
                 self.queue.append((track_object, int(time.time()), "lfm"))
             if lb.enable:
                 self.queue.append((track_object, int(time.time()), "lb"))
-            if prefs.maloja_url:
+            if prefs.maloja_url and prefs.maloja_enable:
                 self.queue.append((track_object, int(time.time()), "maloja"))
 
 

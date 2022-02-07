@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v7.1.1
 
  - Added ctrl text cursor methods
+ - Fixed radio stream continuing download after using rr/revert
+ - Fixed maloja scrobble not respecting enable setting
 
 v7.1.0
 
