@@ -35,6 +35,8 @@ sh compile-phazor.sh
 
 cp -rf locale ../
 python3 compile-translations.py install --root=$ShareDir
+( cd locale
+  rm -fR */*/tauon.po )
 cp -rf locale $ShareDir/
 rm -fR locale
 mv ../locale ./
@@ -46,6 +48,7 @@ sed -i "s+/opt/tauon-music-box/tauonmb+sh $RepoDir/extra/tauonmb.tmp+g" extra/ta
 sed -i '1a cd $(realpath $(dirname "$0")/..)' extra/tauonmb.tmp.sh
 sed -i "s+/opt/tauon-music-box+$RepoDir+g" extra/tauonmb.tmp.sh
 
+mkdir -p $ShareDir/{applications,icons/hicolor/scalable/apps}
 install -Dm755 extra/tauonmb.tmp.desktop $ShareDir/applications/tauonmb.desktop
 install -Dm644 extra/tauonmb{,-symbolic}.svg $ShareDir/icons/hicolor/scalable/apps/
 
@@ -53,5 +56,6 @@ install -Dm644 extra/tauonmb{,-symbolic}.svg $ShareDir/icons/hicolor/scalable/ap
 # open it from the menu as soon as it is ready.
 sudo update-desktop-database
 
-echo -e "Setup finished!\
-\n"
+echo -e "\n== == == == == ==\n\
+ Setup finished!\n\
+== == == == == =="

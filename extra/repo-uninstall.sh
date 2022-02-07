@@ -8,8 +8,9 @@ cd $RepoDir
 
 set -e
 
-rm -f extra/tauonmb.tmp.* $ShareDir/{applications/tauonmb.desktop,locale,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
+rm -fR extra/tauonmb.tmp.* $ShareDir/{applications/tauonmb.desktop,locale,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
 sudo update-desktop-database
 
-echo -e "Uninstall finished.\
-\n"
+echo -e "\n== == == == == == ==\n\
+ Uninstall finished.\n\
+== == == == == == =="
