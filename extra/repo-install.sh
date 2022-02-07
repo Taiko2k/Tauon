@@ -11,7 +11,7 @@
 #
 # The script below installs the TauonMusicBox repo as a desktop app by
 # cloning files into temporary ones and changing+deploying them;
-# lines #40 to #45. I did it because I was too lazy to learn RPM
+# lines #38 to #43. I did it because I was too lazy to learn RPM
 # packaging :B
 #
 # If you're running it for the very first time

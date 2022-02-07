@@ -8,7 +8,7 @@ cd $RepoDir
 
 set -e
 
-rm -fR extra/tauonmb.tmp.* $ShareDir/{applications/tauonmb.desktop,locale,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
+rm -f $ShareDir/{applications/tauonmb.desktop,icons/hicolor/scalable/apps/tauonmb{.svg,-symbolic.svg}}
 sudo update-desktop-database
 
 echo -e "\n== == == == == == ==\n\
