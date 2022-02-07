@@ -9961,8 +9961,6 @@ class TextBox2:
                     return None
                 return self.text[len(self.text) - self.cursor_position - 1]
             def g2():
-                print(len(self.text))
-                print(self.cursor_position)
                 if len(self.text) == 0 or self.cursor_position == 0:
                     return None
                 return self.text[len(self.text) - self.cursor_position]
