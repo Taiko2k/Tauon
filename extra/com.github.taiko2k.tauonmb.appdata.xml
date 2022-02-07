@@ -62,12 +62,11 @@
 
   <releases>
 
-    <release version="7.0.1" date="2022-01-12">
+    <release version="7.1.0" date="2022-02-07">
       <description>
         <ul>
-          <li>Added new radio station view layout</li>
-          <li>Added M3U playlist import/export</li>
-          <li>Added favorite Jellyfin tracks support</li>
+          <li>Added Chromecast support</li>
+          <li>Added playlist export dialog</li>
           <li>Various bug fixes</li>
         </ul>
       </description>
