@@ -12,5 +12,5 @@ if [ "$1" == "--no-start" ]; then
 	else python3 ../tauon.py "$@";
 	fi
 else
-	python3 ../tauon.py "$@"
+	python3 tauon.py "$@"
 fi
