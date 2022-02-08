@@ -40,6 +40,7 @@ cp -f extra/tauonmb.{,tmp.}desktop
 sed -i "s+/opt/tauon-music-box/tauonmb+sh $RepoDir/extra/tauonmb-alt+g" extra/tauonmb.tmp.desktop
 
 mkdir -p $ShareDir/{applications,icons/hicolor/scalable/apps}
+[ -e $ShareDir/applications/tauonmb.desktop ] && rm $ShareDir/applications/tauonmb.desktop
 install -Dm755 extra/tauonmb.tmp.desktop $ShareDir/applications/tauonmb.desktop
 install -Dm644 extra/tauonmb{,-symbolic}.svg $ShareDir/icons/hicolor/scalable/apps/
 
