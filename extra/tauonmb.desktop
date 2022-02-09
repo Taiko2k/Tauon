@@ -37,4 +37,4 @@ Name=Next Track
 
 [Desktop Action Stop]
 Exec=/opt/tauon-music-box/tauonmb.sh --no-start --stop
-Name=Next Track
+Name=Stop
