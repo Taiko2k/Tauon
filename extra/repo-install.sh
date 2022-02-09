@@ -36,17 +36,14 @@ sh compile-phazor.sh
 python3 compile-translations.py
 
 cp -f extra/tauonmb.{,tmp.}desktop
-cp -f extra/tauonmb.{,tmp.}sh
 
-sed -i "s+/opt/tauon-music-box/tauonmb+sh $RepoDir/extra/tauonmb.tmp+g" extra/tauonmb.tmp.desktop
-sed -i '1a cd $(realpath $(dirname "$0")/..)' extra/tauonmb.tmp.sh
-sed -i "s+/opt/tauon-music-box+$RepoDir+g" extra/tauonmb.tmp.sh
+sed -i -e "s+/opt/tauon-music-box/tauonmb.sh %U+python3 $RepoDir/tauon.py+g" -e "s+/opt/tauon-music-box/tauonmb.sh --no-start +curl http://localhost:7813/+g" -e "s+--play-pause+playpause/+g" -e "s+--previous+previous/+g" -e "s+--next+next/+g" -e "s+--stop+stop/+g" extra/tauonmb.tmp.desktop
 
 mkdir -p $ShareDir/{applications,icons/hicolor/scalable/apps}
 install -Dm755 extra/tauonmb.tmp.desktop $ShareDir/applications/tauonmb.desktop
 install -Dm644 extra/tauonmb{,-symbolic}.svg $ShareDir/icons/hicolor/scalable/apps/
 
-rm -fR extra/tauonmb.tmp.*
+rm -fR extra/tauonmb.tmp.desktop
 
 # This lines uses sudo to update your desktop apps list so you can
 # open it from the menu as soon as it is ready.

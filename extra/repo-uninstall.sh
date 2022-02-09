@@ -2,9 +2,7 @@
 #
 # Removes everything 'extra/repo-install.sh' creates.
 
-RepoDir=$(realpath $(dirname "$0")/..)
 ShareDir=~/.local/share
-cd $RepoDir
 
 set -e
 
