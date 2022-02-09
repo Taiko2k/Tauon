@@ -5,13 +5,13 @@
 # updated; this also include dependencies **OUTSIDE OF PYTHON**, like
 # 'opusfile-devel' on Fedora.
 # Either way, the debug message pointing out what is missing when
-# compiling PHAzOR (line #16) helps you find out what is needed.
+# compiling PHAzOR (line #34) helps you find out what is needed.
 # Those packages usually have similar enough names to be found quite
 # easily by your package manager of choice.
 #
 # The script below installs the TauonMusicBox repo as a desktop app by
 # cloning files into temporary ones and changing+deploying them;
-# lines #38 to #43. I did it because I was too lazy to learn RPM
+# lines #38 to #44. I did it because I was too lazy to learn RPM
 # packaging :B
 #
 # If you're running it for the very first time
