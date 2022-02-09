@@ -33691,8 +33691,7 @@ class RadioBox:
             #print(wss)
             ws = websocket.WebSocketApp(wss,
                                         on_message=on_message,
-                                        on_error=on_error,
-                                        on_close=on_close)
+                                        on_error=on_error)
             ws.on_open = on_open
             self.websocket = ws
             shoot = threading.Thread(target=ws.run_forever)
