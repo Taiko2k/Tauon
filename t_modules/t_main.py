@@ -1441,7 +1441,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.enable_fanart_artist = False
         self.enable_fanart_bg = False
-        self.enable_fanart_cover = True
+        self.enable_fanart_cover = False
 
         self.always_auto_update_playlists = False
 
