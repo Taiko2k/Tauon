@@ -540,12 +540,15 @@ SDL_RenderClear(renderer)
 
 
 class LoadImageAsset:
-    def __init__(self, path, is_full_path=False):
-        if is_full_path:
-            raw_image = IMG_Load(path.encode())
-        else:
-            raw_image = IMG_Load(os.path.join(scaled_asset_directory, path).encode())
+    assets = []
+    def __init__(self, path, is_full_path=False, reload=False, scale_name=""):
+        if not reload:
+            self.assets.append(self)
 
+        self.path = path
+        self.scale_name = scale_name
+
+        raw_image = IMG_Load(self.path.encode())
         self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 
         p_w = pointer(c_int(0))
@@ -560,6 +563,12 @@ class LoadImageAsset:
         self.w = p_w.contents.value
         self.h = p_h.contents.value
 
+    def reload(self):
+        SDL_DestroyTexture(self.sdl_texture)
+        if self.scale_name:
+            self.path = os.path.join(scaled_asset_directory, self.scale_name)
+        self.__init__(self.path, reload=True, scale_name=self.scale_name)
+
     def render(self, x, y, colour=None):
         self.rect.x = round(x)
         self.rect.y = round(y)
@@ -568,10 +577,11 @@ class LoadImageAsset:
 
 class WhiteModImageAsset:
     assets = []
-    def __init__(self, path, reload=False):
+    def __init__(self, path, reload=False, scale_name=""):
         if not reload:
             self.assets.append(self)
         self.path = path
+        self.scale_name = scale_name
         raw_image = IMG_Load(path.encode())
         self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
         self.colour = [255, 255, 255, 255]
@@ -585,7 +595,9 @@ class WhiteModImageAsset:
 
     def reload(self):
         SDL_DestroyTexture(self.sdl_texture)
-        self.__init__(self.path, reload=True)
+        if self.scale_name:
+            self.path = os.path.join(scaled_asset_directory, self.scale_name)
+        self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
     def render(self, x, y, colour):
         if colour != self.colour:
@@ -597,12 +609,18 @@ class WhiteModImageAsset:
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 
+loaded_asset_dc = {}
 def asset_loader(name, mod=False):
+    if name in loaded_asset_dc:
+        return loaded_asset_dc[name]
+
     target = os.path.join(scaled_asset_directory, name)
     if mod:
-        return WhiteModImageAsset(target)
-    return LoadImageAsset(target)
-
+        item = WhiteModImageAsset(target, scale_name=name)
+    else:
+        item = LoadImageAsset(target, scale_name=name)
+    loaded_asset_dc[name] = item
+    return item
 
 # loading_image = asset_loader('loading.png')
 
@@ -4107,41 +4125,52 @@ if scale_want == 2.05:
 
 print(f"Using UI scale: {scale_want}")
 
-if scale_want != 1:
-    scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
-    if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(os.listdir(scaled_asset_directory)):
-        print("Force rerender icons")
-        force_render = True
 
-
-if scale_want != prefs.ui_scale or force_render:
-
+def scale_assets(scale_want, force=force_render):
+    global scaled_asset_directory
     if scale_want != 1:
-        if os.path.isdir(scaled_asset_directory):
-            shutil.rmtree(scaled_asset_directory)
-        from t_modules.t_svgout import render_icons
+        scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
+        if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
+                os.listdir(scaled_asset_directory)):
+            print("Force rerender icons")
+            force_render = True
+    else:
+        scaled_asset_directory = asset_directory
 
-        if scaled_asset_directory != asset_directory:
-            print("Rendering icons...")
-            render_icons(svg_directory, scaled_asset_directory, scale_want)
+    if scale_want != prefs.ui_scale or force:
 
-    print("Done rendering icons")
+        if scale_want != 1:
+            if os.path.isdir(scaled_asset_directory) and scaled_asset_directory != asset_directory:
+                shutil.rmtree(scaled_asset_directory)
+            from t_modules.t_svgout import render_icons
 
-    diff_ratio = scale_want / prefs.ui_scale
-    prefs.ui_scale = scale_want
-    prefs.playlist_row_height = round(22 * prefs.ui_scale)
+            if scaled_asset_directory != asset_directory:
+                print("Rendering icons...")
+                render_icons(svg_directory, scaled_asset_directory, scale_want)
 
-    # Save user values
-    column_backup = gui.pl_st
-    rspw = gui.rspw
+        print("Done rendering icons")
 
-    gui.__init__()
+        diff_ratio = scale_want / prefs.ui_scale
+        prefs.ui_scale = scale_want
+        prefs.playlist_row_height = round(22 * prefs.ui_scale)
 
-    # Scale saved values
-    gui.pl_st = column_backup
-    for item in gui.pl_st:
-        item[1] = item[1] * diff_ratio
-    gui.rspw = rspw * diff_ratio
+        # Save user values
+        column_backup = gui.pl_st
+        rspw = gui.pref_rspw
+        grspw = gui.pref_gallery_w
+
+        gui.__init__()
+
+        # Scale saved values
+        gui.pl_st = column_backup
+        for item in gui.pl_st:
+            item[1] = item[1] * diff_ratio
+        gui.pref_rspw = rspw * diff_ratio
+        gui.pref_gallery_w = grspw * diff_ratio
+        global album_mode_art_size
+        album_mode_art_size = int(album_mode_art_size * diff_ratio)
+
+scale_assets(scale_want=scale_want)
 
 try:
     # star_lines = view_prefs['star-lines']
@@ -9252,83 +9281,85 @@ class Drawing:
 
 draw = Drawing()
 
+def prime_fonts():
+        standard_font = prefs.linux_font
+        if msys:
+            standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
+        ddt.prime_font(standard_font, 8, 9)
+        ddt.prime_font(standard_font, 8, 10)
+        ddt.prime_font(standard_font, 8.5, 11)
+        ddt.prime_font(standard_font, 8.7, 11.5)
+        ddt.prime_font(standard_font, 9, 12)
+        ddt.prime_font(standard_font, 10, 13)
+        ddt.prime_font(standard_font, 10, 14)
+        ddt.prime_font(standard_font, 10.2, 14.5)
+        ddt.prime_font(standard_font, 11, 15)
+        ddt.prime_font(standard_font, 12, 16)
+        ddt.prime_font(standard_font, 12, 17)
+        ddt.prime_font(standard_font, 12, 18)
+        ddt.prime_font(standard_font, 13, 19)
+        ddt.prime_font(standard_font, 14, 20)
+        ddt.prime_font(standard_font, 24, 30)
+
+        ddt.prime_font(standard_font, 9, 412)
+        ddt.prime_font(standard_font, 10, 413)
+
+        standard_font = prefs.linux_font_semibold
+        if msys:
+            standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
+
+        ddt.prime_font(standard_font, 8, 309)
+        ddt.prime_font(standard_font, 8, 310)
+        ddt.prime_font(standard_font, 8.5, 311)
+        ddt.prime_font(standard_font, 9, 312)
+        ddt.prime_font(standard_font, 10, 313)
+        ddt.prime_font(standard_font, 10.5, 314)
+        ddt.prime_font(standard_font, 11, 315)
+        ddt.prime_font(standard_font, 12, 316)
+        ddt.prime_font(standard_font, 12, 317)
+        ddt.prime_font(standard_font, 12, 318)
+        ddt.prime_font(standard_font, 13, 319)
+        ddt.prime_font(standard_font, 24, 330)
+
+        standard_font = prefs.linux_font_bold
+        if msys:
+            standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
+
+        ddt.prime_font(standard_font, 6, 209)
+        ddt.prime_font(standard_font, 7, 210)
+        ddt.prime_font(standard_font, 8, 211)
+        ddt.prime_font(standard_font, 9, 212)
+        ddt.prime_font(standard_font, 10, 213)
+        ddt.prime_font(standard_font, 11, 214)
+        ddt.prime_font(standard_font, 12, 215)
+        ddt.prime_font(standard_font, 13, 216)
+        ddt.prime_font(standard_font, 14, 217)
+        ddt.prime_font(standard_font, 17, 218)
+        ddt.prime_font(standard_font, 19, 219)
+        ddt.prime_font(standard_font, 20, 220)
+        ddt.prime_font(standard_font, 25, 228)
+
+        standard_font = prefs.linux_font_condensed
+        if msys:
+            standard_font = "Noto Sans ExtCond, Sans"
+        ddt.prime_font(standard_font, 10, 413)
+        ddt.prime_font(standard_font, 11, 414)
+        ddt.prime_font(standard_font, 12, 415)
+        ddt.prime_font(standard_font, 13, 416)
+
+
+        standard_font = prefs.linux_font_condensed_bold #"Noto Sans, ExtraCondensed Bold"
+        if msys:
+            standard_font = "Noto Sans ExtCond, Sans Bold"
+        #ddt.prime_font(standard_font, 9, 512)
+        ddt.prime_font(standard_font, 10, 513)
+        ddt.prime_font(standard_font, 11, 514)
+        ddt.prime_font(standard_font, 12, 515)
+        ddt.prime_font(standard_font, 13, 516)
+
 
 if system == "linux":
-    standard_font = prefs.linux_font
-    if msys:
-        standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working 
-    ddt.prime_font(standard_font, 8, 9)
-    ddt.prime_font(standard_font, 8, 10)
-    ddt.prime_font(standard_font, 8.5, 11)
-    ddt.prime_font(standard_font, 8.7, 11.5)
-    ddt.prime_font(standard_font, 9, 12)
-    ddt.prime_font(standard_font, 10, 13)
-    ddt.prime_font(standard_font, 10, 14)
-    ddt.prime_font(standard_font, 10.2, 14.5)
-    ddt.prime_font(standard_font, 11, 15)
-    ddt.prime_font(standard_font, 12, 16)
-    ddt.prime_font(standard_font, 12, 17)
-    ddt.prime_font(standard_font, 12, 18)
-    ddt.prime_font(standard_font, 13, 19)
-    ddt.prime_font(standard_font, 14, 20)
-    ddt.prime_font(standard_font, 24, 30)
-
-    ddt.prime_font(standard_font, 9, 412)
-    ddt.prime_font(standard_font, 10, 413)
-
-    standard_font = prefs.linux_font_semibold
-    if msys:
-        standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
-    
-    ddt.prime_font(standard_font, 8, 309)
-    ddt.prime_font(standard_font, 8, 310)
-    ddt.prime_font(standard_font, 8.5, 311)
-    ddt.prime_font(standard_font, 9, 312)
-    ddt.prime_font(standard_font, 10, 313)
-    ddt.prime_font(standard_font, 10.5, 314)
-    ddt.prime_font(standard_font, 11, 315)
-    ddt.prime_font(standard_font, 12, 316)
-    ddt.prime_font(standard_font, 12, 317)
-    ddt.prime_font(standard_font, 12, 318)
-    ddt.prime_font(standard_font, 13, 319)
-    ddt.prime_font(standard_font, 24, 330)
-
-    standard_font = prefs.linux_font_bold
-    if msys:
-        standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
-
-    ddt.prime_font(standard_font, 6, 209)
-    ddt.prime_font(standard_font, 7, 210)
-    ddt.prime_font(standard_font, 8, 211)
-    ddt.prime_font(standard_font, 9, 212)
-    ddt.prime_font(standard_font, 10, 213)
-    ddt.prime_font(standard_font, 11, 214)
-    ddt.prime_font(standard_font, 12, 215)
-    ddt.prime_font(standard_font, 13, 216)
-    ddt.prime_font(standard_font, 14, 217)
-    ddt.prime_font(standard_font, 17, 218)
-    ddt.prime_font(standard_font, 19, 219)
-    ddt.prime_font(standard_font, 20, 220)
-    ddt.prime_font(standard_font, 25, 228)
-
-    standard_font = prefs.linux_font_condensed
-    if msys:
-        standard_font = "Noto Sans ExtCond, Sans"
-    ddt.prime_font(standard_font, 10, 413)
-    ddt.prime_font(standard_font, 11, 414)
-    ddt.prime_font(standard_font, 12, 415)
-    ddt.prime_font(standard_font, 13, 416)
-
-
-    standard_font = prefs.linux_font_condensed_bold #"Noto Sans, ExtraCondensed Bold"
-    if msys:
-        standard_font = "Noto Sans ExtCond, Sans Bold"
-    #ddt.prime_font(standard_font, 9, 512)
-    ddt.prime_font(standard_font, 10, 513)
-    ddt.prime_font(standard_font, 11, 514)
-    ddt.prime_font(standard_font, 12, 515)
-    ddt.prime_font(standard_font, 13, 516)
-
+    prime_fonts()
 
 else:
     #standard_font = "Meiryo"
@@ -10933,7 +10964,7 @@ thumb_tracks = ThumbTracks()
 tauon.thumb_tracks = thumb_tracks
 
 
-def img_slide_update_gall(value):
+def img_slide_update_gall(value, pause=True):
 
     global album_mode_art_size
     gui.halt_image_rendering = True
@@ -10941,8 +10972,9 @@ def img_slide_update_gall(value):
     album_mode_art_size = value
 
     clear_img_cache(False)
-    gallery_load_delay.set()
-    gui.frame_callback_list.append(TestTimer(0.6))
+    if pause:
+        gallery_load_delay.set()
+        gui.frame_callback_list.append(TestTimer(0.6))
     gui.halt_image_rendering = False
 
     # Update sizes
@@ -12944,20 +12976,24 @@ class Menu:
     instances = []
     active = False
 
-    def __init__(self, width, show_icons=False):
-
-        self.active = False
-        self.close_next_frame = False
-        self.clicked = False
-        self.pos = [0, 0]
+    def rescale(self):
         self.vertical_size = round(22 * gui.scale)
         if gui.scale == 1.25:
             self.vertical_size = 28
-
         self.h = self.vertical_size
-        self.w = width * gui.scale
+        self.w = self.request_width * gui.scale
         if gui.scale == 2:
             self.w += 15
+
+    def __init__(self, width, show_icons=False):
+
+        self.active = False
+        self.request_width = width
+        self.close_next_frame = False
+        self.clicked = False
+        self.pos = [0, 0]
+        self.rescale()
+
         self.reference = 0
         self.items = []
         self.subs = []
@@ -27988,7 +28024,7 @@ class Over:
             font = 313
 
         ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colours.box_sub_text, font)
-        ddt.text((x + sw + round(14 * gui.scale), y + round(10 * gui.scale)), _("Restart app to apply any changes"), colours.box_text_label, 11)
+        #ddt.text((x + sw + round(14 * gui.scale), y + round(10 * gui.scale)), _("Restart app to apply any changes"), colours.box_text_label, 11)
 
         ddt.rect(slider, colours.box_text_border)
         ddt.rect(m1, colours.box_text_border)
@@ -27997,7 +28033,12 @@ class Over:
         ddt.rect(grip, colours.box_text_label)
 
         y += round(25 * gui.scale)
-        self.toggle_square(x, y, self.toggle_x_scale, _("Auto scale based on xft-dpi"))
+        self.toggle_square(x, y, self.toggle_x_scale, _("Auto scale"))
+
+        if prefs.scale_want != gui.scale:
+            gui.update += 1
+            if not mouse_down:
+                gui.update_layout()
 
     def toggle_x_scale(self, mode=0):
         if mode == 1:
@@ -39017,7 +39058,7 @@ cctest = ColourPulse2()
 
 class ViewBox:
 
-    def __init__(self):
+    def __init__(self, reload=False):
         self.x = 0
         self.y = gui.panelY
         self.w = 52 * gui.scale
@@ -39052,7 +39093,8 @@ class ViewBox:
         self.over_colour = [255, 190, 50, 255]
         self.off_colour = colours.grey(40)
 
-        gui.combo_was_album = False
+        if not reload:
+            gui.combo_was_album = False
 
     def activate(self, x):
         self.x = x
@@ -39991,7 +40033,29 @@ class Undo:
 undo = Undo()
 
 
+def reload_scale():
+    gui.scale = prefs.scale_want
+    ddt.scale = gui.scale
+    prime_fonts()
+    ddt.clear_text_cache()
+    scale_assets(scale_want=prefs.scale_want, force=True)
+    img_slide_update_gall(album_mode_art_size)
+
+    for item in WhiteModImageAsset.assets:
+        item.reload()
+    for item in LoadImageAsset.assets:
+        item.reload()
+    for menu in Menu.instances:
+        menu.rescale()
+    bottom_bar1.__init__()
+    bottom_bar_ao1.__init__()
+    top_panel.__init__()
+    view_box.__init__(reload=True)
+
+
 def update_layout_do():
+    if prefs.scale_want != gui.scale:
+        reload_scale()
 
     w = window_size[0]
     h = window_size[1]
