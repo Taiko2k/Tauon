@@ -1377,9 +1377,6 @@ class Prefs:    # Used to hold any kind of settings
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
         self.x_scale = True
-        if macos:
-            self.x_scale = False
-            self.scale_want = 2
         self.hide_queue = True
         self.show_playlist_list = True
         self.thin_gallery_borders = False
@@ -3702,7 +3699,7 @@ def save_prefs():
     cf.update_value("block-suspend", prefs.block_suspend)
 
     cf.update_value("ui-scale", prefs.scale_want)
-    cf.update_value("use-xft-dpi", prefs.x_scale)
+    cf.update_value("auto-scale", prefs.x_scale)
     cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("theme-name", prefs.theme_name)
     cf.update_value("mac-style", prefs.macstyle)
@@ -3868,7 +3865,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[HiDPI]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
-    prefs.x_scale = cf.sync_add("bool", "use-xft-dpi", prefs.x_scale, "Automatically scale UI based on your Xresources setting. If the above ui-scale setting is not the default, it will overide this." )
+    prefs.x_scale = cf.sync_add("bool", "auto-scale", prefs.x_scale, "Automatically choose above setting" )
     prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this.")
 
     cf.br()
@@ -4103,28 +4100,40 @@ else:
     #     print("No translation file available")
 
 # ----
+
+sss = SDL_SysWMinfo()
+SDL_GetWindowWMInfo(t_window, sss)
+
 force_render = False
 
+def auto_scale():
+    old = prefs.x_scale
+    if prefs.x_scale:
+        if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
+            prefs.scale_want = window_size[0] / logical_size[0]
+            if old != prefs.x_scale:
+                print("Applying scale based on buffer size")
+        elif sss.subsystem == SDL_SYSWM_X11:
+            if xdpi > 40:
+                prefs.scale_want = xdpi / 96
+                if old != prefs.x_scale:
+                    print("Applying scale based on xft setting")
 
-scale_want = prefs.scale_want
+    prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
 
-if prefs.scale_want == 1 and prefs.x_scale and scale_want == 1 and xdpi > 40:
-    scale_want = xdpi / 96
-    print("Applying scale based on xft setting")
+    if prefs.scale_want == 0.95:
+        prefs.scale_want = 1.0
+    if prefs.scale_want == 1.05:
+        prefs.scale_want = 1.0
+    if prefs.scale_want == 1.95:
+        prefs.scale_want = 2.0
+    if prefs.scale_want == 2.05:
+        prefs.scale_want = 2.0
 
-scale_want = round(round(scale_want / 0.05) * 0.05, 2)
+    if old != prefs.x_scale:
+        print(f"Using UI scale: {prefs.scale_want}")
 
-if scale_want == 0.95:
-    scale_want = 1.0
-if scale_want == 1.05:
-    scale_want = 1.0
-if scale_want == 1.95:
-    scale_want = 2.0
-if scale_want == 2.05:
-    scale_want = 2.0
-
-print(f"Using UI scale: {scale_want}")
-
+auto_scale()
 
 def scale_assets(scale_want, force=force_render):
     global scaled_asset_directory
@@ -4170,7 +4179,7 @@ def scale_assets(scale_want, force=force_render):
         global album_mode_art_size
         album_mode_art_size = int(album_mode_art_size * diff_ratio)
 
-scale_assets(scale_want=scale_want)
+scale_assets(scale_want=prefs.scale_want)
 
 try:
     # star_lines = view_prefs['star-lines']
@@ -9061,8 +9070,6 @@ if not maximized and gui.maximized:
 # print(SDL_GetError())
 
 if system == 'windows' or msys:
-    sss = SDL_SysWMinfo()
-    SDL_GetWindowWMInfo(t_window, sss)
     gui.window_id = sss.info.win.window
 
 
@@ -28044,7 +28051,8 @@ class Over:
         if mode == 1:
             return prefs.x_scale
         prefs.x_scale ^= True
-        prefs.scale_want = 1.0
+        auto_scale()
+        gui.update_layout()
 
     def about(self, x0, y0, w0, h0):
 
@@ -40034,11 +40042,13 @@ undo = Undo()
 
 
 def reload_scale():
-    gui.scale = prefs.scale_want
+    scale = prefs.scale_want
+
+    gui.scale = scale
     ddt.scale = gui.scale
     prime_fonts()
     ddt.clear_text_cache()
-    scale_assets(scale_want=prefs.scale_want, force=True)
+    scale_assets(scale_want=scale, force=True)
     img_slide_update_gall(album_mode_art_size)
 
     for item in WhiteModImageAsset.assets:
@@ -41409,6 +41419,7 @@ while pctl.running:
                     window_size[0] = i_x.contents.value
                     window_size[1] = i_y.contents.value
 
+                    auto_scale()
                     update_layout = True
 
 
