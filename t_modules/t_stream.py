@@ -32,6 +32,7 @@ from PIL import Image
 from mutagen.flac import Picture
 import base64
 from t_modules.t_extra import filename_safe
+from t_modules.t_webserve import vb
 
 class StreamEnc:
 
@@ -39,6 +40,7 @@ class StreamEnc:
         self.tauon = tauon
         self.download_running = False
         self.encode_running = False
+        self.pump_running = False
 
         self.download_process = False
         self.abort = False
@@ -71,6 +73,8 @@ class StreamEnc:
         while self.download_running:
             time.sleep(0.01)
         while self.encode_running:
+            time.sleep(0.01)
+        while self.pump_running:
             time.sleep(0.01)
 
         self.__init__(self.tauon)
@@ -108,9 +112,67 @@ class StreamEnc:
         self.download_process = threading.Thread(target=self.run_download, args=([r]))
         self.download_process.daemon = True
         self.download_process.start()
-
         self.download_running = True
+
+        self.download_process = threading.Thread(target=self.pump)
+        self.download_process.daemon = True
+        self.download_process.start()
         return True
+
+    def pump(self):
+        aud = self.tauon.aud
+        if self.tauon.prefs.backend != 4 or not aud:
+            print("Radio error: Phazor not loaded")
+            return
+        self.pump_running = True
+
+        rate = str(48000)
+        cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_f32le", "-f", "f32le", "-ac", "2", "-ar",
+               rate, "-"]
+
+        decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+
+        position = 0
+        raw_audio = None
+        max_read = int(100000 / 10)
+        vb.reset()
+        vb.tauon = self.tauon
+
+        while True:
+            if not self.tauon.stream_proxy.download_running or self.abort:
+                break
+
+            if raw_audio == None:
+                raw_audio = decoder.stdout.read(max_read)
+            if raw_audio:
+                r = aud.feed_ready(max_read)
+                if r:
+                    aud.feed_raw(len(raw_audio), raw_audio)
+                    raw_audio = None
+                else:
+                    continue
+
+            if position < self.tauon.stream_proxy.c:
+                if position not in self.tauon.stream_proxy.chunks:
+                    print("The buffer was deleted too soon!")
+                    break
+
+                chunk = self.chunks[position]
+                decoder.stdin.write(chunk)
+                vb.input(self.tauon.stream_proxy.chunks[position])
+                position += 1
+
+
+        print("END FEEDER")
+        decoder.terminate()
+        time.sleep(0.1)
+        try:
+            decoder.kill()
+        except:
+            pass
+        self.pump_running = False
+
 
     def encode(self):
 

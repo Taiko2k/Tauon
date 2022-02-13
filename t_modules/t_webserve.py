@@ -885,7 +885,6 @@ class VorbisMonitor():
             new.write(b.read())
             self.buffer = new
 
-
 vb = VorbisMonitor()
 
 def stream_proxy(tauon):

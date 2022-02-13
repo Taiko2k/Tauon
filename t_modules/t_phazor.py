@@ -53,6 +53,9 @@ def player4(tauon):
 
     aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
     aud.init()
+    aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
+    aud.feed_raw.restype = None
+    tauon.aud = aud
     aud.set_volume(int(pctl.player_volume))
     if prefs.power_save:
         aud.config_set_samplerate(44100)
@@ -340,7 +343,7 @@ def player4(tauon):
                         pctl.playerCommandReady = True
                         break
                 else:
-                    aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(calc_rg(None)))
+                    aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                     state = 3
                     player_timer.hit()
 
