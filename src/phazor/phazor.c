@@ -44,7 +44,7 @@
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
-
+#define BUFFER_STREAM_READY 30000
 
 float bfl[BUFF_SIZE];
 float bfr[BUFF_SIZE];
@@ -189,6 +189,7 @@ enum decoder_types {
     FFMPEG,
     WAVE,
     MPT,
+    FEED,
 };
 
 enum result_status_enum {
@@ -983,8 +984,23 @@ int load_next() {
 
     char peak[35];
 
+    if (strcmp(loaded_target_file, "RAW FEED") == 0){
+        codec = FEED;
+        load_target_seek = 0;
+        pthread_mutex_lock(&buffer_mutex);
+        if (current_sample_rate != sample_rate_out) {
+            sample_change_byte = high;
+            want_sample_rate = sample_rate_out;
+        }
+        pthread_mutex_unlock(&buffer_mutex);
+        decoder_allocated = 1;
+        buffering = 1;
+        return 0;
+    }
+
     // If target is url, use FFMPEG
     if (loaded_target_file[0] == 'h') {
+
         codec = FFMPEG;
         start_ffmpeg(loaded_target_file, load_target_seek);
         load_target_seek = 0;
@@ -994,6 +1010,7 @@ int load_next() {
             want_sample_rate = sample_rate_out;
         }
         pthread_mutex_unlock(&buffer_mutex);
+
         return 0;
     }
 
@@ -1011,6 +1028,7 @@ int load_next() {
 
     if (memcmp(peak, "fLaC", 4) == 0) {
         codec = FLAC;
+        //printf("Detected flac\n");
     } else if (memcmp(peak, "RIFF", 4) == 0) {
         codec = WAVE;
     } else if (memcmp(peak, "OggS", 4) == 0) {
@@ -1041,6 +1059,7 @@ int load_next() {
         codec = MPG;
         //printf("Detected mp3 id3\n");
     }
+
 
     // Fallback to detecting using file extension
     if (codec == UNKNOWN && (
@@ -1516,7 +1535,7 @@ void *out_thread(void *thread_id) {
     //printf("pa: Start out thread\n");
 
     while (out_thread_running == 1) {
-        if (buffering == 1 && get_buff_fill() > 90000) {
+        if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
 
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
@@ -2028,7 +2047,7 @@ void *main_loop(void *thread_id) {
 
 
         // Refill the buffer
-        if (mode == PLAYING) {
+        if (mode == PLAYING && codec != FEED) {
             while (get_buff_fill() < BUFF_SAFE && mode != ENDING) {
                 pump_decode();
 
@@ -2105,7 +2124,7 @@ int start(char *filename, int start_ms, int fade, float rg) {
     while (command != NONE) {
         usleep(1000);
     }
-                                                              
+
     result_status = WAITING;
 
     rg_value_want = rg;
@@ -2289,11 +2308,34 @@ int get_spectrum(int n_bins, float* bins) {
 
 int is_buffering(){
     if (buffering == 0) return 0;
-    return (int) (get_buff_fill() / 90000.0 * 100);
+    return (int) (get_buff_fill() / BUFFER_STREAM_READY * 100.0);
 }
 /* int get_latency(){ */
 /*   return active_latency / 1000; */
 /* } */
+
+int feed_ready(int request_size){
+    if (mode != STOPPED && high_mark - get_buff_fill() > request_size && codec == FEED) return 1;
+    return 0;
+}
+
+void feed_raw(int len, char* data){
+    if (feed_ready(len) == 0) return;
+    pthread_mutex_lock(&buffer_mutex);
+    int i = 0;
+    int b = len;
+    while (i < b) {
+        memcpy(&bfl[high], &data[i], 4);
+        memcpy(&bfr[high], &data[i + 4], 4);
+        if (fade_fill > 0) {
+            fade_fx();
+        }
+        high++;
+        i += 8;
+    }
+    buff_cycle();
+    pthread_mutex_unlock(&buffer_mutex);
+}
 
 int shutdown() {
     while (command != NONE) {

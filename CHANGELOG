@@ -6,6 +6,7 @@ v7.1.1
  - Added ctrl text cursor methods
  - Added automatic scaling between HiDPI monitors
  - Improved UI scale slider to update without restart
+ - Tweaked internet radio reliabiliy
  - Fixed radio stream continuing download after using rr/revert
  - Fixed maloja scrobble not respecting enable setting
 

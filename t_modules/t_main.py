@@ -7606,6 +7606,7 @@ class Tauon:
 
         self.cargo_playtime = None
         self.macos = macos
+        self.aud = None
 
         self.recorded_songs = []
 
