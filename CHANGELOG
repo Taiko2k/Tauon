@@ -5,8 +5,9 @@ v7.1.1
 
  - Added ctrl text cursor methods
  - Added automatic scaling between HiDPI monitors
+ - Added playlist tab indicators for track drag
  - Improved UI scale slider to update without restart
- - Tweaked internet radio reliabiliy
+ - Tweaked internet radio reliability
  - Fixed radio stream continuing download after using rr/revert
  - Fixed maloja scrobble not respecting enable setting
  - Fixed crash when attempting to export an empty playlist

@@ -928,7 +928,6 @@ playlist_hold = False
 selection_stage = 0
 
 shift_selection = []
-shift_id_selection = []
 
 gen_codes = {}
 # Control Variables--------------------------------------------------------------------------
@@ -29056,6 +29055,11 @@ corner_icon = asset_loader("corner.png", True)
 
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
+def pl_is_mut(pl):
+    id = pl_to_id(pl)
+    if id is None:
+        return False
+    return not (pctl.gen_codes.get(id) and "self" not in pctl.gen_codes[id])
 
 class TopPanel:
     def __init__(self):
@@ -29628,6 +29632,7 @@ class TopPanel:
 
         # Reset X draw position
         x = x_start
+        bar_highlight_size = round(2 * gui.scale)
 
         # TAB DRAWING
         shown = []
@@ -29701,7 +29706,7 @@ class TopPanel:
 
             # Drop pulse
             if gui.pl_pulse and gui.drop_playlist_target == i:
-                    if tab_pulse.render(x, y + self.height - 2, tab_width, 2, r=200, g=130) is False:
+                    if tab_pulse.render(x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size, r=200, g=130) is False:
                         gui.pl_pulse = False
 
             # Drag to move playlist
@@ -29709,15 +29714,25 @@ class TopPanel:
                 if mouse_down and i != playlist_box.drag_on and playlist_box.drag is True:
 
                     if key_shift_down:
-                        ddt.rect((x, y + self.height - 2, tab_width, 2), [80, 160, 200, 255])
+                        ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 160, 200, 255])
                     else:
                         if playlist_box.drag_on < i:
-                            ddt.rect((x + tab_width - 2, y, 2, gui.panelY2), [80, 160, 200, 255])
+                            ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
                         else:
-                            ddt.rect((x, y, 2, gui.panelY2), [80, 160, 200, 255])
+                            ddt.rect((x, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
 
-                elif quick_drag is True and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
-                    ddt.rect((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255])
+                elif quick_drag is True and pl_is_mut(i):
+                    ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 200, 180, 255])
+            # Drag yellow line highlight if single track already in playlist
+            elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
+                for item in shift_selection:
+                    if default_playlist[item] in tab[2]:
+                        ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [190, 160, 20, 255])
+                        break
+            # Drag red line highlight if playlist is generator playlist
+            if quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
+                if not pl_is_mut(i):
+                    ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [200, 70, 50, 255])
 
             if not gui.radio_view:
                 if len(self.adds) > 0:
@@ -34801,61 +34816,22 @@ class PlaylistBox:
             if i < self.scroll_on:
                 continue
 
-            # if not pl[8] and i in tabs_on_top:
-            #     continue
-
             tab_on += 1
-            # if draw_pin_indicator:
-            #     if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
-            #         if input.mouse_click:
-            #             switch_playlist(i)
-            #             self.drag_on = i
-            #             self.drag = True
-            #             self.drag_source = 1
-            #             set_drag_source()
 
             name = pl[0]
             hidden = pl[8]
 
-            # semi_light = False
-            # if not light_mode and test_lumi(colours.playlist_box_background) < 0.85 and False:
-            #     semi_light = True
-
-            # bg = [255, 255, 255, 6]
-            # if light_mode:
-            #     bg = [0, 0, 0, 8]
-            # if semi_light:
-            #     bg = [45, 45, 45, 255]
-
             # Background is insivible by default (for hightlighting if selected)
             bg = [0, 0, 0, 0]
-
-            # Additional highlight reasons
-            # if i == pctl.active_playlist_playing and 3 > pctl.playing_state > 0:
-            #     bg = [255, 255, 255, 10]
-            #
-            #     if dark_mode:
-            #         bg = [255, 255, 255, 8]
-            #     if light_mode:
-            #         bg = [0, 0, 0, 13]
-            #     if semi_light:
-            #         bg = [55, 55, 55, 255]
 
             # Highlight if playlist selected (viewing)
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
                 #bg = [255, 255, 255, 25]
 
                 # Adjust highlight for different background brightnesses
-                #if dark_mode:
-                    #bg = [255, 255, 255, 15]
                 bg = rgb_add_hls(colours.playlist_box_background, 0, 0.06, 0)
                 if light_mode:
                     bg = [0, 0, 0, 25]
-                    #bg = rgb_add_hls(colours.playlist_box_background, 0, -0.04, 0)
-                # if semi_light:
-                #     bg = [55, 55, 55, 255]
-                #     bg = rgb_add_hls(colours.playlist_box_background, 0, -0.04, 0)
-                #     print("SEMI")
 
             # Highlight target playlist when tragging tracks over
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag and not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
@@ -34863,16 +34839,9 @@ class PlaylistBox:
                 bg = rgb_add_hls(colours.playlist_box_background, 0, 0.04, 0)
                 if light_mode:
                     bg = [0, 0, 0, 16]
-                # if semi_light:
-                #     bg = [52, 52, 52, 255]
-
-
 
             # Get actual bg from blend for text bg
             real_bg = alpha_blend(bg, colours.playlist_box_background)
-
-            # if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
-            #     bg = rgb_add_hls(colours.playlist_box_background, 0, 0.06, 0)
 
             # Draw highlight
             ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
@@ -34883,54 +34852,6 @@ class PlaylistBox:
                 #text_start = 40 * gui.scale
                 text_start = 32 * gui.scale
 
-
-
-
-            # if pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
-            #     cl = [60, 60, 60, 240]
-            #     if light_mode:
-            #         cl = [90, 90, 90, 240]
-            #
-            #     c = [240, 240, 240, 255]
-            #     if light_mode:
-            #         c = [240, 240, 240, 255]
-            #
-            #     a_rect = ((tab_start + tab_width) - round(37 * gui.scale), yy + round(self.tab_h / 2) - round(6 * gui.scale), round(30 * gui.scale), round(10 * gui.scale))
-            #
-            #     ddt.rect(a_rect, cl, True)
-            #     ddt.text((a_rect[0] + round(2 * gui.scale), a_rect[1] - round(5 * gui.scale)), "AUTO", c, 210, bg=alpha_blend(cl, real_bg))
-            #     text_max_w -= a_rect[2] + 2 * gui.scale
-            #
-            #     fields.add(a_rect)
-            #     if coll(a_rect):
-            #         tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, pctl.gen_codes.get(pl[6]) )
-            #
-
-
-            #
-            # print(light_mode)
-            # print(dark_mode)
-
-            # Set and adjust pin indicator colour for different background brightnesses
-            # indicator_colour = [100, 200, 90, 255]
-            # if light_mode:
-            #     indicator_colour = [40, 40, 40, 210]
-            #
-            # if hidden:
-            #     indicator_colour = [255, 255, 255, 40]
-            #     if light_mode:
-            #         indicator_colour = [40, 40, 40, 60]
-                # if not dark_mode:
-                #     indicator_colour = [40, 40, 40, 60]
-                # if dark_mode:
-                #     indicator_colour = [255, 255, 255, 50]
-
-            # if i == pctl.active_playlist_playing:
-            #     indicator_colour = [200, 230, 20, 255]
-            #     if light_mode:
-            #         indicator_colour = [100, 60, 180, 255]
-
-            #else:
             if not pl[8] and prefs.tabs_on_top:
                 cl = [255, 255, 255, 25]
 
@@ -34940,70 +34861,12 @@ class PlaylistBox:
                 xx = tab_start + tab_width - self.lock_icon.w
                 self.lock_icon.render(xx, yy, cl)
 
-            # Draw pin indicator/toggle
-            # if draw_pin_indicator:
-            #     ddt.rect((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
-
-            # cl = [255, 255, 255, 40]
-            # if light_mode:
-            #     cl = [0, 0, 0, 120]
-            #
-            # indicators_start_x = (tab_start + tab_width) - round(8 * gui.scale)
-            # slide = 0
-            # if colours.lm:
-            #     slide += round(3 * gui.scale)
-            # indicators_start_x -= slide
-            # indicator_run_x = 0
-
-            # if not pl[8]:
-            #     indicator_run_x += self.pin_icon.w
-            #     self.pin_icon.render(indicators_start_x - indicator_run_x, yy + round(5 * gui.scale), cl)
-            #
-            #
-            #     a_rect = (indicators_start_x - indicator_run_x, yy, round(18 * gui.scale), round(18 * gui.scale))
-            #     fields.add(a_rect)
-            #     if coll(a_rect):
-            #         tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, "Playlist is pinned to top panel")
-            #
-            #     indicator_run_x += round(4 * gui.scale)
-            #
-            # if pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
-            #     indicator_run_x += self.gen_icon.w
-            #     self.gen_icon.render(indicators_start_x - indicator_run_x, yy + round(5 * gui.scale), cl)
-            #
-            #     a_rect = (indicators_start_x - indicator_run_x, yy, round(18 * gui.scale), round(18 * gui.scale))
-            #     fields.add(a_rect)
-            #     if coll(a_rect):
-            #         tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, pctl.gen_codes.get(pl[6]) )
-            #
-            #     indicator_run_x += round(4 * gui.scale)
-            #
-            #
-            # if pl[9] and not (key_shift_down and self.drag and hit and i != self.drag_on):
-            #     indicator_run_x += lock_asset.w
-            #     lock_asset.render(indicators_start_x - indicator_run_x, yy + round(5 * gui.scale), cl)
-            #     indicator_run_x += round(5 * gui.scale)
-
 
             text_max_w = tab_width - text_start - 15 * gui.scale
             # if indicator_run_x:
             #     text_max_w = tab_width - (indicator_run_x + text_start + 17 * gui.scale + slide)
             ddt.text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w,
                      bg=real_bg)
-            # # Draw lock icon (but not if shift append indicator)
-            # if pl[9] and not (key_shift_down and self.drag and hit and i != self.drag_on):
-            #     cl = [255, 255, 255, 35] # 24
-            #     if light_mode:
-            #         cl = [0, 0, 0, 50]
-            #     #self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
-            #     lock_asset.render(tab_start + tab_width - round(19 * gui.scale), yy + 4, cl)
-
-            # # Draw indicator playing track from this playlist
-            # if i == pctl.active_playlist_playing:
-            #     ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w),
-            #                colours.title_playing, True)
-
-            # Draw indicator playing track from this playlist
 
             # Is mouse collided with tab?
             hit = coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1)))
@@ -35022,15 +34885,15 @@ class PlaylistBox:
             # # If mouse over...
             if hit:
                 # Draw indicator for dragging tracks
-                if quick_drag:
-                    ddt.rect((tab_start + tab_width - 2 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w),
+                if quick_drag and pl_is_mut(i):
+                    ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h),
                              [80, 200, 180, 255])
 
                 # Draw indicators for moving tab
                 if self.drag and i != self.drag_on and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
                     if key_shift_down:
                         ddt.rect(
-                            (tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w),
+                            (tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h),
                             [80, 160, 200, 255])
                     else:
                         if i < self.drag_on:
@@ -35039,7 +34902,19 @@ class PlaylistBox:
                             ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w),
                                      [80, 160, 200, 255])
 
-            # Draw effect of adding tracks to playlist
+            elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
+                for item in shift_selection:
+                    if default_playlist[item] in pl[2]:
+                        ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h),
+                                 [190, 170, 20, 255])
+                        break
+            # Drag red line highlight if playlist is generator playlist
+            if quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
+                if not pl_is_mut(i):
+                    ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h),
+                             [200, 70, 50, 255])
+
+# Draw effect of adding tracks to playlist
             if len(self.adds) > 0:
                 for k in reversed(range(len(self.adds))):
                     if pctl.multi_playlist[i][6] == self.adds[k][0]:
@@ -41282,6 +41157,7 @@ while pctl.running:
                     mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
 
                 mouse_down = False
+                gui.update += 1
         elif event.type == SDL_KEYDOWN and key_focused == 0:
             k_input = True
             power += 5
@@ -45188,7 +45064,7 @@ while pctl.running:
         # quick_view_box.render()
 
         # Drag icon next to cursor
-        if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
+        if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
             i_x, i_y = get_sdl_input.mouse()
             gui.drag_source_position = (0, 0)
 
