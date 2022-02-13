@@ -9,6 +9,7 @@ v7.1.1
  - Tweaked internet radio reliabiliy
  - Fixed radio stream continuing download after using rr/revert
  - Fixed maloja scrobble not respecting enable setting
+ - Fixed crash when attempting to export an empty playlist
 
 v7.1.0
 

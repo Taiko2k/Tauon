@@ -14124,7 +14124,7 @@ class ExportPlaylistBox:
         if current["type"] == "m3u":
             target = export_m3u(id_to_pl(self.id), direc=path, relative=current["relative"], show=False)
 
-        if warnings:
+        if warnings and target != 1:
             show_message("Playlist exported", target, mode="done")
 
 export_playlist_box = ExportPlaylistBox()
@@ -15740,7 +15740,7 @@ tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_
 def export_m3u(pl, direc=None, relative=False, show=True):
     if len(pctl.multi_playlist[pl][2]) < 1:
         show_message("There are no tracks in this playlist. Nothing to export")
-        return
+        return 1
 
     if not direc:
         direc = os.path.join(user_directory, 'playlists')
@@ -15782,7 +15782,7 @@ def export_m3u(pl, direc=None, relative=False, show=True):
 def export_xspf(pl, direc=None, relative=False, show=True):
     if len(pctl.multi_playlist[pl][2]) < 1:
         show_message("There are no tracks in this playlist. Nothing to export")
-        return
+        return 1
 
     if not direc:
         direc = os.path.join(user_directory, 'playlists')
