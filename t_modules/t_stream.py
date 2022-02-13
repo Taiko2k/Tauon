@@ -151,6 +151,7 @@ class StreamEnc:
                     aud.feed_raw(len(raw_audio), raw_audio)
                     raw_audio = None
                 else:
+                    time.sleep(0.05)
                     continue
 
             if position < self.tauon.stream_proxy.c:
