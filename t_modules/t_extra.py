@@ -877,30 +877,8 @@ def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of 
             break
 
 def fit_box(inner, outer):
-
-    # find the largest side of the outer box
-    large = outer[0]
-    if outer[1] > large:
-        large = outer[1]
-
-    # find the aspect ratio of inner image
-    ratio = inner[0] / inner[1]
-
-    # scale up to largest potential
-    w = large
-    h = w * ratio
-
-    # constrain height
-    if h > outer[1]:
-        h = outer[1]
-        w = h / ratio
-
-    # constrain width
-    if w > outer[0]:
-        w = outer[0]
-        h = w * ratio
-
-    return round(w), round(h)
+    scale = min(outer[0]/inner[0], outer[1]/inner[1])
+    return round(inner[0] * scale), round(inner[1] * scale)
 
 
 def seconds_to_day_hms(seconds, s_day, s_days):
