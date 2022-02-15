@@ -41411,10 +41411,11 @@ while pctl.running:
 
     if gui.request_raise:
         gui.request_raise = False
-        if gui.lowered:
-            SDL_RestoreWindow(t_window)
-            SDL_RaiseWindow(t_window)
-            gui.lowered = False
+        print("Raise")
+        SDL_ShowWindow(t_window)
+        SDL_RestoreWindow(t_window)
+        SDL_RaiseWindow(t_window)
+        gui.lowered = False
 
     # if tm.sleeping:
     #     if not gui.lowered:
