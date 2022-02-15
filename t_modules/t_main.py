@@ -1948,6 +1948,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.radio_view = False
         self.window_size = window_size
         self.box_over = False
+        self.suggest_clean_db = False
 
 
 gui = GuiVar()
@@ -2842,8 +2843,7 @@ for t in range(2):
         if save[63] is not None:
             prefs.ui_scale = save[63]
             #prefs.ui_scale = 1.3
-
-            gui.__init__()
+            #gui.__init__()
 
         if save[0] is not None:
             master_library = save[0]
@@ -3179,6 +3179,15 @@ for t in range(2):
 
 core_timer.set()
 print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
+
+perf_timer.set()
+keys = set(master_library.keys())
+for pl in multi_playlist:
+    keys -= set(pl[2])
+if len(keys) > 5000:
+    gui.suggest_clean_db = True
+#print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
+
 
 # temporary
 if window_size is None:
@@ -5621,12 +5630,13 @@ class PlayerCtl:
                 tauon.spot_ctl.update_timer.set()
                 tauon.spot_ctl.update()
 
-    def purge_track(self, track_id):  # Remove a track from the database
+    def purge_track(self, track_id, fast=False):  # Remove a track from the database
         # Remove from all playlists
-        for playlist in self.multi_playlist:
-            while track_id in playlist[2]:
-                album_dex.clear()
-                playlist[2].remove(track_id)
+        if not fast:
+            for playlist in self.multi_playlist:
+                while track_id in playlist[2]:
+                    album_dex.clear()
+                    playlist[2].remove(track_id)
         # Stop if track is playing track
         if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
             self.stop(block=True)
@@ -21325,6 +21335,23 @@ def new_playlist_deco():
     return [colours.menu_text, colours.menu_background, text]
 
 x_menu.add(_("New Playlist"), new_playlist, new_playlist_deco,  icon=add_icon)
+
+def clean_db_show_test(_):
+    return gui.suggest_clean_db
+
+def clean_db_fast():
+    keys = set(pctl.master_library.keys())
+    for pl in pctl.multi_playlist:
+        keys -= set(pl[2])
+    for item in keys:
+        pctl.purge_track(item, fast=True)
+    gui.show_message(f"Done! {len(keys)} old items were removed.", mode="done")
+    gui.suggest_clean_db = False
+
+def clean_db_deco():
+    return [colours.menu_text, [30, 150, 120, 255], _("Clean Database")]
+
+x_menu.add(_("Clean Database"), clean_db_fast, clean_db_deco, show_test=clean_db_show_test)
 
 
 # x_menu.add(_("Internet Radio…"), activate_radio_box)
