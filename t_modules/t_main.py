@@ -335,19 +335,6 @@ if msys:
             pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
             sys.exit()
 
-elif system == 'linux':
-    if os.path.isfile('.gitignore') and False:
-        print("Dev mode, ignoring single instancing")
-    else:
-        pid_file = os.path.join(user_directory, 'program.pid')
-        fp = open(pid_file, 'w')
-        try:
-            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError:
-            # another instance is running
-            print("Program is already running")
-            transfer_args_and_exit()
-
 
 if system == 'windows':
     from win32event import CreateMutex
@@ -1949,6 +1936,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.window_size = window_size
         self.box_over = False
         self.suggest_clean_db = False
+        self.style_worker_timer = Timer()
 
 
 gui = GuiVar()
@@ -12136,7 +12124,7 @@ class StyleOverlay:
                         return
                     else:
                         self.flush()
-                        self.min_on_timer.force_set(-8)
+                        self.min_on_timer.force_set(-4)
                         return
 
                 self.stage = 1
@@ -12151,9 +12139,13 @@ class StyleOverlay:
         if self.b_texture is not None:
             SDL_DestroyTexture(self.b_texture)
             self.b_texture = None
-        self.min_on_timer.force_set(-0.4)
+        self.min_on_timer.force_set(-0.1)
         self.parent_path = "None"
         self.stage = 0
+        tm.ready("worker")
+        gui.style_worker_timer.set()
+        gui.delay_frame(0.15)
+        gui.update += 1
 
     def display(self):
 
@@ -23959,15 +23951,15 @@ def worker3():
 
 
 def worker4():
-    active_timer = Timer()
+    gui.style_worker_timer.set()
     while True:
         if prefs.art_bg:
             style_overlay.worker()
 
-        time.sleep(0.5)
+        time.sleep(0.01)
         if pctl.playing_state > 0 and pctl.playing_time < 5:
-            active_timer.set()
-        if active_timer.get() > 5:
+            gui.style_worker_timer.set()
+        if gui.style_worker_timer.get() > 5:
             return
 
 
@@ -40082,6 +40074,7 @@ def update_layout_do():
 
     if prefs.bg_showcase_only:
         prefs.art_bg_opacity += 21
+
     # -----
 
     # Adjust for for compact window sizes ----

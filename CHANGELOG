@@ -13,6 +13,7 @@ v7.1.1
  - Fixed maloja scrobble not respecting enable setting
  - Fixed crash when attempting to export an empty playlist
  - Fixed "zoom art to fix" aspect ratio
+ - Fixed background art not reloading on window resize
 
 v7.1.0
 
