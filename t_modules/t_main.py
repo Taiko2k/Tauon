@@ -335,19 +335,6 @@ if msys:
             pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
             sys.exit()
 
-elif system == 'linux':
-    if os.path.isfile('.gitignore') and False:
-        print("Dev mode, ignoring single instancing")
-    else:
-        pid_file = os.path.join(user_directory, 'program.pid')
-        fp = open(pid_file, 'w')
-        try:
-            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError:
-            # another instance is running
-            print("Program is already running")
-            transfer_args_and_exit()
-
 
 if system == 'windows':
     from win32event import CreateMutex
@@ -1558,6 +1545,68 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
     def delay_frame(self, t):
         gui.frame_callback_list.append(TestTimer(t))
 
+    def destroy_textures(self):
+        SDL_DestroyTexture(self.spec4_tex)
+        SDL_DestroyTexture(self.spec1_tex)
+        SDL_DestroyTexture(self.spec2_tex)
+        SDL_DestroyTexture(self.spec_level_tex)
+
+    def rescale(self):
+        self.spec_y = int(round(5 * self.scale))
+        self.spec_w = int(round(80 * self.scale))
+        self.spec_h = int(round(20 * self.scale))
+        self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
+
+        self.spec4_y = int(round(200 * self.scale))
+        self.spec4_w = int(round(322 * self.scale))
+        self.spec4_h = int(round(100 * self.scale))
+        self.spec4_rec = SDL_Rect(0, self.spec4_y, self.spec4_w, self.spec4_h)
+
+        self.bar = SDL_Rect(10, 10, round(3 * self.scale), 10) # spec bar bin
+        self.bar4 = SDL_Rect(10, 10, round(3 * self.scale), 10) # spec bar bin
+        self.set_height = round(25 * self.scale)
+        self.panelBY = round(51 * self.scale)
+        self.panelY = round(30 * self.scale)
+        self.panelY2 = round(30 * self.scale)
+        self.playlist_top = self.panelY + (8 * self.scale)
+        self.playlist_top_bk = self.playlist_top
+        self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
+
+        self.spec2_y = int(round(22 * self.scale))
+        self.spec2_w = int(round(140 * self.scale))
+        self.spec2 = [0] * self.spec2_y
+        self.spec2_phase = 0
+        self.spec2_buffers = []
+        self.spec2_rec = SDL_Rect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
+        self.spec2_source = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+        self.spec2_dest = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+        self.spec2_position = 0
+        self.spec2_timer = Timer()
+        self.spec2_timer.set()
+
+        self.level_w = 5 * self.scale
+        self.level_y = 16 * self.scale
+        self.level_s = 1 * self.scale
+        self.level_ww = round(79 * self.scale)
+        self.level_hh = round(18 * self.scale)
+        self.spec_level_rec = SDL_Rect(0, round(self.level_y - 10 * self.scale), round(self.level_ww), round(self.level_hh))
+
+        self.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w,
+                                          self.spec2_y)
+        self.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w,
+                                          self.spec4_y)
+        self.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w,
+                                          self.spec_h)
+        self.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
+                                               self.level_ww, self.level_hh)
+        SDL_SetTextureBlendMode(self.spec4_tex, SDL_BLENDMODE_BLEND)
+        self.artist_panel_height = 320 * self.scale
+        self.last_artist_panel_height = self.artist_panel_height
+
+        self.window_control_hit_area_w = 100 * self.scale
+        self.window_control_hit_area_h = 30 * self.scale
+
+
     def __init__(self):
 
         self.scale = prefs.ui_scale
@@ -1603,20 +1652,11 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         #self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
 
-        self.spec_y = int(round(5 * self.scale))
-        self.spec_w = int(round(80 * self.scale))
-        self.spec_h = int(round(20 * self.scale))
-        self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
 
         self.spec4_array = []
-        self.spec4_y = int(round(200 * self.scale))
-        self.spec4_w = int(round(322 * self.scale))
-        self.spec4_h = int(round(100 * self.scale))
-        self.draw_spec4 = False
-        self.spec4_rec = SDL_Rect(0, self.spec4_y, self.spec4_w, self.spec4_h)
 
-        self.bar = SDL_Rect(10, 10, round(3 * self.scale), 10) # spec bar bin
-        self.bar4 = SDL_Rect(10, 10, round(3 * self.scale), 10) # spec bar bin
+        self.draw_spec4 = False
+
 
         self.combo_mode = False
         self.showcase_mode = False
@@ -1638,7 +1678,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.set_bar = True
         self.set_mode = False
-        self.set_height = round(25 * self.scale)
         self.set_hold = -1
         self.set_label_hold = -1
         self.set_label_point = (0, 0)
@@ -1649,14 +1688,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         for item in self.pl_st:
             item[1] = item[1] * self.scale
 
-        self.panelBY = round(51 * self.scale)
-        self.panelY = round(30 * self.scale)
-        self.panelY2 = round(30 * self.scale)
 
-        self.playlist_top = self.panelY + (8 * self.scale)
-        self.playlist_top_bk = self.playlist_top
+
         self.offset_extra = 0
-        self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
 
         self.playlist_row_height = 16
         self.playlist_text_offset = 0
@@ -1677,25 +1711,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.gallery_show_text = True
         self.bb_show_art = False
 
-        self.spec2_y = int(round(22 * self.scale))
-        self.spec2_w = int(round(140 * self.scale))
-        self.spec2 = [0] * self.spec2_y
-        self.spec2_phase = 0
-        self.spec2_buffers = []
-        self.spec2_tex = None
-        self.spec2_rec = SDL_Rect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
-        self.spec2_source = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
-        self.spec2_dest = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
-        self.spec2_position = 0
-        self.spec2_timer = Timer()
-        self.spec2_timer.set()
-
-        self.level_w = 5 * self.scale
-        self.level_y = 16 * self.scale
-        self.level_s = 1 * self.scale
-        self.level_ww = round(79 * self.scale)
-        self.level_hh = round(18 * self.scale)
-        self.spec_level_rec = SDL_Rect(0, round(self.level_y - 10 * self.scale), round(self.level_ww), round(self.level_hh))
 
         self.rename_folder_box = False
 
@@ -1749,7 +1764,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.pref_rspw = 300
 
         self.pref_gallery_w = 600
-        self.artist_panel_height = 320 * self.scale
 
         self.artist_info_panel = False
 
@@ -1793,8 +1807,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.save_position = [0, 0]
 
-        self.window_control_hit_area_w = 100 * self.scale
-        self.window_control_hit_area_h = 30 * self.scale
+
 
         self.draw_vis4_top = False
         #self.vis_4_colour = [0,0,0,255]
@@ -1826,8 +1839,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.top_bar_mode2 = False
         self.mode_toast_text = ""
 
+        self.rescale()
         #self.smooth_scrolling = False
-        self.last_artist_panel_height = self.artist_panel_height
 
         self.compact_artist_list = False
 
@@ -1922,6 +1935,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.radio_view = False
         self.window_size = window_size
         self.box_over = False
+        self.suggest_clean_db = False
+        self.style_worker_timer = Timer()
 
 
 gui = GuiVar()
@@ -2816,8 +2831,7 @@ for t in range(2):
         if save[63] is not None:
             prefs.ui_scale = save[63]
             #prefs.ui_scale = 1.3
-
-            gui.__init__()
+            #gui.__init__()
 
         if save[0] is not None:
             master_library = save[0]
@@ -3153,6 +3167,15 @@ for t in range(2):
 
 core_timer.set()
 print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
+
+perf_timer.set()
+keys = set(master_library.keys())
+for pl in multi_playlist:
+    keys -= set(pl[2])
+if len(keys) > 5000:
+    gui.suggest_clean_db = True
+#print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
+
 
 # temporary
 if window_size is None:
@@ -4167,7 +4190,8 @@ def scale_assets(scale_want, force=force_render):
         rspw = gui.pref_rspw
         grspw = gui.pref_gallery_w
 
-        gui.__init__()
+        gui.destroy_textures()
+        gui.rescale()
 
         # Scale saved values
         gui.pl_st = column_backup
@@ -5594,12 +5618,13 @@ class PlayerCtl:
                 tauon.spot_ctl.update_timer.set()
                 tauon.spot_ctl.update()
 
-    def purge_track(self, track_id):  # Remove a track from the database
+    def purge_track(self, track_id, fast=False):  # Remove a track from the database
         # Remove from all playlists
-        for playlist in self.multi_playlist:
-            while track_id in playlist[2]:
-                album_dex.clear()
-                playlist[2].remove(track_id)
+        if not fast:
+            for playlist in self.multi_playlist:
+                while track_id in playlist[2]:
+                    album_dex.clear()
+                    playlist[2].remove(track_id)
         # Stop if track is playing track
         if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
             self.stop(block=True)
@@ -9139,11 +9164,10 @@ if system == 'windows' or msys:
 #
 # SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
-gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
-gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
+# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
+# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
+# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
 
 
 def bass_player_thread(player):
@@ -12100,7 +12124,7 @@ class StyleOverlay:
                         return
                     else:
                         self.flush()
-                        self.min_on_timer.force_set(-8)
+                        self.min_on_timer.force_set(-4)
                         return
 
                 self.stage = 1
@@ -12115,9 +12139,13 @@ class StyleOverlay:
         if self.b_texture is not None:
             SDL_DestroyTexture(self.b_texture)
             self.b_texture = None
-        self.min_on_timer.force_set(-0.4)
+        self.min_on_timer.force_set(-0.1)
         self.parent_path = "None"
         self.stage = 0
+        tm.ready("worker")
+        gui.style_worker_timer.set()
+        gui.delay_frame(0.15)
+        gui.update += 1
 
     def display(self):
 
@@ -21300,6 +21328,23 @@ def new_playlist_deco():
 
 x_menu.add(_("New Playlist"), new_playlist, new_playlist_deco,  icon=add_icon)
 
+def clean_db_show_test(_):
+    return gui.suggest_clean_db
+
+def clean_db_fast():
+    keys = set(pctl.master_library.keys())
+    for pl in pctl.multi_playlist:
+        keys -= set(pl[2])
+    for item in keys:
+        pctl.purge_track(item, fast=True)
+    gui.show_message(f"Done! {len(keys)} old items were removed.", mode="done")
+    gui.suggest_clean_db = False
+
+def clean_db_deco():
+    return [colours.menu_text, [30, 150, 120, 255], _("Clean Database")]
+
+x_menu.add(_("Clean Database"), clean_db_fast, clean_db_deco, show_test=clean_db_show_test)
+
 
 # x_menu.add(_("Internet Radio…"), activate_radio_box)
 
@@ -23906,15 +23951,15 @@ def worker3():
 
 
 def worker4():
-    active_timer = Timer()
+    gui.style_worker_timer.set()
     while True:
         if prefs.art_bg:
             style_overlay.worker()
 
-        time.sleep(0.5)
+        time.sleep(0.01)
         if pctl.playing_state > 0 and pctl.playing_time < 5:
-            active_timer.set()
-        if active_timer.get() > 5:
+            gui.style_worker_timer.set()
+        if gui.style_worker_timer.get() > 5:
             return
 
 
@@ -40029,6 +40074,7 @@ def update_layout_do():
 
     if prefs.bg_showcase_only:
         prefs.art_bg_opacity += 21
+
     # -----
 
     # Adjust for for compact window sizes ----
@@ -41278,9 +41324,9 @@ while pctl.running:
                 key_focused = 1
                 gui.update += 1
 
-            elif event.window.event == SDL_WINDOWEVENT_RESIZED:
+            elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
 
-                if restore_ignore_timer.get() > 1:  # Hacky
+                if restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
                     gui.update = 2
 
                     logical_size[0] = event.window.data1
@@ -41358,10 +41404,11 @@ while pctl.running:
 
     if gui.request_raise:
         gui.request_raise = False
-        if gui.lowered:
-            SDL_RestoreWindow(t_window)
-            SDL_RaiseWindow(t_window)
-            gui.lowered = False
+        print("Raise")
+        SDL_ShowWindow(t_window)
+        SDL_RestoreWindow(t_window)
+        SDL_RaiseWindow(t_window)
+        gui.lowered = False
 
     # if tm.sleeping:
     #     if not gui.lowered:
