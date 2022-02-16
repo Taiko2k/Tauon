@@ -452,8 +452,9 @@ class StreamEnc:
                         try:
                             meta = text.decode().rstrip("\x00")
                             for tag in meta.split(";"):
+                                print(tag)
                                 if '=' in tag:
-                                    a, b = tag.split('=')
+                                    a, b = tag.split('=', 1)
                                     if a == 'StreamTitle':
                                         #print("Set meta")
                                         self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
