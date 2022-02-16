@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v7.1.1
 
+ - Added "Clean Database" prompt function to MENU
  - Added ctrl text cursor methods
  - Added automatic scaling between HiDPI monitors
  - Added playlist tab indicators for track drag
@@ -11,6 +12,8 @@ v7.1.1
  - Fixed radio stream continuing download after using rr/revert
  - Fixed maloja scrobble not respecting enable setting
  - Fixed crash when attempting to export an empty playlist
+ - Fixed "zoom art to fix" aspect ratio
+ - Fixed background art not reloading on window resize
 
 v7.1.0
 

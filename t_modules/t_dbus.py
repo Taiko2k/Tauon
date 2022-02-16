@@ -515,9 +515,11 @@ class Gnome:
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Raise(self):
                         gui.request_raise = True
+                        tauon.wake()
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Quit(self):
+                        tauon.wake()
                         tauon.exit()
 
                     @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
@@ -544,6 +546,7 @@ class Gnome:
                                     in_signature='ssv', out_signature='')
                     def Set(self, interface_name, property_name, value):
                         if interface_name == 'org.mpris.MediaPlayer2.Player':
+                            tauon.wake()
                             if property_name == "Volume":
                                 pctl.player_volume = min(max(int(value * 100), 0), 100)
                                 pctl.set_volume()
@@ -571,11 +574,13 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Next(self):
+                        tauon.wake()
                         pctl.advance()
                         pass
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Previous(self):
+                        tauon.wake()
                         pctl.back()
                         pass
 
@@ -585,6 +590,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def PlayPause(self):
+                        tauon.wake()
                         if pctl.playing_state == 3:
                             pctl.stop()  # Stop if playing radio
                         else:
@@ -596,6 +602,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Play(self):
+                        tauon.wake()
                         pctl.play()
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
@@ -611,6 +618,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def OpenUri(self, uri):
+                        tauon.wake()
                         tauon.open_uri(uri)
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')

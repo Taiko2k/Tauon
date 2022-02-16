@@ -110,7 +110,7 @@ class Config:
         old_value = None
 
         for row in self.old:
-            row = row.split("#", 1)[0]
+            row = row.split(" #", 1)[0]
             if "=" in row:
                 if row.split("=", 1)[0].strip() == key:
                     old_value = row.split("=", 1)[1].strip()

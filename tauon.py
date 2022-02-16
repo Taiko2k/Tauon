@@ -87,7 +87,7 @@ if install_mode:
 if not os.path.isdir(user_directory):
     os.makedirs(user_directory)
 
-if os.path.isfile('.gitignore') and False:
+if os.path.isfile('.gitignore'):
     print("Dev mode, ignoring single instancing")
 else:
     pid_file = os.path.join(user_directory, 'program.pid')
