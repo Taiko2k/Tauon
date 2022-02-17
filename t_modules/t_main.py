@@ -12139,12 +12139,12 @@ class StyleOverlay:
         if self.b_texture is not None:
             SDL_DestroyTexture(self.b_texture)
             self.b_texture = None
-        self.min_on_timer.force_set(-0.1)
+        self.min_on_timer.force_set(-0.2)
         self.parent_path = "None"
         self.stage = 0
         tm.ready("worker")
         gui.style_worker_timer.set()
-        gui.delay_frame(0.15)
+        gui.delay_frame(0.25)
         gui.update += 1
 
     def display(self):
@@ -27164,10 +27164,11 @@ class Over:
 
         y += 41 * gui.scale
 
-        if self.button2(x, y, "Spotify", width=84*gui.scale):
-            self.account_view = 8
-            
-        prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
+        if prefs.spot_mode or key_shift_down:
+            if self.button2(x, y, "Spotify", width=84*gui.scale):
+                self.account_view = 8
+
+            prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
 
         if self.account_view in (9, 2, 1):
             self.toggle_square(x0 + 230 * gui.scale, y + 2 * gui.scale, toggle_scrobble_mark, _("Show threshold marker"))
