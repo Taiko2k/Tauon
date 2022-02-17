@@ -150,7 +150,9 @@ SDL_Init(SDL_INIT_VIDEO)
 err = SDL_GetError()
 if err:
     print(f"SDL init error: {err.decode()}")
-    SDL_ClearError()
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
+                             b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
+    sys.exit()
 
 window_title = t_title
 window_title = window_title.encode('utf-8')
