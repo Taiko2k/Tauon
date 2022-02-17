@@ -14,8 +14,7 @@
   - Fast, comfortable and responsive UI.
   - Import tracks and create playlists by simple **drag and drop**.
   - Supports most common codecs and **tracker** file types.  
-  - Seamless support for CUE sheets.
-  - Import and control playback of **Spotify** tracks. (Requires Spotify Premium) 
+  - Seamless support for CUE sheets. 
   - Stream music from your **PLEX**, **koel**, **Jellyfin** or **Airsonic** server.
   - Large album art and gallery displays!
   - Support for **gapless playback**.
