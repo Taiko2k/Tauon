@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.1.0"
+n_version = "7.1.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
