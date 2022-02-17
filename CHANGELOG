@@ -5,7 +5,7 @@ v7.1.1
 
  - Added "Clean Database" prompt function to MENU
  - Added ctrl text cursor methods
- - Added automatic scaling between HiDPI monitors
+ - Added automatic scaling between HiDPI monitors (Experimental)
  - Added playlist tab indicators for track drag
  - Improved UI scale slider to update without restart
  - Tweaked internet radio reliability
@@ -14,6 +14,7 @@ v7.1.1
  - Fixed crash when attempting to export an empty playlist
  - Fixed "zoom art to fix" aspect ratio
  - Fixed background art not reloading on window resize
+ - Depricated Spotify support (Now hold shift to reveal setting)
 
 v7.1.0
 

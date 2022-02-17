@@ -62,12 +62,10 @@
 
   <releases>
 
-    <release version="7.1.0" date="2022-02-07">
+    <release version="7.1.1" date="2022-02-17">
       <description>
         <ul>
-          <li>Added Chromecast support</li>
-          <li>Added playlist export dialog</li>
-          <li>Various bug fixes</li>
+          <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
     </release>
