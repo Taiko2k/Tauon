@@ -10446,7 +10446,19 @@ class TextBox:
                 self.eliminate_selection()
                 self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
 
-            # Handle backspace
+            def g():
+                if len(self.text) == 0 or self.cursor_position == len(self.text):
+                    return None
+                return self.text[len(self.text) - self.cursor_position - 1]
+            def g2():
+                if len(self.text) == 0 or self.cursor_position == 0:
+                    return None
+                return self.text[len(self.text) - self.cursor_position]
+            def d():
+                self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
+                                                                            len(self.text) - self.cursor_position:]
+                self.selection = self.cursor_position
+
             # Ctrl + Backspace to delete word
             if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
                 self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(self.text):
