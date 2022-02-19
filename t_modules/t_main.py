@@ -10446,8 +10446,61 @@ class TextBox:
                 self.eliminate_selection()
                 self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
 
-            # Handle backspace
-            if inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+            def g():
+                if len(self.text) == 0 or self.cursor_position == len(self.text):
+                    return None
+                return self.text[len(self.text) - self.cursor_position - 1]
+            def g2():
+                if len(self.text) == 0 or self.cursor_position == 0:
+                    return None
+                return self.text[len(self.text) - self.cursor_position]
+            def d():
+                self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
+                                                                            len(self.text) - self.cursor_position:]
+                self.selection = self.cursor_position
+
+            # Ctrl + Backspace to delete word
+            if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
+                self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(self.text):
+                while g() == " ":
+                    d()
+                while g() != " " and g() != None:
+                    d()
+
+            # Ctrl + left to move cursor back a word
+            elif (key_ctrl_down or key_rctrl_down) and key_left_press:
+                while g() == " ":
+                    self.cursor_position += 1
+                    if not key_shift_down:
+                        self.selection = self.cursor_position
+                while g() != " " and g() != None:
+                    self.cursor_position += 1
+                    if not key_shift_down:
+                        self.selection = self.cursor_position
+                    if g() == " ":
+                        self.cursor_position -= 1
+                        if not key_shift_down:
+                            self.selection = self.cursor_position
+                        break
+
+            # Ctrl + right to move cursor forward a word
+            elif (key_ctrl_down or key_rctrl_down) and key_right_press:
+                while g2() == " ":
+                    self.cursor_position -= 1
+                    if not key_shift_down:
+                        self.selection = self.cursor_position
+                while g2() != " " and g2() != None:
+                    self.cursor_position -= 1
+                    if not key_shift_down:
+                        self.selection = self.cursor_position
+                    if g2() == " ":
+                        self.cursor_position += 1
+                        if not key_shift_down:
+                            self.selection = self.cursor_position
+                        break
+
+            # Handle normal backspace
+            elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
                 while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
                     if self.selection != self.cursor_position:
                         self.eliminate_selection()
