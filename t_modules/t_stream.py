@@ -135,7 +135,7 @@ class StreamEnc:
 
         position = 0
         raw_audio = None
-        max_read = int(100000 / 10)
+        max_read = int(10000)
         vb.reset()
         vb.tauon = self.tauon
 
@@ -452,7 +452,6 @@ class StreamEnc:
                         try:
                             meta = text.decode().rstrip("\x00")
                             for tag in meta.split(";"):
-                                print(tag)
                                 if '=' in tag:
                                     a, b = tag.split('=', 1)
                                     if a == 'StreamTitle':
