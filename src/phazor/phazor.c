@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1024,7 +1024,6 @@ int load_next() {
     stat(loaded_target_file, &st);
     load_file_size = st.st_size;
     fread(peak, sizeof(peak), 1, fptr);
-    fclose(fptr);
 
     if (memcmp(peak, "fLaC", 4) == 0) {
         codec = FLAC;
@@ -1057,8 +1056,17 @@ int load_next() {
         //printf("Detected tta\n");
     } else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
         codec = MPG;
+        char peak2[10000];
+        memset(peak2, 0, sizeof(peak2));
+        rewind(fptr);
+        fread(peak, sizeof(peak2), 1, fptr);
+        if (memmem(peak2, sizeof(peak2), "fLaC", 4) != NULL){
+          codec = FLAC;
+          printf("ph: Detected FLAC with id3 header\n");
+        }
         //printf("Detected mp3 id3\n");
     }
+    fclose(fptr);
 
 
     // Fallback to detecting using file extension
