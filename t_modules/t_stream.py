@@ -163,6 +163,8 @@ class StreamEnc:
                 decoder.stdin.write(chunk)
                 vb.input(self.tauon.stream_proxy.chunks[position])
                 position += 1
+            else:
+                time.sleep(0.01)
 
 
         print("END FEEDER")
