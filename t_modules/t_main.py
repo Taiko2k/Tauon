@@ -10049,7 +10049,7 @@ class TextBox2:
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g() != " " and g() != None:
+                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
@@ -10065,7 +10065,7 @@ class TextBox2:
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g2() != " " and g2() != None:
+                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
@@ -10473,7 +10473,7 @@ class TextBox:
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g() != " " and g() != None:
+                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
@@ -10489,7 +10489,7 @@ class TextBox:
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g2() != " " and g2() != None:
+                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
