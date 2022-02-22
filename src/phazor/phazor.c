@@ -1059,7 +1059,7 @@ int load_next() {
         char peak2[10000];
         memset(peak2, 0, sizeof(peak2));
         rewind(fptr);
-        fread(peak, sizeof(peak2), 1, fptr);
+        fread(peak2, sizeof(peak2), 1, fptr);
         if (memmem(peak2, sizeof(peak2), "fLaC", 4) != NULL){
           codec = FLAC;
           printf("ph: Detected FLAC with id3 header\n");
