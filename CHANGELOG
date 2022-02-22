@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v7.1.2
 
- - Fixed radio stalling in some cases
+ - [Phazor] Fixed radio stalling in some cases
+ - [Phazor] Fixed some FLAC files not playing
 
 v7.1.1
 
