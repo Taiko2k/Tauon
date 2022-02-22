@@ -62,10 +62,10 @@
 
   <releases>
 
-    <release version="7.1.1" date="2022-02-17">
+    <release version="7.1.2" date="2022-02-23">
       <description>
         <ul>
-          <li>Various tweaks and bug fixes</li>
+          <li>Various bug fixes</li>
         </ul>
       </description>
     </release>
