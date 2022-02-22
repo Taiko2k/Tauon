@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v7.1.2
+
+ - Fixed radio stalling in some cases
+
 v7.1.1
 
  - Added "Clean Database" prompt function to MENU

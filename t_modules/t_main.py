@@ -33668,7 +33668,6 @@ class RadioBox:
         self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&name=" + text)
 
     def start(self, item):
-
         url = item["stream_url"]
         print("Start radio")
         print(url)
@@ -33704,7 +33703,7 @@ class RadioBox:
             show_message(_("FFmpeg does not appear to be installed"), mode="error")
             prefs.auto_rec = False
 
-        if not self.proxy_started:
+        if not self.proxy_started and prefs.backend != 4:
             shoot = threading.Thread(target=stream_proxy, args=[tauon])
             shoot.daemon = True
             shoot.start()

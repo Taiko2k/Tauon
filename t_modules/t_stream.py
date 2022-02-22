@@ -41,6 +41,7 @@ class StreamEnc:
         self.download_running = False
         self.encode_running = False
         self.pump_running = False
+        self.feed_running = False
 
         self.download_process = False
         self.abort = False
@@ -69,7 +70,6 @@ class StreamEnc:
     def start_download(self, url):
 
         self.abort = True
-
         while self.download_running:
             time.sleep(0.01)
         while self.encode_running:
@@ -133,11 +133,37 @@ class StreamEnc:
         decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
-        position = 0
         raw_audio = None
         max_read = int(10000)
         vb.reset()
         vb.tauon = self.tauon
+
+        def feed(decoder):
+            position = 0
+            self.feed_running = True
+            try:
+                while True:
+                    if position < self.tauon.stream_proxy.c:
+                        if position not in self.tauon.stream_proxy.chunks:
+                            print("The buffer was deleted too soon!")
+                            break
+
+                        chunk = self.chunks[position]
+                        decoder.stdin.write(chunk)
+                        vb.input(self.tauon.stream_proxy.chunks[position])
+                        position += 1
+                    else:
+                        time.sleep(0.01)
+                    if not self.pump_running or not self.feed_running:
+                        break
+            except:
+                self.feed_running = False
+                raise
+            print("Exit feeder")
+
+        feeder = threading.Thread(target=feed, args=[decoder])
+        feeder.daemon = True
+        feeder.start()
 
         while True:
             if not self.tauon.stream_proxy.download_running or self.abort:
@@ -151,29 +177,16 @@ class StreamEnc:
                     aud.feed_raw(len(raw_audio), raw_audio)
                     raw_audio = None
                 else:
-                    time.sleep(0.05)
+                    time.sleep(0.01)
                     continue
 
-            if position < self.tauon.stream_proxy.c:
-                if position not in self.tauon.stream_proxy.chunks:
-                    print("The buffer was deleted too soon!")
-                    break
-
-                chunk = self.chunks[position]
-                decoder.stdin.write(chunk)
-                vb.input(self.tauon.stream_proxy.chunks[position])
-                position += 1
-            else:
-                time.sleep(0.01)
-
-
-        print("END FEEDER")
         decoder.terminate()
         time.sleep(0.1)
         try:
             decoder.kill()
         except:
             pass
+
         self.pump_running = False
 
 
