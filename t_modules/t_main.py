@@ -28262,25 +28262,20 @@ class Over:
             ddt.text((x, y + 1 * gui.scale), "Created by", colours.box_text_label, 13)
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
-            y += 25 * gui.scale
+            y += 35 * gui.scale
+            ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
+            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "RSKYS", colours.box_sub_text, 13)
 
-            ddt.text((x, y), "Translations", colours.box_text_label, 13)
-            yy = y
-            ddt.text((x + 120 * gui.scale, y), "tyzmodo", colours.box_sub_text, 13)
-            y += 19 * gui.scale
-            ddt.text((x + 120 * gui.scale, y), "brunob", colours.box_sub_text, 13)
-            y += 19 * gui.scale
-            ddt.text((x + 120 * gui.scale, y), "msmafra", colours.box_sub_text, 13)
 
-            y = yy
-            ddt.text((x + 210 * gui.scale, y), "eson57", colours.box_sub_text, 13)
-            y += 19 * gui.scale
-            ddt.text((x + 210 * gui.scale, y), "Ricardo Simões", colours.box_sub_text, 13)
-            y += 19 * gui.scale
-            ddt.text((x + 210 * gui.scale, y), "sk22", colours.box_sub_text, 13)
-
-            # ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
-            # ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "", colours.box_sub_text, 13)
+            y += 20 * gui.scale
+            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/TauonMusicBox/graphs/contributors", colours.box_sub_text, 12, replace="Other contributors")
+            link_rect = [x, y, link_pa[1], 18 * gui.scale]
+            if coll(link_rect):
+                if not self.click:
+                    gui.cursor_want = 3
+                if self.click:
+                    webbrowser.open(link_pa[2], new=2, autoraise=True)
+            fields.add(link_rect)
 
 
         elif self.cred_page == 2:
