@@ -32066,7 +32066,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     star_x += round(13 * gui.scale)
                 else:
                     if playtime_stars > 3:
-                        dd = round((13 - (playtime_stars - 3) * gui.scale))
+                        dd = round(((13 - (playtime_stars - 3)) * gui.scale))
                         sx -= dd
                         star_x += dd
                     else:
@@ -41787,8 +41787,6 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            print(window_size)
-            print(logical_size)
             pass
 
         if gui.mode < 3:
