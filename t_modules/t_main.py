@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.1.2"
+n_version = "7.1.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -14188,10 +14188,10 @@ class ExportPlaylistBox:
         prefs.playlist_exports[self.id] = current
 
         if draw.button(_("Export"), x, y, press=gui.level_2_click):
-            self.run_export(current, warnings=True)
+            self.run_export(current, self.id, warnings=True)
 
 
-    def run_export(self, current, warnings=True):
+    def run_export(self, current, id, warnings=True):
         print("Export playlist")
         path = current["path"]
         if not os.path.isdir(path):
@@ -14200,9 +14200,9 @@ class ExportPlaylistBox:
             return
         target = ""
         if current["type"] == "xspf":
-            target = export_xspf(id_to_pl(self.id), direc=path, relative=current["relative"], show=False)
+            target = export_xspf(id_to_pl(id), direc=path, relative=current["relative"], show=False)
         if current["type"] == "m3u":
-            target = export_m3u(id_to_pl(self.id), direc=path, relative=current["relative"], show=False)
+            target = export_m3u(id_to_pl(id), direc=path, relative=current["relative"], show=False)
 
         if warnings and target != 1:
             show_message("Playlist exported", target, mode="done")
@@ -40781,7 +40781,7 @@ def save_state():
                 continue
             if item["auto"] is False:
                 continue
-            export_playlist_box.run_export(item, warnings=False)
+            export_playlist_box.run_export(item, key, warnings=False)
 
         print("done")
 
