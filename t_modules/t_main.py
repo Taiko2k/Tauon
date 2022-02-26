@@ -41074,6 +41074,7 @@ c_xax = 0
 c_xax_timer = Timer()
 c_xay = 0
 c_xay_timer = Timer()
+rt = 0
 
 while pctl.running:
     # bm.get('main')
@@ -41140,6 +41141,8 @@ while pctl.running:
                 print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
 
         if event.type == SDL_CONTROLLERAXISMOTION:
+            if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+                rt = event.caxis.value > 5000
             if event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY:
                 if event.caxis.value < -10000:
                     new = -1
@@ -41153,9 +41156,9 @@ while pctl.running:
                 power += 5
                 gui.update += 1
             if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX:
-                if event.caxis.value < -10000:
+                if event.caxis.value < -15000:
                     new = -1
-                elif event.caxis.value > 10000:
+                elif event.caxis.value > 15000:
                     new = 1
                 else:
                     new = 0
@@ -41165,9 +41168,9 @@ while pctl.running:
                 power += 5
                 gui.update += 1
             if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY:
-                if event.caxis.value < -10000:
+                if event.caxis.value < -15000:
                     new = -1
-                elif event.caxis.value > 10000:
+                elif event.caxis.value > 15000:
                     new = 1
                 else:
                     new = 0
@@ -41182,24 +41185,42 @@ while pctl.running:
             power += 5
             gui.update += 2
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                toggle_random()
+                if rt:
+                    toggle_random()
+                else:
+                    pctl.advance()
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                toggle_repeat()
+                if rt:
+                    toggle_repeat()
+                else:
+                    pctl.back()
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_A:
-                if pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
-                    pctl.selected_ready() and default_playlist[playlist_selected] == pctl.playing_object().index:
-                    pctl.play_pause()
+                if rt:
+                    pctl.show_current(highlight=True)
                 else:
-                    inp.key_return_press = True
+                    if pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
+                        pctl.selected_ready() and default_playlist[playlist_selected] == pctl.playing_object().index:
+                        pctl.play_pause()
+                    else:
+                        inp.key_return_press = True
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_X:
-                toggle_gallery_keycontrol(always_exit=True)
-            if event.cbutton.button == SDL_CONTROLLER_BUTTON_Y:
-                pctl.play_pause()
-            if event.cbutton.button == SDL_CONTROLLER_BUTTON_B:
-                if is_level_zero():
-                    pctl.stop()
+                if rt:
+                    random_track()
                 else:
-                    key_esc_press = True
+                    toggle_gallery_keycontrol(always_exit=True)
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_Y:
+                if rt:
+                    pctl.advance(rr=True)
+                else:
+                    pctl.play_pause()
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_B:
+                if rt:
+                    pctl.revert()
+                else:
+                    if is_level_zero():
+                        pctl.stop()
+                    else:
+                        key_esc_press = True
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP:
                 key_up_press = True
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN:

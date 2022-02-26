@@ -145,10 +145,10 @@ try:
 except:
     print('No previous window state')
 
-SDL_Init(SDL_INIT_VIDEO)
+SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
 
 err = SDL_GetError()
-if err:
+if err and "GLX" in err.decode():
     print(f"SDL init error: {err.decode()}")
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
                              b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
