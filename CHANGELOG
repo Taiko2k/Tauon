@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v7.1.2
 
+ - Added game controller input support
  - Fixed terminal spam on radio playback
  - [Phazor] Fixed radio stalling in some cases
  - [Phazor] Fixed some FLAC files not playing
