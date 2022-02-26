@@ -5,6 +5,7 @@ v7.1.3
 
  - Added game controller input support
  - Fixed auto export playlist not working
+ - Fixed mod playback (bug from v7.1.2)
 
 v7.1.2
 
