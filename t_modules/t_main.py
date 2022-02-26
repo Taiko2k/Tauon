@@ -41133,9 +41133,8 @@ while pctl.running:
 
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
-        #print(event.type)
+
         if event.type == SDL_CONTROLLERDEVICEADDED:
-            print("Controller added")
             if SDL_IsGameController(event.cdevice.which):
                 SDL_GameControllerOpen(event.cdevice.which)
                 print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
