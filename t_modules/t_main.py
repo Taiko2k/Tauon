@@ -21200,6 +21200,20 @@ def toggle_album_mode(force_on=False):
         if playlist_selected < len(pctl.playing_playlist()):
             goto_album(playlist_selected)
 
+def toggle_gallery_keycontrol(always_exit=False):
+    if is_level_zero():
+        if not album_mode:
+            toggle_album_mode()
+            gui.gall_tab_enter = True
+            gui.album_tab_mode = True
+            show_in_gal(playlist_selected, silent=True)
+        elif gui.gall_tab_enter or always_exit:
+            # Exit gallery and tab mode
+            toggle_album_mode()
+        else:
+            gui.album_tab_mode ^= True
+            if gui.album_tab_mode:
+                show_in_gal(playlist_selected, silent=True)
 
 def check_auto_update_okay(code, pl=None):
     try:
@@ -41054,6 +41068,13 @@ pctl.total_playtime = star_store.get_total()
 mouse_up = False
 mouse_wheel = 0
 
+c_yax = 0
+c_yax_timer = Timer()
+c_xax = 0
+c_xax_timer = Timer()
+c_xay = 0
+c_xay_timer = Timer()
+
 while pctl.running:
     # bm.get('main')
     #time.sleep(100)
@@ -41112,6 +41133,91 @@ while pctl.running:
 
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
+        #print(event.type)
+        if event.type == SDL_CONTROLLERDEVICEADDED:
+            print("Controller added")
+            if SDL_IsGameController(event.cdevice.which):
+                SDL_GameControllerOpen(event.cdevice.which)
+                print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
+
+        if event.type == SDL_CONTROLLERAXISMOTION:
+            if event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY:
+                if event.caxis.value < -10000:
+                    new = -1
+                elif event.caxis.value > 10000:
+                    new = 1
+                else:
+                    new = 0
+                if new != c_yax:
+                    c_yax_timer.force_set(1)
+                c_yax = new
+                power += 5
+                gui.update += 1
+            if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX:
+                if event.caxis.value < -10000:
+                    new = -1
+                elif event.caxis.value > 10000:
+                    new = 1
+                else:
+                    new = 0
+                if new != c_xax:
+                    c_xax_timer.force_set(1)
+                c_xax = new
+                power += 5
+                gui.update += 1
+            if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY:
+                if event.caxis.value < -10000:
+                    new = -1
+                elif event.caxis.value > 10000:
+                    new = 1
+                else:
+                    new = 0
+                if new != c_xay:
+                    c_xay_timer.force_set(1)
+                c_xay = new
+                power += 5
+                gui.update += 1
+
+        if event.type == SDL_CONTROLLERBUTTONDOWN:
+            k_input = True
+            power += 5
+            gui.update += 2
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                toggle_random()
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                toggle_repeat()
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_A:
+                if pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
+                    pctl.selected_ready() and default_playlist[playlist_selected] == pctl.playing_object().index:
+                    pctl.play_pause()
+                else:
+                    inp.key_return_press = True
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_X:
+                toggle_gallery_keycontrol(always_exit=True)
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_Y:
+                pctl.play_pause()
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_B:
+                if is_level_zero():
+                    pctl.stop()
+                else:
+                    key_esc_press = True
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP:
+                key_up_press = True
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                key_down_press = True
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                if gui.album_tab_mode:
+                    key_left_press = True
+                else:
+                    if is_level_zero() or quick_search_mode:
+                        cycle_playlist_pinned(1)
+            if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                if gui.album_tab_mode:
+                    key_right_press = True
+                else:
+                    if is_level_zero() or quick_search_mode:
+                        cycle_playlist_pinned(-1)
+
 
         if event.type == SDL_RENDER_TARGETS_RESET:
             print("Reset render targets!")
@@ -41619,6 +41725,41 @@ while pctl.running:
             input_text = ''
             inp.level_2_enter = False
 
+    if c_yax != 0:
+        if c_yax_timer.get() >= 0:
+            if c_yax == -1:
+                key_up_press = True
+            if c_yax == 1:
+                key_down_press = True
+            c_yax_timer.force_set(-0.01)
+            gui.delay_frame(0.02)
+            k_input = True
+    if c_xax != 0:
+        if c_xax_timer.get() >= 0:
+            if c_xax == 1:
+                pctl.seek_time(pctl.playing_time + 2)
+            if c_xax == -1:
+                pctl.seek_time(pctl.playing_time - 2)
+            c_xax_timer.force_set(-0.01)
+            gui.delay_frame(0.02)
+            k_input = True
+    if c_xay != 0:
+        if c_xay_timer.get() >= 0:
+            if c_xay == -1:
+                pctl.player_volume += 1
+                if pctl.player_volume > 100:
+                    pctl.player_volume = 100
+                pctl.set_volume()
+            if c_xay == 1:
+                if pctl.player_volume > 1:
+                    pctl.player_volume -= 1
+                else:
+                    pctl.player_volume = 0
+                pctl.set_volume()
+            c_xay_timer.force_set(-0.01)
+            gui.delay_frame(0.02)
+            k_input = True
+
     if k_input and key_focused == 0:
 
         if keymaps.hits:
@@ -41859,19 +42000,7 @@ while pctl.running:
                 view_box.lyrics(True)
 
             if keymaps.test("toggle-gallery-keycontrol"):
-                if is_level_zero():
-                    if not album_mode:
-                        toggle_album_mode()
-                        gui.gall_tab_enter = True
-                        gui.album_tab_mode = True
-                        show_in_gal(playlist_selected, silent=True)
-                    elif gui.gall_tab_enter:
-                        # Exit gallery and tab mode
-                        toggle_album_mode()
-                    else:
-                        gui.album_tab_mode ^= True
-                        if gui.album_tab_mode:
-                            show_in_gal(playlist_selected, silent=True)
+                toggle_gallery_keycontrol()
 
             if keymaps.test("toggle-show-art"):
                 toggle_side_art()
