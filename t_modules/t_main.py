@@ -14487,6 +14487,8 @@ def move_playing_folder_to_stem(path, pl_id=None):
 
     # Make filename friendly
     artist = filename_safe(artist)
+    if not artist:
+        artist = "unknown artist"
 
     # Sanity checks
     if track.is_network:
