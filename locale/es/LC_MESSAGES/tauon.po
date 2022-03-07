@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-01-10 17:19+1300\n"
-"PO-Revision-Date: 2022-02-11 22:52+0000\n"
+"PO-Revision-Date: 2022-03-01 06:56+0000\n"
 "Last-Translator: ΔLΣISTΣR <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.11.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1939 t_modules/t_main.py:1941
@@ -1551,7 +1551,7 @@ msgstr ""
 
 #: t_modules/t_main.py:25803
 msgid "Tracklist"
-msgstr "Lista de Canciones"
+msgstr "Canciones"
 
 #: t_modules/t_main.py:25804 t_modules/t_main.py:25854
 msgid "Theme"
@@ -1567,7 +1567,7 @@ msgstr "Vista"
 
 #: t_modules/t_main.py:25807
 msgid "Transcode"
-msgstr "Transcodificación"
+msgstr "Codec"
 
 #: t_modules/t_main.py:25808 t_modules/t_main.py:44163
 msgid "Lyrics"
@@ -1805,7 +1805,7 @@ msgstr "Transcodificar carpeta"
 
 #: t_modules/t_main.py:26526
 msgid "Enable Discord Rich Presence"
-msgstr "Activar Discord Rich Presence"
+msgstr "Discord Rich Presence"
 
 #: t_modules/t_main.py:26530
 msgid "For troubleshooting Discord RP"
@@ -1825,7 +1825,7 @@ msgstr "Activar monitor de descargas"
 
 #: t_modules/t_main.py:26562
 msgid "One click import new archives and folders from downloads folder"
-msgstr "Importar archivos y carpetas con un click de la carpeta Descargas"
+msgstr "Importar archivos y carpetas con un click de Descargas"
 
 #: t_modules/t_main.py:26564
 msgid "Trash archive after extraction"
