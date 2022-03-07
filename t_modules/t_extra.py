@@ -512,7 +512,7 @@ def get_folder_size(path):
 def filename_safe(text, sub=""):
     for cha in '/\\<>:"|?*':
         text = text.replace(cha, sub)
-    return text.rstrip(".")
+    return text.rstrip(" .")
 
 def get_artist_strip_feat(track_object):
 

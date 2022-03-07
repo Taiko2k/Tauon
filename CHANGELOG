@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v7.1.4
+
+ - Fixed invalid folder name on move
+
 v7.1.3
 
  - Added game controller input support
