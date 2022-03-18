@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.1.3"
+n_version = "7.1.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -22247,7 +22247,7 @@ def discord_loop():
 
     try:
         #print("Attempting to connect to Discord...")
-        client_id = '434627346574606351'
+        client_id = '954253873160286278'
         RPC = Presence(client_id)
         RPC.connect()
 
