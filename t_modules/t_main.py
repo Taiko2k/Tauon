@@ -3699,7 +3699,7 @@ def save_prefs():
     cf.update_value("audio-backend", prefs.backend)
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
-    #cf.update_value("cross-fade-time", prefs.cross_fade_time)
+    cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     #cf.update_value("force-mono", prefs.mono)
@@ -3831,7 +3831,7 @@ def load_prefs():
     cf.add_text("[audio]")
 
     prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
-    prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "Interval to seek when using shortcut. In seconds. Default is 15.")
+    prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "In s. Interval to seek when using shortcut. In seconds. Default is 15.")
     #prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
     if prefs.pause_fade_time < 100:
@@ -3839,15 +3839,15 @@ def load_prefs():
     if prefs.pause_fade_time > 5000:
         prefs.pause_fade_time = 5000
 
-    #prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "This is a placeholder setting and currently has no effect.")
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. Used by Phazor backend only. Default: 40")
+    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Jump crossfades must be enabled for this setting to take effect.")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Used by Phazor backend only. Default: 40")
     prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
     #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
-    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification.")
+    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
     prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
 
     if prefs.dc_device_setting == 'on':
@@ -18606,7 +18606,8 @@ def reload_config_file():
 
     ddt.force_subpixel_text = prefs.force_subpixel_text
     ddt.clear_text_cache()
-
+    pctl.playerCommand = 'reload'
+    pctl.playerCommandReady = True
     show_message(_("Configuration reloaded"), mode="done")
     gui.update_layout()
 

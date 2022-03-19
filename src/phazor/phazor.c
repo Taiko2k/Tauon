@@ -158,6 +158,7 @@ int config_fast_seek = 0;
 int config_dev_buffer = 40;
 int config_fade_jump = 1;
 char config_output_sink[256]; // 256 just a conservative guess
+int config_fade_duration = 700;
 
 unsigned int test1 = 0;
 
@@ -1564,6 +1565,26 @@ void *out_thread(void *thread_id) {
             } else buffering = 0;
         }
 
+        // Put fade buffer back
+        // warning: possible race collision
+        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() == 0){
+            int i = 0;
+            while (fade_position < fade_fill){
+                float cross = fade_position / (float) fade_fill;
+                float cross_i = 1.0 - cross;
+                bfl[high] = fadefl[fade_position] * cross_i;
+                bfr[high] = fadefr[fade_position] * cross_i;
+                fade_position++;
+                high++;
+                i++;
+                if (i > current_sample_rate * 0.05) break;
+            }
+            buff_cycle();
+            if (fade_position == fade_fill){
+                fade_fill = 0;
+                fade_position = 0;
+            }
+        }
         // Process decoded audio data and send out
         if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
 
@@ -1878,95 +1899,65 @@ void *main_loop(void *thread_id) {
 
                 case LOAD:
 
-                    load_result = load_next();
-                    if (load_result == 0) {
-                        pthread_mutex_lock(&buffer_mutex);
-                        // Prepare for a crossfade if enabled and suitable
+                    // Prepare for a crossfade if enabled and suitable
+                    int using_fade = 0;
+                    if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
+                        int reserve = current_sample_rate * 0.0;
+                        int l = current_sample_rate * (config_fade_duration / 1000.0);
 
-                        if (config_fade_jump == 2 && want_sample_rate == 0 && mode == PLAYING){
-
-                            float l = current_sample_rate * 0.6;
+                        if (get_buff_fill() > l + reserve) {
                             int i = 0;
                             int p = low;
-                            float v = 1.0;
-                            while (i < l){
-                                v = 1.0 - (i / l);
-                                bfl[p] *= v;
-                                bfr[p] *= v;
-                                i++;
+                            while (i < reserve){
                                 p++;
-                                if (p > watermark){
+                                i++;
+                                if (p >= watermark){
                                     p = 0;
                                 }
                             }
-                            high = p;
+                            int mark = p;
+                            i = 0;
+
+                            while (i < l) {
+                                fadefl[i] = bfl[p]; //buffl[(buff_base + i + reserve) % BUFF_SIZE];
+                                fadefr[i] = bfr[p]; //buffr[(buff_base + i + reserve) % BUFF_SIZE];
+                                i++;
+                                p++;
+                                if (p >= watermark){
+                                    p = 0;
+                                }
+                            }
+                            fade_position = 0;
+                            fade_fill = l;
+                            high = mark;
+                            using_fade = 1;
+                            //buff_filled = reserve;
+
                             reset_set_byte = p;
                             if (reset_set == 0) {
                                 reset_set = 1;
                                 reset_set_value = 0;
                             }
-
-
                         }
-                        else if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
-                            int reserve = current_sample_rate * 0.1;
-                            int l = current_sample_rate * 0.7;
+                    }
 
-                            if (get_buff_fill() > l + reserve) {
-                                int i = 0;
-                                int p = low;
-                                while (i < reserve){
-                                    p++;
-                                    i++;
-                                    if (p >= watermark){
-                                        p = 0;
-                                    }
-                                }
-                                int mark = p;
-                                i = 0;
+                    load_result = load_next();
 
-                                while (i < l) {
-                                    fadefl[i] = bfl[p]; //buffl[(buff_base + i + reserve) % BUFF_SIZE];
-                                    fadefr[i] = bfr[p]; //buffr[(buff_base + i + reserve) % BUFF_SIZE];
-                                    i++;
-                                    p++;
-                                    if (p >= watermark){
-                                        p = 0;
-                                    }
-                                }
-                                fade_position = 0;
-                                fade_fill = l;
-                                high = mark;
-                                //buff_filled = reserve;
-
-                                reset_set_byte = p;
-                                if (reset_set == 0) {
-                                    reset_set = 1;
-                                    reset_set_value = 0;
-
-                                }
-
-                            }
-                        } else {
-
+                    if (using_fade == 0){
                             // Jump immediately
+                            printf("jump\n");
                             position_count = 0;
                             buff_reset();
                             gate = 0;
                             sample_change_byte = 0;
                             reset_set_byte = 0;
                             reset_set_value = 0;
+                    }
 
-                        }
-
-//                        if (want_sample_rate == 0 && pulse_connected == 0) {
-//                            connect_pulse();
-//
-//                        }
+                    if (load_result == 0){
 
                         mode = PLAYING;
                         result_status = SUCCESS;
-                        pthread_mutex_unlock(&buffer_mutex);
                         while (out_thread_running == 2){
                             usleep(1000);
                         }
@@ -2251,6 +2242,12 @@ void config_set_dev_buffer(int ms) {
 
 void config_set_samplerate(int hz) {
     sample_rate_out = hz;
+}
+
+void config_set_fade_duration(int ms){
+    if (ms < 200) ms = 200;
+    if (ms > 2000) ms = 2000;
+    config_fade_duration = ms;
 }
 
 void config_set_dev_name(char *device) {
