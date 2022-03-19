@@ -5274,6 +5274,7 @@ class PlayerCtl:
             self.playerSubCommand = 'now'
         self.playerCommandReady = True
         self.playing_state = 1
+        radiobox.loaded_station = None
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
@@ -5298,6 +5299,8 @@ class PlayerCtl:
         self.playerCommand = 'open'
         self.playing_length = target.length
         self.last_playing_time = 0
+        radiobox.loaded_station = None
+
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
@@ -5563,6 +5566,10 @@ class PlayerCtl:
 
         # If stopped...
         elif pctl.playing_state == 0:
+
+            if radiobox.loaded_station:
+                radiobox.start(radiobox.loaded_station)
+                return
 
             # If the queue is empty
             if self.track_queue == [] and len(self.multi_playlist[self.active_playlist_playing][2]) > 0:
