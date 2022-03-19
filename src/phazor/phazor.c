@@ -1817,6 +1817,7 @@ void *main_loop(void *thread_id) {
     int error = 0;
 
     int load_result = 0;
+    int using_fade = 0;
 
     // SRC ----------------------------
 
@@ -1900,7 +1901,7 @@ void *main_loop(void *thread_id) {
                 case LOAD:
 
                     // Prepare for a crossfade if enabled and suitable
-                    int using_fade = 0;
+                    using_fade = 0;
                     if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
                         int reserve = current_sample_rate * 0.0;
                         int l = current_sample_rate * (config_fade_duration / 1000.0);
