@@ -259,7 +259,7 @@ def player4(tauon):
 
     def set_config():
         aud.config_set_dev_buffer(prefs.device_buffer)
-
+        aud.config_set_fade_duration(prefs.cross_fade_time)
         if prefs.phazor_device_selected != "Default":
             if prefs.phazor_device_selected in prefs.phazor_devices.values():
                 aud.config_set_dev_name(prefs.phazor_device_selected.encode())
