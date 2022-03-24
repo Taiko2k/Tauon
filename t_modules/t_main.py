@@ -22986,8 +22986,8 @@ class SearchOverlay:
                 if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
                     if item not in playlist:
                         playlist.append(item)
-                elif include_multi and ("/" in track.genre or "," in track.genre):
-                    for split in track.genre.replace(",", "/").split("/"):
+                elif include_multi and ("/" in track.genre or "," in track.genre or ";" in track.genre):
+                    for split in track.genre.replace(",", "/").replace(";","/").split("/"):
                         split = split.strip()
                         if name.lower().replace("-", "") == split.lower().replace("-", ""):
                             if item not in playlist:
