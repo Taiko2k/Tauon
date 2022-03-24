@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.1.4
 
  - Fixed invalid folder name on move
+ - Fixed genre search not detecting semicolon deliminator
  - Tweaked play action to resume radio station
  - [Phazor] Fixed audio stall on track jump with delayed IO
  - Enabled "cross fade time" setting for Phazor backend

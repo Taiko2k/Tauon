@@ -24186,9 +24186,9 @@ def worker2():
 
                         if s_text in genre:
 
-                            if "/" in genre or "," in genre:
+                            if "/" in genre or "," in genre or ";" in genre:
 
-                                for split in genre.replace(",", "/").split("/"):
+                                for split in genre.replace(";", "/").replace(",", "/").split("/"):
                                     if s_text in split:
 
                                         split = genre_correct(split)
