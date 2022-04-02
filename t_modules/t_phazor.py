@@ -19,12 +19,14 @@
 
 
 import ctypes
+import os.path
 import time
 import requests
 import threading
 import shutil
 from t_modules.t_extra import *
 import mutagen
+import hashlib
 
 def player4(tauon):
 
@@ -102,6 +104,97 @@ def player4(tauon):
         return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
     audio_cache = tauon.cache_directory + "/network-audio1"
+    audio_cache2 = tauon.cache_directory + "/audio-cache"
+
+    class Cachement:
+        def __init__(self):
+            self.direc = audio_cache2
+            if not os.path.exists(self.direc):
+                os.makedirs(self.direc)
+            self.list = prefs.cache_list
+            self.files = os.listdir(self.direc)
+            self.get_now = None
+            self.running = False
+            self.error = None
+
+        def get_key(self, track):
+            return hashlib.sha256((track.fullpath + track.url_key).encode()).hexdigest()
+        def get_file(self, track):
+            # 0: file ready
+            # 1: file downloading
+            # 2: file not found
+            key = self.get_key(track)
+            if key in self.files:
+                path = os.path.join(self.direc, key)
+                if os.path.isfile(path):
+                    print("got cached")
+                    self.get_now = None
+                    if not self.running:
+                        shoot_dl = threading.Thread(target=self.run)
+                        shoot_dl.daemon = True
+                        shoot_dl.start()
+                    return 0, path
+                print("not found")
+
+            self.get_now = track
+
+            if not self.running:
+                shoot_dl = threading.Thread(target=self.run)
+                shoot_dl.daemon = True
+                shoot_dl.start()
+            return 1, None
+
+            return 2, None
+
+        def run(self):
+            self.running = True
+
+            now = self.get_now
+            if now is not None:
+                self.dl_file(now)
+                if self.error:
+                    return
+
+            next = pctl.advance(dry=True)
+            if next is not None:
+                self.dl_file(pctl.g(next))
+
+            self.running = False
+            return
+
+        def dl_file(self, track):
+            key = self.get_key(track)
+            path = os.path.join(self.direc, key)
+            if os.path.exists(path):
+                assert os.path.isfile(path)
+                os.remove(path)
+            if not track.is_network:
+                if not os.path.isfile(track.fullpath):
+                    self.error = track
+                    self.running = False
+                    return
+            print("start transfer")
+            timer = Timer()
+            target = open(path, "wb")
+            source = open(track.fullpath, "rb")
+            while True:
+                try:
+                    timer.set()
+                    data = source.read(128000)
+                    #time.sleep(0.1)
+                    print(int(len(data) / timer.get() / 1000), end=" kbps\n")
+                except:
+                    break
+                if len(data) == 0:
+                    break
+                target.write(data)
+            target.close()
+            source.close()
+            print("got file")
+            self.files.append(key)
+            self.list.append(key)
+
+    cachement = Cachement()
 
     class DownloadObject:
         def __init__(self, track):
@@ -403,6 +496,16 @@ def player4(tauon):
                     continue
                 elif not target_object.found:
                     pctl.reset_missing_flags()
+
+                if prefs.precache:
+                    while True:
+                        status, path = cachement.get_file(target_object)
+                        if status == 0:
+                            break
+                        gui.buffering = True
+                        time.sleep(0.05)
+                    gui.buffering = False
+                    target_path = path
 
                 length = 0
                 remain = 0
