@@ -1464,6 +1464,8 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_rec = False
         self.radio_record_codec = "OPUS"
         self.pa_fast_seek = False
+        self.precache = False
+        self.cache_list = []
         self.save_window_position = False
         self.spotify_token = ""
 
@@ -3702,6 +3704,7 @@ def save_prefs():
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
+    cf.update_value("precache-local-files", prefs.precache)
     #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -3842,6 +3845,7 @@ def load_prefs():
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Jump crossfades must be enabled for this setting to take effect.")
     prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Used by Phazor backend only. Default: 40")
     prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
+    prefs.pa_fast_seek = cf.sync_add("bool", "precache-local-files", prefs.precache, "Try copy files before playback")
     #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
@@ -6100,6 +6104,8 @@ class PlayerCtl:
                     ti = self.master_library[self.track_queue[self.queue_step]]
 
                     if ti.index not in pp:
+                        if dry:
+                            return None
                         print("No tracks to repeat!")
                         return 0
 
@@ -6115,7 +6121,7 @@ class PlayerCtl:
                         if len(matches) > 1 and (k, ti.index) in matches:
                             matches.remove((k, ti.index))
 
-                        i, p = random.choice(matches)
+                        i, p = random.choice(matches)  # not used
 
                         if prefs.true_shuffle:
 
@@ -6130,8 +6136,12 @@ class PlayerCtl:
                                          del pctl.shuffle_pools[id]  # Trigger a refill
                                          continue
 
-                                     ref = random.choice(pool)
-                                     pool.remove(ref)
+                                     ref = pool.pop()
+                                     if dry:
+                                         pool.append(ref)
+                                         return ref[1]
+                                     # ref = random.choice(pool)
+                                     # pool.remove(ref)
 
                                      if ref[1] not in pp:  # Check track still in the live playlist
                                          print("Track not in pool")
@@ -6142,7 +6152,9 @@ class PlayerCtl:
 
                                 else:
                                      # Refill the pool
+                                     random.shuffle(matches)
                                      pctl.shuffle_pools[id] = matches
+
                                      print("Refill folder shuffle pool")
 
 
@@ -6153,7 +6165,7 @@ class PlayerCtl:
                     # Normal select from playlist
 
                     if prefs.true_shuffle:
-                        # True shuffle avoides repeats by using a pool
+                        # True shuffle avoids repeats by using a pool
 
                         pl = pctl.multi_playlist[pctl.active_playlist_playing]
                         id = pl[6]
@@ -6168,8 +6180,12 @@ class PlayerCtl:
                                     del pctl.shuffle_pools[id]  # Trigger a refill
                                     continue
 
-                                ref = random.choice(pool)
-                                pool.remove(ref)
+                                ref = pool.pop()
+                                if dry:
+                                    pool.append(ref)
+                                    return ref
+                                # ref = random.choice(pool)
+                                # pool.remove(ref)
 
                                 if ref not in pl[2]:  # Check track still in the live playlist
                                     continue
@@ -6179,11 +6195,14 @@ class PlayerCtl:
 
                             else:
                                 # Refill the pool
-                                pctl.shuffle_pools[id] = copy.deepcopy(pl[2])
+                                new_pool = copy.deepcopy(pl[2])
+                                random.shuffle(new_pool)
+                                pctl.shuffle_pools[id] = new_pool
                                 print("Refill shuffle pool")
 
                     else:
-                        random_jump = random.randrange(len(self.playing_playlist()))
+                        random_jump = random.randrange(len(self.playing_playlist()))  # not used
+
                     self.playlist_playing_position = random_jump
                     self.track_queue.append(self.playing_playlist()[random_jump])
 
@@ -6195,6 +6214,8 @@ class PlayerCtl:
 
 
             if rr:
+                if dry:
+                    return None
                 self.play_target_rr()
             else:
                 if play:
@@ -6206,6 +6227,8 @@ class PlayerCtl:
 
             # Stop at end of playlist
             if self.playlist_playing_position == len(self.playing_playlist()) - 1:
+                if dry:
+                    return None
                 if prefs.end_setting == 'stop':
                     self.playing_state = 0
                     self.playerCommand = 'runstop'
@@ -6258,11 +6281,15 @@ class PlayerCtl:
 
             else:
                 if self.playlist_playing_position > len(self.playing_playlist()) - 1:
+                    if dry:
+                        return None
                     self.playlist_playing_position = 0
 
                 elif not force and len(self.track_queue) > 0 and self.playing_playlist()[self.playlist_playing_position] != self.track_queue[
                     self.queue_step]:
                     try:
+                        if dry:
+                            return None
                         self.playlist_playing_position = self.playing_playlist().index(self.track_queue[self.queue_step])
                     except:
                         pass
@@ -6270,6 +6297,8 @@ class PlayerCtl:
                 if len(self.playing_playlist()) == self.playlist_playing_position + 1:
                     return
 
+                if dry:
+                    return self.playing_playlist()[self.playlist_playing_position + 1]
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 
@@ -6307,6 +6336,8 @@ class PlayerCtl:
                         redraw = True
 
                     if not redraw:
+                        if dry:
+                            return self.playing_playlist()[self.playlist_playing_position + 1]
                         self.playlist_playing_position += 1
                         self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                         self.queue_step = len(self.track_queue) - 1
@@ -6316,6 +6347,8 @@ class PlayerCtl:
 
                     else:
 
+                        if dry:
+                            return None
                         albums = []
                         current_folder = ""
                         for i in range(len(self.playing_playlist())):
@@ -41958,7 +41991,8 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            pass
+            next = pctl.advance(dry=True)
+            print(next)
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
