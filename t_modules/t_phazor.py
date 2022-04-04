@@ -115,10 +115,14 @@ def player4(tauon):
             self.files = os.listdir(self.direc)
             self.get_now = None
             self.running = False
+            self.ready = None
             self.error = None
 
         def get_key(self, track):
-            return hashlib.sha256((track.fullpath + track.url_key).encode()).hexdigest()
+            if track.is_network:
+                return hashlib.sha256((str(track.index) + track.url_key).encode()).hexdigest()
+            else:
+                return hashlib.sha256(track.fullpath.encode()).hexdigest()
 
         def get_file_cached_only(self, track):
             key = self.get_key(track)
@@ -132,9 +136,13 @@ def player4(tauon):
             # 0: file ready
             # 1: file downloading
             # 2: file not found
+            if self.error == track:
+                return 2, None
+
             key = self.get_key(track)
+            path = os.path.join(self.direc, key)
+
             if key in self.files:
-                path = os.path.join(self.direc, key)
                 if os.path.isfile(path):
                     print("got cached")
                     self.files.remove(key)
@@ -147,28 +155,38 @@ def player4(tauon):
                     return 0, path
                 print("not found")
 
-            self.get_now = track
-
-            if not self.running:
-                shoot_dl = threading.Thread(target=self.run)
-                shoot_dl.daemon = True
-                shoot_dl.start()
-            return 1, None
-
-            return 2, None
+            if self.running and self.get_now == track:
+                pass
+            else:
+                self.get_now = track
+                if not self.running:
+                    shoot_dl = threading.Thread(target=self.run)
+                    shoot_dl.daemon = True
+                    shoot_dl.start()
+            return 1, path
 
         def run(self):
             self.running = True
 
             now = self.get_now
+            self.get_now = None
             if now is not None:
-                self.dl_file(now)
-                if self.error:
+                error = self.dl_file(now)
+                if error:
                     return
 
-            next = pctl.advance(dry=True)
-            if next is not None:
-                self.dl_file(pctl.g(next))
+            if self.get_now is None:
+                i = 0
+                while i < 10:
+                    time.sleep(0.1)
+                    i += 1
+                    if self.get_now is not None:
+                        self.running = False
+                        return
+                print("PRECACHE NEXT")
+                next = pctl.advance(dry=True)
+                if next is not None:
+                    self.dl_file(pctl.g(next))
 
             self.trim_cache()
             self.running = False
@@ -202,32 +220,104 @@ def player4(tauon):
             key = self.get_key(track)
             path = os.path.join(self.direc, key)
             if os.path.exists(path):
-                assert os.path.isfile(path)
-                os.remove(path)
+                if not os.path.isfile(path):
+                    return 1
+                if key in self.list:
+                    return 0
+                else:
+                    os.remove(path)
             if not track.is_network:
                 if not os.path.isfile(track.fullpath):
                     self.error = track
                     self.running = False
-                    return
-            print("start transfer")
-            timer = Timer()
-            target = open(path, "wb")
-            source = open(track.fullpath, "rb")
-            while True:
+                    return 1
+
+                tauon.console.print("start transfer")
+                timer = Timer()
+                target = open(path, "wb")
+                source = open(track.fullpath, "rb")
+                while True:
+                    try:
+                        data = source.read(128000)
+                    except:
+                        break
+                    if len(data) > 0:
+                        tauon.console.print(f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps")
+                    else:
+                        break
+                    target.write(data)
+                target.close()
+                source.close()
+                print("got file")
+                self.files.append(key)
+                self.list.append(key)
+                return 0
+
+            else:
                 try:
-                    data = source.read(128000)
+                    tauon.console.print("Download file")
+                    network_url, params = pctl.get_url(track)
+                    part = requests.get(network_url, stream=True, params=params)
+
+                    if part.status_code == 404:
+                        gui.show_message("Server: File not found", mode="error")
+                        self.error = track
+                        return 1
+                    elif part.status_code != 200:
+                        gui.show_message("Server Error", mode="error")
+                        self.error = track
+                        return 1
+
                 except:
-                    break
-                if len(data) > 0:
-                    tauon.console.print(f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps")
-                else:
-                    break
-                target.write(data)
-            target.close()
-            source.close()
-            print("got file")
-            self.files.append(key)
-            self.list.append(key)
+                    gui.show_message("Could not connect to server", mode="error")
+                    self.error = track
+                    return 1
+
+                a = 0
+                length = 0
+                cl = part.headers.get("Content-Length")
+                if cl:
+                    length = int(cl)
+                    gui.buffering_text = "0%"
+
+
+                timer = Timer()
+                try:
+                    with open(path, 'wb') as f:
+                        for chunk in part.iter_content(chunk_size=1024):
+                            if chunk:  # filter out keep-alive new chunks
+                                a += 1
+                                if a == 1500:  # kilobyes~
+                                    self.ready = track
+                                if a % 32 == 0:
+                                    #time.sleep(0.03)
+                                    tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
+                                    if length:
+                                        gui.update += 1
+                                        if True: #a > 2000:
+                                            gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
+                                        else:
+                                            gui.buffering_text = str(round(a / 2100 * 100)) + "%"
+
+                                if self.get_now is not None and self.get_now != track:
+                                    tauon.console.print("ABORT")
+                                    return
+
+                                # if self.cancel is True:
+                                #     self.part.close()
+                                #     self.status = "failed"
+                                #     print("Abort download")
+                                #     return
+
+                                f.write(chunk)
+                    tauon.console.print("DONE")
+                    self.files.append(key)
+                    self.list.append(key)
+                except:
+                    print("ERROR")
+                    return 1
+                return 0
+
 
     cachement = Cachement()
     tauon.cachement = cachement
@@ -502,26 +592,81 @@ def player4(tauon):
                             pctl.playerCommandReady = True
                         continue
 
-                    target_path = None
+                    timer = Timer()
+                    timer.set()
                     while True:
-                        if int(pctl.start_time_target + pctl.jump_time):
-                            s = dm.request(target_object, t=int(pctl.start_time_target + pctl.jump_time))
-                        else:
-                            s = dm.request(target_object)
+                        status, path = cachement.get_file(target_object)
+                        if status == 0 or status == 2:
+                            break
+                        if timer.get() > 0.25 and gui.buffering is False:
+                            gui.buffering_text = ""
+                            gui.buffering = True
+                            gui.update += 1
+                            tauon.wake()
+                        if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0:
+                            print("FIRE EARLY")
+                            break
+                        time.sleep(0.05)
+                        #print(status)
 
-                        if s == "go":
-                            target_path = dm.get_filepath(target_object)
-                            break
-                        elif s == "wait":
-                            if pctl.playerCommandReady and pctl.playerCommand == "open":
-                                break
-                            #print("wait")
-                            time.sleep(0.01)
-                        else:
-                            print("Abort for error")
-                            break
-                    if target_path is None:
+                    gui.buffering = False
+                    gui.update += 1
+                    tauon.wake()
+
+                    if status == 2:
+                        print("ERROR!")
+                        target_object.found = False
+                        pctl.playing_state = 0
+                        pctl.jump_time = 0
+                        pctl.advance(inplace=True, play=True)
                         continue
+                    target_path = path
+                    # while True:
+                    #     if int(pctl.start_time_target + pctl.jump_time):
+                    #         s = dm.request(target_object, t=int(pctl.start_time_target + pctl.jump_time))
+                    #     else:
+                    #         s = dm.request(target_object)
+                    #
+                    #     if s == "go":
+                    #         target_path = dm.get_filepath(target_object)
+                    #         break
+                    #     elif s == "wait":
+                    #         if pctl.playerCommandReady and pctl.playerCommand == "open":
+                    #             break
+                    #         #print("wait")
+                    #         time.sleep(0.01)
+                    #     else:
+                    #         print("Abort for error")
+                    #         break
+                    # if target_path is None:
+                    #     continue
+
+                elif prefs.precache:
+                    timer = Timer()
+                    timer.set()
+                    while True:
+                        status, path = cachement.get_file(target_object)
+                        if status == 0 or status == 2:
+                            break
+                        if timer.get() > 0.25 and gui.buffering is False:
+                            gui.buffering_text = ""
+                            gui.buffering = True
+                            gui.update += 1
+                            tauon.wake()
+
+                        time.sleep(0.05)
+
+                    gui.buffering = False
+                    gui.update += 1
+                    tauon.wake()
+
+                    if status == 2:
+                        target_object.found = False
+                        pctl.playing_state = 0
+                        pctl.jump_time = 0
+                        pctl.advance(inplace=True, play=True)
+                        continue
+                    target_path = path
 
                 if not os.path.isfile(target_path):
                     target_object.found = False
@@ -533,20 +678,6 @@ def player4(tauon):
                 elif not target_object.found:
                     pctl.reset_missing_flags()
 
-                if prefs.precache:
-                    timer = Timer()
-                    timer.set()
-                    while True:
-                        status, path = cachement.get_file(target_object)
-                        if status == 0:
-                            break
-                        if timer.get() > 0.25 and gui.buffering is False:
-                            gui.buffering = True
-                            gui.update += 1
-                        time.sleep(0.05)
-                    gui.buffering = False
-                    gui.update += 1
-                    target_path = path
 
                 length = 0
                 remain = 0
@@ -604,6 +735,8 @@ def player4(tauon):
                         if r == 2:
                             if loaded_track.is_network:
                                 gui.buffering = True
+                                gui.buffering_text = ""
+
                                 while dm.request(loaded_track, whole=True) == "wait":
                                     time.sleep(0.05)
                                     if pctl.playerCommandReady:
@@ -647,48 +780,48 @@ def player4(tauon):
 
                     if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
 
-                        was_playing = False
-                        if state == 1:
-                            was_playing = True
-                            aud.pause()
-
-                        abort = False
+                        timer = Timer()
+                        timer.set()
                         while True:
-                            s = dm.request(loaded_track, t=pctl.new_time)
-                            if s == "go":
+                            status, path = cachement.get_file(loaded_track)
+                            if status == 0 or status == 2:
                                 break
-
-                            if pctl.playerCommandReady:
-                                abort = True
-                                break
-
-                            if s == "wait":
+                            if timer.get() > 0.25 and gui.buffering is False:
+                                gui.buffering_text = ""
                                 gui.buffering = True
-                                print("Can't seek yet")
-                                time.sleep(0.1)
-                                continue
-                            abort = True
-                            break
+                                gui.update += 1
+                                tauon.wake()
+
+                            time.sleep(0.05)
+
                         gui.buffering = False
-                        if abort:
+                        gui.update += 1
+                        tauon.wake()
+
+                        if status == 2:
+                            loaded_track.found = False
+                            pctl.playing_state = 0
+                            pctl.jump_time = 0
+                            pctl.stop()
                             continue
 
                         # The vorbis decoder doesn't like appended files
-                        aud.start(dm.get_filepath(loaded_track).encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
+                        aud.start(path.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
                         while aud.get_result() == 0:
                             time.sleep(0.01)
-                        #aud.set_position_ms(int(pctl.new_time * 1000))
                     else:
                         aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
 
                     pctl.playing_time = pctl.new_time
 
                 pctl.decode_time = pctl.playing_time
+
             if command == "volume":
                 if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                     tauon.spot_ctl.control("volume", int(pctl.player_volume))
                 else:
                     aud.ramp_volume(int(pctl.player_volume), 750)
+
             if command == "runstop":
                 length = aud.get_length_ms() / 1000
                 position = aud.get_position_ms() / 1000
