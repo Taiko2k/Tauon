@@ -3157,6 +3157,8 @@ for t in range(2):
             prefs.playlist_exports = save[168]
         if save[169] is not None:
             prefs.show_chromecast = save[169]
+        if save[170] is not None:
+            prefs.cache_list = save[170]
 
         state_file.close()
         del save
@@ -40819,6 +40821,7 @@ def save_state():
             prefs.radio_thumb_bans,
             prefs.playlist_exports,
             prefs.show_chromecast,
+            prefs.cache_list,
         ]
 
 
