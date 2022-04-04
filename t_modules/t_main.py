@@ -1466,6 +1466,7 @@ class Prefs:    # Used to hold any kind of settings
         self.pa_fast_seek = False
         self.precache = False
         self.cache_list = []
+        self.cache_limit = 1000  # in mb
         self.save_window_position = False
         self.spotify_token = ""
 
@@ -3703,8 +3704,9 @@ def save_prefs():
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
-    cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
+    #cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     cf.update_value("precache-local-files", prefs.precache)
+    cf.update_value("cache-limit", prefs.cache_limit)
     #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -3843,13 +3845,21 @@ def load_prefs():
         prefs.pause_fade_time = 5000
 
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Jump crossfades must be enabled for this setting to take effect.")
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Used by Phazor backend only. Default: 40")
-    prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
-    prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache, "Try copy files before playback")
+
+    cf.br()
+    cf.add_text("[audio (phazor only)]")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
+    #prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
+    prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB")
+    prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache, "Cache files from local sources too. (Useful for mounted network drives)")
     #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
+
+
+    cf.br()
+    cf.add_text("[audio (gstreamer only)]")
 
     prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
     prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
@@ -7626,6 +7636,7 @@ class Tauon:
         self.desktop = desktop
         self.device = socket.gethostname()
 
+        self.cachement = None
         self.dummy_event = SDL_Event()
         self.translate = _
         self.strings = strings
@@ -11462,6 +11473,12 @@ class AlbumArt():
         #    return cached[1]
 
         filepath = track.fullpath
+
+        # Use cached file if present
+        if prefs.precache and tauon.cachement:
+            path = tauon.cachement.get_file_cached_only(track)
+            if path:
+                filepath = path
 
         pic = None
 

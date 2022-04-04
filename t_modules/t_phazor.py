@@ -119,6 +119,15 @@ def player4(tauon):
 
         def get_key(self, track):
             return hashlib.sha256((track.fullpath + track.url_key).encode()).hexdigest()
+
+        def get_file_cached_only(self, track):
+            key = self.get_key(track)
+            if key in self.files:
+                path = os.path.join(self.direc, key)
+                if os.path.isfile(path):
+                    return path
+            return None
+
         def get_file(self, track):
             # 0: file ready
             # 1: file downloading
@@ -128,6 +137,8 @@ def player4(tauon):
                 path = os.path.join(self.direc, key)
                 if os.path.isfile(path):
                     print("got cached")
+                    self.files.remove(key)
+                    self.files.append(key)  # bump to top of list
                     self.get_now = None
                     if not self.running:
                         shoot_dl = threading.Thread(target=self.run)
@@ -159,8 +170,33 @@ def player4(tauon):
             if next is not None:
                 self.dl_file(pctl.g(next))
 
+            self.trim_cache()
             self.running = False
             return
+
+        def trim_cache(self):
+            # Remove untracked items
+            for item in self.files:
+                t = os.path.join(self.direc, item)
+                if os.path.isfile(t) and item not in self.list:
+                    os.remove(t)
+
+            # Check total size
+            while True:
+                s = 0
+                for item in list(self.list):
+                    t = os.path.join(self.direc, item)
+                    if not os.path.exists(t):
+                        self.list.remove(item)
+                        continue
+                    s += os.path.getsize(t)
+                # Removed oldest items if over limit
+                if s > prefs.cache_limit * 1000 * 1000 and len(self.list) > 3:
+                    t = os.path.join(self.direc, self.list[0])
+                    os.remove(t)
+                    del self.list[0]
+                else:
+                    break
 
         def dl_file(self, track):
             key = self.get_key(track)
@@ -179,13 +215,12 @@ def player4(tauon):
             source = open(track.fullpath, "rb")
             while True:
                 try:
-                    timer.set()
                     data = source.read(128000)
-                    #time.sleep(0.1)
-                    print(int(len(data) / timer.get() / 1000), end=" kbps\n")
                 except:
                     break
-                if len(data) == 0:
+                if len(data) > 0:
+                    tauon.console.print(f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps")
+                else:
                     break
                 target.write(data)
             target.close()
@@ -195,6 +230,7 @@ def player4(tauon):
             self.list.append(key)
 
     cachement = Cachement()
+    tauon.cachement = cachement
 
     class DownloadObject:
         def __init__(self, track):
@@ -498,13 +534,18 @@ def player4(tauon):
                     pctl.reset_missing_flags()
 
                 if prefs.precache:
+                    timer = Timer()
+                    timer.set()
                     while True:
                         status, path = cachement.get_file(target_object)
                         if status == 0:
                             break
-                        gui.buffering = True
+                        if timer.get() > 0.25 and gui.buffering is False:
+                            gui.buffering = True
+                            gui.update += 1
                         time.sleep(0.05)
                     gui.buffering = False
+                    gui.update += 1
                     target_path = path
 
                 length = 0
