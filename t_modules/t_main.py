@@ -1925,7 +1925,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.spot_info_icon = asset_loader("spot-info.png", True)
         self.tray_active = False
-        self.buffering = 0  # 0:false 1:true
+        self.buffering = False
+        self.buffering_text = ""
 
         self.update_on_drag = False
         self.pl_update_on_drag = False
@@ -12709,7 +12710,7 @@ def read_pls(lines, path, followed=False):
                     try:
                         print("Download .pls")
                         response = requests.get(radio["stream_url"], stream=True)
-                        if int(response.headers["Content-length"]) < 2000:
+                        if int(response.headers["Content-Length"]) < 2000:
                             read_pls(response.content.decode().splitlines(), path, followed=True)
                     except:
                         print("Failed to retrieve .pls")
@@ -30142,7 +30143,8 @@ class TopPanel:
             text = "Scanning Scrobbles..."
             bg = [219, 88, 18, 255]
         elif gui.buffering:
-            text = _("Buffering... ") + str(gui.buffering) + "%"
+            text = _("Buffering... ")
+            text += gui.buffering_text
             bg = [18, 180, 180, 255]
 
         elif lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
