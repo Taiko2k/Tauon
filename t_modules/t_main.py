@@ -3702,7 +3702,7 @@ def save_prefs():
     #cf.update_value("decode-search", prefs.diacritic_search)
 
     #cf.update_value("use-log-volume-scale", prefs.log_vol)
-    cf.update_value("audio-backend", prefs.backend)
+    #cf.update_value("audio-backend", prefs.backend)
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
@@ -3714,8 +3714,8 @@ def save_prefs():
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
 
-    cf.update_value("gst-output", prefs.gst_output)
-    cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
+    #cf.update_value("gst-output", prefs.gst_output)
+    #cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
 
     cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
 
@@ -3838,7 +3838,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
-    prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
+    #prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
     prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "In s. Interval to seek when using shortcut. In seconds. Default is 15.")
     #prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
@@ -3849,8 +3849,6 @@ def load_prefs():
 
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Jump crossfades must be enabled for this setting to take effect.")
 
-    cf.br()
-    cf.add_text("[audio (phazor only)]")
     prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
     #prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
     prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB")
@@ -3861,11 +3859,11 @@ def load_prefs():
     # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
 
-    cf.br()
-    cf.add_text("[audio (gstreamer only)]")
-
-    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
-    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
+    # cf.br()
+    # cf.add_text("[audio (gstreamer only)]")
+    #
+    # prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
+    # prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
@@ -7719,8 +7717,8 @@ class Tauon:
 
 tauon = Tauon()
 
-if prefs.backend == 1:
-    prefs.backend = 2
+if prefs.backend != 4:
+    prefs.backend = 4
 
 chrome = None
 
@@ -26627,24 +26625,27 @@ class Over:
 
         #if system == "linux":
         pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "lib/libphazor.so"))
-        if pha_detected:
+        if not pha_detected:
             x += round(20 * gui.scale)
+            ddt.text((x, y - 25 * gui.scale), "PHAzOR not detected!", colour, 213)
+            # ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
+
             #y += round(19 * gui.scale)
 
-            ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
-            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
+        # ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
+        # self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
+        #
+        # x += round(100 * gui.scale)
+        # if not macos:
+        #     ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
+        #     self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
-            x += round(100 * gui.scale)
-            if not macos:
-                ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-                self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
 
-
-        else:
-            prefs.backend = 2
-            ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-            #self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+        # else:
+        #     prefs.backend = 2
+        #     ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
+        #     #self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
         if prefs.backend == 4:
 
@@ -39940,9 +39941,9 @@ class ThreadManager:
             if prefs.backend == 4:
                 from t_modules.t_phazor import player4
                 self.playback = threading.Thread(target=player4, args=[tauon])
-            elif prefs.backend == 2:
-                from t_modules.t_gstreamer import player3
-                self.playback = threading.Thread(target=player3, args=[tauon])
+            # elif prefs.backend == 2:
+            #     from t_modules.t_gstreamer import player3
+            #     self.playback = threading.Thread(target=player3, args=[tauon])
             self.playback.daemon = True
             self.playback.start()
 
