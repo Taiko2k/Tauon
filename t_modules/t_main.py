@@ -11127,8 +11127,12 @@ def clear_img_cache(delete_disk=True):
     prefs.failed_background_artists.clear()
     gall_ren.key_list = []
 
+    i = 0
     while len(gall_ren.queue) > 0:
         time.sleep(0.01)
+        i += 1
+        if i > 5 / 0.01:
+            break
 
     for key, value in gall_ren.gall.items():
         SDL_DestroyTexture(value[2])
@@ -26649,17 +26653,11 @@ class Over:
 
         if prefs.backend == 4:
 
-            y = y0 + 44 * gui.scale
+            y = y0 + round(20 * gui.scale)
             x = x0 + 20 * gui.scale
 
             x += round(2 * gui.scale)
-            #ddt.text((x, y), "Phazor is an alternative backend", colours.box_text_label, 12)
-            y += round(17 * gui.scale)
-            #ddt.text((x, y), "in beta testing stage. Best suited for", colours.box_text_label, 12)
-            y += round(17 * gui.scale)
-            #ddt.text((x, y), "playing FLAC, MP3, Vorbis and Opus.", colours.box_text_label, 12)
 
-            y += round(35 * gui.scale)
             # ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
             # y += round(22 * gui.scale)
             #
@@ -26670,10 +26668,19 @@ class Over:
             y += round(23 * gui.scale)
             self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
 
-            y += round(35 * gui.scale)
+            y += round(40 * gui.scale)
             if self.button(x, y, _("ReplayGain")):
                 mouse_down = False
                 self.rg_view = True
+
+            y += round(45 * gui.scale)
+
+            ddt.text((x, y), _("Network file cache size"), colours.box_text, 312)
+            y += round(18 * gui.scale)
+            prefs.cache_limit = self.slide_control(x + round(0 * gui.scale), y, None, ' MB', prefs.cache_limit, 100,
+                                                     1000000, 100)
+            y += round(26 * gui.scale)
+            prefs.precache = self.toggle_square(x, y, prefs.precache, _("Cache local files (for smb/nfs)"))
 
 
             y += round(57 * gui.scale)
