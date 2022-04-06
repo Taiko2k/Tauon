@@ -8,7 +8,10 @@ v7.1.4
  - Fixed genre search not detecting semicolon deliminator
  - Tweaked play action to resume radio station
  - [Phazor] Fixed audio stall on track jump with delayed IO
- - Enabled "cross fade time" setting for Phazor backend
+ - [Phazor] Enabled "cross fade time" setting
+ - [Phazor] Added output-samplerate config setting
+ - [Phazor] Added resample quality config setting
+ - Removed GStreamer backend
 
 v7.1.3
 
