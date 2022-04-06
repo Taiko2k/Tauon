@@ -257,7 +257,7 @@ def player4(tauon):
                 try:
                     tauon.console.print("Download file")
                     network_url, params = pctl.get_url(track)
-                    part = requests.get(network_url, stream=True, params=params)
+                    part = requests.get(network_url, stream=True, params=params, timeout=(3, 10))
 
                     if part.status_code == 404:
                         gui.show_message("Server: File not found", mode="error")
@@ -321,160 +321,6 @@ def player4(tauon):
 
     cachement = Cachement()
     tauon.cachement = cachement
-
-    class DownloadObject:
-        def __init__(self, track):
-            self.timestamp = time.time()
-            self.status = "prep"
-            self.tauon_id = track.index
-            self.filepath = audio_cache
-            if not os.path.exists(self.filepath):
-                os.makedirs(self.filepath)
-            self.filepath += "/" + str(self.tauon_id) + ".mp3"
-            if os.path.exists(self.filepath):
-                os.remove(self.filepath)
-            self.network_url = ""
-            self.params = ""
-            self.part = None
-            self.cancel = False
-            self.downloaded_duration = -1
-
-        def download(self):
-            print("Start download")
-            self.downloaded_duration = -1
-            try:
-                self.part = requests.get(self.network_url, stream=True, params=self.params)
-
-                if self.part.status_code == 404:
-                    gui.show_message("Server: File not found", mode="error")
-                    self.status = "error"
-                    return
-                elif self.part.status_code != 200:
-                    gui.show_message("Server Error", mode="error")
-                    self.status = "error"
-                    return
-
-            except:
-                gui.show_message("Could not connect to server", mode="error")
-                self.status = "error"
-                return
-
-            bitrate = 0
-            a = 0
-            z = 0
-
-            with open(self.filepath, 'wb') as f:
-                for chunk in self.part.iter_content(chunk_size=1024):
-                    if chunk:  # filter out keep-alive new chunks
-                        a += 1
-                        if a == 900:  # kilobyes~
-                            self.status = "ready"
-                        if self.cancel is True:
-                            self.part.close()
-                            self.status = "failed"
-                            print("Abort download")
-                            return
-
-                        f.write(chunk)
-
-                        z += 1
-                        if z == 60:
-                            if bitrate == 0:
-                                try:
-                                    audio = mutagen.File(self.filepath)
-                                    bitrate = audio.info.bitrate / 1000
-                                except:
-                                    pass
-                            if bitrate > 0:
-                                gui.update += 1
-                                self.downloaded_duration = a * 1024 / (bitrate / 8) / 1000
-                                #pctl.download_time = a * 1024 / (bitrate / 8) / 1000
-
-            #pctl.download_time = -1
-
-            self.status = "done"
-            print("Download done")
-
-    class DownloadManager:
-
-        def __init__(self):
-            self.items = {}
-            if os.path.exists(audio_cache):
-                shutil.rmtree(audio_cache)
-
-        def get_filepath(self, track):
-            return self.items[track.index].filepath
-
-        def _prune(self):
-
-            items = list(self.items.values())
-            items.sort(key=lambda x: x.timestamp)
-            for item in items:
-                if item.status in ("ready", "prep"):
-                    item.cancel = True
-                elif item.status in ("failed", "error"):
-                    print("prune failed item")
-                    if os.path.exists(item.filepath):
-                        os.remove(item.filepath)
-                    del self.items[item.tauon_id]
-
-            items = list(self.items.values())
-            items.sort(key=lambda x: x.timestamp)
-            items = items[:-25]
-            for item in items:
-                print("prune old item")
-                if os.path.exists(item.filepath):
-                    os.remove(item.filepath)
-                del self.items[item.tauon_id]
-
-
-        def request(self, track, t=0, whole=False):
-
-            if track.index in self.items:
-                item = self.items[track.index]
-                if item.status == "ready":
-                    if whole:
-                        return "wait"
-                    if t == 0:
-                        return "go"
-                    elif item.downloaded_duration > t + 20:
-                        return "go"
-                    elif t:
-                        return "wait"
-
-                if item.status == "done":
-                    item.timestamp = time.time()
-                    print("Use cached audio")
-                    return "go"
-                if item.status == "prep":
-                    return "wait"
-                if item.status == "error":
-                    del self.items[track.index]
-                    return "error"
-                if item.status == "failed":
-                    del self.items[track.index]
-
-                if t:
-                    print(item.status)
-                    return "wait"
-
-            self._prune()
-
-            item = DownloadObject(track)
-
-            try:
-                item.network_url, item.params = pctl.get_url(target_object)
-            except:
-                return "error"
-
-            self.items[track.index] = item
-            shoot_dl = threading.Thread(target=item.download)
-            shoot_dl.daemon = True
-            shoot_dl.start()
-
-            return "wait"
-
-    dm = DownloadManager()
 
     def set_config():
         aud.config_set_dev_buffer(prefs.device_buffer)
@@ -596,6 +442,7 @@ def player4(tauon):
                     timer.set()
                     while True:
                         status, path = cachement.get_file(target_object)
+
                         if status == 0 or status == 2:
                             break
                         if timer.get() > 0.25 and gui.buffering is False:
@@ -618,28 +465,9 @@ def player4(tauon):
                         target_object.found = False
                         pctl.playing_state = 0
                         pctl.jump_time = 0
-                        pctl.advance(inplace=True, play=True)
+                        #pctl.advance(inplace=True, play=True)
                         continue
                     target_path = path
-                    # while True:
-                    #     if int(pctl.start_time_target + pctl.jump_time):
-                    #         s = dm.request(target_object, t=int(pctl.start_time_target + pctl.jump_time))
-                    #     else:
-                    #         s = dm.request(target_object)
-                    #
-                    #     if s == "go":
-                    #         target_path = dm.get_filepath(target_object)
-                    #         break
-                    #     elif s == "wait":
-                    #         if pctl.playerCommandReady and pctl.playerCommand == "open":
-                    #             break
-                    #         #print("wait")
-                    #         time.sleep(0.01)
-                    #     else:
-                    #         print("Abort for error")
-                    #         break
-                    # if target_path is None:
-                    #     continue
 
                 elif prefs.precache:
                     timer = Timer()
@@ -737,10 +565,10 @@ def player4(tauon):
                                 gui.buffering = True
                                 gui.buffering_text = ""
 
-                                while dm.request(loaded_track, whole=True) == "wait":
-                                    time.sleep(0.05)
-                                    if pctl.playerCommandReady:
-                                        break
+                                # while dm.request(loaded_track, whole=True) == "wait":
+                                #     time.sleep(0.05)
+                                #     if pctl.playerCommandReady:
+                                #         break
                                 print("Retry start file")
                                 aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000,
                                           fade, ctypes.c_float(calc_rg(target_object)))
