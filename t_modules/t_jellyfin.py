@@ -66,7 +66,7 @@ class Jellyfin():
                     "X-Application": self.tauon.t_agent,
                     "x-emby-authorization": self._get_jellyfin_auth()
                 },
-                data=json.dumps({ "username": username, "Pw": password }),
+                data=json.dumps({ "username": username, "Pw": password }), timeout=(5, 10)
             )
         except:
             self.gui.show_message("Could not establish connection to server.", "Check server is running and URL is correct.", mode="error")
