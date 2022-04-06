@@ -159,6 +159,7 @@ int config_dev_buffer = 40;
 int config_fade_jump = 1;
 char config_output_sink[256]; // 256 just a conservative guess
 int config_fade_duration = 700;
+int config_resample_quality = 2;
 
 unsigned int test1 = 0;
 
@@ -1821,7 +1822,7 @@ void *main_loop(void *thread_id) {
 
     // SRC ----------------------------
 
-    src = src_new(SRC_SINC_MEDIUM_QUALITY, 2, &error);
+    src = src_new(config_resample_quality, 2, &error);
     // printf("pa: SRC error code %d", error);
     error = 0;
 
@@ -2243,6 +2244,9 @@ void config_set_dev_buffer(int ms) {
 
 void config_set_samplerate(int hz) {
     sample_rate_out = hz;
+}
+void config_set_resample_quality(int n) {
+    config_resample_quality = n;
 }
 
 void config_set_fade_duration(int ms){
