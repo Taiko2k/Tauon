@@ -26632,24 +26632,6 @@ class Over:
         if not pha_detected:
             x += round(20 * gui.scale)
             ddt.text((x, y - 25 * gui.scale), "PHAzOR not detected!", colour, 213)
-            # ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
-
-            #y += round(19 * gui.scale)
-
-        # ddt.text((x, y - 25 * gui.scale), "PHAzOR", colour, 213)
-        # self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_phazor, "                          ")
-        #
-        # x += round(100 * gui.scale)
-        # if not macos:
-        #     ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-        #     self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
-
-
-
-        # else:
-        #     prefs.backend = 2
-        #     ddt.text((x, y - 25 * gui.scale), "GStreamer", colour, 213)
-        #     #self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
         if prefs.backend == 4:
 
@@ -26657,12 +26639,6 @@ class Over:
             x = x0 + 20 * gui.scale
 
             x += round(2 * gui.scale)
-
-            # ddt.text((x, y), "Seek mode", colours.box_text_label, 12)
-            # y += round(22 * gui.scale)
-            #
-            # prefs.pa_fast_seek = self.toggle_square(x, y, prefs.pa_fast_seek ^ True, "Smooth") ^ True
-            # prefs.pa_fast_seek = self.toggle_square(x + 90 * gui.scale, y, prefs.pa_fast_seek, "Fast")
 
             self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
             y += round(23 * gui.scale)
@@ -26741,109 +26717,6 @@ class Over:
                         ddt.text((x, y), line, colours.box_text_label, 10)
                 y += 14 * gui.scale
                 i += 1
-
-            if reload:
-                reload_backend()
-
-        # Gstreamer
-        if prefs.backend == 2:
-
-            y = y0 + 45 * gui.scale
-            x = x0 + 29 * gui.scale
-
-
-            reload = False
-            bk_gain = prefs.replay_gain
-
-            y += round(15 * gui.scale)
-            if not prefs.gst_use_custom_output:
-                if self.button(x, y, _("ReplayGain")):
-                    mouse_down = False
-                    self.rg_view = True
-
-            else:
-                y += round(66 * gui.scale)
-
-
-            y += round(35 * gui.scale)
-
-            if self.button(x, y, "EQ", width=50*gui.scale):
-                self.eq_view = True
-
-            y += 35 * gui.scale
-            self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
-
-            if bk_gain != prefs.replay_gain:
-                reload = True
-
-            y += 30 * gui.scale
-            prefs.gst_use_custom_output = self.toggle_square(x, y, prefs.gst_use_custom_output, _("Customise GStreamer output"))
-            y += 22 * gui.scale
-
-            if prefs.gst_use_custom_output:
-                rect = (x, y, 400 * gui.scale, 22 * gui.scale)
-                ddt.rect(rect, colours.grey(8))
-                bk = ddt.text_background_colour
-                ddt.text_background_colour = colours.grey(8)
-                gst_output_field.text = prefs.gst_output
-                gst_output_field.draw(x + 5 * gui.scale, y, colours.grey(180), width=rect[2] - 8 * gui.scale, click=self.click)
-                ddt.text_background_colour = bk
-
-                self.button(x + rect[2] + 15 * gui.scale, y, _("Reload"), reload_backend)
-
-            y = y0 + 37 * gui.scale
-            x = x0 + 270 * gui.scale
-
-            ddt.text_background_colour = colours.box_background
-
-            if not prefs.gst_use_custom_output:
-                ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_text_label, 212)
-
-                self.device_scroll_bar_position -= pref_box.scroll
-                if self.device_scroll_bar_position < 0:
-                    self.device_scroll_bar_position = 0
-                if self.device_scroll_bar_position > len(pctl.gst_devices) - 11 > 11:
-                    self.device_scroll_bar_position = len(pctl.gst_devices) - 11
-
-                if len(pctl.gst_devices) > 13:
-                    self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.gst_devices) - 11, click=self.click)
-
-
-                for i, name in enumerate(pctl.gst_devices):
-
-                    if i < self.device_scroll_bar_position:
-                        continue
-                    if y > self.box_y + self.h - 40 * gui.scale:
-                        break
-
-                    rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
-
-                    if self.click and coll(rect):
-                        prefs.gst_device = name
-                        reload = True
-                    #     prefs.last_device = item[0]
-                    #     pctl.playerCommandReady = True
-                    #     pctl.playerCommand = "setdev"
-
-                    line = trunc_line(name, 10, 245 * gui.scale)
-
-                    fields.add(rect)
-
-                    if prefs.gst_device == name:
-                        ddt.text((x, y), line, colours.box_sub_text, 10)
-                        ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
-                    else:
-                        if coll(rect):
-                            ddt.text((x, y), line, colours.box_sub_text, 10)
-                        else:
-                            ddt.text((x, y), line, colours.box_text_label, 10)
-                    y += 14 * gui.scale
-
-            if not prefs.gst_use_custom_output:
-                prefs.gst_output = prefs.gen_gst_out()
-                gst_output_field.text = prefs.gst_output
-            else:
-                prefs.gst_output = gst_output_field.text
 
             if reload:
                 reload_backend()
