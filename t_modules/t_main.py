@@ -1511,6 +1511,9 @@ class Prefs:    # Used to hold any kind of settings
         self.playlist_exports = {}
         self.show_chromecast = False
 
+        self.samplerate = 48000
+        self.resample = 1
+
 prefs = Prefs()
 
 
@@ -3707,6 +3710,8 @@ def save_prefs():
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
     cf.update_value("device-buffer-length", prefs.device_buffer)
+    cf.update_value("output-samplerate", prefs.samplerate)
+    cf.update_value("resample-quality", prefs.resample)
     #cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     cf.update_value("precache-local-files", prefs.precache)
     cf.update_value("cache-limit", prefs.cache_limit)
@@ -3850,6 +3855,10 @@ def load_prefs():
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Jump crossfades must be enabled for this setting to take effect.")
 
     prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
+    prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate, "In hz. Default: 48000, alt: 44100. (applies on restart)")
+    prefs.resample = cf.sync_add("int", "resample-quality", prefs.resample, "0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
+    if prefs.resample < 0 or prefs.resample > 4:
+        prefs.resample = 1
     #prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
     prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB")
     prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache, "Cache files from local sources too. (Useful for mounted network drives)")
