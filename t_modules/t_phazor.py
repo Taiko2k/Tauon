@@ -59,8 +59,9 @@ def player4(tauon):
     aud.feed_raw.restype = None
     tauon.aud = aud
     aud.set_volume(int(pctl.player_volume))
-    if prefs.power_save:
-        aud.config_set_samplerate(44100)
+
+    aud.config_set_samplerate(prefs.samplerate)
+    aud.config_set_resample_quality(prefs.resample)
 
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
