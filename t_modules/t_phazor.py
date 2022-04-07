@@ -60,10 +60,7 @@ def player4(tauon):
     tauon.aud = aud
     aud.set_volume(int(pctl.player_volume))
 
-    aud.config_set_samplerate(prefs.samplerate)
-    aud.config_set_resample_quality(prefs.resample)
-    if prefs.always_ffmpeg:
-        aud.config_set_always_ffmpeg(1)
+
 
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
@@ -336,6 +333,12 @@ def player4(tauon):
                 aud.config_set_dev_name(None)
         else:
             aud.config_set_dev_name(None)
+
+    aud.config_set_samplerate(prefs.samplerate)
+    aud.config_set_resample_quality(prefs.resample)
+    if prefs.always_ffmpeg:
+        aud.config_set_always_ffmpeg(1)
+
 
     set_config()
 
