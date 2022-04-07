@@ -62,6 +62,8 @@ def player4(tauon):
 
     aud.config_set_samplerate(prefs.samplerate)
     aud.config_set_resample_quality(prefs.resample)
+    if prefs.always_ffmpeg:
+        aud.config_set_always_ffmpeg(1)
 
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
