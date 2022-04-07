@@ -1469,6 +1469,7 @@ class Prefs:    # Used to hold any kind of settings
         self.cache_limit = 1000  # in mb
         self.save_window_position = False
         self.spotify_token = ""
+        self.always_ffmpeg = False
 
         self.use_libre_fm = False
         self.back_restarts = False
@@ -3715,6 +3716,7 @@ def save_prefs():
     #cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     cf.update_value("precache-local-files", prefs.precache)
     cf.update_value("cache-limit", prefs.cache_limit)
+    cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
     #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -3862,6 +3864,7 @@ def load_prefs():
     #prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
     prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB")
     prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache, "Cache files from local sources too. (Useful for mounted network drives)")
+    prefs.always_ffmpeg = cf.sync_add("bool", "always-ffmpeg", prefs.always_ffmpeg, "Prefer decoding using FFMPEG")
     #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")

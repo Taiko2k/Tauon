@@ -160,6 +160,7 @@ int config_fade_jump = 1;
 char config_output_sink[256]; // 256 just a conservative guess
 int config_fade_duration = 700;
 int config_resample_quality = 2;
+int config_always_ffmpeg = 0;
 
 unsigned int test1 = 0;
 
@@ -1106,9 +1107,9 @@ int load_next() {
         }
     }
 
-    if (codec == UNKNOWN) {
+    if (codec == UNKNOWN || config_always_ffmpeg == 1) {
         codec = FFMPEG;
-        printf("pa: Codec could not be identified, trying FFMPEG\n");
+        printf("pa: Decode using FFMPEG\n");
     }
 
     // Start decoders
@@ -2247,6 +2248,9 @@ void config_set_samplerate(int hz) {
 }
 void config_set_resample_quality(int n) {
     config_resample_quality = n;
+}
+void config_set_always_ffmpeg(int n) {
+    config_always_ffmpeg = n;
 }
 
 void config_set_fade_duration(int ms){
