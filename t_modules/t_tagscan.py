@@ -271,7 +271,7 @@ class Flac:
         # Find start of FLAC stream
         if s != b'fLaC':
             while f.tell() < size + 100:
-                f.seek(-1, 1)
+                f.seek(-3, 1)
                 s = f.read(4)
                 if s == b'fLaC':
                     break
