@@ -4587,9 +4587,8 @@ def tag_scan(nt):
                 raise
                 print(e)
 
-    except:
-        print("Warning: Tag read error")
-        print("     On file: " + nt.fullpath)
+    except Exception as err:
+        print("Error: Tag read failed on file:", nt.fullpath,, "\n", err, file=sys.stderr)
         return nt
 
     # Parse any multiple artists into list
