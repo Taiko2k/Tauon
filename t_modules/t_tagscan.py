@@ -213,11 +213,11 @@ class Flac:
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
                     elif "replaygain_track_gain" == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif "replaygain_track_peak" == a:
                         self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif "replaygain_album_gain" == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif "replaygain_album_peak" == a:
                         self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif 'composer' == a:
@@ -511,11 +511,11 @@ class Opus:
                         # print(b)
 
                     elif 'replaygain_track_gain' == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif 'replaygain_track_peak' == a:
                         self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif 'replaygain_album_gain' == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif 'replaygain_album_peak' == a:
                         self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif a == "discnumber":
@@ -728,11 +728,11 @@ class Ape:
                 elif key.lower() == "lyrics":
                     self.lyrics = value
                 elif "replaygain_track_gain" == key.lower():
-                    self.misc["replaygain_track_gain"] = float(value.strip(" dB"))
+                    self.misc["replaygain_track_gain"] = float(value.lower().strip(" db"))
                 elif "replaygain_track_peak" == key.lower():
                     self.misc["replaygain_track_peak"] = float(value)
                 elif "replaygain_album_gain" == key.lower():
-                    self.misc["replaygain_album_gain"] = float(value.strip(" dB"))
+                    self.misc["replaygain_album_gain"] = float(value.lower().strip(" db"))
                 elif "replaygain_album_peak" == key.lower():
                     self.misc["replaygain_album_peak"] = float(value)
                 elif parse_mbids_from_vorbis(self, key.lower(), value):
