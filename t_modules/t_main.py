@@ -26655,6 +26655,8 @@ class Over:
             self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
             y += round(23 * gui.scale)
             self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
+            y += round(23 * gui.scale)
+            prefs.back_restarts = self.toggle_square(x, y, prefs.back_restarts, _("Back restarts to beginning"))
 
             y += round(40 * gui.scale)
             if self.button(x, y, _("ReplayGain")):

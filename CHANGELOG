@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.1.4
 
  - Added cache system option for local files
+ - Added setting to restart on back to UI settings
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
  - Tweaked play action to resume radio station
@@ -11,6 +12,7 @@ v7.1.4
  - [Phazor] Enabled "cross fade time" setting
  - [Phazor] Added output-samplerate config setting
  - [Phazor] Added resample quality config setting
+ - [Phazor] Added setting to always use FFMPEG
  - Removed GStreamer backend
 
 v7.1.3
