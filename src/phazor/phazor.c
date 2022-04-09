@@ -1032,7 +1032,7 @@ int load_next() {
         codec = FLAC;
         //printf("Detected flac\n");
     } else if (memcmp(peak, "RIFF", 4) == 0) {
-        codec = WAVE;
+        codec = FFMPEG //WAVE;
     } else if (memcmp(peak, "OggS", 4) == 0) {
         codec = VORBIS;
         if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
