@@ -8,6 +8,7 @@ v7.1.4
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
  - Tweaked play action to resume radio station
+ - Restored Spotify button
  - [Phazor] Fixed audio stall on track jump with delayed IO
  - [Phazor] Enabled "cross fade time" setting
  - [Phazor] Added output-samplerate config setting
