@@ -27188,7 +27188,7 @@ class Over:
 
         y += 41 * gui.scale
 
-        if prefs.spot_mode or key_shift_down:
+        if prefs.spot_mode:
             if self.button2(x, y, "Spotify", width=84*gui.scale):
                 self.account_view = 8
 
