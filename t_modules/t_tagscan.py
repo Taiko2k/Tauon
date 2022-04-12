@@ -23,6 +23,7 @@
 import struct
 import wave
 import io
+import base64
 import os
 import math
 from t_modules.t_extra import process_odat
@@ -102,7 +103,6 @@ class Flac:
 
         self.filepath = file
         self.has_picture = False
-        self.picture = ""
 
         self.album_artist = ""
         self.artist = ""
@@ -507,7 +507,7 @@ class Opus:
                         print("Tag Scanner: Found picture in OGG/OPUS file.")
                         print("      In file: " + self.filepath)
                         self.has_picture = True
-                        self.picture = b
+                        self.picture = parse_picture_block(io.BytesIO(base64.b64decode(b)))
                         # print(b)
 
                     elif 'replaygain_track_gain' == a:
@@ -579,7 +579,6 @@ class Ape:
 
         self.filepath = file
         self.has_picture = False
-        self.picture = ""
 
         self.found_tag = False
         self.album_artist = ""
