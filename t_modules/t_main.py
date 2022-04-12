@@ -11527,7 +11527,7 @@ class AlbumArt():
             if tag.has_picture and len(tag.picture) > 30:
                 pic = tag.picture
 
-        elif track.file_ext == 'OPUS' or track.file_ext == 'OGG':
+        elif track.file_ext == 'OPUS' or track.file_ext == 'OGG' or track.file_ext == 'OGA':
             tag = Opus(filepath)
             tag.read()
             if tag.has_picture and len(tag.picture) > 30:
