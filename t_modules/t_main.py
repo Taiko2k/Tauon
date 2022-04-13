@@ -42963,6 +42963,7 @@ while pctl.running:
                                 track = pctl.master_library[default_playlist[album_dex[album_on]]]
 
                                 info = get_album_info(album_dex[album_on])
+                                album = info[1]
                                 #info = (0, 0, 0)
 
                                 # rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
@@ -43075,6 +43076,25 @@ while pctl.running:
                                         albumtitle = colours.grey(160)
 
 
+                                # Determine meta info
+                                singles = False
+                                artists = 0
+                                last_album = ""
+                                last_artist = ""
+                                s = 0
+                                ones = 0
+                                for id in album:
+                                    tr = pctl.g(default_playlist[id])
+                                    if tr.album != last_album:
+                                        if last_album:
+                                            s += 1
+                                        last_album = tr.album
+                                        if str(tr.track_number) == "1":
+                                            ones += 1
+                                    if tr.artist != last_artist:
+                                        artists += 1
+                                if s > 1 or ones > 1:
+                                    singles = True
 
                                 # Draw blank back colour
                                 back_colour = [40, 40, 40, 50]
@@ -43086,10 +43106,34 @@ while pctl.running:
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour)
 
                                 # Draw album art
-                                album_count += 1
-                                if (album_count * 1.5) + 10 > gall_ren.limit:
-                                    gall_ren.limit = round((album_count * 1.5) + 30)
-                                drawn_art = gall_ren.render(track, (x, y))
+                                if singles:
+                                    dia = math.sqrt(album_mode_art_size * album_mode_art_size * 2)
+                                    ran = dia * 0.25
+                                    off = (dia - ran) / 2
+                                    albs = min(len(album), 5)
+                                    spacing = ran / (albs - 1)
+                                    size = round(album_mode_art_size * 0.5)
+
+                                    i = 0
+                                    for p in album[:albs]:
+
+                                        pp = spacing * i
+                                        pp += off
+                                        xx = pp / math.sqrt(2)
+
+                                        xx -= size / 2
+                                        drawn_art = gall_ren.render(pctl.g(default_playlist[p]), (x + xx, y + xx), size=size)
+                                        if not drawn_art:
+                                            g = 50 + (100 / albs) * i
+                                            ddt.rect((x + xx, y + xx, size, size), [g, g, g, 255])
+                                        drawn_art = True
+                                        i += 1
+
+                                else:
+                                    album_count += 1
+                                    if (album_count * 1.5) + 10 > gall_ren.limit:
+                                        gall_ren.limit = round((album_count * 1.5) + 30)
+                                    drawn_art = gall_ren.render(track, (x, y))
 
                                 # Determine mouse collision
                                 rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
@@ -43161,7 +43205,10 @@ while pctl.running:
 
                                     line = album_artist_dict[c_index]
                                     line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
-
+                                    if singles:
+                                        line2 = pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name
+                                        if artists > 1:
+                                            line = "Various Artists"
 
                                     text_align = 0
                                     if prefs.center_gallery_text:
