@@ -43396,7 +43396,6 @@ while pctl.running:
 
                     gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale)
                 except:
-                    raise
                     print("Gallery render error!")
                 # END POWER BAR ------------------------
 
