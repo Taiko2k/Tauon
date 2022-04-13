@@ -10976,7 +10976,7 @@ class GallClass:
             return False
 
 
-    def render(self, track, location, size=None):
+    def render(self, track, location, size=None, force_offset=None):
 
         if gallery_load_delay.get() < 0.5:
             return
@@ -10995,6 +10995,9 @@ class GallClass:
             offset = folder_image_offsets[track.parent_folder_path]
         else:
             offset = 0
+
+        if force_offset is not None:
+            offset = force_offset
 
         key = (track, size, offset)
 
@@ -43122,9 +43125,9 @@ while pctl.running:
                                         xx = pp / math.sqrt(2)
 
                                         xx -= size / 2
-                                        drawn_art = gall_ren.render(pctl.g(default_playlist[p]), (x + xx, y + xx), size=size)
+                                        drawn_art = gall_ren.render(pctl.g(default_playlist[p]), (x + xx, y + xx), size=size, force_offset=0)
                                         if not drawn_art:
-                                            g = 50 + (100 / albs) * i
+                                            g = 50 + round(100 / albs) * i
                                             ddt.rect((x + xx, y + xx, size, size), [g, g, g, 255])
                                         drawn_art = True
                                         i += 1
@@ -43393,6 +43396,7 @@ while pctl.running:
 
                     gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale)
                 except:
+                    raise
                     print("Gallery render error!")
                 # END POWER BAR ------------------------
 
