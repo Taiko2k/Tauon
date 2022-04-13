@@ -1071,9 +1071,8 @@ int load_next() {
     }
     fclose(fptr);
 
-
     // Fallback to detecting using file extension
-    if (codec == UNKNOWN && (
+    if (codec == UNKNOWN && ext != NULL && (
             strcmp(ext, ".ape") == 0 || strcmp(ext, ".APE") == 0 ||
             strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
             strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
@@ -1082,7 +1081,7 @@ int load_next() {
                             )
         ) codec = FFMPEG;
 
-    if (codec == UNKNOWN && (
+    if (codec == UNKNOWN && ext != NULL && (
             (strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
              strcmp(ext, ".s3m") == 0 || strcmp(ext, ".S3M") == 0 ||
              strcmp(ext, ".it") == 0 || strcmp(ext, ".IT") == 0 ||
@@ -1091,7 +1090,7 @@ int load_next() {
                             )
             ) codec = MPT;
 
-    if (codec == UNKNOWN) {
+    if (codec == UNKNOWN && ext != NULL) {
         if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
             codec = FLAC;
         }
