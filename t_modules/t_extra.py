@@ -428,7 +428,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 
             for fi in file_list:
 
-                if '....A' not in fi:
+                if '….A' not in fi:
                     continue
                 for ty in extensions:
                     if fi[len(ty) * -1:].lower() == ty:

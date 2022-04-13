@@ -51,8 +51,8 @@ msgid "Scanning scrobbles complete"
 msgstr "Escaneo de scrobbles completado"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
-msgstr "Obteniendo información de amigos..."
+msgid "Getting friend data…"
+msgstr "Obteniendo información de amigos…"
 
 #: t_modules/t_main.py:6829
 msgid "This may take a very long time."
@@ -424,8 +424,8 @@ msgstr "Seamos amables e intentemos más tarde."
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
-msgstr "Buscando..."
+msgid "Searching…"
+msgstr "Buscando…"
 
 #: t_modules/t_main.py:14600
 msgid "No lyrics for this track were found"
@@ -454,8 +454,8 @@ msgid "Toggle Lyrics"
 msgstr "Alternar letras"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
-msgstr "Búsqueda de sustitutos..."
+msgid "Substitute Search…"
+msgstr "Búsqueda de sustitutos…"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
 msgid "Paste Lyrics"
@@ -490,8 +490,8 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr "No parece que esta carpeta pertenezca a un solo álbum, lo siento"
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
-msgstr "Buscando ID de MusicBrainz ..."
+msgid "Looking up MusicBrainz ID…"
+msgstr "Buscando ID de MusicBrainz …"
 
 #: t_modules/t_main.py:14980
 msgid "Cover art downloaded from fanart.tv"
@@ -577,8 +577,8 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr "¿Está seguro de que desea eliminar la lista de reproducción: %s?"
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
-msgstr "Volviendo a escanear carpetas..."
+msgid "Rescanning folders…"
+msgstr "Volviendo a escanear carpetas…"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
 msgid "Playlist is locked"
@@ -617,10 +617,10 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Puedes eliminar o editar este comportamiento en \"Varios...\" > \"Editar "
-"generador...\""
+"Puedes eliminar o editar este comportamiento en \"Varios…\" > \"Editar "
+"generador…\""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
 #: t_modules/t_main.py:20979
@@ -689,8 +689,8 @@ msgid "Target folder could not be found"
 msgstr "Carpeta objetivo no encontrada"
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
-msgstr "Borrando carpetas..."
+msgid "Deleting folders…"
+msgstr "Borrando carpetas…"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
 msgid "Copying files to device"
@@ -766,8 +766,8 @@ msgid "Toggle Breaks"
 msgstr "Activar/Desactivar Pausas"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
-msgstr "Editar Generador..."
+msgid "Edit Generator…"
+msgstr "Editar Generador…"
 
 #: t_modules/t_main.py:17469
 msgid "Engage Gallery Quick Add"
@@ -1044,8 +1044,8 @@ msgid "Edit with "
 msgstr "Editar con "
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
-msgstr "Letra..."
+msgid "Lyrics…"
+msgstr "Letra…"
 
 #: t_modules/t_main.py:19730
 msgid "Fix Mojibake"
@@ -1960,12 +1960,12 @@ msgid "Import all user playlists"
 msgstr "Importar playlists del usuario"
 
 #: t_modules/t_main.py:26979
-msgid "Importing Spotify playlists..."
-msgstr "Importando playlists de Spotify..."
+msgid "Importing Spotify playlists…"
+msgstr "Importando playlists de Spotify…"
 
 #: t_modules/t_main.py:26987
-msgid "Import single user playlist..."
-msgstr "Importando playlists de un usuario..."
+msgid "Import single user playlist…"
+msgstr "Importando playlists de un usuario…"
 
 #: t_modules/t_main.py:27002
 msgid "Airsonic/Subsonic network streaming"
@@ -2173,13 +2173,13 @@ msgid "Start Sync"
 msgstr "Empezar Sincronización"
 
 #: t_modules/t_main.py:27548
-msgid "Stopping..."
-msgstr "Parando..."
+msgid "Stopping…"
+msgstr "Parando…"
 
 #: t_modules/t_main.py:27554
 #, fuzzy
-msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr "Menú de click derecho > Miscela... > Hacer la lista sincronizada"
+msgid "Right click tab > Misc… > Set as sync playlist"
+msgstr "Menú de click derecho > Miscela… > Hacer la lista sincronizada"
 
 #: t_modules/t_main.py:27554
 #, fuzzy
@@ -2199,8 +2199,8 @@ msgid "Open output folder"
 msgstr "Abrir la carpeta objetivo"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
-msgstr "Sincronizar..."
+msgid "Sync…"
+msgstr "Sincronizar…"
 
 #: t_modules/t_main.py:27586
 msgid "Save opus as .ogg extension"
@@ -2300,8 +2300,8 @@ msgid "Generate"
 msgstr "Generar"
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
-msgstr "Generando..."
+msgid "Generating…"
+msgstr "Generando…"
 
 #: t_modules/t_main.py:28133
 msgid "Album chart"
@@ -2312,7 +2312,7 @@ msgid "Not enough albums in the playlist!"
 msgstr "¡Álbumes insuficientes en la playlist!"
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr ""
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2417,7 +2417,7 @@ msgid "Added station to: "
 msgstr "Estación añadida a: "
 
 #: t_modules/t_main.py:29626
-msgid "Buffering... "
+msgid "Buffering… "
 msgstr ""
 
 #: t_modules/t_main.py:29741
@@ -2530,8 +2530,8 @@ msgid "Station Browser"
 msgstr "Navegador de Estaciones"
 
 #: t_modules/t_main.py:33680
-msgid "Connecting..."
-msgstr "Conectando..."
+msgid "Connecting…"
+msgstr "Conectando…"
 
 #: t_modules/t_main.py:33683
 msgid "Failed to connect!"
@@ -2592,8 +2592,8 @@ msgid "Visit Website"
 msgstr "Visitar Sitio-Web"
 
 #: t_modules/t_main.py:34824
-msgid "View..."
-msgstr "Ver..."
+msgid "View…"
+msgstr "Ver…"
 
 #: t_modules/t_main.py:34842
 msgid "Sort Alphabetically"
@@ -2616,8 +2616,8 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Imágen del artista de fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
-msgstr "Descargando datos..."
+msgid "Downloading data…"
+msgstr "Descargando datos…"
 
 #: t_modules/t_main.py:35621
 msgid "No artists in playlist"
@@ -2628,17 +2628,17 @@ msgid "Artist threshold not met"
 msgstr "Mínimo de artistas no alcanzado"
 
 #: t_modules/t_main.py:35626
-msgid "Loading Artist List..."
-msgstr "Cargando Lista del Artista..."
+msgid "Loading Artist List…"
+msgstr "Cargando Lista del Artista…"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
-msgstr "Ocupado..."
+msgid "Busy…"
+msgstr "Ocupado…"
 
 #: t_modules/t_main.py:35838
 #, fuzzy
-msgid "Loading Folder Tree..."
-msgstr "Cargando carpeta madre..."
+msgid "Loading Folder Tree…"
+msgstr "Cargando carpeta madre…"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
 #, fuzzy
@@ -2674,16 +2674,16 @@ msgid "Auto-Stop"
 msgstr ""
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
-msgstr "Mirando..."
+msgid "Looking up…"
+msgstr "Mirando…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
+msgid "Cooldown…"
 msgstr ""
 
 #: t_modules/t_main.py:37351
-msgid "Loading..."
-msgstr "Cargando..."
+msgid "Loading…"
+msgstr "Cargando…"
 
 #: t_modules/t_main.py:37521
 #, fuzzy
@@ -2704,8 +2704,8 @@ msgid "Clear Bio"
 msgstr "Limpiar Bio"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
-msgstr "Editar..."
+msgid "Edit…"
+msgstr "Editar…"
 
 #: t_modules/t_main.py:38440
 msgid "Playing"

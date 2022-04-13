@@ -51,7 +51,7 @@ msgid "Scanning scrobbles complete"
 msgstr "Ordner neu scannen abgeschlossen"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
+msgid "Getting friend data…"
 msgstr "Freundes-Daten werden geladen…"
 
 #: t_modules/t_main.py:6829
@@ -425,7 +425,7 @@ msgstr "Seien wir lieb und versuchen es später erneut."
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
+msgid "Searching…"
 msgstr "Suchen …"
 
 #: t_modules/t_main.py:14600
@@ -455,7 +455,7 @@ msgid "Toggle Lyrics"
 msgstr "Liedtext ein-/ausschalten"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
+msgid "Substitute Search…"
 msgstr "Ersatzsuche …"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
@@ -491,7 +491,7 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr "Dieser Ordner ist wohl kein einzelnes Album, Entschuldigung"
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
 msgstr "MusicBrainz-ID wird gesucht …"
 
 #: t_modules/t_main.py:14980
@@ -578,7 +578,7 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr ""
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
+msgid "Rescanning folders…"
 msgstr "Ordner neu scannen…"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
@@ -617,7 +617,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
 "Dieses Vorgehen kann unter „Misc …“ > „Generator bearbeiten …“ geändert "
 "werden"
@@ -689,7 +689,7 @@ msgid "Target folder could not be found"
 msgstr "Zielordner nicht gefunden"
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
+msgid "Deleting folders…"
 msgstr "Ordner löschen …"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
@@ -768,7 +768,7 @@ msgid "Toggle Breaks"
 msgstr "Trennung nach Alben ein/aus"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
+msgid "Edit Generator…"
 msgstr "Generator bearbeiten…"
 
 #: t_modules/t_main.py:17469
@@ -1044,7 +1044,7 @@ msgid "Edit with "
 msgstr "Bearbeiten mit "
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
+msgid "Lyrics…"
 msgstr "Liedtext …"
 
 #: t_modules/t_main.py:19730
@@ -1954,12 +1954,12 @@ msgstr "Benutzerwiedergabeliste importieren …"
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "Fehler beim Erstellen der Spotify-Wiedergabeliste"
 
 #: t_modules/t_main.py:26987
 #, fuzzy
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr "Benutzerwiedergabeliste importieren …"
 
 #: t_modules/t_main.py:27002
@@ -2171,11 +2171,11 @@ msgid "Start Sync"
 msgstr "Sync starten"
 
 #: t_modules/t_main.py:27548
-msgid "Stopping..."
+msgid "Stopping…"
 msgstr "Stoppen …"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 "Registerkarte rechtsklicken > Misc … > Als Sync-Wiedergabeliste festlegen"
 
@@ -2196,7 +2196,7 @@ msgid "Open output folder"
 msgstr "Output-Ordner öffnen"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr "Sync…"
 
 #: t_modules/t_main.py:27586
@@ -2297,7 +2297,7 @@ msgid "Generate"
 msgstr "Generieren"
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
+msgid "Generating…"
 msgstr "Generieren…"
 
 #: t_modules/t_main.py:28133
@@ -2309,7 +2309,7 @@ msgid "Not enough albums in the playlist!"
 msgstr "Nicht genug Alben in der Wiedergabeliste!"
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr "Chart-Generator…"
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2409,7 +2409,7 @@ msgid "Added station to: "
 msgstr ""
 
 #: t_modules/t_main.py:29626
-msgid "Buffering... "
+msgid "Buffering… "
 msgstr "Wird geladen … "
 
 #: t_modules/t_main.py:29741
@@ -2523,7 +2523,7 @@ msgid "Station Browser"
 msgstr "Übertragung starten"
 
 #: t_modules/t_main.py:33680
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr "Verbinden …"
 
 #: t_modules/t_main.py:33683
@@ -2584,7 +2584,7 @@ msgid "Visit Website"
 msgstr "Website besuchen"
 
 #: t_modules/t_main.py:34824
-msgid "View..."
+msgid "View…"
 msgstr "Ansicht"
 
 #: t_modules/t_main.py:34842
@@ -2611,7 +2611,7 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Hinweis: Künstler-Bild von fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
+msgid "Downloading data…"
 msgstr "Daten laden…"
 
 #: t_modules/t_main.py:35621
@@ -2623,16 +2623,16 @@ msgid "Artist threshold not met"
 msgstr "Künstler-Threshold nicht erreicht"
 
 #: t_modules/t_main.py:35626
-msgid "Loading Artist List..."
-msgstr "Künstlerliste wird geladen..."
+msgid "Loading Artist List…"
+msgstr "Künstlerliste wird geladen…"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
-msgstr "Beschäftigt..."
+msgid "Busy…"
+msgstr "Beschäftigt…"
 
 #: t_modules/t_main.py:35838
-msgid "Loading Folder Tree..."
-msgstr "Ordnerstruktur wird geladen..."
+msgid "Loading Folder Tree…"
+msgstr "Ordnerstruktur wird geladen…"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
 msgid "Folder Tree"
@@ -2667,16 +2667,16 @@ msgid "Auto-Stop"
 msgstr "Auto-Stop"
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
+msgid "Looking up…"
 msgstr "Suchen…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
-msgstr "Abkühlen..."
+msgid "Cooldown…"
+msgstr "Abkühlen…"
 
 #: t_modules/t_main.py:37351
-msgid "Loading..."
-msgstr "Laden..."
+msgid "Loading…"
+msgstr "Laden…"
 
 #: t_modules/t_main.py:37521
 msgid "No artist data downloaded"
@@ -2695,7 +2695,7 @@ msgid "Clear Bio"
 msgstr "Bio leeren"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440
@@ -2872,7 +2872,7 @@ msgstr "Ungeliebter Titel"
 #~ msgid "Force subpixel text rendering"
 #~ msgstr "Subpixel-Text-Rendering erzwingen"
 
-#~ msgid "Disconnecting..."
+#~ msgid "Disconnecting…"
 #~ msgstr "Verbindung trennen…"
 
 #~ msgid "Disconnect Discord"
@@ -2894,7 +2894,7 @@ msgstr "Ungeliebter Titel"
 #~ msgstr "Liedtext automatisch suchen"
 
 #, fuzzy
-#~ msgid "Set List Sorting..."
+#~ msgid "Set List Sorting…"
 #~ msgstr "Stoppen …"
 
 #~ msgid "Download URL"

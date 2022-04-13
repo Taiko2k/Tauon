@@ -28,7 +28,7 @@ class Chrome:
         self.target_id = None
 
     def two(self):
-        print("Scanning for chromecasts...")
+        print("Scanning for chromecasts…")
 
         if True: #not self.services:
             try:

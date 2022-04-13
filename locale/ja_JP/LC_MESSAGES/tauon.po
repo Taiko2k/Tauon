@@ -50,8 +50,8 @@ msgid "Scanning scrobbles complete"
 msgstr "フォルダーの再スキャンが完了しました.。"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
-msgstr "友達データを取得しています..."
+msgid "Getting friend data…"
+msgstr "友達データを取得しています…"
 
 #: t_modules/t_main.py:6829
 msgid "This may take a very long time."
@@ -433,8 +433,8 @@ msgstr "礼儀正しく、後で試してみましょう。"
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
-msgstr "検索中..."
+msgid "Searching…"
+msgstr "検索中…"
 
 #: t_modules/t_main.py:14600
 msgid "No lyrics for this track were found"
@@ -466,7 +466,7 @@ msgid "Toggle Lyrics"
 msgstr "歌詞をトグル"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
+msgid "Substitute Search…"
 msgstr ""
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
@@ -502,7 +502,7 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
 msgstr "MBIDを探している"
 
 #: t_modules/t_main.py:14980
@@ -590,7 +590,7 @@ msgstr ""
 
 #: t_modules/t_main.py:15881
 #, fuzzy
-msgid "Rescanning folders..."
+msgid "Rescanning folders…"
 msgstr "フォルダースキャン"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
@@ -633,7 +633,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
@@ -653,15 +653,15 @@ msgstr "生成する"
 
 #: t_modules/t_main.py:17161
 msgid "Generate…"
-msgstr "生成する..."
+msgstr "生成する…"
 
 #: t_modules/t_main.py:17162
 msgid "Sort…"
-msgstr "ソート..."
+msgstr "ソート…"
 
 #: t_modules/t_main.py:17163
 msgid "From Current…"
-msgstr "現行から..."
+msgstr "現行から…"
 
 #: t_modules/t_main.py:17168
 #, fuzzy
@@ -696,7 +696,7 @@ msgstr "再生を追加"
 
 #: t_modules/t_main.py:17184
 msgid "Misc…"
-msgstr "その他..."
+msgstr "その他…"
 
 #: t_modules/t_main.py:17233
 msgid "No target folder selected"
@@ -709,7 +709,7 @@ msgstr "カバーアートまたはIDが見つかりませんでした"
 
 #: t_modules/t_main.py:17279
 #, fuzzy
-msgid "Deleting folders..."
+msgid "Deleting folders…"
 msgstr "フォルダースキャン"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
@@ -797,7 +797,7 @@ msgstr "ブレークの切り替え"
 
 #: t_modules/t_main.py:17468
 #, fuzzy
-msgid "Edit Generator..."
+msgid "Edit Generator…"
 msgstr "チャート"
 
 #: t_modules/t_main.py:17469
@@ -987,7 +987,7 @@ msgstr "最長アルバム"
 
 #: t_modules/t_main.py:18780
 msgid "Track Info…"
-msgstr "トラック情報..."
+msgstr "トラック情報…"
 
 #: t_modules/t_main.py:18825 t_modules/t_main.py:21413
 msgid "Un-Love Track"
@@ -1012,7 +1012,7 @@ msgstr "ギャラリーに表示"
 
 #: t_modules/t_main.py:18935
 msgid "Meta…"
-msgstr "メタ..."
+msgstr "メタ…"
 
 #: t_modules/t_main.py:18940 t_modules/t_main.py:19941
 #: t_modules/t_main.py:19946 t_modules/t_main.py:19947
@@ -1092,8 +1092,8 @@ msgid "Edit with "
 msgstr "編集: "
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
-msgstr "歌詞..."
+msgid "Lyrics…"
+msgstr "歌詞…"
 
 #: t_modules/t_main.py:19730
 msgid "Fix Mojibake"
@@ -1342,7 +1342,7 @@ msgstr "設定"
 
 #: t_modules/t_main.py:21030
 msgid "Database…"
-msgstr "データベース..."
+msgstr "データベース…"
 
 #: t_modules/t_main.py:21096
 msgid "Export as CSV"
@@ -2022,12 +2022,12 @@ msgstr "音楽フォルダをインポート"
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "プレイリストの終わり"
 
 #: t_modules/t_main.py:26987
 #, fuzzy
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr "音楽フォルダをインポート"
 
 #: t_modules/t_main.py:27002
@@ -2234,11 +2234,11 @@ msgstr ""
 
 #: t_modules/t_main.py:27548
 #, fuzzy
-msgid "Stopping..."
-msgstr "検索中..."
+msgid "Stopping…"
+msgstr "検索中…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 
 #: t_modules/t_main.py:27554
@@ -2260,7 +2260,7 @@ msgid "Open output folder"
 msgstr "出力を開く"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr ""
 
 #: t_modules/t_main.py:27586
@@ -2362,7 +2362,7 @@ msgid "Generate"
 msgstr "生成する"
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
+msgid "Generating…"
 msgstr "生成中。。。"
 
 #: t_modules/t_main.py:28133
@@ -2375,7 +2375,7 @@ msgid "Not enough albums in the playlist!"
 msgstr "十分なアルバムがありません！"
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr "チャート"
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2483,8 +2483,8 @@ msgstr ""
 
 #: t_modules/t_main.py:29626
 #, fuzzy
-msgid "Buffering... "
-msgstr "検索中..."
+msgid "Buffering… "
+msgstr "検索中…"
 
 #: t_modules/t_main.py:29741
 msgid "There are currently no connected clients"
@@ -2558,7 +2558,7 @@ msgstr "プレイリストの終わり"
 #: t_modules/t_main.py:33190
 #, fuzzy
 msgid "Search Tag"
-msgstr "検索中..."
+msgstr "検索中…"
 
 #: t_modules/t_main.py:33191
 #, fuzzy
@@ -2568,17 +2568,17 @@ msgstr "歌詞を検索"
 #: t_modules/t_main.py:33192
 #, fuzzy
 msgid "Search Title"
-msgstr "検索中..."
+msgstr "検索中…"
 
 #: t_modules/t_main.py:33480
 #, fuzzy
 msgid "Search text…"
-msgstr "検索中..."
+msgstr "検索中…"
 
 #: t_modules/t_main.py:33487
 #, fuzzy
 msgid "Search"
-msgstr "検索中..."
+msgstr "検索中…"
 
 #: t_modules/t_main.py:33494 t_modules/t_main.py:33498
 msgid "Get Top Voted"
@@ -2603,7 +2603,7 @@ msgstr "放送開始"
 
 #: t_modules/t_main.py:33680
 #, fuzzy
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr "生成中。。。"
 
 #: t_modules/t_main.py:33683
@@ -2665,7 +2665,7 @@ msgstr ""
 
 #: t_modules/t_main.py:34824
 #, fuzzy
-msgid "View..."
+msgid "View…"
 msgstr "ビュー "
 
 #: t_modules/t_main.py:34842
@@ -2693,8 +2693,8 @@ msgstr "イメージはfanart.tvからダウンロードされました"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
 #, fuzzy
-msgid "Downloading data..."
-msgstr "ダウンロードしています...お待ちください"
+msgid "Downloading data…"
+msgstr "ダウンロードしています…お待ちください"
 
 #: t_modules/t_main.py:35621
 msgid "No artists in playlist"
@@ -2705,16 +2705,16 @@ msgid "Artist threshold not met"
 msgstr "しきい値に達していません"
 
 #: t_modules/t_main.py:35626
-msgid "Loading Artist List..."
-msgstr "アーティスト読み込み中..."
+msgid "Loading Artist List…"
+msgstr "アーティスト読み込み中…"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
+msgid "Busy…"
 msgstr "忙しい"
 
 #: t_modules/t_main.py:35838
-msgid "Loading Folder Tree..."
-msgstr "フォルダ読み込み中..."
+msgid "Loading Folder Tree…"
+msgstr "フォルダ読み込み中…"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
 msgid "Folder Tree"
@@ -2749,16 +2749,16 @@ msgid "Auto-Stop"
 msgstr "自動停止"
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
+msgid "Looking up…"
 msgstr "探している"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
+msgid "Cooldown…"
 msgstr "クールダウン。。。"
 
 #: t_modules/t_main.py:37351
-msgid "Loading..."
-msgstr "検索中..."
+msgid "Loading…"
+msgstr "検索中…"
 
 #: t_modules/t_main.py:37521
 msgid "No artist data downloaded"
@@ -2777,7 +2777,7 @@ msgid "Clear Bio"
 msgstr "クリアバイオ"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440
@@ -2946,7 +2946,7 @@ msgstr "好きじゃない"
 #~ msgid "Force subpixel text rendering"
 #~ msgstr "サブピクセルテキスト"
 
-#~ msgid "Disconnecting..."
+#~ msgid "Disconnecting…"
 #~ msgstr "生成中。。。"
 
 #~ msgid "Disconnect Discord"
@@ -2962,8 +2962,8 @@ msgstr "好きじゃない"
 #~ msgstr "歌詞の自動検索"
 
 #, fuzzy
-#~ msgid "Set List Sorting..."
-#~ msgstr "検索中..."
+#~ msgid "Set List Sorting…"
+#~ msgstr "検索中…"
 
 #~ msgid "Download URL"
 #~ msgstr "ダウンロードURL"
@@ -3022,7 +3022,7 @@ msgstr "好きじゃない"
 #~ msgstr "ソート降順"
 
 #~ msgid "Open Stream…"
-#~ msgstr "オープンストリーム..."
+#~ msgstr "オープンストリーム…"
 
 #~ msgid "Show playtime lines"
 #~ msgstr "行を表示"
@@ -3057,8 +3057,8 @@ msgstr "好きじゃない"
 #~ msgid "Monitor download folders"
 #~ msgstr "ダウンロードフォルダーの監視"
 
-#~ msgid "Lyrics settings..."
-#~ msgstr "歌詞..."
+#~ msgid "Lyrics settings…"
+#~ msgstr "歌詞…"
 
 #~ msgid "Reload config file"
 #~ msgstr "設定を再読み込み"

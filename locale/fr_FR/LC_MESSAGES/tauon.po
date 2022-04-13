@@ -52,7 +52,7 @@ msgid "Scanning scrobbles complete"
 msgstr "Réanalyse du dossier terminée"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
+msgid "Getting friend data…"
 msgstr "Chargement des données des ami⋅e⋅s…"
 
 #: t_modules/t_main.py:6829
@@ -426,7 +426,7 @@ msgstr "Soyons sympas et essayons plus tard."
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
+msgid "Searching…"
 msgstr "Recherche en cours…"
 
 #: t_modules/t_main.py:14600
@@ -456,7 +456,7 @@ msgid "Toggle Lyrics"
 msgstr "Afficher/Masquer les paroles"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
+msgid "Substitute Search…"
 msgstr "Recherche de remplacement…"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
@@ -492,7 +492,7 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr "Ce dossier n'a pas l'air d'appartenir à un seul album, désolé"
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
 msgstr "Recherche de l’ID MusicBrainz…"
 
 #: t_modules/t_main.py:14980
@@ -577,7 +577,7 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr "Êtes-vous sûr·e de vouloir supprimer la liste de lecture : %s ?"
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
+msgid "Rescanning folders…"
 msgstr "Réanalyse des dossiers…"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
@@ -617,7 +617,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
 "Vous retirez ou modifiez ce comportement en allant dans « Divers » > "
 "« Modifier le génerateur… »"
@@ -689,8 +689,8 @@ msgid "Target folder could not be found"
 msgstr "Le dossier cible n'a pas pu être trouvé"
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
-msgstr "Supression des dossiers..."
+msgid "Deleting folders…"
+msgstr "Supression des dossiers…"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
 msgid "Copying files to device"
@@ -769,8 +769,8 @@ msgid "Toggle Breaks"
 msgstr "Afficher/Masquer les séparateurs"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
-msgstr "Modifier le générateur..."
+msgid "Edit Generator…"
+msgstr "Modifier le générateur…"
 
 #: t_modules/t_main.py:17469
 msgid "Engage Gallery Quick Add"
@@ -1048,8 +1048,8 @@ msgid "Edit with "
 msgstr "Modifier avec "
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
-msgstr "Paroles..."
+msgid "Lyrics…"
+msgstr "Paroles…"
 
 #: t_modules/t_main.py:19730
 msgid "Fix Mojibake"
@@ -1956,11 +1956,11 @@ msgid "Import all user playlists"
 msgstr "Importer la liste de lecture utilisateur"
 
 #: t_modules/t_main.py:26979
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "Importation de listes de lecture Spotify…"
 
 #: t_modules/t_main.py:26987
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr "Importer une liste de lecture pour un seul utilisateur…"
 
 #: t_modules/t_main.py:27002
@@ -2172,13 +2172,13 @@ msgid "Start Sync"
 msgstr "Démarrer la syncho"
 
 #: t_modules/t_main.py:27548
-msgid "Stopping..."
+msgid "Stopping…"
 msgstr "Arrêt en cours…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
-"Cliquez-droit sur l'onglet > Divers... > Définir comme liste de lecture de "
+"Cliquez-droit sur l'onglet > Divers… > Définir comme liste de lecture de "
 "synchronisation"
 
 #: t_modules/t_main.py:27554
@@ -2198,7 +2198,7 @@ msgid "Open output folder"
 msgstr "Ouvrir le dossier de sortie"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr "Synchro…"
 
 #: t_modules/t_main.py:27586
@@ -2298,8 +2298,8 @@ msgid "Generate"
 msgstr "Générer"
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
-msgstr "Génération en cours..."
+msgid "Generating…"
+msgstr "Génération en cours…"
 
 #: t_modules/t_main.py:28133
 #, fuzzy
@@ -2311,7 +2311,7 @@ msgid "Not enough albums in the playlist!"
 msgstr "Pas assez d'albums dnas la liste de lecture !"
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr "Générateur de graphiques…"
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2411,7 +2411,7 @@ msgid "Added station to: "
 msgstr "Station ajoutée à : "
 
 #: t_modules/t_main.py:29626
-msgid "Buffering... "
+msgid "Buffering… "
 msgstr "Mise en mémoire tampon… "
 
 #: t_modules/t_main.py:29741
@@ -2523,7 +2523,7 @@ msgid "Station Browser"
 msgstr "Explorer les stations"
 
 #: t_modules/t_main.py:33680
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr "Connexion…"
 
 #: t_modules/t_main.py:33683
@@ -2586,7 +2586,7 @@ msgid "Visit Website"
 msgstr "Visitez le site web"
 
 #: t_modules/t_main.py:34824
-msgid "View..."
+msgid "View…"
 msgstr "Affichage…"
 
 #: t_modules/t_main.py:34842
@@ -2610,8 +2610,8 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Info : L'image de l'artiste sera téléchargée depuis fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
-msgstr "Téléchargement..."
+msgid "Downloading data…"
+msgstr "Téléchargement…"
 
 #: t_modules/t_main.py:35621
 msgid "No artists in playlist"
@@ -2622,16 +2622,16 @@ msgid "Artist threshold not met"
 msgstr "Seuil d'artistes non atteint"
 
 #: t_modules/t_main.py:35626
-msgid "Loading Artist List..."
-msgstr "Chargement de la liste d'artistes..."
+msgid "Loading Artist List…"
+msgstr "Chargement de la liste d'artistes…"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
-msgstr "Occupé..."
+msgid "Busy…"
+msgstr "Occupé…"
 
 #: t_modules/t_main.py:35838
-msgid "Loading Folder Tree..."
-msgstr "Chargement de l'arborescence..."
+msgid "Loading Folder Tree…"
+msgstr "Chargement de l'arborescence…"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
 msgid "Folder Tree"
@@ -2666,16 +2666,16 @@ msgid "Auto-Stop"
 msgstr "Arrêt automatique"
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
-msgstr "Recherche en cours..."
+msgid "Looking up…"
+msgstr "Recherche en cours…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
-msgstr "Tranquille..."
+msgid "Cooldown…"
+msgstr "Tranquille…"
 
 #: t_modules/t_main.py:37351
-msgid "Loading..."
-msgstr "Chargement..."
+msgid "Loading…"
+msgstr "Chargement…"
 
 #: t_modules/t_main.py:37521
 msgid "No artist data downloaded"
@@ -2694,8 +2694,8 @@ msgid "Clear Bio"
 msgstr "Effacer bio"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
-msgstr "Modifier..."
+msgid "Edit…"
+msgstr "Modifier…"
 
 #: t_modules/t_main.py:38440
 msgid "Playing"
@@ -2868,8 +2868,8 @@ msgstr "Piste désaimée"
 #~ msgid "Force subpixel text rendering"
 #~ msgstr "Forcer le rendu de texte en sous-pixels"
 
-#~ msgid "Disconnecting..."
-#~ msgstr "Déconnexion..."
+#~ msgid "Disconnecting…"
+#~ msgstr "Déconnexion…"
 
 #~ msgid "Disconnect Discord"
 #~ msgstr "Déconnecter Discord"
@@ -2890,7 +2890,7 @@ msgstr "Piste désaimée"
 #~ msgstr "Rechercher automatiquement les paroles"
 
 #, fuzzy
-#~ msgid "Set List Sorting..."
+#~ msgid "Set List Sorting…"
 #~ msgstr "Arrêt en cours…"
 
 #~ msgid "Download URL"
@@ -2919,8 +2919,8 @@ msgstr "Piste désaimée"
 #~ msgid "Spectrogram"
 #~ msgstr "Spectrogramme"
 
-#~ msgid "Downloading... Please wait"
-#~ msgstr "Téléchargement en cours..."
+#~ msgid "Downloading… Please wait"
+#~ msgstr "Téléchargement en cours…"
 
 #~ msgid "BASS Download Complete."
 #~ msgstr "Téléchargement de BASS terminé."
@@ -2983,7 +2983,7 @@ msgstr "Piste désaimée"
 #~ msgstr "Tri décroissant"
 
 #~ msgid "Open Stream…"
-#~ msgstr "Ouvrir le flux..."
+#~ msgstr "Ouvrir le flux…"
 
 #~ msgid "Always center"
 #~ msgstr "Toujours centré"
@@ -3052,8 +3052,8 @@ msgstr "Piste désaimée"
 #~ msgid "View 2"
 #~ msgstr "Vue 2"
 
-#~ msgid "Lyrics settings..."
-#~ msgstr "Paramètres des paroles..."
+#~ msgid "Lyrics settings…"
+#~ msgstr "Paramètres des paroles…"
 
 #~ msgid "Reload config file"
 #~ msgstr "Recharger le fichier de configuration"
@@ -3082,7 +3082,7 @@ msgstr "Piste désaimée"
 #~ msgid "Then return here and click \"Done\"."
 #~ msgstr "Puis revenez ici pour cliquer sur \"Terminé\"."
 
-#~ msgid "Loading artist image..."
+#~ msgid "Loading artist image…"
 #~ msgstr "Chargement de l'image de l'artiste"
 
 #~ msgid "Reload Bio"

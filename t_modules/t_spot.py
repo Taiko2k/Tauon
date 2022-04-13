@@ -383,7 +383,7 @@ class SpotCtl:
                 tries = 0
                 playing = False
                 while True:
-                    print("WAIT FOR DEVICE...")
+                    print("WAIT FOR DEVICE…")
                     devices = self.spotify.playback_devices()
                     if devices:
                         print("DEVICE FOUND")
@@ -401,7 +401,7 @@ class SpotCtl:
                                 break
                             time.sleep(2)
                             tries += 1
-                            print("NOT PLAYING YET...")
+                            print("NOT PLAYING YET…")
                             if tries > 6:
                                 break
                     if playing:

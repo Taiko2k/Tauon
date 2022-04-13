@@ -53,7 +53,7 @@ msgstr ""
 
 #: t_modules/t_main.py:6829
 #, fuzzy
-msgid "Getting friend data..."
+msgid "Getting friend data…"
 msgstr "Henter vennedata…"
 
 #: t_modules/t_main.py:6829
@@ -432,7 +432,7 @@ msgstr "La oss være hensynsfulle og prøve igjen senere."
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
 #, fuzzy
-msgid "Searching..."
+msgid "Searching…"
 msgstr "Søker…"
 
 #: t_modules/t_main.py:14600
@@ -465,7 +465,7 @@ msgstr "Skru av/på sangtekster"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
 #, fuzzy
-msgid "Substitute Search..."
+msgid "Substitute Search…"
 msgstr "Erstatt"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
@@ -501,7 +501,7 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
 msgstr "Finner MusicBrainz-ID…"
 
 #: t_modules/t_main.py:14980
@@ -592,7 +592,7 @@ msgstr ""
 
 #: t_modules/t_main.py:15881
 #, fuzzy
-msgid "Rescanning folders..."
+msgid "Rescanning folders…"
 msgstr "Skann mappe på ny"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
@@ -631,7 +631,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
@@ -705,7 +705,7 @@ msgid "Target folder could not be found"
 msgstr ""
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
+msgid "Deleting folders…"
 msgstr ""
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
@@ -792,7 +792,7 @@ msgid "Toggle Breaks"
 msgstr "Skru av/på sangtekster"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
+msgid "Edit Generator…"
 msgstr ""
 
 #: t_modules/t_main.py:17469
@@ -1093,7 +1093,7 @@ msgstr ""
 
 #: t_modules/t_main.py:19627
 #, fuzzy
-msgid "Lyrics..."
+msgid "Lyrics…"
 msgstr "Skjul sangtekster"
 
 #: t_modules/t_main.py:19730
@@ -2016,12 +2016,12 @@ msgstr "Importer brukerspilleliste…"
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "Kan ikke opprette Spotify-spilleliste"
 
 #: t_modules/t_main.py:26987
 #, fuzzy
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr "Importer brukerspilleliste…"
 
 #: t_modules/t_main.py:27002
@@ -2227,11 +2227,11 @@ msgstr ""
 
 #: t_modules/t_main.py:27548
 #, fuzzy
-msgid "Stopping..."
+msgid "Stopping…"
 msgstr "Søker…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 
 #: t_modules/t_main.py:27554
@@ -2252,7 +2252,7 @@ msgid "Open output folder"
 msgstr "Åpne utdatamappe"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr "Synk…"
 
 #: t_modules/t_main.py:27586
@@ -2354,7 +2354,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28125
 #, fuzzy
-msgid "Generating..."
+msgid "Generating…"
 msgstr "Søker…"
 
 #: t_modules/t_main.py:28133
@@ -2366,7 +2366,7 @@ msgid "Not enough albums in the playlist!"
 msgstr ""
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr ""
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2481,7 +2481,7 @@ msgstr ""
 
 #: t_modules/t_main.py:29626
 #, fuzzy
-msgid "Buffering... "
+msgid "Buffering… "
 msgstr "Søker…"
 
 #: t_modules/t_main.py:29741
@@ -2606,7 +2606,7 @@ msgstr "Start kringkasting"
 
 #: t_modules/t_main.py:33680
 #, fuzzy
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr "Søker…"
 
 #: t_modules/t_main.py:33683
@@ -2668,7 +2668,7 @@ msgid "Visit Website"
 msgstr ""
 
 #: t_modules/t_main.py:34824
-msgid "View..."
+msgid "View…"
 msgstr ""
 
 #: t_modules/t_main.py:34842
@@ -2696,7 +2696,7 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Omslag lastet ned fra fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
+msgid "Downloading data…"
 msgstr ""
 
 #: t_modules/t_main.py:35621
@@ -2710,15 +2710,15 @@ msgstr ""
 
 #: t_modules/t_main.py:35626
 #, fuzzy
-msgid "Loading Artist List..."
+msgid "Loading Artist List…"
 msgstr "Artistliste"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
+msgid "Busy…"
 msgstr ""
 
 #: t_modules/t_main.py:35838
-msgid "Loading Folder Tree..."
+msgid "Loading Folder Tree…"
 msgstr ""
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
@@ -2760,16 +2760,16 @@ msgstr "Automatisk rulling"
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
 #, fuzzy
-msgid "Looking up..."
+msgid "Looking up…"
 msgstr "Finner MusicBrainz-ID…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
+msgid "Cooldown…"
 msgstr ""
 
 #: t_modules/t_main.py:37351
 #, fuzzy
-msgid "Loading..."
+msgid "Loading…"
 msgstr "Søker…"
 
 #: t_modules/t_main.py:37521
@@ -2791,7 +2791,7 @@ msgid "Clear Bio"
 msgstr "Tøm biografi"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440

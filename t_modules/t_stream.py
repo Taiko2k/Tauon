@@ -98,7 +98,7 @@ class StreamEnc:
             #r.add_header('GET', '1')
             r.add_header('Icy-MetaData', '1')
             r.add_header('User-Agent', self.tauon.t_agent)
-            print("Open URL.....")
+            print("Open URL…..")
             r = urllib.request.urlopen(r, timeout=7)
             print("URL opened.")
 

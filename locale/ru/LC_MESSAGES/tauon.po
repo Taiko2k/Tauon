@@ -52,8 +52,8 @@ msgid "Scanning scrobbles complete"
 msgstr "Скан скроббл завершено"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
-msgstr "Получение данных о друзьях..."
+msgid "Getting friend data…"
+msgstr "Получение данных о друзьях…"
 
 #: t_modules/t_main.py:6829
 msgid "This may take a very long time."
@@ -421,7 +421,7 @@ msgstr "Будем вежливы и попробуем позже."
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
+msgid "Searching…"
 msgstr "Поиск…"
 
 #: t_modules/t_main.py:14600
@@ -451,8 +451,8 @@ msgid "Toggle Lyrics"
 msgstr "Переключить текст песни"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
-msgstr "Замена поиска..."
+msgid "Substitute Search…"
+msgstr "Замена поиска…"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
 msgid "Paste Lyrics"
@@ -487,8 +487,8 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr "Не похоже, что эта папка принадлежит одному альбому, извините"
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
-msgstr "Поиск по MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
+msgstr "Поиск по MusicBrainz ID…"
 
 #: t_modules/t_main.py:14980
 msgid "Cover art downloaded from fanart.tv"
@@ -572,8 +572,8 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr "Вы уверены, что хотите удалить плейлист: %s?"
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
-msgstr "Повторное сканирование папок..."
+msgid "Rescanning folders…"
+msgstr "Повторное сканирование папок…"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
 msgid "Playlist is locked"
@@ -610,10 +610,10 @@ msgstr "OK. Отныне этот плейлист будет автоматич
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Вы можете удалить или изменить это действие, перейдя в меню \"Misc...\" > "
-"\"Edit generator...\""
+"Вы можете удалить или изменить это действие, перейдя в меню \"Misc…\" > "
+"\"Edit generator…\""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
 #: t_modules/t_main.py:20979
@@ -682,8 +682,8 @@ msgid "Target folder could not be found"
 msgstr "Не удалось найти каталог"
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
-msgstr "Удаление папок..."
+msgid "Deleting folders…"
+msgstr "Удаление папок…"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
 msgid "Copying files to device"
@@ -761,7 +761,7 @@ msgid "Toggle Breaks"
 msgstr "Переключить перерывы"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
+msgid "Edit Generator…"
 msgstr ""
 
 #: t_modules/t_main.py:17469
@@ -1061,7 +1061,7 @@ msgstr ""
 
 #: t_modules/t_main.py:19627
 #, fuzzy
-msgid "Lyrics..."
+msgid "Lyrics…"
 msgstr "Скрыть текст песни"
 
 #: t_modules/t_main.py:19730
@@ -1984,11 +1984,11 @@ msgstr ""
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "Ошибка при создании плейлиста Spotify"
 
 #: t_modules/t_main.py:26987
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr ""
 
 #: t_modules/t_main.py:27002
@@ -2192,11 +2192,11 @@ msgstr "Прерывание синхронизации"
 
 #: t_modules/t_main.py:27548
 #, fuzzy
-msgid "Stopping..."
+msgid "Stopping…"
 msgstr "Поиск…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 
 #: t_modules/t_main.py:27554
@@ -2218,7 +2218,7 @@ msgid "Open output folder"
 msgstr "Открыть папку"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr ""
 
 #: t_modules/t_main.py:27586
@@ -2321,7 +2321,7 @@ msgstr "Создать…"
 
 #: t_modules/t_main.py:28125
 #, fuzzy
-msgid "Generating..."
+msgid "Generating…"
 msgstr "Поиск…"
 
 #: t_modules/t_main.py:28133
@@ -2333,7 +2333,7 @@ msgid "Not enough albums in the playlist!"
 msgstr ""
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr ""
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2444,7 +2444,7 @@ msgstr ""
 
 #: t_modules/t_main.py:29626
 #, fuzzy
-msgid "Buffering... "
+msgid "Buffering… "
 msgstr "Поиск…"
 
 #: t_modules/t_main.py:29741
@@ -2570,7 +2570,7 @@ msgstr ""
 
 #: t_modules/t_main.py:33680
 #, fuzzy
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr "Поиск…"
 
 #: t_modules/t_main.py:33683
@@ -2631,7 +2631,7 @@ msgid "Visit Website"
 msgstr ""
 
 #: t_modules/t_main.py:34824
-msgid "View..."
+msgid "View…"
 msgstr ""
 
 #: t_modules/t_main.py:34842
@@ -2659,7 +2659,7 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Обложка скачана с сайта fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
+msgid "Downloading data…"
 msgstr ""
 
 #: t_modules/t_main.py:35621
@@ -2673,16 +2673,16 @@ msgstr ""
 
 #: t_modules/t_main.py:35626
 #, fuzzy
-msgid "Loading Artist List..."
+msgid "Loading Artist List…"
 msgstr "Список исполнителей"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
+msgid "Busy…"
 msgstr ""
 
 #: t_modules/t_main.py:35838
 #, fuzzy
-msgid "Loading Folder Tree..."
+msgid "Loading Folder Tree…"
 msgstr "Переместить папку с воспроизведением сюда"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
@@ -2721,16 +2721,16 @@ msgstr ""
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
 #, fuzzy
-msgid "Looking up..."
-msgstr "Поиск по MusicBrainz ID..."
+msgid "Looking up…"
+msgstr "Поиск по MusicBrainz ID…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
+msgid "Cooldown…"
 msgstr ""
 
 #: t_modules/t_main.py:37351
 #, fuzzy
-msgid "Loading..."
+msgid "Loading…"
 msgstr "Поиск…"
 
 #: t_modules/t_main.py:37521
@@ -2753,7 +2753,7 @@ msgid "Clear Bio"
 msgstr "Очистить"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440

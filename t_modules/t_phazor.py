@@ -34,7 +34,7 @@ def player4(tauon):
     gui = tauon.gui
     prefs = tauon.prefs
 
-    print("Start PHAzOR backend...")
+    print("Start PHAzOR backend…")
 
     # Get output device names
     if len(prefs.phazor_devices) < 2 and not tauon.macos:

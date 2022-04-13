@@ -48,7 +48,7 @@ msgid "Scanning scrobbles complete"
 msgstr ""
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
+msgid "Getting friend data…"
 msgstr ""
 
 #: t_modules/t_main.py:6829
@@ -411,7 +411,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
+msgid "Searching…"
 msgstr ""
 
 #: t_modules/t_main.py:14600
@@ -441,7 +441,7 @@ msgid "Toggle Lyrics"
 msgstr ""
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
+msgid "Substitute Search…"
 msgstr ""
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
@@ -477,7 +477,7 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
 msgstr ""
 
 #: t_modules/t_main.py:14980
@@ -562,7 +562,7 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr ""
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
+msgid "Rescanning folders…"
 msgstr ""
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
@@ -599,7 +599,7 @@ msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
 
 #: t_modules/t_main.py:17139
-msgid "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+msgid "You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
@@ -669,7 +669,7 @@ msgid "Target folder could not be found"
 msgstr ""
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
+msgid "Deleting folders…"
 msgstr ""
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
@@ -746,7 +746,7 @@ msgid "Toggle Breaks"
 msgstr ""
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
+msgid "Edit Generator…"
 msgstr ""
 
 #: t_modules/t_main.py:17469
@@ -1020,7 +1020,7 @@ msgid "Edit with "
 msgstr ""
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
+msgid "Lyrics…"
 msgstr ""
 
 #: t_modules/t_main.py:19730
@@ -1885,11 +1885,11 @@ msgid "Import all user playlists"
 msgstr ""
 
 #: t_modules/t_main.py:26979
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr ""
 
 #: t_modules/t_main.py:26987
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr ""
 
 #: t_modules/t_main.py:27002
@@ -2080,11 +2080,11 @@ msgid "Start Sync"
 msgstr ""
 
 #: t_modules/t_main.py:27548
-msgid "Stopping..."
+msgid "Stopping…"
 msgstr ""
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 
 #: t_modules/t_main.py:27554
@@ -2104,7 +2104,7 @@ msgid "Open output folder"
 msgstr ""
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr ""
 
 #: t_modules/t_main.py:27586
@@ -2204,7 +2204,7 @@ msgid "Generate"
 msgstr ""
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
+msgid "Generating…"
 msgstr ""
 
 #: t_modules/t_main.py:28133
@@ -2216,7 +2216,7 @@ msgid "Not enough albums in the playlist!"
 msgstr ""
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr ""
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2316,7 +2316,7 @@ msgid "Added station to: "
 msgstr ""
 
 #: t_modules/t_main.py:29626
-msgid "Buffering... "
+msgid "Buffering… "
 msgstr ""
 
 #: t_modules/t_main.py:29741
@@ -2428,7 +2428,7 @@ msgid "Station Browser"
 msgstr ""
 
 #: t_modules/t_main.py:33680
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr ""
 
 #: t_modules/t_main.py:33683
@@ -2489,7 +2489,7 @@ msgid "Visit Website"
 msgstr ""
 
 #: t_modules/t_main.py:34824
-msgid "View..."
+msgid "View…"
 msgstr ""
 
 #: t_modules/t_main.py:34842
@@ -2513,7 +2513,7 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr ""
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
+msgid "Downloading data…"
 msgstr ""
 
 #: t_modules/t_main.py:35621
@@ -2525,15 +2525,15 @@ msgid "Artist threshold not met"
 msgstr ""
 
 #: t_modules/t_main.py:35626
-msgid "Loading Artist List..."
+msgid "Loading Artist List…"
 msgstr ""
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
+msgid "Busy…"
 msgstr ""
 
 #: t_modules/t_main.py:35838
-msgid "Loading Folder Tree..."
+msgid "Loading Folder Tree…"
 msgstr ""
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
@@ -2569,15 +2569,15 @@ msgid "Auto-Stop"
 msgstr ""
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
+msgid "Looking up…"
 msgstr ""
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
+msgid "Cooldown…"
 msgstr ""
 
 #: t_modules/t_main.py:37351
-msgid "Loading..."
+msgid "Loading…"
 msgstr ""
 
 #: t_modules/t_main.py:37521
@@ -2597,7 +2597,7 @@ msgid "Clear Bio"
 msgstr ""
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440

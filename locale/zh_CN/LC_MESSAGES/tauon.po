@@ -52,8 +52,8 @@ msgid "Scanning scrobbles complete"
 msgstr "文件夹重扫描完成。"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
-msgstr "正在获取好友数据..."
+msgid "Getting friend data…"
+msgstr "正在获取好友数据…"
 
 #: t_modules/t_main.py:6829
 msgid "This may take a very long time."
@@ -440,8 +440,8 @@ msgstr "让我们调整一下，以后再试。"
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
-msgstr "搜索中..."
+msgid "Searching…"
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:14600
 msgid "No lyrics for this track were found"
@@ -471,7 +471,7 @@ msgid "Toggle Lyrics"
 msgstr "切换歌词"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
+msgid "Substitute Search…"
 msgstr ""
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
@@ -508,7 +508,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14916
 #, fuzzy
-msgid "Looking up MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
 msgstr "正在查找"
 
 #: t_modules/t_main.py:14980
@@ -596,7 +596,7 @@ msgstr ""
 
 #: t_modules/t_main.py:15881
 #, fuzzy
-msgid "Rescanning folders..."
+msgid "Rescanning folders…"
 msgstr "重扫描文件夹"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
@@ -639,7 +639,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
@@ -659,15 +659,15 @@ msgstr "生成"
 
 #: t_modules/t_main.py:17161
 msgid "Generate…"
-msgstr "生成..."
+msgstr "生成…"
 
 #: t_modules/t_main.py:17162
 msgid "Sort…"
-msgstr "排序..."
+msgstr "排序…"
 
 #: t_modules/t_main.py:17163
 msgid "From Current…"
-msgstr "从当前..."
+msgstr "从当前…"
 
 #: t_modules/t_main.py:17168
 #, fuzzy
@@ -702,7 +702,7 @@ msgstr "追加到当前播放之后"
 
 #: t_modules/t_main.py:17184
 msgid "Misc…"
-msgstr "其他..."
+msgstr "其他…"
 
 #: t_modules/t_main.py:17233
 msgid "No target folder selected"
@@ -714,7 +714,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17279
 #, fuzzy
-msgid "Deleting folders..."
+msgid "Deleting folders…"
 msgstr "重扫描文件夹"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
@@ -802,7 +802,7 @@ msgstr "切换间隙"
 
 #: t_modules/t_main.py:17468
 #, fuzzy
-msgid "Edit Generator..."
+msgid "Edit Generator…"
 msgstr "图表"
 
 #: t_modules/t_main.py:17469
@@ -992,7 +992,7 @@ msgstr "Spotify 专辑"
 
 #: t_modules/t_main.py:18780
 msgid "Track Info…"
-msgstr "曲目信息..."
+msgstr "曲目信息…"
 
 #: t_modules/t_main.py:18825 t_modules/t_main.py:21413
 msgid "Un-Love Track"
@@ -1017,7 +1017,7 @@ msgstr "在收藏中显示"
 
 #: t_modules/t_main.py:18935
 msgid "Meta…"
-msgstr "Meta信息..."
+msgstr "Meta信息…"
 
 #: t_modules/t_main.py:18940 t_modules/t_main.py:19941
 #: t_modules/t_main.py:19946 t_modules/t_main.py:19947
@@ -1055,7 +1055,7 @@ msgstr "移除找不到的曲目"
 #: t_modules/t_main.py:18996 t_modules/t_main.py:19783
 #: t_modules/t_main.py:19784
 msgid "Rename Tracks…"
-msgstr "重命名曲目..."
+msgstr "重命名曲目…"
 
 #: t_modules/t_main.py:19007 t_modules/t_main.py:19830
 #: t_modules/t_main.py:19930
@@ -1097,8 +1097,8 @@ msgid "Edit with "
 msgstr "编辑:"
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
-msgstr "歌词..."
+msgid "Lyrics…"
+msgstr "歌词…"
 
 #: t_modules/t_main.py:19730
 msgid "Fix Mojibake"
@@ -1346,7 +1346,7 @@ msgstr "设定"
 
 #: t_modules/t_main.py:21030
 msgid "Database…"
-msgstr "数据库..."
+msgstr "数据库…"
 
 #: t_modules/t_main.py:21096
 msgid "Export as CSV"
@@ -2023,12 +2023,12 @@ msgstr "导入音乐文件夹"
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "播放列表末尾"
 
 #: t_modules/t_main.py:26987
 #, fuzzy
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr "导入音乐文件夹"
 
 #: t_modules/t_main.py:27002
@@ -2235,11 +2235,11 @@ msgstr ""
 
 #: t_modules/t_main.py:27548
 #, fuzzy
-msgid "Stopping..."
-msgstr "搜索中..."
+msgid "Stopping…"
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 
 #: t_modules/t_main.py:27554
@@ -2261,7 +2261,7 @@ msgid "Open output folder"
 msgstr "打开输出文件夹"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr ""
 
 #: t_modules/t_main.py:27586
@@ -2363,8 +2363,8 @@ msgid "Generate"
 msgstr "生成"
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
-msgstr "生成中..."
+msgid "Generating…"
+msgstr "生成中…"
 
 #: t_modules/t_main.py:28133
 #, fuzzy
@@ -2376,7 +2376,7 @@ msgid "Not enough albums in the playlist!"
 msgstr "播放列表中没有足够的专辑！"
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
+msgid "Chart generator…"
 msgstr "图表"
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
@@ -2484,8 +2484,8 @@ msgstr ""
 
 #: t_modules/t_main.py:29626
 #, fuzzy
-msgid "Buffering... "
-msgstr "搜索中..."
+msgid "Buffering… "
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:29741
 msgid "There are currently no connected clients"
@@ -2560,7 +2560,7 @@ msgstr "播放列表末尾"
 #: t_modules/t_main.py:33190
 #, fuzzy
 msgid "Search Tag"
-msgstr "搜索中..."
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:33191
 #, fuzzy
@@ -2570,17 +2570,17 @@ msgstr "搜索GuitarParty"
 #: t_modules/t_main.py:33192
 #, fuzzy
 msgid "Search Title"
-msgstr "搜索中..."
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:33480
 #, fuzzy
 msgid "Search text…"
-msgstr "搜索中..."
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:33487
 #, fuzzy
 msgid "Search"
-msgstr "搜索中..."
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:33494 t_modules/t_main.py:33498
 msgid "Get Top Voted"
@@ -2605,7 +2605,7 @@ msgstr "开始推流"
 
 #: t_modules/t_main.py:33680
 #, fuzzy
-msgid "Connecting..."
+msgid "Connecting…"
 msgstr "断开中。。。"
 
 #: t_modules/t_main.py:33683
@@ -2667,7 +2667,7 @@ msgstr ""
 
 #: t_modules/t_main.py:34824
 #, fuzzy
-msgid "View..."
+msgid "View…"
 msgstr "视图 "
 
 #: t_modules/t_main.py:34842
@@ -2695,8 +2695,8 @@ msgstr ""
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
 #, fuzzy
-msgid "Downloading data..."
-msgstr "搜索中..."
+msgid "Downloading data…"
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:35621
 msgid "No artists in playlist"
@@ -2708,16 +2708,16 @@ msgstr "艺术家界定值有误"
 
 #: t_modules/t_main.py:35626
 #, fuzzy
-msgid "Loading Artist List..."
+msgid "Loading Artist List…"
 msgstr "读取中"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
+msgid "Busy…"
 msgstr "正忙"
 
 #: t_modules/t_main.py:35838
 #, fuzzy
-msgid "Loading Folder Tree..."
+msgid "Loading Folder Tree…"
 msgstr "读取中"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
@@ -2754,17 +2754,17 @@ msgid "Auto-Stop"
 msgstr "自动停止"
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
+msgid "Looking up…"
 msgstr "正在查找"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
-msgstr "冷却..."
+msgid "Cooldown…"
+msgstr "冷却…"
 
 #: t_modules/t_main.py:37351
 #, fuzzy
-msgid "Loading..."
-msgstr "搜索中..."
+msgid "Loading…"
+msgstr "搜索中…"
 
 #: t_modules/t_main.py:37521
 #, fuzzy
@@ -2785,7 +2785,7 @@ msgid "Clear Bio"
 msgstr "清空"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440
@@ -2953,7 +2953,7 @@ msgstr "取消喜爱曲目"
 #~ msgid "Force subpixel text rendering"
 #~ msgstr "强制像素文字渲染"
 
-#~ msgid "Disconnecting..."
+#~ msgid "Disconnecting…"
 #~ msgstr "断开中。。。"
 
 #~ msgid "Disconnect Discord"
@@ -2969,8 +2969,8 @@ msgstr "取消喜爱曲目"
 #~ msgstr "自动检索歌词"
 
 #, fuzzy
-#~ msgid "Set List Sorting..."
-#~ msgstr "搜索中..."
+#~ msgid "Set List Sorting…"
+#~ msgstr "搜索中…"
 
 #~ msgid "Download URL"
 #~ msgstr "下载URL"
@@ -3029,7 +3029,7 @@ msgstr "取消喜爱曲目"
 #~ msgstr "降序排序"
 
 #~ msgid "Open Stream…"
-#~ msgstr "打开流..."
+#~ msgstr "打开流…"
 
 #~ msgid "Show playtime lines"
 #~ msgstr "显示行"
@@ -3073,8 +3073,8 @@ msgstr "取消喜爱曲目"
 #~ msgid "Monitor download folders"
 #~ msgstr "监视下载文件夹"
 
-#~ msgid "Lyrics settings..."
-#~ msgstr "歌词设定..."
+#~ msgid "Lyrics settings…"
+#~ msgstr "歌词设定…"
 
 #~ msgid "Search artist on Wikipedia"
 #~ msgstr "在维基搜索艺术家"

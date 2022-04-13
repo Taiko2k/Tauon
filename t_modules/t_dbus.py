@@ -47,7 +47,7 @@ class Gnome:
             if not os.path.isdir(export_dir):
                 os.makedirs(export_dir)
 
-            print("Copy tray icons to data directory...")
+            print("Copy tray icons to data directory…")
 
             alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-play.svg")
             if os.path.isfile(self.indicator_icon_play):

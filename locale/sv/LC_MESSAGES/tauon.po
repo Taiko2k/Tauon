@@ -52,8 +52,8 @@ msgid "Scanning scrobbles complete"
 msgstr "Skanna om mappar fullständigt"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
-msgstr "Hämtar kompisdata..."
+msgid "Getting friend data…"
+msgstr "Hämtar kompisdata…"
 
 #: t_modules/t_main.py:6829
 msgid "This may take a very long time."
@@ -428,8 +428,8 @@ msgstr "Var lite artig och försök senare."
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
-msgstr "Söker..."
+msgid "Searching…"
+msgstr "Söker…"
 
 #: t_modules/t_main.py:14600
 msgid "No lyrics for this track were found"
@@ -458,8 +458,8 @@ msgid "Toggle Lyrics"
 msgstr "Sångtext på/av"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
-msgstr "Ersättningssök..."
+msgid "Substitute Search…"
+msgstr "Ersättningssök…"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
 msgid "Paste Lyrics"
@@ -494,8 +494,8 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr "Det verkar inte som om denna mapp tillhör ett enskilt album"
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
-msgstr "Slår upp MusicBrainz-ID..."
+msgid "Looking up MusicBrainz ID…"
+msgstr "Slår upp MusicBrainz-ID…"
 
 #: t_modules/t_main.py:14980
 msgid "Cover art downloaded from fanart.tv"
@@ -582,8 +582,8 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr ""
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
-msgstr "Skannar om mappar..."
+msgid "Rescanning folders…"
+msgstr "Skannar om mappar…"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
 #, fuzzy
@@ -623,10 +623,10 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Du kan ta bort eller redigera detta beteende genom att gå till \"Diverse..."
-"\" > \"Redigera generator...\""
+"Du kan ta bort eller redigera detta beteende genom att gå till \"Diverse…"
+"\" > \"Redigera generator…\""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
 #: t_modules/t_main.py:20979
@@ -696,8 +696,8 @@ msgid "Target folder could not be found"
 msgstr "Målmappen kunde inte hittas"
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
-msgstr "Tar bort mappar..."
+msgid "Deleting folders…"
+msgstr "Tar bort mappar…"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
 msgid "Copying files to device"
@@ -776,8 +776,8 @@ msgid "Toggle Breaks"
 msgstr "Albumavgränsning på/av"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
-msgstr "Redigera generator..."
+msgid "Edit Generator…"
+msgstr "Redigera generator…"
 
 #: t_modules/t_main.py:17469
 msgid "Engage Gallery Quick Add"
@@ -1055,8 +1055,8 @@ msgid "Edit with "
 msgstr "Redigera med "
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
-msgstr "Sångtexter..."
+msgid "Lyrics…"
+msgstr "Sångtexter…"
 
 #: t_modules/t_main.py:19730
 msgid "Fix Mojibake"
@@ -1966,17 +1966,17 @@ msgstr "Importera gillade låtar"
 #: t_modules/t_main.py:26977
 #, fuzzy
 msgid "Import all user playlists"
-msgstr "Importera användarlista..."
+msgstr "Importera användarlista…"
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "Kan inte skapa Spotify-lista"
 
 #: t_modules/t_main.py:26987
 #, fuzzy
-msgid "Import single user playlist..."
-msgstr "Importera användarlista..."
+msgid "Import single user playlist…"
+msgstr "Importera användarlista…"
 
 #: t_modules/t_main.py:27002
 msgid "Airsonic/Subsonic network streaming"
@@ -2185,12 +2185,12 @@ msgid "Start Sync"
 msgstr "Starta synkronisering"
 
 #: t_modules/t_main.py:27548
-msgid "Stopping..."
-msgstr "Stoppar..."
+msgid "Stopping…"
+msgstr "Stoppar…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr "Högerklick tab > Div... Ange som synkad spelningslista"
+msgid "Right click tab > Misc… > Set as sync playlist"
+msgstr "Högerklick tab > Div… Ange som synkad spelningslista"
 
 #: t_modules/t_main.py:27554
 msgid "Select a source playlist"
@@ -2209,8 +2209,8 @@ msgid "Open output folder"
 msgstr "Öppna utdatamappen"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
-msgstr "Synk..."
+msgid "Sync…"
+msgstr "Synk…"
 
 #: t_modules/t_main.py:27586
 msgid "Save opus as .ogg extension"
@@ -2309,8 +2309,8 @@ msgid "Generate"
 msgstr "Generera"
 
 #: t_modules/t_main.py:28125
-msgid "Generating..."
-msgstr "Genererar..."
+msgid "Generating…"
+msgstr "Genererar…"
 
 #: t_modules/t_main.py:28133
 msgid "Album chart"
@@ -2321,8 +2321,8 @@ msgid "Not enough albums in the playlist!"
 msgstr "Inte tillräckligt med album!"
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
-msgid "Chart generator..."
-msgstr "Kartgenerator..."
+msgid "Chart generator…"
+msgstr "Kartgenerator…"
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
 msgid "Tracks in playlist"
@@ -2422,8 +2422,8 @@ msgstr ""
 
 #: t_modules/t_main.py:29626
 #, fuzzy
-msgid "Buffering... "
-msgstr "Söker..."
+msgid "Buffering… "
+msgstr "Söker…"
 
 #: t_modules/t_main.py:29741
 msgid "There are currently no connected clients"
@@ -2536,8 +2536,8 @@ msgid "Station Browser"
 msgstr "Starta sändning"
 
 #: t_modules/t_main.py:33680
-msgid "Connecting..."
-msgstr "Ansluter..."
+msgid "Connecting…"
+msgstr "Ansluter…"
 
 #: t_modules/t_main.py:33683
 msgid "Failed to connect!"
@@ -2598,7 +2598,7 @@ msgstr "Besök webbsidan"
 
 #: t_modules/t_main.py:34824
 #, fuzzy
-msgid "View..."
+msgid "View…"
 msgstr "Visa"
 
 #: t_modules/t_main.py:34842
@@ -2625,8 +2625,8 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Notera: Artistbild från fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
-msgstr "Laddar ner data..."
+msgid "Downloading data…"
+msgstr "Laddar ner data…"
 
 #: t_modules/t_main.py:35621
 msgid "No artists in playlist"
@@ -2637,16 +2637,16 @@ msgid "Artist threshold not met"
 msgstr "Artisttröskelvärde inte uppnått"
 
 #: t_modules/t_main.py:35626
-msgid "Loading Artist List..."
-msgstr "Läser in artistlista..."
+msgid "Loading Artist List…"
+msgstr "Läser in artistlista…"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
-msgstr "Upptagen..."
+msgid "Busy…"
+msgstr "Upptagen…"
 
 #: t_modules/t_main.py:35838
-msgid "Loading Folder Tree..."
-msgstr "Läser in mappträd..."
+msgid "Loading Folder Tree…"
+msgstr "Läser in mappträd…"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
 msgid "Folder Tree"
@@ -2681,16 +2681,16 @@ msgid "Auto-Stop"
 msgstr "Autostopp"
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
-msgid "Looking up..."
-msgstr "Slår upp..."
+msgid "Looking up…"
+msgstr "Slår upp…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
-msgstr "Cooldown..."
+msgid "Cooldown…"
+msgstr "Cooldown…"
 
 #: t_modules/t_main.py:37351
-msgid "Loading..."
-msgstr "Läser in..."
+msgid "Loading…"
+msgstr "Läser in…"
 
 #: t_modules/t_main.py:37521
 msgid "No artist data downloaded"
@@ -2709,7 +2709,7 @@ msgid "Clear Bio"
 msgstr "Ta bort biografi"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440
@@ -2886,8 +2886,8 @@ msgstr "Av-älska spår"
 #~ msgid "Force subpixel text rendering"
 #~ msgstr "Tvinga fram underpixel-textåtergivning"
 
-#~ msgid "Disconnecting..."
-#~ msgstr "Kopplar ner..."
+#~ msgid "Disconnecting…"
+#~ msgstr "Kopplar ner…"
 
 #~ msgid "Disconnect Discord"
 #~ msgstr "Koppla ner Discord"
@@ -2905,8 +2905,8 @@ msgstr "Av-älska spår"
 #~ msgstr "Sök automatiskt efter sångtext"
 
 #, fuzzy
-#~ msgid "Set List Sorting..."
-#~ msgstr "Stoppar..."
+#~ msgid "Set List Sorting…"
+#~ msgstr "Stoppar…"
 
 #~ msgid "Download URL"
 #~ msgstr "Nerladdnings-URL"
@@ -2941,8 +2941,8 @@ msgstr "Av-älska spår"
 #~ msgid "Sorry, broadcasting feature not implemented with GStreamer backend!"
 #~ msgstr "Utsändning är för närvarande inte tillgängligt med GStreamer!"
 
-#~ msgid "Downloading... Please wait"
-#~ msgstr "Laddar ner, vänta..."
+#~ msgid "Downloading… Please wait"
+#~ msgstr "Laddar ner, vänta…"
 
 #~ msgid "BASS Download Complete."
 #~ msgstr "BASS-nerladdning slutförd."

@@ -51,8 +51,8 @@ msgid "Scanning scrobbles complete"
 msgstr "Pemindaian scrobble selesai"
 
 #: t_modules/t_main.py:6829
-msgid "Getting friend data..."
-msgstr "Mendapatkan data teman..."
+msgid "Getting friend data…"
+msgstr "Mendapatkan data teman…"
 
 #: t_modules/t_main.py:6829
 msgid "This may take a very long time."
@@ -423,8 +423,8 @@ msgstr "Mari bersikap sopan dan coba nanti."
 
 #: t_modules/t_main.py:14567 t_modules/t_main.py:19999
 #: t_modules/t_main.py:20053 t_modules/t_main.py:33690
-msgid "Searching..."
-msgstr "Mencari..."
+msgid "Searching…"
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:14600
 msgid "No lyrics for this track were found"
@@ -453,8 +453,8 @@ msgid "Toggle Lyrics"
 msgstr "Toggle Lirik"
 
 #: t_modules/t_main.py:14753 t_modules/t_main.py:14764
-msgid "Substitute Search..."
-msgstr "Cari Pengganti..."
+msgid "Substitute Search…"
+msgstr "Cari Pengganti…"
 
 #: t_modules/t_main.py:14754 t_modules/t_main.py:14765
 msgid "Paste Lyrics"
@@ -489,8 +489,8 @@ msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr "Sepertinya folder ini bukan milik satu album manapun, maaf"
 
 #: t_modules/t_main.py:14916
-msgid "Looking up MusicBrainz ID..."
-msgstr "Mencari MusicBrainz ID..."
+msgid "Looking up MusicBrainz ID…"
+msgstr "Mencari MusicBrainz ID…"
 
 #: t_modules/t_main.py:14980
 msgid "Cover art downloaded from fanart.tv"
@@ -574,8 +574,8 @@ msgid "Are you sure you want to delete playlist: %s?"
 msgstr "Kamu yakin ingin menghapus daftar putar: %s?"
 
 #: t_modules/t_main.py:15881
-msgid "Rescanning folders..."
-msgstr "Memindai ulang folder..."
+msgid "Rescanning folders…"
+msgstr "Memindai ulang folder…"
 
 #: t_modules/t_main.py:16201 t_modules/t_main.py:16213
 msgid "Playlist is locked"
@@ -613,10 +613,10 @@ msgstr ""
 
 #: t_modules/t_main.py:17139
 msgid ""
-"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+"You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Kamu menghapus atau mengedit perilaku ini dengan membuka \"Lain-lain ...\"> "
-"\"Edit generator ...\""
+"Kamu menghapus atau mengedit perilaku ini dengan membuka \"Lain-lain …\"> "
+"\"Edit generator …\""
 
 #: t_modules/t_main.py:17143 t_modules/t_main.py:20976
 #: t_modules/t_main.py:20979
@@ -685,8 +685,8 @@ msgid "Target folder could not be found"
 msgstr "Folder target tidak dapat ditemukan"
 
 #: t_modules/t_main.py:17279
-msgid "Deleting folders..."
-msgstr "Menghapus folder..."
+msgid "Deleting folders…"
+msgstr "Menghapus folder…"
 
 #: t_modules/t_main.py:17298 t_modules/t_main.py:17363
 msgid "Copying files to device"
@@ -766,8 +766,8 @@ msgid "Toggle Breaks"
 msgstr "Toggle Lirik"
 
 #: t_modules/t_main.py:17468
-msgid "Edit Generator..."
-msgstr "Sunting Generator..."
+msgid "Edit Generator…"
+msgstr "Sunting Generator…"
 
 #: t_modules/t_main.py:17469
 msgid "Engage Gallery Quick Add"
@@ -1043,8 +1043,8 @@ msgid "Edit with "
 msgstr "Edit dengan "
 
 #: t_modules/t_main.py:19627
-msgid "Lyrics..."
-msgstr "Lirik..."
+msgid "Lyrics…"
+msgstr "Lirik…"
 
 #: t_modules/t_main.py:19730
 #, fuzzy
@@ -1572,7 +1572,7 @@ msgstr "Transkode Semua"
 #: t_modules/t_main.py:25808 t_modules/t_main.py:44163
 #, fuzzy
 msgid "Lyrics"
-msgstr "Lirik..."
+msgstr "Lirik…"
 
 #: t_modules/t_main.py:25809
 msgid "Accounts"
@@ -1961,12 +1961,12 @@ msgstr "Error membuat playlist Spotify"
 
 #: t_modules/t_main.py:26979
 #, fuzzy
-msgid "Importing Spotify playlists..."
+msgid "Importing Spotify playlists…"
 msgstr "Error membuat playlist Spotify"
 
 #: t_modules/t_main.py:26987
 #, fuzzy
-msgid "Import single user playlist..."
+msgid "Import single user playlist…"
 msgstr "Error membuat playlist Spotify"
 
 #: t_modules/t_main.py:27002
@@ -2172,11 +2172,11 @@ msgstr "Membatalkan Sinkronisasi"
 
 #: t_modules/t_main.py:27548
 #, fuzzy
-msgid "Stopping..."
-msgstr "Mencari..."
+msgid "Stopping…"
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:27554
-msgid "Right click tab > Misc... > Set as sync playlist"
+msgid "Right click tab > Misc… > Set as sync playlist"
 msgstr ""
 
 #: t_modules/t_main.py:27554
@@ -2198,7 +2198,7 @@ msgid "Open output folder"
 msgstr "Buka Folder"
 
 #: t_modules/t_main.py:27577 t_modules/t_main.py:27578
-msgid "Sync..."
+msgid "Sync…"
 msgstr ""
 
 #: t_modules/t_main.py:27586
@@ -2301,8 +2301,8 @@ msgstr "Menghasilkan…"
 
 #: t_modules/t_main.py:28125
 #, fuzzy
-msgid "Generating..."
-msgstr "Sunting Generator..."
+msgid "Generating…"
+msgstr "Sunting Generator…"
 
 #: t_modules/t_main.py:28133
 #, fuzzy
@@ -2315,8 +2315,8 @@ msgstr ""
 
 #: t_modules/t_main.py:28158 t_modules/t_main.py:28159
 #, fuzzy
-msgid "Chart generator..."
-msgstr "Sunting Generator..."
+msgid "Chart generator…"
+msgstr "Sunting Generator…"
 
 #: t_modules/t_main.py:28167 t_modules/t_main.py:28208
 #, fuzzy
@@ -2428,8 +2428,8 @@ msgstr ""
 
 #: t_modules/t_main.py:29626
 #, fuzzy
-msgid "Buffering... "
-msgstr "Mencari..."
+msgid "Buffering… "
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:29741
 msgid "There are currently no connected clients"
@@ -2511,7 +2511,7 @@ msgstr "Akhir playlist"
 #: t_modules/t_main.py:33190
 #, fuzzy
 msgid "Search Tag"
-msgstr "Mencari..."
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:33191
 #, fuzzy
@@ -2530,7 +2530,7 @@ msgstr ""
 #: t_modules/t_main.py:33487
 #, fuzzy
 msgid "Search"
-msgstr "Mencari..."
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:33494 t_modules/t_main.py:33498
 msgid "Get Top Voted"
@@ -2555,8 +2555,8 @@ msgstr "Siarkan Ini"
 
 #: t_modules/t_main.py:33680
 #, fuzzy
-msgid "Connecting..."
-msgstr "Mencari..."
+msgid "Connecting…"
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:33683
 msgid "Failed to connect!"
@@ -2616,7 +2616,7 @@ msgid "Visit Website"
 msgstr ""
 
 #: t_modules/t_main.py:34824
-msgid "View..."
+msgid "View…"
 msgstr ""
 
 #: t_modules/t_main.py:34842
@@ -2644,7 +2644,7 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Gambar sampul diunduh dari fanart.tv"
 
 #: t_modules/t_main.py:35259 t_modules/t_main.py:35394
-msgid "Downloading data..."
+msgid "Downloading data…"
 msgstr ""
 
 #: t_modules/t_main.py:35621
@@ -2658,16 +2658,16 @@ msgstr ""
 
 #: t_modules/t_main.py:35626
 #, fuzzy
-msgid "Loading Artist List..."
+msgid "Loading Artist List…"
 msgstr "Daftar Artis"
 
 #: t_modules/t_main.py:35628
-msgid "Busy..."
+msgid "Busy…"
 msgstr ""
 
 #: t_modules/t_main.py:35838
 #, fuzzy
-msgid "Loading Folder Tree..."
+msgid "Loading Folder Tree…"
 msgstr "Pindahkan Folder Pemutaran Di Sini"
 
 #: t_modules/t_main.py:35846 t_modules/t_main.py:35862
@@ -2707,17 +2707,17 @@ msgstr ""
 
 #: t_modules/t_main.py:37292 t_modules/t_main.py:37529
 #, fuzzy
-msgid "Looking up..."
-msgstr "Mencari MusicBrainz ID..."
+msgid "Looking up…"
+msgstr "Mencari MusicBrainz ID…"
 
 #: t_modules/t_main.py:37336
-msgid "Cooldown..."
+msgid "Cooldown…"
 msgstr ""
 
 #: t_modules/t_main.py:37351
 #, fuzzy
-msgid "Loading..."
-msgstr "Mencari..."
+msgid "Loading…"
+msgstr "Mencari…"
 
 #: t_modules/t_main.py:37521
 #, fuzzy
@@ -2739,7 +2739,7 @@ msgid "Clear Bio"
 msgstr "Bersihkan"
 
 #: t_modules/t_main.py:38109
-msgid "Edit..."
+msgid "Edit…"
 msgstr ""
 
 #: t_modules/t_main.py:38440

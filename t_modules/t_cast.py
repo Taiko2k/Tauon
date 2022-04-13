@@ -73,7 +73,7 @@ def enc(tauon):
                     pctl.broadcastCommandReady = False
 
                     if command == "encstop":
-                        # print("Stopping broadcast...")
+                        # print("Stopping broadcast…")
                         pctl.broadcast_active = False
                         time.sleep(1)
                         self.decoder.terminate()
@@ -96,7 +96,7 @@ def enc(tauon):
                         pctl.broadcast_time = 0
 
                     if command == "encstart":
-                        # print("Start broadcast...")
+                        # print("Start broadcast…")
                         target = pctl.target_open
                         # print(f"URI = {target}")
                         pctl.broadcast_active = True
@@ -173,7 +173,7 @@ def enc(tauon):
                             break
 
                     if not data:
-                        #print("No more decoded data...")
+                        #print("No more decoded data…")
                         time.sleep(0.01)
 
                     # Push data into encoder

@@ -177,7 +177,7 @@ class Jellyfin():
         self.scanning = True
         self.gui.to_got = 0
 
-        print("Prepare for Jellyfin library import...")
+        print("Prepare for Jellyfin library import…")
 
         if not self.connected or not self.accessToken:
             self._authenticate()
@@ -196,7 +196,7 @@ class Jellyfin():
             if track.is_network and track.file_ext == "JELY":
                 existing[track.url_key] = track_id
 
-        print("Get items...")
+        print("Get items…")
 
         try:
             response = requests.get(
@@ -218,7 +218,7 @@ class Jellyfin():
 
         if response.status_code == 200:
 
-            print("Connection successful, soring items...")
+            print("Connection successful, soring items…")
 
             # filter audio items only
             audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
