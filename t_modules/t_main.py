@@ -43128,7 +43128,7 @@ while pctl.running:
                                         drawn_art = gall_ren.render(pctl.g(default_playlist[p]), (x + xx, y + xx), size=size, force_offset=0)
                                         if not drawn_art:
                                             g = 50 + round(100 / albs) * i
-                                            ddt.rect((x + xx, y + xx, size, size), [g, g, g, 255])
+                                            ddt.rect((x + xx, y + xx, size, size), [g, g, g, 100])
                                         drawn_art = True
                                         i += 1
 
