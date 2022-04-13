@@ -32753,49 +32753,53 @@ class StandardPlaylist:
             if type == 1:
 
                 # Is type ALBUM TITLE
-
+                album_artist_mode = False
+                date = ""
                 line = tr.parent_folder_name
 
+                # Use folder name if mixed/singles?
+                if len(default_playlist) > track_position + 1 and pctl.g(default_playlist[track_position + 1]).album != tr.album and \
+                        pctl.g(default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
+                    line = tr.parent_folder_name
+                else:
 
-                album_artist_mode = False
-                if tr.album_artist != "" and tr.album != "":
-                    line = tr.album_artist + " - " + tr.album
+                    if tr.album_artist != "" and tr.album != "":
+                        line = tr.album_artist + " - " + tr.album
 
-                    if prefs.left_align_album_artist_title:
-                        album_artist_mode = True
+                        if prefs.left_align_album_artist_title:
+                            album_artist_mode = True
+                            line = tr.album
+
+                    if len(line) < 6 and "CD" in line:
                         line = tr.album
 
-                if len(line) < 6 and "CD" in line:
-                    line = tr.album
-
-                date = ""
-                if prefs.append_date and year_search.search(tr.date):
-                    date = "(" + d_date_display(tr) + ")"
+                    if prefs.append_date and year_search.search(tr.date):
+                        date = "(" + d_date_display(tr) + ")"
 
 
-                if line.endswith(")"):
-                    b = line.split("(")
-                    if len(b) > 1 and len(b[1]) <= 11:
+                    if line.endswith(")"):
+                        b = line.split("(")
+                        if len(b) > 1 and len(b[1]) <= 11:
 
-                        match = year_search.search(b[1])
+                            match = year_search.search(b[1])
 
-                        if match:
-                            line = b[0]
-                            date = "(" + b[1]
+                            if match:
+                                line = b[0]
+                                date = "(" + b[1]
 
-                elif line.startswith("("):
+                    elif line.startswith("("):
 
-                    b = line.split(")")
-                    if len(b) > 1 and len(b[0]) <= 11:
+                        b = line.split(")")
+                        if len(b) > 1 and len(b[0]) <= 11:
 
-                        match = year_search.search(b[0])
+                            match = year_search.search(b[0])
 
-                        if match:
-                            line = b[1]
-                            date = b[0] + ")"
+                            if match:
+                                line = b[1]
+                                date = b[0] + ")"
 
-                if "(" in line and year_search.search(line):
-                    date = ""
+                    if "(" in line and year_search.search(line):
+                        date = ""
 
                 qq = 0
 
@@ -43096,7 +43100,7 @@ while pctl.running:
                                             ones += 1
                                     if tr.artist != last_artist:
                                         artists += 1
-                                if s > 1 or ones > 1:
+                                if s > 2 or ones > 2:
                                     singles = True
 
                                 # Draw blank back colour
