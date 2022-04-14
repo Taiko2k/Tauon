@@ -41,6 +41,7 @@
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
 #include "kissfft/kiss_fftr.h"
+#include "wavpack/wavpack.h"
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -193,6 +194,7 @@ enum decoder_types {
     WAVE,
     MPT,
     FEED,
+    WAVPACK,
 };
 
 enum result_status_enum {
@@ -253,6 +255,12 @@ ao_sample_format format;
 
 SRC_DATA src_data;
 SRC_STATE *src;
+
+// wavpack -----------------------------------
+
+WavpackContext *wpc;
+int wp_bit = 0;
+int wp_float = 0;
 
 // kiss fft -----------------------------------------------------------
 
@@ -535,6 +543,49 @@ void wave_close() {
     fclose(wave_file);
 }
 
+void read_to_buffer_24in32_fs(int32_t src[], int n_samples){
+    // full samples version
+    int i = 0;
+    int f = 0;
+
+    // Convert int16 to float
+    while (f < n_samples) {
+        re_in[f * 2] = (src[i]) / 8388608.0;
+        if (src_channels == 1) {
+            re_in[(f * 2) + 1] = re_in[f * 2];
+            i += 1;
+        } else {
+            re_in[(f * 2) + 1] = (src[i + 1]) / 8388608.0;
+            i += 2;
+        }
+
+        f++;
+    }
+
+    resample_to_buffer(f);
+}
+
+void read_to_buffer_16in32_fs(int32_t src[], int n_samples){
+    // full samples version
+    int i = 0;
+    int f = 0;
+
+    // Convert int16 to float
+    while (f < n_samples) {
+        re_in[f * 2] = (src[i]) / 32768.0;
+        if (src_channels == 1) {
+            re_in[(f * 2) + 1] = re_in[f * 2];
+            i += 1;
+        } else {
+            re_in[(f * 2) + 1] = (src[i + 1]) / 32768.0;
+            i += 2;
+        }
+
+        f++;
+    }
+
+    resample_to_buffer(f);
+}
 
 void read_to_buffer_char16_resample(char src[], int n_bytes) {
 
@@ -649,7 +700,6 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
         }
         buff_cycle();
     }
-
 }
 
 // FLAC related ---------------------------------------------------------------
@@ -808,6 +858,9 @@ void stop_decoder() {
         case FLAC:
             FLAC__stream_decoder_finish(dec);
             break;
+        case WAVPACK:
+            WavpackCloseFile(wpc);
+            break;
         case MPG:
             mpg123_close(mh);
             break;
@@ -942,6 +995,9 @@ void decode_seek(int abs_ms, int sample_rate) {
         case VORBIS:
             ov_pcm_seek(&vf, (ogg_int64_t) sample_rate * (abs_ms / 1000.0));
             break;
+        case WAVPACK:
+            WavpackSeekSample64(wpc, (int64_t) sample_rate * (abs_ms / 1000.0));
+            break;
         case MPG:
             mpg123_seek(mh, (int) sample_rate * (abs_ms / 1000.0), SEEK_SET);
             break;
@@ -1056,6 +1112,9 @@ int load_next() {
     } else if (memcmp(peak, "TTA1", 4) == 0) {
         codec = FFMPEG;
         //printf("Detected tta\n");
+    } else if (memcmp(peak, "wvpk", 4) == 0) {
+        codec = WAVPACK;
+        printf("Detected wavpack\n");
     } else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
         codec = MPG;
         char peak2[10000];
@@ -1075,8 +1134,7 @@ int load_next() {
             strcmp(ext, ".ape") == 0 || strcmp(ext, ".APE") == 0 ||
             strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
             strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
-            strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
-            strcmp(ext, ".wv") == 0 || strcmp(ext, ".WV") == 0
+            strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0
                             )
         ) codec = FFMPEG;
 
@@ -1102,6 +1160,9 @@ int load_next() {
         }
         if (strcmp(ext, ".opus") == 0 || strcmp(ext, ".OPUS") == 0) {
             codec = OPUS;
+        }
+        if (strcmp(ext, ".wv") == 0 || strcmp(ext, ".WV") == 0) {
+            codec = WAVPACK;
         }
     }
 
@@ -1280,6 +1341,37 @@ int load_next() {
 
             break;
 
+        case WAVPACK:
+            wpc = WavpackOpenFileInput(loaded_target_file, NULL, OPEN_WVC | OPEN_2CH_MAX, 0);
+            if (wpc == NULL) {
+                printf("pa: Error loading wavpak file\n");
+                WavpackCloseFile(wpc);
+                return 1;
+            }
+            src_channels = WavpackGetReducedChannels(wpc);
+            if (src_channels != 2){
+                printf("pa: wavpak mono not implemented\n");
+                WavpackCloseFile(wpc);
+                return 1;
+            }
+            sample_rate_src = WavpackGetSampleRate(wpc);
+            wp_bit = WavpackGetBitsPerSample(wpc);
+            if (! (wp_bit == 16 || wp_bit == 24)){
+                printf("pa: wavpak bit depth not supported\n");
+                WavpackCloseFile(wpc);
+                return 1;
+            }
+            wp_float = 0;
+            if (WavpackGetMode(wpc) & MODE_FLOAT){
+                wp_float = 1;
+                printf("pa: wavpak float mode not implemented");
+                return 1;
+            }
+
+            current_length_count = WavpackGetNumSamples(wpc);
+            return 0;
+            break;
+
         case MPG:
 
             mpg123_open(mh, loaded_target_file);
@@ -1456,6 +1548,17 @@ void pump_decode() {
         if (done == 0) {
             decoder_eos();
         }
+
+    } else if (codec == WAVPACK) {
+        int samples;
+        int32_t buffer[4 * 1024 * 2];
+        samples = WavpackUnpackSamples(wpc, buffer, 1024);
+        if (wp_bit == 16){
+            read_to_buffer_16in32_fs(buffer, samples);
+        } else if (wp_bit == 24){
+            read_to_buffer_24in32_fs(buffer, samples);
+        }
+        samples_decoded += samples;
 
     } else if (codec == MPG) {
         // MP3 decoding
