@@ -294,9 +294,9 @@ char ffm_buffer[2048];
 
 void start_ffmpeg(char uri[], int start_ms) {
     if (start_ms > 0)
-        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_f32le -f f32le -ac 2 -ar %d - ",
+        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
                 start_ms, uri, sample_rate_out);
-    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_f32le -f f32le -ac 2 -ar %d - ", uri, sample_rate_out);
+    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
 
     ffm = popen(exe_string, "r");
     if (ffm == NULL) {
@@ -712,8 +712,6 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
             // Read and handle 24bit audio
             if (frame->header.bits_per_sample == 24) {
 
-                // Here we downscale 24bit to 16bit. Dithering is appied to reduce quantisation noise.
-
                 bfl[high] = (buffer[0][i]) / 8388608.0;
 
                 if (frame->header.channels == 1) {
@@ -995,6 +993,7 @@ int load_next() {
             sample_change_byte = high;
             want_sample_rate = sample_rate_out;
         }
+        sample_rate_src = sample_rate_out;
         pthread_mutex_unlock(&buffer_mutex);
         decoder_allocated = 1;
         buffering = 1;
@@ -1473,7 +1472,6 @@ void pump_decode() {
         }
     } else if (codec == FFMPEG) {
 
-        int i = 0;
         int b = 0;
         int done = 0;
 
@@ -1506,18 +1504,19 @@ void pump_decode() {
         }
 
         pthread_mutex_lock(&buffer_mutex);
-        while (i < b) {
-
-            memcpy(&bfl[high], &ffm_buffer[i], 4);
-            memcpy(&bfr[high], &ffm_buffer[i + 4], 4);
-
-            if (fade_fill > 0) {
-                fade_fx();
-            }
-            high++;
-            i += 8;
-        }
-        buff_cycle();
+        read_to_buffer_char16(ffm_buffer, b);
+//        while (i < b) {
+//
+//            memcpy(&bfl[high], &ffm_buffer[i], 4);
+//            memcpy(&bfr[high], &ffm_buffer[i + 4], 4);
+//
+//            if (fade_fill > 0) {
+//                fade_fx();
+//            }
+//            high++;
+//            i += 8;
+//        }
+//        buff_cycle();
         pthread_mutex_unlock(&buffer_mutex);
         if (done == 1) {
             printf("pa: FFMPEG has finished\n");
@@ -2335,18 +2334,7 @@ int feed_ready(int request_size){
 void feed_raw(int len, char* data){
     if (feed_ready(len) == 0) return;
     pthread_mutex_lock(&buffer_mutex);
-    int i = 0;
-    int b = len;
-    while (i < b) {
-        memcpy(&bfl[high], &data[i], 4);
-        memcpy(&bfr[high], &data[i + 4], 4);
-        if (fade_fill > 0) {
-            fade_fx();
-        }
-        high++;
-        i += 8;
-    }
-    buff_cycle();
+    read_to_buffer_char16(data, len);
     pthread_mutex_unlock(&buffer_mutex);
 }
 

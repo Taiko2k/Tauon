@@ -552,6 +552,7 @@ def player4(tauon):
                 else:
                     if state == 1 and prefs.use_jump_crossfade:
                         fade = 1
+
                     aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
                     loaded_track = target_object
                     pctl.playing_time = pctl.jump_time
