@@ -1349,11 +1349,6 @@ int load_next() {
                 return 1;
             }
             src_channels = WavpackGetReducedChannels(wpc);
-            if (src_channels != 2){
-                printf("pa: wavpak mono not implemented\n");
-                WavpackCloseFile(wpc);
-                return 1;
-            }
             sample_rate_src = WavpackGetSampleRate(wpc);
             wp_bit = WavpackGetBitsPerSample(wpc);
             if (! (wp_bit == 16 || wp_bit == 24)){
