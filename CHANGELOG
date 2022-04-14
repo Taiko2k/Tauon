@@ -5,6 +5,7 @@ v7.1.4
 
  - Added cache system option for local files
  - Added setting to restart on back to UI settings
+ - Added singles folder detection and gallery display
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
  - Tweaked play action to resume radio station
