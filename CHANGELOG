@@ -8,6 +8,7 @@ v7.1.4
  - Added singles folder detection and gallery display
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
+ - Fixed playing track position when items from playlist are deleted
  - Tweaked play action to resume radio station
  - Restored Spotify button
  - [Phazor] Fixed audio stall on track jump with delayed IO
@@ -15,6 +16,7 @@ v7.1.4
  - [Phazor] Added output-samplerate config setting
  - [Phazor] Added resample quality config setting
  - [Phazor] Added setting to always use FFMPEG
+ - [Phazor] Added native Wavpack decode
  - Removed GStreamer backend
 
 v7.1.3
