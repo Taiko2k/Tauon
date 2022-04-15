@@ -10937,10 +10937,10 @@ class GallClass:
 
                     if im.mode != "RGB":
                         im = im.convert("RGB")
-                    im.thumbnail((size, size), Image.ANTIALIAS)
+                    im.thumbnail((size, size), Image.Resampling.LANCZOS)
 
                     im.save(g, 'BMP')
-                    
+
                     if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
                         im.save(os.path.join(g_cache_dir, img_name + '.jpg'), 'JPEG', quality=95)
 
@@ -11103,7 +11103,7 @@ class ThumbTracks:
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail((1000, 1000), Image.ANTIALIAS)
+        im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
 
         im.save(t_path, 'JPEG')
 
@@ -11627,7 +11627,7 @@ class AlbumArt():
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail(size, Image.ANTIALIAS)
+        im.thumbnail(size, Image.Resampling.LANCZOS)
         buff = io.BytesIO()
         im.save(buff, format="JPEG")
         sss = base64.b64encode(buff.getvalue())
@@ -11787,7 +11787,7 @@ class AlbumArt():
             im = im.convert("RGB")
 
         if not zoom:
-            im.thumbnail(size, Image.ANTIALIAS)
+            im.thumbnail(size, Image.Resampling.LANCZOS)
         else:
             w, h = im.size
             if w != h:
@@ -11799,7 +11799,7 @@ class AlbumArt():
                     (h + m) / 2,
                 ))
 
-            im = im.resize(size, Image.ANTIALIAS)
+            im = im.resize(size, Image.Resampling.LANCZOS)
 
         if not save_path:
             g = io.BytesIO()
@@ -11917,9 +11917,9 @@ class AlbumArt():
 
                 if prefs.zoom_art:
                     new_size = fit_box(o_size, box)
-                    im = im.resize(new_size, Image.ANTIALIAS)
+                    im = im.resize(new_size, Image.Resampling.LANCZOS)
                 else:
-                    im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
+                    im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
                 im.save(g, 'BMP')
                 g.seek(0)
 
@@ -11927,7 +11927,7 @@ class AlbumArt():
             if track == pctl.playing_object() and gui.theme_name == "Carbon" and track.parent_folder_path != colours.last_album:
 
                 # Find main image colours
-                im.thumbnail((50, 50), Image.ANTIALIAS)
+                im.thumbnail((50, 50), Image.Resampling.LANCZOS)
                 pixels = im.getcolors(maxcolors=2500)
                 pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
                 colour = pixels[0][1]
@@ -11962,7 +11962,7 @@ class AlbumArt():
 
                 colours = copy.deepcopy(colours)
 
-                im.thumbnail((50, 50), Image.ANTIALIAS)
+                im.thumbnail((50, 50), Image.Resampling.LANCZOS)
                 pixels = im.getcolors(maxcolors=2500)
                 # print(pixels)
                 pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
@@ -25164,9 +25164,9 @@ def worker1():
 
                 if to_got % 100 == 0:
                     gui.update = 1
-                    
+
                 if not prefs.remove_network_tracks and track.file_ext == "SPTY":
-                    
+
                     for playlist in pctl.multi_playlist:
                         if index in playlist[2]:
                             break
@@ -27245,7 +27245,7 @@ class Over:
             prefs.maloja_key = text_maloja_key.text.strip()
 
             y += round(35 * gui.scale)
- 
+
             if self.button(x, y, _("Test connectivity")):
 
                 if not prefs.maloja_url or not prefs.maloja_key:
@@ -27568,7 +27568,7 @@ class Over:
             prefs.koel_server_url = text_koel_ser.text
 
             y += round(40 * gui.scale)
-            
+
             self.button(x, y, _("Import music to playlist"), koel_get_album_thread)
 
 
@@ -29042,7 +29042,7 @@ class Over:
 
                 if coll(box2):
                     ddt.rect(box, tab_over)
-                    
+
                 yy = box[1] + 4 * gui.scale
 
                 if current_tab == self.tab_active:
@@ -33599,7 +33599,7 @@ class RadioBox:
         self.click_point = (0, 0)
 
         self.song_key = ""
-        
+
         self.drag = None
 
         self.tab = 0
@@ -35281,13 +35281,13 @@ class ArtistList:
 
                 im = Image.open(filepath)
 
-                im.thumbnail((self.thumb_size, self.thumb_size), Image.ANTIALIAS)
+                im.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
 
                 # bigsize = (im.size[0] * 4, im.size[1] * 4)
                 # mask = Image.new('L', bigsize, 0)
                 # draw = ImageDraw.Draw(mask)
                 # draw.ellipse((0, 0) + bigsize, fill=255)
-                # mask = mask.resize(im.size, Image.ANTIALIAS)
+                # mask = mask.resize(im.size, Image.Resampling.LANCZOS)
                 # im.putalpha(mask)
 
                 im.save(g, 'PNG')
@@ -35684,7 +35684,7 @@ class ArtistList:
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
         if prefs.artist_list_style == 2:
             area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 1)
-        
+
         fields.add(area)
 
         light_mode = False
@@ -36244,13 +36244,13 @@ class TreeView:
                 elif right_click:
 
                     if item[3]:
-                        
+
                         for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
                             if msys:
                                 if pctl.g(id).fullpath.startswith(target.lstrip("/")):
                                     folder_tree_menu.activate(in_reference=id)
                                     self.menu_selected = full_folder_path
-                                    break                            
+                                    break
                             else:
                                 if pctl.g(id).fullpath.startswith(target):
                                     folder_tree_menu.activate(in_reference=id)
@@ -36293,7 +36293,7 @@ class TreeView:
                             else:
                                 if pctl.g(id).fullpath.startswith(target):
                                     track_id = id
-                                    break                            
+                                    break
                         else:  # Fallback to folder name if full-path not found (hack for networked items)
                             for p, id in enumerate(default_playlist):
                                 if pctl.g(id).parent_folder_name == item[0]:
@@ -37491,7 +37491,7 @@ class PictureRender:
 
         im = Image.open(path)
         if box_size is not None:
-            im.thumbnail((box_size, box_size), Image.ANTIALIAS)
+            im.thumbnail((box_size, box_size), Image.Resampling.LANCZOS)
 
         im.save(g, 'BMP')
         g.seek(0)
@@ -38319,7 +38319,7 @@ class RadioThumbGen:
                     prefs.radio_thumb_bans.append(station.get("icon"))
                 continue
 
-            im = im.resize((size, size), Image.ANTIALIAS)
+            im = im.resize((size, size), Image.Resampling.LANCZOS)
             g = io.BytesIO()
             g.seek(0)
             im.save(g, 'PNG')

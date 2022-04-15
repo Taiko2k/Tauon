@@ -72,7 +72,7 @@ class QuickThumbnail:
         g = io.BytesIO()
         g.seek(0)
         im = Image.open(f)
-        im.thumbnail((w, h), Image.ANTIALIAS)
+        im.thumbnail((w, h), Image.Resampling.LANCZOS)
         im.save(g, 'PNG')
         g.seek(0)
         wop = rw_from_object(g)
