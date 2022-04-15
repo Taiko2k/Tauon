@@ -19172,12 +19172,12 @@ def del_selected(force_delete=False):
         if item > len(default_playlist) - 1:
             return
 
-        li.append((item, default_playlist[item]))
+        li.append((item, default_playlist[item])) # take note for force delete
 
-        # # Remove from playlist folder import list
-        # tr = pctl.g(default_playlist[item])
-        # if tr.parent_folder_path in pctl.multi_playlist[pctl.active_playlist_viewing][7]:
-        #     pctl.multi_playlist[pctl.active_playlist_viewing][7].remove(tr.parent_folder_path)
+        # Correct track playing position
+        if pctl.active_playlist_playing == pctl.active_playlist_viewing:
+            if 0 < pctl.playlist_playing_position + 1 > item:
+                pctl.playlist_playing_position -= 1
 
         del default_playlist[item]
 
