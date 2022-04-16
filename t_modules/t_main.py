@@ -21487,9 +21487,9 @@ def clean_db_fast():
     gui.suggest_clean_db = False
 
 def clean_db_deco():
-    return [colours.menu_text, [30, 150, 120, 255], _("Clean Database")]
+    return [colours.menu_text, [30, 150, 120, 255], _("Clean Database!")]
 
-x_menu.add(_("Clean Database"), clean_db_fast, clean_db_deco, show_test=clean_db_show_test)
+x_menu.add(_("Clean Database!"), clean_db_fast, clean_db_deco, show_test=clean_db_show_test)
 
 
 # x_menu.add(_("Internet Radio…"), activate_radio_box)
