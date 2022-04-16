@@ -3184,7 +3184,7 @@ for pl in multi_playlist:
     keys -= set(pl[2])
 if len(keys) > 5000:
     gui.suggest_clean_db = True
-#print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
+# print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
 
 # temporary
@@ -26675,7 +26675,7 @@ class Over:
             prefs.precache = self.toggle_square(x, y, prefs.precache, _("Cache local files (for smb/nfs)"))
 
 
-            y += round(57 * gui.scale)
+            y += round(30 * gui.scale)
             ddt.text((x, y), "If you experience cracking audio, try ", colours.box_text_label, 12)
             y += round(17 * gui.scale)
             ddt.text((x, y), "increase output buffer.", colours.box_text_label, 12)
