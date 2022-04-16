@@ -126,8 +126,8 @@ class StreamEnc:
             return
         self.pump_running = True
 
-        rate = str(48000)
-        cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_f32le", "-f", "f32le", "-ac", "2", "-ar",
+        rate = str(self.tauon.prefs.samplerate)
+        cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",
                rate, "-"]
 
         decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
