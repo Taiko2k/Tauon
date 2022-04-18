@@ -10,6 +10,7 @@ v7.2.0
  - Fixed genre search not detecting semicolon deliminator
  - Fixed playing track position when items from playlist are deleted
  - Tweaked play action to resume radio station
+ - Tweaked config file formatting
  - Restored Spotify button
  - [Phazor] Fixed audio stall on track jump with delayed IO
  - [Phazor] Enabled "cross fade time" setting
