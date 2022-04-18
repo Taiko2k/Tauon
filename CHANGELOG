@@ -17,6 +17,7 @@ v7.2.0
  - [Phazor] Added resample quality config setting
  - [Phazor] Added setting to always use FFMPEG
  - [Phazor] Added native Wavpack decode
+ - [Phazor] Added volume curve setting
  - Removed GStreamer backend
 
 v7.1.3

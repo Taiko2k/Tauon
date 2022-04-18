@@ -162,6 +162,7 @@ char config_output_sink[256]; // 256 just a conservative guess
 int config_fade_duration = 700;
 int config_resample_quality = 2;
 int config_always_ffmpeg = 0;
+int config_volume_power = 2;
 
 unsigned int test1 = 0;
 
@@ -1786,8 +1787,8 @@ void *out_thread(void *thread_id) {
 
                 } // End amp
 
-                // Apply final volume adjustment (logarithmic)
-                float final_vol = (gate * volume_on) * (gate * volume_on);
+                // Apply final volume adjustment
+                float final_vol = pow((gate * volume_on), config_volume_power);
                 l = l * final_vol;
                 r = r * final_vol;
 
@@ -2361,6 +2362,10 @@ void config_set_dev_name(char *device) {
     } else {
         strcpy(config_output_sink, device);
     }
+}
+
+void config_set_volume_power(int n){
+    config_volume_power = n;
 }
 
 float get_level_peak_l() {

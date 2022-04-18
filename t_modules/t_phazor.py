@@ -334,10 +334,15 @@ def player4(tauon):
         else:
             aud.config_set_dev_name(None)
 
+        if prefs.always_ffmpeg:
+            aud.config_set_always_ffmpeg(1)
+        if prefs.volume_power < 0 or prefs.volume_power > 10:
+            prefs.volume_power = 2
+        aud.config_set_volume_power(prefs.volume_power)
+
     aud.config_set_samplerate(prefs.samplerate)
     aud.config_set_resample_quality(prefs.resample)
-    if prefs.always_ffmpeg:
-        aud.config_set_always_ffmpeg(1)
+
 
 
     set_config()
