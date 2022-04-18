@@ -1514,6 +1514,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.samplerate = 48000
         self.resample = 1
+        self.volume_power = 2
 
 prefs = Prefs()
 
@@ -3717,6 +3718,7 @@ def save_prefs():
     cf.update_value("precache-local-files", prefs.precache)
     cf.update_value("cache-limit", prefs.cache_limit)
     cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
+    cf.update_value("volume-curve", prefs.volume_power)
     #cf.update_value("force-mono", prefs.mono)
     #cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     #cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -3846,7 +3848,7 @@ def load_prefs():
     cf.add_text("[audio]")
 
     #prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
-    prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "In s. Interval to seek when using shortcut. In seconds. Default is 15.")
+    prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval, "In s. Interval to seek when using keyboard shortcut. Default is 15.")
     #prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
     if prefs.pause_fade_time < 100:
@@ -3854,18 +3856,19 @@ def load_prefs():
     if prefs.pause_fade_time > 5000:
         prefs.pause_fade_time = 5000
 
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Jump crossfades must be enabled for this setting to take effect.")
+    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
 
     prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
-    prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate, "In hz. Default: 48000, alt: 44100. (applies on restart)")
+    prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate, "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
     prefs.resample = cf.sync_add("int", "resample-quality", prefs.resample, "0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
     if prefs.resample < 0 or prefs.resample > 4:
         prefs.resample = 1
     #prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
     prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB")
     prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache, "Cache files from local sources too. (Useful for mounted network drives)")
-    prefs.always_ffmpeg = cf.sync_add("bool", "always-ffmpeg", prefs.always_ffmpeg, "Prefer decoding using FFMPEG")
-    #prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "This is a placeholder setting and currently has no effect.")
+    prefs.always_ffmpeg = cf.sync_add("bool", "always-ffmpeg", prefs.always_ffmpeg, "Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
+    prefs.volume_power = cf.sync_add("int", "volume-curve", prefs.volume_power, "1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
+
     #prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
     # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
