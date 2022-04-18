@@ -1,4 +1,4 @@
-// PHAzOR - A high level audio playback library
+// PHAzOR - Audio playback module for Tauon Music Box
 //
 // Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
 //
@@ -73,22 +73,9 @@ void buff_reset(){
     watermark = high_mark;
 }
 
-// before writing
-
-//double get_time_ms() {
-//    struct timeval t;
-//    gettimeofday(&t, NULL);
-//    return (t.tv_sec + (t.tv_usec / 1000000.0)) * 1000.0;
-//}
-
 double t_start, t_end;
 
 int out_thread_running = 0; // bool
-
-//float buffl[BUFF_SIZE];
-//float buffr[BUFF_SIZE];
-//unsigned int buff_filled = 0;
-//unsigned int buff_base = 0;
 
 float fadefl[BUFF_SIZE];
 float fadefr[BUFF_SIZE];
@@ -355,7 +342,6 @@ void resample_to_buffer(int in_frames) {
     buff_cycle();
 
 }
-
 
 // WAV Decoder ----------------------------------------------------------------
 
