@@ -3652,7 +3652,15 @@ if db_version > 0:
         if prefs.radio_urls:
             radio_playlists[0]["items"].extend(prefs.radio_urls)
             prefs.radio_urls = []
-        prefs.show_nag = True
+        #prefs.show_nag = True
+
+    if db_version <= 64:
+        print("Updating database to version 65")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("\nescape Escape\n")
+
 #prefs.show_nag = True
 
 if playing_in_queue > len(QUE) - 1:
@@ -40574,7 +40582,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            64,  # Version, used for upgrading
+            65,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -41365,8 +41373,8 @@ while pctl.running:
                 key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:
                 key_del = True
-            elif event.key.keysym.sym == SDLK_ESCAPE:
-                key_esc_press = True
+            # elif event.key.keysym.sym == SDLK_ESCAPE:
+            #     key_esc_press = True
             elif event.key.keysym.sym == SDLK_RALT:
                 key_ralt = True
             elif event.key.keysym.sym == SDLK_LALT:
@@ -41808,6 +41816,9 @@ while pctl.running:
 
             if keymaps.test("toggle-broadcast"):
                 toggle_broadcast()
+
+            if keymaps.test("escape"):
+                key_esc_press = True
 
         if key_ctrl_down:
             gui.pl_update += 1
