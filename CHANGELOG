@@ -6,6 +6,7 @@ v7.2.0
  - Added cache system option for local files
  - Added setting to restart on back to UI settings
  - Added singles folder detection and gallery display
+ - Added escape key to keymaps file
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
  - Fixed playing track position when items from playlist are deleted
