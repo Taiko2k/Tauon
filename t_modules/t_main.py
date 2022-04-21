@@ -24064,10 +24064,12 @@ class NagBox:
                    colours.box_text_border)
         ddt.rect_a((x, y), (w, h), colours.message_box_bg)
 
-        if gui.level_2_click and not coll((x, y, w, h)) and core_timer.get() > 1.5:
-            prefs.show_nag = False
+        if gui.level_2_click and not coll((x, y, w, h)):
+            if core_timer.get() < 2.5:
+                self.wiggle_timer.set()
+            else:
+                prefs.show_nag = False
 
-            #self.wiggle_timer.set()
             gui.update += 1
 
         ddt.text_background_colour = colours.message_box_bg
@@ -24099,8 +24101,11 @@ class NagBox:
         y += round(20 * gui.scale)
         ddt.text((x, y), "supporting an independent open source project!", colours.message_box_text, 12)
 
-        y += round(10 * gui.scale)
+        y += round(20 * gui.scale)
 
+        link_pa = draw_linked_text((x, y), "If you prefer, I also have a https://www.patreon.com/taiko2k",
+                                   colours.message_box_text, 12, replace="patreon page.")
+        link_activate(x, y, link_pa, click=gui.level_2_click)
         # if draw.button("Nope!", x, y, press=gui.level_2_click):
         #     prefs.show_nag = False
         #     show_message("Oh... :( 💔")
