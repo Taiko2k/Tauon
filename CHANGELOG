@@ -6,6 +6,7 @@ v7.2.0
  - Added cache system option for local files
  - Added setting to restart on back to UI settings
  - Added singles folder detection and gallery display
+ - Added generator code 'px' to exclude contents of a playlist
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
  - Fixed playing track position when items from playlist are deleted
@@ -13,6 +14,7 @@ v7.2.0
  - Tweaked config file formatting
  - Restored Spotify button
  - [Phazor] Fixed audio stall on track jump with delayed IO
+ - [Phazor] Fixed delay/freeze on switching output device
  - [Phazor] Enabled "cross fade time" setting
  - [Phazor] Added output-samplerate config setting
  - [Phazor] Added resample quality config setting

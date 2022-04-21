@@ -322,7 +322,7 @@ def player4(tauon):
     cachement = Cachement()
     tauon.cachement = cachement
 
-    def set_config():
+    def set_config(set_device=False):
         aud.config_set_dev_buffer(prefs.device_buffer)
         aud.config_set_fade_duration(prefs.cross_fade_time)
         if prefs.phazor_device_selected != "Default":
@@ -333,6 +333,9 @@ def player4(tauon):
                 aud.config_set_dev_name(None)
         else:
             aud.config_set_dev_name(None)
+        if set_device:
+            aud.pause()
+            aud.resume()
 
         if prefs.always_ffmpeg:
             aud.config_set_always_ffmpeg(1)
@@ -342,8 +345,6 @@ def player4(tauon):
 
     aud.config_set_samplerate(prefs.samplerate)
     aud.config_set_resample_quality(prefs.resample)
-
-
 
     set_config()
 
@@ -405,6 +406,8 @@ def player4(tauon):
 
             if command == "reload":
                 set_config()
+            if command == "set-device":
+                set_config(set_device=True)
 
             if command == "url":
                 pctl.download_time = 0

@@ -17513,7 +17513,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             playlist = list(OrderedDict.fromkeys(playlist))
 
-        elif cm.startswith("s\""):
+
+        elif cm.startswith("s\"") or cm.startswith("px\""):
             pl_name = quote
             target = None
             for p in pctl.multi_playlist:
@@ -17530,12 +17531,16 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if target is None:
                 print(f"not found: {pl_name}")
                 print("Target playlist not found")
-                selections_searched += 1
+                if cm.startswith("s\""):
+                    selections_searched += 1
                 errors = "playlist"
                 continue
-            selections_searched += 1
-            selections.append(target)
-            #print(selections)
+
+            if cm.startswith("s\""):
+                selections_searched += 1
+                selections.append(target)
+            elif cm.startswith("px\""):
+                playlist[:] = [x for x in playlist if x not in target]
 
         else:
             errors = True
@@ -26738,7 +26743,8 @@ class Over:
                 i += 1
 
             if reload:
-                reload_backend()
+                pctl.playerCommand = "set-device"
+                pctl.playerCommandReady = True
 
 
     def reload_device(self, _):
