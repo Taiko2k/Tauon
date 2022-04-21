@@ -26656,9 +26656,9 @@ class Over:
         pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "lib/libphazor.so"))
         if not pha_detected:
             x += round(20 * gui.scale)
-            ddt.text((x, y - 25 * gui.scale), "PHAzOR not detected!", colour, 213)
+            ddt.text((x, y - 25 * gui.scale), "PHAzOR DLL not found!", colour, 213)
 
-        if prefs.backend == 4:
+        elif prefs.backend == 4:
 
             y = y0 + round(20 * gui.scale)
             x = x0 + 20 * gui.scale
