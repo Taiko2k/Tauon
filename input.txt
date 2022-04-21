@@ -50,6 +50,7 @@ shift-down Down Shift
 info-show I Ctrl
 info-playing P Ctrl
 
+escape Escape
 pageup PageUp
 pagedown PageDown
 
