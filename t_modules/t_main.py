@@ -24065,7 +24065,7 @@ class NagBox:
         ddt.rect_a((x, y), (w, h), colours.message_box_bg)
 
         if gui.level_2_click and not coll((x, y, w, h)):
-            if core_timer.get() < 2.5:
+            if core_timer.get() < 2:
                 self.wiggle_timer.set()
             else:
                 prefs.show_nag = False
@@ -24103,8 +24103,6 @@ class NagBox:
 
         y += round(20 * gui.scale)
 
-        link_pa = draw_linked_text((x, y), "If you prefer, I also have a https://www.patreon.com/taiko2k",
-                                   colours.message_box_text, 12, replace="patreon page.")
         link_activate(x, y, link_pa, click=gui.level_2_click)
         # if draw.button("Nope!", x, y, press=gui.level_2_click):
         #     prefs.show_nag = False
