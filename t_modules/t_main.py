@@ -26175,6 +26175,11 @@ def switch_rg_album(mode=0):
         return True if prefs.replay_gain == 2 else False
     prefs.replay_gain = 0 if prefs.replay_gain == 2 else 2
 
+def switch_rg_auto(mode=0):
+    if mode == 1:
+        return True if prefs.replay_gain == 3 else False
+    prefs.replay_gain = 0 if prefs.replay_gain == 3 else 3
+
 def toggle_jump_crossfade(mode=0):
     if mode == 1:
         return True if prefs.use_jump_crossfade else False
@@ -26537,6 +26542,7 @@ class Over:
         y += round(25 * gui.scale)
 
         self.toggle_square(x, y, switch_rg_off, _("Off"))
+        self.toggle_square(x + round(80 * gui.scale), y, switch_rg_auto, _("Auto"))
         y += round(22 * gui.scale)
         self.toggle_square(x, y, switch_rg_album, _("Preserve album dynamics"))
         y += round(22 * gui.scale)
