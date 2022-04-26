@@ -11229,7 +11229,7 @@ class ImageObject():
 
 class AlbumArt():
     def __init__(self):
-        self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif'}
+        self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif', "jxl", "JXL"}
         self.art_folder_names = {'art', 'scans', 'scan', 'booklet', 'images', 'image', 'cover',
                                  'covers', 'coverart', 'albumart', 'gallery', 'jacket', 'artwork',
                                  'bonus', 'bk', 'cover artwork', 'cover art'}
