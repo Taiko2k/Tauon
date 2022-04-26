@@ -8,6 +8,7 @@ v7.2.0
  - Added singles folder detection and gallery display
  - Added generator code 'px' to exclude contents of a playlist
  - Added escape key to keymaps file
+ - Added toggle mute to keymaps file
  - Added 'auto' mode for ReplayGain
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator

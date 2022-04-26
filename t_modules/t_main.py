@@ -3660,6 +3660,7 @@ if db_version > 0:
         if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\nescape Escape\n")
+                f.write("toggle-mute M Ctrl\n")
 
         prefs.show_nag = True
 
@@ -5236,6 +5237,15 @@ class PlayerCtl:
             tree_view_box.show_track(pctl.playing_object())
 
         return 0
+
+    def toggle_mute(self):
+        if pctl.player_volume > 0:
+            volume_store = pctl.player_volume
+            pctl.player_volume = 0
+        else:
+            pctl.player_volume = volume_store
+
+        pctl.set_volume()
 
     def set_volume(self, notify=True):
 
@@ -30470,13 +30480,7 @@ class BottomBarType1:
 
             if right_click and coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
                 if right_click:
-                    if pctl.player_volume > 0:
-                        volume_store = pctl.player_volume
-                        pctl.player_volume = 0
-                    else:
-                        pctl.player_volume = volume_store
-
-                    pctl.set_volume()
+                    pctl.toggle_mute()
 
             for bar in range(8):
 
@@ -42180,6 +42184,9 @@ while pctl.running:
                     else:
                         pctl.player_volume = 0
                     pctl.set_volume()
+
+                if keymaps.test("toggle-mute"):
+                    pctl.toggle_mute()
 
                 if keymaps.test("vol-up"):
                     pctl.player_volume += 3
