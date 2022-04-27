@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-01-20 23:52+0000\n"
+"PO-Revision-Date: 2022-04-27 06:10+0000\n"
 "Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1981 t_modules/t_main.py:1983
@@ -128,18 +128,17 @@ msgid "days"
 msgstr "jours"
 
 #: t_modules/t_main.py:7612
-#, fuzzy
 msgid "Scanning for Chromecasts..."
-msgstr "Réanalyse des dossiers…"
+msgstr "Recherche de Chromecasts…"
 
 #: t_modules/t_main.py:7613
+#, fuzzy
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Diffuser sur : %s"
 
 #: t_modules/t_main.py:7614
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Aucun résultat trouvé"
+msgstr "Aucun Chromecast trouvé"
 
 #: t_modules/t_main.py:7616
 msgid "Web server stopped."
@@ -306,31 +305,28 @@ msgid "with"
 msgstr "par"
 
 #: t_modules/t_main.py:14233
-#, fuzzy
 msgid "Export Playlist"
-msgstr "Exporter les statistiques de la liste de lecture"
+msgstr "Exporter la liste de lecture"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Enregistre le dossier"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Utiliser des chemins relatifs"
 
 #: t_modules/t_main.py:14258
-#, fuzzy
 msgid "Auto-export"
-msgstr "Arrêt automatique"
+msgstr "Export automatique"
 
 #: t_modules/t_main.py:14261 t_modules/t_main.py:14266
-#, fuzzy
 msgid "Export"
-msgstr "Exporter en M3U"
+msgstr "Exporter"
 
 #: t_modules/t_main.py:14275
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Le dossier n'existe pas"
 
 #: t_modules/t_main.py:14318
 msgid "Repeat OFF"
@@ -723,9 +719,8 @@ msgid "Append Playing"
 msgstr "Ajouter l'élément en cours de lecture"
 
 #: t_modules/t_main.py:17608
-#, fuzzy
 msgid "Export…"
-msgstr "Tri…"
+msgstr "Exporter…"
 
 #: t_modules/t_main.py:17611
 msgid "Misc…"
@@ -1197,9 +1192,8 @@ msgid "Broadcast This"
 msgstr "Diffuser"
 
 #: t_modules/t_main.py:20674
-#, fuzzy
 msgid "Chromecast This"
-msgstr "Diffuser"
+msgstr "Diffuser sur le Chromecast"
 
 #: t_modules/t_main.py:20709 t_modules/t_main.py:26503
 msgid "Off"
@@ -1316,9 +1310,8 @@ msgid "New Radio List"
 msgstr "Nouvelle liste de radio"
 
 #: t_modules/t_main.py:21490 t_modules/t_main.py:21492
-#, fuzzy
 msgid "Clean Database!"
-msgstr "Base de données…"
+msgstr "Effacer la base de données !"
 
 #: t_modules/t_main.py:21516
 msgid "Paste Spotify Playlist"
@@ -1714,16 +1707,17 @@ msgid "Use fade on track jump"
 msgstr "Utiliser le fondu lors du changement de piste"
 
 #: t_modules/t_main.py:26661
+#, fuzzy
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Redémarrer au début"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
-msgstr ""
+msgstr "La taille du cache fichiers du réseau"
 
 #: t_modules/t_main.py:26675
 msgid "Cache local files (for smb/nfs)"
-msgstr ""
+msgstr "Mettre les fichiers locaux en cache (pour smb/nfs)"
 
 #: t_modules/t_main.py:26683
 msgid "Output buffer"
@@ -1858,9 +1852,8 @@ msgid "Transcode folder"
 msgstr "Transcoder le dossier"
 
 #: t_modules/t_main.py:26917
-#, fuzzy
 msgid "Chromecast this"
-msgstr "Diffuser"
+msgstr "Diffuser sur le Chromecast"
 
 #: t_modules/t_main.py:26924
 msgid "Extract archives"
