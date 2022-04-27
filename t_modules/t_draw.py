@@ -26,6 +26,11 @@ import ctypes
 from ctypes import pointer
 import io
 from PIL import Image
+try:
+    from jxlpy import JXLImagePlugin
+    print("Found jxlpy for JPEG XL support")
+except:
+    pass
 
 system = "linux"
 if sys.platform == 'win32':
