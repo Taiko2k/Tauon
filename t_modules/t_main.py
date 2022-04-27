@@ -11339,7 +11339,7 @@ class AlbumArt():
                 direc = os.path.dirname(filepath)
                 items_in_dir = os.listdir(direc)
             except:
-                print("Error loading directroy")
+                print("Error loading directory")
                 return []
 
         # Check for embedded image
