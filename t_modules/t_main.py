@@ -743,6 +743,12 @@ elif not msys and not macos:
 # Other imports
 
 from PIL import Image, ImageDraw, ImageFilter
+try:
+    from jxlpy import JXLImagePlugin
+    print("Found jxlpy for JPEG XL support")
+except:
+    pass
+
 import mutagen
 import mutagen.id3
 import mutagen.flac
