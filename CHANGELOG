@@ -8,12 +8,15 @@ v7.2.0
  - Added singles folder detection and gallery display
  - Added generator code 'px' to exclude contents of a playlist
  - Added escape key to keymaps file
+ - Added toggle mute to keymaps file
  - Added 'auto' mode for ReplayGain
+ - Added mini modes to shuffle lockdown mode
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator
  - Fixed playing track position when items from playlist are deleted
  - Tweaked play action to resume radio station
  - Tweaked config file formatting
+ - Tweaked shuffle lockdown to restore on restart
  - Restored Spotify button
  - [Phazor] Fixed audio stall on track jump with delayed IO
  - [Phazor] Fixed delay/freeze on switching output device

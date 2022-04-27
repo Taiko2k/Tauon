@@ -1500,6 +1500,7 @@ class Prefs:    # Used to hold any kind of settings
         self.smart_bypass = True
         self.seek_interval = 15
         self.shuffle_lock = False
+        self.album_shuffle_lock_mode = False
         self.premium = False
         self.power_save = False
         if macos or phone:
@@ -1946,6 +1947,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.box_over = False
         self.suggest_clean_db = False
         self.style_worker_timer = Timer()
+
+        self.shuffle_was_showcase = False
+        self.shuffle_was_random = True
+        self.shuffle_was_repeat = False
 
 
 gui = GuiVar()
@@ -3165,6 +3170,10 @@ for t in range(2):
             prefs.show_chromecast = save[169]
         if save[170] is not None:
             prefs.cache_list = save[170]
+        if save[171] is not None:
+            prefs.shuffle_lock = save[171]
+        if save[172] is not None:
+            prefs.album_shuffle_lock_mode = save[172]
 
         state_file.close()
         del save
@@ -3660,6 +3669,7 @@ if db_version > 0:
         if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\nescape Escape\n")
+                f.write("toggle-mute M Ctrl\n")
 
         prefs.show_nag = True
 
@@ -4763,7 +4773,6 @@ class PlayerCtl:
         self.repeat_mode = prefs.repeat_mode
         self.album_repeat_mode = prefs.album_repeat_mode
         self.album_shuffle_mode = prefs.album_shuffle_mode
-        self.album_shuffle_lock_mode = False
         # self.album_shuffle_pool = []
         # self.album_shuffle_id = ""
         self.last_playing_time = 0
@@ -5236,6 +5245,15 @@ class PlayerCtl:
             tree_view_box.show_track(pctl.playing_object())
 
         return 0
+
+    def toggle_mute(self):
+        if pctl.player_volume > 0:
+            volume_store = pctl.player_volume
+            pctl.player_volume = 0
+        else:
+            pctl.player_volume = volume_store
+
+        pctl.set_volume()
 
     def set_volume(self, notify=True):
 
@@ -6123,7 +6141,7 @@ class PlayerCtl:
                 self.play_target(jump=not end)
 
         # If random, jump to random track
-        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not (self.album_shuffle_mode or self.album_shuffle_lock_mode):
+        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not (self.album_shuffle_mode or prefs.album_shuffle_lock_mode):
             #self.queue_step += 1
             new_step = self.queue_step + 1
 
@@ -6346,7 +6364,7 @@ class PlayerCtl:
 
         else:
 
-            if self.random_mode and (self.album_shuffle_mode or self.album_shuffle_lock_mode):
+            if self.random_mode and (self.album_shuffle_mode or prefs.album_shuffle_lock_mode):
 
                 # Album shuffle mode
                 print("Album shuffle mode")
@@ -6365,7 +6383,7 @@ class PlayerCtl:
                     elif po.parent_folder_path != pctl.g(self.playing_playlist()[self.playlist_playing_position + 1]).parent_folder_path:
                         redraw = True
                     # Always redraw on press in album shuffle lockdown
-                    if self.album_shuffle_lock_mode and not end:
+                    if prefs.album_shuffle_lock_mode and not end:
                         redraw = True
 
                     if not redraw:
@@ -11229,7 +11247,7 @@ class ImageObject():
 
 class AlbumArt():
     def __init__(self):
-        self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif'}
+        self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif', "jxl", "JXL"}
         self.art_folder_names = {'art', 'scans', 'scan', 'booklet', 'images', 'image', 'cover',
                                  'covers', 'coverart', 'albumart', 'gallery', 'jacket', 'artwork',
                                  'bonus', 'bk', 'cover artwork', 'cover art'}
@@ -14380,13 +14398,13 @@ def toggle_shuffle_layout(albums=False):
         pctl.random_mode = True
         pctl.repeat_mode = False
         if albums:
-            pctl.album_shuffle_lock_mode = True
+            prefs.album_shuffle_lock_mode = True
         if pctl.playing_state == 0:
             pctl.advance()
     else:
         pctl.random_mode = gui.shuffle_was_random
         pctl.repeat_mode = gui.shuffle_was_repeat
-        pctl.album_shuffle_lock_mode = False
+        prefs.album_shuffle_lock_mode = False
         if not gui.shuffle_was_showcase:
             exit_combo()
 
@@ -29252,7 +29270,7 @@ class TopPanel:
                 colour = [10, 10, 10, 255]
             if not pctl.broadcast_active:
                 text = "Tauon Music Box SHUFFLE!"
-                if pctl.album_shuffle_lock_mode:
+                if prefs.album_shuffle_lock_mode:
                     text = "Tauon Music Box ALBUM SHUFFLE!"
                 ddt.text((window_size[0] // 2, 8 * gui.scale, 2), text, colour,
                                           212, bg=colours.top_panel_background)
@@ -30470,13 +30488,7 @@ class BottomBarType1:
 
             if right_click and coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
                 if right_click:
-                    if pctl.player_volume > 0:
-                        volume_store = pctl.player_volume
-                        pctl.player_volume = 0
-                    else:
-                        pctl.player_volume = volume_store
-
-                    pctl.set_volume()
+                    pctl.toggle_mute()
 
             for bar in range(8):
 
@@ -31132,6 +31144,13 @@ class BottomBarType_ao1:
             pctl.player_volume = int(pctl.player_volume)
             pctl.set_volume()
 
+        # mode menu
+        if right_click:
+            if mouse_position[0] > 190 * gui.scale and \
+                mouse_position[1] > window_size[1] - gui.panelBY and \
+                mouse_position[0] < window_size[0] - 190 * gui.scale:
+                mode_menu.activate()
+
         # Volume Bar 2 ------------------------------------------------
         if True:
             x = window_size[0] - right_offset - 120 * gui.scale
@@ -31508,8 +31527,6 @@ class MiniMode:
             # Double click bottom text to return to full window
             text_hit_area = (60 * gui.scale, y1 + 4, 230 * gui.scale, 50 * gui.scale)
 
-
-
             if coll(text_hit_area):
                 if inp.mouse_click:
                     if d_click_timer.get() < 0.3:
@@ -31518,7 +31535,6 @@ class MiniMode:
                         return
                     else:
                         d_click_timer.set()
-
 
             # Draw title texts
             line1 = track.artist
@@ -31577,7 +31593,6 @@ class MiniMode:
 
                 seek_r[2] = progress_w
 
-
                 if self.volume_timer.get() < 0.9:
                     progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
                     gui.update += 1
@@ -31601,7 +31616,7 @@ class MiniMode:
             hint = 30
         if coll(left_area):
             hint = 240
-        if hint:
+        if hint and not prefs.shuffle_lock:
             self.left_slide.render(16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, hint])
 
         hint = 0
@@ -31619,7 +31634,7 @@ class MiniMode:
         #fields.add(shuffle_area)
         # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
 
-        if coll(control_hit_area):
+        if coll(control_hit_area) and not prefs.shuffle_lock:
             colour = [255, 255, 255, 20]
             if inp.mouse_click and coll(shuffle_area):
                 #pctl.random_mode ^= True
@@ -31635,7 +31650,7 @@ class MiniMode:
 
 
         shuffle_area = (seek_r[0] - 41 * gui.scale, seek_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
-        if coll(control_hit_area):
+        if coll(control_hit_area) and not prefs.shuffle_lock:
             colour = [255, 255, 255, 20]
             if inp.mouse_click and coll(shuffle_area):
                 toggle_repeat()
@@ -31653,7 +31668,7 @@ class MiniMode:
 
         # Forward and back clicking
         if inp.mouse_click:
-            if coll(left_area):
+            if coll(left_area) and not prefs.shuffle_lock:
                 pctl.back()
             if coll(right_area):
                 pctl.advance()
@@ -40766,6 +40781,8 @@ def save_state():
             prefs.playlist_exports,
             prefs.show_chromecast,
             prefs.cache_list,
+            prefs.shuffle_lock,
+            prefs.album_shuffle_lock_mode,
         ]
 
 
@@ -42180,6 +42197,9 @@ while pctl.running:
                     else:
                         pctl.player_volume = 0
                     pctl.set_volume()
+
+                if keymaps.test("toggle-mute"):
+                    pctl.toggle_mute()
 
                 if keymaps.test("vol-up"):
                     pctl.player_volume += 3
