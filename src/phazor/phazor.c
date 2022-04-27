@@ -91,6 +91,7 @@ int fade_position = 0;
 int fade_2_flag = 0;
 
 pthread_mutex_t buffer_mutex;
+pthread_mutex_t fade_mutex;
 //pthread_mutex_t pulse_mutex;
 
 float out_buff[2048 * 2];
@@ -933,7 +934,7 @@ void connect_pulse() {
                       &error               // Error
     );
 
-    if (error > 0) {
+    if (error != 0) {
         printf("pa: PulseAudio init error\n");
         //printf(pa_strerror(error));
         //printf("\n");
@@ -1651,8 +1652,8 @@ void *out_thread(void *thread_id) {
         }
 
         // Put fade buffer back
-        // warning: possible race collision
         if (mode == PLAYING && fade_fill > 0 && get_buff_fill() == 0){
+            pthread_mutex_lock(&fade_mutex);
             int i = 0;
             while (fade_position < fade_fill){
                 float cross = fade_position / (float) fade_fill;
@@ -1669,6 +1670,7 @@ void *out_thread(void *thread_id) {
                 fade_fill = 0;
                 fade_position = 0;
             }
+            pthread_mutex_unlock(&fade_mutex);
         }
         // Process decoded audio data and send out
         if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
@@ -1941,7 +1943,7 @@ void *main_loop(void *thread_id) {
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
                         if (out_thread_running == 1){
-                          out_thread_running = 2;
+                            out_thread_running = 2;
                             usleep(20000);
                           }
                         
@@ -1988,20 +1990,13 @@ void *main_loop(void *thread_id) {
                     // Prepare for a crossfade if enabled and suitable
                     using_fade = 0;
                     if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
-                        int reserve = current_sample_rate * 0.0;
+                        pthread_mutex_lock(&fade_mutex);
                         int l = current_sample_rate * (config_fade_duration / 1000.0);
 
-                        if (get_buff_fill() > l + reserve) {
+                        if (get_buff_fill() > l) {
                             int i = 0;
                             int p = low;
-                            while (i < reserve){
-                                p++;
-                                i++;
-                                if (p >= watermark){
-                                    p = 0;
-                                }
-                            }
-                            int mark = p;
+                            int mark = low;
                             i = 0;
 
                             while (i < l) {
@@ -2017,14 +2012,15 @@ void *main_loop(void *thread_id) {
                             fade_fill = l;
                             high = mark;
                             using_fade = 1;
-                            //buff_filled = reserve;
 
                             reset_set_byte = p;
                             if (reset_set == 0) {
                                 reset_set = 1;
                                 reset_set_value = 0;
                             }
+
                         }
+                        pthread_mutex_unlock(&fade_mutex);
                     }
 
                     load_result = load_next();
@@ -2426,6 +2422,7 @@ void feed_raw(int len, char* data){
     read_to_buffer_char16(data, len);
     pthread_mutex_unlock(&buffer_mutex);
 }
+
 
 int shutdown() {
     while (command != NONE) {
