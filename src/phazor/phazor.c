@@ -208,7 +208,7 @@ float ramp_step(int sample_rate, int milliseconds) {
 }
 
 void fade_fx() {
-
+    pthread_mutex_lock(&fade_mutex);
     if (fade_fill > 0) {
         if (fade_fill == fade_position) {
             fade_fill = 0;
@@ -226,6 +226,7 @@ void fade_fx() {
             fade_position++;
         }
     }
+    pthread_mutex_unlock(&fade_mutex);
 }
 
 FILE *fptr;
@@ -1672,9 +1673,10 @@ void *out_thread(void *thread_id) {
             }
             pthread_mutex_unlock(&fade_mutex);
         }
-        // Process decoded audio data and send out
-        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
 
+        // Process decoded audio data and send out
+        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && (get_buff_fill() > 0 || fade_fill > 0) && buffering == 0) {
+            pthread_mutex_lock(&fade_mutex);
             //pthread_mutex_lock(&buffer_mutex);
 
             b = 0; // byte number
@@ -1817,6 +1819,7 @@ void *out_thread(void *thread_id) {
                 if (b >= 256 * 2) break; // Buffer is now full
             }
             //pthread_mutex_unlock(&buffer_mutex);
+            pthread_mutex_unlock(&fade_mutex);
             // Send data to pulseaudio server
             if (b > 0) {
 
@@ -1996,7 +1999,6 @@ void *main_loop(void *thread_id) {
                         if (get_buff_fill() > l) {
                             int i = 0;
                             int p = low;
-                            int mark = low;
                             i = 0;
 
                             while (i < l) {
@@ -2010,7 +2012,7 @@ void *main_loop(void *thread_id) {
                             }
                             fade_position = 0;
                             fade_fill = l;
-                            high = mark;
+                            high = low;
                             using_fade = 1;
 
                             reset_set_byte = p;
