@@ -1675,7 +1675,7 @@ void *out_thread(void *thread_id) {
         }
 
         // Process decoded audio data and send out
-        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && (get_buff_fill() > 0) && buffering == 0) {
+        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
             pthread_mutex_lock(&fade_mutex);
             //pthread_mutex_lock(&buffer_mutex);
 
