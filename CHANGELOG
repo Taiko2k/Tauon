@@ -17,6 +17,7 @@ v7.2.0
  - Tweaked play action to resume radio station
  - Tweaked config file formatting
  - Tweaked shuffle lockdown to restore on restart
+ - Tweaked restart back threshold time to from 2s to 6s
  - Restored Spotify button
  - [Phazor] Fixed audio stall on track jump with delayed IO
  - [Phazor] Fixed delay/freeze on switching output device

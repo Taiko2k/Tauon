@@ -5419,7 +5419,7 @@ class PlayerCtl:
 
     def back(self):
 
-        if self.playing_state < 3 and prefs.back_restarts and pctl.playing_time > 2:
+        if self.playing_state < 3 and prefs.back_restarts and pctl.playing_time > 6:
             self.seek_time(0)
             self.render_playlist()
             return
