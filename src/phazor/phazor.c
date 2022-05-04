@@ -302,6 +302,7 @@ void start_ffmpeg(char uri[], int start_ms) {
         return;
     }
     decoder_allocated = 1;
+    sample_rate_src = sample_rate_out;
 }
 
 void stop_ffmpeg() {
@@ -1679,6 +1680,7 @@ void *out_thread(void *thread_id) {
             pthread_mutex_lock(&fade_mutex);
             //pthread_mutex_lock(&buffer_mutex);
 
+
             b = 0; // byte number
 
             peak_roll_l = 0;
@@ -1836,6 +1838,7 @@ void *out_thread(void *thread_id) {
                 } else {
 
                     #ifndef AO
+
                         pa_simple_write(s, &out_buff, b * 4, &error);
                     #else
                         ao_play(device, out_buffc, b);
