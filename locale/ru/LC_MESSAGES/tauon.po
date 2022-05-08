@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2021-05-10 01:42+0000\n"
-"Last-Translator: Feel_again <pardoffspring@gmail.com>\n"
+"PO-Revision-Date: 2022-05-09 18:18+0000\n"
+"Last-Translator: Edward T <tumanchinsky.edward@yandex.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.7-dev\n"
+"X-Generator: Weblate 4.12.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1981 t_modules/t_main.py:1983
@@ -25,7 +25,7 @@ msgstr "Изображение исполнителя не найдено."
 
 #: t_modules/t_main.py:1983
 msgid "No providers are enabled in settings!"
-msgstr "Никакие поставщики не включены в настройках!"
+msgstr "Нет включенных поставщиков в настройках!"
 
 #: t_modules/t_main.py:6597
 msgid "End of playlist"
@@ -37,7 +37,7 @@ msgstr "После авторизации нажмите кнопку \"Гото
 
 #: t_modules/t_main.py:6648
 msgid "Web auth page opened"
-msgstr "Открыта страница веб-аутентиф"
+msgstr "Открыта страница веб-авторизации"
 
 #: t_modules/t_main.py:6656
 msgid "You need to log in first"
@@ -45,11 +45,11 @@ msgstr "Сначала вам нужно войти в систему"
 
 #: t_modules/t_main.py:6812
 msgid "Scanning failed. Try again?"
-msgstr "Скан не удался. Попробовать еще раз?"
+msgstr "Сканирование не удалось. Попробовать еще раз?"
 
 #: t_modules/t_main.py:6819 t_modules/t_main.py:7401
 msgid "Scanning scrobbles complete"
-msgstr "Скан скроббл завершено"
+msgstr "Сканирование scrobbles завершено"
 
 #: t_modules/t_main.py:6971
 msgid "Getting friend data..."
@@ -73,7 +73,7 @@ msgstr "Может быть, проверить подключение к Инт
 
 #: t_modules/t_main.py:7596
 msgid "Spotify Likes"
-msgstr "Лайк Spotify"
+msgstr "Spotify лайки"
 
 #: t_modules/t_main.py:7597
 msgid "Spotify Albums"
@@ -85,7 +85,7 @@ msgstr "Трек удален из избранных"
 
 #: t_modules/t_main.py:7599
 msgid "Track was already un-liked"
-msgstr "Трек не нравится"
+msgstr "Трек больше не нравится"
 
 #: t_modules/t_main.py:7600
 msgid "Track is already liked"
@@ -101,7 +101,7 @@ msgstr "Подключен аккаунт Spotify"
 
 #: t_modules/t_main.py:7603
 msgid "This Spotify account isn't currently playing anything"
-msgstr "Этот аккаунт Spotify в наст время ничего не воспр"
+msgstr "Этот аккаунт Spotify в настоящее время ничего не воспроизводит"
 
 #: t_modules/t_main.py:7604
 msgid "Error starting Spotify"
@@ -128,18 +128,16 @@ msgid "days"
 msgstr "дни"
 
 #: t_modules/t_main.py:7612
-#, fuzzy
 msgid "Scanning for Chromecasts..."
-msgstr "Повторное сканирование папок..."
+msgstr "Сканирование для Chromecast..."
 
 #: t_modules/t_main.py:7613
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Передать на: %s"
 
 #: t_modules/t_main.py:7614
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Изображение исполнителя не найдено."
+msgstr "Устройств Chromecast не найдено"
 
 #: t_modules/t_main.py:7616
 msgid "Web server stopped."
@@ -175,7 +173,7 @@ msgstr "Остановите синхронизацию перед выходо�
 
 #: t_modules/t_main.py:13682
 msgid "Playlists + Queue"
-msgstr "Плейлисты и очередь"
+msgstr "Плейлисты + очередь"
 
 #: t_modules/t_main.py:13683 t_modules/t_main.py:36829
 msgid "Queue"
@@ -187,7 +185,7 @@ msgstr "Список исполнителей"
 
 #: t_modules/t_main.py:13687
 msgid "Folder Navigator"
-msgstr "Навигатор папок"
+msgstr "Обзор папок"
 
 #: t_modules/t_main.py:13747
 msgid "Track Renaming"
@@ -211,85 +209,88 @@ msgstr "Переименование завершено."
 
 #: t_modules/t_main.py:13866
 msgid " filenames were written."
-msgstr " были записаны имена файлов."
+msgstr " имена файлов записаны."
 
 #: t_modules/t_main.py:13938
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Простой редактор тегов"
 
 #: t_modules/t_main.py:13940 t_modules/t_main.py:26982
 #: t_modules/t_main.py:27209 t_modules/t_main.py:27962
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: t_modules/t_main.py:13941
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Нажмите Enter в каждом поле, чтобы применить его изменения к локальной базе "
+"данных."
 
 #: t_modules/t_main.py:13942
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"Когда закончите, нажмите ЗАПИСАТЬ ТЕГИ, чтобы сохранить теги в файлы. ("
+"Опционлано, но рекомендуется)"
 
 #: t_modules/t_main.py:13945
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Кол-во выбранных дорожек: %d"
 
 #: t_modules/t_main.py:13980
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Несколько выбранных>"
 
 #: t_modules/t_main.py:13988
 msgid "Track title"
-msgstr ""
+msgstr "Название дорожки"
 
 #: t_modules/t_main.py:13990
 msgid "Album name"
-msgstr ""
+msgstr "Имя альбома"
 
 #: t_modules/t_main.py:13992
-#, fuzzy
 msgid "Artist name"
-msgstr "Список исполнителей"
+msgstr "Имя исполнителя"
 
 #: t_modules/t_main.py:13994
-#, fuzzy
 msgid "Album-artist name"
-msgstr "Список исполнителей"
+msgstr "Альбом-имя исполнителя"
 
 #: t_modules/t_main.py:14000
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Редактировать сетевые дорожки не рекомендуется!"
 
 #: t_modules/t_main.py:14030 t_modules/t_main.py:14031
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "ЗАПИСАТЬ ТЕГИ"
 
 #: t_modules/t_main.py:14033
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Нажмите enter в полях перед сохранением изменений!"
 
 #: t_modules/t_main.py:14045
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Запись на сетевую дорожку не применяется!"
 
 #: t_modules/t_main.py:14048
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Невозможно записать типы Cue sheet!"
 
 #: t_modules/t_main.py:14056
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
+"Обработка нескольких полей невозможна! Пожалуйста, используйте внешний "
+"редактор тегов"
 
 #: t_modules/t_main.py:14074
-#, fuzzy
 msgid "%d files rewritten"
-msgstr " были записаны имена файлов."
+msgstr "%d файлы перезаписаны"
 
 #: t_modules/t_main.py:14136
 msgid "Substitute Lyric Search"
-msgstr "Поиск Lyric на замену"
+msgstr "Поиск лирики на замену"
 
 #: t_modules/t_main.py:14142 t_modules/t_main.py:14162
 msgid "Substitute"
@@ -300,52 +301,48 @@ msgid "with"
 msgstr "с"
 
 #: t_modules/t_main.py:14233
-#, fuzzy
 msgid "Export Playlist"
-msgstr "Экспорт статистики плейлиста"
+msgstr "Экспортировать плейлист"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Сохранить каталог"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Используйте относительный путь"
 
 #: t_modules/t_main.py:14258
 msgid "Auto-export"
-msgstr ""
+msgstr "Автоматический экспорт"
 
 #: t_modules/t_main.py:14261 t_modules/t_main.py:14266
-#, fuzzy
 msgid "Export"
-msgstr "Экспорт XSPF"
+msgstr "Экспорт"
 
 #: t_modules/t_main.py:14275
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Каталог не существует"
 
 #: t_modules/t_main.py:14318
 msgid "Repeat OFF"
-msgstr "Повтор ВЫКЛ"
+msgstr "Повтор выключен"
 
 #: t_modules/t_main.py:14319
 msgid "Repeat Track"
-msgstr "Повторить трек"
+msgstr "Повторить дорожку"
 
 #: t_modules/t_main.py:14320
 msgid "Repeat Album"
 msgstr "Повторить альбом"
 
 #: t_modules/t_main.py:14389
-#, fuzzy
 msgid "Shuffle Lockdown"
-msgstr "Перемешать треки"
+msgstr "Блокировка случайного порядка дорожек"
 
 #: t_modules/t_main.py:14390
-#, fuzzy
 msgid "Shuffle Lockdown Albums"
-msgstr "Перемешать треки"
+msgstr "Блокировка случайного порядка альбомов"
 
 #: t_modules/t_main.py:14392
 msgid "Shuffle OFF"
@@ -353,7 +350,7 @@ msgstr "Не перемешивать"
 
 #: t_modules/t_main.py:14393
 msgid "Shuffle Tracks"
-msgstr "Перемешать треки"
+msgstr "Перемешать дорожки"
 
 #: t_modules/t_main.py:14394
 msgid "Random Albums"
@@ -387,7 +384,7 @@ msgstr "Заблокировать панель"
 #: t_modules/t_main.py:14739 t_modules/t_main.py:19233
 #: t_modules/t_main.py:20227
 msgid "Open Folder"
-msgstr "Открыть папку"
+msgstr "Открыть каталог"
 
 #: t_modules/t_main.py:14719 t_modules/t_main.py:14720
 #: t_modules/t_main.py:14721 t_modules/t_main.py:35102
@@ -397,11 +394,11 @@ msgstr "Отфильтровать в новый плейлист"
 #: t_modules/t_main.py:14722 t_modules/t_main.py:14723
 #: t_modules/t_main.py:17600
 msgid "Rescan Folder"
-msgstr "Повторное сканирование папки"
+msgstr "Повторное сканирование каталога"
 
 #: t_modules/t_main.py:14724 t_modules/t_main.py:14726
 msgid "Move Playing Folder Here"
-msgstr "Переместить папку с воспроизведением сюда"
+msgstr "Переместить воспроизводимый каталог сюда"
 
 #: t_modules/t_main.py:14732 t_modules/t_main.py:20248
 msgid "Collapse All"
@@ -424,7 +421,7 @@ msgstr "Следующий альбом в очереди"
 #: t_modules/t_main.py:14835 t_modules/t_main.py:17792
 #: t_modules/t_main.py:27955
 msgid "Aborting Sync"
-msgstr "Прерывание синхронизации"
+msgstr "Отмена синхронизации"
 
 #: t_modules/t_main.py:14838
 msgid "Cancel"
@@ -471,7 +468,7 @@ msgstr "Поиск…"
 
 #: t_modules/t_main.py:15003
 msgid "No lyrics for this track were found"
-msgstr "Тексты песен для этого трека не найдены"
+msgstr "Тексты песен для этой дорожки не найдены"
 
 #: t_modules/t_main.py:15067 t_modules/t_main.py:15164
 #: t_modules/t_main.py:15594
@@ -484,11 +481,11 @@ msgstr "Поиск GuitarParty"
 
 #: t_modules/t_main.py:15114
 msgid "Paste Chord Lyrics"
-msgstr "Вставить текст аккорда"
+msgstr "Вставить аккорд"
 
 #: t_modules/t_main.py:15115
 msgid "Clear Chord Lyrics"
-msgstr "Очистить тексты аккордов"
+msgstr "Очистить аккорды"
 
 #: t_modules/t_main.py:15154 t_modules/t_main.py:15165
 #: t_modules/t_main.py:15595
@@ -525,11 +522,11 @@ msgstr "Извлечь изображение"
 
 #: t_modules/t_main.py:15284
 msgid "Cannot download art for network tracks."
-msgstr "Невозможно загрузить обложку для сетевых треков."
+msgstr "Невозможно загрузить обложку для сетевых дорожек."
 
 #: t_modules/t_main.py:15308
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr "Не похоже, что эта папка принадлежит одному альбому, извините"
+msgstr "Не похоже, что этот каталог принадлежит одному альбому, извините"
 
 #: t_modules/t_main.py:15319
 msgid "Looking up MusicBrainz ID..."
@@ -557,23 +554,23 @@ msgstr "Удаление встроенного изображения из фа
 
 #: t_modules/t_main.py:15529 t_modules/t_main.py:15536
 msgid "Delete Image File"
-msgstr "Удалить файл изображения"
+msgstr "Удалить изображение"
 
 #: t_modules/t_main.py:15544
 msgid "Delete Embedded | Folder"
-msgstr "Удалить встроенную | Папку"
+msgstr "Удалить встроенную | Каталог"
 
 #: t_modules/t_main.py:15546
 msgid "Delete Embedded | Track"
-msgstr "Удалить встроенный | трек"
+msgstr "Удалить встроенный | Дорожку"
 
 #: t_modules/t_main.py:15566
 msgid "Quick-Fetch Cover Art"
-msgstr "Быстрая съемка обложки"
+msgstr "Быстрый выбор обложки"
 
 #: t_modules/t_main.py:15616
 msgid "Paste Spotify Album"
-msgstr "Вставьте Spotify Альбом"
+msgstr "Вставьте альбом Spotify"
 
 #: t_modules/t_main.py:15836 t_modules/t_main.py:15837
 #: t_modules/t_main.py:44756
@@ -618,7 +615,7 @@ msgstr "Вы уверены, что хотите удалить плейлист
 
 #: t_modules/t_main.py:16299
 msgid "Rescanning folders..."
-msgstr "Повторное сканирование папок..."
+msgstr "Повторное сканирование каталогов..."
 
 #: t_modules/t_main.py:16619 t_modules/t_main.py:16631
 msgid "Playlist is locked"
@@ -635,7 +632,7 @@ msgstr "Добавить альбом Spotify"
 
 #: t_modules/t_main.py:16901
 msgid "Playlist contains non-Spotify tracks"
-msgstr "Плейлист содержит треки, не относящиеся к Spotify"
+msgstr "Плейлист содержит дорожки, не относящиеся к Spotify"
 
 #: t_modules/t_main.py:16907
 msgid "Created new Spotify playlist"
@@ -651,14 +648,14 @@ msgstr "Плейлист Spotify обновлен"
 
 #: t_modules/t_main.py:17562
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr "OK. Отныне этот плейлист будет автоматически сортироваться при импорте"
+msgstr "OK. Теперь этот плейлист будет автоматически сортироваться при импорте"
 
 #: t_modules/t_main.py:17563
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Вы можете удалить или изменить это действие, перейдя в меню \"Misc...\" > "
-"\"Edit generator...\""
+"Вы можете удалить или изменить это действие, перейдя в меню \"Разное...\" > "
+"\"Редактирование...\""
 
 #: t_modules/t_main.py:17567 t_modules/t_main.py:21472
 #: t_modules/t_main.py:21475
@@ -695,11 +692,11 @@ msgstr "Сортировать по пути к файлу"
 
 #: t_modules/t_main.py:17594
 msgid "Sort Track Numbers"
-msgstr "Сортировать по номеру трека"
+msgstr "Сортировать по номеру дорожки"
 
 #: t_modules/t_main.py:17595
 msgid "Sort Year per Artist"
-msgstr "Сортировать по годам по исполнителям"
+msgstr "Сортировать по годам для исполнителя"
 
 #: t_modules/t_main.py:17596
 msgid "Make Playlist Auto-Sorting"
@@ -712,12 +709,11 @@ msgstr "Вставить"
 
 #: t_modules/t_main.py:17603
 msgid "Append Playing"
-msgstr "Добавить плейлист"
+msgstr "Добавить в воспроизведение"
 
 #: t_modules/t_main.py:17608
-#, fuzzy
 msgid "Export…"
-msgstr "Сортировать…"
+msgstr "Экспорт…"
 
 #: t_modules/t_main.py:17611
 msgid "Misc…"
@@ -733,7 +729,7 @@ msgstr "Не удалось найти каталог"
 
 #: t_modules/t_main.py:17706
 msgid "Deleting folders..."
-msgstr "Удаление папок..."
+msgstr "Удаление каталогов..."
 
 #: t_modules/t_main.py:17725 t_modules/t_main.py:17790
 msgid "Copying files to device"
@@ -746,7 +742,7 @@ msgstr "Синхронизация прервана! Мало места на у
 #: t_modules/t_main.py:17740 t_modules/t_main.py:17772
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
-"Одна или несколько папок для синхронизации имеют одинаковое имя. Пропуск."
+"Один или несколько каталогов для синхронизации имеют одинаковое имя. Пропуск."
 
 #: t_modules/t_main.py:17740 t_modules/t_main.py:17772
 msgid "Sync warning"
@@ -754,11 +750,11 @@ msgstr "Предупреждение о синхронизации"
 
 #: t_modules/t_main.py:17757 t_modules/t_main.py:30112
 msgid "Folders Remaining"
-msgstr "Оставшиеся папки"
+msgstr "Оставшиеся каталоги"
 
 #: t_modules/t_main.py:17759 t_modules/t_main.py:30110
 msgid "Folder Remaining"
-msgstr "Оставшаяся папка"
+msgstr "Оставшийся каталог"
 
 #: t_modules/t_main.py:17800
 msgid "Sync completed"
@@ -766,11 +762,11 @@ msgstr "Синхронизация завершена"
 
 #: t_modules/t_main.py:17816 t_modules/t_main.py:17897
 msgid "Set as Sync Playlist"
-msgstr "Установить как синхронизация плейлиста"
+msgstr "Установить синхронизируемым плейлистом"
 
 #: t_modules/t_main.py:17819
 msgid "Un-set as Sync Playlist"
-msgstr "Не установлена как синхронизация плейлиста"
+msgstr "Отключить синхронизацию плейлиста"
 
 #: t_modules/t_main.py:17830 t_modules/t_main.py:17898
 msgid "Set as Downloads Playlist"
@@ -778,7 +774,7 @@ msgstr "Установить как плейлист для загрузок"
 
 #: t_modules/t_main.py:17833
 msgid "Un-set as Downloads Playlist"
-msgstr "Не установлен как плейлист для загрузок"
+msgstr "Отключить плейлист для загрузок"
 
 #: t_modules/t_main.py:17886
 msgid "Export Playlist Stats"
@@ -803,322 +799,297 @@ msgstr "Переключить перерывы"
 
 #: t_modules/t_main.py:17895
 msgid "Edit Generator..."
-msgstr ""
+msgstr "Генератор редактирования..."
 
 #: t_modules/t_main.py:17896
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Быстрое добавление в галерею"
 
 #: t_modules/t_main.py:17899
 msgid "Remove Duplicates"
-msgstr ""
+msgstr "Удалить дубликаты"
 
 #: t_modules/t_main.py:17939 t_modules/t_main.py:18031
 #: t_modules/t_main.py:18032
-#, fuzzy
 msgid "Top Rated Tracks"
-msgstr "Повторить трек"
+msgstr "Дорожки с самым высоким рейтингом"
 
 #: t_modules/t_main.py:17956 t_modules/t_main.py:17963
 #: t_modules/t_main.py:17964
 msgid "Top Played Tracks"
-msgstr ""
+msgstr "Самые проигрываемые дорожки"
 
 #: t_modules/t_main.py:18021 t_modules/t_main.py:18028
 #: t_modules/t_main.py:18029
-#, fuzzy
 msgid "Top Played Albums"
-msgstr "Случайные альбомы"
+msgstr "Самые проигрываемые альбомы"
 
 #: t_modules/t_main.py:18076 t_modules/t_main.py:18107
 #: t_modules/t_main.py:18108
-#, fuzzy
 msgid "Top Rated Albums"
-msgstr "Случайные альбомы"
+msgstr "Альбомы с самым высоким рейтингом"
 
 #: t_modules/t_main.py:18098
-#, fuzzy
 msgid "Tracks with lyrics"
-msgstr "Вставить текст песни"
+msgstr "Дорожки с текстами песен"
 
 #: t_modules/t_main.py:18105
-#, fuzzy
 msgid "No tracks with lyrics were found."
-msgstr "Тексты песен для этого трека не найдены"
+msgstr "Дорожек с текстом песен не найдено."
 
 #: t_modules/t_main.py:18154
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
+"Обратите внимание, что сюда могут входить альбомы, в дорожках которых "
+"отсутствует тег альбома"
 
 #: t_modules/t_main.py:18155
-#, fuzzy
 msgid "Incomplete Albums"
-msgstr "Случайные альбомы"
+msgstr "Неполные альбомы"
 
 #: t_modules/t_main.py:18162
 msgid "No incomplete albums were found."
-msgstr ""
+msgstr "Незавершенных альбомов не найдено."
 
 #: t_modules/t_main.py:18176 t_modules/t_main.py:20987
 msgid "Codec"
-msgstr ""
+msgstr "Кодек"
 
 #: t_modules/t_main.py:18234 t_modules/t_main.py:18240
 #: t_modules/t_main.py:18241
 msgid "File Modified"
-msgstr ""
+msgstr "Файл изменен"
 
 #: t_modules/t_main.py:18263 t_modules/t_main.py:18648
 #: t_modules/t_main.py:18649 t_modules/t_main.py:20995
 msgid "Loved"
-msgstr ""
+msgstr "Понравившийся"
 
 #: t_modules/t_main.py:18293
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Интересные комментарии"
 
 #: t_modules/t_main.py:18337
 msgid "Duration Sorted"
-msgstr ""
+msgstr "Отсортировано по продолжительности"
 
 #: t_modules/t_main.py:18343 t_modules/t_main.py:18344
-#, fuzzy
 msgid "Longest Tracks"
-msgstr "Повторить трек"
+msgstr "Самые длинные дорожки"
 
 #: t_modules/t_main.py:18382 t_modules/t_main.py:18387
 #: t_modules/t_main.py:18388
-#, fuzzy
 msgid "Longest Albums"
-msgstr "Альбомы Spotify"
+msgstr "Самые длинные альбомы"
 
 #: t_modules/t_main.py:18431
 msgid "Year Sorted"
-msgstr ""
+msgstr "Отсортировано по году"
 
 #: t_modules/t_main.py:18447 t_modules/t_main.py:18448
 msgid "Year by Oldest"
-msgstr ""
+msgstr "Год по возрасту"
 
 #: t_modules/t_main.py:18455 t_modules/t_main.py:18456
 msgid "Year by Latest"
-msgstr ""
+msgstr "По последним годам"
 
 #: t_modules/t_main.py:18468 t_modules/t_main.py:18474
 #: t_modules/t_main.py:18475
-#, fuzzy
 msgid "Shuffled Tracks"
-msgstr "Перемешать треки"
+msgstr "Перемешанные дорожки"
 
 #: t_modules/t_main.py:18504 t_modules/t_main.py:18510
 #: t_modules/t_main.py:18511
-#, fuzzy
 msgid "Shuffled Albums"
-msgstr "Альбомы Spotify"
+msgstr "Перемешанные альбомы"
 
 #: t_modules/t_main.py:18528 t_modules/t_main.py:18535
 #: t_modules/t_main.py:18536
 msgid "Lucky Random"
-msgstr ""
+msgstr "Произвольный"
 
 #: t_modules/t_main.py:18550
 msgid "Reversed"
-msgstr ""
+msgstr "Развернутые"
 
 #: t_modules/t_main.py:18556 t_modules/t_main.py:18557
-#, fuzzy
 msgid "Reverse Tracks"
-msgstr "Повторить трек"
+msgstr "Развернуть дорожки"
 
 #: t_modules/t_main.py:18584
-#, fuzzy
 msgid "Reversed Albums"
-msgstr "Повторить альбом"
+msgstr "Развернутые альбомы"
 
 #: t_modules/t_main.py:18590 t_modules/t_main.py:18591
-#, fuzzy
 msgid "Reverse Albums"
-msgstr "Повторить альбом"
+msgstr "Развернуть альбомы"
 
 #: t_modules/t_main.py:18596 t_modules/t_main.py:18603
 #: t_modules/t_main.py:18604
 msgid "Duplicate"
-msgstr ""
+msgstr "Дублировать"
 
 #: t_modules/t_main.py:18614
 msgid "Filepath Sorted"
-msgstr ""
+msgstr "Отсортированные по пути к файлу"
 
 #: t_modules/t_main.py:18629
-#, fuzzy
 msgid "Artist Sorted"
-msgstr "Список исполнителей"
+msgstr "Отсортированные по исполнителю"
 
 #: t_modules/t_main.py:18643
 msgid "Album Sorted"
-msgstr ""
+msgstr "Отсортированные по альбому"
 
 #: t_modules/t_main.py:18650 t_modules/t_main.py:18651
 msgid "Has Comment"
-msgstr ""
+msgstr "Есть комментарий"
 
 #: t_modules/t_main.py:18652 t_modules/t_main.py:18653
 #: t_modules/t_main.py:20989
-#, fuzzy
 msgid "Has Lyrics"
-msgstr "Вставить текст песни"
+msgstr "Есть текст песни"
 
 #: t_modules/t_main.py:18687
 msgid "Configuration reloaded"
-msgstr ""
+msgstr "Конфигурация перезагружена"
 
 #: t_modules/t_main.py:18699
 msgid "Click \"Reload\" if you made any changes"
-msgstr ""
+msgstr "Нажмите \"Перезагрузить\" если вы вносили изменения"
 
 #: t_modules/t_main.py:18699
-#, fuzzy
 msgid "Config file opened."
-msgstr "Копирование файлов на устройство"
+msgstr "Конфигурационный файл открыт."
 
 #: t_modules/t_main.py:18773 t_modules/t_main.py:18793
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Перекодирование дорожек из сети не поддерживается"
 
 #: t_modules/t_main.py:19145
-#, fuzzy
 msgid "Add Playing Spotify Album"
-msgstr "Добавить альбом Spotify"
+msgstr "Добавить воспроизводимый альбом Spotify"
 
 #: t_modules/t_main.py:19234
 msgid "Track Info…"
-msgstr ""
+msgstr "О дорожке…"
 
 #: t_modules/t_main.py:19279 t_modules/t_main.py:21927
 msgid "Un-Love Track"
-msgstr ""
+msgstr "Убрать из любимых"
 
 #: t_modules/t_main.py:19281 t_modules/t_main.py:21930
 #: t_modules/t_main.py:21932
-#, fuzzy
 msgid "Love Track"
-msgstr "Повторить трек"
+msgstr "В любимые"
 
 #: t_modules/t_main.py:19382 t_modules/t_main.py:36827
-#, fuzzy
 msgid "Add to Queue"
-msgstr "Добавить альбом в очередь"
+msgstr "Добавить в очередь"
 
 #: t_modules/t_main.py:19384
 msgid "↳ After Current Track"
-msgstr ""
+msgstr "↳ После текущей дорожки"
 
 #: t_modules/t_main.py:19386
-#, fuzzy
 msgid "Show in Gallery"
-msgstr "Показать в плейлисте"
+msgstr "Показать в галерее"
 
 #: t_modules/t_main.py:19389
 msgid "Meta…"
-msgstr ""
+msgstr "Мета…"
 
 #: t_modules/t_main.py:19394 t_modules/t_main.py:20400
 #: t_modules/t_main.py:20405 t_modules/t_main.py:20406
 #: t_modules/t_main.py:20697
 msgid "Copy"
-msgstr ""
+msgstr "Копировать"
 
 #: t_modules/t_main.py:19410
-#, fuzzy
 msgid "Cannot delete a network track"
-msgstr "Невозможно загрузить обложку для сетевых треков."
+msgstr "Невозможно удалить сетевую дорожку"
 
 #: t_modules/t_main.py:19422 t_modules/t_main.py:19431
 msgid "File deleted"
-msgstr ""
+msgstr "Файл удален"
 
 #: t_modules/t_main.py:19424 t_modules/t_main.py:19433
 msgid "Error deleting file"
-msgstr ""
+msgstr "Ошибка удаления файла"
 
 #: t_modules/t_main.py:19426
 msgid "File moved to trash"
-msgstr ""
+msgstr "Файл перемещен в корзину"
 
 #: t_modules/t_main.py:19440
-#, fuzzy
 msgid "Delete Track File"
-msgstr "Удалить файл изображения"
+msgstr "Удалить файл дорожки"
 
 #: t_modules/t_main.py:19448
 msgid "Rename (Single track)"
-msgstr ""
+msgstr "Переименовать (Одиночная дорожка)"
 
 #: t_modules/t_main.py:19450 t_modules/t_main.py:20237
 #: t_modules/t_main.py:20238
-#, fuzzy
 msgid "Rename Tracks…"
-msgstr "Повторить трек"
+msgstr "Переименовать дорожки…"
 
 #: t_modules/t_main.py:19461 t_modules/t_main.py:20289
 #: t_modules/t_main.py:20389
 msgid "Edit fields…"
-msgstr ""
+msgstr "Редактировать поля…"
 
 #: t_modules/t_main.py:19469
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Нельзя физически удалить"
 
 #: t_modules/t_main.py:19469
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Одна или несколько дорожек взяты из сети!"
 
 #: t_modules/t_main.py:19490
 msgid "Delete size safety limit reached!"
-msgstr ""
+msgstr "Достигнут безопасный размер удаления!"
 
 #: t_modules/t_main.py:19528
-#, fuzzy
 msgid "Folder could not be trashed."
-msgstr "Не удалось найти каталог"
+msgstr "Каталог не может быть удален."
 
 #: t_modules/t_main.py:19655 t_modules/t_main.py:20229
 #: t_modules/t_main.py:20230 t_modules/t_main.py:20235
 msgid "Modify Folder…"
-msgstr ""
+msgstr "Изменить каталог…"
 
 #: t_modules/t_main.py:19950
 msgid "Tag editor app does not appear to be installed."
-msgstr ""
+msgstr "Приложение редактор тегов не установлено."
 
 #: t_modules/t_main.py:19953
 msgid "App not found on host OR insufficient Flatpak permissions."
-msgstr ""
+msgstr "Приложение не найдено на хосте или не выданы разрешения для Flatpak."
 
 #: t_modules/t_main.py:20069
 msgid "Edit with "
-msgstr ""
+msgstr "Редактировать с помощью "
 
 #: t_modules/t_main.py:20081
-#, fuzzy
 msgid "Lyrics..."
-msgstr "Скрыть текст песни"
+msgstr "Тексты песен..."
 
 #: t_modules/t_main.py:20184
 msgid "Fix Mojibake"
-msgstr ""
+msgstr "Исправить Mojibake"
 
 #: t_modules/t_main.py:20283
-#, fuzzy
 msgid "Transcode Single"
-msgstr "Перекодировать все"
+msgstr "Перекодировать дорожку"
 
 #: t_modules/t_main.py:20285 t_modules/t_main.py:20291
 #: t_modules/t_main.py:20292 t_modules/t_main.py:20647
-#, fuzzy
 msgid "Transcode Folder"
-msgstr "Перекодировать все"
+msgstr "Перекодировать каталог"
 
 #: t_modules/t_main.py:20290
 msgid "Vacuum Playtimes"
@@ -1126,428 +1097,402 @@ msgstr ""
 
 #: t_modules/t_main.py:20301
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "Копировать \"Исполнитель - Альбом\""
 
 #: t_modules/t_main.py:20308 t_modules/t_main.py:22067
 msgid "URL copied to clipboard"
-msgstr ""
+msgstr "URL скопирован в буфер обмена"
 
 #: t_modules/t_main.py:20310 t_modules/t_main.py:22069
-#, fuzzy
 msgid "No results found"
-msgstr "Изображение исполнителя не найдено."
+msgstr "Ничего не найдено"
 
 #: t_modules/t_main.py:20317
-#, fuzzy
 msgid "Copy Spotify Album URL"
-msgstr "Альбомы Spotify"
+msgstr "Скопировать URL альбома Spotify"
 
 #: t_modules/t_main.py:20319
-#, fuzzy
 msgid "Lookup Spotify Album URL"
-msgstr "Альбомы Spotify"
+msgstr "Поиск URL альбома Spotify"
 
 #: t_modules/t_main.py:20327
 msgid "Save to Spotify Library"
-msgstr ""
+msgstr "Сохранить в библиотеке Spotify"
 
 #: t_modules/t_main.py:20333
 msgid "Remove from Spotify Library"
-msgstr ""
+msgstr "Удалить из библиотеки Spotify"
 
 #: t_modules/t_main.py:20377
-#, fuzzy
 msgid "Queue %d"
-msgstr "Очередь"
+msgstr "Очередь %d"
 
 #: t_modules/t_main.py:20382
-#, fuzzy
 msgid "Add to queue"
-msgstr "Добавить альбом в очередь"
+msgstr "Добавить в очередь"
 
 #: t_modules/t_main.py:20401
 msgid "Cut"
-msgstr ""
+msgstr "Вырезать"
 
 #: t_modules/t_main.py:20402 t_modules/t_main.py:20410
 #: t_modules/t_main.py:20411 t_modules/t_main.py:38396
 msgid "Remove"
-msgstr ""
+msgstr "Удалить"
 
 #: t_modules/t_main.py:20403
-#, fuzzy
 msgid "Delete Files"
-msgstr "Удалить файл изображения"
+msgstr "Удалить файлы"
 
 #: t_modules/t_main.py:20449
-#, fuzzy
 msgid "No matching artist result found"
-msgstr "Изображение исполнителя не найдено."
+msgstr "Подходящего исполнителя не найдено"
 
 #: t_modules/t_main.py:20527
 msgid "Search Artist on Wikipedia"
-msgstr ""
+msgstr "Искать исполнителя на Wikipedia"
 
 #: t_modules/t_main.py:20529
 msgid "Search Track on Genius"
-msgstr ""
+msgstr "Искать дорожку на Genius"
 
 #: t_modules/t_main.py:20535
 msgid "Search Artist on Sonemic"
-msgstr ""
+msgstr "Искать исполнителя на Sonemic"
 
 #: t_modules/t_main.py:20542
 msgid "Search Artist on Bandcamp"
-msgstr ""
+msgstr "Искать исполнителя на Bandcamp"
 
 #: t_modules/t_main.py:20554
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "Копировать \"Исполнитель - Трек\""
 
 #: t_modules/t_main.py:20572
 msgid "Copy Spotify Track URL"
-msgstr ""
+msgstr "Копировать URL дорожки Spotify"
 
 #: t_modules/t_main.py:20621 t_modules/t_main.py:33677
 msgid "FFmpeg does not appear to be installed"
-msgstr ""
+msgstr "FFmpeg не установлен"
 
 #: t_modules/t_main.py:20673
 msgid "Broadcast This"
-msgstr ""
+msgstr "Транслировать"
 
 #: t_modules/t_main.py:20674
 msgid "Chromecast This"
-msgstr ""
+msgstr "Транслировать через Chromecast"
 
 #: t_modules/t_main.py:20709 t_modules/t_main.py:26503
 msgid "Off"
-msgstr ""
+msgstr "Выключено"
 
 #: t_modules/t_main.py:20722
 msgid "Level Meter"
-msgstr ""
+msgstr "Индикатор уровня"
 
 #: t_modules/t_main.py:20731
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Визуализатор спектра"
 
 #: t_modules/t_main.py:20963
 msgid "Time"
-msgstr ""
+msgstr "Время"
 
 #: t_modules/t_main.py:20964 t_modules/t_main.py:20991
-#, fuzzy
 msgid "Filepath"
-msgstr "Сортировать по пути к файлу"
+msgstr "Путь к файлу"
 
 #: t_modules/t_main.py:20970
 msgid "Auto Resize"
-msgstr ""
+msgstr "Автоматическое изменение размера"
 
 #: t_modules/t_main.py:20971
-#, fuzzy
 msgid "Hide bar"
-msgstr "Скрыть текст песни"
+msgstr "Скрыть панель"
 
 #: t_modules/t_main.py:20972
-#, fuzzy
 msgid "Show bar"
-msgstr "Показать текст песни"
+msgstr "Показать панель"
 
 #: t_modules/t_main.py:20974 t_modules/t_main.py:36557
 msgid "Remove This"
-msgstr ""
+msgstr "Удалить это"
 
 #: t_modules/t_main.py:20976 t_modules/t_main.py:44441
 #: t_modules/t_main.py:44447
-#, fuzzy
 msgid "Artist"
-msgstr "Список исполнителей"
+msgstr "Исполнитель"
 
 #: t_modules/t_main.py:20977 t_modules/t_main.py:44421
 #: t_modules/t_main.py:44427
 msgid "Title"
-msgstr ""
+msgstr "Название"
 
 #: t_modules/t_main.py:20978 t_modules/t_main.py:44460
 #: t_modules/t_main.py:44466
 msgid "Album"
-msgstr ""
+msgstr "Альбом"
 
 #: t_modules/t_main.py:20979 t_modules/t_main.py:44528
 #: t_modules/t_main.py:44534
 msgid "Album Artist"
-msgstr ""
+msgstr "Исполнитель альбома"
 
 #: t_modules/t_main.py:20980 t_modules/t_main.py:44621
 #: t_modules/t_main.py:44627
 msgid "Composer"
-msgstr ""
+msgstr "Композитор"
 
 #: t_modules/t_main.py:20981 t_modules/t_main.py:44548
 #: t_modules/t_main.py:44554
 msgid "Duration"
-msgstr ""
+msgstr "Длительность"
 
 #: t_modules/t_main.py:20982 t_modules/t_main.py:44605
 #: t_modules/t_main.py:44611
 msgid "Date"
-msgstr ""
+msgstr "Дата"
 
 #: t_modules/t_main.py:20983 t_modules/t_main.py:44590
 #: t_modules/t_main.py:44596
 msgid "Genre"
-msgstr ""
+msgstr "Жанр"
 
 #: t_modules/t_main.py:20984
-#, fuzzy
 msgid "Track Number"
-msgstr "Сортировать по номеру трека"
+msgstr "Номер дорожки"
 
 #: t_modules/t_main.py:20985
 msgid "Play Count"
-msgstr ""
+msgstr "Время проигрывания"
 
 #: t_modules/t_main.py:20986
 msgid "Scrobble Count"
-msgstr ""
+msgstr "Кол-во скробблов"
 
 #: t_modules/t_main.py:20988 t_modules/t_main.py:27996
 #: t_modules/t_main.py:44515
 msgid "Bitrate"
-msgstr ""
+msgstr "Битрейт"
 
 #: t_modules/t_main.py:20990 t_modules/t_main.py:44676
 #: t_modules/t_main.py:44682
 msgid "Comment"
-msgstr ""
+msgstr "Комментарий"
 
 #: t_modules/t_main.py:20992
-#, fuzzy
 msgid "Filename"
-msgstr "Переименовать"
+msgstr "Имя файла"
 
 #: t_modules/t_main.py:20993
 msgid "Starline"
-msgstr ""
+msgstr "Звездная линия"
 
 #: t_modules/t_main.py:20994
 msgid "Rating"
-msgstr ""
+msgstr "Рейтинг"
 
 #: t_modules/t_main.py:21470
-#, fuzzy
 msgid "New Radio List"
-msgstr "Новый плейлист"
+msgstr "Новый список радиостанций"
 
 #: t_modules/t_main.py:21490 t_modules/t_main.py:21492
 msgid "Clean Database!"
-msgstr ""
+msgstr "Чистая база данных!"
 
 #: t_modules/t_main.py:21516
-#, fuzzy
 msgid "Paste Spotify Playlist"
-msgstr "Плейлист Spotify обновлен"
+msgstr "Вставить плейлист Spotify"
 
 #: t_modules/t_main.py:21524
 msgid "Music"
-msgstr ""
+msgstr "Музыка"
 
 #: t_modules/t_main.py:21534
 msgid "Import Music Folder"
-msgstr ""
+msgstr "Импортировать каталог с музыкой"
 
 #: t_modules/t_main.py:21542
 msgid "Settings"
-msgstr ""
+msgstr "Настройки"
 
 #: t_modules/t_main.py:21543
 msgid "Database…"
-msgstr ""
+msgstr "База данных…"
 
 #: t_modules/t_main.py:21609
-#, fuzzy
 msgid "Export as CSV"
-msgstr "Экспорт альбомов CSV"
+msgstr "Экспортировать как CSV"
 
 #: t_modules/t_main.py:21610
-#, fuzzy
 msgid "Play History to Playlist"
-msgstr "Отфильтровать в новый плейлист"
+msgstr "Воспроизвести историю в плейлист"
 
 #: t_modules/t_main.py:21611
-#, fuzzy
 msgid "Reset Image Cache"
-msgstr "Удалить файл изображения"
+msgstr "Сбросить кеш изображений"
 
 #: t_modules/t_main.py:21628
-#, fuzzy
 msgid "Remove Network Tracks"
-msgstr "Повторить трек"
+msgstr "Удалить сетевые дорожки"
 
 #: t_modules/t_main.py:21629
 msgid "Remove Missing Tracks"
-msgstr ""
+msgstr "Удалить недостающие дорожки"
 
 #: t_modules/t_main.py:21648
 msgid "Import FMPS_Ratings from Tags"
-msgstr ""
+msgstr "Импорт FMPS_Ratings из тегов"
 
 #: t_modules/t_main.py:21653
 msgid "This will delete all track and album ratings from the local database!"
-msgstr ""
+msgstr "Это удалит все рейтинги дорожек и альбомов из локальной базы данных!"
 
 #: t_modules/t_main.py:21654 t_modules/t_main.py:27824
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
 msgstr ""
+"Нажмите кнопку еще раз, удерживая клавишу Shift, если вы уверены, что хотите "
+"это сделать."
 
 #: t_modules/t_main.py:21662
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "Сбросить пользовательские рейтинги"
 
 #: t_modules/t_main.py:21667
-#, fuzzy
 msgid "Find Incomplete Albums"
-msgstr "Случайные альбомы"
+msgstr "Найти неполные альбомы"
 
 #: t_modules/t_main.py:21673
 msgid "There are no tracks in this playlist to broadcast."
-msgstr ""
+msgstr "В этом плейлисте нет дорожек для трансляции."
 
 #: t_modules/t_main.py:21676
 msgid "You need to start the broadcast web server in settings."
-msgstr ""
+msgstr "Вам нужно запустить веб-сервер вещания в настройках."
 
 #: t_modules/t_main.py:21700
 msgid "Stop Broadcast"
-msgstr ""
+msgstr "Остановить трансляцию"
 
 #: t_modules/t_main.py:21716
 msgid "Start Broadcast"
-msgstr ""
+msgstr "Начать трансляцию"
 
 #: t_modules/t_main.py:21747
 msgid "Mini"
-msgstr ""
+msgstr "Мини"
 
 #: t_modules/t_main.py:21749
 msgid "Square"
-msgstr ""
+msgstr "Квадрат"
 
 #: t_modules/t_main.py:21750
-#, fuzzy
 msgid "Square Large"
-msgstr "Сделать большим"
+msgstr "Большой квадрат"
 
 #: t_modules/t_main.py:21751
 msgid "Micro"
-msgstr ""
+msgstr "Микро"
 
 #: t_modules/t_main.py:21762
 msgid "No metadata available to copy"
-msgstr ""
+msgstr "Нет доступных метаданных для копирования"
 
 #: t_modules/t_main.py:21765
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Скопировать название в буфер обмена"
 
 #: t_modules/t_main.py:21783
-#, fuzzy
 msgid "Random Track"
-msgstr "Повторить трек"
+msgstr "Случайная дорожка"
 
 #: t_modules/t_main.py:21809
 msgid "Radio Random"
-msgstr ""
+msgstr "Случайная радиостанция"
 
 #: t_modules/t_main.py:21815
 msgid "Revert"
-msgstr ""
+msgstr "Развернуть"
 
 #: t_modules/t_main.py:21823 t_modules/t_main.py:36562
-#, fuzzy
 msgid "Clear Queue"
-msgstr "Очередь"
+msgstr "Очистить очередь"
 
 #: t_modules/t_main.py:21980
-#, fuzzy
 msgid "Spotify Like Track"
-msgstr "Лайк Spotify"
+msgstr "Лайкнуть дорожку Spotify"
 
 #: t_modules/t_main.py:21985
 msgid "Un-like Spotify Track"
-msgstr ""
+msgstr "Снять лайк с дорожки Spotify"
 
 #: t_modules/t_main.py:22059
 msgid "Global Search"
-msgstr ""
+msgstr "Глобальный поиск"
 
 #: t_modules/t_main.py:22073
 msgid "Copy Album URL"
-msgstr ""
+msgstr "Скопировать URL альбома"
 
 #: t_modules/t_main.py:22077
-#, fuzzy
 msgid "Lookup Spotify Album"
-msgstr "Альбомы Spotify"
+msgstr "Найти альбом Spotify"
 
 #: t_modules/t_main.py:22086
-#, fuzzy
 msgid "Locate Artist"
-msgstr "Сортировать по годам по исполнителям"
+msgstr "Найти исполнителя"
 
 #: t_modules/t_main.py:22088
 msgid "Go To Playing"
-msgstr ""
+msgstr "Перейти к воспроизводимому"
 
 #: t_modules/t_main.py:22247
 msgid "ListenBrainz is Paused"
-msgstr ""
+msgstr "ListenBrainz приостановлен"
 
 #: t_modules/t_main.py:22249
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "Скробблинг приостановлен"
 
 #: t_modules/t_main.py:22253
 msgid "ListenBrainz is Active"
-msgstr ""
+msgstr "ListenBrainz активен"
 
 #: t_modules/t_main.py:22255
 msgid "Scrobbling is Active"
-msgstr ""
+msgstr "Скробблинг активен"
 
 #: t_modules/t_main.py:22462
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Выйти из блокировки случайного порядка"
 
 #: t_modules/t_main.py:22463
 msgid "Exit"
-msgstr ""
+msgstr "Выход"
 
 #: t_modules/t_main.py:22471
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "Отключить быстрое добавление"
 
 #: t_modules/t_main.py:23200
 msgid "Press Tab key to switch to Spotify search"
-msgstr ""
+msgstr "Нажмите клавишу Tab, чтобы переключиться на поиск Spotify"
 
 #: t_modules/t_main.py:23427
-#, fuzzy
 msgid "Searching for albums by artist: "
-msgstr "Поиск текстов песни"
+msgstr "Поиск альбомов по исполнителю: "
 
 #: t_modules/t_main.py:23427
-#, fuzzy
 msgid "This may take a moment"
-msgstr "Это может занять очень много времени."
+msgstr "Это может занять некоторое время"
 
 #: t_modules/t_main.py:24978
 msgid "Permission error accessing one or more files."
-msgstr ""
+msgstr "Ошибка доступа к одному или нескольким файлам."
 
 #: t_modules/t_main.py:24979
 msgid "If this location is on external media, see"
