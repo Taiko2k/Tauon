@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-03-09 11:02+0000\n"
-"Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
+"PO-Revision-Date: 2025-05-04 09:07+0000\n"
+"Last-Translator: Edward T <tumanchinsky.edward@yandex.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.10.3-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -4911,8 +4911,7 @@ msgstr "Ошибка доступа к одному или нескольким 
 
 #: src/tauon/t_modules/t_main.py:43410
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
-"Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
+msgstr "Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
 
 #: src/tauon/t_modules/t_main.py:43486
 msgid ""
@@ -5032,8 +5031,7 @@ msgstr "Восстановление"
 
 #: src/tauon/t_modules/t_main.py:47389
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
-"Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
+msgstr "Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
 
 #: src/tauon/t_modules/t_main.py:47396
 msgid "Deletes some unnecessary files from folder"
