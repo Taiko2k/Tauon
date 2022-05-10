@@ -3689,7 +3689,7 @@ if db_version > 0:
                 f.write("\nescape Escape\n")
                 f.write("toggle-mute M Ctrl\n")
 
-        prefs.show_nag = True
+prefs.show_nag = True
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -24094,24 +24094,24 @@ class NagBox:
     def draw(self):
 
         w = 485 * gui.scale
-        h = 180 * gui.scale
+        h = 165 * gui.scale
         x = int(window_size[0] / 2) - int(w / 2)
-        if self.wiggle_timer.get() < 0.5:
-            gui.update += 1
-            x += math.sin(core_timer.get() * 40) * 4
+        # if self.wiggle_timer.get() < 0.5:
+        #     gui.update += 1
+        #     x += math.sin(core_timer.get() * 40) * 4
         y = int(window_size[1] / 2) - int(h / 2)
 
         ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
                    colours.box_text_border)
         ddt.rect_a((x, y), (w, h), colours.message_box_bg)
 
-        if gui.level_2_click and not coll((x, y, w, h)):
-            if core_timer.get() < 2:
-                self.wiggle_timer.set()
-            else:
-                prefs.show_nag = False
-
-            gui.update += 1
+        # if gui.level_2_click and not coll((x, y, w, h)):
+        #     if core_timer.get() < 2:
+        #         self.wiggle_timer.set()
+        #     else:
+        #         prefs.show_nag = False
+        #
+        #     gui.update += 1
 
         ddt.text_background_colour = colours.message_box_bg
 
@@ -24120,36 +24120,32 @@ class NagBox:
         ddt.text((x, y), "Welcome to v7.2.0!", colours.message_box_text, 212)
         y += round(20 * gui.scale)
 
-        #ddt.text((x, y), "Check out the release notes here", colours.message_box_text, 312)
-
-        link_pa = draw_linked_text((x, y), "Check out the release notes on the https://github.com/Taiko2k/TauonMusicBox/releases",
-                                   colours.message_box_text, 12, replace="Github Release Page.")
+        link_pa = draw_linked_text((x, y), "You can check out the release notes on the https://github.com/Taiko2k/TauonMusicBox/releases",
+                                   colours.message_box_text, 12, replace="Github release page.")
         link_activate(x, y, link_pa, click=gui.level_2_click)
 
         heart_notify_icon.render(x + round(425 * gui.scale), y + round(60 * gui.scale), [255, 90, 90, 255])
 
         y += round(30 * gui.scale)
-        ddt.text((x, y), "Wanna become a supporter?", colours.message_box_text, 212)
+        ddt.text((x, y), "New supporter bonuses!", colours.message_box_text, 212)
 
         y += round(20 * gui.scale)
 
-        ddt.text((x, y), "In case you didn't know already, you can support Tauon by becoming a", colours.message_box_text, 312)
-        y += round(20 * gui.scale)
-
-        ddt.text((x, y), "sponsor on Github. What you get: A warm feeling in your heart that you're", colours.message_box_text, 12)
-
+        link_pa = draw_linked_text((x, y), "Check out my updated sponsor page https://github.com/sponsors/Taiko2k",
+                                   colours.message_box_text, 12, replace="here!")
+        link_activate(x, y, link_pa, click=gui.level_2_click)
 
         y += round(20 * gui.scale)
-        ddt.text((x, y), "supporting an independent open source project!", colours.message_box_text, 12)
+        ddt.text((x, y), "Your support means a lot! Love you!", colours.message_box_text, 12)
 
-        y += round(20 * gui.scale)
+        y += round(30 * gui.scale)
 
         link_activate(x, y, link_pa, click=gui.level_2_click)
-        # if draw.button("Nope!", x, y, press=gui.level_2_click):
-        #     prefs.show_nag = False
-        #     show_message("Oh... :( 💔")
-        if draw.button("Show supporter page", x + round(304 * gui.scale), y, background_colour=[60, 140, 60, 255], background_highlight_colour=[60, 150, 60, 255], press=gui.level_2_click):
-            webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
+        if draw.button("Close", x, y, press=gui.level_2_click):
+            prefs.show_nag = False
+            #show_message("Oh... :( 💔")
+        # if draw.button("Show supporter page", x + round(304 * gui.scale), y, background_colour=[60, 140, 60, 255], background_highlight_colour=[60, 150, 60, 255], press=gui.level_2_click):
+        #     webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
             #prefs.show_nag = False
         # if draw.button("I already am!", x + round(360), y, press=gui.level_2_click):
         #     show_message("Oh hey, thanks! :)")
