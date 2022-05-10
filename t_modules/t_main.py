@@ -769,7 +769,7 @@ from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_cast import *
 from t_modules.t_stream import *
 from t_modules.t_lyrics import *
-from t_modules.t_themeload import load_theme
+from t_modules.t_themeload import *
 from t_modules.t_spot import SpotCtl
 from t_modules.t_search import *
 
@@ -2388,6 +2388,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
     def __init__(self):
 
+        self.deco = None
         self.column_colours = {}
         self.column_colours_playing = {}
 
@@ -2670,20 +2671,31 @@ def set_colour(colour):
     SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
 
 
-def get_themes():
+def get_themes(deco=False):
 
     themes = []  # full, name
+    decos = {}
     direcs = [install_directory + '/theme']
     if user_directory != install_directory:
         direcs.append(user_directory + '/theme')
 
-    for direc in direcs:
-        if os.path.exists(direc):
-            for path in [os.path.join(direc, f) for f in os.listdir(direc)]:
-                if path[-6:] == 'ttheme':
-                    themes.append((path, os.path.basename(path).split(".")[0]))
-
+    def scan_folders(folders):
+        for folder in folders:
+            if not os.path.isdir(folder):
+                continue
+            paths = [os.path.join(folder, f) for f in os.listdir(folder)]
+            for path in paths:
+                if os.path.isfile(path):
+                    if path[-7:] == '.ttheme':
+                        themes.append((path, os.path.basename(path).split(".")[0]))
+                    elif path[-6:] == '.tdeco':
+                        decos[os.path.basename(path).split(".")[0]] = path
+                elif os.path.isdir(path):
+                    scan_folders([path])
+    scan_folders(direcs)
     themes.sort()
+    if deco:
+        return decos
     return themes
 
 
@@ -7762,6 +7774,11 @@ class Tauon:
 
 
 tauon = Tauon()
+
+
+deco = Deco(tauon)
+deco.get_themes = get_themes
+deco.renderer = renderer
 
 if prefs.backend != 4:
     prefs.backend = 4
@@ -32343,10 +32360,11 @@ class StandardPlaylist:
         if pl_bg:
             x = (left + highlight_width) - (pl_bg.w + round(60 * gui.scale))
             pl_bg.render(x, window_size[1] - gui.panelBY - pl_bg.h)
-            #if not gui.set_mode:
             ddt.pretty_rect = ((left + highlight_width) - (pl_bg.w + 60 * gui.scale), window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
             ddt.alpha_bg = True
-                # ddt.rect(ddt.pretty_rect, [255, 0, 0, 100], True)
+        else:
+            deco.draw(ddt, left + highlight_width, window_size[1] - gui.panelBY, pretty_text=True)
+        # ddt.rect(ddt.pretty_rect, [255, 0, 0, 100], True)
 
         # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
@@ -41981,8 +41999,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            next = pctl.advance(dry=True)
-            print(next)
+            pass
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -42443,6 +42460,7 @@ while pctl.running:
                 colours.__init__()
 
                 load_theme(colours, theme_item[0])
+                deco.load(colours.deco)
                 print("Applying theme: " + gui.theme_name)
 
                 if colours.lm:
