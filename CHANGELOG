@@ -10,6 +10,7 @@ v7.2.0
  - Added escape key to keymaps file
  - Added toggle mute to keymaps file
  - Added 'auto' mode for ReplayGain
+ - Added theme mascot extension
  - Added mini modes to shuffle lockdown mode
  - Fixed invalid folder name on move
  - Fixed genre search not detecting semicolon deliminator

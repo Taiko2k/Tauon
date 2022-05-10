@@ -145,6 +145,8 @@ try:
 except:
     print('No previous window state')
 
+#os.environ["SDL_VIDEODRIVER"] = "wayland"
+
 SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
 
 err = SDL_GetError()
@@ -175,7 +177,7 @@ if "--tray" in sys.argv:
 t_window = SDL_CreateWindow(window_title,
                             o_x, o_y,
                             logical_size[0], logical_size[1],
-                            flags)
+                            flags) # | SDL_WINDOW_FULLSCREEN)
 
 
 if maximized:

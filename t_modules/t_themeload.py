@@ -1,6 +1,6 @@
 # Tauon Music Box - Theme reading module
 
-# Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2022, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -17,6 +17,13 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+import io
+import os
+import json
+from PIL import Image, ImageDraw, ImageFilter
+from sdl2 import *
+from sdl2.sdlimage import *
+import base64
 
 def get_colour_from_line(cline):
 
@@ -45,6 +52,8 @@ def load_theme(colours, path):
     for p in content:
         if "#" in p:
             continue
+        if p.startswith("deco="):
+            colours.deco = p.split("=", 1)[1].strip()
         if "light-mode" in p:
             colours.light_mode()
         if 'window frame' in p:
@@ -248,3 +257,105 @@ def load_theme(colours, path):
     colours.post_config()
     if colours.lm:
         colours.light_mode()
+
+
+class Drawable:
+    def __int__(self):
+        self.location = 1
+        self.x = 0
+        self.y = 0
+        self.w = 100
+        self.y = 100
+        self.rect = None
+        self.texture = None
+
+class Deco:
+    def __init__(self, tauon):
+        self.tauon = tauon
+        self.renderer = None
+        self.pctl = tauon.pctl
+        self.prefs = tauon.prefs
+        self.drawables = []
+
+    def unload(self):
+        for item in self.drawables:
+            SDL_DestroyTexture(item.texture)
+        self.drawables.clear()
+
+    def load(self, name):
+        self.unload()
+        if not name:
+            return
+
+        decos = self.get_themes(deco=True)
+
+        if name not in decos:
+            print("Missing deco file")
+            return
+
+        target = decos[name]
+        with open(target) as f:
+            j = json.load(f)
+
+        if "images" not in j:
+            return
+        images = j["images"]
+        if not images:
+            return
+        item = images[0]
+        if item.get("location") != 1:
+            return
+        x = int(item.get("x-margin", 0))
+        y = int(item.get("y-margin", 0))
+        opacity = int(item.get("opacity", 100))
+        logical_h = int(item.get("logical-height", 400))
+        file = item.get("file")
+        if file:
+            path = os.path.join(os.path.dirname(target), file)
+            im = Image.open(path)
+        else:
+            s = item.get("image-data")
+            if not s:
+                return
+            b = io.BytesIO(base64.b64decode(s))
+            im = Image.open(b)
+
+        w, h = im.size
+        scale = self.tauon.gui.scale
+        if not abs(h - (logical_h * scale)) < 10:
+            new_h = round(logical_h * scale)
+            ratio = w / h
+            new_w = round(new_h * ratio)
+            im.resize((w, h), Image.Resampling.LANCZOS)
+            w, h = new_w, new_h
+
+        g = io.BytesIO()
+        g.seek(0)
+        im.save(g, 'PNG')
+        g.seek(0)
+        wop = rw_from_object(g)
+        s_image = IMG_Load_RW(wop, 0)
+        texture = SDL_CreateTextureFromSurface(self.renderer, s_image)
+        SDL_SetTextureAlphaMod(texture, opacity)
+        SDL_FreeSurface(s_image)
+        sdl_rect = SDL_Rect(0, 0, w, h)
+
+        drawable = Drawable()
+        drawable.x = x
+        drawable.y = y
+        drawable.w = w
+        drawable.h = h
+        drawable.rect = sdl_rect
+        drawable.texture = texture
+        self.drawables.append(drawable)
+
+    def draw(self, ddt, x, y, pretty_text=False):
+        if self.drawables:
+            d = self.drawables[0]
+            d.rect.x = round(x - int(d.w + round(d.x + self.tauon.gui.scale)))
+            d.rect.y = round(y - int(d.h + round(d.y + self.tauon.gui.scale)))
+            SDL_RenderCopy(self.renderer, d.texture, None, d.rect)
+
+            if pretty_text:
+                ddt.pretty_rect = (d.rect.x, d.rect.y, d.rect.w, d.rect.h)
+                ddt.alpha_bg = True
