@@ -3689,7 +3689,7 @@ if db_version > 0:
                 f.write("\nescape Escape\n")
                 f.write("toggle-mute M Ctrl\n")
 
-prefs.show_nag = True
+        prefs.show_nag = True
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
