@@ -88,8 +88,8 @@ def player4(tauon):
 
             if prefs.replay_gain > 0:
                 if prefs.replay_gain == 3 and tg is not None and ag is not None:
-                    gens = pctl.gen_codes[tauon.pl_to_id(pctl.active_playlist_playing)]
-                    if pctl.random_mode or ("st" in gens or "rt" in gens or "r" in gens):
+                    gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
+                    if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
                         g = tg
                         if tp is not None:
                             p = tp
@@ -97,7 +97,7 @@ def player4(tauon):
                         g = ag
                         if ap is not None:
                             p = ap
-                if (prefs.replay_gain == 1 and tg is not None) or (prefs.replay_gain == 2 and ag is None and tg is not None):
+                elif (prefs.replay_gain == 1 and tg is not None) or (prefs.replay_gain == 2 and ag is None and tg is not None):
                     g = tg
                     if tp is not None:
                         p = tp
