@@ -42489,6 +42489,7 @@ while pctl.running:
             colours.lm = False
             colours.__init__()
             colours.post_config()
+            deco.unload()
 
         prefs.theme_name = gui.theme_name
 
