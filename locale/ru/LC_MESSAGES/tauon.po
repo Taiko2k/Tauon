@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-05-11 18:19+0000\n"
+"PO-Revision-Date: 2022-05-13 10:00+0000\n"
 "Last-Translator: Edward T <tumanchinsky.edward@yandex.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.12.1\n"
+"X-Generator: Weblate 4.13-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1981 t_modules/t_main.py:1983
@@ -1093,7 +1093,7 @@ msgstr "Перекодировать каталог"
 
 #: t_modules/t_main.py:20290
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Время тишины"
 
 #: t_modules/t_main.py:20301
 msgid "Copy \"Artist - Album\""
@@ -1651,7 +1651,7 @@ msgstr "Вернуться"
 
 #: t_modules/t_main.py:26500 t_modules/t_main.py:26664
 msgid "ReplayGain"
-msgstr ""
+msgstr "Выравнивание громкости (ReplayGain)"
 
 #: t_modules/t_main.py:26505
 msgid "Preserve album dynamics"
@@ -1693,7 +1693,7 @@ msgstr "Используйте затухание при переходе по �
 
 #: t_modules/t_main.py:26661
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Начать сначала"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
@@ -1725,7 +1725,7 @@ msgstr "*Веб-скрейпинг. Включайте на свое усмот�
 
 #: t_modules/t_main.py:26786
 msgid "Tip: The order enabled will be the order searched."
-msgstr ""
+msgstr "Совет: Отмеченный пункт является значением поиска."
 
 #: t_modules/t_main.py:26798
 msgid "Metadata side panel"
@@ -2215,620 +2215,572 @@ msgstr "Выберите исходный плейлист"
 
 #: t_modules/t_main.py:27953
 msgid "Stop"
-msgstr ""
+msgstr "Стоп"
 
 #: t_modules/t_main.py:27969
 msgid "Output codec setting:"
-msgstr ""
+msgstr "Настройка выходного кодека:"
 
 #: t_modules/t_main.py:27971 t_modules/t_main.py:27972
-#, fuzzy
 msgid "Open output folder"
-msgstr "Открыть папку"
+msgstr "Открыть выходной каталог"
 
 #: t_modules/t_main.py:27974 t_modules/t_main.py:27975
 msgid "Sync..."
-msgstr ""
+msgstr "Синхронизация..."
 
 #: t_modules/t_main.py:27983
 msgid "Save opus as .ogg extension"
-msgstr ""
+msgstr "Сохранить opus как .ogg"
 
 #: t_modules/t_main.py:28007
 msgid "Save to output folder"
-msgstr ""
+msgstr "Сохранить в выходной каталог"
 
 #: t_modules/t_main.py:28009
 msgid "Save and overwrite files inplace"
-msgstr ""
+msgstr "Сохранить и перезаписать файлы"
 
 #: t_modules/t_main.py:28031
 msgid "Emit track change notifications"
-msgstr ""
+msgstr "Отправка уведомлений об изменении дорожки"
 
 #: t_modules/t_main.py:28034
 msgid "Draw own window decorations"
-msgstr ""
+msgstr "Создать собственные оформления окна"
 
 #: t_modules/t_main.py:28037
 msgid "Restore window position on restart"
-msgstr ""
+msgstr "Восстановить положение окна при перезапуске"
 
 #: t_modules/t_main.py:28041
 msgid "Show playing in titlebar"
-msgstr ""
+msgstr "Показать воспроизводимую дорожку в заголовке"
 
 #: t_modules/t_main.py:28048
 msgid "Top-panel level meter"
-msgstr ""
+msgstr "Визуализатор спектра в заголовке окна"
 
 #: t_modules/t_main.py:28052
 msgid "Showcase visualisation"
-msgstr ""
+msgstr "Визуализация витрины"
 
 #: t_modules/t_main.py:28058
 msgid "UI scale for HiDPI displays"
-msgstr ""
+msgstr "Масштаб интерфейса для HiDPI дисплеев"
 
 #: t_modules/t_main.py:28116
 msgid "Auto scale"
-msgstr ""
+msgstr "Автоматическое масштабирование"
 
 #: t_modules/t_main.py:28400 t_modules/t_main.py:28403
 msgid "Credits"
-msgstr ""
+msgstr "Благодарности"
 
 #: t_modules/t_main.py:28400 t_modules/t_main.py:28405
 msgid "Next"
-msgstr ""
+msgstr "Следующий"
 
 #: t_modules/t_main.py:28417
 msgid "Chart Grid Generator"
-msgstr ""
+msgstr "Генератор сетки чартов"
 
 #: t_modules/t_main.py:28420
 msgid "Target playlist:   "
-msgstr ""
+msgstr "Целевой плейлист:   "
 
 #: t_modules/t_main.py:28448
 msgid "Rows"
-msgstr ""
+msgstr "Строки"
 
 #: t_modules/t_main.py:28450
 msgid "Columns"
-msgstr ""
+msgstr "Колонки"
 
 #: t_modules/t_main.py:28457
 msgid "Cascade style"
-msgstr ""
+msgstr "Каскадный стиль"
 
 #: t_modules/t_main.py:28459
 msgid "Use padding"
-msgstr ""
+msgstr "Использовать отступы"
 
 #: t_modules/t_main.py:28464
 msgid "Include album titles"
-msgstr ""
+msgstr "Включить названия альбомов"
 
 #: t_modules/t_main.py:28466
-#, fuzzy
 msgid "Sort by top played"
-msgstr "Сортировать по Импортировано"
+msgstr "Сортировать по количеству воспроизведений"
 
 #: t_modules/t_main.py:28473
 msgid "Randomise BG"
-msgstr ""
+msgstr "Случайный BG"
 
 #: t_modules/t_main.py:28509
-#, fuzzy
 msgid "Generate"
-msgstr "Создать…"
+msgstr "Генерировать"
 
 #: t_modules/t_main.py:28523
-#, fuzzy
 msgid "Generating..."
-msgstr "Поиск…"
+msgstr "Генерация..."
 
 #: t_modules/t_main.py:28531
 msgid "Album chart"
-msgstr ""
+msgstr "Рейтинг альбома"
 
 #: t_modules/t_main.py:28536
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "Недостаточно альбомов в плейлисте!"
 
 #: t_modules/t_main.py:28556 t_modules/t_main.py:28557
 msgid "Chart generator..."
-msgstr ""
+msgstr "Генератор чартов..."
 
 #: t_modules/t_main.py:28565 t_modules/t_main.py:28606
-#, fuzzy
 msgid "Tracks in playlist"
-msgstr "Трек нравится"
+msgstr "Дорожки в плейлисте"
 
 #: t_modules/t_main.py:28566 t_modules/t_main.py:28609
-#, fuzzy
 msgid "Albums in playlist"
-msgstr "Показать в плейлисте"
+msgstr "Альбомы в плейлисте"
 
 #: t_modules/t_main.py:28567 t_modules/t_main.py:28612
-#, fuzzy
 msgid "Playlist duration"
-msgstr "Сделать авто-сортировку плейлиста"
+msgstr "Длительность плейлиста"
 
 #: t_modules/t_main.py:28568 t_modules/t_main.py:28641
 msgid "Tracks in database"
-msgstr ""
+msgstr "Дорожки в базе данных"
 
 #: t_modules/t_main.py:28569 t_modules/t_main.py:28644
-#, fuzzy
 msgid "Total albums"
-msgstr "Альбомы Spotify"
+msgstr "Всего альбомов"
 
 #: t_modules/t_main.py:28570 t_modules/t_main.py:28648
 msgid "Total playtime"
-msgstr ""
+msgstr "Общее время воспроизведения"
 
 #: t_modules/t_main.py:28710
-#, fuzzy
 msgid "Track ratings"
-msgstr "Переименование дорожек"
+msgstr "Рейтинги дорожек"
 
 #: t_modules/t_main.py:28712
 msgid "Album ratings"
-msgstr ""
+msgstr "Рейтинги альбомов"
 
 #: t_modules/t_main.py:28720
 msgid "Show track loves"
-msgstr ""
+msgstr "Показать любимые дорожки"
 
 #: t_modules/t_main.py:28728
 msgid "Represent playtime as stars"
-msgstr ""
+msgstr "Представить время воспроизведения в виде звезд"
 
 #: t_modules/t_main.py:28737
 msgid "Represent playcount as lines"
-msgstr ""
+msgstr "Представить время проигрывания в виде линий"
 
 #: t_modules/t_main.py:28757
 msgid "Show album release year"
-msgstr ""
+msgstr "Показать дату релиза альбома"
 
 #: t_modules/t_main.py:28760
 msgid "Show album duration"
-msgstr ""
+msgstr "Показать длительность альбома"
 
 #: t_modules/t_main.py:28767
 msgid "Font Size"
-msgstr ""
+msgstr "Размер шрифта"
 
 #: t_modules/t_main.py:28769
 msgid "Row Size"
-msgstr ""
+msgstr "Размер строки"
 
 #: t_modules/t_main.py:28771
 msgid "Baseline offset"
-msgstr ""
+msgstr "Смещение базовой линии"
 
 #: t_modules/t_main.py:28775
-#, fuzzy
 msgid "Thin default"
-msgstr "По умолчанию"
+msgstr "Тонкий по умолчанию"
 
 #: t_modules/t_main.py:28777
-#, fuzzy
 msgid "Thick default"
-msgstr "По умолчанию"
+msgstr "Толстый по умолчанию"
 
 #: t_modules/t_main.py:28783
-#, fuzzy
 msgid "End of playlist action"
-msgstr "Конец плейлиста"
+msgstr "Действие по окончанию плейлиста"
 
 #: t_modules/t_main.py:28786 t_modules/t_main.py:28790
 msgid "Stop playback"
-msgstr ""
+msgstr "Остановить воспроизведение"
 
 #: t_modules/t_main.py:28787 t_modules/t_main.py:28792
-#, fuzzy
 msgid "Repeat playlist"
-msgstr "Новый плейлист"
+msgstr "Повторить плейлист"
 
 #: t_modules/t_main.py:28796
-#, fuzzy
 msgid "Play next playlist"
-msgstr "Создание нового плейлиста Spotify"
+msgstr "Воспроизвести следующий плейлист"
 
 #: t_modules/t_main.py:28798
 msgid "Cycle all playlists"
-msgstr ""
+msgstr "Воспроизводить все плейлисты по кругу"
 
 #: t_modules/t_main.py:29663 t_modules/t_main.py:34405
 msgid "Added station to: "
-msgstr ""
+msgstr "Добавлена станция в: "
 
 #: t_modules/t_main.py:30043
-#, fuzzy
 msgid "Buffering... "
-msgstr "Поиск…"
+msgstr "Буферизация... "
 
 #: t_modules/t_main.py:30159
 msgid "There are currently no connected clients"
-msgstr ""
+msgstr "В настоящее время нет подключенных клиентов"
 
 #: t_modules/t_main.py:30161
 msgid "There is 1 inbound connection."
-msgstr ""
+msgstr "Имеется 1 входящее соединение."
 
 #: t_modules/t_main.py:30163
 msgid "There are %d inbound connections."
-msgstr ""
+msgstr "Имеется %d входящих соединений."
 
 #: t_modules/t_main.py:30743 t_modules/t_main.py:31321
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Играть, RC: Переход к воспроизводимому"
 
 #: t_modules/t_main.py:30771 t_modules/t_main.py:31349
 msgid "Pause"
-msgstr ""
+msgstr "Пауза"
 
 #: t_modules/t_main.py:30788
 msgid "Stop, RC: Toggle auto-stop"
-msgstr ""
+msgstr "Стоп, RC: Переключатель автоматической остановки"
 
 #: t_modules/t_main.py:30810 t_modules/t_main.py:31370
-#, fuzzy
 msgid "Shuffle On"
-msgstr "Не перемешивать"
+msgstr "Перемешивание включено"
 
 #: t_modules/t_main.py:30813 t_modules/t_main.py:31373
-#, fuzzy
 msgid "Shuffle Off"
-msgstr "Не перемешивать"
+msgstr "Перемешивание выключено"
 
 #: t_modules/t_main.py:30842
-#, fuzzy
 msgid "Repeat On"
-msgstr "Повтор ВЫКЛ"
+msgstr "Повтор включен"
 
 #: t_modules/t_main.py:30845
-#, fuzzy
 msgid "Repeat Off"
-msgstr "Повтор ВЫКЛ"
+msgstr "Повтор выключен"
 
 #: t_modules/t_main.py:30852
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Назад, RC: переключатель повтора, MC: вернуться"
 
 #: t_modules/t_main.py:30908 t_modules/t_main.py:30910
-#, fuzzy
 msgid "Shuffle"
-msgstr "Не перемешивать"
+msgstr "Перемешать"
 
 #: t_modules/t_main.py:30957 t_modules/t_main.py:30965
-#, fuzzy
 msgid "Repeat album"
 msgstr "Повторить альбом"
 
 #: t_modules/t_main.py:30959 t_modules/t_main.py:30967
-#, fuzzy
 msgid "Repeat track"
-msgstr "Повторить трек"
+msgstr "Повторить дорожку"
 
 #: t_modules/t_main.py:32342
-#, fuzzy
 msgid "Playlist is empty"
-msgstr "Плейлист заблокирован"
+msgstr "Плейлист пуст"
 
 #: t_modules/t_main.py:32344
 msgid "Drag and drop files to import"
-msgstr ""
+msgstr "Перетащите файлы для импорта"
 
 #: t_modules/t_main.py:32366
-#, fuzzy
 msgid "End of Playlist"
 msgstr "Конец плейлиста"
 
 #: t_modules/t_main.py:33612
-#, fuzzy
 msgid "Search Tag"
-msgstr "Поиск…"
+msgstr "Поиск тега"
 
 #: t_modules/t_main.py:33613
-#, fuzzy
 msgid "Search Country Code"
-msgstr "Поиск GuitarParty"
+msgstr "Поиск кода страны"
 
 #: t_modules/t_main.py:33614
-#, fuzzy
 msgid "Search Title"
-msgstr "Поиск GuitarParty"
+msgstr "Поиск заголовка"
 
 #: t_modules/t_main.py:33900
 msgid "Search text…"
-msgstr ""
+msgstr "Поиск текста…"
 
 #: t_modules/t_main.py:33907
-#, fuzzy
 msgid "Search"
-msgstr "Поиск…"
+msgstr "Поиск"
 
 #: t_modules/t_main.py:33914 t_modules/t_main.py:33918
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Получить лучшие голоса"
 
 #: t_modules/t_main.py:33920
 msgid "Developer Picks"
-msgstr ""
+msgstr "Подборки разработчика"
 
 #: t_modules/t_main.py:34068
 msgid "Add Station"
-msgstr ""
+msgstr "Добавить станцию"
 
 #: t_modules/t_main.py:34070
 msgid "Edit Station"
-msgstr ""
+msgstr "Редактировать станцию"
 
 #: t_modules/t_main.py:34096
 msgid "Station Browser"
-msgstr ""
+msgstr "Обзор станций"
 
 #: t_modules/t_main.py:34100
-#, fuzzy
 msgid "Connecting..."
-msgstr "Поиск…"
+msgstr "Подключение..."
 
 #: t_modules/t_main.py:34103
 msgid "Failed to connect!"
-msgstr ""
+msgstr "Не удалось подключиться!"
 
 #: t_modules/t_main.py:34151
 msgid "Name / Title"
-msgstr ""
+msgstr "Имя / Заголовок"
 
 #: t_modules/t_main.py:34168
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr ""
+msgstr "URL необработанного потока http://example.stream:1234"
 
 #: t_modules/t_main.py:34172 t_modules/t_main.py:34408
 msgid "Save"
-msgstr ""
+msgstr "Сохранить"
 
 #: t_modules/t_main.py:34175
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Введите URL потока"
 
 #: t_modules/t_main.py:34189
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr ""
+msgstr "Не удалось проверить URL. Должен начинаться с https:// или http://"
 
 #: t_modules/t_main.py:34347 t_modules/t_main.py:34353
 #: t_modules/t_main.py:34358
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Запись и автоматическое разделение песен"
 
 #: t_modules/t_main.py:34349
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Прежде чем переключать этот параметр, остановите воспроизведение"
 
 #: t_modules/t_main.py:34354
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Сначала остановите воспроизведение, чтобы закончить текущую запись"
 
 #: t_modules/t_main.py:34360
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Совет: Вы можете нажать F9, чтобы просмотреть выходной каталог."
 
 #: t_modules/t_main.py:34360
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Дорожки будут записаны."
 
 #: t_modules/t_main.py:34364
 msgid "Browse"
-msgstr ""
+msgstr "Просмотр"
 
 #: t_modules/t_main.py:34368
 msgid "Saved"
-msgstr ""
+msgstr "Сохранено"
 
 #: t_modules/t_main.py:34407 t_modules/t_main.py:38390
 msgid "Visit Website"
-msgstr ""
+msgstr "Посетить сайт"
 
 #: t_modules/t_main.py:35104
 msgid "View..."
-msgstr ""
+msgstr "Осмотр..."
 
 #: t_modules/t_main.py:35122
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Сортировать по алфавиту"
 
 #: t_modules/t_main.py:35123
-#, fuzzy
 msgid "Sort by Popularity"
-msgstr "Сортировать по Импортировано"
+msgstr "Сортировать по популярности"
 
 #: t_modules/t_main.py:35124
-#, fuzzy
 msgid "Sort by Playtime"
-msgstr "Сортировать по пути к файлу"
+msgstr "Сортировать по времени воспроизведения"
 
 #: t_modules/t_main.py:35125
-#, fuzzy
 msgid "Toggle Thumbnails"
-msgstr "Переключить текст песни"
+msgstr "Переключить миниатюры"
 
 #: t_modules/t_main.py:35214
-#, fuzzy
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr "Обложка скачана с сайта fanart.tv"
+msgstr "Примечание: изображение исполнителя взято с сайта fanart.tv"
 
 #: t_modules/t_main.py:35539 t_modules/t_main.py:35674
 msgid "Downloading data..."
-msgstr ""
+msgstr "Загрузка данных..."
 
 #: t_modules/t_main.py:35901
-#, fuzzy
 msgid "No artists in playlist"
-msgstr "Показать в плейлисте"
+msgstr "Нет исполнителей в плейлисте"
 
 #: t_modules/t_main.py:35904
 msgid "Artist threshold not met"
-msgstr ""
+msgstr "Пороговое значение исполнителя не достигнуто"
 
 #: t_modules/t_main.py:35906
-#, fuzzy
 msgid "Loading Artist List..."
-msgstr "Список исполнителей"
+msgstr "Загрузка списка исполнителей..."
 
 #: t_modules/t_main.py:35908
 msgid "Busy..."
-msgstr ""
+msgstr "Занят..."
 
 #: t_modules/t_main.py:36118
-#, fuzzy
 msgid "Loading Folder Tree..."
-msgstr "Переместить папку с воспроизведением сюда"
+msgstr "Загрузка дерева каталогов..."
 
 #: t_modules/t_main.py:36126 t_modules/t_main.py:36142
 msgid "Folder Tree"
-msgstr ""
+msgstr "Дерево каталогов"
 
 #: t_modules/t_main.py:36527
 msgid "Resume Queue"
-msgstr ""
+msgstr "Возобновить очередь"
 
 #: t_modules/t_main.py:36529
-#, fuzzy
 msgid "Pause Queue"
-msgstr "Плейлисты и очередь"
+msgstr "Приостановить очередь"
 
 #: t_modules/t_main.py:36558
 msgid "Play Now"
-msgstr ""
+msgstr "Воспроизвести сейчас"
 
 #: t_modules/t_main.py:36564
 msgid "↳ Except for This"
-msgstr ""
+msgstr "↳ За исключением этого"
 
 #: t_modules/t_main.py:36566
-#, fuzzy
 msgid "Queue to New Playlist"
-msgstr "Отфильтровать в новый плейлист"
+msgstr "Очередь в новый плейлист"
 
 #: t_modules/t_main.py:36711
 msgid "Cancel Auto-Stop"
-msgstr ""
+msgstr "Отменить автоматическую остановку"
 
 #: t_modules/t_main.py:36713
 msgid "Auto-Stop"
-msgstr ""
+msgstr "Автоматическая остановка"
 
 #: t_modules/t_main.py:37572 t_modules/t_main.py:37809
-#, fuzzy
 msgid "Looking up..."
-msgstr "Поиск по MusicBrainz ID..."
+msgstr "Поиск..."
 
 #: t_modules/t_main.py:37616
 msgid "Cooldown..."
-msgstr ""
+msgstr "Перезарядка..."
 
 #: t_modules/t_main.py:37631
-#, fuzzy
 msgid "Loading..."
-msgstr "Поиск…"
+msgstr "Загрузка…"
 
 #: t_modules/t_main.py:37801
-#, fuzzy
 msgid "No artist data downloaded"
-msgstr "Изображение исполнителя не найдено."
+msgstr "Данные исполнителя не загружены"
 
 #: t_modules/t_main.py:37815
-#, fuzzy
 msgid "No artist bio found"
-msgstr "Изображение исполнителя не найдено."
+msgstr "Биография исполнителя не найдена"
 
 #: t_modules/t_main.py:37907
 msgid "Download Artist Data"
-msgstr ""
+msgstr "Загрузить данные исполнителя"
 
 #: t_modules/t_main.py:37908
-#, fuzzy
 msgid "Clear Bio"
-msgstr "Очистить"
+msgstr "Очистить биографию"
 
 #: t_modules/t_main.py:38389
 msgid "Edit..."
-msgstr ""
+msgstr "Редактировать..."
 
 #: t_modules/t_main.py:38720
-#, fuzzy
 msgid "Playing"
-msgstr "Добавить плейлист"
+msgstr "Воспроизведение"
 
 #: t_modules/t_main.py:38781
 msgid "Prefer synced"
-msgstr ""
+msgstr "Предпочитать синхронизированный"
 
 #: t_modules/t_main.py:38783
 msgid "Prefer static"
-msgstr ""
+msgstr "Предпочитать статический"
 
 #: t_modules/t_main.py:38794
 msgid "Auto-Scroll"
-msgstr ""
+msgstr "Автопрокрутка"
 
 #: t_modules/t_main.py:39271
 msgid "Tracks + Art"
-msgstr ""
+msgstr "Дорожки + Арт"
 
 #: t_modules/t_main.py:39304
 msgid "Tracks only"
-msgstr ""
+msgstr "Только дорожки"
 
 #: t_modules/t_main.py:39317
-#, fuzzy
 msgid "Showcase + Lyrics"
-msgstr "Показать текст песни"
+msgstr "Витрина + тексты песен"
 
 #: t_modules/t_main.py:39330
 msgid "Radio"
-msgstr ""
+msgstr "Радио"
 
 #: t_modules/t_main.py:39343
-#, fuzzy
 msgid "Toggle columns"
-msgstr "Переключить текст песни"
+msgstr "Переключить столбцы"
 
 #: t_modules/t_main.py:39359
-#, fuzzy
 msgid "Toggle artist info"
-msgstr "Переключить текст песни"
+msgstr "Переключить информацию об исполнителе"
 
 #: t_modules/t_main.py:40970
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
+msgstr "Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
 
 #: t_modules/t_main.py:41924
 msgid "Enabled auto theme"
-msgstr ""
+msgstr "Включена автоматическая тема"
 
 #: t_modules/t_main.py:41926
 msgid "Disabled auto theme"
-msgstr ""
+msgstr "Отключена автоматическая тема"
 
 #: t_modules/t_main.py:41938
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Сначала выберите исходный трек, скопировав его в буфер обмена"
 
 #: t_modules/t_main.py:43452
-#, fuzzy
 msgid "Rescan folders complete."
-msgstr "Переименование завершено."
+msgstr "Повторное сканирование каталогов завершено."
 
 #: t_modules/t_main.py:44064
 msgid "Queue is Empty"
-msgstr ""
+msgstr "Очередь пуста"
 
 #: t_modules/t_main.py:44423 t_modules/t_main.py:44443
 #: t_modules/t_main.py:44462 t_modules/t_main.py:44482
@@ -2836,80 +2788,79 @@ msgstr ""
 #: t_modules/t_main.py:44592 t_modules/t_main.py:44607
 #: t_modules/t_main.py:44623 t_modules/t_main.py:44678
 msgid "Copied text to clipboard"
-msgstr ""
+msgstr "Текст скопирован в буфер обмена"
 
 #: t_modules/t_main.py:44480 t_modules/t_main.py:44486
 msgid "Path"
-msgstr ""
+msgstr "Путь"
 
 #: t_modules/t_main.py:44501
 msgid "Samplerate"
-msgstr ""
+msgstr "Частота дискретизации"
 
 #: t_modules/t_main.py:44561 t_modules/t_main.py:44578
 msgid " of "
-msgstr ""
+msgstr " от "
 
 #: t_modules/t_main.py:44563
 msgid "Track"
-msgstr ""
+msgstr "Дорожка"
 
 #: t_modules/t_main.py:44571
 msgid "File size"
-msgstr ""
+msgstr "Размер файла"
 
 #: t_modules/t_main.py:44580
 msgid "Disc"
-msgstr ""
+msgstr "Диск"
 
 #: t_modules/t_main.py:44645
 msgid "Play count"
-msgstr ""
+msgstr "Счетчик воспроизведения"
 
 #: t_modules/t_main.py:44658
 msgid "Play time"
-msgstr ""
+msgstr "Время воспроизведения"
 
 #: t_modules/t_main.py:44744
-#, fuzzy
 msgid "Folder Modification"
-msgstr "Навигатор папок"
+msgstr "Модификация каталога"
 
 #: t_modules/t_main.py:44757
 msgid "Renames the physical folder based on the template"
-msgstr ""
+msgstr "Переименовывает физический каталог на основе шаблона"
 
 #: t_modules/t_main.py:44762
 msgid "Trash"
-msgstr ""
+msgstr "Корзина"
 
 #: t_modules/t_main.py:44763
 msgid "Moves folder to system trash"
-msgstr ""
+msgstr "Перемещает каталог в системную корзину"
 
 #: t_modules/t_main.py:44766
 msgid "Physically deletes folder from disk"
-msgstr ""
+msgstr "Физически удаляет каталог с диска"
 
 #: t_modules/t_main.py:44778
 msgid "Raise"
-msgstr ""
+msgstr "Восстановление"
 
 #: t_modules/t_main.py:44779
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
+msgstr "Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
 
 #: t_modules/t_main.py:44786
 msgid "Deletes some unnecessary files from folder"
-msgstr ""
+msgstr "Удаляет некоторые ненужные файлы из каталога"
 
 #: t_modules/t_main.py:45171
 msgid "Loved track"
-msgstr ""
+msgstr "Любимая дорожка"
 
 #: t_modules/t_main.py:45174
 msgid "Un-Loved track"
-msgstr ""
+msgstr "Не понравившаяся дорожка"
 
 #~ msgid "Export XSPF"
 #~ msgstr "Экспорт XSPF"
