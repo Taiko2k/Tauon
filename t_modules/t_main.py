@@ -32365,10 +32365,10 @@ class StandardPlaylist:
         if pl_bg:
             x = (left + highlight_width) - (pl_bg.w + round(60 * gui.scale))
             pl_bg.render(x, window_size[1] - gui.panelBY - pl_bg.h)
-            ddt.pretty_rect = ((left + highlight_width) - (pl_bg.w + 60 * gui.scale), window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+            ddt.pretty_rect = (x, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
             ddt.alpha_bg = True
         else:
-            deco.draw(ddt, left + highlight_width, window_size[1] - gui.panelBY, pretty_text=True)
+            deco.draw(ddt, left + highlight_width + inset_left, window_size[1] - gui.panelBY, pretty_text=True)
         # ddt.rect(ddt.pretty_rect, [255, 0, 0, 100], True)
 
         # Mouse wheel scrolling
