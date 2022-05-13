@@ -1523,6 +1523,8 @@ class Prefs:    # Used to hold any kind of settings
         self.resample = 1
         self.volume_power = 2
 
+        self.tmp_cache = False
+
 prefs = Prefs()
 
 
@@ -3752,6 +3754,7 @@ def save_prefs():
     cf.update_value("resample-quality", prefs.resample)
     #cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     cf.update_value("precache-local-files", prefs.precache)
+    cf.update_value("cache-use-tmp", prefs.tmp_cache)
     cf.update_value("cache-limit", prefs.cache_limit)
     cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
     cf.update_value("volume-curve", prefs.volume_power)
@@ -3900,7 +3903,8 @@ def load_prefs():
     if prefs.resample < 0 or prefs.resample > 4:
         prefs.resample = 1
     #prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
-    prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB")
+    prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit, "Limit size of network audio file cache. In MB.")
+    prefs.tmp_cache = cf.sync_add("bool", "cache-use-tmp", prefs.tmp_cache, "Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
     prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache, "Cache files from local sources too. (Useful for mounted network drives)")
     prefs.always_ffmpeg = cf.sync_add("bool", "always-ffmpeg", prefs.always_ffmpeg, "Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
     prefs.volume_power = cf.sync_add("int", "volume-curve", prefs.volume_power, "1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
@@ -3945,7 +3949,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[playback]")
     prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected.")
-    prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather then attempting to launch the desktop client.")
+    prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web, "Launch the web client rather than attempting to launch the desktop client.")
     prefs.back_restarts = cf.sync_add("bool", "back-restarts", prefs.back_restarts, "Pressing the back button restarts playing track on first press.")
     prefs.stop_end_queue = cf.sync_add("bool", "end-queue-stop", prefs.stop_end_queue, "Queue will always enable auto-stop on last track")
     prefs.block_suspend = cf.sync_add("bool", "block-suspend", prefs.block_suspend, "Prevent system suspend during playback")

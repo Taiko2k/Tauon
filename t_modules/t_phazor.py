@@ -119,6 +119,8 @@ def player4(tauon):
     class Cachement:
         def __init__(self):
             self.direc = audio_cache2
+            if prefs.tmp_cache and os.path.isdir("/tmp"):
+                self.direc = "/tmp/TauonMusicBox/audio-cache"
             if not os.path.exists(self.direc):
                 os.makedirs(self.direc)
             self.list = prefs.cache_list
@@ -210,6 +212,9 @@ def player4(tauon):
                     os.remove(t)
 
             # Check total size
+            limit = prefs.cache_limit
+            if prefs.tmp_cache:
+                limit = 10
             while True:
                 s = 0
                 for item in list(self.list):
@@ -219,7 +224,7 @@ def player4(tauon):
                         continue
                     s += os.path.getsize(t)
                 # Removed oldest items if over limit
-                if s > prefs.cache_limit * 1000 * 1000 and len(self.list) > 3:
+                if s > limit * 1000 * 1000 and len(self.list) > 3:
                     t = os.path.join(self.direc, self.list[0])
                     os.remove(t)
                     del self.list[0]
