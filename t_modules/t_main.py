@@ -16464,6 +16464,9 @@ def key_filepath(index):
     track = pctl.master_library[index]
     return track.parent_folder_path.lower(), track.filename
 
+def key_fullpath(index):
+    return pctl.master_library[index].fullpath
+
 def key_filename(index):
     track = pctl.master_library[index]
     return track.filename
@@ -16475,10 +16478,10 @@ def sort_path_pl(pl, custom_list=None):
     else:
         target = pctl.multi_playlist[pl][2]
 
-    # if use_natsort and False:
-    #     target[:] = natsort.os_sorted(target, key=key_fullpath)
-    # else:
-    target.sort(key=key_filepath)
+    if use_natsort and False:
+        target[:] = natsort.os_sorted(target, key=key_fullpath)
+    else:
+        target.sort(key=key_filepath)
 
 def append_current_playing(index):
 
@@ -20937,15 +20940,18 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
         playlist = custom_list
 
     key = None
+    ns = False
 
     if name == "Filepath":
         key = key_filepath
-        # if use_natsort:
-        #     key = natsort.natsort_keygen()
-    if name == "Filename":
-        key = key_filename
         if use_natsort:
-            key = natsort.natsort_keygen()
+            key = key_fullpath
+            ns = True
+    if name == "Filename":
+        key = key_filepath #key_filename
+        if use_natsort:
+            key = key_fullpath
+            ns = True
     if name == "Artist":
         key = key_artist
     if name == "Album Artist":
@@ -20985,6 +20991,9 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 
     if custom_list is None:
         if key is not None:
+
+            if ns:
+                key = natsort.natsort_keygen(key=key, alg=natsort.PATH)
 
             playlist.sort(key=key, reverse=invert)
 
