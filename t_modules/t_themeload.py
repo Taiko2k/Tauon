@@ -326,7 +326,7 @@ class Deco:
             new_h = round(logical_h * scale)
             ratio = w / h
             new_w = round(new_h * ratio)
-            im.resize((w, h), Image.Resampling.LANCZOS)
+            im = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
             w, h = new_w, new_h
 
         g = io.BytesIO()

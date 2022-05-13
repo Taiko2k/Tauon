@@ -512,12 +512,12 @@ class TDraw:
 
             if coll_rect(self.pretty_rect, quick_box):
                 # self.rect_r(quick_box, [0, 0, 0, 100], True)
-                # print("PT")
-                # print(text)
-                if self.real_bg:
-                    real_bg = True
+                # if self.real_bg:
+                #     real_bg = True
+                alpha_bg = True
             else:
                 alpha_bg = False
+
 
         if alpha_bg:
             bg = (0, 0, 0, 0)
