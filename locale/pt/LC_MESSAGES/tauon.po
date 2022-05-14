@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2021-08-29 15:29+0000\n"
-"Last-Translator: ssantos <ssantos@web.de>\n"
-"Language-Team: Portuguese <https://hosted.weblate.org/projects/tauon-music-"
-"box/tauon-music-box/pt/>\n"
+"PO-Revision-Date: 2022-05-14 06:23+0000\n"
+"Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
+"Language-Team: Portuguese <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt/>\n"
 "Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.8.1-dev\n"
+"X-Generator: Weblate 4.13-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1981 t_modules/t_main.py:1983
@@ -127,18 +127,16 @@ msgid "days"
 msgstr "dias"
 
 #: t_modules/t_main.py:7612
-#, fuzzy
 msgid "Scanning for Chromecasts..."
-msgstr "A reexaminar pastas..."
+msgstr "Procurando por Chromecasts..."
 
 #: t_modules/t_main.py:7613
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Transmitir para: %s"
 
 #: t_modules/t_main.py:7614
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Sem resultados"
+msgstr "Não foram encontrados Chromecasts"
 
 #: t_modules/t_main.py:7616
 msgid "Web server stopped."
@@ -301,31 +299,28 @@ msgid "with"
 msgstr "com"
 
 #: t_modules/t_main.py:14233
-#, fuzzy
 msgid "Export Playlist"
-msgstr "Exportado Estatísticas da Lista de Reprodução"
+msgstr "Exportar Playlist"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Salvar diretório"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Usar caminhos relativos"
 
 #: t_modules/t_main.py:14258
-#, fuzzy
 msgid "Auto-export"
-msgstr "Auto-Stop"
+msgstr "Auto-exportar"
 
 #: t_modules/t_main.py:14261 t_modules/t_main.py:14266
-#, fuzzy
 msgid "Export"
-msgstr "Exportar XSPF"
+msgstr "Exportar"
 
 #: t_modules/t_main.py:14275
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Diretório não existe"
 
 #: t_modules/t_main.py:14318
 msgid "Repeat OFF"
@@ -342,12 +337,12 @@ msgstr "Repetir Álbum"
 #: t_modules/t_main.py:14389
 #, fuzzy
 msgid "Shuffle Lockdown"
-msgstr "Baralhar Ligado"
+msgstr "Shuffle Lockdown"
 
 #: t_modules/t_main.py:14390
 #, fuzzy
 msgid "Shuffle Lockdown Albums"
-msgstr "Baralhar Ligado"
+msgstr "Shuffle Lockdown Albums"
 
 #: t_modules/t_main.py:14392
 msgid "Shuffle OFF"
@@ -718,9 +713,8 @@ msgid "Append Playing"
 msgstr "Acrescentar a Tocar"
 
 #: t_modules/t_main.py:17608
-#, fuzzy
 msgid "Export…"
-msgstr "Ordenar…"
+msgstr "Exportar…"
 
 #: t_modules/t_main.py:17611
 msgid "Misc…"
@@ -1187,9 +1181,8 @@ msgid "Broadcast This"
 msgstr "Transmitir Isto"
 
 #: t_modules/t_main.py:20674
-#, fuzzy
 msgid "Chromecast This"
-msgstr "Transmitir Isto"
+msgstr "Chromecast Isto"
 
 #: t_modules/t_main.py:20709 t_modules/t_main.py:26503
 msgid "Off"
@@ -1302,14 +1295,12 @@ msgid "Rating"
 msgstr "Avaliação"
 
 #: t_modules/t_main.py:21470
-#, fuzzy
 msgid "New Radio List"
-msgstr "Nova Lista de Reprodução"
+msgstr "Nova Lista de Rádio"
 
 #: t_modules/t_main.py:21490 t_modules/t_main.py:21492
-#, fuzzy
 msgid "Clean Database!"
-msgstr "Base de dados…"
+msgstr "Limpar Base de dados!"
 
 #: t_modules/t_main.py:21516
 msgid "Paste Spotify Playlist"
@@ -1478,8 +1469,9 @@ msgid "Scrobbling is Active"
 msgstr "Scrobbling está Ativo"
 
 #: t_modules/t_main.py:22462
+#, fuzzy
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Exit Shuffle Lockdown"
 
 #: t_modules/t_main.py:22463
 msgid "Exit"
@@ -1701,16 +1693,17 @@ msgid "Use fade on track jump"
 msgstr "Usar desvanecer ao saltar faixa"
 
 #: t_modules/t_main.py:26661
+#, fuzzy
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Voltar reinicia do começo"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
-msgstr ""
+msgstr "Tamanho do cache de arquivo de rede"
 
 #: t_modules/t_main.py:26675
 msgid "Cache local files (for smb/nfs)"
-msgstr ""
+msgstr "Cachê de arquivos locais (para SMB/NFS)"
 
 #: t_modules/t_main.py:26683
 msgid "Output buffer"
@@ -1802,9 +1795,8 @@ msgid "Tabs in top panel"
 msgstr "Abas no painel do topo"
 
 #: t_modules/t_main.py:26879
-#, fuzzy
 msgid "Uncheck to disable the tab pin function"
-msgstr "Desativa a função Fixar Aba"
+msgstr "Desmarque para desativar a função de trava de aba"
 
 #: t_modules/t_main.py:26884 t_modules/t_main.py:26890
 msgid "Open config file"
@@ -1843,9 +1835,8 @@ msgid "Transcode folder"
 msgstr "Converter pasta"
 
 #: t_modules/t_main.py:26917
-#, fuzzy
 msgid "Chromecast this"
-msgstr "Transmitir Isto"
+msgstr "Chromecast Isto"
 
 #: t_modules/t_main.py:26924
 msgid "Extract archives"
@@ -1901,22 +1892,23 @@ msgid "Prevent system suspend during playback"
 msgstr "Prevenir que o sistema entre em suspensão ao tocar"
 
 #: t_modules/t_main.py:26962
-#, fuzzy
 msgid "Record Radio"
-msgstr "Internet Rádio"
+msgstr "Gravar Rádio"
 
 #: t_modules/t_main.py:26963
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "Gravar e dividir sons ao tocar rádio da internet"
 
 #: t_modules/t_main.py:26965
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Faixas serão salvas para a playlist \"Faixas de Rádio Salvas\"."
 
 #: t_modules/t_main.py:26965
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Faixas serão gravadas agora. Reinicie qualquer reprodução para a mudança "
+"sutir efeito."
 
 #: t_modules/t_main.py:26979
 msgid "Enable Discord Rich Presence"
@@ -2280,9 +2272,8 @@ msgid "UI scale for HiDPI displays"
 msgstr "Escala de IU para ecrãs HiDPi"
 
 #: t_modules/t_main.py:28116
-#, fuzzy
 msgid "Auto scale"
-msgstr "Auto Redimensionar"
+msgstr "Auto escalonar"
 
 #: t_modules/t_main.py:28400 t_modules/t_main.py:28403
 msgid "Credits"
@@ -2442,7 +2433,7 @@ msgstr "Rodar todas as listas de reprodução"
 
 #: t_modules/t_main.py:29663 t_modules/t_main.py:34405
 msgid "Added station to: "
-msgstr ""
+msgstr "Estação adicionada para: "
 
 #: t_modules/t_main.py:30043
 msgid "Buffering... "
@@ -2521,9 +2512,8 @@ msgid "Search Tag"
 msgstr "Procurar etiqueta"
 
 #: t_modules/t_main.py:33613
-#, fuzzy
 msgid "Search Country Code"
-msgstr "Procurar País"
+msgstr "Procurar Código de País"
 
 #: t_modules/t_main.py:33614
 msgid "Search Title"
@@ -2543,20 +2533,19 @@ msgstr "Obter o Mais Votado"
 
 #: t_modules/t_main.py:33920
 msgid "Developer Picks"
-msgstr ""
+msgstr "Escolhas do Desenvolvedor"
 
 #: t_modules/t_main.py:34068
 msgid "Add Station"
-msgstr ""
+msgstr "Adicionar Estação"
 
 #: t_modules/t_main.py:34070
 msgid "Edit Station"
-msgstr ""
+msgstr "Editar Estação"
 
 #: t_modules/t_main.py:34096
-#, fuzzy
 msgid "Station Browser"
-msgstr "Começar Transmissão"
+msgstr "Navegador de Estação"
 
 #: t_modules/t_main.py:34100
 msgid "Connecting..."
@@ -2729,7 +2718,7 @@ msgstr "Limpar Bio"
 
 #: t_modules/t_main.py:38389
 msgid "Edit..."
-msgstr ""
+msgstr "Editar..."
 
 #: t_modules/t_main.py:38720
 msgid "Playing"
@@ -2761,7 +2750,7 @@ msgstr "Vitrine + Letras"
 
 #: t_modules/t_main.py:39330
 msgid "Radio"
-msgstr ""
+msgstr "Rádio"
 
 #: t_modules/t_main.py:39343
 msgid "Toggle columns"
