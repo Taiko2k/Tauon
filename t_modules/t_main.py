@@ -40141,7 +40141,7 @@ def update_layout_do():
             ((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
         # 17 here is the art box inset value
 
-        if not album_mode and gui.rspw > max_w - 12 * gui.scale:
+        if not album_mode and gui.rspw > max_w - 12 * gui.scale and side_drag:
             gui.rsp_full_lock = True
     # ----------------------------------------------------------
 
