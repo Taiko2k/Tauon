@@ -231,8 +231,8 @@ msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
-"Когда закончите, нажмите ЗАПИСАТЬ ТЕГИ, чтобы сохранить теги в файлы. ("
-"Опционлано, но рекомендуется)"
+"Когда закончите, нажмите ЗАПИСАТЬ ТЕГИ, чтобы сохранить теги в файлы. "
+"(Опционлано, но рекомендуется)"
 
 #: t_modules/t_main.py:13945
 msgid "Number of tracks selected: %d"
@@ -2760,7 +2760,8 @@ msgstr "Переключить информацию об исполнителе"
 
 #: t_modules/t_main.py:40970
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr "Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
+msgstr ""
+"Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
 
 #: t_modules/t_main.py:41924
 msgid "Enabled auto theme"
@@ -2848,7 +2849,8 @@ msgstr "Восстановление"
 
 #: t_modules/t_main.py:44779
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr "Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
+msgstr ""
+"Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
 
 #: t_modules/t_main.py:44786
 msgid "Deletes some unnecessary files from folder"
