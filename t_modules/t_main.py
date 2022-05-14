@@ -24114,6 +24114,16 @@ class NagBox:
         #     x += math.sin(core_timer.get() * 40) * 4
         y = int(window_size[1] / 2) - int(h / 2)
 
+        # xx = x - round(8 * gui.scale)
+        # hh = 0.0 #349 / 360
+        # while xx < x + w + round(8 * gui.scale):
+        #     re = [xx, y - round(8 * gui.scale), 3, h + round(8 * gui.scale) + round(8 * gui.scale)]
+        #     hh -= 0.0007
+        #     c = hsl_to_rgb(hh, 0.9, 0.7)
+        #     #c = hsl_to_rgb(hh, 0.63, 0.43)
+        #     ddt.rect(re, c)
+        #     xx += 3
+
         ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
                    colours.box_text_border)
         ddt.rect_a((x, y), (w, h), colours.message_box_bg)
@@ -24153,7 +24163,6 @@ class NagBox:
 
         y += round(30 * gui.scale)
 
-        link_activate(x, y, link_pa, click=gui.level_2_click)
         if draw.button("Close", x, y, press=gui.level_2_click):
             prefs.show_nag = False
             #show_message("Oh... :( 💔")
@@ -44918,6 +44927,7 @@ while pctl.running:
 
             if gui.message_box:
                 message_box.render()
+
             if prefs.show_nag:
                 nagbox.draw()
 
