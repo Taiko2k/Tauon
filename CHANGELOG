@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.2.0
 
  - Added cache system option for local files
+ - Added option to use persistent network cache
  - Added setting to restart on back to UI settings
  - Added singles folder detection and gallery display
  - Added generator code 'px' to exclude contents of a playlist
