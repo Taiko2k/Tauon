@@ -1472,7 +1472,7 @@ class Prefs:    # Used to hold any kind of settings
         self.pa_fast_seek = False
         self.precache = False
         self.cache_list = []
-        self.cache_limit = 1000  # in mb
+        self.cache_limit = 2000  # in mb
         self.save_window_position = False
         self.spotify_token = ""
         self.always_ffmpeg = False
@@ -1523,7 +1523,7 @@ class Prefs:    # Used to hold any kind of settings
         self.resample = 1
         self.volume_power = 2
 
-        self.tmp_cache = False
+        self.tmp_cache = True
 
 prefs = Prefs()
 
@@ -26765,20 +26765,21 @@ class Over:
                 self.rg_view = True
 
             y += round(45 * gui.scale)
-
-            ddt.text((x, y), _("Network file cache size"), colours.box_text, 312)
-            y += round(18 * gui.scale)
-            prefs.cache_limit = self.slide_control(x + round(0 * gui.scale), y, None, ' MB', prefs.cache_limit, 100,
-                                                     1000000, 100)
-            y += round(26 * gui.scale)
             prefs.precache = self.toggle_square(x, y, prefs.precache, _("Cache local files (for smb/nfs)"))
+            y += round(22 * gui.scale)
+            old = prefs.tmp_cache
+            prefs.tmp_cache = self.toggle_square(x, y, prefs.tmp_cache ^ True, _("Use persistent network cache")) ^ True
+            if old != prefs.tmp_cache and tauon.cachement:
+                tauon.cachement.__init__()
+
+            y += round(22 * gui.scale)
+            ddt.text((x + round(22 * gui.scale), y), _("Cache size"), colours.box_text, 312)
+            y += round(18 * gui.scale)
+            prefs.cache_limit = int(self.slide_control(x + round(22 * gui.scale), y, None, ' GB', prefs.cache_limit / 1000, 0.5,
+                                                     1000, 0.5) * 1000)
 
 
             y += round(30 * gui.scale)
-            ddt.text((x, y), "If you experience cracking audio, try ", colours.box_text_label, 12)
-            y += round(17 * gui.scale)
-            ddt.text((x, y), "increase output buffer.", colours.box_text_label, 12)
-            y += round(0 * gui.scale)
             prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms', prefs.device_buffer, 10,
                                                      500, 10, self.reload_device)
 
@@ -46020,6 +46021,10 @@ SDL_Quit()
 
 exit_timer = Timer()
 exit_timer.set()
+
+if os.path.isdir("/tmp/TauonMusicBox"):
+    print("Clear tmp cache")
+    shutil.rmtree("/tmp/TauonMusicBox")
 
 if not tauon.quick_close:
     while tm.check_playback_running() or lfm_scrobbler.running:
