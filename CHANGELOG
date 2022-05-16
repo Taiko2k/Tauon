@@ -17,6 +17,7 @@ v7.2.0
  - Fixed genre search not detecting semicolon deliminator
  - Fixed playing track position when items from playlist are deleted
  - Fixed "Filepath" column sort not working correctly
+ - Fixed some issues with UI scaling in tracks view
  - Tweaked "Filename" column sort to sort by full filepath
  - Tweaked play action to resume radio station
  - Tweaked config file formatting
