@@ -24147,16 +24147,16 @@ class NagBox:
                                    colours.message_box_text, 12, replace="Github release page.")
         link_activate(x, y, link_pa, click=gui.level_2_click)
 
-        heart_notify_icon.render(x + round(425 * gui.scale), y + round(60 * gui.scale), [255, 90, 90, 255])
+        heart_notify_icon.render(x + round(425 * gui.scale), y + round(80 * gui.scale), [255, 90, 90, 255])
 
         y += round(30 * gui.scale)
         ddt.text((x, y), "New supporter bonuses!", colours.message_box_text, 212)
 
         y += round(20 * gui.scale)
 
-        link_pa = draw_linked_text((x, y), "Check out my updated sponsor page https://github.com/sponsors/Taiko2k",
-                                   colours.message_box_text, 12, replace="here!")
-        link_activate(x, y, link_pa, click=gui.level_2_click)
+        ddt.text((x, y), "A new supporter bonus theme is now available! Check it out at the above link!",
+                                   colours.message_box_text, 12)
+        #link_activate(x, y, link_pa, click=gui.level_2_click)
 
         y += round(20 * gui.scale)
         ddt.text((x, y), "Your support means a lot! Love you!", colours.message_box_text, 12)
@@ -27292,11 +27292,11 @@ class Over:
 
         y += 41 * gui.scale
 
-        if prefs.spot_mode:
-            if self.button2(x, y, "Spotify", width=84*gui.scale):
-                self.account_view = 8
 
-            prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
+        if self.button2(x, y, "Spotify", width=84*gui.scale):
+            self.account_view = 8
+
+        prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
 
         if self.account_view in (9, 2, 1):
             self.toggle_square(x0 + 230 * gui.scale, y + 2 * gui.scale, toggle_scrobble_mark, _("Show threshold marker"))
