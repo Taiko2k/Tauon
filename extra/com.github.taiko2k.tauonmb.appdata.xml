@@ -62,11 +62,13 @@
 
   <releases>
 
-    <release version="7.1.3" date="2022-02-27">
+    <release version="7.2.0" date="2022-05-16">
       <description>
         <ul>
-          <li>Added gamepad support</li>
-          <li>Various bug fixes</li>
+          <li>Added persistent network cache option</li>
+          <li>Added singles style gallery thumbnail</li>
+          <li>Removed GStreamer backend</li>
+          <li>Various tweaks and fixes</li>
         </ul>
       </description>
     </release>
