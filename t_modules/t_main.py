@@ -26766,7 +26766,7 @@ class Over:
 
             y += round(45 * gui.scale)
             prefs.precache = self.toggle_square(x, y, prefs.precache, _("Cache local files (for smb/nfs)"))
-            y += round(22 * gui.scale)
+            y += round(23 * gui.scale)
             old = prefs.tmp_cache
             prefs.tmp_cache = self.toggle_square(x, y, prefs.tmp_cache ^ True, _("Use persistent network cache")) ^ True
             if old != prefs.tmp_cache and tauon.cachement:
@@ -32382,8 +32382,10 @@ class StandardPlaylist:
             ddt.pretty_rect = (x, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
             ddt.alpha_bg = True
         else:
-            deco.draw(ddt, left + highlight_width + inset_left, window_size[1] - gui.panelBY, pretty_text=True)
-        # ddt.rect(ddt.pretty_rect, [255, 0, 0, 100], True)
+            xx = left + inset_left + inset_width
+            if center_mode:
+                xx -= round(15 * gui.scale)
+            deco.draw(ddt, xx, window_size[1] - gui.panelBY, pretty_text=True)
 
         # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
