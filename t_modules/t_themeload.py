@@ -352,8 +352,8 @@ class Deco:
     def draw(self, ddt, x, y, pretty_text=False):
         if self.drawables:
             d = self.drawables[0]
-            d.rect.x = round(x - int(d.w + round(d.x + self.tauon.gui.scale)))
-            d.rect.y = round(y - int(d.h + round(d.y + self.tauon.gui.scale)))
+            d.rect.x = round(x - int(d.w + round(d.x * self.tauon.gui.scale)))
+            d.rect.y = round(y - int(d.h + round(d.y * self.tauon.gui.scale)))
             SDL_RenderCopy(self.renderer, d.texture, None, d.rect)
 
             if pretty_text:

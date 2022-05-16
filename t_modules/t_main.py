@@ -32277,7 +32277,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         line = get_display_time(n_track.length)
 
-        ddt.text((width + start_x - 36 * gui.scale - offset_font_extra,
+        ddt.text((width + start_x - (round(36 * gui.scale) + offset_font_extra),
                   y + num_y_offset, 0), line,
                  alpha_mod(timec, album_fade), gui.row_font_size)
 
@@ -40498,9 +40498,9 @@ def update_layout_do():
 
         if center_mode:
             if gui.set_mode:
-                highlight_left = int(pow((window_size[0] * 0.005), 2))
+                highlight_left = int(pow((logical_size[0] * 0.005), 2) * gui.scale)
             else:
-                highlight_left = int(pow((window_size[0] * 0.01), 2))
+                highlight_left = int(pow((logical_size[0] * 0.01), 2) * gui.scale)
 
             if window_size[0] < 600 * gui.scale:
                 highlight_left = 3 * gui.scale
