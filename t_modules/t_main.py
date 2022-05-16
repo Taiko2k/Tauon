@@ -40498,9 +40498,9 @@ def update_layout_do():
 
         if center_mode:
             if gui.set_mode:
-                highlight_left = int(pow((logical_size[0] * 0.005), 2) * gui.scale)
+                highlight_left = int(pow((window_size[0] / gui.scale * 0.005), 2) * gui.scale)
             else:
-                highlight_left = int(pow((logical_size[0] * 0.01), 2) * gui.scale)
+                highlight_left = int(pow((window_size[0] / gui.scale * 0.01), 2) * gui.scale)
 
             if window_size[0] < 600 * gui.scale:
                 highlight_left = 3 * gui.scale
