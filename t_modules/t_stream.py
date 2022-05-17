@@ -174,7 +174,6 @@ class StreamEnc:
                 r = aud.feed_ready(max_read)
                 if r:
                     aud.feed_raw(len(raw_audio), raw_audio)
-                    print(len(raw_audio))
                     if len(raw_audio) < max_read:
                         time.sleep(0.01)
                     raw_audio = None
