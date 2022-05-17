@@ -150,7 +150,7 @@ class StreamEnc:
 
                         chunk = self.chunks[position]
                         decoder.stdin.write(chunk)
-                        vb.input(self.tauon.stream_proxy.chunks[position])
+                        #vb.input(self.tauon.stream_proxy.chunks[position])
                         position += 1
                     else:
                         time.sleep(0.01)
@@ -168,13 +168,16 @@ class StreamEnc:
         while True:
             if not self.tauon.stream_proxy.download_running or self.abort:
                 break
-
-            if raw_audio == None:
+            #time.sleep(0.01)
+            if raw_audio is None:
                 raw_audio = decoder.stdout.read(max_read)
             if raw_audio:
                 r = aud.feed_ready(max_read)
                 if r:
                     aud.feed_raw(len(raw_audio), raw_audio)
+                    print(len(raw_audio))
+                    if len(raw_audio) < max_read:
+                        time.sleep(0.01)
                     raw_audio = None
                 else:
                     time.sleep(0.01)

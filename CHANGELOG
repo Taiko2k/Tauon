@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v7.2.1
+
+ - Fixed an issue with high CPU usage with internet radio
+
 v7.2.0
 
  - Added cache system option for local files
