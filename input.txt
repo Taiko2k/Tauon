@@ -27,6 +27,7 @@ advance End
 
 vol-up Up Ctrl
 vol-down Down Ctrl
+toggle-mute M Ctrl
 
 toggle-shuffle .
 toggle-repeat ,
