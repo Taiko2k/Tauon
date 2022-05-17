@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.2.1
 
  - Fixed an issue with high CPU usage with internet radio
+ - Fixed ctrl+m for mute not working and crashing
 
 v7.2.0
 

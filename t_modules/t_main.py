@@ -5269,6 +5269,7 @@ class PlayerCtl:
         return 0
 
     def toggle_mute(self):
+        global volume_store
         if pctl.player_volume > 0:
             volume_store = pctl.player_volume
             pctl.player_volume = 0
