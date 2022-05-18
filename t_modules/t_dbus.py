@@ -34,6 +34,7 @@ class Gnome:
         self.indicator_mode = 0
         self.update_tray_text = None
         self.tray_text = ""
+        self.resume_playback = False
 
         self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
         self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
@@ -307,13 +308,29 @@ class Gnome:
 
                 if active == 1 and tauon.sleep_lock is not None:
                     print("System is suspending!")
-                    if pctl.playing_state in (1, 3):
+                    if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
+                        pctl.stop(block=True)
+                        if prefs.resume_play_wake:
+                            pctl.playing_state = 3
+                            self.resume_playback = True
+                    elif pctl.playing_state in (1, 3):
                         tauon.pctl.pause()
+                        if prefs.resume_play_wake:
+                            self.resume_playback = True
                     del tauon.sleep_lock
                     tauon.sleep_lock = None
 
                 elif active == 0 and tauon.sleep_lock is None:
                     tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
+                    if self.resume_playback:
+                        self.resume_playback = False
+                        if pctl.playing_state == 3:
+                            pctl.playing_state = 0
+                            time.sleep(4)
+                            pctl.play()
+                            print("Resume Radio")
+                        else:
+                            pctl.play()
 
             def PrepareForShutdown(active):
                 print("The system is shutting down!")

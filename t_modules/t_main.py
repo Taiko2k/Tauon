@@ -1253,6 +1253,7 @@ class Prefs:    # Used to hold any kind of settings
         self.finish_current = False  # Finish current album when adding to queue
 
         self.reload_play_state = False # Resume playback on app restart
+        self.resume_play_wake = False # Resume playback on wake
         self.reload_state = None
 
         self.mono = False
@@ -3838,6 +3839,7 @@ def save_prefs():
     cf.update_value("restore-window-position", prefs.save_window_position)
     cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
+    cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
 
     cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
@@ -4061,6 +4063,7 @@ def load_prefs():
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
+    prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
     prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data, "Enable automatic downloading of thumbnails in artist list")
     prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
@@ -5521,20 +5524,20 @@ class PlayerCtl:
         if update_title:
             update_title_do()  # Update title bar text
 
+        if tauon.stream_proxy.download_running:
+            tauon.stream_proxy.stop()
+
         if block:
             loop = 0
-            while self.playerSubCommand != "stopped":
-                time.sleep(0.05)
-                loop += 1
-                if loop > 200:
-                    break
+            sleep_timeout(lambda :self.playerSubCommand != "stopped", 2)
+            if tauon.stream_proxy.download_running:
+                sleep_timeout(lambda: tauon.stream_proxy.download_running, 2)
 
         if spot_ctl.playing or spot_ctl.coasting:
             print("Spotify stop")
             spot_ctl.control("stop")
 
-        if tauon.stream_proxy.download_running:
-            tauon.stream_proxy.stop()
+
 
         self.notify_update()
         lfm_scrobbler.start_queue()
@@ -27048,18 +27051,21 @@ class Over:
             old = prefs.enable_remote
             prefs.enable_remote = self.toggle_square(x, y, prefs.enable_remote, _("Enable remote control"),
                                subtitle=_("Change requires restart"))
-            y += 35 * gui.scale
+            y += 37 * gui.scale
 
             if prefs.enable_remote and prefs.enable_remote != old:
                 show_message("Notice: This API is not security hardened.",
                              "Only enable in a trusted LAN and do not expose port (7814) to the internet", mode="warning")
 
-            y += 12 * gui.scale
             old = prefs.block_suspend
             prefs.block_suspend = self.toggle_square(x, y, prefs.block_suspend, _("Block suspend"),
                                                      subtitle=_("Prevent system suspend during playback"))
+            y += 37 * gui.scale
+            old = prefs.block_suspend
+            prefs.resume_play_wake = self.toggle_square(x, y, prefs.resume_play_wake, _("Resume from suspend"),
+                                                     subtitle=_("Continue playback when waking from sleep"))
 
-            y += 46 * gui.scale
+            y += 37 * gui.scale
             old = prefs.auto_rec
             prefs.auto_rec = self.toggle_square(x, y, prefs.auto_rec, _("Record Radio"),
                                                     subtitle=_("Record and split songs when playing internet radio"))
@@ -27074,7 +27080,7 @@ class Over:
             elif old != prefs.block_suspend:
                 tauon.update_play_lock()
 
-            y += 50 * gui.scale
+            y += 37 * gui.scale
             ddt.text((x, y), "Discord", colours.box_text_label, 11)
             y += 25 * gui.scale
             old = prefs.discord_enable

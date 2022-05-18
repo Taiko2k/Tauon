@@ -929,3 +929,13 @@ mac_styles = {
     "nordic": None,
     "juno": None
 }
+
+def sleep_timeout(condition_function, time_limit=2):
+    if condition_function():
+        return
+    timer = Timer()
+    timer.set()
+    while condition_function():
+        time.sleep(0.01)
+        if timer.get() > time_limit:
+            break

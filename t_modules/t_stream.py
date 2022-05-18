@@ -55,6 +55,7 @@ class StreamEnc:
 
         self.chunks = {}
         self.c = 0
+        self.url = None
 
     def stop(self):
 
@@ -79,6 +80,17 @@ class StreamEnc:
 
         self.__init__(self.tauon)
 
+        self.url = url
+        result = self.start_request()
+        if not result:
+            return False
+
+        self.download_process = threading.Thread(target=self.pump)
+        self.download_process.daemon = True
+        self.download_process.start()
+        return True
+
+    def start_request(self):
         def NiceToICY(self):
             class InterceptedHTTPResponse:
                 pass
@@ -93,30 +105,36 @@ class StreamEnc:
         ORIGINAL_HTTP_CLIENT_READ_STATUS = urllib.request.http.client.HTTPResponse._read_status
         urllib.request.http.client.HTTPResponse._read_status = NiceToICY
 
-        try:
-            r = urllib.request.Request(url)
-            #r.add_header('GET', '1')
-            r.add_header('Icy-MetaData', '1')
-            r.add_header('User-Agent', self.tauon.t_agent)
-            print("Open URL.....")
-            r = urllib.request.urlopen(r, timeout=7)
-            print("URL opened.")
+        retry = 5
+        while True:
+            try:
+                r = urllib.request.Request(self.url)
+                #r.add_header('GET', '1')
+                r.add_header('Icy-MetaData', '1')
+                r.add_header('User-Agent', self.tauon.t_agent)
+                print("Open URL.....")
+                r = urllib.request.urlopen(r, timeout=7)
+                print("URL opened.")
 
-        except Exception as e:
-            print("Connection failed")
-            #raise
-            self.tauon.gui.show_message("Failed to establish a connection", str(e), mode="error")
+            except Exception as e:
 
-            return False
+                print("URL error...")
+                retry -= 1
+                if retry > 0 and "Temporary" in str(e):
+                    time.sleep(2)
+                    print("RETRYING...")
+                    continue
+                else:
+                    print("Connection failed")
+                    print(str(e))
+                    self.tauon.gui.show_message("Failed to establish a connection", str(e), mode="error")
+                    return False
+            break
 
         self.download_process = threading.Thread(target=self.run_download, args=([r]))
         self.download_process.daemon = True
         self.download_process.start()
         self.download_running = True
-
-        self.download_process = threading.Thread(target=self.pump)
-        self.download_process.daemon = True
-        self.download_process.start()
         return True
 
     def pump(self):
@@ -164,6 +182,8 @@ class StreamEnc:
         feeder = threading.Thread(target=feed, args=[decoder])
         feeder.daemon = True
         feeder.start()
+
+        retry = 3
 
         while True:
             if not self.tauon.stream_proxy.download_running or self.abort:
@@ -479,7 +499,7 @@ class StreamEnc:
                             self.download_running = False
                             self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
                             raise
-        except:
+        except Exception as e:
             print("Stream download thread crashed!")
             self.download_running = False
             return
