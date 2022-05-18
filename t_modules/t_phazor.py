@@ -550,7 +550,7 @@ def player4(tauon):
                     # print("position: " + str(position))
                     # print("We are %s from end" % str(remain))
 
-                    if loaded_track.is_network:
+                    if loaded_track.is_network or length == 0:
                         length = loaded_track.length
                         remain = length - position
 
