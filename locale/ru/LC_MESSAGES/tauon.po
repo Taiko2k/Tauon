@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-05-13 10:00+0000\n"
+"PO-Revision-Date: 2022-05-17 15:18+0000\n"
 "Last-Translator: Edward T <tumanchinsky.edward@yandex.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -1186,7 +1186,7 @@ msgstr "Транслировать через Chromecast"
 
 #: t_modules/t_main.py:20709 t_modules/t_main.py:26503
 msgid "Off"
-msgstr "Выключено"
+msgstr "Выкл"
 
 #: t_modules/t_main.py:20722
 msgid "Level Meter"
@@ -1598,7 +1598,7 @@ msgstr "Вид"
 
 #: t_modules/t_main.py:26321
 msgid "Transcode"
-msgstr "Перекодировать"
+msgstr "Формат"
 
 #: t_modules/t_main.py:26322 t_modules/t_main.py:44664
 msgid "Lyrics"
@@ -1685,15 +1685,15 @@ msgstr "Включить"
 
 #: t_modules/t_main.py:26657
 msgid "Use fade on pause/stop"
-msgstr "Использовать затухание при паузе/остановке"
+msgstr "Затухание при паузе/остановке"
 
 #: t_modules/t_main.py:26659
 msgid "Use fade on track jump"
-msgstr "Используйте затухание при переходе по дорожке"
+msgstr "Затухание при переходе по дорожке"
 
 #: t_modules/t_main.py:26661
 msgid "Back restarts to beginning"
-msgstr "Начать сначала"
+msgstr "Затухание при возврате к началу"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
@@ -1737,7 +1737,7 @@ msgstr "Использовать стиль по центру"
 
 #: t_modules/t_main.py:26804
 msgid "Zoom album art to fit"
-msgstr "Увеличьте обложку альбома, чтобы она соответствовала размеру"
+msgstr "Увеличить обложку альбома до нужного размера"
 
 #: t_modules/t_main.py:26811 t_modules/t_main.py:39287
 #: t_modules/t_main.py:39290
@@ -1874,7 +1874,7 @@ msgstr "Показывать название дорожки"
 
 #: t_modules/t_main.py:26947
 msgid "Enable remote control"
-msgstr "Включить удаленный контроль"
+msgstr "Удаленное управление"
 
 #: t_modules/t_main.py:26948
 msgid "Change requires restart"
@@ -1909,7 +1909,7 @@ msgstr ""
 
 #: t_modules/t_main.py:26979
 msgid "Enable Discord Rich Presence"
-msgstr "Включить Discord Rich Presence"
+msgstr "Discord Rich Presence"
 
 #: t_modules/t_main.py:26983
 msgid "For troubleshooting Discord RP"
@@ -2247,7 +2247,7 @@ msgstr "Отправка уведомлений об изменении доро
 
 #: t_modules/t_main.py:28034
 msgid "Draw own window decorations"
-msgstr "Создать собственные оформления окна"
+msgstr "Программная рамка окна"
 
 #: t_modules/t_main.py:28037
 msgid "Restore window position on restart"
@@ -2375,11 +2375,11 @@ msgstr "Показать любимые дорожки"
 
 #: t_modules/t_main.py:28728
 msgid "Represent playtime as stars"
-msgstr "Представить время воспроизведения в виде звезд"
+msgstr "Время воспроизведения звездами"
 
 #: t_modules/t_main.py:28737
 msgid "Represent playcount as lines"
-msgstr "Представить время проигрывания в виде линий"
+msgstr "Время воспроизведения линией"
 
 #: t_modules/t_main.py:28757
 msgid "Show album release year"
@@ -2403,11 +2403,11 @@ msgstr "Смещение базовой линии"
 
 #: t_modules/t_main.py:28775
 msgid "Thin default"
-msgstr "Тонкий по умолчанию"
+msgstr "Компактный вид"
 
 #: t_modules/t_main.py:28777
 msgid "Thick default"
-msgstr "Толстый по умолчанию"
+msgstr "Крупный вид"
 
 #: t_modules/t_main.py:28783
 msgid "End of playlist action"
