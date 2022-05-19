@@ -62,13 +62,10 @@
 
   <releases>
 
-    <release version="7.2.0" date="2022-05-16">
+    <release version="7.2.1" date="2022-05-19">
       <description>
         <ul>
-          <li>Added persistent network cache option</li>
-          <li>Added singles style gallery thumbnail</li>
-          <li>Removed GStreamer backend</li>
-          <li>Various tweaks and fixes</li>
+          <li>Fixed some bugs</li>
         </ul>
       </description>
     </release>
