@@ -197,9 +197,10 @@ class StreamEnc:
                     if len(raw_audio) < max_read:
                         time.sleep(0.01)
                     raw_audio = None
-                else:
-                    time.sleep(0.01)
                     continue
+
+            time.sleep(0.01)
+
 
         decoder.terminate()
         time.sleep(0.1)
