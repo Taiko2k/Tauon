@@ -309,7 +309,7 @@ if flatpak_mode:
 
 ffmpeg = "ffmpeg"
 if pyinstaller_mode:
-     os.environ["PATH"] = os.environ["PATH"] + ":" + sys._MEIPASS
+     os.environ["PATH"] += ":" + sys._MEIPASS
 
 # ffmpeg = sys._MEIPASS + "/ffmpeg"
 # import subprocess
@@ -4269,7 +4269,7 @@ def scale_assets(scale_want, force=force_render):
         # Scale saved values
         gui.pl_st = column_backup
         for item in gui.pl_st:
-            item[1] = item[1] * diff_ratio
+            item[1] *= diff_ratio
         gui.pref_rspw = rspw * diff_ratio
         gui.pref_gallery_w = grspw * diff_ratio
         global album_mode_art_size
@@ -7091,8 +7091,7 @@ class LastFMapi:
                         if "L" not in star[1]:
                             updated += 1
                             print("     NEW LOVE")
-                            # star = [star[0], star[1] + "L"]
-                            star[1] = star[1] + "L"
+                            star[1] += "L"
 
                         star_store.insert(index, star)
 
@@ -13098,7 +13097,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
     w = ddt.get_text_w(text, 312) + 24 * gui.scale
     h = 24 * gui.scale
 
-    x = x - int(w / 2)
+    x -= int(w / 2)
 
     border = 1 * gui.scale
     ddt.rect((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
@@ -13122,7 +13121,7 @@ class ToolTip3:
 
     def set(self, x, y, text, font, rect):
 
-        y = y - 11 * gui.scale
+        y -= round(11 * gui.scale)
         if self.show == False or self.y != y or x != self.x or self.pl_position != pctl.playlist_view_position:
             self.timer.set()
 
@@ -13619,7 +13618,7 @@ class Menu:
         # Reposition the menu if it would otherwise intersect with far edge of window
         if not position:
             if self.pos[0] + self.w > window_size[0]:
-                self.pos[0] = self.pos[0] - (self.w + 3 * gui.scale)
+                self.pos[0] -= round(self.w + 3 * gui.scale)
 
         # Get height size of menu
         full_h = 0
@@ -13635,7 +13634,7 @@ class Menu:
 
         # Flip menu up if would intersect with bottom of window
         if self.pos[1] + full_h > window_size[1]:
-            self.pos[1] = self.pos[1] - shown_h
+            self.pos[1] -= shown_h
 
             # Prevent moving outside top of window
             if self.pos[1] < gui.panelY:
@@ -28945,7 +28944,7 @@ class Over:
 
     def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None, width=58):
 
-        width = width * gui.scale
+        width = round(width * gui.scale)
 
         if label is not None:
             ddt.text((x + 55 * gui.scale, y, 1), label, colours.box_text, 312)
@@ -32320,49 +32319,6 @@ class StandardPlaylist:
 
         left = gui.playlist_left
         width = gui.plw
-
-        # center_mode = True
-        # if gui.lsp or gui.rsp:  #gui.set_mode
-        #     center_mode = False
-        #
-        # highlight_left = 0
-        # highlight_width = width
-        #
-        # inset_left = highlight_left + 23 * gui.scale
-        # inset_width = highlight_width - 32 * gui.scale
-        #
-        # if gui.lsp and not gui.rsp:
-        #     inset_width -= 10 * gui.scale
-        #
-        # if gui.lsp:
-        #     inset_left -= 10 * gui.scale
-        #     inset_width += 10 * gui.scale
-        #
-        # if center_mode:
-        #
-        #     if gui.set_mode:
-        #
-        #         highlight_left = int(pow((window_size[0] * 0.004), 2))
-        #         if window_size[0] < 600 * gui.scale:
-        #             highlight_left = 3 * gui.scale
-        #         highlight_width = highlight_width - (highlight_left * 2)
-        #
-        #         inset_left = highlight_left + 18 * gui.scale
-        #         inset_width = highlight_width - 25 * gui.scale
-        #
-        #     else:
-        #
-        #         highlight_left = int(pow((window_size[0] * 0.01), 2))
-        #         if window_size[0] < 600 * gui.scale:
-        #             highlight_left = 3 * gui.scale
-        #         highlight_width = highlight_width - (highlight_left * 2)
-        #
-        #         inset_left = highlight_left + 18 * gui.scale
-        #         inset_width = highlight_width - 25 * gui.scale
-
-        #
-        # if window_size[0] < 600 and gui.lsp:
-        #     inset_width = highlight_width - 18 * gui.scale
 
         highlight_width = gui.tracklist_highlight_width
         highlight_left = gui.tracklist_highlight_left
@@ -38317,7 +38273,7 @@ class GuitarChords:
         if mouse_wheel and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
             self.scroll_position += int(mouse_wheel * 30 * gui.scale * -1)
             self.auto_scroll = False
-        y = y - self.scroll_position
+        y -= self.scroll_position
 
         if self.data:
 
@@ -39356,7 +39312,7 @@ class ViewBox:
                      border_colour)
         ddt.rect(vr, colours.menu_background)
 
-        x = x + 7 * gui.scale
+        x += 7 * gui.scale
         y = gui.panelY + 14 * gui.scale
 
         func = None
@@ -40511,7 +40467,7 @@ def update_layout_do():
             if window_size[0] < 600 * gui.scale:
                 highlight_left = 3 * gui.scale
 
-            highlight_width = highlight_width - (highlight_left * 2)
+            highlight_width -= highlight_left * 2
             inset_left = highlight_left + 18 * gui.scale
             inset_width = highlight_width - 25 * gui.scale
 
@@ -43365,7 +43321,7 @@ while pctl.running:
 
                                     text_align = 0
                                     if prefs.center_gallery_text:
-                                        x = x + album_mode_art_size // 2
+                                        x += album_mode_art_size // 2
                                         text_align = 2
                                     elif card_mode:
                                         x += round(6 * gui.scale)
