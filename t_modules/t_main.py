@@ -1961,6 +1961,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.shuffle_was_random = True
         self.shuffle_was_repeat = False
 
+        self.was_radio = False
+
 
 gui = GuiVar()
 
@@ -3195,6 +3197,8 @@ for t in range(2):
             prefs.shuffle_lock = save[171]
         if save[172] is not None:
             prefs.album_shuffle_lock_mode = save[172]
+        if save[173] is not None:
+            gui.was_radio = save[173]
 
         state_file.close()
         del save
@@ -21179,11 +21183,13 @@ def exit_combo(restore=False):
             gui.rsp = True
         gui.update_layout()
         gui.combo_mode = False
+        gui.was_radio = False
 
 
 def enter_showcase_view(track_id=None):
     if not gui.combo_mode:
         enter_combo()
+        gui.was_radio = False
     gui.showcase_mode = True
     gui.radio_view = False
     if track_id is None or pctl.playing_object() is None or pctl.playing_object().index == track_id:
@@ -39255,7 +39261,12 @@ class ViewBox:
             return gui.showcase_mode
 
         if not gui.showcase_mode:
+            if gui.radio_view:
+                gui.was_radio = True
             enter_showcase_view()
+
+        elif gui.was_radio:
+            enter_radio_view()
         else:
             exit_combo(restore=True)
         if x_menu.active:
@@ -40790,6 +40801,7 @@ def save_state():
             prefs.cache_list,
             prefs.shuffle_lock,
             prefs.album_shuffle_lock_mode,
+            gui.was_radio
         ]
 
 
