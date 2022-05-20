@@ -12377,14 +12377,22 @@ class StyleOverlay:
             self.a_type = album_art_gen.loaded_bg_type
 
             self.stage = 2
+            self.radio_meta = None
 
             gui.update += 1
 
 
         if self.stage == 2:
             track = pctl.playing_object()
-            if not self.go_to_sleep and self.b_texture is None and self.current_track_id != track.index:
 
+            if pctl.playing_state == 3 and not spot_ctl.coasting:
+                if self.radio_meta != pctl.tag_meta:
+                    self.radio_meta = pctl.tag_meta
+                    self.current_track_id = -1
+                    self.stage = 0
+
+            elif not self.go_to_sleep and self.b_texture is None and self.current_track_id != track.index:
+                self.radio_meta = None
                 if not track.album:
                     self.stage = 0
                 else:
@@ -42561,6 +42569,9 @@ while pctl.running:
         if gui.clear_image_cache_next:
             gui.clear_image_cache_next -= 1
             album_art_gen.clear_cache()
+            style_overlay.radio_meta = None
+            if prefs.art_bg:
+                tm.ready('style')
 
         fields.clear()
         gui.cursor_want = 0

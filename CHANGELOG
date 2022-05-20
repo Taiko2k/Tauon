@@ -6,6 +6,7 @@ v7.2.2
  - Improved "transfer playtime to" function
  - Fixed high CPU usage with radio (again)
  - Fixed toggle-showcase from radio view
+ - Fixed background art to work with radio stations
 
 v7.2.1
 
