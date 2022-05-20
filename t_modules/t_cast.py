@@ -213,7 +213,7 @@ def enc(tauon):
                             cont -= 1
                             total += value
 
-                        total = total + 27
+                        total += 27
 
                         self.output_buffer.seek(0, 2)
                         # self.output_buffer.seek(0)

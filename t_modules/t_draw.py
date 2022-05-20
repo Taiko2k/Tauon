@@ -459,7 +459,7 @@ class TDraw:
             sd[0].x = round(x) - sd[0].w
 
         elif align == 2:
-            sd[0].x = sd[0].x - int(sd[0].w / 2)
+            sd[0].x -= int(sd[0].w / 2)
 
         if range_height is not None and range_height < sd[0].h:
 
@@ -508,7 +508,7 @@ class TDraw:
                 quick_box[0] = x - quick_box[2]
 
             elif align == 2:
-                quick_box[0] = quick_box[0] - int(quick_box[2] / 2)
+                quick_box[0] -= int(quick_box[2] / 2)
 
             if coll_rect(self.pretty_rect, quick_box):
                 # self.rect_r(quick_box, [0, 0, 0, 100], True)
@@ -569,7 +569,7 @@ class TDraw:
                 box.x = x - box.w
 
             elif align == 2:
-                box.x = box.x - int(box.w / 2)
+                box.x -= int(box.w / 2)
 
             SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
 
@@ -707,7 +707,7 @@ class TDraw:
         if align == 1:
             sd[0].x = round(x) - sd[0].w
         elif align == 2:
-            sd[0].x = sd[0].x - int(sd[0].w / 2)
+            sd[0].x -= int(sd[0].w / 2)
 
         if range_height is not None and range_height < sd[0].h - 20:
         
@@ -777,7 +777,7 @@ class TDraw:
             dst.x = round(x) - dst.w
 
         elif align == 2:
-            dst.x = dst.x - int(dst.w / 2)
+            dst.x -= int(dst.w / 2)
 
         #SDL_RenderCopy(renderer, c, None, dst)
         #SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
