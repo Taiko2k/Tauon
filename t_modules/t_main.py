@@ -7746,7 +7746,7 @@ class Tauon:
         self.shutdown_lock = None
         self.quick_close = False
 
-        self.cargo_playtime = None
+        self.copied_track = None
         self.macos = macos
         self.aud = None
 
@@ -18973,10 +18973,10 @@ def s_copy():
     if not cargo and -1 < playlist_selected < len(default_playlist):
         cargo.append(default_playlist[playlist_selected])
 
-    tauon.cargo_playtime = None
+    tauon.copied_track = None
 
     if len(cargo) == 1:
-        tauon.cargo_playtime = star_store.get(cargo[0])
+        tauon.copied_track = cargo[0]
 
 def directory_size(path):
     total = 0
@@ -40073,12 +40073,11 @@ class Undo:
                     pctl.playlist_view_position = i
                     console.print("DEBUG: Position changed by undo")
         elif job[0] == 'ptt':
-            star_store.remove(job[1])
-            if job[2]:
-                star_store.insert(job[1], job[2])
-            star_store.remove(job[3])
-            if job[4]:
-                star_store.insert(job[3], job[4])
+            j, fr, fr_s, fr_scr, so, to_s, to_scr = job
+            star_store.insert(fr.index, fr_s)
+            star_store.insert(to.index, to_s)
+            to.lfm_scrobbles = to_scr
+            fr.lfm_scrobbles = fr_scr
 
         gui.pl_update = 1
 
@@ -40091,8 +40090,8 @@ class Undo:
         uid = pctl.multi_playlist[pl_index][6]
         self.e.append(("tracks", uid, indis))
 
-    def bk_playtime_transfer(self, source, target):
-        self.e.append(("ptt", source, copy.deepcopy(star_store.full_get(source)), target, copy.deepcopy(star_store.full_get(target))))
+    def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr):
+        self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
 undo = Undo()
 
@@ -42040,13 +42039,43 @@ while pctl.running:
                     gui.theme_temp_current = -1
 
             if keymaps.test("transfer-playtime-to"):
-                if len(cargo) == 1 and tauon.cargo_playtime and -1 < playlist_selected < len(default_playlist):
-                    undo.bk_playtime_transfer(cargo[0], default_playlist[playlist_selected])
-                    star_store.remove(cargo[0])
-                    star_store.add(default_playlist[playlist_selected], tauon.cargo_playtime)
-                    tauon.cargo_playtime = None
+                if len(cargo) == 1 and tauon.copied_track is not None and -1 < playlist_selected < len(default_playlist):
+                    fr = pctl.g(tauon.copied_track)
+                    to = pctl.g(default_playlist[playlist_selected])
+
+                    fr_s = star_store.full_get(fr.index)
+                    to_s = star_store.full_get(to.index)
+
+                    fr_scr = fr.lfm_scrobbles
+                    to_scr = to.lfm_scrobbles
+
+                    undo.bk_playtime_transfer(fr, fr_s, fr_scr, to, to_s, to_scr)
+
+                    if to_s is None:
+                        to_s = star_store.new_object()
+                    if fr_s is None:
+                        fr_s = star_store.new_object()
+
+                    new = star_store.new_object()
+
+                    new[0] = fr_s[0] + to_s[0]  # playtime
+                    new[1] = fr_s[1]  # flags
+                    if to_s[1]:
+                        new[1] = so_s[1]  # keep target flags
+                    new[2] = fr_s[2]  # raiting
+                    if to_s[2] > 0 and fr_s[2] == 0:
+                        new[2] = to_s[2]  # keep target rating
+                    to.lfm_scrobbles = fr.lfm_scrobbles
+
+                    star_store.remove(fr.index)
+                    star_store.remove(to.index)
+                    if new[0] or new[1] or new[2]:
+                        star_store.insert(to.index, new)
+
+                    tauon.copied_track = None
                     gui.pl_update += 1
-                elif tauon.cargo_playtime is None:
+                    print("Transferred track stats!")
+                elif tauon.copied_track is None:
                     show_message(_("First select a source track by copying it into clipboard"))
 
             if keymaps.test("toggle-gallery"):

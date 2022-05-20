@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v7.2.2
+
+ - Improved "transfer playtime to" function
+ - Fixed high CPU usage with radio (again)
+
 v7.2.1
 
  - Added option to resume playback on system wake
