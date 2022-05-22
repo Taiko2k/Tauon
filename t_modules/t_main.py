@@ -17550,7 +17550,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not selections:
                 for plist in pctl.multi_playlist:
                     code = pctl.gen_codes.get(plist[6])
-                    if code is None or code == "" or code.startswith("self"):
+                    if code is None or code == "" or code.startswith("self") or code.startswith("tau"):
                         selections.append(plist[2])
 
             search = quote
