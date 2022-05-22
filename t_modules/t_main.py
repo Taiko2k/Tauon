@@ -664,7 +664,6 @@ if system == "windows":
     import atexit
 
 try:
-    1 / 0
     import pylast
     last_fm_enable = True
 except:
