@@ -8541,7 +8541,7 @@ tauon.koel = koel
 
 class TauService:
     def __init__(self):
-        pass
+        self.processing = False
 
     def resolve_stream(self, key):
         return "http://" + prefs.sat_url + ":7814/api1/file/" + key
@@ -8554,32 +8554,50 @@ class TauService:
         try:
             r = requests.get(url + point)
             data = r.json()
-        except:
-            print("error")
+        except Exception as e:
+            show_message("Network error", str(e), mode="error")
         return data
 
-    def get_playlist(self, return_list=False):
+    def get_playlist(self, playlist_name=None, return_list=False):
 
         p = self.get("playlists")
 
         if not p or not p["playlists"]:
-            return
-        id = p["playlists"][0]["id"]
-        name = p["playlists"][0]["name"]
-        t = self.get("tracklist/" + id)
+            self.processing = False
+            return []
+
+        if playlist_name is None:
+            playlist_name = text_sat_playlist.text.strip()
+
+        id = None
+        name = ""
+        for pp in p["playlists"]:
+            if pp["name"].lower() == playlist_name.lower():
+                id = pp["id"]
+                name = pp["name"]
+
+        if id is None:
+            show_message("Playlist not found on target", mode="error")
+            self.processing = False
+            return []
+
+        try:
+            t = self.get("tracklist/" + id)
+        except:
+            return []
         at = t["tracks"]
 
         exist = {}
         for k, v in pctl.master_library.items():
-            if "tauid" in v.misc:
-                exist[v.misc["tauid"]] = k
+            if v.is_network and v.file_ext == "TAU":
+                exist[v.url_key] = k
 
         playlist = []
         for item in at:
             replace_existing = True
 
             tid = item["id"]
-            id = exist.get(tid)
+            id = exist.get(str(tid))
             if id is None:
                 id = pctl.master_count
                 replace_existing = False
@@ -8594,6 +8612,7 @@ class TauService:
             nt.track_number = item.get("track_number", 0)
 
             nt.fullpath = item.get("path", "")
+            nt.filename = os.path.basename(nt.fullpath)
             nt.parent_folder_name = os.path.basename(os.path.dirname(nt.fullpath))
             nt.parent_folder_path = os.path.dirname(nt.fullpath)
 
@@ -8609,12 +8628,14 @@ class TauService:
             playlist.append(nt.index)
 
         if return_list:
+            self.processing = False
             return playlist
 
         pctl.multi_playlist.append(pl_gen(title=name, playlist=playlist))
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "tau path tn"
         standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
+        self.processing = False
 
 tau = TauService()
 tauon.tau = tau
@@ -10981,6 +11002,7 @@ text_maloja_url = TextBox2()
 text_maloja_key = TextBox2()
 
 text_sat_url = TextBox2()
+text_sat_playlist = TextBox2()
 
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
@@ -17184,6 +17206,10 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "koel":
             if not koel.scanning:
                 playlist.extend(koel.get_albums(return_list=True))
+
+        elif cm == "tau":
+            if not tau.processing:
+                playlist.extend(tau.get_playlist(pctl.multi_playlist[pl][0], return_list=True))
 
         elif cm == "air":
             if not subsonic.scanning:
@@ -27461,8 +27487,27 @@ class Over:
 
             y += round(25 * gui.scale)
 
-            if self.button(x, y, _("Test")):
-                tau.get_playlist()
+            y += round(30 * gui.scale)
+
+            field_width = round(245 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Playlist name"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_sat_playlist.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+
+            y += round(25 * gui.scale)
+
+            if self.button(x, y, _("Get playlist")):
+                if tau.processing:
+                    show_message("An opperation is already running")
+                else:
+                    shooter(tau.get_playlist())
 
         elif self.account_view == 9:
 
