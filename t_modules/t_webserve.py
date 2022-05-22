@@ -271,6 +271,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["duration"] = int(track.length * 1000)
             data["id"] = track.index
             data["position"] = track_position
+            data["path"] = track.fullpath
             data["album_id"] = album_id
             data["has_lyrics"] = track.lyrics != ""
             data["track_number"] = str(track.track_number).lstrip("0")

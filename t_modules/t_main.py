@@ -956,6 +956,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "WV": [229, 23, 18, 255],
     "PLEX": [229, 160, 13, 255],
     "KOEL": [111, 98, 190, 255],
+    "TAU": [111, 98, 190, 255],
     "SUB": [235, 140, 20, 255],
     "SPTY": [30, 215, 96, 255],
     "JELY": [190, 100, 210, 255],
@@ -1527,6 +1528,8 @@ class Prefs:    # Used to hold any kind of settings
         self.volume_power = 2
 
         self.tmp_cache = True
+
+        self.sat_url = ""
 
 prefs = Prefs()
 
@@ -3865,6 +3868,8 @@ def save_prefs():
     cf.update_value("maloja-url", prefs.maloja_url)
     cf.update_value("maloja-enable", prefs.maloja_enable)
 
+    cf.update_value("tau-url", prefs.sat_url)
+
     #cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-page-port", prefs.metadata_page_port)
     #cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
@@ -4093,6 +4098,10 @@ def load_prefs():
 
     prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url, "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
     prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
+
+    cf.br()
+    cf.add_text("[tauon_satellite]")
+    prefs.sat_url = cf.sync_add("string", "tau-url", prefs.sat_url, "Exclude the port")
 
     cf.br()
     cf.add_text("[maloja_account]")
@@ -5010,6 +5019,9 @@ class PlayerCtl:
 
         if track_object.file_ext == "SUB":
             return subsonic.resolve_stream(track_object.url_key)
+
+        if track_object.file_ext == "TAU":
+            return tau.resolve_stream(track_object.url_key), None
 
         return None
 
@@ -8527,6 +8539,85 @@ class KoelService:
 koel = KoelService()
 tauon.koel = koel
 
+class TauService:
+    def __init__(self):
+        pass
+
+    def resolve_stream(self, key):
+        return "http://" + prefs.sat_url + ":7814/api1/file/" + key
+    def resolve_picture(self, key):
+        return "http://" + prefs.sat_url + ":7814/api1/pic/medium/" + key
+
+    def get(self, point):
+        url = "http://" + prefs.sat_url + ":7814/api1/"
+        data = None
+        try:
+            r = requests.get(url + point)
+            data = r.json()
+        except:
+            print("error")
+        return data
+
+    def get_playlist(self, return_list=False):
+
+        p = self.get("playlists")
+
+        if not p or not p["playlists"]:
+            return
+        id = p["playlists"][0]["id"]
+        name = p["playlists"][0]["name"]
+        t = self.get("tracklist/" + id)
+        at = t["tracks"]
+
+        exist = {}
+        for k, v in pctl.master_library.items():
+            if "tauid" in v.misc:
+                exist[v.misc["tauid"]] = k
+
+        playlist = []
+        for item in at:
+            replace_existing = True
+
+            tid = item["id"]
+            id = exist.get(tid)
+            if id is None:
+                id = pctl.master_count
+                replace_existing = False
+
+            nt = TrackClass()
+            nt.index = id
+            nt.title = item.get("title", "")
+            nt.artist = item.get("artist", "")
+            nt.album = item.get("album", "")
+            nt.album_artist = item.get("album_artist", "")
+            nt.length = int(item.get("duration", 0) / 1000)
+            nt.track_number = item.get("track_number", 0)
+
+            nt.fullpath = item.get("path", "")
+            nt.parent_folder_name = os.path.basename(os.path.dirname(nt.fullpath))
+            nt.parent_folder_path = os.path.dirname(nt.fullpath)
+
+            nt.url_key = str(tid)
+            nt.art_url_key = str(tid)
+
+            nt.is_network = True
+            nt.file_ext = "TAU"
+            pctl.master_library[id] = nt
+
+            if not replace_existing:
+                pctl.master_count += 1
+            playlist.append(nt.index)
+
+        if return_list:
+            return playlist
+
+        pctl.multi_playlist.append(pl_gen(title=name, playlist=playlist))
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "tau path tn"
+        standard_sort(len(pctl.multi_playlist) - 1)
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+tau = TauService()
+tauon.tau = tau
 
 def get_network_thumbnail_url(track_object):
     if track_object.file_ext == "SPTY":
@@ -8542,6 +8633,10 @@ def get_network_thumbnail_url(track_object):
         return url
     if track_object.file_ext == "KOEL":
         url = track_object.art_url_key
+        assert url
+        return url
+    if track_object.file_ext == "TAU":
+        url = tau.resolve_picture(track_object.art_url_key)
         assert url
         return url
 
@@ -10885,6 +10980,8 @@ text_spot_secret = TextBox2()
 text_maloja_url = TextBox2()
 text_maloja_key = TextBox2()
 
+text_sat_url = TextBox2()
+
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
@@ -11659,7 +11756,6 @@ class AlbumArt():
                         source_image.seek(0)
 
             except:
-                # raise
                 pass
 
         else:
@@ -11932,7 +12028,6 @@ class AlbumArt():
         close = True
         # Render new...
         try:
-
             # Get source IO
             if source[offset][0] == 1:
                 # Target is a embedded image
@@ -21413,6 +21508,7 @@ def check_auto_update_okay(code, pl=None):
                           not "plex" in cmds and
                           not "jelly" in cmds and
                           not "koel" in cmds and
+                          not "tau" in cmds and
                           not "air" in cmds and
                           not "sal" in cmds and
                           not "slt" in cmds and
@@ -27328,13 +27424,15 @@ class Over:
         if self.button2(x + round(95 * gui.scale), y, "PLEX", width=84*gui.scale):
             self.account_view = 5
 
-        y += 41 * gui.scale
+        y += 28 * gui.scale
 
 
         if self.button2(x, y, "Spotify", width=84*gui.scale):
             self.account_view = 8
 
-        prefs.spot_mode = self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
+        if self.button2(x + round(95 * gui.scale), y, "Satellite", width=84*gui.scale):
+            self.account_view = 11
+
 
         if self.account_view in (9, 2, 1):
             self.toggle_square(x0 + 230 * gui.scale, y + 2 * gui.scale, toggle_scrobble_mark, _("Show threshold marker"))
@@ -27342,7 +27440,31 @@ class Over:
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
 
-        if self.account_view == 9:
+        if self.account_view == 11:
+            ddt.text((x, y), 'Tauon Satellite', colours.box_sub_text, 213)
+
+            y += round(30 * gui.scale)
+
+            field_width = round(245 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("IP"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 0
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_sat_url.text = prefs.sat_url
+            text_sat_url.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.sat_url = text_sat_url.text.strip()
+
+            y += round(25 * gui.scale)
+
+            if self.button(x, y, _("Test")):
+                tau.get_playlist()
+
+        elif self.account_view == 9:
 
             ddt.text((x, y), _('Maloja Server'), colours.box_sub_text, 213)
             if self.button(x + 260 * gui.scale, y, _("?")):
@@ -27418,8 +27540,9 @@ class Over:
 
         if self.account_view == 8:
 
-            ddt.text((x, y), _('Spotify Premium account'), colours.box_sub_text, 213)
+            ddt.text((x, y), 'Spotify', colours.box_sub_text, 213)
 
+            prefs.spot_mode = self.toggle_square(x + 80 * gui.scale, y + 2 * gui.scale, prefs.spot_mode, _("Enable"))
             y += round(30 * gui.scale)
 
 
@@ -27473,13 +27596,6 @@ class Over:
 
                     spot_ctl.auth()
 
-            # y += round(30 * gui.scale)
-            # if self.button(x, y, _("Paste code param")):
-            #     text = copy_from_clipboard().strip()
-            #     if "=" in text:
-            #         text = text.split("=", 1)[1].strip()
-            #     if len(text) > 50:
-            #         spot_ctl.paste_code(text)
             y += round(31 * gui.scale)
             prefs.launch_spotify_web = self.toggle_square(x,y, prefs.launch_spotify_web, _("Prefer launching web player"))
 
@@ -27530,7 +27646,6 @@ class Over:
                             spotify_playlist_menu.activate(position=(x, y))
                 else:
                     show_message(_("Please wait until current job is finished"))
-
 
 
         if self.account_view == 7:
@@ -27766,8 +27881,6 @@ class Over:
 
             y += round(40 * gui.scale)
             self.button(x, y, _("Import music to playlist"), plex_get_album_thread)
-
-
 
         if self.account_view == 4:
 
