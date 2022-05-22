@@ -2846,6 +2846,15 @@ perf_timer.set()
 radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 radio_playlist_viewing = 0
 
+pump = True
+def pumper():
+    while pump:
+        time.sleep(0.005)
+        SDL_PumpEvents()
+shoot_pump = threading.Thread(target=pumper)
+shoot_pump.daemon = True
+shoot_pump.start()
+
 for t in range(2):
     try:
 
@@ -3226,6 +3235,8 @@ if len(keys) > 5000:
     gui.suggest_clean_db = True
 # print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
+pump = False
+shoot_pump.join()
 
 # temporary
 if window_size is None:
