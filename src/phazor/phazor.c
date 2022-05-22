@@ -890,10 +890,10 @@ int disconnect_pulse() {
 void connect_pulse() {
 
     if (pulse_connected == 1) {
-        printf("pa: reconnect pulse\n");
+        //printf("pa: reconnect pulse\n");
         disconnect_pulse();
     }
-    printf("pa: Connect pulse\n");
+    //printf("pa: Connect pulse\n");
 
     if (want_sample_rate > 0) {
         current_sample_rate = want_sample_rate;
@@ -2032,7 +2032,6 @@ void *main_loop(void *thread_id) {
 
                     if (using_fade == 0){
                             // Jump immediately
-                            printf("jump\n");
                             position_count = 0;
                             buff_reset();
                             gate = 0;
