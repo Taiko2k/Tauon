@@ -480,7 +480,6 @@ def player4(tauon):
                             gui.update += 1
                             tauon.wake()
                         if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0:
-                            print("FIRE EARLY")
                             break
                         time.sleep(0.05)
                         #print(status)
