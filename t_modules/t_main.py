@@ -662,11 +662,13 @@ if snap_mode:
 if system == "windows":
     import win32con, win32api, win32gui, win32ui, comtypes
     import atexit
+
 try:
+    1 / 0
     import pylast
     last_fm_enable = True
 except:
-    raise
+    last_fm_enable = False
     print("PyLast moduel not found, last fm will be disabled.")
 
 use_natsort = False
@@ -6696,7 +6698,9 @@ class LastFMapi:
             return pylast.LastFMNetwork
 
     def auth1(self):
-
+        if not last_fm_enable:
+            show_message("Optional module python-pylast not installed", mode='warning')
+            return
         # This is step one where the user clicks "login"
 
         if self.network is None:
@@ -6785,7 +6789,8 @@ class LastFMapi:
             return False
 
     def last_fm_only_connect(self):
-
+        if not last_fm_enable:
+            return False
         try:
             self.lastfm_network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
             print('Connection appears successful')
@@ -6797,7 +6802,8 @@ class LastFMapi:
             return False
 
     def no_user_connect(self):
-
+        if not last_fm_enable:
+            return False
         try:
             self.network = self.get_network()(api_key=self.API_KEY, api_secret=self.API_SECRET)
             print('Connection appears successful')
@@ -6913,6 +6919,8 @@ class LastFMapi:
         return ""
 
     def scrobble(self, track_object, timestamp=None):
+        if not last_fm_enable:
+            return True
         if prefs.scrobble_hold:
             return True
         if prefs.auto_lfm:
@@ -6969,7 +6977,7 @@ class LastFMapi:
         return True
 
     def get_bio(self, artist):
-        #if self.connected:
+
         if self.lastfm_network is None:
             if self.last_fm_only_connect() is False:
                 return ""
@@ -6986,6 +6994,7 @@ class LastFMapi:
         #    return ""
 
     def love(self, artist, title):
+
         if not self.connected and prefs.auto_lfm:
             self.connect(False)
             prefs.scrobble_hold = True
@@ -6994,6 +7003,8 @@ class LastFMapi:
             track.love()
 
     def unlove(self, artist, title):
+        if not last_fm_enable:
+            return
         if not self.connected and prefs.auto_lfm:
             self.connect(False)
             prefs.scrobble_hold = True
@@ -7012,7 +7023,8 @@ class LastFMapi:
         show_message("Removed {} loves.".format(count))
 
     def get_friends_love(self):
-
+        if not last_fm_enable:
+            return
         self.scanning_friends = True
 
         try:
@@ -7054,7 +7066,8 @@ class LastFMapi:
         self.scanning_friends = False
 
     def dl_love(self):
-
+        if not last_fm_enable:
+            return
         username = prefs.last_fm_username
         show_message(_("Scanning loved tracks for: %s" % username), mode="info")
         self.scanning_username = username
@@ -7117,6 +7130,8 @@ class LastFMapi:
         self.scanning_loves = False
 
     def update(self, track_object):
+        if not last_fm_enable:
+            return
         if prefs.scrobble_hold:
             return 0
         if prefs.auto_lfm:
@@ -26060,6 +26075,9 @@ def toggle_lfm_auto(mode=0):
     if mode == 1:
         return prefs.auto_lfm
     prefs.auto_lfm ^= True
+    if prefs.auto_lfm and not last_fm_enable:
+        show_message("Optional module python-pylast not installed", mode='warning')
+        prefs.auto_lfm = False
     # if prefs.auto_lfm:
     #     lastfm.hold = False
     # else:
@@ -27259,13 +27277,13 @@ class Over:
         y = y0 + round(15 * gui.scale)
 
         ddt.text_background_colour = colours.box_background
-        if last_fm_enable:
-            text = "Last.fm"
-            if prefs.use_libre_fm:
-                text = "Libre.fm"
-            if self.button2(x, y, text, width=84*gui.scale):
-                self.account_view = 1
-            self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
+
+        text = "Last.fm"
+        if prefs.use_libre_fm:
+            text = "Libre.fm"
+        if self.button2(x, y, text, width=84*gui.scale):
+            self.account_view = 1
+        self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_lfm_auto, _("Enable"))
 
         y += 28 * gui.scale
 
