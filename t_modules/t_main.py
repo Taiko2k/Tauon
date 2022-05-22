@@ -6293,7 +6293,7 @@ class PlayerCtl:
                                 new_pool = copy.deepcopy(pl[2])
                                 random.shuffle(new_pool)
                                 pctl.shuffle_pools[id] = new_pool
-                                print("Refill shuffle pool")
+                                console.print("Refill shuffle pool")
 
                     else:
                         random_jump = random.randrange(len(self.playing_playlist()))  # not used
@@ -46114,7 +46114,7 @@ while pctl.running:
 
     # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
-        print("Auto save playtime")
+        console.print("Auto save playtime")
         try:
             pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
         except PermissionError:
