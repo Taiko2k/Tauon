@@ -8577,8 +8577,10 @@ class TauService:
             self.processing = False
             return []
 
-        if playlist_name is None:
+        if not playlist_name is None:
             playlist_name = text_sat_playlist.text.strip()
+        if not playlist_name:
+            return []
 
         id = None
         name = ""
