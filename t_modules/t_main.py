@@ -39114,7 +39114,7 @@ class ViewBox:
         self.x = 0
         self.y = gui.panelY
         self.w = 52 * gui.scale
-        self.h = 295 * gui.scale #257
+        self.h = 260 * gui.scale #257
         self.active = False
 
         self.border = 3 * gui.scale
@@ -39447,19 +39447,19 @@ class ViewBox:
 
         # --
 
-        y += 41 * gui.scale
-
-        high = [198, 229, 76, 255]
-        if colours.lm:
-            #high = (.2, .6, .75)
-            high = [63, 63, 63, 255]
-
-        if gui.scale == 1.25:
-            x-= 1
-
-        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, _("Toggle artist info"), False, low=low, high=high)
-        if test is not None:
-            func = test
+        # y += 41 * gui.scale
+        #
+        # high = [198, 229, 76, 255]
+        # if colours.lm:
+        #     #high = (.2, .6, .75)
+        #     high = [63, 63, 63, 255]
+        #
+        # if gui.scale == 1.25:
+        #     x-= 1
+        #
+        # test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, _("Toggle artist info"), False, low=low, high=high)
+        # if test is not None:
+        #     func = test
 
         if func is not None:
             func(True)
@@ -40731,7 +40731,7 @@ def save_state():
             gui.pref_rspw,
             gui.show_hearts,
             prefs.monitor_downloads,  # 76
-            gui.artist_info_panel,  # 77
+            False, #gui.artist_info_panel,  # 77
             prefs.extract_to_music,  # 78
             lb.enable,
             None, #lb.key,
