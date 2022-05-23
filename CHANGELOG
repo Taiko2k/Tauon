@@ -5,6 +5,7 @@ v7.2.2
 
  - Added Tauon to Tauon interconnect feature
  - Improved "transfer playtime to" function
+ - Improved transition and track timing
  - Fixed high CPU usage with radio (again)
  - Fixed toggle-showcase from radio view
  - Fixed background art to work with radio stations
