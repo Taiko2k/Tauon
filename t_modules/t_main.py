@@ -4904,6 +4904,8 @@ class PlayerCtl:
         self.radio_playlist_viewing = radio_playlist_viewing
         self.tag_history = {}
 
+        self.commit = None
+
     def notify_change(self):
         self.db_inc += 1
         tauon.bg_save()
@@ -5404,22 +5406,20 @@ class PlayerCtl:
         self.target_object = target
         self.start_time = target.start_time
         self.start_time_target = self.start_time
-        # if not gapless:
-        self.playerCommand = 'open'
         self.playing_length = target.length
         self.last_playing_time = 0
+        self.commit = None
         radiobox.loaded_station = None
-
 
         if tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
+        self.playerCommand = 'open'
         if jump: # and not prefs.use_jump_crossfade:
             self.playerSubCommand = 'now'
 
         self.playerCommandReady = True
-        # else:
-        #     self.playerCommand = 'gapless'
+
         self.playing_state = 1
 
         if update_title:
@@ -5621,7 +5621,8 @@ class PlayerCtl:
             self.play()
 
     def seek_decimal(self, decimal):
-
+        if self.commit:
+            return
         if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
             if decimal > 1:
                 decimal = 1
@@ -5640,7 +5641,8 @@ class PlayerCtl:
                 self.mpris.seek_do(self.playing_time)
 
     def seek_time(self, new):
-
+        if self.commit:
+            return
         if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
 
             if new > self.playing_length - 0.5:
@@ -5778,6 +5780,9 @@ class PlayerCtl:
         if msys and taskbar_progress and self.windows_progress:
             self.windows_progress.update(True)
 
+        if self.commit is not None:
+            return
+
         if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
             # Allow some time for spotify playing time to update?
@@ -5809,7 +5814,7 @@ class PlayerCtl:
                 if self.album_repeat_mode:
 
                     if self.playlist_playing_position > len(pp) - 1:
-                        self.playlist_playing_position = 0  # Hack fix, race conditon bug?
+                        self.playlist_playing_position = 0  # Hack fix, race condition bug?
 
                     ti = self.g(pp[self.playlist_playing_position])
 
@@ -5820,7 +5825,7 @@ class PlayerCtl:
                         nt = self.g(pp[i + 1])
                         if ti.parent_folder_path == nt.parent_folder_path:
                             # The next track is in the same folder
-                            # so advance normaly
+                            # so advance normally
                             self.advance(quiet=True, end=True)
                             return
 
@@ -5906,8 +5911,21 @@ class PlayerCtl:
                     update_title_do()
                 self.notify_update()
             else:
-                self.advance(quiet=True, end=True)
+                #self.advance(quiet=True, end=True)
 
+                id = self.advance(quiet=True, end=True, dry=True)
+                if id is not None and not spot_ctl.playing:
+                    self.commit = id
+                    target = self.g(id)
+                    self.target_open = target.fullpath
+                    self.target_object = target
+                    self.start_time = target.start_time
+                    self.start_time_target = self.start_time
+                    self.playerCommand = 'open'
+                    self.playerCommandReady = True
+                    return
+
+                self.advance(quiet=True, end=True)
                 self.playing_time = 0
                 self.decode_time = 0
 
@@ -41073,9 +41091,6 @@ if reload_state:
     if reload_state[0] == 1:
         pctl.jump_time = reload_state[1]
         pctl.play()
-
-    # if reload_state[0] == 2:
-    #     pctl.playing_state = 2
 
 pctl.notify_update()
 

@@ -388,6 +388,64 @@ def player4(tauon):
                 if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
                     gui.update_spec = 1
 
+    stall_timer = Timer()
+    wall_timer = Timer()
+
+    def track(end=True, wall=False):
+
+        run_vis()
+
+        if end and loaded_track.is_network and pctl.playing_time < 7:
+            if aud.get_result() == 2:
+                print("STALL, RETRY")
+                time.sleep(0.5)
+                pctl.playerCommandReady = True
+                pctl.playerCommand = "open"
+
+        add_time = player_timer.hit()
+        if add_time > 2:
+            add_time = 2
+        if add_time < 0:
+            add_time = 0
+
+        pctl.total_playtime += add_time
+
+        t = aud.get_position_ms() / 1000
+
+        # if t and end:
+        #     pctl.decode_time = t - loaded_track.start_time
+        #     if abs(pctl.decode_time - pctl.playing_time) > 5:  # Eehh hack fix?
+        #         pctl.decode_time = pctl.playing_time
+        # else:
+        #     pctl.decode_time = pctl.playing_time
+        #
+        # print((pctl.playing_time, pctl.decode_time))
+
+        if wall or tauon.spot_ctl.playing or wall_timer.get() < 2:
+            pctl.playing_time += add_time
+        else:
+            #new = t - loaded_track.start_time
+            new = t - pctl.start_time
+            if new != pctl.playing_time:
+                stall_timer.set()
+                pctl.playing_time = new
+            elif stall_timer.get() > 2:
+                print("STALL!")
+                pctl.playing_time += add_time
+
+        pctl.decode_time = pctl.playing_time
+
+        if pctl.playing_time < 3 and pctl.a_time < 3:
+            pctl.a_time = pctl.playing_time
+        else:
+            pctl.a_time += add_time
+
+        tauon.lfm_scrobbler.update(add_time)
+
+        if len(pctl.track_queue) > 0 and 2 > add_time > 0:
+            tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
+        if end and pctl.playing_time > 1:
+            pctl.test_progress()
 
     while True:
 
@@ -445,6 +503,7 @@ def player4(tauon):
                 if state == 2:
                     aud.set_volume(int(pctl.player_volume))
 
+                stall_timer.set()
                 pctl.download_time = 0
                 target_object = pctl.target_object
                 target_path = target_object.fullpath
@@ -557,21 +616,40 @@ def player4(tauon):
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
 
-                    print("Transition gapless mode")
+                    tauon.console.print("Transition gapless mode")
 
                     aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
-                    pctl.playing_time = pctl.jump_time
 
-                    if remain > 0:
+                    r_timer = Timer()
+                    r_timer.set()
+                    while r_timer.get() <= remain - prefs.device_buffer / 1000:
+                        if pctl.commit:
+                            track(end=False, wall=True)
                         time.sleep(0.016)
-                        run_vis()
-                        remain -= 0.01
                         if pctl.playerCommandReady and pctl.playerCommand == "open":
+                            print("JANK")
                             break
 
+                    if pctl.commit is not None:
+                        pctl.playing_time = 0
+                        pctl.decode_time = 0
+                        match = pctl.commit
+                        pctl.advance(quiet=True, end=True)
+                        pt = pctl.playing_object()
+                        if pt and pt.index != match:
+                            print("MISSFIRE")
+                        elif pctl.playerCommandReady and pctl.playerCommand == "open":
+                            pctl.playerCommandReady = False
+                            pctl.playerCommand = ""
+
                     loaded_track = target_object
+                    pctl.playing_time = pctl.jump_time
 
                 else:
+                    if pctl.commit:
+                        pctl.advance(quiet=True, end=True)
+                        pctl.commit = None
+
                     if state == 1 and prefs.use_jump_crossfade:
                         fade = 1
 
@@ -629,6 +707,10 @@ def player4(tauon):
                         pctl.playing_length = loaded_track.length
                         gui.pl_update += 1
 
+                pctl.commit = None
+                stall_timer.set()
+                wall_timer.force_set(3)
+
             if command == "seek":
                 if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
                     tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
@@ -672,6 +754,7 @@ def player4(tauon):
                     pctl.playing_time = pctl.new_time
 
                 pctl.decode_time = pctl.playing_time
+                wall_timer.set()
 
             if command == "volume":
                 if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
@@ -732,6 +815,7 @@ def player4(tauon):
                     aud.ramp_volume(int(pctl.player_volume), int(speed))
                 aud.resume()
                 player_timer.set()
+                stall_timer.set()
                 state = 1
 
             if command == "unload":
@@ -772,45 +856,6 @@ def player4(tauon):
                     gui.update += 1
 
             if state == 1:
-                run_vis()
+                track()
 
-                if loaded_track.is_network and pctl.playing_time < 7:
-                    if aud.get_result() == 2:
-                        print("STALL, RETRY")
-                        time.sleep(0.5)
-                        pctl.playerCommandReady = True
-                        pctl.playerCommand = "open"
-
-                add_time = player_timer.hit()
-                if add_time > 2:
-                    add_time = 2
-                if add_time < 0:
-                    add_time = 0
-
-                pctl.playing_time += add_time
-
-                t = aud.get_position_ms() / 1000
-
-                pctl.total_playtime += add_time
-
-                if t:
-                    pctl.decode_time = t - loaded_track.start_time
-                    if abs(pctl.decode_time - pctl.playing_time) > 5:  # Eehh hack fix?
-                        pctl.decode_time = pctl.playing_time
-                else:
-                    pctl.decode_time = pctl.playing_time
-
-                #print((pctl.playing_time, pctl.decode_time))
-
-                if pctl.playing_time < 3 and pctl.a_time < 3:
-                    pctl.a_time = pctl.playing_time
-                else:
-                    pctl.a_time += add_time
-
-                tauon.lfm_scrobbler.update(add_time)
-
-                if len(pctl.track_queue) > 0 and 2 > add_time > 0:
-                    tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
-                if pctl.playing_time > 1:
-                    pctl.test_progress()
 

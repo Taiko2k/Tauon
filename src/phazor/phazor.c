@@ -1423,9 +1423,9 @@ void end() {
 
 void decoder_eos() {
     // Call once current decode steam has run out
-    printf("pa: End of stream\n");
+    //printf("pa: End of stream\n");
     if (next_ready == 1) {
-        printf("pa: Read next gapless\n");
+        //printf("pa: Read next gapless\n");
         int result = load_next();
         if (result == 1){
           result_status = FAILURE;
@@ -2014,15 +2014,16 @@ void *main_loop(void *thread_id) {
                                 }
                             }
                             fade_position = 0;
+                            position_count = 0;
                             fade_fill = l;
                             high = low;
                             using_fade = 1;
 
-                            reset_set_byte = p;
-                            if (reset_set == 0) {
-                                reset_set = 1;
-                                reset_set_value = 0;
-                            }
+//                            reset_set_byte = p;
+//                            if (reset_set == 0) {
+//                                reset_set = 1;
+//                                reset_set_value = 0;
+//                            }
 
                         }
                         pthread_mutex_unlock(&fade_mutex);
@@ -2140,20 +2141,20 @@ void *main_loop(void *thread_id) {
         }
 
         if (mode == ENDING && get_buff_fill() == 0) {
-            printf("pa: Buffer ran out at end of track\n");
+            //printf("pa: Buffer ran out at end of track\n");
             end();
 
         }
         if (mode == ENDING && next_ready == 1) {
-            printf("pa: Next registered while buffer was draining\n");
-            printf("pa: -- remaining was %d\n", get_buff_fill());
+            //printf("pa: Next registered while buffer was draining\n");
+            //printf("pa: -- remaining was %d\n", get_buff_fill());
             mode = PLAYING;
         }
 
         usleep(5000);
     }
 
-    printf("pa: Cleanup and exit\n");
+    //printf("pa: Cleanup and exit\n");
 
     pthread_mutex_lock(&buffer_mutex);
 
