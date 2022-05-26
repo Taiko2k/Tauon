@@ -1987,7 +1987,7 @@ def toast(text):
 
 def set_artist_preview(path, artist, x, y):
     m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
-    artist_preview_render.load(path, box_size=m)
+    artist_preview_render.load(path, box_size=(m, m))
     artist_preview_render.show = True
     ah = artist_preview_render.size[1]
     ay = round(y) - (ah // 2)
