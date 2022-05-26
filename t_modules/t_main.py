@@ -35559,22 +35559,7 @@ class ArtistList:
 
         f_artist = filename_safe(artist)
 
-        filepath = os.path.join(a_cache_dir, f_artist + "-lfm.png")
-
-        if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + f_artist + ".png")):
-            filepath = os.path.join(user_directory, "artist-pictures/" + f_artist + ".png")
-
-        elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg")):
-            filepath = os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg")
-
-        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg")):
-            filepath = os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg")
-
-        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-ftv.jpg")):
-            filepath = os.path.join(a_cache_dir, f_artist + "-ftv.jpg")
-
-        elif os.path.isfile(os.path.join(a_cache_dir, f_artist + "-dcg.jpg")):
-            filepath = os.path.join(a_cache_dir, f_artist + "-dcg.jpg")
+        filepath = artist_info_box.get_data(artist, get_img_path=True)
 
         if os.path.isfile(filepath):
 
@@ -37787,7 +37772,7 @@ class PictureRender:
 
         im = Image.open(path)
         if box_size is not None:
-            im.thumbnail((box_size, box_size), Image.Resampling.LANCZOS)
+            im.thumbnail(box_size, Image.Resampling.LANCZOS)
 
         im.save(g, 'BMP')
         g.seek(0)
@@ -37975,8 +37960,11 @@ class ArtistInfoBox:
             #     tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
             #     self.th = th
             #     self.w = w
+            p_off = round(5 * gui.scale)
+            if artist_picture_render.show and artist_picture_render.sdl_rect:
+                p_off += artist_picture_render.sdl_rect.w + round(12 * gui.scale)
 
-            text_max_w = w - gui.artist_panel_height - 55 * gui.scale
+            text_max_w = w - (round(55 * gui.scale) + p_off)
 
             if self.w != w:
                 tw, th = ddt.get_text_wh(self.processed_text, 14.5, text_max_w - (text_max_w % 20), True)
@@ -38003,7 +37991,7 @@ class ArtistInfoBox:
             artist_picture_render.draw(x + 20 * gui.scale, y + 10 * gui.scale)
             width = text_max_w - (text_max_w % 20)
             if width > 20 * gui.scale:
-                ddt.text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, width, 14000), self.processed_text, text_colour, 14.5, bg=background, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
+                ddt.text((x + p_off + round(15 * gui.scale), y + 14 * gui.scale, 4, width, 14000), self.processed_text, text_colour, 14.5, bg=background, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -38039,7 +38027,7 @@ class ArtistInfoBox:
 
         print("Load Bio Data")
 
-        if artist is None:
+        if artist is None and not get_img_path:
             self.artist_on = artist
             self.lock = False
             return ""
@@ -38048,7 +38036,6 @@ class ArtistInfoBox:
 
         img_filename = f_artist + '-ftv-full.jpg'
         text_filename = f_artist + '-lfm.txt'
-        img_filepath_lfm = os.path.join(a_cache_dir, f_artist + '-lfm.png')
         img_filepath_dcg = os.path.join(a_cache_dir, f_artist + '-dcg.jpg')
         img_filepath = os.path.join(a_cache_dir, img_filename)
         text_filepath = os.path.join(a_cache_dir, text_filename)
@@ -38073,6 +38060,7 @@ class ArtistInfoBox:
             return ""
 
         # Check for cache
+        box_size = (round(gui.artist_panel_height - 20 * gui.scale) * 2, round(gui.artist_panel_height - 20 * gui.scale))
         try:
 
             if os.path.isfile(text_filepath):
@@ -38083,7 +38071,7 @@ class ArtistInfoBox:
                 for path in image_paths:
                     if os.path.isfile(path):
                         filepath = path
-                        artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                        artist_picture_render.load(filepath, box_size)
                         artist_picture_render.show = True
                         break
 
@@ -38130,7 +38118,8 @@ class ArtistInfoBox:
                 if data[3] and prefs.enable_fanart_artist:
                     try:
                         save_fanart_artist_thumb(data[3], img_filepath)
-                        artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                        artist_picture_render.load(img_filepath, box_size)
+
                         artist_picture_render.show = True
                     except:
                         print("Failed to find image from fanart.tv")
@@ -38138,7 +38127,8 @@ class ArtistInfoBox:
                     if verify_discogs():
                         try:
                             save_discogs_artist_thumb(artist, img_filepath_dcg)
-                            artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
+                            artist_picture_render.load(img_filepath_dcg, box_size)
+
                             artist_picture_render.show = True
                         except:
                             print("Failed to find image from discogs")
@@ -38153,8 +38143,7 @@ class ArtistInfoBox:
                             assert len(r.content) > 1000
                             with open(standard_path, "wb") as f:
                                 f.write(r.content)
-                            artist_picture_render.load(standard_path,
-                                                       round(gui.artist_panel_height - 20 * gui.scale))
+                            artist_picture_render.load(standard_path, box_size)
                             artist_picture_render.show = True
                     except Exception as e:
                         print("error scraping art")

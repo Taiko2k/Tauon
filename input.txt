@@ -58,9 +58,10 @@ pagedown PageDown
 delete-playlist W Ctrl
 delete-playlist-force W Shift Ctrl
 rename-playlist R Ctrl
+rename-playlist F2
 new-playlist T Ctrl
 
-new-generator-playlist
+new-generator-playlist E Ctrl Shift
 edit-generator E Ctrl
 
 search-lyrics-selected
@@ -83,12 +84,11 @@ toggle-gallery-keycontrol Tab
 toggle-showcase F5
 toggle-minimode F8
 toggle-columns
-toggle-artistinfo
+toggle-artistinfo O Ctrl
 cycle-layouts ]
 cycle-layouts-reverse [
 
 playlist-toggle-breaks F1
-cycle-theme F2
 
 toggle-auto-theme F3
 find-playing-artist F4
@@ -98,7 +98,8 @@ show-encode-folder F9
 toggle-fullscreen F11
 quit Q Ctrl
 
-cycle-theme-reverse
+cycle-theme ] Ctrl
+cycle-theme-reverse [ Ctrl
 reload-theme F10
 
 opacity-up = Ctrl
