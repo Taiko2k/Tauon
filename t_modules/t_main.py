@@ -35569,6 +35569,16 @@ class ArtistList:
 
                 im = Image.open(filepath)
 
+                w, h = im.size
+                if w != h:
+                    m = min(w, h)
+                    im = im.crop((
+                        (w - m) / 2,
+                        (h - m) / 2,
+                        (w + m) / 2,
+                        (h + m) / 2,
+                    ))
+
                 im.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
 
                 im.save(g, 'PNG')
@@ -41149,7 +41159,7 @@ def save_state():
             gui.pref_rspw,
             gui.show_hearts,
             prefs.monitor_downloads,  # 76
-            False, #gui.artist_info_panel,  # 77
+            gui.artist_info_panel,  # 77
             prefs.extract_to_music,  # 78
             lb.enable,
             None, #lb.key,
