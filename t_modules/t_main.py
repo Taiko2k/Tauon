@@ -1529,6 +1529,7 @@ class Prefs:    # Used to hold any kind of settings
         self.tmp_cache = True
 
         self.sat_url = ""
+        self.lyrics_font_size = 15
 
 prefs = Prefs()
 
@@ -1572,6 +1573,14 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         SDL_DestroyTexture(self.spec1_tex)
         SDL_DestroyTexture(self.spec2_tex)
         SDL_DestroyTexture(self.spec_level_tex)
+
+    # def test_text_input(self):
+    #     if self.text_input_request and not self.text_input_active:
+    #         SDL_StartTextInput()
+    #         self.update += 1
+    #     if not self.text_input_request and self.text_input_active:
+    #         SDL_StopTextInput()
+    #     self.text_input_request = False
 
     def rescale(self):
         self.spec_y = int(round(5 * self.scale))
@@ -1966,7 +1975,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.shuffle_was_repeat = False
 
         self.was_radio = False
-
+        # self.text_input_request = False
+        # self.text_input_active = False
 
 gui = GuiVar()
 
@@ -6935,12 +6945,13 @@ class LastFMapi:
                 bio = l_artist.get_bio_content()
                 #cover_link = l_artist.get_cover_image()
                 mbid = l_artist.get_mbid()
+                url = l_artist.get_url()
 
-                return True, bio, "", mbid
+                return True, bio, "", mbid, url
         except:
             print("last.fm get artist info failed")
 
-        return False, "", "", ""
+        return False, "", "", "", ""
 
     def artist_mbid(self, artist):
 
@@ -9829,7 +9840,13 @@ class LyricsRenMini:
 
         colour = colours.side_bar_line1
 
-        ddt.text((x, y, 4, w), self.text, colour, 15, w - (w % 2), colours.side_panel_background)
+        # if key_ctrl_down:
+        #     if mouse_wheel < 0:
+        #         prefs.lyrics_font_size += 1
+        #     if mouse_wheel > 0:
+        #         prefs.lyrics_font_size -= 1
+
+        ddt.text((x, y, 4, w), self.text, colour, prefs.lyrics_font_size, w - (w % 2), colours.side_panel_background)
 
 
 lyrics_ren_mini = LyricsRenMini()
@@ -9855,6 +9872,8 @@ class LyricsRen:
         colour = colours.lyrics
         if test_lumi(colours.gallery_background) < 0.5:
             colour = colours.grey(40)
+
+
 
         ddt.text((x, y, 4, w), self.text, colour, 17, w, colours.playlist_panel_background)
 
@@ -35567,13 +35586,6 @@ class ArtistList:
 
                 im.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
 
-                # bigsize = (im.size[0] * 4, im.size[1] * 4)
-                # mask = Image.new('L', bigsize, 0)
-                # draw = ImageDraw.Draw(mask)
-                # draw.ellipse((0, 0) + bigsize, fill=255)
-                # mask = mask.resize(im.size, Image.Resampling.LANCZOS)
-                # im.putalpha(mask)
-
                 im.save(g, 'PNG')
                 g.seek(0)
 
@@ -38041,12 +38053,16 @@ class ArtistInfoBox:
         img_filepath = os.path.join(a_cache_dir, img_filename)
         text_filepath = os.path.join(a_cache_dir, text_filename)
 
+        standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
         image_paths = [
             os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
             os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
-            img_filepath,
-            img_filepath_dcg,
-            img_filepath_lfm
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".webp"),
+            os.path.join(a_cache_dir, f_artist + '-ftv-full.jpg'),
+            os.path.join(a_cache_dir, f_artist + '-lfm.png'),
+            os.path.join(a_cache_dir, f_artist + '-lfm.jpg'),
+            os.path.join(a_cache_dir, f_artist + '-lfm.webp'),
+            os.path.join(a_cache_dir, f_artist + '-dcg.jpg')
         ]
 
         if get_img_path:
@@ -38126,6 +38142,23 @@ class ArtistInfoBox:
                             artist_picture_render.show = True
                         except:
                             print("Failed to find image from discogs")
+                if not artist_picture_render.show and data[4]:
+                    try:
+                        r = requests.get(data[4])
+                        html = BeautifulSoup(r.text, 'html.parser')
+                        tag = html.find("meta", property="og:image")
+                        url = tag["content"]
+                        if url:
+                            r = requests.get(url)
+                            assert len(r.content) > 1000
+                            with open(standard_path, "wb") as f:
+                                f.write(r.content)
+                            artist_picture_render.load(standard_path,
+                                                       round(gui.artist_panel_height - 20 * gui.scale))
+                            artist_picture_render.show = True
+                    except Exception as e:
+                        print("error scraping art")
+                        print(str(e))
 
                 # Trigger reload of thumbnail in artist list box
                 for key, value in list(artist_list_box.thumb_cache.items()):
@@ -38180,6 +38213,214 @@ class ArtistInfoBox:
 # artist info box def
 artist_info_box = ArtistInfoBox()
 
+class ArtistInfoBox2:
+    def __init__(self):
+        self.active = False
+        self.ref = None
+        self.bio_text = ""
+        self.image = None
+        self.urls = []
+        self.scroll_y = 0
+        self.inset = round(10 * gui.scale)
+        self.h = 0
+
+    def activate(self):
+        self.scroll_y = 0
+
+        self.active = True
+        self.ref = pctl.playing_object()
+        self.get_data()
+
+    def parse_bio(self, text):
+
+        lic = ""
+        link = ""
+
+        if "<a" in text:
+            text, ex = text.split('<a href="', 1)
+            link, ex = ex.split('">', 1)
+            lic = ex.split("</a>. ", 1)[1]
+
+        text += "\n"
+
+        self.urls = [(link, [200, 60, 60, 255], "L")]
+        for word in text.replace("\n", " ").split(" "):
+            if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
+                word = word.rstrip(".")
+                if word.strip()[:4] == "www.":
+                    word = "http://" + word
+                if 'bandcamp' in word:
+                    self.urls.append((word.strip(), [200, 150, 70, 255], "B"))
+                elif 'soundcloud' in word:
+                    self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
+                elif 'twitter' in word:
+                    self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
+                elif 'facebook' in word:
+                    self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
+                elif 'youtube' in word:
+                    self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
+                else:
+                    self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
+
+        self.bio_text = text
+
+    def get_data(self):
+
+        self.bio_text = ""
+        self.urls.clear()
+        if self.image:
+            SDL_DestroyTexture(self.image[0])
+        self.image = None
+        if not self.ref or not self.ref.artist:
+            return
+
+        artist = self.ref.artist
+        f_artist = filename_safe(artist)
+        text_filename = f_artist + '-lfm.txt'
+        text_filepath = os.path.join(a_cache_dir, text_filename)
+
+        standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
+        image_paths = [
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
+            os.path.join(user_directory, "artist-pictures/" + f_artist + ".webp"),
+            os.path.join(a_cache_dir, f_artist + '-ftv-full.jpg'),
+            os.path.join(a_cache_dir, f_artist + '-lfm.png'),
+            os.path.join(a_cache_dir, f_artist + '-lfm.jpg'),
+            os.path.join(a_cache_dir, f_artist + '-lfm.webp'),
+            os.path.join(a_cache_dir, f_artist + '-dcg.jpg')
+        ]
+
+        # Read cached bio text from file
+        if os.path.isfile(text_filepath):
+            with open(text_filepath, encoding="utf-8") as f:
+                text = f.read()
+            print("LOADED BIO TEXT")
+        else:
+            # Get bio from lastfm
+            data = lastfm.artist_info(artist)
+            text = data[1]
+            # Cache it
+            if text:
+                with open(text_filepath, 'w', encoding="utf-8") as f:
+                    f.write(text)
+            print("GOT BIO TEXT")
+        if text:
+            self.parse_bio(text)
+
+        im_path = None
+        for path in image_paths:
+            if os.path.isfile(path):
+                print(path)
+                im_path = path
+                break
+
+        if not im_path and self.urls:
+            print("Scrape art from lastfm")
+            url = self.urls[0][0]
+            try:
+                r = requests.get(url)
+                html = BeautifulSoup(r.text, 'html.parser')
+                tag = html.find("meta", property="og:image")
+                url = tag["content"]
+                if url:
+                    r = requests.get(url)
+                    assert len(r.content) > 1000
+                    with open(standard_path, "wb") as f:
+                        f.write(r.content)
+                    im_path = standard_path
+            except Exception as e:
+                print("error scraping art")
+                print(str(e))
+
+        if im_path:
+            try:
+                g = io.BytesIO()
+                g.seek(0)
+                self.measure()
+
+                im = Image.open(im_path)
+                size = self.h - self.inset * 2
+                print(size)
+                im.thumbnail((size, size), Image.Resampling.LANCZOS)
+
+                im.save(g, 'PNG')
+                g.seek(0)
+
+                wop = rw_from_object(g)
+                s_image = IMG_Load_RW(wop, 0)
+                texture = SDL_CreateTextureFromSurface(renderer, s_image)
+                SDL_FreeSurface(s_image)
+                tex_w = pointer(c_int(0))
+                tex_h = pointer(c_int(0))
+                SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+                sdl_rect = SDL_Rect(0, 0)
+                sdl_rect.w = int(tex_w.contents.value)
+                sdl_rect.h = int(tex_h.contents.value)
+
+                iw, ih = im.size
+                self.image = (texture, sdl_rect, iw, ih)
+            except:
+                raise
+
+    def measure(self):
+        border = round(30 * gui.scale)
+        self.w = window_size[0] - border * 2
+        self.h = window_size[1] - border * 2
+        self.w = int(min(self.w, 1000 * gui.scale))
+        self.h = int(min(self.h, 450 * gui.scale))
+
+    def draw(self):
+
+        self.measure()
+        w = self.w
+        h = self.h
+        x = int((window_size[0] - w) / 2)
+        y = int((window_size[1] - h) / 2)
+
+
+        c1 = h + round(20 * gui.scale)
+
+        ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale),
+                   colours.box_border)
+        ddt.rect_a((x, y), (w, h), colours.box_background)
+        ddt.text_background_colour = colours.box_background
+
+        if (gui.level_2_click and not coll([x, y, w, h])) or key_esc_press:
+            self.active = False
+
+        if not self.ref:
+            return
+
+        if w > 20 * gui.scale and self.bio_text:
+            ddt.text((x + c1, y + round(20 * gui.scale), 4, w - c1, 14000),
+                     self.bio_text, colours.box_text, 14.5, bg=colours.box_background, range_height=h - 44 * gui.scale,
+                     range_top=self.scroll_y)
+
+        if self.image:
+            rect = self.image[1]
+            b = self.inset
+            iw = self.image[2]
+            ih = self.image[3]
+            rect.x = x + b
+            rect.y = y + b
+
+            if iw >= ih:
+                rect.w = h - b * 2
+                rect.h = int(ih / iw * rect.w)
+                rect.y += int(((h - b * 2) - rect.h) / 2)
+            if iw < ih:
+                rect.h = h - b * 2
+                rect.w = int(iw / ih * rect.h)
+                rect.y += int(((h - b * 2) - rect.h) / 2)
+            # rect.w = h - b * 2
+            # rect.h = h - b * 2
+
+            SDL_RenderCopy(renderer, self.image[0], None, rect)
+            style_overlay.hole_punches.append(rect)
+
+
+artist_box = ArtistInfoBox2()
 
 def artist_dl_deco():
 
@@ -41059,7 +41300,7 @@ def save_state():
     except PermissionError:
         show_message("Permission error encountered while writing database", "error")
 
-# SDL_StartTextInput()
+SDL_StartTextInput()
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 # SDL_EventState(SDL_SYSWMEVENT, 1)
 
@@ -42205,7 +42446,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            pass
+            artist_box.activate()
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -42351,7 +42592,7 @@ while pctl.running:
             if view_box.active:
                 view_box.clicked = True
 
-        if inp.mouse_click and (prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
+        if inp.mouse_click and (prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active or artist_box.active): # and not gui.message_box:
             inp.mouse_click = False
             gui.level_2_click = True
         else:
@@ -44627,6 +44868,9 @@ while pctl.running:
                 artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
                 if inp.mouse_click or right_click or mouse_wheel:
                     gui.preview_artist = ""
+
+            if artist_box.active:
+                artist_box.draw()
 
             if track_box:
                 if inp.key_return_press or right_click or key_esc_press or inp.backspace_press or keymaps.test("quick-find"):
