@@ -35557,11 +35557,9 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        f_artist = filename_safe(artist)
-
         filepath = artist_info_box.get_data(artist, get_img_path=True)
 
-        if os.path.isfile(filepath):
+        if filepath and os.path.isfile(filepath):
 
             try:
                 g = io.BytesIO()

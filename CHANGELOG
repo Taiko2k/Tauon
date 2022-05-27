@@ -4,13 +4,15 @@ Changelog-------------------------------------
 v7.2.2
 
  - Added Tauon to Tauon interconnect feature
+ - Added lastfm artist image scraper to artist info panel
  - Improved "transfer playtime to" function
  - Improved transition and track timing
+ - Tweaked various default keyboard shortcuts
  - Fixed high CPU usage with radio (again)
  - Fixed toggle-showcase from radio view
  - Fixed background art to work with radio stations
  - Fixed non-responsive window on long init
- - Disabled "artist info panel" feature
+ - Removed "artist info panel" toggle from view box
 
 v7.2.1
 
