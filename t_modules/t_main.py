@@ -2857,6 +2857,8 @@ radio_playlist_viewing = 0
 
 pump = True
 def pumper():
+    if macos:
+        return
     while pump:
         time.sleep(0.005)
         SDL_PumpEvents()
