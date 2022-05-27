@@ -41929,8 +41929,11 @@ while pctl.running:
             elif event.key.keysym.sym == SDLK_END:
                 key_end_press = True
             elif event.key.keysym.sym == SDLK_LGUI:
-                key_meta = True
-                key_focused = 1
+                if macos:
+                    key_ctrl_down = True
+                else:
+                    key_meta = True
+                    key_focused = 1
 
         elif event.type == SDL_KEYUP:
 
@@ -41952,8 +41955,11 @@ while pctl.running:
                 gui.album_tab_mode = False
                 key_lalt = False
             elif event.key.keysym.sym == SDLK_LGUI:
-                key_meta = False
-                key_focused = 1
+                if macos:
+                    key_ctrl_down = False
+                else:
+                    key_meta = False
+                    key_focused = 1
 
         elif event.type == SDL_TEXTINPUT:
             k_input = True
