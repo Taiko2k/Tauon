@@ -27470,16 +27470,16 @@ class Over:
             self.account_view = 9
         self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_maloja, _("Enable"))
 
-        y += 28 * gui.scale
 
-        if self.button2(x, y, "Discogs", width=84*gui.scale):
-            self.account_view = 3
+        # if self.button2(x, y, "Discogs", width=84*gui.scale):
+        #     self.account_view = 3
 
         y += 28 * gui.scale
 
         if self.button2(x, y, "fanart.tv", width=84*gui.scale):
             self.account_view = 4
 
+        y += 28 * gui.scale
         y += 28 * gui.scale
 
 
@@ -28016,64 +28016,64 @@ class Over:
                     style_overlay.flush()
                     show_message("OK", mode="done")
 
-        if self.account_view == 3:
-
-            ddt.text((x, y), 'Discogs', colours.box_sub_text, 213)
-
-            y += 25 * gui.scale
-            hh = ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
-                     colours.box_text_label, 11)
-
-
-            y += hh
-            #y += 15 * gui.scale
-            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers",colours.box_text_label, 12)
-            link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
-            fields.add(link_rect2)
-            if coll(link_rect2):
-                if not self.click:
-                    gui.cursor_want = 3
-                if self.click:
-                    webbrowser.open(link_pa2[2], new=2, autoraise=True)
-
-            y += 40 * gui.scale
-            if self.button(x, y, _("Paste Token")):
-
-                text = copy_from_clipboard()
-                if text == "":
-                    show_message("There is no text in the clipboard", mode='error')
-                elif len(text) == 40:
-                    prefs.discogs_pat = text
-
-                    # Reset caches -------------------
-                    prefs.failed_artists.clear()
-                    artist_list_box.to_fetch = ""
-                    for key, value in artist_list_box.thumb_cache.items():
-                        if value:
-                            SDL_DestroyTexture(value[0])
-                    artist_list_box.thumb_cache.clear()
-                    artist_list_box.to_fetch = ""
-
-                    direc = os.path.join(a_cache_dir)
-                    if os.path.isdir(direc):
-                        for item in os.listdir(direc):
-                            if "-lfm.txt" in item:
-                                os.remove(os.path.join(direc, item))
-                    # -----------------------------------
-
-                else:
-                    show_message("That is not a valid token", mode='error')
-            y += 30 * gui.scale
-            if self.button(x, y, _("Clear")):
-                if not prefs.discogs_pat:
-                    show_message("There wasn't any token saved.")
-                prefs.discogs_pat = ""
-                save_prefs()
-
-            y += 30 * gui.scale
-            if prefs.discogs_pat:
-                ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.box_input_text, 211)
-
+        # if self.account_view == 3:
+        #
+        #     ddt.text((x, y), 'Discogs', colours.box_sub_text, 213)
+        #
+        #     y += 25 * gui.scale
+        #     hh = ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
+        #              colours.box_text_label, 11)
+        #
+        #
+        #     y += hh
+        #     #y += 15 * gui.scale
+        #     link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers",colours.box_text_label, 12)
+        #     link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
+        #     fields.add(link_rect2)
+        #     if coll(link_rect2):
+        #         if not self.click:
+        #             gui.cursor_want = 3
+        #         if self.click:
+        #             webbrowser.open(link_pa2[2], new=2, autoraise=True)
+        #
+        #     y += 40 * gui.scale
+        #     if self.button(x, y, _("Paste Token")):
+        #
+        #         text = copy_from_clipboard()
+        #         if text == "":
+        #             show_message("There is no text in the clipboard", mode='error')
+        #         elif len(text) == 40:
+        #             prefs.discogs_pat = text
+        #
+        #             # Reset caches -------------------
+        #             prefs.failed_artists.clear()
+        #             artist_list_box.to_fetch = ""
+        #             for key, value in artist_list_box.thumb_cache.items():
+        #                 if value:
+        #                     SDL_DestroyTexture(value[0])
+        #             artist_list_box.thumb_cache.clear()
+        #             artist_list_box.to_fetch = ""
+        #
+        #             direc = os.path.join(a_cache_dir)
+        #             if os.path.isdir(direc):
+        #                 for item in os.listdir(direc):
+        #                     if "-lfm.txt" in item:
+        #                         os.remove(os.path.join(direc, item))
+        #             # -----------------------------------
+        #
+        #         else:
+        #             show_message("That is not a valid token", mode='error')
+        #     y += 30 * gui.scale
+        #     if self.button(x, y, _("Clear")):
+        #         if not prefs.discogs_pat:
+        #             show_message("There wasn't any token saved.")
+        #         prefs.discogs_pat = ""
+        #         save_prefs()
+        #
+        #     y += 30 * gui.scale
+        #     if prefs.discogs_pat:
+        #         ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.box_input_text, 211)
+        #
 
 
         if self.account_view == 1:
