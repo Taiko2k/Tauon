@@ -11,3 +11,4 @@ setproctitle
 pulsectl
 mutagen
 natsort
+httpx
