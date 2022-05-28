@@ -6,8 +6,8 @@ block_cipher = None
 import subprocess
 prefix = subprocess.run(['brew', '--prefix'], capture_output=True, text=True).stdout.strip()
 
+
 a = Analysis(['tauon.py'],
-             pathex=['/Users/kai/TauonMusicBox'],
              binaries=[('lib/libphazor.so', 'lib/'),
               (prefix + '/bin/ffmpeg', '.'),
               (prefix + '/lib/*.dylib', '.'),
