@@ -3722,6 +3722,14 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\nescape Escape\n")
                 f.write("toggle-mute M Ctrl\n")
+    if db_version <= 65:
+        print("Updating database to version 66")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("\ntoggle-artistinfo O Ctrl\n")
+                f.write("cycle-theme ] Ctrl\n")
+                f.write("cycle-theme-reverse [ Ctrl\n")
 
         prefs.show_nag = True
 
@@ -27470,7 +27478,6 @@ class Over:
             self.account_view = 9
         self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_maloja, _("Enable"))
 
-
         # if self.button2(x, y, "Discogs", width=84*gui.scale):
         #     self.account_view = 3
 
@@ -41099,7 +41106,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            65,  # Version, used for upgrading
+            66,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
