@@ -39363,7 +39363,7 @@ class ViewBox:
         self.gallery2_img = asset_loader("gallery2.png", True)
         self.radio_img = asset_loader("radio.png", True)
         self.col_img = asset_loader("col.png", True)
-        self.artist_img = asset_loader("artist.png", True)
+        #self.artist_img = asset_loader("artist.png", True)
 
         # _ .15 0
         self.tracks_colour = ColourPulse2() #(0.5) # .5 .6 .75
