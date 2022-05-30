@@ -1531,6 +1531,8 @@ class Prefs:    # Used to hold any kind of settings
         self.sat_url = ""
         self.lyrics_font_size = 15
 
+        self.use_gamepad = True
+
 prefs = Prefs()
 
 
@@ -3870,6 +3872,7 @@ def save_prefs():
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("use-system-tray", prefs.use_tray)
+    cf.update_value("use-gamepad", prefs.use_gamepad)
     cf.update_value("enable-remote-interface", prefs.enable_remote)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
@@ -4097,6 +4100,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[app]")
     prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote, "For use with Tauon Music Remote for Android")
+    prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control")
     prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position, "Save and restore the last window position on desktop on open")
@@ -27183,6 +27187,11 @@ class Over:
 
             y += 38 * gui.scale
 
+            gui.artist_info_panel = self.toggle_square(x, y, gui.artist_info_panel,
+                               _("Show artist info panel"), subtitle=_("You can also toggle this with ctrl+o"))
+
+            y += 38 * gui.scale
+
             self.toggle_square(x, y, toggle_auto_artist_dl,
                                _("Auto fetch artist data"), subtitle=_("Downloads data in background when artist panel is open"))
 
@@ -27196,6 +27205,8 @@ class Over:
 
 
             y += 45 * gui.scale
+            #y += 30 * gui.scale
+
 
             wa = ddt.get_text_w(_("Open config file"), 211) + 10 * gui.scale
             #wb = ddt.get_text_w(_("Open keymap file"), 211) + 10 * gui.scale
@@ -27209,9 +27220,7 @@ class Over:
                 bg = [90, 50, 130, 255]
                 self.button(x + ww + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
 
-            y += 30 * gui.scale
-
-            self.button(x, y, _("Open data folder"), open_data_directory, ww)
+            self.button(x + wa + round(10 * gui.scale), y, _("Open data folder"), open_data_directory, ww)
 
         elif self.func_page == 1:
             y += 23 * gui.scale
@@ -41427,12 +41436,12 @@ while pctl.running:
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
 
-        if event.type == SDL_CONTROLLERDEVICEADDED:
+        if event.type == SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
             if SDL_IsGameController(event.cdevice.which):
                 SDL_GameControllerOpen(event.cdevice.which)
                 print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
 
-        if event.type == SDL_CONTROLLERAXISMOTION:
+        if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
             if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
                 rt = event.caxis.value > 5000
             if event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY:
@@ -41472,7 +41481,7 @@ while pctl.running:
                 power += 5
                 gui.update += 1
 
-        if event.type == SDL_CONTROLLERBUTTONDOWN:
+        if event.type == SDL_CONTROLLERBUTTONDOWN and prefs.use_gamepad:
             k_input = True
             power += 5
             gui.update += 2
