@@ -1014,6 +1014,7 @@ playlist_selected = -1
 loading_in_progress = False
 
 core_use = 0
+dl_use = 0
 
 random_mode = False
 repeat_mode = False
@@ -1530,6 +1531,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.sat_url = ""
         self.lyrics_font_size = 15
+
+        self.use_gamepad = True
 
 prefs = Prefs()
 
@@ -2857,6 +2860,8 @@ radio_playlist_viewing = 0
 
 pump = True
 def pumper():
+    if macos:
+        return
     while pump:
         time.sleep(0.005)
         SDL_PumpEvents()
@@ -3721,7 +3726,14 @@ if db_version > 0:
                 f.write("\nescape Escape\n")
                 f.write("toggle-mute M Ctrl\n")
 
-        prefs.show_nag = True
+    if db_version <= 65:
+        print("Updating database to version 66")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("\ntoggle-artistinfo O Ctrl\n")
+                f.write("cycle-theme ] Ctrl\n")
+                f.write("cycle-theme-reverse [ Ctrl\n")
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -3861,6 +3873,7 @@ def save_prefs():
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("use-system-tray", prefs.use_tray)
+    cf.update_value("use-gamepad", prefs.use_gamepad)
     cf.update_value("enable-remote-interface", prefs.enable_remote)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
@@ -4088,6 +4101,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[app]")
     prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote, "For use with Tauon Music Remote for Android")
+    prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control")
     prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position, "Save and restore the last window position on desktop on open")
@@ -5045,7 +5059,7 @@ class PlayerCtl:
         if track_object.file_ext == "TAU":
             return tau.resolve_stream(track_object.url_key), None
 
-        return None
+        return None, None
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -8594,6 +8608,7 @@ class TauService:
             r = requests.get(url + point)
             data = r.json()
         except Exception as e:
+            print("Error")
             show_message("Network error", str(e), mode="error")
         return data
 
@@ -8605,9 +8620,10 @@ class TauService:
             self.processing = False
             return []
 
-        if not playlist_name is None:
+        if playlist_name is None:
             playlist_name = text_sat_playlist.text.strip()
         if not playlist_name:
+            show_message("No playlist name")
             return []
 
         id = None
@@ -8625,6 +8641,7 @@ class TauService:
         try:
             t = self.get("tracklist/" + id)
         except:
+            print("error getting tracklist")
             return []
         at = t["tracks"]
 
@@ -12106,39 +12123,43 @@ class AlbumArt():
                 source_image = self.get_source_raw(0, 0, track, source[offset])
 
             elif source[offset][0] == 2:
-                try:
-                    close = False
-                    # We want to download the image asynchronously as to not block the UI
-                    if self.downloaded_image and self.downloaded_track == track:
-                        source_image = self.downloaded_image
+                idea = os.path.join(prefs.encoder_output, encode_folder_name(track), "cover.jpg")
+                if os.path.isfile(idea):
+                    source_image = open(idea, "rb")
+                else:
+                    try:
+                        close = False
+                        # We want to download the image asynchronously as to not block the UI
+                        if self.downloaded_image and self.downloaded_track == track:
+                            source_image = self.downloaded_image
 
-                    elif self.download_in_progress:
-                        return 0
+                        elif self.download_in_progress:
+                            return 0
 
-                    else:
-                        self.download_in_progress = True
-                        shoot_dl = threading.Thread(target=self.async_download_image, args=([track, source[offset]]))
-                        shoot_dl.daemon = True
-                        shoot_dl.start()
+                        else:
+                            self.download_in_progress = True
+                            shoot_dl = threading.Thread(target=self.async_download_image, args=([track, source[offset]]))
+                            shoot_dl.daemon = True
+                            shoot_dl.start()
 
-                        # We'll block with a small timeout to avoid unwanted flashing between frames
-                        s = 0
-                        while self.download_in_progress:
-                            s += 1
-                            time.sleep(0.01)
-                            if s > 20:  # 200 ms
-                                break
+                            # We'll block with a small timeout to avoid unwanted flashing between frames
+                            s = 0
+                            while self.download_in_progress:
+                                s += 1
+                                time.sleep(0.01)
+                                if s > 20:  # 200 ms
+                                    break
 
-                        if self.downloaded_track != track:
-                            return
+                            if self.downloaded_track != track:
+                                return
 
-                        assert self.downloaded_image
-                        source_image = self.downloaded_image
+                            assert self.downloaded_image
+                            source_image = self.downloaded_image
 
 
-                except:
-                    print("IMAGE NETWORK LOAD ERROR")
-                    raise
+                    except:
+                        print("IMAGE NETWORK LOAD ERROR")
+                        raise
 
             else:
                 #source_image = open(source[offset][1], 'rb')
@@ -19053,8 +19074,8 @@ def convert_folder(index):
             if r_folder == pctl.master_library[item].parent_folder_path:
 
                 track_object = pctl.g(item)
-                if track_object.is_network:
-                    show_message(_("Transcoding tracks from network locations is not supported"))
+                if track_object.file_ext == "SPOT": #track_object.is_network:
+                    show_message(_("Transcoding spotify tracks not possible"))
                     return
 
                 if item not in folder:
@@ -22860,6 +22881,7 @@ def toggle_playlist_break():
 
 def transcode_single(item, manual_directroy=None, manual_name=None):
     global core_use
+    global dl_use
 
     if manual_directroy != None:
         codec = "opus"
@@ -22873,19 +22895,36 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         output = prefs.encoder_output + item[1] + "/"
         bitrate = prefs.transcode_bitrate
 
-    if not os.path.isfile(pctl.master_library[track].fullpath):
+    t = pctl.master_library[track]
+
+    path = t.fullpath
+    cleanup = False
+
+    if t.is_network:
+        while dl_use > 1:
+            time.sleep(0.2)
+        dl_use += 1
+        try:
+            url, params = pctl.get_url(t)
+            assert url
+            path = "/tmp/TauonMusicBox/" + str(t.index)
+            if os.path.exists(path):
+                os.remove(path)
+            print("Downloading file...")
+            with requests.get(url, params=params) as response, open(path, 'wb') as out_file:
+                out_file.write(response.content)
+            print("Download complete")
+            cleanup = True
+        except:
+            print("Error downloading file")
+        dl_use -= 1
+
+    if not os.path.isfile(path):
         show_message("Encoding warning: Missing one or more files")
         core_use -= 1
         return
 
-    t = pctl.master_library[track]
-    if t.is_cue:
-        out_line = str(t.track_number) + ". "
-        out_line += t.artist + " - " + t.title
-        out_line = filename_safe(out_line)
-
-    else:
-        out_line = os.path.splitext(pctl.master_library[track].filename)[0]
+    out_line = encode_track_name(t)
 
     target_out = output + 'output' + str(track) + "." + codec
 
@@ -22897,15 +22936,15 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     else:
         command = command.replace("/", "\\")
 
-    if not pctl.master_library[track].is_cue:
+    if not t.is_cue:
         command += '-i "'
     else:
-        command += '-ss ' + str(pctl.master_library[track].start_time)
-        command += ' -t ' + str(pctl.master_library[track].length)
+        command += '-ss ' + str(t.start_time)
+        command += ' -t ' + str(t.length)
 
         command += ' -i "'
 
-    command += pctl.master_library[track].fullpath.replace('"', '\\"')
+    command += path.replace('"', '\\"')
 
     command += '" '
     if pctl.master_library[track].is_cue:
@@ -22951,10 +22990,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         final_out = output + manual_name + "." + codec
         final_name = manual_name + "." + codec
         os.rename(target_out, final_out)
-    if prefs.transcode_inplace:
+
+    if prefs.transcode_inplace and not t.is_network and not t.is_cue:
         print("MOVE AND REPLACE!")
         if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
-            new_name = os.path.join(pctl.master_library[track].parent_folder_path, final_name)
+            new_name = os.path.join(t.parent_folder_path, final_name)
             print(new_name)
             shutil.move(final_out, new_name)
 
@@ -22994,6 +23034,8 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
                 star_store.db[new_key] = new_star
 
     gui.transcoding_bach_done += 1
+    if cleanup:
+        os.remove(path)
     core_use -= 1
     gui.update += 1
 
@@ -24771,6 +24813,17 @@ def worker2():
                 search_over.force_select = 0
                 #print(perf_timer.get())
 
+def encode_track_name(t):
+    if t.is_cue or not t.filename:
+        out_line = str(t.track_number) + ". "
+        out_line += t.artist + " - " + t.title
+        return filename_safe(out_line)
+    else:
+        return os.path.splitext(t.filename)[0]
+
+
+tauon.encode_track_name = encode_track_name
+
 def encode_folder_name(track_object):
 
     folder_name = track_object.artist + " - " + track_object.album
@@ -24791,6 +24844,7 @@ def encode_folder_name(track_object):
 
     return folder_name
 
+tauon.encode_folder_name = encode_folder_name
 
 def worker1():
     global cue_list
@@ -25530,17 +25584,16 @@ def worker1():
                 # Create new empty folder to output tracks to
                 os.makedirs(prefs.encoder_output + folder_name)
 
-                working_folder = prefs.encoder_output + folder_name
-
-                full_wav_out = '"' + prefs.encoder_output + 'output.wav"'
                 full_wav_out_p = prefs.encoder_output + 'output.wav'
                 full_target_out_p = prefs.encoder_output + 'output.' + prefs.transcode_codec
-                full_target_out = '"' + prefs.encoder_output + 'output.' + prefs.transcode_codec + '"'
-
                 if os.path.isfile(full_wav_out_p):
                     os.remove(full_wav_out_p)
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
+
+                cache_dir = "/tmp/TauonMusicBox"
+                if not os.path.isdir(cache_dir):
+                    os.makedirs(cache_dir)
 
                 if prefs.transcode_codec in ('opus', 'ogg', 'flac', 'mp3'):
                     global core_use
@@ -27174,6 +27227,11 @@ class Over:
 
             y += 38 * gui.scale
 
+            gui.artist_info_panel = self.toggle_square(x, y, gui.artist_info_panel,
+                               _("Show artist info panel"), subtitle=_("You can also toggle this with ctrl+o"))
+
+            y += 38 * gui.scale
+
             self.toggle_square(x, y, toggle_auto_artist_dl,
                                _("Auto fetch artist data"), subtitle=_("Downloads data in background when artist panel is open"))
 
@@ -27187,6 +27245,8 @@ class Over:
 
 
             y += 45 * gui.scale
+            #y += 30 * gui.scale
+
 
             wa = ddt.get_text_w(_("Open config file"), 211) + 10 * gui.scale
             #wb = ddt.get_text_w(_("Open keymap file"), 211) + 10 * gui.scale
@@ -27200,9 +27260,7 @@ class Over:
                 bg = [90, 50, 130, 255]
                 self.button(x + ww + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
 
-            y += 30 * gui.scale
-
-            self.button(x, y, _("Open data folder"), open_data_directory, ww)
+            self.button(x + wa + round(10 * gui.scale), y, _("Open data folder"), open_data_directory, ww)
 
         elif self.func_page == 1:
             y += 23 * gui.scale
@@ -27468,16 +27526,15 @@ class Over:
             self.account_view = 9
         self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, toggle_maloja, _("Enable"))
 
-        y += 28 * gui.scale
-
-        if self.button2(x, y, "Discogs", width=84*gui.scale):
-            self.account_view = 3
+        # if self.button2(x, y, "Discogs", width=84*gui.scale):
+        #     self.account_view = 3
 
         y += 28 * gui.scale
 
         if self.button2(x, y, "fanart.tv", width=84*gui.scale):
             self.account_view = 4
 
+        y += 28 * gui.scale
         y += 28 * gui.scale
 
 
@@ -28014,64 +28071,64 @@ class Over:
                     style_overlay.flush()
                     show_message("OK", mode="done")
 
-        if self.account_view == 3:
-
-            ddt.text((x, y), 'Discogs', colours.box_sub_text, 213)
-
-            y += 25 * gui.scale
-            hh = ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
-                     colours.box_text_label, 11)
-
-
-            y += hh
-            #y += 15 * gui.scale
-            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers",colours.box_text_label, 12)
-            link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
-            fields.add(link_rect2)
-            if coll(link_rect2):
-                if not self.click:
-                    gui.cursor_want = 3
-                if self.click:
-                    webbrowser.open(link_pa2[2], new=2, autoraise=True)
-
-            y += 40 * gui.scale
-            if self.button(x, y, _("Paste Token")):
-
-                text = copy_from_clipboard()
-                if text == "":
-                    show_message("There is no text in the clipboard", mode='error')
-                elif len(text) == 40:
-                    prefs.discogs_pat = text
-
-                    # Reset caches -------------------
-                    prefs.failed_artists.clear()
-                    artist_list_box.to_fetch = ""
-                    for key, value in artist_list_box.thumb_cache.items():
-                        if value:
-                            SDL_DestroyTexture(value[0])
-                    artist_list_box.thumb_cache.clear()
-                    artist_list_box.to_fetch = ""
-
-                    direc = os.path.join(a_cache_dir)
-                    if os.path.isdir(direc):
-                        for item in os.listdir(direc):
-                            if "-lfm.txt" in item:
-                                os.remove(os.path.join(direc, item))
-                    # -----------------------------------
-
-                else:
-                    show_message("That is not a valid token", mode='error')
-            y += 30 * gui.scale
-            if self.button(x, y, _("Clear")):
-                if not prefs.discogs_pat:
-                    show_message("There wasn't any token saved.")
-                prefs.discogs_pat = ""
-                save_prefs()
-
-            y += 30 * gui.scale
-            if prefs.discogs_pat:
-                ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.box_input_text, 211)
-
+        # if self.account_view == 3:
+        #
+        #     ddt.text((x, y), 'Discogs', colours.box_sub_text, 213)
+        #
+        #     y += 25 * gui.scale
+        #     hh = ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
+        #              colours.box_text_label, 11)
+        #
+        #
+        #     y += hh
+        #     #y += 15 * gui.scale
+        #     link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers",colours.box_text_label, 12)
+        #     link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
+        #     fields.add(link_rect2)
+        #     if coll(link_rect2):
+        #         if not self.click:
+        #             gui.cursor_want = 3
+        #         if self.click:
+        #             webbrowser.open(link_pa2[2], new=2, autoraise=True)
+        #
+        #     y += 40 * gui.scale
+        #     if self.button(x, y, _("Paste Token")):
+        #
+        #         text = copy_from_clipboard()
+        #         if text == "":
+        #             show_message("There is no text in the clipboard", mode='error')
+        #         elif len(text) == 40:
+        #             prefs.discogs_pat = text
+        #
+        #             # Reset caches -------------------
+        #             prefs.failed_artists.clear()
+        #             artist_list_box.to_fetch = ""
+        #             for key, value in artist_list_box.thumb_cache.items():
+        #                 if value:
+        #                     SDL_DestroyTexture(value[0])
+        #             artist_list_box.thumb_cache.clear()
+        #             artist_list_box.to_fetch = ""
+        #
+        #             direc = os.path.join(a_cache_dir)
+        #             if os.path.isdir(direc):
+        #                 for item in os.listdir(direc):
+        #                     if "-lfm.txt" in item:
+        #                         os.remove(os.path.join(direc, item))
+        #             # -----------------------------------
+        #
+        #         else:
+        #             show_message("That is not a valid token", mode='error')
+        #     y += 30 * gui.scale
+        #     if self.button(x, y, _("Clear")):
+        #         if not prefs.discogs_pat:
+        #             show_message("There wasn't any token saved.")
+        #         prefs.discogs_pat = ""
+        #         save_prefs()
+        #
+        #     y += 30 * gui.scale
+        #     if prefs.discogs_pat:
+        #         ddt.text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.box_input_text, 211)
+        #
 
 
         if self.account_view == 1:
@@ -35557,11 +35614,9 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        f_artist = filename_safe(artist)
-
         filepath = artist_info_box.get_data(artist, get_img_path=True)
 
-        if os.path.isfile(filepath):
+        if filepath and os.path.isfile(filepath):
 
             try:
                 g = io.BytesIO()
@@ -38212,214 +38267,6 @@ class ArtistInfoBox:
 # artist info box def
 artist_info_box = ArtistInfoBox()
 
-class ArtistInfoBox2:
-    def __init__(self):
-        self.active = False
-        self.ref = None
-        self.bio_text = ""
-        self.image = None
-        self.urls = []
-        self.scroll_y = 0
-        self.inset = round(10 * gui.scale)
-        self.h = 0
-
-    def activate(self):
-        self.scroll_y = 0
-
-        self.active = True
-        self.ref = pctl.playing_object()
-        self.get_data()
-
-    def parse_bio(self, text):
-
-        lic = ""
-        link = ""
-
-        if "<a" in text:
-            text, ex = text.split('<a href="', 1)
-            link, ex = ex.split('">', 1)
-            lic = ex.split("</a>. ", 1)[1]
-
-        text += "\n"
-
-        self.urls = [(link, [200, 60, 60, 255], "L")]
-        for word in text.replace("\n", " ").split(" "):
-            if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
-                word = word.rstrip(".")
-                if word.strip()[:4] == "www.":
-                    word = "http://" + word
-                if 'bandcamp' in word:
-                    self.urls.append((word.strip(), [200, 150, 70, 255], "B"))
-                elif 'soundcloud' in word:
-                    self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
-                elif 'twitter' in word:
-                    self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
-                elif 'facebook' in word:
-                    self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
-                elif 'youtube' in word:
-                    self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
-                else:
-                    self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
-
-        self.bio_text = text
-
-    def get_data(self):
-
-        self.bio_text = ""
-        self.urls.clear()
-        if self.image:
-            SDL_DestroyTexture(self.image[0])
-        self.image = None
-        if not self.ref or not self.ref.artist:
-            return
-
-        artist = self.ref.artist
-        f_artist = filename_safe(artist)
-        text_filename = f_artist + '-lfm.txt'
-        text_filepath = os.path.join(a_cache_dir, text_filename)
-
-        standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
-        image_paths = [
-            os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
-            os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
-            os.path.join(user_directory, "artist-pictures/" + f_artist + ".webp"),
-            os.path.join(a_cache_dir, f_artist + '-ftv-full.jpg'),
-            os.path.join(a_cache_dir, f_artist + '-lfm.png'),
-            os.path.join(a_cache_dir, f_artist + '-lfm.jpg'),
-            os.path.join(a_cache_dir, f_artist + '-lfm.webp'),
-            os.path.join(a_cache_dir, f_artist + '-dcg.jpg')
-        ]
-
-        # Read cached bio text from file
-        if os.path.isfile(text_filepath):
-            with open(text_filepath, encoding="utf-8") as f:
-                text = f.read()
-            print("LOADED BIO TEXT")
-        else:
-            # Get bio from lastfm
-            data = lastfm.artist_info(artist)
-            text = data[1]
-            # Cache it
-            if text:
-                with open(text_filepath, 'w', encoding="utf-8") as f:
-                    f.write(text)
-            print("GOT BIO TEXT")
-        if text:
-            self.parse_bio(text)
-
-        im_path = None
-        for path in image_paths:
-            if os.path.isfile(path):
-                print(path)
-                im_path = path
-                break
-
-        if not im_path and self.urls:
-            print("Scrape art from lastfm")
-            url = self.urls[0][0]
-            try:
-                r = requests.get(url)
-                html = BeautifulSoup(r.text, 'html.parser')
-                tag = html.find("meta", property="og:image")
-                url = tag["content"]
-                if url:
-                    r = requests.get(url)
-                    assert len(r.content) > 1000
-                    with open(standard_path, "wb") as f:
-                        f.write(r.content)
-                    im_path = standard_path
-            except Exception as e:
-                print("error scraping art")
-                print(str(e))
-
-        if im_path:
-            try:
-                g = io.BytesIO()
-                g.seek(0)
-                self.measure()
-
-                im = Image.open(im_path)
-                size = self.h - self.inset * 2
-                print(size)
-                im.thumbnail((size, size), Image.Resampling.LANCZOS)
-
-                im.save(g, 'PNG')
-                g.seek(0)
-
-                wop = rw_from_object(g)
-                s_image = IMG_Load_RW(wop, 0)
-                texture = SDL_CreateTextureFromSurface(renderer, s_image)
-                SDL_FreeSurface(s_image)
-                tex_w = pointer(c_int(0))
-                tex_h = pointer(c_int(0))
-                SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-                sdl_rect = SDL_Rect(0, 0)
-                sdl_rect.w = int(tex_w.contents.value)
-                sdl_rect.h = int(tex_h.contents.value)
-
-                iw, ih = im.size
-                self.image = (texture, sdl_rect, iw, ih)
-            except:
-                raise
-
-    def measure(self):
-        border = round(30 * gui.scale)
-        self.w = window_size[0] - border * 2
-        self.h = window_size[1] - border * 2
-        self.w = int(min(self.w, 1000 * gui.scale))
-        self.h = int(min(self.h, 450 * gui.scale))
-
-    def draw(self):
-
-        self.measure()
-        w = self.w
-        h = self.h
-        x = int((window_size[0] - w) / 2)
-        y = int((window_size[1] - h) / 2)
-
-
-        c1 = h + round(20 * gui.scale)
-
-        ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale),
-                   colours.box_border)
-        ddt.rect_a((x, y), (w, h), colours.box_background)
-        ddt.text_background_colour = colours.box_background
-
-        if (gui.level_2_click and not coll([x, y, w, h])) or key_esc_press:
-            self.active = False
-
-        if not self.ref:
-            return
-
-        if w > 20 * gui.scale and self.bio_text:
-            ddt.text((x + c1, y + round(20 * gui.scale), 4, w - c1, 14000),
-                     self.bio_text, colours.box_text, 14.5, bg=colours.box_background, range_height=h - 44 * gui.scale,
-                     range_top=self.scroll_y)
-
-        if self.image:
-            rect = self.image[1]
-            b = self.inset
-            iw = self.image[2]
-            ih = self.image[3]
-            rect.x = x + b
-            rect.y = y + b
-
-            if iw >= ih:
-                rect.w = h - b * 2
-                rect.h = int(ih / iw * rect.w)
-                rect.y += int(((h - b * 2) - rect.h) / 2)
-            if iw < ih:
-                rect.h = h - b * 2
-                rect.w = int(iw / ih * rect.h)
-                rect.y += int(((h - b * 2) - rect.h) / 2)
-            # rect.w = h - b * 2
-            # rect.h = h - b * 2
-
-            SDL_RenderCopy(renderer, self.image[0], None, rect)
-            style_overlay.hole_punches.append(rect)
-
-
-artist_box = ArtistInfoBox2()
 
 def artist_dl_deco():
 
@@ -39556,7 +39403,7 @@ class ViewBox:
         self.gallery2_img = asset_loader("gallery2.png", True)
         self.radio_img = asset_loader("radio.png", True)
         self.col_img = asset_loader("col.png", True)
-        self.artist_img = asset_loader("artist.png", True)
+        #self.artist_img = asset_loader("artist.png", True)
 
         # _ .15 0
         self.tracks_colour = ColourPulse2() #(0.5) # .5 .6 .75
@@ -41099,7 +40946,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            65,  # Version, used for upgrading
+            66,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -41629,12 +41476,12 @@ while pctl.running:
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented by pysdl2
 
-        if event.type == SDL_CONTROLLERDEVICEADDED:
+        if event.type == SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
             if SDL_IsGameController(event.cdevice.which):
                 SDL_GameControllerOpen(event.cdevice.which)
                 print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
 
-        if event.type == SDL_CONTROLLERAXISMOTION:
+        if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
             if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
                 rt = event.caxis.value > 5000
             if event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY:
@@ -41674,7 +41521,7 @@ while pctl.running:
                 power += 5
                 gui.update += 1
 
-        if event.type == SDL_CONTROLLERBUTTONDOWN:
+        if event.type == SDL_CONTROLLERBUTTONDOWN and prefs.use_gamepad:
             k_input = True
             power += 5
             gui.update += 2
@@ -41929,8 +41776,11 @@ while pctl.running:
             elif event.key.keysym.sym == SDLK_END:
                 key_end_press = True
             elif event.key.keysym.sym == SDLK_LGUI:
-                key_meta = True
-                key_focused = 1
+                if macos:
+                    key_ctrl_down = True
+                else:
+                    key_meta = True
+                    key_focused = 1
 
         elif event.type == SDL_KEYUP:
 
@@ -41952,8 +41802,11 @@ while pctl.running:
                 gui.album_tab_mode = False
                 key_lalt = False
             elif event.key.keysym.sym == SDLK_LGUI:
-                key_meta = False
-                key_focused = 1
+                if macos:
+                    key_ctrl_down = False
+                else:
+                    key_meta = False
+                    key_focused = 1
 
         elif event.type == SDL_TEXTINPUT:
             k_input = True
@@ -42445,7 +42298,7 @@ while pctl.running:
             pctl.running = False
 
         if keymaps.test('testkey'):  # F7: test
-            artist_box.activate()
+            pass
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -42591,7 +42444,7 @@ while pctl.running:
             if view_box.active:
                 view_box.clicked = True
 
-        if inp.mouse_click and (prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active or artist_box.active): # and not gui.message_box:
+        if inp.mouse_click and (prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active): # and not gui.message_box:
             inp.mouse_click = False
             gui.level_2_click = True
         else:
@@ -44867,9 +44720,6 @@ while pctl.running:
                 artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
                 if inp.mouse_click or right_click or mouse_wheel:
                     gui.preview_artist = ""
-
-            if artist_box.active:
-                artist_box.draw()
 
             if track_box:
                 if inp.key_return_press or right_click or key_esc_press or inp.backspace_press or keymaps.test("quick-find"):
