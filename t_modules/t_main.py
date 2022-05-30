@@ -24829,14 +24829,14 @@ def encode_folder_name(track_object):
     folder_name = track_object.artist + " - " + track_object.album
 
     if folder_name == " - ":
-        folder_name = track_object.filename
+        folder_name = track_object.parent_folder_name
 
-    "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+    folder_name = "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' '])
 
-    if folder_name[-1:] == ' ':
-        folder_name = track_object.filename
+    folder_name = filename_safe(folder_name).strip()
 
-    folder_name = filename_safe(folder_name)
+    if not folder_name:
+        folder_name = str(track_object.index)
 
     if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
         if track_object.disc_total not in ("", "0", 0, "1", 1) or (str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
