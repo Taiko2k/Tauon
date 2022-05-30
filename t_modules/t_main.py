@@ -3722,6 +3722,7 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("\nescape Escape\n")
                 f.write("toggle-mute M Ctrl\n")
+
     if db_version <= 65:
         print("Updating database to version 66")
 
@@ -3730,8 +3731,6 @@ if db_version > 0:
                 f.write("\ntoggle-artistinfo O Ctrl\n")
                 f.write("cycle-theme ] Ctrl\n")
                 f.write("cycle-theme-reverse [ Ctrl\n")
-
-        prefs.show_nag = True
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
