@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v7.2.2
 
  - Added Tauon to Tauon interconnect feature
+ - Added transcode of network tracks
+ - Added transcoded track network fallback feature
  - Added lastfm artist image scraper to artist info panel
  - Added config setting to disable gamepad
  - Improved "transfer playtime to" function
