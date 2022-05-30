@@ -16165,7 +16165,7 @@ lock_icon.yoff = -1
 
 
 
-tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_ref_deco=True, icon=lock_icon)
+tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=test_shift)
 
 
 def export_m3u(pl, direc=None, relative=False, show=True):
@@ -37953,14 +37953,14 @@ class ArtistInfoBox:
             if artist == "":
                 return
 
-            if self.min_rq_timer.get() < 5:  # Limit rate
+            if self.min_rq_timer.get() < 10:  # Limit rate
                 if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
                     pass
                 else:
                     self.status = _("Cooldown...")
                     wait = True
 
-            if pctl.playing_time < 0.5:
+            if pctl.playing_time < 2:
                 if os.path.isfile(os.path.join(a_cache_dir, artist + '-lfm.txt')):
                     pass
                 else:
