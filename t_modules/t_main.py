@@ -24831,8 +24831,6 @@ def encode_folder_name(track_object):
     if folder_name == " - ":
         folder_name = track_object.parent_folder_name
 
-    folder_name = "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' '])
-
     folder_name = filename_safe(folder_name).strip()
 
     if not folder_name:
