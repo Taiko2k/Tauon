@@ -1014,6 +1014,7 @@ playlist_selected = -1
 loading_in_progress = False
 
 core_use = 0
+dl_use = 0
 
 random_mode = False
 repeat_mode = False
@@ -5058,7 +5059,7 @@ class PlayerCtl:
         if track_object.file_ext == "TAU":
             return tau.resolve_stream(track_object.url_key), None
 
-        return None
+        return None, None
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -8607,6 +8608,7 @@ class TauService:
             r = requests.get(url + point)
             data = r.json()
         except Exception as e:
+            print("Error")
             show_message("Network error", str(e), mode="error")
         return data
 
@@ -8618,9 +8620,10 @@ class TauService:
             self.processing = False
             return []
 
-        if not playlist_name is None:
+        if playlist_name is None:
             playlist_name = text_sat_playlist.text.strip()
         if not playlist_name:
+            show_message("No playlist name")
             return []
 
         id = None
@@ -8638,6 +8641,7 @@ class TauService:
         try:
             t = self.get("tracklist/" + id)
         except:
+            print("error getting tracklist")
             return []
         at = t["tracks"]
 
@@ -12119,39 +12123,43 @@ class AlbumArt():
                 source_image = self.get_source_raw(0, 0, track, source[offset])
 
             elif source[offset][0] == 2:
-                try:
-                    close = False
-                    # We want to download the image asynchronously as to not block the UI
-                    if self.downloaded_image and self.downloaded_track == track:
-                        source_image = self.downloaded_image
+                idea = os.path.join(prefs.encoder_output, encode_folder_name(track), "cover.jpg")
+                if os.path.isfile(idea):
+                    source_image = open(idea, "rb")
+                else:
+                    try:
+                        close = False
+                        # We want to download the image asynchronously as to not block the UI
+                        if self.downloaded_image and self.downloaded_track == track:
+                            source_image = self.downloaded_image
 
-                    elif self.download_in_progress:
-                        return 0
+                        elif self.download_in_progress:
+                            return 0
 
-                    else:
-                        self.download_in_progress = True
-                        shoot_dl = threading.Thread(target=self.async_download_image, args=([track, source[offset]]))
-                        shoot_dl.daemon = True
-                        shoot_dl.start()
+                        else:
+                            self.download_in_progress = True
+                            shoot_dl = threading.Thread(target=self.async_download_image, args=([track, source[offset]]))
+                            shoot_dl.daemon = True
+                            shoot_dl.start()
 
-                        # We'll block with a small timeout to avoid unwanted flashing between frames
-                        s = 0
-                        while self.download_in_progress:
-                            s += 1
-                            time.sleep(0.01)
-                            if s > 20:  # 200 ms
-                                break
+                            # We'll block with a small timeout to avoid unwanted flashing between frames
+                            s = 0
+                            while self.download_in_progress:
+                                s += 1
+                                time.sleep(0.01)
+                                if s > 20:  # 200 ms
+                                    break
 
-                        if self.downloaded_track != track:
-                            return
+                            if self.downloaded_track != track:
+                                return
 
-                        assert self.downloaded_image
-                        source_image = self.downloaded_image
+                            assert self.downloaded_image
+                            source_image = self.downloaded_image
 
 
-                except:
-                    print("IMAGE NETWORK LOAD ERROR")
-                    raise
+                    except:
+                        print("IMAGE NETWORK LOAD ERROR")
+                        raise
 
             else:
                 #source_image = open(source[offset][1], 'rb')
@@ -19066,8 +19074,8 @@ def convert_folder(index):
             if r_folder == pctl.master_library[item].parent_folder_path:
 
                 track_object = pctl.g(item)
-                if track_object.is_network:
-                    show_message(_("Transcoding tracks from network locations is not supported"))
+                if track_object.file_ext == "SPOT": #track_object.is_network:
+                    show_message(_("Transcoding spotify tracks not possible"))
                     return
 
                 if item not in folder:
@@ -22873,6 +22881,7 @@ def toggle_playlist_break():
 
 def transcode_single(item, manual_directroy=None, manual_name=None):
     global core_use
+    global dl_use
 
     if manual_directroy != None:
         codec = "opus"
@@ -22886,19 +22895,36 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         output = prefs.encoder_output + item[1] + "/"
         bitrate = prefs.transcode_bitrate
 
-    if not os.path.isfile(pctl.master_library[track].fullpath):
+    t = pctl.master_library[track]
+
+    path = t.fullpath
+    cleanup = False
+
+    if t.is_network:
+        while dl_use > 1:
+            time.sleep(0.2)
+        dl_use += 1
+        try:
+            url, params = pctl.get_url(t)
+            assert url
+            path = "/tmp/TauonMusicBox/" + str(t.index)
+            if os.path.exists(path):
+                os.remove(path)
+            print("Downloading file...")
+            with requests.get(url, params=params) as response, open(path, 'wb') as out_file:
+                out_file.write(response.content)
+            print("Download complete")
+            cleanup = True
+        except:
+            print("Error downloading file")
+        dl_use -= 1
+
+    if not os.path.isfile(path):
         show_message("Encoding warning: Missing one or more files")
         core_use -= 1
         return
 
-    t = pctl.master_library[track]
-    if t.is_cue:
-        out_line = str(t.track_number) + ". "
-        out_line += t.artist + " - " + t.title
-        out_line = filename_safe(out_line)
-
-    else:
-        out_line = os.path.splitext(pctl.master_library[track].filename)[0]
+    out_line = encode_track_name(t)
 
     target_out = output + 'output' + str(track) + "." + codec
 
@@ -22910,15 +22936,15 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     else:
         command = command.replace("/", "\\")
 
-    if not pctl.master_library[track].is_cue:
+    if not t.is_cue:
         command += '-i "'
     else:
-        command += '-ss ' + str(pctl.master_library[track].start_time)
-        command += ' -t ' + str(pctl.master_library[track].length)
+        command += '-ss ' + str(t.start_time)
+        command += ' -t ' + str(t.length)
 
         command += ' -i "'
 
-    command += pctl.master_library[track].fullpath.replace('"', '\\"')
+    command += path.replace('"', '\\"')
 
     command += '" '
     if pctl.master_library[track].is_cue:
@@ -22964,10 +22990,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         final_out = output + manual_name + "." + codec
         final_name = manual_name + "." + codec
         os.rename(target_out, final_out)
-    if prefs.transcode_inplace:
+
+    if prefs.transcode_inplace and not t.is_network and not t.is_cue:
         print("MOVE AND REPLACE!")
         if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
-            new_name = os.path.join(pctl.master_library[track].parent_folder_path, final_name)
+            new_name = os.path.join(t.parent_folder_path, final_name)
             print(new_name)
             shutil.move(final_out, new_name)
 
@@ -23007,6 +23034,8 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
                 star_store.db[new_key] = new_star
 
     gui.transcoding_bach_done += 1
+    if cleanup:
+        os.remove(path)
     core_use -= 1
     gui.update += 1
 
@@ -24784,6 +24813,17 @@ def worker2():
                 search_over.force_select = 0
                 #print(perf_timer.get())
 
+def encode_track_name(t):
+    if t.is_cue or not t.filename:
+        out_line = str(t.track_number) + ". "
+        out_line += t.artist + " - " + t.title
+        return filename_safe(out_line)
+    else:
+        return os.path.splitext(t.filename)[0]
+
+
+tauon.encode_track_name = encode_track_name
+
 def encode_folder_name(track_object):
 
     folder_name = track_object.artist + " - " + track_object.album
@@ -24804,6 +24844,7 @@ def encode_folder_name(track_object):
 
     return folder_name
 
+tauon.encode_folder_name = encode_folder_name
 
 def worker1():
     global cue_list
@@ -25543,17 +25584,16 @@ def worker1():
                 # Create new empty folder to output tracks to
                 os.makedirs(prefs.encoder_output + folder_name)
 
-                working_folder = prefs.encoder_output + folder_name
-
-                full_wav_out = '"' + prefs.encoder_output + 'output.wav"'
                 full_wav_out_p = prefs.encoder_output + 'output.wav'
                 full_target_out_p = prefs.encoder_output + 'output.' + prefs.transcode_codec
-                full_target_out = '"' + prefs.encoder_output + 'output.' + prefs.transcode_codec + '"'
-
                 if os.path.isfile(full_wav_out_p):
                     os.remove(full_wav_out_p)
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
+
+                cache_dir = "/tmp/TauonMusicBox"
+                if not os.path.isdir(cache_dir):
+                    os.makedirs(cache_dir)
 
                 if prefs.transcode_codec in ('opus', 'ogg', 'flac', 'mp3'):
                     global core_use

@@ -167,6 +167,13 @@ def player4(tauon):
                     return 0, path
                 print("not found")
 
+
+            for codec in (".opus", ".ogg", ".flac", ".mp3"):
+                idea = os.path.join(prefs.encoder_output, tauon.encode_folder_name(track), tauon.encode_track_name(track)) + codec
+                if os.path.isfile(idea):
+                    tauon.console.print("Found transcode")
+                    return 0, idea
+
             if self.running and self.get_now == track:
                 pass
             else:
@@ -394,6 +401,7 @@ def player4(tauon):
     def track(end=True, wall=False):
 
         run_vis()
+        wall = True
 
         if end and loaded_track.is_network and pctl.playing_time < 7:
             if aud.get_result() == 2:
