@@ -1,6 +1,6 @@
 #!/bin/bash
 rm -rf dist/tauon
-pyinstaller --hidden-import 'infi.systray' --hidden-import 'pylast' --hidden-import 'packaging.requirements' --hidden-import 'pkg_resources.py2_warn' tauon.py -w -i icon.ico
+pyinstaller --hidden-import 'infi.systray' --hidden-import 'pylast' --add-binary 'lib/libphazor.so;lib' --add-binary 'C:\msys64\mingw64\bin\libao-4.dll;.' --add-binary 'C:\msys64\mingw64\bin\libFLAC.dll;.' --add-binary 'C:\msys64\mingw64\bin\libmpg123-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libogg-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libopenmpt-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libopus-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libopusfile-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libsamplerate-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libssp-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libvorbis-0.dll;.' --add-binary 'C:\msys64\mingw64\bin\libvorbisfile-3.dll;.' --add-binary 'C:\msys64\mingw64\bin\libwavpack-1.dll;.' --add-binary 'C:\msys64\mingw64\bin\SDL2.dll;.' --add-binary 'C:\msys64\mingw64\bin\SDL2_image.dll;.' --hidden-import 'packaging.requirements' --hidden-import 'pkg_resources.py2_warn' tauon.py -w -i icon.ico
 cp -r theme dist/tauon/
 cp -r assets dist/tauon/
 cp -r templates dist/tauon/
