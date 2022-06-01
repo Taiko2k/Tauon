@@ -17,7 +17,9 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-import fcntl
+import sys
+if sys.platform != 'win32':
+    import fcntl
 import html
 import time
 import random

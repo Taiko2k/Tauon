@@ -182,7 +182,7 @@ if install_directory.startswith("/opt/")\
         flatpak_mode = True
 
 # If we're installed, use home data locations
-if (install_mode and system == 'linux') or macos:
+if (install_mode and system == 'linux') or macos or msys:
 
     cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
@@ -767,8 +767,9 @@ from t_modules.t_tagscan import Ape
 from t_modules.t_tagscan import Wav
 from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
-from t_modules.t_cast import *
-from t_modules.t_stream import *
+if not msys:
+    from t_modules.t_cast import *
+    from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import *
 from t_modules.t_spot import SpotCtl
@@ -5435,7 +5436,7 @@ class PlayerCtl:
         self.commit = None
         radiobox.loaded_station = None
 
-        if tauon.stream_proxy.download_running:
+        if tauon.stream_proxy and tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
         self.playerCommand = 'open'
@@ -5576,7 +5577,7 @@ class PlayerCtl:
         if update_title:
             update_title_do()  # Update title bar text
 
-        if tauon.stream_proxy.download_running:
+        if tauon.stream_proxy and tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
         if block:
@@ -7815,7 +7816,9 @@ class Tauon:
         self.pl_to_id = pl_to_id
         self.id_to_pl = id_to_pl
         self.chunker = Chunker()
-        self.stream_proxy = StreamEnc(self)
+        self.stream_proxy = None
+        if not msys:
+            self.stream_proxy = StreamEnc(self)
         self.level_train = []
         self.radio_server = None
         self.mod_formats = MOD_Formats
@@ -20955,8 +20958,9 @@ def chromecast_select_track(track_id):
 
     shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
 
-track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
-track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
+if not msys:
+    track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
+    track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -22007,7 +22011,8 @@ def broadcast_colour():
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
 broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
-x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
+if not msys:
+    x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
 
 def clear_queue():
@@ -39388,6 +39393,8 @@ class ViewBox:
         self.y = gui.panelY
         self.w = 52 * gui.scale
         self.h = 260 * gui.scale #257
+        if msys:
+            self.h -= 40 * gui.scale
         self.active = False
 
         self.border = 3 * gui.scale
@@ -39694,16 +39701,18 @@ class ViewBox:
 
         # --
 
-        y += 40 * gui.scale
 
-        high = [92, 86, 255, 255]
-        if colours.lm:
-            #high = (.7, .75, .75)
-            high = [63, 63, 63, 255]
+        if not msys:
+            y += 40 * gui.scale
 
-        test = self.button(x + 3 * gui.scale, y, self.radio_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
-        if test is not None:
-            func = test
+            high = [92, 86, 255, 255]
+            if colours.lm:
+                #high = (.7, .75, .75)
+                high = [63, 63, 63, 255]
+
+            test = self.button(x + 3 * gui.scale, y, self.radio_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
+            if test is not None:
+                func = test
 
         # --
 
@@ -40234,7 +40243,11 @@ tm = ThreadManager()
 tauon.tm = tm
 tm.ready_playback()
 
-tm.d['caster'] = [enc, [tauon], None]
+try:
+    tm.d['caster'] = [enc, [tauon], None]
+except:
+    tm.d['caster'] = [lambda:x, [tauon], None]
+
 tm.d['worker'] = [worker1, (), None]
 tm.d['search'] = [worker2, (), None]
 tm.d['gallery'] = [worker3, (), None]
@@ -46280,7 +46293,7 @@ date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
-if tauon.stream_proxy.download_running:
+if tauon.stream_proxy and tauon.stream_proxy.download_running:
     print("Stopping stream...")
     tauon.stream_proxy.stop()
     time.sleep(2)

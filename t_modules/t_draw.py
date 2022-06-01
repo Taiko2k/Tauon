@@ -32,10 +32,13 @@ try:
 except:
     pass
 
+
 system = "linux"
 if sys.platform == 'win32':
-    system = "windows"
-system = "linux"
+    system = "linux" #"windows"
+    import os
+    os.environ["PANGOCAIRO_BACKEND"] = "fc"
+
 if system == "linux":
     import cairo
     import gi
@@ -43,6 +46,7 @@ if system == "linux":
     gi.require_version('PangoCairo', '1.0')
     from gi.repository import Pango
     from gi.repository import PangoCairo
+
 else:
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
     import win32con, win32api, win32gui, win32ui
