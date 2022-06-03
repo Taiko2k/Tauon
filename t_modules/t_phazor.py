@@ -464,7 +464,7 @@ def player4(tauon):
             active_timer.set()
         if active_timer.get() > 7:
            aud.stop()
-           aud.shutdown()
+           aud.phazor_shutdown()
            break
 
         # Level meter
@@ -838,7 +838,7 @@ def player4(tauon):
                     time.sleep((fade_time + 100) / 1000)
 
                 aud.stop()
-                aud.shutdown()
+                aud.phazor_shutdown()
 
                 if os.path.exists(audio_cache):
                     shutil.rmtree(audio_cache)

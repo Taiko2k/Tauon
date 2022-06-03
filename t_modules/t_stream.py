@@ -22,7 +22,9 @@ import threading
 import time
 import subprocess
 import os
-import fcntl
+import sys
+if sys.platform != 'win32':
+    import fcntl
 import datetime
 import io
 import shutil
@@ -149,7 +151,8 @@ class StreamEnc:
                rate, "-"]
 
         decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+        if sys.platform != 'win32':
+           fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
         raw_audio = None
         max_read = int(10000)
@@ -244,7 +247,8 @@ class StreamEnc:
             cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
             decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+            if sys.platform != 'win32':
+                fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
             position = 0
             old_metadata = self.tauon.radiobox.song_key
