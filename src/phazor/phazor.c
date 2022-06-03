@@ -302,7 +302,7 @@ void start_ffmpeg(char uri[], int start_ms) {
                 start_ms, uri, sample_rate_out);
     else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
 
-    ffm = popen(exe_string, "r");
+    ffm = popen(exe_string, "rb");
     if (ffm == NULL) {
         printf("pa: Error starting FFMPEG\n");
         return;

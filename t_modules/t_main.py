@@ -769,7 +769,7 @@ from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 if not msys:
     from t_modules.t_cast import *
-    from t_modules.t_stream import *
+from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import *
 from t_modules.t_spot import SpotCtl
@@ -1193,9 +1193,9 @@ class Prefs:    # Used to hold any kind of settings
         self.pl_thumb = False
 
         self.use_custom_fonts = False
-        self.linux_font = "Noto Sans, Noto Sans CJK JP"
-        self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP Medium"
-        self.linux_font_bold = "Noto Sans, Noto Sans CJK JP Bold"
+        self.linux_font = "Noto Sans, Noto Sans CJK JP, Arial"
+        self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP Medium, Arial"
+        self.linux_font_bold = "Noto Sans, Noto Sans CJK JP Bold, Arial Bold"
         self.linux_font_condensed = "Noto Sans ExtraCondensed"
         self.linux_font_condensed_bold = "Noto Sans ExtraCondensed Bold"
 
@@ -7817,8 +7817,7 @@ class Tauon:
         self.id_to_pl = id_to_pl
         self.chunker = Chunker()
         self.stream_proxy = None
-        if not msys:
-            self.stream_proxy = StreamEnc(self)
+        self.stream_proxy = StreamEnc(self)
         self.level_train = []
         self.radio_server = None
         self.mod_formats = MOD_Formats
@@ -9632,8 +9631,8 @@ draw = Drawing()
 
 def prime_fonts():
         standard_font = prefs.linux_font
-        if msys:
-            standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
+        # if msys:
+        #     standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
         ddt.prime_font(standard_font, 8, 9)
         ddt.prime_font(standard_font, 8, 10)
         ddt.prime_font(standard_font, 8.5, 11)
@@ -9654,8 +9653,8 @@ def prime_fonts():
         ddt.prime_font(standard_font, 10, 413)
 
         standard_font = prefs.linux_font_semibold
-        if msys:
-            standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
+        # if msys:
+        #     standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
 
         ddt.prime_font(standard_font, 8, 309)
         ddt.prime_font(standard_font, 8, 310)
@@ -9671,8 +9670,8 @@ def prime_fonts():
         ddt.prime_font(standard_font, 24, 330)
 
         standard_font = prefs.linux_font_bold
-        if msys:
-            standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
+        # if msys:
+        #     standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
 
         ddt.prime_font(standard_font, 6, 209)
         ddt.prime_font(standard_font, 7, 210)
@@ -9689,8 +9688,8 @@ def prime_fonts():
         ddt.prime_font(standard_font, 25, 228)
 
         standard_font = prefs.linux_font_condensed
-        if msys:
-            standard_font = "Noto Sans ExtCond, Sans"
+        # if msys:
+        #     standard_font = "Noto Sans ExtCond, Sans"
         ddt.prime_font(standard_font, 10, 413)
         ddt.prime_font(standard_font, 11, 414)
         ddt.prime_font(standard_font, 12, 415)
@@ -9698,8 +9697,8 @@ def prime_fonts():
 
 
         standard_font = prefs.linux_font_condensed_bold #"Noto Sans, ExtraCondensed Bold"
-        if msys:
-            standard_font = "Noto Sans ExtCond, Sans Bold"
+        # if msys:
+        #     standard_font = "Noto Sans ExtCond, Sans Bold"
         #ddt.prime_font(standard_font, 9, 512)
         ddt.prime_font(standard_font, 10, 513)
         ddt.prime_font(standard_font, 11, 514)
@@ -16308,21 +16307,9 @@ def clear_playlist(index):
 def convert_playlist(pl, get_list=False):
     global transcode_list
 
-    if system == 'windows' or msys:
-        if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from encoder directory",
-                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
-            return
-        # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
-        #     show_message("Error: Missing lame.exe from '/encoder' directory")
-        #     return
-    else:
-        if shutil.which(ffmpeg) is None:
-            show_message("Error: ffmpeg does not appear to be installed")
-            return
-        # if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
-        #     show_message("Error: LAME does not appear to be installed")
-        #     return
+    if shutil.which(ffmpeg) is None:
+        show_message("Error: ffmpeg does not appear to be installed")
+        return
 
     paths = []
     folders = []
@@ -19043,16 +19030,9 @@ def convert_folder(index):
     global default_playlist
     global transcode_list
 
-    if system == 'windows' or msys:
-        if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from encoder directory",
-                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
-            return
-
-    else:
-        if shutil.which(ffmpeg) is None:
-            show_message("Error: ffmpeg does not appear to be installed")
-            return
+    if shutil.which(ffmpeg) is None:
+        show_message("Error: ffmpeg does not appear to be installed")
+        return
 
     folder = []
     if key_shift_down or key_shiftr_down:
@@ -22933,13 +22913,9 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     target_out = output + 'output' + str(track) + "." + codec
 
-    command = user_directory + "/encoder/ffmpeg "
+    #command = user_directory + "/encoder/ffmpeg "
 
-
-    if system != 'windows' and not msys:
-        command = ffmpeg + " "
-    else:
-        command = command.replace("/", "\\")
+    command = ffmpeg + " "
 
     if not t.is_cue:
         command += '-i "'
@@ -39393,8 +39369,6 @@ class ViewBox:
         self.y = gui.panelY
         self.w = 52 * gui.scale
         self.h = 260 * gui.scale #257
-        if msys:
-            self.h -= 40 * gui.scale
         self.active = False
 
         self.border = 3 * gui.scale
@@ -39701,18 +39675,16 @@ class ViewBox:
 
         # --
 
+        y += 40 * gui.scale
 
-        if not msys:
-            y += 40 * gui.scale
+        high = [92, 86, 255, 255]
+        if colours.lm:
+            #high = (.7, .75, .75)
+            high = [63, 63, 63, 255]
 
-            high = [92, 86, 255, 255]
-            if colours.lm:
-                #high = (.7, .75, .75)
-                high = [63, 63, 63, 255]
-
-            test = self.button(x + 3 * gui.scale, y, self.radio_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
-            if test is not None:
-                func = test
+        test = self.button(x + 3 * gui.scale, y, self.radio_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
+        if test is not None:
+            func = test
 
         # --
 
