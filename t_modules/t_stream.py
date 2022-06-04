@@ -115,7 +115,7 @@ class StreamEnc:
                 r.add_header('Icy-MetaData', '1')
                 r.add_header('User-Agent', self.tauon.t_agent)
                 print("Open URL.....")
-                r = urllib.request.urlopen(r, timeout=7)
+                r = urllib.request.urlopen(r, timeout=7, cafile=self.tauon.ca)
                 print("URL opened.")
 
             except Exception as e:
@@ -150,7 +150,11 @@ class StreamEnc:
         cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",
                rate, "-"]
 
-        decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        startupinfo = None
+        if self.tauon.msys:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
         if sys.platform != 'win32':
            fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
