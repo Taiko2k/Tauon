@@ -7836,6 +7836,9 @@ class Tauon:
         self.aud = None
 
         self.recorded_songs = []
+        self.ca = None
+        if pyinstaller_mode:
+            self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
 
     def get_ffmpeg(self):
         return shutil.which("ffmpeg")
@@ -11114,7 +11117,7 @@ class GallClass:
         if search_over.active:
             while QuickThumbnail.queue:
                 img = QuickThumbnail.queue.pop(0)
-                response = urllib.request.urlopen(img.url)
+                response = urllib.request.urlopen(img.url, cafile=tauon.ca)
                 source_image = io.BytesIO(response.read())
                 img.read_and_thumbnail(source_image, img.size, img.size)
                 gui.update += 1
@@ -11840,7 +11843,7 @@ class AlbumArt():
                     elif track.file_ext == "JELY":
                         source_image = jellyfin.get_cover(track)
                     else:
-                        response = urllib.request.urlopen(get_network_thumbnail_url(track))
+                        response = urllib.request.urlopen(get_network_thumbnail_url(track), cafile=tauon.ca)
                         source_image = io.BytesIO(response.read())
                     if source_image:
                         f = open(cached_path, 'wb')
@@ -11937,7 +11940,7 @@ class AlbumArt():
 
             artlink = r.json()['artistbackground'][0]['url']
 
-            response = urllib.request.urlopen(artlink)
+            response = urllib.request.urlopen(artlink, cafile=tauon.ca)
             info = response.info()
 
             assert info.get_content_maintype() == 'image'
@@ -15634,7 +15637,7 @@ def download_art1(tr):
                 artlink = r.json()['albums'][album_id]['albumcover'][0]['url']
                 id = r.json()['albums'][album_id]['albumcover'][0]['id']
 
-                response = urllib.request.urlopen(artlink)
+                response = urllib.request.urlopen(artlink, cafile=tauon.ca)
                 info = response.info()
 
                 t = io.BytesIO()
@@ -34344,7 +34347,7 @@ class RadioBox:
         req = urllib.request.Request(uri)
         req.add_header('User-Agent', t_agent)
         req.add_header('Content-Type', 'application/json')
-        response = urllib.request.urlopen(req)
+        response = urllib.request.urlopen(req, cafile=tauon.ca)
         data = response.read()
         data = json.loads(data.decode())
         self.parse_data(data)
@@ -35501,7 +35504,7 @@ def save_discogs_artist_thumb(artist, filepath):
     else:
         url = images[0]['uri']
 
-    response = urllib.request.urlopen(url)
+    response = urllib.request.urlopen(url, cafile=tauon.ca)
     im = Image.open(response)
 
     width, height = im.size
@@ -35535,7 +35538,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
     if preview:
         thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
-    response = urllib.request.urlopen(thumblink, timeout=10)
+    response = urllib.request.urlopen(thumblink, timeout=10, cafile=tauon.ca)
     info = response.info()
 
     t = io.BytesIO()
@@ -39992,7 +39995,7 @@ lyric_side_bottom_pulse = EdgePulse2()
 def download_img(link, target_folder, track):
 
     try:
-        response = urllib.request.urlopen(link)
+        response = urllib.request.urlopen(link, cafile=tauon.ca)
         info = response.info()
         if info.get_content_maintype() == 'image':
             if info.get_content_subtype() == 'jpeg':
