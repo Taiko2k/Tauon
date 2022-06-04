@@ -154,9 +154,12 @@ def player4(tauon):
             key = self.get_key(track)
             path = os.path.join(self.direc, key)
 
+            if self.running and self.get_now == track:
+                return 1, path
+
             if key in self.files:
                 if os.path.isfile(path):
-                    print("got cached")
+                    tauon.console.print("got cached file")
                     self.files.remove(key)
                     self.files.append(key)  # bump to top of list
                     self.get_now = None
@@ -165,8 +168,6 @@ def player4(tauon):
                         shoot_dl.daemon = True
                         shoot_dl.start()
                     return 0, path
-                print("not found")
-
 
             for codec in (".opus", ".ogg", ".flac", ".mp3"):
                 idea = os.path.join(prefs.encoder_output, tauon.encode_folder_name(track), tauon.encode_track_name(track)) + codec
@@ -174,14 +175,11 @@ def player4(tauon):
                     tauon.console.print("Found transcode")
                     return 0, idea
 
-            if self.running and self.get_now == track:
-                pass
-            else:
-                self.get_now = track
-                if not self.running:
-                    shoot_dl = threading.Thread(target=self.run)
-                    shoot_dl.daemon = True
-                    shoot_dl.start()
+            self.get_now = track
+            if not self.running:
+                shoot_dl = threading.Thread(target=self.run)
+                shoot_dl.daemon = True
+                shoot_dl.start()
             return 1, path
 
         def run(self):
@@ -192,6 +190,8 @@ def player4(tauon):
             if now is not None:
                 error = self.dl_file(now)
                 if error:
+                    self.error = now
+                    self.running = False
                     return
 
             if self.get_now is None:
@@ -202,7 +202,7 @@ def player4(tauon):
                     if self.get_now is not None:
                         self.running = False
                         return
-                print("PRECACHE NEXT")
+                tauon.console.print("Precache next track")
                 next = pctl.advance(dry=True)
                 if next is not None:
                     self.dl_file(pctl.g(next))
@@ -556,7 +556,7 @@ def player4(tauon):
                     tauon.wake()
 
                     if status == 2:
-                        print("ERROR!")
+                        tauon.console.print("Could not locate resource")
                         target_object.found = False
                         pctl.playing_state = 0
                         pctl.jump_time = 0
