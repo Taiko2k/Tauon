@@ -296,24 +296,35 @@ FILE *ffm;
 char exe_string[4096];
 char ffm_buffer[2048];
 
-void start_ffmpeg(char uri[], int start_ms) {
-    if (start_ms > 0)
-        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
-                start_ms, uri, sample_rate_out);
-    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
+int (*ff_start)(char*, int, int);
+int (*ff_read)(char*, int);
+void (*ff_close)();
 
-    ffm = popen(exe_string, "rb");
-    if (ffm == NULL) {
+void start_ffmpeg(char uri[], int start_ms) {
+    int status = ff_start(uri, start_ms, sample_rate_out);
+    if (status != 0){
         printf("pa: Error starting FFMPEG\n");
         return;
     }
+//    if (start_ms > 0)
+//        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
+//                start_ms, uri, sample_rate_out);
+//    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
+//
+//    ffm = popen(exe_string, "rb");
+//    if (ffm == NULL) {
+//        printf("pa: Error starting FFMPEG\n");
+//        return;
+//    }
     decoder_allocated = 1;
     sample_rate_src = sample_rate_out;
+
 }
 
 void stop_ffmpeg() {
     //printf("pa: Stop FFMPEG\n");
-    pclose(ffm);
+    //pclose(ffm);
+    ff_close();
 }
 
 
@@ -1390,7 +1401,6 @@ int load_next() {
             break;
 
         case MPG:
-            printf("go this far\n");
             mpg123_open(mh, loaded_target_file);
             decoder_allocated = 1;
             mpg123_getformat(mh, &rate, &channels, &encoding);
@@ -1593,18 +1603,19 @@ void pump_decode() {
     } else if (codec == FFMPEG) {
 
         int b = 0;
-        int done = 0;
 
-        int c;
-        while(b < 2048 && (c = fgetc(ffm)) != EOF ){
-            ffm_buffer[b] = (char) c;
-            b++;
-        }
+        b = ff_read(ffm_buffer, 2048);
 
-        if (feof(ffm)) {
-            done = 1;
-            printf("pa: FFMPEG EOF\n");
-        }
+//        int c;
+//        while(b < 2048 && (c = fgetc(ffm)) != EOF ){
+//            ffm_buffer[b] = (char) c;
+//            b++;
+//        }
+
+//        if (feof(ffm)) {
+//            done = 1;
+//            printf("pa: FFMPEG EOF\n");
+//        }
 
 
 //        while (b < 2048) {
@@ -1638,7 +1649,7 @@ void pump_decode() {
 //        }
 //        buff_cycle();
         pthread_mutex_unlock(&buffer_mutex);
-        if (done == 1) {
+        if (b == 0) {
             printf("pa: FFMPEG has finished\n");
             decoder_eos();
 
@@ -2397,6 +2408,12 @@ float get_level_peak_r() {
     float peak = peak_r;
     peak_r = 0.0;
     return peak;
+}
+
+void set_callbacks(void *start, void *read, void *close){
+    ff_start = start;
+    ff_read = read;
+    ff_close = close;
 }
 
 int get_spectrum(int n_bins, float* bins) {
