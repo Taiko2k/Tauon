@@ -19,6 +19,7 @@
 
 
 import ctypes
+from ctypes import *
 import os.path
 import time
 import requests
@@ -60,16 +61,58 @@ def player4(tauon):
     tauon.aud = aud
     aud.set_volume(int(pctl.player_volume))
 
-
-
     bins1 = (ctypes.c_float * 24)()
     bins2 = (ctypes.c_float * 45)()
 
     aud.get_level_peak_l.restype = ctypes.c_float
     aud.get_level_peak_r.restype = ctypes.c_float
 
-
     active_timer = Timer()
+
+    class FFRun:
+        def __init__(self):
+            self.decoder = None
+
+        def close(self):
+            if self.decoder:
+                self.decoder.terminate()
+            self.decoder = None
+
+        def start(self, uri, start_ms, samplerate):
+            self.close()
+            path = tauon.get_ffmpeg()
+            if not path:
+                return 1
+            cmd = [path]
+            cmd += ["-loglevel", "quiet"]
+            if start_ms > 0:
+                cmd += ["-ss", f"{start_ms}ms"]
+            cmd += ["-i", uri.decode(), "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", f"{samplerate}", "-"]
+            startupinfo = None
+            if tauon.msys:
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            try:
+                self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+            except:
+                print("Error starting ffmpeg")
+                return 1
+            return 0
+
+        def read(self, buffer: POINTER(c_char), max):
+            data = self.decoder.stdout.read(max)
+            p = cast(buffer, POINTER(c_char * max))
+            p.contents.value = data
+            return len(data)
+
+    ff_run = FFRun()
+    FUNCTYPE = CFUNCTYPE
+    if tauon.msys:
+        FUNCTYPE = WINFUNCTYPE
+    start_callback = FUNCTYPE(c_int, c_char_p, c_int, c_int)(ff_run.start)
+    read_callback = FUNCTYPE(c_int, c_void_p, c_int)(ff_run.read)
+    close_callback = FUNCTYPE(c_void_p)(ff_run.close)
+    aud.set_callbacks(start_callback, read_callback, close_callback)
 
     def calc_rg(track):
 
