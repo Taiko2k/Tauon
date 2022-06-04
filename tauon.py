@@ -4,11 +4,14 @@ import copy
 import os
 import pickle
 import sys
-import fcntl
 from sdl2 import *
 from sdl2.sdlimage import *
 from ctypes import pointer
 from gi.repository import GLib
+
+if sys.platform != 'win32':
+    import fcntl
+
 
 # Early arg processing
 def transfer_args_and_exit():
@@ -79,7 +82,7 @@ install_mode = False
 if install_directory.startswith("/opt/")\
         or install_directory.startswith("/usr/")\
         or install_directory.startswith("/app/")\
-        or install_directory.startswith("/snap/") or sys.platform == "darwin":
+        or install_directory.startswith("/snap/") or sys.platform == "darwin" or sys.platform == 'win32':
     install_mode = True
 
 if install_mode:
@@ -89,7 +92,7 @@ if not os.path.isdir(user_directory):
 
 if os.path.isfile('.gitignore'):
     print("Dev mode, ignoring single instancing")
-else:
+elif sys.platform != 'win32':
     pid_file = os.path.join(user_directory, 'program.pid')
     fp = open(pid_file, 'w')
     try:

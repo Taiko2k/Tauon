@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-05-22 17:19+0000\n"
-"Last-Translator: AHOHNMYC <lqwh2h2cwa@protonmail.com>\n"
+"PO-Revision-Date: 2022-05-30 18:16+0000\n"
+"Last-Translator: Edward T <tumanchinsky.edward@yandex.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -48,7 +48,6 @@ msgid "Scanning failed. Try again?"
 msgstr "Сканирование не удалось. Попробовать еще раз?"
 
 #: t_modules/t_main.py:6819 t_modules/t_main.py:7401
-#, fuzzy
 msgid "Scanning scrobbles complete"
 msgstr "Сканирование scrobbles завершено"
 
@@ -65,17 +64,14 @@ msgid "Failed updating last.fm love status"
 msgstr "Не удалось обновить статус на last.fm"
 
 #: t_modules/t_main.py:7326
-#, fuzzy
 msgid "Error updating love to last.fm!"
-msgstr "Ошибка обновления love на last.fm!"
+msgstr "Ошибка обновления понравившихся на last.fm!"
 
 #: t_modules/t_main.py:7326
-#, fuzzy
 msgid "Maybe check your internet connection and try again?"
 msgstr "Может быть, проверить подключение к Интернету и попробовать еще раз?"
 
 #: t_modules/t_main.py:7596
-#, fuzzy
 msgid "Spotify Likes"
 msgstr "Spotify лайки"
 
@@ -88,12 +84,10 @@ msgid "Track removed from liked tracks"
 msgstr "Трек удален из избранных"
 
 #: t_modules/t_main.py:7599
-#, fuzzy
 msgid "Track was already un-liked"
 msgstr "Трек больше не нравится"
 
 #: t_modules/t_main.py:7600
-#, fuzzy
 msgid "Track is already liked"
 msgstr "Трек нравится"
 
@@ -118,7 +112,6 @@ msgid "Please authorise Spotify in settings!"
 msgstr "Пожалуйста, авторизуйте в Spotify в настройках!"
 
 #: t_modules/t_main.py:7606
-#, fuzzy
 msgid "Please authorise and click the enable toggle first!"
 msgstr "Пожалуйста, авторизуйтесь и нажмите кнопку вкл!"
 
@@ -131,7 +124,6 @@ msgid "day"
 msgstr "день"
 
 #: t_modules/t_main.py:7610
-#, fuzzy
 msgid "days"
 msgstr "дни"
 
@@ -267,7 +259,6 @@ msgid "Album-artist name"
 msgstr "Альбом-имя исполнителя"
 
 #: t_modules/t_main.py:14000
-#, fuzzy
 msgid "Editing network tracks is not recommended!"
 msgstr "Редактировать сетевые дорожки не рекомендуется!"
 
@@ -280,12 +271,10 @@ msgid "Press enter on fields to apply your changes first!"
 msgstr "Нажмите Enter в полях перед сохранением изменений!"
 
 #: t_modules/t_main.py:14045
-#, fuzzy
 msgid "Writing to a network track is not applicable!"
 msgstr "Запись на сетевую дорожку не применяется!"
 
 #: t_modules/t_main.py:14048
-#, fuzzy
 msgid "Cannot write CUE sheet types!"
 msgstr "Невозможно записать типы Cue sheet!"
 
@@ -368,12 +357,10 @@ msgid "Random Albums"
 msgstr "Случайные альбомы"
 
 #: t_modules/t_main.py:14419
-#, fuzzy
 msgid "Make Large Size"
 msgstr "Сделать большой размер"
 
 #: t_modules/t_main.py:14421
-#, fuzzy
 msgid "Make Compact Size"
 msgstr "Сделать компактным"
 
@@ -382,7 +369,6 @@ msgid "Close Panel"
 msgstr "Закрыть панель"
 
 #: t_modules/t_main.py:14455
-#, fuzzy
 msgid "Make Large"
 msgstr "Сделать большим"
 
@@ -407,9 +393,8 @@ msgstr "Отфильтровать в новый плейлист"
 
 #: t_modules/t_main.py:14722 t_modules/t_main.py:14723
 #: t_modules/t_main.py:17600
-#, fuzzy
 msgid "Rescan Folder"
-msgstr "Повторное сканирование каталога"
+msgstr "Пересканировать каталог"
 
 #: t_modules/t_main.py:14724 t_modules/t_main.py:14726
 msgid "Move Playing Folder Here"
@@ -430,7 +415,6 @@ msgstr "Добавить альбом в очередь"
 
 #: t_modules/t_main.py:14823 t_modules/t_main.py:20233
 #: t_modules/t_main.py:20245
-#, fuzzy
 msgid "Enqueue Album Next"
 msgstr "Следующий альбом в очереди"
 
@@ -573,12 +557,10 @@ msgid "Delete Image File"
 msgstr "Удалить изображение"
 
 #: t_modules/t_main.py:15544
-#, fuzzy
 msgid "Delete Embedded | Folder"
-msgstr "Удалить встроенную | Каталог"
+msgstr "Удалить встроенный | Каталог"
 
 #: t_modules/t_main.py:15546
-#, fuzzy
 msgid "Delete Embedded | Track"
 msgstr "Удалить встроенный | Дорожку"
 
@@ -681,7 +663,6 @@ msgid "New Playlist"
 msgstr "Новый плейлист"
 
 #: t_modules/t_main.py:17572
-#, fuzzy
 msgid "Upload"
 msgstr "Загрузить"
 
@@ -702,7 +683,6 @@ msgid "From Current…"
 msgstr "Из текущего…"
 
 #: t_modules/t_main.py:17592
-#, fuzzy
 msgid "Sort by Imported"
 msgstr "Сортировать по Импортировано"
 
@@ -908,12 +888,10 @@ msgid "Year Sorted"
 msgstr "Отсортировано по году"
 
 #: t_modules/t_main.py:18447 t_modules/t_main.py:18448
-#, fuzzy
 msgid "Year by Oldest"
 msgstr "Год по возрасту"
 
 #: t_modules/t_main.py:18455 t_modules/t_main.py:18456
-#, fuzzy
 msgid "Year by Latest"
 msgstr "По последним годам"
 
@@ -937,17 +915,14 @@ msgid "Reversed"
 msgstr "Развернутые"
 
 #: t_modules/t_main.py:18556 t_modules/t_main.py:18557
-#, fuzzy
 msgid "Reverse Tracks"
 msgstr "Развернуть дорожки"
 
 #: t_modules/t_main.py:18584
-#, fuzzy
 msgid "Reversed Albums"
 msgstr "Развернутые альбомы"
 
 #: t_modules/t_main.py:18590 t_modules/t_main.py:18591
-#, fuzzy
 msgid "Reverse Albums"
 msgstr "Развернуть альбомы"
 
@@ -1023,7 +998,6 @@ msgid "Show in Gallery"
 msgstr "Показать в галерее"
 
 #: t_modules/t_main.py:19389
-#, fuzzy
 msgid "Meta…"
 msgstr "Мета…"
 
@@ -1118,7 +1092,6 @@ msgid "Transcode Folder"
 msgstr "Перекодировать каталог"
 
 #: t_modules/t_main.py:20290
-#, fuzzy
 msgid "Vacuum Playtimes"
 msgstr "Время тишины"
 
@@ -1296,7 +1269,6 @@ msgid "Play Count"
 msgstr "Время проигрывания"
 
 #: t_modules/t_main.py:20986
-#, fuzzy
 msgid "Scrobble Count"
 msgstr "Кол-во скробблов"
 
@@ -1315,7 +1287,6 @@ msgid "Filename"
 msgstr "Имя файла"
 
 #: t_modules/t_main.py:20993
-#, fuzzy
 msgid "Starline"
 msgstr "Звездная линия"
 
@@ -1328,7 +1299,6 @@ msgid "New Radio List"
 msgstr "Новый список радиостанций"
 
 #: t_modules/t_main.py:21490 t_modules/t_main.py:21492
-#, fuzzy
 msgid "Clean Database!"
 msgstr "Чистая база данных!"
 
@@ -1357,7 +1327,6 @@ msgid "Export as CSV"
 msgstr "Экспортировать как CSV"
 
 #: t_modules/t_main.py:21610
-#, fuzzy
 msgid "Play History to Playlist"
 msgstr "Воспроизвести историю в плейлист"
 
@@ -1406,12 +1375,10 @@ msgid "You need to start the broadcast web server in settings."
 msgstr "Вам нужно запустить веб-сервер вещания в настройках."
 
 #: t_modules/t_main.py:21700
-#, fuzzy
 msgid "Stop Broadcast"
 msgstr "Остановить трансляцию"
 
 #: t_modules/t_main.py:21716
-#, fuzzy
 msgid "Start Broadcast"
 msgstr "Начать трансляцию"
 
@@ -1496,12 +1463,10 @@ msgid "ListenBrainz is Active"
 msgstr "ListenBrainz активен"
 
 #: t_modules/t_main.py:22255
-#, fuzzy
 msgid "Scrobbling is Active"
 msgstr "Скробблинг активен"
 
 #: t_modules/t_main.py:22462
-#, fuzzy
 msgid "Exit Shuffle Lockdown"
 msgstr "Выйти из блокировки случайного порядка"
 
@@ -1656,7 +1621,6 @@ msgid "Use album art as background"
 msgstr "Использовать обложку альбома в качестве фона"
 
 #: t_modules/t_main.py:26376
-#, fuzzy
 msgid "Stronger"
 msgstr "Сильнее"
 
@@ -1665,17 +1629,14 @@ msgid "Blur"
 msgstr "Размытие"
 
 #: t_modules/t_main.py:26385
-#, fuzzy
 msgid "Showcase only"
 msgstr "Только на витрине"
 
 #: t_modules/t_main.py:26389
-#, fuzzy
 msgid "Pattern style"
 msgstr "Стиль шаблона"
 
 #: t_modules/t_main.py:26393
-#, fuzzy
 msgid "Auto-theme from album art"
 msgstr "Авто-тема на основе обложки альбома"
 
@@ -1693,12 +1654,10 @@ msgid "ReplayGain"
 msgstr "Выравнивание громкости (ReplayGain)"
 
 #: t_modules/t_main.py:26505
-#, fuzzy
 msgid "Preserve album dynamics"
 msgstr "Сохранить динамику альбома"
 
 #: t_modules/t_main.py:26507
-#, fuzzy
 msgid "Tracks equal loudness"
 msgstr "Отслеживает равную громкость"
 
@@ -1707,7 +1666,6 @@ msgid "Will only have effect if ReplayGain metadata is present."
 msgstr "Будет иметь эффект, только если присутствуют метаданные ReplayGain."
 
 #: t_modules/t_main.py:26513
-#, fuzzy
 msgid "Pre-amp"
 msgstr "Предусилитель"
 
@@ -1762,7 +1720,6 @@ msgid "Sources:"
 msgstr "Источник:"
 
 #: t_modules/t_main.py:26783
-#, fuzzy
 msgid "*Uses scraping. Enable at your own discretion."
 msgstr "*Веб-скрейпинг. Включайте на свое усмотрение."
 
@@ -1796,7 +1753,6 @@ msgid "Show titles"
 msgstr "Показать названия"
 
 #: t_modules/t_main.py:26821
-#, fuzzy
 msgid "Center alignment"
 msgstr "Выравнивание по центру"
 
@@ -1809,12 +1765,10 @@ msgid "Prefer thinner padding"
 msgstr "Предпочитать меньшие отступы"
 
 #: t_modules/t_main.py:26853
-#, fuzzy
 msgid "Ready broadcaster"
 msgstr "Готовый транслятор"
 
 #: t_modules/t_main.py:26853
-#, fuzzy
 msgid "Start web server for broadcasting"
 msgstr "Запустить веб-сервер для трансляции"
 
@@ -1827,7 +1781,6 @@ msgid "Downloads data in background when artist panel is open"
 msgstr "Загружать данные в фоне, когда панель исполнителя открыта"
 
 #: t_modules/t_main.py:26874
-#, fuzzy
 msgid "Auto regenerate playlists"
 msgstr "Автоматически регенерировать плейлисты"
 
@@ -1840,7 +1793,6 @@ msgid "Tabs in top panel"
 msgstr "Вкладки на верхней панели"
 
 #: t_modules/t_main.py:26879
-#, fuzzy
 msgid "Uncheck to disable the tab pin function"
 msgstr "Снимите флажок, чтобы отключить функцию закрепления вкладок"
 
@@ -1889,7 +1841,6 @@ msgid "Extract archives"
 msgstr "Извлечь архивы"
 
 #: t_modules/t_main.py:26925
-#, fuzzy
 msgid "Extracts zip archives on drag and drop"
 msgstr "Извлекает zip-архивы при перетаскивании"
 
@@ -1898,7 +1849,6 @@ msgid "Enable download monitor"
 msgstr "Включить отслеживание загрузки"
 
 #: t_modules/t_main.py:26928
-#, fuzzy
 msgid "One click import new archives and folders from downloads folder"
 msgstr "Импорт новых архивов и каталогов из каталога загрузок в один клик"
 
@@ -1958,7 +1908,6 @@ msgstr ""
 "вступили в силу."
 
 #: t_modules/t_main.py:26979
-#, fuzzy
 msgid "Enable Discord Rich Presence"
 msgstr "Discord Rich Presence"
 
@@ -1975,7 +1924,6 @@ msgid "Maloja Server"
 msgstr "Maloja сервер"
 
 #: t_modules/t_main.py:27210
-#, fuzzy
 msgid "Maloja is a self-hosted scrobble server."
 msgstr "Maloja — это собственный скроббл-сервер."
 
@@ -1998,7 +1946,6 @@ msgstr "Проверить подключение"
 
 #: t_modules/t_main.py:27274 t_modules/t_main.py:27276
 #: t_modules/t_main.py:27771 t_modules/t_main.py:27788
-#, fuzzy
 msgid "Get scrobble counts"
 msgstr "Получить счетчик скробблов"
 
@@ -2019,7 +1966,6 @@ msgid "Forget Account"
 msgstr "Забыть аккаунт"
 
 #: t_modules/t_main.py:27328
-#, fuzzy
 msgid "Authorise"
 msgstr "Авторизовать"
 
