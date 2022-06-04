@@ -15,6 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#ifdef WIN
+#include <windows.h>
+#endif
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -201,6 +205,8 @@ int buffering = 0;
 
 int flac_got_rate = 0;
 
+FILE *d_file;
+
 // Misc ----------------------------------------------------------
 
 float ramp_step(int sample_rate, int milliseconds) {
@@ -296,7 +302,7 @@ void start_ffmpeg(char uri[], int start_ms) {
                 start_ms, uri, sample_rate_out);
     else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
 
-    ffm = popen(exe_string, "r");
+    ffm = popen(exe_string, "rb");
     if (ffm == NULL) {
         printf("pa: Error starting FFMPEG\n");
         return;
@@ -844,9 +850,11 @@ void stop_decoder() {
             break;
         case VORBIS:
             ov_clear(&vf);
+            fclose(d_file);
             break;
         case FLAC:
             FLAC__stream_decoder_finish(dec);
+            fclose(d_file);
             break;
         case WAVPACK:
             WavpackCloseFile(wpc);
@@ -953,12 +961,15 @@ void connect_pulse() {
 	format.rate = current_sample_rate;
 	format.byte_format = AO_FMT_LITTLE;
 
+	/* -- Open driver -- */
+	#ifdef WIN
+	device = ao_open_live(default_driver, &format, NULL);
+    #else
     ao_option option;
     option.key = "buffer_time";
     option.value = "100";
-
-	/* -- Open driver -- */
-	device = ao_open_live(default_driver, &format, &option);
+    device = ao_open_live(default_driver, &format, &option);
+    #endif
 
 	if (device == NULL) {
 		fprintf(stderr, "Error opening device.\n");
@@ -1003,6 +1014,19 @@ void decode_seek(int abs_ms, int sample_rate) {
             break;
     }
 }
+
+FILE *uni_fopen(char *ff){
+    #ifdef WIN
+    wchar_t w_path[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, ff, -1, w_path, MAX_PATH);
+    FILE *file = _wfopen(w_path, L"rb");
+    return file;
+
+    #else
+    return fopen(ff, "rb");
+    #endif
+}
+
 
 int load_next() {
     // Function to load a file / prepare decoder
@@ -1062,15 +1086,19 @@ int load_next() {
         return 0;
     }
 
+
     // We need to identify the file type
     // Peak into file and try to detect signature
-    if ((fptr = fopen(loaded_target_file, "rb")) == NULL) {
-        printf("pa: Error opening file\n");
+
+    if ((fptr = uni_fopen(loaded_target_file)) == NULL) {
+        printf("pa: Error opening file - 1\n");
+        perror("Error");
         return 1;
     }
 
     stat(loaded_target_file, &st);
     load_file_size = st.st_size;
+
     fread(peak, sizeof(peak), 1, fptr);
 
     if (memcmp(peak, "fLaC", 4) == 0) {
@@ -1111,11 +1139,13 @@ int load_next() {
         memset(peak2, 0, sizeof(peak2));
         rewind(fptr);
         fread(peak2, sizeof(peak2), 1, fptr);
+        #ifndef WIN
         if (memmem(peak2, sizeof(peak2), "fLaC", 4) != NULL){
           codec = FLAC;
           printf("ph: Detected FLAC with id3 header\n");
         }
-        //printf("Detected mp3 id3\n");
+        #endif
+        printf("Detected mp3 id3\n");
     }
     fclose(fptr);
 
@@ -1176,7 +1206,7 @@ int load_next() {
 
     if (codec == MPT){
 
-      mod_file = fopen(loaded_target_file, "rb");
+      mod_file = uni_fopen(loaded_target_file);
       mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
       src_channels = 2;
       fclose(mod_file);
@@ -1274,8 +1304,9 @@ int load_next() {
 
             break;
         case VORBIS:
-
-            e = ov_fopen(loaded_target_file, &vf);
+            d_file = uni_fopen(loaded_target_file);
+            //e = ov_fopen(loaded_target_file, &vf);
+            e = ov_open(d_file, &vf, NULL, 0);
             decoder_allocated = 1;
             if (e != 0) {
                 printf("pa: Error reading ogg file (expecting vorbis)\n");
@@ -1314,9 +1345,10 @@ int load_next() {
 
             break;
         case FLAC:
-            if (FLAC__stream_decoder_init_file(
+            d_file = uni_fopen(loaded_target_file);
+            if (FLAC__stream_decoder_init_FILE(
                     dec,
-                    loaded_target_file,
+                    d_file,
                     &f_write,
                     NULL, //&f_meta,
                     &f_err,
@@ -1358,7 +1390,7 @@ int load_next() {
             break;
 
         case MPG:
-
+            printf("go this far\n");
             mpg123_open(mh, loaded_target_file);
             decoder_allocated = 1;
             mpg123_getformat(mh, &rate, &channels, &encoding);
@@ -1373,7 +1405,7 @@ int load_next() {
                 sample_change_byte = high;
                 want_sample_rate = sample_rate_out;
             }
-            current_length_count = (u_int) mpg123_length(mh);
+            current_length_count = (unsigned int) mpg123_length(mh);
 
             if (encoding == MPG123_ENC_SIGNED_16) {
 
@@ -1894,14 +1926,13 @@ int main_running = 0;
 void *main_loop(void *thread_id) {
 
 
-#ifdef AO
+    #ifdef AO
     	ao_initialize();
     	connect_pulse();
     #endif
     rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
     cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
     ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
-
 
     //pthread_t out_thread_id;
     //pthread_create(&out_thread_id, NULL, out_thread, NULL);
@@ -2429,7 +2460,7 @@ void feed_raw(int len, char* data){
 }
 
 
-int shutdown() {
+int phazor_shutdown() {
     while (command != NONE) {
         usleep(1000);
     }

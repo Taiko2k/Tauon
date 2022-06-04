@@ -182,7 +182,7 @@ if install_directory.startswith("/opt/")\
         flatpak_mode = True
 
 # If we're installed, use home data locations
-if (install_mode and system == 'linux') or macos:
+if (install_mode and system == 'linux') or macos or msys:
 
     cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
@@ -767,7 +767,8 @@ from t_modules.t_tagscan import Ape
 from t_modules.t_tagscan import Wav
 from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
-from t_modules.t_cast import *
+if not msys:
+    from t_modules.t_cast import *
 from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import *
@@ -1192,9 +1193,9 @@ class Prefs:    # Used to hold any kind of settings
         self.pl_thumb = False
 
         self.use_custom_fonts = False
-        self.linux_font = "Noto Sans, Noto Sans CJK JP"
-        self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP Medium"
-        self.linux_font_bold = "Noto Sans, Noto Sans CJK JP Bold"
+        self.linux_font = "Noto Sans, Noto Sans CJK JP, Arial"
+        self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP Medium, Arial"
+        self.linux_font_bold = "Noto Sans, Noto Sans CJK JP Bold, Arial Bold"
         self.linux_font_condensed = "Noto Sans ExtraCondensed"
         self.linux_font_condensed_bold = "Noto Sans ExtraCondensed Bold"
 
@@ -5435,7 +5436,7 @@ class PlayerCtl:
         self.commit = None
         radiobox.loaded_station = None
 
-        if tauon.stream_proxy.download_running:
+        if tauon.stream_proxy and tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
         self.playerCommand = 'open'
@@ -5576,7 +5577,7 @@ class PlayerCtl:
         if update_title:
             update_title_do()  # Update title bar text
 
-        if tauon.stream_proxy.download_running:
+        if tauon.stream_proxy and tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
         if block:
@@ -7815,6 +7816,7 @@ class Tauon:
         self.pl_to_id = pl_to_id
         self.id_to_pl = id_to_pl
         self.chunker = Chunker()
+        self.stream_proxy = None
         self.stream_proxy = StreamEnc(self)
         self.level_train = []
         self.radio_server = None
@@ -9629,8 +9631,8 @@ draw = Drawing()
 
 def prime_fonts():
         standard_font = prefs.linux_font
-        if msys:
-            standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
+        # if msys:
+        #     standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
         ddt.prime_font(standard_font, 8, 9)
         ddt.prime_font(standard_font, 8, 10)
         ddt.prime_font(standard_font, 8.5, 11)
@@ -9651,8 +9653,8 @@ def prime_fonts():
         ddt.prime_font(standard_font, 10, 413)
 
         standard_font = prefs.linux_font_semibold
-        if msys:
-            standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
+        # if msys:
+        #     standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
 
         ddt.prime_font(standard_font, 8, 309)
         ddt.prime_font(standard_font, 8, 310)
@@ -9668,8 +9670,8 @@ def prime_fonts():
         ddt.prime_font(standard_font, 24, 330)
 
         standard_font = prefs.linux_font_bold
-        if msys:
-            standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
+        # if msys:
+        #     standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
 
         ddt.prime_font(standard_font, 6, 209)
         ddt.prime_font(standard_font, 7, 210)
@@ -9686,8 +9688,8 @@ def prime_fonts():
         ddt.prime_font(standard_font, 25, 228)
 
         standard_font = prefs.linux_font_condensed
-        if msys:
-            standard_font = "Noto Sans ExtCond, Sans"
+        # if msys:
+        #     standard_font = "Noto Sans ExtCond, Sans"
         ddt.prime_font(standard_font, 10, 413)
         ddt.prime_font(standard_font, 11, 414)
         ddt.prime_font(standard_font, 12, 415)
@@ -9695,8 +9697,8 @@ def prime_fonts():
 
 
         standard_font = prefs.linux_font_condensed_bold #"Noto Sans, ExtraCondensed Bold"
-        if msys:
-            standard_font = "Noto Sans ExtCond, Sans Bold"
+        # if msys:
+        #     standard_font = "Noto Sans ExtCond, Sans Bold"
         #ddt.prime_font(standard_font, 9, 512)
         ddt.prime_font(standard_font, 10, 513)
         ddt.prime_font(standard_font, 11, 514)
@@ -16305,21 +16307,9 @@ def clear_playlist(index):
 def convert_playlist(pl, get_list=False):
     global transcode_list
 
-    if system == 'windows' or msys:
-        if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from encoder directory",
-                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
-            return
-        # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
-        #     show_message("Error: Missing lame.exe from '/encoder' directory")
-        #     return
-    else:
-        if shutil.which(ffmpeg) is None:
-            show_message("Error: ffmpeg does not appear to be installed")
-            return
-        # if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
-        #     show_message("Error: LAME does not appear to be installed")
-        #     return
+    if shutil.which(ffmpeg) is None:
+        show_message("Error: ffmpeg does not appear to be installed")
+        return
 
     paths = []
     folders = []
@@ -19040,16 +19030,9 @@ def convert_folder(index):
     global default_playlist
     global transcode_list
 
-    if system == 'windows' or msys:
-        if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from encoder directory",
-                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
-            return
-
-    else:
-        if shutil.which(ffmpeg) is None:
-            show_message("Error: ffmpeg does not appear to be installed")
-            return
+    if shutil.which(ffmpeg) is None:
+        show_message("Error: ffmpeg does not appear to be installed")
+        return
 
     folder = []
     if key_shift_down or key_shiftr_down:
@@ -20955,8 +20938,9 @@ def chromecast_select_track(track_id):
 
     shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
 
-track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
-track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
+if not msys:
+    track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
+    track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -22007,7 +21991,8 @@ def broadcast_colour():
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
 broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
-x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
+if not msys:
+    x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
 
 def clear_queue():
@@ -22928,13 +22913,9 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     target_out = output + 'output' + str(track) + "." + codec
 
-    command = user_directory + "/encoder/ffmpeg "
+    #command = user_directory + "/encoder/ffmpeg "
 
-
-    if system != 'windows' and not msys:
-        command = ffmpeg + " "
-    else:
-        command = command.replace("/", "\\")
+    command = ffmpeg + " "
 
     if not t.is_cue:
         command += '-i "'
@@ -40234,7 +40215,11 @@ tm = ThreadManager()
 tauon.tm = tm
 tm.ready_playback()
 
-tm.d['caster'] = [enc, [tauon], None]
+try:
+    tm.d['caster'] = [enc, [tauon], None]
+except:
+    tm.d['caster'] = [lambda:x, [tauon], None]
+
 tm.d['worker'] = [worker1, (), None]
 tm.d['search'] = [worker2, (), None]
 tm.d['gallery'] = [worker3, (), None]
@@ -46280,7 +46265,7 @@ date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
-if tauon.stream_proxy.download_running:
+if tauon.stream_proxy and tauon.stream_proxy.download_running:
     print("Stopping stream...")
     tauon.stream_proxy.stop()
     time.sleep(2)
