@@ -7837,6 +7837,9 @@ class Tauon:
 
         self.recorded_songs = []
 
+    def get_ffmpeg(self):
+        return shutil.which("ffmpeg")
+
     def bg_save(self):
         self.worker_save_state = True
         tm.ready("worker")
