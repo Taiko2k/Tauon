@@ -101,6 +101,9 @@ elif sys.platform != 'win32':
         # another instance is running
         print("Program is already running")
         transfer_args_and_exit()
+else:
+    if pyinstaller_mode:
+        os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
 d = os.environ.get('XDG_CURRENT_DESKTOP')

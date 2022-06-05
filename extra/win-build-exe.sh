@@ -10,4 +10,7 @@ rm -rf dist/tauon/share/icons
 rm -rf dist/tauon/share/locale
 rm -rf dist/tauon/share/tcl/tzdata
 rm -rf dist/tauon/tcl/tzdata
+mkdir dist/tauon/etc
+cp -r fonts dist/tauon/
+cp -r C:/msys64/mingw64/etc/fonts dist/tauon/etc
 cp TaskbarLib.tlb dist/tauon/
