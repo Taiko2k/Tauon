@@ -83,6 +83,16 @@ if not windows_native:
     import gi
     from gi.repository import GLib
 
+    font_folder = os.path.join(install_directory, "fonts")
+    if os.path.isdir(font_folder):
+        import ctypes
+        fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
+        fc.FcConfigReference.restype = ctypes.c_void_p
+        fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
+        fc.FcConfigAppFontAddDir.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
+        config = ctypes.c_void_p()
+        config.contents = fc.FcConfigGetCurrent()
+        fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
