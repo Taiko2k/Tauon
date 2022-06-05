@@ -4,8 +4,6 @@ import copy
 import os
 import pickle
 import sys
-from sdl2 import *
-from sdl2.sdlimage import *
 from ctypes import pointer
 from gi.repository import GLib
 
@@ -110,6 +108,12 @@ d = os.environ.get('XDG_CURRENT_DESKTOP')
 if d in ["GNOME:Phosh"]:
     os.environ["SDL_VIDEODRIVER"] = "wayland"
     phone = True
+
+if pyinstaller_mode and sys.platform == 'darwin':
+    os.environ["PYSDL2_DLL_PATH"] = install_directory
+
+from sdl2 import *
+from sdl2.sdlimage import *
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
