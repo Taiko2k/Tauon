@@ -138,22 +138,32 @@ if phone:
 maximized = False
 old_window_position = None
 
-try:
-    state_file = open(user_directory + "/window.p", "rb")
-    save = pickle.load(state_file)
+window_p = os.path.join(user_directory, "window.p")
+if os.path.isfile(window_p):
+    try:
+        state_file = open(window_p, "rb")
+        save = pickle.load(state_file)
+        state_file.close()
 
-    draw_border = save[0]
-    window_size = save[1]
-    logical_size = copy.deepcopy(save[1])
-    window_opacity = save[2]
-    scale = save[3]
-    maximized = save[4]
-    old_window_position = save[5]
+        draw_border = save[0]
+        window_size = save[1]
+        w, h = save[1]
+        if 100 < w < 10000 and 100 < h < 5000:
+            logical_size[0], logical_size[1] = w, h
+        window_opacity = save[2]
+        scale = save[3]
+        maximized = save[4]
+        old_window_position = save[5]
+        del save
 
-    del save
+    except:
+        print('Corrupted window state file?!')
+        print('Please restart app')
+        os.remove(window_p)
+        exit(1)
+else:
+    print("No window state file")
 
-except:
-    print('No previous window state')
 
 #os.environ["SDL_VIDEODRIVER"] = "wayland"
 

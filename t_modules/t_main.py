@@ -2920,7 +2920,7 @@ for t in range(2):
         QUE = save[7]
         playing_in_queue = save[8]
         default_playlist = save[9]
-        playlist_playing = save[10]
+        # playlist_playing = save[10]
         # cue_list = save[11]
         # radio_field_text = save[12]
         theme = save[13]
@@ -40938,7 +40938,7 @@ def save_state():
             pctl.track_queue,
             pctl.queue_step,
             default_playlist,
-            pctl.playlist_playing_position,
+            None, #pctl.playlist_playing_position,
             None,  # Was cue list
             "", #radio_field.text,
             theme,
