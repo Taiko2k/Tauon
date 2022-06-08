@@ -861,11 +861,9 @@ void stop_decoder() {
             break;
         case VORBIS:
             ov_clear(&vf);
-            fclose(d_file);
             break;
         case FLAC:
             FLAC__stream_decoder_finish(dec);
-            fclose(d_file);
             break;
         case WAVPACK:
             WavpackCloseFile(wpc);
