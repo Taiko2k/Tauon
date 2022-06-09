@@ -121,7 +121,7 @@ class Gnome:
 
         def menu_quit(_):
             print("Exit via tray")
-            tauon.exit()
+            tauon.exit("Exit received from app indicator")
             self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
 
         def play_pause(_):
@@ -335,7 +335,7 @@ class Gnome:
             def PrepareForShutdown(active):
                 print("The system is shutting down!")
                 tauon.quick_close = True
-                tauon.exit()
+                tauon.exit("System shutdown signal received")
 
             iface.connect_to_signal("PrepareForSleep", PrepareForSleep)
             iface.connect_to_signal("PrepareForShutdown", PrepareForShutdown)
@@ -537,7 +537,7 @@ class Gnome:
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Quit(self):
                         tauon.wake()
-                        tauon.exit()
+                        tauon.exit("Exit request received from MPRIS2")
 
                     @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
                                     in_signature='ss', out_signature='v')
