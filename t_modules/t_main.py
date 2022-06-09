@@ -7857,7 +7857,8 @@ class Tauon:
         self.worker_save_state = True
         tm.ready("worker")
 
-    def exit(self):
+    def exit(self, reason):
+        print("Shutting down. Reason: " + reason)
         pctl.running = False
 
     def min_to_tray(self):
@@ -8837,7 +8838,7 @@ class STray:
          pctl.stop()
 
     def on_quit_callback(self, systray):
-        pctl.running = False
+        tauon.exit("Exit called from tray.")
 
     def start(self):
         menu_options = (("Show", None, self.up),
@@ -9120,12 +9121,15 @@ stats_gen = GStats()
 
 def do_exit_button():
     if mouse_up or ab_click:
-        if gui.tray_active and prefs.min_to_tray and not key_shift_down:
+        if gui.tray_active and prefs.min_to_tray:
+            if key_shift_down:
+                tauon.exit("User clicked X button with shift key")
+                return
             tauon.min_to_tray()
         elif gui.sync_progress and not gui.stop_sync:
             show_message(_("Stop the sync before exiting!"))
         else:
-            pctl.running = False
+            tauon.exit("User clicked X button")
 
 def do_maximize_button():
     global mouse_down
@@ -22755,7 +22759,7 @@ def show_spot_playing():
 x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test, icon=spot_icon)
 
 x_menu.add(_("Exit Shuffle Lockdown"), toggle_shuffle_layout, show_test=exit_shuffle_layout)
-x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4", )
+x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True)
 
 def stop_quick_add():
     pctl.quick_add_target = None
@@ -41655,7 +41659,7 @@ while pctl.running:
             if gui.tray_active and prefs.min_to_tray and not key_shift_down:
                 tauon.min_to_tray()
             else:
-                pctl.running = False
+                tauon.exit("Window received exit signal")
                 break
         elif event.type == SDL_TEXTEDITING:
             power += 5
@@ -42294,7 +42298,7 @@ while pctl.running:
             undo.undo()
 
         if keymaps.test('quit'):
-            pctl.running = False
+            tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
             pass
