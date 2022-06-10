@@ -8006,7 +8006,7 @@ class Tauon:
         p = shutil.which("ffmpeg")
         if p: return p
         p = os.path.join(user_directory, "ffmpeg.exe")
-        if os.path.isfile(p): return p
+        if msys and os.path.isfile(p): return p
         return None
 
     def bg_save(self):
