@@ -1216,7 +1216,7 @@ class Prefs:  # Used to hold any kind of settings
         self.use_custom_fonts = False
         self.linux_font = "Noto Sans, Noto Sans CJK JP, Arial"
         self.linux_font_semibold = "Noto Sans Medium, Noto Sans CJK JP Medium, Arial"
-        self.linux_font_bold = "Noto Sans Bold, Noto Sans CJK JP Bold, Arial Bold"
+        self.linux_font_bold = "Noto Sans Bold, Noto Sans CJK JP Bold"
         self.linux_font_condensed = "Noto Sans ExtraCondensed"
         self.linux_font_condensed_bold = "Noto Sans ExtraCondensed Bold"
 
