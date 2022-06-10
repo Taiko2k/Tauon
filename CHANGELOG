@@ -8,6 +8,7 @@ v7.2.2
  - Added transcoded track network fallback feature
  - Added lastfm artist image scraper to artist info panel
  - Added config setting to disable gamepad
+ - Added hex code compatibility to theme files
  - Improved "transfer playtime to" function
  - Improved transition and track timing
  - Updated Windows support
