@@ -4343,9 +4343,6 @@ else:
 sss = SDL_SysWMinfo()
 SDL_GetWindowWMInfo(t_window, sss)
 
-force_render = False
-
-
 def auto_scale():
     old = prefs.x_scale
     if prefs.x_scale:
@@ -4377,14 +4374,14 @@ def auto_scale():
 auto_scale()
 
 
-def scale_assets(scale_want, force=force_render):
+def scale_assets(scale_want, force=False):
     global scaled_asset_directory
     if scale_want != 1:
         scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
         if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
                 os.listdir(scaled_asset_directory)):
             print("Force rerender icons")
-            force_render = True
+            force = True
     else:
         scaled_asset_directory = asset_directory
 
