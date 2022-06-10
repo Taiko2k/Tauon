@@ -30,18 +30,43 @@ def get_colour_from_line(cline):
     colour = ["", "", "", ""]
     mode = 0
 
-    for i in cline:
-        if i.isdigit():
-            colour[mode] += i
-        elif i == ',':
-            mode += 1
+    is_hex = False
+    if "," not in cline[:8]:
+        if cline[:6].isalnum():
+            is_hex = True
+        if cline[0] == "#" and cline[1:7].isalnum() and cline[7].isspace() and cline[8].isspace():
+            is_hex = True
+        if cline[0] == "#" and cline[1:9].isalnum() and cline[9].isspace() and cline[10].isspace():
+            is_hex = True
 
-    for b in range(len(colour)):
-        if colour[b] == "":
-            colour[b] = "255"
-        colour[b] = int(colour[b])
+    if is_hex:
+        # hex mode
+        if cline.startswith("0x"):
+            cline = cline[2:]
+        if cline.startswith("#"):
+            cline = cline[1:]
+        ll = cline
+        a = 255
+        r = int(ll[0] + ll[1], 16)
+        g = int(ll[2] + ll[3], 16)
+        b = int(ll[4] + ll[5], 16)
+        if ll[6].isalnum() and ll[7].isalnum():
+            a = int(ll[6] + ll[7], 16)
+        return [r, g, b, a]
+    else:
+        # rgb mode
+        for i in cline:
+            if i.isdigit():
+                colour[mode] += i
+            elif i == ',':
+                mode += 1
 
-    return colour
+        for b in range(len(colour)):
+            if colour[b] == "":
+                colour[b] = "255"
+            colour[b] = int(colour[b])
+
+        return colour
 
 
 def load_theme(colours, path):
@@ -50,8 +75,13 @@ def load_theme(colours, path):
     content = f.readlines()
 
     for p in content:
-        if "#" in p:
+        p = p.strip()
+        if not p:
             continue
+        if p[0] == "#" and ("-" in p[:7] or " " in p[:7] or "\t" in p[:7]):
+            continue
+        if "# " in p:
+            p = p.split("# ")[0]
         if p.startswith("deco="):
             colours.deco = p.split("=", 1)[1].strip()
         if "light-mode" in p:
