@@ -111,8 +111,8 @@ if d in ["GNOME:Phosh"]:
     os.environ["SDL_VIDEODRIVER"] = "wayland"
     phone = True
 
-# if pyinstaller_mode and sys.platform == 'darwin':
-#     os.environ["PYSDL2_DLL_PATH"] = install_directory
+if pyinstaller_mode: # and sys.platform == 'darwin':
+    os.environ["PYSDL2_DLL_PATH"] = install_directory
 
 from sdl2 import *
 from sdl2.sdlimage import *
