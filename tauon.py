@@ -68,6 +68,9 @@ if 'base_library' in install_directory:
 if hasattr(sys, "_MEIPASS"):
     pyinstaller_mode = True
 
+if pyinstaller_mode:
+     os.environ["PATH"] += ":" + sys._MEIPASS
+
 user_directory = os.path.join(install_directory, "user-data")
 config_directory = user_directory
 
