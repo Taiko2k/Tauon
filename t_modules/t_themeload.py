@@ -76,12 +76,12 @@ def load_theme(colours, path):
 
     for p in content:
         p = p.strip()
+        if "# " in p:
+            p = p.split("# ")[0]
         if not p:
             continue
         if p[0] == "#" and ("-" in p[:7] or " " in p[:7] or "\t" in p[:7]):
             continue
-        if "# " in p:
-            p = p.split("# ")[0]
         if p.startswith("deco="):
             colours.deco = p.split("=", 1)[1].strip()
         if "light-mode" in p:
