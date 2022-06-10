@@ -82,6 +82,7 @@ def player4(tauon):
             self.close()
             path = tauon.get_ffmpeg()
             if not path:
+                tauon.test_ffmpeg()
                 return 1
             cmd = [path]
             cmd += ["-loglevel", "quiet"]

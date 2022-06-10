@@ -317,14 +317,6 @@ launch_prefix = ""
 if flatpak_mode:
     launch_prefix = "flatpak-spawn --host "
 
-ffmpeg = "ffmpeg"
-if pyinstaller_mode:
-     os.environ["PATH"] += ":" + sys._MEIPASS
-
-# ffmpeg = sys._MEIPASS + "/ffmpeg"
-# import subprocess
-# subprocess.call("ffmpeg", stdout=subprocess.PIPE, shell=False)
-
 # -------------------------------
 # Single Instancing
 
@@ -2819,6 +2811,7 @@ def show_message(line1, line2="", line3="", mode='info'):
     gui.message_subtext = line2
     gui.message_subtext2 = line3
     message_box_min_timer.set()
+    console.print("Message: " + line1)
     gui.update = 1
 
 # -----------------------------------------------------
@@ -7850,8 +7843,60 @@ class Tauon:
         if pyinstaller_mode:
             self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
 
+    def download_ffmpeg(self, x):
+        def go():
+            url = "https://github.com/GyanD/codexffmpeg/releases/download/5.0.1/ffmpeg-5.0.1-essentials_build.zip"
+            sha = "9e00da9100ae1bba22b1385705837392e8abcdfd2efc5768d447890d101451b5"
+            show_message("Starting download...")
+            try:
+                f = io.BytesIO()
+                r = requests.get(url, stream=True)
+
+                dl = 0
+                for data in r.iter_content(chunk_size=4096):
+                    dl += len(data)
+                    f.write(data)
+                    mb = round(dl/1000/1000)
+                    if mb > 90:
+                        break
+                    if mb % 5 == 0:
+                        show_message(f"Downloading... {mb}/80MB")
+
+            except Exception as e:
+                show_message("Download failed", str(e), mode="error")
+
+            f.seek(0)
+            if not hashlib.sha256(f.read()).hexdigest() == sha:
+                show_message("Download completed but checksum failed", mode="error")
+                return
+            show_message("Download completed.. extracting")
+            f.seek(0)
+            z = zipfile.ZipFile(f, mode="r")
+            exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
+            ff = open(os.path.join(user_directory, "ffmpeg.exe"), 'wb')
+            ff.write(exe.read())
+            ff.close()
+            exe.close()
+            show_message("FFMPEG fetch complete", mode="done")
+
+        shooter(go)
+
+    def test_ffmpeg(self):
+        if self.get_ffmpeg():
+            return True
+        if msys:
+            show_message("This feature requires FFMPEG. Shall I can download that for you? (80MB)", mode="confirm")
+            gui.message_box_confirm_callback = self.download_ffmpeg
+            gui.message_box_confirm_reference = (None,)
+        else:
+            show_message("FFMPEG could not be found")
+
     def get_ffmpeg(self):
-        return shutil.which("ffmpeg")
+        p = shutil.which("ffmpeg")
+        if p: return p
+        p = shutil.which(os.path.join(user_directory, "ffmpeg.exe"))
+        if p: return p
+        return None
 
     def bg_save(self):
         self.worker_save_state = True
@@ -16327,8 +16372,7 @@ def clear_playlist(index):
 def convert_playlist(pl, get_list=False):
     global transcode_list
 
-    if shutil.which(ffmpeg) is None:
-        show_message("Error: ffmpeg does not appear to be installed")
+    if not tauon.test_ffmpeg():
         return
 
     paths = []
@@ -19050,8 +19094,7 @@ def convert_folder(index):
     global default_playlist
     global transcode_list
 
-    if shutil.which(ffmpeg) is None:
-        show_message("Error: ffmpeg does not appear to be installed")
+    if not tauon.test_ffmpeg():
         return
 
     folder = []
@@ -20905,8 +20948,7 @@ def queue_deco():
 
 def broadcast_select_track(track_id):
 
-    if shutil.which(ffmpeg) is None:
-        show_message(_("FFmpeg does not appear to be installed"), mode="error")
+    if not tauon.test_ffmpeg():
         return
 
     pctl.broadcast_index = track_id
@@ -22933,9 +22975,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     target_out = output + 'output' + str(track) + "." + codec
 
-    #command = user_directory + "/encoder/ffmpeg "
-
-    command = ffmpeg + " "
+    command = tauon.get_ffmpeg() + " "
 
     if not t.is_cue:
         command += '-i "'
@@ -28399,9 +28439,6 @@ class Over:
 
             y -= 1 * gui.scale
             x += 280 * gui.scale
-            if (msys and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
-                    not msys and shutil.which(ffmpeg) is None):
-                ddt.text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
         x = x0 + round(20 * gui.scale)
         y = y0 + 215 * gui.scale
@@ -34032,9 +34069,9 @@ class RadioBox:
 
         album_art_gen.clear_cache()
 
-        if shutil.which(ffmpeg) is None:
-            show_message(_("FFmpeg does not appear to be installed"), mode="error")
+        if not tauon.test_ffmpeg():
             prefs.auto_rec = False
+            return
 
         if not self.proxy_started and prefs.backend != 4:
             shoot = threading.Thread(target=stream_proxy, args=[tauon])
