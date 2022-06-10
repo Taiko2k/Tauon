@@ -9034,100 +9034,23 @@ if system == "windows" or msys:
 
     import keyboard
 
-
     def key_callback(event):
+
         if event.event_type == "down":
-            if event.scan_code == 179:
+            if event.scan_code == -179:
                 inp.media_key = 'play'
-            elif event.scan_code == 178:
+            elif event.scan_code == -178:
                 inp.media_key = 'stop'
-            elif event.scan_code == 177:
+            elif event.scan_code == -177:
                 inp.media_key = 'back'
-            elif event.scan_code == 176:
+            elif event.scan_code == -176:
                 inp.media_key = 'forward'
-            gui.update += 1
+                gui.update += 1
 
-
-    keyboard.hook_key(179, key_callback)
-    keyboard.hook_key(178, key_callback)
-    keyboard.hook_key(177, key_callback)
-    keyboard.hook_key(176, key_callback)
-
-    # def keyboard_hook():
-    # from collections import namedtuple
-
-    # KeyboardEvent = namedtuple('KeyboardEvent', ['event_type', 'key_code',
-    # 'scan_code', 'alt_pressed',
-    # 'time'])
-
-    # handlers = []
-
-    # def listen():
-    # # Adapted from http://www.hackerthreads.org/Topic-42395
-
-    # event_types = {win32con.WM_KEYDOWN: 'key down',
-    # win32con.WM_KEYUP: 'key up',
-    # 0x104: 'key down',  # WM_SYSKEYDOWN, used for Alt key.
-    # 0x105: 'key up',  # WM_SYSKEYUP, used for Alt key.
-    # }
-
-    # def low_level_handler(nCode, wParam, lParam):
-
-    # event = KeyboardEvent(event_types[wParam], lParam[0], lParam[1],
-    # lParam[2] == 32, lParam[3])
-
-    # if event[1] == 179 and event[0] == 'key down':
-    # input.media_key = 'play'
-    # elif event[1] == 178 and event[0] == 'key down':
-    # input.media_key = 'stop'
-    # elif event[1] == 177 and event[0] == 'key down':
-    # input.media_key = 'back'
-    # elif event[1] == 176 and event[0] == 'key down':
-    # input.media_key = 'forward'
-    # if input.media_key:
-    # gui.update += 1
-    # # Be a good neighbor and call the next hook.
-    # return windll.user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
-
-    # # Our low level handler signature.
-    # CMPFUNC = CFUNCTYPE(c_int, c_int, c_int, POINTER(c_void_p))
-    # # Convert the Python handler into C pointer.
-    # pointer = CMPFUNC(low_level_handler)
-
-    # # Hook both key up and key down events for common keys (non-system).
-    # hook_id = windll.user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer,
-    # win32api.GetModuleHandle(None), 0)
-
-    # # Register to remove the hook when the interpreter exits. Unfortunately a
-    # # try/finally block doesn't seem to work here.
-    # atexit.register(windll.user32.UnhookWindowsHookEx, hook_id)
-
-    # while True:
-    # msg = win32gui.GetMessage(None, 0, 0)
-    # win32gui.TranslateMessage(byref(msg))
-    # win32gui.DispatchMessage(byref(msg))
-    # time.sleep(5)
-
-    # listen()
-
-
-# if system == 'windows' or msys:
-#    print('Starting hook thread for Windows')
-#    keyboardHookThread = threading.Thread(target=keyboard_hook)
-#    keyboardHookThread.daemon = True
-#    keyboardHookThread.start()
-
-# macos multimedia keys
-# if macos:
-#     try:
-#         import osxmmkeys
-#         tap = osxmmkeys.Tap()
-#         tap.on('play_pause', inp.m_key_play)
-#         tap.on('next_track', inp.m_key_next)
-#         tap.on('prev_track', inp.m_key_previous)
-#         tap.start()
-#     except ImportError:
-#         print("Could not import osxmmkeys")
+    keyboard.hook_key(-179, key_callback)
+    keyboard.hook_key(-178, key_callback)
+    keyboard.hook_key(-177, key_callback)
+    keyboard.hook_key(-176, key_callback)
 
 
 class GStats:
