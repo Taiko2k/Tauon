@@ -41670,7 +41670,7 @@ pctl.total_playtime = star_store.get_total()
 
 mouse_up = False
 mouse_wheel = 0
-
+reset_render = False
 c_yax = 0
 c_yax_timer = Timer()
 c_xax = 0
@@ -41724,7 +41724,6 @@ while pctl.running:
 
     # f not mouse_down:
     k_input = False
-
     clicked = False
     focused = False
     mouse_moved = False
@@ -41842,11 +41841,7 @@ while pctl.running:
                         cycle_playlist_pinned(-1)
 
         if event.type == SDL_RENDER_TARGETS_RESET:
-            print("Reset render targets!")
-            clear_img_cache(delete_disk=False)
-            ddt.clear_text_cache()
-            for item in WhiteModImageAsset.assets:
-                item.reload()
+            reset_render = True
 
         if event.type == SDL_DROPTEXT:
 
@@ -43101,6 +43096,14 @@ while pctl.running:
     if gui.update > 0 and not resize_mode:
         if gui.update > 2:
             gui.update = 2
+
+        if reset_render:
+            print("Reset render targets!")
+            clear_img_cache(delete_disk=False)
+            ddt.clear_text_cache()
+            for item in WhiteModImageAsset.assets:
+                item.reload()
+            reset_render = False
 
         SDL_SetRenderTarget(renderer, None)
         SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
