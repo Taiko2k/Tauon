@@ -101,10 +101,12 @@ def player4(tauon):
             return 0
 
         def read(self, buffer: POINTER(c_char), max):
-            data = self.decoder.stdout.read(max)
-            p = cast(buffer, POINTER(c_char * max))
-            p.contents.value = data
-            return len(data)
+            if self.decoder:
+                data = self.decoder.stdout.read(max)
+                p = cast(buffer, POINTER(c_char * max))
+                p.contents.value = data
+                return len(data)
+            return 0
 
     ff_run = FFRun()
     FUNCTYPE = CFUNCTYPE
@@ -665,6 +667,7 @@ def player4(tauon):
                         remain = length - position
 
                 fade = 0
+                error = False
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
 
@@ -736,12 +739,16 @@ def player4(tauon):
                                 break
                             else:
                                 aud.stop()
-                                gui.show_message("Error loading track", mode="warning")
+                                if not gui.message_box:
+                                    gui.show_message("Error loading track", mode="warning")
+                                error = True
                                 break
                         time.sleep(0.016)
                         run_vis()
 
                     state = 1
+                    if error:
+                        state = 0
 
                 player_timer.set()
                 pctl.jump_time = 0

@@ -1210,6 +1210,7 @@ int load_next() {
             want_sample_rate = sample_rate_out;
         }
         pthread_mutex_unlock(&buffer_mutex);
+        if (decoder_allocated == 0) return 1;
         return 0;
     }
 
