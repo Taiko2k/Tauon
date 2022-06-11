@@ -154,6 +154,9 @@ def player4(tauon):
         # print("GAIN: " + str(g))
         # print("PEAK: " + str(p))
         # print("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
+        if p == 0:
+            print("Warning: detected replay gain peak of 0")
+            return 1
         pctl.active_replaygain = g
         return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
