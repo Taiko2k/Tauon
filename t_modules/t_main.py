@@ -4467,6 +4467,8 @@ try:
     p = ctypes.util.find_library("libopenmpt")
     if p:
         mpt = ctypes.cdll.LoadLibrary(p)
+    elif msys:
+        mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
     else:
         mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
 
