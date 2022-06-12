@@ -11,6 +11,6 @@ rm -rf dist/tauon/share/locale
 rm -rf dist/tauon/share/tcl/tzdata
 rm -rf dist/tauon/tcl/tzdata
 mkdir dist/tauon/etc
-cp -r fonts dist/tauon/
-cp -r C:/msys64/mingw64/etc/fonts dist/tauon/etc
-cp TaskbarLib.tlb dist/tauon/
+cp -r fonts dist/tauon/ 2>/dev/null || echo 'Fonts are not present!'
+cp -r /mingw64/etc/fonts dist/tauon/etc
+cp TaskbarLib.tlb dist/tauon/ 2>/dev/null || echo 'TLB is not present!'
