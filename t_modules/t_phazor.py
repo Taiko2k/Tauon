@@ -38,7 +38,7 @@ def player4(tauon):
     print("Start PHAzOR backend...")
 
     # Get output device names
-    if len(prefs.phazor_devices) < 2 and not tauon.macos:
+    if len(prefs.phazor_devices) < 2 and not tauon.macos and not tauon.msys:
         try:
             import pulsectl
             pulse = pulsectl.Pulse('Tauon Music Box')
