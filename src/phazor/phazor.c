@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifdef WIN
+#ifdef _WIN32
+#define WIN
 #include <windows.h>
 #endif
 
@@ -28,12 +29,15 @@
 #include <pthread.h>
 #include <time.h>
 
-#ifdef AO
-#include <ao/ao.h>
-#else
-#include <pulse/simple.h>
-#include <pulse/error.h>
-#endif
+#define MINIAUDIO_IMPLEMENTATION
+#define MA_NO_GENERATION
+#define MA_NO_DECODING
+#define MA_NO_ENCODING
+#define MA_ENABLE_ONLY_SPECIFIC_BACKENDS
+#define MA_ENABLE_WASAPI
+#define MA_ENABLE_PULSEAUDIO
+
+#include "miniaudio.h"
 
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
@@ -50,6 +54,9 @@
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
 #define BUFFER_STREAM_READY 30000
+
+ma_device_config config;
+ma_device device;
 
 float bfl[BUFF_SIZE];
 float bfr[BUFF_SIZE];
@@ -108,7 +115,7 @@ int32_t temp32 = 0;
 int position_count = 0;
 int current_length_count = 0;
 
-int sample_rate_out = 48000;
+int sample_rate_out = 44100;
 int sample_rate_src = 0;
 int src_channels = 2;
 
@@ -241,12 +248,6 @@ struct stat st;
 int load_file_size = 0;
 int samples_decoded = 0;
 
-// AO --------------
-
-#ifdef AO
-ao_device *device;
-ao_sample_format format;
-#endif
 // Secret Rabbit Code --------------------------------------------------
 
 SRC_DATA src_data;
@@ -264,12 +265,6 @@ kiss_fft_scalar * rbuf;
 kiss_fft_cpx * cbuf;
 kiss_fftr_cfg ffta;
 
-// Pulseaudio ---------------------------------------------------------
-#ifndef AO
-pa_simple *s;
-pa_sample_spec ss;
-pa_buffer_attr pab;
-#endif
 // Vorbis related --------------------------------------------------------
 
 OggVorbis_File vf;
@@ -306,24 +301,13 @@ void start_ffmpeg(char uri[], int start_ms) {
         printf("pa: Error starting FFMPEG\n");
         return;
     }
-//    if (start_ms > 0)
-//        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
-//                start_ms, uri, sample_rate_out);
-//    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
-//
-//    ffm = popen(exe_string, "rb");
-//    if (ffm == NULL) {
-//        printf("pa: Error starting FFMPEG\n");
-//        return;
-//    }
+
     decoder_allocated = 1;
     sample_rate_src = sample_rate_out;
 
 }
 
 void stop_ffmpeg() {
-    //printf("pa: Stop FFMPEG\n");
-    //pclose(ffm);
     ff_close();
 }
 
@@ -346,8 +330,6 @@ void resample_to_buffer(int in_frames) {
     int i = 0;
     while (i < out_frames) {
 
-        //buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_out[i * 2];
-        //buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_out[(i * 2) + 1];
         bfl[high] = re_out[i * 2];
         bfr[high] = re_out[(i * 2) + 1];
 
@@ -356,7 +338,6 @@ void resample_to_buffer(int in_frames) {
         }
 
         high += 1;
-        //buff_filled++;
         i++;
     }
     buff_cycle();
@@ -887,22 +868,230 @@ void stop_decoder() {
 
 
 int disconnect_pulse() {
+    printf("ph: Disconnect Device\n");
 
     if (pulse_connected == 1) {
-
-        #ifdef AO
-            ao_close(device);
-        #else
-            printf("pa: Disconnect from PulseAudio\n");
-            pa_simple_free(s);
-        #endif
-
-
+        ma_device_uninit(&device);
     }
     pulse_connected = 0;
     return 0;
 }
 
+float gate = 1.0;  // Used for ramping
+
+int get_audio(int max, float* buff){
+        int b = 0;
+
+        if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
+            buffering = 0;
+            printf("pa: Buffering -> Playing\n");
+        }
+
+        if (get_buff_fill() < 10 && loaded_target_file[0] == 'h') {
+
+            if (mode == PLAYING) {
+                if (buffering == 0) printf("pa: Buffering...\n");
+                buffering = 1;
+            } else buffering = 0;
+        }
+
+        // Put fade buffer back
+        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max){
+            pthread_mutex_lock(&fade_mutex);
+            int i = 0;
+            while (fade_position < fade_fill){
+                float cross = fade_position / (float) fade_fill;
+                float cross_i = 1.0 - cross;
+                bfl[high] = fadefl[fade_position] * cross_i;
+                bfr[high] = fadefr[fade_position] * cross_i;
+                fade_position++;
+                high++;
+                i++;
+                if (i > max) break;
+            }
+            buff_cycle();
+            if (fade_position == fade_fill){
+                fade_fill = 0;
+                fade_position = 0;
+            }
+            pthread_mutex_unlock(&fade_mutex);
+        }
+
+
+        if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
+        printf("pa: %d\n", get_buff_fill());
+            printf("pa: eeeeee\n");
+        }
+
+        // Process decoded audio data and send out
+        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
+            pthread_mutex_lock(&fade_mutex);
+            //pthread_mutex_lock(&buffer_mutex);
+
+            b = 0; // byte number
+
+            peak_roll_l = 0;
+            peak_roll_r = 0;
+
+            //printf("pa: Buffer is at %d\n", buff_filled);
+
+            // Fill the out buffer...
+            while (get_buff_fill() > 0) {
+
+
+                // Truncate data if gate is closed anyway
+                if (mode == RAMP_DOWN && gate == 0) break;
+
+//                if (want_sample_rate > 0 && sample_change_byte == buff_base) {
+//                    //printf("pa: Set new sample rate\n");
+//                    connect_pulse();
+//                    break;
+//                }
+
+                if (reset_set == 1 && reset_set_byte == low) {
+                    //printf("pa: Reset position counter\n");
+                    reset_set = 0;
+                    position_count = reset_set_value;
+                }
+
+                // Set new gain value
+                if (config_fade_jump == 0) {
+                    if (rg_set == 1 && reset_set_byte == low) {
+                        rg_value_on = rg_value_want;
+                        rg_set = 0;
+                    }
+                } else {
+                    if (rg_set == 1) {
+                        if (fabs(rg_value_on - rg_value_want) < 0.01) {
+                            // printf("pa: SET\n");
+                            rg_value_on = rg_value_want;
+                        }
+                        if (rg_value_on < rg_value_want) rg_value_on += ramp_step(current_sample_rate, 2000);
+                        if (rg_value_on > rg_value_want) rg_value_on -= ramp_step(current_sample_rate, 2000);
+                        if (rg_value_on == rg_value_want) rg_set = 0;
+                        // printf("%f\n", rg_value_on);
+                    }
+                }
+
+                // Ramp control ---
+                if (mode == RAMP_DOWN) {
+                    gate -= ramp_step(current_sample_rate, 5);
+                    if (gate < 0) gate = 0;
+                }
+
+                if (gate < 1 && mode == PLAYING) {
+                    gate += ramp_step(current_sample_rate, 5);
+                    if (gate > 1) gate = 1;
+                }
+
+                // Volume control ---
+                if (volume_want > volume_on) {
+                    volume_on += ramp_step(current_sample_rate, volume_ramp_speed);
+
+                    if (volume_on > volume_want) {
+                        volume_on = volume_want;
+                    }
+                }
+
+                if (volume_want < volume_on) {
+                    volume_on -= ramp_step(current_sample_rate, volume_ramp_speed);
+
+                    if (volume_on < volume_want) {
+                        volume_on = volume_want;
+                    }
+                }
+
+                float l = bfl[low];
+                float r = bfr[low];
+
+                if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
+                if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
+
+                // Apply gain amp
+                if (rg_value_on != 0.0) {
+
+                    // Left channel
+                    if (l > 0 && l * rg_value_on <= 0) {
+                        printf("pa: Warning: Audio clipped!\n");
+                    } else if (l < 0 && l * rg_value_on >= 0) {
+                        printf("pa: Warning: Audio clipped!\n");
+                    } else l *= rg_value_on;
+
+                    // Right channel
+                    if (r > 0 && r * rg_value_on <= 0) {
+                        printf("pa: Warning: Audio clipped!\n");
+                    } else if (r < 0 && r * rg_value_on >= 0) {
+                        printf("pa: Warning: Audio clipped!\n");
+                    } else r *= rg_value_on;
+
+                } // End amp
+
+                // Apply final volume adjustment
+                float final_vol = pow((gate * volume_on), config_volume_power);
+                l = l * final_vol;
+                r = r * final_vol;
+
+                buff[b] = l;
+                buff[b + 1] = r;
+                b += 2;
+
+                low += 1;
+                buff_cycle();
+
+                position_count++;
+
+                if (b >= max) break; // Buffer is now full
+            }
+
+            pthread_mutex_unlock(&fade_mutex);
+
+            if (b > 0) {
+                if (peak_roll_l > peak_l) peak_l = peak_roll_l;
+                if (peak_roll_r > peak_r) peak_r = peak_roll_r;
+                return b;
+
+            } // sent data
+
+        } // close if data
+
+        return 0;
+}
+
+
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
+    get_audio(frameCount * 2, pOutput);
+}
+
+
+ma_device_info* pPlaybackDeviceInfos;
+ma_uint32 playbackDeviceCount = 0;
+ma_result result;
+ma_context context;
+ma_uint32 iDevice;
+
+int scan_devices(){
+
+    if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
+        printf("Failed to initialize context.\n");
+        return -1;
+    }
+
+    result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
+    if (result != MA_SUCCESS) {
+        printf("Failed to retrieve device information.\n");
+        return -2;
+    }
+
+    printf("Playback Devices\n");
+    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
+    }
+
+    ma_context_uninit(&context);
+    return playbackDeviceCount;
+
+}
 
 void connect_pulse() {
 
@@ -910,85 +1099,41 @@ void connect_pulse() {
         //printf("pa: reconnect pulse\n");
         disconnect_pulse();
     }
-    //printf("pa: Connect pulse\n");
 
-    if (want_sample_rate > 0) {
-        current_sample_rate = want_sample_rate;
-        want_sample_rate = 0;
+    scan_devices();
+    int n = -1;
+    if (strcmp(config_output_sink, "Default") != 0){
+        for (int i = 0; i < playbackDeviceCount; ++i) {
+            if (strcmp(pPlaybackDeviceInfos[i].name, config_output_sink) == 0){
+                n = i;
+            }
+        }
     }
 
-//    if (current_sample_rate <= 1) {
-//        printf("pa: Samplerate detection warning.\n");
-//        return;
-//    }
+    printf("ph: Connect device\n");
+
+    ma_device_config config = ma_device_config_init(ma_device_type_playback);
+    if (n > -1) config.playback.pDeviceID = &pPlaybackDeviceInfos[n].id;
+    config.playback.format   = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
+    config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
+    config.sampleRate        = 0;           // Set to 0 to use the device's native sample rate.
+    config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
+    config.periodSizeInFrames      = 750;   //
+    config.periods      = 6;   //
+
+    if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) {
+        printf("ph: Device init error\n");
+        mode = STOPPED;
+        return;  // Failed to initialize the device.
+    }
+
+        //dev = config_output_sink;
+        printf("    %u\n", device.sampleRate);
+    sample_rate_out = device.sampleRate;
     current_sample_rate = sample_rate_out;
 
-    #ifndef AO
-    int error = 0;
-    char *dev = NULL;
-    if (strcmp(config_output_sink, "Default") != 0) {
-        dev = config_output_sink;
-    }
-
-    pab.maxlength = (current_sample_rate * 8 * (config_dev_buffer / 1000.0));
-    pab.fragsize = (uint32_t) - 1;
-    pab.minreq = (uint32_t) - 1;
-    pab.prebuf = (uint32_t) - 1;
-    pab.tlength = (current_sample_rate * 4 * (config_dev_buffer / 1000.0));
-
-    //printf("pa: Connect to PulseAudio\n");
-    //ss.format = PA_SAMPLE_S16LE;
-    ss.format = PA_SAMPLE_FLOAT32NE;
-    ss.channels = 2;
-    ss.rate = current_sample_rate;
-
-    s = pa_simple_new(NULL,                // Use default server
-                      "Tauon Music Box",   // Application name
-                      PA_STREAM_PLAYBACK,  // Flow direction
-                      dev, //NULL,                // Use the default device
-                      "Music",             // Description
-                      &ss,                 // Format
-                      NULL,                // Channel map
-                      &pab,                // Buffering attributes
-                      &error               // Error
-    );
-
-    if (error != 0) {
-        printf("pa: PulseAudio init error\n");
-        //printf(pa_strerror(error));
-        //printf("\n");
-        mode = STOPPED;
-    } else pulse_connected = 1;
-
-    #else
-
-	int default_driver = ao_default_driver_id();
-
-    memset(&format, 0, sizeof(format));
-	format.bits = 32;
-	format.channels = 2;
-	format.rate = current_sample_rate;
-	format.byte_format = AO_FMT_LITTLE;
-
-	/* -- Open driver -- */
-	#ifdef WIN
-	device = ao_open_live(default_driver, &format, NULL);
-    #else
-    ao_option option;
-    option.key = "buffer_time";
-    option.value = "100";
-    device = ao_open_live(default_driver, &format, &option);
-    #endif
-
-	if (device == NULL) {
-		fprintf(stderr, "Error opening device.\n");
-	}
     pulse_connected = 1;
-    usleep(50000);
-
-    #endif
-    //src_reset(src);
-    //pthread_mutex_unlock(&pulse_mutex);
+    //usleep(50000);
 
 }
 
@@ -1448,18 +1593,9 @@ void end() {
     pthread_mutex_lock(&buffer_mutex);
     mode = STOPPED;
     command = NONE;
-    //buff_base = 0;
-    //buff_filled = 0;
     buff_reset();
     buffering = 0;
     pthread_mutex_unlock(&buffer_mutex);
-//    #ifndef AO
-//        if (pulse_connected == 1){
-//            pa_simple_flush (s, &error);
-//        }
-//    #endif
-    //disconnect_pulse();
-    //current_sample_rate = 0;
 }
 
 void decoder_eos() {
@@ -1605,28 +1741,6 @@ void pump_decode() {
 
         b = ff_read(ffm_buffer, 2048);
 
-//        int c;
-//        while(b < 2048 && (c = fgetc(ffm)) != EOF ){
-//            ffm_buffer[b] = (char) c;
-//            b++;
-//        }
-
-//        if (feof(ffm)) {
-//            done = 1;
-//            printf("pa: FFMPEG EOF\n");
-//        }
-
-
-//        while (b < 2048) {
-//            if (feof(ffm)) {
-//                done = 1;
-//                printf("pa: FFMPEG EOF\n");
-//                break;
-//            }
-//            ffm_buffer[b] = fgetc(ffm);
-//            b++;
-//        }
-//
         if (b % 4 != 0) {
             printf("pa: Uneven data\n");
             decoder_eos();
@@ -1635,298 +1749,33 @@ void pump_decode() {
 
         pthread_mutex_lock(&buffer_mutex);
         read_to_buffer_char16(ffm_buffer, b);
-//        while (i < b) {
-//
-//            memcpy(&bfl[high], &ffm_buffer[i], 4);
-//            memcpy(&bfr[high], &ffm_buffer[i + 4], 4);
-//
-//            if (fade_fill > 0) {
-//                fade_fx();
-//            }
-//            high++;
-//            i += 8;
-//        }
-//        buff_cycle();
         pthread_mutex_unlock(&buffer_mutex);
         if (b == 0) {
             printf("pa: FFMPEG has finished\n");
             decoder_eos();
 
         }
-
-
     }
-
 }
 
+void start_out(){
+    if (pulse_connected == 0) connect_pulse();
+    printf("ph: start\n");
 
-// ------------------------------------------------------------------------------------
-// Audio output thread
+    if (out_thread_running == 0){
+        ma_device_start(&device);
+        out_thread_running = 1;
+    }
+}
 
-float gate = 1.0;  // Used for ramping
-
-void *out_thread(void *thread_id) {
-
-    int b = 0;
-    //double testa, testb;
-
-    //t_start = get_time_ms();
-    //printf("pa: Start out thread\n");
-
-    while (out_thread_running == 1) {
-        if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
-
-            buffering = 0;
-            printf("pa: Buffering -> Playing\n");
-            #ifndef AO
-            if (mode == PLAYING) connect_pulse();
-            #endif
-
-        }
-
-        if (get_buff_fill() < 10 && loaded_target_file[0] == 'h') {
-
-            if (mode == PLAYING) {
-                #ifndef AO
-                disconnect_pulse();
-                #endif
-                if (buffering == 0) printf("pa: Buffering...\n");
-                buffering = 1;
-            } else buffering = 0;
-        }
-
-        // Put fade buffer back
-        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() == 0){
-            pthread_mutex_lock(&fade_mutex);
-            int i = 0;
-            while (fade_position < fade_fill){
-                float cross = fade_position / (float) fade_fill;
-                float cross_i = 1.0 - cross;
-                bfl[high] = fadefl[fade_position] * cross_i;
-                bfr[high] = fadefr[fade_position] * cross_i;
-                fade_position++;
-                high++;
-                i++;
-                if (i > current_sample_rate * 0.05) break;
-            }
-            buff_cycle();
-            if (fade_position == fade_fill){
-                fade_fill = 0;
-                fade_position = 0;
-            }
-            pthread_mutex_unlock(&fade_mutex);
-        }
-
-        // Process decoded audio data and send out
-        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
-            pthread_mutex_lock(&fade_mutex);
-            //pthread_mutex_lock(&buffer_mutex);
-
-
-            b = 0; // byte number
-
-            peak_roll_l = 0;
-            peak_roll_r = 0;
-
-            //printf("pa: Buffer is at %d\n", buff_filled);
-
-            // Fill the out buffer...
-            while (get_buff_fill() > 0) {
-
-
-                // Truncate data if gate is closed anyway
-                if (mode == RAMP_DOWN && gate == 0) break;
-
-//                if (want_sample_rate > 0 && sample_change_byte == buff_base) {
-//                    //printf("pa: Set new sample rate\n");
-//                    connect_pulse();
-//                    break;
-//                }
-
-                if (reset_set == 1 && reset_set_byte == low) {
-                    //printf("pa: Reset position counter\n");
-                    reset_set = 0;
-                    position_count = reset_set_value;
-                }
-
-                // Set new gain value
-                if (config_fade_jump == 0) {
-                    if (rg_set == 1 && reset_set_byte == low) {
-                        rg_value_on = rg_value_want;
-                        rg_set = 0;
-                    }
-                } else {
-                    if (rg_set == 1) {
-                        if (fabs(rg_value_on - rg_value_want) < 0.01) {
-                            // printf("pa: SET\n");
-                            rg_value_on = rg_value_want;
-                        }
-                        if (rg_value_on < rg_value_want) rg_value_on += ramp_step(current_sample_rate, 2000);
-                        if (rg_value_on > rg_value_want) rg_value_on -= ramp_step(current_sample_rate, 2000);
-                        if (rg_value_on == rg_value_want) rg_set = 0;
-                        // printf("%f\n", rg_value_on);
-                    }
-                }
-
-                // Ramp control ---
-                if (mode == RAMP_DOWN) {
-                    gate -= ramp_step(current_sample_rate, 5);
-                    if (gate < 0) gate = 0;
-                }
-
-                if (gate < 1 && mode == PLAYING) {
-                    gate += ramp_step(current_sample_rate, 5);
-                    if (gate > 1) gate = 1;
-                }
-
-                // Volume control ---
-                if (volume_want > volume_on) {
-                    volume_on += ramp_step(current_sample_rate, volume_ramp_speed);
-
-                    if (volume_on > volume_want) {
-                        volume_on = volume_want;
-                    }
-                }
-
-                if (volume_want < volume_on) {
-                    volume_on -= ramp_step(current_sample_rate, volume_ramp_speed);
-
-                    if (volume_on < volume_want) {
-                        volume_on = volume_want;
-                    }
-                }
-
-                float l = bfl[low];
-                float r = bfr[low];
-
-                if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
-                if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
-
-                // Apply gain amp
-                if (rg_value_on != 0.0) {
-
-                    // Left channel
-                    if (l > 0 && l * rg_value_on <= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else if (l < 0 && l * rg_value_on >= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else l *= rg_value_on;
-
-                    // Right channel
-                    if (r > 0 && r * rg_value_on <= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else if (r < 0 && r * rg_value_on >= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else r *= rg_value_on;
-
-                } // End amp
-
-                // Apply final volume adjustment
-                float final_vol = pow((gate * volume_on), config_volume_power);
-                l = l * final_vol;
-                r = r * final_vol;
-
-                // Pack integer audio data to bytes
-//                out_buf[b] = (buffl[buff_base]) & 0xFF;
-//                out_buf[b + 1] = (buffl[buff_base] >> 8) & 0xFF;
-//                out_buf[b + 2] = (buffr[buff_base]) & 0xFF;
-//                out_buf[b + 3] = (buffr[buff_base] >> 8) & 0xFF;
-                //printf("%f\n",out_buff[b]);
-
-                #ifndef AO
-                out_buff[b] = l;
-                out_buff[b + 1] = r;
-                b += 2;
-                #else
-                temp32 = l * 2147483648;
-                out_buffc[b] = (temp32) & 0xFF;
-                out_buffc[b + 1] = (temp32 >> 8) & 0xFF;
-                out_buffc[b + 2] = (temp32 >> 16) & 0xFF;
-                out_buffc[b + 3] = (temp32 >> 24) & 0xFF;
-                temp32 = r * 2147483648;
-                out_buffc[b + 4] = (temp32) & 0xFF;
-                out_buffc[b + 5] = (temp32 >> 8) & 0xFF;
-                out_buffc[b + 6] = (temp32 >> 16) & 0xFF;
-                out_buffc[b + 7] = (temp32 >> 24) & 0xFF;
-                b += 8;
-                #endif
-
-
-                //buff_filled--;
-                //buff_base = (buff_base + 1) % BUFF_SIZE;
-                low += 1;
-                buff_cycle();
-
-                position_count++;
-
-
-                if (b >= 256 * 2) break; // Buffer is now full
-            }
-            //pthread_mutex_unlock(&buffer_mutex);
-            pthread_mutex_unlock(&fade_mutex);
-            // Send data to pulseaudio server
-            if (b > 0) {
-
-                if (peak_roll_l > peak_l) peak_l = peak_roll_l;
-                if (peak_roll_r > peak_r) peak_r = peak_roll_r;
-
-                if (pulse_connected == 0) {
-                    connect_pulse();
-                }
-
-                //pthread_mutex_lock(&pulse_mutex);
-                if (pulse_connected == 0) {
-                    printf("pa: Error, not connected to any output!\n");
-                } else {
-
-                    #ifndef AO
-
-                        pa_simple_write(s, &out_buff, b * 4, &error);
-                    #else
-                        ao_play(device, out_buffc, b);
-                    #endif
-
-                    // Flush buffer with 0s to avoid popping noise on close
-                    if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)) {
-
-                        b = 0;
-                        while (b < 256 * 8) {
-                            out_buff[b] = 0.0;
-                            b += 1;
-                        }
-                        #ifndef AO
-                            int g = 0;
-                            while (g < 8) {
-                                g++;
-                                pa_simple_write(s, out_buff, b, &error);
-                            }
-                            pa_simple_flush(s, &error);
-                            pa_simple_free(s);
-                            //printf("Auto free\n");
-                            pulse_connected = 0;
-
-                        #else
-
-                        #endif
-                        usleep(100000);
-                    }
-                }
-
-                //pthread_mutex_unlock(&pulse_mutex);
-
-            } // sent data
-
-        } // close if data
-        else {
-            usleep(2000);
-        }
-
-    } // close main loop
-    out_thread_running = 0;
-    //printf("Exit out thread\n");
-    return thread_id;
-} // close thread
-
+void stop_out(){
+    printf("ph: stop\n");
+    if (out_thread_running == 1){
+        ma_device_stop(&device);
+        out_thread_running = 0;
+    }
+    disconnect_pulse();
+}
 
 // ---------------------------------------------------------------------------------------
 // Main loop
@@ -1935,18 +1784,9 @@ int main_running = 0;
 
 void *main_loop(void *thread_id) {
 
-
-    #ifdef AO
-    	ao_initialize();
-    	connect_pulse();
-    #endif
     rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
     cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
     ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
-
-    //pthread_t out_thread_id;
-    //pthread_create(&out_thread_id, NULL, out_thread, NULL);
-
 
     int error = 0;
 
@@ -1970,6 +1810,9 @@ void *main_loop(void *thread_id) {
 
     dec = FLAC__stream_decoder_new();
 
+    // ---------------------------------------------
+
+
     // Main loop ---------------------------------------------------------------
     while (1) {
 
@@ -1989,10 +1832,7 @@ void *main_loop(void *thread_id) {
                 case PAUSE:
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
-                        if (out_thread_running == 1){
-                            out_thread_running = 2;
-                            usleep(20000);
-                          }
+                        stop_out();
                         
                         command = NONE;
                     }
@@ -2000,16 +1840,7 @@ void *main_loop(void *thread_id) {
                     break;
                 case RESUME:
                     if (mode == PAUSED) {
-                        //if (pulse_connected == 0) connect_pulse();
-                        while (out_thread_running == 2){
-                            usleep(1000);
-
-                        }
-                        if (out_thread_running == 0) {
-                              out_thread_running = 1;
-                              pthread_t out_thread_id;
-                              pthread_create(&out_thread_id, NULL, out_thread, NULL);
-                        }
+                        start_out();
                         mode = PLAYING;
                     }
                     command = NONE;
@@ -2036,13 +1867,13 @@ void *main_loop(void *thread_id) {
 
                     // Prepare for a crossfade if enabled and suitable
                     using_fade = 0;
-                    if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
+                    if (config_fade_jump == 1 && mode == PLAYING) {
                         pthread_mutex_lock(&fade_mutex);
                         int l = current_sample_rate * (config_fade_duration / 1000.0);
-
+                        int reserve = 0; //current_sample_rate / 10.0;
                         if (get_buff_fill() > l) {
                             int i = 0;
-                            int p = low;
+                            int p = low + reserve;
                             i = 0;
 
                             while (i < l) {
@@ -2057,14 +1888,14 @@ void *main_loop(void *thread_id) {
                             fade_position = 0;
                             position_count = 0;
                             fade_fill = l;
-                            high = low;
+                            high = low + reserve;
                             using_fade = 1;
 
-//                            reset_set_byte = p;
-//                            if (reset_set == 0) {
-//                                reset_set = 1;
-//                                reset_set_value = 0;
-//                            }
+                            reset_set_byte = p;
+                            if (reset_set == 0) {
+                                reset_set = 1;
+                                reset_set_value = 0;
+                            }
 
                         }
                         pthread_mutex_unlock(&fade_mutex);
@@ -2086,19 +1917,12 @@ void *main_loop(void *thread_id) {
 
                         mode = PLAYING;
                         result_status = SUCCESS;
-                        while (out_thread_running == 2){
-                            usleep(1000);
-                        }
-                        if (out_thread_running == 0) {
-                             out_thread_running = 1;
-                              pthread_t out_thread_id;
-                              pthread_create(&out_thread_id, NULL, out_thread, NULL);
-                        }
+                        start_out();
                         command = NONE;
 
 
                     } else {
-                        printf("pa: Load file failed\n");
+                        printf("ph: Load file failed\n");
                         result_status = FAILURE;
                         command = NONE;
                         mode = STOPPED;
@@ -2136,14 +1960,6 @@ void *main_loop(void *thread_id) {
 
                 buff_reset();
 
-//                #ifndef AO
-//                pthread_mutex_lock(&pulse_mutex);
-//                if (pulse_connected == 1) {
-//                    pa_simple_flush(s, &error);
-//                }
-//                pthread_mutex_unlock(&pulse_mutex);
-//                #endif
-
                 command = NONE;
 
                 pthread_mutex_unlock(&buffer_mutex);
@@ -2156,15 +1972,6 @@ void *main_loop(void *thread_id) {
             if (mode == RAMP_DOWN && gate == 0) {
                 pthread_mutex_lock(&buffer_mutex);
                 buff_reset();
-                //buff_base = 0; //(buff_base + buff_filled) % BUFF_SIZE;
-                //buff_filled = 0;
-//                if (command == SEEK && config_fast_seek == 1) {
-//                    pthread_mutex_lock(&pulse_mutex);
-//                    #ifndef AO
-//                    pa_simple_flush(s, &error);
-//                    #endif
-//                    pthread_mutex_unlock(&pulse_mutex);
-//                }
                 mode = PLAYING;
                 command = NONE;
                 pthread_mutex_unlock(&buffer_mutex);
@@ -2200,9 +2007,6 @@ void *main_loop(void *thread_id) {
     pthread_mutex_lock(&buffer_mutex);
 
     main_running = 0;
-    if (out_thread_running == 1) {
-        out_thread_running = 2;
-    }
 
     position_count = 0;
     buff_reset();
@@ -2215,9 +2019,7 @@ void *main_loop(void *thread_id) {
 
     pthread_mutex_unlock(&buffer_mutex);
 
-    while (out_thread_running != 0){
-        usleep(10000);
-    }
+    stop_out();
     disconnect_pulse();
     command = NONE;
 
@@ -2413,6 +2215,11 @@ void set_callbacks(void *start, void *read, void *close){
     ff_start = start;
     ff_read = read;
     ff_close = close;
+}
+
+
+char* get_device(int n){
+    return pPlaybackDeviceInfos[n].name;
 }
 
 int get_spectrum(int n_bins, float* bins) {

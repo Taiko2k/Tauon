@@ -37,17 +37,17 @@ def player4(tauon):
 
     print("Start PHAzOR backend...")
 
-    # Get output device names
-    if len(prefs.phazor_devices) < 2 and not tauon.macos and not tauon.msys:
-        try:
-            import pulsectl
-            pulse = pulsectl.Pulse('Tauon Music Box')
-            sink_list = pulse.sink_list()
-            for sink in sink_list:
-                prefs.phazor_devices[sink.description] = sink.name
-            pulse.close()
-        except:
-            print("Warning: Missing dependency Pulsectl")
+    # # Get output device names
+    # if len(prefs.phazor_devices) < 2 and not tauon.macos and not tauon.msys:
+    #     try:
+    #         import pulsectl
+    #         pulse = pulsectl.Pulse('Tauon Music Box')
+    #         sink_list = pulse.sink_list()
+    #         for sink in sink_list:
+    #             prefs.phazor_devices[sink.description] = sink.name
+    #         pulse.close()
+    #     except:
+    #         print("Warning: Missing dependency Pulsectl")
 
     state = 0
     player_timer = Timer()
@@ -56,6 +56,9 @@ def player4(tauon):
 
     aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
     aud.init()
+
+    aud.get_device.restype = ctypes.c_char_p
+
     aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
     aud.feed_raw.restype = None
     tauon.aud = aud
@@ -68,6 +71,18 @@ def player4(tauon):
     aud.get_level_peak_r.restype = ctypes.c_float
 
     active_timer = Timer()
+
+    def scan_device():
+        n = aud.scan_devices()
+        devices = ["Default"]
+        if n:
+            for d in range(n):
+                devices.append(aud.get_device(d).decode())
+        prefs.phazor_devices = devices
+        if prefs.phazor_device_selected not in devices:
+            prefs.phazor_device_selected = devices[0]
+
+    scan_device()
 
     class FFRun:
         def __init__(self):
@@ -394,16 +409,9 @@ def player4(tauon):
     tauon.cachement = cachement
 
     def set_config(set_device=False):
-        aud.config_set_dev_buffer(prefs.device_buffer)
+        #aud.config_set_dev_buffer(prefs.device_buffer)
         aud.config_set_fade_duration(prefs.cross_fade_time)
-        if prefs.phazor_device_selected != "Default":
-            if prefs.phazor_device_selected in prefs.phazor_devices.values():
-                aud.config_set_dev_name(prefs.phazor_device_selected.encode())
-            else:
-                print("Warning: Selected audio output is now missing. Defaulting to default.")
-                aud.config_set_dev_name(None)
-        else:
-            aud.config_set_dev_name(None)
+        aud.config_set_dev_name(prefs.phazor_device_selected.encode())
         if set_device:
             aud.pause()
             aud.resume()
@@ -414,7 +422,7 @@ def player4(tauon):
             prefs.volume_power = 2
         aud.config_set_volume_power(prefs.volume_power)
 
-    aud.config_set_samplerate(prefs.samplerate)
+    #aud.config_set_samplerate(prefs.samplerate)
     aud.config_set_resample_quality(prefs.resample)
 
     set_config()

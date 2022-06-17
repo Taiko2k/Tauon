@@ -147,7 +147,7 @@ class StreamEnc:
         self.pump_running = True
 
         rate = str(self.tauon.prefs.samplerate)
-        cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",
+        cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",
                rate, "-"]
 
         startupinfo = None
@@ -248,7 +248,7 @@ class StreamEnc:
             if os.path.isfile(target_file):
                 os.remove(target_file)
 
-            cmd = ['ffmpeg', "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
+            cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
             decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             if sys.platform != 'win32':
