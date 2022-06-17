@@ -1119,7 +1119,7 @@ void connect_pulse() {
     config.sampleRate        = 0;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
     config.periodSizeInFrames      = 750;   //
-    config.periods      = 4;   //
+    config.periods      = 6;   //
 
     if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) {
         printf("ph: Device init error\n");

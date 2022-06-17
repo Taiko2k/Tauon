@@ -3781,7 +3781,7 @@ def save_prefs():
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    cf.update_value("device-buffer-length", prefs.device_buffer)
+    #cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("output-samplerate", prefs.samplerate)
     cf.update_value("resample-quality", prefs.resample)
     # cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
@@ -3936,9 +3936,9 @@ def load_prefs():
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time,
                                         "In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
 
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
-    prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
-                                   "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
+    #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
+    #prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
+    #                               "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
     prefs.resample = cf.sync_add("int", "resample-quality", prefs.resample,
                                  "0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
     if prefs.resample < 0 or prefs.resample > 4:
@@ -27267,14 +27267,14 @@ class Over:
                                    1000, 0.5) * 1000)
 
             y += round(30 * gui.scale)
-            prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms',
-                                                     prefs.device_buffer, 10,
-                                                     500, 10, self.reload_device)
+            # prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms',
+            #                                          prefs.device_buffer, 10,
+            #                                          500, 10, self.reload_device)
 
-            if prefs.device_buffer > 100:
-                prefs.pa_fast_seek = True
-            else:
-                prefs.pa_fast_seek = False
+            # if prefs.device_buffer > 100:
+            #     prefs.pa_fast_seek = True
+            # else:
+            #     prefs.pa_fast_seek = False
 
             y = y0 + 37 * gui.scale
             x = x0 + 270 * gui.scale
