@@ -1129,39 +1129,6 @@ album_position = 0
 
 class Prefs:  # Used to hold any kind of settings
 
-    def gen_gst_out(self):
-        # "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
-        line = ""
-        if prefs.replay_gain:
-            line += f"rgvolume pre-amp={prefs.replay_preamp} fallback-gain=0 album-mode="
-            if prefs.replay_gain == 1:
-                line += "false"
-            else:
-                line += "true"
-
-        if line:
-            line += " ! "
-
-        # print(prefs.gst_device)
-        # print(pctl.gst_outputs)
-
-        if prefs.gst_device == "Auto":
-            line += "autoaudiosink"
-        elif prefs.gst_device == "PipeWire":
-            line += "pipewiresink"
-        elif prefs.gst_device == "PulseAudio":
-            line += f"pulsesink client-name=\"{t_title}\""
-        elif prefs.gst_device == "JACK":
-            line += f"jackaudiosink client-name=\"{t_title}\""
-        elif prefs.gst_device == "ALSA":
-            line += "alsasink"
-        elif prefs.gst_device in pctl.gst_outputs:
-            line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
-        else:
-            print("Device not found, fallback to PulseAudio")
-
-        return line
-
     def __init__(self):
         self.colour_from_image = False
         self.dim_art = False
@@ -1246,7 +1213,6 @@ class Prefs:  # Used to hold any kind of settings
         self.log_vol = False
 
         self.ui_scale = scale
-        self.last_device = "PulseAudio Sound Server"
 
         # if flatpak_mode:
 
@@ -1446,9 +1412,6 @@ class Prefs:  # Used to hold any kind of settings
         self.show_side_lyrics_art_panel = True
 
         self.gst_use_custom_output = False
-        self.gst_device = "PulseAudio"
-        if macos:
-            self.gst_device = "Auto"
 
         self.notify_include_album = True
 
@@ -1517,7 +1480,7 @@ class Prefs:  # Used to hold any kind of settings
         self.artist_list_sort_mode = "alpha"
 
         self.phazor_device_selected = "Default"
-        self.phazor_devices = {"Default": "Default"}
+        self.phazor_devices = ["Default"]
         self.bg_flips = set()
         self.use_tray = False
         self.tray_show_title = False
@@ -3029,8 +2992,8 @@ for t in range(2):
             gui.level_meter_colour_mode = save[62]
         if save[64] is not None:
             prefs.show_lyrics_side = save[64]
-        if save[65] is not None:
-            prefs.last_device = save[65]
+        # if save[65] is not None:
+        #     prefs.last_device = save[65]
         if save[66] is not None:
             gui.restart_album_mode = save[66]
         if save[67] is not None:
@@ -3173,8 +3136,8 @@ for t in range(2):
             prefs.left_panel_mode = save[134]
         if save[135] is not None:
             gui.last_left_panel_mode = save[135]
-        if save[136] is not None:
-            prefs.gst_device = save[136]
+        # if save[136] is not None:
+        #     prefs.gst_device = save[136]
         if save[137] is not None:
             search_string_cache = save[137]
         if save[138] is not None:
@@ -3818,7 +3781,7 @@ def save_prefs():
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    cf.update_value("device-buffer-length", prefs.device_buffer)
+    #cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("output-samplerate", prefs.samplerate)
     cf.update_value("resample-quality", prefs.resample)
     # cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
@@ -3973,9 +3936,9 @@ def load_prefs():
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time,
                                         "In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
 
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
-    prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
-                                   "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
+    #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
+    #prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
+    #                               "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
     prefs.resample = cf.sync_add("int", "resample-quality", prefs.resample,
                                  "0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
     if prefs.resample < 0 or prefs.resample > 4:
@@ -27304,14 +27267,14 @@ class Over:
                                    1000, 0.5) * 1000)
 
             y += round(30 * gui.scale)
-            prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms',
-                                                     prefs.device_buffer, 10,
-                                                     500, 10, self.reload_device)
+            # prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms',
+            #                                          prefs.device_buffer, 10,
+            #                                          500, 10, self.reload_device)
 
-            if prefs.device_buffer > 100:
-                prefs.pa_fast_seek = True
-            else:
-                prefs.pa_fast_seek = False
+            # if prefs.device_buffer > 100:
+            #     prefs.pa_fast_seek = True
+            # else:
+            #     prefs.pa_fast_seek = False
 
             y = y0 + 37 * gui.scale
             x = x0 + 270 * gui.scale
@@ -27331,7 +27294,7 @@ class Over:
 
             i = 0
             reload = False
-            for f_name, s_name in prefs.phazor_devices.items():
+            for name in prefs.phazor_devices:
 
                 if i < self.device_scroll_bar_position:
                     continue
@@ -27341,14 +27304,14 @@ class Over:
                 rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
 
                 if self.click and coll(rect):
-                    prefs.phazor_device_selected = s_name
+                    prefs.phazor_device_selected = name
                     reload = True
 
-                line = trunc_line(f_name, 10, 245 * gui.scale)
+                line = trunc_line(name, 10, 245 * gui.scale)
 
                 fields.add(rect)
 
-                if prefs.phazor_device_selected == s_name:
+                if prefs.phazor_device_selected == name:
                     ddt.text((x, y), line, colours.box_sub_text, 10)
                     ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
                 else:
@@ -41258,7 +41221,7 @@ def save_state():
             gui.level_meter_colour_mode,
             prefs.ui_scale,
             prefs.show_lyrics_side,
-            prefs.last_device,
+            None, #prefs.last_device,
             album_mode,
             None,  # album_playlist_width
             prefs.transcode_opus_as,
@@ -41329,7 +41292,7 @@ def save_state():
             prefs.chart_bg,
             prefs.left_panel_mode,
             gui.last_left_panel_mode,
-            prefs.gst_device,
+            None, #prefs.gst_device,
             search_string_cache,
             search_dia_string_cache,
             pctl.gen_codes,
