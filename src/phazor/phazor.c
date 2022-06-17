@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifdef WIN
+#ifdef _WIN32
+#define WIN
 #include <windows.h>
 #endif
 
@@ -28,13 +29,6 @@
 #include <pthread.h>
 #include <time.h>
 
-#ifdef AO
-#include <ao/ao.h>
-#else
-#include <pulse/simple.h>
-#include <pulse/error.h>
-#endif
-
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_NO_GENERATION
 #define MA_NO_DECODING
@@ -44,7 +38,6 @@
 #define MA_ENABLE_PULSEAUDIO
 
 #include "miniaudio.h"
-
 
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
@@ -255,12 +248,6 @@ struct stat st;
 int load_file_size = 0;
 int samples_decoded = 0;
 
-// AO --------------
-
-#ifdef AO
-ao_device *device;
-ao_sample_format format;
-#endif
 // Secret Rabbit Code --------------------------------------------------
 
 SRC_DATA src_data;
@@ -278,12 +265,6 @@ kiss_fft_scalar * rbuf;
 kiss_fft_cpx * cbuf;
 kiss_fftr_cfg ffta;
 
-// Pulseaudio ---------------------------------------------------------
-#ifndef AO
-pa_simple *s;
-pa_sample_spec ss;
-pa_buffer_attr pab;
-#endif
 // Vorbis related --------------------------------------------------------
 
 OggVorbis_File vf;
@@ -320,24 +301,13 @@ void start_ffmpeg(char uri[], int start_ms) {
         printf("pa: Error starting FFMPEG\n");
         return;
     }
-//    if (start_ms > 0)
-//        sprintf(exe_string, "ffmpeg -loglevel quiet -ss %dms -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ",
-//                start_ms, uri, sample_rate_out);
-//    else sprintf(exe_string, "ffmpeg -loglevel quiet -i \"%s\" -acodec pcm_s16le -f s16le -ac 2 -ar %d - ", uri, sample_rate_out);
-//
-//    ffm = popen(exe_string, "rb");
-//    if (ffm == NULL) {
-//        printf("pa: Error starting FFMPEG\n");
-//        return;
-//    }
+
     decoder_allocated = 1;
     sample_rate_src = sample_rate_out;
 
 }
 
 void stop_ffmpeg() {
-    //printf("pa: Stop FFMPEG\n");
-    //pclose(ffm);
     ff_close();
 }
 
@@ -360,8 +330,6 @@ void resample_to_buffer(int in_frames) {
     int i = 0;
     while (i < out_frames) {
 
-        //buffl[(buff_filled + buff_base) % BUFF_SIZE] = re_out[i * 2];
-        //buffr[(buff_filled + buff_base) % BUFF_SIZE] = re_out[(i * 2) + 1];
         bfl[high] = re_out[i * 2];
         bfr[high] = re_out[(i * 2) + 1];
 
@@ -370,7 +338,6 @@ void resample_to_buffer(int in_frames) {
         }
 
         high += 1;
-        //buff_filled++;
         i++;
     }
     buff_cycle();
@@ -901,19 +868,10 @@ void stop_decoder() {
 
 
 int disconnect_pulse() {
+    printf("ph: Disconnect Device\n");
 
     if (pulse_connected == 1) {
-
         ma_device_uninit(&device);
-
-        #ifdef AO
-            ao_close(device);
-        #else
-            printf("pa: Disconnect from PulseAudio\n");
-            //pa_simple_free(s);
-        #endif
-
-
     }
     pulse_connected = 0;
     return 0;
@@ -924,21 +882,13 @@ float gate = 1.0;  // Used for ramping
 int get_audio(int max, float* buff){
         int b = 0;
         if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
-
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
-            #ifndef AO
-            //if (mode == PLAYING) connect_pulse();
-            #endif
-
         }
 
         if (get_buff_fill() < 10 && loaded_target_file[0] == 'h') {
 
             if (mode == PLAYING) {
-                #ifndef AO
-                //disconnect_pulse();
-                #endif
                 if (buffering == 0) printf("pa: Buffering...\n");
                 buffering = 1;
             } else buffering = 0;
@@ -970,7 +920,6 @@ int get_audio(int max, float* buff){
         if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
             pthread_mutex_lock(&fade_mutex);
             //pthread_mutex_lock(&buffer_mutex);
-
 
             b = 0; // byte number
 
@@ -1075,50 +1024,23 @@ int get_audio(int max, float* buff){
                 l = l * final_vol;
                 r = r * final_vol;
 
-                // Pack integer audio data to bytes
-//                out_buf[b] = (buffl[buff_base]) & 0xFF;
-//                out_buf[b + 1] = (buffl[buff_base] >> 8) & 0xFF;
-//                out_buf[b + 2] = (buffr[buff_base]) & 0xFF;
-//                out_buf[b + 3] = (buffr[buff_base] >> 8) & 0xFF;
-                //printf("%f\n",out_buff[b]);
-
-//                #ifndef AO
                 buff[b] = l;
                 buff[b + 1] = r;
                 b += 2;
-//                #else
-//                temp32 = l * 2147483648;
-//                out_buffc[b] = (temp32) & 0xFF;
-//                out_buffc[b + 1] = (temp32 >> 8) & 0xFF;
-//                out_buffc[b + 2] = (temp32 >> 16) & 0xFF;
-//                out_buffc[b + 3] = (temp32 >> 24) & 0xFF;
-//                temp32 = r * 2147483648;
-//                out_buffc[b + 4] = (temp32) & 0xFF;
-//                out_buffc[b + 5] = (temp32 >> 8) & 0xFF;
-//                out_buffc[b + 6] = (temp32 >> 16) & 0xFF;
-//                out_buffc[b + 7] = (temp32 >> 24) & 0xFF;
-//                b += 8;
-//                #endif
 
-
-                //buff_filled--;
-                //buff_base = (buff_base + 1) % BUFF_SIZE;
                 low += 1;
                 buff_cycle();
 
                 position_count++;
 
-
                 if (b >= max) break; // Buffer is now full
             }
-            //pthread_mutex_unlock(&buffer_mutex);
-            pthread_mutex_unlock(&fade_mutex);
-            // Send data to pulseaudio server
-            if (b > 0) {
 
+            pthread_mutex_unlock(&fade_mutex);
+
+            if (b > 0) {
                 if (peak_roll_l > peak_l) peak_l = peak_roll_l;
                 if (peak_roll_r > peak_r) peak_r = peak_roll_r;
-
                 return b;
 
             } // sent data
@@ -1131,9 +1053,6 @@ int get_audio(int max, float* buff){
 
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
     get_audio(frameCount * 2, pOutput);
-    // In playback mode copy data to pOutput. In capture mode read data from pInput. In full-duplex mode, both
-    // pOutput and pInput will be valid and you can move data from pInput into pOutput. Never process more than
-    // frameCount frames.
 }
 
 
@@ -1143,12 +1062,39 @@ void connect_pulse() {
         //printf("pa: reconnect pulse\n");
         disconnect_pulse();
     }
-    //printf("pa: Connect pulse\n");
+    printf("ph: Connect device\n");
 
     if (want_sample_rate > 0) {
         current_sample_rate = want_sample_rate;
         want_sample_rate = 0;
     }
+
+    ma_result result;
+    ma_context context;
+    ma_device_info* pPlaybackDeviceInfos;
+    ma_uint32 playbackDeviceCount;
+    ma_device_info* pCaptureDeviceInfos;
+    ma_uint32 captureDeviceCount;
+    ma_uint32 iDevice;
+
+
+    if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
+        printf("Failed to initialize context.\n");
+        return -2;
+    }
+
+    result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
+    if (result != MA_SUCCESS) {
+        printf("Failed to retrieve device information.\n");
+        return -3;
+    }
+
+    printf("Playback Devices\n");
+    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+    }
+
+    ma_context_uninit(&context);
 
 //    if (current_sample_rate <= 1) {
 //        printf("pa: Samplerate detection warning.\n");
@@ -1161,79 +1107,19 @@ void connect_pulse() {
     config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
     config.sampleRate        = current_sample_rate;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
-    //config.pUserData         = pMyCustomData;   // Can be accessed from the device object (device.pUserData).
+    config.periodSizeInFrames      = 250;   //
+    config.periods      = 16;   //
 
     if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) {
-        printf("init errir\n");
+        printf("ph: Device init error\n");
+        mode = STOPPED;
         return;  // Failed to initialize the device.
     }
 
-    #ifndef AO
-    int error = 0;
-    char *dev = NULL;
-    if (strcmp(config_output_sink, "Default") != 0) {
-        dev = config_output_sink;
-    }
+        //dev = config_output_sink;
 
-    pab.maxlength = (current_sample_rate * 8 * (config_dev_buffer / 1000.0));
-    pab.fragsize = (uint32_t) - 1;
-    pab.minreq = (uint32_t) - 1;
-    pab.prebuf = (uint32_t) - 1;
-    pab.tlength = (current_sample_rate * 4 * (config_dev_buffer / 1000.0));
-
-    //printf("pa: Connect to PulseAudio\n");
-    //ss.format = PA_SAMPLE_S16LE;
-    ss.format = PA_SAMPLE_FLOAT32NE;
-    ss.channels = 2;
-    ss.rate = current_sample_rate;
-
-//    s = pa_simple_new(NULL,                // Use default server
-//                      "Tauon Music Box",   // Application name
-//                      PA_STREAM_PLAYBACK,  // Flow direction
-//                      dev, //NULL,                // Use the default device
-//                      "Music",             // Description
-//                      &ss,                 // Format
-//                      NULL,                // Channel map
-//                      &pab,                // Buffering attributes
-//                      &error               // Error
-//    );
-
-    if (error != 0) {
-        printf("pa: PulseAudio init error\n");
-        //printf(pa_strerror(error));
-        //printf("\n");
-        mode = STOPPED;
-    } else pulse_connected = 1;
-
-    #else
-
-	int default_driver = ao_default_driver_id();
-
-    memset(&format, 0, sizeof(format));
-	format.bits = 32;
-	format.channels = 2;
-	format.rate = current_sample_rate;
-	format.byte_format = AO_FMT_LITTLE;
-
-	/* -- Open driver -- */
-	#ifdef WIN
-	device = ao_open_live(default_driver, &format, NULL);
-    #else
-    ao_option option;
-    option.key = "buffer_time";
-    option.value = "100";
-    device = ao_open_live(default_driver, &format, &option);
-    #endif
-
-	if (device == NULL) {
-		fprintf(stderr, "Error opening device.\n");
-	}
     pulse_connected = 1;
-    usleep(50000);
-
-    #endif
-    //src_reset(src);
-    //pthread_mutex_unlock(&pulse_mutex);
+    //usleep(50000);
 
 }
 
@@ -1693,18 +1579,9 @@ void end() {
     pthread_mutex_lock(&buffer_mutex);
     mode = STOPPED;
     command = NONE;
-    //buff_base = 0;
-    //buff_filled = 0;
     buff_reset();
     buffering = 0;
     pthread_mutex_unlock(&buffer_mutex);
-//    #ifndef AO
-//        if (pulse_connected == 1){
-//            pa_simple_flush (s, &error);
-//        }
-//    #endif
-    //disconnect_pulse();
-    //current_sample_rate = 0;
 }
 
 void decoder_eos() {
@@ -1850,28 +1727,6 @@ void pump_decode() {
 
         b = ff_read(ffm_buffer, 2048);
 
-//        int c;
-//        while(b < 2048 && (c = fgetc(ffm)) != EOF ){
-//            ffm_buffer[b] = (char) c;
-//            b++;
-//        }
-
-//        if (feof(ffm)) {
-//            done = 1;
-//            printf("pa: FFMPEG EOF\n");
-//        }
-
-
-//        while (b < 2048) {
-//            if (feof(ffm)) {
-//                done = 1;
-//                printf("pa: FFMPEG EOF\n");
-//                break;
-//            }
-//            ffm_buffer[b] = fgetc(ffm);
-//            b++;
-//        }
-//
         if (b % 4 != 0) {
             printf("pa: Uneven data\n");
             decoder_eos();
@@ -1880,118 +1735,31 @@ void pump_decode() {
 
         pthread_mutex_lock(&buffer_mutex);
         read_to_buffer_char16(ffm_buffer, b);
-//        while (i < b) {
-//
-//            memcpy(&bfl[high], &ffm_buffer[i], 4);
-//            memcpy(&bfr[high], &ffm_buffer[i + 4], 4);
-//
-//            if (fade_fill > 0) {
-//                fade_fx();
-//            }
-//            high++;
-//            i += 8;
-//        }
-//        buff_cycle();
         pthread_mutex_unlock(&buffer_mutex);
         if (b == 0) {
             printf("pa: FFMPEG has finished\n");
             decoder_eos();
 
         }
-
-
     }
-
 }
 
-
-// ------------------------------------------------------------------------------------
-// Audio output thread
-
-
-void *out_thread(void *thread_id) {
-
-    int b = 0;
-    //double testa, testb;
-
-    //t_start = get_time_ms();
-    //printf("pa: Start out thread\n");
-
-    while (out_thread_running == 1) {
-                printf("ioop\n");
-
-                b = get_audio(256, out_buff);
-
-                printf("%d\n", b);
-
-                if (b == 0){
-                    usleep(10000);
-                    continue;
-                }
-
-               if (pulse_connected == 0) {
-                    connect_pulse();
-                }
-
-                //pthread_mutex_lock(&pulse_mutex);
-                if (pulse_connected == 0) {
-                    printf("pa: Error, not connected to any output!\n");
-                } else {
-
-                    #ifndef AO
-
-                        //pa_simple_write(s, &out_buff, b * 4, &error);
-                    #else
-                        ao_play(device, out_buffc, b);
-                    #endif
-
-                    // Flush buffer with 0s to avoid popping noise on close
-                    if (mode == RAMP_DOWN && gate == 0 && (command == PAUSE || command == STOP)) {
-
-                        b = 0;
-                        while (b < 256 * 8) {
-                            out_buff[b] = 0.0;
-                            b += 1;
-                        }
-                        #ifndef AO
-                            int g = 0;
-                            while (g < 8) {
-                                g++;
-                                pa_simple_write(s, out_buff, b, &error);
-                            }
-                            pa_simple_flush(s, &error);
-                            pa_simple_free(s);
-                            //printf("Auto free\n");
-                            pulse_connected = 0;
-
-                        #else
-
-                        #endif
-                        usleep(100000);
-                    }
-                }
-    } // close main loop
-    out_thread_running = 0;
-    //printf("Exit out thread\n");
-    return thread_id;
-} // close thread
-
-
 void start_out(){
-    connect_pulse();
-            printf("start\n");
+    if (pulse_connected == 0) connect_pulse();
+    printf("ph: start\n");
 
-    ma_device_start(&device);
-    out_thread_running = 1;
+    if (out_thread_running == 0){
+        ma_device_start(&device);
+        out_thread_running = 1;
+    }
+}
 
-//    while (out_thread_running == 2){
-//        usleep(1000);
-//    }
-//    if (out_thread_running == 0) {
-//          out_thread_running = 1;
-//          pthread_t out_thread_id;
-//          pthread_create(&out_thread_id, NULL, out_thread, NULL);
-//    }
+void stop_out(){
+    printf("ph: stop\n");
+    if (out_thread_running == 1){
+        ma_device_stop(&device);
+        out_thread_running = 0;
+    }
 }
 
 // ---------------------------------------------------------------------------------------
@@ -2001,18 +1769,9 @@ int main_running = 0;
 
 void *main_loop(void *thread_id) {
 
-
-    #ifdef AO
-    	ao_initialize();
-    	connect_pulse();
-    #endif
     rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
     cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
     ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
-
-    //pthread_t out_thread_id;
-    //pthread_create(&out_thread_id, NULL, out_thread, NULL);
-
 
     int error = 0;
 
@@ -2055,10 +1814,7 @@ void *main_loop(void *thread_id) {
                 case PAUSE:
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
-                        if (out_thread_running == 1){
-                            out_thread_running = 2;
-                            usleep(20000);
-                          }
+                        stop_out();
                         
                         command = NONE;
                     }
@@ -2066,7 +1822,6 @@ void *main_loop(void *thread_id) {
                     break;
                 case RESUME:
                     if (mode == PAUSED) {
-                        //if (pulse_connected == 0) connect_pulse();
                         start_out();
                         mode = PLAYING;
                     }
@@ -2149,7 +1904,7 @@ void *main_loop(void *thread_id) {
 
 
                     } else {
-                        printf("pa: Load file failed\n");
+                        printf("ph: Load file failed\n");
                         result_status = FAILURE;
                         command = NONE;
                         mode = STOPPED;
@@ -2187,14 +1942,6 @@ void *main_loop(void *thread_id) {
 
                 buff_reset();
 
-//                #ifndef AO
-//                pthread_mutex_lock(&pulse_mutex);
-//                if (pulse_connected == 1) {
-//                    pa_simple_flush(s, &error);
-//                }
-//                pthread_mutex_unlock(&pulse_mutex);
-//                #endif
-
                 command = NONE;
 
                 pthread_mutex_unlock(&buffer_mutex);
@@ -2207,15 +1954,6 @@ void *main_loop(void *thread_id) {
             if (mode == RAMP_DOWN && gate == 0) {
                 pthread_mutex_lock(&buffer_mutex);
                 buff_reset();
-                //buff_base = 0; //(buff_base + buff_filled) % BUFF_SIZE;
-                //buff_filled = 0;
-//                if (command == SEEK && config_fast_seek == 1) {
-//                    pthread_mutex_lock(&pulse_mutex);
-//                    #ifndef AO
-//                    pa_simple_flush(s, &error);
-//                    #endif
-//                    pthread_mutex_unlock(&pulse_mutex);
-//                }
                 mode = PLAYING;
                 command = NONE;
                 pthread_mutex_unlock(&buffer_mutex);
@@ -2251,9 +1989,6 @@ void *main_loop(void *thread_id) {
     pthread_mutex_lock(&buffer_mutex);
 
     main_running = 0;
-    if (out_thread_running == 1) {
-        out_thread_running = 2;
-    }
 
     position_count = 0;
     buff_reset();
@@ -2266,9 +2001,7 @@ void *main_loop(void *thread_id) {
 
     pthread_mutex_unlock(&buffer_mutex);
 
-    while (out_thread_running != 0){
-        usleep(10000);
-    }
+    stop_out();
     disconnect_pulse();
     command = NONE;
 
