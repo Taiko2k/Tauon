@@ -115,7 +115,7 @@ int32_t temp32 = 0;
 int position_count = 0;
 int current_length_count = 0;
 
-int sample_rate_out = 48000;
+int sample_rate_out = 44100;
 int sample_rate_src = 0;
 int src_channels = 2;
 
@@ -1056,56 +1056,60 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 }
 
 
+ma_device_info* pPlaybackDeviceInfos;
+ma_uint32 playbackDeviceCount = 0;
+ma_result result;
+ma_context context;
+ma_uint32 iDevice;
+
+int scan_devices(){
+
+    if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
+        printf("Failed to initialize context.\n");
+        return -1;
+    }
+
+    result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
+    if (result != MA_SUCCESS) {
+        printf("Failed to retrieve device information.\n");
+        return -2;
+    }
+
+    printf("Playback Devices\n");
+    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
+    }
+
+    ma_context_uninit(&context);
+    return playbackDeviceCount;
+
+}
+
 void connect_pulse() {
 
     if (pulse_connected == 1) {
         //printf("pa: reconnect pulse\n");
         disconnect_pulse();
     }
+
+    scan_devices();
+    int n = -1;
+    if (strcmp(config_output_sink, "Default") != 0){
+        for (int i = 0; i < playbackDeviceCount; ++i) {
+            if (strcmp(pPlaybackDeviceInfos[i].name, config_output_sink) == 0){
+                n = i;
+            }
+        }
+    }
+
     printf("ph: Connect device\n");
 
-    if (want_sample_rate > 0) {
-        current_sample_rate = want_sample_rate;
-        want_sample_rate = 0;
-    }
-
-    ma_result result;
-    ma_context context;
-    ma_device_info* pPlaybackDeviceInfos;
-    ma_uint32 playbackDeviceCount;
-    ma_device_info* pCaptureDeviceInfos;
-    ma_uint32 captureDeviceCount;
-    ma_uint32 iDevice;
-
-
-    if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
-        printf("Failed to initialize context.\n");
-        return -2;
-    }
-
-    result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
-    if (result != MA_SUCCESS) {
-        printf("Failed to retrieve device information.\n");
-        return -3;
-    }
-
-    printf("Playback Devices\n");
-    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
-    }
-
-    ma_context_uninit(&context);
-
-//    if (current_sample_rate <= 1) {
-//        printf("pa: Samplerate detection warning.\n");
-//        return;
-//    }
-    current_sample_rate = sample_rate_out;
-
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
+    if (n > -1) config.playback.pDeviceID = &pPlaybackDeviceInfos[n].id;
     config.playback.format   = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
     config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
-    config.sampleRate        = current_sample_rate;           // Set to 0 to use the device's native sample rate.
+    config.sampleRate        = 0;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
     config.periodSizeInFrames      = 250;   //
     config.periods      = 16;   //
@@ -1117,6 +1121,9 @@ void connect_pulse() {
     }
 
         //dev = config_output_sink;
+        printf("    %u\n", device.sampleRate);
+    sample_rate_out = device.sampleRate;
+    current_sample_rate = sample_rate_out;
 
     pulse_connected = 1;
     //usleep(50000);
@@ -1760,6 +1767,7 @@ void stop_out(){
         ma_device_stop(&device);
         out_thread_running = 0;
     }
+    disconnect_pulse();
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1794,6 +1802,9 @@ void *main_loop(void *thread_id) {
     // FLAC decoder ----------------------------------------------------------------
 
     dec = FLAC__stream_decoder_new();
+
+    // ---------------------------------------------
+
 
     // Main loop ---------------------------------------------------------------
     while (1) {
@@ -1849,7 +1860,7 @@ void *main_loop(void *thread_id) {
 
                     // Prepare for a crossfade if enabled and suitable
                     using_fade = 0;
-                    if (config_fade_jump == 1 && want_sample_rate == 0 && mode == PLAYING) {
+                    if (config_fade_jump == 1 && mode == PLAYING) {
                         pthread_mutex_lock(&fade_mutex);
                         int l = current_sample_rate * (config_fade_duration / 1000.0);
 
@@ -2197,6 +2208,11 @@ void set_callbacks(void *start, void *read, void *close){
     ff_start = start;
     ff_read = read;
     ff_close = close;
+}
+
+
+char* get_device(int n){
+    return pPlaybackDeviceInfos[n].name;
 }
 
 int get_spectrum(int n_bins, float* bins) {

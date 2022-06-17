@@ -1129,39 +1129,6 @@ album_position = 0
 
 class Prefs:  # Used to hold any kind of settings
 
-    def gen_gst_out(self):
-        # "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
-        line = ""
-        if prefs.replay_gain:
-            line += f"rgvolume pre-amp={prefs.replay_preamp} fallback-gain=0 album-mode="
-            if prefs.replay_gain == 1:
-                line += "false"
-            else:
-                line += "true"
-
-        if line:
-            line += " ! "
-
-        # print(prefs.gst_device)
-        # print(pctl.gst_outputs)
-
-        if prefs.gst_device == "Auto":
-            line += "autoaudiosink"
-        elif prefs.gst_device == "PipeWire":
-            line += "pipewiresink"
-        elif prefs.gst_device == "PulseAudio":
-            line += f"pulsesink client-name=\"{t_title}\""
-        elif prefs.gst_device == "JACK":
-            line += f"jackaudiosink client-name=\"{t_title}\""
-        elif prefs.gst_device == "ALSA":
-            line += "alsasink"
-        elif prefs.gst_device in pctl.gst_outputs:
-            line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
-        else:
-            print("Device not found, fallback to PulseAudio")
-
-        return line
-
     def __init__(self):
         self.colour_from_image = False
         self.dim_art = False
@@ -1246,7 +1213,6 @@ class Prefs:  # Used to hold any kind of settings
         self.log_vol = False
 
         self.ui_scale = scale
-        self.last_device = "PulseAudio Sound Server"
 
         # if flatpak_mode:
 
@@ -1446,9 +1412,6 @@ class Prefs:  # Used to hold any kind of settings
         self.show_side_lyrics_art_panel = True
 
         self.gst_use_custom_output = False
-        self.gst_device = "PulseAudio"
-        if macos:
-            self.gst_device = "Auto"
 
         self.notify_include_album = True
 
@@ -1517,7 +1480,7 @@ class Prefs:  # Used to hold any kind of settings
         self.artist_list_sort_mode = "alpha"
 
         self.phazor_device_selected = "Default"
-        self.phazor_devices = {"Default": "Default"}
+        self.phazor_devices = ["Default"]
         self.bg_flips = set()
         self.use_tray = False
         self.tray_show_title = False
@@ -3029,8 +2992,8 @@ for t in range(2):
             gui.level_meter_colour_mode = save[62]
         if save[64] is not None:
             prefs.show_lyrics_side = save[64]
-        if save[65] is not None:
-            prefs.last_device = save[65]
+        # if save[65] is not None:
+        #     prefs.last_device = save[65]
         if save[66] is not None:
             gui.restart_album_mode = save[66]
         if save[67] is not None:
@@ -3173,8 +3136,8 @@ for t in range(2):
             prefs.left_panel_mode = save[134]
         if save[135] is not None:
             gui.last_left_panel_mode = save[135]
-        if save[136] is not None:
-            prefs.gst_device = save[136]
+        # if save[136] is not None:
+        #     prefs.gst_device = save[136]
         if save[137] is not None:
             search_string_cache = save[137]
         if save[138] is not None:
@@ -27331,7 +27294,7 @@ class Over:
 
             i = 0
             reload = False
-            for f_name, s_name in prefs.phazor_devices.items():
+            for name in prefs.phazor_devices:
 
                 if i < self.device_scroll_bar_position:
                     continue
@@ -27341,14 +27304,14 @@ class Over:
                 rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
 
                 if self.click and coll(rect):
-                    prefs.phazor_device_selected = s_name
+                    prefs.phazor_device_selected = name
                     reload = True
 
-                line = trunc_line(f_name, 10, 245 * gui.scale)
+                line = trunc_line(name, 10, 245 * gui.scale)
 
                 fields.add(rect)
 
-                if prefs.phazor_device_selected == s_name:
+                if prefs.phazor_device_selected == name:
                     ddt.text((x, y), line, colours.box_sub_text, 10)
                     ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", colours.box_sub_text, 213)
                 else:
@@ -41258,7 +41221,7 @@ def save_state():
             gui.level_meter_colour_mode,
             prefs.ui_scale,
             prefs.show_lyrics_side,
-            prefs.last_device,
+            None, #prefs.last_device,
             album_mode,
             None,  # album_playlist_width
             prefs.transcode_opus_as,
@@ -41329,7 +41292,7 @@ def save_state():
             prefs.chart_bg,
             prefs.left_panel_mode,
             gui.last_left_panel_mode,
-            prefs.gst_device,
+            None, #prefs.gst_device,
             search_string_cache,
             search_dia_string_cache,
             pctl.gen_codes,
