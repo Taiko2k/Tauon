@@ -881,6 +881,7 @@ float gate = 1.0;  // Used for ramping
 
 int get_audio(int max, float* buff){
         int b = 0;
+
         if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
@@ -895,7 +896,7 @@ int get_audio(int max, float* buff){
         }
 
         // Put fade buffer back
-        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() == 0){
+        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max){
             pthread_mutex_lock(&fade_mutex);
             int i = 0;
             while (fade_position < fade_fill){
@@ -906,7 +907,7 @@ int get_audio(int max, float* buff){
                 fade_position++;
                 high++;
                 i++;
-                if (i > current_sample_rate * 0.05) break;
+                if (i > max) break;
             }
             buff_cycle();
             if (fade_position == fade_fill){
@@ -914,6 +915,12 @@ int get_audio(int max, float* buff){
                 fade_position = 0;
             }
             pthread_mutex_unlock(&fade_mutex);
+        }
+
+
+        if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
+        printf("pa: %d\n", get_buff_fill());
+            printf("pa: eeeeee\n");
         }
 
         // Process decoded audio data and send out
@@ -1111,8 +1118,8 @@ void connect_pulse() {
     config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
     config.sampleRate        = 0;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
-    config.periodSizeInFrames      = 250;   //
-    config.periods      = 16;   //
+    config.periodSizeInFrames      = 750;   //
+    config.periods      = 4;   //
 
     if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) {
         printf("ph: Device init error\n");
@@ -1863,10 +1870,10 @@ void *main_loop(void *thread_id) {
                     if (config_fade_jump == 1 && mode == PLAYING) {
                         pthread_mutex_lock(&fade_mutex);
                         int l = current_sample_rate * (config_fade_duration / 1000.0);
-
+                        int reserve = 0; //current_sample_rate / 10.0;
                         if (get_buff_fill() > l) {
                             int i = 0;
-                            int p = low;
+                            int p = low + reserve;
                             i = 0;
 
                             while (i < l) {
@@ -1881,14 +1888,14 @@ void *main_loop(void *thread_id) {
                             fade_position = 0;
                             position_count = 0;
                             fade_fill = l;
-                            high = low;
+                            high = low + reserve;
                             using_fade = 1;
 
-//                            reset_set_byte = p;
-//                            if (reset_set == 0) {
-//                                reset_set = 1;
-//                                reset_set_value = 0;
-//                            }
+                            reset_set_byte = p;
+                            if (reset_set == 0) {
+                                reset_set = 1;
+                                reset_set_value = 0;
+                            }
 
                         }
                         pthread_mutex_unlock(&fade_mutex);
