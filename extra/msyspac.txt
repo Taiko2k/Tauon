@@ -3,7 +3,6 @@ mingw-w64-x86_64-SDL2_image
 mingw-w64-x86_64-flac
 mingw-w64-x86_64-gcc
 mingw-w64-x86_64-gtk3
-mingw-w64-x86_64-libao
 mingw-w64-x86_64-libopenmpt
 mingw-w64-x86_64-libsamplerate
 mingw-w64-x86_64-opusfile
