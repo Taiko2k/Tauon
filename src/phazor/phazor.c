@@ -919,8 +919,7 @@ int get_audio(int max, float* buff){
 
 
         if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
-        printf("pa: %d\n", get_buff_fill());
-            printf("pa: eeeeee\n");
+            //printf("pa: Buffer underrun\n");
         }
 
         // Process decoded audio data and send out
@@ -1082,11 +1081,11 @@ int scan_devices(){
         return -2;
     }
 
-    printf("Playback Devices\n");
-    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
-        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
-    }
+//    printf("Playback Devices\n");
+//    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+//        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+//        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
+//    }
 
     ma_context_uninit(&context);
     return playbackDeviceCount;
