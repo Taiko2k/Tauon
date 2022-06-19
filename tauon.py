@@ -21,7 +21,7 @@ def transfer_args_and_exit():
 
     for item in sys.argv:
 
-        if not item.endswith(".py") and not item.startswith("-") and (item.startswith("file://") or item.startswith("/")):
+        if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or os.path.exists(item)):
             import base64
             url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
             urllib.request.urlopen(url)
@@ -102,6 +102,16 @@ elif sys.platform != 'win32':
         print("Program is already running")
         transfer_args_and_exit()
 else:
+    if sys.platform == "win32":
+        pid_file = os.path.join(user_directory, 'program.pid')
+        try:
+            if os.path.isfile(pid_file):
+                os.remove(pid_file)
+            fp = open(pid_file, 'w')
+        except IOError:
+            # another instance is running
+            print("Program is already running")
+            transfer_args_and_exit()
     if pyinstaller_mode:
         os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
 
