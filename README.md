@@ -34,6 +34,10 @@
 
 ## Download and Install :dizzy:
 
+### Windows
+
+Comming Soon
+
 
 ### Linux
 
@@ -45,14 +49,12 @@ Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wik
 
 You can also install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
 
-### Windows
-
-Comming Soon
-
 #### Unofficial packages
 
  - [SlackBuilds](https://slackbuilds.org/repository/15.0/audio/tauonmb/)
  - NixPkgs: tauon
+
+
 ___
 
 I highly recommend reading the Tauon Music Box [manual](https://tauonmusicbox.rocks#manual).
