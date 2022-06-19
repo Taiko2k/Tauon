@@ -3,7 +3,7 @@
 
 ## Tauon Music Box
 
-**A music player for the Linux desktop.** Designed to be powerful and streamlined, putting the user in control of their music collection.
+**A music player for the desktop.** Designed to be powerful and streamlined, putting the user in control of their music collection.
 
 <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
 
@@ -34,6 +34,13 @@
 
 ## Download and Install :dizzy:
 
+### Windows
+
+Comming Soon
+
+
+### Linux
+
 Installation is available as a Flatpak.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
@@ -46,6 +53,8 @@ You can also install from the [AUR](https://aur.archlinux.org/packages/tauon-mus
 
  - [SlackBuilds](https://slackbuilds.org/repository/15.0/audio/tauonmb/)
  - NixPkgs: tauon
+
+
 ___
 
 I highly recommend reading the Tauon Music Box [manual](https://tauonmusicbox.rocks#manual).
