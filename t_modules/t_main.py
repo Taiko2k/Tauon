@@ -328,49 +328,35 @@ if flatpak_mode:
 
 pid = os.getpid()
 
-if msys:
-    if os.path.isfile('.gitignore') and False:
-        print("Dev mode, ignoring single instancing")
-    else:
-        pid_file = os.path.join(user_directory, 'program.pid')
-        try:
-            if os.path.isfile(pid_file):
-                os.remove(pid_file)
-            fp = open(pid_file, 'w')
-        except IOError:
-            # another instance is running
-            print("Program is already running")
-            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-            sys.exit()
 
-if system == 'windows':
-    from win32event import CreateMutex
-    from win32api import CloseHandle, GetLastError
-    from winerror import ERROR_ALREADY_EXISTS
-
-
-    class singleinstance:
-        """ Limits application to single instance """
-
-        def __init__(self):
-            self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
-            self.mutex = CreateMutex(None, False, self.mutexname)
-            self.lasterror = GetLastError()
-
-        def aleradyrunning(self):
-            return (self.lasterror == ERROR_ALREADY_EXISTS)
-
-        def __del__(self):
-            if self.mutex:
-                CloseHandle(self.mutex)
-
-
-    lock = singleinstance()
-
-    if lock.aleradyrunning():
-        print("Program is already running")
-        pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-        sys.exit()
+# if system == 'windows':
+#     from win32event import CreateMutex
+#     from win32api import CloseHandle, GetLastError
+#     from winerror import ERROR_ALREADY_EXISTS
+#
+#
+#     class singleinstance:
+#         """ Limits application to single instance """
+#
+#         def __init__(self):
+#             self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
+#             self.mutex = CreateMutex(None, False, self.mutexname)
+#             self.lasterror = GetLastError()
+#
+#         def aleradyrunning(self):
+#             return (self.lasterror == ERROR_ALREADY_EXISTS)
+#
+#         def __del__(self):
+#             if self.mutex:
+#                 CloseHandle(self.mutex)
+#
+#
+#     lock = singleinstance()
+#
+#     if lock.aleradyrunning():
+#         print("Program is already running")
+#         pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+#         sys.exit()
 
 # ------------------------------------
 # Continue startup
