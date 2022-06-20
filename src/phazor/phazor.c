@@ -56,6 +56,7 @@
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
 #define BUFFER_STREAM_READY 30000
 
+ma_context_config c_config;
 ma_device_config config;
 ma_device device;
 
@@ -1093,6 +1094,7 @@ int scan_devices(){
 
 }
 
+
 void connect_pulse() {
 
     if (pulse_connected == 1) {
@@ -1100,7 +1102,6 @@ void connect_pulse() {
         disconnect_pulse();
     }
 
-    scan_devices();
     int n = -1;
     if (strcmp(config_output_sink, "Default") != 0){
         for (int i = 0; i < playbackDeviceCount; ++i) {
@@ -1112,6 +1113,19 @@ void connect_pulse() {
 
     printf("ph: Connect device\n");
 
+    ma_context_config c_config = ma_context_config_init();
+    c_config.pulse.pApplicationName = "Tauon Music Box";
+    if (ma_context_init(NULL, 0, &c_config, &context) != MA_SUCCESS) {
+        printf("Failed to initialize context.\n");
+        return;
+    }
+
+    result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
+    if (result != MA_SUCCESS) {
+        printf("Failed to retrieve device information.\n");
+        return;
+    }
+
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
     if (n > -1) config.playback.pDeviceID = &pPlaybackDeviceInfos[n].id;
     config.playback.format   = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
@@ -1121,18 +1135,22 @@ void connect_pulse() {
     config.periodSizeInFrames      = 750;   //
     config.periods      = 6;   //
 
-    if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) {
+    if (ma_device_init(&context, &config, &device) != MA_SUCCESS) {
         printf("ph: Device init error\n");
         mode = STOPPED;
         return;  // Failed to initialize the device.
     }
 
-        //dev = config_output_sink;
-        printf("    %u\n", device.sampleRate);
+    //dev = config_output_sink;
+    printf("ph: Using samplerate %uhz\n", device.sampleRate);
     sample_rate_out = device.sampleRate;
     current_sample_rate = sample_rate_out;
 
+    ma_context_uninit(&context);
+
+
     pulse_connected = 1;
+
     //usleep(50000);
 
 }
@@ -1299,7 +1317,7 @@ int load_next() {
           printf("ph: Detected FLAC with id3 header\n");
         }
         #endif
-        printf("Detected mp3 id3\n");
+        //printf("Detected mp3 id3\n");
     }
     fclose(fptr);
 
@@ -1760,7 +1778,6 @@ void pump_decode() {
 
 void start_out(){
     if (pulse_connected == 0) connect_pulse();
-    printf("ph: start\n");
 
     if (out_thread_running == 0){
         ma_device_start(&device);
