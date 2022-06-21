@@ -36,7 +36,7 @@
 
 ### Windows
 
-Comming Soon
+Coming Soon
 
 
 ### Linux
