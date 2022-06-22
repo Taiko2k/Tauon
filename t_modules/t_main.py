@@ -5988,6 +5988,7 @@ class PlayerCtl:
 
                 id = self.advance(quiet=True, end=True, dry=True)
                 if id is not None and not spot_ctl.playing:
+                    print("Commit")
                     self.commit = id
                     target = self.g(id)
                     self.target_open = target.fullpath
