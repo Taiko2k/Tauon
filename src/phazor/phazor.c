@@ -712,12 +712,12 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
     /*   } */
     /* } */
 
-    if (sample_rate_out != current_sample_rate) {
-        if (want_sample_rate != sample_rate_out) {
-            want_sample_rate = sample_rate_out;
-            sample_change_byte = high;
-        }
-    }
+//    if (sample_rate_out != current_sample_rate) {
+//        if (want_sample_rate != sample_rate_out) {
+//            want_sample_rate = sample_rate_out;
+//            sample_change_byte = high;
+//        }
+//    }
 
     if (current_length_count == 0) {
         current_length_count = FLAC__stream_decoder_get_total_samples(decoder);
@@ -864,7 +864,7 @@ void stop_decoder() {
             openmpt_module_destroy(mod);
             break;
     }
-    src_reset(src);
+    //src_reset(src);
     decoder_allocated = 0;
 }
 
@@ -883,6 +883,7 @@ float gate = 1.0;  // Used for ramping
 
 int get_audio(int max, float* buff){
         int b = 0;
+        //printf("%d\n", get_buff_fill());
 
         if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
             buffering = 0;
@@ -1903,7 +1904,7 @@ void *main_loop(void *thread_id) {
                                 }
                             }
                             fade_position = 0;
-                            position_count = 0;
+                            //position_count = 0;
                             fade_fill = l;
                             high = low + reserve;
                             using_fade = 1;
@@ -1922,6 +1923,7 @@ void *main_loop(void *thread_id) {
 
                     if (using_fade == 0){
                             // Jump immediately
+                            printf("ph: Jump\n");
                             position_count = 0;
                             buff_reset();
                             gate = 0;
@@ -1960,18 +1962,19 @@ void *main_loop(void *thread_id) {
 
                 //if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
                 decode_seek(seek_request_ms, sample_rate_src);
+                reset_set = 0;
 
-                if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
-                else position_count  = current_sample_rate * (seek_request_ms / 1000.0);
+                //if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
+                position_count  = current_sample_rate * (seek_request_ms / 1000.0);
 
             } else if (mode == PAUSED) {
 
 
-                if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
-                else decode_seek(seek_request_ms, current_sample_rate);
+                //if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
+                decode_seek(seek_request_ms, current_sample_rate);
 
-                if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
-                else position_count = current_sample_rate * (seek_request_ms / 1000.0);
+                //if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
+                position_count = current_sample_rate * (seek_request_ms / 1000.0);
 
                 pthread_mutex_lock(&buffer_mutex);
 

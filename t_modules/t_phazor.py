@@ -475,7 +475,7 @@ def player4(tauon):
 
         pctl.total_playtime += add_time
 
-        t = aud.get_position_ms() / 1000
+        ##t = aud.get_position_ms() / 1000
 
         # if t and end:
         #     pctl.decode_time = t - loaded_track.start_time
@@ -486,17 +486,17 @@ def player4(tauon):
         #
         # print((pctl.playing_time, pctl.decode_time))
 
-        if wall or tauon.spot_ctl.playing or wall_timer.get() < 2:
-            pctl.playing_time += add_time
-        else:
-            #new = t - loaded_track.start_time
-            new = t - pctl.start_time
-            if new != pctl.playing_time:
-                stall_timer.set()
-                pctl.playing_time = new
-            elif stall_timer.get() > 2:
-                print("STALL!")
-                pctl.playing_time += add_time
+        #if wall or tauon.spot_ctl.playing or wall_timer.get() < 2:
+        pctl.playing_time += add_time
+        # else:
+        #     #new = t - loaded_track.start_time
+        #     new = t - pctl.start_time
+        #     if new != pctl.playing_time:
+        #         stall_timer.set()
+        #         pctl.playing_time = new
+        #     elif stall_timer.get() > 2:
+        #         print("STALL!")
+        #         pctl.playing_time += add_time
 
         pctl.decode_time = pctl.playing_time
 
@@ -669,6 +669,7 @@ def player4(tauon):
                     position = aud.get_position_ms() / 1000
                     remain = length - position
 
+                    # print(loaded_track.title + " -> " + target_object.title)
                     # print("length: " + str(length))
                     # print("position: " + str(position))
                     # print("We are %s from end" % str(remain))
@@ -682,7 +683,7 @@ def player4(tauon):
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
 
-                    tauon.console.print("Transition gapless mode")
+                    #print("Transition gapless mode")
 
                     aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
 
@@ -715,6 +716,7 @@ def player4(tauon):
                     if pctl.commit:
                         pctl.advance(quiet=True, end=True)
                         pctl.commit = None
+                        continue
 
                     if state == 1 and prefs.use_jump_crossfade:
                         fade = 1
