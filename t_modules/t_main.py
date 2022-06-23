@@ -4320,6 +4320,8 @@ def auto_scale():
     if old != prefs.x_scale:
         print(f"Using UI scale: {prefs.scale_want}")
 
+if prefs.scale_want < 0.5:
+    prefs.scale_want = 1.0
 
 auto_scale()
 
