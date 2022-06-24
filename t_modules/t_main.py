@@ -57,6 +57,7 @@ install_directory = h.id
 pyinstaller_mode = h.py
 phone = h.p
 window_default_size = h.wdf
+window_title = h.window_title
 
 print(f"Window size: {window_size}")
 
@@ -4738,23 +4739,24 @@ def tag_scan(nt):
                                 nt.misc['FMPS_Rating'] = float(item.text[0])
 
             except Exception as e:
-                raise
                 print(e)
+                raise
+
+        # Parse any multiple artists into list
+        artists = nt.artist.split(";")
+        if len(artists) > 1:
+            for a in artists:
+                a = a.strip()
+                if a:
+                    if "artists" not in nt.misc:
+                        nt.misc["artists"] = []
+                    if a not in nt.misc["artists"]:
+                        nt.misc["artists"].append(a)
+
 
     except Exception as err:
-        print("Error: Tag read failed on file:", nt.fullpath, "\n", err, file=sys.stderr)
+        print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
         return nt
-
-    # Parse any multiple artists into list
-    artists = nt.artist.split(";")
-    if len(artists) > 1:
-        for a in artists:
-            a = a.strip()
-            if a:
-                if "artists" not in nt.misc:
-                    nt.misc["artists"] = []
-                if a not in nt.misc["artists"]:
-                    nt.misc["artists"].append(a)
 
     return nt
 
@@ -12986,7 +12988,7 @@ def load_m3u(path):
         pctl.multi_playlist.append(pl_gen(title=name,
                                           playlist=playlist))
     if stations:
-        add_sations(stations, name)
+        add_stations(stations, name)
 
     gui.update = 1
 
@@ -25564,6 +25566,7 @@ def worker1():
 
     active_timer = Timer()
     while True:
+
         if not after_scan:
             time.sleep(0.1)
 
@@ -25587,10 +25590,12 @@ def worker1():
             i = 0
             while after_scan:
                 i += 1
+
                 if i > 123:
                     break
 
                 tag_scan(after_scan[0])
+
                 gui.update = 2
                 gui.pl_update = 1
                 # time.sleep(0.001)
@@ -25632,7 +25637,7 @@ def worker1():
         if tauon.worker_save_state and \
                 not gui.pl_pulse and \
                 not loading_in_progress and \
-                not to_scan and \
+                not to_scan and not after_scan and \
                 not plex.scanning and \
                 not jellyfin.scanning and \
                 not cm_clean_db and \
@@ -41331,6 +41336,7 @@ def save_state():
     try:
         pickle.dump(save, open(user_directory + "/state.p.backup", "wb"))
         # if not pctl.running:
+
         pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
         old_position = old_window_position
