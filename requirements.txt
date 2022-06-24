@@ -8,6 +8,5 @@ PlexAPI
 musicbrainzngs
 isounidecode
 setproctitle
-pulsectl
 mutagen
 natsort
