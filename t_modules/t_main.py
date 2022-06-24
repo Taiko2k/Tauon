@@ -664,8 +664,9 @@ if system == "windows":
 
 try:
     import pylast
-
     last_fm_enable = True
+    if pyinstaller_mode:
+        pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
 except:
     last_fm_enable = False
     print("PyLast moduel not found, last fm will be disabled.")
@@ -8959,6 +8960,7 @@ class STray:
                                    on_quit=self.on_quit_callback)
         self.systray.start()
         self.active = True
+        gui.tray_active = True
 
     def stop(self):
         self.systray.shutdown()
@@ -27478,7 +27480,7 @@ class Over:
                 bg = [90, 50, 130, 255]
                 self.button(x + ww + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
 
-            self.button(x + wa + round(10 * gui.scale), y, _("Open data folder"), open_data_directory, ww)
+            self.button(x + wa + round(20 * gui.scale), y, _("Open data folder"), open_data_directory, ww)
 
         elif self.func_page == 1:
             y += 23 * gui.scale
@@ -27515,13 +27517,17 @@ class Over:
             self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
             y += 38 * gui.scale
-            self.toggle_square(x, y, toggle_use_tray, _("Show icon in system tray"))
+            if not msys:
+                self.toggle_square(x, y, toggle_use_tray, _("Show icon in system tray"))
 
-            y += 25 * gui.scale
-            self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Close to tray"))
+                y += 25 * gui.scale
+                self.toggle_square(x + round(10 * gui.scale), y, toggle_min_tray, _("Close to tray"))
 
-            y += 25 * gui.scale
-            self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
+                y += 25 * gui.scale
+                self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
+            else:
+                self.toggle_square(x, y, toggle_min_tray, _("Close to tray"))
+
 
 
         elif self.func_page == 3:
