@@ -36,7 +36,7 @@
 
 ### Windows
 
-Download latest installer [here](https://github.com/Taiko2k/TauonMusicBox/releases/download/v7.3.0/TauonMusicBox.v7.3.0-2.x64.exe).
+Download latest installer [here](https://github.com/Taiko2k/TauonMusicBox/releases/download/v7.3.0/TauonMusicBox.v7.3.0-3.x64.exe).
 
 
 ### Linux
