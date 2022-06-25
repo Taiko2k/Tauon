@@ -224,7 +224,9 @@ msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
 
 #: t_modules/t_main.py:13942
-msgid "When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"
+msgid ""
+"When done, press WRITE TAGS to save to tags in actual files. (Optional but "
+"recommended)"
 msgstr ""
 
 #: t_modules/t_main.py:13945
@@ -642,7 +644,8 @@ msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
 
 #: t_modules/t_main.py:17563
-msgid "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+msgid ""
+"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
 
 #: t_modules/t_main.py:17567 t_modules/t_main.py:21472
@@ -825,7 +828,8 @@ msgid "No tracks with lyrics were found."
 msgstr ""
 
 #: t_modules/t_main.py:18154
-msgid "Note this may include albums that simply have tracks missing an album tag"
+msgid ""
+"Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
 
 #: t_modules/t_main.py:18155
@@ -1336,7 +1340,9 @@ msgid "This will delete all track and album ratings from the local database!"
 msgstr "Bu işlem yerel veritabanındaki tüm parça ve albüm puanlarını silecek!"
 
 #: t_modules/t_main.py:21654 t_modules/t_main.py:27824
-msgid "Press button again while holding shift key if you're sure you want to do that."
+msgid ""
+"Press button again while holding shift key if you're sure you want to do "
+"that."
 msgstr ""
 "Bunu yapmak istediğinizden eminseniz shift tuşunu basılı tutarken düğmeye "
 "tekrar basın."
@@ -1486,7 +1492,8 @@ msgid "Permission error accessing one or more files"
 msgstr ""
 
 #: t_modules/t_main.py:25744
-msgid "Note that ratings are stored in the local database and not written to tags."
+msgid ""
+"Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 
 #: t_modules/t_main.py:25793 t_modules/t_main.py:25807
@@ -1511,19 +1518,27 @@ msgid "One or more fields is missing."
 msgstr ""
 
 #: t_modules/t_main.py:26074
-msgid "DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."
+msgid ""
+"DANGER! This will delete the original files. Keeping a backup is recommended "
+"in case of malfunction."
 msgstr ""
 
 #: t_modules/t_main.py:26075
-msgid "For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."
+msgid ""
+"For safety, this setting will default to off. Embedded thumbnails are not "
+"kept so you may want to extract them first."
 msgstr ""
 
 #: t_modules/t_main.py:26095
-msgid "DANGER! This will delete the original files. You may want to have backups in case of malfunction."
+msgid ""
+"DANGER! This will delete the original files. You may want to have backups in "
+"case of malfunction."
 msgstr ""
 
 #: t_modules/t_main.py:26096
-msgid "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."
+msgid ""
+"For safety, this setting will reset on restart. Embedded thumbnails are not "
+"kept so you may want to extract them first."
 msgstr ""
 
 #: t_modules/t_main.py:26258 t_modules/t_main.py:26266
@@ -1632,7 +1647,9 @@ msgid "Pre-amp"
 msgstr ""
 
 #: t_modules/t_main.py:26563
-msgid "Lower pre-amp values improve normalisation but will require a higher system volume."
+msgid ""
+"Lower pre-amp values improve normalisation but will require a higher system "
+"volume."
 msgstr ""
 
 #: t_modules/t_main.py:26579 t_modules/t_main.py:27147
@@ -1859,7 +1876,8 @@ msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
 
 #: t_modules/t_main.py:26965
-msgid "Tracks will now be recorded. Restart any playback for change to take effect."
+msgid ""
+"Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
 
 #: t_modules/t_main.py:26979
@@ -2026,7 +2044,8 @@ msgstr ""
 
 #: t_modules/t_main.py:27676
 msgid ""
-"Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n"
+"Discogs can be used for sourcing artist images. For this you will need a "
+"\"Personal Access Token\".\n"
 "\n"
 "You can generate one with a Discogs account here:"
 msgstr ""
@@ -2053,7 +2072,9 @@ msgid "Use LibreFM"
 msgstr ""
 
 #: t_modules/t_main.py:27755
-msgid "Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."
+msgid ""
+"Click login to open the last.fm web authorisation page and follow prompt. "
+"Then return here and click \"Done\"."
 msgstr ""
 
 #: t_modules/t_main.py:27759
@@ -2089,7 +2110,9 @@ msgid "Cleared all scrobble counts"
 msgstr ""
 
 #: t_modules/t_main.py:27859
-msgid "Warning: This process can take a long time to complete! (up to an hour or more)"
+msgid ""
+"Warning: This process can take a long time to complete! (up to an hour or "
+"more)"
 msgstr ""
 "Uyarı: Bu işlemin tamamlanması uzun sürebilir! (bir saat veya daha fazla)"
 
