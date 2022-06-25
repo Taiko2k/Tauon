@@ -258,6 +258,7 @@ h.ow = old_window_position
 h.id = install_directory
 h.py = pyinstaller_mode
 h.p = phone
+h.window_title = window_title
 
 del raw_image
 del sdl_texture
