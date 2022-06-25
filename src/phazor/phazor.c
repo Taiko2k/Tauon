@@ -726,8 +726,12 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 
     unsigned int i = 0;
     int resample = 0;
+    int old_sample_rate = sample_rate_src;
     sample_rate_src = frame->header.sample_rate;
     flac_got_rate = 1;
+    if (old_sample_rate != sample_rate_src) {
+            src_reset(src);
+    }
     if (sample_rate_src != sample_rate_out) {
         resample = 1;
     }
@@ -1212,6 +1216,7 @@ int load_next() {
     int encoding;
     long rate;
     int e = 0;
+    int old_sample_rate = sample_rate_src;
 
     char *ext;
     ext = strrchr(loaded_target_file, '.');
@@ -1250,9 +1255,8 @@ int load_next() {
         start_ffmpeg(loaded_target_file, load_target_seek);
         load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
-        if (current_sample_rate != sample_rate_out) {
-            sample_change_byte = high;
-            want_sample_rate = sample_rate_out;
+        if (old_sample_rate != sample_rate_src) {
+            src_reset(src);
         }
         pthread_mutex_unlock(&buffer_mutex);
 
@@ -1369,9 +1373,8 @@ int load_next() {
         start_ffmpeg(loaded_target_file, load_target_seek);
         load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
-        if (current_sample_rate != sample_rate_out) {
-            sample_change_byte = high;
-            want_sample_rate = sample_rate_out;
+        if (old_sample_rate != sample_rate_src) {
+            src_reset(src);
         }
         pthread_mutex_unlock(&buffer_mutex);
         if (decoder_allocated == 0) return 1;
@@ -1388,10 +1391,9 @@ int load_next() {
       sample_rate_src = 48000;
       current_length_count = openmpt_module_get_duration_seconds(mod) * 48000;
 
-      if (current_sample_rate != sample_rate_out) {
-            sample_change_byte = high;
-            want_sample_rate = sample_rate_out;
-                }
+      if (old_sample_rate != sample_rate_src) {
+            src_reset(src);
+      }
 
       if (load_target_seek > 0) {
                     // printf("pa: Start at position %d\n", load_target_seek);
@@ -1421,10 +1423,9 @@ int load_next() {
                 wave_seek((int) wave_samplerate * (load_target_seek / 1000.0));
             }
             pthread_mutex_lock(&buffer_mutex);
-            //if (current_sample_rate != wave_samplerate) {
-            //    sample_change_byte = (buff_filled + buff_base) % BUFF_SIZE;
-            //    want_sample_rate = wave_samplerate;
-            //}
+              if (old_sample_rate != sample_rate_src) {
+                    src_reset(src);
+              }
 
             if (load_target_seek > 0) {
                 reset_set_value = (int) wave_samplerate * (load_target_seek / 1000.0);
@@ -1453,10 +1454,9 @@ int load_next() {
                 sample_rate_src = 48000;
                 src_channels = op_channel_count(opus_dec, -1);
 
-                if (current_sample_rate != sample_rate_out) {
-                    sample_change_byte = high;
-                    want_sample_rate = sample_rate_out;
-                }
+                  if (old_sample_rate != sample_rate_src) {
+                        src_reset(src);
+                  }
 
                 current_length_count = op_pcm_total(opus_dec, -1);
 
@@ -1496,10 +1496,9 @@ int load_next() {
                 sample_rate_src = vi.rate;
                 src_channels = vi.channels;
 
-                if (current_sample_rate != sample_rate_out) {
-                    sample_change_byte = high;
-                    want_sample_rate = sample_rate_out;
-                }
+                  if (old_sample_rate != sample_rate_src) {
+                        src_reset(src);
+                  }
 
                 current_length_count = ov_pcm_total(&vf, -1);
 
@@ -1546,6 +1545,9 @@ int load_next() {
             }
             src_channels = WavpackGetReducedChannels(wpc);
             sample_rate_src = WavpackGetSampleRate(wpc);
+                  if (old_sample_rate != sample_rate_src) {
+            src_reset(src);
+      }
             wp_bit = WavpackGetBitsPerSample(wpc);
             if (! (wp_bit == 16 || wp_bit == 24)){
                 printf("pa: wavpak bit depth not supported\n");
@@ -1564,6 +1566,7 @@ int load_next() {
             break;
 
         case MPG:
+
             mpg123_open(mh, loaded_target_file);
             decoder_allocated = 1;
             mpg123_getformat(mh, &rate, &channels, &encoding);
@@ -1574,9 +1577,8 @@ int load_next() {
 
             sample_rate_src = rate;
             src_channels = channels;
-            if (current_sample_rate != sample_rate_out) {
-                sample_change_byte = high;
-                want_sample_rate = sample_rate_out;
+            if (old_sample_rate != sample_rate_src) {
+                src_reset(src);
             }
             current_length_count = (unsigned int) mpg123_length(mh);
 
@@ -1677,12 +1679,8 @@ void pump_decode() {
         if (load_target_seek > 0 && flac_got_rate == 1) {
             //printf("pa: Set start position %d\n", load_target_seek);
 
-            int rate = current_sample_rate;
-            if (want_sample_rate > 0) rate = want_sample_rate;
-
             FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
             pthread_mutex_lock(&buffer_mutex);
-            reset_set_value = rate * (load_target_seek / 1000.0);
             reset_set = 1;
             reset_set_byte = high;
             load_target_seek = 0;
