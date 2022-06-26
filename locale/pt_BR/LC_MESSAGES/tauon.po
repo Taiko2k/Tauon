@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-01-11 15:55+0000\n"
+"PO-Revision-Date: 2022-06-28 07:14+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.10.1\n"
+"X-Generator: Weblate 4.13.1-dev\n"
 
 #: t_modules/t_main.py:1981 t_modules/t_main.py:1983
 msgid "No artist image found."
@@ -133,7 +133,7 @@ msgstr "Reexaminando pastas..."
 
 #: t_modules/t_main.py:7613
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Envia para: %s"
 
 #: t_modules/t_main.py:7614
 #, fuzzy
@@ -307,11 +307,11 @@ msgstr "Exportar Estatísticas da Playlist"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Salvar diretório"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Usar caminhos relativos"
 
 #: t_modules/t_main.py:14258
 #, fuzzy
@@ -325,7 +325,7 @@ msgstr "Exportar M3U"
 
 #: t_modules/t_main.py:14275
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Diretório não existe"
 
 #: t_modules/t_main.py:14318
 msgid "Repeat OFF"
@@ -1697,7 +1697,7 @@ msgstr "Usar desvanecer ao saltar faixa"
 
 #: t_modules/t_main.py:26661
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Voltar reinicia do começo"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
