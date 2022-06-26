@@ -1,0 +1,6 @@
+[submodule "src/phazor/miniaudio"]
+	path = src/phazor/miniaudio
+	url = https://github.com/mackron/miniaudio
+[submodule "src/phazor/kissfft"]
+	path = src/phazor/kissfft
+	url = https://github.com/mborgerding/kissfft
