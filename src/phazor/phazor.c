@@ -38,7 +38,7 @@
 #define MA_ENABLE_PULSEAUDIO
 #define MA_ENABLE_COREAUDIO
 
-#include "miniaudio.h"
+#include "miniaudio/miniaudio.h"
 
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
