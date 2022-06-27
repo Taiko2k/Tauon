@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-06-24 05:32+0000\n"
+"PO-Revision-Date: 2022-06-28 07:14+0000\n"
 "Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/tr/>\n"
@@ -28,7 +28,7 @@ msgstr ""
 
 #: t_modules/t_main.py:6597
 msgid "End of playlist"
-msgstr ""
+msgstr "Çalma listesi sonu"
 
 #: t_modules/t_main.py:6648
 msgid "Once authorised click the 'done' button."
@@ -172,7 +172,7 @@ msgstr ""
 
 #: t_modules/t_main.py:13682
 msgid "Playlists + Queue"
-msgstr "Çalma listesi + Sıra"
+msgstr "Çalma Listeleri + Sıra"
 
 #: t_modules/t_main.py:13683 t_modules/t_main.py:36829
 msgid "Queue"
@@ -208,7 +208,7 @@ msgstr "Yeniden adlandırma tamamlandı."
 
 #: t_modules/t_main.py:13866
 msgid " filenames were written."
-msgstr ""
+msgstr " dosya adları yazıldı."
 
 #: t_modules/t_main.py:13938
 msgid "Simple tag editor"
@@ -295,7 +295,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14233
 msgid "Export Playlist"
-msgstr ""
+msgstr "Çalma Listesini Dışa Aktar"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
@@ -377,12 +377,12 @@ msgstr "Paneli Kilitle"
 #: t_modules/t_main.py:14739 t_modules/t_main.py:19233
 #: t_modules/t_main.py:20227
 msgid "Open Folder"
-msgstr "Klasör Aç"
+msgstr "Klasörü Aç"
 
 #: t_modules/t_main.py:14719 t_modules/t_main.py:14720
 #: t_modules/t_main.py:14721 t_modules/t_main.py:35102
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Yeni Çalma Listesine Filtrele"
 
 #: t_modules/t_main.py:14722 t_modules/t_main.py:14723
 #: t_modules/t_main.py:17600
@@ -391,7 +391,7 @@ msgstr "Klasörü Yeniden Tara"
 
 #: t_modules/t_main.py:14724 t_modules/t_main.py:14726
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Çalan Klasörü Buraya Taşı"
 
 #: t_modules/t_main.py:14732 t_modules/t_main.py:20248
 msgid "Collapse All"
@@ -604,7 +604,7 @@ msgstr ""
 
 #: t_modules/t_main.py:16257
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "Çalma listesini silmek istediğinizden emin misiniz: %s?"
 
 #: t_modules/t_main.py:16299
 msgid "Rescanning folders..."
@@ -642,6 +642,8 @@ msgstr "Spotify çalma listesi güncellendi"
 #: t_modules/t_main.py:17562
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
+"Tamam. Bu çalma listesi, bundan sonra içe aktarma sırasında kendiliğinden "
+"sıralanacak"
 
 #: t_modules/t_main.py:17563
 msgid ""
@@ -691,7 +693,7 @@ msgstr "Sanatçıya göre Yılı Sırala"
 
 #: t_modules/t_main.py:17596
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Çalma Listesini Otomatik Sırala"
 
 #: t_modules/t_main.py:17602 t_modules/t_main.py:19398
 #: t_modules/t_main.py:20699
@@ -700,7 +702,7 @@ msgstr "Yapıştır"
 
 #: t_modules/t_main.py:17603
 msgid "Append Playing"
-msgstr ""
+msgstr "Çalmaya Ekle"
 
 #: t_modules/t_main.py:17608
 msgid "Export…"
@@ -752,23 +754,23 @@ msgstr "Eşitleme tamamlandı"
 
 #: t_modules/t_main.py:17816 t_modules/t_main.py:17897
 msgid "Set as Sync Playlist"
-msgstr ""
+msgstr "Eşitlenmiş Çalma Listesi Olarak Ayarla"
 
 #: t_modules/t_main.py:17819
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Eşitlenmiş Çalma Listesi Olarak Ayarlama"
 
 #: t_modules/t_main.py:17830 t_modules/t_main.py:17898
 msgid "Set as Downloads Playlist"
-msgstr ""
+msgstr "İndirilenler Çalma Listesi Olarak Ayarla"
 
 #: t_modules/t_main.py:17833
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "İndirilenler Çalma Listesi Olarak Ayarlama"
 
 #: t_modules/t_main.py:17886
 msgid "Export Playlist Stats"
-msgstr ""
+msgstr "Çalma Listesi İstatistiklerini Dışa Aktar"
 
 #: t_modules/t_main.py:17887
 msgid "Export Albums CSV"
@@ -1437,15 +1439,15 @@ msgstr ""
 
 #: t_modules/t_main.py:22088
 msgid "Go To Playing"
-msgstr ""
+msgstr "Çalana Git"
 
 #: t_modules/t_main.py:22247
 msgid "ListenBrainz is Paused"
-msgstr ""
+msgstr "ListenBrainz Duraklatıldı"
 
 #: t_modules/t_main.py:22249
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "Scrobbling Duraklatıldı"
 
 #: t_modules/t_main.py:22253
 msgid "ListenBrainz is Active"
@@ -1628,7 +1630,7 @@ msgstr ""
 
 #: t_modules/t_main.py:26500 t_modules/t_main.py:26664
 msgid "ReplayGain"
-msgstr ""
+msgstr "ReplayGain"
 
 #: t_modules/t_main.py:26505
 msgid "Preserve album dynamics"
@@ -1640,7 +1642,7 @@ msgstr ""
 
 #: t_modules/t_main.py:26510
 msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
+msgstr "Yalnızca ReplayGain üstverisi mevcutsa etkili olacaktır."
 
 #: t_modules/t_main.py:26513
 msgid "Pre-amp"
@@ -1660,7 +1662,7 @@ msgstr "Etkinleştir"
 
 #: t_modules/t_main.py:26657
 msgid "Use fade on pause/stop"
-msgstr ""
+msgstr "Duraklatma/durdurma sırasında sesin kısılmasını kullan"
 
 #: t_modules/t_main.py:26659
 msgid "Use fade on track jump"
@@ -1721,7 +1723,7 @@ msgstr ""
 
 #: t_modules/t_main.py:26815
 msgid "Single click to play"
-msgstr ""
+msgstr "Çalmak için tek tıkla"
 
 #: t_modules/t_main.py:26817
 msgid "Show titles"
@@ -1757,11 +1759,11 @@ msgstr ""
 
 #: t_modules/t_main.py:26874
 msgid "Auto regenerate playlists"
-msgstr ""
+msgstr "Çalma listesini kendiliğinden yeniden oluştur"
 
 #: t_modules/t_main.py:26875
 msgid "Generated playlists reload when re-entering"
-msgstr ""
+msgstr "Oluşturulan çalma listeleri yeniden girildiğinde yeniden yüklenir"
 
 #: t_modules/t_main.py:26879
 msgid "Tabs in top panel"
@@ -1817,7 +1819,7 @@ msgstr ""
 
 #: t_modules/t_main.py:26925
 msgid "Extracts zip archives on drag and drop"
-msgstr ""
+msgstr "Sürükle ve bırak sırasında zip arşivlerini ayıklar"
 
 #: t_modules/t_main.py:26927
 msgid "Enable download monitor"
@@ -1861,7 +1863,7 @@ msgstr ""
 
 #: t_modules/t_main.py:26958
 msgid "Prevent system suspend during playback"
-msgstr ""
+msgstr "Çalma sırasında sistemin askıya alınmasını önle"
 
 #: t_modules/t_main.py:26962
 msgid "Record Radio"
@@ -1869,16 +1871,18 @@ msgstr ""
 
 #: t_modules/t_main.py:26963
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "İnternet radyosu çalarken şarkıları kaydet ve böl"
 
 #: t_modules/t_main.py:26965
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Parçalar \"Kaydedilmiş Radyo Parçaları\" çalma listesine kaydedilir."
 
 #: t_modules/t_main.py:26965
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Parçalar artık kaydedilecektir. Değişikliğin etkili olması için herhangi bir "
+"çalmayı yeniden başlatın."
 
 #: t_modules/t_main.py:26979
 msgid "Enable Discord Rich Presence"
@@ -1944,7 +1948,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27345
 msgid "Prefer launching web player"
-msgstr ""
+msgstr "Web çalıcı başlatmayı tercih et"
 
 #: t_modules/t_main.py:27349 t_modules/t_main.py:27350
 msgid "Import Albums"
@@ -1961,7 +1965,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27374
 msgid "Import all user playlists"
-msgstr ""
+msgstr "Tüm kullanıcı çalma listelerini içe aktar"
 
 #: t_modules/t_main.py:27376
 msgid "Importing Spotify playlists..."
@@ -1969,7 +1973,7 @@ msgstr "Spotify çalma listeleri içe aktarılıyor..."
 
 #: t_modules/t_main.py:27384
 msgid "Import single user playlist..."
-msgstr ""
+msgstr "Tek kullanıcı çalma listesini içe aktar..."
 
 #: t_modules/t_main.py:27399
 msgid "Airsonic/Subsonic network streaming"
@@ -1988,7 +1992,7 @@ msgstr ""
 #: t_modules/t_main.py:27451 t_modules/t_main.py:27511
 #: t_modules/t_main.py:27572 t_modules/t_main.py:27629
 msgid "Import music to playlist"
-msgstr ""
+msgstr "Müziği çalma listesine içe aktar"
 
 #: t_modules/t_main.py:27454
 msgid "Needed for Nextcloud Music"
@@ -2122,11 +2126,11 @@ msgstr ""
 
 #: t_modules/t_main.py:27899
 msgid "Selected playlist:"
-msgstr ""
+msgstr "Seçilen çalma listesi:"
 
 #: t_modules/t_main.py:27903
 msgid "No sync playlist selected!"
-msgstr ""
+msgstr "Eşitlenmiş çalma listesi seçilmedi!"
 
 #: t_modules/t_main.py:27906
 msgid "Path to device music folder:   "
@@ -2174,7 +2178,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27951
 msgid "Select a source playlist"
-msgstr ""
+msgstr "Kaynak çalma listesi seç"
 
 #: t_modules/t_main.py:27953
 msgid "Stop"
@@ -2218,7 +2222,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28041
 msgid "Show playing in titlebar"
-msgstr ""
+msgstr "Çalanı başlık çubuğunda göster"
 
 #: t_modules/t_main.py:28048
 msgid "Top-panel level meter"
@@ -2230,7 +2234,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28058
 msgid "UI scale for HiDPI displays"
-msgstr ""
+msgstr "HiDPI ekranlar için kullanıcı arayüzü ölçeği"
 
 #: t_modules/t_main.py:28116
 msgid "Auto scale"
@@ -2250,7 +2254,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28420
 msgid "Target playlist:   "
-msgstr ""
+msgstr "Hedef çalma listesi:   "
 
 #: t_modules/t_main.py:28448
 msgid "Rows"
@@ -2274,7 +2278,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28466
 msgid "Sort by top played"
-msgstr ""
+msgstr "En çok çalınana göre sırala"
 
 #: t_modules/t_main.py:28473
 msgid "Randomise BG"
@@ -2294,7 +2298,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28536
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "Çalma listesinde yeterli albüm yok!"
 
 #: t_modules/t_main.py:28556 t_modules/t_main.py:28557
 msgid "Chart generator..."
@@ -2302,15 +2306,15 @@ msgstr ""
 
 #: t_modules/t_main.py:28565 t_modules/t_main.py:28606
 msgid "Tracks in playlist"
-msgstr ""
+msgstr "Çalma listesindeki parçalar"
 
 #: t_modules/t_main.py:28566 t_modules/t_main.py:28609
 msgid "Albums in playlist"
-msgstr ""
+msgstr "Çalma listesindeki albümler"
 
 #: t_modules/t_main.py:28567 t_modules/t_main.py:28612
 msgid "Playlist duration"
-msgstr ""
+msgstr "Çalma listesi süresi"
 
 #: t_modules/t_main.py:28568 t_modules/t_main.py:28641
 msgid "Tracks in database"
@@ -2338,11 +2342,11 @@ msgstr ""
 
 #: t_modules/t_main.py:28728
 msgid "Represent playtime as stars"
-msgstr "Çalma zamanını yıldızlarla temsil et"
+msgstr "Çalma süresini yıldızlarla temsil et"
 
 #: t_modules/t_main.py:28737
 msgid "Represent playcount as lines"
-msgstr ""
+msgstr "Çalma sayısını satır olarak göster"
 
 #: t_modules/t_main.py:28757
 msgid "Show album release year"
@@ -2374,23 +2378,23 @@ msgstr ""
 
 #: t_modules/t_main.py:28783
 msgid "End of playlist action"
-msgstr ""
+msgstr "Çalma listesi sonu eylemi"
 
 #: t_modules/t_main.py:28786 t_modules/t_main.py:28790
 msgid "Stop playback"
-msgstr ""
+msgstr "Çalmayı durdur"
 
 #: t_modules/t_main.py:28787 t_modules/t_main.py:28792
 msgid "Repeat playlist"
-msgstr ""
+msgstr "Çalma listesini yinele"
 
 #: t_modules/t_main.py:28796
 msgid "Play next playlist"
-msgstr ""
+msgstr "Sonraki çalma listesini çal"
 
 #: t_modules/t_main.py:28798
 msgid "Cycle all playlists"
-msgstr ""
+msgstr "Tüm çalma listelerini döngüye sok"
 
 #: t_modules/t_main.py:29663 t_modules/t_main.py:34405
 msgid "Added station to: "
@@ -2414,11 +2418,11 @@ msgstr ""
 
 #: t_modules/t_main.py:30743 t_modules/t_main.py:31321
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Çal, RC: Çalmaya git"
 
 #: t_modules/t_main.py:30771 t_modules/t_main.py:31349
 msgid "Pause"
-msgstr ""
+msgstr "Duraklat"
 
 #: t_modules/t_main.py:30788
 msgid "Stop, RC: Toggle auto-stop"
@@ -2458,15 +2462,15 @@ msgstr ""
 
 #: t_modules/t_main.py:32342
 msgid "Playlist is empty"
-msgstr ""
+msgstr "Çalma listesi boş"
 
 #: t_modules/t_main.py:32344
 msgid "Drag and drop files to import"
-msgstr ""
+msgstr "İçe aktarmak için dosyaları sürükleyip bırakın"
 
 #: t_modules/t_main.py:32366
 msgid "End of Playlist"
-msgstr ""
+msgstr "Çalma Listesi Sonu"
 
 #: t_modules/t_main.py:33612
 msgid "Search Tag"
@@ -2543,11 +2547,11 @@ msgstr ""
 
 #: t_modules/t_main.py:34349
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Lütfen bu ayarı değiştirmeden önce çalmayı durdurun"
 
 #: t_modules/t_main.py:34354
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Geçerli kaydı sonlandırmak için lütfen önce çalmayı durdurun"
 
 #: t_modules/t_main.py:34360
 msgid "Tip: You can press F9 to view the output folder."
@@ -2599,7 +2603,7 @@ msgstr ""
 
 #: t_modules/t_main.py:35901
 msgid "No artists in playlist"
-msgstr ""
+msgstr "Çalma listesinde sanatçı yok"
 
 #: t_modules/t_main.py:35904
 msgid "Artist threshold not met"
@@ -2627,11 +2631,11 @@ msgstr ""
 
 #: t_modules/t_main.py:36529
 msgid "Pause Queue"
-msgstr ""
+msgstr "Sırayı Duraklat"
 
 #: t_modules/t_main.py:36558
 msgid "Play Now"
-msgstr ""
+msgstr "Şimdi Çal"
 
 #: t_modules/t_main.py:36564
 msgid "↳ Except for This"
@@ -2639,7 +2643,7 @@ msgstr ""
 
 #: t_modules/t_main.py:36566
 msgid "Queue to New Playlist"
-msgstr ""
+msgstr "Yeni Çalma Listesine Sırala"
 
 #: t_modules/t_main.py:36711
 msgid "Cancel Auto-Stop"
@@ -2683,7 +2687,7 @@ msgstr ""
 
 #: t_modules/t_main.py:38720
 msgid "Playing"
-msgstr ""
+msgstr "Çalıyor"
 
 #: t_modules/t_main.py:38781
 msgid "Prefer synced"
@@ -2779,7 +2783,7 @@ msgstr ""
 
 #: t_modules/t_main.py:44645
 msgid "Play count"
-msgstr ""
+msgstr "Çalma sayısı"
 
 #: t_modules/t_main.py:44658
 msgid "Play time"
