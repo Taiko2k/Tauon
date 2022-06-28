@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-06-28 07:14+0000\n"
+"PO-Revision-Date: 2022-06-29 10:45+0000\n"
 "Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/tr/>\n"
@@ -24,7 +24,7 @@ msgstr "Sanatçı resmi bulunamadı."
 
 #: t_modules/t_main.py:1983
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "Ayarlarda hiçbir sağlayıcı etkinleştirilmemiş!"
 
 #: t_modules/t_main.py:6597
 msgid "End of playlist"
@@ -32,19 +32,19 @@ msgstr "Çalma listesi sonu"
 
 #: t_modules/t_main.py:6648
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Yetkilendirildikten sonra 'bitti' düğmesine tıklayın."
 
 #: t_modules/t_main.py:6648
 msgid "Web auth page opened"
-msgstr ""
+msgstr "Web yetkilendirme sayfası açıldı"
 
 #: t_modules/t_main.py:6656
 msgid "You need to log in first"
-msgstr ""
+msgstr "Önce giriş yapmanız gerekiyor"
 
 #: t_modules/t_main.py:6812
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Tarama başarısız oldu. Tekrar denensin mi?"
 
 #: t_modules/t_main.py:6819 t_modules/t_main.py:7401
 msgid "Scanning scrobbles complete"
@@ -52,7 +52,7 @@ msgstr ""
 
 #: t_modules/t_main.py:6971
 msgid "Getting friend data..."
-msgstr ""
+msgstr "Arkadaş verileri alınıyor..."
 
 #: t_modules/t_main.py:6971
 msgid "This may take a very long time."
@@ -60,15 +60,15 @@ msgstr "Bu çok uzun zaman alabilir."
 
 #: t_modules/t_main.py:7323
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Last.fm beğeni durumu güncellenemedi"
 
 #: t_modules/t_main.py:7326
 msgid "Error updating love to last.fm!"
-msgstr ""
+msgstr "Last.fm beğeni güncelleme hatası!"
 
 #: t_modules/t_main.py:7326
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "İnternet bağlantınızı denetleyip tekrar deneyebilirsiniz."
 
 #: t_modules/t_main.py:7596
 msgid "Spotify Likes"
@@ -80,19 +80,19 @@ msgstr "Spotify Albümleri"
 
 #: t_modules/t_main.py:7598
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Parça, beğenilen parçalardan kaldırıldı"
 
 #: t_modules/t_main.py:7599
 msgid "Track was already un-liked"
-msgstr ""
+msgstr "Parça zaten beğenilerden kaldırılmış"
 
 #: t_modules/t_main.py:7600
 msgid "Track is already liked"
-msgstr ""
+msgstr "Parça zaten beğenilmiş"
 
 #: t_modules/t_main.py:7601
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Parça, beğenilen parçalara eklendi"
 
 #: t_modules/t_main.py:7602
 msgid "Spotify account connected"
@@ -112,7 +112,7 @@ msgstr "Lütfen ayarlardan Spotify'ı yetkilendirin!"
 
 #: t_modules/t_main.py:7606
 msgid "Please authorise and click the enable toggle first!"
-msgstr ""
+msgstr "Lütfen yetkilendirin ve etkinleştir düğmesine tıklayın!"
 
 #: t_modules/t_main.py:7607
 msgid "Spotify import complete"
@@ -132,23 +132,23 @@ msgstr "Chromecast Aranıyor..."
 
 #: t_modules/t_main.py:7613
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Şuna yayınla: %s"
 
 #: t_modules/t_main.py:7614
 msgid "No Chromecast devices found"
-msgstr ""
+msgstr "Chromecast cihazı bulunamadı"
 
 #: t_modules/t_main.py:7616
 msgid "Web server stopped."
-msgstr ""
+msgstr "Web sunucusu durdu."
 
 #: t_modules/t_main.py:7753
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Eksik kullanıcı adı, parola ve/veya sunucu adı"
 
 #: t_modules/t_main.py:7768
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "PLEX sunucusuna bağlanırken hata oluştu"
 
 #: t_modules/t_main.py:7769
 msgid "Try check login credentials and that server is accessible."
@@ -156,19 +156,19 @@ msgstr ""
 
 #: t_modules/t_main.py:8269
 msgid "Missing username, password and/or server URL"
-msgstr ""
+msgstr "Eksik kullanıcı adı, parola ve/veya sunucu URL'si"
 
 #: t_modules/t_main.py:8297
 msgid "Could not establish connection"
-msgstr ""
+msgstr "Bağlantı kurulamadı"
 
 #: t_modules/t_main.py:8316
 msgid "Could not establish connection/authorisation"
-msgstr ""
+msgstr "Bağlantı/yetkilendirme kurulamadı"
 
 #: t_modules/t_main.py:8856
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Çıkmadan önce eşitlemeyi durdur!"
 
 #: t_modules/t_main.py:13682
 msgid "Playlists + Queue"
@@ -222,16 +222,20 @@ msgstr "?"
 #: t_modules/t_main.py:13941
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Değişiklikleri yerel veritabanına uygulamak için ilgili her alanda Enter'a "
+"basın."
 
 #: t_modules/t_main.py:13942
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"İşiniz bittiğinde, etiketleri dosyalara kaydetmek için ETİKETLERİ YAZ "
+"düğmesine basın. (İsteğe bağlı ama önerilir)"
 
 #: t_modules/t_main.py:13945
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Seçilen parça sayısı: %d"
 
 #: t_modules/t_main.py:13980
 msgid "<Multiple selected>"
@@ -255,7 +259,7 @@ msgstr "Albüm-sanatçı adı"
 
 #: t_modules/t_main.py:14000
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Ağ parçalarının düzenlenmesi önerilmez!"
 
 #: t_modules/t_main.py:14030 t_modules/t_main.py:14031
 msgid "WRITE TAGS"
@@ -263,11 +267,11 @@ msgstr "ETİKETLERİ YAZ"
 
 #: t_modules/t_main.py:14033
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Değişikliklerinizi uygulamak için ilgili alanlarda Enter'a basın!"
 
 #: t_modules/t_main.py:14045
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Bir ağ parçasına yazılamaz!"
 
 #: t_modules/t_main.py:14048
 msgid "Cannot write CUE sheet types!"
@@ -275,7 +279,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14056
 msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr ""
+msgstr "Çoklu alan işlenemiyor! Lütfen harici etiket düzenleyici kullanın"
 
 #: t_modules/t_main.py:14074
 msgid "%d files rewritten"
@@ -283,15 +287,15 @@ msgstr "%d dosya yeniden yazıldı"
 
 #: t_modules/t_main.py:14136
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Yedek Şarkı Sözü Arama"
 
 #: t_modules/t_main.py:14142 t_modules/t_main.py:14162
 msgid "Substitute"
-msgstr ""
+msgstr "Yedek"
 
 #: t_modules/t_main.py:14148 t_modules/t_main.py:14168
 msgid "with"
-msgstr ""
+msgstr "ile"
 
 #: t_modules/t_main.py:14233
 msgid "Export Playlist"
@@ -299,15 +303,15 @@ msgstr "Çalma Listesini Dışa Aktar"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Dizini kaydet"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Göreli yolları kullan"
 
 #: t_modules/t_main.py:14258
 msgid "Auto-export"
-msgstr ""
+msgstr "Kendiliğinden dışa aktar"
 
 #: t_modules/t_main.py:14261 t_modules/t_main.py:14266
 msgid "Export"
@@ -331,11 +335,11 @@ msgstr "Albümü Yinele"
 
 #: t_modules/t_main.py:14389
 msgid "Shuffle Lockdown"
-msgstr ""
+msgstr "Karıştırma Kilidi"
 
 #: t_modules/t_main.py:14390
 msgid "Shuffle Lockdown Albums"
-msgstr ""
+msgstr "Albüm Karıştırmayı Kilitle"
 
 #: t_modules/t_main.py:14392
 msgid "Shuffle OFF"
@@ -351,11 +355,11 @@ msgstr "Rastgele Albümler"
 
 #: t_modules/t_main.py:14419
 msgid "Make Large Size"
-msgstr ""
+msgstr "Büyük Boy Yap"
 
 #: t_modules/t_main.py:14421
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Sıkıştırılmış Boyut Yap"
 
 #: t_modules/t_main.py:14454
 msgid "Close Panel"
@@ -363,7 +367,7 @@ msgstr "Paneli Kapat"
 
 #: t_modules/t_main.py:14455
 msgid "Make Large"
-msgstr ""
+msgstr "Büyük Yap"
 
 #: t_modules/t_main.py:14712
 msgid "Unlock Panel"
@@ -395,7 +399,7 @@ msgstr "Çalan Klasörü Buraya Taşı"
 
 #: t_modules/t_main.py:14732 t_modules/t_main.py:20248
 msgid "Collapse All"
-msgstr ""
+msgstr "Tümünü Daralt"
 
 #: t_modules/t_main.py:14741
 msgid "Show in Playlist"
@@ -409,7 +413,7 @@ msgstr "Albümü Sıraya Ekle"
 #: t_modules/t_main.py:14823 t_modules/t_main.py:20233
 #: t_modules/t_main.py:20245
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Sonraki Albümü Sıraya Al"
 
 #: t_modules/t_main.py:14835 t_modules/t_main.py:17792
 #: t_modules/t_main.py:27955
@@ -430,11 +434,11 @@ msgstr "Üstveri Panelini Göster"
 
 #: t_modules/t_main.py:14860
 msgid "Panel Below Lyrics"
-msgstr ""
+msgstr "Panel Sözlerin Altında"
 
 #: t_modules/t_main.py:14862
 msgid "Panel Above Lyrics"
-msgstr ""
+msgstr "Panel Sözlerin Üstünde"
 
 #: t_modules/t_main.py:14890 t_modules/t_main.py:14900
 #: t_modules/t_main.py:14908
@@ -448,11 +452,11 @@ msgstr "Sözleri Göster"
 
 #: t_modules/t_main.py:14944
 msgid "There are no lyric sources enabled."
-msgstr ""
+msgstr "Hiçbir söz kaynağı etkinleştirilmemiş."
 
 #: t_modules/t_main.py:14953
 msgid "Let's be polite and try later."
-msgstr ""
+msgstr "Kibar olalım ve daha sonra deneyelim."
 
 #: t_modules/t_main.py:14970 t_modules/t_main.py:20458
 #: t_modules/t_main.py:20512 t_modules/t_main.py:34110
@@ -461,7 +465,7 @@ msgstr "Aranıyor..."
 
 #: t_modules/t_main.py:15003
 msgid "No lyrics for this track were found"
-msgstr ""
+msgstr "Bu parça için söz bulunamadı"
 
 #: t_modules/t_main.py:15067 t_modules/t_main.py:15164
 #: t_modules/t_main.py:15594
@@ -470,7 +474,7 @@ msgstr "Sözleri Ara"
 
 #: t_modules/t_main.py:15079
 msgid "Search GuitarParty"
-msgstr ""
+msgstr "GuitarParty'de Ara"
 
 #: t_modules/t_main.py:15114
 msgid "Paste Chord Lyrics"
@@ -478,7 +482,7 @@ msgstr "Akor Sözlerini Yapıştır"
 
 #: t_modules/t_main.py:15115
 msgid "Clear Chord Lyrics"
-msgstr ""
+msgstr "Akor Sözlerini Temizle"
 
 #: t_modules/t_main.py:15154 t_modules/t_main.py:15165
 #: t_modules/t_main.py:15595
@@ -487,7 +491,7 @@ msgstr "Sözleri Aç/Kapat"
 
 #: t_modules/t_main.py:15156 t_modules/t_main.py:15167
 msgid "Substitute Search..."
-msgstr ""
+msgstr "Yedek Arama..."
 
 #: t_modules/t_main.py:15157 t_modules/t_main.py:15168
 msgid "Paste Lyrics"
@@ -515,27 +519,27 @@ msgstr "Resim Ayıkla"
 
 #: t_modules/t_main.py:15284
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Ağ parçaları için resim indirilemiyor."
 
 #: t_modules/t_main.py:15308
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Bu klasör tek bir albüme ait gibi görünmüyor, üzgünüm"
 
 #: t_modules/t_main.py:15319
 msgid "Looking up MusicBrainz ID..."
-msgstr ""
+msgstr "MusicBrainz Kimliği aranıyor..."
 
 #: t_modules/t_main.py:15383
 msgid "Cover art downloaded from fanart.tv"
-msgstr ""
+msgstr "Kapak resmi fanart.tv'den indirildi"
 
 #: t_modules/t_main.py:15404
 msgid "Cover art downloaded from MusicBrainz"
-msgstr ""
+msgstr "Kapak resmi MusicBrainz'den indirildi"
 
 #: t_modules/t_main.py:15415
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Eşleşen kapak resmi veya kimlik bulunamadı."
 
 #: t_modules/t_main.py:15498
 msgid "Image removal failed."
@@ -600,7 +604,7 @@ msgstr "Bu çalma listesini silmek istediğinizden emin misiniz?"
 
 #: t_modules/t_main.py:16149
 msgid "Try again while holding shift to confirm"
-msgstr ""
+msgstr "Doğrulamak için shift tuşunu basılı tutarak tekrar deneyin"
 
 #: t_modules/t_main.py:16257
 msgid "Are you sure you want to delete playlist: %s?"
@@ -677,7 +681,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17592
 msgid "Sort by Imported"
-msgstr ""
+msgstr "İçe Aktarılanlara Göre Sırala"
 
 #: t_modules/t_main.py:17593
 msgid "Sort by Filepath"
@@ -791,7 +795,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17895
 msgid "Edit Generator..."
-msgstr ""
+msgstr "Oluşturucuyu Düzenle..."
 
 #: t_modules/t_main.py:17896
 msgid "Engage Gallery Quick Add"
@@ -1944,7 +1948,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27328
 msgid "Authorise"
-msgstr ""
+msgstr "Yetkilendir"
 
 #: t_modules/t_main.py:27345
 msgid "Prefer launching web player"
@@ -2000,7 +2004,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27454
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Düz metin kimlik doğrulaması kullan"
 
 #: t_modules/t_main.py:27458
 msgid "Jellyfin network streaming"
@@ -2069,7 +2073,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27747 t_modules/t_main.py:27749
 msgid "Done"
-msgstr ""
+msgstr "Bitti"
 
 #: t_modules/t_main.py:27752
 msgid "Use LibreFM"
@@ -2080,6 +2084,8 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
+"Last.fm web yetkilendirme sayfasını açmak için girişe tıklayın ve komut "
+"istemini izleyin. Ardından buraya dönün ve \"Bitti\" düğmesine tıklayın."
 
 #: t_modules/t_main.py:27759
 msgid "Forget account"
