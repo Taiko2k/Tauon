@@ -377,7 +377,13 @@ class SpotCtl:
                         self.tauon.gui.update += 1
                         return
             else:
-                subprocess.run(["xdg-open", "spotify:track"])
+                if self.tauon.msys:
+                    p = os.getenv('APPDATA') + "\\Spotify\\Spotify.exe"
+                    if not os.path.isfile(p):
+                        return
+                    subprocess.Popen([p])
+                else:
+                    subprocess.run(["xdg-open", "spotify:track"])
                 print("LAUNCH SPOTIFY")
                 time.sleep(3)
                 tries = 0
