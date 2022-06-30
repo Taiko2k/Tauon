@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-01-11 15:55+0000\n"
+"PO-Revision-Date: 2022-06-29 10:45+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.10.1\n"
+"X-Generator: Weblate 4.13.1-dev\n"
 
 #: t_modules/t_main.py:1981 t_modules/t_main.py:1983
 msgid "No artist image found."
@@ -127,18 +127,16 @@ msgid "days"
 msgstr "dias"
 
 #: t_modules/t_main.py:7612
-#, fuzzy
 msgid "Scanning for Chromecasts..."
 msgstr "Reexaminando pastas..."
 
 #: t_modules/t_main.py:7613
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Envia para: %s"
 
 #: t_modules/t_main.py:7614
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Sem resultados"
+msgstr "Não foram encontrados dispositivos Chromecast"
 
 #: t_modules/t_main.py:7616
 msgid "Web server stopped."
@@ -301,31 +299,28 @@ msgid "with"
 msgstr "com"
 
 #: t_modules/t_main.py:14233
-#, fuzzy
 msgid "Export Playlist"
-msgstr "Exportar Estatísticas da Playlist"
+msgstr "Exportar Playlist"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Salvar diretório"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Usar caminhos relativos"
 
 #: t_modules/t_main.py:14258
-#, fuzzy
 msgid "Auto-export"
-msgstr "Autoparada"
+msgstr "Auto-exportar"
 
 #: t_modules/t_main.py:14261 t_modules/t_main.py:14266
-#, fuzzy
 msgid "Export"
-msgstr "Exportar M3U"
+msgstr "Exportar"
 
 #: t_modules/t_main.py:14275
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Diretório não existe"
 
 #: t_modules/t_main.py:14318
 msgid "Repeat OFF"
@@ -344,9 +339,8 @@ msgid "Shuffle Lockdown"
 msgstr "Trava de Embaralho"
 
 #: t_modules/t_main.py:14390
-#, fuzzy
 msgid "Shuffle Lockdown Albums"
-msgstr "Trava de Embaralho"
+msgstr "Embaralhar Albuns Lockdown"
 
 #: t_modules/t_main.py:14392
 msgid "Shuffle OFF"
@@ -714,9 +708,8 @@ msgid "Append Playing"
 msgstr "Acrescentar Tocando"
 
 #: t_modules/t_main.py:17608
-#, fuzzy
 msgid "Export…"
-msgstr "Ordenar…"
+msgstr "Exportar…"
 
 #: t_modules/t_main.py:17611
 msgid "Misc…"
@@ -1183,7 +1176,6 @@ msgid "Broadcast This"
 msgstr "Transmitir Isto"
 
 #: t_modules/t_main.py:20674
-#, fuzzy
 msgid "Chromecast This"
 msgstr "Transmitir Isto"
 
@@ -1302,9 +1294,8 @@ msgid "New Radio List"
 msgstr "Nova Lista de Rádio"
 
 #: t_modules/t_main.py:21490 t_modules/t_main.py:21492
-#, fuzzy
 msgid "Clean Database!"
-msgstr "Base de dados…"
+msgstr "Limpar Banco de dados!"
 
 #: t_modules/t_main.py:21516
 msgid "Paste Spotify Playlist"
@@ -1697,15 +1688,15 @@ msgstr "Usar desvanecer ao saltar faixa"
 
 #: t_modules/t_main.py:26661
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Voltar reinicia do começo"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
-msgstr ""
+msgstr "Tamanho do arquivo cache de Rede"
 
 #: t_modules/t_main.py:26675
 msgid "Cache local files (for smb/nfs)"
-msgstr ""
+msgstr "Cache de arquivos locais (smb/nfs)"
 
 #: t_modules/t_main.py:26683
 msgid "Output buffer"
@@ -1837,7 +1828,6 @@ msgid "Transcode folder"
 msgstr "Converter pasta"
 
 #: t_modules/t_main.py:26917
-#, fuzzy
 msgid "Chromecast this"
 msgstr "Transmitir Isto"
 
@@ -2274,7 +2264,6 @@ msgid "UI scale for HiDPI displays"
 msgstr "Escala de IU para telas HiDPi"
 
 #: t_modules/t_main.py:28116
-#, fuzzy
 msgid "Auto scale"
 msgstr "Auto Redimensionar"
 
