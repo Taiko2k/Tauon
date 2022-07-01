@@ -669,12 +669,13 @@ def player4(tauon):
                     position = aud.get_position_ms() / 1000
                     remain = length - position
 
-                    # print(loaded_track.title + " -> " + target_object.title)
-                    # print("length: " + str(length))
-                    # print("position: " + str(position))
-                    # print("We are %s from end" % str(remain))
+                    tauon.console.print(loaded_track.title + " -> " + target_object.title)
+                    tauon.console.print(" --- length: " + str(length))
+                    tauon.console.print(" --- position: " + str(position))
+                    tauon.console.print(" --- We are %s from end" % str(remain))
 
                     if loaded_track.is_network or length == 0:
+                        tauon.console.print("Phazor did not respond with a duration")
                         length = loaded_track.length
                         remain = length - position
 
@@ -683,7 +684,7 @@ def player4(tauon):
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
 
-                    #print("Transition gapless mode")
+                    tauon.console.print("Transition gapless")
 
                     aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
 
@@ -720,6 +721,8 @@ def player4(tauon):
 
                     if state == 1 and prefs.use_jump_crossfade:
                         fade = 1
+
+                    tauon.console.print("Transition jump")
 
                     aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
                     loaded_track = target_object
