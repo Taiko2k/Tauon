@@ -32889,8 +32889,8 @@ class StandardPlaylist:
             if gui.playlist_view_length > 40:
                 pctl.playlist_view_position -= mouse_wheel
 
-            if mouse_wheel:
-                console.print("DEBUG: Position changed by mouse wheel scroll: " + str(mouse_wheel))
+            #if mouse_wheel:
+                #console.print("DEBUG: Position changed by mouse wheel scroll: " + str(mouse_wheel))
 
             if pctl.playlist_view_position > len(default_playlist):
                 pctl.playlist_view_position = len(default_playlist)
@@ -45968,8 +45968,8 @@ while pctl.running:
                     text_colour = [255, 40, 90, fade]
 
                 w = ddt.text((rect[0] + 10 * gui.scale, yy), item[2].strftime('%H:%M:%S'), [255, 80, 160, fade], 311,
-                             rect[2] - 60 * gui.scale)
-                ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale)
+                             rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+                ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
                 yy -= 14 * gui.scale
             if u:
                 gui.delay_frame(5)
