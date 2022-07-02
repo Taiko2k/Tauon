@@ -38318,7 +38318,8 @@ class ArtistInfoBox:
 
     def get_data(self, artist, get_img_path=False, force_dl=False):
 
-        print("Load Bio Data")
+        if not get_img_path:
+            print("Load Bio Data")
 
         if artist is None and not get_img_path:
             self.artist_on = artist
@@ -38348,7 +38349,6 @@ class ArtistInfoBox:
         if get_img_path:
             for path in image_paths:
                 if os.path.isfile(path):
-                    print(path)
                     return path
             return ""
 
