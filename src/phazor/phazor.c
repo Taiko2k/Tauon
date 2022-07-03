@@ -100,6 +100,7 @@ float re_in[BUFF_SIZE * 2];
 float re_out[BUFF_SIZE * 2];
 
 int fade_fill = 0;
+int fade_lockout = 0;
 int fade_position = 0;
 int fade_2_flag = 0;
 
@@ -223,13 +224,13 @@ float ramp_step(int sample_rate, int milliseconds) {
 }
 
 void fade_fx() {
-    pthread_mutex_lock(&fade_mutex);
+    //pthread_mutex_lock(&fade_mutex);
     if (fade_fill > 0) {
         if (fade_fill == fade_position) {
             fade_fill = 0;
             fade_position = 0;
         } else {
-
+            fade_lockout = 1;
             float cross = fade_position / (float) fade_fill;
             float cross_i = 1.0 - cross;
 
@@ -241,7 +242,7 @@ void fade_fx() {
             fade_position++;
         }
     }
-    pthread_mutex_unlock(&fade_mutex);
+    //pthread_mutex_unlock(&fade_mutex);
 }
 
 FILE *fptr;
@@ -888,6 +889,7 @@ float gate = 1.0;  // Used for ramping
 int get_audio(int max, float* buff){
         int b = 0;
         //printf("%d\n", get_buff_fill());
+        pthread_mutex_lock(&buffer_mutex);
 
         if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
             buffering = 0;
@@ -902,9 +904,14 @@ int get_audio(int max, float* buff){
             } else buffering = 0;
         }
 
+//        if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
+//            //printf("pa: Buffer underrun\n");
+//        }
+
+
         // Put fade buffer back
-        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max){
-            pthread_mutex_lock(&fade_mutex);
+        if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && fade_lockout == 0){
+
             int i = 0;
             while (fade_position < fade_fill){
                 float cross = fade_position / (float) fade_fill;
@@ -921,17 +928,12 @@ int get_audio(int max, float* buff){
                 fade_fill = 0;
                 fade_position = 0;
             }
-            pthread_mutex_unlock(&fade_mutex);
         }
 
-
-        if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
-            //printf("pa: Buffer underrun\n");
-        }
 
         // Process decoded audio data and send out
         if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
-            pthread_mutex_lock(&fade_mutex);
+
             //pthread_mutex_lock(&buffer_mutex);
 
             b = 0; // byte number
@@ -1049,17 +1051,18 @@ int get_audio(int max, float* buff){
                 if (b >= max) break; // Buffer is now full
             }
 
-            pthread_mutex_unlock(&fade_mutex);
+
 
             if (b > 0) {
                 if (peak_roll_l > peak_l) peak_l = peak_roll_l;
                 if (peak_roll_r > peak_r) peak_r = peak_roll_r;
+                pthread_mutex_unlock(&buffer_mutex);
                 return b;
 
             } // sent data
 
         } // close if data
-
+        pthread_mutex_unlock(&buffer_mutex);
         return 0;
 }
 
@@ -1886,7 +1889,10 @@ void *main_loop(void *thread_id) {
                     // Prepare for a crossfade if enabled and suitable
                     using_fade = 0;
                     if (config_fade_jump == 1 && mode == PLAYING) {
-                        pthread_mutex_lock(&fade_mutex);
+                        pthread_mutex_lock(&buffer_mutex);
+                        if (fade_fill > 0){
+                            printf("pa: Fade already in progress\n");
+                        }
                         int l = current_sample_rate * (config_fade_duration / 1000.0);
                         int reserve = 0; //current_sample_rate / 10.0;
                         if (get_buff_fill() > l) {
@@ -1908,6 +1914,7 @@ void *main_loop(void *thread_id) {
                             fade_fill = l;
                             high = low + reserve;
                             using_fade = 1;
+                            fade_lockout = 0;
 
                             reset_set_byte = p;
                             if (reset_set == 0) {
@@ -1916,7 +1923,7 @@ void *main_loop(void *thread_id) {
                             }
 
                         }
-                        pthread_mutex_unlock(&fade_mutex);
+                        pthread_mutex_unlock(&buffer_mutex);
                     }
 
                     load_result = load_next();
