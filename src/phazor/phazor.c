@@ -1065,7 +1065,9 @@ int get_audio(int max, float* buff){
 
 
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
-    get_audio(frameCount * 2, pOutput);
+
+    int b = get_audio(frameCount * 2, pOutput);
+    if (0 < b && b < frameCount) printf("ph: Buffer underflow\n");
 }
 
 

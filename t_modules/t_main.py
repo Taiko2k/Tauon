@@ -799,7 +799,6 @@ if desktop == "GNOME":
 
 if import_cursors and system == "linux" and not macos and not msys:
     c_br = cursor_get_gdk(4)
-    print(c_br)
     c_rs = cursor_get_gdk(8)
     c_ts = cursor_get_gdk(9)
     c_ls = cursor_get_gdk(10)
