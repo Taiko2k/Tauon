@@ -243,8 +243,8 @@ void fade_fx() {
             fade_position++;
 
             if (fade_mini < 1.0){
-                fade_mini += 0.03 / 1 * sample_rate_out; // 30ms ramp
-                if (fade_mini > 1.0) fade_mini = 1.0;
+                fade_mini += ramp_step(sample_rate_out, 30); // 30ms ramp
+                if (fade_mini > 1.0) fade_mini = 1.0
             }
 
         }
