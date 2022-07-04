@@ -101,6 +101,7 @@ float re_out[BUFF_SIZE * 2];
 
 int fade_fill = 0;
 int fade_lockout = 0;
+float fade_mini = 0.0;
 int fade_position = 0;
 int fade_2_flag = 0;
 
@@ -234,12 +235,18 @@ void fade_fx() {
             float cross = fade_position / (float) fade_fill;
             float cross_i = 1.0 - cross;
 
-            bfl[high] *= cross;
+            bfl[high] *= cross * fade_mini;
             bfl[high] += fadefl[fade_position] * cross_i;
 
-            bfr[high] *= cross;
+            bfr[high] *= cross * fade_mini;
             bfr[high] += fadefr[fade_position] * cross_i;
             fade_position++;
+
+            if (fade_mini < 1.0){
+                fade_mini += 0.03 / 1 * sample_rate_out; // 30ms ramp
+                if (fade_mini > 1.0) fade_mini = 1.0;
+            }
+
         }
     }
     //pthread_mutex_unlock(&fade_mutex);
@@ -1915,6 +1922,7 @@ void *main_loop(void *thread_id) {
                             high = low + reserve;
                             using_fade = 1;
                             fade_lockout = 0;
+                            fade_mini = 0.0;
 
                             reset_set_byte = p;
                             if (reset_set == 0) {
