@@ -226,6 +226,12 @@ float ramp_step(int sample_rate, int milliseconds) {
 
 void fade_fx() {
     //pthread_mutex_lock(&fade_mutex);
+    if (fade_mini < 1.0){
+        fade_mini += ramp_step(sample_rate_out, 10); // 10ms ramp
+        bfr[high] *= fade_mini;
+        bfl[high] *= fade_mini;
+        if (fade_mini > 1.0) fade_mini = 1.0;
+    }
     if (fade_fill > 0) {
         if (fade_fill == fade_position) {
             fade_fill = 0;
@@ -235,17 +241,13 @@ void fade_fx() {
             float cross = fade_position / (float) fade_fill;
             float cross_i = 1.0 - cross;
 
-            bfl[high] *= cross * fade_mini;
+
+            bfl[high] *= cross;
             bfl[high] += fadefl[fade_position] * cross_i;
 
-            bfr[high] *= cross * fade_mini;
+            bfr[high] *= cross;
             bfr[high] += fadefr[fade_position] * cross_i;
             fade_position++;
-
-            if (fade_mini < 1.0){
-                fade_mini += ramp_step(sample_rate_out, 30); // 30ms ramp
-                if (fade_mini > 1.0) fade_mini = 1.0
-            }
 
         }
     }
@@ -343,7 +345,7 @@ void resample_to_buffer(int in_frames) {
         bfl[high] = re_out[i * 2];
         bfr[high] = re_out[(i * 2) + 1];
 
-        if (fade_fill > 0) {
+        if (fade_fill > 0 || fade_mini < 1.0) {
             fade_fx();
         }
 
@@ -517,7 +519,7 @@ int wave_decode(int read_frames) {
             bfl[high] = re_in[i * 2];
             bfr[high] = re_in[i * 2 + 1];
 
-            if (fade_fill > 0) {
+            if (fade_fill > 0 || fade_mini < 1.0) {
                 fade_fx();
             }
 
@@ -622,7 +624,7 @@ void read_to_buffer_char16(char src[], int n_bytes) {
         while (i < n_bytes) {
             bfl[high] = ((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0;
             bfr[high] = bfl[high];
-            if (fade_fill > 0) {
+            if (fade_fill > 0 || fade_mini < 1.0) {
                 fade_fx();
             }
             high++;
@@ -632,7 +634,7 @@ void read_to_buffer_char16(char src[], int n_bytes) {
         while (i < n_bytes) {
             bfl[high] = (((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
             bfr[high] = (((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
-            if (fade_fill > 0) {
+            if (fade_fill > 0 || fade_mini < 1.0) {
                 fade_fx();
             }
             high++;
@@ -677,7 +679,7 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
         while (i < n_samples){
             bfl[high] = src[i] / 32768.0;
             bfr[high] = bfl[high];
-            if (fade_fill > 0) {
+            if (fade_fill > 0 || fade_mini < 1.0) {
                 fade_fx();
             }
             i+=1;
@@ -690,7 +692,7 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
         while (i < n_samples){
             bfl[high] = src[i] / 32768.0;
             bfr[high] = src[i + 1] / 32768.0;
-            if (fade_fill > 0) {
+            if (fade_fill > 0 || fade_mini < 1.0) {
                 fade_fx();
             }
             i+=2;
@@ -783,7 +785,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
                 }
             } else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
 
-            if (fade_fill > 0) {
+            if (fade_fill > 0 || fade_mini < 1.0) {
                 fade_fx();
             }
 
