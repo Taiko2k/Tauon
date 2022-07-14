@@ -30,7 +30,8 @@ import glob
 import locale
 import re
 import math
-
+import threading
+import urllib.parse
 
 # A seconds based timer
 class Timer:
@@ -149,17 +150,17 @@ def rel_luminance(colour):
     b = colour[2] / 255
 
     if r < 0.03928:
-        r = r / 12.90
+        r /= 12.90
     else:
         r = ((r + 0.055) / 1.055) ** 2.4
 
     if g < 0.03928:
-        g = g / 12.90
+        g /= 12.90
     else:
         g = ((g + 0.055) / 1.055) ** 2.4
 
     if b < 0.03928:
-        b = b / 12.90
+        b /= 12.90
     else:
         b = ((b + 0.055) / 1.055) ** 2.4
 
@@ -230,11 +231,11 @@ def star_count(sec, dur):
         stars += 1
     if sec > 60 * 60 * 2:
         stars += 1
-    if sec > 60 * 60 * 5:
+    if sec > 60 * 60 * 4:
         stars += 1
-    if sec > 60 * 60 * 10:
+    if sec > 60 * 60 * 8:
         stars += 1
-    if sec > 60 * 60 * 15:
+    if sec > 60 * 60 * 16:
         stars += 1
     return stars
 
@@ -511,7 +512,7 @@ def get_folder_size(path):
 def filename_safe(text, sub=""):
     for cha in '/\\<>:"|?*':
         text = text.replace(cha, sub)
-    return text
+    return text.rstrip(" .")
 
 def get_artist_strip_feat(track_object):
 
@@ -876,30 +877,8 @@ def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of 
             break
 
 def fit_box(inner, outer):
-
-    # find the largest side of the outer box
-    large = outer[0]
-    if outer[1] > large:
-        large = outer[1]
-
-    # find the aspect ratio of inner image
-    ratio = inner[0] / inner[1]
-
-    # scale up to largest potential
-    w = large
-    h = w * ratio
-
-    # constrain height
-    if h > outer[1]:
-        h = outer[1]
-        w = h / ratio
-
-    # constrain width
-    if w > outer[0]:
-        w = outer[0]
-        h = w * ratio
-
-    return round(w), round(h)
+    scale = min(outer[0]/inner[0], outer[1]/inner[1])
+    return round(inner[0] * scale), round(inner[1] * scale)
 
 
 def seconds_to_day_hms(seconds, s_day, s_days):
@@ -912,3 +891,51 @@ def seconds_to_day_hms(seconds, s_day, s_days):
         return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minuites))}:{str(int(seconds))}"
     else:
         return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minuites)).zfill(2)}:{str(int(seconds)).zfill(2)}"
+
+
+def shooter(func, args=()):
+    shoot = threading.Thread(target=func, args=args)
+    shoot.daemon = True
+    shoot.start()
+
+def d_date_display(track):
+    if 'rdat' in track.misc:
+        return str(track.date) + " → " + track.misc["rdat"]
+    return str(track.date)
+
+def process_odat(nt, odat):
+    if odat and odat != nt.date and odat != nt.date[:4] and odat != nt.date[-4:] \
+            and nt.date != odat[:4] and nt.date != odat[-4:]:
+        if not nt.date:
+            nt.date = odat
+        else:
+            nt.misc["rdat"] = nt.date
+            nt.date = odat
+
+def clean_string(s):
+    return s.encode('utf-8', 'surrogatepass').decode('utf-8', 'replace')
+
+def uri_parse(s):
+    if s.startswith("file://"):
+        s = str(urllib.parse.unquote(s)).replace("file://", "").replace("\r", "")
+    return s
+
+mac_styles = {
+    "mac": None,
+    "whitesur": None,
+    "vimix": None,
+    "sweet": None,
+    "dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
+    "nordic": None,
+    "juno": None
+}
+
+def sleep_timeout(condition_function, time_limit=2):
+    if condition_function():
+        return
+    timer = Timer()
+    timer.set()
+    while condition_function():
+        time.sleep(0.01)
+        if timer.get() > time_limit:
+            break

@@ -17,7 +17,9 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-import fcntl
+import sys
+if sys.platform != 'win32':
+    import fcntl
 import html
 import time
 import random
@@ -49,7 +51,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             return None, None
         else:
             return tr[0], tr[1]
-
 
     chunker = tauon.chunker
     gui.web_running = True
@@ -89,7 +90,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             elif path == "/radio/update_radio":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-                self.end_headers()
 
                 track_id, p = get_broadcast_track()
                 if track_id is not None:
@@ -102,19 +102,24 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     data = {"position": position,
                             "index": track.index,
                             "port": str(prefs.broadcast_port)}
+
                     data = json.dumps(data).replace(" ", "").encode()
+                    self.send_header("Content-length", str(len(data)))
+                    self.end_headers()
                     self.wfile.write(data)
 
                 else:
                     data = {"position": 0,
                             "index": -1}
                     data = json.dumps(data).replace(" ", "").encode()
+                    self.send_header("Content-length", str(len(data)))
+                    self.end_headers()
                     self.wfile.write(data)
 
             elif path == "/radio/getpic":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-                self.end_headers()
+
 
                 track_id, p = get_broadcast_track()
 
@@ -140,6 +145,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "lyrics": lyrics}
 
                         data = json.dumps(data).encode()
+                        self.send_header("Content-length", str(len(data)))
+                        self.end_headers()
                         self.wfile.write(data)
                     except:
                         # Failed getting image
@@ -152,6 +159,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "lyrics": lyrics}
 
                         data = json.dumps(data).encode()
+                        self.send_header("Content-length", str(len(data)))
+                        self.end_headers()
                         self.wfile.write(data)
                 else:
                     # Broadcast is not active
@@ -164,6 +173,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "lyrics": ""}
 
                     data = json.dumps(data).encode()
+                    self.send_header("Content-length", str(len(data)))
+                    self.end_headers()
                     self.wfile.write(data)
 
             elif path == "/stream.ogg":
@@ -172,13 +183,17 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
                 self.send_response(200)
                 self.send_header("Content-type", "audio/ogg")
+                #self.send_header("Transfer-Encoding", "chunked")
                 self.end_headers()
 
                 position = max(chunker.master_count - 7, 1)
                 id = random.random()
 
                 for header in chunker.headers:
+                    #self.wfile.write(hex(len(header))[2:].encode())
+                    #self.wfile.write("\r\n".encode())
                     self.wfile.write(header)
+                    #self.wfile.write("\r\n".encode())
                 while True:
                     if not pctl.broadcast_active:
                         return
@@ -186,7 +201,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         while 1 < position < chunker.master_count:
                             if not pctl.broadcast_active:
                                 return
+                            #self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
+
+                            #self.wfile.write("\r\n".encode())
                             self.wfile.write(chunker.chunks[position])
+                            #self.wfile.write("\r\n".encode())
+
                             position += 1
                     else:
                         time.sleep(0.01)
@@ -253,6 +273,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["duration"] = int(track.length * 1000)
             data["id"] = track.index
             data["position"] = track_position
+            data["path"] = track.fullpath
             data["album_id"] = album_id
             data["has_lyrics"] = track.lyrics != ""
             data["track_number"] = str(track.track_number).lstrip("0")
@@ -543,10 +564,34 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.end_headers()
                 self.wfile.write(b"OK")
 
+            elif path.startswith("/api1/setvolumerel/"):
+                key = path[19:]
+                if key.lstrip("-").isdigit() and key.count("-") < 2:
+                    volume = pctl.player_volume + int(key)
+                    volume = max(volume, 0)
+                    volume = min(volume, 100)
+                    pctl.player_volume = volume
+                    pctl.set_volume()
+
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
             elif path.startswith("/api1/seek1k/"):
                 key = path[13:]
                 if key.isdigit():
                     pctl.seek_decimal(int(key) / 1000)
+
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"OK")
+
+            elif path.startswith("/api1/seek/"):
+                key = path[11:]
+                if key.isdigit():
+                    pctl.seek_time(int(key) / 1000)
 
                 self.send_response(200)
                 self.send_header("Content-type", "text/plain")
@@ -646,6 +691,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                 self.send_response(404)
                 self.end_headers()
                 self.wfile.write(b"404 Not found")
+            tauon.wake()
 
     class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
         pass
@@ -692,7 +738,7 @@ def controller(tauon):
 
             self.send_response(200)
             self.end_headers()
-
+            tauon.wake()
     print("Start controller server")
     try:
         httpd = HTTPServer(("127.0.0.1", 7813), Server)
@@ -717,6 +763,7 @@ def authserve(tauon):
                 if len(code) > 1:
                     code = code[1]
                     self.wfile.write(b"You can close this now and return to Tauon Music Box")
+                tauon.wake()
 
             else:
                 self.send_response(400)
@@ -840,7 +887,6 @@ class VorbisMonitor():
             new = io.BytesIO()
             new.write(b.read())
             self.buffer = new
-
 
 vb = VorbisMonitor()
 

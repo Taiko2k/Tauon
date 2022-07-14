@@ -76,27 +76,39 @@ class Config:
                     f.write(os.linesep)
                     continue
 
+                c = 0
                 f.write(item[1])
+                c += len(item[1])
+
                 f.write(" = ")
+                c += 3
 
                 if item[0] == 'bool':
                     if item[2] is True:
                         f.write("true")
+                        c += 4
                     else:
                         f.write("false")
+                        c += 5
 
                 if item[0] == 'string':
                     f.write('"')
                     f.write(item[2])
                     f.write('"')
+                    c += len(item[2]) + 2
 
                 if item[0] == 'int':
                     f.write(str(item[2]))
+                    c += len(str(item[2]))
 
                 if item[0] == 'float':
                     f.write(str(item[2]))
+                    c += len(str(item[2]))
 
                 if item[3]:
+                    d = 30 - c
+                    if d > 0:
+                        f.write(" " * d)
                     f.write("  # ")
                     f.write(item[3])
 
@@ -110,7 +122,7 @@ class Config:
         old_value = None
 
         for row in self.old:
-            row = row.split("#", 1)[0]
+            row = row.split(" #", 1)[0]
             if "=" in row:
                 if row.split("=", 1)[0].strip() == key:
                     old_value = row.split("=", 1)[1].strip()

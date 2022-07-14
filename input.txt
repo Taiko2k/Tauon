@@ -25,8 +25,9 @@ previous Left Shift
 advance Right Shift
 advance End
 
-vol-up Up Shift
-vol-down Down Shift
+vol-up Up Ctrl
+vol-down Down Ctrl
+toggle-mute M Ctrl
 
 toggle-shuffle .
 toggle-repeat ,
@@ -44,18 +45,23 @@ goto-previous ' Ctrl
 goto-top Home Shift
 goto-bottom End Shift
 
+shift-up Up Shift
+shift-down Down Shift
+
 info-show I Ctrl
 info-playing P Ctrl
 
+escape Escape
 pageup PageUp
 pagedown PageDown
 
 delete-playlist W Ctrl
 delete-playlist-force W Shift Ctrl
 rename-playlist R Ctrl
+rename-playlist F2
 new-playlist T Ctrl
 
-new-generator-playlist
+new-generator-playlist E Ctrl Shift
 edit-generator E Ctrl
 
 search-lyrics-selected
@@ -78,12 +84,11 @@ toggle-gallery-keycontrol Tab
 toggle-showcase F5
 toggle-minimode F8
 toggle-columns
-toggle-artistinfo
+toggle-artistinfo O Ctrl
 cycle-layouts ]
 cycle-layouts-reverse [
 
 playlist-toggle-breaks F1
-cycle-theme F2
 
 toggle-auto-theme F3
 find-playing-artist F4
@@ -93,12 +98,14 @@ show-encode-folder F9
 toggle-fullscreen F11
 quit Q Ctrl
 
-cycle-theme-reverse
+cycle-theme ] Ctrl
+cycle-theme-reverse [ Ctrl
 reload-theme F10
 
 opacity-up = Ctrl
 opacity-down - Ctrl
 
+transfer-playtime-to P Ctrl Shift
 toggle-show-art H Ctrl
 resize-window-16:9 F11 Alt
 toggle-console `

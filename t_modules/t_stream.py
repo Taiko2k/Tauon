@@ -16,17 +16,25 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-
+import mimetypes
 import urllib.request
 import threading
 import time
 import subprocess
 import os
-import fcntl
+import sys
+if sys.platform != 'win32':
+    import fcntl
 import datetime
 import io
 import shutil
+import mutagen
+import copy
+from PIL import Image
+from mutagen.flac import Picture
+import base64
 from t_modules.t_extra import filename_safe
+from t_modules.t_webserve import vb
 
 class StreamEnc:
 
@@ -34,6 +42,8 @@ class StreamEnc:
         self.tauon = tauon
         self.download_running = False
         self.encode_running = False
+        self.pump_running = False
+        self.feed_running = False
 
         self.download_process = False
         self.abort = False
@@ -47,6 +57,7 @@ class StreamEnc:
 
         self.chunks = {}
         self.c = 0
+        self.url = None
 
     def stop(self):
 
@@ -62,14 +73,26 @@ class StreamEnc:
     def start_download(self, url):
 
         self.abort = True
-
         while self.download_running:
             time.sleep(0.01)
         while self.encode_running:
             time.sleep(0.01)
+        while self.pump_running:
+            time.sleep(0.01)
 
         self.__init__(self.tauon)
 
+        self.url = url
+        result = self.start_request()
+        if not result:
+            return False
+
+        self.download_process = threading.Thread(target=self.pump)
+        self.download_process.daemon = True
+        self.download_process.start()
+        return True
+
+    def start_request(self):
         def NiceToICY(self):
             class InterceptedHTTPResponse:
                 pass
@@ -84,24 +107,117 @@ class StreamEnc:
         ORIGINAL_HTTP_CLIENT_READ_STATUS = urllib.request.http.client.HTTPResponse._read_status
         urllib.request.http.client.HTTPResponse._read_status = NiceToICY
 
-        try:
-            r = urllib.request.Request(url)
-            #r.add_header('GET', '1')
-            r.add_header('Icy-MetaData', '1')
-            print("Open URL.....")
-            r = urllib.request.urlopen(r)
-            print("URL opened.")
+        retry = 5
+        while True:
+            try:
+                r = urllib.request.Request(self.url)
+                #r.add_header('GET', '1')
+                r.add_header('Icy-MetaData', '1')
+                r.add_header('User-Agent', self.tauon.t_agent)
+                print("Open URL.....")
+                r = urllib.request.urlopen(r, timeout=7, cafile=self.tauon.ca)
+                print("URL opened.")
 
-        except:
-            print("Connection failed")
-            return False
+            except Exception as e:
+
+                print("URL error...")
+                retry -= 1
+                if retry > 0 and "Temporary" in str(e):
+                    time.sleep(2)
+                    print("RETRYING...")
+                    continue
+                else:
+                    print("Connection failed")
+                    print(str(e))
+                    self.tauon.gui.show_message("Failed to establish a connection", str(e), mode="error")
+                    return False
+            break
 
         self.download_process = threading.Thread(target=self.run_download, args=([r]))
         self.download_process.daemon = True
         self.download_process.start()
-
         self.download_running = True
         return True
+
+    def pump(self):
+        aud = self.tauon.aud
+        if self.tauon.prefs.backend != 4 or not aud:
+            print("Radio error: Phazor not loaded")
+            return
+        self.pump_running = True
+
+        rate = str(self.tauon.prefs.samplerate)
+        cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",
+               rate, "-"]
+
+        startupinfo = None
+        if self.tauon.msys:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+        if sys.platform != 'win32':
+           fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+
+        raw_audio = None
+        max_read = int(10000)
+        vb.reset()
+        vb.tauon = self.tauon
+
+        def feed(decoder):
+            position = 0
+            self.feed_running = True
+            try:
+                while True:
+                    if position < self.tauon.stream_proxy.c:
+                        if position not in self.tauon.stream_proxy.chunks:
+                            print("The buffer was deleted too soon!")
+                            break
+
+                        chunk = self.chunks[position]
+                        decoder.stdin.write(chunk)
+                        vb.input(self.tauon.stream_proxy.chunks[position])
+                        position += 1
+                    else:
+                        time.sleep(0.01)
+                    if not self.pump_running or not self.feed_running:
+                        break
+            except:
+                self.feed_running = False
+                raise
+            print("Exit feeder")
+
+        feeder = threading.Thread(target=feed, args=[decoder])
+        feeder.daemon = True
+        feeder.start()
+
+        retry = 3
+
+        while True:
+            if not self.tauon.stream_proxy.download_running or self.abort:
+                break
+            if raw_audio is None:
+                raw_audio = decoder.stdout.read(max_read)
+            if raw_audio:
+                r = aud.feed_ready(max_read)
+                if r:
+                    aud.feed_raw(len(raw_audio), raw_audio)
+                    if len(raw_audio) < max_read:
+                        time.sleep(0.01)
+                    raw_audio = None
+                    continue
+
+            time.sleep(0.01)
+
+
+        decoder.terminate()
+        time.sleep(0.1)
+        try:
+            decoder.kill()
+        except:
+            pass
+
+        self.pump_running = False
+
 
     def encode(self):
 
@@ -132,17 +248,82 @@ class StreamEnc:
             if os.path.isfile(target_file):
                 os.remove(target_file)
 
-            cmd = ['ffmpeg', "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
+            cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
             decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+            if sys.platform != 'win32':
+                fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
             position = 0
             old_metadata = self.tauon.radiobox.song_key
+            old_tags = self.tauon.pctl.found_tags
 
             ##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-            cmd = ["ffmpeg", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
+            cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
             encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            def save_track():
+                #self.tauon.recorded_songs.append(song)
+
+                save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                save_file += filename_safe(old_metadata)
+                save_file = save_file.strip() + ext
+                save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                if not os.path.exists(self.tauon.prefs.encoder_output):
+                    os.makedirs(self.tauon.prefs.encoder_output)
+                shutil.move(target_file, save_file)
+
+                # print(self.tauon.pctl.tag_history)
+                # print(old_metadata)
+                tags = self.tauon.pctl.tag_history.get(old_metadata, None)
+                if tags:
+                    print("Save metadata to file")
+                    #print(tags)
+                    muta = mutagen.File(save_file, easy=True)
+                    muta["artist"] = tags.get("artist", "")
+                    muta["title"] = tags.get("title", "")
+                    muta["album"] = tags.get("album", "")
+                    # if tags["image"]:
+                    #     tags["image"].seek(0)
+                    #     im = Image.open(tags["image"])
+                    #     width, height = im.size
+                    #     tags["image"].seek(0)
+                    #
+                    #     picture = Picture()
+                    #     tags["image"].seek(0)
+                    #     picture.data = tags["image"].read()
+                    #     picture.type = 3
+                    #     picture.desc = ""
+                    #     picture.mime = "image/jpeg"
+                    #     picture.width = width
+                    #     picture.height = height
+                    #
+                    #     mode_to_bpp = {'1': 1, 'L': 8, 'P': 8, 'RGB': 24, 'RGBA': 32, 'CMYK': 32, 'YCbCr': 24, 'I': 32,
+                    #                    'F': 32}
+                    #     picture.depth = mode_to_bpp[im.mode]
+                    #
+                    #     picture_data = picture.write()
+                    #     encoded_data = base64.b64encode(picture_data)
+                    #     vcomment_value = encoded_data.decode("ascii")
+                    #     muta["metadata_block_picture"] = [vcomment_value]
+
+                    muta.save()
+
+                target_pl = None
+                for i, pl in enumerate(self.tauon.pctl.multi_playlist):
+                    if pl[0] == "Saved Radio Tracks":
+                        target_pl = i
+                if target_pl is None:
+                    self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Saved Radio Tracks"))
+                    target_pl = len(self.tauon.pctl.multi_playlist) - 1
+
+                load_order = self.tauon.pctl.LoadClass()
+                load_order.playlist = self.tauon.pctl.multi_playlist[target_pl][6]
+                load_order.target = save_file
+                self.tauon.load_orders.append(copy.deepcopy(load_order))
+                self.tauon.gui.update += 1
 
             while True:
 
@@ -161,20 +342,14 @@ class StreamEnc:
 
                     if os.path.exists(target_file):
                         if os.path.getsize(target_file) > 256000:
-
                             print("Save file")
-                            save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                            save_file += filename_safe(old_metadata)
-                            save_file = save_file.strip() + ext
-                            save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                            if os.path.exists(save_file):
-                                os.remove(save_file)
-                            shutil.move(target_file, save_file)
+                            save_track()
                         else:
                             print("Discard small file")
                             os.remove(target_file)
 
                     self.encode_running = False
+                    self.tauon.pctl.tag_history.clear()
                     return
 
                 if old_metadata != self.tauon.radiobox.song_key:
@@ -195,15 +370,7 @@ class StreamEnc:
                             pass
                         if os.path.exists(target_file):
                             if os.path.getsize(target_file) > 256000:
-                                save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
-                                save_file += filename_safe(old_metadata)
-                                save_file = save_file.strip() + ext
-                                save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
-                                if os.path.exists(save_file):
-                                    os.remove(save_file)
-                                if not os.path.exists(self.tauon.prefs.encoder_output):
-                                    os.makedirs(self.tauon.prefs.encoder_output)
-                                shutil.move(target_file, save_file)
+                                save_track()
                             else:
                                 print("Discard small file")
                                 os.remove(target_file)
@@ -220,8 +387,10 @@ class StreamEnc:
                 else:
                     time.sleep(0.005)
 
-        except:
+        except Exception as e:
             print("Encoder thread crashed!")
+            print(str(e))
+            #raise
             self.encode_running = False
             return
 
@@ -278,6 +447,7 @@ class StreamEnc:
                     if not icy or m_remain > len(chunk):
                         # We're sure its data Its data, send it on
                         self.chunks[self.c] = chunk
+
                         # Delete old data
                         d = self.c - 90000
                         if d in self.chunks:
@@ -311,7 +481,7 @@ class StreamEnc:
 
                         self.chunks[self.c] = data1 + data2
                         # Delete old data
-                        d = self.c - 512
+                        d = self.c - 90000
                         if d in self.chunks:
                             del self.chunks[d]
 
@@ -328,7 +498,7 @@ class StreamEnc:
                             meta = text.decode().rstrip("\x00")
                             for tag in meta.split(";"):
                                 if '=' in tag:
-                                    a, b = tag.split('=')
+                                    a, b = tag.split('=', 1)
                                     if a == 'StreamTitle':
                                         #print("Set meta")
                                         self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
@@ -338,7 +508,7 @@ class StreamEnc:
                             self.download_running = False
                             self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
                             raise
-        except:
+        except Exception as e:
             print("Stream download thread crashed!")
             self.download_running = False
             return

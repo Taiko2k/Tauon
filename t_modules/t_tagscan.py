@@ -25,6 +25,7 @@ import wave
 import io
 import os
 import math
+from t_modules.t_extra import process_odat
 
 def parse_mbids_from_vorbis(object, key, value):
 
@@ -147,6 +148,7 @@ class Flac:
         # print(fields)
         artists = []
         genres = []
+        odat = ""
 
         for i in range(fields):
             buffer = f.read(4)
@@ -182,6 +184,8 @@ class Flac:
                         self.cue_sheet = b.decode()
                     elif a == "date":
                         self.date = b.decode("utf-8")
+                    elif a == "originaldate":
+                        odat = b.decode("utf-8")
                     elif a == "comment":
                         self.comment = b.decode("utf-8")
                     elif a == "album":
@@ -209,11 +213,11 @@ class Flac:
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
                     elif "replaygain_track_gain" == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif "replaygain_track_peak" == a:
                         self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif "replaygain_album_gain" == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif "replaygain_album_peak" == a:
                         self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif 'composer' == a:
@@ -235,7 +239,7 @@ class Flac:
             self.genre = "; ".join(genres)
             if len(genres) > 1:
                 self.misc['genres'] = genres
-
+        process_odat(self, odat)
 
     def read_seek_table(self, f):
 
@@ -441,6 +445,7 @@ class Opus:
 
         artists = []
         genres = []
+        odat = ""
 
         for i in range(number):
             s = v.read(4)
@@ -478,6 +483,8 @@ class Opus:
                         genres.append(b.decode())
                     elif a == "date":
                         self.date = b.decode("utf-8")
+                    elif a == "originaldate":
+                        odat = b.decode("utf-8")
                     elif a == "comment":
                         self.comment = b.decode("utf-8")
                     elif a == "album":
@@ -504,11 +511,11 @@ class Opus:
                         # print(b)
 
                     elif 'replaygain_track_gain' == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif 'replaygain_track_peak' == a:
                         self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif 'replaygain_album_gain' == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").strip(" dB"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
                     elif 'replaygain_album_peak' == a:
                         self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif a == "discnumber":
@@ -521,10 +528,10 @@ class Opus:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
                         self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
-                    else:
-                        print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
-                        print(b.decode("utf-8"))
-                        print("      In file: " + self.filepath)
+                    # else:
+                    #     print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
+                    #     print(b.decode("utf-8"))
+                    #     print("      In file: " + self.filepath)
 
                     break
 
@@ -538,6 +545,7 @@ class Opus:
             self.genre = "; ".join(genres)
             if len(genres) > 1:
                 self.misc['genres'] = genres
+        process_odat(self, odat)
 
         # Find the last Ogg page from end of file to get track length
         f.seek(-1, 2)
@@ -720,11 +728,11 @@ class Ape:
                 elif key.lower() == "lyrics":
                     self.lyrics = value
                 elif "replaygain_track_gain" == key.lower():
-                    self.misc["replaygain_track_gain"] = float(value.strip(" dB"))
+                    self.misc["replaygain_track_gain"] = float(value.lower().strip(" db"))
                 elif "replaygain_track_peak" == key.lower():
                     self.misc["replaygain_track_peak"] = float(value)
                 elif "replaygain_album_gain" == key.lower():
-                    self.misc["replaygain_album_gain"] = float(value.strip(" dB"))
+                    self.misc["replaygain_album_gain"] = float(value.lower().strip(" db"))
                 elif "replaygain_album_peak" == key.lower():
                     self.misc["replaygain_album_peak"] = float(value)
                 elif parse_mbids_from_vorbis(self, key.lower(), value):

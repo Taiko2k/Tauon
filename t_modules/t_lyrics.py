@@ -19,7 +19,6 @@
 
 
 from isounidecode import unidecode
-from PyLyrics import PyLyrics
 from bs4 import BeautifulSoup  # Remember to add to dependency list if PyLyrics is removed
 import urllib.parse
 import requests  # Remember to add to dependency list if PyLyrics is removed
@@ -33,23 +32,25 @@ import re
 # Finally add provider name and function reference to lyric_sources dict below
 
 
-def lyricwiki(artist, title):
-
-    lyrics = PyLyrics.getLyrics(artist, title)
-
-    if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
-        lyrics = "[Instrumental]"
-
-    return lyrics
-
-# def apiseeds(artist, title):
+# def lyricwiki(artist, title):
 #
-#     point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(artist) + \
-#             "/" + urllib.parse.quote(title) + "?apikey=" + "4daMG8Oas53LFqXEaeFh8mA8UNG" + \
-#             "Vg22JdJXCKxpxp8GtLcVJv29d3fAFYucaALk2"
+#     lyrics = PyLyrics.getLyrics(artist, title)
 #
-#     r = requests.get(point)
-#     return r.json()['result']['track']['text'].replace("\r\n", "\n")
+#     if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
+#         lyrics = "[Instrumental]"
+#
+#     return lyrics
+
+def ovh(artist, title):
+
+    q = urllib.parse.quote(f"{artist}/{title}")
+    point = f"https://api.lyrics.ovh/v1/{q}"
+    r = requests.get(point)
+    if r.status_code == 200:
+        j = r.json()
+        return j["lyrics"]
+    return ""
+
 
 def happi(artist, title):
     q = urllib.parse.quote(f"{artist} {title}")
@@ -142,10 +143,11 @@ lyric_sources = {
     # "Apiseeds": apiseeds,
     "Happi": happi,
     "Genius": genius,
-    "LyricWiki": lyricwiki,
+    #"LyricWiki": lyricwiki,
+    "lyrics.ovh": ovh,
 }
 
 uses_scraping = {
-    "LyricWiki",
+    #"LyricWiki",
     "Genius"
 }

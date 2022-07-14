@@ -34,6 +34,7 @@ class Gnome:
         self.indicator_mode = 0
         self.update_tray_text = None
         self.tray_text = ""
+        self.resume_playback = False
 
         self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
         self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
@@ -120,7 +121,7 @@ class Gnome:
 
         def menu_quit(_):
             print("Exit via tray")
-            tauon.exit()
+            tauon.exit("Exit received from app indicator")
             self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
 
         def play_pause(_):
@@ -276,8 +277,72 @@ class Gnome:
             if self.tauon.inp.media_key:
                 gui.update = 1
 
-        # set up the glib main loop.
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        try:
+            # set up the glib main loop.
+            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+            bus = dbus.Bus(dbus.Bus.TYPE_SYSTEM)
+            bus_object = bus.get_object('org.freedesktop.login1',
+                                        '/org/freedesktop/login1')
+
+            iface = dbus.Interface(bus_object,
+                                   dbus_interface='org.freedesktop.login1.Manager')
+
+            tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
+            tauon.shutdown_lock = iface.Inhibit("shutdown", "Tauon Music Box", "Save data to disk", "delay")
+
+            def update_play_lock():
+                if prefs.block_suspend:
+                    if pctl.playing_state in (1, 3) and tauon.play_lock is None:
+                        tauon.play_lock = iface.Inhibit("idle", "Tauon Music Box", "Audio is playing", "block")
+                    elif pctl.playing_state not in (1, 3) and tauon.play_lock is not None:
+                        del tauon.play_lock
+                        tauon.play_lock = None
+                elif tauon.play_lock is not None:
+                    del tauon.play_lock
+                    tauon.play_lock = None
+
+            tauon.update_play_lock = update_play_lock
+
+            def PrepareForSleep(active):
+
+                if active == 1 and tauon.sleep_lock is not None:
+                    print("System is suspending!")
+                    if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
+                        pctl.stop(block=True)
+                        if prefs.resume_play_wake:
+                            pctl.playing_state = 3
+                            self.resume_playback = True
+                    elif pctl.playing_state in (1, 3):
+                        tauon.pctl.pause()
+                        if prefs.resume_play_wake:
+                            self.resume_playback = True
+                    del tauon.sleep_lock
+                    tauon.sleep_lock = None
+
+                elif active == 0 and tauon.sleep_lock is None:
+                    tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
+                    if self.resume_playback:
+                        self.resume_playback = False
+                        if pctl.playing_state == 3:
+                            pctl.playing_state = 0
+                            time.sleep(4)
+                            pctl.play()
+                            print("Resume Radio")
+                        else:
+                            pctl.play()
+
+            def PrepareForShutdown(active):
+                print("The system is shutting down!")
+                tauon.quick_close = True
+                tauon.exit("System shutdown signal received")
+
+            iface.connect_to_signal("PrepareForSleep", PrepareForSleep)
+            iface.connect_to_signal("PrepareForShutdown", PrepareForShutdown)
+
+
+        except:
+            print("Failure to connect to login1")
 
         if prefs.mkey:
             try:
@@ -346,16 +411,17 @@ class Gnome:
                         if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
                             track = pctl.playing_object()
                             self.playing_index = track.index
-                            id = f"/com/tauon/{track.index}/{pctl.playlist_playing_position}"
+                            id = f"/com/tauon/{track.index}/{abs(pctl.playlist_playing_position)}"
+                            if pctl.playing_state == 3:
+                                id = "/com/tauon/radio"
 
                             d = {
-                                'mpris:trackid': id,
+                                'mpris:trackid': dbus.ObjectPath(id),
                                 'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
                                 'xesam:album': track.album,
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
                                 'xesam:artist': dbus.Array([track.artist]),
                                 'xesam:title': track.title,
-                                'xesam:url': "file://" + urllib.parse.quote(track.fullpath),
                                 'xesam:asText': track.lyrics,
                                 'xesam:autoRating': star_count2(tauon.star_store.get(track.index)),
                                 'xesam:composer': dbus.Array([track.composer]),
@@ -365,6 +431,10 @@ class Gnome:
                                 'xesam:genre': dbus.Array([track.genre])
 
                             }
+                            try:
+                                d['xesam:url'] = "file://" + urllib.parse.quote(track.fullpath)
+                            except:
+                                print("Uri encode error")
 
                             try:
                                 i_path = tauon.thumb_tracks.path(track)
@@ -392,7 +462,13 @@ class Gnome:
                                 changed['CanSeek'] = self.player_properties['CanSeek']
 
                         if len(changed) > 0:
-                            self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+                            try:
+                                self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+                            except Exception as e:
+                                print("Error updating MPRIS")
+                                print(str(e))
+                                print(changed)
+                                print(pctl.playing_object().fullpath)
 
                     def update_progress(self):
                         self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
@@ -434,7 +510,7 @@ class Gnome:
                             'Rate': 1.0,
                             'Shuffle': pctl.random_mode,
                             'Volume': pctl.player_volume / 100,
-                            'Position': 0,
+                            'Position': dbus.Int64(0),
                             'MinimumRate': 1.0,
                             'MaximumRate': 1.0,
                             'CanGoNext': True,
@@ -442,7 +518,8 @@ class Gnome:
                             'CanPlay': True,
                             'CanPause': True,
                             'CanSeek': True,
-                            'CanControl': True
+                            'CanControl': True,
+                            'Metadata': dbus.Dictionary({}, signature='sv')
                         }
 
                     def get_loop_status(self):
@@ -455,10 +532,12 @@ class Gnome:
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Raise(self):
                         gui.request_raise = True
+                        tauon.wake()
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Quit(self):
-                        tauon.exit()
+                        tauon.wake()
+                        tauon.exit("Exit request received from MPRIS2")
 
                     @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
                                     in_signature='ss', out_signature='v')
@@ -484,6 +563,7 @@ class Gnome:
                                     in_signature='ssv', out_signature='')
                     def Set(self, interface_name, property_name, value):
                         if interface_name == 'org.mpris.MediaPlayer2.Player':
+                            tauon.wake()
                             if property_name == "Volume":
                                 pctl.player_volume = min(max(int(value * 100), 0), 100)
                                 pctl.set_volume()
@@ -511,11 +591,13 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Next(self):
+                        tauon.wake()
                         pctl.advance()
                         pass
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Previous(self):
+                        tauon.wake()
                         pctl.back()
                         pass
 
@@ -525,6 +607,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def PlayPause(self):
+                        tauon.wake()
                         if pctl.playing_state == 3:
                             pctl.stop()  # Stop if playing radio
                         else:
@@ -536,6 +619,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Play(self):
+                        tauon.wake()
                         pctl.play()
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
@@ -551,6 +635,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def OpenUri(self, uri):
+                        tauon.wake()
                         tauon.open_uri(uri)
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')

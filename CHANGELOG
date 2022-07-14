@@ -1,6 +1,245 @@
 
 Changelog-------------------------------------
 
+v7.3.2
+
+ - Fixed possible tick on track crossfade
+
+v7.3.1
+
+ - Fixed distortion on track start (regression)
+
+v7.3.0
+
+ - Added Tauon to Tauon interconnect feature
+ - Added transcode of network tracks
+ - Added transcoded track network fallback feature
+ - Added lastfm artist image scraper to artist info panel
+ - Added config setting to disable gamepad
+ - Added hex code compatibility to theme files
+ - Improved "transfer playtime to" function
+ - Improved transition and track timing
+ - Updated Windows support
+ - Tweaked various default keyboard shortcuts
+ - Tweaked the lock playlist feature to be hidden behind shift
+ - Fixed high CPU usage with radio (again)
+ - Fixed toggle-showcase from radio view
+ - Fixed background art to work with radio stations
+ - Fixed non-responsive window on long init
+ - Removed "artist info panel" toggle from view box
+ - Removed discogs setting from UI
+
+v7.2.1
+
+ - Added option to resume playback on system wake
+ - Fixed an issue with high CPU usage with internet radio
+ - Fixed ctrl+m for mute not working and crashing
+ - Fixed a possible issue with premature end of track with some formats
+
+v7.2.0
+
+ - Added cache system option for local files
+ - Added option to use persistent network cache
+ - Added setting to restart on back to UI settings
+ - Added singles folder detection and gallery display
+ - Added generator code 'px' to exclude contents of a playlist
+ - Added escape key to keymaps file
+ - Added toggle mute to keymaps file
+ - Added 'auto' mode for ReplayGain
+ - Added theme mascot extension
+ - Added mini modes to shuffle lockdown mode
+ - Fixed invalid folder name on move
+ - Fixed genre search not detecting semicolon deliminator
+ - Fixed playing track position when items from playlist are deleted
+ - Fixed "Filepath" column sort not working correctly
+ - Fixed some issues with UI scaling in tracks view
+ - Tweaked "Filename" column sort to sort by full filepath
+ - Tweaked play action to resume radio station
+ - Tweaked config file formatting
+ - Tweaked shuffle lockdown to restore on restart
+ - Tweaked restart back threshold time to from 2s to 6s
+ - Restored Spotify button
+ - [Phazor] Fixed audio stall on track jump with delayed IO
+ - [Phazor] Fixed delay/freeze on switching output device
+ - [Phazor] Enabled "cross fade time" setting
+ - [Phazor] Added output-samplerate config setting
+ - [Phazor] Added resample quality config setting
+ - [Phazor] Added setting to always use FFMPEG
+ - [Phazor] Added native Wavpack decode
+ - [Phazor] Added volume curve setting
+ - Removed GStreamer backend
+
+v7.1.3
+
+ - Added game controller input support
+ - Fixed auto export playlist not working
+ - Fixed mod playback (bug from v7.1.2)
+
+v7.1.2
+
+ - Fixed terminal spam on radio playback
+ - [Phazor] Fixed radio stalling in some cases
+ - [Phazor] Fixed some FLAC files not playing
+
+
+v7.1.1
+
+ - Added "Clean Database" prompt function to MENU
+ - Added ctrl text cursor methods
+ - Added automatic scaling between HiDPI monitors (Experimental)
+ - Added playlist tab indicators for track drag
+ - Improved UI scale slider to update without restart
+ - Tweaked internet radio reliability
+ - Fixed radio stream continuing download after using rr/revert
+ - Fixed maloja scrobble not respecting enable setting
+ - Fixed crash when attempting to export an empty playlist
+ - Fixed "zoom art to fix" aspect ratio
+ - Fixed background art not reloading on window resize
+ - Depricated Spotify support (Now hold shift to reveal setting)
+
+v7.1.0
+
+ - Added export playlist settings box
+ - Added chromecast support (Experimental)
+ - Added lyric provider lyrics.ovh
+ - Added "albums" mode to shuffle lockdown
+ - Added gen code 'ia' for albums imported
+ - Added flag "--tray" to hide window on startup
+ - Fixed some radio stations not working
+ - Fixed replay gain not being read from MP3
+ - [Phazor] Fixed some file types not playing with network
+ - Removed lyric provider LyricWiki
+
+v7.0.1
+
+ - Fixed showcase visualiser glitch
+ - Fixed GENRE field in CUE sheet parsing
+
+v7.0.0
+
+ - Added track favorite support for Jellyfin
+ - Added M3U support for playlist import/export
+ - Added new radio layout view
+ - Added icon thumbnails to radio stations
+ - Added generator code "find string" fs
+ - Added auto recorded radio tracks import
+ - Added moved exit radio/showcase button to top panel
+ - Tweaked right side panel size behavior on window resize
+ - Fixed toggle background "Blur" setting not triggering update
+ - Fixed radio broadcast page periodically terminating
+
+v6.8.3
+
+ - Fixed phazor related bugs related to idling
+
+v6.8.2
+
+ - Fixed del key deleting tracks with tag editor box open
+ - Reverted natsort filepath change
+ - [Phazor] Fixed a bug where small chance backend crash on seek
+
+v6.8.1
+
+ - Added shift + up/down for track selection
+ - Moved ctrl + up/down for volume level
+ - Changed track number column name to #
+ - Enabled open image for embedded
+ - Tweaked filtered artist list to transfer back playing when switching artist
+ - Tweaked bitrate column to show samplerate/bitdepth for lossless
+ - Tweaked filepath sort to use natural sort
+ - Fixed possible UI glitch with some video drivers
+ - Fixed tooltip text on light theme
+ - Fixed mac window tool function order
+ - Fixed RTL language text not rendering (RTL still todo)
+ - Fixed add to queue shortcut in search applying text
+ - Fixed left window control in compact mode
+ - [Phazor] Fixed incorrect playback speed with WAV files
+ - [Phazor] Improved output quality with 24bit tracks
+
+v6.8.0
+
+ - Added left window decoration style
+ - Added macOS style window control style
+ - Added option to config file "seek-interval"
+ - Added shuffle lockdown as feature
+ - Added queue and show shortcuts to global search
+ - Fixed album artist field reading for MP3
+ - Fixed crash when displaying filenames with non utf8 data
+ - Fixed gallery add album to queue
+ - Fixed MP3 multi genre scan
+ - Fixed default sorting of imported tracks
+ - Fixed jellyfin album/artist tagging
+ - Changed importer to ignore dotfiles
+ - Further improved idle CPU usage
+ - Improved MPRIS2 compliance
+ - Updated macOS support
+
+v6.7.1
+
+ - Fixed mini mode border
+ - Fixed import stalling in some cases
+
+v6.7.0
+
+ - Added basic built in tag editor
+ - Added server rating support for Airsonic/Subsonic tracks
+ - Added image remove support for M4A, FLAC (now built in)
+ - Added MBID reading for M4A
+ - Changed date display to use original date
+ - Improved window startup speed
+ - Improved idle performance
+ - Tweaked defaults of some settings
+ - Fixed a bug with text highlighting
+ - Fixed an issue with CUE importing
+ - Fixed replay-gain slider setting movement
+ - Fixed a possible issue with Airsonic import stalling
+ - Fixed UI scaling of some border elements
+ - Workaround for a rendering bug in SDL 2.0.16
+ - Replaced Hsaudiotag and Stagger with Mutagen
+
+v6.6.1
+
+ - Added Jellyfin playback status update
+ - Added get scrobble counts from Maloja
+ - Added keyboard shortcut to transfer playtimes between tracks
+ - Tweaked default font behavior
+ - Enabled "rescan folder" menu entry for album in folder navigator
+ - Enabled WavePack decode with Phazor (via ffmpeg)
+ - Fixed rescan folder function moving folder to end of playlist when scanning the first
+ - Removed text RGB AA override (now auto detected)
+ - [Flatpak] Removed supplementary CJK font
+
+v6.6.0
+
+ - Restored spectrum visualisers (Phazor only)
+ - Added "Filename" type column
+ - Added relative volume adjust remote API point
+ - Added help link for Discord RP with Flatpak
+ - Added auto pause on suspend
+ - Added auto write db changes on shutdown
+ - Added option to block suspend during playback
+ - Improved radio stream fail error reporting detail
+ - Tweaked search goto to pulse highlight album in gallery
+ - Tweaked last.fm scrobble to include album-artist
+ - Fixed some shortcuts being possible while text input is active
+ - Fixed discord RPC not working when album is a single letter
+ - Fixed CUE sheet parsing missing composer and album artist fields
+ - Fixed click not registering after restore from tray
+ - Fixed some MP3 fields not parsing
+ - Fixed gallery not updating after column sort
+
+v6.5.4
+
+ - Added support for .WAV metadata
+ - Added setting to auto-stop on queue final track
+ - Re-enabled auto search lyrics feature (moved setting to config file)
+ - Fixed crash on reload metadata on removed file
+ - Fixed a rare possible crash when tag scanning MP3 files
+ - Fixed MPRIS not updating on CUE track transition
+ - Tweaked 8 star playtime balance
+ - [Phazor] Fixed an issue with FLAC + CUE position when previous track had different samplerate
+ - [Phazor] Fixed loading of some types of .WAV files (24bit still unsupported)
+
 v6.5.3
 
  - Changed Discord presence control to persistent setting

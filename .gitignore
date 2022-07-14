@@ -7,8 +7,8 @@ pypresence/
 cache/
 user-data/
 .idea/
-pyperclip/
 sdl2/
+fonts/
 *.pyd
 *.pyx
 *.flac
@@ -24,3 +24,6 @@ prime/
 pygettext.py
 *.po~
 lib/
+*.DS_Store
+dist/
+*.exe

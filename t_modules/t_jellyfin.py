@@ -21,7 +21,9 @@ import requests
 import json
 import itertools
 import io
-
+import time
+import threading
+from t_modules.t_extra import Timer
 
 class Jellyfin():
 
@@ -37,6 +39,13 @@ class Jellyfin():
         self.accessToken = None
         self.userId = None
         self.currentId = None
+
+        self.session_thread_active = False
+        self.session_status = 0
+        self.session_item_id = None
+        self.session_update_timer = Timer()
+        self.session_last_item = None
+
 
     def _get_jellyfin_auth(self):
         auth_str = f"MediaBrowser Client={self.tauon.t_title}, Device={self.tauon.device}, DeviceId=-, Version={self.tauon.t_version}"
@@ -57,7 +66,7 @@ class Jellyfin():
                     "X-Application": self.tauon.t_agent,
                     "x-emby-authorization": self._get_jellyfin_auth()
                 },
-                data=json.dumps({ "username": username, "Pw": password }),
+                data=json.dumps({ "username": username, "Pw": password }), timeout=(5, 10)
             )
         except:
             self.gui.show_message("Could not establish connection to server.", "Check server is running and URL is correct.", mode="error")
@@ -102,6 +111,11 @@ class Jellyfin():
 
         url = base_url + "?" + requests.compat.urlencode(params)
 
+        if not self.session_thread_active:
+            shoot = threading.Thread(target=self.session)
+            shoot.daemon = True
+            shoot.start()
+
         return base_url, params
 
     def get_cover(self, track):
@@ -128,6 +142,35 @@ class Jellyfin():
         else:
             print("Jellyfin album art api error:", response.status_code, response.text)
             return None
+
+    def favorite(self, track, un=False):
+        try:
+            if not self.connected or not self.accessToken:
+                self._authenticate()
+
+            if not self.connected:
+                return None
+
+            headers = {
+                "Token": self.accessToken,
+                "X-Application": "Tauon/1.0",
+                "x-emby-authorization": self._get_jellyfin_auth()
+            }
+
+            params = {}
+            base_url = f"{self.prefs.jelly_server_url}/Users/{self.userId}/FavoriteItems/{track.url_key}"
+            if un:
+                response = requests.delete(base_url, headers=headers, params=params)
+            else:
+                response = requests.post(base_url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                return
+            else:
+                print("Jellyfin fav api error")
+
+        except:
+            print("Failed to submit favorite to Jellyfin server")
 
     def ingest_library(self, return_list=False):
         self.gui.update += 1
@@ -188,28 +231,46 @@ class Jellyfin():
             self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
             return
 
+        mem_folder = {}
         for parent, items in grouped_items:
             for track in items:
                 id = self.pctl.master_count  # id here is tauons track_id for the track
                 existing_track = existing.get(track.get("Id"))
                 replace_existing = existing_track is not None
-
+                #print(track.items())
                 if replace_existing:
                     id = existing_track
 
                 nt = self.tauon.TrackClass()
                 nt.index = id  # this is tauons track id
-
                 nt.track_number = str(track.get("IndexNumber", ""))
+                nt.disc_number = str(track.get("ParentIndexNumber", ""))
                 nt.file_ext = "JELY"
-                nt.parent_folder_path = parent
-                nt.parent_folder_name = parent
                 nt.album_artist = track.get("AlbumArtist", "")
-                nt.artist = track.get("AlbumArtist", "")
+                artists = track.get("Artists", [])
+                nt.artist = "; ".join(artists)
+                if len(artists) > 1:
+                    nt.misc["artists"] = artists
                 nt.title = track.get("Name", "")
                 nt.album = track.get("Album", "")
                 nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
                 nt.date = str(track.get("ProductionYear"))
+
+                folder_name = nt.album_artist
+                if folder_name and nt.album:
+                    folder_name += " / "
+                folder_name += nt.album
+
+                if track.get("AlbumId") and folder_name:
+                    key = track.get("AlbumId") + nt.album
+                    if key not in mem_folder:
+                        mem_folder[key] = folder_name
+                    folder_name = mem_folder[key]
+                elif nt.album:
+                    folder_name = nt.album
+
+                nt.parent_folder_path = folder_name
+                nt.parent_folder_name = nt.parent_folder_path
                 nt.is_network = True
 
                 nt.url_key = track.get("Id")
@@ -220,8 +281,28 @@ class Jellyfin():
                     self.pctl.master_count += 1
                 playlist.append(nt.index)
 
+                # Sync favorite
+                star = self.tauon.star_store.full_get(nt.index)
+                user_data = track.get("UserData")
+                if user_data:
+                    if user_data.get("IsFavorite"):
+                        if star is None:
+                            star = self.tauon.star_store.new_object()
+                        if 'L' not in star[1]:
+                            star[1] += "L"
+                        self.tauon.star_store.insert(nt.index, star)
+                    else:
+                        if star is None:
+                            pass
+                        else:
+                            star = [star[0], star[1].replace("L", ""), star[2]]
+                            self.tauon.star_store.insert(nt.index, star)
+
         self.scanning = False
         print("Jellyfin import complete")
+
+        playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
+        self.tauon.sort_track_2(0, playlist)
 
         if return_list:
             return playlist
@@ -229,3 +310,74 @@ class Jellyfin():
         self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
         self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
+
+    def session_item(self, track):
+        return {
+            "QueueableMediaTypes": ["Audio"],
+            "CanSeek": True,
+            "ItemId": track.url_key,
+            "IsPaused": self.pctl.playing_state == 2,
+            "IsMuted": self.pctl.player_volume == 0,
+            "PositionTicks": int(self.pctl.playing_time * 10000000),
+            "PlayMethod": "DirectStream",
+            "PlaySessionId": "0",
+        }
+
+    def session(self):
+
+        if not self.connected:
+            return
+
+        self.session_thread_active = True
+
+        while True:
+            time.sleep(1)
+            track = self.pctl.playing_object()
+
+            if track.file_ext != "JELY" or (self.session_status == 0 and self.pctl.playing_state == 0):
+                if self.session_status != 0:
+                    data = self.session_last_item
+                    self.session_send("Sessions/Playing/Stopped", data)
+                    self.session_status = 0
+                self.session_thread_active = False
+                return
+
+            if (self.session_status == 0 or self.session_item_id != track.index) and self.pctl.playing_state == 1:
+                data = self.session_item(track)
+                self.session_send("Sessions/Playing", data)
+                self.session_update_timer.set()
+                self.session_status = 1
+                self.session_item_id = track.index
+                self.session_last_item = data
+            elif self.session_status == 1 and self.session_update_timer.get() >= 10:
+                data = self.session_item(track)
+                data["EventName"] = "TimeUpdate"
+                self.session_send("Sessions/Playing/Progress", data)
+                self.session_update_timer.set()
+            elif self.session_status in (1, 2) and self.pctl.playing_state in (0, 3):
+                data = self.session_last_item
+                self.session_send("Sessions/Playing/Stopped", data)
+                self.session_status = 0
+            elif self.session_status == 1 and self.pctl.playing_state == 2:
+                data = self.session_item(track)
+                data["EventName"] = "Pause"
+                self.session_send("Sessions/Playing/Progress", data)
+                self.session_update_timer.set()
+                self.session_status = 2
+            elif self.session_status == 2 and self.pctl.playing_state == 1:
+                data = self.session_item(track)
+                data["EventName"] = "Unpause"
+                self.session_send("Sessions/Playing/Progress", data)
+                self.session_update_timer.set()
+                self.session_status = 1
+
+    def session_send(self, point, data):
+
+        response = requests.post(
+            f"{self.prefs.jelly_server_url}/{point}", data=json.dumps(data),
+            headers={
+                "Token": self.accessToken,
+                "X-Application": "Tauon/1.0",
+                "x-emby-authorization": self._get_jellyfin_auth(),
+                "Content-Type": "application/json"
+            })

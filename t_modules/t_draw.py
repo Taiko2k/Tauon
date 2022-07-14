@@ -17,7 +17,7 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-
+import math
 import sys
 from sdl2 import *
 from sdl2.sdlimage import IMG_Load_RW
@@ -26,11 +26,19 @@ import ctypes
 from ctypes import pointer
 import io
 from PIL import Image
+try:
+    from jxlpy import JXLImagePlugin
+    print("Found jxlpy for JPEG XL support")
+except:
+    pass
+
 
 system = "linux"
 if sys.platform == 'win32':
-    system = "windows"
-system = "linux"
+    system = "linux" #"windows"
+    import os
+    os.environ["PANGOCAIRO_BACKEND"] = "fc"
+
 if system == "linux":
     import cairo
     import gi
@@ -38,6 +46,7 @@ if system == "linux":
     gi.require_version('PangoCairo', '1.0')
     from gi.repository import Pango
     from gi.repository import PangoCairo
+
 else:
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
     import win32con, win32api, win32gui, win32ui
@@ -72,7 +81,7 @@ class QuickThumbnail:
         g = io.BytesIO()
         g.seek(0)
         im = Image.open(f)
-        im.thumbnail((w, h), Image.ANTIALIAS)
+        im.thumbnail((w, h), Image.Resampling.LANCZOS)
         im.save(g, 'PNG')
         g.seek(0)
         wop = rw_from_object(g)
@@ -322,21 +331,35 @@ class TDraw:
 
         self.was_truncated = False
 
-    def rect_a(self, location_xy, size_wh, colour, fill=False):
+    def rect_s(self, rectangle, colour, thickness):
+        SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+        x, y, w, h = (round(x) for x in rectangle)
+        th = math.floor(thickness)
+        self.sdl_rect.x = x - th
+        self.sdl_rect.y = y - th
+        self.sdl_rect.w = th
+        self.sdl_rect.h = h + th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # left
+        self.sdl_rect.x = x - th
+        self.sdl_rect.y = y + h
+        self.sdl_rect.w = w + th
+        self.sdl_rect.h = th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # bottom
+        self.sdl_rect.x = x
+        self.sdl_rect.y = y - th
+        self.sdl_rect.w = w + th
+        self.sdl_rect.h = th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # top
+        self.sdl_rect.x = x + w
+        self.sdl_rect.y = y
+        self.sdl_rect.w = th
+        self.sdl_rect.h = h + th
+        SDL_RenderFillRect(self.renderer, self.sdl_rect) # right
 
-        self.sdl_rect.x = round(location_xy[0])
-        self.sdl_rect.y = round(location_xy[1])
-        self.sdl_rect.w = round(size_wh[0])
-        self.sdl_rect.h = round(size_wh[1])
+    def rect_a(self, location_xy, size_wh, colour):
+        self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
-        if fill is True:
-            SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderFillRect(self.renderer, self.sdl_rect)
-        else:
-            SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderDrawRect(self.renderer, self.sdl_rect)
-
-    def rect(self, rectangle, colour, fill=False):
+    def rect(self, rectangle, colour):
 
         self.sdl_rect.x = round(rectangle[0])
         self.sdl_rect.y = round(rectangle[1])
@@ -345,10 +368,10 @@ class TDraw:
 
         SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 
-        if fill:
-            SDL_RenderFillRect(self.renderer, self.sdl_rect)
-        else:
-            SDL_RenderDrawRect(self.renderer, self.sdl_rect)
+        #if fill:
+        SDL_RenderFillRect(self.renderer, self.sdl_rect)
+        # else:
+        #     SDL_RenderDrawRect(self.renderer, self.sdl_rect)
 
     def bordered_rect(self, rectangle, fill_colour, outer_colour, border_size):
 
@@ -440,7 +463,7 @@ class TDraw:
             sd[0].x = round(x) - sd[0].w
 
         elif align == 2:
-            sd[0].x = sd[0].x - int(sd[0].w / 2)
+            sd[0].x -= int(sd[0].w / 2)
 
         if range_height is not None and range_height < sd[0].h:
 
@@ -489,16 +512,16 @@ class TDraw:
                 quick_box[0] = x - quick_box[2]
 
             elif align == 2:
-                quick_box[0] = quick_box[0] - int(quick_box[2] / 2)
+                quick_box[0] -= int(quick_box[2] / 2)
 
             if coll_rect(self.pretty_rect, quick_box):
                 # self.rect_r(quick_box, [0, 0, 0, 100], True)
-                # print("PT")
-                # print(text)
-                if self.real_bg:
-                    real_bg = True
+                # if self.real_bg:
+                #     real_bg = True
+                alpha_bg = True
             else:
                 alpha_bg = False
+
 
         if alpha_bg:
             bg = (0, 0, 0, 0)
@@ -550,7 +573,7 @@ class TDraw:
                 box.x = x - box.w
 
             elif align == 2:
-                box.x = box.x - int(box.w / 2)
+                box.x -= int(box.w / 2)
 
             SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
 
@@ -573,6 +596,7 @@ class TDraw:
             context.set_font_options(options)
 
         layout = PangoCairo.create_layout(context)
+        layout.set_auto_dir(False)
 
         if max_y is not None:
             layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -587,7 +611,7 @@ class TDraw:
                 extra = round(400000 * self.scale)
 
             layout.set_height(h * 1000 + extra)
-           
+
         if not wrap and max_y is None:
             layout.set_height(-1)
 
@@ -614,6 +638,7 @@ class TDraw:
 
         layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
         layout.set_text(text, -1)
+        #print(layout.get_direction(0))
 
         y_off = layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
@@ -686,7 +711,7 @@ class TDraw:
         if align == 1:
             sd[0].x = round(x) - sd[0].w
         elif align == 2:
-            sd[0].x = sd[0].x - int(sd[0].w / 2)
+            sd[0].x -= int(sd[0].w / 2)
 
         if range_height is not None and range_height < sd[0].h - 20:
         
@@ -756,7 +781,7 @@ class TDraw:
             dst.x = round(x) - dst.w
 
         elif align == 2:
-            dst.x = dst.x - int(dst.w / 2)
+            dst.x -= int(dst.w / 2)
 
         #SDL_RenderCopy(renderer, c, None, dst)
         #SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
