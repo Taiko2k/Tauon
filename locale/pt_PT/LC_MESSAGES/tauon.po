@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
 "POT-Creation-Date: 2022-04-16 17:42+1200\n"
-"PO-Revision-Date: 2022-07-14 22:34+0100\n"
+"PO-Revision-Date: 2022-07-14 23:00+0100\n"
 "Last-Translator: Ricardo Simões - XM Corporation <xm.corporation@gmail.com>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_PT/>\n"
@@ -133,7 +133,7 @@ msgstr "A procurar por Chromecasts..."
 
 #: t_modules/t_main.py:7613
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Transmitir para: %s"
 
 #: t_modules/t_main.py:7614
 msgid "No Chromecast devices found"
@@ -305,11 +305,11 @@ msgstr "Exportar Lista de Reprodução"
 
 #: t_modules/t_main.py:14238
 msgid "Save directory"
-msgstr ""
+msgstr "Diretório para salvar"
 
 #: t_modules/t_main.py:14256
 msgid "Use relative paths"
-msgstr ""
+msgstr "Usar caminhos relativos"
 
 #: t_modules/t_main.py:14258
 msgid "Auto-export"
@@ -321,7 +321,7 @@ msgstr "Exportar"
 
 #: t_modules/t_main.py:14275
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Diretório não existe"
 
 #: t_modules/t_main.py:14318
 msgid "Repeat OFF"
@@ -336,22 +336,20 @@ msgid "Repeat Album"
 msgstr "Repetir Álbum"
 
 #: t_modules/t_main.py:14389
-#, fuzzy
 msgid "Shuffle Lockdown"
-msgstr "Baralhar Ligado"
+msgstr "Trancar Misturar"
 
 #: t_modules/t_main.py:14390
-#, fuzzy
 msgid "Shuffle Lockdown Albums"
-msgstr "Baralhar Ligado"
+msgstr "Trancar Misturar Álbuns"
 
 #: t_modules/t_main.py:14392
 msgid "Shuffle OFF"
-msgstr "Baralhar DESLIGADO"
+msgstr "Misturar DESLIGADO"
 
 #: t_modules/t_main.py:14393
 msgid "Shuffle Tracks"
-msgstr "Baralhar Faixas"
+msgstr "Misturar Faixas"
 
 #: t_modules/t_main.py:14394
 msgid "Random Albums"
@@ -899,12 +897,12 @@ msgstr "Ano por Mais Recente"
 #: t_modules/t_main.py:18468 t_modules/t_main.py:18474
 #: t_modules/t_main.py:18475
 msgid "Shuffled Tracks"
-msgstr "Faixas Baralhadas"
+msgstr "Faixas Misturadas"
 
 #: t_modules/t_main.py:18504 t_modules/t_main.py:18510
 #: t_modules/t_main.py:18511
 msgid "Shuffled Albums"
-msgstr "Álbuns Baralhados"
+msgstr "Álbuns Misturados"
 
 #: t_modules/t_main.py:18528 t_modules/t_main.py:18535
 #: t_modules/t_main.py:18536
@@ -1182,9 +1180,8 @@ msgid "Broadcast This"
 msgstr "Transmitir Isto"
 
 #: t_modules/t_main.py:20674
-#, fuzzy
 msgid "Chromecast This"
-msgstr "Transmitir Isto"
+msgstr "Transmitir isto via Chromecast"
 
 #: t_modules/t_main.py:20709 t_modules/t_main.py:26503
 msgid "Off"
@@ -1297,9 +1294,8 @@ msgid "Rating"
 msgstr "Avaliação"
 
 #: t_modules/t_main.py:21470
-#, fuzzy
 msgid "New Radio List"
-msgstr "Nova Lista de Reprodução"
+msgstr "Nova Lista de Rádio"
 
 #: t_modules/t_main.py:21490 t_modules/t_main.py:21492
 msgid "Clean Database!"
@@ -1429,11 +1425,11 @@ msgstr "Limpar Fila"
 
 #: t_modules/t_main.py:21980
 msgid "Spotify Like Track"
-msgstr "Curtir Faixa Spotify"
+msgstr "Gostar Faixa Spotify"
 
 #: t_modules/t_main.py:21985
 msgid "Un-like Spotify Track"
-msgstr "Deixar de curtir faixa Spotify"
+msgstr "Deixar de gostar Faixa Spotify"
 
 #: t_modules/t_main.py:22059
 msgid "Global Search"
@@ -1473,7 +1469,7 @@ msgstr "Scrobbling está Ativo"
 
 #: t_modules/t_main.py:22462
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Sair de Trancar Mistura"
 
 #: t_modules/t_main.py:22463
 msgid "Exit"
@@ -1696,15 +1692,15 @@ msgstr "Usar desvanecer ao saltar faixa"
 
 #: t_modules/t_main.py:26661
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Para trás recomeça do início"
 
 #: t_modules/t_main.py:26670
 msgid "Network file cache size"
-msgstr ""
+msgstr "Tamanho da cache do ficheiro de rede"
 
 #: t_modules/t_main.py:26675
 msgid "Cache local files (for smb/nfs)"
-msgstr ""
+msgstr "Guardar ficheiros locais na cache (para smb/nfs)"
 
 #: t_modules/t_main.py:26683
 msgid "Output buffer"
@@ -1796,9 +1792,8 @@ msgid "Tabs in top panel"
 msgstr "Abas no painel do topo"
 
 #: t_modules/t_main.py:26879
-#, fuzzy
 msgid "Uncheck to disable the tab pin function"
-msgstr "Desativa a função Fixar Aba"
+msgstr "Desmarque para desabilitar a função de pino de aba"
 
 #: t_modules/t_main.py:26884 t_modules/t_main.py:26890
 msgid "Open config file"
@@ -1837,9 +1832,8 @@ msgid "Transcode folder"
 msgstr "Converter pasta"
 
 #: t_modules/t_main.py:26917
-#, fuzzy
 msgid "Chromecast this"
-msgstr "Transmitir Isto"
+msgstr "Transmitir isto via Chromecast"
 
 #: t_modules/t_main.py:26924
 msgid "Extract archives"
@@ -1895,22 +1889,24 @@ msgid "Prevent system suspend during playback"
 msgstr "Prevenir que o sistema entre em suspensão ao tocar"
 
 #: t_modules/t_main.py:26962
-#, fuzzy
 msgid "Record Radio"
-msgstr "Internet Rádio"
+msgstr "Gravar Rádio"
 
 #: t_modules/t_main.py:26963
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "Gravar e dividir músicas quando tocar rádio da internet"
 
 #: t_modules/t_main.py:26965
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
+"Faixas será guardadas na lista de reprodução \"Faixas de Rádio Guardadas\"."
 
 #: t_modules/t_main.py:26965
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Faixas serão agora gravadas. Reinicie qualquer reprodução para que as "
+"alterações tenham efeito."
 
 #: t_modules/t_main.py:26979
 msgid "Enable Discord Rich Presence"
@@ -2275,9 +2271,8 @@ msgid "UI scale for HiDPI displays"
 msgstr "Escala de IU para ecrãs HiDPi"
 
 #: t_modules/t_main.py:28116
-#, fuzzy
 msgid "Auto scale"
-msgstr "Auto Redimensionar"
+msgstr "Auto dimensionar"
 
 #: t_modules/t_main.py:28400 t_modules/t_main.py:28403
 msgid "Credits"
@@ -2437,7 +2432,7 @@ msgstr "Rodar todas as listas de reprodução"
 
 #: t_modules/t_main.py:29663 t_modules/t_main.py:34405
 msgid "Added station to: "
-msgstr ""
+msgstr "Estação adicionada a:"
 
 #: t_modules/t_main.py:30043
 msgid "Buffering... "
@@ -2469,11 +2464,11 @@ msgstr "Stop, RC: Alternar auto-stop"
 
 #: t_modules/t_main.py:30810 t_modules/t_main.py:31370
 msgid "Shuffle On"
-msgstr "Baralhar Ligado"
+msgstr "Misturar Ligado"
 
 #: t_modules/t_main.py:30813 t_modules/t_main.py:31373
 msgid "Shuffle Off"
-msgstr "Baralhar Desligado"
+msgstr "Misturar Desligado"
 
 #: t_modules/t_main.py:30842
 msgid "Repeat On"
@@ -2489,7 +2484,7 @@ msgstr "Anterior, RC: Alternar repetir, MC: Reverter"
 
 #: t_modules/t_main.py:30908 t_modules/t_main.py:30910
 msgid "Shuffle"
-msgstr "Baralhar"
+msgstr "Misturar"
 
 #: t_modules/t_main.py:30957 t_modules/t_main.py:30965
 msgid "Repeat album"
@@ -2516,9 +2511,8 @@ msgid "Search Tag"
 msgstr "Procurar etiqueta"
 
 #: t_modules/t_main.py:33613
-#, fuzzy
 msgid "Search Country Code"
-msgstr "Procurar País"
+msgstr "Procurar Código de País"
 
 #: t_modules/t_main.py:33614
 msgid "Search Title"
@@ -2538,20 +2532,19 @@ msgstr "Obter o Mais Votado"
 
 #: t_modules/t_main.py:33920
 msgid "Developer Picks"
-msgstr ""
+msgstr "Escolhas do Desenvolvedor"
 
 #: t_modules/t_main.py:34068
 msgid "Add Station"
-msgstr ""
+msgstr "Adicionar Estação"
 
 #: t_modules/t_main.py:34070
 msgid "Edit Station"
-msgstr ""
+msgstr "Editar Estação"
 
 #: t_modules/t_main.py:34096
-#, fuzzy
 msgid "Station Browser"
-msgstr "Começar Transmissão"
+msgstr "Navegador de Estações"
 
 #: t_modules/t_main.py:34100
 msgid "Connecting..."
