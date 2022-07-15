@@ -4496,15 +4496,23 @@ def tag_scan(nt):
 
         elif nt.file_ext == "WAV":
 
-            audio = Wav(nt.fullpath)
-            audio.read()
+            try:
+                audio = Wav(nt.fullpath)
+                audio.read()
 
-            nt.samplerate = audio.sample_rate
-            nt.length = audio.length
-            nt.title = audio.title
-            nt.artist = audio.artist
-            nt.album = audio.album
-            nt.track_number = audio.track_number
+                nt.samplerate = audio.sample_rate
+                nt.length = audio.length
+                nt.title = audio.title
+                nt.artist = audio.artist
+                nt.album = audio.album
+                nt.track_number = audio.track_number
+
+            except:
+                audio = mutagen.File(nt.fullpath)
+                nt.samplerate = audio.info.sample_rate
+                nt.bitrate = audio.info.bitrate // 1000
+                nt.length = audio.info.length
+                nt.size = os.path.getsize(nt.fullpath)
 
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
@@ -4758,6 +4766,7 @@ def tag_scan(nt):
 
     except Exception as err:
         print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
+        #raise
         return nt
 
     return nt
