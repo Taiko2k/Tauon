@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v7.3.2
 
  - Fixed possible tick on track crossfade
+ - Fixed mpris and media keys
 
 v7.3.1
 
