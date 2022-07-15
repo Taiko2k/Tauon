@@ -884,7 +884,7 @@ void stop_decoder() {
 
 
 int disconnect_pulse() {
-    printf("ph: Disconnect Device\n");
+    //printf("ph: Disconnect Device\n");
 
     if (pulse_connected == 1) {
         ma_device_uninit(&device);
@@ -1079,7 +1079,7 @@ int get_audio(int max, float* buff){
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
 
     int b = get_audio(frameCount * 2, pOutput);
-    if (0 < b && b < frameCount) printf("ph: Buffer underflow\n");
+    if (0 < b && b < frameCount) printf("ph: Buffer underrun\n");
 }
 
 
@@ -1130,7 +1130,7 @@ void connect_pulse() {
         }
     }
 
-    printf("ph: Connect device\n");
+    //printf("ph: Connect device\n");
 
     ma_context_config c_config = ma_context_config_init();
     c_config.pulse.pApplicationName = "Tauon Music Box";
@@ -1799,7 +1799,7 @@ void start_out(){
 }
 
 void stop_out(){
-    printf("ph: stop\n");
+    //printf("ph: stop\n");
     if (out_thread_running == 1){
         ma_device_stop(&device);
         out_thread_running = 0;
@@ -1940,7 +1940,7 @@ void *main_loop(void *thread_id) {
 
                     if (using_fade == 0){
                             // Jump immediately
-                            printf("ph: Jump\n");
+                            // printf("ph: Jump\n");
                             position_count = 0;
                             buff_reset();
                             gate = 0;

@@ -344,26 +344,6 @@ class Gnome:
         except:
             print("Failure to connect to login1")
 
-        if prefs.mkey:
-            try:
-                bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-                bus_object = bus.get_object('org.gnome.SettingsDaemon.MediaKeys',
-                                            '/org/gnome/SettingsDaemon/MediaKeys')
-
-                self.bus_object = bus_object
-
-                # this is what gives us the multi media keys.
-                dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-                bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
-                                               dbus_interface=dbus_interface)
-
-                # connect_to_signal registers our callback function.
-                bus_object.connect_to_signal('MediaPlayerKeyPressed',
-                                             on_mediakey)
-            except:
-                print("Could not connect to gnome media keys")
-
-        # ----------
 
         # t_bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
         # t_bus_name = dbus.service.BusName('com.github.taiko2k.tauonmb', t_bus)  # This object must be kept alive

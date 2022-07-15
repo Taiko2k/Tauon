@@ -126,7 +126,7 @@ try:
     if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
         left_window_control = True
     gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-    print(f"GTK theme is: {gtk_theme}")
+    #print(f"GTK theme is: {gtk_theme}")
     for k, v in mac_styles.items():
         if k in gtk_theme:
             detect_macstyle = True
@@ -1191,7 +1191,6 @@ class Prefs:  # Used to hold any kind of settings
         self.scrobble_mark = False
         self.enable_mpris = True
 
-        self.mkey = True
         self.replay_gain = 0  # 0=off 1=track 2=album
         self.replay_preamp = 0  # db
         self.radio_page_lyrics = True
@@ -3860,7 +3859,6 @@ def save_prefs():
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("restore-window-position", prefs.save_window_position)
-    cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
@@ -4139,7 +4137,6 @@ def load_prefs():
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position,
                                              "Save and restore the last window position on desktop on open")
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
-    prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
     prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
     prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data,
