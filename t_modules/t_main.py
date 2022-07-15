@@ -741,7 +741,10 @@ except:
 if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 elif not msys and not macos:
-    gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
+    try:
+        gi.require_version('Notify', '0.7')
+    except:
+        gi.require_version('Notify', '0.8')
     from gi.repository import Notify
 
 # Other imports
