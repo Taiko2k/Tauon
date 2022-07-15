@@ -9002,14 +9002,15 @@ if system == "windows" or msys:
 
         if event.event_type == "down":
             if event.scan_code == -179:
-                inp.media_key = 'play'
+                inp.media_key = 'Play'
             elif event.scan_code == -178:
-                inp.media_key = 'stop'
+                inp.media_key = 'Stop'
             elif event.scan_code == -177:
-                inp.media_key = 'back'
+                inp.media_key = 'Back'
             elif event.scan_code == -176:
-                inp.media_key = 'forward'
-                gui.update += 1
+                inp.media_key = 'Forward'
+            gui.update += 1
+            tauon.wake()
 
     keyboard.hook_key(-179, key_callback)
     keyboard.hook_key(-178, key_callback)
