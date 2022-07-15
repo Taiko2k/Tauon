@@ -9006,9 +9006,9 @@ if system == "windows" or msys:
             elif event.scan_code == -178:
                 inp.media_key = 'Stop'
             elif event.scan_code == -177:
-                inp.media_key = 'Back'
+                inp.media_key = 'Previous'
             elif event.scan_code == -176:
-                inp.media_key = 'Forward'
+                inp.media_key = 'Next'
             gui.update += 1
             tauon.wake()
 
