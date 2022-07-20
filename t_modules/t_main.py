@@ -2249,7 +2249,7 @@ class KeyMap:
                     if items[1] in ("MB4", "MB5"):
                         key = items[1]
                     else:
-                        key = SDL_GetKeyFromName(items[1].encode())
+                        key = SDL_GetScancodeFromName(items[1].encode())
                         if key == 0:
                             continue
 
@@ -41680,9 +41680,7 @@ while pctl.running:
         inp.key_tab_press = False
         key_c_press = False
         key_v_press = False
-        # key_f_press = False
         key_a_press = False
-        # key_t_press = False
         key_z_press = False
         key_x_press = False
         key_home_press = False
@@ -41955,7 +41953,7 @@ while pctl.running:
             k_input = True
             power += 5
             gui.update += 2
-            keymaps.hits.append(event.key.keysym.sym)
+            keymaps.hits.append(event.key.keysym.scancode)
 
             if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
                 inp.key_return_press = True
@@ -41975,17 +41973,15 @@ while pctl.running:
                 key_ralt = True
             elif event.key.keysym.sym == SDLK_LALT:
                 key_lalt = True
-            elif event.key.keysym.sym == SDLK_v:
+            elif event.key.keysym.scancode == SDL_SCANCODE_V:
                 key_v_press = True
-            elif event.key.keysym.sym == SDLK_a:
+            elif event.key.keysym.scancode == SDL_SCANCODE_A:
                 key_a_press = True
-            elif event.key.keysym.sym == SDLK_c:
+            elif event.key.keysym.scancode == SDL_SCANCODE_C:
                 key_c_press = True
-            # elif event.key.keysym.sym == SDLK_t:
-            #     key_t_press = True
-            elif event.key.keysym.sym == SDLK_z:
+            elif event.key.keysym.scancode == SDL_SCANCODE_Z:
                 key_z_press = True
-            elif event.key.keysym.sym == SDLK_x:
+            elif event.key.keysym.scancode == SDL_SCANCODE_X:
                 key_x_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
                 key_down_press = True
