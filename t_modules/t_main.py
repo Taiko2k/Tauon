@@ -41586,7 +41586,7 @@ def drop_file(target):
                      mode='bubble')
 
     load_order = LoadClass()
-    load_order.target = target
+    load_order.target = target.replace('\\', '/')
 
     if os.path.isdir(load_order.target):
         quick_import_done.append(load_order.target)
@@ -44096,10 +44096,10 @@ while pctl.running:
                         if order.replace_stem:
                             for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
                                 pfp = pctl.g(id).parent_folder_path
-                                if pfp.startswith(order.target):
-                                    if pfp.rstrip("/") == order.target.rstrip("/") or \
+                                if pfp.startswith(order.target.replace('\\', '/')):
+                                    if pfp.rstrip("/\\") == order.target.rstrip("/\\") or \
                                             (len(pfp) > len(order.target) and pfp[
-                                                len(order.target.rstrip("/"))] == "/"):
+                                                len(order.target.rstrip("/\\"))] in ("/", "\\")):
                                         del pctl.multi_playlist[target_pl][2][ii]
 
                         # print(order.tracks)
@@ -45168,16 +45168,19 @@ while pctl.running:
 
                     rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
+                    path = tc.fullpath
+                    if msys:
+                        path = path.replace("/", "\\")
                     if coll(rect):
                         ddt.text((x1, y1), _("Path"), key_colour_on, 212)
                         if inp.mouse_click:
                             show_message(_("Copied text to clipboard"))
-                            copy_to_clipboard(tc.fullpath)
+                            copy_to_clipboard(path)
                             inp.mouse_click = False
                     else:
                         ddt.text((x1, y1), _("Path"), key_colour_off, 212)
 
-                    q = ddt.text((x2, y1 - int(3 * gui.scale)), clean_string(tc.fullpath),
+                    q = ddt.text((x2, y1 - int(3 * gui.scale)), clean_string(path),
                                  path_colour, 210, max_w=425 * gui.scale)
 
                     if coll(rect):
