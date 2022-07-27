@@ -5,6 +5,7 @@ v7.3.3
 
  - Added prompt to clear generator on dnd
  - Switched keyboard shortcuts to use scancodes
+ - Fix folder rescan on Windows
 
 
 v7.3.2
