@@ -861,12 +861,12 @@ def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of 
     while True:
         remove_path = False
         for i in reversed(range(len(paths))):
-            path = paths[i].rstrip("/")
+            path = paths[i].rstrip("\\/")
 
             for b in reversed(range(len(paths))):
-                path2 = paths[b].rstrip("/")
+                path2 = paths[b].rstrip("\\/")
 
-                if len(path) > len(path2) and path.startswith(path2) and path[len(path2)] == "/":
+                if len(path) > len(path2) and path.startswith(path2) and path[len(path2)] in ("/", "\\"):
                     del paths[i]
                     remove_path = True
                     break
