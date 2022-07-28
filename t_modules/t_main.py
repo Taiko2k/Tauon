@@ -5860,7 +5860,7 @@ class PlayerCtl:
 
         gap_extra = 2  # 2
 
-        if spot_ctl.playing:
+        if spot_ctl.playing or tauon.chrome_mode:
             gap_extra = 3
 
         if msys and taskbar_progress and self.windows_progress:
@@ -5869,8 +5869,10 @@ class PlayerCtl:
         if self.commit is not None:
             return
 
-        if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
+        if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
+            # import pdb
+            # pdb.set_trace()
             # Allow some time for spotify playing time to update?
             if spot_ctl.playing and spot_ctl.start_timer.get() < 3:
                 return
@@ -7917,6 +7919,8 @@ class Tauon:
         if pyinstaller_mode:
             self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
 
+        self.chrome_mode = False
+
     def download_ffmpeg(self, x):
         def go():
             url = "https://github.com/GyanD/codexffmpeg/releases/download/5.0.1/ffmpeg-5.0.1-essentials_build.zip"
@@ -8018,7 +8022,7 @@ try:
     chrome = Chrome(tauon)
 except:
     print("Pychromecast not found")
-
+tauon.chrome = chrome
 
 class PlexService:
 
@@ -42535,6 +42539,7 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
+            chrome.one(pl_to_id(pctl.active_playlist_viewing), default_playlist[playlist_selected])
             pass
 
         if gui.mode < 3:

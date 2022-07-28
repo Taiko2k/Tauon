@@ -288,10 +288,11 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             end = 0
 
             if "Range" in self.headers:
-                range_req = True
-                b = self.headers["Range"].split("=")[1]
-                start, end = b.split("-")
-                start = int(start)
+                if not self.headers["Range"] == "bytes=0-":
+                    range_req = True
+                    b = self.headers["Range"].split("=")[1]
+                    start, end = b.split("-")
+                    start = int(start)
 
             with open(path, "rb") as f:
 
@@ -307,6 +308,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     self.send_response(206)
                     self.send_header("Content-type", mime)
                     self.send_header("Content-Range", f"bytes={start}-/{l}")
+                    #self.send_header("Content-Range", f"bytes={start}-/")
                     self.send_header("Content-Length", str(remain))
                     f.seek(start)
 
@@ -326,6 +328,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
         def do_GET(self):
 
             path = self.path
+            print(self.headers)
 
             if path.startswith("/api1/pic/small/"):
                 value = path[16:]

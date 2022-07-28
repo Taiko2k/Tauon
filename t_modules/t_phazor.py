@@ -512,12 +512,14 @@ def player4(tauon):
         if end and pctl.playing_time > 1:
             pctl.test_progress()
 
+    chrome_update = 0
+
     while True:
 
         time.sleep(0.016)
         if state == 2:
             time.sleep(0.05)
-        if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
+        if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
             active_timer.set()
         if active_timer.get() > 7:
            aud.stop()
@@ -533,6 +535,47 @@ def player4(tauon):
 
             tauon.level_train.append((0, l, r))
             gui.level_update = True
+
+        if tauon.chrome_mode:
+            if pctl.playerCommandReady:
+                command = pctl.playerCommand
+                print(command)
+                subcommand = pctl.playerSubCommand
+                pctl.playerSubCommand = ""
+                pctl.playerCommandReady = False
+                if command == "open":
+                    if state == 1:
+                        t, pid, s, d = tauon.chrome.update()
+                        print((t, d))
+                        print(d - t)
+                        if d and t and 2 < d - t < 5:
+                            print("fnqlflf")
+                    target_object = pctl.target_object
+                    tauon.chrome.start(target_object.index)
+                    state = 1
+                if command == "stop":
+                    state = 0
+                    tauon.chrome.stop()
+
+            if state == 1:
+
+                if chrome_update > 0.8:
+                    t, pid, s, d = tauon.chrome.update()
+                    pctl.playing_time = t
+                    pctl.decode_time = t
+                    player_timer.hit()
+                    chrome_update = 0
+
+                add_time = player_timer.hit()
+                # pctl.playing_time += add_time
+                # pctl.decode_time = pctl.playing_time
+                chrome_update += add_time
+                pctl.a_time += add_time
+
+                pctl.test_progress()
+
+            time.sleep(0.1)
+            continue
 
         # Command processing
         if pctl.playerCommandReady:
