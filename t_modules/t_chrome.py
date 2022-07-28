@@ -58,7 +58,7 @@ class Chrome:
                 print("Failed to get chromecasts")
 
     def one(self, playlist_id, track_id):
-
+        self.tauon.pctl.stop()
         self.target_playlist = playlist_id
         self.target_id = track_id
         self.cast = None
@@ -71,20 +71,55 @@ class Chrome:
 
     def four(self, item):
 
-        self.tauon.broadcast_select_track(self.target_id)
-        ip = get_ip()
+        #self.tauon.broadcast_select_track(self.target_id)
         time.sleep(2)
         print(item)
         ccs, browser = pychromecast.get_listed_chromecasts(friendly_names=[item[1]], discovery_timeout=3.0)
         print(ccs)
+        self.browser = browser
         self.cast = ccs[0]
-        self.cast.wait()
+        self.ip = get_ip()
 
         mc = self.cast.media_controller
-        mc.play_media(f"http://{ip}:7590/stream.ogg", "audio/ogg")
-        self.active = True
-        pychromecast.discovery.stop_discovery(browser)
+        mc.app_id = "2F76715B"
 
+        self.tauon.chrome_mode = True
+
+
+
+    def update(self):
+        self.cast.media_controller.update_status()
+        return self.cast.media_controller.status.current_time, \
+            self.cast.media_controller.status.media_custom_data.get("id"), \
+            self.cast.media_controller.status.player_state, \
+               self.cast.media_controller.status.duration
+
+    def start(self, track_id):
+        self.cast.wait()
+        tr = self.tauon.pctl.g(track_id)
+        n = 0
+        try:
+            n = int(tr.track_number)
+        except:
+            pass
+        d = {
+            "metadataType": 3,
+            "albumName": tr.album,
+            "title": tr.title,
+            "albumArtist": tr.album_artist,
+            "artist": tr.artist,
+            "trackNumber": n,
+            "images": [{"url": f"http://{self.ip}:7814/api1/pic/medium/{track_id}"}],
+            "releaseDate": tr.date
+        }
+        m = {
+            "duration": round(float(tr.length), 1),
+            "customData": {"id": str(tr.index)}
+            #"contentId": str(tr.index)
+        }
+        print(m)
+        self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=0.0)
+        self.active = True
 
     def stop(self):
         if self.active:
@@ -92,4 +127,5 @@ class Chrome:
                 mc = self.cast.media_controller
                 mc.stop()
             self.active = False
-
+        self.tauon.chrome_mode = False
+        pychromecast.discovery.stop_discovery(self.browser)
