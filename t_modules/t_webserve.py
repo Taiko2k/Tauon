@@ -288,39 +288,34 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             end = 0
 
             if "Range" in self.headers:
-                if not self.headers["Range"] == "bytes=0-":
-                    range_req = True
-                    b = self.headers["Range"].split("=")[1]
-                    start, end = b.split("-")
-                    start = int(start)
+                range_req = True
+                b = self.headers["Range"].split("=")[1]
+                start, end = b.split("-")
+                start = int(start)
 
             with open(path, "rb") as f:
 
                 f.seek(0, 2)
                 length = f.tell()
-                f.seek(0, 0)
-
-                l = str(length)
-
-                remain = length - start
+                f.seek(start, 0)
 
                 if range_req:
                     self.send_response(206)
-                    self.send_header("Content-type", mime)
-                    self.send_header("Content-Range", f"bytes={start}-/{l}")
-                    #self.send_header("Content-Range", f"bytes={start}-/")
-                    self.send_header("Content-Length", str(remain))
+                    self.send_header("Content-Range", f"bytes {start}-{length-1}/{length}")
+                    self.send_header("Content-Length", str(length))
+                    self.send_header("Content-Type", mime)
                     f.seek(start)
 
                 else:
                     self.send_response(200)
-                    self.send_header("Content-type", mime)
-                    self.send_header("Content-Length", l)
+                    self.send_header("Accept-Ranges", "bytes")
+                    self.send_header("Content-Type", mime)
+                    self.send_header("Content-Length", str(length))
 
                 self.end_headers()
 
                 while True:
-                    data = f.read(5000)
+                    data = f.read(1000)
                     if not data:
                         break
                     self.wfile.write(data)
@@ -352,6 +347,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
             if path.startswith("/api1/pic/medium/"):
                 value = path[17:]
+                print(value)
                 if value.isalnum() and int(value) in pctl.master_library:
                     track = pctl.g(int(value))
                     raw = album_art_gen.save_thumb(track, (1000, 1000), "")

@@ -5871,8 +5871,7 @@ class PlayerCtl:
 
 
         if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
-            # import pdb
-            # pdb.set_trace()
+
             # Allow some time for spotify playing time to update?
             if spot_ctl.playing and spot_ctl.start_timer.get() < 3:
                 return
@@ -13462,9 +13461,7 @@ class Menu:
     active = False
 
     def rescale(self):
-        self.vertical_size = round(22 * gui.scale)
-        if gui.scale == 1.25:
-            self.vertical_size = 28
+        self.vertical_size = round(self.base_v_size * gui.scale)
         self.h = self.vertical_size
         self.w = self.request_width * gui.scale
         if gui.scale == 2:
@@ -13472,6 +13469,7 @@ class Menu:
 
     def __init__(self, width, show_icons=False):
 
+        self.base_v_size = 22
         self.active = False
         self.request_width = width
         self.close_next_frame = False
@@ -13944,6 +13942,7 @@ radio_context_menu = Menu(175)
 chrome_menu = Menu(175)
 
 tauon.chrome_menu = chrome_menu
+
 
 
 def enable_artist_list():
@@ -21028,25 +21027,25 @@ def gstreamer_test(_):
     return prefs.backend == 2
 
 
-def chromecast_select_track(track_id):
-    gui.delay_frame(8)
-
-    if not prefs.enable_web:
-        show_message('Please first enable the setting "Ready Broadcaster" in MENU > settings > function')
-        return
-    if not chrome:
-        show_message("pychromecast not found")
-        return
-    if pctl.broadcast_active:
-        broadcast_select_track(track_id)
-        return
-
-    shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
+# def chromecast_select_track(track_id):
+#     gui.delay_frame(8)
+#
+#     if not prefs.enable_web:
+#         show_message('Please first enable the setting "Ready Broadcaster" in MENU > settings > function')
+#         return
+#     if not chrome:
+#         show_message("pychromecast not found")
+#         return
+#     if pctl.broadcast_active:
+#         broadcast_select_track(track_id)
+#         return
+#
+#     shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
 
 
 if not msys:
     track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
-    track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
+    #track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -22157,8 +22156,8 @@ def toggle_broadcast():
         #     pctl.broadcastCommand = "encpause"
         #     pctl.broadcastCommandReady = True
         #     return
-        if chrome:
-            chrome.stop()
+        # if chrome:
+        #     chrome.stop()
         pctl.broadcastCommand = "encstop"
         pctl.broadcastCommandReady = True
 
@@ -22186,6 +22185,32 @@ broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
 if not msys:
     x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
+
+
+def cast_deco():
+    line_colour = colours.menu_text
+    if tauon.chrome_mode:
+       return [line_colour, colours.menu_background, _("Stop Cast")]  # [24, 25, 60, 255]
+    return [line_colour, colours.menu_background, None]
+
+
+def cast_search2():
+    chrome.one()
+
+def cast_search():
+
+    if tauon.chrome_mode:
+        pctl.stop()
+        chrome.end()
+    else:
+        if not chrome:
+            show_message("pychromecast not found")
+            return
+        show_message("Searching for Chomecasts...")
+        shooter(cast_search2)
+
+
+x_menu.add(_("Cast…"), cast_search, cast_deco)
 
 
 def clear_queue():
@@ -27519,7 +27544,7 @@ class Over:
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_transcode, _("Transcode folder"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_chromecast, _("Chromecast this"))
+            #self.toggle_square(x, y, toggle_chromecast, _("Chromecast this"))
 
 
         elif self.func_page == 2:
@@ -30697,6 +30722,9 @@ class TopPanel:
         elif jellyfin.scanning:
             text = "Accessing JELLYFIN library..."
             bg = [90, 170, 240, 255]
+        elif tauon.chrome_mode:
+            text = "Chromecast Mode"
+            bg = [207, 94, 219, 255]
         elif gui.sync_progress and not transcode_list:
             text = gui.sync_progress
             bg = [100, 200, 100, 255]
@@ -42539,7 +42567,6 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
-            chrome.one(pl_to_id(pctl.active_playlist_viewing), default_playlist[playlist_selected])
             pass
 
         if gui.mode < 3:
