@@ -1,4 +1,3 @@
-
 import pychromecast
 from t_modules.t_extra import shooter
 import time
@@ -36,6 +35,7 @@ class Chrome:
                 services, browser = pychromecast.discovery.discover_chromecasts()
                 pychromecast.discovery.stop_discovery(browser)
                 menu = self.tauon.chrome_menu
+                menu.rescale()
                 menu.items.clear()
                 for item in services:
                     self.services.append([str(item.uuid), str(item.friendly_name)])
@@ -57,10 +57,8 @@ class Chrome:
                 raise
                 print("Failed to get chromecasts")
 
-    def one(self, playlist_id, track_id):
+    def one(self):
         self.tauon.pctl.stop()
-        self.target_playlist = playlist_id
-        self.target_id = track_id
         self.cast = None
         if self.cast is None:
             self.two()
@@ -78,13 +76,15 @@ class Chrome:
         print(ccs)
         self.browser = browser
         self.cast = ccs[0]
+        self.cast.wait()
+        self.tauon.pctl.player_volume = min(self.cast.status.volume_level * 100, 100)
         self.ip = get_ip()
 
         mc = self.cast.media_controller
         mc.app_id = "2F76715B"
 
         self.tauon.chrome_mode = True
-
+        self.tauon.gui.update += 1
 
 
     def update(self):
@@ -94,7 +94,7 @@ class Chrome:
             self.cast.media_controller.status.player_state, \
                self.cast.media_controller.status.duration
 
-    def start(self, track_id):
+    def start(self, track_id, enqueue=False):
         self.cast.wait()
         tr = self.tauon.pctl.g(track_id)
         n = 0
@@ -118,10 +118,25 @@ class Chrome:
             #"contentId": str(tr.index)
         }
         print(m)
-        self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=0.0)
+        self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=0.0, enqueue=enqueue)
         self.active = True
 
     def stop(self):
+        self.cast.media_controller.stop()
+
+    def play(self):
+        self.cast.media_controller.play()
+
+    def pause(self):
+        self.cast.media_controller.pause()
+
+    def seek(self, t):
+        self.cast.media_controller.seek(t)
+
+    def volume(self, decimal):
+        self.cast.set_volume(decimal)
+
+    def end(self):
         if self.active:
             if self.cast:
                 mc = self.cast.media_controller

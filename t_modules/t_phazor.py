@@ -513,6 +513,7 @@ def player4(tauon):
             pctl.test_progress()
 
     chrome_update = 0
+    chrome_cool_timer = Timer()
 
     while True:
 
@@ -544,22 +545,48 @@ def player4(tauon):
                 pctl.playerSubCommand = ""
                 pctl.playerCommandReady = False
                 if command == "open":
+                    target_object = pctl.target_object
                     if state == 1:
                         t, pid, s, d = tauon.chrome.update()
                         print((t, d))
                         print(d - t)
-                        if d and t and 2 < d - t < 5:
+                        if d and t and 1 < d - t < 5:
                             print("fnqlflf")
-                    target_object = pctl.target_object
+                            tauon.chrome.start(target_object.index, enqueue=True)
+                            chrome_cool_timer.set()
+                            time.sleep(d - t)
+                            if pctl.commit:
+                                pctl.advance(quiet=True, end=True)
+                                pctl.commit = None
+                            continue
+
                     tauon.chrome.start(target_object.index)
+                    chrome_cool_timer.set()
+                    if pctl.commit:
+                        pctl.advance(quiet=True, end=True)
+                        pctl.commit = None
                     state = 1
+                if command == "pauseon":
+                    tauon.chrome.pause()
+                    state = 2
+                if command == "pauseoff":
+                    tauon.chrome.play()
+                    state = 1
+                if command == "volume":
+                    tauon.chrome.volume(round(pctl.player_volume / 100, 3))
+                    state = 1
+                if command == "seek":
+                    tauon.chrome.seek(float(round(pctl.new_time + pctl.start_time_target, 2)))
+                    chrome_cool_timer.set()
+                    pctl.playing_time = pctl.new_time
+                    pctl.decode_time = pctl.playing_time
                 if command == "stop":
                     state = 0
                     tauon.chrome.stop()
 
             if state == 1:
 
-                if chrome_update > 0.8:
+                if chrome_update > 0.8 and chrome_cool_timer.get() > 2.5:
                     t, pid, s, d = tauon.chrome.update()
                     pctl.playing_time = t
                     pctl.decode_time = t
