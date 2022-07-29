@@ -29784,6 +29784,15 @@ def pl_is_mut(pl):
         return False
     return not (pctl.gen_codes.get(id) and "self" not in pctl.gen_codes[id])
 
+def clear_gen(id):
+    del pctl.gen_codes[id]
+    show_message(_("Okay, it's a normal playlist now."), mode="done")
+
+def clear_gen_ask(id):
+    gui.message_box_confirm_callback = clear_gen
+    gui.message_box_confirm_reference = (id,)
+    show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
+
 
 class TopPanel:
     def __init__(self):
@@ -30295,25 +30304,26 @@ class TopPanel:
                 elif quick_drag is True and mouse_up:
                     self.tab_d_click_ref = -1
                     self.tab_d_click_timer.force_set(100)
-                    if not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
-                        quick_drag = False
-                        modified = False
-                        gui.pl_update += 1
+                    if (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
+                        clear_gen_ask(pl_to_id(i))
+                    quick_drag = False
+                    modified = False
+                    gui.pl_update += 1
 
-                        for item in shift_selection:
-                            pctl.multi_playlist[i][2].append(default_playlist[item])
-                            modified = True
-                        if len(shift_selection) > 0:
-                            modified = True
-                            self.adds.append(
-                                [pctl.multi_playlist[i][6], len(shift_selection), Timer()])  # ID, num, timer
+                    for item in shift_selection:
+                        pctl.multi_playlist[i][2].append(default_playlist[item])
+                        modified = True
+                    if len(shift_selection) > 0:
+                        modified = True
+                        self.adds.append(
+                            [pctl.multi_playlist[i][6], len(shift_selection), Timer()])  # ID, num, timer
 
-                        if modified:
-                            pctl.after_import_flag = True
-                            pctl.notify_change()
-                            pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
-                            tree_view_box.clear_target_pl(i)
-                            tm.ready("worker")
+                    if modified:
+                        pctl.after_import_flag = True
+                        pctl.notify_change()
+                        pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
+                        tree_view_box.clear_target_pl(i)
+                        tm.ready("worker")
 
                 if mouse_up and radio_view.drag:
                     pctl.radio_playlists[i]["items"].append(radio_view.drag)
@@ -35441,24 +35451,25 @@ class PlaylistBox:
                 if quick_drag is True and mouse_up:
                     top_panel.tab_d_click_ref = -1
                     top_panel.tab_d_click_timer.force_set(100)
-                    if not (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
-                        quick_drag = False
-                        modified = False
-                        gui.pl_update += 1
+                    if (pctl.gen_codes.get(pl_to_id(i)) and "self" not in pctl.gen_codes[pl_to_id(i)]):
+                        clear_gen_ask(pl_to_id(i))
+                    quick_drag = False
+                    modified = False
+                    gui.pl_update += 1
 
-                        for item in shift_selection:
-                            pctl.multi_playlist[i][2].append(default_playlist[item])
-                            modified = True
-                        if len(shift_selection) > 0:
-                            self.adds.append(
-                                [pctl.multi_playlist[i][6], len(shift_selection), Timer()])  # ID, num, timer
-                            modified = True
-                        if modified:
-                            pctl.after_import_flag = True
-                            tm.ready("worker")
-                            pctl.notify_change()
-                            pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
-                            tree_view_box.clear_target_pl(i)
+                    for item in shift_selection:
+                        pctl.multi_playlist[i][2].append(default_playlist[item])
+                        modified = True
+                    if len(shift_selection) > 0:
+                        self.adds.append(
+                            [pctl.multi_playlist[i][6], len(shift_selection), Timer()])  # ID, num, timer
+                        modified = True
+                    if modified:
+                        pctl.after_import_flag = True
+                        tm.ready("worker")
+                        pctl.notify_change()
+                        pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
+                        tree_view_box.clear_target_pl(i)
 
             # Toggle hidden flag on click
             if draw_pin_indicator and inp.mouse_click and coll(
