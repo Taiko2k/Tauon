@@ -26,49 +26,32 @@ class Chrome:
         self.target_playlist = None
         self.target_id = None
 
-    def two(self):
+    def rescan(self):
         print("Scanning for chromecasts...")
 
         if True: #not self.services:
             try:
-                self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
+                #self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
                 services, browser = pychromecast.discovery.discover_chromecasts()
                 pychromecast.discovery.stop_discovery(browser)
                 menu = self.tauon.chrome_menu
-                menu.rescale()
-                menu.items.clear()
+
+                #menu.items.clear()
                 for item in services:
                     self.services.append([str(item.uuid), str(item.friendly_name)])
-                    menu.add(self.tauon.strings.cast_to % str(item.friendly_name), self.three, pass_ref=True, set_ref=[str(item.uuid), str(item.friendly_name)])
-
-                if self.services:
-                    self.tauon.gui.message_box = False
-                    menu.activate(position=(self.tauon.gui.window_size[0] // 2, self.tauon.gui.window_size[1] // 2))
-                    self.tauon.gui.update += 1
-                else:
-                    self.tauon.gui.show_message(self.tauon.strings.no_chromecasts)
-                    self.tauon.gui.update += 1
-
-                    return
-                print(services)
-                print(self.services)
-
+                    menu.add_to_sub(self.tauon.strings.cast_to % str(item.friendly_name), 1, self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)])
+                menu.add_to_sub(self.tauon.strings.stop_cast, 1, self.end, show_test=lambda x: self.active)
             except:
                 raise
                 print("Failed to get chromecasts")
 
-    def one(self):
-        self.tauon.pctl.stop()
-        self.cast = None
-        if self.cast is None:
-            self.two()
-            return
 
-    def three(self, item):
+    def three(self, _, item):
         shooter(self.four, [item])
 
     def four(self, item):
-
+        if self.active:
+            self.end()
         #self.tauon.broadcast_select_track(self.target_id)
         time.sleep(2)
         print(item)
@@ -84,7 +67,10 @@ class Chrome:
         mc.app_id = "2F76715B"
 
         self.tauon.chrome_mode = True
+        self.active = True
         self.tauon.gui.update += 1
+        self.tauon.pctl.playerCommand = "startchrome"
+        self.tauon.pctl.playerCommandReady = True
 
 
     def update(self):
@@ -94,7 +80,7 @@ class Chrome:
             self.cast.media_controller.status.player_state, \
                self.cast.media_controller.status.duration
 
-    def start(self, track_id, enqueue=False):
+    def start(self, track_id, enqueue=False, t=0):
         self.cast.wait()
         tr = self.tauon.pctl.g(track_id)
         n = 0
@@ -118,8 +104,7 @@ class Chrome:
             #"contentId": str(tr.index)
         }
         print(m)
-        self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=0.0, enqueue=enqueue)
-        self.active = True
+        self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=t, enqueue=enqueue)
 
     def stop(self):
         self.cast.media_controller.stop()
@@ -137,10 +122,12 @@ class Chrome:
         self.cast.set_volume(decimal)
 
     def end(self):
+        self.tauon.pctl.playerCommand = "endchrome"
+        self.tauon.pctl.playerCommandReady = True
         if self.active:
             if self.cast:
                 mc = self.cast.media_controller
                 mc.stop()
             self.active = False
         self.tauon.chrome_mode = False
-        pychromecast.discovery.stop_discovery(self.browser)
+        #pychromecast.discovery.stop_discovery(self.browser)

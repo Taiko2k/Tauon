@@ -460,7 +460,7 @@ def player4(tauon):
         run_vis()
         wall = True
 
-        if end and loaded_track.is_network and pctl.playing_time < 7:
+        if end and loaded_track and loaded_track.is_network and pctl.playing_time < 7:
             if aud.get_result() == 2:
                 print("STALL, RETRY")
                 time.sleep(0.5)
@@ -514,6 +514,7 @@ def player4(tauon):
 
     chrome_update = 0
     chrome_cool_timer = Timer()
+    chrome_mode = False
 
     while True:
 
@@ -537,13 +538,20 @@ def player4(tauon):
             tauon.level_train.append((0, l, r))
             gui.level_update = True
 
-        if tauon.chrome_mode:
+        if chrome_mode:
             if pctl.playerCommandReady:
                 command = pctl.playerCommand
                 print(command)
                 subcommand = pctl.playerSubCommand
                 pctl.playerSubCommand = ""
                 pctl.playerCommandReady = False
+                if command == "endchrome":
+                    chrome_mode = False
+                    state = 0
+                    pctl.playing_time = 0
+                    pctl.decode_time = 0
+                    pctl.stop()
+                    continue
                 if command == "open":
                     target_object = pctl.target_object
                     if state == 1:
@@ -611,6 +619,12 @@ def player4(tauon):
             subcommand = pctl.playerSubCommand
             pctl.playerSubCommand = ""
             pctl.playerCommandReady = False
+
+            if command == "startchrome":
+                aud.stop()
+                if state == 1:
+                    tauon.chrome.start(loaded_track.index, t=pctl.playing_time)
+                chrome_mode = True
 
             if command == "reload":
                 set_config()

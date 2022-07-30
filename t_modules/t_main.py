@@ -7824,6 +7824,7 @@ class Strings:
         self.scan_chrome = _("Scanning for Chromecasts...")
         self.cast_to = _("Cast to: %s")
         self.no_chromecasts = _("No Chromecast devices found")
+        self.stop_cast = _("End Cast")
 
         self.web_server_stopped = _("Web server stopped.")
 
@@ -13939,9 +13940,8 @@ folder_tree_stem_menu = Menu(190, show_icons=True)
 overflow_menu = Menu(175)
 spotify_playlist_menu = Menu(175)
 radio_context_menu = Menu(175)
-chrome_menu = Menu(175)
+#chrome_menu = Menu(175)
 
-tauon.chrome_menu = chrome_menu
 
 
 
@@ -22193,9 +22193,8 @@ def cast_deco():
        return [line_colour, colours.menu_background, _("Stop Cast")]  # [24, 25, 60, 255]
     return [line_colour, colours.menu_background, None]
 
-
 def cast_search2():
-    chrome.one()
+    chrome.rescan()
 
 def cast_search():
 
@@ -22210,7 +22209,11 @@ def cast_search():
         shooter(cast_search2)
 
 
-x_menu.add(_("Cast…"), cast_search, cast_deco)
+x_menu.add_sub(_("Chromecast…"), 220)
+x_menu.add_to_sub(_("Find Incomplete Albums"), 0, find_incomplete)
+tauon.chrome_menu = x_menu
+shooter(cast_search2)
+#x_menu.add(_("Cast…"), cast_search, cast_deco)
 
 
 def clear_queue():
