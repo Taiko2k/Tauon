@@ -5581,11 +5581,13 @@ class PlayerCtl:
             if len(self.track_queue) > 0 and self.playing_playlist()[self.playlist_playing_position] != \
                     self.track_queue[
                         self.queue_step]:
+
                 try:
-                    self.playlist_playing_position = self.playing_playlist().index(self.track_queue[self.queue_step])
+                    p = self.playing_playlist().index(self.track_queue[self.queue_step])
                 except:
-                    random_jump = random.randrange(len(self.playing_playlist()))
-                    self.playlist_playing_position = random_jump
+                    p = random.randrange(len(self.playing_playlist()))
+                if p is not None:
+                    self.playlist_playing_position = p
 
             self.playlist_playing_position -= 1
             self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
