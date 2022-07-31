@@ -52,6 +52,7 @@ class Chrome:
     def four(self, item):
         if self.active:
             self.end()
+        self.tauon.start_remote()
         #self.tauon.broadcast_select_track(self.target_id)
         time.sleep(2)
         print(item)

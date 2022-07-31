@@ -324,6 +324,11 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
             path = self.path
             print(self.headers)
+            if tauon.remote_limited and (not path.startswith("/api1/pic/medium/") and not path.startswith("/api1/file/")):
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"404 Not found")
+                return
 
             if path.startswith("/api1/pic/small/"):
                 value = path[16:]
