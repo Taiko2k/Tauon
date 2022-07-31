@@ -4899,6 +4899,8 @@ class PlayerCtl:
         self.queue_step = playing_in_queue
         self.playing_time = 0
         self.playlist_playing_position = playlist_playing  # track in playlist that is playing
+        if self.playlist_playing_position == None:
+            self.playlist_playing_position = -1
         self.playlist_view_position = playlist_view_position
         self.target_open = ""
         self.target_object = None
