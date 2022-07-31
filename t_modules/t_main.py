@@ -7858,6 +7858,11 @@ class Chunker:
 
         self.clients = {}
 
+from t_modules.t_webserve import webserve2
+from t_modules.t_webserve import webserve
+from t_modules.t_webserve import authserve
+from t_modules.t_webserve import controller
+from t_modules.t_webserve import stream_proxy
 
 class Tauon:
 
@@ -7924,6 +7929,18 @@ class Tauon:
             self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
 
         self.chrome_mode = False
+        self.web_running = False
+        self.web_thread = None
+        self.remote_limited = True
+
+    def start_remote(self):
+
+        if not self.web_running:
+            self.web_thread = threading.Thread(target=webserve2,
+                                          args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+            self.web_thread.daemon = True
+            self.web_thread.start()
+            self.web_running = True
 
     def download_ffmpeg(self, x):
         def go():
@@ -26235,13 +26252,6 @@ tauon.reload_albums = reload_albums
 
 # ------------------------------------------------------------------------------------
 # WEBSERVER
-
-from t_modules.t_webserve import webserve
-from t_modules.t_webserve import webserve2
-from t_modules.t_webserve import authserve
-from t_modules.t_webserve import controller
-from t_modules.t_webserve import stream_proxy
-
 if prefs.enable_web is True:
     webThread = threading.Thread(target=webserve,
                                  args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
@@ -26253,10 +26263,8 @@ ctlThread.daemon = True
 ctlThread.start()
 
 if prefs.enable_remote:
-    webThread2 = threading.Thread(target=webserve2,
-                                  args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
-    webThread2.daemon = True
-    webThread2.start()
+    tauon.start_remote()
+    tauon.remote_limited = False
 
 
 # --------------------------------------------------------------
