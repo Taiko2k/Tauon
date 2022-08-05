@@ -22214,6 +22214,7 @@ def cast_deco():
        return [line_colour, colours.menu_background, _("Stop Cast")]  # [24, 25, 60, 255]
     return [line_colour, colours.menu_background, None]
 
+
 def cast_search2():
     chrome.rescan()
 
