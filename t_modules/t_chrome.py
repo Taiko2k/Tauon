@@ -25,6 +25,7 @@ class Chrome:
         self.cast = None
         self.target_playlist = None
         self.target_id = None
+        self.save_vol = 100
 
     def rescan(self):
         print("Scanning for chromecasts...")
@@ -53,14 +54,11 @@ class Chrome:
         if self.active:
             self.end()
         self.tauon.start_remote()
-        #self.tauon.broadcast_select_track(self.target_id)
-        time.sleep(2)
-        print(item)
         ccs, browser = pychromecast.get_listed_chromecasts(friendly_names=[item[1]], discovery_timeout=3.0)
-        print(ccs)
         self.browser = browser
         self.cast = ccs[0]
         self.cast.wait()
+        self.save_vol = self.tauon.pctl.player_volume
         self.tauon.pctl.player_volume = min(self.cast.status.volume_level * 100, 100)
         self.ip = get_ip()
 
@@ -72,6 +70,7 @@ class Chrome:
         self.tauon.gui.update += 1
         self.tauon.pctl.playerCommand = "startchrome"
         self.tauon.pctl.playerCommandReady = True
+        self.tauon.tm.ready_playback()
 
 
     def update(self):
@@ -102,9 +101,7 @@ class Chrome:
         m = {
             "duration": round(float(tr.length), 1),
             "customData": {"id": str(tr.index)}
-            #"contentId": str(tr.index)
         }
-        print(m)
         self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=t, enqueue=enqueue)
 
     def stop(self):
@@ -131,4 +128,5 @@ class Chrome:
                 mc.stop()
             self.active = False
         self.tauon.chrome_mode = False
-        #pychromecast.discovery.stop_discovery(self.browser)
+        self.tauon.pctl.player_volume = self.save_vol
+
