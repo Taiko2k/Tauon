@@ -177,6 +177,20 @@ else:
     print("No window state file")
 
 
+if d == "GNOME" and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
+    try:
+        import gi.repository
+        gi.require_version('Gtk', '3.0')
+        from gi.repository import Gtk
+
+        gtk_settings = Gtk.Settings().get_default()
+        xtheme = gtk_settings.get_property("gtk-cursor-theme-name")
+        xsize = gtk_settings.get_property("gtk-cursor-theme-size")
+        os.environ["XCURSOR_THEME"] = xtheme
+        os.environ["XCURSOR_SIZE"] = str(xsize)
+    except:
+        pass
+
 #os.environ["SDL_VIDEODRIVER"] = "wayland"
 
 SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
