@@ -6,7 +6,8 @@ v7.3.3
  - Added disc change indicator line in tracklist
  - Added prompt to clear generator on dnd
  - Switched keyboard shortcuts to use scancodes
- - Fix folder rescan on Windows
+ - Fixed folder rescan on Windows
+ - Fixed garbled audio on RPi
 
 
 v7.3.2
