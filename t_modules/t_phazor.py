@@ -23,6 +23,7 @@ from ctypes import *
 import os.path
 import time
 import requests
+from requests.models import PreparedRequest
 import threading
 import shutil
 from t_modules.t_extra import *
@@ -516,6 +517,22 @@ def player4(tauon):
     chrome_cool_timer = Timer()
     chrome_mode = False
 
+    def chrome_start(track, enqueue=False, t=0):
+        if track.is_cue:
+            print("Error: CUE cast not supported")
+            return
+        if track.is_network:
+            if track.file_ext == "SPTY":
+                print("Error: Spotify cast not supported")
+                return
+            network_url, params = pctl.get_url(track)
+            if params:
+                req = PreparedRequest()
+                req.prepare_url(network_url, params)
+                network_url = req.url
+            tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
+        else:
+            tauon.chrome.start(track.index, enqueue=enqueue, t=t)
 
     while True:
 
@@ -546,6 +563,7 @@ def player4(tauon):
                 subcommand = pctl.playerSubCommand
                 pctl.playerSubCommand = ""
                 pctl.playerCommandReady = False
+
                 if command == "endchrome":
                     chrome_mode = False
                     state = 0
@@ -559,9 +577,10 @@ def player4(tauon):
                         t, pid, s, d = tauon.chrome.update()
                         print((t, d))
                         print(d - t)
+
                         if d and t and 1 < d - t < 5:
                             print("fnqlflf")
-                            tauon.chrome.start(target_object.index, enqueue=True)
+                            chrome_start(target_object.index, enqueue=True)
                             chrome_cool_timer.set()
                             time.sleep(d - t)
                             if pctl.commit:
@@ -569,7 +588,7 @@ def player4(tauon):
                                 pctl.commit = None
                             continue
 
-                    tauon.chrome.start(target_object.index)
+                    chrome_start(target_object.index)
                     chrome_cool_timer.set()
                     if pctl.commit:
                         pctl.advance(quiet=True, end=True)
@@ -624,7 +643,7 @@ def player4(tauon):
             if command == "startchrome":
                 aud.stop()
                 if state == 1:
-                    tauon.chrome.start(loaded_track.index, t=pctl.playing_time)
+                    chrome_start(loaded_track.index, t=pctl.playing_time)
                 chrome_mode = True
 
             if command == "reload":

@@ -80,7 +80,7 @@ class Chrome:
             self.cast.media_controller.status.player_state, \
                self.cast.media_controller.status.duration
 
-    def start(self, track_id, enqueue=False, t=0):
+    def start(self, track_id, enqueue=False, t=0, url=None):
         self.cast.wait()
         tr = self.tauon.pctl.g(track_id)
         n = 0
@@ -102,7 +102,14 @@ class Chrome:
             "duration": round(float(tr.length), 1),
             "customData": {"id": str(tr.index)}
         }
-        self.cast.media_controller.play_media(f"http://{self.ip}:7814/api1/file/{track_id}", 'audio/mpeg', media_info=m, metadata=d, current_time=t, enqueue=enqueue)
+
+        if url is None:
+            url = f"http://{self.ip}:7814/api1/file/{track_id}"
+        else:
+            url = url.replace("localhost", self.ip)
+            url = url.replace("127.0.0.1", self.ip)
+
+        self.cast.media_controller.play_media(url, 'audio/mpeg', media_info=m, metadata=d, current_time=t, enqueue=enqueue)
 
     def stop(self):
         self.cast.media_controller.stop()
