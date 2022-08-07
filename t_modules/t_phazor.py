@@ -516,6 +516,7 @@ def player4(tauon):
     chrome_cool_timer = Timer()
     chrome_mode = False
 
+
     while True:
 
         time.sleep(0.016)
@@ -541,7 +542,7 @@ def player4(tauon):
         if chrome_mode:
             if pctl.playerCommandReady:
                 command = pctl.playerCommand
-                print(command)
+                # print(command)
                 subcommand = pctl.playerSubCommand
                 pctl.playerSubCommand = ""
                 pctl.playerCommandReady = False
