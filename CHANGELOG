@@ -1,8 +1,9 @@
 
 Changelog-------------------------------------
 
-v7.3.3
+v7.4.0
 
+ - Added revised Chromecast mode
  - Added disc change indicator line in tracklist
  - Added prompt to clear generator on dnd
  - Switched keyboard shortcuts to use scancodes
