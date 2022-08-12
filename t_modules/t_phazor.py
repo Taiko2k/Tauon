@@ -518,9 +518,10 @@ def player4(tauon):
     chrome_mode = False
 
     def chrome_start(track, enqueue=False, t=0):
-        if track.is_cue:
-            print("Error: CUE cast not supported")
-            return
+        track = pctl.g(track)
+        # if track.is_cue:
+        #     print("Error: CUE cast not supported")
+        #     return
         if track.is_network:
             if track.file_ext == "SPTY":
                 print("Error: Spotify cast not supported")
@@ -530,6 +531,7 @@ def player4(tauon):
                 req = PreparedRequest()
                 req.prepare_url(network_url, params)
                 network_url = req.url
+
             tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
         else:
             tauon.chrome.start(track.index, enqueue=enqueue, t=t)
@@ -575,12 +577,12 @@ def player4(tauon):
                     target_object = pctl.target_object
                     if state == 1:
                         t, pid, s, d = tauon.chrome.update()
-                        print((t, d))
-                        print(d - t)
+                        # print((t, d))
+                        # print(d - t)
 
                         if d and t and 1 < d - t < 5:
-                            print("fnqlflf")
-                            chrome_start(target_object.index, enqueue=True)
+                            # print("Enqueue next chromecast")
+                            chrome_start(target_object.index, enqueue=True, t=pctl.start_time_target)
                             chrome_cool_timer.set()
                             time.sleep(d - t)
                             if pctl.commit:
@@ -588,7 +590,7 @@ def player4(tauon):
                                 pctl.commit = None
                             continue
 
-                    chrome_start(target_object.index)
+                    chrome_start(target_object.index, t=pctl.start_time_target)
                     chrome_cool_timer.set()
                     if pctl.commit:
                         pctl.advance(quiet=True, end=True)
@@ -616,8 +618,8 @@ def player4(tauon):
 
                 if chrome_update > 0.8 and chrome_cool_timer.get() > 2.5:
                     t, pid, s, d = tauon.chrome.update()
-                    pctl.playing_time = t
-                    pctl.decode_time = t
+                    pctl.playing_time = t - pctl.start_time_target
+                    pctl.decode_time = t - pctl.start_time_target
                     player_timer.hit()
                     chrome_update = 0
 
