@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.3.2"
+n_version = "7.4.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1508,6 +1508,7 @@ class Prefs:  # Used to hold any kind of settings
         self.lyrics_font_size = 15
 
         self.use_gamepad = True
+        self.avoid_resampling = False
 
 
 prefs = Prefs()
@@ -3774,6 +3775,7 @@ def save_prefs():
     #cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("output-samplerate", prefs.samplerate)
     cf.update_value("resample-quality", prefs.resample)
+    cf.update_value("avoid_resampling", prefs.avoid_resampling)
     # cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
     cf.update_value("precache-local-files", prefs.precache)
     cf.update_value("cache-use-tmp", prefs.tmp_cache)
@@ -3928,6 +3930,8 @@ def load_prefs():
     #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
     #prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
     #                               "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
+    prefs.avoid_resampling = cf.sync_add("bool", "avoid_resampling", prefs.avoid_resampling,
+                                 "Only implemented for FLAC, MP3, OGG, OPUS")
     prefs.resample = cf.sync_add("int", "resample-quality", prefs.resample,
                                  "0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
     if prefs.resample < 0 or prefs.resample > 4:
@@ -27333,6 +27337,12 @@ class Over:
             x = x0 + 270 * gui.scale
             ddt.text_background_colour = colours.box_background
             ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_text_label, 212)
+
+            old = prefs.avoid_resampling
+            prefs.avoid_resampling = self.toggle_square(x, self.box_y + self.h - 27 * gui.scale, prefs.avoid_resampling, _("Avoid resampling"))
+            if prefs.avoid_resampling != old:
+                pctl.playerCommand = 'reload'
+                pctl.playerCommandReady = True
 
             self.device_scroll_bar_position -= pref_box.scroll
             if self.device_scroll_bar_position < 0:
