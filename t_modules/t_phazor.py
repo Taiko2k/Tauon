@@ -422,9 +422,11 @@ def player4(tauon):
         if prefs.volume_power < 0 or prefs.volume_power > 10:
             prefs.volume_power = 2
         aud.config_set_volume_power(prefs.volume_power)
+        aud.config_set_resample(prefs.avoid_resampling ^ True)
 
     #aud.config_set_samplerate(prefs.samplerate)
     aud.config_set_resample_quality(prefs.resample)
+
 
     set_config()
 

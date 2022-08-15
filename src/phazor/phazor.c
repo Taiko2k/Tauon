@@ -164,6 +164,7 @@ int config_fade_jump = 1;
 char config_output_sink[256]; // 256 just a conservative guess
 int config_fade_duration = 700;
 int config_resample_quality = 2;
+int config_resample = 1;
 int config_always_ffmpeg = 0;
 int config_volume_power = 2;
 
@@ -325,7 +326,7 @@ void stop_ffmpeg() {
 
 
 void resample_to_buffer(int in_frames) {
-
+    printf("samet\n");
     src_data.data_in = re_in;
     src_data.data_out = re_out;
     src_data.input_frames = in_frames;
@@ -742,7 +743,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
     if (old_sample_rate != sample_rate_src) {
             src_reset(src);
     }
-    if (sample_rate_src != sample_rate_out) {
+    if (sample_rate_src != sample_rate_out && config_resample == 1) {
         resample = 1;
     }
 
@@ -1130,7 +1131,7 @@ void connect_pulse() {
         }
     }
 
-    //printf("ph: Connect device\n");
+    printf("ph: Connect device\n");
 
     ma_context_config c_config = ma_context_config_init();
     c_config.pulse.pApplicationName = "Tauon Music Box";
@@ -1145,11 +1146,15 @@ void connect_pulse() {
         return;
     }
 
+    int set_samplerate = 0;
+
+    if (sample_rate_src > 0) set_samplerate = sample_rate_src;
+
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
     if (n > -1) config.playback.pDeviceID = &pPlaybackDeviceInfos[n].id;
     config.playback.format   = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
     config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
-    config.sampleRate        = 0;           // Set to 0 to use the device's native sample rate.
+    config.sampleRate        = set_samplerate;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
     config.periodSizeInFrames      = 750;   //
     config.periods      = 6;   //
@@ -1162,6 +1167,7 @@ void connect_pulse() {
 
     //dev = config_output_sink;
     printf("ph: Using samplerate %uhz\n", device.sampleRate);
+
     sample_rate_out = device.sampleRate;
     current_sample_rate = sample_rate_out;
 
@@ -1656,6 +1662,20 @@ void decoder_eos() {
 void pump_decode() {
     // Here we get data from the decoders to fill the main buffer
 
+    int reconnect = 0;
+    if (config_resample == 0 && sample_rate_out != sample_rate_src) {
+        if (get_buff_fill() > 0){
+            return;
+        }
+
+        stop_out();
+        fade_fill = 0;
+        fade_position = 0;
+        reset_set_value = 0;
+        buff_reset();
+        reconnect = 1;
+    }
+
     if (codec == WAVE) {
         int result;
         pthread_mutex_lock(&buffer_mutex);
@@ -1787,6 +1807,8 @@ void pump_decode() {
 
         }
     }
+
+    if (reconnect == 1 && sample_rate_src > 0) start_out();
 }
 
 void start_out(){
@@ -2213,6 +2235,11 @@ void config_set_samplerate(int hz) {
 void config_set_resample_quality(int n) {
     config_resample_quality = n;
 }
+
+void config_set_resample(int n) {
+    config_resample = n;
+}
+
 void config_set_always_ffmpeg(int n) {
     config_always_ffmpeg = n;
 }
