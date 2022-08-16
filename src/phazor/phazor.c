@@ -1658,6 +1658,23 @@ void decoder_eos() {
     } else mode = ENDING;
 }
 
+void stop_out(){
+    //printf("ph: stop\n");
+    if (out_thread_running == 1){
+        ma_device_stop(&device);
+        out_thread_running = 0;
+    }
+    disconnect_pulse();
+}
+
+void start_out(){
+    if (pulse_connected == 0) connect_pulse();
+
+    if (out_thread_running == 0){
+        ma_device_start(&device);
+        out_thread_running = 1;
+    }
+}
 
 void pump_decode() {
     // Here we get data from the decoders to fill the main buffer
@@ -1811,23 +1828,8 @@ void pump_decode() {
     if (reconnect == 1 && sample_rate_src > 0) start_out();
 }
 
-void start_out(){
-    if (pulse_connected == 0) connect_pulse();
 
-    if (out_thread_running == 0){
-        ma_device_start(&device);
-        out_thread_running = 1;
-    }
-}
 
-void stop_out(){
-    //printf("ph: stop\n");
-    if (out_thread_running == 1){
-        ma_device_stop(&device);
-        out_thread_running = 0;
-    }
-    disconnect_pulse();
-}
 
 // ---------------------------------------------------------------------------------------
 // Main loop
