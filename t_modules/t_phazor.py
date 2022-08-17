@@ -458,10 +458,9 @@ def player4(tauon):
     stall_timer = Timer()
     wall_timer = Timer()
 
-    def track(end=True, wall=False):
+    def track(end=True):
 
         run_vis()
-        wall = True
 
         if end and loaded_track and loaded_track.is_network and pctl.playing_time < 7:
             if aud.get_result() == 2:
@@ -479,28 +478,7 @@ def player4(tauon):
         pctl.total_playtime += add_time
 
         ##t = aud.get_position_ms() / 1000
-
-        # if t and end:
-        #     pctl.decode_time = t - loaded_track.start_time
-        #     if abs(pctl.decode_time - pctl.playing_time) > 5:  # Eehh hack fix?
-        #         pctl.decode_time = pctl.playing_time
-        # else:
-        #     pctl.decode_time = pctl.playing_time
-        #
-        # print((pctl.playing_time, pctl.decode_time))
-
-        #if wall or tauon.spot_ctl.playing or wall_timer.get() < 2:
         pctl.playing_time += add_time
-        # else:
-        #     #new = t - loaded_track.start_time
-        #     new = t - pctl.start_time
-        #     if new != pctl.playing_time:
-        #         stall_timer.set()
-        #         pctl.playing_time = new
-        #     elif stall_timer.get() > 2:
-        #         print("STALL!")
-        #         pctl.playing_time += add_time
-
         pctl.decode_time = pctl.playing_time
 
         if pctl.playing_time < 3 and pctl.a_time < 3:
@@ -626,10 +604,14 @@ def player4(tauon):
                     chrome_update = 0
 
                 add_time = player_timer.hit()
-                # pctl.playing_time += add_time
-                # pctl.decode_time = pctl.playing_time
+                if add_time > 2:
+                    add_time = 2
                 chrome_update += add_time
                 pctl.a_time += add_time
+                tauon.lfm_scrobbler.update(add_time)
+                pctl.total_playtime += add_time
+                if len(pctl.track_queue) > 0 and 2 > add_time > 0:
+                    tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
 
                 pctl.test_progress()
 
@@ -800,7 +782,7 @@ def player4(tauon):
                     r_timer.set()
                     while r_timer.get() <= remain - prefs.device_buffer / 1000:
                         if pctl.commit:
-                            track(end=False, wall=True)
+                            track(end=False)
                         time.sleep(0.016)
                         if pctl.playerCommandReady and pctl.playerCommand == "open":
                             print("JANK")
