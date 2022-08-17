@@ -4584,6 +4584,13 @@ def tag_scan(nt):
                 nt.length = audio.info.length
                 nt.size = os.path.getsize(nt.fullpath)
 
+                if not nt.length:
+                    try:
+                        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                        nt.length = float(result.stdout.decode())
+                    except:
+                        print("FFPROBE couldn't supply a duration")
+
                 if type(audio.tags) == mutagen.mp4.MP4Tags:
                     tags = audio.tags
 

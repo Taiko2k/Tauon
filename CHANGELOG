@@ -11,6 +11,7 @@ v7.4.0
  - Workaround cursor theme issue on GNOME Wayland
  - Fixed folder rescan on Windows
  - Fixed garbled audio on RPi
+ - Fixed missing duration on some files
 
 
 v7.3.2
