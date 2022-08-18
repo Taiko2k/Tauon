@@ -1306,9 +1306,6 @@ int load_next() {
     } else if (memcmp(peak, "OggS", 4) == 0) {
         codec = VORBIS;
         if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
-    } else if (memcmp(peak, "\0\0\0\x20" "ftypM4A", 11) == 0) {
-        codec = FFMPEG;
-        //printf("Detected m4a\n");
     } else if (memcmp(peak, "\xff\xfb", 2) == 0) {
         codec = MPG;
         //printf("Detected mp3\n");
@@ -1318,6 +1315,15 @@ int load_next() {
     } else if (memcmp(peak, "\xff\xf2", 2) == 0) {
         codec = MPG;
         //printf("Detected mp3\n");
+    } else if (memcmp(peak, "\0\0\0\x20" "ftypM4A", 11) == 0) {
+        codec = FFMPEG;
+        //printf("Detected m4a\n");
+    } else if (memcmp(peak, "\0\0\0\x18" "ftypdash", 12) == 0) {
+        codec = FFMPEG;
+        //printf("Detected m4a\n");
+    } else if (memcmp(peak, "\0\0\0\x18" "ftypiso5", 12) == 0) {
+        codec = FFMPEG;
+        //printf("Detected m4a\n");
     } else if (memcmp(peak, "\x30\x26\xb2\x75\x8e\x66\xcf\x11", 8) == 0) {
         codec = FFMPEG;
         //printf("Detected wma\n");
