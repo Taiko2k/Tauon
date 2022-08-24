@@ -326,7 +326,7 @@ void stop_ffmpeg() {
 
 
 void resample_to_buffer(int in_frames) {
-    printf("samet\n");
+
     src_data.data_in = re_in;
     src_data.data_out = re_out;
     src_data.input_frames = in_frames;
