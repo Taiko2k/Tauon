@@ -6439,6 +6439,8 @@ class PlayerCtl:
             if inplace and self.queue_step > 1:
                 del self.track_queue[self.queue_step]
             else:
+                if dry:
+                    return self.track_queue[new_step]
                 self.queue_step = new_step
 
             if rr:
