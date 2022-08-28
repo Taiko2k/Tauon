@@ -3,15 +3,16 @@ from t_modules.t_extra import shooter
 import time
 import socket
 
+
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
     try:
         # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
+        s.connect(("10.255.255.255", 1))
         IP = s.getsockname()[0]
     except Exception:
-        IP = '127.0.0.1'
+        IP = "127.0.0.1"
     finally:
         s.close()
     return IP
@@ -30,22 +31,32 @@ class Chrome:
     def rescan(self):
         print("Scanning for chromecasts...")
 
-        if True: #not self.services:
+        if True:  # not self.services:
             try:
-                #self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
+                # self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
                 services, browser = pychromecast.discovery.discover_chromecasts()
                 pychromecast.discovery.stop_discovery(browser)
                 menu = self.tauon.chrome_menu
 
-                #menu.items.clear()
+                # menu.items.clear()
                 for item in services:
                     self.services.append([str(item.uuid), str(item.friendly_name)])
-                    menu.add_to_sub(self.tauon.strings.cast_to % str(item.friendly_name), 1, self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)])
-                menu.add_to_sub(self.tauon.strings.stop_cast, 1, self.end, show_test=lambda x: self.active)
+                    menu.add_to_sub(
+                        self.tauon.strings.cast_to % str(item.friendly_name),
+                        1,
+                        self.three,
+                        pass_ref=True,
+                        args=[str(item.uuid), str(item.friendly_name)],
+                    )
+                menu.add_to_sub(
+                    self.tauon.strings.stop_cast,
+                    1,
+                    self.end,
+                    show_test=lambda x: self.active,
+                )
             except:
                 raise
                 print("Failed to get chromecasts")
-
 
     def three(self, _, item):
         shooter(self.four, [item])
@@ -54,7 +65,9 @@ class Chrome:
         if self.active:
             self.end()
         self.tauon.start_remote()
-        ccs, browser = pychromecast.get_listed_chromecasts(friendly_names=[item[1]], discovery_timeout=3.0)
+        ccs, browser = pychromecast.get_listed_chromecasts(
+            friendly_names=[item[1]], discovery_timeout=3.0
+        )
         self.browser = browser
         self.cast = ccs[0]
         self.cast.wait()
@@ -72,13 +85,14 @@ class Chrome:
         self.tauon.pctl.playerCommandReady = True
         self.tauon.tm.ready_playback()
 
-
     def update(self):
         self.cast.media_controller.update_status()
-        return self.cast.media_controller.status.current_time, \
-            self.cast.media_controller.status.media_custom_data.get("id"), \
-            self.cast.media_controller.status.player_state, \
-               self.cast.media_controller.status.duration
+        return (
+            self.cast.media_controller.status.current_time,
+            self.cast.media_controller.status.media_custom_data.get("id"),
+            self.cast.media_controller.status.player_state,
+            self.cast.media_controller.status.duration,
+        )
 
     def start(self, track_id, enqueue=False, t=0, url=None):
         self.cast.wait()
@@ -96,11 +110,11 @@ class Chrome:
             "artist": tr.artist,
             "trackNumber": n,
             "images": [{"url": f"http://{self.ip}:7814/api1/pic/medium/{track_id}"}],
-            "releaseDate": tr.date
+            "releaseDate": tr.date,
         }
         m = {
             "duration": round(float(tr.length), 1),
-            "customData": {"id": str(tr.index)}
+            "customData": {"id": str(tr.index)},
         }
 
         if url is None:
@@ -109,7 +123,9 @@ class Chrome:
             url = url.replace("localhost", self.ip)
             url = url.replace("127.0.0.1", self.ip)
 
-        self.cast.media_controller.play_media(url, 'audio/mpeg', media_info=m, metadata=d, current_time=t, enqueue=enqueue)
+        self.cast.media_controller.play_media(
+            url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue
+        )
 
     def stop(self):
         self.cast.media_controller.stop()
@@ -136,4 +152,3 @@ class Chrome:
             self.active = False
         self.tauon.chrome_mode = False
         self.tauon.pctl.player_volume = self.save_vol
-

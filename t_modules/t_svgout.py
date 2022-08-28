@@ -17,7 +17,8 @@
 
 
 from gi import require_version
-require_version('Rsvg', '2.0')
+
+require_version("Rsvg", "2.0")
 from gi.repository import Rsvg
 import cairo
 import os
@@ -28,7 +29,9 @@ def render_icons(source_directory, output_directory, scale):
     targets = []
     # Verify svg files exist
     for file in os.listdir(source_directory):
-        if file.endswith(".svg") and os.path.isfile(os.path.join(source_directory, file)):
+        if file.endswith(".svg") and os.path.isfile(
+            os.path.join(source_directory, file)
+        ):
             targets.append(file)
 
     if not os.path.exists(output_directory):
@@ -52,7 +55,7 @@ def render_icons(source_directory, output_directory, scale):
         svg_surface = cairo.SVGSurface(None, width, height)
         svg_context = cairo.Context(svg_surface)
         svg_context.save()
-        svg_context.scale(width/unscaled_width, height/unscaled_height)
+        svg_context.scale(width / unscaled_width, height / unscaled_height)
         svg.render_cairo(svg_context)
         svg_context.restore()
 

@@ -25,8 +25,8 @@ import time
 import threading
 from t_modules.t_extra import Timer
 
-class Jellyfin():
 
+class Jellyfin:
     def __init__(self, tauon):
         self.tauon = tauon
         self.pctl = tauon.pctl
@@ -46,7 +46,6 @@ class Jellyfin():
         self.session_update_timer = Timer()
         self.session_last_item = None
 
-
     def _get_jellyfin_auth(self):
         auth_str = f"MediaBrowser Client={self.tauon.t_title}, Device={self.tauon.device}, DeviceId=-, Version={self.tauon.t_version}"
         if self.accessToken:
@@ -64,12 +63,17 @@ class Jellyfin():
                 headers={
                     "Content-type": "application/json",
                     "X-Application": self.tauon.t_agent,
-                    "x-emby-authorization": self._get_jellyfin_auth()
+                    "x-emby-authorization": self._get_jellyfin_auth(),
                 },
-                data=json.dumps({ "username": username, "Pw": password }), timeout=(5, 10)
+                data=json.dumps({"username": username, "Pw": password}),
+                timeout=(5, 10),
             )
         except:
-            self.gui.show_message("Could not establish connection to server.", "Check server is running and URL is correct.", mode="error")
+            self.gui.show_message(
+                "Could not establish connection to server.",
+                "Check server is running and URL is correct.",
+                mode="error",
+            )
             return
 
         if response.status_code == 200:
@@ -78,12 +82,22 @@ class Jellyfin():
             self.userId = info["User"]["Id"]
             self.connected = True
             if debug:
-                self.gui.show_message("Connection and authorisation successful", mode="done")
+                self.gui.show_message(
+                    "Connection and authorisation successful", mode="done"
+                )
         else:
             if response.status_code == 401:
-                self.gui.show_message("401 Authentication failed", "Check username and password.", mode="warning")
+                self.gui.show_message(
+                    "401 Authentication failed",
+                    "Check username and password.",
+                    mode="warning",
+                )
             else:
-                self.gui.show_message("Jellyfin auth error", f"{response.status_code} {response.text}", mode="warning")
+                self.gui.show_message(
+                    "Jellyfin auth error",
+                    f"{response.status_code} {response.text}",
+                    mode="warning",
+                )
 
     def test(self):
         self._authenticate(debug=True)
@@ -99,12 +113,9 @@ class Jellyfin():
         headers = {
             "Token": self.accessToken,
             "X-Application": "Tauon/1.0",
-            "x-emby-authorization": self._get_jellyfin_auth()
+            "x-emby-authorization": self._get_jellyfin_auth(),
         }
-        params = {
-            "UserId": self.userId,
-            "static": "true"
-        }
+        params = {"UserId": self.userId, "static": "true"}
 
         if self.prefs.network_stream_bitrate > 0:
             params["MaxStreamingBitrate"] = self.prefs.network_stream_bitrate
@@ -131,10 +142,12 @@ class Jellyfin():
         headers = {
             "Token": self.accessToken,
             "X-Application": "Tauon/1.0",
-            "x-emby-authorization": self._get_jellyfin_auth()
+            "x-emby-authorization": self._get_jellyfin_auth(),
         }
         params = {}
-        base_url = f"{self.prefs.jelly_server_url}/Items/{track.art_url_key}/Images/Primary"
+        base_url = (
+            f"{self.prefs.jelly_server_url}/Items/{track.art_url_key}/Images/Primary"
+        )
         response = requests.get(base_url, headers=headers, params=params)
 
         if response.status_code == 200:
@@ -154,7 +167,7 @@ class Jellyfin():
             headers = {
                 "Token": self.accessToken,
                 "X-Application": "Tauon/1.0",
-                "x-emby-authorization": self._get_jellyfin_auth()
+                "x-emby-authorization": self._get_jellyfin_auth(),
             }
 
             params = {}
@@ -204,15 +217,14 @@ class Jellyfin():
                 headers={
                     "Token": self.accessToken,
                     "X-Application": "Tauon/1.0",
-                    "x-emby-authorization": self._get_jellyfin_auth()
+                    "x-emby-authorization": self._get_jellyfin_auth(),
                 },
-                params={
-                    "recursive": True,
-                    "filter": "music"
-                }
+                params={"recursive": True, "filter": "music"},
             )
         except:
-            self.gui.show_message("Error connecting to Jellyfin for Import", mode="error")
+            self.gui.show_message(
+                "Error connecting to Jellyfin for Import", mode="error"
+            )
             self.scanning = False
             return
 
@@ -221,11 +233,25 @@ class Jellyfin():
             print("Connection successful, soring items...")
 
             # filter audio items only
-            audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
+            audio_items = list(
+                filter(lambda item: item["Type"] == "Audio", response.json()["Items"])
+            )
             # sort by artist, then album, then track number
-            sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
+            sorted_items = sorted(
+                audio_items,
+                key=lambda item: (
+                    item.get("AlbumArtist", ""),
+                    item.get("Album", ""),
+                    item.get("IndexNumber", -1),
+                ),
+            )
             # group by parent
-            grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
+            grouped_items = itertools.groupby(
+                sorted_items,
+                lambda item: (
+                    item.get("AlbumArtist", "") + " - " + item.get("Album", "")
+                ).strip("- "),
+            )
         else:
             self.scanning = False
             self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
@@ -237,7 +263,7 @@ class Jellyfin():
                 id = self.pctl.master_count  # id here is tauons track_id for the track
                 existing_track = existing.get(track.get("Id"))
                 replace_existing = existing_track is not None
-                #print(track.items())
+                # print(track.items())
                 if replace_existing:
                     id = existing_track
 
@@ -253,7 +279,9 @@ class Jellyfin():
                     nt.misc["artists"] = artists
                 nt.title = track.get("Name", "")
                 nt.album = track.get("Album", "")
-                nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
+                nt.length = (
+                    track.get("RunTimeTicks", 0) / 10000000
+                )  # needs to be in seconds
                 nt.date = str(track.get("ProductionYear"))
 
                 folder_name = nt.album_artist
@@ -274,7 +302,11 @@ class Jellyfin():
                 nt.is_network = True
 
                 nt.url_key = track.get("Id")
-                nt.art_url_key = track.get("AlbumId") if track.get("AlbumPrimaryImageTag", False) else None
+                nt.art_url_key = (
+                    track.get("AlbumId")
+                    if track.get("AlbumPrimaryImageTag", False)
+                    else None
+                )
 
                 self.pctl.master_library[id] = nt
                 if not replace_existing:
@@ -288,7 +320,7 @@ class Jellyfin():
                     if user_data.get("IsFavorite"):
                         if star is None:
                             star = self.tauon.star_store.new_object()
-                        if 'L' not in star[1]:
+                        if "L" not in star[1]:
                             star[1] += "L"
                         self.tauon.star_store.insert(nt.index, star)
                     else:
@@ -307,8 +339,12 @@ class Jellyfin():
         if return_list:
             return playlist
 
-        self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
-        self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
+        self.pctl.multi_playlist.append(
+            self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist)
+        )
+        self.pctl.gen_codes[
+            self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)
+        ] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
     def session_item(self, track):
@@ -334,7 +370,9 @@ class Jellyfin():
             time.sleep(1)
             track = self.pctl.playing_object()
 
-            if track.file_ext != "JELY" or (self.session_status == 0 and self.pctl.playing_state == 0):
+            if track.file_ext != "JELY" or (
+                self.session_status == 0 and self.pctl.playing_state == 0
+            ):
                 if self.session_status != 0:
                     data = self.session_last_item
                     self.session_send("Sessions/Playing/Stopped", data)
@@ -342,7 +380,9 @@ class Jellyfin():
                 self.session_thread_active = False
                 return
 
-            if (self.session_status == 0 or self.session_item_id != track.index) and self.pctl.playing_state == 1:
+            if (
+                self.session_status == 0 or self.session_item_id != track.index
+            ) and self.pctl.playing_state == 1:
                 data = self.session_item(track)
                 self.session_send("Sessions/Playing", data)
                 self.session_update_timer.set()
@@ -374,10 +414,12 @@ class Jellyfin():
     def session_send(self, point, data):
 
         response = requests.post(
-            f"{self.prefs.jelly_server_url}/{point}", data=json.dumps(data),
+            f"{self.prefs.jelly_server_url}/{point}",
+            data=json.dumps(data),
             headers={
                 "Token": self.accessToken,
                 "X-Application": "Tauon/1.0",
                 "x-emby-authorization": self._get_jellyfin_auth(),
-                "Content-Type": "application/json"
-            })
+                "Content-Type": "application/json",
+            },
+        )

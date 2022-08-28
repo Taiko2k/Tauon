@@ -19,7 +19,9 @@
 
 
 from isounidecode import unidecode
-from bs4 import BeautifulSoup  # Remember to add to dependency list if PyLyrics is removed
+from bs4 import (
+    BeautifulSoup,
+)  # Remember to add to dependency list if PyLyrics is removed
 import urllib.parse
 import requests  # Remember to add to dependency list if PyLyrics is removed
 import re
@@ -40,6 +42,7 @@ import re
 #         lyrics = "[Instrumental]"
 #
 #     return lyrics
+
 
 def ovh(artist, title):
 
@@ -68,6 +71,7 @@ def happi(artist, title):
     j = r.json()
     return j["result"]["lyrics"]
 
+
 def genius(artist, title, return_url=False):
 
     line = f"{artist}-{title}"
@@ -87,9 +91,9 @@ def genius(artist, title, return_url=False):
         return line
 
     page = requests.get(line)
-    html = BeautifulSoup(page.text, 'html.parser')
+    html = BeautifulSoup(page.text, "html.parser")
 
-    result = html.find('div', class_='lyrics') #.get_text()
+    result = html.find("div", class_="lyrics")  # .get_text()
     if result is not None:
         lyrics = result.get_text()
         lyrics2 = []
@@ -106,7 +110,9 @@ def genius(artist, title, return_url=False):
     # New layout type
     else:
 
-        results = html.findAll("div", {"class": lambda l: l and "Lyrics__Container" in l})
+        results = html.findAll(
+            "div", {"class": lambda l: l and "Lyrics__Container" in l}
+        )
         lyrics = "".join([r.get_text("\n") for r in results])
         level = 0
         new = ""
@@ -137,17 +143,15 @@ def genius(artist, title, return_url=False):
         return lyrics
 
 
-
-
 lyric_sources = {
     # "Apiseeds": apiseeds,
     "Happi": happi,
     "Genius": genius,
-    #"LyricWiki": lyricwiki,
+    # "LyricWiki": lyricwiki,
     "lyrics.ovh": ovh,
 }
 
 uses_scraping = {
-    #"LyricWiki",
+    # "LyricWiki",
     "Genius"
 }

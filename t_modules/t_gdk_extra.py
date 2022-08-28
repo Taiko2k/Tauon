@@ -19,7 +19,8 @@
 
 
 import gi
-gi.require_version('Gdk', '3.0')
+
+gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk
 from sdl2 import *
 import ctypes
@@ -55,6 +56,7 @@ def cairo_cursor_to_sdl(cairo_surface, x_hot, y_hot, fallback=None):
     mem = cairo_surface.get_data()
     buff = ctypes.c_buffer(mem.tobytes())
 
-    sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(buff), w, h, 32, w * 4, SDL_PIXELFORMAT_ARGB8888)
+    sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(
+        ctypes.pointer(buff), w, h, 32, w * 4, SDL_PIXELFORMAT_ARGB8888
+    )
     return SDL_CreateColorCursor(sdl_surface, round(x_hot), round(y_hot))
-

@@ -25,6 +25,7 @@ import shlex
 import fcntl, os
 from t_modules.t_extra import Timer
 
+
 def enc(tauon):
 
     pctl = tauon.pctl
@@ -59,8 +60,24 @@ def enc(tauon):
             ms *= 10
             t = f"{str(int(hh)).zfill(2)}:{str(int(mm)).zfill(2)}:{str(int(ss)).zfill(2)}.{str(round(ms))}"
 
-            return ['ffmpeg', "-loglevel", "quiet", "-i", target, "-ss", t, "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",  # -re
-                    "48000", "-"]
+            return [
+                "ffmpeg",
+                "-loglevel",
+                "quiet",
+                "-i",
+                target,
+                "-ss",
+                t,
+                "-acodec",
+                "pcm_s16le",
+                "-f",
+                "s16le",
+                "-ac",
+                "2",
+                "-ar",  # -re
+                "48000",
+                "-",
+            ]
 
         def main(self):
 
@@ -101,16 +118,39 @@ def enc(tauon):
                         # print(f"URI = {target}")
                         pctl.broadcast_active = True
                         # print("Start encoder")
-                        #cmd = shlex.split("opusenc --raw --raw-rate 48000 - -")
-                        cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", '-f', "opus", "-c:a", "libopus", "pipe:1"]
+                        # cmd = shlex.split("opusenc --raw --raw-rate 48000 - -")
+                        cmd = [
+                            "ffmpeg",
+                            "-loglevel",
+                            "quiet",
+                            "-f",
+                            "s16le",
+                            "-ar",
+                            "48000",
+                            "-ac",
+                            "2",
+                            "-i",
+                            "pipe:0",
+                            "-f",
+                            "opus",
+                            "-c:a",
+                            "libopus",
+                            "pipe:1",
+                        ]
                         # cmd = shlex.split("oggenc --raw --raw-rate 48000 -")
-                        self.encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-                        fcntl.fcntl(self.encoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+                        self.encoder = subprocess.Popen(
+                            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+                        )
+                        fcntl.fcntl(
+                            self.encoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK
+                        )
 
                         # print("Begin decode of file")
                         cmd = self.get_decode_command(target, pctl.b_start_time)
                         # print(cmd)
-                        self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                        self.decoder = subprocess.Popen(
+                            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+                        )
                         time.sleep(0.1)
                         self.stream_time.force_set(6)
                         print("Broadcast started")
@@ -121,7 +161,9 @@ def enc(tauon):
 
                         self.decoder.terminate()
                         cmd = self.get_decode_command(target, 0)
-                        self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                        self.decoder = subprocess.Popen(
+                            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+                        )
                         time.sleep(0.1)
                         # print("started next")
                         self.track_bytes_sent = 0
@@ -132,10 +174,14 @@ def enc(tauon):
                         # print(f"URI = {target}")
                         self.decoder.terminate()
                         cmd = self.get_decode_command(target, start)
-                        self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                        self.decoder = subprocess.Popen(
+                            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+                        )
                         time.sleep(0.1)
                         # print("started next")
-                        self.track_bytes_sent = pctl.broadcast_seek_position * (48000 * (16 / 8) * 2)
+                        self.track_bytes_sent = pctl.broadcast_seek_position * (
+                            48000 * (16 / 8) * 2
+                        )
 
                 if self.decoder:
 
@@ -143,7 +189,7 @@ def enc(tauon):
 
                     st = self.stream_time.get()
                     ss = self.bytes_sent / (48000 * (16 / 8) * 2)
-                    #print((st, ss))
+                    # print((st, ss))
 
                     if ss < st:
                         # We owe:
@@ -151,15 +197,15 @@ def enc(tauon):
                         owed_bytes = owed_seconds * (48000 * (16 / 8) * 2)
 
                         while owed_bytes > 0:
-                            #print("PUMP")
+                            # print("PUMP")
                             # Pump data out of decoder
                             data = self.decoder.stdout.read(int(48000 * (16 / 8) * 2))
-                            #print(data)
+                            # print(data)
                             if not data:
                                 self.dry += 1
 
                                 if owed_seconds > 0.1 and self.dry > 2:
-                                    #print("SILENCE")
+                                    # print("SILENCE")
                                     data = b"\x00" * 19200
                                 else:
                                     break
@@ -173,7 +219,7 @@ def enc(tauon):
                             break
 
                     if not data:
-                        #print("No more decoded data...")
+                        # print("No more decoded data...")
                         time.sleep(0.01)
 
                     # Push data into encoder
@@ -189,7 +235,7 @@ def enc(tauon):
                     # Receive encoded data
                     data = self.encoder.stdout.read()
                     if data:
-                        #print("WRITE")
+                        # print("WRITE")
                         self.output_buffer.write(data)
                         self.output_buffer_size += len(data)
 
@@ -198,18 +244,17 @@ def enc(tauon):
 
                         self.output_buffer.seek(6)
                         gp = self.output_buffer.read(8)
-                        gp = int.from_bytes(gp, 'big')
-
+                        gp = int.from_bytes(gp, "big")
 
                         self.output_buffer.seek(26)
                         cont = self.output_buffer.read(1)
-                        cont = int.from_bytes(cont, 'big')
-                        #print(f"{cont} segments")
+                        cont = int.from_bytes(cont, "big")
+                        # print(f"{cont} segments")
                         total = cont
                         while cont:
                             value = self.output_buffer.read(1)
-                            value = int.from_bytes(value, 'big')
-                            #print(f"value {value}")
+                            value = int.from_bytes(value, "big")
+                            # print(f"value {value}")
                             cont -= 1
                             total += value
 

@@ -19,8 +19,9 @@
 
 
 import gi
-gi.require_version('Pango', '1.0')
-gi.require_version('PangoCairo', '1.0')
+
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
 import cairo
 from gi.repository import Pango
 from gi.repository import PangoCairo
@@ -29,7 +30,6 @@ from PIL import Image
 
 
 class TopChart:
-
     def __init__(self, tauon, album_art_gen):
 
         self.pctl = tauon.pctl
@@ -37,7 +37,17 @@ class TopChart:
         self.user_dir = tauon.user_directory
         self.album_art_gen = album_art_gen
 
-    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10", tile=False, cascade=False):
+    def generate(
+        self,
+        tracks,
+        bg=(10, 10, 10),
+        rows=3,
+        columns=3,
+        show_lables=True,
+        font="Monospace 10",
+        tile=False,
+        cascade=False,
+    ):
 
         # Main control variables
         border = 29
@@ -133,7 +143,14 @@ class TopChart:
                     x = border + (spacing + size) * cl
                     if i > len(tracks) - 1:
                         break
-                    positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
+                    positions.append(
+                        (
+                            tracks[i],
+                            x + inv_space // 2,
+                            y + inv_space // 2,
+                            size - inv_space,
+                        )
+                    )
                 y += spacing + size
 
             size = b
@@ -149,9 +166,15 @@ class TopChart:
                     print(x)
                     if i > len(tracks) - 1:
                         break
-                    positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
+                    positions.append(
+                        (
+                            tracks[i],
+                            x + inv_space // 2,
+                            y + inv_space // 2,
+                            size - inv_space,
+                        )
+                    )
                 y += spacing + size
-
 
             size = c
             if not tile:
@@ -164,9 +187,15 @@ class TopChart:
                     x = border + (spacing + size) * cl
                     if i > len(tracks) - 1:
                         break
-                    positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
+                    positions.append(
+                        (
+                            tracks[i],
+                            x + inv_space // 2,
+                            y + inv_space // 2,
+                            size - inv_space,
+                        )
+                    )
                 y += spacing + size
-
 
         # Parse font
         font_comp = font.split(" ")
@@ -186,7 +215,6 @@ class TopChart:
             ww += col_w  # Add extra area to final size for text
             if two_col:
                 ww += col_w + 20
-
 
         # Get lables
         text = ""
@@ -218,12 +246,15 @@ class TopChart:
             else:
                 b_text += line
 
-
         # Prepare a blank Cairo surface
         surface = cairo.ImageSurface(cairo.FORMAT_RGB24, ww, h)
         context = cairo.Context(surface)
 
-        bg = (bg[0] / 255, bg[1] / 255, bg[2] / 255)  # Convert 8-bit rgb values to decimal
+        bg = (
+            bg[0] / 255,
+            bg[1] / 255,
+            bg[2] / 255,
+        )  # Convert 8-bit rgb values to decimal
         context.set_source_rgb(bg[0], bg[1], bg[2])
         context.paint()  # Fill in the background colour
 
@@ -236,7 +267,9 @@ class TopChart:
 
             # Export the album art to file object
             try:
-                art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True, zoom=True)
+                art_file = self.album_art_gen.save_thumb(
+                    track, (size, size), None, png=True, zoom=True
+                )
             except:
                 continue
 
@@ -249,7 +282,6 @@ class TopChart:
             context.set_source_surface(art, x, y)
             context.paint()
 
-
         if show_lables:
 
             # Setup font and prepare Pango layout
@@ -260,9 +292,8 @@ class TopChart:
             layout.set_ellipsize(Pango.EllipsizeMode.END)
             layout.set_width((col_w - text_offset - spacing) * 1000)
             # layout.set_height((h - spacing * 2) * 1000)
-            #layout.set_spacing(3 * 1000)
-            #layout.set_font_description(Pango.FontDescription(font))
-
+            # layout.set_spacing(3 * 1000)
+            # layout.set_font_description(Pango.FontDescription(font))
 
             # Here we make sure the font size is small enough to fit
             font = " ".join(font_comp) + " " + str(font_size)
@@ -311,7 +342,6 @@ class TopChart:
             context.set_source_rgb(0.9, 0.9, 0.9)
             PangoCairo.show_layout(context, layout)
 
-
         # Finally export as PNG
         output_path = os.path.join(self.user_dir, "chart.png")
         surface.write_to_png(output_path)
@@ -319,7 +349,6 @@ class TopChart:
         # Convert to JPEG for convenience
         output_path2 = os.path.join(self.user_dir, "chart.jpg")
         im = Image.open(output_path)
-        im.save(output_path2, 'JPEG', quality=92)
+        im.save(output_path2, "JPEG", quality=92)
 
         return output_path2
-

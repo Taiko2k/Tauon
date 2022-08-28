@@ -18,14 +18,12 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
 # The purpose of this module is to update, parse and write to a configuration file
 
 import os
 
 
 class Config:
-
     def __init__(self):
 
         self.live = []
@@ -37,15 +35,15 @@ class Config:
 
     def add_text(self, text):
 
-        self.live.append(['comment', text])
+        self.live.append(["comment", text])
 
     def add_comment(self, text):
 
-        self.live.append(['comment', "# " + text])
+        self.live.append(["comment", "# " + text])
 
     def br(self):
 
-        self.live.append(['comment', ""])
+        self.live.append(["comment", ""])
 
     def update_value(self, key, value):
 
@@ -67,11 +65,11 @@ class Config:
         #     print("ERROR! Config file cannot be written")
         #     return
 
-        with open(path, 'w', encoding="utf_8") as f:
+        with open(path, "w", encoding="utf_8") as f:
 
             for item in self.live:
 
-                if item[0] == 'comment':
+                if item[0] == "comment":
                     f.write(item[1])
                     f.write(os.linesep)
                     continue
@@ -83,7 +81,7 @@ class Config:
                 f.write(" = ")
                 c += 3
 
-                if item[0] == 'bool':
+                if item[0] == "bool":
                     if item[2] is True:
                         f.write("true")
                         c += 4
@@ -91,17 +89,17 @@ class Config:
                         f.write("false")
                         c += 5
 
-                if item[0] == 'string':
+                if item[0] == "string":
                     f.write('"')
                     f.write(item[2])
                     f.write('"')
                     c += len(item[2]) + 2
 
-                if item[0] == 'int':
+                if item[0] == "int":
                     f.write(str(item[2]))
                     c += len(str(item[2]))
 
-                if item[0] == 'float':
+                if item[0] == "float":
                     f.write(str(item[2]))
                     c += len(str(item[2]))
 
@@ -130,32 +128,32 @@ class Config:
                         got_old = True
                         break
 
-        if type == 'bool':
+        if type == "bool":
             if got_old:
-                if old_value == 'true':
-                    self.live.append(['bool', key, True, comment])
+                if old_value == "true":
+                    self.live.append(["bool", key, True, comment])
                     return True
-                if old_value == 'false':
-                    self.live.append(['bool', key, False, comment])
+                if old_value == "false":
+                    self.live.append(["bool", key, False, comment])
                     return False
-            self.live.append(['bool', key, default_value, comment])
+            self.live.append(["bool", key, default_value, comment])
             return default_value
 
-        if type == 'string':
+        if type == "string":
 
             if old_value is None:
-                self.live.append(['string', key, default_value, comment])
+                self.live.append(["string", key, default_value, comment])
                 return default_value
 
-            #old_value = old_value.strip('"')
-            if old_value and old_value[0] == old_value[-1] == "\"":
+            # old_value = old_value.strip('"')
+            if old_value and old_value[0] == old_value[-1] == '"':
                 old_value = old_value[1:-1]
 
             if not got_old:
-                self.live.append(['string', key, default_value, comment])
+                self.live.append(["string", key, default_value, comment])
                 return default_value
 
-            self.live.append(['string', key, old_value, comment])
+            self.live.append(["string", key, old_value, comment])
             return old_value
 
             # if got_old:
@@ -167,25 +165,23 @@ class Config:
             # self.live.append(['string', key, default_value, comment])
             # return default_value
 
-        if type == 'int':
+        if type == "int":
             if got_old and old_value.isdigit():
                 old_value = int(old_value)
-                self.live.append(['int', key, old_value, comment])
+                self.live.append(["int", key, old_value, comment])
                 return old_value
 
-            self.live.append(['int', key, default_value, comment])
+            self.live.append(["int", key, default_value, comment])
             return default_value
 
-        if type == 'float':
+        if type == "float":
             if got_old:
                 try:
                     old_value = float(old_value)
-                    self.live.append(['float', key, old_value, comment])
+                    self.live.append(["float", key, old_value, comment])
                     return old_value
                 except:
                     print("Warning: Config file contains invalid float")
                     pass
-            self.live.append(['float', key, default_value, comment])
+            self.live.append(["float", key, default_value, comment])
             return default_value
-
-

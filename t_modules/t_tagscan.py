@@ -27,28 +27,29 @@ import os
 import math
 from t_modules.t_extra import process_odat
 
+
 def parse_mbids_from_vorbis(object, key, value):
 
     if key == "musicbrainz_artistid":
         if "musicbrainz_artistids" not in object.misc:
-            object.misc['musicbrainz_artistids'] = []
-        object.misc['musicbrainz_artistids'].append(value)
+            object.misc["musicbrainz_artistids"] = []
+        object.misc["musicbrainz_artistids"].append(value)
         return True
 
     if key == "musicbrainz_trackid":
-        object.misc['musicbrainz_recordingid'] = value
+        object.misc["musicbrainz_recordingid"] = value
         return True
 
     if key == "musicbrainz_releasetrackid":
-        object.misc['musicbrainz_trackid'] = value
+        object.misc["musicbrainz_trackid"] = value
         return True
 
     if key == "musicbrainz_albumid":
-        object.misc['musicbrainz_albumid'] = value
+        object.misc["musicbrainz_albumid"] = value
         return True
 
     if key == "musicbrainz_releasegroupid":
-        object.misc['musicbrainz_releasegroupid'] = value
+        object.misc["musicbrainz_releasegroupid"] = value
         return True
 
     return False
@@ -56,11 +57,11 @@ def parse_mbids_from_vorbis(object, key, value):
 
 def parse_picture_block(f):
     a = f.read(4)
-    a = int.from_bytes(a, byteorder='big')
+    a = int.from_bytes(a, byteorder="big")
     # print("Picture type: " + str(a))
 
     a = f.read(4)
-    b = int.from_bytes(a, byteorder='big')
+    b = int.from_bytes(a, byteorder="big")
     # print("MIME len: " + str(b))
 
     a = f.read(b)
@@ -68,7 +69,7 @@ def parse_picture_block(f):
     # print("MIME: " + a.decode('ascii'))
 
     a = f.read(4)
-    a = int.from_bytes(a, byteorder='big')
+    a = int.from_bytes(a, byteorder="big")
     # print("Description len: " + str(a))
 
     a = f.read(a)
@@ -91,13 +92,13 @@ def parse_picture_block(f):
     # print("Index colour: " + str(a))
 
     a = f.read(4)
-    a = int.from_bytes(a, byteorder='big')
+    a = int.from_bytes(a, byteorder="big")
     # print("Bin len: " + str(a))
 
     return f.read(a)
 
-class Flac:
 
+class Flac:
     def __init__(self, file):
 
         self.filepath = file
@@ -130,21 +131,20 @@ class Flac:
         self.track_gain = None
         self.album_gain = None
 
-
     def read_vorbis(self, f):
 
         block_position = 0
 
         buffer = f.read(4)
         block_position += 4
-        jump = int.from_bytes(buffer, byteorder='little')
+        jump = int.from_bytes(buffer, byteorder="little")
 
         f.read(jump)
         block_position += jump
 
         buffer = f.read(4)
         block_position += 4
-        fields = int.from_bytes(buffer, byteorder='little')
+        fields = int.from_bytes(buffer, byteorder="little")
         # print(fields)
         artists = []
         genres = []
@@ -154,7 +154,7 @@ class Flac:
             buffer = f.read(4)
             block_position += 4
 
-            jump = int.from_bytes(buffer, byteorder='little')
+            jump = int.from_bytes(buffer, byteorder="little")
             buffer = f.read(jump)
             block_position += jump
 
@@ -166,11 +166,10 @@ class Flac:
                 # print(sss[position:position+1])
                 position += 1
 
-
-                if buffer[position:position + 1] == b'=':
+                if buffer[position : position + 1] == b"=":
 
                     a = buffer[0:position].decode("utf-8").lower()
-                    b = buffer[position + 1:]
+                    b = buffer[position + 1 :]
 
                     if parse_mbids_from_vorbis(self, a, b.decode()):
                         pass
@@ -178,9 +177,9 @@ class Flac:
                         # print(a)
                         # print(b)
                     elif a == "genre":
-                        #self.genre = b.decode("utf-8")
+                        # self.genre = b.decode("utf-8")
                         genres.append(b.decode())
-                    elif a == 'cuesheet':
+                    elif a == "cuesheet":
                         self.cue_sheet = b.decode()
                     elif a == "date":
                         self.date = b.decode("utf-8")
@@ -201,29 +200,35 @@ class Flac:
                     elif a == "albumartist" or a == "album artist":
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
-                        #self.artist = b.decode("utf-8")
+                        # self.artist = b.decode("utf-8")
                         artists.append(b.decode())
-                    elif a == 'disctotal' or a == 'totaldiscs':
+                    elif a == "disctotal" or a == "totaldiscs":
                         self.disc_total = b.decode("utf-8")
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
                     elif a == "metadata_block_picture":
-                        print("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
+                        print(
+                            "Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring"
+                        )
                         print("      In file: " + self.filepath)
-                    elif a == 'lyrics' or a == 'unsyncedlyrics':
+                    elif a == "lyrics" or a == "unsyncedlyrics":
                         self.lyrics = b.decode("utf-8")
                     elif "replaygain_track_gain" == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
+                        self.misc["replaygain_track_gain"] = float(
+                            b.decode("utf-8").lower().strip(" db")
+                        )
                     elif "replaygain_track_peak" == a:
                         self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
                     elif "replaygain_album_gain" == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
+                        self.misc["replaygain_album_gain"] = float(
+                            b.decode("utf-8").lower().strip(" db")
+                        )
                     elif "replaygain_album_peak" == a:
                         self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
-                    elif 'composer' == a:
+                    elif "composer" == a:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
-                        self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
+                        self.misc["FMPS_Rating"] = float(b.decode("utf-8"))
                     # else:
                     #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
                     #     print(b)
@@ -234,18 +239,18 @@ class Flac:
         if artists:
             self.artist = "; ".join(artists)
             if len(artists) > 1:
-                self.misc['artists'] = artists
+                self.misc["artists"] = artists
         if genres:
             self.genre = "; ".join(genres)
             if len(genres) > 1:
-                self.misc['genres'] = genres
+                self.misc["genres"] = genres
         process_odat(self, odat)
 
     def read_seek_table(self, f):
 
         f.read(10)
         buffer = f.read(8)
-        a = (int.from_bytes(buffer, byteorder='big'))
+        a = int.from_bytes(buffer, byteorder="big")
         k = bin(a)[2:].zfill(64)
 
         self.sample_rate = int(k[0:20], 2)
@@ -269,11 +274,11 @@ class Flac:
         s = f.read(4)
 
         # Find start of FLAC stream
-        if s != b'fLaC':
+        if s != b"fLaC":
             while f.tell() < size + 100:
                 f.seek(-3, 1)
                 s = f.read(4)
-                if s == b'fLaC':
+                if s == b"fLaC":
                     break
             else:
                 return
@@ -320,12 +325,12 @@ class Flac:
     def read_block(self, f):
 
         q = f.read(1)
-        a = (int.from_bytes(q, byteorder='big'))
+        a = int.from_bytes(q, byteorder="big")
         k = bin(a)[2:].zfill(8)
         flag = int(k[:1], 2)
         block_type = int(k[1:], 2)
         s = f.read(3)
-        a = (int.from_bytes(s, byteorder='big'))
+        a = int.from_bytes(s, byteorder="big")
         length = a
 
         return flag, block_type, length
@@ -341,7 +346,6 @@ class Flac:
 
 
 class Opus:
-
     def __init__(self, file):
 
         self.filepath = file
@@ -372,9 +376,9 @@ class Opus:
 
     def get_more(self, f, v):
 
-        header = struct.unpack('<4sBBqIIiB', f.read(27))
+        header = struct.unpack("<4sBBqIIiB", f.read(27))
 
-        segs = struct.unpack('B' * header[7], f.read(header[7]))
+        segs = struct.unpack("B" * header[7], f.read(header[7]))
         l = sum(segs)
 
         o = v.tell()
@@ -388,11 +392,11 @@ class Opus:
 
         f = open(self.filepath, "rb")
 
-        header = struct.unpack('<4sBBqIIiB', f.read(27))
+        header = struct.unpack("<4sBBqIIiB", f.read(27))
 
         # print(header)
 
-        segs = struct.unpack('B'*header[7], f.read(header[7]))
+        segs = struct.unpack("B" * header[7], f.read(header[7]))
 
         # l = sum(segs)
         # print(f.read(l + 4))
@@ -400,12 +404,12 @@ class Opus:
 
         s = f.read(7)
 
-        if s == b'OpusHea':
+        if s == b"OpusHea":
             f.seek(-7, 1)
-        elif s == b'\x01vorbis':
+        elif s == b"\x01vorbis":
 
             s = f.read(4)
-            a = struct.unpack("<B4i", f.read(17)) # 44100
+            a = struct.unpack("<B4i", f.read(17))  # 44100
             self.sample_rate = a[1]
             self.bit_rate = int(a[3] / 1000)
             f.seek(-28, 1)
@@ -434,14 +438,14 @@ class Opus:
 
         s = v.read(4)
         l -= 4
-        a = int.from_bytes(s, byteorder='little')  # Vendor string length
+        a = int.from_bytes(s, byteorder="little")  # Vendor string length
         s = v.read(a)  # Vendor string
         l -= a
 
         s = v.read(4)
         l -= 4
 
-        number = int.from_bytes(s, byteorder='little')  # Number of comments
+        number = int.from_bytes(s, byteorder="little")  # Number of comments
 
         artists = []
         genres = []
@@ -451,7 +455,7 @@ class Opus:
             s = v.read(4)
             l -= 4
 
-            length = int.from_bytes(s, byteorder='little')
+            length = int.from_bytes(s, byteorder="little")
 
             while l < length + 4:
                 l += self.get_more(f, v)
@@ -464,10 +468,10 @@ class Opus:
 
                 position += 1
 
-                if s[position:position+1] == b'=':
+                if s[position : position + 1] == b"=":
 
                     a = s[0:position].decode("utf-8").lower()
-                    b = s[position + 1:]
+                    b = s[position + 1 :]
 
                     # print(a)  # Key
                     # print(b)  # Value
@@ -479,7 +483,7 @@ class Opus:
                         # print(b)
 
                     elif a == "genre":
-                        #self.genre = b.decode("utf-8")
+                        # self.genre = b.decode("utf-8")
                         genres.append(b.decode())
                     elif a == "date":
                         self.date = b.decode("utf-8")
@@ -500,7 +504,7 @@ class Opus:
                     elif a == "albumartist" or a == "album artist":
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
-                        #self.artist = b.decode("utf-8")
+                        # self.artist = b.decode("utf-8")
                         artists.append(b.decode())
                     elif a == "metadata_block_picture":
 
@@ -510,24 +514,28 @@ class Opus:
                         self.picture = b
                         # print(b)
 
-                    elif 'replaygain_track_gain' == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
-                    elif 'replaygain_track_peak' == a:
+                    elif "replaygain_track_gain" == a:
+                        self.misc["replaygain_track_gain"] = float(
+                            b.decode("utf-8").lower().strip(" db")
+                        )
+                    elif "replaygain_track_peak" == a:
                         self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
-                    elif 'replaygain_album_gain' == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
-                    elif 'replaygain_album_peak' == a:
+                    elif "replaygain_album_gain" == a:
+                        self.misc["replaygain_album_gain"] = float(
+                            b.decode("utf-8").lower().strip(" db")
+                        )
+                    elif "replaygain_album_peak" == a:
                         self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
-                    elif a == 'disctotal' or a == 'totaldiscs':
+                    elif a == "disctotal" or a == "totaldiscs":
                         self.disc_total = b.decode("utf-8")
-                    elif a == 'lyrics' or a == 'unsyncedlyrics':
+                    elif a == "lyrics" or a == "unsyncedlyrics":
                         self.lyrics = b.decode("utf-8")
                     elif a == "composer":
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
-                        self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
+                        self.misc["FMPS_Rating"] = float(b.decode("utf-8"))
                     # else:
                     #     print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
                     #     print(b.decode("utf-8"))
@@ -540,11 +548,11 @@ class Opus:
         if artists:
             self.artist = "; ".join(artists)
             if len(artists) > 1:
-                self.misc['artists'] = artists
+                self.misc["artists"] = artists
         if genres:
             self.genre = "; ".join(genres)
             if len(genres) > 1:
-                self.misc['genres'] = genres
+                self.misc["genres"] = genres
         process_odat(self, odat)
 
         # Find the last Ogg page from end of file to get track length
@@ -561,11 +569,12 @@ class Opus:
 
             if s == b"OggS":
                 f.seek(-4, 1)
-                header = struct.unpack('<4sBBqIIiB', f.read(27))
+                header = struct.unpack("<4sBBqIIiB", f.read(27))
                 self.length = header[3] / self.sample_rate
                 break
 
         f.close()
+
 
 # file = 'a.ogg'
 #
@@ -574,7 +583,6 @@ class Opus:
 
 
 class Ape:
-
     def __init__(self, file):
 
         self.filepath = file
@@ -609,7 +617,7 @@ class Ape:
 
     def read(self):
 
-        a = open(self.filepath, 'rb')
+        a = open(self.filepath, "rb")
 
         # Check size of file
         a.seek(0, 2)
@@ -620,13 +628,13 @@ class Ape:
         # Get last 32 bytes where ape tag footer might be
         a.seek(-32, 1)
         b = a.read(32)
-        footer = struct.unpack('<8c6i', b)
+        footer = struct.unpack("<8c6i", b)
 
         # For use later
         found = 1
 
         # If its not an ape footer, seek through the file for a bit to see if we find it
-        if b"".join(footer[0:8]) != b'APETAGEX':
+        if b"".join(footer[0:8]) != b"APETAGEX":
             found = False
             a.seek(0, 2)
             g = 1000
@@ -642,7 +650,7 @@ class Ape:
                     found = 2
                     a.seek(-8, 1)
                     b = a.read(32)
-                    footer = struct.unpack('<8c6i', b)
+                    footer = struct.unpack("<8c6i", b)
 
         if found == 0:
             print("Tag Scanner: Cant find APE tag")
@@ -675,14 +683,14 @@ class Ape:
                         break
                     name += ch
 
-                key = name.decode('utf-8')
+                key = name.decode("utf-8")
                 # print("Key: " + key)
 
                 value = a.read(ta[0])
                 # print(value)
 
                 if ta[1] == 0:
-                    value = value.decode('utf-8')
+                    value = value.decode("utf-8")
                 elif ta[1] == 2:
                     # Avoid decode of binary data
                     pass
@@ -699,7 +707,7 @@ class Ape:
                     # Ape track fields appear to use fraction format, rather than separate fields for number and total
                     # So we need to handle that here for consistency
                     if "/" in value:
-                        self.disc_number, self.disc_total = value.split('/')
+                        self.disc_number, self.disc_total = value.split("/")
                     else:
                         self.disc_number = value
 
@@ -709,7 +717,7 @@ class Ape:
 
                     # Same deal as with disc number
                     if "/" in value:
-                        self.track_number, self.track_total = value.split('/')
+                        self.track_number, self.track_total = value.split("/")
                     else:
                         self.track_number = value
 
@@ -728,11 +736,15 @@ class Ape:
                 elif key.lower() == "lyrics":
                     self.lyrics = value
                 elif "replaygain_track_gain" == key.lower():
-                    self.misc["replaygain_track_gain"] = float(value.lower().strip(" db"))
+                    self.misc["replaygain_track_gain"] = float(
+                        value.lower().strip(" db")
+                    )
                 elif "replaygain_track_peak" == key.lower():
                     self.misc["replaygain_track_peak"] = float(value)
                 elif "replaygain_album_gain" == key.lower():
-                    self.misc["replaygain_album_gain"] = float(value.lower().strip(" db"))
+                    self.misc["replaygain_album_gain"] = float(
+                        value.lower().strip(" db")
+                    )
                 elif "replaygain_album_peak" == key.lower():
                     self.misc["replaygain_album_peak"] = float(value)
                 elif parse_mbids_from_vorbis(self, key.lower(), value):
@@ -745,7 +757,7 @@ class Ape:
 
                     off = 0
                     while off < 64:
-                        if value[off:off+1] == b'\x00':
+                        if value[off : off + 1] == b"\x00":
 
                             off += 1
                             break
@@ -762,7 +774,7 @@ class Ape:
         a.seek(0)
 
         start = a.read(128)
-        if start[0:3] == b'MAC':  # Ape files start with MAC
+        if start[0:3] == b"MAC":  # Ape files start with MAC
 
             version = struct.unpack("<h", start[4:6])[0]
 
@@ -786,20 +798,20 @@ class Ape:
             a.seek(0)
             header = struct.unpack("<4c3H3L", a.read(22))
 
-            if b"".join(header[0:3]) != b'TTA1':
+            if b"".join(header[0:3]) != b"TTA1":
 
                 self.sample_rate = header[7]
                 bps = header[6]
                 self.bit_depth = bps
                 # channels = header[5]
                 self.length = header[8] / self.sample_rate
-            elif b"".join(header[0:3]) != b'TTA2':
+            elif b"".join(header[0:3]) != b"TTA2":
                 print("WARNING: TTA2 type TTA file not supported")
                 # To do
             else:
                 print("WARNING: Does not appear to be a valid TTA file")
 
-        elif '.wv' in self.filepath:
+        elif ".wv" in self.filepath:
             #  We can handle WavPack files here too
             #  This code likely wont cover all cases as is, I only tested it on a few files
 
@@ -809,14 +821,29 @@ class Ape:
             #  So here I crudely search for the actual start
             off = 0
             while off < file_size - 100:
-                if a.read(4) == b'wvpk':
+                if a.read(4) == b"wvpk":
                     a.seek(-4, 1)
                     b = a.read(32)
                     header = struct.unpack("<4cIH2B5I", b)
 
-                    sample_rates = [6000, 8000, 9600, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000,
-                                    88200, 96000, 192000]   # Adapted from example in WavPack/cli/wvparser.c
-                    n = ((header[11] & (15 << 23)) >> 23)   # Does my head in this
+                    sample_rates = [
+                        6000,
+                        8000,
+                        9600,
+                        11025,
+                        12000,
+                        16000,
+                        22050,
+                        24000,
+                        32000,
+                        44100,
+                        48000,
+                        64000,
+                        88200,
+                        96000,
+                        192000,
+                    ]  # Adapted from example in WavPack/cli/wvparser.c
+                    n = (header[11] & (15 << 23)) >> 23  # Does my head in this
                     self.sample_rate = sample_rates[n]
                     self.length = header[8] / self.sample_rate
                     break
@@ -830,7 +857,6 @@ class Ape:
 
 
 class Wav:
-
     def __init__(self, file):
 
         self.filepath = file
@@ -852,7 +878,7 @@ class Wav:
                 type = f.read(4)
                 if not type:
                     break
-                remain = int.from_bytes(f.read(4), 'little')
+                remain = int.from_bytes(f.read(4), "little")
 
                 if type != b"LIST":
                     f.seek(remain, io.SEEK_CUR)
@@ -863,7 +889,7 @@ class Wav:
                         remain -= 4
                         while remain > 0:
                             id = f.read(4).decode()
-                            size = int.from_bytes(f.read(4), 'little')
+                            size = int.from_bytes(f.read(4), "little")
                             value = f.read(size)[:-1].decode("unicode_escape")
                             if id == "ITRK":
                                 self.track_number = value
@@ -880,7 +906,7 @@ class Wav:
                                 size += 1
                                 f.read(1)
 
-                            remain -= (8 + size)
+                            remain -= 8 + size
 
         wav = wave.open(self.filepath, "rb")
         self.sample_rate = wav.getframerate()
@@ -889,160 +915,159 @@ class Wav:
 
 
 genre_dict = {
-    0 : 'Blues',
-    1 : 'Classic Rock',
-    2 : 'Country',
-    3 : 'Dance',
-    4 : 'Disco',
-    5 : 'Funk',
-    6 : 'Grunge',
-    7 : 'Hip-Hop',
-    8 : 'Jazz',
-    9 : 'Metal',
-    10 : 'New Age',
-    11 : 'Oldies',
-    12 : 'Other',
-    13 : 'Pop',
-    14 : 'R&B',
-    15 : 'Rap',
-    16 : 'Reggae',
-    17 : 'Rock',
-    18 : 'Techno',
-    19 : 'Industrial',
-    20 : 'Alternative',
-    21 : 'Ska',
-    22 : 'Death Metal',
-    23 : 'Pranks',
-    24 : 'Soundtrack',
-    25 : 'Euro-Techno',
-    26 : 'Ambient',
-    27 : 'Trip-Hop',
-    28 : 'Vocal',
-    29 : 'Jazz+Funk',
-    30 : 'Fusion',
-    31 : 'Trance',
-    32 : 'Classical',
-    33 : 'Instrumental',
-    34 : 'Acid',
-    35 : 'House',
-    36 : 'Game',
-    37 : 'Sound Clip',
-    38 : 'Gospel',
-    39 : 'Noise',
-    40 : 'Alternative Rock',
-    41 : 'Bass',
-    42 : 'Soul',
-    43 : 'Punk',
-    44 : 'Space',
-    45 : 'Meditative',
-    46 : 'Instrumental Pop',
-    47 : 'Instrumental Rock',
-    48 : 'Ethnic',
-    49 : 'Gothic',
-    50 : 'Darkwave',
-    51 : 'Techno-Industrial',
-    52 : 'Electronic',
-    53 : 'Pop-Folk',
-    54 : 'Eurodance',
-    55 : 'Dream',
-    56 : 'Southern Rock',
-    57 : 'Comedy',
-    58 : 'Cult',
-    59 : 'Gangsta',
-    60 : 'Top 40',
-    61 : 'Christian Rap',
-    62 : 'Pop/Funk',
-    63 : 'Jungle',
-    64 : 'Native US',
-    65 : 'Cabaret',
-    66 : 'New Wave',
-    67 : 'Psychadelic',
-    68 : 'Rave',
-    69 : 'Showtunes',
-    70 : 'Trailer',
-    71 : 'Lo-Fi',
-    72 : 'Tribal',
-    73 : 'Acid Punk',
-    74 : 'Acid Jazz',
-    75 : 'Polka',
-    76 : 'Retro',
-    77 : 'Musical',
-    78 : 'Rock & Roll',
-    79 : 'Hard Rock',
-    80 : 'Folk',
-    81 : 'Folk-Rock',
-    82 : 'National Folk',
-    83 : 'Swing',
-    84 : 'Fast Fusion',
-    85 : 'Bebob',
-    86 : 'Latin',
-    87 : 'Revival',
-    88 : 'Celtic',
-    89 : 'Bluegrass',
-    90 : 'Avantgarde',
-    91 : 'Gothic Rock',
-    92 : 'Progressive Rock',
-    93 : 'Psychedelic Rock',
-    94 : 'Symphonic Rock',
-    95 : 'Slow Rock',
-    96 : 'Big Band',
-    97 : 'Chorus',
-    98 : 'Easy Listening',
-    99 : 'Acoustic',
-    100 : 'Humour',
-    101 : 'Speech',
-    102 : 'Chanson',
-    103 : 'Opera',
-    104 : 'Chamber Music',
-    105 : 'Sonata',
-    106 : 'Symphony',
-    107 : 'Booty Bass',
-    108 : 'Primus',
-    109 : 'Porn Groove',
-    110 : 'Satire',
-    111 : 'Slow Jam',
-    112 : 'Club',
-    113 : 'Tango',
-    114 : 'Samba',
-    115 : 'Folklore',
-    116 : 'Ballad',
-    117 : 'Power Ballad',
-    118 : 'Rhythmic Soul',
-    119 : 'Freestyle',
-    120 : 'Duet',
-    121 : 'Punk Rock',
-    122 : 'Drum Solo',
-    123 : 'Acapella',
-    124 : 'Euro-House',
-    125 : 'Dance Hall',
-    126 : 'Goa',
-    127 : 'Drum & Bass',
-    128 : 'Club - House',
-    129 : 'Hardcore',
-    130 : 'Terror',
-    131 : 'Indie',
-    132 : 'BritPop',
-    133 : 'Negerpunk',
-    134 : 'Polsk Punk',
-    135 : 'Beat',
-    136 : 'Christian Gangsta Rap',
-    137 : 'Heavy Metal',
-    138 : 'Black Metal',
-    139 : 'Crossover',
-    140 : 'Contemporary Christian',
-    141 : 'Christian Rock',
-    142 : 'Merengue',
-    143 : 'Salsa',
-    144 : 'Thrash Metal',
-    145 : 'Anime',
-    146 : 'JPop',
-    147 : 'Synthpop',
-    148 : 'Unknown',
+    0: "Blues",
+    1: "Classic Rock",
+    2: "Country",
+    3: "Dance",
+    4: "Disco",
+    5: "Funk",
+    6: "Grunge",
+    7: "Hip-Hop",
+    8: "Jazz",
+    9: "Metal",
+    10: "New Age",
+    11: "Oldies",
+    12: "Other",
+    13: "Pop",
+    14: "R&B",
+    15: "Rap",
+    16: "Reggae",
+    17: "Rock",
+    18: "Techno",
+    19: "Industrial",
+    20: "Alternative",
+    21: "Ska",
+    22: "Death Metal",
+    23: "Pranks",
+    24: "Soundtrack",
+    25: "Euro-Techno",
+    26: "Ambient",
+    27: "Trip-Hop",
+    28: "Vocal",
+    29: "Jazz+Funk",
+    30: "Fusion",
+    31: "Trance",
+    32: "Classical",
+    33: "Instrumental",
+    34: "Acid",
+    35: "House",
+    36: "Game",
+    37: "Sound Clip",
+    38: "Gospel",
+    39: "Noise",
+    40: "Alternative Rock",
+    41: "Bass",
+    42: "Soul",
+    43: "Punk",
+    44: "Space",
+    45: "Meditative",
+    46: "Instrumental Pop",
+    47: "Instrumental Rock",
+    48: "Ethnic",
+    49: "Gothic",
+    50: "Darkwave",
+    51: "Techno-Industrial",
+    52: "Electronic",
+    53: "Pop-Folk",
+    54: "Eurodance",
+    55: "Dream",
+    56: "Southern Rock",
+    57: "Comedy",
+    58: "Cult",
+    59: "Gangsta",
+    60: "Top 40",
+    61: "Christian Rap",
+    62: "Pop/Funk",
+    63: "Jungle",
+    64: "Native US",
+    65: "Cabaret",
+    66: "New Wave",
+    67: "Psychadelic",
+    68: "Rave",
+    69: "Showtunes",
+    70: "Trailer",
+    71: "Lo-Fi",
+    72: "Tribal",
+    73: "Acid Punk",
+    74: "Acid Jazz",
+    75: "Polka",
+    76: "Retro",
+    77: "Musical",
+    78: "Rock & Roll",
+    79: "Hard Rock",
+    80: "Folk",
+    81: "Folk-Rock",
+    82: "National Folk",
+    83: "Swing",
+    84: "Fast Fusion",
+    85: "Bebob",
+    86: "Latin",
+    87: "Revival",
+    88: "Celtic",
+    89: "Bluegrass",
+    90: "Avantgarde",
+    91: "Gothic Rock",
+    92: "Progressive Rock",
+    93: "Psychedelic Rock",
+    94: "Symphonic Rock",
+    95: "Slow Rock",
+    96: "Big Band",
+    97: "Chorus",
+    98: "Easy Listening",
+    99: "Acoustic",
+    100: "Humour",
+    101: "Speech",
+    102: "Chanson",
+    103: "Opera",
+    104: "Chamber Music",
+    105: "Sonata",
+    106: "Symphony",
+    107: "Booty Bass",
+    108: "Primus",
+    109: "Porn Groove",
+    110: "Satire",
+    111: "Slow Jam",
+    112: "Club",
+    113: "Tango",
+    114: "Samba",
+    115: "Folklore",
+    116: "Ballad",
+    117: "Power Ballad",
+    118: "Rhythmic Soul",
+    119: "Freestyle",
+    120: "Duet",
+    121: "Punk Rock",
+    122: "Drum Solo",
+    123: "Acapella",
+    124: "Euro-House",
+    125: "Dance Hall",
+    126: "Goa",
+    127: "Drum & Bass",
+    128: "Club - House",
+    129: "Hardcore",
+    130: "Terror",
+    131: "Indie",
+    132: "BritPop",
+    133: "Negerpunk",
+    134: "Polsk Punk",
+    135: "Beat",
+    136: "Christian Gangsta Rap",
+    137: "Heavy Metal",
+    138: "Black Metal",
+    139: "Crossover",
+    140: "Contemporary Christian",
+    141: "Christian Rock",
+    142: "Merengue",
+    143: "Salsa",
+    144: "Thrash Metal",
+    145: "Anime",
+    146: "JPop",
+    147: "Synthpop",
+    148: "Unknown",
 }
 
 
 class M4a:
-
     def __init__(self, file):
         self.filepath = file
         self.has_picture = False
@@ -1072,21 +1097,21 @@ class M4a:
 
     def read(self, get_picture=False):
 
-        f = open(self.filepath, 'rb')
+        f = open(self.filepath, "rb")
 
         k = [
             b"moov",
-            b'trak',
-            b'----',
-            b'udta',
-            b'meta',
-            b'ilst',
-            b'mdia',
-            b'mdhd',
-            b'minf',
-            b'stbl',
-            b'stsd',
-            b'esds'
+            b"trak",
+            b"----",
+            b"udta",
+            b"meta",
+            b"ilst",
+            b"mdia",
+            b"mdhd",
+            b"minf",
+            b"stbl",
+            b"stsd",
+            b"esds",
         ]
 
         s_name = b""
@@ -1104,11 +1129,11 @@ class M4a:
 
             start = f.tell()
             b_size = f.read(4)
-            size = int.from_bytes(b_size, 'big')
+            size = int.from_bytes(b_size, "big")
 
             name = f.read(4)
 
-            if name == b'':
+            if name == b"":
                 return False
 
             # print("NAME: ", end="")
@@ -1117,52 +1142,52 @@ class M4a:
             # Too lazy to parse each sub atom, lets just grab the data out the sub atom and
             # hope the file is formatted normally
 
-            if name == b'\xa9nam':
+            if name == b"\xa9nam":
                 self.title = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'\xa9alb':
+            if name == b"\xa9alb":
                 self.album = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'\xa9ART':
+            if name == b"\xa9ART":
                 self.artist = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'\xa9wrt':
+            if name == b"\xa9wrt":
                 self.composer = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'\xa9cmt':
+            if name == b"\xa9cmt":
                 self.comment = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'\xa9lyr':
+            if name == b"\xa9lyr":
                 self.lyrics = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'\xa9day':
+            if name == b"\xa9day":
                 day = meta_get(f, size).decode().replace("\x00", "")
                 if len(day) > 10 and day[10] == "T":
                     day = day[:10]
                 self.date = day
 
-            if name == b'gnre':
-                index = int.from_bytes(meta_get(f, size), 'big')
+            if name == b"gnre":
+                index = int.from_bytes(meta_get(f, size), "big")
                 if index - 1 in genre_dict:
                     self.genre = genre_dict[index - 1]
 
-                #self.genre = meta_get(f, size).decode()
+                # self.genre = meta_get(f, size).decode()
 
-            if name == b'\xa9gen':
+            if name == b"\xa9gen":
                 self.genre = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'aART':
+            if name == b"aART":
                 self.album_artist = meta_get(f, size).decode().replace("\x00", "")
 
-            if name == b'covr':
+            if name == b"covr":
                 self.has_picture = True
                 if get_picture:
                     self.picture = meta_get(f, size)
 
-            if name == b'trkn':
+            if name == b"trkn":
                 self.track_number = int(meta_get(f, size)[3])  # We'll just grab that
 
-            if name == b'disk':  # They spelt disc wrong lol
+            if name == b"disk":  # They spelt disc wrong lol
                 self.disc_number = int(meta_get(f, size)[3])
 
             # if tail[-4:] == b"----":
@@ -1180,26 +1205,26 @@ class M4a:
 
             if name in k:
 
-                if name == b'----':
+                if name == b"----":
                     f.seek(30, 1)
 
-                if name == b'stsd':
+                if name == b"stsd":
                     f.seek(44, 1)
 
-                if name == b'meta':
+                if name == b"meta":
                     f.seek(4, 1)  # The 'meta' atom has some extra space at the start
 
-                if name == b'mdhd':
+                if name == b"mdhd":
 
                     data = f.read(size - 8)
                     f.seek((size - 8) * -1, 1)
-                    data = struct.unpack('>iiiiihh', data)
+                    data = struct.unpack(">iiiiihh", data)
                     self.sample_rate = data[3]
                     self.length = data[4] / self.sample_rate
 
-                if name == b'esds':
+                if name == b"esds":
                     f.seek(26, 1)
-                    bitrate = int.from_bytes(f.read(4), 'big')
+                    bitrate = int.from_bytes(f.read(4), "big")
                     f.seek(-30, 1)
                     self.bit_rate = bitrate // 1000
 

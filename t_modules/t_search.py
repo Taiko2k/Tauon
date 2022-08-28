@@ -19,11 +19,12 @@
 from bs4 import BeautifulSoup
 import requests
 
+
 def bandcamp_search(artist, callback=None):
 
     try:
         page = requests.get("https://bandcamp.com/search?q=" + artist)
-        html = BeautifulSoup(page.text, 'html.parser')
+        html = BeautifulSoup(page.text, "html.parser")
         results = html.find_all("div", {"class": "result-info"})
         for result in results:
             children = result.findChildren("div")

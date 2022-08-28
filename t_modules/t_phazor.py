@@ -30,6 +30,7 @@ from t_modules.t_extra import *
 import mutagen
 import hashlib
 
+
 def player4(tauon):
 
     pctl = tauon.pctl
@@ -60,7 +61,7 @@ def player4(tauon):
 
     aud.get_device.restype = ctypes.c_char_p
 
-    aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
+    aud.feed_raw.argtypes = (ctypes.c_int, ctypes.c_char_p)
     aud.feed_raw.restype = None
     tauon.aud = aud
     aud.set_volume(int(pctl.player_volume))
@@ -104,13 +105,30 @@ def player4(tauon):
             cmd += ["-loglevel", "quiet"]
             if start_ms > 0:
                 cmd += ["-ss", f"{start_ms}ms"]
-            cmd += ["-i", uri.decode(), "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", f"{samplerate}", "-"]
+            cmd += [
+                "-i",
+                uri.decode(),
+                "-acodec",
+                "pcm_s16le",
+                "-f",
+                "s16le",
+                "-ac",
+                "2",
+                "-ar",
+                f"{samplerate}",
+                "-",
+            ]
             startupinfo = None
             if tauon.msys:
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             try:
-                self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+                self.decoder = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    startupinfo=startupinfo,
+                )
             except:
                 print("Error starting ffmpeg")
                 return 1
@@ -150,8 +168,12 @@ def player4(tauon):
 
             if prefs.replay_gain > 0:
                 if prefs.replay_gain == 3 and tg is not None and ag is not None:
-                    gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
-                    if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
+                    gens = pctl.gen_codes.get(
+                        tauon.pl_to_id(pctl.active_playlist_playing)
+                    )
+                    if pctl.random_mode or (
+                        gens and ("st" in gens or "rt" in gens or "r" in gens)
+                    ):
                         g = tg
                         if tp is not None:
                             p = tp
@@ -159,7 +181,9 @@ def player4(tauon):
                         g = ag
                         if ap is not None:
                             p = ap
-                elif (prefs.replay_gain == 1 and tg is not None) or (prefs.replay_gain == 2 and ag is None and tg is not None):
+                elif (prefs.replay_gain == 1 and tg is not None) or (
+                    prefs.replay_gain == 2 and ag is None and tg is not None
+                ):
                     g = tg
                     if tp is not None:
                         p = tp
@@ -197,7 +221,9 @@ def player4(tauon):
 
         def get_key(self, track):
             if track.is_network:
-                return hashlib.sha256((str(track.index) + track.url_key).encode()).hexdigest()
+                return hashlib.sha256(
+                    (str(track.index) + track.url_key).encode()
+                ).hexdigest()
             else:
                 return hashlib.sha256(track.fullpath.encode()).hexdigest()
 
@@ -235,7 +261,14 @@ def player4(tauon):
                     return 0, path
 
             for codec in (".opus", ".ogg", ".flac", ".mp3"):
-                idea = os.path.join(prefs.encoder_output, tauon.encode_folder_name(track), tauon.encode_track_name(track)) + codec
+                idea = (
+                    os.path.join(
+                        prefs.encoder_output,
+                        tauon.encode_folder_name(track),
+                        tauon.encode_track_name(track),
+                    )
+                    + codec
+                )
                 if os.path.isfile(idea):
                     tauon.console.print("Found transcode")
                     return 0, idea
@@ -329,7 +362,9 @@ def player4(tauon):
                     except:
                         break
                     if len(data) > 0:
-                        tauon.console.print(f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps")
+                        tauon.console.print(
+                            f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps"
+                        )
                     else:
                         break
                     target.write(data)
@@ -344,7 +379,9 @@ def player4(tauon):
                 try:
                     tauon.console.print("Download file")
                     network_url, params = pctl.get_url(track)
-                    part = requests.get(network_url, stream=True, params=params, timeout=(3, 10))
+                    part = requests.get(
+                        network_url, stream=True, params=params, timeout=(3, 10)
+                    )
 
                     if part.status_code == 404:
                         gui.show_message("Server: File not found", mode="error")
@@ -367,24 +404,30 @@ def player4(tauon):
                     length = int(cl)
                     gui.buffering_text = "0%"
 
-
                 timer = Timer()
                 try:
-                    with open(path, 'wb') as f:
+                    with open(path, "wb") as f:
                         for chunk in part.iter_content(chunk_size=1024):
                             if chunk:  # filter out keep-alive new chunks
                                 a += 1
                                 if a == 1500:  # kilobyes~
                                     self.ready = track
                                 if a % 32 == 0:
-                                    #time.sleep(0.03)
-                                    tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
+                                    # time.sleep(0.03)
+                                    tauon.console.print(
+                                        f"Downloading file @ {round(32 / timer.hit())} kbps"
+                                    )
                                     if length:
                                         gui.update += 1
-                                        if True: #a > 2000:
-                                            gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
+                                        if True:  # a > 2000:
+                                            gui.buffering_text = (
+                                                str(round(a * 1000 / length * 100))
+                                                + "%"
+                                            )
                                         else:
-                                            gui.buffering_text = str(round(a / 2100 * 100)) + "%"
+                                            gui.buffering_text = (
+                                                str(round(a / 2100 * 100)) + "%"
+                                            )
 
                                 if self.get_now is not None and self.get_now != track:
                                     tauon.console.print("ABORT")
@@ -405,12 +448,11 @@ def player4(tauon):
                     return 1
                 return 0
 
-
     cachement = Cachement()
     tauon.cachement = cachement
 
     def set_config(set_device=False):
-        #aud.config_set_dev_buffer(prefs.device_buffer)
+        # aud.config_set_dev_buffer(prefs.device_buffer)
         aud.config_set_fade_duration(prefs.cross_fade_time)
         aud.config_set_dev_name(prefs.phazor_device_selected.encode())
         if set_device:
@@ -424,9 +466,8 @@ def player4(tauon):
         aud.config_set_volume_power(prefs.volume_power)
         aud.config_set_resample(prefs.avoid_resampling ^ True)
 
-    #aud.config_set_samplerate(prefs.samplerate)
+    # aud.config_set_samplerate(prefs.samplerate)
     aud.config_set_resample_quality(prefs.resample)
-
 
     set_config()
 
@@ -441,7 +482,9 @@ def player4(tauon):
                     bias += 0.04
                 gui.spec = p_spec
                 gui.level_update = True
-                if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
+                if pctl.playing_time > 0.5 and (
+                    pctl.playing_state == 1 or pctl.playing_state == 3
+                ):
                     gui.update_spec = 1
             elif gui.vis == 4:
                 p_spec = []
@@ -452,7 +495,9 @@ def player4(tauon):
                     bias += 0.01
                 gui.spec4_array = p_spec
                 gui.level_update = True
-                if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
+                if pctl.playing_time > 0.5 and (
+                    pctl.playing_state == 1 or pctl.playing_state == 3
+                ):
                     gui.update_spec = 1
 
     stall_timer = Timer()
@@ -521,12 +566,17 @@ def player4(tauon):
         time.sleep(0.016)
         if state == 2:
             time.sleep(0.05)
-        if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
+        if (
+            state != 0
+            or tauon.spot_ctl.playing
+            or tauon.spot_ctl.coasting
+            or tauon.chrome_mode
+        ):
             active_timer.set()
         if active_timer.get() > 7:
-           aud.stop()
-           aud.phazor_shutdown()
-           break
+            aud.stop()
+            aud.phazor_shutdown()
+            break
 
         # Level meter
         if (state == 1 or state == 3) and gui.vis == 1:
@@ -562,7 +612,11 @@ def player4(tauon):
 
                         if d and t and 1 < d - t < 5:
                             # print("Enqueue next chromecast")
-                            chrome_start(target_object.index, enqueue=True, t=pctl.start_time_target)
+                            chrome_start(
+                                target_object.index,
+                                enqueue=True,
+                                t=pctl.start_time_target,
+                            )
                             chrome_cool_timer.set()
                             time.sleep(d - t)
                             if pctl.commit:
@@ -586,7 +640,9 @@ def player4(tauon):
                     tauon.chrome.volume(round(pctl.player_volume / 100, 3))
                     state = 1
                 if command == "seek":
-                    tauon.chrome.seek(float(round(pctl.new_time + pctl.start_time_target, 2)))
+                    tauon.chrome.seek(
+                        float(round(pctl.new_time + pctl.start_time_target, 2))
+                    )
                     chrome_cool_timer.set()
                     pctl.playing_time = pctl.new_time
                     pctl.decode_time = pctl.playing_time
@@ -646,7 +702,7 @@ def player4(tauon):
                     if w > 100:
                         print("Taking too long!")
                         tauon.stream_proxy.stop()
-                        pctl.playerCommand = 'stop'
+                        pctl.playerCommand = "stop"
                         pctl.playerCommandReady = True
                         break
                 else:
@@ -663,7 +719,9 @@ def player4(tauon):
                 target_object = pctl.target_object
                 target_path = target_object.fullpath
 
-                if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not target_object.file_ext == "SPTY":
+                if (
+                    tauon.spot_ctl.playing or tauon.spot_ctl.coasting
+                ) and not target_object.file_ext == "SPTY":
                     tauon.spot_ctl.control("stop")
 
                 if target_object.is_network:
@@ -693,10 +751,13 @@ def player4(tauon):
                             gui.buffering = True
                             gui.update += 1
                             tauon.wake()
-                        if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0:
+                        if (
+                            cachement.ready == target_object
+                            and pctl.start_time_target + pctl.jump_time == 0
+                        ):
                             break
                         time.sleep(0.05)
-                        #print(status)
+                        # print(status)
 
                     gui.buffering = False
                     gui.update += 1
@@ -707,7 +768,7 @@ def player4(tauon):
                         target_object.found = False
                         pctl.playing_state = 0
                         pctl.jump_time = 0
-                        #pctl.advance(inplace=True, play=True)
+                        # pctl.advance(inplace=True, play=True)
                         continue
                     target_path = path
 
@@ -748,18 +809,23 @@ def player4(tauon):
                 elif not target_object.found:
                     pctl.reset_missing_flags()
 
-
                 length = 0
                 remain = 0
                 position = 0
-                if state == 1 and not pctl.start_time_target and not pctl.jump_time and \
-                        loaded_track:
+                if (
+                    state == 1
+                    and not pctl.start_time_target
+                    and not pctl.jump_time
+                    and loaded_track
+                ):
 
                     length = aud.get_length_ms() / 1000
                     position = aud.get_position_ms() / 1000
                     remain = length - position
 
-                    tauon.console.print(loaded_track.title + " -> " + target_object.title)
+                    tauon.console.print(
+                        loaded_track.title + " -> " + target_object.title
+                    )
                     tauon.console.print(" --- length: " + str(length))
                     tauon.console.print(" --- position: " + str(position))
                     tauon.console.print(" --- We are %s from end" % str(remain))
@@ -771,12 +837,25 @@ def player4(tauon):
 
                 fade = 0
                 error = False
-                if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
-                        loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
+                if (
+                    state == 1
+                    and length
+                    and position
+                    and not pctl.start_time_target
+                    and not pctl.jump_time
+                    and loaded_track
+                    and 0 < remain < 5.5
+                    and not loaded_track.is_cue
+                    and subcommand != "now"
+                ):
 
                     tauon.console.print("Transition gapless")
 
-                    aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
+                    aud.next(
+                        target_path.encode(),
+                        int(pctl.start_time_target + pctl.jump_time) * 1000,
+                        ctypes.c_float(calc_rg(target_object)),
+                    )
 
                     r_timer = Timer()
                     r_timer.set()
@@ -814,7 +893,12 @@ def player4(tauon):
 
                     tauon.console.print("Transition jump")
 
-                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
+                    aud.start(
+                        target_path.encode(),
+                        int(pctl.start_time_target + pctl.jump_time) * 1000,
+                        fade,
+                        ctypes.c_float(calc_rg(target_object)),
+                    )
                     loaded_track = target_object
                     pctl.playing_time = pctl.jump_time
                     if pctl.jump_time:
@@ -838,15 +922,21 @@ def player4(tauon):
                                 #     if pctl.playerCommandReady:
                                 #         break
                                 print("Retry start file")
-                                aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000,
-                                          fade, ctypes.c_float(calc_rg(target_object)))
+                                aud.start(
+                                    target_path.encode(),
+                                    int(pctl.start_time_target + pctl.jump_time) * 1000,
+                                    fade,
+                                    ctypes.c_float(calc_rg(target_object)),
+                                )
                                 gui.buffering = False
                                 player_timer.set()
                                 break
                             else:
                                 aud.stop()
                                 if not gui.message_box:
-                                    gui.show_message("Error loading track", mode="warning")
+                                    gui.show_message(
+                                        "Error loading track", mode="warning"
+                                    )
                                 error = True
                                 break
                         time.sleep(0.016)
@@ -858,7 +948,10 @@ def player4(tauon):
 
                 player_timer.set()
                 pctl.jump_time = 0
-                if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.mod_formats:
+                if (
+                    loaded_track.length == 0
+                    or loaded_track.file_ext.lower() in tauon.mod_formats
+                ):
                     i = 0
                     t = 0
                     while t == 0:
@@ -882,7 +975,9 @@ def player4(tauon):
                     pctl.playing_time = pctl.new_time
                 elif state > 0:
 
-                    if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
+                    if (
+                        loaded_track.is_network
+                    ):  # and loaded_track.fullpath.endswith(".ogg"):
 
                         timer = Timer()
                         timer.set()
@@ -910,11 +1005,19 @@ def player4(tauon):
                             continue
 
                         # The vorbis decoder doesn't like appended files
-                        aud.start(path.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
+                        aud.start(
+                            path.encode(),
+                            int(pctl.new_time + pctl.start_time_target) * 1000,
+                            0,
+                            ctypes.c_float(calc_rg(loaded_track)),
+                        )
                         while aud.get_result() == 0:
                             time.sleep(0.01)
                     else:
-                        aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
+                        aud.seek(
+                            int((pctl.new_time + pctl.start_time_target) * 1000),
+                            prefs.pa_fast_seek,
+                        )
 
                     pctl.playing_time = pctl.new_time
 
@@ -956,7 +1059,7 @@ def player4(tauon):
 
                 if subcommand == "return":
                     pctl.playerSubCommand = "stopped"
-                    #pctl.playerCommandReady = True
+                    # pctl.playerCommandReady = True
 
             if command == "pauseon":
                 if prefs.use_pause_fade:
@@ -1022,5 +1125,3 @@ def player4(tauon):
 
             if state == 1:
                 track()
-
-

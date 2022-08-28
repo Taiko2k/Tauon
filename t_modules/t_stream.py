@@ -23,7 +23,8 @@ import time
 import subprocess
 import os
 import sys
-if sys.platform != 'win32':
+
+if sys.platform != "win32":
     import fcntl
 import datetime
 import io
@@ -36,8 +37,8 @@ import base64
 from t_modules.t_extra import filename_safe
 from t_modules.t_webserve import vb
 
-class StreamEnc:
 
+class StreamEnc:
     def __init__(self, tauon):
         self.tauon = tauon
         self.download_running = False
@@ -104,16 +105,18 @@ class StreamEnc:
             InterceptedSelf._close_conn = self._close_conn
             return ORIGINAL_HTTP_CLIENT_READ_STATUS(InterceptedSelf)
 
-        ORIGINAL_HTTP_CLIENT_READ_STATUS = urllib.request.http.client.HTTPResponse._read_status
+        ORIGINAL_HTTP_CLIENT_READ_STATUS = (
+            urllib.request.http.client.HTTPResponse._read_status
+        )
         urllib.request.http.client.HTTPResponse._read_status = NiceToICY
 
         retry = 5
         while True:
             try:
                 r = urllib.request.Request(self.url)
-                #r.add_header('GET', '1')
-                r.add_header('Icy-MetaData', '1')
-                r.add_header('User-Agent', self.tauon.t_agent)
+                # r.add_header('GET', '1')
+                r.add_header("Icy-MetaData", "1")
+                r.add_header("User-Agent", self.tauon.t_agent)
                 print("Open URL.....")
                 r = urllib.request.urlopen(r, timeout=7, cafile=self.tauon.ca)
                 print("URL opened.")
@@ -129,7 +132,9 @@ class StreamEnc:
                 else:
                     print("Connection failed")
                     print(str(e))
-                    self.tauon.gui.show_message("Failed to establish a connection", str(e), mode="error")
+                    self.tauon.gui.show_message(
+                        "Failed to establish a connection", str(e), mode="error"
+                    )
                     return False
             break
 
@@ -147,16 +152,32 @@ class StreamEnc:
         self.pump_running = True
 
         rate = str(self.tauon.prefs.samplerate)
-        cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar",
-               rate, "-"]
+        cmd = [
+            self.tauon.get_ffmpeg(),
+            "-loglevel",
+            "quiet",
+            "-i",
+            "pipe:0",
+            "-acodec",
+            "pcm_s16le",
+            "-f",
+            "s16le",
+            "-ac",
+            "2",
+            "-ar",
+            rate,
+            "-",
+        ]
 
         startupinfo = None
         if self.tauon.msys:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
-        if sys.platform != 'win32':
-           fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+        decoder = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo
+        )
+        if sys.platform != "win32":
+            fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
         raw_audio = None
         max_read = int(10000)
@@ -208,7 +229,6 @@ class StreamEnc:
 
             time.sleep(0.01)
 
-
         decoder.terminate()
         time.sleep(0.1)
         try:
@@ -217,7 +237,6 @@ class StreamEnc:
             pass
 
         self.pump_running = False
-
 
     def encode(self):
 
@@ -248,10 +267,27 @@ class StreamEnc:
             if os.path.isfile(target_file):
                 os.remove(target_file)
 
-            cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
+            cmd = [
+                self.tauon.get_ffmpeg(),
+                "-loglevel",
+                "quiet",
+                "-i",
+                "pipe:0",
+                "-acodec",
+                "pcm_s16le",
+                "-f",
+                "s16le",
+                "-ac",
+                "2",
+                "-ar",
+                rate,
+                "-",
+            ]
 
-            decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            if sys.platform != 'win32':
+            decoder = subprocess.Popen(
+                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            )
+            if sys.platform != "win32":
                 fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
             position = 0
@@ -259,13 +295,28 @@ class StreamEnc:
             old_tags = self.tauon.pctl.found_tags
 
             ##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-            cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
-            encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            cmd = [
+                "ffmpeg",
+                "-loglevel",
+                "quiet",
+                "-f",
+                "s16le",
+                "-ar",
+                rate,
+                "-ac",
+                "2",
+                "-i",
+                "pipe:0",
+                target_file,
+            ]
+            encoder = subprocess.Popen(
+                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            )
 
             def save_track():
-                #self.tauon.recorded_songs.append(song)
+                # self.tauon.recorded_songs.append(song)
 
-                save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+                save_file = "{:%Y-%m-%d %H-%M-%S} - ".format(datetime.datetime.now())
                 save_file += filename_safe(old_metadata)
                 save_file = save_file.strip() + ext
                 save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
@@ -280,7 +331,7 @@ class StreamEnc:
                 tags = self.tauon.pctl.tag_history.get(old_metadata, None)
                 if tags:
                     print("Save metadata to file")
-                    #print(tags)
+                    # print(tags)
                     muta = mutagen.File(save_file, easy=True)
                     muta["artist"] = tags.get("artist", "")
                     muta["title"] = tags.get("title", "")
@@ -316,7 +367,9 @@ class StreamEnc:
                     if pl[0] == "Saved Radio Tracks":
                         target_pl = i
                 if target_pl is None:
-                    self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Saved Radio Tracks"))
+                    self.tauon.pctl.multi_playlist.append(
+                        self.tauon.pl_gen(title="Saved Radio Tracks")
+                    )
                     target_pl = len(self.tauon.pctl.multi_playlist) - 1
 
                 load_order = self.tauon.pctl.LoadClass()
@@ -355,7 +408,10 @@ class StreamEnc:
                 if old_metadata != self.tauon.radiobox.song_key:
                     if self.c < 400 and not old_metadata:
                         old_metadata = self.tauon.radiobox.song_key
-                    elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
+                    elif (
+                        not os.path.exists(target_file)
+                        or os.path.getsize(target_file) < 100000
+                    ):
                         old_metadata = self.tauon.radiobox.song_key
                     else:
                         print("Split and save file")
@@ -374,7 +430,9 @@ class StreamEnc:
                             else:
                                 print("Discard small file")
                                 os.remove(target_file)
-                        encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                        encoder = subprocess.Popen(
+                            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+                        )
 
                 raw_audio = decoder.stdout.read(1000000)
                 if raw_audio:
@@ -390,7 +448,7 @@ class StreamEnc:
         except Exception as e:
             print("Encoder thread crashed!")
             print(str(e))
-            #raise
+            # raise
             self.encode_running = False
             return
 
@@ -476,8 +534,8 @@ class StreamEnc:
                             # Not enough data yet
                             continue
 
-                        text = inter[1:follow + 1]
-                        data2 = inter[follow + 1:]
+                        text = inter[1 : follow + 1]
+                        data2 = inter[follow + 1 :]
 
                         self.chunks[self.c] = data1 + data2
                         # Delete old data
@@ -497,16 +555,21 @@ class StreamEnc:
                         try:
                             meta = text.decode().rstrip("\x00")
                             for tag in meta.split(";"):
-                                if '=' in tag:
-                                    a, b = tag.split('=', 1)
-                                    if a == 'StreamTitle':
-                                        #print("Set meta")
-                                        self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
+                                if "=" in tag:
+                                    a, b = tag.split("=", 1)
+                                    if a == "StreamTitle":
+                                        # print("Set meta")
+                                        self.tauon.pctl.tag_meta = b.rstrip("'").lstrip(
+                                            "'"
+                                        )
                                         break
                         except:
                             r.close()
                             self.download_running = False
-                            self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
+                            self.tauon.gui.show_message(
+                                "Data malformation detected. Stream aborted.",
+                                mode="error",
+                            )
                             raise
         except Exception as e:
             print("Stream download thread crashed!")

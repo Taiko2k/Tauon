@@ -1,4 +1,3 @@
-
 class Launch:
     def __init__(self, tauon, pctl, gui, ddt):
         self.tauon = tauon

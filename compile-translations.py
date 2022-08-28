@@ -1,4 +1,3 @@
-
 import subprocess
 import os
 
@@ -14,11 +13,10 @@ for l in lang:
     mo_path = os.path.join(locale_folder, l, "LC_MESSAGES", "tauon.mo")
 
     if os.path.exists(po_path):
-        subprocess.run(['msgfmt', '-o', mo_path, po_path])
+        subprocess.run(["msgfmt", "-o", mo_path, po_path])
         print(f"Compiled: {l}")
 
     else:
         print(f"Missing po file: {po_path}")
 
 print("Done")
-

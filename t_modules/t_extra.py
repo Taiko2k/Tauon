@@ -1,4 +1,3 @@
-
 # Tauon Music Box - Misc Functions Module
 
 # Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
@@ -71,21 +70,22 @@ class TestTimer:
         return self.timer.get() > self.time
 
 
-
 # Test given proximity between two 2d points to given square
 def point_proximity_test(a, b, p):
     return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
+
 # Get distance between two points
 def point_distance(a, b):
     return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
+
 
 # Removes whatever this is from a line, I forgot
 def rm_16(line):
     if "ÿ þ" in line:
         for c in line:
             line = line[1:]
-            if c == 'þ':
+            if c == "þ":
                 break
 
         line = line[::2]
@@ -97,7 +97,7 @@ def get_display_time(seconds):
     result = divmod(int(seconds), 60)
     if result[0] > 99:
         result = divmod(result[0], 60)
-        return str(result[0]) + 'h ' + str(result[1]).zfill(2)
+        return str(result[0]) + "h " + str(result[1]).zfill(2)
     return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
 
 
@@ -105,9 +105,9 @@ def get_hms_time(seconds):
     m, s = divmod(round(seconds), 60)
     h, m = divmod(m, 60)
     if h:
-        return f'{h:d}:{m:02d}:{s:02d}'
+        return f"{h:d}:{m:02d}:{s:02d}"
     else:
-        return f'{m:02d}:{s:02d}'
+        return f"{m:02d}:{s:02d}"
 
 
 # Creates a string from number of bytes to X MB/kB etc with Locale adjustment
@@ -127,6 +127,7 @@ def get_filesize_string(file_bytes):
         line = locale.str(file_mb) + " GB"
     return line
 
+
 def get_filesize_string_rounded(file_bytes):
     if not file_bytes:
         return "0"
@@ -140,9 +141,11 @@ def get_filesize_string_rounded(file_bytes):
         line = str(file_mb) + " MB"
     return line
 
+
 # Estimates the perceived luminance of a colour
 def test_lumi(c1):
     return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
+
 
 def rel_luminance(colour):
     r = colour[0] / 255
@@ -177,6 +180,7 @@ def contrast_ratio(c1, c2):
 
     return (l1 + 0.05) / (l2 + 0.05)
 
+
 # Gives the sum of first 3 elements in a list
 def colour_value(c1):
     return c1[0] + c1[1] + c1[2]
@@ -185,9 +189,12 @@ def colour_value(c1):
 # Performs alpha blending of one colour (rgba) onto another (rgb)
 def alpha_blend(colour, base):
     alpha = colour[3] / 255
-    return [int(alpha * colour[0] + (1 - alpha) * base[0]),
-            int(alpha * colour[1] + (1 - alpha) * base[1]),
-            int(alpha * colour[2] + (1 - alpha) * base[2]), 255]
+    return [
+        int(alpha * colour[0] + (1 - alpha) * base[0]),
+        int(alpha * colour[1] + (1 - alpha) * base[1]),
+        int(alpha * colour[2] + (1 - alpha) * base[2]),
+        255,
+    ]
 
 
 # Change the alpha component of an RGBA list
@@ -198,14 +205,17 @@ def alpha_mod(colour, alpha):
 # Shift between two colours based on x where x is between 0 and limit
 def colour_slide(a, b, x, x_limit):
 
-    return (min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
-     min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
-     min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255), 255)
+    return (
+        min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
+        min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
+        min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255),
+        255,
+    )
 
 
 def hex_to_rgb(colour):
     colour = colour.strip("#")
-    return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
+    return list(int(colour[i : i + 2], 16) for i in (0, 2, 4)) + [255]
 
 
 # Checks if all the numbers in a list are the same
@@ -295,24 +305,29 @@ def hsl_to_rgb(h, s, l):
     colour = colorsys.hls_to_rgb(h, l, s)
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
+
 def hls_to_rgb(h, l, s):
     colour = colorsys.hls_to_rgb(h, l, s)
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
+
 def rgb_to_hls(r, g, b):
     return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
+
 def rgb_add_hls(source, h=0, l=0, s=0):
     c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
-    colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
+    colour = colorsys.hls_to_rgb(
+        c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1)
+    )
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
 
 
 def is_light(colour):
     return test_lumi(colour) < 0.2
 
-class ColourGenCache:
 
+class ColourGenCache:
     def __init__(self, saturation, luminance):
 
         self.saturation = saturation
@@ -330,15 +345,13 @@ class ColourGenCache:
         return colour
 
 
-
-
 def folder_file_scan(path, extensions):
 
     match = 0
     count = sum([len(files) for r, d, files in os.walk(path)])
     for ext in extensions:
 
-        match += len(glob.glob(path + '/**/*.' + ext.lower(), recursive=True))
+        match += len(glob.glob(path + "/**/*." + ext.lower(), recursive=True))
 
     if count == 0:
         return 0
@@ -350,14 +363,7 @@ def folder_file_scan(path, extensions):
 
 
 def is_ignorable_file(string):
-    for s in [
-        "Thumbs.db",
-        ".log",
-        "desktop.ini",
-        "DS_Store",
-        ".nfo",
-        "yric"
-    ]:
+    for s in ["Thumbs.db", ".log", "desktop.ini", "DS_Store", ".nfo", "yric"]:
         if s in string:
             return True
     return False
@@ -387,16 +393,23 @@ def archive_file_scan(path, extensions, launch_prefix=""):
     # print(path)
     # print(ext)
     try:
-        if ext == 'rar':
+        if ext == "rar":
             matches = 0
             count = 0
-            line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
+            line = (
+                launch_prefix
+                + "unrar lb -p- "
+                + shlex.quote(path)
+                + " "
+                + shlex.quote(os.path.dirname(path))
+                + os.sep
+            )
             result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-            file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+            file_list = result.stdout.decode("utf-8", "ignore").split("\n")
             # print(file_list)
             for fi in file_list:
                 for ty in extensions:
-                    if fi[len(ty) * -1:].lower() == ty:
+                    if fi[len(ty) * -1 :].lower() == ty:
                         matches += 1
                         break
                     elif is_ignorable_file(fi):
@@ -406,32 +419,34 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                         matches += 5
                 count += 1
             if count > 200:
-                #print("RAR archive has many files")
-                #print("   --- " + path)
+                # print("RAR archive has many files")
+                # print("   --- " + path)
                 return 0
             if matches == 0:
-                #print("RAR archive does not appear to contain audio files")
-                #print("   --- " + path)
+                # print("RAR archive does not appear to contain audio files")
+                # print("   --- " + path)
                 return 0
             if count == 0:
-                #print("Archive has no files")
-                #print("   --- " + path)
+                # print("Archive has no files")
+                # print("   --- " + path)
                 return 0
 
-        elif ext == '7z':
+        elif ext == "7z":
             matches = 0
             count = 0
-            line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
+            line = (
+                launch_prefix + "7z l " + shlex.quote(path)
+            )  # + " " + shlex.quote(os.path.dirname(path)) + os.sep
             result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-            file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+            file_list = result.stdout.decode("utf-8", "ignore").split("\n")
             # print(file_list)
 
             for fi in file_list:
 
-                if '....A' not in fi:
+                if "....A" not in fi:
                     continue
                 for ty in extensions:
-                    if fi[len(ty) * -1:].lower() == ty:
+                    if fi[len(ty) * -1 :].lower() == ty:
                         matches += 1
                         break
                     elif is_ignorable_file(fi):
@@ -442,27 +457,27 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                 count += 1
 
             if count > 200:
-                #print("7z archive has many files")
-                #print("   --- " + path)
+                # print("7z archive has many files")
+                # print("   --- " + path)
                 return 0
             if matches == 0:
-                #print("7z archive does not appear to contain audio files")
-                #print("   --- " + path)
+                # print("7z archive does not appear to contain audio files")
+                # print("   --- " + path)
                 return 0
             if count == 0:
-                #print("7z archive has no files")
-                #print("   --- " + path)
+                # print("7z archive has no files")
+                # print("   --- " + path)
                 return 0
 
         elif ext == "zip":
 
-            zip_ref = zipfile.ZipFile(path, 'r')
+            zip_ref = zipfile.ZipFile(path, "r")
             matches = 0
             count = 0
-            #print(zip_ref.namelist())
+            # print(zip_ref.namelist())
             for fi in zip_ref.namelist():
                 for ty in extensions:
-                    if fi[len(ty) * -1:].lower() == ty:
+                    if fi[len(ty) * -1 :].lower() == ty:
                         matches += 1
                         break
                     elif is_ignorable_file(fi):
@@ -472,16 +487,16 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                         matches += 5
                 count += 1
             if count == 0:
-                #print("Archive has no files")
-                #print("   --- " + path)
+                # print("Archive has no files")
+                # print("   --- " + path)
                 return 0
             if count > 300:
-                #print("Zip archive has many files")
-                #print("   --- " + path)
+                # print("Zip archive has many files")
+                # print("   --- " + path)
                 return 0
             if matches == 0:
-                #print("Zip archive does not appear to contain audio files")
-                #print("   --- " + path)
+                # print("Zip archive does not appear to contain audio files")
+                # print("   --- " + path)
                 return 0
         else:
             return 0
@@ -514,15 +529,25 @@ def filename_safe(text, sub=""):
         text = text.replace(cha, sub)
     return text.rstrip(" .")
 
+
 def get_artist_strip_feat(track_object):
 
-    artist_name = track_object.artist #.lower()
+    artist_name = track_object.artist  # .lower()
     if track_object.album_artist:
-        if "feat." in artist_name or "pres." in artist_name or ", " in artist_name or "; " in artist_name or not artist_name:
-            if track_object.album_artist.lower() != "va" and \
-                    track_object.album_artist.lower() != "various artists":
+        if (
+            "feat." in artist_name
+            or "pres." in artist_name
+            or ", " in artist_name
+            or "; " in artist_name
+            or not artist_name
+        ):
+            if (
+                track_object.album_artist.lower() != "va"
+                and track_object.album_artist.lower() != "various artists"
+            ):
                 artist_name = track_object.album_artist
     return artist_name
+
 
 def get_artist_safe(track):
 
@@ -537,18 +562,22 @@ def get_artist_safe(track):
         return artist
     return ""
 
+
 def get_split_artists(track):
-    if 'artists' in track.misc:
-        return track.misc['artists']
+    if "artists" in track.misc:
+        return track.misc["artists"]
     artist = track.artist.split("feat")[0].strip()
-    return re.split(r'; |, |& ', artist)
+    return re.split(r"; |, |& ", artist)
+
 
 def coll_rect(rect1, rect2):
 
-    if rect1[0] + rect1[2] < rect2[0] or \
-            rect1[1] + rect1[3] < rect2[1] or \
-            rect1[0] > rect2[0] + rect2[2] or \
-            rect1[1] > rect2[1] + rect2[3]:
+    if (
+        rect1[0] + rect1[2] < rect2[0]
+        or rect1[1] + rect1[3] < rect2[1]
+        or rect1[0] > rect2[0] + rect2[2]
+        or rect1[1] > rect2[1] + rect2[3]
+    ):
         return False
     return True
 
@@ -556,7 +585,7 @@ def coll_rect(rect1, rect2):
 def commonprefix(l):
 
     cp = []
-    ls = [p.split('/') for p in l]
+    ls = [p.split("/") for p in l]
     ml = min(len(p) for p in ls)
 
     for i in range(ml):
@@ -567,7 +596,7 @@ def commonprefix(l):
 
         cp.append(s.pop())
 
-    return '/'.join(cp)
+    return "/".join(cp)
 
 
 def fader_timer(time_point, start, duration, off=True, range=255):
@@ -584,7 +613,6 @@ def fader_timer(time_point, start, duration, off=True, range=255):
 
 
 id3_genre_dict = {
-    
     0: "Blues",
     1: "Classic Rock",
     2: "Country",
@@ -799,8 +827,7 @@ class FunctionStore:
             item[0](*item[1])
 
 
-year_search = re.compile(r'\d{4}')
-
+year_search = re.compile(r"\d{4}")
 
 
 def year_from_string(date_string):
@@ -815,6 +842,7 @@ def year_from_string(date_string):
 def grow_rect(rect, px):
     return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
 
+
 # def get_hash(f_path, mode='sha256'):
 #     h = hashlib.new(mode)
 #     with open(f_path, 'rb') as file:
@@ -822,6 +850,7 @@ def grow_rect(rect, px):
 #     h.update(data)
 #     digest = h.hexdigest()
 #     return digest
+
 
 def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with overlaps)
 
@@ -832,6 +861,7 @@ def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with over
 
     return west, north, east, south
 
+
 genre_corrections = [
     "J-Pop",
     "J-Rock",
@@ -839,7 +869,10 @@ genre_corrections = [
     "Hip Hop",
 ]
 
-genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
+genre_corrections2 = [
+    x.lower().replace("-", "").replace(" ", "") for x in genre_corrections
+]
+
 
 def genre_correct(text):
 
@@ -851,7 +884,9 @@ def genre_correct(text):
     return text.title().strip()
 
 
-def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of folder paths
+def reduce_paths(
+    paths,
+):  # in-place remove of redundant sub-paths from list of folder paths
 
     paths[:] = list(set(paths))[:]  # remove duplicates
 
@@ -866,7 +901,11 @@ def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of 
             for b in reversed(range(len(paths))):
                 path2 = paths[b].rstrip("\\/")
 
-                if len(path) > len(path2) and path.startswith(path2) and path[len(path2)] in ("/", "\\"):
+                if (
+                    len(path) > len(path2)
+                    and path.startswith(path2)
+                    and path[len(path2)] in ("/", "\\")
+                ):
                     del paths[i]
                     remove_path = True
                     break
@@ -876,8 +915,9 @@ def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of 
         if not remove_path:
             break
 
+
 def fit_box(inner, outer):
-    scale = min(outer[0]/inner[0], outer[1]/inner[1])
+    scale = min(outer[0] / inner[0], outer[1] / inner[1])
     return round(inner[0] * scale), round(inner[1] * scale)
 
 
@@ -898,27 +938,38 @@ def shooter(func, args=()):
     shoot.daemon = True
     shoot.start()
 
+
 def d_date_display(track):
-    if 'rdat' in track.misc:
+    if "rdat" in track.misc:
         return str(track.date) + " → " + track.misc["rdat"]
     return str(track.date)
 
+
 def process_odat(nt, odat):
-    if odat and odat != nt.date and odat != nt.date[:4] and odat != nt.date[-4:] \
-            and nt.date != odat[:4] and nt.date != odat[-4:]:
+    if (
+        odat
+        and odat != nt.date
+        and odat != nt.date[:4]
+        and odat != nt.date[-4:]
+        and nt.date != odat[:4]
+        and nt.date != odat[-4:]
+    ):
         if not nt.date:
             nt.date = odat
         else:
             nt.misc["rdat"] = nt.date
             nt.date = odat
 
+
 def clean_string(s):
-    return s.encode('utf-8', 'surrogatepass').decode('utf-8', 'replace')
+    return s.encode("utf-8", "surrogatepass").decode("utf-8", "replace")
+
 
 def uri_parse(s):
     if s.startswith("file://"):
         s = str(urllib.parse.unquote(s)).replace("file://", "").replace("\r", "")
     return s
+
 
 mac_styles = {
     "mac": None,
@@ -927,8 +978,9 @@ mac_styles = {
     "sweet": None,
     "dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
     "nordic": None,
-    "juno": None
+    "juno": None,
 }
+
 
 def sleep_timeout(condition_function, time_limit=2):
     if condition_function():

@@ -6,13 +6,14 @@ import sys
 from ctypes import pointer
 from gi.repository import GLib
 
-if sys.platform != 'win32':
+if sys.platform != "win32":
     import fcntl
 
 
 # Early arg processing
 def transfer_args_and_exit():
     import urllib.request
+
     base = "http://localhost:7813/"
 
     if len(sys.argv) <= 1:
@@ -21,8 +22,14 @@ def transfer_args_and_exit():
 
     for item in sys.argv:
 
-        if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or os.path.exists(item)):
+        if (
+            not item.endswith(".py")
+            and not item.startswith("-")
+            and not item.endswith("exe")
+            and (item.startswith("file://") or os.path.exists(item))
+        ):
             import base64
+
             url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
             urllib.request.urlopen(url)
         if item == "--play-pause":
@@ -56,20 +63,22 @@ def transfer_args_and_exit():
 if "--no-start" in sys.argv:
     transfer_args_and_exit()
 
-t_title = 'Tauon Music Box'
-os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
+t_title = "Tauon Music Box"
+os.environ[
+    "SDL_VIDEO_X11_WMCLASS"
+] = t_title  # This sets the window title under some desktop environments
 
 install_directory = os.path.dirname(os.path.abspath(__file__))
 
 pyinstaller_mode = False
-if 'base_library' in install_directory:
+if "base_library" in install_directory:
     pyinstaller_mode = True
     install_directory = os.path.dirname(install_directory)
 if hasattr(sys, "_MEIPASS"):
     pyinstaller_mode = True
 
 if pyinstaller_mode:
-     os.environ["PATH"] += ":" + sys._MEIPASS
+    os.environ["PATH"] += ":" + sys._MEIPASS
 
 user_directory = os.path.join(install_directory, "user-data")
 config_directory = user_directory
@@ -79,10 +88,14 @@ asset_directory = os.path.join(install_directory, "assets")
 
 # If we're installed, use home data locations
 install_mode = False
-if install_directory.startswith("/opt/")\
-        or install_directory.startswith("/usr/")\
-        or install_directory.startswith("/app/")\
-        or install_directory.startswith("/snap/") or sys.platform == "darwin" or sys.platform == 'win32':
+if (
+    install_directory.startswith("/opt/")
+    or install_directory.startswith("/usr/")
+    or install_directory.startswith("/app/")
+    or install_directory.startswith("/snap/")
+    or sys.platform == "darwin"
+    or sys.platform == "win32"
+):
     install_mode = True
 
 if install_mode:
@@ -90,11 +103,11 @@ if install_mode:
 if not os.path.isdir(user_directory):
     os.makedirs(user_directory)
 
-if os.path.isfile(os.path.join(install_directory, '.gitignore')):
+if os.path.isfile(os.path.join(install_directory, ".gitignore")):
     print("Dev mode, ignoring single instancing")
-elif sys.platform != 'win32':
-    pid_file = os.path.join(user_directory, 'program.pid')
-    fp = open(pid_file, 'w')
+elif sys.platform != "win32":
+    pid_file = os.path.join(user_directory, "program.pid")
+    fp = open(pid_file, "w")
     try:
         fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError:
@@ -103,31 +116,33 @@ elif sys.platform != 'win32':
         transfer_args_and_exit()
 else:
     if sys.platform == "win32":
-        pid_file = os.path.join(user_directory, 'program.pid')
+        pid_file = os.path.join(user_directory, "program.pid")
         try:
             if os.path.isfile(pid_file):
                 os.remove(pid_file)
-            fp = open(pid_file, 'w')
+            fp = open(pid_file, "w")
         except IOError:
             # another instance is running
             print("Program is already running")
             transfer_args_and_exit()
     if pyinstaller_mode:
-        os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
+        os.environ["FONTCONFIG_PATH"] = os.path.join(
+            install_directory, "etc\\fonts"
+        )  # "C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
-d = os.environ.get('XDG_CURRENT_DESKTOP')
+d = os.environ.get("XDG_CURRENT_DESKTOP")
 if d in ["GNOME:Phosh"]:
     os.environ["SDL_VIDEODRIVER"] = "wayland"
     phone = True
 
-if pyinstaller_mode: # and sys.platform == 'darwin':
+if pyinstaller_mode:  # and sys.platform == 'darwin':
     os.environ["PYSDL2_DLL_PATH"] = install_directory
 
 from sdl2 import *
 from sdl2.sdlimage import *
 
-SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
+SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
 
@@ -169,18 +184,23 @@ if os.path.isfile(window_p):
         del save
 
     except:
-        print('Corrupted window state file?!')
-        print('Please restart app')
+        print("Corrupted window state file?!")
+        print("Please restart app")
         os.remove(window_p)
         exit(1)
 else:
     print("No window state file")
 
 
-if d == "GNOME" and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
+if (
+    d == "GNOME"
+    and os.environ.get("XDG_SESSION_TYPE")
+    and os.environ.get("XDG_SESSION_TYPE") == "wayland"
+):
     try:
         import gi.repository
-        gi.require_version('Gtk', '3.0')
+
+        gi.require_version("Gtk", "3.0")
         from gi.repository import Gtk
 
         gtk_settings = Gtk.Settings().get_default()
@@ -191,19 +211,23 @@ if d == "GNOME" and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_S
     except:
         pass
 
-#os.environ["SDL_VIDEODRIVER"] = "wayland"
+# os.environ["SDL_VIDEODRIVER"] = "wayland"
 
 SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
 
 err = SDL_GetError()
 if err and "GLX" in err.decode():
     print(f"SDL init error: {err.decode()}")
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
-                             b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
+    SDL_ShowSimpleMessageBox(
+        SDL_MESSAGEBOX_ERROR,
+        b"Tauon Music Box failed to start :(",
+        b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`",
+        None,
+    )
     sys.exit()
 
 window_title = t_title
-window_title = window_title.encode('utf-8')
+window_title = window_title.encode("utf-8")
 
 flags = SDL_WINDOW_RESIZABLE
 flags |= SDL_WINDOW_ALLOW_HIGHDPI
@@ -220,16 +244,17 @@ else:
 if "--tray" in sys.argv:
     flags |= SDL_WINDOW_HIDDEN
 
-t_window = SDL_CreateWindow(window_title,
-                            o_x, o_y,
-                            logical_size[0], logical_size[1],
-                            flags) # | SDL_WINDOW_FULLSCREEN)
+t_window = SDL_CreateWindow(
+    window_title, o_x, o_y, logical_size[0], logical_size[1], flags
+)  # | SDL_WINDOW_FULLSCREEN)
 
 
 if maximized:
     SDL_MaximizeWindow(t_window)
 
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+renderer = SDL_CreateRenderer(
+    t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+)
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 SDL_SetWindowOpacity(t_window, window_opacity)
 
@@ -257,6 +282,7 @@ SDL_FreeSurface(raw_image)
 SDL_DestroyTexture(sdl_texture)
 
 from t_modules import t_bootstrap
+
 h = t_bootstrap.holder
 h.w = t_window
 h.r = renderer
@@ -286,11 +312,10 @@ if pyinstaller_mode or sys.platform == "darwin":
 else:
     # Using the above import method breaks previous pickles. Could be fixed
     # but yet to decide what best method is.
-    big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
+    big_boy_path = os.path.join(install_directory, "t_modules/t_main.py")
     f = open(big_boy_path, "rb")
-    main = compile(f.read(), big_boy_path, 'exec')
+    main = compile(f.read(), big_boy_path, "exec")
     f.close()
     del big_boy_path
     del f
     exec(main)
-

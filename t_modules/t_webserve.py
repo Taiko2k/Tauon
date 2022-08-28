@@ -1,4 +1,3 @@
-
 # Tauon Music Box - Web interface module
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
@@ -18,7 +17,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 import sys
-if sys.platform != 'win32':
+
+if sys.platform != "win32":
     import fcntl
 import html
 import time
@@ -31,6 +31,7 @@ from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from t_modules.t_extra import Timer
+
 
 def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
@@ -56,7 +57,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
     gui.web_running = True
 
     class Server(BaseHTTPRequestHandler):
-
         def send_file(self, path, mime):
             self.send_response(200)
             self.send_header("Content-type", mime)
@@ -73,19 +73,25 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
             if path == "/radio/":
                 self.send_response(302)
-                self.send_header('Location', "/radio")
+                self.send_header("Location", "/radio")
                 self.end_headers()
 
             elif path == "/radio":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
             elif path == "/favicon.ico":
-                self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
+                self.send_file(
+                    install_directory + "/assets/favicon.ico", "image/x-icon"
+                )
             elif path == "/radio/radio.js":
-                self.send_file(install_directory + "/templates/radio.js", "application/javascript")
+                self.send_file(
+                    install_directory + "/templates/radio.js", "application/javascript"
+                )
             elif path == "/radio/theme.css":
                 self.send_file(install_directory + "/templates/theme.css", "text/css")
             elif path == "/radio/logo-bg.png":
-                self.send_file(install_directory + "/templates/logo-bg.png", 'image/png')
+                self.send_file(
+                    install_directory + "/templates/logo-bg.png", "image/png"
+                )
 
             elif path == "/radio/update_radio":
                 self.send_response(200)
@@ -99,9 +105,11 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         position = p / track.length
                     else:
                         position = 0
-                    data = {"position": position,
-                            "index": track.index,
-                            "port": str(prefs.broadcast_port)}
+                    data = {
+                        "position": position,
+                        "index": track.index,
+                        "port": str(prefs.broadcast_port),
+                    }
 
                     data = json.dumps(data).replace(" ", "").encode()
                     self.send_header("Content-length", str(len(data)))
@@ -109,8 +117,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     self.wfile.write(data)
 
                 else:
-                    data = {"position": 0,
-                            "index": -1}
+                    data = {"position": 0, "index": -1}
                     data = json.dumps(data).replace(" ", "").encode()
                     self.send_header("Content-length", str(len(data)))
                     self.end_headers()
@@ -119,7 +126,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             elif path == "/radio/getpic":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-
 
                 track_id, p = get_broadcast_track()
 
@@ -132,7 +138,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
                     if prefs.radio_page_lyrics:
                         lyrics = tauon.synced_to_static_lyrics.get(track)
-                        lyrics = html.escape(lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
+                        lyrics = (
+                            html.escape(lyrics)
+                            .replace("\r\n", "\n")
+                            .replace("\r", "\n")
+                            .replace("\n", "<br>")
+                        )
                     try:
                         base64 = album_art_gen.get_base64(track, (300, 300)).decode()
 
@@ -142,7 +153,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "title": track.title,
                             "artist": track.artist,
                             "album": track.album,
-                            "lyrics": lyrics}
+                            "lyrics": lyrics,
+                        }
 
                         data = json.dumps(data).encode()
                         self.send_header("Content-length", str(len(data)))
@@ -156,7 +168,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                             "title": track.title,
                             "artist": track.artist,
                             "album": track.album,
-                            "lyrics": lyrics}
+                            "lyrics": lyrics,
+                        }
 
                         data = json.dumps(data).encode()
                         self.send_header("Content-length", str(len(data)))
@@ -170,7 +183,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         "title": "",
                         "artist": "- - Broadcast Offline - -",
                         "album": "",
-                        "lyrics": ""}
+                        "lyrics": "",
+                    }
 
                     data = json.dumps(data).encode()
                     self.send_header("Content-length", str(len(data)))
@@ -183,17 +197,17 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
                 self.send_response(200)
                 self.send_header("Content-type", "audio/ogg")
-                #self.send_header("Transfer-Encoding", "chunked")
+                # self.send_header("Transfer-Encoding", "chunked")
                 self.end_headers()
 
                 position = max(chunker.master_count - 7, 1)
                 id = random.random()
 
                 for header in chunker.headers:
-                    #self.wfile.write(hex(len(header))[2:].encode())
-                    #self.wfile.write("\r\n".encode())
+                    # self.wfile.write(hex(len(header))[2:].encode())
+                    # self.wfile.write("\r\n".encode())
                     self.wfile.write(header)
-                    #self.wfile.write("\r\n".encode())
+                    # self.wfile.write("\r\n".encode())
                 while True:
                     if not pctl.broadcast_active:
                         return
@@ -201,11 +215,11 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                         while 1 < position < chunker.master_count:
                             if not pctl.broadcast_active:
                                 return
-                            #self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
+                            # self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
 
-                            #self.wfile.write("\r\n".encode())
+                            # self.wfile.write("\r\n".encode())
                             self.wfile.write(chunker.chunks[position])
-                            #self.wfile.write("\r\n".encode())
+                            # self.wfile.write("\r\n".encode())
 
                             position += 1
                     else:
@@ -233,10 +247,9 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
     play_timer = Timer()
 
     class Server(BaseHTTPRequestHandler):
-
         def run_command(self, callback):
             self.send_response(200)
-            #self.send_header("Content-type", "application/json")
+            # self.send_header("Content-type", "application/json")
             self.end_headers()
             callback()
             self.wfile.write(b"OK")
@@ -254,7 +267,9 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
             return levels, params
 
-        def get_track(self, track_position, playlist_index=None, track=None, album_id=-1):
+        def get_track(
+            self, track_position, playlist_index=None, track=None, album_id=-1
+        ):
             if track is None:
                 if playlist_index is None:
                     playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
@@ -301,7 +316,9 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
                 if range_req:
                     self.send_response(206)
-                    self.send_header("Content-Range", f"bytes {start}-{length-1}/{length}")
+                    self.send_header(
+                        "Content-Range", f"bytes {start}-{length-1}/{length}"
+                    )
                     self.send_header("Content-Length", str(length))
                     self.send_header("Content-Type", mime)
                     f.seek(start)
@@ -323,13 +340,16 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
         def do_GET(self):
 
             path = self.path
-            #print(self.headers)
+            # print(self.headers)
             if tauon.remote_limited and not tauon.chrome_mode:
                 self.send_response(404)
                 self.end_headers()
                 self.wfile.write(b"404 Not found")
                 return
-            if tauon.remote_limited and (not path.startswith("/api1/pic/medium/") and not path.startswith("/api1/file/")):
+            if tauon.remote_limited and (
+                not path.startswith("/api1/pic/medium/")
+                and not path.startswith("/api1/file/")
+            ):
                 self.send_response(404)
                 self.end_headers()
                 self.wfile.write(b"404 Not found")
@@ -428,7 +448,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             elif path.startswith("/api1/file/"):
                 param = path[11:]
 
-                #print(self.headers)
+                # print(self.headers)
                 play_timer.hit()
 
                 if param.isdigit() and int(param) in pctl.master_library:
@@ -436,7 +456,11 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     mime = "audio/mpeg"
                     if track.file_ext == "FLAC":
                         mime = "audio/flac"
-                    if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
+                    if (
+                        track.file_ext == "OGG"
+                        or track.file_ext == "OPUS"
+                        or track.file_ext == "OGA"
+                    ):
                         mime = "audio/ogg"
                     if track.file_ext == "M4A":
                         mime = "audio/mp4"
@@ -532,7 +556,11 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         if p < len(playlist):
                             track = pctl.g(playlist[p])
                             while True:
-                                if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                                if (
+                                    p < 0
+                                    or pctl.g(playlist[p]).parent_folder_path
+                                    != track.parent_folder_path
+                                ):
                                     p += 1
                                     break
                                 p -= 1
@@ -665,7 +693,9 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     "progress": 0,
                     "volume": pctl.player_volume,
                     "playlist": str(tauon.get_playing_playlist_id()),
-                    "playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2])
+                    "playlist_length": len(
+                        pctl.multi_playlist[pctl.active_playlist_playing][2]
+                    ),
                 }
                 if pctl.playing_state == 1:
                     data["status"] = "playing"
@@ -687,7 +717,11 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
                 if p < len(playlist):
                     while True:
-                        if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+                        if (
+                            p < 0
+                            or pctl.g(playlist[p]).parent_folder_path
+                            != track.parent_folder_path
+                        ):
                             p += 1
                             break
                         p -= 1
@@ -715,6 +749,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 
 def controller(tauon):
     import base64
+
     class Server(BaseHTTPRequestHandler):
         def do_GET(self):
 
@@ -748,6 +783,7 @@ def controller(tauon):
             self.send_response(200)
             self.end_headers()
             tauon.wake()
+
     print("Start controller server")
     try:
         httpd = HTTPServer(("127.0.0.1", 7813), Server)
@@ -758,9 +794,7 @@ def controller(tauon):
 
 
 def authserve(tauon):
-
     class Server(BaseHTTPRequestHandler):
-
         def do_GET(self):
             code = ""
             path = self.path
@@ -771,7 +805,9 @@ def authserve(tauon):
                 code = path.split("code=")
                 if len(code) > 1:
                     code = code[1]
-                    self.wfile.write(b"You can close this now and return to Tauon Music Box")
+                    self.wfile.write(
+                        b"You can close this now and return to Tauon Music Box"
+                    )
                 tauon.wake()
 
             else:
@@ -785,9 +821,11 @@ def authserve(tauon):
     httpd.serve_forever()
     httpd.server_close()
 
-import struct
-class VorbisMonitor():
 
+import struct
+
+
+class VorbisMonitor:
     def __init__(self):
 
         self.tauon = None
@@ -842,8 +880,8 @@ class VorbisMonitor():
             # return
 
         b.seek(0, io.SEEK_SET)
-        header = struct.unpack('<4sBBqIIiB', b.read(27))
-        segs = struct.unpack('B' * header[7], b.read(header[7]))
+        header = struct.unpack("<4sBBqIIiB", b.read(27))
+        segs = struct.unpack("B" * header[7], b.read(header[7]))
 
         length = 0
         for s in segs:
@@ -858,13 +896,13 @@ class VorbisMonitor():
                 if h == b"OpusTag":
                     b.seek(1, io.SEEK_CUR)
 
-                vendor_length = int.from_bytes(b.read(4), byteorder='little')
-                vendor = int.from_bytes(b.read(vendor_length), byteorder='little')
-                comment_list_length = int.from_bytes(b.read(4), byteorder='little')
+                vendor_length = int.from_bytes(b.read(4), byteorder="little")
+                vendor = int.from_bytes(b.read(vendor_length), byteorder="little")
+                comment_list_length = int.from_bytes(b.read(4), byteorder="little")
 
                 found_tags = {}
                 for i in range(comment_list_length):
-                    comment_length = int.from_bytes(b.read(4), byteorder='little')
+                    comment_length = int.from_bytes(b.read(4), byteorder="little")
                     comment = b.read(comment_length)
 
                     key, value = comment.decode().split("=", 1)
@@ -897,12 +935,12 @@ class VorbisMonitor():
             new.write(b.read())
             self.buffer = new
 
+
 vb = VorbisMonitor()
 
+
 def stream_proxy(tauon):
-
     class Server(BaseHTTPRequestHandler):
-
         def do_GET(self):
 
             self.send_response(200)
@@ -935,4 +973,3 @@ def stream_proxy(tauon):
     httpd = HTTPServer(("127.0.0.1", 7812), Server)
     httpd.serve_forever()
     httpd.server_close()
-
