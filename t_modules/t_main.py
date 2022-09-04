@@ -797,10 +797,11 @@ if system == "linux" and not macos and not msys:
 import_cursors = False
 
 if desktop == "GNOME":
-    print("Using crash workaround for gdk crash")
+    #print("Using crash workaround for gdk")
     import_cursors = True
 
 if import_cursors and system == "linux" and not macos and not msys:
+    # broken?
     c_br = cursor_get_gdk(4)
     c_rs = cursor_get_gdk(8)
     c_ts = cursor_get_gdk(9)
@@ -6017,7 +6018,7 @@ class PlayerCtl:
 
                 id = self.advance(quiet=True, end=True, dry=True)
                 if id is not None and not spot_ctl.playing:
-                    print("Commit")
+                    #print("Commit")
                     self.commit = id
                     target = self.g(id)
                     self.target_open = target.fullpath
