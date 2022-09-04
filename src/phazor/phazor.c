@@ -1080,7 +1080,7 @@ int get_audio(int max, float* buff){
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
 
     int b = get_audio(frameCount * 2, pOutput);
-    if (0 < b && b < frameCount) printf("ph: Buffer underrun\n");
+    //if (0 < b && b < frameCount) printf("ph: Buffer underrun\n");
 }
 
 
@@ -1131,7 +1131,7 @@ void connect_pulse() {
         }
     }
 
-    printf("ph: Connect device\n");
+    //printf("ph: Connect device\n");
 
     ma_context_config c_config = ma_context_config_init();
     c_config.pulse.pApplicationName = "Tauon Music Box";
@@ -1166,7 +1166,7 @@ void connect_pulse() {
     }
 
     //dev = config_output_sink;
-    printf("ph: Using samplerate %uhz\n", device.sampleRate);
+    printf("ph: Connected using samplerate %uhz\n", device.sampleRate);
 
     sample_rate_out = device.sampleRate;
     current_sample_rate = sample_rate_out;

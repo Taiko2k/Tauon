@@ -62,7 +62,7 @@
 
   <releases>
 
-    <release version="7.4.0" date="2022-08-12">
+    <release version="7.4.0" date="2022-09-04">
       <description>
         <ul>
           <li>Improved Chromecast support</li>
