@@ -16,6 +16,7 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+import os
 
 import requests
 import json
@@ -350,6 +351,44 @@ class Jellyfin():
             self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p['Name'], playlist=playlist))
             self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
+    def get_info(self):
+        dones = []
+        i = 0
+        for p in self.pctl.multi_playlist:
+            for t in p[2]:
+                tr = self.pctl.g(t)
+                i += 1
+                if i % 1000 == 0:
+                    print(i)
+                if tr.file_ext == "JELY":
+                    if tr.url_key not in dones:
+                        dones.append(tr.url_key)
+
+                    # Get media info
+                    response = requests.get(
+                        f"{self.prefs.jelly_server_url}/Items/{tr.url_key}/PlaybackInfo",
+                        headers={
+                            "Token": self.accessToken,
+                            "X-Application": "Tauon/1.0",
+                            "x-emby-authorization": self._get_jellyfin_auth()
+                        },
+                        params={
+                            "UserId": self.userId,
+                        }
+                    )
+                    if response.status_code == 200:
+                        try:
+                            d = response.json()
+                            tr.fullpath = d["MediaSources"][0]["Path"]
+                            tr.filename = os.path.basename(tr.fullpath)
+                            tr.parent_folder_path = os.path.dirname(tr.fullpath)
+                            tr.parent_folder_name = os.path.basename(tr.parent_folder_path)
+                            tr.misc["container"] = d["MediaSources"][0]["Container"].upper()
+                            tr.misc["codec"] = d["MediaSources"][0]["MediaStreams"][0]["Codec"]
+                            tr.bitrate = round(d["MediaSources"][0]["MediaStreams"][0]["BitRate"] / 1000)
+                            tr.samplerate = round(d["MediaSources"][0]["MediaStreams"][0]["SampleRate"])
+                        except:
+                            print("ERROR")
 
     def ingest_library(self, return_list=False):
         self.gui.update += 1
@@ -396,7 +435,6 @@ class Jellyfin():
             return
 
         if response.status_code == 200:
-
             print("Connection successful, soring items...")
 
             # filter audio items only
@@ -421,8 +459,9 @@ class Jellyfin():
                 #print(track.items())
                 if replace_existing:
                     id = existing_track
-
-                nt = self.tauon.TrackClass()
+                    nt = self.pctl.g(id)
+                else:
+                    nt = self.tauon.TrackClass()
                 nt.index = id  # this is tauons track id
                 nt.track_number = str(track.get("IndexNumber", ""))
                 nt.disc_number = str(track.get("ParentIndexNumber", ""))
@@ -479,7 +518,6 @@ class Jellyfin():
                             star = [star[0], star[1].replace("L", ""), star[2]]
                             self.tauon.star_store.insert(nt.index, star)
 
-        self.scanning = False
         print("Jellyfin import complete")
         self.gui.update += 1
         self.tauon.wake()
@@ -493,6 +531,11 @@ class Jellyfin():
         self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
         self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
+
+        self.get_info()
+        self.scanning = False
+        self.gui.update += 1
+        self.tauon.wake()
 
     def session_item(self, track):
         return {
