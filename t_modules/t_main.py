@@ -14906,7 +14906,7 @@ def open_folder_stem(path):
 
 def open_folder(index):
     track = pctl.master_library[index]
-    if track.is_network:
+    if track.is_network and not os.path.isdir(track.parent_folder_path):
         show_message("Can't open folder of a network track.")
         return
 
@@ -28253,6 +28253,7 @@ class Over:
             y += round(30 * gui.scale)
 
             self.button(x, y, _("Import music to playlist"), jellyfin_get_library_thread)
+
             y += round(30 * gui.scale)
             if self.button(x, y, _("Import playlists")):
                 found = False
@@ -33838,6 +33839,8 @@ class StandardPlaylist:
                             norm_colour = colour
                         elif item[0] == "Codec":
                             text = n_track.file_ext
+                            if text == "JELY" and "container" in tr.misc:
+                                text = tr.misc["container"]
                             colour = colours.index_text
                             norm_colour = colour
                             if this_line_playing is True:
@@ -38136,6 +38139,10 @@ class MetaBox:
             album = tr.album
             artist = tr.artist
             ext = tr.file_ext
+            if ext == "JELY":
+                ext = "Jellyfin"
+                if "container" in tr.misc:
+                    ext = tr.misc.get("container", "") + " | Jellyfin"
             if tr.lyrics:
                 ext += ","
             date = tr.date
@@ -45216,7 +45223,6 @@ while pctl.running:
 
                     line = tc.file_ext
                     ex_colour = [130, 130, 130, 255]
-
                     if line in format_colours:
                         ex_colour = format_colours[line]
 
@@ -45245,11 +45251,28 @@ while pctl.running:
 
                     # Codec tag rendering
                     else:
+
+                        if tc.file_ext == "JELY":
+                            if "container" in tc.misc:
+                                line = tc.misc["container"].upper()
+                                e_colour = [130, 130, 130, 255]
+                                if line in format_colours:
+                                    e_colour = format_colours[line]
+
+                            ddt.rect(ext_rect, e_colour)
+                            colour = alpha_blend([10, 10, 10, 235], e_colour)
+                            if colour_value(e_colour) < 180:
+                                colour = alpha_blend([200, 200, 200, 235], e_colour)
+                            ddt.text((int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)), line, colour, 211,
+                                     bg=e_colour)
+                            ext_rect[1] += 16 * gui.scale
+                            y += 16 * gui.scale
+
                         ddt.rect(ext_rect, ex_colour)
                         colour = alpha_blend([10, 10, 10, 235], ex_colour)
                         if colour_value(ex_colour) < 180:
                             colour = alpha_blend([200, 200, 200, 235], ex_colour)
-                        ddt.text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), line, colour, 211,
+                        ddt.text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), tc.file_ext, colour, 211,
                                  bg=ex_colour)
 
                         if tc.is_cue:
@@ -45260,6 +45283,7 @@ while pctl.running:
                             ddt.rect(ext_rect, colour)
                             ddt.text((int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE",
                                      alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
+
 
                     rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
