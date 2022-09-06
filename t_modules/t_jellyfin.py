@@ -526,6 +526,7 @@ class Jellyfin():
         self.tauon.sort_track_2(0, playlist)
 
         if return_list:
+            self.scanning = False
             return playlist
 
         self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
