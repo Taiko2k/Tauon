@@ -4,7 +4,9 @@ Changelog-------------------------------------
 v7.4.1
 
  - Added jellyfin playlist import and uploading
+ - Added jellyfin file metadata info
  - Added shortcuts-ignore-keymap setting
+ - todo fix regen scan metadata
 
 v7.4.0
 
