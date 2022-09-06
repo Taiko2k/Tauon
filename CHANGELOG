@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v7.4.1
+
+ - Added shortcuts-ignore-keymap setting
+
 v7.4.0
 
  - Added revised Chromecast mode
