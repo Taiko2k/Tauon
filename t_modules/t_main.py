@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.0"
+n_version = "7.4.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1510,6 +1510,7 @@ class Prefs:  # Used to hold any kind of settings
 
         self.use_gamepad = True
         self.avoid_resampling = False
+        self.use_scancodes = False
 
 
 prefs = Prefs()
@@ -2251,7 +2252,10 @@ class KeyMap:
                     if items[1] in ("MB4", "MB5"):
                         key = items[1]
                     else:
-                        key = SDL_GetScancodeFromName(items[1].encode())
+                        if prefs.use_scancodes:
+                            key = SDL_GetScancodeFromName(items[1].encode())
+                        else:
+                            key = SDL_GetKeyFromName(items[1].encode())
                         if key == 0:
                             continue
 
@@ -3874,6 +3878,7 @@ def save_prefs():
     cf.update_value("enable-spotify", prefs.spot_mode)
     cf.update_value("enable-discord-rpc", prefs.discord_enable)
     cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
+    cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -4159,6 +4164,9 @@ def load_prefs():
                                        "Show track info in running Discord application")
     prefs.auto_lyrics = cf.sync_add("bool", "auto-search-lyrics", prefs.auto_lyrics,
                                     "Automatically search internet for lyrics when display is wanted")
+
+    prefs.use_scancodes = cf.sync_add("bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
+                                    "When enabled, shortcuts will map to the physical keyboard layout")
 
     cf.br()
     cf.add_text("[tokens]")
@@ -42040,11 +42048,36 @@ while pctl.running:
             k_input = True
             power += 5
             gui.update += 2
-            keymaps.hits.append(event.key.keysym.scancode)
+            if prefs.use_scancodes:
+                keymaps.hits.append(event.key.keysym.scancode)
+            else:
+                keymaps.hits.append(event.key.keysym.sym)
+
+            if prefs.use_scancodes:
+                if event.key.keysym.scancode == SDL_SCANCODE_V:
+                    key_v_press = True
+                elif event.key.keysym.scancode == SDL_SCANCODE_A:
+                    key_a_press = True
+                elif event.key.keysym.scancode == SDL_SCANCODE_C:
+                    key_c_press = True
+                elif event.key.keysym.scancode == SDL_SCANCODE_Z:
+                    key_z_press = True
+                elif event.key.keysym.scancode == SDL_SCANCODE_X:
+                    key_x_press = True
+            else:
+                if event.key.keysym.sym == SDLK_v:
+                    key_v_press = True
+                elif event.key.keysym.sym == SDLK_a:
+                    key_a_press = True
+                elif event.key.keysym.sym == SDLK_c:
+                    key_c_press = True
+                elif event.key.keysym.sym == SDLK_z:
+                    key_z_press = True
+                elif event.key.keysym.sym == SDLK_x:
+                    key_x_press = True
 
             if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
                 inp.key_return_press = True
-
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
                 inp.key_return_press = True
             elif event.key.keysym.sym == SDLK_TAB:
@@ -42054,22 +42087,10 @@ while pctl.running:
                 key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:
                 key_del = True
-            # elif event.key.keysym.sym == SDLK_ESCAPE:
-            #     key_esc_press = True
             elif event.key.keysym.sym == SDLK_RALT:
                 key_ralt = True
             elif event.key.keysym.sym == SDLK_LALT:
                 key_lalt = True
-            elif event.key.keysym.scancode == SDL_SCANCODE_V:
-                key_v_press = True
-            elif event.key.keysym.scancode == SDL_SCANCODE_A:
-                key_a_press = True
-            elif event.key.keysym.scancode == SDL_SCANCODE_C:
-                key_c_press = True
-            elif event.key.keysym.scancode == SDL_SCANCODE_Z:
-                key_z_press = True
-            elif event.key.keysym.scancode == SDL_SCANCODE_X:
-                key_x_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
                 key_down_press = True
             elif event.key.keysym.sym == SDLK_UP:
