@@ -45,6 +45,7 @@ class Jellyfin():
         self.session_item_id = None
         self.session_update_timer = Timer()
         self.session_last_item = None
+        self.playlists = []
 
 
     def _get_jellyfin_auth(self):
@@ -172,6 +173,184 @@ class Jellyfin():
         except:
             print("Failed to submit favorite to Jellyfin server")
 
+    def upload_playlist(self, pl):
+        if not self.connected or not self.accessToken:
+            self._authenticate()
+        if not self.connected:
+            return
+
+        codes = self.pctl.gen_codes.get(self.pctl.multi_playlist[pl][6], "")
+
+        ids = []
+        for t in self.pctl.multi_playlist[pl][2]:
+            track = self.pctl.g(t)
+            if track.url_key not in ids and track.file_ext == "JELY":
+                ids.append(track.url_key)
+
+        if "jelly\"" not in codes:
+
+            response = requests.post(
+                f"{self.prefs.jelly_server_url}/Playlists",
+                data={},
+                headers={
+                    "Token": self.accessToken,
+                    "X-Application": "Tauon/1.0",
+                    "x-emby-authorization": self._get_jellyfin_auth(),
+                    "Content-Type": "text/json"
+                },
+                params={
+                    "UserId": self.userId,
+                    "Name": self.pctl.multi_playlist[pl][0],
+                    "Ids": ",".join(ids),
+                    "MediaType": "Music"
+                }
+            )
+
+            id = response.json()["Id"]
+            self.pctl.gen_codes[self.pctl.multi_playlist[pl][6]] = f"jelly\"{id}\""
+            print("New jellyfin playlist created")
+
+        else:
+            code = codes.split(" ")[0]
+            if not code.startswith("jelly\""):
+                return
+            code = code[6:-1]
+            if "\"" in code or not code:
+                return
+
+            # upload difference
+            response = requests.get(
+                f"{self.prefs.jelly_server_url}/Playlists/{code}/Items",
+                headers={
+                    "Token": self.accessToken,
+                    "X-Application": "Tauon/1.0",
+                    "x-emby-authorization": self._get_jellyfin_auth()
+                },
+                params={
+                    "UserId": self.userId,
+                }
+            )
+            if response.status_code != 200:
+                print("error")
+                return
+
+            d_ids = []
+            for item in response.json()["Items"]:
+                d_ids.append(item["PlaylistItemId"])
+
+            response = requests.delete(
+                f"{self.prefs.jelly_server_url}/Playlists/{code}/Items",
+                headers={
+                    "Token": self.accessToken,
+                    "X-Application": "Tauon/1.0",
+                    "x-emby-authorization": self._get_jellyfin_auth()
+                },
+                params={
+                    "UserId": self.userId,
+                    "EntryIds": ",".join(d_ids),
+                }
+            )
+
+            if response.status_code not in (200, 204):
+                print("error2")
+                return
+
+            response = requests.post(
+                f"{self.prefs.jelly_server_url}/Playlists/{code}/Items",
+                data={},
+                headers={
+                    "Token": self.accessToken,
+                    "X-Application": "Tauon/1.0",
+                    "x-emby-authorization": self._get_jellyfin_auth(),
+                    "Content-Type": "text/json"
+                },
+                params={
+                    "UserId": self.userId,
+                    "Ids": ",".join(ids),
+                }
+            )
+        print("DONE")
+
+
+    def get_playlist(self, id, name="", return_list=False):
+        if not self.connected or not self.accessToken:
+            self._authenticate()
+        if not self.connected:
+            return []
+        response = requests.get(
+            f"{self.prefs.jelly_server_url}/Playlists/{id}/Items",
+            headers={
+                "Token": self.accessToken,
+                "X-Application": "Tauon/1.0",
+                "x-emby-authorization": self._get_jellyfin_auth()
+            },
+            params={
+                "UserId": self.userId,
+            }
+        )
+
+        existing = {}
+        for track_id, track in self.pctl.master_library.items():
+            if track.is_network and track.file_ext == "JELY":
+                existing[track.url_key] = track_id
+
+        playlist = []
+        for item in response.json()["Items"]:
+            track_id = existing.get(item["Id"])
+            if track_id is not None:
+                playlist.append(track_id)
+
+        if return_list:
+            return playlist
+
+        self.scanning = False
+        self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist=playlist))
+        self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{id}\""
+
+    def get_playlists(self):
+        if not self.playlists:
+            self.ingest_library(return_list=True)
+        if not self.connected:
+            return
+
+        for p in self.playlists:
+            found = False
+            for pp in self.pctl.multi_playlist:
+                if f"jelly\"{p['Id']}\"" in self.pctl.gen_codes.get(pp[6], ""):
+                    found = True
+                    break
+            if found:
+                continue
+
+            # Get Playlist
+            response = requests.get(
+                f"{self.prefs.jelly_server_url}/Playlists/{p['Id']}/Items",
+                headers={
+                    "Token": self.accessToken,
+                    "X-Application": "Tauon/1.0",
+                    "x-emby-authorization": self._get_jellyfin_auth()
+                },
+                params={
+                    "UserId": self.userId,
+                }
+            )
+
+            existing = {}
+            for track_id, track in self.pctl.master_library.items():
+                if track.is_network and track.file_ext == "JELY":
+                    existing[track.url_key] = track_id
+
+            playlist = []
+            for item in response.json()["Items"]:
+                track_id = existing.get(item["Id"])
+                if track_id is not None:
+                    playlist.append(track_id)
+
+            self.scanning = False
+            self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p['Name'], playlist=playlist))
+            self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
+
+
     def ingest_library(self, return_list=False):
         self.gui.update += 1
         self.scanning = True
@@ -222,6 +401,8 @@ class Jellyfin():
 
             # filter audio items only
             audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
+            playlist_items = list(filter(lambda item: item["Type"] == "Playlist", response.json()["Items"]))
+            self.playlists = playlist_items
             # sort by artist, then album, then track number
             sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
             # group by parent
@@ -300,6 +481,8 @@ class Jellyfin():
 
         self.scanning = False
         print("Jellyfin import complete")
+        self.gui.update += 1
+        self.tauon.wake()
 
         playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
         self.tauon.sort_track_2(0, playlist)

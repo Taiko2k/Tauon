@@ -8911,12 +8911,22 @@ def get_network_thumbnail_url(track_object):
     return None
 
 
+def jellyfin_get_playlists_thread():
+    if jellyfin.scanning:
+        inp.mouse_click = False
+        show_message("Job already in progress!")
+        return
+    jellyfin.scanning = True
+    shoot_dl = threading.Thread(target=jellyfin.get_playlists)
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
 def jellyfin_get_library_thread():
     pref_box.close()
     save_prefs()
     if jellyfin.scanning:
         inp.mouse_click = False
-        show_message("Already scanning!")
+        show_message("Job already in progress!")
         return
 
     jellyfin.scanning = True
@@ -17161,6 +17171,11 @@ spot_icon.colour = [30, 215, 96, 255]
 spot_icon.xoff = 5
 spot_icon.yoff = 2
 
+jell_icon = MenuIcon(spot_asset)
+spot_icon.colour = [190, 100, 210, 255]
+spot_icon.xoff = 5
+spot_icon.yoff = 2
+
 tab_menu.br()
 
 
@@ -17368,6 +17383,10 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "plex":
             if not plex.scanning:
                 playlist.extend(plex.get_albums(return_list=True))
+
+        elif cm.startswith("jelly\""):
+            if not jellyfin.scanning:
+                playlist.extend(jellyfin.get_playlist(quote, return_list=True))
 
         elif cm == "jelly":
             if not jellyfin.scanning:
@@ -17957,9 +17976,20 @@ extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 def spotify_show_test(_):
     return prefs.spot_mode
 
+def jellyfin_show_test(_):
+    return prefs.jelly_password and prefs.jelly_username
 
-tab_menu.add(_("Upload"), upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon,
+
+tab_menu.add(_("Upload"), upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon,
              show_test=spotify_show_test)
+
+def upload_jellyfin_playlist(pl):
+    if jellyfin.scanning:
+        return
+    shooter(jellyfin.upload_playlist, [pl])
+
+tab_menu.add(_("Upload"), upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon,
+             show_test=jellyfin_show_test)
 
 
 def regen_playlist_async(pl):
@@ -28220,9 +28250,20 @@ class Over:
                                 width=rect1[2] - 8 * gui.scale, click=self.click)
             prefs.jelly_server_url = text_jelly_ser.text
 
-            y += round(40 * gui.scale)
+            y += round(30 * gui.scale)
 
             self.button(x, y, _("Import music to playlist"), jellyfin_get_library_thread)
+            y += round(30 * gui.scale)
+            if self.button(x, y, _("Import playlists")):
+                found = False
+                for item in pctl.gen_codes.values():
+                    if item.startswith("jelly"):
+                        found = True
+                        break
+                if not found:
+                    gui.show_message("Run music import first")
+                else:
+                    jellyfin_get_playlists_thread()
 
             y += round(35 * gui.scale)
             if self.button(x, y, _("Test connectivity")):
@@ -29862,6 +29903,10 @@ def clear_gen(id):
     show_message(_("Okay, it's a normal playlist now."), mode="done")
 
 def clear_gen_ask(id):
+    if "jelly\"" in pctl.gen_codes.get(id, ""):
+        return
+    if "spl\"" in pctl.gen_codes.get(id, ""):
+        return
     gui.message_box_confirm_callback = clear_gen
     gui.message_box_confirm_reference = (id,)
     show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
