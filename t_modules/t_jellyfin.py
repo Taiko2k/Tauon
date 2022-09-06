@@ -351,7 +351,7 @@ class Jellyfin():
             self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p['Name'], playlist=playlist))
             self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
-    def get_info(self):
+    def get_info(self, fast=False):
         dones = []
         i = 0
         for p in self.pctl.multi_playlist:
@@ -361,6 +361,8 @@ class Jellyfin():
                 if i % 1000 == 0:
                     print(i)
                 if tr.file_ext == "JELY":
+                    if tr.fullpath and fast:
+                        continue
                     if tr.url_key not in dones:
                         dones.append(tr.url_key)
 
@@ -522,10 +524,10 @@ class Jellyfin():
         self.gui.update += 1
         self.tauon.wake()
 
-        playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
-        self.tauon.sort_track_2(0, playlist)
-
         if return_list:
+            self.get_info(fast=True)
+            playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
+            self.tauon.sort_track_2(0, playlist)
             self.scanning = False
             return playlist
 
@@ -534,6 +536,8 @@ class Jellyfin():
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
         self.get_info()
+        playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
+        self.tauon.sort_track_2(0, playlist)
         self.scanning = False
         self.gui.update += 1
         self.tauon.wake()
