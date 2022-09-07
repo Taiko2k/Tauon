@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-07 11:14+1200\n"
-"PO-Revision-Date: 2022-09-06 08:11+0000\n"
-"Last-Translator: Edward T <tumanchinsky.edward@yandex.ru>\n"
+"PO-Revision-Date: 2022-09-07 10:46+0000\n"
+"Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -81,19 +81,19 @@ msgstr "Альбомы на Spotify"
 
 #: t_modules/t_main.py:7836
 msgid "Track removed from liked tracks"
-msgstr "Трек удален из избранных"
+msgstr "Дорожка удалена из избранных"
 
 #: t_modules/t_main.py:7837
 msgid "Track was already un-liked"
-msgstr "Трек больше не нравится"
+msgstr "Дорожка уже не нравится"
 
 #: t_modules/t_main.py:7838
 msgid "Track is already liked"
-msgstr "Трек нравится"
+msgstr "Дорожка уже в понравившихся"
 
 #: t_modules/t_main.py:7839
 msgid "Track added to liked tracks"
-msgstr "Трек добавлен в избранное"
+msgstr "Дорожка добавлена в избранное"
 
 #: t_modules/t_main.py:7840
 msgid "Spotify account connected"
@@ -125,7 +125,7 @@ msgstr "день"
 
 #: t_modules/t_main.py:7848
 msgid "days"
-msgstr "дни"
+msgstr "дней"
 
 #: t_modules/t_main.py:7850
 msgid "Scanning for Chromecasts..."
@@ -140,9 +140,8 @@ msgid "No Chromecast devices found"
 msgstr "Устройств Chromecast не найдено"
 
 #: t_modules/t_main.py:7853
-#, fuzzy
 msgid "End Cast"
-msgstr "Конец плейлиста"
+msgstr "Закончить трансляцию"
 
 #: t_modules/t_main.py:7855
 msgid "Web server stopped."
@@ -975,7 +974,7 @@ msgstr "Перекодирование дорожек из сети не под�
 
 #: t_modules/t_main.py:19219
 msgid "Transcoding spotify tracks not possible"
-msgstr ""
+msgstr "Конвертирование треков из Spotify невозможно"
 
 #: t_modules/t_main.py:19576
 msgid "Add Playing Spotify Album"
@@ -1159,7 +1158,7 @@ msgstr "Подходящего исполнителя не найдено"
 
 #: t_modules/t_main.py:20971
 msgid "Search Artist on Wikipedia"
-msgstr "Искать исполнителя на Wikipedia"
+msgstr "Искать исполнителя в Википедии"
 
 #: t_modules/t_main.py:20973
 msgid "Search Track on Genius"
@@ -1384,14 +1383,12 @@ msgid "Start Broadcast"
 msgstr "Начать трансляцию"
 
 #: t_modules/t_main.py:22266
-#, fuzzy
 msgid "Stop Cast"
 msgstr "Остановить трансляцию"
 
 #: t_modules/t_main.py:22287
-#, fuzzy
 msgid "Chromecast…"
-msgstr "Транслировать через Chromecast"
+msgstr "Трансляция Chromecast…"
 
 #: t_modules/t_main.py:22329
 msgid "Mini"
@@ -1633,7 +1630,7 @@ msgstr "Использовать обложку альбома в качеств
 
 #: t_modules/t_main.py:27062
 msgid "Stronger"
-msgstr "Сильнее"
+msgstr "Усилить"
 
 #: t_modules/t_main.py:27068
 msgid "Blur"
@@ -1665,9 +1662,8 @@ msgid "ReplayGain"
 msgstr "Выравнивание громкости (ReplayGain)"
 
 #: t_modules/t_main.py:27193
-#, fuzzy
 msgid "Auto"
-msgstr "Автоматическая остановка"
+msgstr "Автоматически"
 
 #: t_modules/t_main.py:27195
 msgid "Preserve album dynamics"
@@ -1717,12 +1713,11 @@ msgstr "Кэшировать локальные файлы (для smb/nfs)"
 
 #: t_modules/t_main.py:27363
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Использовать постоянный сетевой кэш"
 
 #: t_modules/t_main.py:27368
-#, fuzzy
 msgid "Cache size"
-msgstr "Размер файла"
+msgstr "Размер кэша"
 
 #: t_modules/t_main.py:27387
 msgid "Set audio output device"
@@ -1730,7 +1725,7 @@ msgstr "Установить устройство вывода звука"
 
 #: t_modules/t_main.py:27390
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Избегать передискретизации"
 
 #: t_modules/t_main.py:27462
 msgid "Enable chord lyrics"
@@ -1742,7 +1737,7 @@ msgstr "Источник:"
 
 #: t_modules/t_main.py:27482
 msgid "*Uses scraping. Enable at your own discretion."
-msgstr "*Веб-скрейпинг. Включайте на свое усмотрение."
+msgstr "*Задействует извлечение веб-данных. Включайте по желанию."
 
 #: t_modules/t_main.py:27485
 msgid "Tip: The order enabled will be the order searched."
@@ -1767,7 +1762,7 @@ msgstr "Галерея"
 
 #: t_modules/t_main.py:27513
 msgid "Single click to play"
-msgstr "Одинарный клик для воспроизведения"
+msgstr "Играть по единичному щелчку"
 
 #: t_modules/t_main.py:27515
 msgid "Show titles"
@@ -1794,16 +1789,12 @@ msgid "Start web server for broadcasting"
 msgstr "Запустить веб-сервер для трансляции"
 
 #: t_modules/t_main.py:27570
-#, fuzzy
 msgid "Show artist info panel"
-msgstr "Нет исполнителей в плейлисте"
+msgstr "Показать панель сведений об исполнителе"
 
 #: t_modules/t_main.py:27571
-#, fuzzy
 msgid "You can also toggle this with ctrl+o"
-msgstr ""
-"Совет: Вы также можете переключить это из контекстного меню, вызываемого по "
-"ПКМ"
+msgstr "Вы также можете переключить эту функцию с помощью Ctrl+O"
 
 #: t_modules/t_main.py:27576
 msgid "Auto fetch artist data"
@@ -1847,7 +1838,7 @@ msgstr "Включить/отключить функции контекстно�
 
 #: t_modules/t_main.py:27611
 msgid "Wikipedia artist search"
-msgstr "Поиск исполнителя в Wikipedia"
+msgstr "Поиск исполнителя в Википедии"
 
 #: t_modules/t_main.py:27613
 msgid "Sonemic artist search"
@@ -1879,7 +1870,7 @@ msgstr "Включить отслеживание загрузки"
 
 #: t_modules/t_main.py:27634
 msgid "One click import new archives and folders from downloads folder"
-msgstr "Импорт новых архивов и каталогов из каталога загрузок в один клик"
+msgstr "Импорт новых архивов и каталогов из каталога загрузок в один щелчок"
 
 #: t_modules/t_main.py:27636
 msgid "Trash archive after extraction"
@@ -1919,11 +1910,11 @@ msgstr "Запретить режим сна системы во время во
 
 #: t_modules/t_main.py:27671
 msgid "Resume from suspend"
-msgstr ""
+msgstr "Возобновить после пробуждения"
 
 #: t_modules/t_main.py:27672
 msgid "Continue playback when waking from sleep"
-msgstr ""
+msgstr "Продолжить играть при выходе из спящего режима"
 
 #: t_modules/t_main.py:27676
 msgid "Record Radio"
@@ -1958,17 +1949,15 @@ msgstr "Показать пороговый маркер"
 
 #: t_modules/t_main.py:27923
 msgid "IP"
-msgstr ""
+msgstr "IP-адрес"
 
 #: t_modules/t_main.py:27941
-#, fuzzy
 msgid "Playlist name"
-msgstr "Длительность плейлиста"
+msgstr "Имя плейлиста"
 
 #: t_modules/t_main.py:27954
-#, fuzzy
 msgid "Get playlist"
-msgstr "Повторить плейлист"
+msgstr "Получить плейлист"
 
 #: t_modules/t_main.py:27962
 msgid "Maloja Server"
@@ -2081,9 +2070,8 @@ msgid "Username"
 msgstr "Имя пользователя"
 
 #: t_modules/t_main.py:28258
-#, fuzzy
 msgid "Import playlists"
-msgstr "Импортировать все пользовательские плейлисты"
+msgstr "Импорт плейлистов"
 
 #: t_modules/t_main.py:28275
 msgid "koel network streaming"
@@ -2306,7 +2294,7 @@ msgstr "Визуализация витрины"
 
 #: t_modules/t_main.py:28818
 msgid "UI scale for HiDPI displays"
-msgstr "Масштаб интерфейса для HiDPI дисплеев"
+msgstr "Масштаб интерфейса для экранов HiDPI"
 
 #: t_modules/t_main.py:28876
 msgid "Auto scale"
@@ -2422,7 +2410,7 @@ msgstr "Время воспроизведения линией"
 
 #: t_modules/t_main.py:29530
 msgid "Show album release year"
-msgstr "Показать дату релиза альбома"
+msgstr "Показать год выпуска альбома"
 
 #: t_modules/t_main.py:29533
 msgid "Show album duration"
@@ -2470,12 +2458,12 @@ msgstr "Воспроизводить все плейлисты по кругу"
 
 #: t_modules/t_main.py:29904
 msgid "Okay, it's a normal playlist now."
-msgstr ""
+msgstr "Хорошо, теперь это обычный плейлист."
 
 #: t_modules/t_main.py:29913
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
-msgstr ""
+msgstr "Вы добавили треки в плейлист генератора. Хотите очистить генератор?"
 
 #: t_modules/t_main.py:30449 t_modules/t_main.py:35138
 msgid "Added station to: "
