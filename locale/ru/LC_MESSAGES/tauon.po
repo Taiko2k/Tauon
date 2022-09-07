@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-07 11:14+1200\n"
-"PO-Revision-Date: 2022-09-07 10:46+0000\n"
+"PO-Revision-Date: 2022-09-08 11:16+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -25,7 +25,7 @@ msgstr "Изображение исполнителя не найдено."
 
 #: t_modules/t_main.py:1991
 msgid "No providers are enabled in settings!"
-msgstr "Нет включенных поставщиков в настройках!"
+msgstr "Нет включённых поставщиков в настройках!"
 
 #: t_modules/t_main.py:6818
 msgid "End of playlist"
@@ -45,11 +45,11 @@ msgstr "Сначала вам нужно войти в систему"
 
 #: t_modules/t_main.py:7036
 msgid "Scanning failed. Try again?"
-msgstr "Сканирование не удалось. Попробовать еще раз?"
+msgstr "Сканирование не удалось. Повторить?"
 
 #: t_modules/t_main.py:7043 t_modules/t_main.py:7640
 msgid "Scanning scrobbles complete"
-msgstr "Сканирование scrobbles завершено"
+msgstr "Сканирование скробблов завершено"
 
 #: t_modules/t_main.py:7207
 msgid "Getting friend data..."
@@ -69,7 +69,7 @@ msgstr "Ошибка обновления понравившихся на last.f
 
 #: t_modules/t_main.py:7565
 msgid "Maybe check your internet connection and try again?"
-msgstr "Может быть, проверить подключение к Интернету и попробовать еще раз?"
+msgstr "Может вы проверите ваше подключение к Интернету и попробуйте ещё раз?"
 
 #: t_modules/t_main.py:7834
 msgid "Spotify Likes"
@@ -77,7 +77,7 @@ msgstr "Spotify лайки"
 
 #: t_modules/t_main.py:7835
 msgid "Spotify Albums"
-msgstr "Альбомы на Spotify"
+msgstr "Альбомы из Spotify"
 
 #: t_modules/t_main.py:7836
 msgid "Track removed from liked tracks"
@@ -97,7 +97,7 @@ msgstr "Дорожка добавлена в избранное"
 
 #: t_modules/t_main.py:7840
 msgid "Spotify account connected"
-msgstr "Подключен аккаунт Spotify"
+msgstr "Подключён аккаунт Spotify"
 
 #: t_modules/t_main.py:7841
 msgid "This Spotify account isn't currently playing anything"
@@ -117,7 +117,7 @@ msgstr "Пожалуйста, авторизуйтесь и нажмите кн�
 
 #: t_modules/t_main.py:7845
 msgid "Spotify import complete"
-msgstr "Импорт из Spotify завершен"
+msgstr "Импорт из Spotify завершён"
 
 #: t_modules/t_main.py:7847
 msgid "day"
@@ -129,7 +129,7 @@ msgstr "дней"
 
 #: t_modules/t_main.py:7850
 msgid "Scanning for Chromecasts..."
-msgstr "Сканирование Chromecast..."
+msgstr "Сканирование трансляций Chromecast..."
 
 #: t_modules/t_main.py:7851
 msgid "Cast to: %s"
@@ -137,7 +137,7 @@ msgstr "Передать на: %s"
 
 #: t_modules/t_main.py:7852
 msgid "No Chromecast devices found"
-msgstr "Устройств Chromecast не найдено"
+msgstr "Устройства Chromecast не найдены"
 
 #: t_modules/t_main.py:7853
 msgid "End Cast"
@@ -157,7 +157,7 @@ msgstr "Ошибка подключения к серверу PLEX"
 
 #: t_modules/t_main.py:8096
 msgid "Try check login credentials and that server is accessible."
-msgstr "Попробуйте проверить учетные данные для входа и доступность сервера."
+msgstr "Попробуйте проверить учётные данные для входа и доступность сервера."
 
 #: t_modules/t_main.py:8598
 msgid "Missing username, password and/or server URL"
@@ -213,7 +213,7 @@ msgstr "Переименование завершено."
 
 #: t_modules/t_main.py:14254
 msgid " filenames were written."
-msgstr " имен файлов записано."
+msgstr " имён файлов записано."
 
 #: t_modules/t_main.py:14327
 msgid "Simple tag editor"
@@ -330,7 +330,7 @@ msgstr "Каталога не существует"
 
 #: t_modules/t_main.py:14720
 msgid "Repeat OFF"
-msgstr "Повтор выключен"
+msgstr "Повтор отключён"
 
 #: t_modules/t_main.py:14721
 msgid "Repeat Track"
@@ -420,7 +420,7 @@ msgstr "Добавить альбом в очередь"
 #: t_modules/t_main.py:15224 t_modules/t_main.py:20667
 #: t_modules/t_main.py:20680
 msgid "Enqueue Album Next"
-msgstr "Следующий альбом в очереди"
+msgstr "Поместить следующий альбом в очередь"
 
 #: t_modules/t_main.py:15235 t_modules/t_main.py:18213
 #: t_modules/t_main.py:28716
@@ -463,7 +463,7 @@ msgstr "Источники текста песен не включены."
 
 #: t_modules/t_main.py:15351
 msgid "Let's be polite and try later."
-msgstr "Будем вежливы и попробуем позже."
+msgstr "Давайте будем вежливы и попробуем позже."
 
 #: t_modules/t_main.py:15368 t_modules/t_main.py:20900
 #: t_modules/t_main.py:20956 t_modules/t_main.py:34832
@@ -790,7 +790,7 @@ msgstr "Экспорт альбомов в CSV"
 
 #: t_modules/t_main.py:18313
 msgid "Transcode All"
-msgstr "Перекодировать все"
+msgstr "Конвертировать все"
 
 #: t_modules/t_main.py:18314 t_modules/t_main.py:20480
 #: t_modules/t_main.py:20727 t_modules/t_main.py:20828
@@ -854,7 +854,7 @@ msgstr "Неполные альбомы"
 
 #: t_modules/t_main.py:18593
 msgid "No incomplete albums were found."
-msgstr "Незавершенных альбомов не найдено."
+msgstr "Незавершённые альбомы не найдены."
 
 #: t_modules/t_main.py:18605 t_modules/t_main.py:21503
 msgid "Codec"
@@ -863,7 +863,7 @@ msgstr "Кодек"
 #: t_modules/t_main.py:18661 t_modules/t_main.py:18668
 #: t_modules/t_main.py:18669
 msgid "File Modified"
-msgstr "Файл изменен"
+msgstr "Файл изменён"
 
 #: t_modules/t_main.py:18692 t_modules/t_main.py:19082
 #: t_modules/t_main.py:19083 t_modules/t_main.py:21511
@@ -916,19 +916,19 @@ msgstr "Произвольный"
 
 #: t_modules/t_main.py:18978
 msgid "Reversed"
-msgstr "Развернутые"
+msgstr "Перевёрнутые"
 
 #: t_modules/t_main.py:18985 t_modules/t_main.py:18986
 msgid "Reverse Tracks"
-msgstr "Развернуть дорожки"
+msgstr "Перевернуть дорожки"
 
 #: t_modules/t_main.py:19013
 msgid "Reversed Albums"
-msgstr "Развернутые альбомы"
+msgstr "Перевёрнутые альбомы"
 
 #: t_modules/t_main.py:19020 t_modules/t_main.py:19021
 msgid "Reverse Albums"
-msgstr "Развернуть альбомы"
+msgstr "Перевернуть альбомы"
 
 #: t_modules/t_main.py:19027 t_modules/t_main.py:19035
 #: t_modules/t_main.py:19036
@@ -1021,7 +1021,7 @@ msgstr "Невозможно удалить сетевую дорожку"
 
 #: t_modules/t_main.py:19857 t_modules/t_main.py:19866
 msgid "File deleted"
-msgstr "Файл удален"
+msgstr "Файл удалён"
 
 #: t_modules/t_main.py:19859 t_modules/t_main.py:19868
 msgid "Error deleting file"
@@ -1029,7 +1029,7 @@ msgstr "Ошибка удаления файла"
 
 #: t_modules/t_main.py:19861
 msgid "File moved to trash"
-msgstr "Файл перемещен в корзину"
+msgstr "Файл перемещён в корзину"
 
 #: t_modules/t_main.py:19875
 msgid "Delete Track File"
@@ -1037,7 +1037,7 @@ msgstr "Удалить файл дорожки"
 
 #: t_modules/t_main.py:19882
 msgid "Rename (Single track)"
-msgstr "Переименовать (Одиночная дорожка)"
+msgstr "Переименовать (одна дорожка)"
 
 #: t_modules/t_main.py:19884 t_modules/t_main.py:20671
 #: t_modules/t_main.py:20673
@@ -1063,7 +1063,7 @@ msgstr "Достигнут безопасный размер удаления!"
 
 #: t_modules/t_main.py:19965
 msgid "Folder could not be trashed."
-msgstr "Каталог не может быть удален."
+msgstr "Каталог нельзя поместить в корзину."
 
 #: t_modules/t_main.py:20092 t_modules/t_main.py:20663
 #: t_modules/t_main.py:20664 t_modules/t_main.py:20669
@@ -1092,12 +1092,12 @@ msgstr "Исправить кракозябры"
 
 #: t_modules/t_main.py:20722
 msgid "Transcode Single"
-msgstr "Перекодировать дорожку"
+msgstr "Конвертировать дорожку"
 
 #: t_modules/t_main.py:20724 t_modules/t_main.py:20730
 #: t_modules/t_main.py:20732 t_modules/t_main.py:21089
 msgid "Transcode Folder"
-msgstr "Перекодировать каталог"
+msgstr "Конвертировать каталог"
 
 #: t_modules/t_main.py:20729
 msgid "Vacuum Playtimes"
@@ -1117,11 +1117,11 @@ msgstr "Ничего не найдено"
 
 #: t_modules/t_main.py:20758
 msgid "Copy Spotify Album URL"
-msgstr "Скопировать URL альбома Spotify"
+msgstr "Копировать ссылку на альбом Spotify"
 
 #: t_modules/t_main.py:20760
 msgid "Lookup Spotify Album URL"
-msgstr "Поиск URL альбома Spotify"
+msgstr "Поиск ссылки альбома Spotify"
 
 #: t_modules/t_main.py:20770
 msgid "Save to Spotify Library"
@@ -1186,7 +1186,7 @@ msgstr "Транслировать"
 
 #: t_modules/t_main.py:21159 t_modules/t_main.py:27192
 msgid "Off"
-msgstr "Выкл"
+msgstr "Откл"
 
 #: t_modules/t_main.py:21175
 msgid "Level Meter"
@@ -1270,7 +1270,7 @@ msgstr "Время проигрывания"
 
 #: t_modules/t_main.py:21502
 msgid "Scrobble Count"
-msgstr "Кол-во скробблов"
+msgstr "Счётчик скробблов"
 
 #: t_modules/t_main.py:21504 t_modules/t_main.py:28758
 #: t_modules/t_main.py:45386
@@ -1288,11 +1288,11 @@ msgstr "Имя файла"
 
 #: t_modules/t_main.py:21509
 msgid "Starline"
-msgstr "Звездная линия"
+msgstr "Звёздная линия"
 
 #: t_modules/t_main.py:21510
 msgid "Rating"
-msgstr "Рейтинг"
+msgstr "Оценка"
 
 #: t_modules/t_main.py:21999
 msgid "New Radio List"
@@ -1332,7 +1332,7 @@ msgstr "Воспроизвести историю в плейлист"
 
 #: t_modules/t_main.py:22147
 msgid "Reset Image Cache"
-msgstr "Сбросить кеш изображений"
+msgstr "Сбросить кэш изображений"
 
 #: t_modules/t_main.py:22166
 msgid "Remove Network Tracks"
@@ -1348,19 +1348,19 @@ msgstr "Импорт FMPS_Ratings из тегов"
 
 #: t_modules/t_main.py:22193
 msgid "This will delete all track and album ratings from the local database!"
-msgstr "Это удалит все рейтинги дорожек и альбомов из локальной базы данных!"
+msgstr "Это удалит все оценки дорожек и альбомов из локальной базы данных!"
 
 #: t_modules/t_main.py:22194 t_modules/t_main.py:28581
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
 msgstr ""
-"Нажмите кнопку еще раз, удерживая клавишу Shift, если вы уверены, что хотите "
+"Нажмите кнопку ещё раз, удерживая клавишу Shift, если вы уверены, что хотите "
 "это сделать."
 
 #: t_modules/t_main.py:22204
 msgid "Reset User Ratings"
-msgstr "Сбросить пользовательские рейтинги"
+msgstr "Сбросить пользовательские оценки"
 
 #: t_modules/t_main.py:22211 t_modules/t_main.py:22289
 msgid "Find Incomplete Albums"
@@ -1412,7 +1412,7 @@ msgstr "Нет доступных метаданных для копирован
 
 #: t_modules/t_main.py:22348
 msgid "Copy Title to Clipboard"
-msgstr "Скопировать название в буфер обмена"
+msgstr "Копировать заголовок в буфер обмена"
 
 #: t_modules/t_main.py:22366
 msgid "Random Track"
@@ -1444,7 +1444,7 @@ msgstr "Глобальный поиск"
 
 #: t_modules/t_main.py:22661
 msgid "Copy Album URL"
-msgstr "Скопировать URL альбома"
+msgstr "Копировать ссылку на альбом"
 
 #: t_modules/t_main.py:22665
 msgid "Lookup Spotify Album"
@@ -1514,7 +1514,7 @@ msgstr "Ошибка доступа к одному или нескольким 
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
 msgstr ""
-"Обратите внимание, что рейтинги хранятся в локальной базе данных и не "
+"Обратите внимание, что оценки хранятся в локальной базе данных и не "
 "записываются в теги."
 
 #: t_modules/t_main.py:26445 t_modules/t_main.py:26459
@@ -1545,7 +1545,7 @@ msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
 msgstr ""
-"ОСТОРОЖНО! Это приведет к удалению исходных файлов. Рекомендуется сохранять "
+"ОСТОРОЖНО! Это приведёт к удалению исходных файлов. Рекомендуется хранить "
 "резервную копию на случай сбоя."
 
 #: t_modules/t_main.py:26742
@@ -1553,7 +1553,7 @@ msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
-"В целях безопасности этот параметр по умолчанию отключен. Встроенные эскизы "
+"В целях безопасности этот параметр по умолчанию отключён. Встроенные эскизы "
 "не сохраняются, поэтому вы можете сначала извлечь их."
 
 #: t_modules/t_main.py:26763
@@ -1561,8 +1561,8 @@ msgid ""
 "DANGER! This will delete the original files. You may want to have backups in "
 "case of malfunction."
 msgstr ""
-"ОСТОРОЖНО! Это приведет к удалению исходных файлов. Вы можете захотеть иметь "
-"резервные копии на случай неисправности."
+"ОСТОРОЖНО! Это приведёт к удалению исходных файлов. Возможно, вам захочется "
+"иметь резервные копии на случай сбоя."
 
 #: t_modules/t_main.py:26764
 msgid ""
@@ -1606,7 +1606,7 @@ msgstr "Вид"
 
 #: t_modules/t_main.py:27007
 msgid "Transcode"
-msgstr "Формат"
+msgstr "Конвертация"
 
 #: t_modules/t_main.py:27008 t_modules/t_main.py:45534
 msgid "Lyrics"
@@ -1854,7 +1854,7 @@ msgstr "Поиск дорожек в Genius"
 
 #: t_modules/t_main.py:27621
 msgid "Transcode folder"
-msgstr "Перекодировать каталог"
+msgstr "Конвертировать каталог"
 
 #: t_modules/t_main.py:27630
 msgid "Extract archives"
@@ -1894,7 +1894,7 @@ msgstr "Показывать название дорожки"
 
 #: t_modules/t_main.py:27657
 msgid "Enable remote control"
-msgstr "Удаленное управление"
+msgstr "Удалённое управление"
 
 #: t_modules/t_main.py:27658
 msgid "Change requires restart"
@@ -1933,7 +1933,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27680
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr "Дорожки будут сохранены в плейлист «Сохраненные радиотреки»."
+msgstr "Дорожки будут сохранены в плейлист «Сохранённые радиотреки»."
 
 #: t_modules/t_main.py:27694
 msgid "Enable Discord Rich Presence"
@@ -1987,7 +1987,7 @@ msgstr "Проверить подключение"
 #: t_modules/t_main.py:28029 t_modules/t_main.py:28031
 #: t_modules/t_main.py:28529 t_modules/t_main.py:28546
 msgid "Get scrobble counts"
-msgstr "Получить счетчик скробблов"
+msgstr "Получить счётчик скробблов"
 
 #: t_modules/t_main.py:28042
 msgid "View setup instructions"
@@ -2016,7 +2016,7 @@ msgstr "Импорт альбомов"
 #: t_modules/t_main.py:28105 t_modules/t_main.py:28114
 #: t_modules/t_main.py:28125 t_modules/t_main.py:28137
 msgid "Please wait until current job is finished"
-msgstr "Подождите, пока текущая работа не будет завершена"
+msgstr "Пожалуйста, дождитесь завершения текущего задания"
 
 #: t_modules/t_main.py:28107
 msgid "Import Liked Songs"
@@ -2164,11 +2164,11 @@ msgstr "Очистить все лайки"
 
 #: t_modules/t_main.py:28597 t_modules/t_main.py:28619
 msgid "Press again while holding Shift if you understand"
-msgstr "Нажмите еще раз, удерживая Shift, если понимаете"
+msgstr "Нажмите ещё раз, удерживая Shift, если осознаёте"
 
 #: t_modules/t_main.py:28612
 msgid "Cleared all scrobble counts"
-msgstr "Сброшены все счетчики скробблов"
+msgstr "Сброшены все счётчики скробблов"
 
 #: t_modules/t_main.py:28617
 msgid ""
@@ -2200,7 +2200,7 @@ msgstr "Найден смонтированный музыкальный кат�
 
 #: t_modules/t_main.py:28683
 msgid "Could not auto-detect mounted device path."
-msgstr "Не удалось автоматически определить путь подключенного устройства."
+msgstr "Не удалось автоматически определить путь подключённого устройства."
 
 #: t_modules/t_main.py:28684
 msgid "Make sure the device is mounted and path is accessible."
@@ -2212,7 +2212,7 @@ msgstr "Удалить все остальные каталоги в целев�
 
 #: t_modules/t_main.py:28692
 msgid "Transcode files"
-msgstr "Перекодировать файлы"
+msgstr "Конвертировать файлы"
 
 #: t_modules/t_main.py:28695
 msgid "Bypass low bitrate"
@@ -2220,7 +2220,7 @@ msgstr "Обойти низкий битрейт"
 
 #: t_modules/t_main.py:28698
 msgid "Start Transcode and Sync"
-msgstr "Начать перекодирование и синхронизацию"
+msgstr "Начать конвертацию и синхронизацию"
 
 #: t_modules/t_main.py:28701
 msgid "Start Sync"
@@ -2350,7 +2350,7 @@ msgstr "Генерировать"
 
 #: t_modules/t_main.py:29304
 msgid "Generating..."
-msgstr "Генерация..."
+msgstr "Создание..."
 
 #: t_modules/t_main.py:29312
 msgid "Album chart"
@@ -2390,11 +2390,11 @@ msgstr "Общее время воспроизведения"
 
 #: t_modules/t_main.py:29486
 msgid "Track ratings"
-msgstr "Рейтинги дорожек"
+msgstr "Оценки дорожек"
 
 #: t_modules/t_main.py:29488
 msgid "Album ratings"
-msgstr "Рейтинги альбомов"
+msgstr "Оценки альбомов"
 
 #: t_modules/t_main.py:29496
 msgid "Show track loves"
@@ -2402,7 +2402,7 @@ msgstr "Показать любимые дорожки"
 
 #: t_modules/t_main.py:29504
 msgid "Represent playtime as stars"
-msgstr "Время воспроизведения звездами"
+msgstr "Время воспроизведения в виде звёзд"
 
 #: t_modules/t_main.py:29513
 msgid "Represent playcount as lines"
@@ -2475,7 +2475,7 @@ msgstr "Буферизация... "
 
 #: t_modules/t_main.py:30952
 msgid "There are currently no connected clients"
-msgstr "В настоящее время нет подключенных клиентов"
+msgstr "В настоящее время нет подключённых клиентов"
 
 #: t_modules/t_main.py:30954
 msgid "There is 1 inbound connection."
@@ -2503,15 +2503,15 @@ msgstr "Перемешивание включено"
 
 #: t_modules/t_main.py:31598 t_modules/t_main.py:32160
 msgid "Shuffle Off"
-msgstr "Перемешивание выключено"
+msgstr "Перемешивание отключено"
 
 #: t_modules/t_main.py:31629
 msgid "Repeat On"
-msgstr "Повтор включен"
+msgstr "Повтор включён"
 
 #: t_modules/t_main.py:31632
 msgid "Repeat Off"
-msgstr "Повтор выключен"
+msgstr "Повтор отключён"
 
 #: t_modules/t_main.py:31639
 msgid "Back, RC: Toggle repeat, MC: Revert"
@@ -2607,7 +2607,7 @@ msgstr "Введите URL потока"
 
 #: t_modules/t_main.py:34913
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr "Не удалось проверить URL. Должен начинаться с https:// или http://"
+msgstr "Не удалось проверить адрес. Должен начинаться с https:// или http://"
 
 #: t_modules/t_main.py:35074 t_modules/t_main.py:35080
 #: t_modules/t_main.py:35086
@@ -2849,7 +2849,7 @@ msgstr "Диск"
 
 #: t_modules/t_main.py:45515
 msgid "Play count"
-msgstr "Счетчик воспроизведения"
+msgstr "Счётчик воспроизведения"
 
 #: t_modules/t_main.py:45528
 msgid "Play time"
