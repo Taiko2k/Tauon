@@ -453,6 +453,7 @@ class Jellyfin():
             return
 
         mem_folder = {}
+        fav_status = {}
         for parent, items in grouped_items:
             for track in items:
                 id = self.pctl.master_count  # id here is tauons track_id for the track
@@ -506,28 +507,37 @@ class Jellyfin():
                 # Sync favorite
                 star = self.tauon.star_store.full_get(nt.index)
                 user_data = track.get("UserData")
+
                 if user_data:
-                    if user_data.get("IsFavorite"):
-                        if star is None:
-                            star = self.tauon.star_store.new_object()
-                        if 'L' not in star[1]:
-                            star[1] += "L"
-                        self.tauon.star_store.insert(nt.index, star)
-                    else:
-                        if star is None:
-                            pass
-                        else:
-                            star = [star[0], star[1].replace("L", ""), star[2]]
-                            self.tauon.star_store.insert(nt.index, star)
+                    fav_status[nt] = user_data.get("IsFavorite")
+
 
         print("Jellyfin import complete")
         self.gui.update += 1
         self.tauon.wake()
 
+        def set_favs(d):
+            for tr, v in d.items():
+                star = self.tauon.star_store.full_get(tr.index)
+
+                if v:
+                    if star is None:
+                        star = self.tauon.star_store.new_object()
+                    if 'L' not in star[1]:
+                        star[1] += "L"
+                    self.tauon.star_store.insert(tr.index, star)
+                else:
+                    if star is None:
+                        pass
+                    else:
+                        star = [star[0], star[1].replace("L", ""), star[2]]
+                        self.tauon.star_store.insert(tr.index, star)
+
         if return_list:
             self.get_info(fast=True)
             playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
             self.tauon.sort_track_2(0, playlist)
+            set_favs(fav_status)
             self.scanning = False
             return playlist
 
@@ -538,6 +548,7 @@ class Jellyfin():
         self.get_info()
         playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
         self.tauon.sort_track_2(0, playlist)
+        set_favs(fav_status)
         self.scanning = False
         self.gui.update += 1
         self.tauon.wake()
