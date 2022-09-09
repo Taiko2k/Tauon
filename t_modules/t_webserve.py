@@ -666,7 +666,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                     "shuffle": pctl.random_mode == True,
                     "repeat": pctl.repeat_mode == True,
                     "progress": 0,
-                    "auto-stop": tauon.pctl.auto_stop == True,
+                    "auto_stop": tauon.pctl.auto_stop == True,
                     "volume": pctl.player_volume,
                     "playlist": str(tauon.get_playing_playlist_id()),
                     "playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2])
