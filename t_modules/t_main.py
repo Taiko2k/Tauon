@@ -792,21 +792,6 @@ if system == 'linux':
 
 if system == "linux" and not macos and not msys:
     from t_modules.t_dbus import Gnome
-    from t_modules.t_gdk_extra import *
-
-import_cursors = False
-
-if desktop == "GNOME":
-    #print("Using crash workaround for gdk")
-    import_cursors = True
-
-if import_cursors and system == "linux" and not macos and not msys:
-    # broken?
-    c_br = cursor_get_gdk(4)
-    c_rs = cursor_get_gdk(8)
-    c_ts = cursor_get_gdk(9)
-    c_ls = cursor_get_gdk(10)
-    c_bs = cursor_get_gdk(11)
 
 # Setting various timers
 
@@ -9505,24 +9490,17 @@ def draw_window_border():
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
 
-
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
 cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
-if system == "linux" and not macos and not msys and import_cursors:
-    cursor_br_corner = cairo_cursor_to_sdl(*c_br, fallback=cursor_standard)
-    cursor_right_side = cairo_cursor_to_sdl(*c_rs, fallback=cursor_standard)
-    cursor_top_side = cairo_cursor_to_sdl(*c_ts, fallback=cursor_standard)
-    cursor_left_side = cairo_cursor_to_sdl(*c_ls, fallback=cursor_standard)
-    cursor_bottom_side = cairo_cursor_to_sdl(*c_bs, fallback=cursor_standard)
-else:
-    cursor_br_corner = cursor_standard
-    cursor_right_side = cursor_standard
-    cursor_top_side = cursor_standard
-    cursor_left_side = cursor_standard
-    cursor_bottom_side = cursor_standard
+# todo find solution for these
+cursor_br_corner = cursor_standard
+cursor_right_side = cursor_standard
+cursor_top_side = cursor_standard
+cursor_left_side = cursor_standard
+cursor_bottom_side = cursor_standard
 
 if not maximized and gui.maximized:
     SDL_MaximizeWindow(t_window)
