@@ -9541,7 +9541,7 @@ elif not msys and system == "linux":
         cursor_left_side = get_xcursor("left_side")
         cursor_bottom_side = get_xcursor("bottom_side")
 
-        if SDL_GetCurrentVideoDriver() == b'wayland' and flatpak_mode:
+        if SDL_GetCurrentVideoDriver() == b'wayland':
             cursor_standard = get_xcursor("left_ptr")
             cursor_text = get_xcursor("xterm")
             cursor_shift = get_xcursor("sb_h_double_arrow")
