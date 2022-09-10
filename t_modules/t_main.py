@@ -9521,7 +9521,10 @@ elif not msys and system == "linux":
                         ('pixels', c_void_p),
                         ]
 
-        xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
+        try:
+            xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
+        except:
+            xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
         xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
         def get_xcursor(name):
@@ -9537,6 +9540,12 @@ elif not msys and system == "linux":
         cursor_top_side = get_xcursor("top_side")
         cursor_left_side = get_xcursor("left_side")
         cursor_bottom_side = get_xcursor("bottom_side")
+
+        if SDL_GetCurrentVideoDriver() == b'wayland' and flatpak_mode:
+            cursor_standard = get_xcursor("left_ptr")
+            cursor_text = get_xcursor("xterm")
+            cursor_shift = get_xcursor("sb_h_double_arrow")
+            cursor_hand = get_xcursor("hand2")
 
     except:
         print("Error loading xcursor")
