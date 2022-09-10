@@ -7,6 +7,7 @@ v7.4.1
  - Added jellyfin file metadata info
  - Added shortcuts-ignore-keymap setting
  - Fixed generator playlists with network playlists
+ - Fixed crash on exit on Wayland
 
 v7.4.0
 

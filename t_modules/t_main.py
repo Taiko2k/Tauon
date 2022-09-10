@@ -46739,6 +46739,14 @@ if lfm_scrobbler.queue and not lfm_scrobbler.running:
 if gui.mode < 3:
     old_window_position = get_window_position()
 
+
+SDL_DestroyTexture(gui.main_texture)
+SDL_DestroyTexture(gui.tracklist_texture)
+SDL_DestroyTexture(gui.spec2_tex)
+SDL_DestroyTexture(gui.spec1_tex)
+SDL_DestroyTexture(gui.spec_level_tex)
+ddt.clear_text_cache()
+
 SDL_DestroyWindow(t_window)
 
 pctl.playerCommand = "unload"
@@ -46796,12 +46804,7 @@ try:
 except:
     print("No lock object to close")
 
-SDL_DestroyTexture(gui.main_texture)
-SDL_DestroyTexture(gui.tracklist_texture)
-SDL_DestroyTexture(gui.spec2_tex)
-SDL_DestroyTexture(gui.spec1_tex)
-SDL_DestroyTexture(gui.spec_level_tex)
-ddt.clear_text_cache()
+
 clear_img_cache(False)
 
 IMG_Quit()
