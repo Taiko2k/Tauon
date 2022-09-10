@@ -177,7 +177,7 @@ else:
     print("No window state file")
 
 
-if d == "GNOME" and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
+if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
     try:
         import gi.repository
         gi.require_version('Gtk', '3.0')
