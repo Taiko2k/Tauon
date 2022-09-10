@@ -9456,10 +9456,10 @@ def draw_window_border():
     corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
     fields.add(corner_rect)
 
-    right_rect = (window_size[0] - 1 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
+    right_rect = (window_size[0] - 3 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
     fields.add(right_rect)
 
-    top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 1 * gui.scale)
+    top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 2 * gui.scale)
     fields.add(top_rect)
 
     left_rect = (0, 10 * gui.scale, 4 * gui.scale, window_size[1] - 50 * gui.scale)
@@ -9495,12 +9495,52 @@ cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
 cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
-# todo find solution for these
 cursor_br_corner = cursor_standard
 cursor_right_side = cursor_standard
 cursor_top_side = cursor_standard
 cursor_left_side = cursor_standard
 cursor_bottom_side = cursor_standard
+
+if msys:
+    cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
+    cursor_right_side = cursor_shift
+    cursor_left_side = cursor_shift
+    cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
+    cursor_bottom_side = cursor_top_side
+elif not msys and system == "linux":
+    try:
+        class XcursorImage(ctypes.Structure):
+            _fields_ = [
+                        ("version", c_uint32),
+                        ("size", c_uint32),
+                        ('width', c_uint32),
+                        ('height', c_uint32),
+                        ('xhot', c_uint32),
+                        ('yhot', c_uint32),
+                        ('delay', c_uint32),
+                        ('pixels', c_void_p),
+                        ]
+
+        xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
+        xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
+
+        def get_xcursor(name):
+            c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(os.environ["XCURSOR_THEME"].encode()), c_int(int(os.environ["XCURSOR_SIZE"]))).contents
+            sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
+            cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
+            xcu.XcursorImageDestroy(ctypes.byref(c1))
+            SDL_FreeSurface(sdl_surface)
+            return cursor
+
+        cursor_br_corner = get_xcursor("se-resize")
+        cursor_right_side = get_xcursor("right_side")
+        cursor_top_side = get_xcursor("top_side")
+        cursor_left_side = get_xcursor("left_side")
+        cursor_bottom_side = get_xcursor("bottom_side")
+
+    except:
+        print("Error loading xcursor")
+
 
 if not maximized and gui.maximized:
     SDL_MaximizeWindow(t_window)
@@ -40510,7 +40550,7 @@ def hit_callback(win, point, data):
         if y < 0 and x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        if draw_border and y < 2 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
+        if draw_border and y < 3 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
     if y < gui.panelY:
@@ -40553,7 +40593,7 @@ def hit_callback(win, point, data):
         elif y > window_size[1] - 7 * gui.scale:
             return SDL_HITTEST_RESIZE_BOTTOM
 
-        elif x > window_size[0] - 2 * gui.scale and y > 20 * gui.scale:
+        elif x > window_size[0] - 3 * gui.scale and y > 20 * gui.scale:
             return SDL_HITTEST_RESIZE_RIGHT
         elif x < 5 * gui.scale and y > 10 * gui.scale:
             return SDL_HITTEST_RESIZE_LEFT
@@ -42248,6 +42288,7 @@ while pctl.running:
                 # print("ENTER")
                 mouse_enter_window = True
                 gui.mouse_in_window = True
+                gui.update += 1
 
             # elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
             #
