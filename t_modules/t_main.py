@@ -46755,6 +46755,7 @@ SDL_DestroyTexture(gui.spec2_tex)
 SDL_DestroyTexture(gui.spec1_tex)
 SDL_DestroyTexture(gui.spec_level_tex)
 ddt.clear_text_cache()
+clear_img_cache(False)
 
 SDL_DestroyWindow(t_window)
 
@@ -46813,8 +46814,6 @@ try:
 except:
     print("No lock object to close")
 
-
-clear_img_cache(False)
 
 IMG_Quit()
 SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
