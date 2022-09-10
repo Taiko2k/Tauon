@@ -9459,8 +9459,8 @@ def draw_window_border():
     right_rect = (window_size[0] - 3 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
     fields.add(right_rect)
 
-    top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 2 * gui.scale)
-    fields.add(top_rect)
+    # top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 2 * gui.scale)
+    # fields.add(top_rect)
 
     left_rect = (0, 10 * gui.scale, 4 * gui.scale, window_size[1] - 50 * gui.scale)
     fields.add(left_rect)
@@ -9472,8 +9472,8 @@ def draw_window_border():
         gui.cursor_want = 4
     elif coll(right_rect):
         gui.cursor_want = 8
-    elif coll(top_rect):
-        gui.cursor_want = 9
+    # elif coll(top_rect):
+    #     gui.cursor_want = 9
     elif coll(left_rect):
         gui.cursor_want = 10
     elif coll(bottom_rect):
@@ -40559,8 +40559,8 @@ def hit_callback(win, point, data):
         if y < 0 and x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        if draw_border and y < 3 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
-            return SDL_HITTEST_RESIZE_TOP
+        # if draw_border and y < 3 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
+        #     return SDL_HITTEST_RESIZE_TOP
 
     if y < gui.panelY:
 
