@@ -17317,6 +17317,18 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     selections = []
     errors = False
     selections_searched = 0
+
+    def is_source_type(code):
+        return code is None or \
+            code == "" or \
+            code.startswith("self") or \
+            code.startswith("jelly") or \
+            code.startswith("plex") or \
+            code.startswith("koel") or \
+            code.startswith("tau") or \
+            code.startswith("air") or \
+            code.startswith("sal")
+
     #
     # print(cmds)
     # print(quotes)
@@ -17386,7 +17398,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not selections and not selections_searched:
                 for plist in pctl.multi_playlist:
                     code = pctl.gen_codes.get(plist[6])
-                    if code is None or code == "" or code.startswith("self"):
+                    if is_source_type(code):
                         selections.append(plist[2])
 
             temp = []
@@ -17719,7 +17731,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not selections:
                 for plist in pctl.multi_playlist:
                     code = pctl.gen_codes.get(plist[6])
-                    if code is None or code == "" or code.startswith("self") or code.startswith("tau"):
+                    if is_source_type(code):
                         selections.append(plist[2])
 
             search = quote
@@ -17753,7 +17765,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not selections:
                 for plist in pctl.multi_playlist:
                     code = pctl.gen_codes.get(plist[6])
-                    if code is None or code == "" or code.startswith("self"):
+                    if is_source_type(code):
                         selections.append(plist[2])
 
             g_search = quote.lower().replace("-", "")  # .replace(" ", "")
@@ -17796,11 +17808,10 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
         # SEARCH ARTIST
         elif cm.startswith("a\"") and len(cm) > 3 and cm != "auto":
-
             if not selections:
                 for plist in pctl.multi_playlist:
                     code = pctl.gen_codes.get(plist[6])
-                    if code is None or code == "" or code.startswith("self"):
+                    if is_source_type(code):
                         selections.append(plist[2])
 
             search = quote
@@ -17855,7 +17866,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if not selections:
                 for plist in pctl.multi_playlist:
                     code = pctl.gen_codes.get(plist[6])
-                    if code is None or code == "" or code.startswith("self"):
+                    if is_source_type(code):
                         selections.append(plist[2])
 
             cooldown = 0
