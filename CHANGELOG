@@ -8,6 +8,7 @@ v7.4.1
  - Added shortcuts-ignore-keymap setting
  - Fixed generator playlists with network playlists
  - Fixed crash on exit on Wayland
+ - Fixed corner resize cursors
 
 v7.4.0
 
