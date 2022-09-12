@@ -191,7 +191,8 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
     except:
         pass
 
-#os.environ["SDL_VIDEODRIVER"] = "wayland"
+if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland" and not os.path.exists(os.path.join(user_directory, "x11")):
+    os.environ["SDL_VIDEODRIVER"] = "wayland"
 
 SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
 
