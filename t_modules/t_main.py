@@ -22324,7 +22324,7 @@ def cast_search():
 if chrome:
     x_menu.add_sub(_("Chromecast…"), 220)
     shooter(cast_search2)
-x_menu.add_to_sub(_("Find Incomplete Albums"), 0, find_incomplete)
+
 tauon.chrome_menu = x_menu
 
 #x_menu.add(_("Cast…"), cast_search, cast_deco)
