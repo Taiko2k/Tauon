@@ -42272,7 +42272,6 @@ while pctl.running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
-
                 if restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
                     gui.update = 2
 
@@ -46672,7 +46671,11 @@ while pctl.running:
             SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
 
     if gui.present:
-        SDL_SetRenderTarget(renderer, None)
+        # Possible bug older version of SDL (2.0.16) Wayland, setting render target to None causer last copy
+        # to fail when resizing? Not a big deal as it doesn't matter what the target is when presenting, just
+        # set to something else.
+        # SDL_SetRenderTarget(renderer, None)
+        SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_RenderPresent(renderer)
 
         gui.present = False
