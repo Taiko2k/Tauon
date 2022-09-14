@@ -9465,7 +9465,7 @@ def draw_window_border():
     left_rect = (0, 10 * gui.scale, 4 * gui.scale, window_size[1] - 50 * gui.scale)
     fields.add(left_rect)
 
-    bottom_rect = (20 * gui.scale, window_size[1] - 6, window_size[0] - 40 * gui.scale, 7 * gui.scale)
+    bottom_rect = (20 * gui.scale, window_size[1] - 4, window_size[0] - 40 * gui.scale, 7 * gui.scale)
     fields.add(bottom_rect)
 
     if coll(corner_rect):
@@ -40599,7 +40599,7 @@ def hit_callback(win, point, data):
             return SDL_HITTEST_RESIZE_BOTTOMRIGHT
         elif x < 5 and y > window_size[1] - 5:
             return SDL_HITTEST_RESIZE_BOTTOMLEFT
-        elif y > window_size[1] - 7 * gui.scale:
+        elif y > window_size[1] - 5 * gui.scale:
             return SDL_HITTEST_RESIZE_BOTTOM
 
         elif x > window_size[0] - 3 * gui.scale and y > 20 * gui.scale:
