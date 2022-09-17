@@ -213,13 +213,13 @@ class Flac:
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
                     elif "replaygain_track_gain" == a:
-                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
+                        self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db").replace(",", "."))
                     elif "replaygain_track_peak" == a:
-                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
+                        self.misc["replaygain_track_peak"] = float(b.decode("utf-8").replace(",", "."))
                     elif "replaygain_album_gain" == a:
-                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
+                        self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db").replace(",", "."))
                     elif "replaygain_album_peak" == a:
-                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
+                        self.misc["replaygain_album_peak"] = float(b.decode("utf-8").replace(",", "."))
                     elif 'composer' == a:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
