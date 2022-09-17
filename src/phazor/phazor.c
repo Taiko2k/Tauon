@@ -1170,6 +1170,7 @@ void connect_pulse() {
 
     sample_rate_out = device.sampleRate;
     current_sample_rate = sample_rate_out;
+    src_reset(src);
 
     ma_context_uninit(&context);
 
