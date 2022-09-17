@@ -1169,8 +1169,22 @@ void connect_pulse() {
     printf("ph: Connected using samplerate %uhz\n", device.sampleRate);
 
     sample_rate_out = device.sampleRate;
+
+    if (decoder_allocated == 1 && current_sample_rate > 0 &&
+        sample_rate_out > 0 && position_count > get_buff_fill() &&
+        current_sample_rate != sample_rate_out && position_count > 0 && get_buff_fill() > 0){
+
+        printf("ph: The samplerate changed, rewinding\n");
+        src_reset(src);
+        decode_seek(position_count / current_sample_rate * 1000, sample_rate_src);
+        buff_reset();
+
+    }
+
     current_sample_rate = sample_rate_out;
-    src_reset(src);
+
+
+
 
     ma_context_uninit(&context);
 
