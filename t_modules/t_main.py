@@ -35455,6 +35455,14 @@ rename_playlist_box = RenamePlaylistBox()
 
 class PlaylistBox:
 
+    def recalc(self):
+        self.tab_h = round(25 * gui.scale)
+        self.gap = round(2 * gui.scale)
+
+        self.text_offset = 2 * gui.scale
+        if gui.scale == 1.25:
+            self.text_offset = 3
+
     def __init__(self):
 
         self.scroll_on = prefs.old_playlist_box_position
@@ -35471,12 +35479,11 @@ class PlaylistBox:
         self.gen_icon = asset_loader('gen-gear.png', True)
 
         # if gui.scale == 1.25:
-        self.tab_h = round(25 * gui.scale)
-        self.gap = round(2 * gui.scale)
+        self.tab_h = 0
+        self.gap = 0
 
         self.text_offset = 2 * gui.scale
-        if gui.scale == 1.25:
-            self.text_offset = 3
+        self.recalc()
 
     def draw(self, x, y, w, h):
 
@@ -37315,16 +37322,19 @@ def queue_pause_deco():
 
 class QueueBox:
 
+    def recalc(self):
+        self.tab_h = 34 * gui.scale
     def __init__(self):
 
         self.dragging = None
         self.fq = []
         self.drag_start_y = 0
         self.drag_start_top = 0
-        self.tab_h = 34 * gui.scale
+        self.tab_h = 0
         self.scroll_position = 0
         self.right_click_id = None
         self.d_click_ref = None
+        self.recalc()
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
         queue_menu.add(_("Play Now"), self.play_now, show_test=self.queue_remove_show)
@@ -40814,7 +40824,8 @@ def reload_scale():
     bottom_bar_ao1.__init__()
     top_panel.__init__()
     view_box.__init__(reload=True)
-
+    queue_box.recalc()
+    playlist_box.recalc()
 
 def update_layout_do():
     if prefs.scale_want != gui.scale:
