@@ -8011,6 +8011,7 @@ class Tauon:
     def exit(self, reason):
         print("Shutting down. Reason: " + reason)
         pctl.running = False
+        self.wake()
 
     def min_to_tray(self):
         SDL_HideWindow(t_window)
