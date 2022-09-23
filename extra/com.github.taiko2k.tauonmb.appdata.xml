@@ -62,11 +62,11 @@
 
   <releases>
 
-    <release version="7.4.0" date="2022-09-04">
+    <release version="7.4.1" date="2022-09-23">
       <description>
         <ul>
-          <li>Improved Chromecast support</li>
-          <li>Various tweaks and fixes</li>
+          <li>Added Jellyfin playlist support</li>
+          <li>Various bug fixes</li>
         </ul>
       </description>
     </release>
