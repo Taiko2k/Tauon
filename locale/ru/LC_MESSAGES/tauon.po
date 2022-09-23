@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-07 11:14+1200\n"
-"PO-Revision-Date: 2022-09-08 11:16+0000\n"
+"PO-Revision-Date: 2022-09-22 17:21+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.14.1-dev\n"
+"X-Generator: Weblate 4.14.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1989 t_modules/t_main.py:1991
@@ -125,7 +125,7 @@ msgstr "день"
 
 #: t_modules/t_main.py:7848
 msgid "days"
-msgstr "дней"
+msgstr "дн."
 
 #: t_modules/t_main.py:7850
 msgid "Scanning for Chromecasts..."
@@ -201,7 +201,7 @@ msgstr "По умолчанию"
 
 #: t_modules/t_main.py:14160
 msgid "BEFORE"
-msgstr "ПЕРЕД"
+msgstr "ДО"
 
 #: t_modules/t_main.py:14164
 msgid "AFTER"
@@ -240,7 +240,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14335
 msgid "Number of tracks selected: %d"
-msgstr "Кол-во выбранных треков: %d"
+msgstr "Число выбранных треков: %d"
 
 #: t_modules/t_main.py:14370
 msgid "<Multiple selected>"
@@ -264,7 +264,7 @@ msgstr "Альбом-имя исполнителя"
 
 #: t_modules/t_main.py:14390
 msgid "Editing network tracks is not recommended!"
-msgstr "Редактировать сетевые дорожки не рекомендуется!"
+msgstr "Правка интернет-дорожек не рекомендуется!"
 
 #: t_modules/t_main.py:14420 t_modules/t_main.py:14421
 msgid "WRITE TAGS"
@@ -713,7 +713,7 @@ msgstr "Вставить"
 
 #: t_modules/t_main.py:18023
 msgid "Append Playing"
-msgstr "Добавить в воспроизведение"
+msgstr "Добавить активный трек"
 
 #: t_modules/t_main.py:18028
 msgid "Export…"
@@ -766,11 +766,11 @@ msgstr "Синхронизация завершена"
 
 #: t_modules/t_main.py:18239 t_modules/t_main.py:18322
 msgid "Set as Sync Playlist"
-msgstr "Установить синхронизируемым плейлистом"
+msgstr "Назначить плейлистом синхронизации"
 
 #: t_modules/t_main.py:18242
 msgid "Un-set as Sync Playlist"
-msgstr "Отключить синхронизацию плейлиста"
+msgstr "Снять метку плейлиста синхронизации"
 
 #: t_modules/t_main.py:18255 t_modules/t_main.py:18324
 msgid "Set as Downloads Playlist"
@@ -958,15 +958,15 @@ msgstr "Есть текст песни"
 
 #: t_modules/t_main.py:19120
 msgid "Configuration reloaded"
-msgstr "Конфигурация перезагружена"
+msgstr "Конфигурация обновлена"
 
 #: t_modules/t_main.py:19133
 msgid "Click \"Reload\" if you made any changes"
-msgstr "Нажмите \"Перезагрузить\", если вы вносили изменения"
+msgstr "Нажмите «Обновить», если вы внесли изменения"
 
 #: t_modules/t_main.py:19133
 msgid "Config file opened."
-msgstr "Конфигурационный файл открыт."
+msgstr "Файл конфигурации открыт."
 
 #: t_modules/t_main.py:19199
 msgid "Transcoding tracks from network locations is not supported"
@@ -1047,7 +1047,7 @@ msgstr "Переименовать дорожки…"
 #: t_modules/t_main.py:19899 t_modules/t_main.py:20728
 #: t_modules/t_main.py:20830
 msgid "Edit fields…"
-msgstr "Редактировать поля…"
+msgstr "Изменить поля…"
 
 #: t_modules/t_main.py:19906
 msgid "Cannot physically delete"
@@ -1080,7 +1080,7 @@ msgstr "Приложение не найдено на хосте или не в�
 
 #: t_modules/t_main.py:20500
 msgid "Edit with "
-msgstr "Редактировать с помощью "
+msgstr "Изменить с помощью "
 
 #: t_modules/t_main.py:20513
 msgid "Lyrics..."
@@ -1324,11 +1324,11 @@ msgstr "База данных…"
 
 #: t_modules/t_main.py:22145
 msgid "Export as CSV"
-msgstr "Экспортировать как CSV"
+msgstr "Экспортировать в CSV"
 
 #: t_modules/t_main.py:22146
 msgid "Play History to Playlist"
-msgstr "Воспроизвести историю в плейлист"
+msgstr "Плейлист из истории прослушивания"
 
 #: t_modules/t_main.py:22147
 msgid "Reset Image Cache"
@@ -1340,7 +1340,7 @@ msgstr "Удалить сетевые дорожки"
 
 #: t_modules/t_main.py:22167
 msgid "Remove Missing Tracks"
-msgstr "Удалить недостающие дорожки"
+msgstr "Удалить пропавшие дорожки"
 
 #: t_modules/t_main.py:22188
 msgid "Import FMPS_Ratings from Tags"
@@ -1360,7 +1360,7 @@ msgstr ""
 
 #: t_modules/t_main.py:22204
 msgid "Reset User Ratings"
-msgstr "Сбросить пользовательские оценки"
+msgstr "Сбросить оценки пользователя"
 
 #: t_modules/t_main.py:22211 t_modules/t_main.py:22289
 msgid "Find Incomplete Albums"
@@ -1456,7 +1456,7 @@ msgstr "Найти исполнителя"
 
 #: t_modules/t_main.py:22680
 msgid "Go To Playing"
-msgstr "Перейти к воспроизводимому"
+msgstr "Перейти к активному"
 
 #: t_modules/t_main.py:22830
 msgid "ListenBrainz is Paused"
@@ -1646,7 +1646,7 @@ msgstr "Стиль шаблона"
 
 #: t_modules/t_main.py:27080
 msgid "Auto-theme from album art"
-msgstr "Авто-тема на основе обложки альбома"
+msgstr "Автовыбор темы на основе обложки альбома"
 
 #: t_modules/t_main.py:27175
 msgid "Based on"
@@ -1655,7 +1655,7 @@ msgstr "Основано на"
 #: t_modules/t_main.py:27183 t_modules/t_main.py:27262
 #: t_modules/t_main.py:28720 t_modules/t_main.py:29324
 msgid "Return"
-msgstr "Вернуться"
+msgstr "Назад"
 
 #: t_modules/t_main.py:27189 t_modules/t_main.py:27355
 msgid "ReplayGain"
@@ -1667,11 +1667,11 @@ msgstr "Автоматически"
 
 #: t_modules/t_main.py:27195
 msgid "Preserve album dynamics"
-msgstr "Сохранить динамику альбома"
+msgstr "Сохранять динамику альбома"
 
 #: t_modules/t_main.py:27197
 msgid "Tracks equal loudness"
-msgstr "Отслеживает равную громкость"
+msgstr "Одинаковая громкость треков"
 
 #: t_modules/t_main.py:27200
 msgid "Will only have effect if ReplayGain metadata is present."
@@ -1721,7 +1721,7 @@ msgstr "Размер кэша"
 
 #: t_modules/t_main.py:27387
 msgid "Set audio output device"
-msgstr "Установить устройство вывода звука"
+msgstr "Выбор устройства вывода звука"
 
 #: t_modules/t_main.py:27390
 msgid "Avoid resampling"
@@ -1741,7 +1741,7 @@ msgstr "*Задействует извлечение веб-данных. Вкл
 
 #: t_modules/t_main.py:27485
 msgid "Tip: The order enabled will be the order searched."
-msgstr "Совет: Отмеченный пункт является значением поиска."
+msgstr "Совет: Поиск будет производиться в порядке отметки пунктов."
 
 #: t_modules/t_main.py:27496
 msgid "Metadata side panel"
@@ -1753,7 +1753,7 @@ msgstr "Использовать стиль по центру"
 
 #: t_modules/t_main.py:27502
 msgid "Zoom album art to fit"
-msgstr "Увеличить обложку альбома до нужного размера"
+msgstr "Подгонять размер обложки альбома"
 
 #: t_modules/t_main.py:27509 t_modules/t_main.py:40040
 #: t_modules/t_main.py:40043
@@ -1782,7 +1782,7 @@ msgstr "Предпочитать меньшие отступы"
 
 #: t_modules/t_main.py:27550
 msgid "Ready broadcaster"
-msgstr "Готовый транслятор"
+msgstr "Подготовить транслятор"
 
 #: t_modules/t_main.py:27550
 msgid "Start web server for broadcasting"
@@ -1806,7 +1806,7 @@ msgstr "Загружать данные в фоне, когда панель и�
 
 #: t_modules/t_main.py:27581
 msgid "Auto regenerate playlists"
-msgstr "Автоматически регенерировать плейлисты"
+msgstr "Автоматически пересоздавать плейлисты"
 
 #: t_modules/t_main.py:27582
 msgid "Generated playlists reload when re-entering"
@@ -1822,7 +1822,7 @@ msgstr "Снимите флажок, чтобы отключить функци�
 
 #: t_modules/t_main.py:27592 t_modules/t_main.py:27598
 msgid "Open config file"
-msgstr "Открыть конфигурационный файл"
+msgstr "Открыть файл конфигурации"
 
 #: t_modules/t_main.py:27594 t_modules/t_main.py:27604
 msgid "Open data folder"
@@ -1830,7 +1830,7 @@ msgstr "Открыть каталог программы"
 
 #: t_modules/t_main.py:27602
 msgid "Reload"
-msgstr "Перезагрузить"
+msgstr "Обновить"
 
 #: t_modules/t_main.py:27608
 msgid "Enable/Disable track context menu functions:"
@@ -1858,7 +1858,7 @@ msgstr "Конвертировать каталог"
 
 #: t_modules/t_main.py:27630
 msgid "Extract archives"
-msgstr "Извлечь архивы"
+msgstr "Распаковывать архивы"
 
 #: t_modules/t_main.py:27631
 msgid "Extracts zip archives on drag and drop"
@@ -1882,7 +1882,7 @@ msgstr "Всегда извлекать в каталог «Музыка»"
 
 #: t_modules/t_main.py:27642
 msgid "Show icon in system tray"
-msgstr "Показать иконку в системном лотке"
+msgstr "Показывать значок в трее"
 
 #: t_modules/t_main.py:27645 t_modules/t_main.py:27650
 msgid "Close to tray"
@@ -1914,7 +1914,7 @@ msgstr "Возобновить после пробуждения"
 
 #: t_modules/t_main.py:27672
 msgid "Continue playback when waking from sleep"
-msgstr "Продолжить играть при выходе из спящего режима"
+msgstr "Продолжить воспроизведение по выходу из спящего режима"
 
 #: t_modules/t_main.py:27676
 msgid "Record Radio"
@@ -1922,7 +1922,7 @@ msgstr "Запись радио"
 
 #: t_modules/t_main.py:27677
 msgid "Record and split songs when playing internet radio"
-msgstr "Записывайте и разделяйте песни при воспроизведении интернет-радио"
+msgstr "Запись и разделение песен при воспроизведении интернет-радио"
 
 #: t_modules/t_main.py:27679
 msgid ""
@@ -2188,7 +2188,7 @@ msgstr "Выбранный плейлист:"
 
 #: t_modules/t_main.py:28660
 msgid "No sync playlist selected!"
-msgstr "Синхронизируемый плейлист не выбран!"
+msgstr "Плейлист синхронизации не выбран!"
 
 #: t_modules/t_main.py:28663
 msgid "Path to device music folder:   "
@@ -2236,9 +2236,7 @@ msgstr "Выберите исходный плейлист"
 
 #: t_modules/t_main.py:28712
 msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr ""
-"ПКМ по вкладке> Разное ...> Установить как список воспроизведения для "
-"синхронизации"
+msgstr "ПКМ по вкладке > Разное... > Назначить плейлистом синхронизации"
 
 #: t_modules/t_main.py:28714
 msgid "Stop"
@@ -2322,7 +2320,7 @@ msgstr "Строки"
 
 #: t_modules/t_main.py:29233
 msgid "Columns"
-msgstr "Колонки"
+msgstr "Столбцы"
 
 #: t_modules/t_main.py:29239
 msgid "Cascade style"
@@ -2338,15 +2336,15 @@ msgstr "Включить названия альбомов"
 
 #: t_modules/t_main.py:29248
 msgid "Sort by top played"
-msgstr "Сортировать по количеству воспроизведений"
+msgstr "Сортировать по числу прослушиваний"
 
 #: t_modules/t_main.py:29254
 msgid "Randomise BG"
-msgstr "Случайный BG"
+msgstr "Случайный фон"
 
 #: t_modules/t_main.py:29290
 msgid "Generate"
-msgstr "Генерировать"
+msgstr "Создать"
 
 #: t_modules/t_main.py:29304
 msgid "Generating..."
@@ -2438,7 +2436,7 @@ msgstr "Крупный вид"
 
 #: t_modules/t_main.py:29556
 msgid "End of playlist action"
-msgstr "Действие по окончанию плейлиста"
+msgstr "Действие по окончании плейлиста"
 
 #: t_modules/t_main.py:29559 t_modules/t_main.py:29563
 msgid "Stop playback"
@@ -2487,7 +2485,7 @@ msgstr "Имеется %d входящих соединений."
 
 #: t_modules/t_main.py:31531 t_modules/t_main.py:32111
 msgid "Play, RC: Go to playing"
-msgstr "Играть, RC: Переход к воспроизводимому"
+msgstr "Играть, ПКМ: Перейти к активному"
 
 #: t_modules/t_main.py:31556 t_modules/t_main.py:32136
 msgid "Pause"
@@ -2515,7 +2513,7 @@ msgstr "Повтор отключён"
 
 #: t_modules/t_main.py:31639
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr "Назад, RC: переключатель повтора, MC: вернуться"
+msgstr "Назад, ПКМ: переключить повтор, СКМ: обратить"
 
 #: t_modules/t_main.py:31695 t_modules/t_main.py:31697
 msgid "Shuffle"
@@ -2575,7 +2573,7 @@ msgstr "Добавить станцию"
 
 #: t_modules/t_main.py:34793
 msgid "Edit Station"
-msgstr "Редактировать станцию"
+msgstr "Править станцию"
 
 #: t_modules/t_main.py:34818
 msgid "Station Browser"
@@ -2857,7 +2855,7 @@ msgstr "Время воспроизведения"
 
 #: t_modules/t_main.py:45617
 msgid "Folder Modification"
-msgstr "Модификация каталога"
+msgstr "Изменение каталога"
 
 #: t_modules/t_main.py:45632
 msgid "Renames the physical folder based on the template"
