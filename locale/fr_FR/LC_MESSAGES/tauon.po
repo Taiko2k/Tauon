@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2022-09-07 11:14+1200\n"
-"PO-Revision-Date: 2022-04-27 06:10+0000\n"
+"PO-Revision-Date: 2022-09-25 20:18+0000\n"
 "Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.12.1-dev\n"
+"X-Generator: Weblate 4.14.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1989 t_modules/t_main.py:1991
@@ -141,9 +141,8 @@ msgid "No Chromecast devices found"
 msgstr "Aucun Chromecast trouvé"
 
 #: t_modules/t_main.py:7853
-#, fuzzy
 msgid "End Cast"
-msgstr "Fin de la liste de lecture"
+msgstr "Fin de la diffusion"
 
 #: t_modules/t_main.py:7855
 msgid "Web server stopped."
@@ -985,7 +984,7 @@ msgstr ""
 
 #: t_modules/t_main.py:19219
 msgid "Transcoding spotify tracks not possible"
-msgstr ""
+msgstr "La conversion de pistes Spotify n'est pas possible"
 
 #: t_modules/t_main.py:19576
 msgid "Add Playing Spotify Album"
@@ -1402,9 +1401,8 @@ msgid "Stop Cast"
 msgstr "Arrêter la diffusion"
 
 #: t_modules/t_main.py:22287
-#, fuzzy
 msgid "Chromecast…"
-msgstr "Diffuser sur le Chromecast"
+msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22329
 msgid "Mini"
@@ -1680,9 +1678,8 @@ msgid "ReplayGain"
 msgstr "ReplayGain"
 
 #: t_modules/t_main.py:27193
-#, fuzzy
 msgid "Auto"
-msgstr "Arrêt automatique"
+msgstr "Automatique"
 
 #: t_modules/t_main.py:27195
 msgid "Preserve album dynamics"
@@ -1725,20 +1722,20 @@ msgstr "Utiliser le fondu lors du changement de piste"
 #: t_modules/t_main.py:27352
 #, fuzzy
 msgid "Back restarts to beginning"
-msgstr "Redémarrer au début"
+msgstr "La touche retour fait reprendre au début"
 
 #: t_modules/t_main.py:27360
 msgid "Cache local files (for smb/nfs)"
 msgstr "Mettre les fichiers locaux en cache (pour smb/nfs)"
 
 #: t_modules/t_main.py:27363
+#, fuzzy
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Utiliser un cache réseau persistent"
 
 #: t_modules/t_main.py:27368
-#, fuzzy
 msgid "Cache size"
-msgstr "Taille du fichier"
+msgstr "Taille du cache"
 
 #: t_modules/t_main.py:27387
 msgid "Set audio output device"
@@ -1746,7 +1743,7 @@ msgstr "Définir le périphérique de sortie"
 
 #: t_modules/t_main.py:27390
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Éviter le ré-échantillonnage"
 
 #: t_modules/t_main.py:27462
 msgid "Enable chord lyrics"
@@ -1810,16 +1807,12 @@ msgid "Start web server for broadcasting"
 msgstr "Démarrer le serveur Web pour la diffusion"
 
 #: t_modules/t_main.py:27570
-#, fuzzy
 msgid "Show artist info panel"
-msgstr "Afficher la liste de lecture dans le panneau"
+msgstr "Afficher le panneau d'informations sur l'artiste"
 
 #: t_modules/t_main.py:27571
-#, fuzzy
 msgid "You can also toggle this with ctrl+o"
-msgstr ""
-"Conseil : vous pouvez également activer cette option à partir d’un menu "
-"contextuel accessible par clic droit"
+msgstr "Vous pouvez également basculer ceci avec ctrl+o"
 
 #: t_modules/t_main.py:27576
 msgid "Auto fetch artist data"
@@ -1939,12 +1932,13 @@ msgid "Prevent system suspend during playback"
 msgstr "Empêcher la suspension du système pendant la lecture"
 
 #: t_modules/t_main.py:27671
+#, fuzzy
 msgid "Resume from suspend"
-msgstr ""
+msgstr "Reprendre depuis l'arrêt"
 
 #: t_modules/t_main.py:27672
 msgid "Continue playback when waking from sleep"
-msgstr ""
+msgstr "Reprendre la lecteur à la sortie de veille"
 
 #: t_modules/t_main.py:27676
 msgid "Record Radio"
@@ -1981,17 +1975,15 @@ msgstr "Afficher le marqueur de seuil"
 
 #: t_modules/t_main.py:27923
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: t_modules/t_main.py:27941
-#, fuzzy
 msgid "Playlist name"
-msgstr "Durée de la liste de lecture"
+msgstr "Nom de la liste de lecture"
 
 #: t_modules/t_main.py:27954
-#, fuzzy
 msgid "Get playlist"
-msgstr "Répéter la liste de lecture"
+msgstr "Obtenir la liste de lecture"
 
 #: t_modules/t_main.py:27962
 msgid "Maloja Server"
@@ -2104,9 +2096,8 @@ msgid "Username"
 msgstr "Nom d’utilisateur"
 
 #: t_modules/t_main.py:28258
-#, fuzzy
 msgid "Import playlists"
-msgstr "Importer la liste de lecture utilisateur"
+msgstr "Importer des listes de lecture"
 
 #: t_modules/t_main.py:28275
 msgid "koel network streaming"
@@ -2502,12 +2493,14 @@ msgstr "Boucler toutes les listes de lecture"
 
 #: t_modules/t_main.py:29904
 msgid "Okay, it's a normal playlist now."
-msgstr ""
+msgstr "Ok, c'est une liste de lecture normale maintenant."
 
 #: t_modules/t_main.py:29913
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
 msgstr ""
+"Vous avez ajouté des pistes à la liste générée. Voulez-vous effacer le "
+"générateur ?"
 
 #: t_modules/t_main.py:30449 t_modules/t_main.py:35138
 msgid "Added station to: "
