@@ -294,17 +294,9 @@ if system == 'linux':
 if not os.path.isdir(music_directory):
     music_directory = None
 
-# transfer_target = user_directory + "/transfer.p"
-# print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
 
 old_backend = 2
-
-
-# # Find home music folder
-# music_folder = os.path.join(os.path.expanduser('~'), "Music")
-# if not os.path.isdir(music_folder):
-#     music_folder = None
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target):
@@ -329,135 +321,9 @@ if flatpak_mode:
 
 pid = os.getpid()
 
-
-# if system == 'windows':
-#     from win32event import CreateMutex
-#     from win32api import CloseHandle, GetLastError
-#     from winerror import ERROR_ALREADY_EXISTS
-#
-#
-#     class singleinstance:
-#         """ Limits application to single instance """
-#
-#         def __init__(self):
-#             self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
-#             self.mutex = CreateMutex(None, False, self.mutexname)
-#             self.lasterror = GetLastError()
-#
-#         def aleradyrunning(self):
-#             return (self.lasterror == ERROR_ALREADY_EXISTS)
-#
-#         def __del__(self):
-#             if self.mutex:
-#                 CloseHandle(self.mutex)
-#
-#
-#     lock = singleinstance()
-#
-#     if lock.aleradyrunning():
-#         print("Program is already running")
-#         pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-#         sys.exit()
-
-# ------------------------------------
-# Continue startup
-
 from sdl2 import *
 from sdl2.sdlimage import *
 from ctypes import pointer
-
-SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
-if desktop == "KDE":
-    try:
-        SDL_SetHint(b"SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", b"0")
-    except:
-        print("Old version of SDL2 detected")
-try:
-    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-except:
-    print("old version of SDL detected")
-
-# draw_border = True
-# window_default_size = [1120, 600]
-# window_size = window_default_size
-# logical_size = [0, 0]
-# window_opacity = 1
-# scale = 1
-# maximized = False
-# old_window_position = None
-#
-# try:
-#
-#     state_file = open(user_directory + "/window.p", "rb")
-#     save = pickle.load(state_file)
-#
-#     draw_border = save[0]
-#     window_size = save[1]
-#     logical_size = save[1]
-#     window_opacity = save[2]
-#     scale = save[3]
-#     maximized = save[4]
-#     old_window_position = save[5]
-#
-#     del save
-#
-# except:
-#     print('No previous window state')
-
-
-## Init SDL2
-
-# SDL_Init(SDL_INIT_VIDEO)
-#
-# err = SDL_GetError()
-# if err:
-#     print(f"SDL init error: {err.decode()}")
-#     SDL_ClearError()
-# #
-# window_title = t_title
-# window_title = window_title.encode('utf-8')
-
-# flags = SDL_WINDOW_RESIZABLE # SDL_WINDOW_HIDDEN |
-#
-# if draw_border:
-#     flags |= SDL_WINDOW_BORDERLESS
-#
-# if old_window_position is None:
-#     o_x = SDL_WINDOWPOS_UNDEFINED
-#     o_y = SDL_WINDOWPOS_UNDEFINED
-# else:
-#     o_x = old_window_position[0]
-#     o_y = old_window_position[1]
-#
-# t_window = SDL_CreateWindow(window_title,
-#                             o_x, o_y,
-#                             window_size[0], window_size[1],
-#                             flags)
-
-#
-# err = SDL_GetError()
-# if err:
-#     print(f"SDL window error: {err.decode()}")
-#     SDL_ClearError()
-#
-# if maximized:
-#     SDL_MaximizeWindow(t_window)
-#
-#
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
-
-# window_surface = SDL_GetWindowSurface(t_window)
-
-# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-#
-# err = SDL_GetError()
-# if err:
-#     print(f"SDL render error: {err.decode()}")
-#     SDL_ClearError()
-
-# display_index = SDL_GetWindowDisplayIndex(t_window)
-# display_bounds = SDL_Rect(0, 0)
-# SDL_GetDisplayBounds(display_index, display_bounds)
 
 if not macos:
     icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
@@ -468,7 +334,7 @@ SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 if not phone:
-    if macos:
+    if window_size[0] != logical_size[0]:
         SDL_SetWindowMinimumSize(t_window, 560, 330)
     else:
         SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
