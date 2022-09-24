@@ -19923,7 +19923,7 @@ def rename_parent(index, template):
 
         if old == object.parent_folder_path:
 
-            new_fullpath = os.path.join(new_parent_path, object)
+            new_fullpath = os.path.join(new_parent_path, object.filename)
 
             if os.path.normpath(new_parent_path) == os.path.normpath(old):
                 show_message("The folder already has that name.")
