@@ -9413,6 +9413,7 @@ elif not msys and system == "linux":
             cursor_text = get_xcursor("xterm")
             cursor_shift = get_xcursor("sb_h_double_arrow")
             cursor_hand = get_xcursor("hand2")
+            SDL_SetCursor(cursor_standard)
 
     except:
         print("Error loading xcursor")
