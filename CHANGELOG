@@ -1,5 +1,10 @@
 
-Changelog-------------------------------------
+Changelog----------------------------
+
+v7.4.2
+
+ - Fix min window size on HiDPI
+ - Fix cursor size on Wayland
 
 v7.4.1
 
