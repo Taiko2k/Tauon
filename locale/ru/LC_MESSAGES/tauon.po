@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-07 11:14+1200\n"
-"PO-Revision-Date: 2022-09-22 17:21+0000\n"
+"PO-Revision-Date: 2022-09-25 20:18+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -260,7 +260,7 @@ msgstr "Имя исполнителя"
 
 #: t_modules/t_main.py:14384
 msgid "Album-artist name"
-msgstr "Альбом-имя исполнителя"
+msgstr "Имя исполнителя альбома"
 
 #: t_modules/t_main.py:14390
 msgid "Editing network tracks is not recommended!"
@@ -1072,7 +1072,7 @@ msgstr "Изменить каталог…"
 
 #: t_modules/t_main.py:20381
 msgid "Tag editor app does not appear to be installed."
-msgstr "Приложение редактор тегов не установлено."
+msgstr "Приложение редактора тегов не установлено."
 
 #: t_modules/t_main.py:20384
 msgid "App not found on host OR insufficient Flatpak permissions."
@@ -1288,7 +1288,7 @@ msgstr "Имя файла"
 
 #: t_modules/t_main.py:21509
 msgid "Starline"
-msgstr "Звёздная линия"
+msgstr "Звезда/линия"
 
 #: t_modules/t_main.py:21510
 msgid "Rating"
@@ -1464,7 +1464,7 @@ msgstr "ListenBrainz приостановлен"
 
 #: t_modules/t_main.py:22832
 msgid "Scrobbling is Paused"
-msgstr "Скробблинг приостановлен"
+msgstr "Скробблинг остановлен"
 
 #: t_modules/t_main.py:22836
 msgid "ListenBrainz is Active"
@@ -1709,7 +1709,7 @@ msgstr "Затухание при возврате к началу"
 
 #: t_modules/t_main.py:27360
 msgid "Cache local files (for smb/nfs)"
-msgstr "Кэшировать локальные файлы (для smb/nfs)"
+msgstr "Кэшировать локальные файлы (для SMB/NFS)"
 
 #: t_modules/t_main.py:27363
 msgid "Use persistent network cache"
@@ -2216,7 +2216,7 @@ msgstr "Конвертировать файлы"
 
 #: t_modules/t_main.py:28695
 msgid "Bypass low bitrate"
-msgstr "Обойти низкий битрейт"
+msgstr "Пропускать с низким битрейтом"
 
 #: t_modules/t_main.py:28698
 msgid "Start Transcode and Sync"
@@ -2268,7 +2268,7 @@ msgstr "Сохранить и перезаписать файлы"
 
 #: t_modules/t_main.py:28790
 msgid "Emit track change notifications"
-msgstr "Отправка уведомлений об изменении дорожки"
+msgstr "Уведомлять о смене дорожек"
 
 #: t_modules/t_main.py:28793
 msgid "Draw own window decorations"
@@ -2352,11 +2352,11 @@ msgstr "Создание..."
 
 #: t_modules/t_main.py:29312
 msgid "Album chart"
-msgstr "Рейтинг альбома"
+msgstr "Чарт альбомов"
 
 #: t_modules/t_main.py:29317
 msgid "Not enough albums in the playlist!"
-msgstr "Недостаточно альбомов в плейлисте!"
+msgstr "Не хватает альбомов в плейлисте!"
 
 #: t_modules/t_main.py:29336 t_modules/t_main.py:29337
 msgid "Chart generator..."
@@ -2396,15 +2396,15 @@ msgstr "Оценки альбомов"
 
 #: t_modules/t_main.py:29496
 msgid "Show track loves"
-msgstr "Показать любимые дорожки"
+msgstr "Показывать метку любимых треков"
 
 #: t_modules/t_main.py:29504
 msgid "Represent playtime as stars"
-msgstr "Время воспроизведения в виде звёзд"
+msgstr "Изображать время прослушивания в виде звёзд"
 
 #: t_modules/t_main.py:29513
 msgid "Represent playcount as lines"
-msgstr "Время воспроизведения линией"
+msgstr "Изображать счётчик прослушиваний в виде линий"
 
 #: t_modules/t_main.py:29530
 msgid "Show album release year"
