@@ -1,0 +1,2838 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2022-09-07 11:18+1200\n"
+"PO-Revision-Date: 2022-09-27 21:18+0000\n"
+"Last-Translator: Triss03 <pr0trik520@gmail.com>\n"
+"Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/pl/>\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
+"|| n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.14.1\n"
+"Generated-By: pygettext.py 1.5\n"
+
+#: t_modules/t_main.py:1989 t_modules/t_main.py:1991
+msgid "No artist image found."
+msgstr "Nie znaleziono obrazu dla tego artysty."
+
+#: t_modules/t_main.py:1991
+msgid "No providers are enabled in settings!"
+msgstr "Żadni dostawcy nie są włączeni w ustawieniach!"
+
+#: t_modules/t_main.py:6818
+msgid "End of playlist"
+msgstr "Koniec playlisty"
+
+#: t_modules/t_main.py:6870
+#, fuzzy
+msgid "Once authorised click the 'done' button."
+msgstr "Kiedy zautoryzowano, kliknij przycisk 'zakończ'."
+
+#: t_modules/t_main.py:6870
+msgid "Web auth page opened"
+msgstr "Strona do autoryzacji została otworzona"
+
+#: t_modules/t_main.py:6878
+msgid "You need to log in first"
+msgstr "Najpierw musisz się zalogować"
+
+#: t_modules/t_main.py:7036
+msgid "Scanning failed. Try again?"
+msgstr "Skanowanie nieudane. Spróbować ponownie?"
+
+#: t_modules/t_main.py:7043 t_modules/t_main.py:7640
+msgid "Scanning scrobbles complete"
+msgstr "Skanowanie scrobbli ukończone"
+
+#: t_modules/t_main.py:7207
+msgid "Getting friend data..."
+msgstr ""
+
+#: t_modules/t_main.py:7207
+msgid "This may take a very long time."
+msgstr "To może zająć bardzo długo."
+
+#: t_modules/t_main.py:7561
+msgid "Failed updating last.fm love status"
+msgstr "Aktualizowanie statusu polubień w last.fm nieudane"
+
+#: t_modules/t_main.py:7564
+msgid "Error updating love to last.fm!"
+msgstr "Wystąpił błąd podczas synchronizowania polubień do last.fm!"
+
+#: t_modules/t_main.py:7565
+msgid "Maybe check your internet connection and try again?"
+msgstr "Może sprawdź połączenie sieciowe i spróbuj ponownie?"
+
+#: t_modules/t_main.py:7834
+msgid "Spotify Likes"
+msgstr "Polubienia Spotify"
+
+#: t_modules/t_main.py:7835
+msgid "Spotify Albums"
+msgstr "Albumy Spotify"
+
+#: t_modules/t_main.py:7836
+msgid "Track removed from liked tracks"
+msgstr "Ścieżka została usunięta z polubionych"
+
+#: t_modules/t_main.py:7837
+msgid "Track was already un-liked"
+msgstr "Ścieżka była już odlubiona"
+
+#: t_modules/t_main.py:7838
+msgid "Track is already liked"
+msgstr "Ścieżka jest już polubiona"
+
+#: t_modules/t_main.py:7839
+msgid "Track added to liked tracks"
+msgstr "Ścieżka została dodana do ulubionych"
+
+#: t_modules/t_main.py:7840
+msgid "Spotify account connected"
+msgstr "Konto Spotify zostało połączone"
+
+#: t_modules/t_main.py:7841
+msgid "This Spotify account isn't currently playing anything"
+msgstr "Konto Spotify aktualnie nic nie odtwarza"
+
+#: t_modules/t_main.py:7842
+msgid "Error starting Spotify"
+msgstr "Błąd przy uruchamianiu Spotify"
+
+#: t_modules/t_main.py:7843
+msgid "Please authorise Spotify in settings!"
+msgstr "Zautoryzuj Spotify w ustawieniach!"
+
+#: t_modules/t_main.py:7844
+#, fuzzy
+msgid "Please authorise and click the enable toggle first!"
+msgstr "Najpierw zautoryzuj i naciśnij przełącznik włączenia!"
+
+#: t_modules/t_main.py:7845
+msgid "Spotify import complete"
+msgstr "Importowanie ze Spotify ukończone"
+
+#: t_modules/t_main.py:7847
+msgid "day"
+msgstr "dzień"
+
+#: t_modules/t_main.py:7848
+msgid "days"
+msgstr "dni"
+
+#: t_modules/t_main.py:7850
+msgid "Scanning for Chromecasts..."
+msgstr "Skanowanie w poszukiwaniu Chromecastów..."
+
+#: t_modules/t_main.py:7851
+msgid "Cast to: %s"
+msgstr ""
+
+#: t_modules/t_main.py:7852
+msgid "No Chromecast devices found"
+msgstr ""
+
+#: t_modules/t_main.py:7853
+msgid "End Cast"
+msgstr ""
+
+#: t_modules/t_main.py:7855
+msgid "Web server stopped."
+msgstr "Serwer sieciowy zatrzymany."
+
+#: t_modules/t_main.py:8080
+msgid "Missing username, password and/or server name"
+msgstr ""
+
+#: t_modules/t_main.py:8095
+msgid "Error connecting to PLEX server"
+msgstr ""
+
+#: t_modules/t_main.py:8096
+msgid "Try check login credentials and that server is accessible."
+msgstr ""
+
+#: t_modules/t_main.py:8598
+msgid "Missing username, password and/or server URL"
+msgstr ""
+
+#: t_modules/t_main.py:8626
+msgid "Could not establish connection"
+msgstr ""
+
+#: t_modules/t_main.py:8645
+msgid "Could not establish connection/authorisation"
+msgstr ""
+
+#: t_modules/t_main.py:9238
+msgid "Stop the sync before exiting!"
+msgstr ""
+
+#: t_modules/t_main.py:14067
+msgid "Playlists + Queue"
+msgstr ""
+
+#: t_modules/t_main.py:14068 t_modules/t_main.py:37562
+msgid "Queue"
+msgstr ""
+
+#: t_modules/t_main.py:14070
+msgid "Artist List"
+msgstr ""
+
+#: t_modules/t_main.py:14072
+msgid "Folder Navigator"
+msgstr ""
+
+#: t_modules/t_main.py:14133
+msgid "Track Renaming"
+msgstr ""
+
+#: t_modules/t_main.py:14136 t_modules/t_main.py:45620
+msgid "Default"
+msgstr ""
+
+#: t_modules/t_main.py:14160
+msgid "BEFORE"
+msgstr ""
+
+#: t_modules/t_main.py:14164
+msgid "AFTER"
+msgstr ""
+
+#: t_modules/t_main.py:14253
+msgid "Rename complete."
+msgstr ""
+
+#: t_modules/t_main.py:14254
+msgid " filenames were written."
+msgstr ""
+
+#: t_modules/t_main.py:14327
+msgid "Simple tag editor"
+msgstr ""
+
+#: t_modules/t_main.py:14329 t_modules/t_main.py:27697
+#: t_modules/t_main.py:27963 t_modules/t_main.py:28723
+msgid "?"
+msgstr ""
+
+#: t_modules/t_main.py:14330
+msgid "Press Enter in each field to apply its changes to local database."
+msgstr ""
+
+#: t_modules/t_main.py:14331
+msgid "When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"
+msgstr ""
+
+#: t_modules/t_main.py:14335
+msgid "Number of tracks selected: %d"
+msgstr ""
+
+#: t_modules/t_main.py:14370
+msgid "<Multiple selected>"
+msgstr ""
+
+#: t_modules/t_main.py:14378
+msgid "Track title"
+msgstr ""
+
+#: t_modules/t_main.py:14380
+msgid "Album name"
+msgstr ""
+
+#: t_modules/t_main.py:14382
+msgid "Artist name"
+msgstr ""
+
+#: t_modules/t_main.py:14384
+msgid "Album-artist name"
+msgstr ""
+
+#: t_modules/t_main.py:14390
+msgid "Editing network tracks is not recommended!"
+msgstr ""
+
+#: t_modules/t_main.py:14420 t_modules/t_main.py:14421
+msgid "WRITE TAGS"
+msgstr ""
+
+#: t_modules/t_main.py:14423
+msgid "Press enter on fields to apply your changes first!"
+msgstr ""
+
+#: t_modules/t_main.py:14435
+msgid "Writing to a network track is not applicable!"
+msgstr ""
+
+#: t_modules/t_main.py:14438
+msgid "Cannot write CUE sheet types!"
+msgstr ""
+
+#: t_modules/t_main.py:14446
+msgid "Cannot handle multi-field! Please use external tag editor"
+msgstr ""
+
+#: t_modules/t_main.py:14464
+msgid "%d files rewritten"
+msgstr ""
+
+#: t_modules/t_main.py:14526
+msgid "Substitute Lyric Search"
+msgstr ""
+
+#: t_modules/t_main.py:14532 t_modules/t_main.py:14554
+msgid "Substitute"
+msgstr ""
+
+#: t_modules/t_main.py:14539 t_modules/t_main.py:14561
+msgid "with"
+msgstr ""
+
+#: t_modules/t_main.py:14627
+msgid "Export Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:14632
+msgid "Save directory"
+msgstr ""
+
+#: t_modules/t_main.py:14651
+msgid "Use relative paths"
+msgstr ""
+
+#: t_modules/t_main.py:14654
+msgid "Auto-export"
+msgstr ""
+
+#: t_modules/t_main.py:14657 t_modules/t_main.py:14662
+msgid "Export"
+msgstr ""
+
+#: t_modules/t_main.py:14670
+msgid "Directory does not exist"
+msgstr ""
+
+#: t_modules/t_main.py:14720
+msgid "Repeat OFF"
+msgstr ""
+
+#: t_modules/t_main.py:14721
+msgid "Repeat Track"
+msgstr ""
+
+#: t_modules/t_main.py:14722
+msgid "Repeat Album"
+msgstr ""
+
+#: t_modules/t_main.py:14800
+msgid "Shuffle Lockdown"
+msgstr ""
+
+#: t_modules/t_main.py:14801
+msgid "Shuffle Lockdown Albums"
+msgstr ""
+
+#: t_modules/t_main.py:14803
+msgid "Shuffle OFF"
+msgstr ""
+
+#: t_modules/t_main.py:14804
+msgid "Shuffle Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:14805
+msgid "Random Albums"
+msgstr ""
+
+#: t_modules/t_main.py:14830
+msgid "Make Large Size"
+msgstr ""
+
+#: t_modules/t_main.py:14832
+msgid "Make Compact Size"
+msgstr ""
+
+#: t_modules/t_main.py:14865
+msgid "Close Panel"
+msgstr ""
+
+#: t_modules/t_main.py:14866
+msgid "Make Large"
+msgstr ""
+
+#: t_modules/t_main.py:15118
+msgid "Unlock Panel"
+msgstr ""
+
+#: t_modules/t_main.py:15120
+msgid "Lock Panel"
+msgstr ""
+
+#: t_modules/t_main.py:15123 t_modules/t_main.py:15124
+#: t_modules/t_main.py:15142 t_modules/t_main.py:19668
+#: t_modules/t_main.py:20661
+msgid "Open Folder"
+msgstr ""
+
+#: t_modules/t_main.py:15126 t_modules/t_main.py:15127
+#: t_modules/t_main.py:15128 t_modules/t_main.py:35837
+msgid "Filter to New Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:15129 t_modules/t_main.py:15130
+#: t_modules/t_main.py:18020
+msgid "Rescan Folder"
+msgstr ""
+
+#: t_modules/t_main.py:15131 t_modules/t_main.py:15133
+msgid "Move Playing Folder Here"
+msgstr ""
+
+#: t_modules/t_main.py:15137 t_modules/t_main.py:20683
+msgid "Collapse All"
+msgstr ""
+
+#: t_modules/t_main.py:15144
+msgid "Show in Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:15223 t_modules/t_main.py:20666
+#: t_modules/t_main.py:20679
+msgid "Add Album to Queue"
+msgstr ""
+
+#: t_modules/t_main.py:15224 t_modules/t_main.py:20667
+#: t_modules/t_main.py:20680
+msgid "Enqueue Album Next"
+msgstr ""
+
+#: t_modules/t_main.py:15235 t_modules/t_main.py:18213
+#: t_modules/t_main.py:28716
+msgid "Aborting Sync"
+msgstr ""
+
+#: t_modules/t_main.py:15238
+msgid "Cancel"
+msgstr ""
+
+#: t_modules/t_main.py:15248
+msgid "Hide Metadata Panel"
+msgstr ""
+
+#: t_modules/t_main.py:15250
+msgid "Show Metadata Panel"
+msgstr ""
+
+#: t_modules/t_main.py:15261
+msgid "Panel Below Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15263
+msgid "Panel Above Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15290 t_modules/t_main.py:15300
+#: t_modules/t_main.py:15308
+msgid "Hide Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15292 t_modules/t_main.py:15302
+#: t_modules/t_main.py:15310
+msgid "Show Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15342
+msgid "There are no lyric sources enabled."
+msgstr ""
+
+#: t_modules/t_main.py:15351
+msgid "Let's be polite and try later."
+msgstr ""
+
+#: t_modules/t_main.py:15368 t_modules/t_main.py:20900
+#: t_modules/t_main.py:20956 t_modules/t_main.py:34832
+msgid "Searching..."
+msgstr ""
+
+#: t_modules/t_main.py:15401
+msgid "No lyrics for this track were found"
+msgstr ""
+
+#: t_modules/t_main.py:15464 t_modules/t_main.py:15564
+#: t_modules/t_main.py:15986
+msgid "Search for Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15477
+msgid "Search GuitarParty"
+msgstr ""
+
+#: t_modules/t_main.py:15513
+msgid "Paste Chord Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15514
+msgid "Clear Chord Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15554 t_modules/t_main.py:15565
+#: t_modules/t_main.py:15987
+msgid "Toggle Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15556 t_modules/t_main.py:15567
+msgid "Substitute Search..."
+msgstr ""
+
+#: t_modules/t_main.py:15557 t_modules/t_main.py:15568
+msgid "Paste Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15558 t_modules/t_main.py:15569
+msgid "Copy Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15559 t_modules/t_main.py:15570
+msgid "Clear Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:15645
+msgid "Open Image"
+msgstr ""
+
+#: t_modules/t_main.py:15669
+msgid "Previous"
+msgstr ""
+
+#: t_modules/t_main.py:15672
+msgid "Extract Image"
+msgstr ""
+
+#: t_modules/t_main.py:15683
+msgid "Cannot download art for network tracks."
+msgstr ""
+
+#: t_modules/t_main.py:15707
+msgid "It doesn't look like this folder belongs to a single album, sorry"
+msgstr ""
+
+#: t_modules/t_main.py:15717
+msgid "Looking up MusicBrainz ID..."
+msgstr ""
+
+#: t_modules/t_main.py:15780
+msgid "Cover art downloaded from fanart.tv"
+msgstr ""
+
+#: t_modules/t_main.py:15801
+msgid "Cover art downloaded from MusicBrainz"
+msgstr ""
+
+#: t_modules/t_main.py:15812
+msgid "Matching cover art or ID could not be found."
+msgstr ""
+
+#: t_modules/t_main.py:15894
+msgid "Image removal failed."
+msgstr ""
+
+#: t_modules/t_main.py:15897
+msgid "Deleted embedded picture from file"
+msgstr ""
+
+#: t_modules/t_main.py:15924 t_modules/t_main.py:15931
+msgid "Delete Image File"
+msgstr ""
+
+#: t_modules/t_main.py:15939
+msgid "Delete Embedded | Folder"
+msgstr ""
+
+#: t_modules/t_main.py:15941
+msgid "Delete Embedded | Track"
+msgstr ""
+
+#: t_modules/t_main.py:15957
+msgid "Quick-Fetch Cover Art"
+msgstr ""
+
+#: t_modules/t_main.py:16008
+msgid "Paste Spotify Album"
+msgstr ""
+
+#: t_modules/t_main.py:16227 t_modules/t_main.py:16228
+#: t_modules/t_main.py:45631
+msgid "Rename"
+msgstr ""
+
+#: t_modules/t_main.py:16239
+msgid "Pin"
+msgstr ""
+
+#: t_modules/t_main.py:16241
+msgid "Unpin"
+msgstr ""
+
+#: t_modules/t_main.py:16249
+msgid "Unlock"
+msgstr ""
+
+#: t_modules/t_main.py:16251 t_modules/t_main.py:16285
+msgid "Lock"
+msgstr ""
+
+#: t_modules/t_main.py:16473 t_modules/t_main.py:21150
+#: t_modules/t_main.py:28030 t_modules/t_main.py:28033
+#: t_modules/t_main.py:28530 t_modules/t_main.py:28535
+#: t_modules/t_main.py:28543 t_modules/t_main.py:28547
+#: t_modules/t_main.py:28556
+msgid "Clear"
+msgstr ""
+
+#: t_modules/t_main.py:16530
+msgid "Are you sure you want to delete this playlist?"
+msgstr ""
+
+#: t_modules/t_main.py:16531
+msgid "Try again while holding shift to confirm"
+msgstr ""
+
+#: t_modules/t_main.py:16643
+msgid "Are you sure you want to delete playlist: %s?"
+msgstr ""
+
+#: t_modules/t_main.py:16684
+msgid "Rescanning folders..."
+msgstr ""
+
+#: t_modules/t_main.py:17008 t_modules/t_main.py:17019
+msgid "Playlist is locked"
+msgstr ""
+
+#: t_modules/t_main.py:17116 t_modules/t_main.py:17118
+#: t_modules/t_main.py:45640
+msgid "Delete"
+msgstr ""
+
+#: t_modules/t_main.py:17190
+msgid "Add Spotify Album"
+msgstr ""
+
+#: t_modules/t_main.py:17293
+msgid "Playlist contains non-Spotify tracks"
+msgstr ""
+
+#: t_modules/t_main.py:17299
+msgid "Created new Spotify playlist"
+msgstr ""
+
+#: t_modules/t_main.py:17305
+msgid "Error creating Spotify playlist"
+msgstr ""
+
+#: t_modules/t_main.py:17308
+msgid "Updated Spotify playlist"
+msgstr ""
+
+#: t_modules/t_main.py:17967
+msgid "OK. This playlist will automatically sort on import from now on"
+msgstr ""
+
+#: t_modules/t_main.py:17968
+msgid "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+msgstr ""
+
+#: t_modules/t_main.py:17973 t_modules/t_main.py:22001
+#: t_modules/t_main.py:22005
+msgid "New Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:17983 t_modules/t_main.py:17991
+msgid "Upload"
+msgstr ""
+
+#: t_modules/t_main.py:18004
+msgid "Regenerate"
+msgstr ""
+
+#: t_modules/t_main.py:18005
+msgid "Generate…"
+msgstr ""
+
+#: t_modules/t_main.py:18006
+msgid "Sort…"
+msgstr ""
+
+#: t_modules/t_main.py:18007
+msgid "From Current…"
+msgstr ""
+
+#: t_modules/t_main.py:18012
+msgid "Sort by Imported"
+msgstr ""
+
+#: t_modules/t_main.py:18013
+msgid "Sort by Filepath"
+msgstr ""
+
+#: t_modules/t_main.py:18014
+msgid "Sort Track Numbers"
+msgstr ""
+
+#: t_modules/t_main.py:18015
+msgid "Sort Year per Artist"
+msgstr ""
+
+#: t_modules/t_main.py:18016
+msgid "Make Playlist Auto-Sorting"
+msgstr ""
+
+#: t_modules/t_main.py:18022 t_modules/t_main.py:19834
+#: t_modules/t_main.py:21148
+msgid "Paste"
+msgstr ""
+
+#: t_modules/t_main.py:18023
+msgid "Append Playing"
+msgstr ""
+
+#: t_modules/t_main.py:18028
+msgid "Export…"
+msgstr ""
+
+#: t_modules/t_main.py:18030
+msgid "Misc…"
+msgstr ""
+
+#: t_modules/t_main.py:18079
+msgid "No target folder selected"
+msgstr ""
+
+#: t_modules/t_main.py:18085
+msgid "Target folder could not be found"
+msgstr ""
+
+#: t_modules/t_main.py:18125
+msgid "Deleting folders..."
+msgstr ""
+
+#: t_modules/t_main.py:18144 t_modules/t_main.py:18210
+msgid "Copying files to device"
+msgstr ""
+
+#: t_modules/t_main.py:18150
+msgid "Sync aborted! Low disk space on target device"
+msgstr ""
+
+#: t_modules/t_main.py:18159 t_modules/t_main.py:18191
+msgid "One or more folders to sync has the same name. Skipping."
+msgstr ""
+
+#: t_modules/t_main.py:18159 t_modules/t_main.py:18191
+msgid "Sync warning"
+msgstr ""
+
+#: t_modules/t_main.py:18176 t_modules/t_main.py:30904
+msgid "Folders Remaining"
+msgstr ""
+
+#: t_modules/t_main.py:18178 t_modules/t_main.py:30902
+msgid "Folder Remaining"
+msgstr ""
+
+#: t_modules/t_main.py:18221
+msgid "Sync completed"
+msgstr ""
+
+#: t_modules/t_main.py:18239 t_modules/t_main.py:18322
+msgid "Set as Sync Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:18242
+msgid "Un-set as Sync Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:18255 t_modules/t_main.py:18324
+msgid "Set as Downloads Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:18258
+msgid "Un-set as Downloads Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:18311
+msgid "Export Playlist Stats"
+msgstr ""
+
+#: t_modules/t_main.py:18312
+msgid "Export Albums CSV"
+msgstr ""
+
+#: t_modules/t_main.py:18313
+msgid "Transcode All"
+msgstr ""
+
+#: t_modules/t_main.py:18314 t_modules/t_main.py:20480
+#: t_modules/t_main.py:20727 t_modules/t_main.py:20828
+msgid "Rescan Tags"
+msgstr ""
+
+#: t_modules/t_main.py:18319
+msgid "Toggle Breaks"
+msgstr ""
+
+#: t_modules/t_main.py:18320
+msgid "Edit Generator..."
+msgstr ""
+
+#: t_modules/t_main.py:18321
+msgid "Engage Gallery Quick Add"
+msgstr ""
+
+#: t_modules/t_main.py:18326
+msgid "Remove Duplicates"
+msgstr ""
+
+#: t_modules/t_main.py:18371 t_modules/t_main.py:18460
+#: t_modules/t_main.py:18461
+msgid "Top Rated Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:18388 t_modules/t_main.py:18395
+#: t_modules/t_main.py:18396
+msgid "Top Played Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:18450 t_modules/t_main.py:18457
+#: t_modules/t_main.py:18458
+msgid "Top Played Albums"
+msgstr ""
+
+#: t_modules/t_main.py:18505 t_modules/t_main.py:18537
+#: t_modules/t_main.py:18538
+msgid "Top Rated Albums"
+msgstr ""
+
+#: t_modules/t_main.py:18527
+msgid "Tracks with lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:18534
+msgid "No tracks with lyrics were found."
+msgstr ""
+
+#: t_modules/t_main.py:18585
+msgid "Note this may include albums that simply have tracks missing an album tag"
+msgstr ""
+
+#: t_modules/t_main.py:18586
+msgid "Incomplete Albums"
+msgstr ""
+
+#: t_modules/t_main.py:18593
+msgid "No incomplete albums were found."
+msgstr ""
+
+#: t_modules/t_main.py:18605 t_modules/t_main.py:21503
+msgid "Codec"
+msgstr ""
+
+#: t_modules/t_main.py:18661 t_modules/t_main.py:18668
+#: t_modules/t_main.py:18669
+msgid "File Modified"
+msgstr ""
+
+#: t_modules/t_main.py:18692 t_modules/t_main.py:19082
+#: t_modules/t_main.py:19083 t_modules/t_main.py:21511
+msgid "Loved"
+msgstr ""
+
+#: t_modules/t_main.py:18723
+msgid "Interesting Comments"
+msgstr ""
+
+#: t_modules/t_main.py:18766
+msgid "Duration Sorted"
+msgstr ""
+
+#: t_modules/t_main.py:18773 t_modules/t_main.py:18774
+msgid "Longest Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:18812 t_modules/t_main.py:18817
+#: t_modules/t_main.py:18818
+msgid "Longest Albums"
+msgstr ""
+
+#: t_modules/t_main.py:18860
+msgid "Year Sorted"
+msgstr ""
+
+#: t_modules/t_main.py:18877 t_modules/t_main.py:18878
+msgid "Year by Oldest"
+msgstr ""
+
+#: t_modules/t_main.py:18885 t_modules/t_main.py:18886
+msgid "Year by Latest"
+msgstr ""
+
+#: t_modules/t_main.py:18897 t_modules/t_main.py:18904
+#: t_modules/t_main.py:18905
+msgid "Shuffled Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:18933 t_modules/t_main.py:18940
+#: t_modules/t_main.py:18941
+msgid "Shuffled Albums"
+msgstr ""
+
+#: t_modules/t_main.py:18956 t_modules/t_main.py:18964
+#: t_modules/t_main.py:18965
+msgid "Lucky Random"
+msgstr ""
+
+#: t_modules/t_main.py:18978
+msgid "Reversed"
+msgstr ""
+
+#: t_modules/t_main.py:18985 t_modules/t_main.py:18986
+msgid "Reverse Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:19013
+msgid "Reversed Albums"
+msgstr ""
+
+#: t_modules/t_main.py:19020 t_modules/t_main.py:19021
+msgid "Reverse Albums"
+msgstr ""
+
+#: t_modules/t_main.py:19027 t_modules/t_main.py:19035
+#: t_modules/t_main.py:19036
+msgid "Duplicate"
+msgstr ""
+
+#: t_modules/t_main.py:19046
+msgid "Filepath Sorted"
+msgstr ""
+
+#: t_modules/t_main.py:19061
+msgid "Artist Sorted"
+msgstr ""
+
+#: t_modules/t_main.py:19076
+msgid "Album Sorted"
+msgstr ""
+
+#: t_modules/t_main.py:19084 t_modules/t_main.py:19085
+msgid "Has Comment"
+msgstr ""
+
+#: t_modules/t_main.py:19086 t_modules/t_main.py:19087
+#: t_modules/t_main.py:21505
+msgid "Has Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:19120
+msgid "Configuration reloaded"
+msgstr ""
+
+#: t_modules/t_main.py:19133
+msgid "Click \"Reload\" if you made any changes"
+msgstr ""
+
+#: t_modules/t_main.py:19133
+msgid "Config file opened."
+msgstr ""
+
+#: t_modules/t_main.py:19199
+msgid "Transcoding tracks from network locations is not supported"
+msgstr ""
+
+#: t_modules/t_main.py:19219
+msgid "Transcoding spotify tracks not possible"
+msgstr ""
+
+#: t_modules/t_main.py:19576
+msgid "Add Playing Spotify Album"
+msgstr ""
+
+#: t_modules/t_main.py:19669
+msgid "Track Info…"
+msgstr ""
+
+#: t_modules/t_main.py:19715 t_modules/t_main.py:22511
+msgid "Un-Love Track"
+msgstr ""
+
+#: t_modules/t_main.py:19717 t_modules/t_main.py:22514
+#: t_modules/t_main.py:22516
+msgid "Love Track"
+msgstr ""
+
+#: t_modules/t_main.py:19819 t_modules/t_main.py:37560
+msgid "Add to Queue"
+msgstr ""
+
+#: t_modules/t_main.py:19821
+msgid "↳ After Current Track"
+msgstr ""
+
+#: t_modules/t_main.py:19823
+msgid "Show in Gallery"
+msgstr ""
+
+#: t_modules/t_main.py:19825
+msgid "Meta…"
+msgstr ""
+
+#: t_modules/t_main.py:19830 t_modules/t_main.py:20840
+#: t_modules/t_main.py:20845 t_modules/t_main.py:20846
+#: t_modules/t_main.py:21146
+msgid "Copy"
+msgstr ""
+
+#: t_modules/t_main.py:19845
+msgid "Cannot delete a network track"
+msgstr ""
+
+#: t_modules/t_main.py:19857 t_modules/t_main.py:19866
+msgid "File deleted"
+msgstr ""
+
+#: t_modules/t_main.py:19859 t_modules/t_main.py:19868
+msgid "Error deleting file"
+msgstr ""
+
+#: t_modules/t_main.py:19861
+msgid "File moved to trash"
+msgstr ""
+
+#: t_modules/t_main.py:19875
+msgid "Delete Track File"
+msgstr ""
+
+#: t_modules/t_main.py:19882
+msgid "Rename (Single track)"
+msgstr ""
+
+#: t_modules/t_main.py:19884 t_modules/t_main.py:20671
+#: t_modules/t_main.py:20673
+msgid "Rename Tracks…"
+msgstr ""
+
+#: t_modules/t_main.py:19899 t_modules/t_main.py:20728
+#: t_modules/t_main.py:20830
+msgid "Edit fields…"
+msgstr ""
+
+#: t_modules/t_main.py:19906
+msgid "Cannot physically delete"
+msgstr ""
+
+#: t_modules/t_main.py:19906
+msgid "One or more tracks is from a network location!"
+msgstr ""
+
+#: t_modules/t_main.py:19927
+msgid "Delete size safety limit reached!"
+msgstr ""
+
+#: t_modules/t_main.py:19965
+msgid "Folder could not be trashed."
+msgstr ""
+
+#: t_modules/t_main.py:20092 t_modules/t_main.py:20663
+#: t_modules/t_main.py:20664 t_modules/t_main.py:20669
+msgid "Modify Folder…"
+msgstr ""
+
+#: t_modules/t_main.py:20381
+msgid "Tag editor app does not appear to be installed."
+msgstr ""
+
+#: t_modules/t_main.py:20384
+msgid "App not found on host OR insufficient Flatpak permissions."
+msgstr ""
+
+#: t_modules/t_main.py:20500
+msgid "Edit with "
+msgstr ""
+
+#: t_modules/t_main.py:20513
+msgid "Lyrics..."
+msgstr ""
+
+#: t_modules/t_main.py:20616
+msgid "Fix Mojibake"
+msgstr ""
+
+#: t_modules/t_main.py:20722
+msgid "Transcode Single"
+msgstr ""
+
+#: t_modules/t_main.py:20724 t_modules/t_main.py:20730
+#: t_modules/t_main.py:20732 t_modules/t_main.py:21089
+msgid "Transcode Folder"
+msgstr ""
+
+#: t_modules/t_main.py:20729
+msgid "Vacuum Playtimes"
+msgstr ""
+
+#: t_modules/t_main.py:20742
+msgid "Copy \"Artist - Album\""
+msgstr ""
+
+#: t_modules/t_main.py:20750 t_modules/t_main.py:22654
+msgid "URL copied to clipboard"
+msgstr ""
+
+#: t_modules/t_main.py:20752 t_modules/t_main.py:22656
+msgid "No results found"
+msgstr ""
+
+#: t_modules/t_main.py:20758
+msgid "Copy Spotify Album URL"
+msgstr ""
+
+#: t_modules/t_main.py:20760
+msgid "Lookup Spotify Album URL"
+msgstr ""
+
+#: t_modules/t_main.py:20770
+msgid "Save to Spotify Library"
+msgstr ""
+
+#: t_modules/t_main.py:20776
+msgid "Remove from Spotify Library"
+msgstr ""
+
+#: t_modules/t_main.py:20819
+msgid "Queue %d"
+msgstr ""
+
+#: t_modules/t_main.py:20824
+msgid "Add to queue"
+msgstr ""
+
+#: t_modules/t_main.py:20841
+msgid "Cut"
+msgstr ""
+
+#: t_modules/t_main.py:20842 t_modules/t_main.py:20850
+#: t_modules/t_main.py:20851 t_modules/t_main.py:39144
+msgid "Remove"
+msgstr ""
+
+#: t_modules/t_main.py:20843
+msgid "Delete Files"
+msgstr ""
+
+#: t_modules/t_main.py:20891
+msgid "No matching artist result found"
+msgstr ""
+
+#: t_modules/t_main.py:20971
+msgid "Search Artist on Wikipedia"
+msgstr ""
+
+#: t_modules/t_main.py:20973
+msgid "Search Track on Genius"
+msgstr ""
+
+#: t_modules/t_main.py:20979
+msgid "Search Artist on Sonemic"
+msgstr ""
+
+#: t_modules/t_main.py:20986
+msgid "Search Artist on Bandcamp"
+msgstr ""
+
+#: t_modules/t_main.py:20999
+msgid "Copy \"Artist - Track\""
+msgstr ""
+
+#: t_modules/t_main.py:21018
+msgid "Copy Spotify Track URL"
+msgstr ""
+
+#: t_modules/t_main.py:21120
+msgid "Broadcast This"
+msgstr ""
+
+#: t_modules/t_main.py:21159 t_modules/t_main.py:27192
+msgid "Off"
+msgstr ""
+
+#: t_modules/t_main.py:21175
+msgid "Level Meter"
+msgstr ""
+
+#: t_modules/t_main.py:21185
+msgid "Spectrum Visualizer"
+msgstr ""
+
+#: t_modules/t_main.py:21479
+msgid "Time"
+msgstr ""
+
+#: t_modules/t_main.py:21480 t_modules/t_main.py:21507
+msgid "Filepath"
+msgstr ""
+
+#: t_modules/t_main.py:21486
+msgid "Auto Resize"
+msgstr ""
+
+#: t_modules/t_main.py:21487
+msgid "Hide bar"
+msgstr ""
+
+#: t_modules/t_main.py:21488
+msgid "Show bar"
+msgstr ""
+
+#: t_modules/t_main.py:21490 t_modules/t_main.py:37291
+msgid "Remove This"
+msgstr ""
+
+#: t_modules/t_main.py:21492 t_modules/t_main.py:45310
+#: t_modules/t_main.py:45316
+msgid "Artist"
+msgstr ""
+
+#: t_modules/t_main.py:21493 t_modules/t_main.py:45291
+#: t_modules/t_main.py:45297
+msgid "Title"
+msgstr ""
+
+#: t_modules/t_main.py:21494 t_modules/t_main.py:45329
+#: t_modules/t_main.py:45335
+msgid "Album"
+msgstr ""
+
+#: t_modules/t_main.py:21495 t_modules/t_main.py:45399
+#: t_modules/t_main.py:45405
+msgid "Album Artist"
+msgstr ""
+
+#: t_modules/t_main.py:21496 t_modules/t_main.py:45491
+#: t_modules/t_main.py:45497
+msgid "Composer"
+msgstr ""
+
+#: t_modules/t_main.py:21497 t_modules/t_main.py:45419
+#: t_modules/t_main.py:45425
+msgid "Duration"
+msgstr ""
+
+#: t_modules/t_main.py:21498 t_modules/t_main.py:45476
+#: t_modules/t_main.py:45482
+msgid "Date"
+msgstr ""
+
+#: t_modules/t_main.py:21499 t_modules/t_main.py:45461
+#: t_modules/t_main.py:45467
+msgid "Genre"
+msgstr ""
+
+#: t_modules/t_main.py:21500
+msgid "Track Number"
+msgstr ""
+
+#: t_modules/t_main.py:21501
+msgid "Play Count"
+msgstr ""
+
+#: t_modules/t_main.py:21502
+msgid "Scrobble Count"
+msgstr ""
+
+#: t_modules/t_main.py:21504 t_modules/t_main.py:28758
+#: t_modules/t_main.py:45386
+msgid "Bitrate"
+msgstr ""
+
+#: t_modules/t_main.py:21506 t_modules/t_main.py:45546
+#: t_modules/t_main.py:45552
+msgid "Comment"
+msgstr ""
+
+#: t_modules/t_main.py:21508
+msgid "Filename"
+msgstr ""
+
+#: t_modules/t_main.py:21509
+msgid "Starline"
+msgstr ""
+
+#: t_modules/t_main.py:21510
+msgid "Rating"
+msgstr ""
+
+#: t_modules/t_main.py:21999
+msgid "New Radio List"
+msgstr ""
+
+#: t_modules/t_main.py:22023 t_modules/t_main.py:22026
+msgid "Clean Database!"
+msgstr ""
+
+#: t_modules/t_main.py:22052
+msgid "Paste Spotify Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:22061
+msgid "Music"
+msgstr ""
+
+#: t_modules/t_main.py:22072
+msgid "Import Music Folder"
+msgstr ""
+
+#: t_modules/t_main.py:22080
+msgid "Settings"
+msgstr ""
+
+#: t_modules/t_main.py:22081
+msgid "Database…"
+msgstr ""
+
+#: t_modules/t_main.py:22145
+msgid "Export as CSV"
+msgstr ""
+
+#: t_modules/t_main.py:22146
+msgid "Play History to Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:22147
+msgid "Reset Image Cache"
+msgstr ""
+
+#: t_modules/t_main.py:22166
+msgid "Remove Network Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:22167
+msgid "Remove Missing Tracks"
+msgstr ""
+
+#: t_modules/t_main.py:22188
+msgid "Import FMPS_Ratings from Tags"
+msgstr ""
+
+#: t_modules/t_main.py:22193
+msgid "This will delete all track and album ratings from the local database!"
+msgstr ""
+
+#: t_modules/t_main.py:22194 t_modules/t_main.py:28581
+msgid "Press button again while holding shift key if you're sure you want to do that."
+msgstr ""
+
+#: t_modules/t_main.py:22204
+msgid "Reset User Ratings"
+msgstr ""
+
+#: t_modules/t_main.py:22211 t_modules/t_main.py:22289
+msgid "Find Incomplete Albums"
+msgstr ""
+
+#: t_modules/t_main.py:22217
+msgid "There are no tracks in this playlist to broadcast."
+msgstr ""
+
+#: t_modules/t_main.py:22220
+msgid "You need to start the broadcast web server in settings."
+msgstr ""
+
+#: t_modules/t_main.py:22243
+msgid "Stop Broadcast"
+msgstr ""
+
+#: t_modules/t_main.py:22260
+msgid "Start Broadcast"
+msgstr ""
+
+#: t_modules/t_main.py:22266
+msgid "Stop Cast"
+msgstr ""
+
+#: t_modules/t_main.py:22287
+msgid "Chromecast…"
+msgstr ""
+
+#: t_modules/t_main.py:22329
+msgid "Mini"
+msgstr ""
+
+#: t_modules/t_main.py:22331
+msgid "Square"
+msgstr ""
+
+#: t_modules/t_main.py:22332
+msgid "Square Large"
+msgstr ""
+
+#: t_modules/t_main.py:22333
+msgid "Micro"
+msgstr ""
+
+#: t_modules/t_main.py:22344
+msgid "No metadata available to copy"
+msgstr ""
+
+#: t_modules/t_main.py:22348
+msgid "Copy Title to Clipboard"
+msgstr ""
+
+#: t_modules/t_main.py:22366
+msgid "Random Track"
+msgstr ""
+
+#: t_modules/t_main.py:22394
+msgid "Radio Random"
+msgstr ""
+
+#: t_modules/t_main.py:22399
+msgid "Revert"
+msgstr ""
+
+#: t_modules/t_main.py:22405 t_modules/t_main.py:37297
+msgid "Clear Queue"
+msgstr ""
+
+#: t_modules/t_main.py:22567
+msgid "Spotify Like Track"
+msgstr ""
+
+#: t_modules/t_main.py:22572
+msgid "Un-like Spotify Track"
+msgstr ""
+
+#: t_modules/t_main.py:22645
+msgid "Global Search"
+msgstr ""
+
+#: t_modules/t_main.py:22661
+msgid "Copy Album URL"
+msgstr ""
+
+#: t_modules/t_main.py:22665
+msgid "Lookup Spotify Album"
+msgstr ""
+
+#: t_modules/t_main.py:22678
+msgid "Locate Artist"
+msgstr ""
+
+#: t_modules/t_main.py:22680
+msgid "Go To Playing"
+msgstr ""
+
+#: t_modules/t_main.py:22830
+msgid "ListenBrainz is Paused"
+msgstr ""
+
+#: t_modules/t_main.py:22832
+msgid "Scrobbling is Paused"
+msgstr ""
+
+#: t_modules/t_main.py:22836
+msgid "ListenBrainz is Active"
+msgstr ""
+
+#: t_modules/t_main.py:22838
+msgid "Scrobbling is Active"
+msgstr ""
+
+#: t_modules/t_main.py:23050
+msgid "Exit Shuffle Lockdown"
+msgstr ""
+
+#: t_modules/t_main.py:23051
+msgid "Exit"
+msgstr ""
+
+#: t_modules/t_main.py:23062
+msgid "Disengage Quick Add"
+msgstr ""
+
+#: t_modules/t_main.py:23803
+msgid "Press Tab key to switch to Spotify search"
+msgstr ""
+
+#: t_modules/t_main.py:24033
+msgid "Searching for albums by artist: "
+msgstr ""
+
+#: t_modules/t_main.py:24033
+msgid "This may take a moment"
+msgstr ""
+
+#: t_modules/t_main.py:25634
+msgid "Permission error accessing one or more files."
+msgstr ""
+
+#: t_modules/t_main.py:25635
+msgid "If this location is on external media, see"
+msgstr ""
+
+#: t_modules/t_main.py:25638
+msgid "Permission error accessing one or more files"
+msgstr ""
+
+#: t_modules/t_main.py:26394
+msgid "Note that ratings are stored in the local database and not written to tags."
+msgstr ""
+
+#: t_modules/t_main.py:26445 t_modules/t_main.py:26459
+#: t_modules/t_main.py:26497
+msgid "Change will be applied on restart."
+msgstr ""
+
+#: t_modules/t_main.py:26546
+msgid "Tip: You can also toggle this from a right-click context menu"
+msgstr ""
+
+#: t_modules/t_main.py:26591
+msgid "External connections will be accepted."
+msgstr ""
+
+#: t_modules/t_main.py:26591
+msgid "Web server starting"
+msgstr ""
+
+#: t_modules/t_main.py:26633 t_modules/t_main.py:28007
+msgid "One or more fields is missing."
+msgstr ""
+
+#: t_modules/t_main.py:26741
+msgid "DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."
+msgstr ""
+
+#: t_modules/t_main.py:26742
+msgid "For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."
+msgstr ""
+
+#: t_modules/t_main.py:26763
+msgid "DANGER! This will delete the original files. You may want to have backups in case of malfunction."
+msgstr ""
+
+#: t_modules/t_main.py:26764
+msgid "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."
+msgstr ""
+
+#: t_modules/t_main.py:26944 t_modules/t_main.py:26952
+msgid "There was an error generating the chart"
+msgstr ""
+
+#: t_modules/t_main.py:26955
+msgid "Chart generated"
+msgstr ""
+
+#: t_modules/t_main.py:27001
+msgid "Function"
+msgstr ""
+
+#: t_modules/t_main.py:27002
+msgid "Audio"
+msgstr ""
+
+#: t_modules/t_main.py:27003
+msgid "Tracklist"
+msgstr ""
+
+#: t_modules/t_main.py:27004 t_modules/t_main.py:27054
+msgid "Theme"
+msgstr ""
+
+#: t_modules/t_main.py:27005
+msgid "Window"
+msgstr ""
+
+#: t_modules/t_main.py:27006
+msgid "View"
+msgstr ""
+
+#: t_modules/t_main.py:27007
+msgid "Transcode"
+msgstr ""
+
+#: t_modules/t_main.py:27008 t_modules/t_main.py:45534
+msgid "Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:27009
+msgid "Accounts"
+msgstr ""
+
+#: t_modules/t_main.py:27010
+msgid "Stats"
+msgstr ""
+
+#: t_modules/t_main.py:27011
+msgid "About"
+msgstr ""
+
+#: t_modules/t_main.py:27058
+msgid "Use album art as background"
+msgstr ""
+
+#: t_modules/t_main.py:27062
+msgid "Stronger"
+msgstr ""
+
+#: t_modules/t_main.py:27068
+msgid "Blur"
+msgstr ""
+
+#: t_modules/t_main.py:27071
+msgid "Showcase only"
+msgstr ""
+
+#: t_modules/t_main.py:27076
+msgid "Pattern style"
+msgstr ""
+
+#: t_modules/t_main.py:27080
+msgid "Auto-theme from album art"
+msgstr ""
+
+#: t_modules/t_main.py:27175
+msgid "Based on"
+msgstr ""
+
+#: t_modules/t_main.py:27183 t_modules/t_main.py:27262
+#: t_modules/t_main.py:28720 t_modules/t_main.py:29324
+msgid "Return"
+msgstr ""
+
+#: t_modules/t_main.py:27189 t_modules/t_main.py:27355
+msgid "ReplayGain"
+msgstr ""
+
+#: t_modules/t_main.py:27193
+msgid "Auto"
+msgstr ""
+
+#: t_modules/t_main.py:27195
+msgid "Preserve album dynamics"
+msgstr ""
+
+#: t_modules/t_main.py:27197
+msgid "Tracks equal loudness"
+msgstr ""
+
+#: t_modules/t_main.py:27200
+msgid "Will only have effect if ReplayGain metadata is present."
+msgstr ""
+
+#: t_modules/t_main.py:27203
+msgid "Pre-amp"
+msgstr ""
+
+#: t_modules/t_main.py:27254
+msgid "Lower pre-amp values improve normalisation but will require a higher system volume."
+msgstr ""
+
+#: t_modules/t_main.py:27271 t_modules/t_main.py:27861
+#: t_modules/t_main.py:27867 t_modules/t_main.py:27873
+#: t_modules/t_main.py:28039
+msgid "Enable"
+msgstr ""
+
+#: t_modules/t_main.py:27348
+msgid "Use fade on pause/stop"
+msgstr ""
+
+#: t_modules/t_main.py:27350
+msgid "Use fade on track jump"
+msgstr ""
+
+#: t_modules/t_main.py:27352
+msgid "Back restarts to beginning"
+msgstr ""
+
+#: t_modules/t_main.py:27360
+msgid "Cache local files (for smb/nfs)"
+msgstr ""
+
+#: t_modules/t_main.py:27363
+msgid "Use persistent network cache"
+msgstr ""
+
+#: t_modules/t_main.py:27368
+msgid "Cache size"
+msgstr ""
+
+#: t_modules/t_main.py:27387
+msgid "Set audio output device"
+msgstr ""
+
+#: t_modules/t_main.py:27390
+msgid "Avoid resampling"
+msgstr ""
+
+#: t_modules/t_main.py:27462
+msgid "Enable chord lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:27465
+msgid "Sources:"
+msgstr ""
+
+#: t_modules/t_main.py:27482
+msgid "*Uses scraping. Enable at your own discretion."
+msgstr ""
+
+#: t_modules/t_main.py:27485
+msgid "Tip: The order enabled will be the order searched."
+msgstr ""
+
+#: t_modules/t_main.py:27496
+msgid "Metadata side panel"
+msgstr ""
+
+#: t_modules/t_main.py:27499
+msgid "Use centered style"
+msgstr ""
+
+#: t_modules/t_main.py:27502
+msgid "Zoom album art to fit"
+msgstr ""
+
+#: t_modules/t_main.py:27509 t_modules/t_main.py:40040
+#: t_modules/t_main.py:40043
+msgid "Gallery"
+msgstr ""
+
+#: t_modules/t_main.py:27513
+msgid "Single click to play"
+msgstr ""
+
+#: t_modules/t_main.py:27515
+msgid "Show titles"
+msgstr ""
+
+#: t_modules/t_main.py:27520
+msgid "Center alignment"
+msgstr ""
+
+#: t_modules/t_main.py:27527 t_modules/t_main.py:27535
+msgid "Thumbnail size"
+msgstr ""
+
+#: t_modules/t_main.py:27531
+msgid "Prefer thinner padding"
+msgstr ""
+
+#: t_modules/t_main.py:27550
+msgid "Ready broadcaster"
+msgstr ""
+
+#: t_modules/t_main.py:27550
+msgid "Start web server for broadcasting"
+msgstr ""
+
+#: t_modules/t_main.py:27570
+msgid "Show artist info panel"
+msgstr ""
+
+#: t_modules/t_main.py:27571
+msgid "You can also toggle this with ctrl+o"
+msgstr ""
+
+#: t_modules/t_main.py:27576
+msgid "Auto fetch artist data"
+msgstr ""
+
+#: t_modules/t_main.py:27577
+msgid "Downloads data in background when artist panel is open"
+msgstr ""
+
+#: t_modules/t_main.py:27581
+msgid "Auto regenerate playlists"
+msgstr ""
+
+#: t_modules/t_main.py:27582
+msgid "Generated playlists reload when re-entering"
+msgstr ""
+
+#: t_modules/t_main.py:27586
+msgid "Tabs in top panel"
+msgstr ""
+
+#: t_modules/t_main.py:27587
+msgid "Uncheck to disable the tab pin function"
+msgstr ""
+
+#: t_modules/t_main.py:27592 t_modules/t_main.py:27598
+msgid "Open config file"
+msgstr ""
+
+#: t_modules/t_main.py:27594 t_modules/t_main.py:27604
+msgid "Open data folder"
+msgstr ""
+
+#: t_modules/t_main.py:27602
+msgid "Reload"
+msgstr ""
+
+#: t_modules/t_main.py:27608
+msgid "Enable/Disable track context menu functions:"
+msgstr ""
+
+#: t_modules/t_main.py:27611
+msgid "Wikipedia artist search"
+msgstr ""
+
+#: t_modules/t_main.py:27613
+msgid "Sonemic artist search"
+msgstr ""
+
+#: t_modules/t_main.py:27615
+msgid "Bandcamp artist page search"
+msgstr ""
+
+#: t_modules/t_main.py:27619
+msgid "Genius track search"
+msgstr ""
+
+#: t_modules/t_main.py:27621
+msgid "Transcode folder"
+msgstr ""
+
+#: t_modules/t_main.py:27630
+msgid "Extract archives"
+msgstr ""
+
+#: t_modules/t_main.py:27631
+msgid "Extracts zip archives on drag and drop"
+msgstr ""
+
+#: t_modules/t_main.py:27633
+msgid "Enable download monitor"
+msgstr ""
+
+#: t_modules/t_main.py:27634
+msgid "One click import new archives and folders from downloads folder"
+msgstr ""
+
+#: t_modules/t_main.py:27636
+msgid "Trash archive after extraction"
+msgstr ""
+
+#: t_modules/t_main.py:27638
+msgid "Always extract to Music folder"
+msgstr ""
+
+#: t_modules/t_main.py:27642
+msgid "Show icon in system tray"
+msgstr ""
+
+#: t_modules/t_main.py:27645 t_modules/t_main.py:27650
+msgid "Close to tray"
+msgstr ""
+
+#: t_modules/t_main.py:27648
+msgid "Show title text"
+msgstr ""
+
+#: t_modules/t_main.py:27657
+msgid "Enable remote control"
+msgstr ""
+
+#: t_modules/t_main.py:27658
+msgid "Change requires restart"
+msgstr ""
+
+#: t_modules/t_main.py:27667
+msgid "Block suspend"
+msgstr ""
+
+#: t_modules/t_main.py:27668
+msgid "Prevent system suspend during playback"
+msgstr ""
+
+#: t_modules/t_main.py:27671
+msgid "Resume from suspend"
+msgstr ""
+
+#: t_modules/t_main.py:27672
+msgid "Continue playback when waking from sleep"
+msgstr ""
+
+#: t_modules/t_main.py:27676
+msgid "Record Radio"
+msgstr ""
+
+#: t_modules/t_main.py:27677
+msgid "Record and split songs when playing internet radio"
+msgstr ""
+
+#: t_modules/t_main.py:27679
+msgid "Tracks will now be recorded. Restart any playback for change to take effect."
+msgstr ""
+
+#: t_modules/t_main.py:27680
+msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
+msgstr ""
+
+#: t_modules/t_main.py:27694
+msgid "Enable Discord Rich Presence"
+msgstr ""
+
+#: t_modules/t_main.py:27698
+msgid "For troubleshooting Discord RP"
+msgstr ""
+
+#: t_modules/t_main.py:27912
+msgid "Show threshold marker"
+msgstr ""
+
+#: t_modules/t_main.py:27923
+msgid "IP"
+msgstr ""
+
+#: t_modules/t_main.py:27941
+msgid "Playlist name"
+msgstr ""
+
+#: t_modules/t_main.py:27954
+msgid "Get playlist"
+msgstr ""
+
+#: t_modules/t_main.py:27962
+msgid "Maloja Server"
+msgstr ""
+
+#: t_modules/t_main.py:27964
+msgid "Maloja is a self-hosted scrobble server."
+msgstr ""
+
+#: t_modules/t_main.py:27965
+msgid "See here to lean more: %s"
+msgstr ""
+
+#: t_modules/t_main.py:27975 t_modules/t_main.py:28179
+#: t_modules/t_main.py:28240 t_modules/t_main.py:28313
+msgid "Server URL"
+msgstr ""
+
+#: t_modules/t_main.py:27989
+msgid "API Key"
+msgstr ""
+
+#: t_modules/t_main.py:28004 t_modules/t_main.py:28270
+msgid "Test connectivity"
+msgstr ""
+
+#: t_modules/t_main.py:28029 t_modules/t_main.py:28031
+#: t_modules/t_main.py:28529 t_modules/t_main.py:28546
+msgid "Get scrobble counts"
+msgstr ""
+
+#: t_modules/t_main.py:28042
+msgid "View setup instructions"
+msgstr ""
+
+#: t_modules/t_main.py:28049
+msgid "Client ID"
+msgstr ""
+
+#: t_modules/t_main.py:28079
+msgid "Forget Account"
+msgstr ""
+
+#: t_modules/t_main.py:28083
+msgid "Authorise"
+msgstr ""
+
+#: t_modules/t_main.py:28093
+msgid "Prefer launching web player"
+msgstr ""
+
+#: t_modules/t_main.py:28097 t_modules/t_main.py:28098
+msgid "Import Albums"
+msgstr ""
+
+#: t_modules/t_main.py:28105 t_modules/t_main.py:28114
+#: t_modules/t_main.py:28125 t_modules/t_main.py:28137
+msgid "Please wait until current job is finished"
+msgstr ""
+
+#: t_modules/t_main.py:28107
+msgid "Import Liked Songs"
+msgstr ""
+
+#: t_modules/t_main.py:28118
+msgid "Import all user playlists"
+msgstr ""
+
+#: t_modules/t_main.py:28120
+msgid "Importing Spotify playlists..."
+msgstr ""
+
+#: t_modules/t_main.py:28128
+msgid "Import single user playlist..."
+msgstr ""
+
+#: t_modules/t_main.py:28141
+msgid "Airsonic/Subsonic network streaming"
+msgstr ""
+
+#: t_modules/t_main.py:28151 t_modules/t_main.py:28285
+#: t_modules/t_main.py:28342
+msgid "Username / Email"
+msgstr ""
+
+#: t_modules/t_main.py:28165 t_modules/t_main.py:28226
+#: t_modules/t_main.py:28299 t_modules/t_main.py:28356
+msgid "Password"
+msgstr ""
+
+#: t_modules/t_main.py:28193 t_modules/t_main.py:28255
+#: t_modules/t_main.py:28328 t_modules/t_main.py:28384
+msgid "Import music to playlist"
+msgstr ""
+
+#: t_modules/t_main.py:28197
+msgid "Use plain text authentication"
+msgstr ""
+
+#: t_modules/t_main.py:28198
+msgid "Needed for Nextcloud Music"
+msgstr ""
+
+#: t_modules/t_main.py:28202
+msgid "Jellyfin network streaming"
+msgstr ""
+
+#: t_modules/t_main.py:28212
+msgid "Username"
+msgstr ""
+
+#: t_modules/t_main.py:28258
+msgid "Import playlists"
+msgstr ""
+
+#: t_modules/t_main.py:28275
+msgid "koel network streaming"
+msgstr ""
+
+#: t_modules/t_main.py:28332
+msgid "PLEX network streaming"
+msgstr ""
+
+#: t_modules/t_main.py:28370
+msgid "Server name"
+msgstr ""
+
+#: t_modules/t_main.py:28392
+msgid "Fanart.tv can be used for sourcing of artist images and cover art."
+msgstr ""
+
+#: t_modules/t_main.py:28399 t_modules/t_main.py:35957
+msgid "They encourage you to contribute at https://fanart.tv"
+msgstr ""
+
+#: t_modules/t_main.py:28405
+msgid "Cover art (Manual only)"
+msgstr ""
+
+#: t_modules/t_main.py:28408
+msgid "Artist images (Automatic)"
+msgstr ""
+
+#: t_modules/t_main.py:28411
+msgid "Artist backgrounds (Automatic)"
+msgstr ""
+
+#: t_modules/t_main.py:28414
+msgid "Flip current"
+msgstr ""
+
+#: t_modules/t_main.py:28496 t_modules/t_main.py:28497
+msgid "Username:"
+msgstr ""
+
+#: t_modules/t_main.py:28504 t_modules/t_main.py:28506
+msgid "Login"
+msgstr ""
+
+#: t_modules/t_main.py:28505 t_modules/t_main.py:28507
+msgid "Done"
+msgstr ""
+
+#: t_modules/t_main.py:28511
+msgid "Use LibreFM"
+msgstr ""
+
+#: t_modules/t_main.py:28515
+msgid "Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."
+msgstr ""
+
+#: t_modules/t_main.py:28519
+msgid "Forget account"
+msgstr ""
+
+#: t_modules/t_main.py:28526 t_modules/t_main.py:28534
+msgid "Get user loves"
+msgstr ""
+
+#: t_modules/t_main.py:28527
+msgid "Clear local loves"
+msgstr ""
+
+#: t_modules/t_main.py:28528 t_modules/t_main.py:28542
+msgid "Get friend loves"
+msgstr ""
+
+#: t_modules/t_main.py:28554 t_modules/t_main.py:28556
+msgid "Paste Token"
+msgstr ""
+
+#: t_modules/t_main.py:28580
+msgid "This will mark all tracks in local database as unloved!"
+msgstr ""
+
+#: t_modules/t_main.py:28590
+msgid "Cleared all loves"
+msgstr ""
+
+#: t_modules/t_main.py:28597 t_modules/t_main.py:28619
+msgid "Press again while holding Shift if you understand"
+msgstr ""
+
+#: t_modules/t_main.py:28612
+msgid "Cleared all scrobble counts"
+msgstr ""
+
+#: t_modules/t_main.py:28617
+msgid "Warning: This process can take a long time to complete! (up to an hour or more)"
+msgstr ""
+
+#: t_modules/t_main.py:28618
+msgid "This feature is not recommended for accounts that have many friends."
+msgstr ""
+
+#: t_modules/t_main.py:28656
+msgid "Selected playlist:"
+msgstr ""
+
+#: t_modules/t_main.py:28660
+msgid "No sync playlist selected!"
+msgstr ""
+
+#: t_modules/t_main.py:28663
+msgid "Path to device music folder:   "
+msgstr ""
+
+#: t_modules/t_main.py:28681
+msgid "A mounted music folder was found!"
+msgstr ""
+
+#: t_modules/t_main.py:28683
+msgid "Could not auto-detect mounted device path."
+msgstr ""
+
+#: t_modules/t_main.py:28684
+msgid "Make sure the device is mounted and path is accessible."
+msgstr ""
+
+#: t_modules/t_main.py:28689
+msgid "Delete all other folders in target"
+msgstr ""
+
+#: t_modules/t_main.py:28692
+msgid "Transcode files"
+msgstr ""
+
+#: t_modules/t_main.py:28695
+msgid "Bypass low bitrate"
+msgstr ""
+
+#: t_modules/t_main.py:28698
+msgid "Start Transcode and Sync"
+msgstr ""
+
+#: t_modules/t_main.py:28701
+msgid "Start Sync"
+msgstr ""
+
+#: t_modules/t_main.py:28705
+msgid "Stopping..."
+msgstr ""
+
+#: t_modules/t_main.py:28711
+msgid "Select a source playlist"
+msgstr ""
+
+#: t_modules/t_main.py:28712
+msgid "Right click tab > Misc... > Set as sync playlist"
+msgstr ""
+
+#: t_modules/t_main.py:28714
+msgid "Stop"
+msgstr ""
+
+#: t_modules/t_main.py:28731
+msgid "Output codec setting:"
+msgstr ""
+
+#: t_modules/t_main.py:28733 t_modules/t_main.py:28734
+msgid "Open output folder"
+msgstr ""
+
+#: t_modules/t_main.py:28736 t_modules/t_main.py:28737
+msgid "Sync..."
+msgstr ""
+
+#: t_modules/t_main.py:28745
+msgid "Save opus as .ogg extension"
+msgstr ""
+
+#: t_modules/t_main.py:28766
+msgid "Save to output folder"
+msgstr ""
+
+#: t_modules/t_main.py:28768
+msgid "Save and overwrite files inplace"
+msgstr ""
+
+#: t_modules/t_main.py:28790
+msgid "Emit track change notifications"
+msgstr ""
+
+#: t_modules/t_main.py:28793
+msgid "Draw own window decorations"
+msgstr ""
+
+#: t_modules/t_main.py:28797
+msgid "Restore window position on restart"
+msgstr ""
+
+#: t_modules/t_main.py:28801
+msgid "Show playing in titlebar"
+msgstr ""
+
+#: t_modules/t_main.py:28808
+msgid "Top-panel level meter"
+msgstr ""
+
+#: t_modules/t_main.py:28812
+msgid "Showcase visualisation"
+msgstr ""
+
+#: t_modules/t_main.py:28818
+msgid "UI scale for HiDPI displays"
+msgstr ""
+
+#: t_modules/t_main.py:28876
+msgid "Auto scale"
+msgstr ""
+
+#: t_modules/t_main.py:29183 t_modules/t_main.py:29186
+msgid "Credits"
+msgstr ""
+
+#: t_modules/t_main.py:29183 t_modules/t_main.py:29188
+msgid "Next"
+msgstr ""
+
+#: t_modules/t_main.py:29200
+msgid "Chart Grid Generator"
+msgstr ""
+
+#: t_modules/t_main.py:29203
+msgid "Target playlist:   "
+msgstr ""
+
+#: t_modules/t_main.py:29231
+msgid "Rows"
+msgstr ""
+
+#: t_modules/t_main.py:29233
+msgid "Columns"
+msgstr ""
+
+#: t_modules/t_main.py:29239
+msgid "Cascade style"
+msgstr ""
+
+#: t_modules/t_main.py:29241
+msgid "Use padding"
+msgstr ""
+
+#: t_modules/t_main.py:29246
+msgid "Include album titles"
+msgstr ""
+
+#: t_modules/t_main.py:29248
+msgid "Sort by top played"
+msgstr ""
+
+#: t_modules/t_main.py:29254
+msgid "Randomise BG"
+msgstr ""
+
+#: t_modules/t_main.py:29290
+msgid "Generate"
+msgstr ""
+
+#: t_modules/t_main.py:29304
+msgid "Generating..."
+msgstr ""
+
+#: t_modules/t_main.py:29312
+msgid "Album chart"
+msgstr ""
+
+#: t_modules/t_main.py:29317
+msgid "Not enough albums in the playlist!"
+msgstr ""
+
+#: t_modules/t_main.py:29336 t_modules/t_main.py:29337
+msgid "Chart generator..."
+msgstr ""
+
+#: t_modules/t_main.py:29344 t_modules/t_main.py:29384
+msgid "Tracks in playlist"
+msgstr ""
+
+#: t_modules/t_main.py:29345 t_modules/t_main.py:29387
+msgid "Albums in playlist"
+msgstr ""
+
+#: t_modules/t_main.py:29346 t_modules/t_main.py:29390
+msgid "Playlist duration"
+msgstr ""
+
+#: t_modules/t_main.py:29347 t_modules/t_main.py:29418
+msgid "Tracks in database"
+msgstr ""
+
+#: t_modules/t_main.py:29348 t_modules/t_main.py:29421
+msgid "Total albums"
+msgstr ""
+
+#: t_modules/t_main.py:29349 t_modules/t_main.py:29425
+msgid "Total playtime"
+msgstr ""
+
+#: t_modules/t_main.py:29486
+msgid "Track ratings"
+msgstr ""
+
+#: t_modules/t_main.py:29488
+msgid "Album ratings"
+msgstr ""
+
+#: t_modules/t_main.py:29496
+msgid "Show track loves"
+msgstr ""
+
+#: t_modules/t_main.py:29504
+msgid "Represent playtime as stars"
+msgstr ""
+
+#: t_modules/t_main.py:29513
+msgid "Represent playcount as lines"
+msgstr ""
+
+#: t_modules/t_main.py:29530
+msgid "Show album release year"
+msgstr ""
+
+#: t_modules/t_main.py:29533
+msgid "Show album duration"
+msgstr ""
+
+#: t_modules/t_main.py:29539
+msgid "Font Size"
+msgstr ""
+
+#: t_modules/t_main.py:29541
+msgid "Row Size"
+msgstr ""
+
+#: t_modules/t_main.py:29543
+msgid "Baseline offset"
+msgstr ""
+
+#: t_modules/t_main.py:29548
+msgid "Thin default"
+msgstr ""
+
+#: t_modules/t_main.py:29550
+msgid "Thick default"
+msgstr ""
+
+#: t_modules/t_main.py:29556
+msgid "End of playlist action"
+msgstr ""
+
+#: t_modules/t_main.py:29559 t_modules/t_main.py:29563
+msgid "Stop playback"
+msgstr ""
+
+#: t_modules/t_main.py:29560 t_modules/t_main.py:29565
+msgid "Repeat playlist"
+msgstr ""
+
+#: t_modules/t_main.py:29569
+msgid "Play next playlist"
+msgstr ""
+
+#: t_modules/t_main.py:29571
+msgid "Cycle all playlists"
+msgstr ""
+
+#: t_modules/t_main.py:29904
+msgid "Okay, it's a normal playlist now."
+msgstr ""
+
+#: t_modules/t_main.py:29913
+msgid "You added tracks to a generator playlist. Do you want to clear the generator?"
+msgstr ""
+
+#: t_modules/t_main.py:30449 t_modules/t_main.py:35138
+msgid "Added station to: "
+msgstr ""
+
+#: t_modules/t_main.py:30838
+msgid "Buffering... "
+msgstr ""
+
+#: t_modules/t_main.py:30952
+msgid "There are currently no connected clients"
+msgstr ""
+
+#: t_modules/t_main.py:30954
+msgid "There is 1 inbound connection."
+msgstr ""
+
+#: t_modules/t_main.py:30956
+msgid "There are %d inbound connections."
+msgstr ""
+
+#: t_modules/t_main.py:31531 t_modules/t_main.py:32111
+msgid "Play, RC: Go to playing"
+msgstr ""
+
+#: t_modules/t_main.py:31556 t_modules/t_main.py:32136
+msgid "Pause"
+msgstr ""
+
+#: t_modules/t_main.py:31572
+msgid "Stop, RC: Toggle auto-stop"
+msgstr ""
+
+#: t_modules/t_main.py:31595 t_modules/t_main.py:32157
+msgid "Shuffle On"
+msgstr ""
+
+#: t_modules/t_main.py:31598 t_modules/t_main.py:32160
+msgid "Shuffle Off"
+msgstr ""
+
+#: t_modules/t_main.py:31629
+msgid "Repeat On"
+msgstr ""
+
+#: t_modules/t_main.py:31632
+msgid "Repeat Off"
+msgstr ""
+
+#: t_modules/t_main.py:31639
+msgid "Back, RC: Toggle repeat, MC: Revert"
+msgstr ""
+
+#: t_modules/t_main.py:31695 t_modules/t_main.py:31697
+msgid "Shuffle"
+msgstr ""
+
+#: t_modules/t_main.py:31744 t_modules/t_main.py:31752
+msgid "Repeat album"
+msgstr ""
+
+#: t_modules/t_main.py:31746 t_modules/t_main.py:31754
+msgid "Repeat track"
+msgstr ""
+
+#: t_modules/t_main.py:33068
+msgid "Playlist is empty"
+msgstr ""
+
+#: t_modules/t_main.py:33070
+msgid "Drag and drop files to import"
+msgstr ""
+
+#: t_modules/t_main.py:33092
+msgid "End of Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:34336
+msgid "Search Tag"
+msgstr ""
+
+#: t_modules/t_main.py:34337
+msgid "Search Country Code"
+msgstr ""
+
+#: t_modules/t_main.py:34338
+msgid "Search Title"
+msgstr ""
+
+#: t_modules/t_main.py:34622
+msgid "Search text…"
+msgstr ""
+
+#: t_modules/t_main.py:34629
+msgid "Search"
+msgstr ""
+
+#: t_modules/t_main.py:34639 t_modules/t_main.py:34643
+msgid "Get Top Voted"
+msgstr ""
+
+#: t_modules/t_main.py:34645
+msgid "Developer Picks"
+msgstr ""
+
+#: t_modules/t_main.py:34791
+msgid "Add Station"
+msgstr ""
+
+#: t_modules/t_main.py:34793
+msgid "Edit Station"
+msgstr ""
+
+#: t_modules/t_main.py:34818
+msgid "Station Browser"
+msgstr ""
+
+#: t_modules/t_main.py:34822
+msgid "Connecting..."
+msgstr ""
+
+#: t_modules/t_main.py:34825
+msgid "Failed to connect!"
+msgstr ""
+
+#: t_modules/t_main.py:34873
+msgid "Name / Title"
+msgstr ""
+
+#: t_modules/t_main.py:34890
+msgid "Raw Stream URL http://example.stream:1234"
+msgstr ""
+
+#: t_modules/t_main.py:34895 t_modules/t_main.py:35142
+msgid "Save"
+msgstr ""
+
+#: t_modules/t_main.py:34899
+msgid "Enter a stream URL"
+msgstr ""
+
+#: t_modules/t_main.py:34913
+msgid "Could not validate URL. Must start with https:// or http://"
+msgstr ""
+
+#: t_modules/t_main.py:35074 t_modules/t_main.py:35080
+#: t_modules/t_main.py:35086
+msgid "Record and auto split songs"
+msgstr ""
+
+#: t_modules/t_main.py:35076
+msgid "Please stop playback first before toggling this setting"
+msgstr ""
+
+#: t_modules/t_main.py:35082
+msgid "Please stop playback first to end current recording"
+msgstr ""
+
+#: t_modules/t_main.py:35089
+msgid "Tracks will now be recorded."
+msgstr ""
+
+#: t_modules/t_main.py:35090
+msgid "Tip: You can press F9 to view the output folder."
+msgstr ""
+
+#: t_modules/t_main.py:35093
+msgid "Browse"
+msgstr ""
+
+#: t_modules/t_main.py:35097
+msgid "Saved"
+msgstr ""
+
+#: t_modules/t_main.py:35141 t_modules/t_main.py:39135
+msgid "Visit Website"
+msgstr ""
+
+#: t_modules/t_main.py:35839
+msgid "View..."
+msgstr ""
+
+#: t_modules/t_main.py:35864
+msgid "Sort Alphabetically"
+msgstr ""
+
+#: t_modules/t_main.py:35865
+msgid "Sort by Popularity"
+msgstr ""
+
+#: t_modules/t_main.py:35866
+msgid "Sort by Playtime"
+msgstr ""
+
+#: t_modules/t_main.py:35867
+msgid "Toggle Thumbnails"
+msgstr ""
+
+#: t_modules/t_main.py:35956
+msgid "Notice: Artist image sourced from fanart.tv"
+msgstr ""
+
+#: t_modules/t_main.py:36268 t_modules/t_main.py:36404
+msgid "Downloading data..."
+msgstr ""
+
+#: t_modules/t_main.py:36630
+msgid "No artists in playlist"
+msgstr ""
+
+#: t_modules/t_main.py:36633
+msgid "Artist threshold not met"
+msgstr ""
+
+#: t_modules/t_main.py:36635
+msgid "Loading Artist List..."
+msgstr ""
+
+#: t_modules/t_main.py:36637
+msgid "Busy..."
+msgstr ""
+
+#: t_modules/t_main.py:36848
+msgid "Loading Folder Tree..."
+msgstr ""
+
+#: t_modules/t_main.py:36857 t_modules/t_main.py:36873
+msgid "Folder Tree"
+msgstr ""
+
+#: t_modules/t_main.py:37261
+msgid "Resume Queue"
+msgstr ""
+
+#: t_modules/t_main.py:37263
+msgid "Pause Queue"
+msgstr ""
+
+#: t_modules/t_main.py:37292
+msgid "Play Now"
+msgstr ""
+
+#: t_modules/t_main.py:37299
+msgid "↳ Except for This"
+msgstr ""
+
+#: t_modules/t_main.py:37301
+msgid "Queue to New Playlist"
+msgstr ""
+
+#: t_modules/t_main.py:37445
+msgid "Cancel Auto-Stop"
+msgstr ""
+
+#: t_modules/t_main.py:37447
+msgid "Auto-Stop"
+msgstr ""
+
+#: t_modules/t_main.py:38305 t_modules/t_main.py:38547
+msgid "Looking up..."
+msgstr ""
+
+#: t_modules/t_main.py:38347
+msgid "Cooldown..."
+msgstr ""
+
+#: t_modules/t_main.py:38362
+msgid "Loading..."
+msgstr ""
+
+#: t_modules/t_main.py:38539
+msgid "No artist data downloaded"
+msgstr ""
+
+#: t_modules/t_main.py:38553
+msgid "No artist bio found"
+msgstr ""
+
+#: t_modules/t_main.py:38662
+msgid "Download Artist Data"
+msgstr ""
+
+#: t_modules/t_main.py:38663
+msgid "Clear Bio"
+msgstr ""
+
+#: t_modules/t_main.py:39134
+msgid "Edit..."
+msgstr ""
+
+#: t_modules/t_main.py:39473
+msgid "Playing"
+msgstr ""
+
+#: t_modules/t_main.py:39534
+msgid "Prefer synced"
+msgstr ""
+
+#: t_modules/t_main.py:39536
+msgid "Prefer static"
+msgstr ""
+
+#: t_modules/t_main.py:39547
+msgid "Auto-Scroll"
+msgstr ""
+
+#: t_modules/t_main.py:40025
+msgid "Tracks + Art"
+msgstr ""
+
+#: t_modules/t_main.py:40057
+msgid "Tracks only"
+msgstr ""
+
+#: t_modules/t_main.py:40072
+msgid "Showcase + Lyrics"
+msgstr ""
+
+#: t_modules/t_main.py:40085
+msgid "Radio"
+msgstr ""
+
+#: t_modules/t_main.py:40099
+msgid "Toggle columns"
+msgstr ""
+
+#: t_modules/t_main.py:41731
+msgid "Could not access! Possible insufficient Flatpak permissions."
+msgstr ""
+
+#: t_modules/t_main.py:42693
+msgid "Enabled auto theme"
+msgstr ""
+
+#: t_modules/t_main.py:42695
+msgid "Disabled auto theme"
+msgstr ""
+
+#: t_modules/t_main.py:42738
+msgid "First select a source track by copying it into clipboard"
+msgstr ""
+
+#: t_modules/t_main.py:44280
+msgid "Rescan folders complete."
+msgstr ""
+
+#: t_modules/t_main.py:44913
+msgid "Queue is Empty"
+msgstr ""
+
+#: t_modules/t_main.py:45293 t_modules/t_main.py:45312
+#: t_modules/t_main.py:45331 t_modules/t_main.py:45354
+#: t_modules/t_main.py:45401 t_modules/t_main.py:45422
+#: t_modules/t_main.py:45463 t_modules/t_main.py:45478
+#: t_modules/t_main.py:45493 t_modules/t_main.py:45548
+msgid "Copied text to clipboard"
+msgstr ""
+
+#: t_modules/t_main.py:45352 t_modules/t_main.py:45358
+msgid "Path"
+msgstr ""
+
+#: t_modules/t_main.py:45373
+msgid "Samplerate"
+msgstr ""
+
+#: t_modules/t_main.py:45432 t_modules/t_main.py:45449
+msgid " of "
+msgstr ""
+
+#: t_modules/t_main.py:45434
+msgid "Track"
+msgstr ""
+
+#: t_modules/t_main.py:45442
+msgid "File size"
+msgstr ""
+
+#: t_modules/t_main.py:45451
+msgid "Disc"
+msgstr ""
+
+#: t_modules/t_main.py:45515
+msgid "Play count"
+msgstr ""
+
+#: t_modules/t_main.py:45528
+msgid "Play time"
+msgstr ""
+
+#: t_modules/t_main.py:45617
+msgid "Folder Modification"
+msgstr ""
+
+#: t_modules/t_main.py:45632
+msgid "Renames the physical folder based on the template"
+msgstr ""
+
+#: t_modules/t_main.py:45637
+msgid "Trash"
+msgstr ""
+
+#: t_modules/t_main.py:45638
+msgid "Moves folder to system trash"
+msgstr ""
+
+#: t_modules/t_main.py:45641
+msgid "Physically deletes folder from disk"
+msgstr ""
+
+#: t_modules/t_main.py:45653
+msgid "Raise"
+msgstr ""
+
+#: t_modules/t_main.py:45654
+msgid "Moves folder up 2 levels and deletes the old container folder"
+msgstr ""
+
+#: t_modules/t_main.py:45661
+msgid "Deletes some unnecessary files from folder"
+msgstr ""
+
+#: t_modules/t_main.py:46049
+msgid "Loved track"
+msgstr ""
+
+#: t_modules/t_main.py:46052
+msgid "Un-Loved track"
+msgstr ""
