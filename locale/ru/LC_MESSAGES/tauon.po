@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-30 00:59+1300\n"
-"PO-Revision-Date: 2022-09-29 12:09+0000\n"
+"PO-Revision-Date: 2022-09-30 12:19+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -668,7 +668,7 @@ msgstr "Ошибка при создании плейлиста Spotify"
 
 #: t_modules/t_main.py:17209
 msgid "Updated Spotify playlist"
-msgstr "Плейлист Spotify обновлен"
+msgstr "Плейлист Spotify обновлён"
 
 #: t_modules/t_main.py:17879
 msgid "OK. This playlist will automatically sort on import from now on"
@@ -2199,8 +2199,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28530
 msgid "This feature is not recommended for accounts that have many friends."
-msgstr ""
-"Эта функция не рекомендуется для учетных записей, у которых много друзей."
+msgstr "Эта функция не рекомендуется для учётных записей с множеством друзей."
 
 #: t_modules/t_main.py:28568
 msgid "Selected playlist:"
