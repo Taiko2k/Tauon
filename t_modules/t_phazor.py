@@ -378,7 +378,7 @@ def player4(tauon):
                                     self.ready = track
                                 if a % 32 == 0:
                                     #time.sleep(0.03)
-                                    tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
+                                    #tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
                                     if length:
                                         gui.update += 1
                                         if True: #a > 2000:
