@@ -3,8 +3,9 @@ Changelog----------------------------
 
 v7.4.2
 
- - Fix min window size on HiDPI
- - Fix cursor size on Wayland
+ - Fixed min window size on HiDPI
+ - Fixed cursor size on Wayland
+ - Marked tray menu strings for translation
 
 v7.4.1
 

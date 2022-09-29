@@ -7705,6 +7705,12 @@ class Strings:
 
         self.web_server_stopped = _("Web server stopped.")
 
+        self.menu_open_tauon = _("Open Tauon Music Box")
+        self.menu_play_pause = _("Play/Pause")
+        self.menu_next = _("Next Track")
+        self.menu_previous = _("Previous Track")
+        self.menu_quit = _("Quit")
+
 
 strings = Strings()
 
