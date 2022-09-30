@@ -31459,7 +31459,7 @@ class BottomBarType1:
 
                 rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
                 fields.add(rect)
-                if coll(rect) and not pctl.playing_state == 3:
+                if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
                     pause_colour = colours.media_buttons_over
                     if inp.mouse_click:
                         pctl.pause()
@@ -31493,7 +31493,7 @@ class BottomBarType1:
             rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
                     50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll(rect) and not pctl.playing_state == 3:
+            if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
                 forward_colour = colours.media_buttons_over
                 if inp.mouse_click:
                     pctl.advance()
@@ -31528,7 +31528,7 @@ class BottomBarType1:
             rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
                     50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll(rect) and not pctl.playing_state == 3:
+            if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
                 back_colour = colours.media_buttons_over
                 if inp.mouse_click:
                     pctl.back()
