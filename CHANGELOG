@@ -6,6 +6,7 @@ v7.4.2
  - Fixed min window size on HiDPI
  - Fixed cursor size on Wayland
  - Fixed spotify remote pause/next/previous control
+ - Fixed spotify icon colour in menus
  - Marked tray menu strings for translation
 
 
