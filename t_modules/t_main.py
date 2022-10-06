@@ -17073,9 +17073,9 @@ spot_icon.xoff = 5
 spot_icon.yoff = 2
 
 jell_icon = MenuIcon(spot_asset)
-spot_icon.colour = [190, 100, 210, 255]
-spot_icon.xoff = 5
-spot_icon.yoff = 2
+jell_icon.colour = [190, 100, 210, 255]
+jell_icon.xoff = 5
+jell_icon.yoff = 2
 
 tab_menu.br()
 
