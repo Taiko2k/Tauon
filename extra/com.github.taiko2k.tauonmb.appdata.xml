@@ -62,10 +62,9 @@
 
   <releases>
 
-    <release version="7.4.1" date="2022-09-23">
+    <release version="7.4.2" date="2022-10-06">
       <description>
         <ul>
-          <li>Added Jellyfin playlist support</li>
           <li>Various bug fixes</li>
         </ul>
       </description>
