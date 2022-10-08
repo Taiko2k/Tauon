@@ -4296,6 +4296,120 @@ except:
     print("Failed to load libopenmpt!")
 
 
+def use_id3(tags, nt):
+    def natural_get(tag, track, frame, attr):
+        frames = tag.getall(frame)
+        if frames and frames[0].text:
+            if track is None:
+                return str(frames[0].text[0])
+            setattr(track, attr, str(frames[0].text[0]))
+        elif track is None:
+            return ""
+        else:
+            setattr(track, attr, "")
+
+    tag = tags
+
+    natural_get(tags, nt, "TIT2", "title")
+    natural_get(tags, nt, "TPE1", "artist")
+    natural_get(tags, nt, "TPE2", "album_artist")
+    natural_get(tags, nt, "TCON", "genre")  # content type
+    natural_get(tags, nt, "TALB", "album")
+    natural_get(tags, nt, "TDRC", "date")
+    natural_get(tags, nt, "TCOM", "composer")
+    natural_get(tags, nt, "COMM", "comment")
+
+    process_odat(nt, natural_get(tags, None, "TDOR", None))
+
+    if len(nt.comment) > 4 and nt.comment[2] == "+":
+        nt.comment = ""
+    if nt.comment[0:3] == "000":
+        nt.comment = ""
+
+    frames = tag.getall("USLT")
+    if frames:
+        nt.lyrics = frames[0].text
+        if 0 < len(nt.lyrics) < 150:
+            if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
+                nt.lyrics = ""
+
+    frames = tag.getall("TPE1")
+    if frames:
+        d = []
+        for frame in frames:
+            for t in frame.text:
+                d.append(t)
+        if len(d) > 1:
+            nt.misc['artists'] = d
+            nt.artist = "; ".join(d)
+
+    frames = tag.getall("TCON")
+    if frames:
+        d = []
+        for frame in frames:
+            for t in frame.text:
+                d.append(t)
+        if len(d) > 1:
+            nt.misc['genres'] = d
+        nt.genre = " / ".join(d)
+
+    track_no = natural_get(tags, None, "TRCK", None)
+    nt.track_total = ""
+    nt.track_number = ""
+    if track_no:
+        if "/" in track_no:
+            a, b = track_no.split("/")
+            nt.track_number = a
+            nt.track_total = b
+        else:
+            nt.track_number = track_no
+
+    disc = natural_get(tags, None, "TPOS", None)  # set ? or ?/?
+    nt.disc_total = ""
+    nt.disc_number = ""
+    if disc:
+        if "/" in disc:
+            a, b = disc.split("/")
+            nt.disc_number = a
+            nt.disc_total = b
+        else:
+            nt.disc_number = disc
+
+    tx = tags.getall("UFID")
+    if tx:
+        for item in tx:
+            if item.owner == "http://musicbrainz.org":
+                nt.misc['musicbrainz_recordingid'] = item.data.decode()
+
+    tx = tags.getall("TXXX")
+    if tx:
+        for item in tx:
+            if item.desc == "MusicBrainz Release Track Id":
+                nt.misc['musicbrainz_trackid'] = item.text[0]
+            if item.desc == "MusicBrainz Album Id":
+                nt.misc['musicbrainz_albumid'] = item.text[0]
+            if item.desc == "MusicBrainz Release Group Id":
+                nt.misc['musicbrainz_releasegroupid'] = item.text[0]
+            if item.desc == "MusicBrainz Artist Id":
+                nt.misc['musicbrainz_artistids'] = list(item.text)
+
+            try:
+                desc = item.desc.lower()
+                if desc == "replaygain_track_gain":
+                    nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
+                if desc == "replaygain_track_peak":
+                    nt.misc['replaygain_track_peak'] = float(item.text[0])
+                if desc == "replaygain_album_gain":
+                    nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
+                if desc == "replaygain_album_peak":
+                    nt.misc['replaygain_album_peak'] = float(item.text[0])
+            except:
+                print("Tag Scan: Read Replay Gain MP3 error")
+                print(nt.fullpath)
+
+            if item.desc == "FMPS_RATING":
+                nt.misc['FMPS_Rating'] = float(item.text[0])
+
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
     if nt.is_embed_cue:
@@ -4374,6 +4488,9 @@ def tag_scan(nt):
                 nt.bitrate = audio.info.bitrate // 1000
                 nt.length = audio.info.length
                 nt.size = os.path.getsize(nt.fullpath)
+            audio = mutagen.File(nt.fullpath)
+            if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
+                use_id3(audio.tags, nt)
 
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
@@ -4503,118 +4620,8 @@ def tag_scan(nt):
 
 
                 elif type(audio.tags) == mutagen.id3.ID3:
-                    def natural_get(tag, track, frame, attr):
-                        frames = tag.getall(frame)
-                        if frames and frames[0].text:
-                            if track is None:
-                                return str(frames[0].text[0])
-                            setattr(track, attr, str(frames[0].text[0]))
-                        elif track is None:
-                            return ""
-                        else:
-                            setattr(track, attr, "")
+                    use_id3(audio.tags, nt)
 
-                    tag = audio.tags
-
-                    natural_get(audio.tags, nt, "TIT2", "title")
-                    natural_get(audio.tags, nt, "TPE1", "artist")
-                    natural_get(audio.tags, nt, "TPE2", "album_artist")
-                    natural_get(audio.tags, nt, "TCON", "genre")  # content type
-                    natural_get(audio.tags, nt, "TALB", "album")
-                    natural_get(audio.tags, nt, "TDRC", "date")
-                    natural_get(audio.tags, nt, "TCOM", "composer")
-                    natural_get(audio.tags, nt, "COMM", "comment")
-
-                    process_odat(nt, natural_get(audio.tags, None, "TDOR", None))
-
-                    if len(nt.comment) > 4 and nt.comment[2] == "+":
-                        nt.comment = ""
-                    if nt.comment[0:3] == "000":
-                        nt.comment = ""
-
-                    frames = tag.getall("USLT")
-                    if frames:
-                        nt.lyrics = frames[0].text
-                        if 0 < len(nt.lyrics) < 150:
-                            if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
-                                nt.lyrics = ""
-
-                    frames = tag.getall("TPE1")
-                    if frames:
-                        d = []
-                        for frame in frames:
-                            for t in frame.text:
-                                d.append(t)
-                        if len(d) > 1:
-                            nt.misc['artists'] = d
-                            nt.artist = "; ".join(d)
-
-                    frames = tag.getall("TCON")
-                    if frames:
-                        d = []
-                        for frame in frames:
-                            for t in frame.text:
-                                d.append(t)
-                        if len(d) > 1:
-                            nt.misc['genres'] = d
-                        nt.genre = " / ".join(d)
-
-                    track_no = natural_get(audio.tags, None, "TRCK", None)
-                    nt.track_total = ""
-                    nt.track_number = ""
-                    if track_no:
-                        if "/" in track_no:
-                            a, b = track_no.split("/")
-                            nt.track_number = a
-                            nt.track_total = b
-                        else:
-                            nt.track_number = track_no
-
-                    disc = natural_get(audio.tags, None, "TPOS", None)  # set ? or ?/?
-                    nt.disc_total = ""
-                    nt.disc_number = ""
-                    if disc:
-                        if "/" in disc:
-                            a, b = disc.split("/")
-                            nt.disc_number = a
-                            nt.disc_total = b
-                        else:
-                            nt.disc_number = disc
-
-                    tx = audio.tags.getall("UFID")
-                    if tx:
-                        for item in tx:
-                            if item.owner == "http://musicbrainz.org":
-                                nt.misc['musicbrainz_recordingid'] = item.data.decode()
-
-                    tx = audio.tags.getall("TXXX")
-                    if tx:
-                        for item in tx:
-                            if item.desc == "MusicBrainz Release Track Id":
-                                nt.misc['musicbrainz_trackid'] = item.text[0]
-                            if item.desc == "MusicBrainz Album Id":
-                                nt.misc['musicbrainz_albumid'] = item.text[0]
-                            if item.desc == "MusicBrainz Release Group Id":
-                                nt.misc['musicbrainz_releasegroupid'] = item.text[0]
-                            if item.desc == "MusicBrainz Artist Id":
-                                nt.misc['musicbrainz_artistids'] = list(item.text)
-
-                            try:
-                                desc = item.desc.lower()
-                                if desc == "replaygain_track_gain":
-                                    nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
-                                if desc == "replaygain_track_peak":
-                                    nt.misc['replaygain_track_peak'] = float(item.text[0])
-                                if desc == "replaygain_album_gain":
-                                    nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
-                                if desc == "replaygain_album_peak":
-                                    nt.misc['replaygain_album_peak'] = float(item.text[0])
-                            except:
-                                print("Tag Scan: Read Replay Gain MP3 error")
-                                print(nt.fullpath)
-
-                            if item.desc == "FMPS_RATING":
-                                nt.misc['FMPS_Rating'] = float(item.text[0])
 
             except Exception as e:
                 print(e)
