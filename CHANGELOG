@@ -7,6 +7,7 @@ v7.4.2
  - Fixed cursor size on Wayland
  - Fixed spotify remote pause/next/previous control
  - Fixed spotify icon colour in menus
+ - Enabled ID3 scanning on WAVE files
  - Marked tray menu strings for translation
 
 
