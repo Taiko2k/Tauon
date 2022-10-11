@@ -33587,7 +33587,7 @@ class StandardPlaylist:
 
                 ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
 
-            if track_position > 0 and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.g(default_playlist[track_position - 1]).disc_number \
+            if track_position > 0 and track_position < len(default_playlist) and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.g(default_playlist[track_position - 1]).disc_number \
                     and tr.album == pctl.g(default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.g(default_playlist[track_position - 1]).parent_folder_path:
                 # Draw disc change line
                 ddt.rect((left + highlight_left, line_y + 0 * gui.scale, highlight_width,
