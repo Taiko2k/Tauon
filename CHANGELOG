@@ -1,6 +1,11 @@
 
 Changelog----------------------------
 
+v7.4.3
+
+ - Added window control context menu to top panel
+ - Added middle click top panel to minimize
+
 v7.4.2
 
  - Fixed min window size on HiDPI

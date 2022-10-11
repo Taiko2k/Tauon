@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.2"
+n_version = "7.4.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -21045,9 +21045,14 @@ view_menu = Menu(170)
 set_menu = Menu(150)
 set_menu_hidden = Menu(100)
 vis_menu = Menu(140)
+window_menu = Menu(140)
 field_menu = Menu(140)
 dl_menu = Menu(90)
 
+window_menu = Menu(140)
+window_menu.add(_("Minimize"), do_minimize_button)
+window_menu.add(_("Maximize"), do_maximize_button)
+window_menu.add(_("Exit"), do_exit_button)
 
 def field_copy(text_field):
     text_field.copy()
@@ -44561,9 +44566,22 @@ while pctl.running:
                             gui.column_sort_up_icon.render(x, round(y), [255, 255, 255, 90])
 
                 # Switch Vis:
-                if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale,
+                if right_click and coll((window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale,
                                          gui.panelY)) and not gui.top_bar_mode2:
-                    vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
+                    vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
+                elif right_click and top_panel.tabs_right_x < mouse_position[0] and \
+                        mouse_position[1] < gui.panelY and \
+                        mouse_position[0] > top_panel.tabs_right_x and \
+                        mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra:
+
+                    window_menu.activate(None, (mouse_position[0], 30 * gui.scale))
+
+                elif middle_click and top_panel.tabs_right_x < mouse_position[0] and \
+                        mouse_position[1] < gui.panelY and \
+                        mouse_position[0] > top_panel.tabs_right_x and \
+                        mouse_position[0] < window_size[0] - gui.offset_extra:
+
+                    do_minimize_button()
 
                 # edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
 
