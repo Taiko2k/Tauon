@@ -4640,8 +4640,10 @@ def tag_scan(nt):
 
 
     except Exception as err:
-        print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
-        #raise
+        try:
+            print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
+        except:
+            print("Error: Non utf8 compatible not allowed:", nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace'), "\n", err)
         return nt
 
     return nt
