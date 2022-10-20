@@ -25092,6 +25092,7 @@ def worker1():
     global to_got
 
     loaded_pathes_cache = {}
+    loaded_cue_cache = {}
     added = []
 
     def get_end_folder(direc):
@@ -25252,9 +25253,13 @@ def worker1():
                     if line.endswith("AUDIO"):
                         line = line[:-5]
 
-                    nt = TrackClass()
-                    nt.index = pctl.master_count
-                    pctl.master_count += 1
+                    c = loaded_cue_cache.get((file_path.replace('\\', '/'), int(line.strip())))
+                    if c is not None:
+                        nt = c
+                    else:
+                        nt = TrackClass()
+                        nt.index = pctl.master_count
+                        pctl.master_count += 1
                     nt.fullpath = file_path
                     nt.filename = file_name
                     nt.parent_folder_path = os.path.dirname(file_path.replace('\\', '/'))
@@ -25591,9 +25596,13 @@ def worker1():
 
     def cache_paths():
         dic = {}
+        dic2 = {}
         for key, value in pctl.master_library.items():
             dic[value.fullpath.replace('\\', '/')] = key
-        return dic
+            if value.is_cue:
+                dic2[(value.fullpath.replace('\\', '/'), value.track_number)] = value
+        return dic, dic2
+
 
     # print(pctl.master_library)
 
@@ -25918,14 +25927,14 @@ def worker1():
                     if loaderCommand == LC_Folder:
                         to_get = 0
                         to_got = 0
-                        loaded_pathes_cache = cache_paths()
+                        loaded_pathes_cache, loaded_cue_cache = cache_paths()
                         # pre_get(order.target)
                         if order.force_scan:
                             gets(order.target, force_scan=True)
                         else:
                             gets(order.target)
                     elif loaderCommand == LC_File:
-                        loaded_pathes_cache = cache_paths()
+                        loaded_pathes_cache, loaded_cue_cache = cache_paths()
                         add_file(order.target)
 
                     if gui.im_cancel:
