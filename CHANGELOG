@@ -5,6 +5,8 @@ v7.4.3
 
  - Added window control context menu to top panel
  - Added middle click top panel to minimize
+ - Fixed import stall with non utf8 filenames
+ - Fixed CUE tracks re-importing with rescan folders
 
 v7.4.2
 
