@@ -5,8 +5,10 @@ v7.4.3
 
  - Added window control context menu to top panel
  - Added middle click top panel to minimize
+ - Added bit depth metadata for Jellyfin tracks
  - Fixed import stall with non utf8 filenames
  - Fixed CUE tracks re-importing with rescan folders
+ - Fixed bitrate/samplerate column for Jellyfin tracks
 
 v7.4.2
 

@@ -388,6 +388,7 @@ class Jellyfin():
                             tr.misc["container"] = d["MediaSources"][0]["Container"].upper()
                             tr.misc["codec"] = d["MediaSources"][0]["MediaStreams"][0]["Codec"]
                             tr.bitrate = round(d["MediaSources"][0]["MediaStreams"][0]["BitRate"] / 1000)
+                            tr.bit_depth = d["MediaSources"][0]["MediaStreams"][0].get("BitDepth", 0)
                             tr.samplerate = round(d["MediaSources"][0]["MediaStreams"][0]["SampleRate"])
                         except:
                             print("ERROR")
