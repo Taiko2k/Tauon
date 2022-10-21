@@ -58,6 +58,7 @@ pyinstaller_mode = h.py
 phone = h.p
 window_default_size = h.wdf
 window_title = h.window_title
+fs_mode = h.fs_mode
 
 print(f"Window size: {window_size}")
 
@@ -41454,7 +41455,8 @@ def save_state():
             old_position,
         ]
 
-        pickle.dump(save, open(user_directory + "/window.p", "wb"))
+        if not fs_mode:
+            pickle.dump(save, open(user_directory + "/window.p", "wb"))
 
         spot_ctl.save_token()
 
