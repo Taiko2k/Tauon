@@ -33799,7 +33799,11 @@ class StandardPlaylist:
                             text = str(n_track.bitrate)
                             if text == "0":
                                 text = ""
-                            if n_track.file_ext == "FLAC" or n_track.file_ext == "WAV" or n_track.file_ext == "APE":
+
+                            ex = n_track.file_ext
+                            if n_track.misc.get("container") is not None:
+                                ex = n_track.misc.get("container")
+                            if ex == "FLAC" or ex == "WAV" or ex == "APE":
                                 text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(
                                     n_track.bit_depth)
                             colour = colours.index_text
