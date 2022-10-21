@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-30 00:59+1300\n"
-"PO-Revision-Date: 2020-12-10 08:42+0000\n"
-"Last-Translator: 微别累特 <1365143958@qq.com>\n"
+"PO-Revision-Date: 2022-10-20 12:57+0000\n"
+"Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.14.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1840 t_modules/t_main.py:1842
@@ -47,9 +47,8 @@ msgid "Scanning failed. Try again?"
 msgstr "扫描失败。再试试？"
 
 #: t_modules/t_main.py:6894 t_modules/t_main.py:7491
-#, fuzzy
 msgid "Scanning scrobbles complete"
-msgstr "文件夹重扫描完成。"
+msgstr "扫描乱码完成"
 
 #: t_modules/t_main.py:7058
 msgid "Getting friend data..."
