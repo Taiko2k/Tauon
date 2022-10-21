@@ -76,7 +76,6 @@ config_directory = user_directory
 
 asset_directory = os.path.join(install_directory, "assets")
 
-
 # If we're installed, use home data locations
 install_mode = False
 if install_directory.startswith("/opt/")\
@@ -124,6 +123,11 @@ if d in ["GNOME:Phosh"]:
 if pyinstaller_mode: # and sys.platform == 'darwin':
     os.environ["PYSDL2_DLL_PATH"] = install_directory
 
+fs_mode = False
+if os.environ.get('GAMESCOPE_WAYLAND_DISPLAY') is not None:
+    fs_mode = True
+    print("Running in GAMESCOPE MODE")
+
 from sdl2 import *
 from sdl2.sdlimage import *
 
@@ -151,7 +155,7 @@ maximized = False
 old_window_position = None
 
 window_p = os.path.join(user_directory, "window.p")
-if os.path.isfile(window_p):
+if os.path.isfile(window_p) and not fs_mode:
     try:
         state_file = open(window_p, "rb")
         save = pickle.load(state_file)
@@ -208,8 +212,12 @@ window_title = window_title.encode('utf-8')
 
 flags = SDL_WINDOW_RESIZABLE
 flags |= SDL_WINDOW_ALLOW_HIGHDPI
-if draw_border:
+
+if draw_border and not fs_mode:
     flags |= SDL_WINDOW_BORDERLESS
+
+if fs_mode:
+    flags |= SDL_WINDOW_FULLSCREEN_DESKTOP
 
 if old_window_position is None:
     o_x = SDL_WINDOWPOS_UNDEFINED
@@ -244,6 +252,10 @@ SDL_GL_GetDrawableSize(t_window, i_x, i_y)
 window_size[0] = i_x.contents.value
 window_size[1] = i_y.contents.value
 
+SDL_GetWindowSize(t_window, i_x, i_y)
+logical_size[0] = i_x.contents.value
+logical_size[1] = i_y.contents.value
+
 raw_image = IMG_Load(os.path.join(asset_directory, "loading.png").encode())
 sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 w = raw_image.contents.w
@@ -274,6 +286,7 @@ h.id = install_directory
 h.py = pyinstaller_mode
 h.p = phone
 h.window_title = window_title
+h.fs_mode = fs_mode
 
 del raw_image
 del sdl_texture
