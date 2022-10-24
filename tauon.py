@@ -128,6 +128,10 @@ if os.environ.get('GAMESCOPE_WAYLAND_DISPLAY') is not None:
     fs_mode = True
     print("Running in GAMESCOPE MODE")
 
+allow_hidpi = True
+if sys.platform == "win32" and sys.getwindowsversion().major < 10:
+    allow_hidpi = False
+
 from sdl2 import *
 from sdl2.sdlimage import *
 
@@ -211,7 +215,9 @@ window_title = t_title
 window_title = window_title.encode('utf-8')
 
 flags = SDL_WINDOW_RESIZABLE
-flags |= SDL_WINDOW_ALLOW_HIGHDPI
+
+if allow_hidpi:
+    flags |= SDL_WINDOW_ALLOW_HIGHDPI
 
 if draw_border and not fs_mode:
     flags |= SDL_WINDOW_BORDERLESS
