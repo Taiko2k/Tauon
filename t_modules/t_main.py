@@ -27504,9 +27504,12 @@ class Over:
 
             y += 38 * gui.scale
 
-            gui.artist_info_panel = self.toggle_square(x, y, gui.artist_info_panel,
+            old = gui.artist_info_panel
+            new = self.toggle_square(x, y, gui.artist_info_panel,
                                                        _("Show artist info panel"),
                                                        subtitle=_("You can also toggle this with ctrl+o"))
+            if new != old:
+                view_box.artist_info(True)
 
             y += 38 * gui.scale
 
