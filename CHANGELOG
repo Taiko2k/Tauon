@@ -10,6 +10,8 @@ v7.4.3
  - Fixed CUE tracks re-importing with rescan folders
  - Fixed bitrate/samplerate column for Jellyfin tracks
  - Fixed artist info panel toggle in settings
+ - [Windows] Fixed missing ffprobe import
+ - [Windows] Workaround minimize issue
 
 v7.4.2
 

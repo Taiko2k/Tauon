@@ -4564,7 +4564,7 @@ def tag_scan(nt):
 
                 if not nt.length:
                     try:
-                        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
                         nt.length = float(result.stdout.decode())
                     except:
                         print("FFPROBE couldn't supply a duration")
@@ -7864,6 +7864,12 @@ class Tauon:
             ff = open(os.path.join(user_directory, "ffmpeg.exe"), 'wb')
             ff.write(exe.read())
             ff.close()
+
+            exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
+            ff = open(os.path.join(user_directory, "ffprobe.exe"), 'wb')
+            ff.write(exe.read())
+            ff.close()
+
             exe.close()
             show_message("FFMPEG fetch complete", mode="done")
 
@@ -7883,6 +7889,13 @@ class Tauon:
         p = shutil.which("ffmpeg")
         if p: return p
         p = os.path.join(user_directory, "ffmpeg.exe")
+        if msys and os.path.isfile(p): return p
+        return None
+
+    def get_ffprobe(self):
+        p = shutil.which("ffprobe")
+        if p: return p
+        p = os.path.join(user_directory, "ffprobe.exe")
         if msys and os.path.isfile(p): return p
         return None
 
@@ -30700,7 +30713,7 @@ class TopPanel:
         # LAYOUT --------------------------------
         x += self.menu_space + word_length
 
-        self.drag_zone_start_x = x - 11 * gui.scale
+        self.drag_zone_start_x = x - 5 * gui.scale
         status = True
 
         if loading_in_progress:
