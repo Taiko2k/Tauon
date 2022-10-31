@@ -11,7 +11,6 @@ v7.4.3
  - Fixed bitrate/samplerate column for Jellyfin tracks
  - Fixed artist info panel toggle in settings
  - [Windows] Fixed missing ffprobe import
- - [Windows] Workaround minimize issue
 
 v7.4.2
 
