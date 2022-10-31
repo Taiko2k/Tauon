@@ -9137,8 +9137,7 @@ def do_maximize_button():
 
 
 def do_minimize_button():
-    # if tray.active and prefs.min_to_tray:
-    #     tray.down()
+
     global mouse_down
     global drag_mode
     if macos:
@@ -41929,7 +41928,7 @@ while pctl.running:
                     if is_level_zero() or quick_search_mode:
                         cycle_playlist_pinned(-1)
 
-        if event.type == SDL_RENDER_TARGETS_RESET:
+        if event.type == SDL_RENDER_TARGETS_RESET and not msys:
             reset_render = True
 
         if event.type == SDL_DROPTEXT:
@@ -42183,6 +42182,8 @@ while pctl.running:
             # print(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
+                #print("SDL_WINDOWEVENT_FOCUS_GAINED")
+
                 if system == "linux" and not macos and not msys:
                     gnome.focus()
                 k_input = True
@@ -42242,11 +42243,10 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
 
-                # print("RESTORE")
                 gui.lowered = False
                 gui.maximized = False
                 gui.pl_update = 1
-                gui.update += 1
+                gui.update += 2
 
                 if update_title:
                     update_title_do()
