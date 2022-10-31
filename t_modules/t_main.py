@@ -27550,7 +27550,7 @@ class Over:
             bg = None
             if gui.opened_config_file:
                 bg = [90, 50, 130, 255]
-                self.button(x + ww + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
+                self.button(x + ww + wc + 25 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
 
             self.button(x + wa + round(20 * gui.scale), y, _("Open data folder"), open_data_directory, ww)
 
