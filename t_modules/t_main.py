@@ -9124,10 +9124,7 @@ def do_maximize_button():
 
 
 def do_minimize_button():
-    # if tray.active and prefs.min_to_tray:
-    #     tray.down()
-    if msys: # temp hack
-        SDL_SetWindowResizable(t_window, False)
+
     global mouse_down
     global drag_mode
     if macos:
@@ -42233,10 +42230,6 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
 
-                #print("RESTORE")
-
-                if msys: # temp hack
-                    SDL_SetWindowResizable(t_window, True)
                 gui.lowered = False
                 gui.maximized = False
                 gui.pl_update = 1
