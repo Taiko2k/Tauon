@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.4.4
+
+ - Fixed a rare bug that could cause local tracks to not play
+
 v7.4.3
 
  - Added window control context menu to top panel

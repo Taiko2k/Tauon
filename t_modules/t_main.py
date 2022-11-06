@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.3"
+n_version = "7.4.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -25613,6 +25613,8 @@ def worker1():
         dic = {}
         dic2 = {}
         for key, value in pctl.master_library.items():
+            if value.is_network:
+                continue
             dic[value.fullpath.replace('\\', '/')] = key
             if value.is_cue:
                 dic2[(value.fullpath.replace('\\', '/'), value.track_number)] = value
