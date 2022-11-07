@@ -262,7 +262,14 @@ SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
-raw_image = IMG_Load(os.path.join(asset_directory, "loading.png").encode())
+img_path = os.path.join(asset_directory, "loading.png")
+if scale != 1:
+    img_path2 = os.path.join(user_directory, "scaled-icons", "loading.png")
+    if os.path.isfile(img_path2):
+        img_path = img_path2
+    del img_path2
+
+raw_image = IMG_Load(img_path.encode())
 sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 w = raw_image.contents.w
 h = raw_image.contents.h
@@ -300,6 +307,7 @@ del w
 del h
 del rect
 del flags
+del img_path
 
 if pyinstaller_mode or sys.platform == "darwin":
     from t_modules import t_main

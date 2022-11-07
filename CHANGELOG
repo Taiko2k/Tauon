@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.4.4
 
  - Fixed a rare bug that could cause local tracks to not play
+ - Fixed loading icon hidpi scaling
 
 v7.4.3
 
