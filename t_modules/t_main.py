@@ -36038,10 +36038,10 @@ class ArtistList:
                 if w != h:
                     m = min(w, h)
                     im = im.crop((
-                        (w - m) / 2,
-                        (h - m) / 2,
-                        (w + m) / 2,
-                        (h + m) / 2,
+                        round((w - m) / 2),
+                        round((h - m) / 2),
+                        round((w + m) / 2),
+                        round((h + m) / 2),
                     ))
 
                 im.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
@@ -36214,7 +36214,7 @@ class ArtistList:
             elif prefs.artist_list_sort_mode == "play":
                 all.sort(key=play_time.get, reverse=True)
             else:
-                all.sort(key=lambda y: y.lower())
+                all.sort(key=lambda y: y.lower().removeprefix("the "))
 
         except:
             print("Album scan failure")
@@ -36249,7 +36249,11 @@ class ArtistList:
         letter = text[0].lower()
         letter_upper = letter.upper()
         for i, item in enumerate(self.current_artists):
-            if item and (item[0] == letter or item[0] == letter_upper):
+            if item.startswith("the ") or item.startswith("The "):
+                if len(item) > 4 and (item[4] == letter or item[4] == letter_upper):
+                    self.scroll_position = i
+                    break
+            elif item and (item[0] == letter or item[0] == letter_upper):
                 self.scroll_position = i
                 break
 
