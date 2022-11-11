@@ -221,17 +221,17 @@ if (install_mode and system == 'linux') or macos or msys:
         os.makedirs(os.path.join(user_directory, "encoder"))
 
 
-elif (system == 'windows' or msys) and ('Program Files' in install_directory or
-                                        os.path.isfile(install_directory + '\\unins000.exe')):
-
-    user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
-    config_directory = user_directory
-    cache_directory = user_directory + "\\cache"
-    print("User Directroy: ", end="")
-    print(user_directory)
-    install_mode = True
-    if not os.path.isdir(user_directory):
-        os.makedirs(user_directory)
+# elif (system == 'windows' or msys) and ('Program Files' in install_directory or
+#                                         os.path.isfile(install_directory + '\\unins000.exe')):
+#
+#     user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
+#     config_directory = user_directory
+#     cache_directory = user_directory + "\\cache"
+#     print("User Directroy: ", end="")
+#     print(user_directory)
+#     install_mode = True
+#     if not os.path.isdir(user_directory):
+#         os.makedirs(user_directory)
 
 
 else:
