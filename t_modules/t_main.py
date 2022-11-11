@@ -25237,6 +25237,8 @@ def worker1():
             cue_genre = ""
             cue_main_performer = ""
             cue_songwriter = ""
+            cue_disc = 0
+            cue_disc_total = 0
 
             cd = []
             cds = []
@@ -25273,6 +25275,10 @@ def worker1():
                         cue_genre = line[5:].strip().replace("\"", "")
                     if line.startswith("DATE "):
                         cue_date = line[5:].strip().replace("\"", "")
+                    if line.startswith("DISCNUMBER "):
+                        cue_disc = line[11:].strip().replace("\"", "")
+                    if line.startswith("TOTALDISCS "):
+                        cue_disc_total = line[11:].strip().replace("\"", "")
 
                     if line.startswith("FILE "):
                         in_header = False
@@ -25364,7 +25370,7 @@ def worker1():
             if cd:
                 cds.append(cd)
 
-            for cd in cds:
+            for cdn, cd in enumerate(cds):
 
                 last_end = None
                 end_track = TrackClass()
@@ -25376,7 +25382,7 @@ def worker1():
                     if pctl.g(added[i]).fullpath == end_track.fullpath:
                         del added[i]
 
-                # Update with with proper length
+                # Update with proper length
                 for track in reversed(cd):
 
                     if last_end == None:
@@ -25404,6 +25410,20 @@ def worker1():
                         track.comment = end_track.comment
                     if not track.composer:
                         track.composer = end_track.composer
+
+                    if cue_disc:
+                        track.disc_number = cue_disc
+                    elif len(cds) == 0:
+                        track.disc_number = ""
+                    else:
+                        track.disc_number = str(cdn)
+
+                    if cue_disc_total:
+                        track.disc_total = cue_disc_total
+                    elif len(cds) == 0:
+                        track.disc_total = ""
+                    else:
+                        track.disc_total = str(len(cds))
 
 
             # Add all tracks for import to playlist
