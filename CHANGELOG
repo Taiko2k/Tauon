@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.4.4
 
+ - Added image submenu to gallery menu
  - Tweaked folder navigator to reload on imports
  - Fixed a rare bug that could cause local tracks to not play
  - Fixed loading icon hidpi scaling

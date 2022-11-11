@@ -11710,7 +11710,7 @@ class AlbumArt():
         if source[offset][0] > 0:
             pic = album_art_gen.get_embed(track_object)
             if not pic:
-                show_message("Image save error.", "No embedded album art found file.", mode='warning')
+                show_message("Image save error.", "No embedded album art.", mode='warning')
                 return 0
 
             source_image = io.BytesIO(pic)
@@ -15143,6 +15143,8 @@ def add_album_to_queue_fc(ref):
         pctl.auto_stop = False
 
 
+
+gallery_menu.add_sub(_("Image…"), 160)
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 gallery_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)
 
@@ -15497,6 +15499,8 @@ center_info_menu.add_to_sub('Toggle art position', 0, toggle_lyrics_panel_positi
 
 
 def save_embed_img(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     filepath = track_object.fullpath
     folder = track_object.parent_folder_path
     ext = track_object.file_ext
@@ -15537,6 +15541,8 @@ picture_menu = Menu(175)
 
 
 def open_image_deco(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     info = album_art_gen.get_info(track_object)
 
     if info is None:
@@ -15548,10 +15554,14 @@ def open_image_deco(track_object):
 
 
 def open_image(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     album_art_gen.open_external(track_object)
 
 
 def extract_image_deco(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     info = album_art_gen.get_info(track_object)
 
     if info is None:
@@ -15578,25 +15588,42 @@ def cycle_image_deco(track_object):
 
     return [line_colour, colours.menu_background, None]
 
+def cycle_image_gal_deco(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
+    info = album_art_gen.get_info(track_object)
+
+    if info is not None and info[1] > 1:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
 
 def cycle_offset(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     album_art_gen.cycle_offset(track_object)
 
 
 def cycle_offset_back(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     album_art_gen.cycle_offset_reverse(track_object)
 
 
 # Next and previous pictures
-# picture_menu.add(_("Next"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
-picture_menu.add(_("Previous"), cycle_offset_back, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+picture_menu.add(_("Next Image"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+#picture_menu.add(_("Previous"), cycle_offset_back, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
 
 # Extract embedded artwork from file
 picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True)
 
 
-def dl_art_deco(tr):
-    if not tr.album or not tr.artist:
+def dl_art_deco(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
+    if not track_object.album or not track_object.artist:
         return [colours.menu_text_disabled, colours.menu_background, None]
     return [colours.menu_text, colours.menu_background, None]
 
@@ -15736,6 +15763,8 @@ def download_art1(tr):
 
 
 def download_art1_fire(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     shoot_dl = threading.Thread(target=download_art1, args=[track_object])
     shoot_dl.daemon = True
     shoot_dl.start()
@@ -15842,12 +15871,14 @@ def delete_file_image(track_object):
 
 
 def delete_track_image_deco(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
     info = album_art_gen.get_info(track_object)
 
     text = _("Delete Image File")
     line_colour = colours.menu_text
 
-    if info is None:
+    if info is None or track_object.is_network:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
     elif info and info[0] == 0:
@@ -15867,6 +15898,10 @@ def delete_track_image_deco(track_object):
 
 
 def delete_track_image(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
+    if track_object.is_network:
+        return
     info = album_art_gen.get_info(track_object)
     if info and info[0] == 0:
         delete_file_image(track_object)
@@ -15909,6 +15944,13 @@ def ser_gimage(track_object):
 picture_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 picture_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
+gallery_menu.add_to_sub(_("Next"), 0, cycle_offset, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True)
+gallery_menu.add_to_sub(_("Previous"), 0, cycle_offset_back, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True)
+gallery_menu.add_to_sub(_("Open Image"), 0, open_image, open_image_deco, pass_ref=True, pass_ref_deco=True)
+gallery_menu.add_to_sub(_('Extract Image'), 0, save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True)
+gallery_menu.add_to_sub('Delete Image <combined>', 0, delete_track_image, delete_track_image_deco, pass_ref=True,
+                 pass_ref_deco=True) #, icon=delete_icon)
+gallery_menu.add_to_sub(_('Quick-Fetch Cover Art'), 0, download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
 
 def append_here():
     global cargo
