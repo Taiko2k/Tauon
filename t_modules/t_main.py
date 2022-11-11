@@ -25317,6 +25317,7 @@ def worker1():
                         nt = TrackClass()
                         nt.index = pctl.master_count
                         pctl.master_count += 1
+
                     nt.fullpath = file_path
                     nt.filename = file_name
                     nt.parent_folder_path = os.path.dirname(file_path.replace('\\', '/'))
@@ -25335,6 +25336,7 @@ def worker1():
                     nt.track_number = int(line.strip())
                     if nt.track_number == 1:
                         nt.size = os.path.getsize(nt.fullpath)
+                    nt.misc["parent-size"] = os.path.getsize(nt.fullpath)
 
                     while True:
                         i += 1
@@ -25384,7 +25386,25 @@ def worker1():
                     track.samplerate = end_track.samplerate
                     track.bitrate = end_track.bitrate
                     track.bit_depth = end_track.bit_depth
+                    track.misc["parent-length"] = end_track.length
                     last_end = track.start_time
+
+                    # inherit missing metadata
+                    if not track.date:
+                        track.date = end_track.date
+                    if not track.album_artist:
+                        track.album_artist = end_track.album_artist
+                    if not track.album:
+                        track.album = end_track.album
+                    if not track.artist:
+                        track.artist = end_track.artist
+                    if not track.genre:
+                        track.genre = end_track.genre
+                    if not track.comment:
+                        track.comment = end_track.comment
+                    if not track.composer:
+                        track.composer = end_track.composer
+
 
             # Add all tracks for import to playlist
             for cd in cds:
@@ -45413,7 +45433,7 @@ while pctl.running:
                         ddt.text((x1, y1), _("Bitrate"), key_colour_off, 212, max_w=70 * gui.scale)
                         line = str(tc.bitrate)
                         if tc.file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
-                            line = "~" + line
+                            line = "≈" + line
                         line += " kbps"
                         ddt.text((x2, y1), line, value_colour, 312)
 
@@ -45465,10 +45485,15 @@ while pctl.running:
 
                     y1 += int(15 * gui.scale)
                     # print(tc.size)
-                    if tc.size != 0:
+                    if tc.is_cue and tc.misc.get("parent-length", 0) > 0 and tc.misc.get("parent-size", 0) > 0:
                         ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
-                        ddt.text((x2, y1), get_filesize_string(tc.size),
-                                 value_colour, value_font)
+                        estimate = (tc.length / tc.misc.get("parent-length")) * tc.misc.get("parent-size")
+                        line = f"≈{get_filesize_string(estimate, rounding=0)} / {get_filesize_string(tc.misc.get('parent-size'))}"
+                        ddt.text((x2, y1), line, value_colour, value_font)
+
+                    elif tc.size != 0:
+                        ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
+                        ddt.text((x2, y1), get_filesize_string(tc.size), value_colour, value_font)
 
                     # -----------
                     if tc.disc_total not in ("", "0", 0):
