@@ -1305,7 +1305,7 @@ class Prefs:  # Used to hold any kind of settings
         self.precache = False
         self.cache_list = []
         self.cache_limit = 2000  # in mb
-        self.save_window_position = False
+        self.save_window_position = True
         self.spotify_token = ""
         self.always_ffmpeg = False
 
