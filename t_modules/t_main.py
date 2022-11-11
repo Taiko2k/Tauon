@@ -25700,6 +25700,7 @@ def worker1():
                                 time.sleep(0.02)
                     except:
                         pass
+            tree_view_box.clear_all()
 
         if tauon.worker_save_state and \
                 not gui.pl_pulse and \
@@ -37215,6 +37216,7 @@ class TreeView:
         self.rows_id = ""
         self.background_processing = False
         gui.update += 1
+        tauon.wake()
 
 
 tree_view_box = TreeView()
