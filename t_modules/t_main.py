@@ -836,7 +836,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
               'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'}
 
-MOD_Formats = {'xm', 'mod', 's3m', 'it', 'mptm'}
+MOD_Formats = {'xm', 'mod', 's3m', 'it', 'mptm', "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
 DA_Formats |= MOD_Formats
 
 Archive_Formats = {'zip'}
