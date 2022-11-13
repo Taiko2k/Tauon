@@ -84,6 +84,9 @@ if install_directory.startswith("/opt/")\
         or install_directory.startswith("/snap/") or sys.platform == "darwin" or sys.platform == 'win32':
     install_mode = True
 
+if os.path.isfile(os.path.join(install_directory, "portable")):
+    install_mode = False
+
 if install_mode:
     user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
 if not os.path.isdir(user_directory):
