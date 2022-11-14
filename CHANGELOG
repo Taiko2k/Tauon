@@ -13,6 +13,7 @@ v7.4.4
  - Fixed auto scan lyrics not working with centered style side panel
  - Fixed a rare bug that could cause local tracks to not play
  - Fixed loading icon hidpi scaling
+ - Fixed some bugs with artist list playlist filtering
 
 v7.4.3
 

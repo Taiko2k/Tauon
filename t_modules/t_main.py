@@ -35867,13 +35867,15 @@ def create_artist_pl(artist, replace=False):
                     pctl.active_playlist_playing = source_pl
                     pctl.playlist_playing_position = pctl.multi_playlist[source_pl][2].index(tr.index)
 
+        pctl.gen_codes[pl_to_id(this_pl)] = "s\"" + pctl.multi_playlist[source_pl][
+            0] + "\" a\"" + artist + "\""
 
     else:
 
         pctl.multi_playlist.append(pl_gen(title="Artist: " + artist,
                                           playlist=playlist,
                                           hide_title=0,
-                                          parent=pl_to_id(pctl.active_playlist_viewing)))
+                                          parent=pl_to_id(source_pl)))
 
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[source_pl][
             0] + "\" a\"" + artist + "\""
