@@ -1377,23 +1377,22 @@ int load_next() {
         ) codec = FFMPEG;
 
     if (codec == UNKNOWN && ext != NULL && (
-            (strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
+            strcmp(ext, ".xm") == 0 || strcmp(ext, ".XM") == 0 ||
              strcmp(ext, ".s3m") == 0 || strcmp(ext, ".S3M") == 0 ||
              strcmp(ext, ".it") == 0 || strcmp(ext, ".IT") == 0 ||
              strcmp(ext, ".mptm") == 0 || strcmp(ext, ".MPTM") == 0 ||
-             strcmp(ext, ".mod") == 0 || strcmp(ext, ".MOD") == 0) ||
-             strcmp(ext, ".umx") == 0 || strcmp(ext, ".UMX") == 0) ||
-             strcmp(ext, ".okt") == 0 || strcmp(ext, ".OKT") == 0) ||
-             strcmp(ext, ".mtm") == 0 || strcmp(ext, ".MTM") == 0) ||
-             strcmp(ext, ".far") == 0 || strcmp(ext, ".FAR") == 0) ||
-             strcmp(ext, ".wow") == 0 || strcmp(ext, ".WOW") == 0) ||
-             strcmp(ext, ".dmf") == 0 || strcmp(ext, ".DMF") == 0) ||
-             strcmp(ext, ".med") == 0 || strcmp(ext, ".MED") == 0) ||
-             strcmp(ext, ".md2") == 0 || strcmp(ext, ".MD2") == 0) ||
-             strcmp(ext, ".ult") == 0 || strcmp(ext, ".ULT") == 0) ||
+             strcmp(ext, ".mod") == 0 || strcmp(ext, ".MOD") == 0 ||
+             strcmp(ext, ".umx") == 0 || strcmp(ext, ".UMX") == 0 ||
+             strcmp(ext, ".okt") == 0 || strcmp(ext, ".OKT") == 0 ||
+             strcmp(ext, ".mtm") == 0 || strcmp(ext, ".MTM") == 0 ||
+             strcmp(ext, ".far") == 0 || strcmp(ext, ".FAR") == 0 ||
+             strcmp(ext, ".wow") == 0 || strcmp(ext, ".WOW") == 0 ||
+             strcmp(ext, ".dmf") == 0 || strcmp(ext, ".DMF") == 0 ||
+             strcmp(ext, ".med") == 0 || strcmp(ext, ".MED") == 0 ||
+             strcmp(ext, ".md2") == 0 || strcmp(ext, ".MD2") == 0 ||
+             strcmp(ext, ".ult") == 0 || strcmp(ext, ".ULT") == 0 ||
              strcmp(ext, ".669") == 0
-
-                            )
+              )
             ) codec = MPT;
 
     if (codec == UNKNOWN && ext != NULL) {
