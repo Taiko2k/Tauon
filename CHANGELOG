@@ -5,6 +5,7 @@ v7.4.4
 
  - Added file size approximation for CUE tracks
  - Added image submenu to gallery menu
+ - Added image load error fallback
  - Enabled importing of various additional tracker formats
  - Tweaked folder navigator to reload on imports
  - Tweaked CUE scan to inherit metadata from source file

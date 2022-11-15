@@ -11232,15 +11232,20 @@ class GallClass:
                     g.write(source_image.read())
 
                 else:
-                    im = Image.open(source_image)
-
-                    if im.mode != "RGB":
-                        im = im.convert("RGB")
-                    im.thumbnail((size, size), Image.Resampling.LANCZOS)
+                    error = False
+                    try:
+                        # Process image
+                        im = Image.open(source_image)
+                        if im.mode != "RGB":
+                            im = im.convert("RGB")
+                        im.thumbnail((size, size), Image.Resampling.LANCZOS)
+                    except:
+                        im = album_art_gen.get_error_img(size)
+                        error = True
 
                     im.save(g, 'BMP')
 
-                    if self.save_out and prefs.cache_gallery and not os.path.isfile(
+                    if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
                             os.path.join(g_cache_dir, img_name + '.jpg')):
                         im.save(os.path.join(g_cache_dir, img_name + '.jpg'), 'JPEG', quality=95)
 
@@ -11259,8 +11264,8 @@ class GallClass:
             except:
                 # raise
                 # print('ERROR: Image load failed on track: ' + key[0].fullpath)
-                console.print('ERROR: Image load failed on track: ', level=3)
-                console.print("- " + key[0].fullpath, level=5)
+                console.print('ERROR: Image load failed on track: ')
+                console.print("- " + key[0].fullpath)
                 order = [0, None, None, None]
                 self.gall[key] = order
                 gui.update += 1
@@ -11636,6 +11641,11 @@ class AlbumArt():
         self.source_cache[tr.index] = source_list
 
         return source_list
+
+    def get_error_img(self, size):
+        im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+        im.thumbnail((size, size), Image.Resampling.LANCZOS)
+        return im
 
     def fast_display(self, index, location, box, source, offset):
 
@@ -12198,19 +12208,38 @@ class AlbumArt():
             o_size = im.size
 
             format = im.format
-            if im.format == "JPEG":
-                format = "JPG"
 
-            if im.mode != "RGB":
-                im = im.convert("RGB")
+            try:
+                if im.format == "JPEG":
+                    format = "JPG"
+
+                if im.mode != "RGB":
+                    im = im.convert("RGB")
+            except:
+                if theme_only:
+                    return
+                im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+                o_size = im.size
+
 
             if not theme_only:
 
                 if prefs.zoom_art:
                     new_size = fit_box(o_size, box)
-                    im = im.resize(new_size, Image.Resampling.LANCZOS)
+                    try:
+                        im = im.resize(new_size, Image.Resampling.LANCZOS)
+                    except:
+                        im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+                        o_size = im.size
+                        new_size = fit_box(o_size, box)
+                        im = im.resize(new_size, Image.Resampling.LANCZOS)
                 else:
-                    im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
+                    try:
+                        im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
+                    except:
+                        im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+                        o_size = im.size
+                        im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
                 im.save(g, 'BMP')
                 g.seek(0)
 
@@ -12218,7 +12247,11 @@ class AlbumArt():
             if track == pctl.playing_object() and gui.theme_name == "Carbon" and track.parent_folder_path != colours.last_album:
 
                 # Find main image colours
-                im.thumbnail((50, 50), Image.Resampling.LANCZOS)
+                try:
+                    im.thumbnail((50, 50), Image.Resampling.LANCZOS)
+                except:
+                    print("theme gen error")
+                    return
                 pixels = im.getcolors(maxcolors=2500)
                 pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
                 colour = pixels[0][1]
@@ -12415,7 +12448,7 @@ class AlbumArt():
             playlist_hold = False
 
         except Exception as error:
-
+            # raise
             # print("Image processing error: " + str(error))
             console.print("Image load error")
             console.print("-- Associated track: " + track.fullpath)
