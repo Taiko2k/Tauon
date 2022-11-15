@@ -11,7 +11,7 @@
    version="1.1"
    id="svg8"
    inkscape:version="1.2.1 (9c6d41e410, 2022-07-14, custom)"
-   sodipodi:docname="loading (copy).svg"
+   sodipodi:docname="load-error.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -29,10 +29,10 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.70000001"
-     inkscape:cx="-158.57143"
-     inkscape:cy="285"
+     inkscape:cx="-187.85714"
+     inkscape:cy="286.42857"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer3"
+     inkscape:current-layer="layer2"
      showgrid="false"
      inkscape:pagecheckerboard="false"
      fit-margin-top="0"
@@ -69,12 +69,12 @@
        inkscape:label="bg"
        transform="translate(22.868851,174.73938)">
       <rect
-         style="fill:#0d0d0d;stroke:#ffffff;stroke-width:0.785;stroke-linejoin:round;paint-order:markers stroke fill;fill-opacity:1"
+         style="fill:#171717;fill-opacity:1;stroke:#ffffff;stroke-width:0.827675;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers stroke fill"
          id="rect275"
-         width="135.46666"
-         height="135.46666"
-         x="0.39250001"
-         y="0.39250001" />
+         width="142.06685"
+         height="143.5182"
+         x="-3.1224201"
+         y="-3.7071021" />
     </g>
     <ellipse
        ry="43.462887"
@@ -95,7 +95,7 @@
        cy="242.46899"
        cx="89.578453"
        id="circle2056"
-       style="display:inline;opacity:1;fill:#070707;fill-opacity:1;stroke:none;stroke-width:3.06657;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1" />
+       style="display:inline;opacity:1;fill:#0d0d0d;fill-opacity:1;stroke:none;stroke-width:3.06657;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1" />
     <ellipse
        ry="2.5335367"
        rx="2.5332658"
