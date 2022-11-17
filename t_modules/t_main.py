@@ -5394,7 +5394,9 @@ class PlayerCtl:
         self.playerCommandReady = True
 
         self.playing_state = 1
+        self.update_change()
 
+    def update_change(self):
         if update_title:
             update_title_do()
         self.notify_update()
@@ -5593,8 +5595,8 @@ class PlayerCtl:
             self.play()
 
     def seek_decimal(self, decimal):
-        if self.commit:
-            return
+        # if self.commit:
+        #     return
         if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
             if decimal > 1:
                 decimal = 1
@@ -5613,8 +5615,8 @@ class PlayerCtl:
                 self.mpris.seek_do(self.playing_time)
 
     def seek_time(self, new):
-        if self.commit:
-            return
+        # if self.commit:
+        #     return
         if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
 
             if new > self.playing_length - 0.5:
@@ -5836,20 +5838,23 @@ class PlayerCtl:
                     lfm_scrobbler.start_queue()
 
                 else:
-                    self.play_target(jump=False)
-                    # self.playing_time = 0
-                    # self.decode_time = 0
-                    # self.new_time = 0
-                    # self.playerCommand = 'seek'
-                    # self.playerCommandReady = True
+                    id = self.track_queue[self.queue_step]
+                    self.commit = id
+                    target = self.g(id)
+                    self.target_open = target.fullpath
+                    self.target_object = target
+                    self.start_time = target.start_time
+                    self.start_time_target = self.start_time
+                    self.playerCommand = 'open'
+                    self.playerCommandReady = True
 
-                    self.render_playlist()
-                    lfm_scrobbler.start_queue()
+                    #self.render_playlist()
+                    #lfm_scrobbler.start_queue()
 
                     # Reload lastfm for rescrobble
-                    if lfm_scrobbler.a_sc:
-                        lfm_scrobbler.a_sc = False
-                        self.a_time = 0
+                    # if lfm_scrobbler.a_sc:
+                    #     lfm_scrobbler.a_sc = False
+                    #     self.a_time = 0
 
             elif self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
                     self.master_library[pp[self.playlist_playing_position]].is_cue is True \

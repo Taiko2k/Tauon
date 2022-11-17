@@ -780,19 +780,35 @@ def player4(tauon):
 
                     r_timer = Timer()
                     r_timer.set()
+                    cont = False
                     while r_timer.get() <= remain - prefs.device_buffer / 1000:
                         if pctl.commit:
                             track(end=False)
                         time.sleep(0.016)
-                        if pctl.playerCommandReady and pctl.playerCommand == "open":
+                        if pctl.playerCommandReady and pctl.playerCommand in ("open", "stop"):
                             print("JANK")
+                            pctl.commit = None
+                            break
+                        if pctl.playerCommandReady and pctl.playerCommand == "seek":
+                            print("Seek revert gapless")
+                            pctl.commit = None
+                            pctl.jump(loaded_track.index, jump=True)
+                            pctl.jump_time = pctl.new_time
+                            pctl.playing_time = pctl.new_time
+                            pctl.decode_time = pctl.new_time
+                            cont = True
                             break
 
+                    if cont:
+                        continue
                     if pctl.commit is not None:
                         pctl.playing_time = 0
                         pctl.decode_time = 0
                         match = pctl.commit
-                        pctl.advance(quiet=True, end=True)
+                        if match == loaded_track.index:
+                            pctl.update_change()
+                        else:
+                            pctl.advance(quiet=True, end=True)
                         pt = pctl.playing_object()
                         if pt and pt.index != match:
                             print("MISSFIRE")
@@ -813,7 +829,6 @@ def player4(tauon):
                         fade = 1
 
                     tauon.console.print("Transition jump")
-
                     aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
                     loaded_track = target_object
                     pctl.playing_time = pctl.jump_time
