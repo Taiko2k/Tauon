@@ -11,6 +11,7 @@ v7.4.4
  - Tweaked CUE scan to inherit metadata from source file
  - Tweaked CUE scan to add disc numbers
  - Tweaked artist list to ignore "the" prefix for sorting
+ - Tweaked confirm box to yes/no model
  - Fixed various track transition issues
  - Fixed auto scan lyrics not working with centered style side panel
  - Fixed a rare bug that could cause local tracks to not play
