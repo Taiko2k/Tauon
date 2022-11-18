@@ -5781,7 +5781,14 @@ class PlayerCtl:
                 pctl.auto_stop = False
 
             elif self.force_queue and not self.pause_queue:
-                self.advance(end=True, quiet=True)
+                id = self.advance(end=True, quiet=True, dry=True)
+                if id is not None:
+                    self.start_commit(id)
+                    return
+                else:
+                    self.advance(end=True, quiet=True)
+
+
 
             elif self.repeat_mode is True:
 
@@ -5893,19 +5900,22 @@ class PlayerCtl:
                 id = self.advance(quiet=True, end=True, dry=True)
                 if id is not None and not spot_ctl.playing:
                     #print("Commit")
-                    self.commit = id
-                    target = self.g(id)
-                    self.target_open = target.fullpath
-                    self.target_object = target
-                    self.start_time = target.start_time
-                    self.start_time_target = self.start_time
-                    self.playerCommand = 'open'
-                    self.playerCommandReady = True
+                    self.start_commit(id)
                     return
 
                 self.advance(quiet=True, end=True)
                 self.playing_time = 0
                 self.decode_time = 0
+
+    def start_commit(self, id):
+        self.commit = id
+        target = self.g(id)
+        self.target_open = target.fullpath
+        self.target_object = target
+        self.start_time = target.start_time
+        self.start_time_target = self.start_time
+        self.playerCommand = 'open'
+        self.playerCommandReady = True
 
     def advance_broadcast(self, start=False):
 
