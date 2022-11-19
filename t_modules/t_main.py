@@ -5401,6 +5401,13 @@ class PlayerCtl:
             update_title_do()
         self.notify_update()
         hit_discord()
+        self.render_playlist()
+
+        if lfm_scrobbler.a_sc:
+            lfm_scrobbler.a_sc = False
+            self.a_time = 0
+
+        lfm_scrobbler.start_queue()
 
         if (album_mode or not gui.rsp) and (gui.theme_name == "Carbon" or prefs.colour_from_image):
 
