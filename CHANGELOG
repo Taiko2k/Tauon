@@ -17,6 +17,7 @@ v7.4.4
  - Fixed a rare bug that could cause local tracks to not play
  - Fixed loading icon hidpi scaling
  - Fixed some bugs with artist list playlist filtering
+ - Fixed artist list panel not highlighting track on playback
 
 v7.4.3
 

@@ -36626,7 +36626,7 @@ class ArtistList:
 
                 if double_click:
                     select = block_starts[0]
-                    pctl.jump(default_playlist[select])
+                    pctl.jump(default_playlist[select], pl_position=select)
                     pctl.playlist_view_position = select
                     console.print("DEBUG: Position changed by artist click")
                     playlist_selected = select
