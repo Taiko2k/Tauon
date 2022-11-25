@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.4.5
+
+ - Fixed crash when auto-theme enabled
+
 v7.4.4
 
  - Added file size approximation for CUE tracks
