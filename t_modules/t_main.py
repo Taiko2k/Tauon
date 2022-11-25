@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.4"
+n_version = "7.4.5"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -5410,8 +5410,8 @@ class PlayerCtl:
         lfm_scrobbler.start_queue()
 
         if (album_mode or not gui.rsp) and (gui.theme_name == "Carbon" or prefs.colour_from_image):
-
-            if prefs.colour_from_image and target.parent_folder_path == colours.last_album:
+            target = self.playing_object()
+            if target and prefs.colour_from_image and target.parent_folder_path == colours.last_album:
                 return
 
             album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
