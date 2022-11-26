@@ -805,7 +805,7 @@ def player4(tauon):
                         pctl.playing_time = 0
                         pctl.decode_time = 0
                         match = pctl.commit
-                        if match == loaded_track.index:
+                        if match == loaded_track.index and subcommand == "repeat":
                             pctl.update_change()
                         else:
                             pctl.advance(quiet=True, end=True)

@@ -1115,6 +1115,38 @@ int scan_devices(){
 }
 
 
+void decode_seek(int abs_ms, int sample_rate) {
+
+    switch (codec) {
+        case FLAC:
+            FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate * (abs_ms / 1000.0));
+            break;
+        case OPUS:
+            op_pcm_seek(opus_dec, (int) sample_rate * (abs_ms / 1000.0));
+            samples_decoded = sample_rate * (abs_ms / 1000.0) * 2;
+            break;
+        case VORBIS:
+            ov_pcm_seek(&vf, (ogg_int64_t) sample_rate * (abs_ms / 1000.0));
+            break;
+        case WAVPACK:
+            WavpackSeekSample64(wpc, (int64_t) sample_rate * (abs_ms / 1000.0));
+            break;
+        case MPG:
+            mpg123_seek(mh, (int) sample_rate * (abs_ms / 1000.0), SEEK_SET);
+            break;
+        case FFMPEG:
+            stop_ffmpeg();
+            start_ffmpeg(loaded_target_file, abs_ms);
+            break;
+        case WAVE:
+            wave_seek((int) sample_rate * (abs_ms / 1000.0));
+            break;
+        case MPT:
+            openmpt_module_set_position_seconds(mod, abs_ms / 1000.0);
+            break;
+    }
+}
+
 void connect_pulse() {
 
     if (pulse_connected == 1) {
@@ -1183,49 +1215,12 @@ void connect_pulse() {
 
     current_sample_rate = sample_rate_out;
 
-
-
-
     ma_context_uninit(&context);
-
 
     pulse_connected = 1;
 
-    //usleep(50000);
-
 }
 
-void decode_seek(int abs_ms, int sample_rate) {
-
-    switch (codec) {
-        case FLAC:
-            FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate * (abs_ms / 1000.0));
-            break;
-        case OPUS:
-            op_pcm_seek(opus_dec, (int) sample_rate * (abs_ms / 1000.0));
-            samples_decoded = sample_rate * (abs_ms / 1000.0) * 2;
-            break;
-        case VORBIS:
-            ov_pcm_seek(&vf, (ogg_int64_t) sample_rate * (abs_ms / 1000.0));
-            break;
-        case WAVPACK:
-            WavpackSeekSample64(wpc, (int64_t) sample_rate * (abs_ms / 1000.0));
-            break;
-        case MPG:
-            mpg123_seek(mh, (int) sample_rate * (abs_ms / 1000.0), SEEK_SET);
-            break;
-        case FFMPEG:
-            stop_ffmpeg();
-            start_ffmpeg(loaded_target_file, abs_ms);
-            break;
-        case WAVE:
-            wave_seek((int) sample_rate * (abs_ms / 1000.0));
-            break;
-        case MPT:
-            openmpt_module_set_position_seconds(mod, abs_ms / 1000.0);
-            break;
-    }
-}
 
 FILE *uni_fopen(char *ff){
     #ifdef WIN

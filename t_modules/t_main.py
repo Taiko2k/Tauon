@@ -5907,14 +5907,14 @@ class PlayerCtl:
                 id = self.advance(quiet=True, end=True, dry=True)
                 if id is not None and not spot_ctl.playing:
                     #print("Commit")
-                    self.start_commit(id)
+                    self.start_commit(id, repeat=True)
                     return
 
                 self.advance(quiet=True, end=True)
                 self.playing_time = 0
                 self.decode_time = 0
 
-    def start_commit(self, id):
+    def start_commit(self, id, repeat=False):
         self.commit = id
         target = self.g(id)
         self.target_open = target.fullpath
@@ -5922,6 +5922,8 @@ class PlayerCtl:
         self.start_time = target.start_time
         self.start_time_target = self.start_time
         self.playerCommand = 'open'
+        if repeat:
+            self.playerSubCommand = 'repeat'
         self.playerCommandReady = True
 
     def advance_broadcast(self, start=False):
