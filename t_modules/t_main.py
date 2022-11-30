@@ -5860,6 +5860,7 @@ class PlayerCtl:
                     self.start_time = target.start_time
                     self.start_time_target = self.start_time
                     self.playerCommand = 'open'
+                    self.playerSubCommand = 'repeat'
                     self.playerCommandReady = True
 
                     #self.render_playlist()
@@ -5907,7 +5908,7 @@ class PlayerCtl:
                 id = self.advance(quiet=True, end=True, dry=True)
                 if id is not None and not spot_ctl.playing:
                     #print("Commit")
-                    self.start_commit(id, repeat=True)
+                    self.start_commit(id)
                     return
 
                 self.advance(quiet=True, end=True)
