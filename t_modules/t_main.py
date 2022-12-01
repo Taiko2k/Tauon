@@ -43225,6 +43225,24 @@ while pctl.running:
         pctl.after_import_flag = True
         tm.ready("worker")
         if loaderCommand == LC_None:
+
+            # Fliter out files matching CUE filenames
+            # This isnt the only mechanism that does this. This one helps in the situation
+            # where the user drags and drops multiple files at onec. CUEs in folders are handled elsewhere
+            if len(load_orders) > 1:
+                for order in load_orders:
+                    if order.stage == 0 and order.target.endswith(".cue"):
+                        for order2 in load_orders:
+                            if not order2.target.endswith(".cue") and\
+                                    os.path.splitext(order2.target)[0] == os.path.splitext(order.target)[0] and\
+                                    os.path.isfile(order2.target):
+                                order2.stage = -1
+                for i in reversed(range(len(load_orders))):
+                    order = load_orders[i]
+                    if order.stage == -1:
+                        del load_orders[i]
+
+            # Prepare loader thread with load order
             for order in load_orders:
                 if order.stage == 0:
                     order.traget = order.target.replace('\\', '/')
