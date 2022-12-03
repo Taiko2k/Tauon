@@ -4670,8 +4670,6 @@ def tag_scan(nt):
 
             except Exception as e:
                 raise
-                print(e)
-                print(nt.file_ext)
 
 
         # Parse any multiple artists into list
