@@ -4411,6 +4411,45 @@ def use_id3(tags, nt):
             if item.desc == "FMPS_RATING":
                 nt.misc['FMPS_Rating'] = float(item.text[0])
 
+
+def scan_ffprobe(nt):
+    try:
+        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of",
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+        nt.length = float(result.stdout.decode())
+    except:
+        print("FFPROBE couldn't supply a duration")
+    try:
+        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+        nt.title = str(result.stdout.decode())
+    except:
+        print("FFPROBE couldn't supply a title")
+    try:
+        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+        nt.artist = str(result.stdout.decode())
+    except:
+        print("FFPROBE couldn't supply a artist")
+    try:
+        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+        nt.album = str(result.stdout.decode())
+    except:
+        print("FFPROBE couldn't supply a album")
+    try:
+        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+        nt.date = str(result.stdout.decode())
+    except:
+        print("FFPROBE couldn't supply a date")
+    try:
+        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+        nt.track_number = str(result.stdout.decode())
+    except:
+        print("FFPROBE couldn't supply a track")
+
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
     if nt.is_embed_cue:
@@ -4555,7 +4594,12 @@ def tag_scan(nt):
             # Use MUTAGEN
             try:
 
-                audio = mutagen.File(nt.fullpath)
+                try:
+                    audio = mutagen.File(nt.fullpath)
+                except:
+                    print("Mutagen scan failed, falling back to FFPROBE")
+                    scan_ffprobe(nt)
+                    return nt
 
                 nt.samplerate = audio.info.sample_rate
                 nt.bitrate = audio.info.bitrate // 1000
@@ -4625,8 +4669,10 @@ def tag_scan(nt):
 
 
             except Exception as e:
-                print(e)
                 raise
+                print(e)
+                print(nt.file_ext)
+
 
         # Parse any multiple artists into list
         artists = nt.artist.split(";")
