@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2022-09-30 00:59+1300\n"
-"PO-Revision-Date: 2020-11-13 03:15+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2022-12-03 15:47+0000\n"
+"Last-Translator: Micke Nilsson <mikni@proton.me>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/sv/>\n"
 "Language: sv\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.15-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1840 t_modules/t_main.py:1842
@@ -45,7 +45,7 @@ msgstr "Du måste logga in först"
 
 #: t_modules/t_main.py:6887
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Skanningen misslyckades. Försök igen?"
 
 #: t_modules/t_main.py:6894 t_modules/t_main.py:7491
 msgid "Scanning scrobbles complete"
