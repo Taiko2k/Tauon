@@ -753,7 +753,6 @@ album_mode_art_size = int(200 * scale)
 time_last_save = 0
 
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
-fullscreen = False
 
 volume_store = 50  # Used to save the previous volume when muted
 
@@ -1803,6 +1802,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.shuffle_was_repeat = False
 
         self.was_radio = False
+        self.fullscreen = False
         # self.text_input_request = False
         # self.text_input_active = False
 
@@ -9193,7 +9193,10 @@ def do_exit_button():
 def do_maximize_button():
     global mouse_down
     global drag_mode
-    if gui.maximized:
+    if gui.fullscreen:
+        gui.fullscreen = False
+        SDL_SetWindowFullscreen(t_window, 0)
+    elif gui.maximized:
         gui.maximized = False
         SDL_RestoreWindow(t_window)
     else:
@@ -31513,7 +31516,7 @@ class BottomBarType1:
             if inp.mouse_click and pctl.playing_state != 3:
                 pctl.show_current()
 
-            if pctl.playing_ready() and not fullscreen == 1:
+            if pctl.playing_ready() and not gui.fullscreen:
 
                 if right_click:
                     mode_menu.activate()
@@ -32679,7 +32682,7 @@ mini_mode2 = MiniMode2()
 
 
 def set_mini_mode():
-    if fullscreen == 1:
+    if gui.fullscreen:
         return
 
     global mouse_down
@@ -42706,11 +42709,11 @@ while pctl.running:
                 console.show ^= True
 
             if keymaps.test("toggle-fullscreen"):
-                if not fullscreen and not gui.mode == 3:
-                    fullscreen = True
+                if not gui.fullscreen and not gui.mode == 3:
+                    gui.fullscreen = True
                     SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-                elif fullscreen:
-                    fullscreen = False
+                elif gui.fullscreen:
+                    gui.fullscreen = False
                     SDL_SetWindowFullscreen(t_window, 0)
 
             if keymaps.test("playlist-toggle-breaks"):
@@ -42748,8 +42751,8 @@ while pctl.running:
         if mouse_enter_window:
             inp.key_return_press = False
 
-        if fullscreen and key_esc_press:
-            fullscreen = False
+        if gui.fullscreen and key_esc_press:
+            gui.fullscreen = False
             SDL_SetWindowFullscreen(t_window, 0)
 
         # Disable keys for text cursor control
@@ -45783,7 +45786,7 @@ while pctl.running:
                 if not gui.top_bar_mode2 or coll(tool_rect):
                     draw_window_tools()
 
-                if not fullscreen and not gui.maximized:
+                if not gui.fullscreen and not gui.maximized:
                     draw_window_border()
 
             fader.render()

@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.4.5
 
  - Fixed crash when auto-theme enabled
+ - Fixed un-maximize button in fullscreen
 
 v7.4.4
 

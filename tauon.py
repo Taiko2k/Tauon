@@ -132,7 +132,7 @@ if os.environ.get('GAMESCOPE_WAYLAND_DISPLAY') is not None:
     print("Running in GAMESCOPE MODE")
 
 allow_hidpi = True
-if sys.platform == "win32" and sys.getwindowsversion().major < 10:
+if sys.platform == "win32" and sys.getwindowsversion().major < 10 or os.path.isfile(os.path.join(user_directory, "nohidpi")):
     allow_hidpi = False
 
 from sdl2 import *
@@ -202,8 +202,10 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
     except:
         pass
 
-if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland" and not os.path.exists(os.path.join(user_directory, "x11")):
+if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
     os.environ["SDL_VIDEODRIVER"] = "wayland"
+if os.path.exists(os.path.join(user_directory, "x11")):
+    os.environ["SDL_VIDEODRIVER"] = "x11"
 
 SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
 
