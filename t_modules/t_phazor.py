@@ -658,10 +658,17 @@ def player4(tauon):
                 if state == 2:
                     aud.set_volume(int(pctl.player_volume))
 
+
                 stall_timer.set()
                 pctl.download_time = 0
                 target_object = pctl.target_object
                 target_path = target_object.fullpath
+
+                tauon.console.print(f"open - requested start was {int(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
+                try:
+                    tauon.console.print(target_path.split(".")[1])
+                except:
+                    pass
 
                 if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not target_object.file_ext == "SPTY":
                     tauon.spot_ctl.control("stop")
