@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.5"
+n_version = "7.4.6"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -2424,28 +2424,8 @@ class ColoursClass:  # Used to store colour values for UI elements. These are ch
 
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
-        # self.status_text_normal = alpha_blend([255, 255, 255, 80], self.top_panel_background) #self.grey(100)
-        self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
-
-        # self.status_text_over = alpha_blend([255, 255, 255, 220], self.top_panel_background)#self.grey(220)
-
-        self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
-
-        # self.corner_button = rgb_add_hls(self.top_panel_background, 0, 0.20, -0.15)
-        # self.corner_button_active = colours.status_text_over
-
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
-
-        if test_lumi(colours.bottom_panel_colour) < 0.2:
-            self.corner_icon = [0, 0, 0, 60]
-        elif test_lumi(colours.bottom_panel_colour) < 0.8:
-            self.corner_icon = [40, 40, 40, 255]
-        else:
-            self.corner_icon = [255, 255, 255, 30]
-
-        if test_lumi(self.bottom_panel_colour) < 0.2:
-            self.corner_icon = [0, 0, 0, 60]
 
         if not self.queue_background:
             self.queue_background = self.side_panel_background
@@ -2465,9 +2445,6 @@ class ColoursClass:  # Used to store colour values for UI elements. These are ch
         if test_lumi(self.column_bar_background) < 0.4:
             self.column_bar_text = [40, 40, 40, 200]
             self.column_grip = [255, 255, 255, 20]
-
-        if not self.lm:
-            self.corner_button = rgb_add_hls(self.top_panel_background, 0, 0.18, 0)
 
     def light_mode(self):
 

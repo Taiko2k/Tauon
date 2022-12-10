@@ -23,6 +23,7 @@ import json
 from PIL import Image, ImageDraw, ImageFilter
 from sdl2 import *
 from sdl2.sdlimage import *
+from t_modules.t_extra import *
 import base64
 
 def get_colour_from_line(cline):
@@ -102,10 +103,33 @@ def load_theme(colours, path):
             colours.album_text = get_colour_from_line(p)
         if 'album playing' in p:
             colours.album_playing = get_colour_from_line(p)
-        if 'player background' in p:  # bad name
+        if 'top panel' in p or 'player background' in p:
             colours.top_panel_background = get_colour_from_line(p)
-        if 'top panel' in p:
-            colours.top_panel_background = get_colour_from_line(p)
+
+            colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
+            colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
+
+            if test_lumi(colours.bottom_panel_colour) < 0.2:
+                colours.corner_icon = [0, 0, 0, 60]
+            elif test_lumi(colours.bottom_panel_colour) < 0.8:
+                colours.corner_icon = [40, 40, 40, 255]
+            else:
+                colours.corner_icon = [255, 255, 255, 30]
+
+            if test_lumi(colours.bottom_panel_colour) < 0.2:
+                colours.corner_icon = [0, 0, 0, 60]
+
+            if not colours.lm:
+                colours.corner_button = rgb_add_hls(colours.top_panel_background, 0, 0.18, 0)
+
+        if 'corner button off' in p:
+            colours.corner_button = get_colour_from_line(p)
+        if 'corner button on' in p:
+            colours.corner_button_active = get_colour_from_line(p)
+        if 'menu button normal' in p:
+            colours.status_text_normal = get_colour_from_line(p)
+        if 'menu button hover' in p:
+            colours.status_text_over = get_colour_from_line(p)
         if 'queue panel' in p:
             colours.queue_background = get_colour_from_line(p)
         if 'side panel' in p:
