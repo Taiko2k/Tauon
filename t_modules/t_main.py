@@ -332,7 +332,6 @@ else:
     icon = IMG_Load(os.path.join(asset_directory, "tau-mac.png").encode())
 
 SDL_SetWindowIcon(t_window, icon)
-SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 if not phone:
     if window_size[0] != logical_size[0]:
@@ -4137,16 +4136,18 @@ sss = SDL_SysWMinfo()
 SDL_GetWindowWMInfo(t_window, sss)
 
 def auto_scale():
-    old = prefs.x_scale
+
+    old = prefs.scale_want
+
     if prefs.x_scale:
         if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
             prefs.scale_want = window_size[0] / logical_size[0]
-            if old != prefs.x_scale:
+            if old != prefs.scale_want:
                 print("Applying scale based on buffer size")
         elif sss.subsystem == SDL_SYSWM_X11:
             if xdpi > 40:
                 prefs.scale_want = xdpi / 96
-                if old != prefs.x_scale:
+                if old != prefs.scale_want:
                     print("Applying scale based on xft setting")
 
     prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
@@ -4160,11 +4161,16 @@ def auto_scale():
     if prefs.scale_want == 2.05:
         prefs.scale_want = 2.0
 
-    if old != prefs.x_scale:
+    if old != prefs.scale_want:
         print(f"Using UI scale: {prefs.scale_want}")
 
-if prefs.scale_want < 0.5:
-    prefs.scale_want = 1.0
+    if prefs.scale_want < 0.5:
+        prefs.scale_want = 1.0
+
+    if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
+        print("Window overscale!")
+        show_message("Detected unsuitable UI scaling.", "Scaling setting reset to 1x")
+        prefs.scale_want = 1.0
 
 auto_scale()
 
@@ -40898,6 +40904,8 @@ undo = Undo()
 
 
 def reload_scale():
+    auto_scale()
+
     scale = prefs.scale_want
 
     gui.scale = scale

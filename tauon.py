@@ -141,6 +141,7 @@ from sdl2.sdlimage import *
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
+SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 draw_border = True
 w = 1120
@@ -248,6 +249,7 @@ t_window = SDL_CreateWindow(window_title,
 
 if maximized:
     SDL_MaximizeWindow(t_window)
+
 
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
