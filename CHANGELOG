@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.4.6
 
  - Added theme entries for menu and corner buttons
+ - Added UI scale safety auto fallback
  - Fixed crash when auto-theme enabled
  - Fixed un-maximize button in fullscreen
 
