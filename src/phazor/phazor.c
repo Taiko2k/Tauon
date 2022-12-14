@@ -967,7 +967,7 @@ int get_audio(int max, float* buff){
 //                }
 
                 if (reset_set == 1 && reset_set_byte == low) {
-                    //printf("pa: Reset position counter\n");
+                    printf("pa: Reset position counter\n");
                     reset_set = 0;
                     position_count = reset_set_value;
                 }
@@ -1206,9 +1206,12 @@ void connect_pulse() {
         sample_rate_out > 0 && position_count > get_buff_fill() &&
         current_sample_rate != sample_rate_out && position_count > 0 && get_buff_fill() > 0){
 
-        printf("ph: The samplerate changed, rewinding\n");
         src_reset(src);
-        decode_seek(position_count / current_sample_rate * 1000, sample_rate_src);
+        printf("ph: The samplerate changed, rewinding\n");
+        if (reset_set == 0){
+            decode_seek(position_count / sample_rate_src * 1000, sample_rate_src);
+        }
+
         buff_reset();
 
     }
@@ -1990,11 +1993,12 @@ void *main_loop(void *thread_id) {
 
                     if (using_fade == 0){
                             // Jump immediately
-                            // printf("ph: Jump\n");
+                            printf("ph: Jump\n");
                             position_count = 0;
                             buff_reset();
                             gate = 0;
                             sample_change_byte = 0;
+                            reset_set = 1;
                             reset_set_byte = 0;
                             reset_set_value = 0;
                     }
