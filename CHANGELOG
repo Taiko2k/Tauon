@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.4.7
 
+ - Fixed scrobble on repeat
  - Fixed tracks not starting at 0 with "avoid resampling" on
 
 v7.4.6
