@@ -5891,12 +5891,12 @@ class PlayerCtl:
                     self.playerCommandReady = True
 
                     #self.render_playlist()
-                    #lfm_scrobbler.start_queue()
+                    lfm_scrobbler.start_queue()
 
                     # Reload lastfm for rescrobble
-                    # if lfm_scrobbler.a_sc:
-                    #     lfm_scrobbler.a_sc = False
-                    #     self.a_time = 0
+                    if lfm_scrobbler.a_sc:
+                        lfm_scrobbler.a_sc = False
+                        self.a_time = 0
 
             elif self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
                     self.master_library[pp[self.playlist_playing_position]].is_cue is True \
