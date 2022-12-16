@@ -4396,39 +4396,43 @@ def use_id3(tags, nt):
 
 
 def scan_ffprobe(nt):
+    startupinfo = None
+    if system == 'windows' or msys:
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of",
-                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.length = float(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a duration")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
-                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.title = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a title")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
-                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.artist = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a artist")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
-                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.album = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a album")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
-                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.date = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a date")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
-                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                                 "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.track_number = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a track")
@@ -4591,7 +4595,11 @@ def tag_scan(nt):
 
                 if not nt.length:
                     try:
-                        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE)
+                        startupinfo = None
+                        if system == 'windows' or msys:
+                            startupinfo = subprocess.STARTUPINFO()
+                            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
                         nt.length = float(result.stdout.decode())
                     except:
                         print("FFPROBE couldn't supply a duration")
