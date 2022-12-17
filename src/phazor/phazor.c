@@ -167,6 +167,7 @@ int config_resample_quality = 2;
 int config_resample = 1;
 int config_always_ffmpeg = 0;
 int config_volume_power = 2;
+int config_feed_samplerate = 48000;
 
 unsigned int test1 = 0;
 
@@ -1270,11 +1271,12 @@ int load_next() {
         codec = FEED;
         load_target_seek = 0;
         pthread_mutex_lock(&buffer_mutex);
-        if (current_sample_rate != sample_rate_out) {
-            sample_change_byte = high;
-            want_sample_rate = sample_rate_out;
-        }
-        sample_rate_src = sample_rate_out;
+//        if (current_sample_rate != sample_rate_out) {
+//            sample_change_byte = high;
+//            want_sample_rate = config_feed_samplerate;
+//        }
+        sample_rate_src = config_feed_samplerate;
+        src_reset(src);
         pthread_mutex_unlock(&buffer_mutex);
         decoder_allocated = 1;
         buffering = 1;
@@ -2292,6 +2294,10 @@ void config_set_dev_name(char *device) {
 
 void config_set_volume_power(int n){
     config_volume_power = n;
+}
+
+void config_set_feed_samplerate(int n){
+    config_feed_samplerate = n;
 }
 
 float get_level_peak_l() {
