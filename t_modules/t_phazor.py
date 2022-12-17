@@ -650,6 +650,7 @@ def player4(tauon):
                         pctl.playerCommandReady = True
                         break
                 else:
+                    aud.config_set_feed_samplerate(prefs.samplerate)
                     aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                     state = 3
                     player_timer.hit()
