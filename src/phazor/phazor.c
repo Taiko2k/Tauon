@@ -38,6 +38,8 @@
 #define MA_ENABLE_PULSEAUDIO
 #define MA_ENABLE_COREAUDIO
 #define MA_ENABLE_OSS
+#define MA_ENABLE_SNDIO
+#define MA_ENABLE_AUDIO4
 
 #include "miniaudio/miniaudio.h"
 
