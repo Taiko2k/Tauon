@@ -2280,6 +2280,9 @@ class ColoursClass:  # Used to store colour values for UI elements. These are ch
         self.bar_time = self.grey(70)
 
         self.top_panel_background = self.grey(15)
+        self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
+        self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
+
         self.side_panel_background = self.grey(18)
         self.gallery_background = self.side_panel_background
         self.playlist_panel_background = self.grey(21)
