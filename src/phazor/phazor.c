@@ -37,6 +37,7 @@
 #define MA_ENABLE_WASAPI
 #define MA_ENABLE_PULSEAUDIO
 #define MA_ENABLE_COREAUDIO
+#define MA_ENABLE_OSS
 
 #include "miniaudio/miniaudio.h"
 
