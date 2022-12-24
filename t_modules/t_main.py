@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.7"
+n_version = "7.4.8"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -24709,9 +24709,9 @@ class MessageBox:
         elif gui.message_mode == 'confirm':
             message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
             ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.message_box_text, 15)
-            if draw.button("Yes", ((w * gui.scale) // 2 + x) - 70 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
+            if draw.button("Yes", (w // 2 + x) - 70 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
                 gui.message_box_confirm_callback(*gui.message_box_confirm_reference)
-            if draw.button("No", ((w * gui.scale) // 2 + x) + 25 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
+            if draw.button("No", (w // 2 + x) + 25 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
                 gui.message_box = False
             return
 
