@@ -433,8 +433,7 @@ class TDraw:
             try:
                 self.layout.set_text(text, -1)
             except:
-                print("Text error")
-                return 10, 10
+                self.layout.set_text(text.encode('utf-8', 'replace').decode("utf-8"), -1)
 
             return self.layout.get_pixel_size()
         else:
@@ -454,8 +453,7 @@ class TDraw:
         try:
             self.layout.set_text(text, -1)
         except:
-            print("Text error")
-            return 0
+            self.layout.set_text(text.encode('utf-8', 'replace').decode("utf-8"), -1)
 
         y_off = self.layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
@@ -651,8 +649,9 @@ class TDraw:
         try:
             layout.set_text(text, -1)
         except:
-            print(f"Text error on text: {text}")
-            return 10
+            layout.set_text(text.encode('utf-8', 'replace').decode("utf-8"), -1)
+            #print(f"Text error on text: {text}")
+
         #print(layout.get_direction(0))
 
         y_off = layout.get_baseline() / 1000
