@@ -5000,10 +5000,12 @@ class PlayerCtl:
                 self.radio_scrobble_trip = True
                 lfm_scrobbler.scrob_full_track(copy.deepcopy(radiobox.dummy_track))
 
-    def update_shuffle_pool(self, pl_id, track_list):
+    def update_shuffle_pool(self, pl_id):
 
-        if pl_id in self.shuffle_pools:
-            self.shuffle_pools[pl_id] += track_list
+        new_pool = copy.deepcopy(self.multi_playlist[id_to_pl(pl_id)][2])
+        random.shuffle(new_pool)
+        self.shuffle_pools[pl_id] = new_pool
+        console.print("Refill shuffle pool")
 
     def notify_update_fire(self):
         if self.mpris is not None:
@@ -6358,10 +6360,7 @@ class PlayerCtl:
 
                             else:
                                 # Refill the pool
-                                new_pool = copy.deepcopy(pl[2])
-                                random.shuffle(new_pool)
-                                pctl.shuffle_pools[id] = new_pool
-                                console.print("Refill shuffle pool")
+                                self.update_shuffle_pool(pl[6])
 
                     else:
                         random_jump = random.randrange(len(self.playing_playlist()))  # not used
@@ -30577,7 +30576,7 @@ class TopPanel:
                     if modified:
                         pctl.after_import_flag = True
                         pctl.notify_change()
-                        pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
+                        pctl.update_shuffle_pool(pctl.multi_playlist[i][6])
                         tree_view_box.clear_target_pl(i)
                         tm.ready("worker")
 
@@ -35746,7 +35745,7 @@ class PlaylistBox:
                         pctl.after_import_flag = True
                         tm.ready("worker")
                         pctl.notify_change()
-                        pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
+                        pctl.update_shuffle_pool(pctl.multi_playlist[i][6])
                         tree_view_box.clear_target_pl(i)
 
             # Toggle hidden flag on click
@@ -44453,7 +44452,7 @@ while pctl.running:
                         else:
                             pctl.multi_playlist[target_pl][2] += order.tracks
 
-                        pctl.update_shuffle_pool(pctl.multi_playlist[target_pl][6], order.tracks)
+                        pctl.update_shuffle_pool(pctl.multi_playlist[target_pl][6])
 
                         gui.update += 2
                         gui.pl_update += 2
