@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.4.8
 
  - Fixed conformation dialog scaling
+ - Fixed shuffle breaking after folder rescan
 
 v7.4.7
 
