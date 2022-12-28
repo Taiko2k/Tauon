@@ -429,7 +429,12 @@ class TDraw:
                 self.layout.set_height(20000 * 1000)
             else:
                 self.layout.set_height(0)
-            self.layout.set_text(text, -1)
+
+            try:
+                self.layout.set_text(text, -1)
+            except:
+                print("Text error")
+                return 10, 10
 
             return self.layout.get_pixel_size()
         else:
@@ -445,7 +450,12 @@ class TDraw:
             self.layout.set_height(20000 * 1000)
         else:
             self.layout.set_height(0)
-        self.layout.set_text(text, -1)
+
+        try:
+            self.layout.set_text(text, -1)
+        except:
+            print("Text error")
+            return 0
 
         y_off = self.layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
@@ -637,7 +647,12 @@ class TDraw:
         # desc.set_family("Arial")
 
         layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
-        layout.set_text(text, -1)
+
+        try:
+            layout.set_text(text, -1)
+        except:
+            print(f"Text error on text: {text}")
+            return 10
         #print(layout.get_direction(0))
 
         y_off = layout.get_baseline() / 1000
