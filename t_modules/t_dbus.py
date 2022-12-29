@@ -423,7 +423,7 @@ class Gnome:
                             except Exception as e:
                                 print(str(e))
                                 print("Thumbnail error")
-                                print(track.fullpath)
+                                print(track.fullpath.encode('utf-8', 'replace').decode("utf-8"))
 
                             self.update_progress()
 
