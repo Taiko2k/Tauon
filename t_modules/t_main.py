@@ -6721,7 +6721,7 @@ def notify_song(notify_of_end=False, delay=0.0):
             if not notify_of_end:
                 i_path = thumb_tracks.path(track)
         except:
-            print(track.fullpath)
+            print(track.fullpath.encode('utf-8', 'replace').decode("utf-8"))
             print("Thumbnail error")
 
         top_line = track.title
@@ -11459,7 +11459,7 @@ class ThumbTracks:
             return None
 
         image_name = track.album + track.parent_folder_path + str(offset)
-        image_name = hashlib.md5(image_name.encode()).hexdigest()
+        image_name = hashlib.md5(image_name.encode('utf-8', 'replace')).hexdigest()
 
         t_path = os.path.join(e_cache_dir, image_name + '.jpg')
 
@@ -12628,7 +12628,7 @@ class StyleOverlay:
                 except Exception as e:
                     print("Blur blackground error")
                     print(str(e))
-                    print(track.fullpath)
+                    #print(track.fullpath)
 
                 if self.im is None or self.im is False:
                     if self.a_texture:
