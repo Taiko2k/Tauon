@@ -785,6 +785,8 @@ playlist_hold_position = 0
 playlist_hold = False
 selection_stage = 0
 
+selected_in_playlist = -1
+
 shift_selection = []
 
 gen_codes = {}
@@ -870,7 +872,6 @@ draw_sep_hl = False
 # Playlist Variables
 playlist_view_position = 0
 playlist_playing = -1
-playlist_selected = -1
 
 loading_in_progress = False
 
@@ -2739,7 +2740,7 @@ for t in range(2):
         gui.rspw = save[20]
         # savetime = save[21]
         gui.vis_want = save[22]
-        playlist_selected = save[23]
+        selected_in_playlist = save[23]
         if save[24] is not None:
             album_mode_art_size = save[24]
         if save[25] is not None:
@@ -4821,6 +4822,7 @@ class PlayerCtl:
         if self.playlist_playing_position == None:
             self.playlist_playing_position = -1
         self.playlist_view_position = playlist_view_position
+        self.selected_in_playlist = selected_in_playlist
         self.target_open = ""
         self.target_object = None
         self.start_time = 0
@@ -5058,7 +5060,7 @@ class PlayerCtl:
         return len(self.track_queue) > 0
 
     def selected_ready(self):
-        return default_playlist and playlist_selected < len(default_playlist)
+        return default_playlist and pctl.selected_in_playlist < len(default_playlist)
 
     def render_playlist(self):
 
@@ -5071,12 +5073,11 @@ class PlayerCtl:
         if gui.playlist_view_length < 1:
             return 0
 
-        global playlist_selected
         global shift_selection
 
         for i in range(len(self.multi_playlist[self.active_playlist_viewing][2])):
 
-            if i == playlist_selected:
+            if i == pctl.selected_in_playlist:
 
                 if i < pctl.playlist_view_position:
                     pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
@@ -5113,15 +5114,15 @@ class PlayerCtl:
             target_track = self.playing_object()
 
         elif self.playing_state == 0 and prefs.meta_shows_selected:
-            if -1 < playlist_selected < len(self.multi_playlist[self.active_playlist_viewing][2]):
-                target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][playlist_selected])
+            if -1 < pctl.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing][2]):
+                target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][pctl.selected_in_playlist])
 
         elif self.playing_state == 0 and prefs.meta_persists_stop:
             target_track = self.master_library[self.track_queue[self.queue_step]]
 
         if prefs.meta_shows_selected_always:
-            if -1 < playlist_selected < len(self.multi_playlist[self.active_playlist_viewing][2]):
-                target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][playlist_selected])
+            if -1 < pctl.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing][2]):
+                target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][pctl.selected_in_playlist])
 
         return target_track
 
@@ -5160,7 +5161,6 @@ class PlayerCtl:
 
     def show(self):
 
-        global playlist_selected
         global shift_selection
 
         if not self.track_queue:
@@ -5178,7 +5178,6 @@ class PlayerCtl:
         # print("--------")
         console.print("DEBUG: Position set by show playing")
 
-        global playlist_selected
         global shift_selection
 
         if spot_ctl.coasting:
@@ -5231,7 +5230,7 @@ class PlayerCtl:
                     i = self.playlist_playing_position
 
                 if select:
-                    playlist_selected = i
+                    pctl.selected_in_playlist = i
 
                 if playing:
                     # Make the found track the playing track
@@ -5302,10 +5301,10 @@ class PlayerCtl:
 
         if album_mode and not quiet:
             if highlight:
-                gui.gallery_animate_highlight_on = goto_album(playlist_selected)
+                gui.gallery_animate_highlight_on = goto_album(pctl.selected_in_playlist)
                 gallery_select_animate_timer.set()
             else:
-                goto_album(playlist_selected)
+                goto_album(pctl.selected_in_playlist)
 
         if prefs.left_panel_mode == "artist list" and gui.lsp and not quiet:
             artist_list_box.locate_artist(pctl.playing_object())
@@ -5778,8 +5777,6 @@ class PlayerCtl:
 
     def test_progress(self):
 
-        global playlist_selected
-
         # Fuzzy reload lastfm for rescrobble
         if lfm_scrobbler.a_sc and self.playing_time < 1:
             lfm_scrobbler.a_sc = False
@@ -5868,24 +5865,24 @@ class PlayerCtl:
                     if i < 0:
                         i = 0
 
-                    playlist_selected = i
+                    pctl.selected_in_playlist = i
                     shift_selection = [i]
 
                     self.jump(pp[i], i, jump=False)
 
                 elif prefs.playback_follow_cursor and self.playing_ready() \
                         and self.multi_playlist[pctl.active_playlist_viewing][2][
-                    playlist_selected] != self.playing_object().index \
-                        and -1 < playlist_selected < len(default_playlist):
+                    pctl.selected_in_playlist] != self.playing_object().index \
+                        and -1 < pctl.selected_in_playlist < len(default_playlist):
 
                     print("Repeat follow cursor")
 
                     self.playing_time = 0
                     self.decode_time = 0
                     self.active_playlist_playing = self.active_playlist_viewing
-                    self.playlist_playing_position = playlist_selected
+                    self.playlist_playing_position = pctl.selected_in_playlist
 
-                    self.track_queue.append(default_playlist[playlist_selected])
+                    self.track_queue.append(default_playlist[pctl.selected_in_playlist])
                     self.queue_step = len(self.track_queue) - 1
                     self.play_target(jump=False)
                     self.render_playlist()
@@ -6241,16 +6238,16 @@ class PlayerCtl:
         # Playback follow cursor
         elif prefs.playback_follow_cursor and self.playing_ready() \
                 and self.multi_playlist[pctl.active_playlist_viewing][2][
-            playlist_selected] != self.playing_object().index \
-                and -1 < playlist_selected < len(default_playlist):
+            pctl.selected_in_playlist] != self.playing_object().index \
+                and -1 < pctl.selected_in_playlist < len(default_playlist):
 
             if dry:
-                return default_playlist[playlist_selected]
+                return default_playlist[pctl.selected_in_playlist]
 
             self.active_playlist_playing = self.active_playlist_viewing
-            self.playlist_playing_position = playlist_selected
+            self.playlist_playing_position = pctl.selected_in_playlist
 
-            self.track_queue.append(default_playlist[playlist_selected])
+            self.track_queue.append(default_playlist[pctl.selected_in_playlist])
             self.queue_step = len(self.track_queue) - 1
             if play:
                 self.play_target(jump=not end)
@@ -14310,7 +14307,7 @@ class TransEditBox:
 
         select = list(set(shift_selection))
         if not select and pctl.selected_ready():
-            select = [playlist_selected]
+            select = [pctl.selected_in_playlist]
 
         titles = [pctl.g(default_playlist[s]).title for s in select]
         artists = [pctl.g(default_playlist[s]).artist for s in select]
@@ -14891,10 +14888,10 @@ def show_in_playlist():
     if album_mode and window_size[0] < 750 * gui.scale:
         toggle_album_mode()
 
-    pctl.playlist_view_position = playlist_selected
+    pctl.playlist_view_position = pctl.selected_in_playlist
     console.print("DEBUG: Position changed by show in playlist")
     shift_selection.clear()
-    shift_selection.append(playlist_selected)
+    shift_selection.append(pctl.selected_in_playlist)
     pctl.render_playlist()
 
 
@@ -16646,8 +16643,8 @@ def delete_playlist(index, force=False, check_lock=False):
         default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
         pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
         console.print("DEBUG: Position reset by playlist delete")
-        playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
-        shift_selection = [playlist_selected]
+        pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][5]
+        shift_selection = [pctl.selected_in_playlist]
 
         if album_mode:
             reload_albums(True)
@@ -19319,7 +19316,7 @@ def transfer(index, args):
         if args[1] == 1:  # single track
             cargo.append(index)
             if args[0] == 0:  # cut
-                del default_playlist[playlist_selected]
+                del default_playlist[pctl.selected_in_playlist]
 
         elif args[1] == 2:  # folder
             for b in range(len(default_playlist)):
@@ -19340,7 +19337,7 @@ def transfer(index, args):
     elif args[0] == 2:  # Drop
         if args[1] == 1:  # Before
 
-            insert = playlist_selected
+            insert = pctl.selected_in_playlist
             while insert > 0 and pctl.master_library[default_playlist[insert]].parent_folder_name == \
                     pctl.master_library[index].parent_folder_name:
                 insert -= 1
@@ -19353,7 +19350,7 @@ def transfer(index, args):
                 default_playlist.insert(insert, cargo.pop())
 
         elif args[1] == 2:  # After
-            insert = playlist_selected
+            insert = pctl.selected_in_playlist
 
             while insert < len(default_playlist) and pctl.master_library[default_playlist[insert]].parent_folder_name == \
                     pctl.master_library[index].parent_folder_name:
@@ -19404,8 +19401,8 @@ def s_copy():
         for item in shift_selection:
             cargo.append(default_playlist[item])
 
-    if not cargo and -1 < playlist_selected < len(default_playlist):
-        cargo.append(default_playlist[playlist_selected])
+    if not cargo and -1 < pctl.selected_in_playlist < len(default_playlist):
+        cargo.append(default_playlist[pctl.selected_in_playlist])
 
     tauon.copied_track = None
 
@@ -19662,13 +19659,12 @@ def refind_playing():
 
 def del_selected(force_delete=False):
     global shift_selection
-    global playlist_selected
 
     gui.update += 1
     gui.pl_update = 1
 
     if not shift_selection:
-        shift_selection = [playlist_selected]
+        shift_selection = [pctl.selected_in_playlist]
 
     if not default_playlist:
         return
@@ -19712,10 +19708,10 @@ def del_selected(force_delete=False):
     reload()
     tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
 
-    if playlist_selected > len(default_playlist) - 1:
-        playlist_selected = len(default_playlist) - 1
+    if pctl.selected_in_playlist > len(default_playlist) - 1:
+        pctl.selected_in_playlist = len(default_playlist) - 1
 
-    shift_selection = [playlist_selected]
+    shift_selection = [pctl.selected_in_playlist]
     gui.pl_update += 1
     refind_playing()
     pctl.notify_change()
@@ -19730,8 +19726,8 @@ def test_show(dummy):
 
 
 def show_in_gal(track, silent=False):
-    # goto_album(playlist_selected)
-    gui.gallery_animate_highlight_on = goto_album(playlist_selected)
+    # goto_album(pctl.playlist_selected)
+    gui.gallery_animate_highlight_on = goto_album(pctl.selected_in_playlist)
     if not silent:
         gallery_select_animate_timer.set()
 
@@ -19820,11 +19816,11 @@ def add_selected_to_queue():
     if prefs.stop_end_queue:
         pctl.auto_stop = False
     if gui.album_tab_mode:
-        add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
+        add_album_to_queue(default_playlist[get_album_info(pctl.selected_in_playlist)[1][0]], pctl.selected_in_playlist)
         queue_timer_set()
     else:
-        pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
-                                               playlist_selected,
+        pctl.force_queue.append(queue_item_gen(default_playlist[pctl.selected_in_playlist],
+                                               pctl.selected_in_playlist,
                                                pl_to_id(pctl.active_playlist_viewing)))
         queue_timer_set()
 
@@ -21876,8 +21872,8 @@ def toggle_album_mode(force_on=False):
     # goto_album(pctl.playlist_playing_position)
 
     if album_mode:
-        if playlist_selected < len(pctl.playing_playlist()):
-            goto_album(playlist_selected)
+        if pctl.selected_in_playlist < len(pctl.playing_playlist()):
+            goto_album(pctl.selected_in_playlist)
 
 
 def toggle_gallery_keycontrol(always_exit=False):
@@ -21886,14 +21882,14 @@ def toggle_gallery_keycontrol(always_exit=False):
             toggle_album_mode()
             gui.gall_tab_enter = True
             gui.album_tab_mode = True
-            show_in_gal(playlist_selected, silent=True)
+            show_in_gal(pctl.selected_in_playlist, silent=True)
         elif gui.gall_tab_enter or always_exit:
             # Exit gallery and tab mode
             toggle_album_mode()
         else:
             gui.album_tab_mode ^= True
             if gui.album_tab_mode:
-                show_in_gal(playlist_selected, silent=True)
+                show_in_gal(pctl.selected_in_playlist, silent=True)
 
 
 def check_auto_update_okay(code, pl=None):
@@ -21924,7 +21920,6 @@ def check_auto_update_okay(code, pl=None):
 def switch_playlist(number, cycle=False, quiet=False):
     global default_playlist
 
-    global playlist_selected
     global search_index
     global shift_selection
 
@@ -21958,7 +21953,7 @@ def switch_playlist(number, cycle=False, quiet=False):
 
     pctl.multi_playlist[pctl.active_playlist_viewing][2] = default_playlist
     pctl.multi_playlist[pctl.active_playlist_viewing][3] = pctl.playlist_view_position
-    pctl.multi_playlist[pctl.active_playlist_viewing][5] = playlist_selected
+    pctl.multi_playlist[pctl.active_playlist_viewing][5] = pctl.selected_in_playlist
 
     if gall_pl_switch_timer.get() > 240:
         gui.gallery_positions.clear()
@@ -21978,9 +21973,9 @@ def switch_playlist(number, cycle=False, quiet=False):
 
     default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
     pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
-    playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
+    pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][5]
     console.print("DEBUG: Position changed by playlist change")
-    shift_selection = [playlist_selected]
+    shift_selection = [pctl.selected_in_playlist]
 
     id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
@@ -22606,7 +22601,7 @@ def bar_love_notify():
 
 
 def select_love(notify=False):
-    selected = playlist_selected
+    selected = pctl.selected_in_playlist
     playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
     if -1 < selected < len(playlist):
         track_id = playlist[selected]
@@ -22682,26 +22677,25 @@ def locate_artist():
 
     if block_starts:
 
-        global playlist_selected
         next = False
         for start in block_starts:
 
             if next:
-                playlist_selected = start
+                pctl.selected_in_playlist = start
                 pctl.playlist_view_position = start
                 shift_selection.clear()
                 break
 
-            if playlist_selected == start:
+            if pctl.selected_in_playlist == start:
                 next = True
                 continue
 
         else:
-            playlist_selected = block_starts[0]
+            pctl.selected_in_playlist = block_starts[0]
             pctl.playlist_view_position = block_starts[0]
             shift_selection.clear()
 
-        tree_view_box.show_track(pctl.g(default_playlist[playlist_selected]))
+        tree_view_box.show_track(pctl.g(default_playlist[pctl.selected_in_playlist]))
     else:
         show_message("No exact matching artist could be found in this playlist")
 
@@ -24269,7 +24263,7 @@ class SearchOverlay:
                             else:
 
                                 self.click_album(item[2])
-                                pctl.playlist_view_position = playlist_selected
+                                pctl.playlist_view_position = pctl.selected_in_playlist
                                 console.print("DEBUG: Position changed by global search")
                                 self.active = False
                                 self.search_text.text = ""
@@ -24282,13 +24276,13 @@ class SearchOverlay:
                     elif enter and fade == 1:
                         self.click_album(item[2])
                         pctl.show_current(index=item[2])
-                        pctl.playlist_view_position = playlist_selected
+                        pctl.playlist_view_position = pctl.selected_in_playlist
                         console.print("DEBUG: Position changed by global search")
                         self.active = False
                         self.search_text.text = ""
                     if show:
                         pctl.show_current(index=item[2], playing=False)
-                        pctl.playlist_view_position = playlist_selected
+                        pctl.playlist_view_position = pctl.selected_in_playlist
                         if album_mode:
                             show_in_gal(0)
                         self.active = False
@@ -26176,9 +26170,9 @@ def get_album_info(position, pl=None):
 
     global album_info_cache_key
 
-    if album_info_cache_key != (playlist_selected, pctl.playing_object()):  # Premature optimisation?
+    if album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
         album_info_cache.clear()
-        album_info_cache_key = (playlist_selected, pctl.playing_object())
+        album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
 
     if position in album_info_cache:
         return album_info_cache[position]
@@ -26205,7 +26199,7 @@ def get_album_info(position, pl=None):
         album.append(current)
         if len(pctl.track_queue) > 0 and playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
-        if current == playlist_selected:
+        if current == pctl.selected_in_playlist:
             select = True
 
         if current < len(playlist) - 1 and first_track.parent_folder_name != pctl.master_library[
@@ -26240,51 +26234,51 @@ def get_folder_list(index):
 
 
 def gal_jump_select(up=False, num=1):
-    global playlist_selected
-    old_selected = playlist_selected
+
+    old_selected = pctl.selected_in_playlist
     old_num = num
 
     if not default_playlist:
         return
 
-    on = playlist_selected
+    on = pctl.selected_in_playlist
     if on > len(default_playlist) - 1:
         on = 0
-        playlist_selected = 0
+        pctl.selected_in_playlist = 0
 
     if up is False:
 
         while num > 0:
             while pctl.master_library[
                 default_playlist[on]].parent_folder_name == pctl.master_library[
-                default_playlist[playlist_selected]].parent_folder_name:
+                default_playlist[pctl.selected_in_playlist]].parent_folder_name:
                 on += 1
 
                 if on > len(default_playlist) - 1:
-                    playlist_selected = old_selected
+                    pctl.selected_in_playlist = old_selected
                     return
 
-            playlist_selected = on
+            pctl.selected_in_playlist = on
             num -= 1
     else:
 
         if num > 1:
-            if playlist_selected > len(default_playlist) - 1:
-                playlist_selected = old_selected
+            if pctl.selected_in_playlist > len(default_playlist) - 1:
+                pctl.selected_in_playlist = old_selected
                 return
 
-            alb = get_album_info(playlist_selected)
+            alb = get_album_info(pctl.selected_in_playlist)
             if alb[1][0] in album_dex[:num]:
-                playlist_selected = old_selected
+                pctl.selected_in_playlist = old_selected
                 return
 
         while num > 0:
-            alb = get_album_info(playlist_selected)
+            alb = get_album_info(pctl.selected_in_playlist)
 
             if alb[1][0] > -1:
                 on = alb[1][0] - 1
 
-            playlist_selected = max(get_album_info(on)[1][0], 0)
+            pctl.selected_in_playlist = max(get_album_info(on)[1][0], 0)
             num -= 1
 
 
@@ -30501,7 +30495,7 @@ class TopPanel:
                         if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                             pctl.play()
                         elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
-                            pctl.jump(default_playlist[playlist_selected], pl_position=playlist_selected)
+                            pctl.jump(default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
                     if mouse_up:
                         self.tab_d_click_timer.set()
                         self.tab_d_click_ref = pl_to_id(i)
@@ -33106,7 +33100,6 @@ class StandardPlaylist:
 
         global playlist_hold
         global playlist_hold_position
-        global playlist_selected
         global shift_selection
 
         global click_time
@@ -33312,8 +33305,8 @@ class StandardPlaylist:
 
                             else:  # Add as grouped album
                                 add_album_to_queue(track_id, track_position)
-                            playlist_selected = track_position
-                            shift_selection = [playlist_selected]
+                            pctl.selected_in_playlist = track_position
+                            shift_selection = [pctl.selected_in_playlist]
                             gui.pl_update += 1
 
                         # Play if double click:
@@ -33336,7 +33329,7 @@ class StandardPlaylist:
 
                             if track_position not in shift_selection:
                                 shift_selection = []
-                                playlist_selected = track_position
+                                pctl.selected_in_playlist = track_position
                                 u = track_position
                                 while u < len(default_playlist) and track_object.parent_folder_path == \
                                         pctl.master_library[
@@ -33356,7 +33349,7 @@ class StandardPlaylist:
 
                             selection_stage = 1
                             temp = get_folder_tracks_local(track_position)
-                            playlist_selected = track_position
+                            pctl.selected_in_playlist = track_position
 
                             if len(shift_selection) > 0 and key_shift_down:
                                 if track_position < shift_selection[0]:
@@ -33381,7 +33374,7 @@ class StandardPlaylist:
                             drag_highlight = True
 
                     # Something to do with quick search, I forgot
-                    if playlist_selected > track_position + 1:
+                    if pctl.selected_in_playlist > track_position + 1:
                         gui.row_extra += 1
 
                     list_items.append((1, track_position, track_object, track_box, input_box, highlight, number,
@@ -33423,7 +33416,7 @@ class StandardPlaylist:
                 line_hit = False
 
             # Double click to play
-            if key_shift_down is False and d_mouse_click and line_hit and track_position == playlist_selected and coll_point(
+            if key_shift_down is False and d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
                     last_click_location, input_box):
 
                 pctl.jump(track_id, track_position)
@@ -33445,8 +33438,8 @@ class StandardPlaylist:
             if middle_click and line_hit:
                 pctl.force_queue.append(queue_item_gen(track_id,
                                                        track_position, pl_to_id(pctl.active_playlist_viewing)))
-                playlist_selected = track_position
-                shift_selection = [playlist_selected]
+                pctl.selected_in_playlist = track_position
+                shift_selection = [pctl.selected_in_playlist]
                 gui.pl_update += 1
                 queue_timer_set()
                 if prefs.stop_end_queue:
@@ -33456,7 +33449,7 @@ class StandardPlaylist:
             if len(shift_selection) > 1 and mouse_up and line_over and not key_shift_down and not key_ctrl_down and point_proximity_test(
                     gui.drag_source_position, mouse_position, 15):  # and not playlist_hold:
                 shift_selection = [track_position]
-                playlist_selected = track_position
+                pctl.selected_in_playlist = track_position
                 gui.pl_update = 1
                 gui.update = 2
 
@@ -33488,7 +33481,7 @@ class StandardPlaylist:
                             else:
                                 default_playlist.insert(track_position + 1, "new")
                             default_playlist.remove("old")
-                            playlist_selected = default_playlist.index("new")
+                            pctl.selected_in_playlist = default_playlist.index("new")
                             default_playlist[default_playlist.index("new")] = ref
 
                             gui.pl_update = 1
@@ -33518,7 +33511,7 @@ class StandardPlaylist:
                                     shift_selection.append(b)
                                     default_playlist[b] = ref.pop(0)
 
-                            playlist_selected = shift_selection[0]
+                            pctl.selected_in_playlist = shift_selection[0]
                             gui.pl_update += 1
 
                         reload_albums(True)
@@ -33543,8 +33536,8 @@ class StandardPlaylist:
                     gui.update += 1
 
                     if track_position not in shift_selection:
-                        playlist_selected = track_position
-                        shift_selection = [playlist_selected]
+                        pctl.selected_in_playlist = track_position
+                        shift_selection = [pctl.selected_in_playlist]
 
             if line_over and inp.mouse_click:
 
@@ -33554,19 +33547,19 @@ class StandardPlaylist:
                     selection_stage = 2
                     if key_shift_down:
                         start_s = track_position
-                        end_s = playlist_selected
+                        end_s = pctl.selected_in_playlist
                         if end_s < start_s:
                             end_s, start_s = start_s, end_s
                         for y in range(start_s, end_s + 1):
                             if y not in shift_selection:
                                 shift_selection.append(y)
                         shift_selection.sort()
-                        playlist_selected = track_position
+                        pctl.selected_in_playlist = track_position
                     elif key_ctrl_down:
                         shift_selection.append(track_position)
                     else:
-                        playlist_selected = track_position
-                        shift_selection = [playlist_selected]
+                        pctl.selected_in_playlist = track_position
+                        shift_selection = [pctl.selected_in_playlist]
 
                 if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
                     playlist_hold = True
@@ -33580,7 +33573,7 @@ class StandardPlaylist:
                     playlist_hold = False
 
             # Multi Select Highlight
-            if track_position in shift_selection or track_position == playlist_selected:
+            if track_position in shift_selection or track_position == pctl.selected_in_playlist:
                 highlight = True
 
             if pctl.playing_state != 3 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
@@ -35711,7 +35704,7 @@ class PlaylistBox:
                     if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
                         pctl.play()
                     elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
-                        pctl.jump(default_playlist[playlist_selected], pl_position=playlist_selected)
+                        pctl.jump(default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
                 if mouse_up:
                     top_panel.tab_d_click_timer.set()
                     top_panel.tab_d_click_ref = pl_to_id(i)
@@ -36563,8 +36556,6 @@ class ArtistList:
 
     def draw_card(self, artist, x, y, w):
 
-        global playlist_selected
-
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
         if prefs.artist_list_style == 2:
             area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 1)
@@ -36652,14 +36643,14 @@ class ArtistList:
                 select = block_starts[0]
 
                 if len(block_starts) > 1:
-                    if -1 < playlist_selected < len(default_playlist):
-                        if playlist_selected in block_starts:
+                    if -1 < pctl.selected_in_playlist < len(default_playlist):
+                        if pctl.selected_in_playlist in block_starts:
                             scroll_hide_timer.set()
                             gui.frame_callback_list.append(TestTimer(0.9))
-                            if block_starts[-1] == playlist_selected:
+                            if block_starts[-1] == pctl.selected_in_playlist:
                                 pass
                             else:
-                                select = block_starts[block_starts.index(playlist_selected) + 1]
+                                select = block_starts[block_starts.index(pctl.selected_in_playlist) + 1]
 
                 gui.pl_update += 1
                 if album_mode:
@@ -36672,15 +36663,15 @@ class ArtistList:
                     pctl.jump(default_playlist[select], pl_position=select)
                     pctl.playlist_view_position = select
                     console.print("DEBUG: Position changed by artist click")
-                    playlist_selected = select
+                    pctl.selected_in_playlist = select
 
                     shift_selection.clear()
                     self.d_click_timer.force_set(10)
                 else:
-                    # playlist_selected = i
+                    # pctl.playlist_selected = i
                     pctl.playlist_view_position = select
                     console.print("DEBUG: Position changed by artist click")
-                    playlist_selected = select
+                    pctl.selected_in_playlist = select
                     self.d_click_ref = artist
                     self.d_click_timer.set()
 
@@ -38280,12 +38271,12 @@ class MetaBox:
                 tr = pctl.master_library[pctl.track_queue[pctl.queue_step]]
             if pctl.playing_state == 0 and prefs.meta_shows_selected:
 
-                if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+                if -1 < pctl.selected_in_playlist < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.selected_in_playlist])
 
             if prefs.meta_shows_selected_always and not pctl.playing_state == 3:
-                if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+                if -1 < pctl.selected_in_playlist < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.selected_in_playlist])
 
             if tr is None:
                 tr = pctl.playing_object()
@@ -40962,6 +40953,7 @@ def update_layout_do():
 
     # Restore in case of error
     if gui.rspw < 30 * gui.scale:
+
         gui.rspw = 100 * gui.scale
 
     # Lock right side panel to full size if fully extended -----
@@ -41496,7 +41488,7 @@ def save_state():
             None,  # old side panel size
             0,  # save time (unused)
             gui.vis_want,  # gui.vis
-            playlist_selected,
+            pctl.selected_in_playlist,
             album_mode_art_size,
             draw_border,
             prefs.enable_web,
@@ -42083,7 +42075,7 @@ while pctl.running:
                 else:
                     if pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
                             pctl.selected_ready() and default_playlist[
-                        playlist_selected] == pctl.playing_object().index:
+                        pctl.selected_in_playlist] == pctl.playing_object().index:
                         pctl.play_pause()
                     else:
                         inp.key_return_press = True
@@ -42794,7 +42786,7 @@ while pctl.running:
             if keymaps.test("goto-top"):
                 pctl.playlist_view_position = 0
                 console.print("DEBUG: Position changed by key")
-                playlist_selected = 0
+                pctl.selected_in_playlist = 0
                 gui.pl_update = 1
 
             if keymaps.test("goto-bottom"):
@@ -42803,7 +42795,7 @@ while pctl.running:
                     n = 0
                 pctl.playlist_view_position = n
                 console.print("DEBUG: Position changed by key")
-                playlist_selected = len(default_playlist) - 1
+                pctl.selected_in_playlist = len(default_playlist) - 1
                 gui.pl_update = 1
 
         if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
@@ -42859,10 +42851,10 @@ while pctl.running:
                     gui.theme_temp_current = -1
 
             if keymaps.test("transfer-playtime-to"):
-                if len(cargo) == 1 and tauon.copied_track is not None and -1 < playlist_selected < len(
+                if len(cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
                         default_playlist):
                     fr = pctl.g(tauon.copied_track)
-                    to = pctl.g(default_playlist[playlist_selected])
+                    to = pctl.g(default_playlist[pctl.selected_in_playlist])
 
                     fr_s = star_store.full_get(fr.index)
                     to_s = star_store.full_get(to.index)
@@ -43046,7 +43038,7 @@ while pctl.running:
                 if pctl.playlist_view_position > len(default_playlist):
                     pctl.playlist_view_position = len(default_playlist) - 2
                 gui.pl_update = 1
-                playlist_selected = pctl.playlist_view_position
+                pctl.selected_in_playlist = pctl.playlist_view_position
                 console.print("DEBUG: Position changed by page key")
                 shift_selection.clear()
         if keymaps.test('pageup'):
@@ -43055,20 +43047,20 @@ while pctl.running:
                 if pctl.playlist_view_position < 0:
                     pctl.playlist_view_position = 0
                 gui.pl_update = 1
-                playlist_selected = pctl.playlist_view_position
+                pctl.selected_in_playlist = pctl.playlist_view_position
                 console.print("DEBUG: Position changed by page key")
                 shift_selection.clear()
 
         if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
 
             if keymaps.test("info-playing"):
-                if playlist_selected < len(default_playlist):
-                    r_menu_index = pctl.g(default_playlist[playlist_selected]).index
+                if pctl.selected_in_playlist < len(default_playlist):
+                    r_menu_index = pctl.g(default_playlist[pctl.selected_in_playlist]).index
                     track_box = True
 
             if keymaps.test("info-show"):
-                if playlist_selected < len(default_playlist):
-                    r_menu_index = pctl.g(default_playlist[playlist_selected]).index
+                if pctl.selected_in_playlist < len(default_playlist):
+                    r_menu_index = pctl.g(default_playlist[pctl.selected_in_playlist]).index
                     track_box = True
 
             # These need to be disabled when text fields are active
@@ -43109,31 +43101,31 @@ while pctl.running:
 
                 if keymaps.test("shift-down") and len(default_playlist) > 0:
                     gui.pl_update += 1
-                    if playlist_selected > len(default_playlist) - 1:
-                        playlist_selected = 0
+                    if pctl.selected_in_playlist > len(default_playlist) - 1:
+                        pctl.selected_in_playlist = 0
 
                     if not shift_selection:
-                        shift_selection.append(playlist_selected)
-                    if playlist_selected < len(default_playlist) - 1:
-                        r = playlist_selected
-                        playlist_selected += 1
-                        if playlist_selected not in shift_selection:
-                            shift_selection.append(playlist_selected)
+                        shift_selection.append(pctl.selected_in_playlist)
+                    if pctl.selected_in_playlist < len(default_playlist) - 1:
+                        r = pctl.selected_in_playlist
+                        pctl.selected_in_playlist += 1
+                        if pctl.selected_in_playlist not in shift_selection:
+                            shift_selection.append(pctl.selected_in_playlist)
                         else:
                             shift_selection.remove(r)
 
-                if keymaps.test("shift-up") and playlist_selected > -1:
+                if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
                     gui.pl_update += 1
-                    if playlist_selected > len(default_playlist) - 1:
-                        playlist_selected = 0
+                    if pctl.selected_in_playlist > len(default_playlist) - 1:
+                        pctl.selected_in_playlist = 0
 
                     if not shift_selection:
-                        shift_selection.append(playlist_selected)
-                    if playlist_selected < len(default_playlist) - 1:
-                        r = playlist_selected
-                        playlist_selected -= 1
-                        if playlist_selected not in shift_selection:
-                            shift_selection.insert(0, playlist_selected)
+                        shift_selection.append(pctl.selected_in_playlist)
+                    if pctl.selected_in_playlist < len(default_playlist) - 1:
+                        r = pctl.selected_in_playlist
+                        pctl.selected_in_playlist -= 1
+                        if pctl.selected_in_playlist not in shift_selection:
+                            shift_selection.insert(0, pctl.selected_in_playlist)
                         else:
                             shift_selection.remove(r)
 
@@ -43191,7 +43183,7 @@ while pctl.running:
 
                 if keymaps.test("search-lyrics-selected"):
                     if pctl.selected_ready():
-                        track = pctl.g(default_playlist[playlist_selected])
+                        track = pctl.g(default_playlist[pctl.selected_in_playlist])
                         if track.lyrics:
                             show_message("Track already has lyrics")
                         else:
@@ -43199,7 +43191,7 @@ while pctl.running:
 
                 if keymaps.test("substitute-search-selected"):
                     if pctl.selected_ready():
-                        show_sub_search(pctl.g(default_playlist[playlist_selected]))
+                        show_sub_search(pctl.g(default_playlist[pctl.selected_in_playlist]))
 
                 if keymaps.test("global-search"):
                     activate_search_overlay()
@@ -43573,29 +43565,29 @@ while pctl.running:
                     if gal_right:
                         gal_right = False
                         gal_jump_select(False, 1)
-                        goto_album(playlist_selected)
-                        pctl.playlist_view_position = playlist_selected
+                        goto_album(pctl.selected_in_playlist)
+                        pctl.playlist_view_position = pctl.selected_in_playlist
                         console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
                     if gal_down:
                         gal_down = False
                         gal_jump_select(False, row_len)
-                        goto_album(playlist_selected, down=True)
-                        pctl.playlist_view_position = playlist_selected
+                        goto_album(pctl.selected_in_playlist, down=True)
+                        pctl.playlist_view_position = pctl.selected_in_playlist
                         console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
                     if gal_left:
                         gal_left = False
                         gal_jump_select(True, 1)
-                        goto_album(playlist_selected)
-                        pctl.playlist_view_position = playlist_selected
+                        goto_album(pctl.selected_in_playlist)
+                        pctl.playlist_view_position = pctl.selected_in_playlist
                         console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
                     if gal_up:
                         gal_up = False
                         gal_jump_select(True, row_len)
-                        goto_album(playlist_selected)
-                        pctl.playlist_view_position = playlist_selected
+                        goto_album(pctl.selected_in_playlist)
+                        pctl.playlist_view_position = pctl.selected_in_playlist
                         console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
 
@@ -43736,8 +43728,8 @@ while pctl.running:
                     if last_row != row_len:
                         last_row = row_len
 
-                        if playlist_selected < len(pctl.playing_playlist()):
-                            goto_album(playlist_selected)
+                        if pctl.selected_in_playlist < len(pctl.playing_playlist()):
+                            goto_album(pctl.selected_in_playlist)
                         # else:
                         #     goto_album(pctl.playlist_playing_position)
 
@@ -43807,7 +43799,7 @@ while pctl.running:
                                                     shift_selection.append(b)
                                                     default_playlist[b] = ref.pop(0)
 
-                                            playlist_selected = shift_selection[0]
+                                            pctl.selected_in_playlist = shift_selection[0]
                                             gui.pl_update += 1
                                             playlist_hold = False
 
@@ -43875,7 +43867,7 @@ while pctl.running:
 
                                                 pctl.playlist_view_position = album_dex[album_on]
                                                 console.print("DEBUG: Position changed by gallery click")
-                                                playlist_selected = album_dex[album_on]
+                                                pctl.selected_in_playlist = album_dex[album_on]
                                                 gui.pl_update += 1
 
                                         elif middle_click:
@@ -43917,18 +43909,18 @@ while pctl.running:
                                                 reload_albums(True)
 
                                             else:
-                                                playlist_selected = album_dex[album_on]
-                                                # playlist_position = playlist_selected
-                                                shift_selection = [playlist_selected]
-                                                gallery_menu.activate(default_playlist[playlist_selected])
-                                                r_menu_position = playlist_selected
+                                                pctl.selected_in_playlist = album_dex[album_on]
+                                                # playlist_position = pctl.playlist_selected
+                                                shift_selection = [pctl.selected_in_playlist]
+                                                gallery_menu.activate(default_playlist[pctl.selected_in_playlist])
+                                                r_menu_position = pctl.selected_in_playlist
 
                                                 shift_selection = []
-                                                u = playlist_selected
+                                                u = pctl.selected_in_playlist
                                                 while u < len(default_playlist) and pctl.master_library[
                                                     default_playlist[u]].parent_folder_path == \
                                                         pctl.master_library[
-                                                            default_playlist[playlist_selected]].parent_folder_path:
+                                                            default_playlist[pctl.selected_in_playlist]].parent_folder_path:
                                                     shift_selection.append(u)
                                                     u += 1
                                                 pctl.render_playlist()
@@ -46062,7 +46054,7 @@ while pctl.running:
 
                             if all(word in line for word in search_terms):
 
-                                playlist_selected = search_index
+                                pctl.selected_in_playlist = search_index
                                 if len(default_playlist) > 10 and search_index > 10:
                                     pctl.playlist_view_position = search_index - 7
                                     console.print("DEBUG: Position changed by search")
@@ -46111,7 +46103,7 @@ while pctl.running:
 
                         if all(word in line for word in search_terms):
 
-                            playlist_selected = search_index
+                            pctl.selected_in_playlist = search_index
                             if len(default_playlist) > 10 and search_index > 10:
                                 pctl.playlist_view_position = search_index - 7
                                 console.print("DEBUG: Position changed by search")
@@ -46148,55 +46140,55 @@ while pctl.running:
                     gui.pl_update = 1
 
                     if not keymaps.test("shift-up"):
-                        if playlist_selected > 0:
-                            playlist_selected -= 1
+                        if pctl.selected_in_playlist > 0:
+                            pctl.selected_in_playlist -= 1
                         shift_selection = []
 
-                    if pctl.playlist_view_position > 0 and playlist_selected < pctl.playlist_view_position + 2:
+                    if pctl.playlist_view_position > 0 and pctl.selected_in_playlist < pctl.playlist_view_position + 2:
                         pctl.playlist_view_position -= 1
                         console.print("DEBUG: Position changed by key up")
 
                         scroll_hide_timer.set()
                         gui.frame_callback_list.append(TestTimer(0.9))
 
-                    if playlist_selected > len(default_playlist):
-                        playlist_selected = len(default_playlist)
+                    if pctl.selected_in_playlist > len(default_playlist):
+                        pctl.selected_in_playlist = len(default_playlist)
 
-                if playlist_selected < len(default_playlist) and ((key_down_press and \
-                                                                   not key_shiftr_down \
-                                                                   and not key_shift_down \
-                                                                   and not key_ctrl_down \
-                                                                   and not key_rctrl_down \
-                                                                   and not key_meta \
-                                                                   and not key_lalt \
-                                                                   and not key_ralt) or keymaps.test("shift-down")):
+                if pctl.selected_in_playlist < len(default_playlist) and ((key_down_press and \
+                                                                           not key_shiftr_down \
+                                                                           and not key_shift_down \
+                                                                           and not key_ctrl_down \
+                                                                           and not key_rctrl_down \
+                                                                           and not key_meta \
+                                                                           and not key_lalt \
+                                                                           and not key_ralt) or keymaps.test("shift-down")):
 
                     pctl.show_selected()
                     gui.pl_update = 1
 
                     if not keymaps.test("shift-down"):
-                        if playlist_selected < len(default_playlist) - 1:
-                            playlist_selected += 1
+                        if pctl.selected_in_playlist < len(default_playlist) - 1:
+                            pctl.selected_in_playlist += 1
                         shift_selection = []
 
                     if pctl.playlist_view_position < len(
-                            default_playlist) and playlist_selected > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
+                            default_playlist) and pctl.selected_in_playlist > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
                         pctl.playlist_view_position += 1
                         console.print("DEBUG: Position changed by key down")
 
                         scroll_hide_timer.set()
                         gui.frame_callback_list.append(TestTimer(0.9))
 
-                    if playlist_selected < 0:
-                        playlist_selected = 0
+                    if pctl.selected_in_playlist < 0:
+                        pctl.selected_in_playlist = 0
 
                 if inp.key_return_press and not pref_box.enabled and not radiobox.active and not trans_edit_box.active:
                     gui.pl_update = 1
-                    if playlist_selected > len(default_playlist) - 1:
-                        playlist_selected = 0
+                    if pctl.selected_in_playlist > len(default_playlist) - 1:
+                        pctl.selected_in_playlist = 0
                         shift_selection = []
                     if default_playlist:
-                        pctl.jump(default_playlist[playlist_selected], playlist_selected)
+                        pctl.jump(default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
                         if album_mode:
                             goto_album(pctl.playlist_playing_position)
 
