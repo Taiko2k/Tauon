@@ -61,6 +61,8 @@ class SpotCtl:
         self.token_path = os.path.join(self.tauon.user_directory, "spot-token-pkce")
         self.pkce_code = None
 
+        self.coast_context = ""
+
     def prep_cred(self):
 
         rc = tk.RefreshingCredentials
@@ -109,8 +111,11 @@ class SpotCtl:
             try:
                 self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
             except:
+                self.tauon.gui.show_message("Please re-authenticate Spotify in settings")
                 print("ERROR LOADING TOKEN")
                 self.tauon.prefs.spotify_token = ""
+        else:
+            self.tauon.gui.show_message("Please authenticate Spotify in settings")
 
     def delete_token(self):
         self.tauon.prefs.spotify_token = ""
@@ -948,4 +953,53 @@ class SpotCtl:
 
         self.tauon.gui.update += 2
         self.tauon.gui.pl_update += 1
+
+        if result.context:
+
+            # Get context playlist
+            c = None
+            for p in self.tauon.pctl.multi_playlist:
+                if p[0] == "SPOTIFY CTX":
+                    c = p
+                    break
+            else:
+                c = self.tauon.pl_gen(title="SPOTIFY CTX", hide_title=1)
+                self.tauon.pctl.multi_playlist.append(c)
+
+            if self.coast_context != result.context.uri:
+                self.coast_context = result.context.uri
+
+                if result.context.type == "playlist":
+                        playlist = []
+                        id = result.context.uri[17:]
+                        p = self.spotify.playlist(id)
+                        self.update_existing_import_list()
+                        pages = self.spotify.all_pages(p.tracks)
+                        for page in pages:
+                            for item in page.items:
+                                nt = self.load_track(item.track, include_album_url=True)
+                                self.tauon.pctl.master_library[nt.index] = nt
+                                playlist.append(nt.index)
+                        c[2][:] = playlist[:]
+                        c[3] = 0
+
+                if result.context.type == "album":
+                        playlist = []
+                        id = result.context.uri[14:]
+                        p = self.spotify.album(id)
+                        self.update_existing_import_list()
+                        self.load_album(p, playlist)
+                        # pages = self.spotify.all_pages(p.tracks)
+                        # for page in pages:
+                        #     for item in page.items:
+                        #         nt = self.load_track(item.track, include_album_url=True)
+                        #         self.tauon.pctl.master_library[nt.index] = nt
+                        #         playlist.append(nt.index)
+                        c[2][:] = playlist[:]
+                        c[3] = 0
+                if self.tauon.pctl.active_playlist_viewing == c[6]:
+                    self.playlist_view_position = 0
+
+                self.tauon.gui.pl_update += 1
+
 

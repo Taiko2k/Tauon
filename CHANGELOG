@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.4.8
 
+ - Added auto context playlist for Spotify
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
 
