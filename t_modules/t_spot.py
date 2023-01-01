@@ -60,6 +60,7 @@ class SpotCtl:
 
         self.token_path = os.path.join(self.tauon.user_directory, "spot-token-pkce")
         self.pkce_code = None
+        self.local = True
 
         self.coast_context = ""
 
@@ -344,6 +345,29 @@ class SpotCtl:
                 return d.id
         return None
 
+    def transfer_to_tauon(self, wait=7):
+        self.connect()
+        if not self.spotify:
+            return
+        time.sleep(wait)
+
+        p = self.spotify.playback()
+        if not p or not p.is_playing:
+            self.tauon.gui.show_message("Nothing playing")
+            return
+
+        devices = self.spotify.playback_devices()
+        for d in devices:
+            print(d.name)
+            if d.name == "Tauon Music Box":
+                self.spotify.playback_transfer(d.id, True)
+                print("Found Tauon Spotify player")
+                break
+        else:
+            self.tauon.gui.show_message("Error - Tauon device not found")
+
+        # if not self.coasting or self.playing:
+        #     self.update(start=True)
     def play_target(self, id):
 
         self.coasting = False
@@ -356,12 +380,14 @@ class SpotCtl:
         # if d_id is False:
         #     return
 
-
+        print("play spotify target")
         #if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
         #try:
         if d_id is False:
             self.launching_spotify = True
             self.tauon.gui.update += 1
+
+            print("no device det one")
             if self.tauon.prefs.launch_spotify_web:
                 webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
                 tries = 0
@@ -382,7 +408,14 @@ class SpotCtl:
                         self.tauon.gui.update += 1
                         return
             else:
-                if self.tauon.msys:
+                print("YK")
+                if self.tauon.prefs.launch_spotify_local:
+                    print("start librespot command")
+                    self.tauon.tm.ready_playback()
+                    self.tauon.pctl.playerCommand = 'spotcon'
+                    self.tauon.pctl.playerCommandReady = True
+                    self.tauon.pctl.playing_state = 3
+                elif self.tauon.msys:
                     p = os.getenv('APPDATA') + "\\Spotify\\Spotify.exe"
                     if not os.path.isfile(p):
                         return
@@ -390,6 +423,7 @@ class SpotCtl:
                 else:
                     subprocess.run(["xdg-open", "spotify:track"])
                 print("LAUNCH SPOTIFY")
+
                 time.sleep(3)
                 tries = 0
                 playing = False
@@ -458,8 +492,9 @@ class SpotCtl:
             # except tk.client.decor.error.InternalServerError:
             #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
             #     return
-            except:
-                self.tauon.gui.show_message("Spotify error, try again?", mode="warning")
+            except Exception as e:
+
+                self.tauon.gui.show_message("Spotify error, try again?", str(e), mode="warning")
                 return
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
