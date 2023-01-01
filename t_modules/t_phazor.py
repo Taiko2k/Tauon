@@ -85,6 +85,66 @@ def player4(tauon):
 
     scan_device()
 
+    class LibreSpot:
+        def __init__(self):
+            self.p = None
+            self.running = False
+        def go(self):
+            aud.config_set_feed_samplerate(44100)
+            aud.config_set_min_buffer(1000)
+            if not shutil.which("librespot"):
+                gui.show_message("Error, librespot not found")
+                return 1
+            if not prefs.spot_username or not prefs.spot_password:
+                gui.show_message("Please enter your spotify username and password in settings")
+                return 1
+            if not self.p or not self.p.poll():
+                cmd = ["librespot", "--username", prefs.spot_username, "--password", prefs.spot_password, "--backend", "pipe", "-n", "Tauon Music Box", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
+
+                startupinfo = None
+                if tauon.msys:
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                try:
+                    self.p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+                    print("librespot started")
+                except:
+                    print("Error starting librespot")
+                    return 1
+
+            return 0
+        def end(self):
+            print("spoc shutdown")
+            self.running = False
+            if self.p:
+                self.p.terminate()
+
+        def worker(self):
+            self.running = True
+            while True:
+
+                if self.running is False:
+                    self.running = False
+                    print("End lberetop workes therd")
+                    return
+                #print("0")
+                #print(aud.get_buff_fill())
+                if aud.feed_ready(1000) == 1:
+
+                    if aud.get_buff_fill() < 2000:
+                        #print("1")
+                        data = self.p.stdout.read(1000)
+                        #print("2")
+                        # if not state == 4:
+                        #     continue
+                        aud.feed_raw(len(data), data)
+                        #print("3")
+                if state == 0:
+                    data = self.p.stdout.read(50)
+
+                time.sleep(0.0002)
+    spotc = LibreSpot()
+
     class FFRun:
         def __init__(self):
             self.decoder = None
@@ -625,6 +685,17 @@ def player4(tauon):
             subcommand = pctl.playerSubCommand
             pctl.playerSubCommand = ""
             pctl.playerCommandReady = False
+            #print(command)
+
+            if command == "spotcon":
+
+                aud.stop()
+                aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+                state = 4
+                spotc.go()
+                if not spotc.running:
+                    shooter(spotc.worker)
+                #time.sleep(20)
 
             if command == "startchrome":
                 aud.stop()
@@ -678,10 +749,22 @@ def player4(tauon):
 
                     if target_object.file_ext == "SPTY":
                         tauon.level_train.clear()
-                        if state > 0:
+                        if state > 0 and not state == 4:
                             aud.stop()
-                        state = 0
+                        if not state == 4:
+                            state = 0
                         try:
+                            if spotc.running and state != 4:
+                                aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+                                state = 4
+                            if prefs.launch_spotify_local and not spotc.running:
+                                print("runner")
+                                aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+                                state = 4
+                                spotc.go()
+                                time.sleep(4)
+                                if not spotc.running:
+                                    shooter(spotc.worker)
                             tauon.spot_ctl.play_target(target_object.url_key)
                         except:
                             print("Failed to start Spotify track")
@@ -945,7 +1028,7 @@ def player4(tauon):
                 wall_timer.set()
 
             if command == "volume":
-                if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
+                if (tauon.spot_ctl.coasting or tauon.spot_ctl.playing) and not spotc.running:
                     tauon.spot_ctl.control("volume", int(pctl.player_volume))
                 else:
                     aud.ramp_volume(int(pctl.player_volume), 750)
@@ -1017,6 +1100,7 @@ def player4(tauon):
                     aud.ramp_volume(0, int(speed))
                     time.sleep((fade_time + 100) / 1000)
 
+                spotc.end()
                 aud.stop()
                 aud.phazor_shutdown()
 
@@ -1029,9 +1113,12 @@ def player4(tauon):
         else:
             pctl.spot_test_progress()
 
+            if state == 4:
+                run_vis()
+
             if state == 3:
 
-                pctl.radio_progress()
+                #pctl.radio_progress()
                 run_vis()
 
                 add_time = player_timer.hit()

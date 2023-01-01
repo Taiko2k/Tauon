@@ -57,7 +57,6 @@
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
-#define BUFFER_STREAM_READY 30000
 
 ma_context_config c_config;
 ma_device_config config;
@@ -171,6 +170,7 @@ int config_resample = 1;
 int config_always_ffmpeg = 0;
 int config_volume_power = 2;
 int config_feed_samplerate = 48000;
+int config_min_buffer = 30000;
 
 unsigned int test1 = 0;
 
@@ -902,10 +902,10 @@ float gate = 1.0;  // Used for ramping
 
 int get_audio(int max, float* buff){
         int b = 0;
-        //printf("%d\n", get_buff_fill());
+
         pthread_mutex_lock(&buffer_mutex);
 
-        if (buffering == 1 && get_buff_fill() > BUFFER_STREAM_READY) {
+        if (buffering == 1 && get_buff_fill() > config_min_buffer) {
             buffering = 0;
             printf("pa: Buffering -> Playing\n");
         }
@@ -1900,15 +1900,15 @@ void *main_loop(void *thread_id) {
 
     // ---------------------------------------------
 
-
+    //int test1 = 0;
     // Main loop ---------------------------------------------------------------
     while (1) {
 
-        /* test1++; */
-        /* if (test1 > 650){ */
-        /*   printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, buff_filled); */
-        /*   test1 = 0; */
-        /* } */
+//        test1++;
+//        if (test1 > 650){
+//        printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, get_buff_fill());
+//        test1 = 0;
+//        }
 
         if (command != NONE) {
 
@@ -2303,6 +2303,10 @@ void config_set_feed_samplerate(int n){
     config_feed_samplerate = n;
 }
 
+void config_set_min_buffer(int n){
+    config_min_buffer = n;
+}
+
 float get_level_peak_l() {
 
     float peak = peak_l;
@@ -2369,7 +2373,7 @@ int get_spectrum(int n_bins, float* bins) {
 
 int is_buffering(){
     if (buffering == 0) return 0;
-    return (int) (get_buff_fill() / BUFFER_STREAM_READY * 100.0);
+    return (int) (get_buff_fill() / config_min_buffer * 100.0);
 }
 /* int get_latency(){ */
 /*   return active_latency / 1000; */

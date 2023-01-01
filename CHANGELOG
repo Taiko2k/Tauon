@@ -3,7 +3,8 @@ Changelog----------------------------
 
 v7.4.8
 
- - Added auto context playlist for Spotify
+ - Added Spotify audio passthrough support
+ - Moved many Spotify functions to playback menu
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
 

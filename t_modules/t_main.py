@@ -1292,8 +1292,11 @@ class Prefs:  # Used to hold any kind of settings
 
         self.spot_client = ""
         self.spot_secret = ""
+        self.spot_username = ""
+        self.spot_password = ""
         self.spot_mode = False
         self.launch_spotify_web = False
+        self.launch_spotify_local = False
         self.remove_network_tracks = False
         self.bypass_transcode = False
         self.force_hide_max_button = False
@@ -3044,6 +3047,10 @@ for t in range(2):
             prefs.album_shuffle_lock_mode = save[172]
         if save[173] is not None:
             gui.was_radio = save[173]
+        if save[174] is not None:
+            prefs.spot_username = save[174]
+        if save[175] is not None:
+            prefs.spot_password = save[175]
 
         state_file.close()
         del save
@@ -3633,6 +3640,7 @@ def save_prefs():
 
     cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
     cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
+    cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
     cf.update_value("back-restarts", prefs.back_restarts)
     cf.update_value("end-queue-stop", prefs.stop_end_queue)
     cf.update_value("block-suspend", prefs.block_suspend)
@@ -3830,6 +3838,8 @@ def load_prefs():
                                                "When advancing, always play the track that is selected.")
     prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web,
                                            "Launch the web client rather than attempting to launch the desktop client.")
+    prefs.launch_spotify_local = cf.sync_add("bool", "spotify-allow-local", prefs.launch_spotify_local,
+                                           "Play Spotify audio through Tauon.")
     prefs.back_restarts = cf.sync_add("bool", "back-restarts", prefs.back_restarts,
                                       "Pressing the back button restarts playing track on first press.")
     prefs.stop_end_queue = cf.sync_add("bool", "end-queue-stop", prefs.stop_end_queue,
@@ -5326,7 +5336,7 @@ class PlayerCtl:
 
     def set_volume(self, notify=True):
 
-        if (spot_ctl.coasting or spot_ctl.playing) and mouse_down:
+        if (spot_ctl.coasting or spot_ctl.playing) and not spot_ctl.local and mouse_down:
             # Rate limit network volume change
             t = self.volume_update_timer.get()
             if t < 0.3:
@@ -11161,6 +11171,8 @@ text_air_ser = TextBox2()
 
 text_spot_client = TextBox2()
 text_spot_secret = TextBox2()
+text_spot_username = TextBox2()
+text_spot_password = TextBox2()
 
 text_maloja_url = TextBox2()
 text_maloja_key = TextBox2()
@@ -13590,8 +13602,8 @@ class Menu:
     def br(self):
         self.items.append(None)
 
-    def add_sub(self, title, width):
-        self.items.append([title, True, self.sub_number, self.deco, width * gui.scale])
+    def add_sub(self, title, width, show_test=None):
+        self.items.append([title, True, self.sub_number, self.deco, width * gui.scale, show_test])
         self.sub_number += 1
         self.subs.append([])
 
@@ -13603,7 +13615,9 @@ class Menu:
         self.subs[sub].append(item)
 
     def test_item_active(self, item):
-
+        if item[1] and item[5] is not None:
+            if item[5](1) is False:
+                return False
         if item[1] is False and item[8] is not None:
             if item[8](1) is False:
                 return False
@@ -22648,10 +22662,6 @@ def toggle_spotify_like_active_deco():
     return [colours.menu_text, colours.menu_background, text]
 
 
-extra_menu.add('Spotify Like Track', toggle_spotify_like_active, toggle_spotify_like_active_deco,
-               show_test=spotify_show_test, icon=spot_heartx_icon)
-
-
 def locate_artist():
     track = pctl.playing_object()
     if not track:
@@ -22740,8 +22750,7 @@ def get_album_spot_url_actove_deco():
     return [colours.menu_text, colours.menu_background, text]
 
 
-extra_menu.add("Copy Spotify URL", get_album_spot_url_active, get_album_spot_url_actove_deco,
-               show_test=spotify_show_test, icon=spot_icon)
+
 
 
 def goto_playing_extra():
@@ -22752,6 +22761,86 @@ extra_menu.add(_("Locate Artist"), locate_artist)
 
 extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="'")
 
+def show_spot_playing_deco():
+    if not spot_ctl.coasting or not spot_ctl.playing:
+        return [colours.menu_text, colours.menu_background, None]
+    else:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+def show_spot_playing():
+    if pctl.playing_state != 0 and pctl.playing_state != 3 and not spot_ctl.coasting and not spot_ctl.playing:
+        pctl.stop()
+    spot_ctl.update(start=True)
+
+
+def spot_transfer_playback_here():
+    spot_ctl.update(start=True)
+    pctl.playerCommand = 'spotcon'
+    pctl.playerCommandReady = True
+    pctl.playing_state = 3
+    shooter(spot_ctl.transfer_to_tauon)
+
+extra_menu.br()
+extra_menu.add('Spotify Like Track', toggle_spotify_like_active, toggle_spotify_like_active_deco,
+               show_test=spotify_show_test, icon=spot_heartx_icon)
+
+def spot_import_albums():
+    if not spot_ctl.spotify_com:
+        spot_ctl.spotify_com = True
+        shoot = threading.Thread(target=spot_ctl.get_library_albums)
+        shoot.daemon = True
+        shoot.start()
+    else:
+        show_message(_("Please wait until current job is finished"))
+
+extra_menu.add_sub(_("Import Spotify…"), 140, show_test=spotify_show_test)
+
+extra_menu.add_to_sub("Import Liked Albums", 0, spot_import_albums, show_test=spotify_show_test, icon=spot_icon)
+
+def spot_import_tracks():
+    if not spot_ctl.spotify_com:
+        spot_ctl.spotify_com = True
+        shoot = threading.Thread(target=spot_ctl.get_library_likes)
+        shoot.daemon = True
+        shoot.start()
+    else:
+        show_message(_("Please wait until current job is finished"))
+
+extra_menu.add_to_sub("Import Liked Tracks", 0, spot_import_tracks, show_test=spotify_show_test, icon=spot_icon)
+
+def spot_import_playlists():
+    if not spot_ctl.spotify_com:
+        show_message(_("Importing Spotify playlists..."))
+        shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
+        shoot_dl.daemon = True
+        shoot_dl.start()
+    else:
+        show_message(_("Please wait until current job is finished"))
+
+
+extra_menu.add_to_sub("Import All Playlists", 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
+
+def spot_import_playlist_menu():
+    if not spot_ctl.spotify_com:
+        playlists = spot_ctl.get_playlist_list()
+        spotify_playlist_menu.items.clear()
+        if playlists:
+            for item in playlists:
+                spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
+                spotify_playlist_menu.activate(position=(extra_menu.pos[0], extra_menu.pos[1]))
+    else:
+        show_message(_("Please wait until current job is finished"))
+
+extra_menu.add_to_sub("Import Playlist…", 0, spot_import_playlist_menu, show_test=spotify_show_test, icon=spot_icon)
+
+
+extra_menu.add("Copy Playing Album URL", get_album_spot_url_active, get_album_spot_url_actove_deco,
+               show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
+           icon=spot_icon)
+
+extra_menu.add("Transfer audio here", spot_transfer_playback_here, show_test=spotify_show_test,
+           icon=spot_icon)
 
 def toggle_auto_theme(mode=0):
     if mode == 1:
@@ -23105,20 +23194,6 @@ def hit_discord():
         discord_t.start()
 
 
-def show_spot_playing_deco():
-    if pctl.playing_state == 0:
-        return [colours.menu_text, colours.menu_background, None]
-    else:
-        return [colours.menu_text_disabled, colours.menu_background, None]
-
-
-def show_spot_playing():
-    if pctl.playing_state == 0:
-        spot_ctl.update(start=True)
-
-
-x_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
-           icon=spot_icon)
 
 x_menu.add(_("Exit Shuffle Lockdown"), toggle_shuffle_layout, show_test=exit_shuffle_layout)
 x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True)
@@ -28209,6 +28284,8 @@ class Over:
                 if self.button(x, y, _("Forget Account")):
                     spot_ctl.delete_token()
                     spot_ctl.cache_saved_albums.clear()
+                    prefs.spot_username = ""
+                    prefs.spot_password = ""
             else:
                 if self.button(x, y, _("Authorise")):
                     webThread = threading.Thread(target=authserve, args=[tauon])
@@ -28222,49 +28299,41 @@ class Over:
             prefs.launch_spotify_web = self.toggle_square(x, y, prefs.launch_spotify_web,
                                                           _("Prefer launching web player"))
 
-            y += round(30 * gui.scale)
+            y += round(25 * gui.scale)
+            if not msys:
+                prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
+                                                              _("Allow local audio playback"))
+            x += round(22 * gui.scale)
+            y += round(16 * gui.scale)
+            field_width -= round(22 * gui.scale)
 
-            ww = ddt.get_text_w(_("Import Albums"), 211)
-            if self.button(x, y, _("Import Albums")):
-                if not spot_ctl.spotify_com:
-                    spot_ctl.spotify_com = True
-                    shoot = threading.Thread(target=spot_ctl.get_library_albums)
-                    shoot.daemon = True
-                    shoot.start()
-                else:
-                    show_message(_("Please wait until current job is finished"))
+            if prefs.launch_spotify_local:
+                ddt.text((x + 0 * gui.scale, y), _("Spotify username"),
+                         colours.box_text_label, 11)
+                y += round(19 * gui.scale)
+                rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+                fields.add(rect1)
+                if coll(rect1) and (self.click or level_2_right_click):
+                    self.account_text_field = 2
+                ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+                text_spot_username.text = prefs.spot_username
+                text_spot_username.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                                      width=rect1[2] - 8 * gui.scale, click=self.click)
+                prefs.spot_username = text_spot_username.text.strip()
 
-            if self.button(x + ww + round(20 * gui.scale), y, _("Import Liked Songs")):
-                if not spot_ctl.spotify_com:
-                    spot_ctl.spotify_com = True
-                    shoot = threading.Thread(target=spot_ctl.get_library_likes)
-                    shoot.daemon = True
-                    shoot.start()
-                else:
-                    show_message(_("Please wait until current job is finished"))
-
-            y += round(30 * gui.scale)
-
-            if self.button(x, y, _("Import all user playlists")):
-                if not spot_ctl.spotify_com:
-                    show_message(_("Importing Spotify playlists..."))
-                    shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
-                    shoot_dl.daemon = True
-                    shoot_dl.start()
-                else:
-                    show_message(_("Please wait until current job is finished"))
-
-            y += round(30 * gui.scale)
-            if self.button(x, y, _("Import single user playlist...")):
-                if not spot_ctl.spotify_com:
-                    playlists = spot_ctl.get_playlist_list()
-                    spotify_playlist_menu.items.clear()
-                    if playlists:
-                        for item in playlists:
-                            spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
-                            spotify_playlist_menu.activate(position=(x, y))
-                else:
-                    show_message(_("Please wait until current job is finished"))
+                y += round(18 * gui.scale)
+                ddt.text((x + 0 * gui.scale, y), _("Spofify password"),
+                         colours.box_text_label, 11)
+                y += round(19 * gui.scale)
+                rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+                fields.add(rect1)
+                if coll(rect1) and (self.click or level_2_right_click):
+                    self.account_text_field = 3
+                ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+                text_spot_password.text = prefs.spot_password
+                text_spot_password.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 3, secret=True,
+                                      width=rect1[2] - 8 * gui.scale, click=self.click)
+                prefs.spot_password = text_spot_password.text.strip()
 
         if self.account_view == 7:
 
@@ -41638,7 +41707,9 @@ def save_state():
             prefs.cache_list,
             prefs.shuffle_lock,
             prefs.album_shuffle_lock_mode,
-            gui.was_radio
+            gui.was_radio,
+            prefs.spot_username,
+            prefs.spot_password
             ]
 
     try:
@@ -42838,6 +42909,9 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
+            pctl.playerCommand = 'spotcon'
+            pctl.playerCommandReady = True
+            pctl.playing_state = 3
             pass
 
         if gui.mode < 3:
