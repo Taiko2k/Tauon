@@ -95,21 +95,35 @@ def player4(tauon):
             if not shutil.which("librespot"):
                 gui.show_message("Error, librespot not found")
                 return 1
-            if not prefs.spot_username or not prefs.spot_password:
-                gui.show_message("Please enter your spotify username and password in settings")
-                return 1
+            # if not prefs.spot_username or not prefs.spot_password:
+            #     gui.show_message("Please enter your spotify username and password in settings")
+            #     return 1
             if not self.p or not self.p.poll():
-                cmd = ["librespot", "--username", prefs.spot_username, "--password", prefs.spot_password, "--backend", "pipe", "-n", "Tauon Music Box", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
+                username = tauon.spot_ctl.get_username()
+                if not username or not prefs.spotify_token:
+                    print("Missing auth data")
+                    return 1
+
+                cache = os.path.join(tauon.cache_directory, "lsspot")
+                if not os.path.exists(cache):
+                    os.makedirs(cache)
+
+                cmd = ["librespot", "--username", username, "--password", prefs.spot_password, "--backend", "pipe", "-n", "Tauon Music Box", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
+                tauon.spot_ctl.preparing_spotify = True
+                gui.update += 1
 
                 startupinfo = None
                 if tauon.msys:
                     startupinfo = subprocess.STARTUPINFO()
                     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 try:
-                    self.p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+                    self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE, startupinfo=startupinfo)
                     print("librespot started")
-                except:
+                except Exception as e:
+                    print(str(e))
                     print("Error starting librespot")
+                    tauon.spot_ctl.preparing_spotify = False
+                    gui.update += 1
                     return 1
 
             return 0
@@ -117,7 +131,8 @@ def player4(tauon):
             print("spoc shutdown")
             self.running = False
             if self.p:
-                self.p.terminate()
+                import signal
+                self.p.send_signal(signal.SIGINT)  # terminate() doesn't work
 
         def worker(self):
             self.running = True

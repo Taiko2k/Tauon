@@ -22827,7 +22827,7 @@ def spot_import_playlist_menu():
         if playlists:
             for item in playlists:
                 spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
-                spotify_playlist_menu.activate(position=(extra_menu.pos[0], extra_menu.pos[1]))
+                spotify_playlist_menu.activate(position=(extra_menu.pos[0], window_size[1] - gui.panelBY))
     else:
         show_message(_("Please wait until current job is finished"))
 
@@ -28308,20 +28308,19 @@ class Over:
             field_width -= round(22 * gui.scale)
 
             if prefs.launch_spotify_local:
-                ddt.text((x + 0 * gui.scale, y), _("Spotify username"),
-                         colours.box_text_label, 11)
-                y += round(19 * gui.scale)
-                rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-                fields.add(rect1)
-                if coll(rect1) and (self.click or level_2_right_click):
-                    self.account_text_field = 2
-                ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-                text_spot_username.text = prefs.spot_username
-                text_spot_username.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
-                                      width=rect1[2] - 8 * gui.scale, click=self.click)
-                prefs.spot_username = text_spot_username.text.strip()
+                # ddt.text((x + 0 * gui.scale, y), _("Spotify username"),
+                #          colours.box_text_label, 11)
+                # y += round(19 * gui.scale)
+                # rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+                # fields.add(rect1)
+                # if coll(rect1) and (self.click or level_2_right_click):
+                #     self.account_text_field = 2
+                # ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+                # text_spot_username.text = prefs.spot_username
+                # text_spot_username.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+                #                       width=rect1[2] - 8 * gui.scale, click=self.click)
+                # prefs.spot_username = text_spot_username.text.strip()
 
-                y += round(18 * gui.scale)
                 ddt.text((x + 0 * gui.scale, y), _("Spofify password"),
                          colours.box_text_label, 11)
                 y += round(19 * gui.scale)
@@ -30998,6 +30997,9 @@ class TopPanel:
             bg = [229, 160, 13, 255]
         elif spot_ctl.launching_spotify:
             text = "Launching Spotify..."
+            bg = [30, 215, 96, 255]
+        elif spot_ctl.preparing_spotify:
+            text = "Preparing Spotify Playback..."
             bg = [30, 215, 96, 255]
         elif spot_ctl.spotify_com:
             text = "Accessing Spotify library..."
@@ -42909,9 +42911,6 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
-            pctl.playerCommand = 'spotcon'
-            pctl.playerCommandReady = True
-            pctl.playing_state = 3
             pass
 
         if gui.mode < 3:
