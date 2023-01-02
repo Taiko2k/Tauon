@@ -7890,6 +7890,7 @@ class Tauon:
         self.web_running = False
         self.web_thread = None
         self.remote_limited = True
+        self.enable_librespot = shutil.which("librespot")
 
     def start_remote(self):
 
@@ -22839,7 +22840,7 @@ extra_menu.add("Copy Playing Album URL", get_album_spot_url_active, get_album_sp
 extra_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
            icon=spot_icon)
 
-extra_menu.add("Transfer audio here", spot_transfer_playback_here, show_test=spotify_show_test,
+extra_menu.add("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local,
            icon=spot_icon)
 
 def toggle_auto_theme(mode=0):
@@ -28303,6 +28304,10 @@ class Over:
             if not msys:
                 prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
                                                               _("Allow local audio playback"))
+
+            if prefs.launch_spotify_local and not tauon.enable_librespot:
+                show_message("Librespot not installed?")
+                prefs.launch_spotify_local = False
             x += round(22 * gui.scale)
             y += round(16 * gui.scale)
             field_width -= round(22 * gui.scale)
