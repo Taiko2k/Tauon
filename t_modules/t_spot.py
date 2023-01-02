@@ -55,6 +55,7 @@ class SpotCtl:
         self.cache_saved_albums = []
         self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
         self.launching_spotify = False
+        self.preparing_spotify = False
         self.progress_timer = Timer()
         self.update_timer = Timer()
 
@@ -186,6 +187,14 @@ class SpotCtl:
 
                 self.tauon.gui.show_message("It looks like there are no more active Spotify devices")
 
+    def get_username(self):
+        self.connect()
+        if not self.spotify:
+            return None
+        c = self.spotify.current_user()
+        if c and c.id:
+            return c.id
+        return None
     def add_album_to_library(self, url):
         self.connect()
         if not self.spotify:
@@ -405,6 +414,7 @@ class SpotCtl:
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
                         self.launching_spotify = False
+                        self.preparing_spotify = False
                         self.tauon.gui.update += 1
                         return
             else:
@@ -457,11 +467,13 @@ class SpotCtl:
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
                         self.launching_spotify = False
+                        self.preparing_spotify = False
                         self.tauon.gui.update += 1
                         return
                     time.sleep(2)
 
             self.launching_spotify = False
+            self.preparing_spotify = False
             self.tauon.gui.update += 1
 
         else:
@@ -493,14 +505,17 @@ class SpotCtl:
             #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
             #     return
             except Exception as e:
-
+                self.launching_spotify = False
+                self.preparing_spotify = False
                 self.tauon.gui.show_message("Spotify error, try again?", str(e), mode="warning")
                 return
+
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
         self.playing = True
         self.started_once = True
-
+        self.launching_spotify = False
+        self.preparing_spotify = False
         self.start_timer.set()
         self.tauon.pctl.playing_time = 0
         self.tauon.pctl.decode_time = 0
