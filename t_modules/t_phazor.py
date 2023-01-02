@@ -156,8 +156,9 @@ def player4(tauon):
                         #print("3")
                 if state == 0:
                     data = self.p.stdout.read(50)
-
-                time.sleep(0.0002)
+                    time.sleep(0.0002)
+                else:
+                    time.sleep(0.002)
     spotc = LibreSpot()
 
     class FFRun:

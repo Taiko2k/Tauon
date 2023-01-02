@@ -5728,6 +5728,7 @@ class PlayerCtl:
         self.render_playlist()
 
     def spot_test_progress(self):
+
         if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
             th = 5  # the rate to poll the spotify API
             if self.playing_time > self.playing_length:
@@ -5747,7 +5748,7 @@ class PlayerCtl:
                     star_store.add(self.track_queue[self.queue_step], add_time)
             if spot_ctl.update_timer.get() > th:
                 spot_ctl.update_timer.set()
-                spot_ctl.monitor()
+                shooter(spot_ctl.monitor)
             else:
                 self.test_progress()
 
