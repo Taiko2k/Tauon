@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-30 00:59+1300\n"
-"PO-Revision-Date: 2023-01-01 10:05+0000\n"
+"PO-Revision-Date: 2023-01-03 16:49+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -703,32 +703,32 @@ msgstr "Ordina…"
 
 #: t_modules/t_main.py:17919
 msgid "From Current…"
-msgstr "Dalla  corrente…"
+msgstr "Dalla corrente…"
 
 #: t_modules/t_main.py:17924
 msgid "Sort by Imported"
-msgstr ""
+msgstr "Ordina per importazione"
 
 #: t_modules/t_main.py:17925
 msgid "Sort by Filepath"
-msgstr ""
+msgstr "Ordina per percorso"
 
 #: t_modules/t_main.py:17926
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Ordina Numero Tracce"
 
 #: t_modules/t_main.py:17927
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Ordina Anno per Artista"
 
 #: t_modules/t_main.py:17928
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Rendi la Scaletta Auto-Ordinante"
 
 #: t_modules/t_main.py:17934 t_modules/t_main.py:19746
 #: t_modules/t_main.py:21060
 msgid "Paste"
-msgstr ""
+msgstr "Incolla"
 
 #: t_modules/t_main.py:17935
 msgid "Append Playing"
@@ -736,67 +736,68 @@ msgstr ""
 
 #: t_modules/t_main.py:17940
 msgid "Export…"
-msgstr ""
+msgstr "Esporta…"
 
 #: t_modules/t_main.py:17942
 msgid "Misc…"
-msgstr ""
+msgstr "Gener…"
 
 #: t_modules/t_main.py:17991
 msgid "No target folder selected"
-msgstr ""
+msgstr "Nessuna cartella di destinazione scelta"
 
 #: t_modules/t_main.py:17997
 msgid "Target folder could not be found"
-msgstr ""
+msgstr "La cartella di destinazione non può essere trovata"
 
 #: t_modules/t_main.py:18037
 msgid "Deleting folders..."
-msgstr ""
+msgstr "Sto eliminando le cartelle..."
 
 #: t_modules/t_main.py:18056 t_modules/t_main.py:18122
 msgid "Copying files to device"
-msgstr ""
+msgstr "Sto copiando i file nel dispositivo"
 
 #: t_modules/t_main.py:18062
 msgid "Sync aborted! Low disk space on target device"
 msgstr ""
+"Sincronizzazione fermata! Spazio esaurito nel dispositivo di destinazione"
 
 #: t_modules/t_main.py:18071 t_modules/t_main.py:18103
 msgid "One or more folders to sync has the same name. Skipping."
-msgstr ""
+msgstr "Una o più cartelle da sincronizzare hanno lo stesso nome. Le salto."
 
 #: t_modules/t_main.py:18071 t_modules/t_main.py:18103
 msgid "Sync warning"
-msgstr ""
+msgstr "Avviso di sincronizzazione"
 
 #: t_modules/t_main.py:18088 t_modules/t_main.py:30816
 msgid "Folders Remaining"
-msgstr ""
+msgstr "Cartelle Rimanenti"
 
 #: t_modules/t_main.py:18090 t_modules/t_main.py:30814
 msgid "Folder Remaining"
-msgstr ""
+msgstr "Cartella Rimanente"
 
 #: t_modules/t_main.py:18133
 msgid "Sync completed"
-msgstr ""
+msgstr "Sincronizzazione completata"
 
 #: t_modules/t_main.py:18151 t_modules/t_main.py:18234
 msgid "Set as Sync Playlist"
-msgstr ""
+msgstr "Imposta come Scaletta di Sincronizzazione"
 
 #: t_modules/t_main.py:18154
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Rimuovi come Scaletta di Sincronizzazione"
 
 #: t_modules/t_main.py:18167 t_modules/t_main.py:18236
 msgid "Set as Downloads Playlist"
-msgstr ""
+msgstr "Imposta come Scaletta di Scaricamenti"
 
 #: t_modules/t_main.py:18170
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Rimuovi come Scaletta di Scaricamenti"
 
 #: t_modules/t_main.py:18223
 msgid "Export Playlist Stats"
