@@ -89,6 +89,7 @@ def player4(tauon):
         def __init__(self):
             self.p = None
             self.running = False
+            self.flush = False
         def go(self):
             aud.config_set_feed_samplerate(44100)
             aud.config_set_min_buffer(1000)
@@ -98,7 +99,9 @@ def player4(tauon):
             # if not prefs.spot_username or not prefs.spot_password:
             #     gui.show_message("Please enter your spotify username and password in settings")
             #     return 1
-            if not self.p or not self.p.poll():
+            if self.p:
+                self.flush = True
+            if not self.p:
                 username = tauon.spot_ctl.get_username()
                 if not username or not prefs.spotify_token:
                     print("Missing auth data")
@@ -130,6 +133,7 @@ def player4(tauon):
         def end(self):
             print("spoc shutdown")
             self.running = False
+            pctl.spot_playing = False
             if self.p:
                 import signal
                 self.p.send_signal(signal.SIGINT)  # terminate() doesn't work
@@ -142,20 +146,16 @@ def player4(tauon):
                     self.running = False
                     print("End lberetop workes therd")
                     return
-                #print("0")
-                #print(aud.get_buff_fill())
+                if self.flush:
+                    self.flush = False
+                    self.p.stdout.read(70000)  # rough
                 if aud.feed_ready(1000) == 1:
-
                     if aud.get_buff_fill() < 2000:
-                        #print("1")
                         data = self.p.stdout.read(1000)
-                        #print("2")
-                        # if not state == 4:
-                        #     continue
                         aud.feed_raw(len(data), data)
-                        #print("3")
+
                 if state == 0:
-                    data = self.p.stdout.read(50)
+                    self.p.stdout.read(50)
                     time.sleep(0.0002)
                 else:
                     time.sleep(0.002)
@@ -705,7 +705,7 @@ def player4(tauon):
 
             if command == "spotcon":
 
-                aud.stop()
+                #aud.stop()
                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                 state = 4
                 spotc.go()
@@ -788,6 +788,7 @@ def player4(tauon):
                             pctl.playerCommandReady = True
                         continue
 
+                    spotc.running = False
                     timer = Timer()
                     timer.set()
                     while True:
@@ -855,7 +856,7 @@ def player4(tauon):
                 elif not target_object.found:
                     pctl.reset_missing_flags()
 
-
+                spotc.running = False
                 length = 0
                 remain = 0
                 position = 0
@@ -1073,6 +1074,7 @@ def player4(tauon):
                 state = 0
                 pctl.playing_time = 0
                 aud.stop()
+                spotc.running = False
                 time.sleep(0.1)
                 aud.set_volume(int(pctl.player_volume))
 
