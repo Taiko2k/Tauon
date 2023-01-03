@@ -239,6 +239,22 @@ class SpotCtl:
 
         return None
 
+    def get_artist_url_from_local(self, track_object):
+
+        if "spotify-artist-url" in track_object.misc:
+            return track_object.misc["spotify-artist-url"]
+
+        self.connect()
+        if not self.spotify:
+            return None
+
+        results = self.spotify.search(track_object.artist + " " + track_object.album, types=('artist',), limit=1)
+        for artist in results[0].items:
+            if "spotify" in artist.external_urls:
+                return artist.external_urls["spotify"]
+
+        return None
+
     def import_all_playlists(self):
 
         self.spotify_com = True
@@ -369,6 +385,9 @@ class SpotCtl:
         for d in devices:
             print(d.name)
             if d.name == "Tauon Music Box":
+                if d.is_playing:
+                    print("Tauon is already playing")
+                    return
                 self.spotify.playback_transfer(d.id, True)
                 print("Found Tauon Spotify player")
                 break
@@ -573,7 +592,7 @@ class SpotCtl:
 
         self.connect()
         if not self.spotify:
-            return
+            return []
 
         if url.startswith("spotify:album:"):
             id = url[14:]
@@ -649,9 +668,17 @@ class SpotCtl:
             full_album = self.spotify.album(a.id)
             self.load_album(full_album, playlist)
 
-        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Spotify: " + artist.name, playlist=playlist))
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name, playlist=playlist))
         self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
         self.tauon.gui.message_box = False
+
+    def album_playlist(self, url):
+        l = self.append_album(url, return_list=True)
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=f"{self.tauon.pctl.g(l[0]).artist} - {self.tauon.pctl.g(l[0]).album}",
+                                          playlist=l,
+                                          hide_title=0,
+                                          ))
+        self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
     def update_existing_import_list(self):
         self.current_imports.clear()

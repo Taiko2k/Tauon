@@ -4930,6 +4930,7 @@ class PlayerCtl:
         self.tag_history = {}
 
         self.commit = None
+        self.spot_playing = False
 
     def notify_change(self):
         self.db_inc += 1
@@ -22734,6 +22735,7 @@ def get_album_spot_url_active():
     tr = pctl.playing_object()
     if tr:
         url = spot_ctl.get_album_url_from_local(tr)
+
         if url:
             copy_to_clipboard(url)
             show_message(_("URL copied to clipboard"), mode="done")
@@ -22776,7 +22778,8 @@ def show_spot_playing():
 
 
 def spot_transfer_playback_here():
-    spot_ctl.update(start=True)
+    if not (spot_ctl.playing or spot_ctl.coasting):
+        spot_ctl.update(start=True)
     pctl.playerCommand = 'spotcon'
     pctl.playerCommandReady = True
     pctl.playing_state = 3
@@ -22836,10 +22839,67 @@ def spot_import_playlist_menu():
 extra_menu.add_to_sub("Import Playlist…", 0, spot_import_playlist_menu, show_test=spotify_show_test, icon=spot_icon)
 
 
-extra_menu.add("Copy Playing Album URL", get_album_spot_url_active, get_album_spot_url_actove_deco,
+def get_album_spot_deco():
+    tr = pctl.playing_object()
+    text = _("Show Full Album")
+    if not tr:
+        return [colours.menu_text_disabled, colours.menu_background, text]
+    if not "spotify-album-url" in tr.misc:
+        text = _("Lookup Spotify Album")
+
+    return [colours.menu_text, colours.menu_background, text]
+
+
+def get_album_spot_active():
+    tr = pctl.playing_object()
+    if not tr:
+        return
+    url = spot_ctl.get_album_url_from_local(tr)
+    if not url:
+        show_message(_("No results found"))
+        return
+    l = spot_ctl.append_album(url, return_list=True)
+    if len(l) < 2:
+        show_message(_("Looks like that's the only track in the album"))
+        return
+    pctl.multi_playlist.append(pl_gen(title=f"{pctl.g(l[0]).artist} - {pctl.g(l[0]).album}",
+                                      playlist=l,
+                                      hide_title=0,
+                                      ))
+    switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+extra_menu.add("Show Full Album", get_album_spot_active, get_album_spot_deco,
                show_test=spotify_show_test, icon=spot_icon)
+
+
+def get_artist_spot_active():
+    tr = pctl.playing_object()
+    if not tr:
+        return
+    url = spot_ctl.get_artist_url_from_local(tr)
+    if not url:
+        show_message(_("No results found"))
+        return
+    show_message(_("Fetching..."))
+    shooter(spot_ctl.artist_playlist(url))
+
+extra_menu.add(_("Show Full Artist"), get_artist_spot_active,
+               show_test=spotify_show_test, icon=spot_icon)
+
 extra_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
            icon=spot_icon)
+
+# def spot_transfer_playback_here_deco():
+#     tr = pctl.playing_state == 3:
+#     text = _("Show Full Album")
+#     if not tr:
+#         return [colours.menu_text_disabled, colours.menu_background, text]
+#     if not "spotify-album-url" in tr.misc:
+#         text = _("Lookup Spotify Album")
+#
+#     return [colours.menu_text, colours.menu_background, text]
+
 
 extra_menu.add("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local,
            icon=spot_icon)
@@ -24252,7 +24312,7 @@ class SearchOverlay:
                                 # default_playlist.extend(self.click_artist(item[1], get_list=True))
                                 gui.pl_update += 1
                             else:
-                                spot_ctl.append_album(item[2])
+                                spot_ctl.album_playlist(item[2])
                                 reload_albums()
                                 # self.click_artist(item[1])
                                 self.active = False
@@ -24264,7 +24324,7 @@ class SearchOverlay:
                             self.search_text.text = ""
 
                     if enter and fade == 1:
-                        spot_ctl.append_album(item[2])
+                        spot_ctl.album_playlist(item[2])
                         reload_albums()
                         # self.click_artist(item[1])
                         self.active = False
