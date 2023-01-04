@@ -22755,8 +22755,6 @@ def get_album_spot_url_actove_deco():
 
 
 
-
-
 def goto_playing_extra():
     pctl.show_current(highlight=True)
 
@@ -22800,7 +22798,7 @@ def spot_import_albums():
 
 extra_menu.add_sub(_("Import Spotify…"), 140, show_test=spotify_show_test)
 
-extra_menu.add_to_sub("Import Liked Albums", 0, spot_import_albums, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Import Liked Albums"), 0, spot_import_albums, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_tracks():
     if not spot_ctl.spotify_com:
@@ -22811,7 +22809,7 @@ def spot_import_tracks():
     else:
         show_message(_("Please wait until current job is finished"))
 
-extra_menu.add_to_sub("Import Liked Tracks", 0, spot_import_tracks, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Import Liked Tracks"), 0, spot_import_tracks, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_playlists():
     if not spot_ctl.spotify_com:
@@ -22823,7 +22821,7 @@ def spot_import_playlists():
         show_message(_("Please wait until current job is finished"))
 
 
-extra_menu.add_to_sub("Import All Playlists", 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Import All Playlists"), 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_playlist_menu():
     if not spot_ctl.spotify_com:
@@ -22836,7 +22834,13 @@ def spot_import_playlist_menu():
     else:
         show_message(_("Please wait until current job is finished"))
 
-extra_menu.add_to_sub("Import Playlist…", 0, spot_import_playlist_menu, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Import Playlist…"), 0, spot_import_playlist_menu, show_test=spotify_show_test, icon=spot_icon)
+
+
+def spot_import_context():
+    shooter(spot_ctl.import_context)
+
+extra_menu.add_to_sub(_("Remote Context"), 0, spot_import_context, show_test=spotify_show_test, icon=spot_icon)
 
 
 def get_album_spot_deco():
@@ -22887,7 +22891,7 @@ def get_artist_spot_active():
 extra_menu.add(_("Show Full Artist"), get_artist_spot_active,
                show_test=spotify_show_test, icon=spot_icon)
 
-extra_menu.add("Start Spotify Remote", show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
+extra_menu.add(_("Start Spotify Remote"), show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
            icon=spot_icon)
 
 # def spot_transfer_playback_here_deco():

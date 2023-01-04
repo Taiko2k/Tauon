@@ -660,7 +660,7 @@ class SpotCtl:
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]
         artist = self.spotify.artist(id)
-        artist_albums = self.spotify.artist_albums(id, limit=50, include_groups=["album"])
+        artist_albums = self.spotify.artist_albums(id, limit=70, include_groups=["album"])
         playlist = []
         self.update_existing_import_list()
 
@@ -819,6 +819,9 @@ class SpotCtl:
         return nt
 
     def like_track(self, tract_object):
+        self.connect()
+        if not self.spotify:
+            return 
         track_url = tract_object.misc.get("spotify-track-url", False)
         if track_url:
             id = track_url.strip("/").split("/")[-1]
@@ -832,6 +835,9 @@ class SpotCtl:
             return
 
     def unlike_track(self, tract_object):
+        self.connect()
+        if not self.spotify:
+            return
         track_url = tract_object.misc.get("spotify-track-url", False)
         if track_url:
             id = track_url.strip("/").split("/")[-1]
@@ -1031,52 +1037,24 @@ class SpotCtl:
         self.tauon.gui.update += 2
         self.tauon.gui.pl_update += 1
 
-        if result.context:
+    def import_context(self):
+        self.connect()
+        if not self.spotify:
+            return
+        result = self.spotify.playback_currently_playing()
+        if not result or not result.context:
+            self.tauon.gui.show_message("No Spotify context found")
+            return
 
-            # Get context playlist
-            c = None
-            for p in self.tauon.pctl.multi_playlist:
-                if p[0] == "SPOTIFY CTX":
-                    c = p
-                    break
-            else:
-                c = self.tauon.pl_gen(title="SPOTIFY CTX", hide_title=1)
-                self.tauon.pctl.multi_playlist.append(c)
+        if result.context.type == "playlist":
+                self.playlist(result.context.uri)
 
-            if self.coast_context != result.context.uri:
-                self.coast_context = result.context.uri
+        if result.context.type == "album":
+                self.album_playlist(result.context.uri)
 
-                if result.context.type == "playlist":
-                        playlist = []
-                        id = result.context.uri[17:]
-                        p = self.spotify.playlist(id)
-                        self.update_existing_import_list()
-                        pages = self.spotify.all_pages(p.tracks)
-                        for page in pages:
-                            for item in page.items:
-                                nt = self.load_track(item.track, include_album_url=True)
-                                self.tauon.pctl.master_library[nt.index] = nt
-                                playlist.append(nt.index)
-                        c[2][:] = playlist[:]
-                        c[3] = 0
+        if result.context.type == "artist":
+                self.artist_playlist(result.context.uri)
 
-                if result.context.type == "album":
-                        playlist = []
-                        id = result.context.uri[14:]
-                        p = self.spotify.album(id)
-                        self.update_existing_import_list()
-                        self.load_album(p, playlist)
-                        # pages = self.spotify.all_pages(p.tracks)
-                        # for page in pages:
-                        #     for item in page.items:
-                        #         nt = self.load_track(item.track, include_album_url=True)
-                        #         self.tauon.pctl.master_library[nt.index] = nt
-                        #         playlist.append(nt.index)
-                        c[2][:] = playlist[:]
-                        c[3] = 0
-                if self.tauon.pctl.active_playlist_viewing == c[6]:
-                    self.playlist_view_position = 0
-
-                self.tauon.gui.pl_update += 1
+        self.tauon.gui.pl_update += 1
 
 
