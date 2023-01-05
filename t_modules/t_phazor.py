@@ -770,6 +770,7 @@ def player4(tauon):
                         if not state == 4:
                             state = 0
                         try:
+                            f = False
                             if spotc.running and state != 4:
                                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                                 state = 4
@@ -777,12 +778,18 @@ def player4(tauon):
                                 print("runner")
                                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                                 state = 4
+                                if not spotc.p:
+                                    f = True
                                 spotc.go()
-                                time.sleep(4)
                                 if not spotc.running:
                                     shooter(spotc.worker)
-                            tauon.spot_ctl.play_target(target_object.url_key)
+                            tauon.spot_ctl.play_target(target_object.url_key, force_new_device=f)
+                            if state == 4 and pctl.playerCommand == "spotcon":  # such spaghetti code
+                                pctl.playerCommand = ""
+                                pctl.playerCommandReady = False
+
                         except:
+                            raise
                             print("Failed to start Spotify track")
                             pctl.playerCommand = "stop"
                             pctl.playerCommandReady = True
