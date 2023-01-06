@@ -1,13 +1,14 @@
 
 Changelog----------------------------
 
-v7.4.8
+v7.8.0
 
  - Added Spotify audio passthrough support
  - Added Spotify import artist, album and context functions
  - Moved many Spotify functions to playback menu
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
+ - Fixed tray text not updating with internet radio
 
 v7.4.7
 
