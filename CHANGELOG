@@ -6,6 +6,7 @@ v7.8.0
  - Added Spotify audio passthrough support
  - Added Spotify import artist, album and context functions
  - Moved many Spotify functions to playback menu
+ - Tweaked auto theme colours in radio view
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
  - Fixed tray text not updating with internet radio
