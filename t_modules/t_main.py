@@ -39444,8 +39444,8 @@ class RadioView:
     def render(self):
         # box = int(window_size[1] * 0.4 + 120 * gui.scale)
         # box = min(window_size[0] // 2, box)
-
-        ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background)
+        bg = colours.playlist_panel_background
+        ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), bg)
         # print(prefs.radio_urls)
 
         # Add station button
@@ -39453,27 +39453,31 @@ class RadioView:
         y = gui.panelY + round(30 * gui.scale)
         rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
         fields.add(rect)
-        colour = colours.box_button_text_highlight
-        if colours.lm:
-            colour = colours.vis_colour
+
+        # right buttions colours
+        a_colour = rgb_add_hls(bg, l=0.2, s=-0.3) #colours.box_button_text_highlight
+        b_colour = rgb_add_hls(bg, l=0.4, s=-0.3) #colours.box_button_text_highlight
+        if test_lumi(bg) < 0.38:
+            a_colour = [20, 20, 20, 200]
+            b_colour = [60, 60, 60, 200]
+
         if coll(rect):
+            colour = b_colour
             if inp.mouse_click:
                 add_station()
         else:
-            if not colours.lm:
-                colour = alpha_mod(colour, 40)
+            colour = a_colour
+
         self.add_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
 
         y += round(33 * gui.scale)
         rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
         fields.add(rect)
-        colour = colours.box_button_text_highlight
-        if colours.lm:
-            colour = colours.vis_colour
+
         if not coll(rect):
-            if not colours.lm:
-                colour = alpha_mod(colour, 40)
+            colour = a_colour
         else:
+            colour = b_colour
             if inp.mouse_click:
                 station_browse()
         self.search_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
@@ -39488,13 +39492,11 @@ class RadioView:
         if pctl.playing_state == 3 and radiobox.loaded_station not in radios:
             rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
             fields.add(rect)
-            colour = colours.box_button_text_highlight
-            if colours.lm:
-                colour = colours.vis_colour
+
             if not coll(rect):
-                if not colours.lm:
-                    colour = alpha_mod(colour, 40)
+                colour = a_colour
             else:
+                colour = b_colour
                 if inp.mouse_click:
                     radios.append(radiobox.loaded_station)
                     toast(_("Added station to: " + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"]))
@@ -39505,8 +39507,12 @@ class RadioView:
         y = gui.panelY + round(30 * gui.scale)
         yy = y
 
-        bg = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, -0.03)
+        rbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, -0.03)
         tbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.07, -0.05)
+        if contrast_ratio(bg, rbg) < 1.05:
+            rbg = [30, 30, 30, 255]
+            tbg = [60, 60, 60, 255]
+
         w = round(400 * gui.scale)
         h = round(55 * gui.scale)
         gap = round(7 * gui.scale)
@@ -39537,46 +39543,55 @@ class RadioView:
                 continue
             count += 1
             rect = (x, yy, w, h)
-            ddt.rect(rect, bg)
+            ddt.rect(rect, rbg)
             yyy = yy
             pic_rect = (
             x + round(5 * gui.scale), yy + round(5 * gui.scale), h - round(10 * gui.scale), h - round(10 * gui.scale))
             ddt.rect(pic_rect, tbg)
             radio_thumb_gen.draw(radio, pic_rect[0], pic_rect[1], pic_rect[2])
 
+            l1_colour = [10, 10, 10, 210]
+            if test_lumi(rbg) > 0.45:
+                l1_colour = [255, 255, 255, 220]
+            l2_colour = [30, 30, 30, 200]
+            if test_lumi(rbg) > 0.45:
+                l2_colour = [245, 245, 245, 200]
+
             toff = h + round(2 * gui.scale)
             yyy += round(9 * gui.scale)
-            ddt.text((x + toff, yyy), radio["title"], colours.side_bar_line1, 212,
-                     max_w=w - (toff + round(90 * gui.scale)))
+            ddt.text((x + toff, yyy), radio["title"], l1_colour, 212,
+                     max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
             yyy += round(19 * gui.scale)
-            ddt.text((x + toff, yyy), radio.get("country", ""), alpha_mod(colours.side_bar_line1, 170), 312,
-                     max_w=w - (toff + round(90 * gui.scale)))
+            ddt.text((x + toff, yyy), radio.get("country", ""), l2_colour, 312,
+                     max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
 
             hit = False
             start_rect = (x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
                           round(42 * gui.scale))
             # ddt.rect(hit_rect, [255, 255, 255, 3])
             fields.add(start_rect)
-            colour = alpha_mod(colours.side_bar_line1, 27)
+            colour = rgb_add_hls(tbg, l=0.05)
             if coll(start_rect):
                 if inp.mouse_click:
                     radiobox.start(radio)
                     hit = True
-                colour = colours.side_bar_line1
+                colour = rgb_add_hls(colour, l=0.3)
+
             bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
             extra_rect = (x + (w - round(82 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
                           round(35 * gui.scale))
             # ddt.rect(extra_rect, [255, 255, 255, 2])
             fields.add(extra_rect)
-            colour = alpha_mod(colours.side_bar_line1, 27)
+            colour = rgb_add_hls(tbg, l=0.05)
             if coll(extra_rect):
-                colour = colours.side_bar_line1
+                colour = rgb_add_hls(colour, l=0.3) #alpha_mod(colours.side_bar_line1, 47)
                 if inp.mouse_click:
                     hit = True
                     radiobox.x = extra_rect[0] + extra_rect[2]
                     radiobox.y = extra_rect[1]
                     radio_context_menu.activate((i, radio), position=(radiobox.x, yy + round(20 * gui.scale)))
+
             self.menu_icon.render(x + (w - round(75 * gui.scale)), yy + round(26 * gui.scale), colour)
 
             # bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
