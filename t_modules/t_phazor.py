@@ -1143,7 +1143,7 @@ def player4(tauon):
 
             if state == 3:
 
-                #pctl.radio_progress()
+                pctl.radio_progress()
                 run_vis()
 
                 add_time = player_timer.hit()

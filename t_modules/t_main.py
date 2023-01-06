@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.4.8"
+n_version = "7.8.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4910,7 +4910,6 @@ class PlayerCtl:
         self.download_time = 0
 
         self.radio_meta_on = ""
-        self.radio_meta_timer = Timer()
 
         self.radio_scrobble_trip = True
         self.radio_scrobble_timer = Timer()
@@ -4957,10 +4956,9 @@ class PlayerCtl:
                         self.tag_meta = d["song"]["artist"] + " - " + d["song"]["title"]
 
         if self.tag_meta:
-            if self.radio_rate_timer.get() > 10 and self.radio_meta_on != self.tag_meta:
+            if self.radio_rate_timer.get() > 7 and self.radio_meta_on != self.tag_meta:
                 self.radio_rate_timer.set()
                 self.radio_scrobble_trip = False
-                self.radio_meta_timer.set()
                 self.radio_meta_on = self.tag_meta
 
                 radiobox.dummy_track.art_url_key = ""
@@ -5003,6 +5001,7 @@ class PlayerCtl:
                     # raise
                     print("Get art error")
 
+                pctl.notify_update(mpris=False)
                 if pctl.mpris:
                     pctl.mpris.update(force=True)
 
@@ -5029,14 +5028,14 @@ class PlayerCtl:
         #     self.tray_update()
         self.notify_in_progress = False
 
-    def notify_update(self):
+    def notify_update(self, mpris=True):
         tauon.tray_releases += 1
         try:
             tauon.tray_lock.release()
         except:
             pass
 
-        if self.mpris is not None:
+        if self.mpris is not None and mpris is True:
             while self.notify_in_progress:
                 time.sleep(0.01)
             self.notify_in_progress = True
