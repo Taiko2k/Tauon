@@ -22768,6 +22768,13 @@ def show_spot_playing_deco():
     else:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
+def show_spot_coasting_deco():
+    if spot_ctl.coasting:
+        return [colours.menu_text, colours.menu_background, None]
+    else:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+
 def show_spot_playing():
     if pctl.playing_state != 0 and pctl.playing_state != 3 and not spot_ctl.coasting and not spot_ctl.playing:
         pctl.stop()
@@ -22797,7 +22804,7 @@ def spot_import_albums():
 
 extra_menu.add_sub(_("Import Spotify…"), 140, show_test=spotify_show_test)
 
-extra_menu.add_to_sub(_("Import Liked Albums"), 0, spot_import_albums, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Liked Albums"), 0, spot_import_albums, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_tracks():
     if not spot_ctl.spotify_com:
@@ -22808,7 +22815,7 @@ def spot_import_tracks():
     else:
         show_message(_("Please wait until current job is finished"))
 
-extra_menu.add_to_sub(_("Import Liked Tracks"), 0, spot_import_tracks, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Liked Tracks"), 0, spot_import_tracks, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_playlists():
     if not spot_ctl.spotify_com:
@@ -22820,7 +22827,7 @@ def spot_import_playlists():
         show_message(_("Please wait until current job is finished"))
 
 
-extra_menu.add_to_sub(_("Import All Playlists"), 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
+#extra_menu.add_to_sub(_("Import All Playlists"), 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_playlist_menu():
     if not spot_ctl.spotify_com:
@@ -22829,17 +22836,19 @@ def spot_import_playlist_menu():
         if playlists:
             for item in playlists:
                 spotify_playlist_menu.add(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1])
-                spotify_playlist_menu.activate(position=(extra_menu.pos[0], window_size[1] - gui.panelBY))
+
+            spotify_playlist_menu.add(_("> Import All Playlists"), spot_import_playlists)
+            spotify_playlist_menu.activate(position=(extra_menu.pos[0], window_size[1] - gui.panelBY))
     else:
         show_message(_("Please wait until current job is finished"))
 
-extra_menu.add_to_sub(_("Import Playlist…"), 0, spot_import_playlist_menu, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Playlist…"), 0, spot_import_playlist_menu, show_test=spotify_show_test, icon=spot_icon)
 
 
 def spot_import_context():
     shooter(spot_ctl.import_context)
 
-extra_menu.add_to_sub(_("Remote Context"), 0, spot_import_context, show_test=spotify_show_test, icon=spot_icon)
+extra_menu.add_to_sub(_("Current Context"), 0, spot_import_context, show_spot_coasting_deco, show_test=spotify_show_test, icon=spot_icon)
 
 
 def get_album_spot_deco():
