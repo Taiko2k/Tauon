@@ -160,6 +160,7 @@ def player4(tauon):
                 else:
                     time.sleep(0.002)
     spotc = LibreSpot()
+    tauon.spotc = spotc
 
     class FFRun:
         def __init__(self):
@@ -789,7 +790,7 @@ def player4(tauon):
                                 pctl.playerCommandReady = False
 
                         except:
-                            raise
+                            #raise
                             print("Failed to start Spotify track")
                             pctl.playerCommand = "stop"
                             pctl.playerCommandReady = True

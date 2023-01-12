@@ -7,6 +7,7 @@ v7.8.0
  - Added Spotify import artist, album and context functions
  - Moved many Spotify functions to playback menu
  - Tweaked auto theme colours in radio view
+ - Tweaked auto output to stay open on pause
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
  - Fixed tray text not updating with internet radio
