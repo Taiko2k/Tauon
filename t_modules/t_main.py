@@ -5603,6 +5603,15 @@ class PlayerCtl:
 
     def pause(self):
 
+        if tauon.spotc and tauon.spotc.running and spot_ctl.playing:
+            print("test")
+            if self.playing_state == 1:
+                self.playerCommand = 'pauseon'
+                self.playerCommandReady = True
+            elif self.playing_state == 2:
+                self.playerCommand = 'pauseoff'
+                self.playerCommandReady = True
+
         if self.playing_state == 3:
             if spot_ctl.coasting:
                 if spot_ctl.paused:
@@ -7790,6 +7799,8 @@ class Strings:
         self.menu_next = _("Next Track")
         self.menu_previous = _("Previous Track")
         self.menu_quit = _("Quit")
+
+        self.spotc = None
 
 
 strings = Strings()
@@ -20853,13 +20864,13 @@ folder_menu.add('Lookup Spotify Album URL', get_album_spot_url, get_album_spot_u
 
 def add_to_spotify_library_deco(track_id):
     track_object = pctl.g(track_id)
-    text = _("Save to Spotify Library")
+    text = _("Save Album to Spotify")
     if track_object.file_ext != "SPTY":
         return (colours.menu_text_disabled, colours.menu_background, text)
 
     album_url = track_object.misc.get("spotify-album-url")
     if album_url and album_url in spot_ctl.cache_saved_albums:
-        text = _("Remove from Spotify Library")
+        text = _("Un-save Spotify Album")
 
     return (colours.menu_text, colours.menu_background, text)
 

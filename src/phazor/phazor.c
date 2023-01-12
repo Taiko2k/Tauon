@@ -903,6 +903,8 @@ float gate = 1.0;  // Used for ramping
 int get_audio(int max, float* buff){
         int b = 0;
 
+        if (mode == PAUSED) return;
+
         pthread_mutex_lock(&buffer_mutex);
 
         if (buffering == 1 && get_buff_fill() > config_min_buffer) {
@@ -1920,7 +1922,7 @@ void *main_loop(void *thread_id) {
                 case PAUSE:
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
-                        stop_out();
+                        //stop_out();
                         
                         command = NONE;
                     }
