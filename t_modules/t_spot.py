@@ -652,9 +652,10 @@ class SpotCtl:
             return playlist
 
         title = p.name + " by " + p.owner.display_name
-        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist=playlist))
         if p.name == "Discover Weekly" or p.name == "Release Radar":
-            self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
+            #self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
+            title = p.name
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist=playlist))
 
         self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
         if not silent:

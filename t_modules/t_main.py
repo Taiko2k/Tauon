@@ -28392,7 +28392,7 @@ class Over:
             y += round(25 * gui.scale)
             if not msys:
                 prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
-                                                              _("Allow local audio playback"))
+                                                              _("Enable local audio playback"))
 
             if prefs.launch_spotify_local and not tauon.enable_librespot:
                 show_message("Librespot not installed?")
@@ -35737,6 +35737,8 @@ class PlaylistBox:
         self.lock_icon = asset_loader('lock-corner.png', True)
         self.pin_icon = asset_loader('dia-pin.png', True)
         self.gen_icon = asset_loader('gen-gear.png', True)
+        self.spot_icon = asset_loader("spot-playlist.png", True)
+
 
         # if gui.scale == 1.25:
         self.tab_h = 0
@@ -35963,6 +35965,10 @@ class PlaylistBox:
             if draw_pin_indicator:
                 # text_start = 40 * gui.scale
                 text_start = 32 * gui.scale
+
+            if pctl.gen_codes.get(pl_to_id(i), "")[:3] in ["sal", "slt", "spl"]:
+                text_start = 28 * gui.scale
+                self.spot_icon.render(tab_start + round(7 * gui.scale), yy + round(3 * gui.scale), alpha_mod(tab_title_colour, 170))
 
             if not pl[8] and prefs.tabs_on_top:
                 cl = [255, 255, 255, 25]
