@@ -10384,11 +10384,16 @@ class TextBox2:
     def set_text(self, text):
 
         self.text = text
-        self.cursor_position = 0
-        self.selection = 0
+        if self.cursor_position > len(text):
+            self.cursor_position = 0
+            self.selection = 0
+        else:
+            self.selection = self.cursor_position
 
     def clear(self):
         self.text = ""
+        #self.cursor_position = 0
+        self.selection = self.cursor_position
 
     def highlight_all(self):
 
@@ -14355,16 +14360,16 @@ class TransEditBox:
                 return
 
             tr = pctl.g(default_playlist[select[0]])
-            edit_title.text = tr.title
+            edit_title.set_text(tr.title)
 
             if check_equal(artists):
-                edit_artist.text = artists[0]
+                edit_artist.set_text(artists[0])
 
             if check_equal(albums):
-                edit_album.text = albums[0]
+                edit_album.set_text(albums[0])
 
             if check_equal(album_artists):
-                edit_album_artist.text = album_artists[0]
+                edit_album_artist.set_text(album_artists[0])
 
         x += round(20 * gui.scale)
         y += round(18 * gui.scale)
