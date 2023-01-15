@@ -903,7 +903,7 @@ float gate = 1.0;  // Used for ramping
 int get_audio(int max, float* buff){
         int b = 0;
 
-        if (mode == PAUSED) return;
+        if (mode == PAUSED) return 0;
 
         pthread_mutex_lock(&buffer_mutex);
 

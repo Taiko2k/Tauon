@@ -94,7 +94,7 @@ class SpotCtl:
         if self.token:
             self.save_token()
             self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
-
+        self.tauon.prefs.spot_mode = True
     def save_token(self):
 
         if self.token:
