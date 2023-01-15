@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-30 00:59+1300\n"
-"PO-Revision-Date: 2023-01-03 16:49+0000\n"
+"PO-Revision-Date: 2023-01-09 13:50+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -732,7 +732,7 @@ msgstr "Incolla"
 
 #: t_modules/t_main.py:17935
 msgid "Append Playing"
-msgstr ""
+msgstr "Fissa Riproduci"
 
 #: t_modules/t_main.py:17940
 msgid "Export…"
@@ -801,393 +801,395 @@ msgstr "Rimuovi come Scaletta di Scaricamenti"
 
 #: t_modules/t_main.py:18223
 msgid "Export Playlist Stats"
-msgstr ""
+msgstr "Esporta Statistiche Scaletta"
 
 #: t_modules/t_main.py:18224
 msgid "Export Albums CSV"
-msgstr ""
+msgstr "Esporta CSV Dischi"
 
 #: t_modules/t_main.py:18225
 msgid "Transcode All"
-msgstr ""
+msgstr "Converti Tutto"
 
 #: t_modules/t_main.py:18226 t_modules/t_main.py:20392
 #: t_modules/t_main.py:20639 t_modules/t_main.py:20740
 msgid "Rescan Tags"
-msgstr ""
+msgstr "Ricontrolla Metadati"
 
 #: t_modules/t_main.py:18231
 msgid "Toggle Breaks"
-msgstr ""
+msgstr "Attiva/Disattiva Separatori"
 
 #: t_modules/t_main.py:18232
 msgid "Edit Generator..."
-msgstr ""
+msgstr "Modifica Generatore..."
 
 #: t_modules/t_main.py:18233
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Attiva Aggiunta Veloce da Galleria"
 
 #: t_modules/t_main.py:18238
 msgid "Remove Duplicates"
-msgstr ""
+msgstr "Rimuovi Duplicati"
 
 #: t_modules/t_main.py:18283 t_modules/t_main.py:18372
 #: t_modules/t_main.py:18373
 msgid "Top Rated Tracks"
-msgstr ""
+msgstr "Tracce Più Amate"
 
 #: t_modules/t_main.py:18300 t_modules/t_main.py:18307
 #: t_modules/t_main.py:18308
 msgid "Top Played Tracks"
-msgstr ""
+msgstr "Tracce Più Riprodotte"
 
 #: t_modules/t_main.py:18362 t_modules/t_main.py:18369
 #: t_modules/t_main.py:18370
 msgid "Top Played Albums"
-msgstr ""
+msgstr "Dischi Più Riprodotti"
 
 #: t_modules/t_main.py:18417 t_modules/t_main.py:18449
 #: t_modules/t_main.py:18450
 msgid "Top Rated Albums"
-msgstr ""
+msgstr "Dischi Più Amati"
 
 #: t_modules/t_main.py:18439
 msgid "Tracks with lyrics"
-msgstr ""
+msgstr "Tracce con testo"
 
 #: t_modules/t_main.py:18446
 msgid "No tracks with lyrics were found."
-msgstr ""
+msgstr "Nessuna traccia con testo trovata."
 
 #: t_modules/t_main.py:18497
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
+"Nota che questo potrebbe includere dischi che hanno tracce che mancano di "
+"alcuni metadati dischi"
 
 #: t_modules/t_main.py:18498
 msgid "Incomplete Albums"
-msgstr ""
+msgstr "Dischi incompleti"
 
 #: t_modules/t_main.py:18505
 msgid "No incomplete albums were found."
-msgstr ""
+msgstr "Nessun disco incompleto trovato."
 
 #: t_modules/t_main.py:18517 t_modules/t_main.py:21415
 msgid "Codec"
-msgstr ""
+msgstr "Codec"
 
 #: t_modules/t_main.py:18573 t_modules/t_main.py:18580
 #: t_modules/t_main.py:18581
 msgid "File Modified"
-msgstr ""
+msgstr "File Modificato"
 
 #: t_modules/t_main.py:18604 t_modules/t_main.py:18994
 #: t_modules/t_main.py:18995 t_modules/t_main.py:21423
 msgid "Loved"
-msgstr ""
+msgstr "Amata"
 
 #: t_modules/t_main.py:18635
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Commenti Più Interessanti"
 
 #: t_modules/t_main.py:18678
 msgid "Duration Sorted"
-msgstr ""
+msgstr "Organizza per Durata"
 
 #: t_modules/t_main.py:18685 t_modules/t_main.py:18686
 msgid "Longest Tracks"
-msgstr ""
+msgstr "Tracce più lunghe"
 
 #: t_modules/t_main.py:18724 t_modules/t_main.py:18729
 #: t_modules/t_main.py:18730
 msgid "Longest Albums"
-msgstr ""
+msgstr "Dischi più lunghi"
 
 #: t_modules/t_main.py:18772
 msgid "Year Sorted"
-msgstr ""
+msgstr "Ordina per Anno"
 
 #: t_modules/t_main.py:18789 t_modules/t_main.py:18790
 msgid "Year by Oldest"
-msgstr ""
+msgstr "Anno dal Più Vecchio"
 
 #: t_modules/t_main.py:18797 t_modules/t_main.py:18798
 msgid "Year by Latest"
-msgstr ""
+msgstr "Anno dal Più Nuovo"
 
 #: t_modules/t_main.py:18809 t_modules/t_main.py:18816
 #: t_modules/t_main.py:18817
 msgid "Shuffled Tracks"
-msgstr ""
+msgstr "Tracce mischiate"
 
 #: t_modules/t_main.py:18845 t_modules/t_main.py:18852
 #: t_modules/t_main.py:18853
 msgid "Shuffled Albums"
-msgstr ""
+msgstr "Dischi mischiati"
 
 #: t_modules/t_main.py:18868 t_modules/t_main.py:18876
 #: t_modules/t_main.py:18877
 msgid "Lucky Random"
-msgstr ""
+msgstr "Casuale"
 
 #: t_modules/t_main.py:18890
 msgid "Reversed"
-msgstr ""
+msgstr "Al contrario"
 
 #: t_modules/t_main.py:18897 t_modules/t_main.py:18898
 msgid "Reverse Tracks"
-msgstr ""
+msgstr "Inverti tracce"
 
 #: t_modules/t_main.py:18925
 msgid "Reversed Albums"
-msgstr ""
+msgstr "Dischi invertiti"
 
 #: t_modules/t_main.py:18932 t_modules/t_main.py:18933
 msgid "Reverse Albums"
-msgstr ""
+msgstr "Inverti dischi"
 
 #: t_modules/t_main.py:18939 t_modules/t_main.py:18947
 #: t_modules/t_main.py:18948
 msgid "Duplicate"
-msgstr ""
+msgstr "Duplicato"
 
 #: t_modules/t_main.py:18958
 msgid "Filepath Sorted"
-msgstr ""
+msgstr "Ordina per Percorso file"
 
 #: t_modules/t_main.py:18973
 msgid "Artist Sorted"
-msgstr ""
+msgstr "Ordina per Artista"
 
 #: t_modules/t_main.py:18988
 msgid "Album Sorted"
-msgstr ""
+msgstr "Ordina per Disco"
 
 #: t_modules/t_main.py:18996 t_modules/t_main.py:18997
 msgid "Has Comment"
-msgstr ""
+msgstr "Ha Commenti"
 
 #: t_modules/t_main.py:18998 t_modules/t_main.py:18999
 #: t_modules/t_main.py:21417
 msgid "Has Lyrics"
-msgstr ""
+msgstr "Ha testi"
 
 #: t_modules/t_main.py:19032
 msgid "Configuration reloaded"
-msgstr ""
+msgstr "Configurazione ricaricata"
 
 #: t_modules/t_main.py:19045
 msgid "Click \"Reload\" if you made any changes"
-msgstr ""
+msgstr "Premi \"Ricarica\" se hai fatto dei cambiamenti"
 
 #: t_modules/t_main.py:19045
 msgid "Config file opened."
-msgstr ""
+msgstr "File configurazione aperto."
 
 #: t_modules/t_main.py:19111
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Convertire tracce da indirizzi in rete non è supportato"
 
 #: t_modules/t_main.py:19131
 msgid "Transcoding spotify tracks not possible"
-msgstr ""
+msgstr "Non è possibile convertire tracce di Spotify"
 
 #: t_modules/t_main.py:19488
 msgid "Add Playing Spotify Album"
-msgstr ""
+msgstr "Aggiungi Album in Riproduzione da Spotify"
 
 #: t_modules/t_main.py:19581
 msgid "Track Info…"
-msgstr ""
+msgstr "Informazioni traccia…"
 
 #: t_modules/t_main.py:19627 t_modules/t_main.py:22423
 msgid "Un-Love Track"
-msgstr ""
+msgstr "Rimuovi Cuore Traccia"
 
 #: t_modules/t_main.py:19629 t_modules/t_main.py:22426
 #: t_modules/t_main.py:22428
 msgid "Love Track"
-msgstr ""
+msgstr "Metti Cuore Traccia"
 
 #: t_modules/t_main.py:19731 t_modules/t_main.py:37482
 msgid "Add to Queue"
-msgstr ""
+msgstr "Aggiungi alla Coda"
 
 #: t_modules/t_main.py:19733
 msgid "↳ After Current Track"
-msgstr ""
+msgstr "Dopo la Traccia Corrente"
 
 #: t_modules/t_main.py:19735
 msgid "Show in Gallery"
-msgstr ""
+msgstr "Mostra nella Galleria"
 
 #: t_modules/t_main.py:19737
 msgid "Meta…"
-msgstr ""
+msgstr "Meta…"
 
 #: t_modules/t_main.py:19742 t_modules/t_main.py:20752
 #: t_modules/t_main.py:20757 t_modules/t_main.py:20758
 #: t_modules/t_main.py:21058
 msgid "Copy"
-msgstr ""
+msgstr "Copia"
 
 #: t_modules/t_main.py:19757
 msgid "Cannot delete a network track"
-msgstr ""
+msgstr "Non posso cancellare una traccia in rete"
 
 #: t_modules/t_main.py:19769 t_modules/t_main.py:19778
 msgid "File deleted"
-msgstr ""
+msgstr "File cancellato"
 
 #: t_modules/t_main.py:19771 t_modules/t_main.py:19780
 msgid "Error deleting file"
-msgstr ""
+msgstr "Errore nel cancellare il file"
 
 #: t_modules/t_main.py:19773
 msgid "File moved to trash"
-msgstr ""
+msgstr "File spostato nel cestino"
 
 #: t_modules/t_main.py:19787
 msgid "Delete Track File"
-msgstr ""
+msgstr "Cancella File Traccia"
 
 #: t_modules/t_main.py:19794
 msgid "Rename (Single track)"
-msgstr ""
+msgstr "Rinomina (Traccia singola)"
 
 #: t_modules/t_main.py:19796 t_modules/t_main.py:20583
 #: t_modules/t_main.py:20585
 msgid "Rename Tracks…"
-msgstr ""
+msgstr "Rinomina Tracce…"
 
 #: t_modules/t_main.py:19811 t_modules/t_main.py:20640
 #: t_modules/t_main.py:20742
 msgid "Edit fields…"
-msgstr ""
+msgstr "Modifica campi…"
 
 #: t_modules/t_main.py:19818
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Non posso cancellare dal disco"
 
 #: t_modules/t_main.py:19818
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Una o più tracce è in rete!"
 
 #: t_modules/t_main.py:19839
 msgid "Delete size safety limit reached!"
-msgstr ""
+msgstr "Limite di sicurezza di eliminazione raggiunto!"
 
 #: t_modules/t_main.py:19877
 msgid "Folder could not be trashed."
-msgstr ""
+msgstr "La cartella non può essere eliminata."
 
 #: t_modules/t_main.py:20004 t_modules/t_main.py:20575
 #: t_modules/t_main.py:20576 t_modules/t_main.py:20581
 msgid "Modify Folder…"
-msgstr ""
+msgstr "Modifica Cartella…"
 
 #: t_modules/t_main.py:20293
 msgid "Tag editor app does not appear to be installed."
-msgstr ""
+msgstr "Applicazione per modificare i metadati non installata."
 
 #: t_modules/t_main.py:20296
 msgid "App not found on host OR insufficient Flatpak permissions."
-msgstr ""
+msgstr "Applicazione non trovata nel sistema O Flatpak non ha i permessi."
 
 #: t_modules/t_main.py:20412
 msgid "Edit with "
-msgstr ""
+msgstr "Modifica con "
 
 #: t_modules/t_main.py:20425
 msgid "Lyrics..."
-msgstr ""
+msgstr "Testi..."
 
 #: t_modules/t_main.py:20528
 msgid "Fix Mojibake"
-msgstr ""
+msgstr "Sistema Mojibake"
 
 #: t_modules/t_main.py:20634
 msgid "Transcode Single"
-msgstr ""
+msgstr "Converti Traccia"
 
 #: t_modules/t_main.py:20636 t_modules/t_main.py:20642
 #: t_modules/t_main.py:20644 t_modules/t_main.py:21001
 msgid "Transcode Folder"
-msgstr ""
+msgstr "Converti Cartella"
 
 #: t_modules/t_main.py:20641
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Conto Riproduzioni Vuoto"
 
 #: t_modules/t_main.py:20654
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "Copia \"Artista - Disco\""
 
 #: t_modules/t_main.py:20662 t_modules/t_main.py:22566
 msgid "URL copied to clipboard"
-msgstr ""
+msgstr "URL copiato negli appunti"
 
 #: t_modules/t_main.py:20664 t_modules/t_main.py:22568
 msgid "No results found"
-msgstr ""
+msgstr "Nessun risultato trovato"
 
 #: t_modules/t_main.py:20670
 msgid "Copy Spotify Album URL"
-msgstr ""
+msgstr "Copia URL disco di Spotify"
 
 #: t_modules/t_main.py:20672
 msgid "Lookup Spotify Album URL"
-msgstr ""
+msgstr "Cerca URL disco di Spotify"
 
 #: t_modules/t_main.py:20682
 msgid "Save to Spotify Library"
-msgstr ""
+msgstr "Salva nella Libreria di Spotify"
 
 #: t_modules/t_main.py:20688
 msgid "Remove from Spotify Library"
-msgstr ""
+msgstr "Rimuovi dalla Libreria di Spotify"
 
 #: t_modules/t_main.py:20731
 msgid "Queue %d"
-msgstr ""
+msgstr "Coda %d"
 
 #: t_modules/t_main.py:20736
 msgid "Add to queue"
-msgstr ""
+msgstr "Aggiungi alla coda"
 
 #: t_modules/t_main.py:20753
 msgid "Cut"
-msgstr ""
+msgstr "Taglia"
 
 #: t_modules/t_main.py:20754 t_modules/t_main.py:20762
 #: t_modules/t_main.py:20763 t_modules/t_main.py:39066
 msgid "Remove"
-msgstr ""
+msgstr "Rimuovi"
 
 #: t_modules/t_main.py:20755
 msgid "Delete Files"
-msgstr ""
+msgstr "Cancella File"
 
 #: t_modules/t_main.py:20803
 msgid "No matching artist result found"
-msgstr ""
+msgstr "Nessun artista corrispondente trovato"
 
 #: t_modules/t_main.py:20883
 msgid "Search Artist on Wikipedia"
-msgstr ""
+msgstr "Cerca Artista su Wikipedia"
 
 #: t_modules/t_main.py:20885
 msgid "Search Track on Genius"
-msgstr ""
+msgstr "Cerca Traccia su Genius"
 
 #: t_modules/t_main.py:20891
 msgid "Search Artist on Sonemic"
-msgstr ""
+msgstr "Cerca Artista su Sonemic"
 
 #: t_modules/t_main.py:20898
 msgid "Search Artist on Bandcamp"
-msgstr ""
+msgstr "Cerca Artista su Bandcamp"
 
 #: t_modules/t_main.py:20911
 msgid "Copy \"Artist - Track\""
