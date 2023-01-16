@@ -1806,7 +1806,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
 
         self.was_radio = False
         self.fullscreen = False
-        gui.mouse_in_window = True
+        self.mouse_in_window = True
         # self.text_input_request = False
         # self.text_input_active = False
 
