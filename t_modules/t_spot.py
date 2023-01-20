@@ -573,7 +573,7 @@ class SpotCtl:
         self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "sal"
         self.spotify_com = False
 
-    def append_track(self, url):
+    def append_track(self, url, playlist_number=None):
 
         self.connect()
         if not self.spotify:
@@ -585,10 +585,13 @@ class SpotCtl:
             url = url.split("?")[0]
             id = url.strip("/").split("/")[-1]
 
+        if playlist_number is None:
+            playlist_number = self.tauon.pctl.active_playlist_viewing
+
         track = self.spotify.track(id)
         tr = self.load_track(track)
         self.tauon.pctl.master_library[tr.index] = tr
-        self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].append(tr.index)
+        self.tauon.pctl.multi_playlist[playlist_number][2].append(tr.index)
         self.tauon.gui.pl_update += 1
 
     def append_album(self, url, playlist_number=None, return_list=False):
@@ -664,7 +667,7 @@ class SpotCtl:
     def artist_playlist(self, url):
         id = url.strip("/").split("/")[-1]
         artist = self.spotify.artist(id)
-        artist_albums = self.spotify.artist_albums(id, limit=70, include_groups=["album"])
+        artist_albums = self.spotify.artist_albums(id, limit=50, include_groups=["album"])
         playlist = []
         self.update_existing_import_list()
 
@@ -994,8 +997,8 @@ class SpotCtl:
         if not self.coasting:
             return
         tr = self.tauon.pctl.playing_object()
-        if tr and "spotify-album-url" in tr.misc:
-            self.append_album(tr.misc["spotify-album-url"], playlist_number)
+        if tr and "spotify-track-url" in tr.misc:
+            self.append_track(tr.misc["spotify-track-url"], playlist_number=playlist_number)
 
     def coast_update(self, result):
 

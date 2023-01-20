@@ -19690,12 +19690,25 @@ def paste_playlist_coast_fire():
         default_playlist.extend(spot_ctl.append_album(url, return_list=True))
     gui.pl_update += 1
 
+def paste_playlist_track_coast_fire():
+    url = None
+    # if spot_ctl.coasting and pctl.playing_state == 3:
+    #     url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+    if pctl.playing_ready() and "spotify-track-url" in pctl.playing_object().misc:
+        url = pctl.playing_object().misc["spotify-track-url"]
+    if url:
+        spot_ctl.append_track(url)
+    gui.pl_update += 1
+
 
 def paste_playlist_coast_album():
     shoot_dl = threading.Thread(target=paste_playlist_coast_fire)
     shoot_dl.daemon = True
     shoot_dl.start()
-
+def paste_playlist_coast_track():
+    shoot_dl = threading.Thread(target=paste_playlist_track_coast_fire)
+    shoot_dl.daemon = True
+    shoot_dl.start()
 
 def paste_playlist_coast_album_deco():
     if spot_ctl.coasting or spot_ctl.playing:
@@ -19708,7 +19721,8 @@ def paste_playlist_coast_album_deco():
 
 playlist_menu.add(_('Add Playing Spotify Album'), paste_playlist_coast_album, paste_playlist_coast_album_deco,
                   show_test=spotify_show_test)
-
+playlist_menu.add(_('Add Playing Spotify Track'), paste_playlist_coast_track, paste_playlist_coast_album_deco,
+                  show_test=spotify_show_test)
 
 def refind_playing():
     # Refind playing index
