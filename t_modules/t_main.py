@@ -10170,6 +10170,9 @@ class TimedLyricsRen:
         if index != self.index:
             self.ready = False
             self.generate(pctl.master_library[index])
+            
+        if right_click and x and y and coll((x, y, w, h)):
+            showcase_menu.activate(pctl.master_library[index])
 
         if not self.ready:
             return False
@@ -14028,7 +14031,7 @@ def menu_standard_or_grey(bool):
 # Create empty area menu
 playlist_menu = Menu(130)
 radio_entry_menu = Menu(125)
-showcase_menu = Menu(125)
+showcase_menu = Menu(135)
 center_info_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(175, show_icons=True)
@@ -15343,7 +15346,7 @@ def toggle_lyrics_deco(track_object):
             line = _("Hide Lyrics")
         else:
             line = _("Show Lyrics")
-        if not track_object or track_object.lyrics == "":
+        if not track_object or (track_object.lyrics == "" and not timed_lyrics_ren.generate(track_object)):
             colour = colours.menu_text_disabled
         return [colour, colours.menu_background, line]
 
@@ -15353,7 +15356,7 @@ def toggle_lyrics_deco(track_object):
             line = _("Hide Lyrics")
         else:
             line = _("Show Lyrics")
-        if track_object.lyrics == "":
+        if (track_object.lyrics == "" and not timed_lyrics_ren.generate(track_object)):
             colour = colours.menu_text_disabled
         return [colour, colours.menu_background, line]
 
@@ -15361,7 +15364,7 @@ def toggle_lyrics_deco(track_object):
         line = _("Hide Lyrics")
     else:
         line = _("Show Lyrics")
-    if track_object.lyrics == "":
+    if (track_object.lyrics == "" and not timed_lyrics_ren.generate(track_object)):
         colour = colours.menu_text_disabled
     return [colour, colours.menu_background, line]
 
@@ -15372,6 +15375,8 @@ def toggle_lyrics(track_object):
 
     if gui.combo_mode:
         prefs.show_lyrics_showcase ^= True
+        if prefs.show_lyrics_showcase and track_object.lyrics == "" and timed_lyrics_ren.generate(track_object):
+            prefs.prefer_synced_lyrics = True
         # if prefs.show_lyrics_showcase and track_object.lyrics == "":
         #     show_message(_("No lyrics for this track"))
     else:
@@ -15383,6 +15388,8 @@ def toggle_lyrics(track_object):
         #     return
 
         prefs.show_lyrics_side ^= True
+        if prefs.show_lyrics_side and track_object.lyrics == "" and timed_lyrics_ren.generate(track_object):
+            prefs.prefer_synced_lyrics = True
         # if prefs.show_lyrics_side and track_object.lyrics == "":
         #     show_message(_("No lyrics for this track"))
 
@@ -15515,6 +15522,28 @@ def search_lyrics_deco(track_object):
 
 
 showcase_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+
+
+def toggle_synced_lyrics(tr):
+    prefs.prefer_synced_lyrics ^= True
+
+def toggle_synced_lyrics_deco(track):
+    if prefs.prefer_synced_lyrics:
+        text = _("Show static lyrics")
+    else:
+        text = _("Show synced lyrics")
+    if timed_lyrics_ren.generate(track) and track.lyrics:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+        if not track.lyrics:
+            text = _("Show static lyrics")
+        if not timed_lyrics_ren.generate(track):
+            text = _("Show synced lyrics")
+
+    return [line_colour, colours.menu_background, text]
+
+showcase_menu.add("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 
 def search_guitarparty(track_object):
@@ -39864,15 +39893,15 @@ class Showcase:
 
             if timed_ready and track.lyrics:
 
-                if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
-
-                    line = _("Prefer synced")
-                    if prefs.prefer_synced_lyrics:
-                        line = _("Prefer static")
-                    if draw.button(line, 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-                                   text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-                                   background_highlight_colour=bfg):
-                        prefs.prefer_synced_lyrics ^= True
+                # if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
+                #
+                #     line = _("Prefer synced")
+                #     if prefs.prefer_synced_lyrics:
+                #         line = _("Prefer static")
+                #     if draw.button(line, 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+                #                    text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+                #                    background_highlight_colour=bfg):
+                #         prefs.prefer_synced_lyrics ^= True
 
                 timed_ready = prefs.prefer_synced_lyrics
 
