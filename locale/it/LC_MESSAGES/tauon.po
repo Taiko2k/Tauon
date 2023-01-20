@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2022-09-30 00:59+1300\n"
-"PO-Revision-Date: 2023-01-09 13:50+0000\n"
+"PO-Revision-Date: 2023-01-16 15:51+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -1193,303 +1193,307 @@ msgstr "Cerca Artista su Bandcamp"
 
 #: t_modules/t_main.py:20911
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "Copia \"Artista - Traccia\""
 
 #: t_modules/t_main.py:20930
 msgid "Copy Spotify Track URL"
-msgstr ""
+msgstr "Copia URL Traccia Spotify"
 
 #: t_modules/t_main.py:21032
 msgid "Broadcast This"
-msgstr ""
+msgstr "Trasmetti Questo"
 
 #: t_modules/t_main.py:21071 t_modules/t_main.py:27104
 msgid "Off"
-msgstr ""
+msgstr "Spento"
 
 #: t_modules/t_main.py:21087
 msgid "Level Meter"
-msgstr ""
+msgstr "Misuratore di Livello"
 
 #: t_modules/t_main.py:21097
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Visualizzatore Spettro"
 
 #: t_modules/t_main.py:21391
 msgid "Time"
-msgstr ""
+msgstr "Tempo"
 
 #: t_modules/t_main.py:21392 t_modules/t_main.py:21419
 msgid "Filepath"
-msgstr ""
+msgstr "Percorso File"
 
 #: t_modules/t_main.py:21398
 msgid "Auto Resize"
-msgstr ""
+msgstr "Auto Ridimensiona"
 
 #: t_modules/t_main.py:21399
 msgid "Hide bar"
-msgstr ""
+msgstr "Nascondi Barra"
 
 #: t_modules/t_main.py:21400
 msgid "Show bar"
-msgstr ""
+msgstr "Mostra Barra"
 
 #: t_modules/t_main.py:21402 t_modules/t_main.py:37213
 msgid "Remove This"
-msgstr ""
+msgstr "Rimuovi Questo"
 
 #: t_modules/t_main.py:21404 t_modules/t_main.py:45233
 #: t_modules/t_main.py:45239
 msgid "Artist"
-msgstr ""
+msgstr "Artista"
 
 #: t_modules/t_main.py:21405 t_modules/t_main.py:45214
 #: t_modules/t_main.py:45220
 msgid "Title"
-msgstr ""
+msgstr "Titolo"
 
 #: t_modules/t_main.py:21406 t_modules/t_main.py:45252
 #: t_modules/t_main.py:45258
 msgid "Album"
-msgstr ""
+msgstr "Disco"
 
 #: t_modules/t_main.py:21407 t_modules/t_main.py:45322
 #: t_modules/t_main.py:45328
 msgid "Album Artist"
-msgstr ""
+msgstr "Artista Disco"
 
 #: t_modules/t_main.py:21408 t_modules/t_main.py:45414
 #: t_modules/t_main.py:45420
 msgid "Composer"
-msgstr ""
+msgstr "Compositore"
 
 #: t_modules/t_main.py:21409 t_modules/t_main.py:45342
 #: t_modules/t_main.py:45348
 msgid "Duration"
-msgstr ""
+msgstr "Durata"
 
 #: t_modules/t_main.py:21410 t_modules/t_main.py:45399
 #: t_modules/t_main.py:45405
 msgid "Date"
-msgstr ""
+msgstr "Data"
 
 #: t_modules/t_main.py:21411 t_modules/t_main.py:45384
 #: t_modules/t_main.py:45390
 msgid "Genre"
-msgstr ""
+msgstr "Genere"
 
 #: t_modules/t_main.py:21412
 msgid "Track Number"
-msgstr ""
+msgstr "Numero Traccia"
 
 #: t_modules/t_main.py:21413
 msgid "Play Count"
-msgstr ""
+msgstr "Numero Riproduzioni"
 
 #: t_modules/t_main.py:21414
 msgid "Scrobble Count"
-msgstr ""
+msgstr "Numero Invii"
 
 #: t_modules/t_main.py:21416 t_modules/t_main.py:28670
 #: t_modules/t_main.py:45309
 msgid "Bitrate"
-msgstr ""
+msgstr "Qualità"
 
 #: t_modules/t_main.py:21418 t_modules/t_main.py:45469
 #: t_modules/t_main.py:45475
 msgid "Comment"
-msgstr ""
+msgstr "Commento"
 
 #: t_modules/t_main.py:21420
 msgid "Filename"
-msgstr ""
+msgstr "Nome File"
 
 #: t_modules/t_main.py:21421
 msgid "Starline"
-msgstr ""
+msgstr "Linea Ascolti"
 
 #: t_modules/t_main.py:21422
 msgid "Rating"
-msgstr ""
+msgstr "Valutazione"
 
 #: t_modules/t_main.py:21911
 msgid "New Radio List"
-msgstr ""
+msgstr "Lista Nuove Radio"
 
 #: t_modules/t_main.py:21935 t_modules/t_main.py:21938
 msgid "Clean Database!"
-msgstr ""
+msgstr "Pulisci Database!"
 
 #: t_modules/t_main.py:21964
 msgid "Paste Spotify Playlist"
-msgstr ""
+msgstr "Incolla Scaletta di Spotify"
 
 #: t_modules/t_main.py:21973
 msgid "Music"
-msgstr ""
+msgstr "Musica"
 
 #: t_modules/t_main.py:21984
 msgid "Import Music Folder"
-msgstr ""
+msgstr "Importa Cartella Musica"
 
 #: t_modules/t_main.py:21992
 msgid "Settings"
-msgstr ""
+msgstr "Impostazioni"
 
 #: t_modules/t_main.py:21993
 msgid "Database…"
-msgstr ""
+msgstr "Database…"
 
 #: t_modules/t_main.py:22057
 msgid "Export as CSV"
-msgstr ""
+msgstr "Esporta in CSV"
 
 #: t_modules/t_main.py:22058
 msgid "Play History to Playlist"
-msgstr ""
+msgstr "Riproduci Cronologia su Scaletta"
 
 #: t_modules/t_main.py:22059
 msgid "Reset Image Cache"
-msgstr ""
+msgstr "Resetta Cache Immagini"
 
 #: t_modules/t_main.py:22078
 msgid "Remove Network Tracks"
-msgstr ""
+msgstr "Rimuovi Tracce in Rete"
 
 #: t_modules/t_main.py:22079
 msgid "Remove Missing Tracks"
-msgstr ""
+msgstr "Rimuovi Tracce Mancanti"
 
 #: t_modules/t_main.py:22100
 msgid "Import FMPS_Ratings from Tags"
-msgstr ""
+msgstr "Importa Valutazioni_FMPS dai Metadati"
 
 #: t_modules/t_main.py:22105
 msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
+"Stai per cancellare tutte le votazioni di tracce e dischi dal database "
+"locale!"
 
 #: t_modules/t_main.py:22106 t_modules/t_main.py:28493
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
 msgstr ""
+"Premi il pulsante di nuovo mentre tieni premuto bloc maiusc se sei sicuro di "
+"volerlo fare."
 
 #: t_modules/t_main.py:22116
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "Resetta Votazioni Utente"
 
 #: t_modules/t_main.py:22123
 msgid "Find Incomplete Albums"
-msgstr ""
+msgstr "Trova Dischi Incompleti"
 
 #: t_modules/t_main.py:22129
 msgid "There are no tracks in this playlist to broadcast."
-msgstr ""
+msgstr "Non ci sono tracce da trasmettere in questa scaletta."
 
 #: t_modules/t_main.py:22132
 msgid "You need to start the broadcast web server in settings."
-msgstr ""
+msgstr "Devi iniziare il server di trasmissione in rete nelle impostazioni."
 
 #: t_modules/t_main.py:22155
 msgid "Stop Broadcast"
-msgstr ""
+msgstr "Ferma Trasmissione"
 
 #: t_modules/t_main.py:22172
 msgid "Start Broadcast"
-msgstr ""
+msgstr "Inizia Trasmissione"
 
 #: t_modules/t_main.py:22178
 msgid "Stop Cast"
-msgstr ""
+msgstr "Ferma Invio"
 
 #: t_modules/t_main.py:22199
 msgid "Chromecast…"
-msgstr ""
+msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22241
 msgid "Mini"
-msgstr ""
+msgstr "Mini"
 
 #: t_modules/t_main.py:22243
 msgid "Square"
-msgstr ""
+msgstr "Quadrato"
 
 #: t_modules/t_main.py:22244
 msgid "Square Large"
-msgstr ""
+msgstr "Quadrato Largo"
 
 #: t_modules/t_main.py:22245
 msgid "Micro"
-msgstr ""
+msgstr "Micro"
 
 #: t_modules/t_main.py:22256
 msgid "No metadata available to copy"
-msgstr ""
+msgstr "Nessun metadato da copiare"
 
 #: t_modules/t_main.py:22260
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Copia Titolo negli Appunti"
 
 #: t_modules/t_main.py:22278
 msgid "Random Track"
-msgstr ""
+msgstr "Traccia Casuale"
 
 #: t_modules/t_main.py:22306
 msgid "Radio Random"
-msgstr ""
+msgstr "Radio Casuale"
 
 #: t_modules/t_main.py:22311
 msgid "Revert"
-msgstr ""
+msgstr "Cancella modifica"
 
 #: t_modules/t_main.py:22317 t_modules/t_main.py:37219
 msgid "Clear Queue"
-msgstr ""
+msgstr "Pulisci Coda"
 
 #: t_modules/t_main.py:22479
 msgid "Spotify Like Track"
-msgstr ""
+msgstr "Mi Piace Traccia Spotify"
 
 #: t_modules/t_main.py:22484
 msgid "Un-like Spotify Track"
-msgstr ""
+msgstr "Togli Mi Piace Traccia Spotify"
 
 #: t_modules/t_main.py:22557
 msgid "Global Search"
-msgstr ""
+msgstr "Ricerca Globale"
 
 #: t_modules/t_main.py:22573
 msgid "Copy Album URL"
-msgstr ""
+msgstr "Copia URL Disco"
 
 #: t_modules/t_main.py:22577
 msgid "Lookup Spotify Album"
-msgstr ""
+msgstr "Controlla Disco su Spotify"
 
 #: t_modules/t_main.py:22590
 msgid "Locate Artist"
-msgstr ""
+msgstr "Ricerca Artista"
 
 #: t_modules/t_main.py:22592
 msgid "Go To Playing"
-msgstr ""
+msgstr "Vai a In Riproduzione"
 
 #: t_modules/t_main.py:22742
 msgid "ListenBrainz is Paused"
-msgstr ""
+msgstr "ListenBrainz è in Pausa"
 
 #: t_modules/t_main.py:22744
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "L'invio è in Pausa"
 
 #: t_modules/t_main.py:22748
 msgid "ListenBrainz is Active"
-msgstr ""
+msgstr "ListenBrainz è Attivo"
 
 #: t_modules/t_main.py:22750
 msgid "Scrobbling is Active"
-msgstr ""
+msgstr "L'invio è Attivo"
 
 #: t_modules/t_main.py:22962
 msgid "Exit Shuffle Lockdown"
