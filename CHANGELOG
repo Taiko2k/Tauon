@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.8.0
 
  - Added Spotify audio passthrough support
+ - Added Spotify append track to playlist empty area menu
  - Added Spotify import artist, album and context functions
  - Moved Spotify import library functions to playback menu
  - Moved lyrics toggle synced button to lyrics context menu
@@ -12,6 +13,7 @@ v7.8.0
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
  - Fixed tray text not updating with internet radio
+ - Fixed Spotify artist import not working
 
 v7.4.7
 
