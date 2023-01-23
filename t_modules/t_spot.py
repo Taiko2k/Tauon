@@ -435,7 +435,7 @@ class SpotCtl:
                         self.tauon.gui.update += 1
                         return
             else:
-                print("YK")
+
                 if self.tauon.prefs.launch_spotify_local:
                     print("start librespot command")
                     self.tauon.tm.ready_playback()
@@ -447,23 +447,30 @@ class SpotCtl:
                     if not os.path.isfile(p):
                         return
                     subprocess.Popen([p])
+                    time.sleep(3)
                 else:
                     subprocess.run(["xdg-open", "spotify:track"])
+                    time.sleep(3)
                 print("LAUNCH SPOTIFY")
 
-                time.sleep(3)
+                time.sleep(0.5)
                 tries = 0
                 playing = False
                 while True:
                     print("WAIT FOR DEVICE...")
                     devices = self.spotify.playback_devices()
-                    if devices:
+                    if devices and tries < 8:
                         print("DEVICE FOUND")
                         self.tauon.focus_window()
-                        time.sleep(1)
+                        time.sleep(0.5)
                         print("ATTEMPT START")
-
-                        self.spotify.playback_start_tracks([id], device_id=devices[0].id)
+                        try:
+                            self.spotify.playback_start_tracks([id], device_id=devices[0].id)
+                        except Exception as e:
+                            print(str(e))
+                            time.sleep(1)
+                            tries += 2
+                            continue
                         while True:
                             result = self.spotify.playback_currently_playing()
                             if result and result.is_playing:
@@ -471,15 +478,16 @@ class SpotCtl:
                                 self.progress_timer.set()
                                 print("TRACK START SUCCESS")
                                 break
-                            time.sleep(2)
+                            time.sleep(1)
                             tries += 1
                             print("NOT PLAYING YET...")
-                            if tries > 6:
+                            if tries > 7:
                                 break
+
                     if playing:
                         break
                     tries += 1
-                    if tries > 6:
+                    if tries > 8:
                         print("TOO MANY TRIES")
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
@@ -487,15 +495,14 @@ class SpotCtl:
                         self.preparing_spotify = False
                         self.tauon.gui.update += 1
                         return
-                    time.sleep(2)
+                    time.sleep(1)
 
             self.launching_spotify = False
             self.preparing_spotify = False
             self.tauon.gui.update += 1
 
         else:
-            print("yes devics")
-            print(d_id)
+            #print(d_id)
             try:
                 self.progress_timer.set()
                 okay = False
