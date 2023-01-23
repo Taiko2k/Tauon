@@ -776,7 +776,6 @@ def player4(tauon):
                                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                                 state = 4
                             if prefs.launch_spotify_local and not spotc.running:
-                                print("runner")
                                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                                 state = 4
                                 if not spotc.p:
@@ -791,6 +790,7 @@ def player4(tauon):
 
                         except:
                             #raise
+                            tauon.spot_ctl.preparing_spotify = False
                             print("Failed to start Spotify track")
                             pctl.playerCommand = "stop"
                             pctl.playerCommandReady = True
