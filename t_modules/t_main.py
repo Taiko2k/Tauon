@@ -4692,9 +4692,12 @@ def tag_scan(nt):
 
     except Exception as err:
         try:
-            print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
+            if Exception is UnicodeDecodeError:
+                print("Unicode decode error on file:", nt.fullpath, "\n", err)
+            else:
+                print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
         except:
-            print("Error: Non utf8 compatible not allowed:", nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace'), "\n", err)
+            print("Error printing error. Non utf8 not allowed:", nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace'), "\n", err)
         return nt
 
     return nt
@@ -26314,6 +26317,7 @@ def worker1():
                 gui.update += 1
             album_artist_dict.clear()
             pctl.notify_change()
+            gui.pl_update += 1
 
         if loaderCommandReady is True:
             for order in load_orders:
