@@ -20416,21 +20416,24 @@ def reload_metadata(input, keep_star=True):
         search_string_cache.pop(track.index, None)
         search_dia_string_cache.pop(track.index, None)
 
-        print('Reloading Metadata for ' + track.filename)
-
+        #print('Reloading Metadata for ' + track.filename)
         if keep_star:
-            star = star_store.full_get(track.index)
-            star_store.remove(track.index)
+            to_scan.append(track.index)
+        else:
+            # if keep_star:
+            #     star = star_store.full_get(track.index)
+            #     star_store.remove(track.index)
 
-        pctl.master_library[track.index] = tag_scan(track)
+            pctl.master_library[track.index] = tag_scan(track)
 
-        if keep_star:
-            if star is not None and (star[0] > 0 or star[1] or star[2] > 0):
-                star_store.merge(track.index, star)
+            # if keep_star:
+            #     if star is not None and (star[0] > 0 or star[1] or star[2] > 0):
+            #         star_store.merge(track.index, star)
 
             pctl.notify_change()
 
     gui.pl_update += 1
+    tm.ready("worker")
 
 
 def reload_metadata_selection():
@@ -20438,24 +20441,11 @@ def reload_metadata_selection():
     for item in shift_selection:
         cargo.append(default_playlist[item])
 
-    todo = []
-
     for k in cargo:
         if pctl.master_library[k].is_cue == False:
-            todo.append(k)
+            to_scan.append(k)
+    tm.ready("worker")
 
-    for track in todo:
-
-        print('Reloading Metadate for ' + pctl.master_library[track].filename)
-
-        star = star_store.full_get(track)
-        star_store.remove(track)
-        pctl.master_library[track] = tag_scan(pctl.master_library[track])
-
-        if star is not None and (star[0] > 0 or star[1]):
-            star_store.merge(track, star)
-
-    gui.pl_update += 1
 
 
 def editor(index):
@@ -26323,6 +26313,7 @@ def worker1():
                 del to_scan[0]
                 gui.update += 1
             album_artist_dict.clear()
+            pctl.notify_change()
 
         if loaderCommandReady is True:
             for order in load_orders:
