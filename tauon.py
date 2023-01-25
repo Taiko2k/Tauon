@@ -208,7 +208,7 @@ if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == 
 if os.path.exists(os.path.join(user_directory, "x11")):
     os.environ["SDL_VIDEODRIVER"] = "x11"
 
-SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER)
+SDL_Init(SDL_INIT_VIDEO)
 
 err = SDL_GetError()
 if err and "GLX" in err.decode():

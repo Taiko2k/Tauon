@@ -3984,7 +3984,7 @@ def load_prefs():
     cf.add_text("[app]")
     prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote,
                                       "For use with Tauon Music Remote for Android")
-    prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control")
+    prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control, restart on change.")
     prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position,
@@ -4149,6 +4149,9 @@ else:
 
 sss = SDL_SysWMinfo()
 SDL_GetWindowWMInfo(t_window, sss)
+
+if prefs.use_gamepad:
+    SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
 
 def auto_scale():
 
