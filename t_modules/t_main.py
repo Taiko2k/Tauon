@@ -19905,6 +19905,33 @@ def love_index():
 # Mark track as 'liked'
 track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
+def toggle_spotify_like_ref():
+    tr = pctl.g(r_menu_index)
+    if tr:
+        shoot_dl = threading.Thread(target=toggle_spotify_like_active2, args=([tr]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
+
+def toggle_spotify_like3():
+    toggle_spotify_like_active2(pctl.g(r_menu_index))
+
+def toggle_spotify_like_row_deco():
+    tr = pctl.g(r_menu_index)
+    text = _("Spotify Like Track")
+
+    # if pctl.playing_state == 0 or not tr or not "spotify-track-url" in tr.misc:
+    #     return [colours.menu_text_disabled, colours.menu_background, text]
+    if "spotify-liked" in tr.misc:
+        text = _("Un-like Spotify Track")
+
+    return [colours.menu_text, colours.menu_background, text]
+
+def spot_like_show_test(x):
+
+    return spotify_show_test and pctl.g(r_menu_index).file_ext == "SPTY"
+
+track_menu.add('Spotify Like Track', toggle_spotify_like_ref, toggle_spotify_like_row_deco, show_test=spot_like_show_test, icon=spot_heartx_icon)
+
 
 def add_to_queue(ref):
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
@@ -22718,7 +22745,7 @@ def toggle_spotify_like_active2(tr):
         if code and code.startswith("slt"):
             print("Fetching Spotify likes...")
             regenerate_playlist(i, silent=True)
-
+    gui.pl_update += 1
 
 def toggle_spotify_like_active():
     tr = pctl.playing_object()

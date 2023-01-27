@@ -184,7 +184,6 @@ class SpotCtl:
                         return
                 except:
                     pass
-
                 self.tauon.gui.show_message("It looks like there are no more active Spotify devices")
 
     def get_username(self):
