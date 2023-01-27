@@ -22712,7 +22712,7 @@ def toggle_spotify_like_active2(tr):
             spot_ctl.unlike_track(tr)
         else:
             spot_ctl.like_track(tr)
-
+    gui.pl_update += 1
     for i, p in enumerate(pctl.multi_playlist):
         code = pctl.gen_codes.get(p[6])
         if code and code.startswith("slt"):
@@ -33213,6 +33213,14 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 star_x += 18 * gui.scale
 
+            if "spotify-liked" in pctl.master_library[index].misc:
+
+                x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
+
+                f_store.store(display_spot_heart, (x, yy))
+
+                star_x += heart_row_icon.w + spacing + 2
+
             for name in pctl.master_library[index].lfm_friend_likes:
 
                 # Limit to number of hears to display
@@ -34249,8 +34257,14 @@ class StandardPlaylist:
                                 j = 0  # justify right
                                 if run < start + 100 * gui.scale:
                                     j = 1  # justify left
-
                                 display_you_heart(run + 6 * gui.scale, yy, j)
+                                u += 18 * gui.scale
+
+                            if "spotify-liked" in n_track.misc:
+                                j = 0  # justify right
+                                if run < start + 100 * gui.scale:
+                                    j = 1  # justify left
+                                display_spot_heart(run + u, yy, j)
                                 u += 18 * gui.scale
 
                             count = 0
@@ -40847,6 +40861,31 @@ def display_you_heart(x, yy, just=0):
     heart_row_icon.render(x,
                           yy, [244, 100, 100, 255])
 
+def display_spot_heart(x, yy, just=0):
+    rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
+    gui.heart_fields.append(rect)
+    fields.add(rect, update_playlist_call)
+    if coll(rect) and not track_box:
+        gui.pl_update += 1
+        w = ddt.get_text_w("Liked on Spotify", 13)
+        xx = (x - w) - 5 * gui.scale
+
+        if just == 1:
+            xx += w + 15 * gui.scale
+
+        ty = yy - 28 * gui.scale
+        tx = xx
+        if ty < gui.panelY + 5 * gui.scale:
+            ty = gui.panelY + 5 * gui.scale
+            tx -= 20 * gui.scale
+
+        # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+        ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
+        ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+        ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), "Liked on Spotify", [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+
+    heart_row_icon.render(x,
+                          yy, [100, 244, 100, 255])
 
 def display_friend_heart(x, yy, name, just=0):
     heart_row_icon.render(x,

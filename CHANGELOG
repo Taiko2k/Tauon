@@ -6,6 +6,7 @@ v7.8.0
  - Added Spotify audio passthrough support
  - Added Spotify append track to playlist empty area menu
  - Added Spotify import artist, album and context functions
+ - Added Spotify love heart icon to track row
  - Moved Spotify import library functions to playback menu
  - Moved lyrics toggle synced button to lyrics context menu
  - Tweaked auto theme colours in radio view
