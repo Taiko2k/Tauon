@@ -10,7 +10,7 @@ v7.8.0
  - Moved lyrics toggle synced button to lyrics context menu
  - Tweaked auto theme colours in radio view
  - Tweaked auto output to stay open on pause
- - Fixed rescan tags function blocking UI
+ - Fixed tag scan and write functions blocking UI
  - Fixed conformation dialog scaling
  - Fixed shuffle breaking after folder rescan
  - Fixed tray text not updating with internet radio
