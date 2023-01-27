@@ -21866,7 +21866,7 @@ def standard_size():
     album_mode = False
     gui.rsp = True
     window_size = window_default_size
-    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+    SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
     gui.rspw = 80 + int(window_size[0] * 0.18)
     update_layout = True
@@ -42720,7 +42720,10 @@ while pctl.running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
-                if restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
+                if event.window.data1 < 350:
+                    print("Grrr why this happen, stupid wm")
+                    SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+                elif restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
                     gui.update = 2
 
                     logical_size[0] = event.window.data1

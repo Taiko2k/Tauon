@@ -426,7 +426,7 @@ class SpotCtl:
                         self.spotify.playback_start_tracks([id], device_id=devices[0].id)
                         break
                     tries += 1
-                    if tries > 6:
+                    if tries > 13:
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
                         self.launching_spotify = False
@@ -458,7 +458,7 @@ class SpotCtl:
                 while True:
                     print("WAIT FOR DEVICE...")
                     devices = self.spotify.playback_devices()
-                    if devices and tries < 8:
+                    if devices and tries < 13:
                         print("DEVICE FOUND")
                         self.tauon.focus_window()
                         time.sleep(0.5)
@@ -480,13 +480,13 @@ class SpotCtl:
                             time.sleep(1)
                             tries += 1
                             print("NOT PLAYING YET...")
-                            if tries > 7:
+                            if tries > 13:
                                 break
 
                     if playing:
                         break
                     tries += 1
-                    if tries > 8:
+                    if tries > 13:
                         print("TOO MANY TRIES")
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
