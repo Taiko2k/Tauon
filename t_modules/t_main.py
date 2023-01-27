@@ -31,7 +31,7 @@
 import sys
 import socket
 
-n_version = "7.8.0"
+n_version = "7.5.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -19930,7 +19930,20 @@ def spot_like_show_test(x):
 
     return spotify_show_test and pctl.g(r_menu_index).file_ext == "SPTY"
 
-track_menu.add('Spotify Like Track', toggle_spotify_like_ref, toggle_spotify_like_row_deco, show_test=spot_like_show_test, icon=spot_heartx_icon)
+def spot_heart_menu_colour():
+    tr = pctl.g(r_menu_index)
+    if tr and "spotify-liked" in tr.misc:
+        return [30, 215, 96, 255]
+    else:
+        return None
+
+heart_spot_icon = MenuIcon(asset_loader('heart-menu.png', True))
+heart_spot_icon.colour = [30, 215, 96, 255]
+heart_spot_icon.xoff = 1
+heart_spot_icon.yoff = 0
+heart_spot_icon.colour_callback = spot_heart_menu_colour
+
+track_menu.add('Spotify Like Track', toggle_spotify_like_ref, toggle_spotify_like_row_deco, show_test=spot_like_show_test, icon=heart_spot_icon)
 
 
 def add_to_queue(ref):
@@ -22692,6 +22705,8 @@ heart_colours = ColourGenCache(0.7, 0.7)
 heart_icon.colour = [245, 60, 60, 255]
 heart_icon.xoff = 3
 heart_icon.yoff = 0
+
+
 
 if gui.scale == 1.25:
     heart_icon.yoff = 1
