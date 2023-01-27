@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-01-20 19:58+1300\n"
-"PO-Revision-Date: 2022-09-30 12:19+0000\n"
+"PO-Revision-Date: 2023-01-25 10:52+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.14.1\n"
+"X-Generator: Weblate 4.16-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1845 t_modules/t_main.py:1847
@@ -434,7 +434,7 @@ msgstr "Показать в плейлисте"
 
 #: t_modules/t_main.py:15278
 msgid "Image…"
-msgstr ""
+msgstr "Изображение…"
 
 #: t_modules/t_main.py:15279 t_modules/t_main.py:20812
 #: t_modules/t_main.py:20825
@@ -504,14 +504,12 @@ msgid "Search for Lyrics"
 msgstr "Поиск текста песни"
 
 #: t_modules/t_main.py:15532 t_modules/t_main.py:15540
-#, fuzzy
 msgid "Show static lyrics"
-msgstr "Показать текст песни"
+msgstr "Показать статичные тексты"
 
 #: t_modules/t_main.py:15534 t_modules/t_main.py:15542
-#, fuzzy
 msgid "Show synced lyrics"
-msgstr "Показать текст песни"
+msgstr "Показать синхронизированные тексты песен"
 
 #: t_modules/t_main.py:15559
 msgid "Search GuitarParty"
@@ -551,9 +549,8 @@ msgid "Open Image"
 msgstr "Открыть изображение"
 
 #: t_modules/t_main.py:15773
-#, fuzzy
 msgid "Next Image"
-msgstr "Открыть изображение"
+msgstr "Следующее изображение"
 
 #: t_modules/t_main.py:15777 t_modules/t_main.py:16107
 msgid "Extract Image"
@@ -1025,9 +1022,8 @@ msgid "Add Playing Spotify Album"
 msgstr "Добавить воспроизводимый альбом Spotify"
 
 #: t_modules/t_main.py:19724
-#, fuzzy
 msgid "Add Playing Spotify Track"
-msgstr "Добавить воспроизводимый альбом Spotify"
+msgstr "Добавить воспроизводимый трек Spotify"
 
 #: t_modules/t_main.py:19815
 msgid "Track Info…"
@@ -1174,14 +1170,12 @@ msgid "Lookup Spotify Album URL"
 msgstr "Поиск ссылки альбома Spotify"
 
 #: t_modules/t_main.py:20916
-#, fuzzy
 msgid "Save Album to Spotify"
-msgstr "Сохранить в библиотеке Spotify"
+msgstr "Сохранить альбом в Spotify"
 
 #: t_modules/t_main.py:20922
-#, fuzzy
 msgid "Un-save Spotify Album"
-msgstr "Вставьте альбом Spotify"
+msgstr "Отменить сохранение альбома Spotify"
 
 #: t_modules/t_main.py:20965
 msgid "Queue %d"
@@ -1237,13 +1231,12 @@ msgid "Broadcast This"
 msgstr "Транслировать"
 
 #: t_modules/t_main.py:21280
-#, fuzzy
 msgid "Minimize"
-msgstr "Мини"
+msgstr "Минимизировать"
 
 #: t_modules/t_main.py:21281
 msgid "Maximize"
-msgstr ""
+msgstr "Максимизировать"
 
 #: t_modules/t_main.py:21282 t_modules/t_main.py:23333
 msgid "Exit"
@@ -1530,59 +1523,51 @@ msgstr "Пожалуйста, дождитесь завершения текущ
 
 #: t_modules/t_main.py:22865
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Импортировать Spotify…"
 
 #: t_modules/t_main.py:22867
-#, fuzzy
 msgid "Liked Albums"
-msgstr "Самые длинные альбомы"
+msgstr "Понравившиеся альбомы"
 
 #: t_modules/t_main.py:22878
-#, fuzzy
 msgid "Liked Tracks"
-msgstr "В любимые"
+msgstr "Понравившиеся треки"
 
 #: t_modules/t_main.py:22882
 msgid "Importing Spotify playlists..."
 msgstr "Импортирование плейлистов Spotify..."
 
 #: t_modules/t_main.py:22900
-#, fuzzy
 msgid "> Import All Playlists"
-msgstr "Импорт плейлистов"
+msgstr "> Импортировать все плейлисты"
 
 #: t_modules/t_main.py:22905
-#, fuzzy
 msgid "Playlist…"
-msgstr "Новый плейлист"
+msgstr "Плейлист…"
 
 #: t_modules/t_main.py:22911
 msgid "Current Context"
-msgstr ""
+msgstr "Текущий контекст"
 
 #: t_modules/t_main.py:22916
-#, fuzzy
 msgid "Show Full Album"
-msgstr "Перемешанные альбомы"
+msgstr "Показать полный альбом"
 
 #: t_modules/t_main.py:22935
 msgid "Looks like that's the only track in the album"
-msgstr ""
+msgstr "Похоже, это единственный трек в альбоме"
 
 #: t_modules/t_main.py:22956
-#, fuzzy
 msgid "Fetching..."
-msgstr "Поиск…"
+msgstr "Получение…"
 
 #: t_modules/t_main.py:22959
-#, fuzzy
 msgid "Show Full Artist"
-msgstr "Показать в плейлисте"
+msgstr "Показать полного исполнителя"
 
 #: t_modules/t_main.py:22962
-#, fuzzy
 msgid "Start Spotify Remote"
-msgstr "Вставьте альбом Spotify"
+msgstr "Запустить Spotify Remote"
 
 #: t_modules/t_main.py:23126
 msgid "ListenBrainz is Paused"
@@ -2133,11 +2118,11 @@ msgstr "Предпочитать запуск веб-плеера"
 
 #: t_modules/t_main.py:28439
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Включить локальное воспроизведение звука"
 
 #: t_modules/t_main.py:28462
 msgid "Spofify password"
-msgstr ""
+msgstr "Пароль Spofify"
 
 #: t_modules/t_main.py:28477
 msgid "Airsonic/Subsonic network streaming"
