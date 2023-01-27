@@ -1807,6 +1807,9 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.was_radio = False
         self.fullscreen = False
         self.mouse_in_window = True
+
+        self.write_tag_in_progress = False
+        self.tag_write_count = 0
         # self.text_input_request = False
         # self.text_input_active = False
 
@@ -14477,8 +14480,12 @@ class TransEditBox:
                     tr.album_artist = edit_album_artist.text
             tauon.bg_save()
 
+
         ww = ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * gui.scale)
-        if draw.button(_("WRITE TAGS"), (x + w) - ww, y - round(0) * gui.scale):
+        if gui.write_tag_in_progress:
+            text = f"{gui.tag_write_count}/{len(select)}"
+        text = _("WRITE TAGS")
+        if draw.button(text, (x + w) - ww, y - round(0) * gui.scale):
             if changed:
                 show_message(_("Press enter on fields to apply your changes first!"))
                 return
@@ -14487,42 +14494,55 @@ class TransEditBox:
             except:
                 show_message("Please install package python-mutagen for this feature")
                 return
-            written = 0
-            for s in select:
-                tr = pctl.g(default_playlist[s])
 
-                if tr.is_network:
-                    show_message(_("Writing to a network track is not applicable!"), mode="error")
-                    return
-                if tr.is_cue:
-                    show_message(_("Cannot write CUE sheet types!"), mode="error")
-                    return
+            if gui.write_tag_in_progress:
+                return
 
-                muta = mutagen.File(tr.fullpath, easy=True)
+            def write_tag_go():
 
-                def write_tag(track, muta, field_name_tauon, field_name_muta):
-                    item = muta.get(field_name_muta)
-                    if item and len(item) > 1:
-                        show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
-                        return 0
-                    if not getattr(tr, field_name_tauon):  # Want delete tag field
-                        if item:
-                            del muta[field_name_muta]
-                    else:
-                        muta[field_name_muta] = getattr(tr, field_name_tauon)
-                    return 1
 
-                write_tag(tr, muta, "artist", "artist")
-                write_tag(tr, muta, "album", "album")
-                write_tag(tr, muta, "title", "title")
-                write_tag(tr, muta, "album_artist", "albumartist")
+                for s in select:
+                    tr = pctl.g(default_playlist[s])
 
-                muta.save()
-                written += 1
-            tauon.bg_save()
-            if not gui.message_box:
-                show_message(_("%d files rewritten") % written, mode="done")
+                    if tr.is_network:
+                        show_message(_("Writing to a network track is not applicable!"), mode="error")
+                        gui.write_tag_in_progress = True
+                        return
+                    if tr.is_cue:
+                        show_message(_("Cannot write CUE sheet types!"), mode="error")
+                        gui.write_tag_in_progress = True
+                        return
 
+                    muta = mutagen.File(tr.fullpath, easy=True)
+
+                    def write_tag(track, muta, field_name_tauon, field_name_muta):
+                        item = muta.get(field_name_muta)
+                        if item and len(item) > 1:
+                            show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
+                            return 0
+                        if not getattr(tr, field_name_tauon):  # Want delete tag field
+                            if item:
+                                del muta[field_name_muta]
+                        else:
+                            muta[field_name_muta] = getattr(tr, field_name_tauon)
+                        return 1
+
+                    write_tag(tr, muta, "artist", "artist")
+                    write_tag(tr, muta, "album", "album")
+                    write_tag(tr, muta, "title", "title")
+                    write_tag(tr, muta, "album_artist", "albumartist")
+
+                    muta.save()
+                    gui.tag_write_count += 1
+                    gui.update += 1
+                tauon.bg_save()
+                if not gui.message_box:
+                    show_message(_("%d files rewritten") % gui.tag_write_count, mode="done")
+                gui.write_tag_in_progress = False
+            if not gui.write_tag_in_progress:
+                gui.tag_write_count = 0
+                gui.write_tag_in_progress = True
+                shooter(write_tag_go)
 
 trans_edit_box = TransEditBox()
 
