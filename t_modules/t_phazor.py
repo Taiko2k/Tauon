@@ -101,6 +101,7 @@ def player4(tauon):
             #     return 1
             if self.p:
                 self.flush = True
+            pctl.spot_playing = True
             if not self.p:
                 username = tauon.spot_ctl.get_username()
                 if not username or not prefs.spotify_token:
@@ -140,6 +141,7 @@ def player4(tauon):
 
         def worker(self):
             self.running = True
+
             while True:
 
                 if self.running is False:
@@ -710,6 +712,8 @@ def player4(tauon):
                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                 state = 4
                 spotc.go()
+
+
                 if not spotc.running:
                     shooter(spotc.worker)
                 #time.sleep(20)
@@ -797,6 +801,7 @@ def player4(tauon):
                         continue
 
                     spotc.running = False
+                    pctl.spot_playing = False
                     timer = Timer()
                     timer.set()
                     while True:

@@ -22881,7 +22881,7 @@ extra_menu.add(_("Locate Artist"), locate_artist)
 extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="'")
 
 def show_spot_playing_deco():
-    if not spot_ctl.coasting or not spot_ctl.playing:
+    if not (spot_ctl.coasting or spot_ctl.playing):
         return [colours.menu_text, colours.menu_background, None]
     else:
         return [colours.menu_text_disabled, colours.menu_background, None]
@@ -23031,7 +23031,7 @@ extra_menu.add(_("Start Spotify Remote"), show_spot_playing, show_spot_playing_d
 #     return [colours.menu_text, colours.menu_background, text]
 
 
-extra_menu.add("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local,
+extra_menu.add("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (spot_ctl.coasting or spot_ctl.playing),
            icon=spot_icon)
 
 def toggle_auto_theme(mode=0):
