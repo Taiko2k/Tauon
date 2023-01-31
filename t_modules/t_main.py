@@ -22378,8 +22378,6 @@ x_menu.add_to_sub(_("Remove Network Tracks"), 0, clean_db2)
 x_menu.add_to_sub(_("Remove Missing Tracks"), 0, clean_db)
 
 
-# x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
-
 
 def import_fmps():
     unique = set()
@@ -22420,7 +22418,7 @@ def find_incomplete():
 
 
 x_menu.add_to_sub(_("Find Incomplete Albums"), 0, find_incomplete)
-
+x_menu.add_to_sub("Mark Missing as Found", 0, pctl.reset_missing_flags, show_test=test_shift)
 
 def toggle_broadcast():
     if pctl.broadcast_active is not True:
