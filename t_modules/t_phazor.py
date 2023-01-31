@@ -87,7 +87,7 @@ def player4(tauon):
 
     class LibreSpot:
         def __init__(self):
-            self.p = None
+
             self.running = False
             self.flush = False
         def go(self):
@@ -99,10 +99,15 @@ def player4(tauon):
             # if not prefs.spot_username or not prefs.spot_password:
             #     gui.show_message("Please enter your spotify username and password in settings")
             #     return 1
-            if self.p:
+            if tauon.librespot_p:
                 self.flush = True
+                # if tauon.librespot_p.poll() is None:
+                #     print("librespot died")
+                #     tauon.librespot_p = None
+                #     self.flush = False
             pctl.spot_playing = True
-            if not self.p:
+
+            if not tauon.librespot_p:
                 username = tauon.spot_ctl.get_username()
                 if not username or not prefs.spotify_token:
                     print("Missing auth data")
@@ -121,7 +126,7 @@ def player4(tauon):
                     startupinfo = subprocess.STARTUPINFO()
                     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 try:
-                    self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE, startupinfo=startupinfo)
+                    tauon.librespot_p = subprocess.Popen(cmd, stdout=subprocess.PIPE, startupinfo=startupinfo)
                     print("librespot started")
                 except Exception as e:
                     print(str(e))
@@ -131,13 +136,15 @@ def player4(tauon):
                     return 1
 
             return 0
-        def end(self):
-            print("spoc shutdown")
+        def soft_end(self):
             self.running = False
             pctl.spot_playing = False
-            if self.p:
+        def end(self):
+            self.running = False
+            pctl.spot_playing = False
+            if tauon.librespot_p:
                 import signal
-                self.p.send_signal(signal.SIGINT)  # terminate() doesn't work
+                tauon.librespot_p.send_signal(signal.SIGINT)  # terminate() doesn't work
 
         def worker(self):
             self.running = True
@@ -146,18 +153,18 @@ def player4(tauon):
 
                 if self.running is False:
                     self.running = False
-                    print("End lberetop workes therd")
+                    print("End libertop workes theard")
                     return
                 if self.flush:
                     self.flush = False
-                    self.p.stdout.read(70000)  # rough
+                    tauon.librespot_p.stdout.read(70000)  # rough
                 if aud.feed_ready(1000) == 1:
                     if aud.get_buff_fill() < 2000:
-                        data = self.p.stdout.read(1000)
+                        data = tauon.librespot_p.stdout.read(1000)
                         aud.feed_raw(len(data), data)
 
                 if state == 0:
-                    self.p.stdout.read(50)
+                    tauon.librespot_p.stdout.read(50)
                     time.sleep(0.0002)
                 else:
                     time.sleep(0.002)
@@ -605,6 +612,7 @@ def player4(tauon):
         if active_timer.get() > 7:
            aud.stop()
            aud.phazor_shutdown()
+           spotc.soft_end()
            break
 
         # Level meter
@@ -782,7 +790,7 @@ def player4(tauon):
                             if prefs.launch_spotify_local and not spotc.running:
                                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                                 state = 4
-                                if not spotc.p:
+                                if not tauon.librespot_p:
                                     f = True
                                 spotc.go()
                                 if not spotc.running:
@@ -793,7 +801,7 @@ def player4(tauon):
                                 pctl.playerCommandReady = False
 
                         except:
-                            #raise
+                            raise
                             tauon.spot_ctl.preparing_spotify = False
                             print("Failed to start Spotify track")
                             pctl.playerCommand = "stop"

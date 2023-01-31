@@ -508,7 +508,7 @@ class SpotCtl:
 
                 # Check conditions for a proper transition
                 if self.playing:
-                    print("already playing")
+                    #print("already playing")
                     result = self.spotify.playback_currently_playing()
                     if result and result.item and result.is_playing:
                         remain = result.item.duration_ms - result.progress_ms
@@ -525,7 +525,6 @@ class SpotCtl:
 
                 # Force a transition
                 if not okay:
-                    print("Force")
                     self.spotify.playback_start_tracks([id], device_id=d_id)
 
             # except tk.client.decor.error.InternalServerError:
