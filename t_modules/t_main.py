@@ -36307,7 +36307,10 @@ def toggle_artist_list_threshold_deco():
     if prefs.artist_list_threshold == 0:
         return [colours.menu_text, colours.menu_background, _("Filter small artists")]
     else:
-        return [colours.menu_text, colours.menu_background, _('Show all artists')]
+        save = artist_list_box.saves.get(pctl.multi_playlist[pctl.active_playlist_viewing][6])
+        if save and save[5] == 0:
+            return [colours.menu_text_disabled, colours.menu_background, _('Include all artists')]
+        return [colours.menu_text, colours.menu_background, _('Include all artists')]
 
 artist_list_menu.add_to_sub(_("Sort Alphabetically"), 0, aa_sort_alpha)
 artist_list_menu.add_to_sub(_("Sort by Popularity"), 0, aa_sort_popular)
@@ -36574,7 +36577,7 @@ class ArtistList:
         artist_parents = {}
         counts = {}
         play_time = {}
-
+        filtered = 0
         b = 0
 
         try:
@@ -36623,6 +36626,8 @@ class ArtistList:
                                 all.append(artist)
                             elif len(current_pl[2]) < 1000:
                                 all.append(artist)
+                            else:
+                                filtered += 1
 
                         if artist not in artist_parents:
                             artist_parents[artist] = []
@@ -36643,8 +36648,8 @@ class ArtistList:
             time.sleep(4)
             return
 
-        # Artist-list, album-counts, scroll-position, playlist-length
-        save = [all, current_album_counts, 0, len(current_pl[2]), counts]
+        # Artist-list, album-counts, scroll-position, playlist-length, number ignored
+        save = [all, current_album_counts, 0, len(current_pl[2]), counts, filtered]
 
         # Scroll to playing artist
         scroll = 0
