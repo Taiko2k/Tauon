@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.5.0
 
+ - Added "show all" artists toggle to artist list menu
  - Added Spotify audio passthrough support
  - Added Spotify append track to playlist empty area menu
  - Added Spotify import artist, album and context functions
