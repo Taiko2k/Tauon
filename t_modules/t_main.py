@@ -4466,7 +4466,8 @@ def scan_ffprobe(nt):
 def tag_scan(nt):
     if nt.is_embed_cue:
         return nt
-
+    if nt.is_network or not nt.fullpath:
+        return
     try:
         try:
             nt.modified_time = os.path.getmtime(nt.fullpath)
