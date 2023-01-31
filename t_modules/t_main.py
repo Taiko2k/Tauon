@@ -36305,18 +36305,18 @@ def toggle_artist_list_threshold():
 
 def toggle_artist_list_threshold_deco():
     if prefs.artist_list_threshold == 0:
-        return [colours.menu_text, colours.menu_background, _("Filter small artists")]
+        return [colours.menu_text, colours.menu_background, _("Filter Small Artists")]
     else:
         save = artist_list_box.saves.get(pctl.multi_playlist[pctl.active_playlist_viewing][6])
         if save and save[5] == 0:
-            return [colours.menu_text_disabled, colours.menu_background, _('Include all artists')]
-        return [colours.menu_text, colours.menu_background, _('Include all artists')]
+            return [colours.menu_text_disabled, colours.menu_background, _('Include All Artists')]
+        return [colours.menu_text, colours.menu_background, _('Include All Artists')]
 
 artist_list_menu.add_to_sub(_("Sort Alphabetically"), 0, aa_sort_alpha)
 artist_list_menu.add_to_sub(_("Sort by Popularity"), 0, aa_sort_popular)
 artist_list_menu.add_to_sub(_("Sort by Playtime"), 0, aa_sort_play)
 artist_list_menu.add_to_sub(_("Toggle Thumbnails"), 0, toggle_artist_list_style)
-artist_list_menu.add_to_sub("Toggle filter", 0, toggle_artist_list_threshold, toggle_artist_list_threshold_deco)
+artist_list_menu.add_to_sub("Toggle Filter", 0, toggle_artist_list_threshold, toggle_artist_list_threshold_deco)
 
 
 def verify_discogs():
