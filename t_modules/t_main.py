@@ -7815,7 +7815,6 @@ class Strings:
         self.menu_previous = _("Previous Track")
         self.menu_quit = _("Quit")
 
-        self.spotc = None
 
 
 strings = Strings()
@@ -7918,6 +7917,9 @@ class Tauon:
         self.web_thread = None
         self.remote_limited = True
         self.enable_librespot = shutil.which("librespot")
+
+        self.spotc = None
+        self.librespot_p = None
 
     def start_remote(self):
 
