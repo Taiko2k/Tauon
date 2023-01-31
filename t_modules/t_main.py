@@ -1366,6 +1366,8 @@ class Prefs:  # Used to hold any kind of settings
         self.avoid_resampling = False
         self.use_scancodes = False
 
+        self.artist_list_threshold = 4
+
 
 prefs = Prefs()
 
@@ -3055,6 +3057,8 @@ for t in range(2):
             prefs.spot_username = save[174]
         if save[175] is not None:
             prefs.spot_password = save[175]
+        if save[176] is not None:
+            prefs.artist_list_threshold = save[176]
 
         state_file.close()
         del save
@@ -36292,10 +36296,24 @@ def toggle_artist_list_style():
         prefs.artist_list_style = 1
 
 
+def toggle_artist_list_threshold():
+    if prefs.artist_list_threshold > 0:
+        prefs.artist_list_threshold = 0
+    else:
+        prefs.artist_list_threshold = 4
+    artist_list_box.saves.clear()
+
+def toggle_artist_list_threshold_deco():
+    if prefs.artist_list_threshold == 0:
+        return [colours.menu_text, colours.menu_background, _("Filter small artists")]
+    else:
+        return [colours.menu_text, colours.menu_background, _('Show all artists')]
+
 artist_list_menu.add_to_sub(_("Sort Alphabetically"), 0, aa_sort_alpha)
 artist_list_menu.add_to_sub(_("Sort by Popularity"), 0, aa_sort_popular)
 artist_list_menu.add_to_sub(_("Sort by Playtime"), 0, aa_sort_play)
 artist_list_menu.add_to_sub(_("Toggle Thumbnails"), 0, toggle_artist_list_style)
+artist_list_menu.add_to_sub("Toggle filter", 0, toggle_artist_list_threshold, toggle_artist_list_threshold_deco)
 
 
 def verify_discogs():
@@ -36601,7 +36619,7 @@ class ArtistList:
                             counts[artist] = 0
                         counts[artist] += 1
                         if artist not in all:
-                            if counts[artist] > 4:
+                            if counts[artist] > prefs.artist_list_threshold:
                                 all.append(artist)
                             elif len(current_pl[2]) < 1000:
                                 all.append(artist)
@@ -41969,7 +41987,8 @@ def save_state():
             prefs.album_shuffle_lock_mode,
             gui.was_radio,
             prefs.spot_username,
-            prefs.spot_password
+            prefs.spot_password,
+            prefs.artist_list_threshold
             ]
 
     try:
