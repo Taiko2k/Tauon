@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-01-20 19:58+1300\n"
-"PO-Revision-Date: 2023-01-16 15:51+0000\n"
+"PO-Revision-Date: 2023-01-29 15:14+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 4.16-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1845 t_modules/t_main.py:1847
@@ -430,7 +430,7 @@ msgstr "Mostra nella Scaletta"
 
 #: t_modules/t_main.py:15278
 msgid "Image…"
-msgstr ""
+msgstr "Immagine…"
 
 #: t_modules/t_main.py:15279 t_modules/t_main.py:20812
 #: t_modules/t_main.py:20825
@@ -500,14 +500,12 @@ msgid "Search for Lyrics"
 msgstr "Cerca Testo"
 
 #: t_modules/t_main.py:15532 t_modules/t_main.py:15540
-#, fuzzy
 msgid "Show static lyrics"
-msgstr "Mostra Testi"
+msgstr "Mostra Testi statici"
 
 #: t_modules/t_main.py:15534 t_modules/t_main.py:15542
-#, fuzzy
 msgid "Show synced lyrics"
-msgstr "Mostra Testi"
+msgstr "Mostra Testi sincronizzati"
 
 #: t_modules/t_main.py:15559
 msgid "Search GuitarParty"
@@ -547,9 +545,8 @@ msgid "Open Image"
 msgstr "Apri Immagine"
 
 #: t_modules/t_main.py:15773
-#, fuzzy
 msgid "Next Image"
-msgstr "Apri Immagine"
+msgstr "Prossima Immagine"
 
 #: t_modules/t_main.py:15777 t_modules/t_main.py:16107
 msgid "Extract Image"
@@ -607,7 +604,7 @@ msgstr "Ricerca veloce Copertina"
 #: t_modules/t_main.py:16104 t_modules/t_main.py:29519
 #: t_modules/t_main.py:29524
 msgid "Next"
-msgstr ""
+msgstr "Prossima"
 
 #: t_modules/t_main.py:16105
 msgid "Previous"
@@ -1024,9 +1021,8 @@ msgid "Add Playing Spotify Album"
 msgstr "Aggiungi Album in Riproduzione da Spotify"
 
 #: t_modules/t_main.py:19724
-#, fuzzy
 msgid "Add Playing Spotify Track"
-msgstr "Aggiungi Album in Riproduzione da Spotify"
+msgstr "Aggiungi Traccia in Riproduzione da Spotify"
 
 #: t_modules/t_main.py:19815
 msgid "Track Info…"
@@ -1173,14 +1169,12 @@ msgid "Lookup Spotify Album URL"
 msgstr "Cerca URL disco di Spotify"
 
 #: t_modules/t_main.py:20916
-#, fuzzy
 msgid "Save Album to Spotify"
-msgstr "Salva nella Libreria di Spotify"
+msgstr "Salva Disco su Spotify"
 
 #: t_modules/t_main.py:20922
-#, fuzzy
 msgid "Un-save Spotify Album"
-msgstr "Incolla Disco di Spotify"
+msgstr "Rimuovi Disco di Spotify"
 
 #: t_modules/t_main.py:20965
 msgid "Queue %d"
@@ -1236,17 +1230,16 @@ msgid "Broadcast This"
 msgstr "Trasmetti Questo"
 
 #: t_modules/t_main.py:21280
-#, fuzzy
 msgid "Minimize"
-msgstr "Mini"
+msgstr "Riduci"
 
 #: t_modules/t_main.py:21281
 msgid "Maximize"
-msgstr ""
+msgstr "Massimizza"
 
 #: t_modules/t_main.py:21282 t_modules/t_main.py:23333
 msgid "Exit"
-msgstr ""
+msgstr "Uscita"
 
 #: t_modules/t_main.py:21310 t_modules/t_main.py:27528
 msgid "Off"
@@ -1527,63 +1520,55 @@ msgstr "Vai a In Riproduzione"
 #: t_modules/t_main.py:22863 t_modules/t_main.py:22876
 #: t_modules/t_main.py:22887 t_modules/t_main.py:22903
 msgid "Please wait until current job is finished"
-msgstr ""
+msgstr "Per favore aspetta che il lavoro corrente sia finito"
 
 #: t_modules/t_main.py:22865
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Importa da Spotify…"
 
 #: t_modules/t_main.py:22867
-#, fuzzy
 msgid "Liked Albums"
-msgstr "Dischi più lunghi"
+msgstr "Dischi piaciuti"
 
 #: t_modules/t_main.py:22878
-#, fuzzy
 msgid "Liked Tracks"
-msgstr "Metti Cuore Traccia"
+msgstr "Tracce preferite"
 
 #: t_modules/t_main.py:22882
 msgid "Importing Spotify playlists..."
-msgstr ""
+msgstr "Sto importando le Scalette da Spotify..."
 
 #: t_modules/t_main.py:22900
-#, fuzzy
 msgid "> Import All Playlists"
-msgstr "Esporta Scaletta"
+msgstr "> Importa tutte le Scalette"
 
 #: t_modules/t_main.py:22905
-#, fuzzy
 msgid "Playlist…"
-msgstr "Nuova Scaletta"
+msgstr "Scaletta…"
 
 #: t_modules/t_main.py:22911
 msgid "Current Context"
-msgstr ""
+msgstr "Contesto corrente"
 
 #: t_modules/t_main.py:22916
-#, fuzzy
 msgid "Show Full Album"
-msgstr "Dischi mischiati"
+msgstr "Mostra Disco Completo"
 
 #: t_modules/t_main.py:22935
 msgid "Looks like that's the only track in the album"
-msgstr ""
+msgstr "Sembra che sia la sola traccia del disco"
 
 #: t_modules/t_main.py:22956
-#, fuzzy
 msgid "Fetching..."
-msgstr "Ricerca..."
+msgstr "Sto recuperando..."
 
 #: t_modules/t_main.py:22959
-#, fuzzy
 msgid "Show Full Artist"
-msgstr "Mostra nella Scaletta"
+msgstr "Mostra Artista Completo"
 
 #: t_modules/t_main.py:22962
-#, fuzzy
 msgid "Start Spotify Remote"
-msgstr "Incolla Disco di Spotify"
+msgstr "Avvia controllo di Spotify"
 
 #: t_modules/t_main.py:23126
 msgid "ListenBrainz is Paused"
@@ -1603,73 +1588,77 @@ msgstr "L'invio è Attivo"
 
 #: t_modules/t_main.py:23332
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Uscita dal Blocco Casuale"
 
 #: t_modules/t_main.py:23344
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "Rimuovi Aggiunta Veloce"
 
 #: t_modules/t_main.py:24085
 msgid "Press Tab key to switch to Spotify search"
-msgstr ""
+msgstr "Premi Tab per cercare su Spotify"
 
 #: t_modules/t_main.py:24315
 msgid "Searching for albums by artist: "
-msgstr ""
+msgstr "Cerco per Disco da Artista: "
 
 #: t_modules/t_main.py:24315
 msgid "This may take a moment"
-msgstr ""
+msgstr "Potrebbe volerci un attimo"
 
 #: t_modules/t_main.py:25963
 msgid "Permission error accessing one or more files."
-msgstr ""
+msgstr "Permesso negato nell'accedere uno o più file."
 
 #: t_modules/t_main.py:25964
 msgid "If this location is on external media, see"
-msgstr ""
+msgstr "Se il percorso è su di un disco esterno, vedi"
 
 #: t_modules/t_main.py:25967
 msgid "Permission error accessing one or more files"
-msgstr ""
+msgstr "Permesso negato nell'accedere uno o più file"
 
 #: t_modules/t_main.py:26730
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
-msgstr ""
+msgstr "Nota che i giudizi sono salvati nel database locale e non nei metadati."
 
 #: t_modules/t_main.py:26781 t_modules/t_main.py:26795
 #: t_modules/t_main.py:26833
 msgid "Change will be applied on restart."
-msgstr ""
+msgstr "I cambiamenti verranno applicati al riavvio."
 
 #: t_modules/t_main.py:26882
 msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr ""
+msgstr "Suggerimento: Puoi modificarlo dal menu contestuale del tasto destro"
 
 #: t_modules/t_main.py:26927
 msgid "External connections will be accepted."
-msgstr ""
+msgstr "Saranno accettate connessioni esterne."
 
 #: t_modules/t_main.py:26927
 msgid "Web server starting"
-msgstr ""
+msgstr "Avvio server in rete"
 
 #: t_modules/t_main.py:26969 t_modules/t_main.py:28346
 msgid "One or more fields is missing."
-msgstr ""
+msgstr "Uno o più campi mancanti."
 
 #: t_modules/t_main.py:27077
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
 msgstr ""
+"ATTENZIONE! Questo cancellerà i file originali. Avere un backup è "
+"raccomandato in caso di malfunzionamenti."
 
 #: t_modules/t_main.py:27078
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
+"Per sicurezza, questa impostazione è impostata su spento. Le anteprime "
+"incorporate non sono salvate quindi potresti volerle estrarre prima."
 
 #: t_modules/t_main.py:27099
 msgid ""
