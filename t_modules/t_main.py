@@ -5619,7 +5619,6 @@ class PlayerCtl:
     def pause(self):
 
         if tauon.spotc and tauon.spotc.running and spot_ctl.playing:
-            print("test")
             if self.playing_state == 1:
                 self.playerCommand = 'pauseon'
                 self.playerCommandReady = True

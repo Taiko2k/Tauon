@@ -176,9 +176,7 @@ class SpotCtl:
                     if command == "resume" and tr and tr.file_ext == "SPTY" and tr.url_key:
                         self.tauon.gui.show_message("Resuming Spotify playback")
                         p = self.tauon.pctl.playing_time
-                        self.play_target(tr.url_key)
-                        time.sleep(0.3)
-                        self.spotify.playback_seek(int(p * 1000))
+                        self.play_target(tr.url_key, p)
                         self.tauon.gui.message_box = False
                         self.tauon.gui.update += 1
                         return
@@ -391,7 +389,12 @@ class SpotCtl:
 
         # if not self.coasting or self.playing:
         #     self.update(start=True)
-    def play_target(self, id, force_new_device=False):
+    def play_target(self, id, force_new_device=False, start_time=0):
+
+        if not start_time:
+            start_time = None
+        else:
+            start_time = int(start_time * 1000)
 
         self.coasting = False
         self.connect()
@@ -423,7 +426,7 @@ class SpotCtl:
                     devices = self.spotify.playback_devices()
                     if devices:
                         self.progress_timer.set()
-                        self.spotify.playback_start_tracks([id], device_id=devices[0].id)
+                        self.spotify.playback_start_tracks([id], device_id=devices[0].id, position_ms=start_time)
                         break
                     tries += 1
                     if tries > 13:
@@ -460,11 +463,12 @@ class SpotCtl:
                     devices = self.spotify.playback_devices()
                     if devices and tries < 13:
                         print("DEVICE FOUND")
-                        self.tauon.focus_window()
+                        if not self.tauon.prefs.launch_spotify_local:
+                            self.tauon.focus_window()
                         time.sleep(0.5)
                         print("ATTEMPT START")
                         try:
-                            self.spotify.playback_start_tracks([id], device_id=devices[0].id)
+                            self.spotify.playback_start_tracks([id], device_id=devices[0].id, position_ms=start_time)
                         except Exception as e:
                             print(str(e))
                             time.sleep(1)
@@ -525,7 +529,7 @@ class SpotCtl:
 
                 # Force a transition
                 if not okay:
-                    self.spotify.playback_start_tracks([id], device_id=d_id)
+                    self.spotify.playback_start_tracks([id], device_id=d_id, position_ms=start_time)
 
             # except tk.client.decor.error.InternalServerError:
             #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
