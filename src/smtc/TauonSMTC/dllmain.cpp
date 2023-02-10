@@ -1,4 +1,8 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
+// SMTC module by Taiko2k
+
+// This needs to be compiled by Visual Studio, mingw won't work apparently
+// Put the dll in tauons /lib folder
+
 #include "pch.h"
 #include <windows.h>
 #include <windows.media.h>
@@ -12,14 +16,13 @@
 #include <wrl/event.h>
 
 
-
 using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::Media;
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
 
 typedef ITypedEventHandler<SystemMediaTransportControls*, SystemMediaTransportControlsButtonPressedEventArgs*> SMTC_ButtonPressEvt_Callback;
-//typedef ITypedEventHandler<SystemMediaTransportControls*, PlaybackPositionChangeRequestedEventArgs*> PlaybacPos_ChangeReqEvt_Callback;  //obbs
+//typedef ITypedEventHandler<SystemMediaTransportControls*, PlaybackPositionChangeRequestedEventArgs*> PlaybacPos_ChangeReqEvt_Callback;
 
 
 void (*ext_button_callback)(int);
@@ -129,7 +132,6 @@ extern "C" {
             displayUpdater->Update();
 
             HRESULT hRes = smtc->add_ButtonPressed(cbBtnPressed.Get(), &mBtnPressEvt);
-
 
             printf("Loaded SMTC\n");
             return 0;
