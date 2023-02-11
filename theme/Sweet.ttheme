@@ -1,0 +1,121 @@
+# Tauon Music Box theme file
+# by @therootuser_
+
+
+#-Backgrounds-----
+
+27,27,32       player background (top panel)
+28,28,33       playlist panel
+24,24,29       side panel
+26,26,31       bottom panel
+28,28,33       gallery background
+20,20,25       queue panel
+
+#-Frame--------
+
+150,21,21       sep line
+21,150,21       bb line
+21,21,160       tb line
+
+#-Playlist-------
+
+169,169,171    track line
+170,170,172    track time
+169,169,171    track index
+130,130,130    track artist
+169,169,171    album line
+
+206,125,115    track playing
+169,169,171    index playing
+131,131,131    artist playing
+169,169,171    album playing
+170,170,172    time playing
+
+85,85,85       track missing
+
+100,100,100    fav line
+40,40,41       folder line
+158,158,159    folder title 
+
+255,255,255,9      playing highlight
+255,255,255,11     select highlight
+200,120,110        gallery highlight
+
+#-Bottom panel------
+
+55,55,60       buttons off
+160,160,165    buttons over
+205,205,210    buttons active
+
+200,125,115    playing time
+
+191,110,100    seek bar
+35,35,36       seek bg
+100,100,105    volume bar
+31,31,32       volume bg
+45,45,51       scroll bar
+
+50,50,55       mode off
+140,140,145    mode over
+170,170,175    mode on
+
+255,190,180    bottom title
+
+#-Menu-------------
+24,24,29       menu background
+40,40,45       menu highlight
+40,40,45       menu border
+200,200,205    menu text
+50,50,55       menu disable text
+50,50,55       menu icons
+
+#-Top panel---------
+
+245,245,250    tab active line
+235,235,240    tab line
+25,25,30       tab background
+40,40,45       tab over
+45,45,50       tab active background
+180,180,185    music vis
+
+27,27,32,7     window buttons background
+
+#-Side panel--------
+
+250,250,255    title info
+230,230,235    extra info
+21,21,25       art border
+
+#-Dialog box---------
+
+24,24,29        box background
+31,31,36        box border
+
+169,169,171     box title text
+121,121,122     box text label
+
+166,166,169     box text normal
+170,170,172     box sub text
+#31,31,36        box --
+170,170,172     box input text
+47,47,50        box text border
+
+169,169,171     box button text normal
+200,200,203     box button text highlight
+35,35,40        box button background normal
+45,45,50        box button background highlight
+47,47,50        box button border
+
+#-Misc--------------
+
+20,20,25        playlist box background
+24,24,29,8      window frame
+25,25,30        artist bio background
+172,172,175     artist bio text
+
+#-Mini Mode---------
+
+19,19,24,8      mini bg
+45,45,48        mini border
+169,169,171     mini text 1
+200,120,110     mini text 2
