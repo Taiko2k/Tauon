@@ -1376,6 +1376,8 @@ int load_next() {
     if (codec == UNKNOWN && ext != NULL && (
             strcmp(ext, ".ape") == 0 || strcmp(ext, ".APE") == 0 ||
             strcmp(ext, ".m4a") == 0 || strcmp(ext, ".M4A") == 0 ||
+            strcmp(ext, ".mp4") == 0 || strcmp(ext, ".MP4") == 0 ||
+            strcmp(ext, ".webm") == 0 || strcmp(ext, ".WEBM") == 0 ||
             strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
             strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0
                             )
