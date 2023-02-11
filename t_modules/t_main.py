@@ -836,6 +836,8 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
               'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'}
 
+VID_Formats = {'mp4', "webm"}
+
 MOD_Formats = {'xm', 'mod', 's3m', 'it', 'mptm', "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
 DA_Formats |= MOD_Formats
 
@@ -1367,6 +1369,7 @@ class Prefs:  # Used to hold any kind of settings
         self.use_scancodes = False
 
         self.artist_list_threshold = 4
+        self.allow_video_formats = True
 
 
 prefs = Prefs()
@@ -3652,6 +3655,7 @@ def save_prefs():
     cf.update_value("back-restarts", prefs.back_restarts)
     cf.update_value("end-queue-stop", prefs.stop_end_queue)
     cf.update_value("block-suspend", prefs.block_suspend)
+    cf.update_value("allow-video-formats", prefs.allow_video_formats)
 
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("auto-scale", prefs.x_scale)
@@ -3854,6 +3858,12 @@ def load_prefs():
                                        "Queue will always enable auto-stop on last track")
     prefs.block_suspend = cf.sync_add("bool", "block-suspend", prefs.block_suspend,
                                       "Prevent system suspend during playback")
+    prefs.allow_video_formats = cf.sync_add("bool", "allow-video-formats", prefs.allow_video_formats,
+                                      "Allow the import of MP4 and WEBM formats")
+    if prefs.allow_video_formats:
+        for item in VID_Formats:
+            if item not in DA_Formats:
+                DA_Formats.add(item)
 
     cf.br()
     cf.add_text("[HiDPI]")
@@ -4606,6 +4616,9 @@ def tag_scan(nt):
 
             # Use MUTAGEN
             try:
+                if nt.file_ext.lower() in VID_Formats:
+                    scan_ffprobe(nt)
+                    return nt
 
                 try:
                     audio = mutagen.File(nt.fullpath)
