@@ -28498,8 +28498,8 @@ class Over:
                                                           _("Prefer launching web player"))
 
             y += round(25 * gui.scale)
-            if not msys:
-                prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
+
+            prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
                                                               _("Enable local audio playback"))
 
             if prefs.launch_spotify_local and not tauon.enable_librespot:
