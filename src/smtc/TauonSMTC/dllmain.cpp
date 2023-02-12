@@ -1,11 +1,18 @@
 // SMTC module by Taiko2k
 
-// This needs to be compiled by Visual Studio, mingw won't work apparently
+// This needs to be compiled by Visual Studio, mingw won't work apparently.
 // Put the dll in tauons /lib folder
+
+// Interesting references
+//  - https://github.com/ValleyBell/vgmplay-libvgm/blob/master/mediactrl_WinSMTC.cpp
+//  - https://searchfox.org/mozilla-central/source/widget/windows/WindowsSMTCProvider.cpp
+
 
 #include "pch.h"
 #include <windows.h>
 #include <windows.media.h>
+#include <Windows.Storage.h>
+#include <Windows.Storage.Streams.h>
 #include <systemmediatransportcontrolsinterop.h>
 #include <Windows.Foundation.h>
 #include <wrl/wrappers/corewrappers.h>
@@ -16,10 +23,14 @@
 #include <wrl/event.h>
 
 
+
 using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::Media;
+using namespace ABI::Windows::Storage::Streams;
+using namespace ABI::Windows::Storage;
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
+
 
 typedef ITypedEventHandler<SystemMediaTransportControls*, SystemMediaTransportControlsButtonPressedEventArgs*> SMTC_ButtonPressEvt_Callback;
 //typedef ITypedEventHandler<SystemMediaTransportControls*, PlaybackPositionChangeRequestedEventArgs*> PlaybacPos_ChangeReqEvt_Callback;
@@ -30,8 +41,7 @@ void (*ext_button_callback)(int);
 int OnButtonPressed(ISystemMediaTransportControls*, ISystemMediaTransportControlsButtonPressedEventArgs* pArgs){
     SystemMediaTransportControlsButton btn;
     HRESULT hRes = pArgs->get_Button(&btn);
-    printf("BUTTON PRESSSED! YOUO\n");
-    printf("%d\n", btn);
+
     switch (btn)
     {
     	case SystemMediaTransportControlsButton_Play:
@@ -61,6 +71,9 @@ ComPtr<ISystemMediaTransportControls> smtc;
 ComPtr<ISystemMediaTransportControlsInterop> smtcInterop;
 ComPtr<ISystemMediaTransportControlsDisplayUpdater> displayUpdater;
 ComPtr<IMusicDisplayProperties> musicProperties;
+
+ComPtr<IAsyncOperation<StorageFile*> > mSFileAsyncOp;
+
 
 HWND windowHandle;
 
@@ -126,8 +139,6 @@ extern "C" {
             HSTRING hString;
             hr = WindowsCreateString(L"Tauon Music Box", 15, &hString);
             musicProperties->put_Title(hString);
-            
-            //get_AlbumArtist
 
             displayUpdater->Update();
 
@@ -149,13 +160,14 @@ extern "C" {
         printf("Unloaded SMTC\n");
     }
 
-    __declspec(dllimport) void update(int state, wchar_t* title, int title_len, wchar_t* artist, int artist_len);
-    void update(int state, wchar_t* title, int title_len, wchar_t* artist, int artist_len) {
+    __declspec(dllimport) void update(int state, wchar_t* title, int title_len, wchar_t* artist, int artist_len, wchar_t* thumb, int thumb_len);
+    void update(int state, wchar_t* title, int title_len, wchar_t* artist, int artist_len, wchar_t* thumb, int thumb_len) {
+
+        //wprintf(L"%s\n", thumb);  // Print thumbnail path to console
 
         if (state == 0) smtc->put_PlaybackStatus(MediaPlaybackStatus_Stopped);
         if (state == 1) smtc->put_PlaybackStatus(MediaPlaybackStatus_Playing);
         if (state == 2) smtc->put_PlaybackStatus(MediaPlaybackStatus_Paused);
-
 
         HSTRING hString;
         HRESULT hr;
@@ -179,8 +191,14 @@ extern "C" {
         }
         musicProperties->put_Artist(hString);
         WindowsDeleteString(hString);
-        
+
+        // todo: There is also put_AlbumArtist to impliment
+
+        // todo: Add support for thumbnails  https://learn.microsoft.com/en-us/previous-versions/windows/desktop/mediatransport/isystemmediatransportcontrolsdisplayupdater-put-thumbnail
+
+
         displayUpdater->Update();
+ 
         return;
     }
 }

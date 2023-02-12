@@ -4166,9 +4166,10 @@ if msys:
     print(sss.info.win.window)
     try:
         sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
-        print("a1")
+        print("Loaded SMTC module")
+
         def SMTC_button_callback(button):
-            print("GO")
+
             if button == 1:
                 inp.media_key = 'Play'
             if button == 2:
@@ -5089,7 +5090,8 @@ class PlayerCtl:
                 try:
                     image_path = tauon.thumb_tracks.path(tr)
                 except:
-                    raise
+                    pass
+                    #raise
 
                 if image_path is None:
                     image_path = ""
