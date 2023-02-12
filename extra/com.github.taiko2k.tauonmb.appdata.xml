@@ -62,9 +62,10 @@
 
   <releases>
 
-    <release version="7.4.7" date="2022-12-21">
+    <release version="7.5.0" date="2023-01-12">
       <description>
         <ul>
+          <li>Improved Spotify support</li>
           <li>Various bug fixes</li>
         </ul>
       </description>
