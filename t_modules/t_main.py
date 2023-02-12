@@ -47425,4 +47425,10 @@ if tauon.shutdown_lock is not None:
 if tauon.play_lock is not None:
     del tauon.play_lock
 
+if tauon.librespot_p:
+    time.sleep(1)
+    print("Kill liberspot")
+    tauon.librespot_p.kill()
+    #tauon.librespot_p.communicate()
+
 print("bye")
