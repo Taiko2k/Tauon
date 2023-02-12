@@ -4178,7 +4178,6 @@ if msys and int(py_platform.release()) >= 10:
     #print(sss.info.win.window)
     try:
         sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
-        print("Loaded SMTC module")
 
         def SMTC_button_callback(button):
 
@@ -9096,30 +9095,31 @@ if system == "linux" and not macos and not msys:
     except:
         print("ERROR: Could not start Dbus thread")
 
-if (system == "windows" or msys) and int(py_platform.release()) < 10:
+if (system == "windows" or msys):
 
     tray.start()
 
-    import keyboard
+    if int(py_platform.release()) < 10:
+        import keyboard
 
-    def key_callback(event):
+        def key_callback(event):
 
-        if event.event_type == "down":
-            if event.scan_code == -179:
-                inp.media_key = 'Play'
-            elif event.scan_code == -178:
-                inp.media_key = 'Stop'
-            elif event.scan_code == -177:
-                inp.media_key = 'Previous'
-            elif event.scan_code == -176:
-                inp.media_key = 'Next'
-            gui.update += 1
-            tauon.wake()
+            if event.event_type == "down":
+                if event.scan_code == -179:
+                    inp.media_key = 'Play'
+                elif event.scan_code == -178:
+                    inp.media_key = 'Stop'
+                elif event.scan_code == -177:
+                    inp.media_key = 'Previous'
+                elif event.scan_code == -176:
+                    inp.media_key = 'Next'
+                gui.update += 1
+                tauon.wake()
 
-    keyboard.hook_key(-179, key_callback)
-    keyboard.hook_key(-178, key_callback)
-    keyboard.hook_key(-177, key_callback)
-    keyboard.hook_key(-176, key_callback)
+        keyboard.hook_key(-179, key_callback)
+        keyboard.hook_key(-178, key_callback)
+        keyboard.hook_key(-177, key_callback)
+        keyboard.hook_key(-176, key_callback)
 
 
 class GStats:
