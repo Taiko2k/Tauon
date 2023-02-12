@@ -14,4 +14,5 @@ rm -rf dist/tauon/tcl/tzdata
 mkdir dist/tauon/etc
 cp -r fonts dist/tauon/ 2>/dev/null || echo 'Fonts are not present!'
 cp -r /mingw64/etc/fonts dist/tauon/etc
+cp librespot.exe dist/tauon/
 cp TaskbarLib.tlb dist/tauon/ 2>/dev/null || echo 'TLB is not present!'

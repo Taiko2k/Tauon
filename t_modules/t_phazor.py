@@ -143,8 +143,12 @@ def player4(tauon):
             self.running = False
             pctl.spot_playing = False
             if tauon.librespot_p:
-                import signal
-                tauon.librespot_p.send_signal(signal.SIGINT)  # terminate() doesn't work
+                if tauon.msys:
+                    tauon.librespot_p.terminate()
+                    #tauon.librespot_p.communicate()
+                else:
+                    import signal
+                    tauon.librespot_p.send_signal(signal.SIGINT)  # terminate() doesn't work
 
         def worker(self):
             self.running = True
