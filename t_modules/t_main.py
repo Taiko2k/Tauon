@@ -4160,6 +4160,33 @@ SDL_GetWindowWMInfo(t_window, sss)
 if prefs.use_gamepad:
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
 
+smtc = False
+if msys:
+    
+    print(sss.info.win.window)
+    try:
+        sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
+        print("a1")
+        def SMTC_button_callback(button):
+            print("GO")
+            if button == 1:
+                inp.media_key = 'Play'
+            if button == 2:
+                inp.media_key = 'Pause'
+            if button == 3:
+                inp.media_key = "Next"
+            if button == 4:
+                inp.media_key = "Previous"
+            if button == 5:
+                inp.media_key = "Stop"
+            gui.update += 1
+            tauon.wake()
+
+        close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
+        smtc = sm.init(close_callback) == 0
+    except:
+        print("Failed to load TauonSMTC.dll")
+
 def auto_scale():
 
     old = prefs.scale_want
@@ -5049,6 +5076,30 @@ class PlayerCtl:
             tauon.tray_lock.release()
         except:
             pass
+
+        if mpris and smtc:
+            tr = pctl.playing_object()
+            if tr:
+                state = 0
+                if pctl.playing_state == 1:
+                    state = 1
+                if pctl.playing_state == 2:
+                    state = 2
+                image_path = ""
+                try:
+                    image_path = tauon.thumb_tracks.path(tr)
+                except:
+                    raise
+
+                if image_path is None:
+                    image_path = ""
+
+                image_path = image_path.replace("/", "\\")
+                print(image_path)
+
+                sm.update(state, tr.title.encode("utf-16"), len(tr.title), tr.artist.encode("utf-16"), len(tr.artist),
+                          image_path.encode("utf-16"), len(image_path))
+
 
         if self.mpris is not None and mpris is True:
             while self.notify_in_progress:
@@ -47307,6 +47358,8 @@ except:
 
 if system == "windows" or msys:
     tray.stop()
+    if smtc:
+        sm.unload()
 else:
     if de_notify_support:
         try:
