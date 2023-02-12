@@ -4183,7 +4183,7 @@ if msys:
             tauon.wake()
 
         close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
-        smtc = sm.init(close_callback) is 0
+        smtc = sm.init(close_callback) == 0
     except:
         print("Failed to load TauonSMTC.dll")
 
@@ -5085,8 +5085,21 @@ class PlayerCtl:
                     state = 1
                 if pctl.playing_state == 2:
                     state = 2
+                image_path = ""
+                try:
+                    image_path = tauon.thumb_tracks.path(tr)
+                except:
+                    raise
 
-                sm.update(state, tr.title.encode("utf-16"), len(tr.title), tr.artist.encode("utf-16"), len(tr.artist))
+                if image_path is None:
+                    image_path = ""
+
+                image_path = image_path.replace("/", "\\")
+                print(image_path)
+
+                sm.update(state, tr.title.encode("utf-16"), len(tr.title), tr.artist.encode("utf-16"), len(tr.artist),
+                          image_path.encode("utf-16"), len(image_path))
+
 
         if self.mpris is not None and mpris is True:
             while self.notify_in_progress:
