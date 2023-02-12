@@ -546,6 +546,7 @@ try:
 except:
     print("Warning: Python module natsort not found")
 
+import platform as py_platform
 import time
 import ctypes
 import ctypes.util
@@ -4171,9 +4172,10 @@ if prefs.use_gamepad:
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
 
 smtc = False
-if msys:
+
+if msys and int(py_platform.release()) >= 10:
     
-    print(sss.info.win.window)
+    #print(sss.info.win.window)
     try:
         sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
         print("Loaded SMTC module")
@@ -5110,7 +5112,7 @@ class PlayerCtl:
                     image_path = ""
 
                 image_path = image_path.replace("/", "\\")
-                print(image_path)
+                #print(image_path)
 
                 sm.update(state, tr.title.encode("utf-16"), len(tr.title), tr.artist.encode("utf-16"), len(tr.artist),
                           image_path.encode("utf-16"), len(image_path))
@@ -9094,7 +9096,7 @@ if system == "linux" and not macos and not msys:
     except:
         print("ERROR: Could not start Dbus thread")
 
-if system == "windows" or msys:
+if (system == "windows" or msys) and int(py_platform.release()) < 10:
 
     tray.start()
 
