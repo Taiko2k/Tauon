@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-01-20 19:58+1300\n"
-"PO-Revision-Date: 2023-01-29 15:14+0000\n"
+"PO-Revision-Date: 2023-02-14 01:44+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -1665,92 +1665,96 @@ msgid ""
 "DANGER! This will delete the original files. You may want to have backups in "
 "case of malfunction."
 msgstr ""
+"ATTENZIONE! Questo cancellerà i file originali. Potresti voler fare un "
+"backup in caso di malfunzionamenti."
 
 #: t_modules/t_main.py:27100
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
+"Per sicurezza, questa impostazione si resetterà al riavvio. Le anteprime "
+"incorporate non saranno salvate per cui potresti volerle estrarre prima."
 
 #: t_modules/t_main.py:27280 t_modules/t_main.py:27288
 msgid "There was an error generating the chart"
-msgstr ""
+msgstr "C'è stato un errore nel generare la classifica"
 
 #: t_modules/t_main.py:27291
 msgid "Chart generated"
-msgstr ""
+msgstr "Classifica generata"
 
 #: t_modules/t_main.py:27337
 msgid "Function"
-msgstr ""
+msgstr "Funzione"
 
 #: t_modules/t_main.py:27338
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: t_modules/t_main.py:27339
 msgid "Tracklist"
-msgstr ""
+msgstr "Elenco Tracce"
 
 #: t_modules/t_main.py:27340 t_modules/t_main.py:27390
 msgid "Theme"
-msgstr ""
+msgstr "Tema"
 
 #: t_modules/t_main.py:27341
 msgid "Window"
-msgstr ""
+msgstr "Finestra"
 
 #: t_modules/t_main.py:27342
 msgid "View"
-msgstr ""
+msgstr "Vista"
 
 #: t_modules/t_main.py:27343
 msgid "Transcode"
-msgstr ""
+msgstr "Converti"
 
 #: t_modules/t_main.py:27344 t_modules/t_main.py:45956
 msgid "Lyrics"
-msgstr ""
+msgstr "Testi"
 
 #: t_modules/t_main.py:27345
 msgid "Accounts"
-msgstr ""
+msgstr "Account"
 
 #: t_modules/t_main.py:27346
 msgid "Stats"
-msgstr ""
+msgstr "Statistiche"
 
 #: t_modules/t_main.py:27347
 msgid "About"
-msgstr ""
+msgstr "A riguardo"
 
 #: t_modules/t_main.py:27394
 msgid "Use album art as background"
-msgstr ""
+msgstr "Usa copertina disco come sfondo"
 
 #: t_modules/t_main.py:27398
 msgid "Stronger"
-msgstr ""
+msgstr "Più forte"
 
 #: t_modules/t_main.py:27404
 msgid "Blur"
-msgstr ""
+msgstr "Sfoca"
 
 #: t_modules/t_main.py:27407
 msgid "Showcase only"
-msgstr ""
+msgstr "Solo su Vista Copertina"
 
 #: t_modules/t_main.py:27412
 msgid "Pattern style"
-msgstr ""
+msgstr "Stile pattern"
 
 #: t_modules/t_main.py:27416
 msgid "Auto-theme from album art"
-msgstr ""
+msgstr "Tema automatico da Copertina"
 
 #: t_modules/t_main.py:27511
 msgid "Based on"
-msgstr ""
+msgstr "Basa su"
 
 #: t_modules/t_main.py:27519 t_modules/t_main.py:27598
 #: t_modules/t_main.py:29056 t_modules/t_main.py:29660
