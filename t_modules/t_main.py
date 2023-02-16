@@ -616,7 +616,7 @@ elif not msys and not macos:
 
 # Other imports
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 
 try:
     from jxlpy import JXLImagePlugin
@@ -1818,6 +1818,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.tag_write_count = 0
         # self.text_input_request = False
         # self.text_input_active = False
+        self.center_blur_pixel = (0, 0, 0)
 
 
 gui = GuiVar()
@@ -5124,7 +5125,7 @@ class PlayerCtl:
             shoot = threading.Thread(target=self.notify_update_fire)
             shoot.daemon = True
             shoot.start()
-        if prefs.art_bg:
+        if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
             tm.ready("style")
 
     def get_url(self, track_object):
@@ -12231,8 +12232,23 @@ class AlbumArt():
             if artist and artist in prefs.bg_flips:
                 im = im.transpose(Image.FLIP_LEFT_RIGHT)
 
-        if ox_size < 500 or prefs.art_bg_always_blur:
-            im = im.filter(ImageFilter.GaussianBlur(prefs.art_bg_blur))
+        if (ox_size < 500 or prefs.art_bg_always_blur) or gui.mode == 3:
+            blur = prefs.art_bg_blur
+            if prefs.mini_mode_mode == 5 and gui.mode == 3:
+                blur = 160
+                pix = im.getpixel((new_x // 2, new_y // 4 * 3))
+                pixel_sum = sum(pix) / (255 * 3)
+                if pixel_sum > 0.6:
+                    enhancer = ImageEnhance.Brightness(im)
+                    deduct = 1 - ((pixel_sum - 0.6) * 1.5)
+                    im = enhancer.enhance(deduct)
+                    print(deduct)
+                gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
+
+            im = im.filter(ImageFilter.GaussianBlur(blur))
+
+
+        gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 2))
 
         g = io.BytesIO()
         g.seek(0)
@@ -12916,7 +12932,11 @@ class StyleOverlay:
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
-            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, prefs.art_bg_opacity)
+            opacity = prefs.art_bg_opacity
+            if prefs.mini_mode_mode == 5 and gui.mode == 3:
+                opacity = 255
+
+            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, opacity)
             SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -22594,6 +22614,10 @@ def set_mini_mode_A2():
     set_mini_mode()
 
 
+def set_mini_mode_C1():
+    prefs.mini_mode_mode = 5
+    set_mini_mode()
+
 def set_mini_mode_B2():
     prefs.mini_mode_mode = 3
     set_mini_mode()
@@ -22604,11 +22628,12 @@ def set_mini_mode_D():
     set_mini_mode()
 
 
+mode_menu.add(_('Tab'), set_mini_mode_D)
 mode_menu.add(_('Mini'), set_mini_mode_A1)
 # mode_menu.add(_('Mini Mode Large'), set_mini_mode_A2)
+mode_menu.add(_('Slate'), set_mini_mode_C1)
 mode_menu.add(_('Square'), set_mini_mode_B1)
 mode_menu.add(_('Square Large'), set_mini_mode_B2)
-mode_menu.add(_('Micro'), set_mini_mode_D)
 
 
 def copy_bb_metadata():
@@ -33009,6 +33034,258 @@ class MiniMode2:
 mini_mode2 = MiniMode2()
 
 
+
+class MiniMode3:
+
+    def __init__(self):
+
+        self.save_position = None
+        self.was_borderless = True
+        self.volume_timer = Timer()
+        self.volume_timer.force_set(100)
+
+        self.left_slide = asset_loader("left-slide.png", True)
+        self.right_slide = asset_loader("right-slide.png", True)
+
+        self.shuffle_fade_timer = Timer(100)
+        self.repeat_fade_timer = Timer(100)
+
+    def render(self):
+
+        w = window_size[0]
+        h = window_size[1]
+
+        y1 = w
+        if w == h:
+            y1 -= 79 * gui.scale
+
+        h1 = h - y1
+
+        # Draw background
+        bg = colours.mini_mode_background
+        bg = [0, 0, 0, 0]
+        # bg = [250, 250, 250, 255]
+
+        ddt.rect((0, 0, w, h), bg)
+
+        style_overlay.display()
+
+        ddt.text_background_colour = list(gui.center_blur_pixel) + [255,] #bg
+        if style_overlay.fade_on_timer.get() < 0.4 or style_overlay.stage != 2:
+            ddt.alpha_bg = True
+
+        detect_mouse_rect = (3, 3, w - 6, h - 6)
+        fields.add(detect_mouse_rect)
+        mouse_in = coll(detect_mouse_rect)
+
+        # Play / Pause when right clicking below art
+        if right_click:  # and mouse_position[1] > y1:
+            pctl.play_pause()
+
+        # Volume change on scroll
+        if mouse_wheel != 0:
+            self.volume_timer.set()
+
+            pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment * 3
+            if pctl.player_volume < 1:
+                pctl.player_volume = 0
+            elif pctl.player_volume > 100:
+                pctl.player_volume = 100
+
+            pctl.player_volume = int(pctl.player_volume)
+            pctl.set_volume()
+
+        track = pctl.playing_object()
+
+        control_hit_area = (3, y1 - 15 * gui.scale, w - 6, h1 - 3 + 15 * gui.scale)
+        mouse_in_area = coll(control_hit_area)
+        fields.add(control_hit_area)
+
+        #ddt.rect((0, 0, w, w), (0, 0, 0, 45))
+        if track is not None:
+
+            # Render album art
+
+            ins = w // 4
+            wid = (w // 2) + round(10 * gui.scale)
+            off = round(4 * gui.scale)
+
+            drop_shadow.render(ins + off, ins + off, wid, wid)
+            album_art_gen.display(track, (w // 4, w // 4), (w // 2, w // 2))
+
+
+            line1c = [255, 255, 255, 255] #colours.mini_mode_text_1
+            line2c = [255, 255, 255, 255] #colours.mini_mode_text_2
+
+            # if h == w and mouse_in_area:
+            #     # ddt.pretty_rect = (0, 260 * gui.scale, w, 100 * gui.scale)
+            #     ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
+            #     line1c = [255, 255, 255, 240]
+            #     line2c = [255, 255, 255, 77]
+
+            # Double click bottom text to return to full window
+            text_hit_area = (60 * gui.scale, y1 + 4, 230 * gui.scale, 50 * gui.scale)
+
+            if coll(text_hit_area):
+                if inp.mouse_click:
+                    if d_click_timer.get() < 0.3:
+                        restore_full_mode()
+                        gui.update += 1
+                        return
+                    else:
+                        d_click_timer.set()
+
+            # Draw title texts
+            line1 = track.artist
+            line2 = track.title
+
+            # Calculate seek bar position
+            seek_w = int(w * 0.70)
+
+            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
+            seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
+
+            if w != h or mouse_in_area:
+
+                if not line1 and not line2:
+                    ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
+                             window_size[0] - 30 * gui.scale)
+                else:
+
+                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, line2c, 515,
+                             window_size[0] - 30 * gui.scale)
+
+                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
+                             window_size[0] - 30 * gui.scale)
+
+                # Test click to seek
+                if mouse_up and coll(seek_r_hit):
+
+                    click_x = mouse_position[0]
+                    if click_x > seek_r[0] + seek_r[2]:
+                        click_x = seek_r[0] + seek_r[2]
+                    if click_x < seek_r[0]:
+                        click_x = seek_r[0]
+                    click_x -= seek_r[0]
+
+                    if click_x < 6 * gui.scale:
+                        click_x = 0
+                    seek = click_x / seek_r[2]
+
+                    pctl.seek_decimal(seek)
+
+                # Draw progress bar background
+                ddt.rect(seek_r, [255, 255, 255, 32])
+
+                # Calculate and draw bar foreground
+                progress_w = 0
+                if pctl.playing_length > 1:
+                    progress_w = pctl.playing_time * seek_w / pctl.playing_length
+                seek_colour = [210, 210, 210, 255]
+                if gui.theme_name == "Carbon":
+                    seek_colour = colours.bottom_panel_colour
+
+                if pctl.playing_state != 1:
+                    seek_colour = [210, 40, 100, 255]
+
+                seek_r[2] = progress_w
+
+                if self.volume_timer.get() < 0.9:
+                    progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
+                    gui.update += 1
+                    seek_colour = [210, 210, 210, 255]
+                    seek_r[2] = progress_w
+                    seek_r[0] += 2 * gui.scale
+                    seek_r[1] += 2 * gui.scale
+                    seek_r[3] -= 4 * gui.scale
+
+                ddt.rect(seek_r, seek_colour)
+
+        left_area = (1, y1, seek_r[0] - 1, 45 * gui.scale)
+        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * gui.scale)
+
+        fields.add(left_area)
+        fields.add(right_area)
+
+        hint = 0
+        if True: #coll(control_hit_area):
+            hint = 30
+        if coll(left_area):
+            hint = 240
+        if hint and not prefs.shuffle_lock:
+            self.left_slide.render(16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, hint])
+
+        hint = 0
+        if True: #coll(control_hit_area):
+            hint = 30
+        if coll(right_area):
+            hint = 240
+        if hint:
+            self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 17 * gui.scale,
+                                    [255, 255, 255, hint])
+
+        # Shuffle
+
+        shuffle_area = (seek_r[0] + seek_w, seek_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
+        # fields.add(shuffle_area)
+        # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
+
+        if True: #coll(control_hit_area) and not prefs.shuffle_lock:
+            colour = [255, 255, 255, 20]
+            if inp.mouse_click and coll(shuffle_area):
+                # pctl.random_mode ^= True
+                toggle_random()
+            if pctl.random_mode:
+                colour = [255, 255, 255, 190]
+
+            sx = seek_r[0] + seek_w + 8 * gui.scale
+            sy = seek_r[1] - 1 * gui.scale
+            ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
+            sy += 4 * gui.scale
+            ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
+
+        shuffle_area = (seek_r[0] - 41 * gui.scale, seek_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
+        if True: #coll(control_hit_area) and not prefs.shuffle_lock:
+            colour = [255, 255, 255, 20]
+            if inp.mouse_click and coll(shuffle_area):
+                toggle_repeat()
+            if pctl.repeat_mode:
+                colour = [255, 255, 255, 190]
+
+            sx = seek_r[0] - 39 * gui.scale
+            sy = seek_r[1] - 1 * gui.scale
+
+            tw = 2 * gui.scale
+            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)
+            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour)
+            ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour)
+
+        # Forward and back clicking
+        if inp.mouse_click:
+            if coll(left_area) and not prefs.shuffle_lock:
+                pctl.back()
+            if coll(right_area):
+                pctl.advance()
+
+        search_over.render()
+
+
+        # Show exit/min buttons when mosue over
+        tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
+        if prefs.left_window_control:
+            tool_rect[0] = 0
+        fields.add(tool_rect)
+        if coll(tool_rect):
+            draw_window_tools()
+
+        # if w != h:
+        #     ddt.rect_s((1, 1, w - 2, h - 2), colours.mini_mode_border, 1 * gui.scale)
+        #     if gui.scale == 2:
+        #         ddt.rect_s((2, 2, w - 4, h - 4), colours.mini_mode_border, 1 * gui.scale)
+        ddt.alpha_bg = False
+
+mini_mode3 = MiniMode3()
+
 def set_mini_mode():
     if gui.fullscreen:
         return
@@ -33052,6 +33329,8 @@ def set_mini_mode():
         size = (330, 80)
     if prefs.mini_mode_mode == 5:
         size = (400, 600)
+        style_overlay.flush()
+        tm.ready("style")
 
     if logical_size == window_size:
         size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
@@ -41059,10 +41338,10 @@ def hit_callback(win, point, data):
         if key_shift_down or key_shiftr_down:
             return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 5:
-            return SDL_HITTEST_NORMAL
+        # if prefs.mini_mode_mode == 5:
+        #     return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 4 and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
+        if prefs.mini_mode_mode in (4, 5) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
             return SDL_HITTEST_NORMAL
 
         if y < gui.window_control_hit_area_h and x > window_size[
@@ -41071,12 +41350,14 @@ def hit_callback(win, point, data):
 
         # Square modes
         y1 = window_size[0]
+        # if prefs.mini_mode_mode == 5:
+        #     y1 = window_size[1]
         y0 = 0
         if macos:
             y0 = round(35 * gui.scale)
         if window_size[0] == window_size[1]:
             y1 = window_size[1] - 79 * gui.scale
-        if y0 < y < y1:
+        if y0 < y < y1 and not search_over.active:
             return SDL_HITTEST_DRAGGABLE
 
         return SDL_HITTEST_NORMAL
@@ -46635,7 +46916,9 @@ while pctl.running:
                     SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
                     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
-            if prefs.mini_mode_mode == 4:
+            if prefs.mini_mode_mode == 5:
+                mini_mode3.render()
+            elif prefs.mini_mode_mode == 4:
                 mini_mode2.render()
             else:
                 mini_mode.render()
