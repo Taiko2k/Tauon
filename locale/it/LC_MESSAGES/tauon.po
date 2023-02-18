@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-01-20 19:58+1300\n"
-"PO-Revision-Date: 2023-02-16 10:55+0000\n"
+"PO-Revision-Date: 2023-02-19 10:50+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -2092,58 +2092,58 @@ msgstr "Test connettività"
 #: t_modules/t_main.py:28368 t_modules/t_main.py:28370
 #: t_modules/t_main.py:28865 t_modules/t_main.py:28882
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Ottieni conto invii"
 
 #: t_modules/t_main.py:28381
 msgid "View setup instructions"
-msgstr ""
+msgstr "Guarda istruzioni di configurazione"
 
 #: t_modules/t_main.py:28388
 msgid "Client ID"
-msgstr ""
+msgstr "ID client"
 
 #: t_modules/t_main.py:28418
 msgid "Forget Account"
-msgstr ""
+msgstr "Dimentica Account"
 
 #: t_modules/t_main.py:28424
 msgid "Authorise"
-msgstr ""
+msgstr "Autorizza"
 
 #: t_modules/t_main.py:28434
 msgid "Prefer launching web player"
-msgstr ""
+msgstr "Preferisci lanciare lettore in rete"
 
 #: t_modules/t_main.py:28439
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Abilita riproduzione audio locale"
 
 #: t_modules/t_main.py:28462
 msgid "Spofify password"
-msgstr ""
+msgstr "Password Spotify"
 
 #: t_modules/t_main.py:28477
 msgid "Airsonic/Subsonic network streaming"
-msgstr ""
+msgstr "Streaming in rete Airsonic/subsonic"
 
 #: t_modules/t_main.py:28487 t_modules/t_main.py:28621
 #: t_modules/t_main.py:28678
 msgid "Username / Email"
-msgstr ""
+msgstr "Nome utente/Email"
 
 #: t_modules/t_main.py:28501 t_modules/t_main.py:28562
 #: t_modules/t_main.py:28635 t_modules/t_main.py:28692
 msgid "Password"
-msgstr ""
+msgstr "Password"
 
 #: t_modules/t_main.py:28529 t_modules/t_main.py:28591
 #: t_modules/t_main.py:28664 t_modules/t_main.py:28720
 msgid "Import music to playlist"
-msgstr ""
+msgstr "Importa musica su scaletta"
 
 #: t_modules/t_main.py:28533
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Usa autenticazione testuale"
 
 #: t_modules/t_main.py:28534
 msgid "Needed for Nextcloud Music"
