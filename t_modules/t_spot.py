@@ -688,6 +688,18 @@ class SpotCtl:
         self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
         self.tauon.gui.message_box = False
 
+        artist_albums = self.spotify.artist_albums(id, limit=50, include_groups=["single"])
+        playlist = []
+        self.update_existing_import_list()
+
+        for a in artist_albums.items:
+            full_album = self.spotify.album(a.id)
+            self.load_album(full_album, playlist)
+
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Singles", playlist=playlist))
+        self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+        self.tauon.gui.message_box = False
+
     def album_playlist(self, url):
         l = self.append_album(url, return_list=True)
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=f"{self.tauon.pctl.g(l[0]).artist} - {self.tauon.pctl.g(l[0]).album}",
