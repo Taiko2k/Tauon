@@ -12243,6 +12243,7 @@ class AlbumArt():
                     deduct = 1 - ((pixel_sum - 0.6) * 1.5)
                     im = enhancer.enhance(deduct)
                     print(deduct)
+
                 gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
 
             im = im.filter(ImageFilter.GaussianBlur(blur))
@@ -12758,6 +12759,7 @@ class StyleOverlay:
                 except Exception as e:
                     print("Blur blackground error")
                     print(str(e))
+                    raise
                     #print(track.fullpath)
 
                 if self.im is None or self.im is False:
@@ -24355,14 +24357,14 @@ class SearchOverlay:
                 if selected != p:
                     fade = 0.85
 
-                # Block separating lower search results
-                if item[4] < 4 and not sec:
-                    if i != 0:
-                        ddt.rect((50 * gui.scale, yy + 5 * gui.scale, 400 * gui.scale, 4 * gui.scale),
-                                 [255, 255, 255, 40])
-                        yy += 20 * gui.scale
-
-                    sec = True
+                # # Block separating lower search results
+                # if item[4] < 4 and not sec:
+                #     if i != 0:
+                #         ddt.rect((50 * gui.scale, yy + 5 * gui.scale, 400 * gui.scale, 4 * gui.scale),
+                #                  [255, 255, 255, 40])
+                #         yy += 20 * gui.scale
+                #
+                #     sec = True
 
                 full = False
 
@@ -24420,7 +24422,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 # Spotify Artist
                 if item[0] == 10:
@@ -24465,7 +24467,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
                     if go:
                         show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
                         shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
@@ -24662,6 +24664,12 @@ class SearchOverlay:
                     text = "Track"
                     track = pctl.master_library[item[2]]
 
+                    #thumb = False
+                    #if True:
+                    #    thumb = True
+                    ddt.rect((75 * gui.scale, yy + 0, 25 * gui.scale, 25 * gui.scale), [50, 50, 50, 150])
+                    gall_ren.render(pctl.g(item[2]), (75 * gui.scale, yy + 0), 25 * gui.scale)
+
                     if track.artist == track.title == "":
                         ddt.text((120 * gui.scale, yy), os.path.splitext(track.filename)[0],
                                  [255, 255, 255, int(255 * fade)], 15,
@@ -24687,9 +24695,9 @@ class SearchOverlay:
                                            [80, 80, 80, int(255 * fade)], 212,
                                            bg=[12, 12, 12, 255])
 
-                    ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
+                    #ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour)
+                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 25 * gui.scale), bar_colour)
 
                     if key_ctrl_down and item[2] in default_playlist:
                         ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour)
@@ -24713,6 +24721,8 @@ class SearchOverlay:
 
                         if level_2_right_click:
                             show = True
+                    #if thumb:
+                    yy += round(6 * gui.scale)
 
                     if enter and key_shift_down and fade == 1:
                         show = True
@@ -24898,7 +24908,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 if item[0] == 7:
                     cl = [250, 50, 140, int(255 * fade)]
@@ -24938,7 +24948,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 if item[0] == 8:
                     cl = [100, 210, 250, int(255 * fade)]
@@ -24987,7 +24997,7 @@ class SearchOverlay:
                             self.active = False
                             self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 if i > 40:
                     break
@@ -33106,13 +33116,13 @@ class MiniMode3:
 
             # Render album art
 
-            ins = w // 4
-            wid = (w // 2) + round(10 * gui.scale)
+            wid = (w // 2) + round(45 * gui.scale)
+            ins = (window_size[0] - wid) / 2
             off = round(4 * gui.scale)
 
-            drop_shadow.render(ins + off, ins + off, wid, wid)
-            album_art_gen.display(track, (w // 4, w // 4), (w // 2, w // 2))
-
+            drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
+            ddt.rect((ins, ins, wid, wid), [20, 20, 20, 255])
+            album_art_gen.display(track, (ins, ins), (wid, wid))
 
             line1c = [255, 255, 255, 255] #colours.mini_mode_text_1
             line2c = [255, 255, 255, 255] #colours.mini_mode_text_2
@@ -33139,24 +33149,27 @@ class MiniMode3:
             line1 = track.artist
             line2 = track.title
 
-            # Calculate seek bar position
-            seek_w = int(w * 0.70)
+            if not line1 and not line2:
+                ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
+                         window_size[0] - 30 * gui.scale)
+            else:
 
-            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
-            seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
+                ddt.text((w // 2, y1 + 5 * gui.scale, 2), line1, line2c, 515,
+                         window_size[0] - 30 * gui.scale)
+
+                ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
+                         window_size[0] - 30 * gui.scale)
+
+            y1 += round(10 * gui.scale)
+
+            # Calculate seek bar position
+            seek_w = int(w * 0.80)
+
+            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 9 * gui.scale]
+            seek_r_hit = [seek_r[0], seek_r[1] - 5 * gui.scale, seek_r[2], seek_r[3] + 12 * gui.scale]
 
             if w != h or mouse_in_area:
 
-                if not line1 and not line2:
-                    ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
-                             window_size[0] - 30 * gui.scale)
-                else:
-
-                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, line2c, 515,
-                             window_size[0] - 30 * gui.scale)
-
-                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
-                             window_size[0] - 30 * gui.scale)
 
                 # Test click to seek
                 if mouse_up and coll(seek_r_hit):
@@ -33190,19 +33203,47 @@ class MiniMode3:
 
                 seek_r[2] = progress_w
 
-                if self.volume_timer.get() < 0.9:
-                    progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
-                    gui.update += 1
-                    seek_colour = [210, 210, 210, 255]
-                    seek_r[2] = progress_w
-                    seek_r[0] += 2 * gui.scale
-                    seek_r[1] += 2 * gui.scale
-                    seek_r[3] -= 4 * gui.scale
+            ddt.rect(seek_r, seek_colour)
 
-                ddt.rect(seek_r, seek_colour)
 
-        left_area = (1, y1, seek_r[0] - 1, 45 * gui.scale)
-        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * gui.scale)
+
+            volume_w = int(w * 0.50)
+            volume_r = [(w - volume_w) // 2, y1 + 80 * gui.scale, volume_w, 6 * gui.scale]
+            volume_r_hit = [volume_r[0], volume_r[1] - 5 * gui.scale, volume_r[2], volume_r[3] + 10 * gui.scale]
+
+            # Test click to volume
+            if (mouse_up or mouse_down) and coll(volume_r_hit):
+
+                click_x = mouse_position[0]
+                if click_x > volume_r[0] + volume_r[2]:
+                    click_x = volume_r[0] + volume_r[2]
+                if click_x < volume_r[0]:
+                    click_x = volume_r[0]
+                click_x -= volume_r[0]
+
+                if click_x < 6 * gui.scale:
+                    click_x = 0
+                volume = click_x / volume_r[2]
+
+                pctl.player_volume = int(volume * 100)
+                pctl.set_volume()
+
+            ddt.rect(volume_r, [255, 255, 255, 32])
+
+            #if self.volume_timer.get() < 0.9:
+            progress_w = pctl.player_volume * (volume_w - (4 * gui.scale)) / 100
+            gui.update += 1
+            volume_colour = [210, 210, 210, 255]
+            volume_r[2] = progress_w
+            volume_r[0] += 2 * gui.scale
+            volume_r[1] += 2 * gui.scale
+            volume_r[3] -= 4 * gui.scale
+
+            ddt.rect(volume_r, volume_colour)
+
+
+        left_area = (1, y1, volume_r[0] - 1, 45 * gui.scale)
+        right_area = (volume_r[0] + volume_w, y1, volume_r[0] - 2, 45 * gui.scale)
 
         fields.add(left_area)
         fields.add(right_area)
@@ -33213,7 +33254,7 @@ class MiniMode3:
         if coll(left_area):
             hint = 240
         if hint and not prefs.shuffle_lock:
-            self.left_slide.render(16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, hint])
+            self.left_slide.render(16 * gui.scale, y1 + 10 * gui.scale, [255, 255, 255, hint])
 
         hint = 0
         if True: #coll(control_hit_area):
@@ -33221,12 +33262,12 @@ class MiniMode3:
         if coll(right_area):
             hint = 240
         if hint:
-            self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 17 * gui.scale,
+            self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 10 * gui.scale,
                                     [255, 255, 255, hint])
 
         # Shuffle
 
-        shuffle_area = (seek_r[0] + seek_w, seek_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
+        shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
         # fields.add(shuffle_area)
         # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
 
@@ -33238,13 +33279,13 @@ class MiniMode3:
             if pctl.random_mode:
                 colour = [255, 255, 255, 190]
 
-            sx = seek_r[0] + seek_w + 8 * gui.scale
-            sy = seek_r[1] - 1 * gui.scale
+            sx = volume_r[0] + volume_w + 8 * gui.scale
+            sy = volume_r[1] - 1 * gui.scale
             ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
             sy += 4 * gui.scale
             ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
 
-        shuffle_area = (seek_r[0] - 41 * gui.scale, seek_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
+        shuffle_area = (volume_r[0] - 41 * gui.scale, volume_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
         if True: #coll(control_hit_area) and not prefs.shuffle_lock:
             colour = [255, 255, 255, 20]
             if inp.mouse_click and coll(shuffle_area):
@@ -33252,8 +33293,8 @@ class MiniMode3:
             if pctl.repeat_mode:
                 colour = [255, 255, 255, 190]
 
-            sx = seek_r[0] - 39 * gui.scale
-            sy = seek_r[1] - 1 * gui.scale
+            sx = volume_r[0] - 39 * gui.scale
+            sy = volume_r[1] - 1 * gui.scale
 
             tw = 2 * gui.scale
             ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)

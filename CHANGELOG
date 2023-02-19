@@ -1,6 +1,11 @@
 
 Changelog----------------------------
 
+v7.6.0
+
+ - Added new mini mode "Slate"
+ - Tweaked search overlay layout
+
 v7.5.0
 
  - Added Windows SMTC support
