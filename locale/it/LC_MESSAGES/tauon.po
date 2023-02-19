@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-01-20 19:58+1300\n"
-"PO-Revision-Date: 2023-01-29 15:14+0000\n"
+"PO-Revision-Date: 2023-02-19 10:50+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -1665,476 +1665,485 @@ msgid ""
 "DANGER! This will delete the original files. You may want to have backups in "
 "case of malfunction."
 msgstr ""
+"ATTENZIONE! Questo cancellerà i file originali. Potresti voler fare un "
+"backup in caso di malfunzionamenti."
 
 #: t_modules/t_main.py:27100
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
+"Per sicurezza, questa impostazione si resetterà al riavvio. Le anteprime "
+"incorporate non saranno salvate per cui potresti volerle estrarre prima."
 
 #: t_modules/t_main.py:27280 t_modules/t_main.py:27288
 msgid "There was an error generating the chart"
-msgstr ""
+msgstr "C'è stato un errore nel generare la classifica"
 
 #: t_modules/t_main.py:27291
 msgid "Chart generated"
-msgstr ""
+msgstr "Classifica generata"
 
 #: t_modules/t_main.py:27337
 msgid "Function"
-msgstr ""
+msgstr "Funzione"
 
 #: t_modules/t_main.py:27338
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: t_modules/t_main.py:27339
 msgid "Tracklist"
-msgstr ""
+msgstr "Elenco Tracce"
 
 #: t_modules/t_main.py:27340 t_modules/t_main.py:27390
 msgid "Theme"
-msgstr ""
+msgstr "Tema"
 
 #: t_modules/t_main.py:27341
 msgid "Window"
-msgstr ""
+msgstr "Finestra"
 
 #: t_modules/t_main.py:27342
 msgid "View"
-msgstr ""
+msgstr "Vista"
 
 #: t_modules/t_main.py:27343
 msgid "Transcode"
-msgstr ""
+msgstr "Converti"
 
 #: t_modules/t_main.py:27344 t_modules/t_main.py:45956
 msgid "Lyrics"
-msgstr ""
+msgstr "Testi"
 
 #: t_modules/t_main.py:27345
 msgid "Accounts"
-msgstr ""
+msgstr "Account"
 
 #: t_modules/t_main.py:27346
 msgid "Stats"
-msgstr ""
+msgstr "Statistiche"
 
 #: t_modules/t_main.py:27347
 msgid "About"
-msgstr ""
+msgstr "A riguardo"
 
 #: t_modules/t_main.py:27394
 msgid "Use album art as background"
-msgstr ""
+msgstr "Usa copertina come sfondo"
 
 #: t_modules/t_main.py:27398
 msgid "Stronger"
-msgstr ""
+msgstr "Più forte"
 
 #: t_modules/t_main.py:27404
 msgid "Blur"
-msgstr ""
+msgstr "Sfoca"
 
 #: t_modules/t_main.py:27407
 msgid "Showcase only"
-msgstr ""
+msgstr "Solo su Vista Copertina"
 
 #: t_modules/t_main.py:27412
 msgid "Pattern style"
-msgstr ""
+msgstr "Stile pattern"
 
 #: t_modules/t_main.py:27416
 msgid "Auto-theme from album art"
-msgstr ""
+msgstr "Tema automatico da Copertina"
 
 #: t_modules/t_main.py:27511
 msgid "Based on"
-msgstr ""
+msgstr "Basa su"
 
 #: t_modules/t_main.py:27519 t_modules/t_main.py:27598
 #: t_modules/t_main.py:29056 t_modules/t_main.py:29660
 msgid "Return"
-msgstr ""
+msgstr "Ritorna"
 
 #: t_modules/t_main.py:27525 t_modules/t_main.py:27691
 msgid "ReplayGain"
-msgstr ""
+msgstr "ReplayGain"
 
 #: t_modules/t_main.py:27529
 msgid "Auto"
-msgstr ""
+msgstr "Automatico"
 
 #: t_modules/t_main.py:27531
 msgid "Preserve album dynamics"
-msgstr ""
+msgstr "Preserva Dinamiche disco"
 
 #: t_modules/t_main.py:27533
 msgid "Tracks equal loudness"
-msgstr ""
+msgstr "Tracce uguali a volume"
 
 #: t_modules/t_main.py:27536
 msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
+msgstr "Avrà effetto solo se i metadati di ReplayGain sono presenti."
 
 #: t_modules/t_main.py:27539
 msgid "Pre-amp"
-msgstr ""
+msgstr "Pre-amplificazione"
 
 #: t_modules/t_main.py:27590
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
+"Una bassa pre-amplificazione migliora la normalizzazione ma richiede un "
+"volume di sistema maggiore."
 
 #: t_modules/t_main.py:27607 t_modules/t_main.py:28200
 #: t_modules/t_main.py:28206 t_modules/t_main.py:28212
 #: t_modules/t_main.py:28378
 msgid "Enable"
-msgstr ""
+msgstr "Abilita"
 
 #: t_modules/t_main.py:27684
 msgid "Use fade on pause/stop"
-msgstr ""
+msgstr "Usa dissolvi su pausa/ferma"
 
 #: t_modules/t_main.py:27686
 msgid "Use fade on track jump"
-msgstr ""
+msgstr "Usa dissolvi su salta traccia"
 
 #: t_modules/t_main.py:27688
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Indietro riparte dall'inizio"
 
 #: t_modules/t_main.py:27696
 msgid "Cache local files (for smb/nfs)"
-msgstr ""
+msgstr "Cache file locali (per smb/nfs)"
 
 #: t_modules/t_main.py:27699
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Usa cache di rete persistente"
 
 #: t_modules/t_main.py:27704
 msgid "Cache size"
-msgstr ""
+msgstr "Dimensione cache"
 
 #: t_modules/t_main.py:27723
 msgid "Set audio output device"
-msgstr ""
+msgstr "Imposta audio di uscita dispositivo"
 
 #: t_modules/t_main.py:27726
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Evita ricodifica"
 
 #: t_modules/t_main.py:27798
 msgid "Enable chord lyrics"
-msgstr ""
+msgstr "Abilita note chitarra"
 
 #: t_modules/t_main.py:27801
 msgid "Sources:"
-msgstr ""
+msgstr "Fonti:"
 
 #: t_modules/t_main.py:27818
 msgid "*Uses scraping. Enable at your own discretion."
-msgstr ""
+msgstr "*Usa raccolta dati. Abilitalo a tua discrezione."
 
 #: t_modules/t_main.py:27821
 msgid "Tip: The order enabled will be the order searched."
-msgstr ""
+msgstr "Suggerimento: L'ordine abilitato sarà l'ordine cercato."
 
 #: t_modules/t_main.py:27832
 msgid "Metadata side panel"
-msgstr ""
+msgstr "Pannello laterale metadati"
 
 #: t_modules/t_main.py:27835
 msgid "Use centered style"
-msgstr ""
+msgstr "Usa stile centrato"
 
 #: t_modules/t_main.py:27838
 msgid "Zoom album art to fit"
-msgstr ""
+msgstr "Ingrandisci copertina per allineare alla finestra"
 
 #: t_modules/t_main.py:27845 t_modules/t_main.py:40418
 #: t_modules/t_main.py:40421
 msgid "Gallery"
-msgstr ""
+msgstr "Galleria"
 
 #: t_modules/t_main.py:27849
 msgid "Single click to play"
-msgstr ""
+msgstr "Click singolo per riprodurre"
 
 #: t_modules/t_main.py:27851
 msgid "Show titles"
-msgstr ""
+msgstr "Mostra titoli"
 
 #: t_modules/t_main.py:27856
 msgid "Center alignment"
-msgstr ""
+msgstr "Allinea al centro"
 
 #: t_modules/t_main.py:27863 t_modules/t_main.py:27871
 msgid "Thumbnail size"
-msgstr ""
+msgstr "Dimensione miniature"
 
 #: t_modules/t_main.py:27867
 msgid "Prefer thinner padding"
-msgstr ""
+msgstr "Preferisci bordi più piccoli"
 
 #: t_modules/t_main.py:27886
 msgid "Ready broadcaster"
-msgstr ""
+msgstr "Prepara trasmettitore"
 
 #: t_modules/t_main.py:27886
 msgid "Start web server for broadcasting"
-msgstr ""
+msgstr "Inizia server in rete per trasmettere"
 
 #: t_modules/t_main.py:27907
 msgid "Show artist info panel"
-msgstr ""
+msgstr "Mostra pannello informazioni artista"
 
 #: t_modules/t_main.py:27908
 msgid "You can also toggle this with ctrl+o"
-msgstr ""
+msgstr "Puoi anche modificare ciò con ctrl+o"
 
 #: t_modules/t_main.py:27915
 msgid "Auto fetch artist data"
-msgstr ""
+msgstr "Cerca automaticamente dati artista"
 
 #: t_modules/t_main.py:27916
 msgid "Downloads data in background when artist panel is open"
-msgstr ""
+msgstr "Scarica dati nello sfondo mentre il pannello artisti è aperto"
 
 #: t_modules/t_main.py:27920
 msgid "Auto regenerate playlists"
-msgstr ""
+msgstr "Auto rigenera scalette"
 
 #: t_modules/t_main.py:27921
 msgid "Generated playlists reload when re-entering"
-msgstr ""
+msgstr "Ricarica scalette generate quando ri-entri"
 
 #: t_modules/t_main.py:27925
 msgid "Tabs in top panel"
-msgstr ""
+msgstr "Schede nel pannello in alto"
 
 #: t_modules/t_main.py:27926
 msgid "Uncheck to disable the tab pin function"
-msgstr ""
+msgstr "Deseleziona per disabilitare la funzione di ancoraggio delle schede"
 
 #: t_modules/t_main.py:27931 t_modules/t_main.py:27937
 msgid "Open config file"
-msgstr ""
+msgstr "Apri file di configurazione"
 
 #: t_modules/t_main.py:27933 t_modules/t_main.py:27943
 msgid "Open data folder"
-msgstr ""
+msgstr "Apri cartella dati"
 
 #: t_modules/t_main.py:27941
 msgid "Reload"
-msgstr ""
+msgstr "Ricarica"
 
 #: t_modules/t_main.py:27947
 msgid "Enable/Disable track context menu functions:"
-msgstr ""
+msgstr "Abilita/Disabilita menu funzioni contesto tracce:"
 
 #: t_modules/t_main.py:27950
 msgid "Wikipedia artist search"
-msgstr ""
+msgstr "Cerca artista su Wikipedia"
 
 #: t_modules/t_main.py:27952
 msgid "Sonemic artist search"
-msgstr ""
+msgstr "Cerca artista su Sonemic"
 
 #: t_modules/t_main.py:27954
 msgid "Bandcamp artist page search"
-msgstr ""
+msgstr "Cerca pagina artista su Bandcamp"
 
 #: t_modules/t_main.py:27958
 msgid "Genius track search"
-msgstr ""
+msgstr "Cerca traccia su Genius"
 
 #: t_modules/t_main.py:27960
 msgid "Transcode folder"
-msgstr ""
+msgstr "Converti cartella"
 
 #: t_modules/t_main.py:27969
 msgid "Extract archives"
-msgstr ""
+msgstr "Estrai archivio"
 
 #: t_modules/t_main.py:27970
 msgid "Extracts zip archives on drag and drop"
-msgstr ""
+msgstr "Estrai archivi zip su trascina e incolla"
 
 #: t_modules/t_main.py:27972
 msgid "Enable download monitor"
-msgstr ""
+msgstr "Abilita monitoraggio scaricamenti"
 
 #: t_modules/t_main.py:27973
 msgid "One click import new archives and folders from downloads folder"
 msgstr ""
+"Un click per importare nuovi archivi e cartelle da cartella scaricamenti"
 
 #: t_modules/t_main.py:27975
 msgid "Trash archive after extraction"
-msgstr ""
+msgstr "Cestina archivio dopo l'estrazione"
 
 #: t_modules/t_main.py:27977
 msgid "Always extract to Music folder"
-msgstr ""
+msgstr "Estrai sempre su cartella Musica"
 
 #: t_modules/t_main.py:27981
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Mostra icona su vassoio di sistema"
 
 #: t_modules/t_main.py:27984 t_modules/t_main.py:27989
 msgid "Close to tray"
-msgstr ""
+msgstr "Chiudi su vassoio"
 
 #: t_modules/t_main.py:27987
 msgid "Show title text"
-msgstr ""
+msgstr "Mostra titolo"
 
 #: t_modules/t_main.py:27996
 msgid "Enable remote control"
-msgstr ""
+msgstr "Abilita controllo remoto"
 
 #: t_modules/t_main.py:27997
 msgid "Change requires restart"
-msgstr ""
+msgstr "Le modifiche richiedono il riavvio"
 
 #: t_modules/t_main.py:28006
 msgid "Block suspend"
-msgstr ""
+msgstr "Blocca sospendi"
 
 #: t_modules/t_main.py:28007
 msgid "Prevent system suspend during playback"
-msgstr ""
+msgstr "Previeni sospensione del sistema durante la riproduzione"
 
 #: t_modules/t_main.py:28010
 msgid "Resume from suspend"
-msgstr ""
+msgstr "Riprenda da sospensione"
 
 #: t_modules/t_main.py:28011
 msgid "Continue playback when waking from sleep"
-msgstr ""
+msgstr "Continua playback quando riprendi da sospensione"
 
 #: t_modules/t_main.py:28015
 msgid "Record Radio"
-msgstr ""
+msgstr "Registra Radio"
 
 #: t_modules/t_main.py:28016
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "Registra e dividi tracce quando si riproduce una radio in rete"
 
 #: t_modules/t_main.py:28018
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Le tracce saranno registrate. Fai ripartire la riproduzione per applicare le "
+"modifiche."
 
 #: t_modules/t_main.py:28019
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Le tracce saranno salvate sulla scaletta \"Tracce Radio Salvate\"."
 
 #: t_modules/t_main.py:28033
 msgid "Enable Discord Rich Presence"
-msgstr ""
+msgstr "Abilita Stato Discord"
 
 #: t_modules/t_main.py:28037
 msgid "For troubleshooting Discord RP"
-msgstr ""
+msgstr "Per problemi su Stato Discord"
 
 #: t_modules/t_main.py:28251
 msgid "Show threshold marker"
-msgstr ""
+msgstr "Mostra marcatore soglia"
 
 #: t_modules/t_main.py:28262
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: t_modules/t_main.py:28280
 msgid "Playlist name"
-msgstr ""
+msgstr "Nome scaletta"
 
 #: t_modules/t_main.py:28293
 msgid "Get playlist"
-msgstr ""
+msgstr "Ottieni scaletta"
 
 #: t_modules/t_main.py:28301
 msgid "Maloja Server"
-msgstr ""
+msgstr "Server Maloja"
 
 #: t_modules/t_main.py:28303
 msgid "Maloja is a self-hosted scrobble server."
-msgstr ""
+msgstr "Maloja è un server di invii hostato personalmente."
 
 #: t_modules/t_main.py:28304
 msgid "See here to lean more: %s"
-msgstr ""
+msgstr "Per saperne di più: %s"
 
 #: t_modules/t_main.py:28314 t_modules/t_main.py:28515
 #: t_modules/t_main.py:28576 t_modules/t_main.py:28649
 msgid "Server URL"
-msgstr ""
+msgstr "Indirizzo server"
 
 #: t_modules/t_main.py:28328
 msgid "API Key"
-msgstr ""
+msgstr "Chiave API"
 
 #: t_modules/t_main.py:28343 t_modules/t_main.py:28606
 msgid "Test connectivity"
-msgstr ""
+msgstr "Test connettività"
 
 #: t_modules/t_main.py:28368 t_modules/t_main.py:28370
 #: t_modules/t_main.py:28865 t_modules/t_main.py:28882
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Ottieni conto invii"
 
 #: t_modules/t_main.py:28381
 msgid "View setup instructions"
-msgstr ""
+msgstr "Guarda istruzioni di configurazione"
 
 #: t_modules/t_main.py:28388
 msgid "Client ID"
-msgstr ""
+msgstr "ID client"
 
 #: t_modules/t_main.py:28418
 msgid "Forget Account"
-msgstr ""
+msgstr "Dimentica Account"
 
 #: t_modules/t_main.py:28424
 msgid "Authorise"
-msgstr ""
+msgstr "Autorizza"
 
 #: t_modules/t_main.py:28434
 msgid "Prefer launching web player"
-msgstr ""
+msgstr "Preferisci lanciare lettore in rete"
 
 #: t_modules/t_main.py:28439
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Abilita riproduzione audio locale"
 
 #: t_modules/t_main.py:28462
 msgid "Spofify password"
-msgstr ""
+msgstr "Password Spotify"
 
 #: t_modules/t_main.py:28477
 msgid "Airsonic/Subsonic network streaming"
-msgstr ""
+msgstr "Streaming in rete Airsonic/subsonic"
 
 #: t_modules/t_main.py:28487 t_modules/t_main.py:28621
 #: t_modules/t_main.py:28678
 msgid "Username / Email"
-msgstr ""
+msgstr "Nome utente/Email"
 
 #: t_modules/t_main.py:28501 t_modules/t_main.py:28562
 #: t_modules/t_main.py:28635 t_modules/t_main.py:28692
 msgid "Password"
-msgstr ""
+msgstr "Password"
 
 #: t_modules/t_main.py:28529 t_modules/t_main.py:28591
 #: t_modules/t_main.py:28664 t_modules/t_main.py:28720
 msgid "Import music to playlist"
-msgstr ""
+msgstr "Importa musica su scaletta"
 
 #: t_modules/t_main.py:28533
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Usa autenticazione testuale"
 
 #: t_modules/t_main.py:28534
 msgid "Needed for Nextcloud Music"
