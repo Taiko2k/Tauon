@@ -629,6 +629,7 @@ import mutagen
 import mutagen.id3
 import mutagen.flac
 import mutagen.mp4
+import mutagen.oggvorbis
 
 
 def no_padding(info):
@@ -1931,8 +1932,28 @@ class StarStore:
             print("Writing rating..")
             assert value <= 10
             assert value >= 0
-            if tr.file_ext == "MP3":
+
+            if tr.file_ext == "OGG" or tr.file_ext == "OPUS":
+                tag = mutagen.oggvorbis.OggVorbis(tr.fullpath)
+                if value == 0:
+                    if "FMPS_RATING" in tag:
+                        del tag["FMPS_RATING"]
+                        tag.save()
+                else:
+                    tag["FMPS_RATING"] = ['{:.2f}'.format(value / 10)]
+                    tag.save()
+
+            elif tr.file_ext == "MP3":
                 tag = mutagen.id3.ID3(tr.fullpath)
+
+                # if True:
+                #     if value == 0:
+                #         tag.delall("POPM")
+                #     else:
+                #         p_rating = 0
+                #
+                #     tag.add(mutagen.id3.POPM(email="Windows Media Player 9 Series", rating=int))
+
                 if value == 0:
                     changed = False
                     frames = tag.getall("TXXX")
@@ -4020,7 +4041,7 @@ def load_prefs():
                                                      prefs.always_auto_update_playlists,
                                                      "Automatically update generator playlists")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings,
-                                      "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
+                                      "This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
     prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
     prefs.discord_enable = cf.sync_add("bool", "enable-discord-rpc", prefs.discord_enable,
                                        "Show track info in running Discord application")
@@ -4370,6 +4391,14 @@ def use_id3(tags, nt):
 
     process_odat(nt, natural_get(tags, None, "TDOR", None))
 
+    frames = tag.getall("POPM")
+    rating = 0
+    if frames:
+        for frame in frames:
+            if frame.rating:
+                rating = frame.rating
+                nt.misc['POPM'] = frame.rating
+
     if len(nt.comment) > 4 and nt.comment[2] == "+":
         nt.comment = ""
     if nt.comment[0:3] == "000":
@@ -4501,6 +4530,7 @@ def scan_ffprobe(nt):
         nt.track_number = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a track")
+
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
@@ -17761,11 +17791,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             def rat_key(track_id):
                 return star_store.get_rating(track_id)
-                # tr = pctl.g(track_id)
-                # if "FMPS_Rating" in tr.misc:
-                #     return tr.misc["FMPS_Rating"]
-                # else:
-                #     return 0
 
             playlist = sorted(playlist, key=rat_key)
 
@@ -17777,10 +17802,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for item in playlist:
                     if value == star_store.get_rating(item):
                         temp.append(item)
-                    # tr = pctl.g(item)
-                    # if "FMPS_Rating" in tr.misc:
-                    #     if value == tr.misc["FMPS_Rating"]:
-                    #         temp.append(item)
                 playlist = temp
             except:
                 errors = True
@@ -17795,10 +17816,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for item in playlist:
                     if value > star_store.get_rating(item):
                         temp.append(item)
-                    # tr = pctl.g(item)
-                    # if "FMPS_Rating" in tr.misc:
-                    #     if value > tr.misc["FMPS_Rating"]:
-                    #         temp.append(item)
                 playlist = temp
             except:
                 errors = True
@@ -17812,10 +17829,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for item in playlist:
                     if value < star_store.get_rating(item):
                         temp.append(item)
-                    # tr = pctl.g(item)
-                    # if "FMPS_Rating" in tr.misc:
-                    #     if value < tr.misc["FMPS_Rating"]:
-                    #         temp.append(item)
                 playlist = temp
             except:
                 errors = True
@@ -17827,8 +17840,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 # tr = pctl.g(item)
                 if star_store.get_rating(item) > 0:
                     temp.append(item)
-                # if "FMPS_Rating" in tr.misc:
-                #     temp.append(item)
             playlist = temp
 
         elif cm == "norat":
@@ -17836,9 +17847,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             for item in playlist:
                 if star_store.get_rating(item) == 0:
                     temp.append(item)
-                # tr = pctl.g(item)
-                # if "FMPS_Rating" not in tr.misc:
-                #     temp.append(item)
             playlist = temp
 
         elif cm == "d>":
@@ -22484,8 +22492,44 @@ def import_fmps():
 
     gui.pl_update += 1
 
+x_menu.add_to_sub(_("Import FMPS Ratings"), 0, import_fmps)
 
-x_menu.add_to_sub(_("Import FMPS_Ratings from Tags"), 0, import_fmps)
+
+def import_popm():
+    unique = set()
+    skipped = set()
+    for playlist in pctl.multi_playlist:
+        for id in playlist[2]:
+            tr = pctl.g(id)
+            if "POPM" in tr.misc:
+                rating = tr.misc["POPM"]
+                t_rating = 0
+                if rating <= 1:
+                    t_rating = 2
+                elif rating <= 64:
+                    t_rating = 4
+                elif rating <= 128:
+                    t_rating = 6
+                elif rating <= 196:
+                    t_rating = 8
+                elif rating <= 255:
+                    t_rating = 10
+
+                if star_store.get_rating(tr.index) == 0:
+                    star_store.set_rating(tr.index, t_rating)
+                    unique.add(tr.index)
+                else:
+                    print("Won't import POPM because track is already rated")
+                    skipped.add(tr.index)
+
+    s = str(len(unique)) + " ratings imported"
+    if len(skipped) > 0:
+        s += f", {len(skipped)} skipped"
+    show_message(s, mode="done")
+
+    gui.pl_update += 1
+
+x_menu.add_to_sub(_("Import POPM Ratings"), 0, import_popm)
 
 
 def clear_ratings():
