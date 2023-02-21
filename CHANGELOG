@@ -4,7 +4,9 @@ Changelog----------------------------
 v7.6.0
 
  - Added new mini mode "Slate"
- - Tweaked search overlay layout
+ - Added function to import POPM ratings from tags
+ - Added FMPS_Rating write support for OGG files
+ - Tweaked search overlay to show thumbnails for track results
 
 v7.5.0
 
