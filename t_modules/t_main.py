@@ -1372,6 +1372,7 @@ class Prefs:  # Used to hold any kind of settings
 
         self.artist_list_threshold = 4
         self.allow_video_formats = True
+        self.mini_mode_on_top = True
 
 
 prefs = Prefs()
@@ -1517,7 +1518,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.level_meter_colour_mode = 3
 
         self.vis = 0  # visualiser mode actual
-        self.vis_want = 0  # visualiser mode setting
+        self.vis_want = 1  # visualiser mode setting
         self.spec = None
         self.s_spec = [0] * 24
         self.s4_spec = [0] * 45
@@ -3741,6 +3742,7 @@ def save_prefs():
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("restore-window-position", prefs.save_window_position)
+    cf.update_value("mini-mode-always-on-top", prefs.mini_mode_on_top)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
@@ -4029,6 +4031,7 @@ def load_prefs():
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position,
                                              "Save and restore the last window position on desktop on open")
+    prefs.mini_mode_on_top  = cf.sync_add("bool", "mini-mode-always-on-top", prefs.mini_mode_on_top)
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
     prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
@@ -29339,20 +29342,23 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
-        y += 25 * gui.scale
-        prefs.save_window_position = self.toggle_square(x, y, prefs.save_window_position,
-                                                        _("Restore window position on restart"))
+        # y += 25 * gui.scale
+        # prefs.save_window_position = self.toggle_square(x, y, prefs.save_window_position,
+        #                                                 _("Restore window position on restart"))
 
         y += 25 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        y += 25 * gui.scale
+        #y += 25 * gui.scale
         # if system != 'windows' and (flatpak_mode or snap_mode):
         #     self.toggle_square(x, y, toggle_force_subpixel, _("Enable RGB text antialiasing"))
 
-        y += 15 * gui.scale
-        self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
+        y += 25 * gui.scale
+        prefs.mini_mode_on_top = self.toggle_square(x, y, prefs.mini_mode_on_top, _("Mini-mode always on top"))
+
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualiser"))
 
         y += 25 * gui.scale
         if prefs.backend == 4:
@@ -33389,6 +33395,9 @@ def set_mini_mode():
     if gui.mode < 3:
         old_window_position = get_window_position()
 
+    if prefs.mini_mode_on_top:
+        SDL_SetWindowAlwaysOnTop(t_window, True)
+
     gui.mode = 3
     gui.vis = 0
     gui.turbo = False
@@ -33463,6 +33472,7 @@ def restore_full_mode():
 
     SDL_SetWindowResizable(t_window, True)
     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+    SDL_SetWindowAlwaysOnTop(t_window, False)
 
     restore_ignore_timer.set()  # Hacky
 

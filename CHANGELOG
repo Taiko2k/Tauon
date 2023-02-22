@@ -4,9 +4,11 @@ Changelog----------------------------
 v7.6.0
 
  - Added new mini mode "Slate"
+ - Added mini-mode always-on-top feature
  - Added function to import POPM ratings from tags
  - Added FMPS_Rating write support for OGG files
  - Tweaked search overlay to show thumbnails for track results
+ - Removed "restore window position" setting from GUI
 
 v7.5.0
 
