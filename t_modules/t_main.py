@@ -16082,7 +16082,7 @@ def download_art1_fire(track_object):
     shoot_dl.start()
 
 
-def remove_embed_picture(track_object):
+def remove_embed_picture(track_object, dry=True):
     index = track_object.index
 
     if key_shift_down or key_shiftr_down:
@@ -16099,7 +16099,8 @@ def remove_embed_picture(track_object):
                 tracks.append(k)
 
     removed = 0
-    pr = pctl.stop(True)
+    if not dry:
+        pr = pctl.stop(True)
     try:
         for item in tracks:
 
@@ -16111,48 +16112,54 @@ def remove_embed_picture(track_object):
             if tr.is_network:
                 continue
 
-            if "MP3" == tr.file_ext:
-                try:
-                    tag = mutagen.id3.ID3(tr.fullpath)
-                    tag.delall("APIC")
-                    remove = True
-                    tag.save(padding=no_padding)
-                except Exception as e:
-                    print("No APIC found")
-                    removed += 1
+            if dry:
+                removed += 1
+            else:
+                if "MP3" == tr.file_ext:
+                    try:
+                        tag = mutagen.id3.ID3(tr.fullpath)
+                        tag.delall("APIC")
+                        remove = True
+                        tag.save(padding=no_padding)
+                        removed += 1
+                    except Exception as e:
+                        print("No APIC found")
 
-            if tr.file_ext == "M4A":
-                try:
-                    tag = mutagen.mp4.MP4(tr.fullpath)
-                    del tag.tags["covr"]
-                    tag.save(padding=no_padding)
-                    removed += 1
-                except:
-                    pass
+                if tr.file_ext == "M4A":
+                    try:
+                        tag = mutagen.mp4.MP4(tr.fullpath)
+                        del tag.tags["covr"]
+                        tag.save(padding=no_padding)
+                        removed += 1
+                    except:
+                        pass
 
-            if tr.file_ext in ("OGA", "OPUS", "OGG"):
-                show_message("Removing vorbis image not implemented")
-                # try:
-                #     tag = mutagen.File(tr.fullpath).tags
-                #     print(tag)
-                #     removed += 1
-                # except:
-                #     pass
+                if tr.file_ext in ("OGA", "OPUS", "OGG"):
+                    show_message("Removing vorbis image not implemented")
+                    # try:
+                    #     tag = mutagen.File(tr.fullpath).tags
+                    #     print(tag)
+                    #     removed += 1
+                    # except:
+                    #     pass
 
-            if "FLAC" == tr.file_ext:
-                try:
-                    tag = mutagen.flac.FLAC(tr.fullpath)
-                    tag.clear_pictures()
-                    tag.save(padding=no_padding)
-                    removed += 1
-                except:
-                    pass
+                if "FLAC" == tr.file_ext:
+                    try:
+                        tag = mutagen.flac.FLAC(tr.fullpath)
+                        tag.clear_pictures()
+                        tag.save(padding=no_padding)
+                        removed += 1
+                    except:
+                        pass
 
-            clear_track_image_cache(tr)
+                clear_track_image_cache(tr)
 
     except Exception as e:
         show_message("Image remove error", mode='error')
         return
+
+    if dry:
+        return removed
 
     if removed == 0:
         show_message(_("Image removal failed."), mode='error')
@@ -16160,7 +16167,7 @@ def remove_embed_picture(track_object):
     elif removed == 1:
         show_message(_("Deleted embedded picture from file"), mode='done')
     else:
-        show_message("Deleted embedded picture from " + str(removed) + " files", mode='done')
+        show_message(_("%d files processed") % removed, mode='done')
     if pr == 1:
         pctl.revert()
 
@@ -16218,10 +16225,14 @@ def delete_track_image(track_object):
     if info and info[0] == 0:
         delete_file_image(track_object)
     elif info and info[0] == 1:
-        remove_embed_picture(track_object)
+        n = remove_embed_picture(track_object, dry=True)
+        gui.message_box_confirm_callback = remove_embed_picture
+        gui.message_box_confirm_reference = (track_object, False)
+        show_message(_("This will erase any embedded image in %d files. Are you sure?" % n), mode="confirm")
 
 
-picture_menu.add('Delete Image <combined>', delete_track_image, delete_track_image_deco, pass_ref=True,
+
+picture_menu.add(_("Delete Image File"), delete_track_image, delete_track_image_deco, pass_ref=True,
                  pass_ref_deco=True, icon=delete_icon)
 
 picture_menu.add(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
