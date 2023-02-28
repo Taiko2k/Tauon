@@ -636,8 +636,9 @@ def no_padding(info):
     # this will remove all padding
     return 0
 
-
+wayland = True
 if not os.environ.get('SDL_VIDEODRIVER') == "wayland":
+    wayland = False
     os.environ['GDK_BACKEND'] = "x11"
 
 from t_modules.t_tagscan import Flac
@@ -1518,7 +1519,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.level_meter_colour_mode = 3
 
         self.vis = 0  # visualiser mode actual
-        self.vis_want = 1  # visualiser mode setting
+        self.vis_want = 2  # visualiser mode setting
         self.spec = None
         self.s_spec = [0] * 24
         self.s4_spec = [0] * 45
@@ -4317,7 +4318,7 @@ try:
     update_title = view_prefs['update-title']
     prefs.prefer_side = view_prefs['side-panel']
     prefs.dim_art = False  # view_prefs['dim-art']
-    gui.turbo = view_prefs['level-meter']
+    #gui.turbo = view_prefs['level-meter']
     # pl_follow = view_prefs['pl-follow']
     scroll_enable = view_prefs['scroll-enable']
     break_enable = view_prefs['break-enable']
@@ -5226,7 +5227,6 @@ class PlayerCtl:
         return 0
 
     def g(self, index):
-
         return self.master_library[index]
 
     def show_object(self):  # The track to show in the metadata side panel
@@ -21352,7 +21352,25 @@ track_menu.add_to_sub(_('Show Full Artist'), 1, get_spot_artist_track, pass_ref=
 track_menu.add_to_sub(_('Copy Track URL'), 1, get_track_spot_url, get_track_spot_url_deco, pass_ref=True,
                icon=spot_icon)
 
+def get_spot_recs(tr=None):
+    if not tr:
+        tr = pctl.playing_object()
+    if not tr:
+        return
+    url = spot_ctl.get_artist_url_from_local(tr)
+    if not url:
+        show_message(_("No results found"))
+        return
+    track_url = tr.misc.get("spotify-track-url")
 
+    show_message(_("Fetching..."))
+    shooter(spot_ctl.rec_playlist, (url, track_url))
+
+def get_spot_recs_track(index):
+    get_spot_recs(pctl.g(index))
+
+track_menu.add_to_sub(_('Get Recommended'), 1, get_spot_recs_track, pass_ref=True,
+               icon=spot_icon)
 
 
 def drop_tracks_to_new_playlist(track_list, hidden=False):
@@ -23186,7 +23204,7 @@ def get_artist_spot(tr=None):
         show_message(_("No results found"))
         return
     show_message(_("Fetching..."))
-    shooter(spot_ctl.artist_playlist(url))
+    shooter(spot_ctl.artist_playlist, (url,))
 
 extra_menu.add(_("Show Full Artist"), get_artist_spot,
                show_test=spotify_show_test, icon=spot_icon)
@@ -29383,7 +29401,10 @@ class Over:
         #     self.toggle_square(x, y, toggle_force_subpixel, _("Enable RGB text antialiasing"))
 
         y += 25 * gui.scale
+        old = prefs.mini_mode_on_top
         prefs.mini_mode_on_top = self.toggle_square(x, y, prefs.mini_mode_on_top, _("Mini-mode always on top"))
+        if prefs.mini_mode_on_top and prefs.mini_mode_on_top != old:
+            show_message("Always-on-top feature not yet implemented for Wayland mode")
 
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualiser"))
@@ -42278,7 +42299,7 @@ def save_state():
     view_prefs['update-title'] = update_title
     view_prefs['side-panel'] = prefs.prefer_side
     view_prefs['dim-art'] = prefs.dim_art
-    view_prefs['level-meter'] = gui.turbo
+    #view_prefs['level-meter'] = gui.turbo
     # view_prefs['pl-follow'] = pl_follow
     view_prefs['scroll-enable'] = scroll_enable
     view_prefs['break-enable'] = break_enable
