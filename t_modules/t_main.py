@@ -21319,10 +21319,10 @@ def clip_ar_tr(index):
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
 
-def get_track_spot_url_show_test(_):
-    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
-        return True
-    return False
+# def get_track_spot_url_show_test(_):
+#     if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+#         return True
+#     return False
 
 
 def get_track_spot_url(track_id):
@@ -21334,9 +21334,25 @@ def get_track_spot_url(track_id):
     else:
         show_message("No results found")
 
+def get_track_spot_url_deco():
+    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
 
-track_menu.add(_('Copy Spotify Track URL'), get_track_spot_url, pass_ref=True, show_test=get_track_spot_url_show_test,
+    return [line_colour, colours.menu_background, None]
+
+track_menu.add_sub(_("Spotify…"), 190, show_test=spotify_show_test)
+
+def get_spot_artist_track(index):
+    get_artist_spot(pctl.g(index))
+
+track_menu.add_to_sub(_('Show Full Artist'), 1, get_spot_artist_track, pass_ref=True, icon=spot_icon)
+
+track_menu.add_to_sub(_('Copy Track URL'), 1, get_track_spot_url, get_track_spot_url_deco, pass_ref=True,
                icon=spot_icon)
+
+
 
 
 def drop_tracks_to_new_playlist(track_list, hidden=False):
@@ -23160,8 +23176,9 @@ extra_menu.add("Show Full Album", get_album_spot_active, get_album_spot_deco,
                show_test=spotify_show_test, icon=spot_icon)
 
 
-def get_artist_spot_active():
-    tr = pctl.playing_object()
+def get_artist_spot(tr=None):
+    if not tr:
+        tr = pctl.playing_object()
     if not tr:
         return
     url = spot_ctl.get_artist_url_from_local(tr)
@@ -23171,7 +23188,7 @@ def get_artist_spot_active():
     show_message(_("Fetching..."))
     shooter(spot_ctl.artist_playlist(url))
 
-extra_menu.add(_("Show Full Artist"), get_artist_spot_active,
+extra_menu.add(_("Show Full Artist"), get_artist_spot,
                show_test=spotify_show_test, icon=spot_icon)
 
 extra_menu.add(_("Start Spotify Remote"), show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,

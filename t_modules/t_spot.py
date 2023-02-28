@@ -245,9 +245,11 @@ class SpotCtl:
         if not self.spotify:
             return None
 
-        results = self.spotify.search(track_object.artist + " " + track_object.album, types=('artist',), limit=1)
+        results = self.spotify.search(track_object.artist, types=('artist',), limit=1) #+ " " + track_object.album
         for artist in results[0].items:
             if "spotify" in artist.external_urls:
+                if artist.name.lower() not in track_object.artist.lower():
+                    return None
                 return artist.external_urls["spotify"]
 
         return None
@@ -697,7 +699,6 @@ class SpotCtl:
             self.load_album(full_album, playlist)
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Singles", playlist=playlist))
-        self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
         self.tauon.gui.message_box = False
 
     def album_playlist(self, url):
