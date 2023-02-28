@@ -9,7 +9,9 @@ v7.6.0
  - Added FMPS_Rating write support for OGG files
  - Added lookup artist on Spotify function to track menu
  - Added confirmation to embedded art delete
+ - Added Spotify get recommended tracks feature
  - Tweaked search overlay to show thumbnails for track results
+ - Tweaked spotify artist lookup to give more accurate results
  - Removed "restore window position" setting from GUI
 
 v7.5.0
