@@ -21349,6 +21349,33 @@ def get_spot_artist_track(index):
 
 track_menu.add_to_sub(_('Show Full Artist'), 1, get_spot_artist_track, pass_ref=True, icon=spot_icon)
 
+def get_album_spot_active(tr=None):
+    if tr is None:
+        tr = pctl.playing_object()
+    if not tr:
+        return
+    url = spot_ctl.get_album_url_from_local(tr)
+    if not url:
+        show_message(_("No results found"))
+        return
+    l = spot_ctl.append_album(url, return_list=True)
+    if len(l) < 2:
+        show_message(_("Looks like that's the only track in the album"))
+        return
+    pctl.multi_playlist.append(pl_gen(title=f"{pctl.g(l[0]).artist} - {pctl.g(l[0]).album}",
+                                      playlist=l,
+                                      hide_title=0,
+                                      ))
+    switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+def get_spot_album_track(index):
+    get_album_spot_active(pctl.g(index))
+
+track_menu.add_to_sub(_('Show Full Album'), 1, get_spot_album_track, pass_ref=True, icon=spot_icon)
+
+
+
 track_menu.add_to_sub(_('Copy Track URL'), 1, get_track_spot_url, get_track_spot_url_deco, pass_ref=True,
                icon=spot_icon)
 
@@ -23169,25 +23196,6 @@ def get_album_spot_deco():
         text = _("Lookup Spotify Album")
 
     return [colours.menu_text, colours.menu_background, text]
-
-
-def get_album_spot_active():
-    tr = pctl.playing_object()
-    if not tr:
-        return
-    url = spot_ctl.get_album_url_from_local(tr)
-    if not url:
-        show_message(_("No results found"))
-        return
-    l = spot_ctl.append_album(url, return_list=True)
-    if len(l) < 2:
-        show_message(_("Looks like that's the only track in the album"))
-        return
-    pctl.multi_playlist.append(pl_gen(title=f"{pctl.g(l[0]).artist} - {pctl.g(l[0]).album}",
-                                      playlist=l,
-                                      hide_title=0,
-                                      ))
-    switch_playlist(len(pctl.multi_playlist) - 1)
 
 
 extra_menu.add("Show Full Album", get_album_spot_active, get_album_spot_deco,
