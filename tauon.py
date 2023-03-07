@@ -9,6 +9,15 @@ from gi.repository import GLib
 if sys.platform != 'win32':
     import fcntl
 
+n_version = "7.5.0"
+t_version = "v" + n_version
+t_title = 'Tauon Music Box'
+t_id = 'tauonmb'
+t_agent = "TauonMusicBox/" + n_version
+
+
+print(f"{t_title} {t_version}")
+print('Copyright 2015-2022 Taiko2k captain.gxj@gmail.com\n')
 
 # Early arg processing
 def transfer_args_and_exit():
@@ -56,9 +65,6 @@ def transfer_args_and_exit():
 if "--no-start" in sys.argv:
     transfer_args_and_exit()
 
-t_title = 'Tauon Music Box'
-os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
-
 install_directory = os.path.dirname(os.path.abspath(__file__))
 
 pyinstaller_mode = False
@@ -83,6 +89,12 @@ if install_directory.startswith("/opt/")\
         or install_directory.startswith("/app/")\
         or install_directory.startswith("/snap/") or sys.platform == "darwin" or sys.platform == 'win32':
     install_mode = True
+
+if install_directory.startswith("/app/"):
+    # Its Flatpak
+    t_id = "com.github.taiko2k.tauonmb"
+os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
+os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 
 if os.path.isfile(os.path.join(install_directory, "portable")):
     install_mode = False
@@ -307,6 +319,11 @@ h.py = pyinstaller_mode
 h.p = phone
 h.window_title = window_title
 h.fs_mode = fs_mode
+h.title = t_title
+h.n_version = n_version
+h.t_version = t_version
+h.t_id = t_id
+h.agent = t_agent
 
 del raw_image
 del sdl_texture

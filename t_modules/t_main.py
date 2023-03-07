@@ -31,15 +31,6 @@
 import sys
 import socket
 
-n_version = "7.5.0"
-t_version = "v" + n_version
-t_title = 'Tauon Music Box'
-t_id = 'tauonmb'
-t_agent = "TauonMusicBox/" + n_version
-
-print(f"{t_title} {t_version}")
-print('Copyright 2015-2022 Taiko2k captain.gxj@gmail.com\n')
-
 from t_modules import t_bootstrap
 
 h = t_bootstrap.holder
@@ -59,7 +50,11 @@ phone = h.p
 window_default_size = h.wdf
 window_title = h.window_title
 fs_mode = h.fs_mode
-
+t_title = h.title
+n_version = h.n_version
+t_version = h.t_version
+t_id = h.t_id
+t_agent = h.agent
 print(f"Window size: {window_size}")
 
 import os
@@ -172,8 +167,6 @@ if install_directory.startswith("/opt/") \
         snap_mode = True
     if install_directory[:5] == "/app/":
         # Flatpak mode
-
-        t_id = "com.github.taiko2k.tauonmb"
         print("Detected running as Flatpak")
 
         # [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
