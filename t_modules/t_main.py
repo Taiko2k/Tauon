@@ -5768,7 +5768,8 @@ class PlayerCtl:
             self.notify_update()
 
     def play_pause(self):
-
+        if self.playing_state == 3:
+            self.stop()
         if self.playing_state > 0:
             self.pause()
         else:
@@ -43697,10 +43698,8 @@ while pctl.running:
                     paste()
 
                 if keymaps.test("playpause"):
-                    if pctl.playing_state == 0:
-                        pctl.play()
-                    else:
-                        pctl.pause()
+                    pctl.play_pause()
+
 
         if inp.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
             inp.key_return_press = False
