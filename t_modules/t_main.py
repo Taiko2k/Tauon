@@ -24108,8 +24108,9 @@ class SearchOverlay:
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+        if gui.combo_mode:
+            exit_combo()
         switch_playlist(len(pctl.multi_playlist) - 1)
-
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "a\"" + name + "\""
 
         inp.key_return_press = False
@@ -24130,6 +24131,9 @@ class SearchOverlay:
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+        if gui.combo_mode:
+            exit_combo()
+
         switch_playlist(len(pctl.multi_playlist) - 1)
 
         inp.key_return_press = False
@@ -24149,6 +24153,9 @@ class SearchOverlay:
         pctl.multi_playlist.append(pl_gen(title="Composer: " + name,
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
+
+        if gui.combo_mode:
+            exit_combo()
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -24174,6 +24181,9 @@ class SearchOverlay:
         pctl.multi_playlist.append(pl_gen(title=os.path.basename(name).upper(),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
+
+        if gui.combo_mode:
+            exit_combo()
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -24215,6 +24225,9 @@ class SearchOverlay:
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+        if gui.combo_mode:
+            exit_combo()
+
         switch_playlist(len(pctl.multi_playlist) - 1)
 
         if include_multi:
@@ -24227,6 +24240,9 @@ class SearchOverlay:
     def click_album(self, index):
 
         pctl.jump(index)
+        if gui.combo_mode:
+            exit_combo()
+
         pctl.show_current()
 
         inp.key_return_press = False
