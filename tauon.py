@@ -17,7 +17,7 @@ t_agent = "TauonMusicBox/" + n_version
 
 
 print(f"{t_title} {t_version}")
-print('Copyright 2015-2022 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2023 Taiko2k captain.gxj@gmail.com\n')
 
 # Early arg processing
 def transfer_args_and_exit():
@@ -76,6 +76,7 @@ if hasattr(sys, "_MEIPASS"):
 
 if pyinstaller_mode:
      os.environ["PATH"] += ":" + sys._MEIPASS
+     os.environ['SSL_CERT_FILE'] = os.path.join(install_directory, "certifi", "cacert.pem")
 
 user_directory = os.path.join(install_directory, "user-data")
 config_directory = user_directory
