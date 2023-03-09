@@ -37514,9 +37514,6 @@ class ArtistList:
 
                 gui.pl_update += 1
 
-                # if album_mode:
-                #     goto_album(select)
-
                 self.click_highlight_timer.set()
 
                 select = blocks[0][0]
@@ -37584,6 +37581,8 @@ class ArtistList:
                     pctl.selected_in_playlist = select
                     self.d_click_ref = artist
                     self.d_click_timer.set()
+                    if album_mode:
+                        goto_album(select)
 
             if middle_click:
                 self.click_ref = artist
