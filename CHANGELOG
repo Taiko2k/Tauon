@@ -1,6 +1,20 @@
 
 Changelog----------------------------
 
+v7.6.0
+
+ - Added new mini mode "Slate"
+ - Added mini-mode always-on-top feature
+ - Added function to import POPM ratings from tags
+ - Added FMPS_Rating write support for OGG files
+ - Added lookup artist on Spotify function to track menu
+ - Added confirmation to embedded art delete
+ - Added Spotify get recommended tracks feature
+ - Tweaked search overlay to show thumbnails for track results
+ - Tweaked spotify artist lookup to give more accurate results
+ - Fixed radio view not exiting on search result activate
+ - Removed "restore window position" setting from GUI
+
 v7.5.0
 
  - Added Windows SMTC support

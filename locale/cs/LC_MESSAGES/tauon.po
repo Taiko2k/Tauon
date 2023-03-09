@@ -248,7 +248,9 @@ msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
 
 #: t_modules/t_main.py:14385
-msgid "When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"
+msgid ""
+"When done, press WRITE TAGS to save to tags in actual files. (Optional but "
+"recommended)"
 msgstr ""
 
 #: t_modules/t_main.py:14389
@@ -687,7 +689,8 @@ msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
 
 #: t_modules/t_main.py:18101
-msgid "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
+msgid ""
+"You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
 
 #: t_modules/t_main.py:18106 t_modules/t_main.py:22151
@@ -870,7 +873,8 @@ msgid "No tracks with lyrics were found."
 msgstr ""
 
 #: t_modules/t_main.py:18718
-msgid "Note this may include albums that simply have tracks missing an album tag"
+msgid ""
+"Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
 
 #: t_modules/t_main.py:18719
@@ -1393,7 +1397,9 @@ msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
 
 #: t_modules/t_main.py:22344 t_modules/t_main.py:28917
-msgid "Press button again while holding shift key if you're sure you want to do that."
+msgid ""
+"Press button again while holding shift key if you're sure you want to do "
+"that."
 msgstr ""
 
 #: t_modules/t_main.py:22354
@@ -1598,7 +1604,8 @@ msgid "Permission error accessing one or more files"
 msgstr ""
 
 #: t_modules/t_main.py:26730
-msgid "Note that ratings are stored in the local database and not written to tags."
+msgid ""
+"Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 
 #: t_modules/t_main.py:26781 t_modules/t_main.py:26795
@@ -1623,19 +1630,27 @@ msgid "One or more fields is missing."
 msgstr ""
 
 #: t_modules/t_main.py:27077
-msgid "DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."
+msgid ""
+"DANGER! This will delete the original files. Keeping a backup is recommended "
+"in case of malfunction."
 msgstr ""
 
 #: t_modules/t_main.py:27078
-msgid "For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."
+msgid ""
+"For safety, this setting will default to off. Embedded thumbnails are not "
+"kept so you may want to extract them first."
 msgstr ""
 
 #: t_modules/t_main.py:27099
-msgid "DANGER! This will delete the original files. You may want to have backups in case of malfunction."
+msgid ""
+"DANGER! This will delete the original files. You may want to have backups in "
+"case of malfunction."
 msgstr ""
 
 #: t_modules/t_main.py:27100
-msgid "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."
+msgid ""
+"For safety, this setting will reset on restart. Embedded thumbnails are not "
+"kept so you may want to extract them first."
 msgstr ""
 
 #: t_modules/t_main.py:27280 t_modules/t_main.py:27288
@@ -1748,7 +1763,9 @@ msgid "Pre-amp"
 msgstr ""
 
 #: t_modules/t_main.py:27590
-msgid "Lower pre-amp values improve normalisation but will require a higher system volume."
+msgid ""
+"Lower pre-amp values improve normalisation but will require a higher system "
+"volume."
 msgstr ""
 
 #: t_modules/t_main.py:27607 t_modules/t_main.py:28200
@@ -1987,7 +2004,8 @@ msgid "Record and split songs when playing internet radio"
 msgstr ""
 
 #: t_modules/t_main.py:28018
-msgid "Tracks will now be recorded. Restart any playback for change to take effect."
+msgid ""
+"Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
 
 #: t_modules/t_main.py:28019
@@ -2168,7 +2186,9 @@ msgid "Use LibreFM"
 msgstr ""
 
 #: t_modules/t_main.py:28851
-msgid "Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."
+msgid ""
+"Click login to open the last.fm web authorisation page and follow prompt. "
+"Then return here and click \"Done\"."
 msgstr ""
 
 #: t_modules/t_main.py:28855
@@ -2208,7 +2228,9 @@ msgid "Cleared all scrobble counts"
 msgstr ""
 
 #: t_modules/t_main.py:28953
-msgid "Warning: This process can take a long time to complete! (up to an hour or more)"
+msgid ""
+"Warning: This process can take a long time to complete! (up to an hour or "
+"more)"
 msgstr ""
 
 #: t_modules/t_main.py:28954
@@ -2488,7 +2510,8 @@ msgid "Okay, it's a normal playlist now."
 msgstr ""
 
 #: t_modules/t_main.py:30249
-msgid "You added tracks to a generator playlist. Do you want to clear the generator?"
+msgid ""
+"You added tracks to a generator playlist. Do you want to clear the generator?"
 msgstr ""
 
 #: t_modules/t_main.py:30785 t_modules/t_main.py:35480

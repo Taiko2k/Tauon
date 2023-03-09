@@ -31,15 +31,6 @@
 import sys
 import socket
 
-n_version = "7.5.0"
-t_version = "v" + n_version
-t_title = 'Tauon Music Box'
-t_id = 'tauonmb'
-t_agent = "TauonMusicBox/" + n_version
-
-print(f"{t_title} {t_version}")
-print('Copyright 2015-2022 Taiko2k captain.gxj@gmail.com\n')
-
 from t_modules import t_bootstrap
 
 h = t_bootstrap.holder
@@ -59,7 +50,11 @@ phone = h.p
 window_default_size = h.wdf
 window_title = h.window_title
 fs_mode = h.fs_mode
-
+t_title = h.title
+n_version = h.n_version
+t_version = h.t_version
+t_id = h.t_id
+t_agent = h.agent
 print(f"Window size: {window_size}")
 
 import os
@@ -172,8 +167,6 @@ if install_directory.startswith("/opt/") \
         snap_mode = True
     if install_directory[:5] == "/app/":
         # Flatpak mode
-
-        t_id = "com.github.taiko2k.tauonmb"
         print("Detected running as Flatpak")
 
         # [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
@@ -616,7 +609,7 @@ elif not msys and not macos:
 
 # Other imports
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 
 try:
     from jxlpy import JXLImagePlugin
@@ -629,14 +622,16 @@ import mutagen
 import mutagen.id3
 import mutagen.flac
 import mutagen.mp4
+import mutagen.oggvorbis
 
 
 def no_padding(info):
     # this will remove all padding
     return 0
 
-
+wayland = True
 if not os.environ.get('SDL_VIDEODRIVER') == "wayland":
+    wayland = False
     os.environ['GDK_BACKEND'] = "x11"
 
 from t_modules.t_tagscan import Flac
@@ -1371,6 +1366,7 @@ class Prefs:  # Used to hold any kind of settings
 
         self.artist_list_threshold = 4
         self.allow_video_formats = True
+        self.mini_mode_on_top = True
 
 
 prefs = Prefs()
@@ -1516,7 +1512,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.level_meter_colour_mode = 3
 
         self.vis = 0  # visualiser mode actual
-        self.vis_want = 0  # visualiser mode setting
+        self.vis_want = 2  # visualiser mode setting
         self.spec = None
         self.s_spec = [0] * 24
         self.s4_spec = [0] * 45
@@ -1818,6 +1814,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
         self.tag_write_count = 0
         # self.text_input_request = False
         # self.text_input_active = False
+        self.center_blur_pixel = (0, 0, 0)
 
 
 gui = GuiVar()
@@ -1930,8 +1927,28 @@ class StarStore:
             print("Writing rating..")
             assert value <= 10
             assert value >= 0
-            if tr.file_ext == "MP3":
+
+            if tr.file_ext == "OGG" or tr.file_ext == "OPUS":
+                tag = mutagen.oggvorbis.OggVorbis(tr.fullpath)
+                if value == 0:
+                    if "FMPS_RATING" in tag:
+                        del tag["FMPS_RATING"]
+                        tag.save()
+                else:
+                    tag["FMPS_RATING"] = ['{:.2f}'.format(value / 10)]
+                    tag.save()
+
+            elif tr.file_ext == "MP3":
                 tag = mutagen.id3.ID3(tr.fullpath)
+
+                # if True:
+                #     if value == 0:
+                #         tag.delall("POPM")
+                #     else:
+                #         p_rating = 0
+                #
+                #     tag.add(mutagen.id3.POPM(email="Windows Media Player 9 Series", rating=int))
+
                 if value == 0:
                     changed = False
                     frames = tag.getall("TXXX")
@@ -3719,6 +3736,7 @@ def save_prefs():
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
     cf.update_value("restore-window-position", prefs.save_window_position)
+    cf.update_value("mini-mode-always-on-top", prefs.mini_mode_on_top)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
@@ -4007,6 +4025,7 @@ def load_prefs():
     prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
     prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position,
                                              "Save and restore the last window position on desktop on open")
+    prefs.mini_mode_on_top  = cf.sync_add("bool", "mini-mode-always-on-top", prefs.mini_mode_on_top)
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
     prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
@@ -4019,7 +4038,7 @@ def load_prefs():
                                                      prefs.always_auto_update_playlists,
                                                      "Automatically update generator playlists")
     prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings,
-                                      "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
+                                      "This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
     prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
     prefs.discord_enable = cf.sync_add("bool", "enable-discord-rpc", prefs.discord_enable,
                                        "Show track info in running Discord application")
@@ -4292,7 +4311,7 @@ try:
     update_title = view_prefs['update-title']
     prefs.prefer_side = view_prefs['side-panel']
     prefs.dim_art = False  # view_prefs['dim-art']
-    gui.turbo = view_prefs['level-meter']
+    #gui.turbo = view_prefs['level-meter']
     # pl_follow = view_prefs['pl-follow']
     scroll_enable = view_prefs['scroll-enable']
     break_enable = view_prefs['break-enable']
@@ -4368,6 +4387,14 @@ def use_id3(tags, nt):
     natural_get(tags, nt, "COMM", "comment")
 
     process_odat(nt, natural_get(tags, None, "TDOR", None))
+
+    frames = tag.getall("POPM")
+    rating = 0
+    if frames:
+        for frame in frames:
+            if frame.rating:
+                rating = frame.rating
+                nt.misc['POPM'] = frame.rating
 
     if len(nt.comment) > 4 and nt.comment[2] == "+":
         nt.comment = ""
@@ -4500,6 +4527,7 @@ def scan_ffprobe(nt):
         nt.track_number = str(result.stdout.decode())
     except:
         print("FFPROBE couldn't supply a track")
+
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
@@ -5124,7 +5152,7 @@ class PlayerCtl:
             shoot = threading.Thread(target=self.notify_update_fire)
             shoot.daemon = True
             shoot.start()
-        if prefs.art_bg:
+        if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
             tm.ready("style")
 
     def get_url(self, track_object):
@@ -5192,7 +5220,6 @@ class PlayerCtl:
         return 0
 
     def g(self, index):
-
         return self.master_library[index]
 
     def show_object(self):  # The track to show in the metadata side panel
@@ -5734,8 +5761,9 @@ class PlayerCtl:
             self.notify_update()
 
     def play_pause(self):
-
-        if self.playing_state > 0:
+        if self.playing_state == 3:
+            self.stop()
+        elif self.playing_state > 0:
             self.pause()
         else:
             self.play()
@@ -12231,8 +12259,24 @@ class AlbumArt():
             if artist and artist in prefs.bg_flips:
                 im = im.transpose(Image.FLIP_LEFT_RIGHT)
 
-        if ox_size < 500 or prefs.art_bg_always_blur:
-            im = im.filter(ImageFilter.GaussianBlur(prefs.art_bg_blur))
+        if (ox_size < 500 or prefs.art_bg_always_blur) or gui.mode == 3:
+            blur = prefs.art_bg_blur
+            if prefs.mini_mode_mode == 5 and gui.mode == 3:
+                blur = 160
+                pix = im.getpixel((new_x // 2, new_y // 4 * 3))
+                pixel_sum = sum(pix) / (255 * 3)
+                if pixel_sum > 0.6:
+                    enhancer = ImageEnhance.Brightness(im)
+                    deduct = 1 - ((pixel_sum - 0.6) * 1.5)
+                    im = enhancer.enhance(deduct)
+                    print(deduct)
+
+                gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
+
+            im = im.filter(ImageFilter.GaussianBlur(blur))
+
+
+        gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 2))
 
         g = io.BytesIO()
         g.seek(0)
@@ -12742,6 +12786,7 @@ class StyleOverlay:
                 except Exception as e:
                     print("Blur blackground error")
                     print(str(e))
+                    raise
                     #print(track.fullpath)
 
                 if self.im is None or self.im is False:
@@ -12916,7 +12961,11 @@ class StyleOverlay:
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
-            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, prefs.art_bg_opacity)
+            opacity = prefs.art_bg_opacity
+            if prefs.mini_mode_mode == 5 and gui.mode == 3:
+                opacity = 255
+
+            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, opacity)
             SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -16027,7 +16076,7 @@ def download_art1_fire(track_object):
     shoot_dl.start()
 
 
-def remove_embed_picture(track_object):
+def remove_embed_picture(track_object, dry=True):
     index = track_object.index
 
     if key_shift_down or key_shiftr_down:
@@ -16044,7 +16093,8 @@ def remove_embed_picture(track_object):
                 tracks.append(k)
 
     removed = 0
-    pr = pctl.stop(True)
+    if not dry:
+        pr = pctl.stop(True)
     try:
         for item in tracks:
 
@@ -16056,48 +16106,54 @@ def remove_embed_picture(track_object):
             if tr.is_network:
                 continue
 
-            if "MP3" == tr.file_ext:
-                try:
-                    tag = mutagen.id3.ID3(tr.fullpath)
-                    tag.delall("APIC")
-                    remove = True
-                    tag.save(padding=no_padding)
-                except Exception as e:
-                    print("No APIC found")
-                    removed += 1
+            if dry:
+                removed += 1
+            else:
+                if "MP3" == tr.file_ext:
+                    try:
+                        tag = mutagen.id3.ID3(tr.fullpath)
+                        tag.delall("APIC")
+                        remove = True
+                        tag.save(padding=no_padding)
+                        removed += 1
+                    except Exception as e:
+                        print("No APIC found")
 
-            if tr.file_ext == "M4A":
-                try:
-                    tag = mutagen.mp4.MP4(tr.fullpath)
-                    del tag.tags["covr"]
-                    tag.save(padding=no_padding)
-                    removed += 1
-                except:
-                    pass
+                if tr.file_ext == "M4A":
+                    try:
+                        tag = mutagen.mp4.MP4(tr.fullpath)
+                        del tag.tags["covr"]
+                        tag.save(padding=no_padding)
+                        removed += 1
+                    except:
+                        pass
 
-            if tr.file_ext in ("OGA", "OPUS", "OGG"):
-                show_message("Removing vorbis image not implemented")
-                # try:
-                #     tag = mutagen.File(tr.fullpath).tags
-                #     print(tag)
-                #     removed += 1
-                # except:
-                #     pass
+                if tr.file_ext in ("OGA", "OPUS", "OGG"):
+                    show_message("Removing vorbis image not implemented")
+                    # try:
+                    #     tag = mutagen.File(tr.fullpath).tags
+                    #     print(tag)
+                    #     removed += 1
+                    # except:
+                    #     pass
 
-            if "FLAC" == tr.file_ext:
-                try:
-                    tag = mutagen.flac.FLAC(tr.fullpath)
-                    tag.clear_pictures()
-                    tag.save(padding=no_padding)
-                    removed += 1
-                except:
-                    pass
+                if "FLAC" == tr.file_ext:
+                    try:
+                        tag = mutagen.flac.FLAC(tr.fullpath)
+                        tag.clear_pictures()
+                        tag.save(padding=no_padding)
+                        removed += 1
+                    except:
+                        pass
 
-            clear_track_image_cache(tr)
+                clear_track_image_cache(tr)
 
     except Exception as e:
         show_message("Image remove error", mode='error')
         return
+
+    if dry:
+        return removed
 
     if removed == 0:
         show_message(_("Image removal failed."), mode='error')
@@ -16105,7 +16161,7 @@ def remove_embed_picture(track_object):
     elif removed == 1:
         show_message(_("Deleted embedded picture from file"), mode='done')
     else:
-        show_message("Deleted embedded picture from " + str(removed) + " files", mode='done')
+        show_message(_("%d files processed") % removed, mode='done')
     if pr == 1:
         pctl.revert()
 
@@ -16163,10 +16219,14 @@ def delete_track_image(track_object):
     if info and info[0] == 0:
         delete_file_image(track_object)
     elif info and info[0] == 1:
-        remove_embed_picture(track_object)
+        n = remove_embed_picture(track_object, dry=True)
+        gui.message_box_confirm_callback = remove_embed_picture
+        gui.message_box_confirm_reference = (track_object, False)
+        show_message(_("This will erase any embedded image in %d files. Are you sure?" % n), mode="confirm")
 
 
-picture_menu.add('Delete Image <combined>', delete_track_image, delete_track_image_deco, pass_ref=True,
+
+picture_menu.add(_("Delete Image File"), delete_track_image, delete_track_image_deco, pass_ref=True,
                  pass_ref_deco=True, icon=delete_icon)
 
 picture_menu.add(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
@@ -17739,11 +17799,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             def rat_key(track_id):
                 return star_store.get_rating(track_id)
-                # tr = pctl.g(track_id)
-                # if "FMPS_Rating" in tr.misc:
-                #     return tr.misc["FMPS_Rating"]
-                # else:
-                #     return 0
 
             playlist = sorted(playlist, key=rat_key)
 
@@ -17755,10 +17810,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for item in playlist:
                     if value == star_store.get_rating(item):
                         temp.append(item)
-                    # tr = pctl.g(item)
-                    # if "FMPS_Rating" in tr.misc:
-                    #     if value == tr.misc["FMPS_Rating"]:
-                    #         temp.append(item)
                 playlist = temp
             except:
                 errors = True
@@ -17773,10 +17824,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for item in playlist:
                     if value > star_store.get_rating(item):
                         temp.append(item)
-                    # tr = pctl.g(item)
-                    # if "FMPS_Rating" in tr.misc:
-                    #     if value > tr.misc["FMPS_Rating"]:
-                    #         temp.append(item)
                 playlist = temp
             except:
                 errors = True
@@ -17790,10 +17837,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 for item in playlist:
                     if value < star_store.get_rating(item):
                         temp.append(item)
-                    # tr = pctl.g(item)
-                    # if "FMPS_Rating" in tr.misc:
-                    #     if value < tr.misc["FMPS_Rating"]:
-                    #         temp.append(item)
                 playlist = temp
             except:
                 errors = True
@@ -17805,8 +17848,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 # tr = pctl.g(item)
                 if star_store.get_rating(item) > 0:
                     temp.append(item)
-                # if "FMPS_Rating" in tr.misc:
-                #     temp.append(item)
             playlist = temp
 
         elif cm == "norat":
@@ -17814,9 +17855,6 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             for item in playlist:
                 if star_store.get_rating(item) == 0:
                     temp.append(item)
-                # tr = pctl.g(item)
-                # if "FMPS_Rating" not in tr.misc:
-                #     temp.append(item)
             playlist = temp
 
         elif cm == "d>":
@@ -21275,10 +21313,10 @@ def clip_ar_tr(index):
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
 
-def get_track_spot_url_show_test(_):
-    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
-        return True
-    return False
+# def get_track_spot_url_show_test(_):
+#     if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+#         return True
+#     return False
 
 
 def get_track_spot_url(track_id):
@@ -21290,8 +21328,69 @@ def get_track_spot_url(track_id):
     else:
         show_message("No results found")
 
+def get_track_spot_url_deco():
+    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
 
-track_menu.add(_('Copy Spotify Track URL'), get_track_spot_url, pass_ref=True, show_test=get_track_spot_url_show_test,
+    return [line_colour, colours.menu_background, None]
+
+track_menu.add_sub(_("Spotify…"), 190, show_test=spotify_show_test)
+
+def get_spot_artist_track(index):
+    get_artist_spot(pctl.g(index))
+
+track_menu.add_to_sub(_('Show Full Artist'), 1, get_spot_artist_track, pass_ref=True, icon=spot_icon)
+
+def get_album_spot_active(tr=None):
+    if tr is None:
+        tr = pctl.playing_object()
+    if not tr:
+        return
+    url = spot_ctl.get_album_url_from_local(tr)
+    if not url:
+        show_message(_("No results found"))
+        return
+    l = spot_ctl.append_album(url, return_list=True)
+    if len(l) < 2:
+        show_message(_("Looks like that's the only track in the album"))
+        return
+    pctl.multi_playlist.append(pl_gen(title=f"{pctl.g(l[0]).artist} - {pctl.g(l[0]).album}",
+                                      playlist=l,
+                                      hide_title=0,
+                                      ))
+    switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+def get_spot_album_track(index):
+    get_album_spot_active(pctl.g(index))
+
+track_menu.add_to_sub(_('Show Full Album'), 1, get_spot_album_track, pass_ref=True, icon=spot_icon)
+
+
+
+track_menu.add_to_sub(_('Copy Track URL'), 1, get_track_spot_url, get_track_spot_url_deco, pass_ref=True,
+               icon=spot_icon)
+
+def get_spot_recs(tr=None):
+    if not tr:
+        tr = pctl.playing_object()
+    if not tr:
+        return
+    url = spot_ctl.get_artist_url_from_local(tr)
+    if not url:
+        show_message(_("No results found"))
+        return
+    track_url = tr.misc.get("spotify-track-url")
+
+    show_message(_("Fetching..."))
+    shooter(spot_ctl.rec_playlist, (url, track_url))
+
+def get_spot_recs_track(index):
+    get_spot_recs(pctl.g(index))
+
+track_menu.add_to_sub(_('Get Recommended'), 1, get_spot_recs_track, pass_ref=True,
                icon=spot_icon)
 
 
@@ -22462,8 +22561,44 @@ def import_fmps():
 
     gui.pl_update += 1
 
+x_menu.add_to_sub(_("Import FMPS Ratings"), 0, import_fmps)
 
-x_menu.add_to_sub(_("Import FMPS_Ratings from Tags"), 0, import_fmps)
+
+def import_popm():
+    unique = set()
+    skipped = set()
+    for playlist in pctl.multi_playlist:
+        for id in playlist[2]:
+            tr = pctl.g(id)
+            if "POPM" in tr.misc:
+                rating = tr.misc["POPM"]
+                t_rating = 0
+                if rating <= 1:
+                    t_rating = 2
+                elif rating <= 64:
+                    t_rating = 4
+                elif rating <= 128:
+                    t_rating = 6
+                elif rating <= 196:
+                    t_rating = 8
+                elif rating <= 255:
+                    t_rating = 10
+
+                if star_store.get_rating(tr.index) == 0:
+                    star_store.set_rating(tr.index, t_rating)
+                    unique.add(tr.index)
+                else:
+                    print("Won't import POPM because track is already rated")
+                    skipped.add(tr.index)
+
+    s = str(len(unique)) + " ratings imported"
+    if len(skipped) > 0:
+        s += f", {len(skipped)} skipped"
+    show_message(s, mode="done")
+
+    gui.pl_update += 1
+
+x_menu.add_to_sub(_("Import POPM Ratings"), 0, import_popm)
 
 
 def clear_ratings():
@@ -22594,6 +22729,10 @@ def set_mini_mode_A2():
     set_mini_mode()
 
 
+def set_mini_mode_C1():
+    prefs.mini_mode_mode = 5
+    set_mini_mode()
+
 def set_mini_mode_B2():
     prefs.mini_mode_mode = 3
     set_mini_mode()
@@ -22604,11 +22743,12 @@ def set_mini_mode_D():
     set_mini_mode()
 
 
+mode_menu.add(_('Tab'), set_mini_mode_D)
 mode_menu.add(_('Mini'), set_mini_mode_A1)
 # mode_menu.add(_('Mini Mode Large'), set_mini_mode_A2)
+mode_menu.add(_('Slate'), set_mini_mode_C1)
 mode_menu.add(_('Square'), set_mini_mode_B1)
 mode_menu.add(_('Square Large'), set_mini_mode_B2)
-mode_menu.add(_('Micro'), set_mini_mode_D)
 
 
 def copy_bb_metadata():
@@ -23052,31 +23192,13 @@ def get_album_spot_deco():
     return [colours.menu_text, colours.menu_background, text]
 
 
-def get_album_spot_active():
-    tr = pctl.playing_object()
-    if not tr:
-        return
-    url = spot_ctl.get_album_url_from_local(tr)
-    if not url:
-        show_message(_("No results found"))
-        return
-    l = spot_ctl.append_album(url, return_list=True)
-    if len(l) < 2:
-        show_message(_("Looks like that's the only track in the album"))
-        return
-    pctl.multi_playlist.append(pl_gen(title=f"{pctl.g(l[0]).artist} - {pctl.g(l[0]).album}",
-                                      playlist=l,
-                                      hide_title=0,
-                                      ))
-    switch_playlist(len(pctl.multi_playlist) - 1)
-
-
 extra_menu.add("Show Full Album", get_album_spot_active, get_album_spot_deco,
                show_test=spotify_show_test, icon=spot_icon)
 
 
-def get_artist_spot_active():
-    tr = pctl.playing_object()
+def get_artist_spot(tr=None):
+    if not tr:
+        tr = pctl.playing_object()
     if not tr:
         return
     url = spot_ctl.get_artist_url_from_local(tr)
@@ -23084,9 +23206,9 @@ def get_artist_spot_active():
         show_message(_("No results found"))
         return
     show_message(_("Fetching..."))
-    shooter(spot_ctl.artist_playlist(url))
+    shooter(spot_ctl.artist_playlist, (url,))
 
-extra_menu.add(_("Show Full Artist"), get_artist_spot_active,
+extra_menu.add(_("Show Full Artist"), get_artist_spot,
                show_test=spotify_show_test, icon=spot_icon)
 
 extra_menu.add(_("Start Spotify Remote"), show_spot_playing, show_spot_playing_deco, show_test=spotify_show_test,
@@ -23980,8 +24102,9 @@ class SearchOverlay:
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+        if gui.combo_mode:
+            exit_combo()
         switch_playlist(len(pctl.multi_playlist) - 1)
-
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "a\"" + name + "\""
 
         inp.key_return_press = False
@@ -24002,6 +24125,9 @@ class SearchOverlay:
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+        if gui.combo_mode:
+            exit_combo()
+
         switch_playlist(len(pctl.multi_playlist) - 1)
 
         inp.key_return_press = False
@@ -24021,6 +24147,9 @@ class SearchOverlay:
         pctl.multi_playlist.append(pl_gen(title="Composer: " + name,
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
+
+        if gui.combo_mode:
+            exit_combo()
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -24046,6 +24175,9 @@ class SearchOverlay:
         pctl.multi_playlist.append(pl_gen(title=os.path.basename(name).upper(),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
+
+        if gui.combo_mode:
+            exit_combo()
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -24087,6 +24219,9 @@ class SearchOverlay:
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
+        if gui.combo_mode:
+            exit_combo()
+
         switch_playlist(len(pctl.multi_playlist) - 1)
 
         if include_multi:
@@ -24099,6 +24234,9 @@ class SearchOverlay:
     def click_album(self, index):
 
         pctl.jump(index)
+        if gui.combo_mode:
+            exit_combo()
+
         pctl.show_current()
 
         inp.key_return_press = False
@@ -24330,14 +24468,14 @@ class SearchOverlay:
                 if selected != p:
                     fade = 0.85
 
-                # Block separating lower search results
-                if item[4] < 4 and not sec:
-                    if i != 0:
-                        ddt.rect((50 * gui.scale, yy + 5 * gui.scale, 400 * gui.scale, 4 * gui.scale),
-                                 [255, 255, 255, 40])
-                        yy += 20 * gui.scale
-
-                    sec = True
+                # # Block separating lower search results
+                # if item[4] < 4 and not sec:
+                #     if i != 0:
+                #         ddt.rect((50 * gui.scale, yy + 5 * gui.scale, 400 * gui.scale, 4 * gui.scale),
+                #                  [255, 255, 255, 40])
+                #         yy += 20 * gui.scale
+                #
+                #     sec = True
 
                 full = False
 
@@ -24395,7 +24533,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 # Spotify Artist
                 if item[0] == 10:
@@ -24440,7 +24578,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
                     if go:
                         show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
                         shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
@@ -24637,6 +24775,12 @@ class SearchOverlay:
                     text = "Track"
                     track = pctl.master_library[item[2]]
 
+                    #thumb = False
+                    #if True:
+                    #    thumb = True
+                    ddt.rect((75 * gui.scale, yy + 0, 25 * gui.scale, 25 * gui.scale), [50, 50, 50, 150])
+                    gall_ren.render(pctl.g(item[2]), (75 * gui.scale, yy + 0), 25 * gui.scale)
+
                     if track.artist == track.title == "":
                         ddt.text((120 * gui.scale, yy), os.path.splitext(track.filename)[0],
                                  [255, 255, 255, int(255 * fade)], 15,
@@ -24662,9 +24806,9 @@ class SearchOverlay:
                                            [80, 80, 80, int(255 * fade)], 212,
                                            bg=[12, 12, 12, 255])
 
-                    ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
+                    #ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour)
+                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 25 * gui.scale), bar_colour)
 
                     if key_ctrl_down and item[2] in default_playlist:
                         ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour)
@@ -24688,6 +24832,8 @@ class SearchOverlay:
 
                         if level_2_right_click:
                             show = True
+                    #if thumb:
+                    yy += round(6 * gui.scale)
 
                     if enter and key_shift_down and fade == 1:
                         show = True
@@ -24873,7 +25019,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 if item[0] == 7:
                     cl = [250, 50, 140, int(255 * fade)]
@@ -24913,7 +25059,7 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 if item[0] == 8:
                     cl = [100, 210, 250, int(255 * fade)]
@@ -24962,7 +25108,7 @@ class SearchOverlay:
                             self.active = False
                             self.search_text.text = ""
 
-                    yy += 6 * gui.scale
+                    yy += 5 * gui.scale
 
                 if i > 40:
                     break
@@ -29260,20 +29406,26 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
-        y += 25 * gui.scale
-        prefs.save_window_position = self.toggle_square(x, y, prefs.save_window_position,
-                                                        _("Restore window position on restart"))
+        # y += 25 * gui.scale
+        # prefs.save_window_position = self.toggle_square(x, y, prefs.save_window_position,
+        #                                                 _("Restore window position on restart"))
 
         y += 25 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        y += 25 * gui.scale
+        #y += 25 * gui.scale
         # if system != 'windows' and (flatpak_mode or snap_mode):
         #     self.toggle_square(x, y, toggle_force_subpixel, _("Enable RGB text antialiasing"))
 
-        y += 15 * gui.scale
-        self.toggle_square(x, y, toggle_level_meter, _("Top-panel level meter"))
+        y += 25 * gui.scale
+        old = prefs.mini_mode_on_top
+        prefs.mini_mode_on_top = self.toggle_square(x, y, prefs.mini_mode_on_top, _("Mini-mode always on top"))
+        if prefs.mini_mode_on_top and prefs.mini_mode_on_top != old:
+            show_message("Always-on-top feature not yet implemented for Wayland mode")
+
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualiser"))
 
         y += 25 * gui.scale
         if prefs.backend == 4:
@@ -33009,6 +33161,289 @@ class MiniMode2:
 mini_mode2 = MiniMode2()
 
 
+
+class MiniMode3:
+
+    def __init__(self):
+
+        self.save_position = None
+        self.was_borderless = True
+        self.volume_timer = Timer()
+        self.volume_timer.force_set(100)
+
+        self.left_slide = asset_loader("left-slide.png", True)
+        self.right_slide = asset_loader("right-slide.png", True)
+
+        self.shuffle_fade_timer = Timer(100)
+        self.repeat_fade_timer = Timer(100)
+
+    def render(self):
+
+        w = window_size[0]
+        h = window_size[1]
+
+        y1 = w
+        if w == h:
+            y1 -= 79 * gui.scale
+
+        h1 = h - y1
+
+        # Draw background
+        bg = colours.mini_mode_background
+        bg = [0, 0, 0, 0]
+        # bg = [250, 250, 250, 255]
+
+        ddt.rect((0, 0, w, h), bg)
+
+        style_overlay.display()
+
+        ddt.text_background_colour = list(gui.center_blur_pixel) + [255,] #bg
+        if style_overlay.fade_on_timer.get() < 0.4 or style_overlay.stage != 2:
+            ddt.alpha_bg = True
+
+        detect_mouse_rect = (3, 3, w - 6, h - 6)
+        fields.add(detect_mouse_rect)
+        mouse_in = coll(detect_mouse_rect)
+
+        # Play / Pause when right clicking below art
+        if right_click:  # and mouse_position[1] > y1:
+            pctl.play_pause()
+
+        # Volume change on scroll
+        if mouse_wheel != 0:
+            self.volume_timer.set()
+
+            pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment * 3
+            if pctl.player_volume < 1:
+                pctl.player_volume = 0
+            elif pctl.player_volume > 100:
+                pctl.player_volume = 100
+
+            pctl.player_volume = int(pctl.player_volume)
+            pctl.set_volume()
+
+        track = pctl.playing_object()
+
+        control_hit_area = (3, y1 - 15 * gui.scale, w - 6, h1 - 3 + 15 * gui.scale)
+        mouse_in_area = coll(control_hit_area)
+        fields.add(control_hit_area)
+
+        #ddt.rect((0, 0, w, w), (0, 0, 0, 45))
+        if track is not None:
+
+            # Render album art
+
+            wid = (w // 2) + round(45 * gui.scale)
+            ins = (window_size[0] - wid) / 2
+            off = round(4 * gui.scale)
+
+            drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
+            ddt.rect((ins, ins, wid, wid), [20, 20, 20, 255])
+            album_art_gen.display(track, (ins, ins), (wid, wid))
+
+            line1c = [255, 255, 255, 255] #colours.mini_mode_text_1
+            line2c = [255, 255, 255, 255] #colours.mini_mode_text_2
+
+            # if h == w and mouse_in_area:
+            #     # ddt.pretty_rect = (0, 260 * gui.scale, w, 100 * gui.scale)
+            #     ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
+            #     line1c = [255, 255, 255, 240]
+            #     line2c = [255, 255, 255, 77]
+
+            # Double click bottom text to return to full window
+            text_hit_area = (60 * gui.scale, y1 + 4, 230 * gui.scale, 50 * gui.scale)
+
+            if coll(text_hit_area):
+                if inp.mouse_click:
+                    if d_click_timer.get() < 0.3:
+                        restore_full_mode()
+                        gui.update += 1
+                        return
+                    else:
+                        d_click_timer.set()
+
+            # Draw title texts
+            line1 = track.artist
+            line2 = track.title
+
+            if not line1 and not line2:
+                ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
+                         window_size[0] - 30 * gui.scale)
+            else:
+
+                ddt.text((w // 2, y1 + 5 * gui.scale, 2), line1, line2c, 515,
+                         window_size[0] - 30 * gui.scale)
+
+                ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
+                         window_size[0] - 30 * gui.scale)
+
+            y1 += round(10 * gui.scale)
+
+            # Calculate seek bar position
+            seek_w = int(w * 0.80)
+
+            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 9 * gui.scale]
+            seek_r_hit = [seek_r[0], seek_r[1] - 5 * gui.scale, seek_r[2], seek_r[3] + 12 * gui.scale]
+
+            if w != h or mouse_in_area:
+
+
+                # Test click to seek
+                if mouse_up and coll(seek_r_hit):
+
+                    click_x = mouse_position[0]
+                    if click_x > seek_r[0] + seek_r[2]:
+                        click_x = seek_r[0] + seek_r[2]
+                    if click_x < seek_r[0]:
+                        click_x = seek_r[0]
+                    click_x -= seek_r[0]
+
+                    if click_x < 6 * gui.scale:
+                        click_x = 0
+                    seek = click_x / seek_r[2]
+
+                    pctl.seek_decimal(seek)
+
+                # Draw progress bar background
+                ddt.rect(seek_r, [255, 255, 255, 32])
+
+                # Calculate and draw bar foreground
+                progress_w = 0
+                if pctl.playing_length > 1:
+                    progress_w = pctl.playing_time * seek_w / pctl.playing_length
+                seek_colour = [210, 210, 210, 255]
+                if gui.theme_name == "Carbon":
+                    seek_colour = colours.bottom_panel_colour
+
+                if pctl.playing_state != 1:
+                    seek_colour = [210, 40, 100, 255]
+
+                seek_r[2] = progress_w
+
+            ddt.rect(seek_r, seek_colour)
+
+
+
+            volume_w = int(w * 0.50)
+            volume_r = [(w - volume_w) // 2, y1 + 80 * gui.scale, volume_w, 6 * gui.scale]
+            volume_r_hit = [volume_r[0], volume_r[1] - 5 * gui.scale, volume_r[2], volume_r[3] + 10 * gui.scale]
+
+            # Test click to volume
+            if (mouse_up or mouse_down) and coll(volume_r_hit):
+
+                click_x = mouse_position[0]
+                if click_x > volume_r[0] + volume_r[2]:
+                    click_x = volume_r[0] + volume_r[2]
+                if click_x < volume_r[0]:
+                    click_x = volume_r[0]
+                click_x -= volume_r[0]
+
+                if click_x < 6 * gui.scale:
+                    click_x = 0
+                volume = click_x / volume_r[2]
+
+                pctl.player_volume = int(volume * 100)
+                pctl.set_volume()
+
+            ddt.rect(volume_r, [255, 255, 255, 32])
+
+            #if self.volume_timer.get() < 0.9:
+            progress_w = pctl.player_volume * (volume_w - (4 * gui.scale)) / 100
+            gui.update += 1
+            volume_colour = [210, 210, 210, 255]
+            volume_r[2] = progress_w
+            volume_r[0] += 2 * gui.scale
+            volume_r[1] += 2 * gui.scale
+            volume_r[3] -= 4 * gui.scale
+
+            ddt.rect(volume_r, volume_colour)
+
+
+        left_area = (1, y1, volume_r[0] - 1, 45 * gui.scale)
+        right_area = (volume_r[0] + volume_w, y1, volume_r[0] - 2, 45 * gui.scale)
+
+        fields.add(left_area)
+        fields.add(right_area)
+
+        hint = 0
+        if True: #coll(control_hit_area):
+            hint = 30
+        if coll(left_area):
+            hint = 240
+        if hint and not prefs.shuffle_lock:
+            self.left_slide.render(16 * gui.scale, y1 + 10 * gui.scale, [255, 255, 255, hint])
+
+        hint = 0
+        if True: #coll(control_hit_area):
+            hint = 30
+        if coll(right_area):
+            hint = 240
+        if hint:
+            self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 10 * gui.scale,
+                                    [255, 255, 255, hint])
+
+        # Shuffle
+
+        shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
+        # fields.add(shuffle_area)
+        # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
+
+        if True: #coll(control_hit_area) and not prefs.shuffle_lock:
+            colour = [255, 255, 255, 20]
+            if inp.mouse_click and coll(shuffle_area):
+                # pctl.random_mode ^= True
+                toggle_random()
+            if pctl.random_mode:
+                colour = [255, 255, 255, 190]
+
+            sx = volume_r[0] + volume_w + 8 * gui.scale
+            sy = volume_r[1] - 1 * gui.scale
+            ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
+            sy += 4 * gui.scale
+            ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
+
+        shuffle_area = (volume_r[0] - 41 * gui.scale, volume_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
+        if True: #coll(control_hit_area) and not prefs.shuffle_lock:
+            colour = [255, 255, 255, 20]
+            if inp.mouse_click and coll(shuffle_area):
+                toggle_repeat()
+            if pctl.repeat_mode:
+                colour = [255, 255, 255, 190]
+
+            sx = volume_r[0] - 39 * gui.scale
+            sy = volume_r[1] - 1 * gui.scale
+
+            tw = 2 * gui.scale
+            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)
+            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour)
+            ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour)
+
+        # Forward and back clicking
+        if inp.mouse_click:
+            if coll(left_area) and not prefs.shuffle_lock:
+                pctl.back()
+            if coll(right_area):
+                pctl.advance()
+
+        search_over.render()
+
+
+        # Show exit/min buttons when mosue over
+        tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
+        if prefs.left_window_control:
+            tool_rect[0] = 0
+        fields.add(tool_rect)
+        if coll(tool_rect):
+            draw_window_tools()
+
+        # if w != h:
+        #     ddt.rect_s((1, 1, w - 2, h - 2), colours.mini_mode_border, 1 * gui.scale)
+        #     if gui.scale == 2:
+        #         ddt.rect_s((2, 2, w - 4, h - 4), colours.mini_mode_border, 1 * gui.scale)
+        ddt.alpha_bg = False
+
+mini_mode3 = MiniMode3()
+
 def set_mini_mode():
     if gui.fullscreen:
         return
@@ -33026,6 +33461,9 @@ def set_mini_mode():
 
     if gui.mode < 3:
         old_window_position = get_window_position()
+
+    if prefs.mini_mode_on_top:
+        SDL_SetWindowAlwaysOnTop(t_window, True)
 
     gui.mode = 3
     gui.vis = 0
@@ -33052,6 +33490,8 @@ def set_mini_mode():
         size = (330, 80)
     if prefs.mini_mode_mode == 5:
         size = (400, 600)
+        style_overlay.flush()
+        tm.ready("style")
 
     if logical_size == window_size:
         size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
@@ -33099,6 +33539,7 @@ def restore_full_mode():
 
     SDL_SetWindowResizable(t_window, True)
     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+    SDL_SetWindowAlwaysOnTop(t_window, False)
 
     restore_ignore_timer.set()  # Hacky
 
@@ -37002,55 +37443,144 @@ class ArtistList:
                         pctl.multi_playlist[pctl.active_playlist_viewing][0].startswith("Artist:"):
                     create_artist_pl(artist, replace=True)
 
-                block_starts = []
-                current = False
+
+                blocks = []
+                current_block = []
+
+                in_artist = False
+                this_artist = artist.casefold()
+                last_ref = None
+                on = 0
+
                 for i in range(len(default_playlist)):
                     track = pctl.g(default_playlist[i])
-                    if current is False:
-                        if track.artist == artist or track.album_artist == artist or (
-                                'artists' in track.misc and artist in track.misc['artists']):
-                            block_starts.append(i)
-                            current = True
-                    else:
-                        if track.artist != artist and track.album_artist != artist or (
-                                'artists' in track.misc and artist in track.misc['artists']):
-                            current = False
+                    if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
+                            'artists' in track.misc and artist in track.misc['artists']):
+                        # Matchin artist
+                        if not in_artist:
+                            in_artist = True
+                            last_ref = track
+                            current_block.append(i)
 
-                if not block_starts:
-                    print("No matching artists found in playlist")
+                        elif last_ref and track.album != last_ref.album or track.parent_folder_path != last_ref.parent_folder_path:
+                            current_block.append(i)
+                            last_ref = track
+                    else:
+                        # Not matching
+                        if in_artist:
+                            blocks.append(current_block)
+                            current_block = []
+                            in_artist = False
+
+                if current_block:
+                    blocks.append(current_block)
+                    current_block = []
+
+                # print(blocks)
+                # return
+
+                # block_starts = []
+                # current = False
+                # for i in range(len(default_playlist)):
+                #     track = pctl.g(default_playlist[i])
+                #     if current is False:
+                #         if track.artist == artist or track.album_artist == artist or (
+                #                 'artists' in track.misc and artist in track.misc['artists']):
+                #             block_starts.append(i)
+                #             current = True
+                #     else:
+                #         if track.artist != artist and track.album_artist != artist or (
+                #                 'artists' in track.misc and artist in track.misc['artists']):
+                #             current = False
+                #
+                # if not block_starts:
+                #     print("No matching artists found in playlist")
+                #     return
+
+                if not blocks:
                     return
 
-                select = block_starts[0]
+                #select = block_starts[0]
 
-                if len(block_starts) > 1:
-                    if -1 < pctl.selected_in_playlist < len(default_playlist):
-                        if pctl.selected_in_playlist in block_starts:
-                            scroll_hide_timer.set()
-                            gui.frame_callback_list.append(TestTimer(0.9))
-                            if block_starts[-1] == pctl.selected_in_playlist:
-                                pass
-                            else:
-                                select = block_starts[block_starts.index(pctl.selected_in_playlist) + 1]
+                # if len(block_starts) > 1:
+                #     if -1 < pctl.selected_in_playlist < len(default_playlist):
+                #         if pctl.selected_in_playlist in block_starts:
+                #             scroll_hide_timer.set()
+                #             gui.frame_callback_list.append(TestTimer(0.9))
+                #             if block_starts[-1] == pctl.selected_in_playlist:
+                #                 pass
+                #             else:
+                #                 select = block_starts[block_starts.index(pctl.selected_in_playlist) + 1]
 
                 gui.pl_update += 1
-                if album_mode:
-                    goto_album(select)
+
+                # if album_mode:
+                #     goto_album(select)
 
                 self.click_highlight_timer.set()
 
+                select = blocks[0][0]
                 if double_click:
-                    select = block_starts[0]
+                    # Stat first artist track in playlist
+
                     pctl.jump(default_playlist[select], pl_position=select)
                     pctl.playlist_view_position = select
-                    console.print("DEBUG: Position changed by artist click")
                     pctl.selected_in_playlist = select
-
                     shift_selection.clear()
                     self.d_click_timer.force_set(10)
                 else:
-                    # pctl.playlist_selected = i
+                    # Goto next artist section in playlist
+                    c = pctl.selected_in_playlist
+                    next = False
+                    track = pctl.g(default_playlist[c])
+                    if track.artist.casefold != artist.casefold:
+                        pctl.selected_in_playlist = 0
+                        pctl.playlist_view_position = 0
+                    if len(blocks) == 1:
+                        block = blocks[0]
+                        if len(block) > 1:
+                            if c < block[0] or c >= block[-1]:
+                                select = block[0]
+                                toast("First of artist's albums (%d albums)" % len(block))
+                            else:
+                                select = block[-1]
+                                toast("Last of artist's albums (%d albums)" % len(block))
+                    else:
+                        select = None
+                        for bb, block in enumerate(blocks):
+                            for i, al in enumerate(block):
+                               if al <= c:
+                                   continue
+                               else:
+                                    next = True
+                                    if i == 0:
+                                       select = al
+                                       if len(block) > 1:
+                                           toast("Start of location %d of %d (%d albums)" % (bb + 1, len(blocks), len(block)))
+                                       else:
+                                           toast("Location %d of %d" % (bb + 1, len(blocks)))
+                                       break
+
+                            if next and not select:
+                                select = block[-1]
+                                if len(block) > 1:
+                                    toast("End of location %d of %d (%d albums)" % (bb + 1, len(blocks), len(block)))
+                                else:
+                                    toast("Location %d of %d" % (bb, len(blocks)))
+                                break
+                            if select:
+                                break
+                    if not select:
+                        select = blocks[0][0]
+                        if len(blocks[0]) > 1:
+                            if len(blocks) > 1:
+                                toast("Start of location 1 of %d (%d albums)" % (len(blocks), len(blocks[0])))
+                            else:
+                                toast("Location 1 of %d (%d albums)" % (len(blocks), len(blocks[0])))
+                        else:
+                            toast("Location 1 of %d" % len(blocks))
+
                     pctl.playlist_view_position = select
-                    console.print("DEBUG: Position changed by artist click")
                     pctl.selected_in_playlist = select
                     self.d_click_ref = artist
                     self.d_click_timer.set()
@@ -41059,10 +41589,10 @@ def hit_callback(win, point, data):
         if key_shift_down or key_shiftr_down:
             return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 5:
-            return SDL_HITTEST_NORMAL
+        # if prefs.mini_mode_mode == 5:
+        #     return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 4 and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
+        if prefs.mini_mode_mode in (4, 5) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
             return SDL_HITTEST_NORMAL
 
         if y < gui.window_control_hit_area_h and x > window_size[
@@ -41071,12 +41601,14 @@ def hit_callback(win, point, data):
 
         # Square modes
         y1 = window_size[0]
+        # if prefs.mini_mode_mode == 5:
+        #     y1 = window_size[1]
         y0 = 0
         if macos:
             y0 = round(35 * gui.scale)
         if window_size[0] == window_size[1]:
             y1 = window_size[1] - 79 * gui.scale
-        if y0 < y < y1:
+        if y0 < y < y1 and not search_over.active:
             return SDL_HITTEST_DRAGGABLE
 
         return SDL_HITTEST_NORMAL
@@ -41874,7 +42406,7 @@ def save_state():
     view_prefs['update-title'] = update_title
     view_prefs['side-panel'] = prefs.prefer_side
     view_prefs['dim-art'] = prefs.dim_art
-    view_prefs['level-meter'] = gui.turbo
+    #view_prefs['level-meter'] = gui.turbo
     # view_prefs['pl-follow'] = pl_follow
     view_prefs['scroll-enable'] = scroll_enable
     view_prefs['break-enable'] = break_enable
@@ -43248,10 +43780,8 @@ while pctl.running:
                     paste()
 
                 if keymaps.test("playpause"):
-                    if pctl.playing_state == 0:
-                        pctl.play()
-                    else:
-                        pctl.pause()
+                    pctl.play_pause()
+
 
         if inp.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
             inp.key_return_press = False
@@ -46635,7 +47165,9 @@ while pctl.running:
                     SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
                     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
-            if prefs.mini_mode_mode == 4:
+            if prefs.mini_mode_mode == 5:
+                mini_mode3.render()
+            elif prefs.mini_mode_mode == 4:
                 mini_mode2.render()
             else:
                 mini_mode.render()
