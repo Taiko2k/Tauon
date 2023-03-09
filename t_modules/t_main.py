@@ -5763,7 +5763,7 @@ class PlayerCtl:
     def play_pause(self):
         if self.playing_state == 3:
             self.stop()
-        if self.playing_state > 0:
+        elif self.playing_state > 0:
             self.pause()
         else:
             self.play()
