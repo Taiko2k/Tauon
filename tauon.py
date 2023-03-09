@@ -70,6 +70,7 @@ if hasattr(sys, "_MEIPASS"):
 
 if pyinstaller_mode:
      os.environ["PATH"] += ":" + sys._MEIPASS
+     os.environ['SSL_CERT_FILE'] = os.path.join(install_directory, "certifi", "cacert.pem")
 
 user_directory = os.path.join(install_directory, "user-data")
 config_directory = user_directory
