@@ -37443,55 +37443,144 @@ class ArtistList:
                         pctl.multi_playlist[pctl.active_playlist_viewing][0].startswith("Artist:"):
                     create_artist_pl(artist, replace=True)
 
-                block_starts = []
-                current = False
+
+                blocks = []
+                current_block = []
+
+                in_artist = False
+                this_artist = artist.casefold()
+                last_ref = None
+                on = 0
+
                 for i in range(len(default_playlist)):
                     track = pctl.g(default_playlist[i])
-                    if current is False:
-                        if track.artist == artist or track.album_artist == artist or (
-                                'artists' in track.misc and artist in track.misc['artists']):
-                            block_starts.append(i)
-                            current = True
-                    else:
-                        if track.artist != artist and track.album_artist != artist or (
-                                'artists' in track.misc and artist in track.misc['artists']):
-                            current = False
+                    if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
+                            'artists' in track.misc and artist in track.misc['artists']):
+                        # Matchin artist
+                        if not in_artist:
+                            in_artist = True
+                            last_ref = track
+                            current_block.append(i)
 
-                if not block_starts:
-                    print("No matching artists found in playlist")
+                        elif last_ref and track.album != last_ref.album or track.parent_folder_path != last_ref.parent_folder_path:
+                            current_block.append(i)
+                            last_ref = track
+                    else:
+                        # Not matching
+                        if in_artist:
+                            blocks.append(current_block)
+                            current_block = []
+                            in_artist = False
+
+                if current_block:
+                    blocks.append(current_block)
+                    current_block = []
+
+                # print(blocks)
+                # return
+
+                # block_starts = []
+                # current = False
+                # for i in range(len(default_playlist)):
+                #     track = pctl.g(default_playlist[i])
+                #     if current is False:
+                #         if track.artist == artist or track.album_artist == artist or (
+                #                 'artists' in track.misc and artist in track.misc['artists']):
+                #             block_starts.append(i)
+                #             current = True
+                #     else:
+                #         if track.artist != artist and track.album_artist != artist or (
+                #                 'artists' in track.misc and artist in track.misc['artists']):
+                #             current = False
+                #
+                # if not block_starts:
+                #     print("No matching artists found in playlist")
+                #     return
+
+                if not blocks:
                     return
 
-                select = block_starts[0]
+                #select = block_starts[0]
 
-                if len(block_starts) > 1:
-                    if -1 < pctl.selected_in_playlist < len(default_playlist):
-                        if pctl.selected_in_playlist in block_starts:
-                            scroll_hide_timer.set()
-                            gui.frame_callback_list.append(TestTimer(0.9))
-                            if block_starts[-1] == pctl.selected_in_playlist:
-                                pass
-                            else:
-                                select = block_starts[block_starts.index(pctl.selected_in_playlist) + 1]
+                # if len(block_starts) > 1:
+                #     if -1 < pctl.selected_in_playlist < len(default_playlist):
+                #         if pctl.selected_in_playlist in block_starts:
+                #             scroll_hide_timer.set()
+                #             gui.frame_callback_list.append(TestTimer(0.9))
+                #             if block_starts[-1] == pctl.selected_in_playlist:
+                #                 pass
+                #             else:
+                #                 select = block_starts[block_starts.index(pctl.selected_in_playlist) + 1]
 
                 gui.pl_update += 1
-                if album_mode:
-                    goto_album(select)
+
+                # if album_mode:
+                #     goto_album(select)
 
                 self.click_highlight_timer.set()
 
+                select = blocks[0][0]
                 if double_click:
-                    select = block_starts[0]
+                    # Stat first artist track in playlist
+
                     pctl.jump(default_playlist[select], pl_position=select)
                     pctl.playlist_view_position = select
-                    console.print("DEBUG: Position changed by artist click")
                     pctl.selected_in_playlist = select
-
                     shift_selection.clear()
                     self.d_click_timer.force_set(10)
                 else:
-                    # pctl.playlist_selected = i
+                    # Goto next artist section in playlist
+                    c = pctl.selected_in_playlist
+                    next = False
+                    track = pctl.g(default_playlist[c])
+                    if track.artist.casefold != artist.casefold:
+                        pctl.selected_in_playlist = 0
+                        pctl.playlist_view_position = 0
+                    if len(blocks) == 1:
+                        block = blocks[0]
+                        if len(block) > 1:
+                            if c < block[0] or c >= block[-1]:
+                                select = block[0]
+                                toast("First of artist's albums (%d albums)" % len(block))
+                            else:
+                                select = block[-1]
+                                toast("Last of artist's albums (%d albums)" % len(block))
+                    else:
+                        select = None
+                        for bb, block in enumerate(blocks):
+                            for i, al in enumerate(block):
+                               if al <= c:
+                                   continue
+                               else:
+                                    next = True
+                                    if i == 0:
+                                       select = al
+                                       if len(block) > 1:
+                                           toast("Start of location %d of %d (%d albums)" % (bb + 1, len(blocks), len(block)))
+                                       else:
+                                           toast("Location %d of %d" % (bb + 1, len(blocks)))
+                                       break
+
+                            if next and not select:
+                                select = block[-1]
+                                if len(block) > 1:
+                                    toast("End of location %d of %d (%d albums)" % (bb + 1, len(blocks), len(block)))
+                                else:
+                                    toast("Location %d of %d" % (bb, len(blocks)))
+                                break
+                            if select:
+                                break
+                    if not select:
+                        select = blocks[0][0]
+                        if len(blocks[0]) > 1:
+                            if len(blocks) > 1:
+                                toast("Start of location 1 of %d (%d albums)" % (len(blocks), len(blocks[0])))
+                            else:
+                                toast("Location 1 of %d (%d albums)" % (len(blocks), len(blocks[0])))
+                        else:
+                            toast("Location 1 of %d" % len(blocks))
+
                     pctl.playlist_view_position = select
-                    console.print("DEBUG: Position changed by artist click")
                     pctl.selected_in_playlist = select
                     self.d_click_ref = artist
                     self.d_click_timer.set()
