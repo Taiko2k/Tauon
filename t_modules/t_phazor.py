@@ -217,13 +217,18 @@ def player4(tauon):
             return 0
 
     ff_run = FFRun()
+    
+    def pause_when_device_unavailable():
+        pctl.pause_only()
+    
     FUNCTYPE = CFUNCTYPE
     if tauon.msys:
         FUNCTYPE = WINFUNCTYPE
     start_callback = FUNCTYPE(c_int, c_char_p, c_int, c_int)(ff_run.start)
     read_callback = FUNCTYPE(c_int, c_void_p, c_int)(ff_run.read)
     close_callback = FUNCTYPE(c_void_p)(ff_run.close)
-    aud.set_callbacks(start_callback, read_callback, close_callback)
+    device_unavailable_callback = FUNCTYPE(c_void_p)(pause_when_device_unavailable)
+    aud.set_callbacks(start_callback, read_callback, close_callback, device_unavailable_callback)
 
     def calc_rg(track):
 
