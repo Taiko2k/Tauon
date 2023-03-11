@@ -675,11 +675,11 @@ class Ape:
                         break
                     name += ch
 
-                key = name.decode('utf-8')
-                # print("Key: " + key)
+                key = name.decode('utf-8').lower()
+                #print("Key: " + key)
 
                 value = a.read(ta[0])
-                # print(value)
+                #print(value)
 
                 if ta[1] == 0:
                     value = value.decode('utf-8')
@@ -688,13 +688,15 @@ class Ape:
                     pass
 
                 # Fill in the class attributes
-                if key.lower() == "title":
+                if key == "title":
                     self.title = value
-                elif key.lower() == "artist":
+                elif key == "artist":
                     self.artist = value
-                elif key.lower() == "genre":
+                elif key == "genre":
                     self.genre = value
-                elif key.lower() == "disc":
+                elif key == "discnumber":
+                    self.disc_number = value
+                elif key == "disc":
 
                     # Ape track fields appear to use fraction format, rather than separate fields for number and total
                     # So we need to handle that here for consistency
@@ -703,9 +705,9 @@ class Ape:
                     else:
                         self.disc_number = value
 
-                elif key.lower() == "comment":
+                elif key == "comment":
                     self.comment = value
-                elif key.lower() == "track":
+                elif key == "track":
 
                     # Same deal as with disc number
                     if "/" in value:
@@ -713,32 +715,32 @@ class Ape:
                     else:
                         self.track_number = value
 
-                elif key.lower() == "year":
+                elif key == "year":
                     self.date = value
-                elif key.lower() == "album":
+                elif key == "album":
                     self.album = value
-                elif key.lower() == "artist":
+                elif key == "artist":
                     self.artist = value
-                elif key.lower() == "composer":
+                elif key == "composer":
                     self.composer = value
-                elif key.lower() == "album artist":
+                elif key == "album artist" or key == "albumartist":
                     self.album_artist = value
-                elif key.lower() == "label":
+                elif key == "label":
                     self.label = value
-                elif key.lower() == "lyrics":
+                elif key == "lyrics":
                     self.lyrics = value
-                elif "replaygain_track_gain" == key.lower():
+                elif "replaygain_track_gain" == key:
                     self.misc["replaygain_track_gain"] = float(value.lower().strip(" db"))
-                elif "replaygain_track_peak" == key.lower():
+                elif "replaygain_track_peak" == key:
                     self.misc["replaygain_track_peak"] = float(value)
-                elif "replaygain_album_gain" == key.lower():
+                elif "replaygain_album_gain" == key:
                     self.misc["replaygain_album_gain"] = float(value.lower().strip(" db"))
-                elif "replaygain_album_peak" == key.lower():
+                elif "replaygain_album_peak" == key:
                     self.misc["replaygain_album_peak"] = float(value)
-                elif parse_mbids_from_vorbis(self, key.lower(), value):
+                elif parse_mbids_from_vorbis(self, key, value):
                     pass
 
-                elif key.lower() == "cover art (front)":
+                elif key == "cover art (front)":
 
                     # Data appears to have a filename at the start of it, we need to remove to recover a valid picture
                     # Im not sure what the actual specification is here
@@ -778,8 +780,7 @@ class Ape:
 
                 self.length = (frames * blocks) / self.sample_rate
             else:
-
-                print("WARNING: Old APE codec version; not supported")
+                print("Note: Old APE file format version")
 
         elif ".tta" in self.filepath:
 
