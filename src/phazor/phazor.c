@@ -887,17 +887,6 @@ void stop_decoder() {
     decoder_allocated = 0;
 }
 
-
-int disconnect_pulse() {
-    //printf("ph: Disconnect Device\n");
-
-    if (pulse_connected == 1) {
-        ma_device_uninit(&device);
-    }
-    pulse_connected = 0;
-    return 0;
-}
-
 float gate = 1.0;  // Used for ramping
 
 int get_audio(int max, float* buff){
@@ -1153,6 +1142,17 @@ void decode_seek(int abs_ms, int sample_rate) {
     }
 }
 
+int disconnect_pulse() {
+    //printf("ph: Disconnect Device\n");
+
+    if (pulse_connected == 1) {
+        ma_device_uninit(&device);
+        ma_context_uninit(&context);
+    }
+    pulse_connected = 0;
+    return 0;
+}
+
 void connect_pulse() {
 
     if (pulse_connected == 1) {
@@ -1181,6 +1181,7 @@ void connect_pulse() {
     result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
     if (result != MA_SUCCESS) {
         printf("Failed to retrieve device information.\n");
+        ma_context_uninit(&context);
         return;
     }
 
@@ -1199,6 +1200,7 @@ void connect_pulse() {
 
     if (ma_device_init(&context, &config, &device) != MA_SUCCESS) {
         printf("ph: Device init error\n");
+        ma_context_uninit(&context);
         mode = STOPPED;
         return;  // Failed to initialize the device.
     }
@@ -1224,12 +1226,9 @@ void connect_pulse() {
 
     current_sample_rate = sample_rate_out;
 
-    ma_context_uninit(&context);
-
     pulse_connected = 1;
 
 }
-
 
 FILE *uni_fopen(char *ff){
     #ifdef WIN
