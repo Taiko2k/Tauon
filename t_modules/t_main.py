@@ -4641,7 +4641,53 @@ def tag_scan(nt):
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
-        elif nt.file_ext == "APE" or nt.file_ext == "WV" or nt.file_ext == "TTA":
+        elif nt.file_ext == "APE":
+            
+            audio = mutagen.File(nt.fullpath)
+            nt.length = audio.info.length
+            nt.bit_depth = audio.info.bits_per_sample
+            nt.samplerate = audio.info.sample_rate
+            nt.size = os.path.getsize(nt.fullpath)
+            if nt.length > 0:
+                nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+
+            # # def getter(audio, key, type):
+            # #     if
+            # t = audio.tags
+            # print(t.keys())
+            # nt.size = os.path.getsize(nt.fullpath)
+            # nt.title = str(t.get("title", ""))
+            # nt.album = str(t.get("album", ""))
+            # nt.date = str(t.get("year", ""))
+            # nt.disc_number = str(t.get("discnumber", ""))
+            # nt.comment = str(t.get("comment", ""))
+            # nt.artist = str(t.get("artist", ""))
+            # nt.composer = str(t.get("composer", ""))
+            # nt.composer = str(t.get("composer", ""))
+
+            audio = Ape(nt.fullpath)
+            audio.read()
+
+            # print(audio.title)
+
+            nt.length = audio.length
+            nt.title = audio.title
+            nt.artist = audio.artist
+            nt.album = audio.album
+            nt.date = audio.date
+            nt.composer = audio.composer
+            nt.bit_depth = audio.bit_depth
+            nt.track_number = audio.track_number
+            nt.genre = audio.genre
+            nt.album_artist = audio.album_artist
+            nt.disc_number = audio.disc_number
+            nt.lyrics = audio.lyrics
+            nt.track_total = audio.track_total
+            nt.disc_total = audio.disc_total
+            nt.comment = audio.comment
+            nt.misc = audio.misc
+
+        elif nt.file_ext == "WV" or nt.file_ext == "TTA":
 
             audio = Ape(nt.fullpath)
             audio.read()
