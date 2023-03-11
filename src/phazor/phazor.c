@@ -91,6 +91,9 @@ void buff_reset(){
 double t_start, t_end;
 
 int out_thread_running = 0; // bool
+int called_to_stop_device = 0; // bool
+int device_stopped = 0; // bool
+int signaled_device_unavailable = 0; // bool
 
 float fadefl[BUFF_SIZE];
 float fadefr[BUFF_SIZE];
@@ -311,6 +314,7 @@ char ffm_buffer[2048];
 int (*ff_start)(char*, int, int);
 int (*ff_read)(char*, int);
 void (*ff_close)();
+void (*on_device_unavailable)();
 
 void start_ffmpeg(char uri[], int start_ms) {
     int status = ff_start(uri, start_ms, sample_rate_out);
@@ -1078,6 +1082,13 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
     //if (0 < b && b < frameCount) printf("ph: Buffer underrun\n");
 }
 
+void notification_callback(const ma_device_notification* pNotification) {
+    if (pNotification->type == ma_device_notification_type_stopped) {
+        device_stopped = 1;
+        signaled_device_unavailable = 0;
+    }
+}
+
 
 ma_device_info* pPlaybackDeviceInfos;
 ma_uint32 playbackDeviceCount = 0;
@@ -1195,6 +1206,7 @@ void connect_pulse() {
     config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
     config.sampleRate        = set_samplerate;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
+    config.notificationCallback = notification_callback;
     config.periodSizeInFrames      = 750;   //
     config.periods      = 6;   //
 
@@ -1698,6 +1710,7 @@ void decoder_eos() {
 void stop_out(){
     //printf("ph: stop\n");
     if (out_thread_running == 1){
+        called_to_stop_device = 1;
         ma_device_stop(&device);
         out_thread_running = 0;
     }
@@ -1708,6 +1721,8 @@ void start_out(){
     if (pulse_connected == 0) connect_pulse();
 
     if (out_thread_running == 0){
+        called_to_stop_device = 0;
+        device_stopped = 0;
         ma_device_start(&device);
         out_thread_running = 1;
     }
@@ -1912,6 +1927,12 @@ void *main_loop(void *thread_id) {
 //        printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, get_buff_fill());
 //        test1 = 0;
 //        }
+
+        // Detect when device was unplugged or became unavailble
+        if (device_stopped && !called_to_stop_device && !signaled_device_unavailable) {
+            on_device_unavailable();
+            signaled_device_unavailable = 1;
+        }
 
         if (command != NONE) {
 
@@ -2323,10 +2344,11 @@ float get_level_peak_r() {
     return peak;
 }
 
-void set_callbacks(void *start, void *read, void *close){
+void set_callbacks(void *start, void *read, void *close, void *device_unavailable){
     ff_start = start;
     ff_read = read;
     ff_close = close;
+    on_device_unavailable = device_unavailable;
 }
 
 
