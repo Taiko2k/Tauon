@@ -36,12 +36,13 @@ class Chrome:
                 services, browser = pychromecast.discovery.discover_chromecasts()
                 pychromecast.discovery.stop_discovery(browser)
                 menu = self.tauon.chrome_menu
+                MenuItem = self.tauon.MenuItem
 
                 #menu.items.clear()
                 for item in services:
                     self.services.append([str(item.uuid), str(item.friendly_name)])
-                    menu.add_to_sub(self.tauon.strings.cast_to % str(item.friendly_name), 1, self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)])
-                menu.add_to_sub(self.tauon.strings.stop_cast, 1, self.end, show_test=lambda x: self.active)
+                    menu.add_to_sub(1, MenuItem(self.tauon.strings.cast_to % str(item.friendly_name), self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)]))
+                menu.add_to_sub(1, MenuItem(self.tauon.strings.stop_cast, self.end, show_test=lambda x: self.active))
             except:
                 raise
                 print("Failed to get chromecasts")
