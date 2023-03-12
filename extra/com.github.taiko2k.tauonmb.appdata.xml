@@ -24,16 +24,14 @@
     <p>Features:</p>
     <ul>
       <li>Playback local audio files including MP3, FLAC and OGG</li>
-      <li>Import Spotify tracks and control Spotify playback</li>
-      <li>Add network tracks from Airsonic and koel servers</li>
-      <li>Automatic CUE sheet detection</li>
+      <li>Import Spotify tracks and manage Spotify playlists</li>
+      <li>Add network tracks from Jellyfin, Airsonic and Plex servers</li>
       <li>Gapless playback</li>
+      <li>Automatic CUE sheet detection</li>
       <li>Lookup artists on Rate Your Music and Bandcamp</li>
-      <li>Scrobble and love tracks to last.fm</li>
-      <li>Support for Listenbrainz and launching the Musicbrainz Picard tag editor</li>
+      <li>Support for last.fm and Listenbrainz</li>
       <li>Import downloaded music archives in one click</li>
       <li>Large album art and gallery layouts</li>
-      <li>Transcode and sync to device functionality</li>
       <li>Support for lyrics including synced lrc files and guitar chords</li>
       <li>Multiple preset colour themes</li>
     </ul>
@@ -42,6 +40,10 @@
   <screenshots>
 
     <screenshot type="default">
+      <image type="source">https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg</image>
+      <caption>Player window showing track-list and album art grid</caption>
+    </screenshot>
+    <screenshot>
       <image type="source">https://user-images.githubusercontent.com/17271572/90944081-f40a3080-e470-11ea-8a52-ba20c6e7758f.png</image>
       <caption>Player window showing track-list and album art</caption>
     </screenshot>
@@ -62,11 +64,10 @@
 
   <releases>
 
-    <release version="7.5.0" date="2023-01-12">
+    <release version="7.6.0" date="2023-03-26">
       <description>
         <ul>
-          <li>Improved Spotify support</li>
-          <li>Various bug fixes</li>
+          <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
     </release>
