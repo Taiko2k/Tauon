@@ -7988,6 +7988,55 @@ from t_modules.t_webserve import authserve
 from t_modules.t_webserve import controller
 from t_modules.t_webserve import stream_proxy
 
+class MenuIcon:
+
+    def __init__(self, asset):
+        self.asset = asset
+        self.colour = [170, 170, 170, 255]
+        self.base_asset = None
+        self.base_asset_mod = None
+        self.colour_callback = None
+        self.mode_callback = None
+        self.xoff = 0
+        self.yoff = 0
+
+class MenuItem:
+    __slots__ = [
+        "title",           # 0
+        "is_sub_menu",     # 1
+        "func",            # 2
+        "render_func",     # 3
+        "no_exit",         # 4
+        "pass_ref",        # 5
+        "hint",            # 6
+        "icon",            # 7
+        "show_test",       # 8
+        "pass_ref_deco",   # 9
+        "disable_test",    # 10
+        "set_ref",         # 11
+        "args",            # 12
+        "sub_menu_number", # 13
+        "sub_menu_width",  # 14
+    ]
+    def __init__(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
+            pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0):
+        self.title = title
+        self.is_sub_menu = is_sub_menu
+        self.func = func
+        self.render_func = render_func
+        self.no_exit = no_exit
+        self.pass_ref = pass_ref
+        self.hint = hint
+        self.icon = icon
+        self.show_test = show_test
+        self.pass_ref_deco = pass_ref_deco
+        self.disable_test = disable_test
+        self.set_ref = set_ref
+        self.args = args
+        self.sub_menu_number = sub_menu_number
+        self.sub_menu_width = sub_menu_width
+
+
 class Tauon:
 
     def __init__(self):
@@ -8060,6 +8109,7 @@ class Tauon:
 
         self.spotc = None
         self.librespot_p = None
+        self.MenuItem = MenuItem
 
     def start_remote(self):
 
@@ -13725,53 +13775,7 @@ tool_tip_instant = ToolTip3()
 
 # Right click context menu generator
 
-class MenuIcon:
 
-    def __init__(self, asset):
-        self.asset = asset
-        self.colour = [170, 170, 170, 255]
-        self.base_asset = None
-        self.base_asset_mod = None
-        self.colour_callback = None
-        self.mode_callback = None
-        self.xoff = 0
-        self.yoff = 0
-
-class MenuItem:
-    __slots__ = [
-        "title",           # 0
-        "is_sub_menu",     # 1
-        "func",            # 2
-        "render_func",     # 3
-        "no_exit",         # 4
-        "pass_ref",        # 5
-        "hint",            # 6
-        "icon",            # 7
-        "show_test",       # 8
-        "pass_ref_deco",   # 9
-        "disable_test",    # 10
-        "set_ref",         # 11
-        "args",            # 12
-        "sub_menu_number", # 13
-        "sub_menu_width",  # 14
-    ]
-    def __init__(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
-            pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0):
-        self.title = title
-        self.is_sub_menu = is_sub_menu
-        self.func = func
-        self.render_func = render_func
-        self.no_exit = no_exit
-        self.pass_ref = pass_ref
-        self.hint = hint
-        self.icon = icon
-        self.show_test = show_test
-        self.pass_ref_deco = pass_ref_deco
-        self.disable_test = disable_test
-        self.set_ref = set_ref
-        self.args = args
-        self.sub_menu_number = sub_menu_number
-        self.sub_menu_width = sub_menu_width
 
 class Menu:
     switch = 0
