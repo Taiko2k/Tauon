@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-01-20 19:58+1300\n"
+"POT-Creation-Date: 2023-03-12 21:30+1300\n"
 "PO-Revision-Date: 2019-05-01 22:39+1200\n"
 "Last-Translator:  <captain.gxj@gmail.com>\n"
 "Language-Team: Language ja\n"
@@ -15,3116 +15,3153 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
 
-#: t_modules/t_main.py:1845 t_modules/t_main.py:1847
+#: t_modules/t_main.py:1851 t_modules/t_main.py:1853
 msgid "No artist image found."
 msgstr "アーティスト画像が見つかりません"
 
-#: t_modules/t_main.py:1847
+#: t_modules/t_main.py:1853
 msgid "No providers are enabled in settings!"
 msgstr "設定で有効になっているプロバイダーはありません！"
 
-#: t_modules/t_main.py:6759
+#: t_modules/t_main.py:6913
 msgid "End of playlist"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:6811
+#: t_modules/t_main.py:6965
 msgid "Once authorised click the 'done' button."
 msgstr "承認されたら、「完了」ボタンをクリックして。"
 
-#: t_modules/t_main.py:6811
+#: t_modules/t_main.py:6965
 msgid "Web auth page opened"
 msgstr "ページ化されたWeb認証"
 
-#: t_modules/t_main.py:6819
+#: t_modules/t_main.py:6973
 #, fuzzy
 msgid "You need to log in first"
 msgstr "先にログインする必要があります"
 
-#: t_modules/t_main.py:6977
+#: t_modules/t_main.py:7131
 msgid "Scanning failed. Try again?"
 msgstr ""
 
-#: t_modules/t_main.py:6984 t_modules/t_main.py:7581
+#: t_modules/t_main.py:7138 t_modules/t_main.py:7735
 #, fuzzy
 msgid "Scanning scrobbles complete"
 msgstr "フォルダーの再スキャンが完了しました.。"
 
-#: t_modules/t_main.py:7148
+#: t_modules/t_main.py:7302
 msgid "Getting friend data..."
 msgstr "友達データを取得しています..."
 
-#: t_modules/t_main.py:7148
+#: t_modules/t_main.py:7302
 msgid "This may take a very long time."
 msgstr "これには時間がかかる場合があります。"
 
-#: t_modules/t_main.py:7502
+#: t_modules/t_main.py:7656
 msgid "Failed updating last.fm love status"
 msgstr ""
 
-#: t_modules/t_main.py:7505
+#: t_modules/t_main.py:7659
 #, fuzzy
 msgid "Error updating love to last.fm!"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:7506
+#: t_modules/t_main.py:7660
 msgid "Maybe check your internet connection and try again?"
 msgstr ""
 
-#: t_modules/t_main.py:7775
+#: t_modules/t_main.py:7929
 #, fuzzy
 msgid "Spotify Likes"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:7776
+#: t_modules/t_main.py:7930
 #, fuzzy
 msgid "Spotify Albums"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:7777
+#: t_modules/t_main.py:7931
 msgid "Track removed from liked tracks"
 msgstr ""
 
-#: t_modules/t_main.py:7778
+#: t_modules/t_main.py:7932
 #, fuzzy
 msgid "Track was already un-liked"
 msgstr "このトラック数"
 
-#: t_modules/t_main.py:7779
+#: t_modules/t_main.py:7933
 #, fuzzy
 msgid "Track is already liked"
 msgstr "このトラック数"
 
-#: t_modules/t_main.py:7780
+#: t_modules/t_main.py:7934
 #, fuzzy
 msgid "Track added to liked tracks"
 msgstr "このトラック数"
 
-#: t_modules/t_main.py:7781
+#: t_modules/t_main.py:7935
 msgid "Spotify account connected"
 msgstr ""
 
-#: t_modules/t_main.py:7782
+#: t_modules/t_main.py:7936
 msgid "This Spotify account isn't currently playing anything"
 msgstr ""
 
-#: t_modules/t_main.py:7783
+#: t_modules/t_main.py:7937
 #, fuzzy
 msgid "Error starting Spotify"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:7784
+#: t_modules/t_main.py:7938
 msgid "Please authorise Spotify in settings!"
 msgstr ""
 
-#: t_modules/t_main.py:7785
+#: t_modules/t_main.py:7939
 #, fuzzy
 msgid "Please authorise and click the enable toggle first!"
 msgstr "承認されたら、「完了」ボタンをクリックして。"
 
-#: t_modules/t_main.py:7786
+#: t_modules/t_main.py:7940
 msgid "Spotify import complete"
 msgstr ""
 
-#: t_modules/t_main.py:7788
+#: t_modules/t_main.py:7942
 msgid "day"
 msgstr ""
 
-#: t_modules/t_main.py:7789
+#: t_modules/t_main.py:7943
 msgid "days"
 msgstr ""
 
-#: t_modules/t_main.py:7791
+#: t_modules/t_main.py:7945
 #, fuzzy
 msgid "Scanning for Chromecasts..."
 msgstr "フォルダースキャン"
 
-#: t_modules/t_main.py:7792
+#: t_modules/t_main.py:7946
 msgid "Cast to: %s"
 msgstr ""
 
-#: t_modules/t_main.py:7793
+#: t_modules/t_main.py:7947
 #, fuzzy
 msgid "No Chromecast devices found"
 msgstr "バイオが見つかりません"
 
-#: t_modules/t_main.py:7794
+#: t_modules/t_main.py:7948
 #, fuzzy
 msgid "End Cast"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:7796
+#: t_modules/t_main.py:7950
 msgid "Web server stopped."
 msgstr ""
 
-#: t_modules/t_main.py:7798
+#: t_modules/t_main.py:7952
 msgid "Open Tauon Music Box"
 msgstr ""
 
-#: t_modules/t_main.py:7799
+#: t_modules/t_main.py:7953
 #, fuzzy
 msgid "Play/Pause"
 msgstr "一時停止"
 
-#: t_modules/t_main.py:7800
+#: t_modules/t_main.py:7954
 #, fuzzy
 msgid "Next Track"
 msgstr "繰り返しトラック"
 
-#: t_modules/t_main.py:7801
+#: t_modules/t_main.py:7955
 #, fuzzy
 msgid "Previous Track"
 msgstr "前"
 
-#: t_modules/t_main.py:7802
+#: t_modules/t_main.py:7956
 msgid "Quit"
 msgstr ""
 
-#: t_modules/t_main.py:8044
+#: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
 msgstr ""
 
-#: t_modules/t_main.py:8059
+#: t_modules/t_main.py:8215
 msgid "Error connecting to PLEX server"
 msgstr "PLEXサーバーへの接続エラー"
 
-#: t_modules/t_main.py:8060
+#: t_modules/t_main.py:8216
 msgid "Try check login credentials and that server is accessible."
 msgstr ""
 
-#: t_modules/t_main.py:8562
+#: t_modules/t_main.py:8718
 msgid "Missing username, password and/or server URL"
 msgstr ""
 
-#: t_modules/t_main.py:8590
+#: t_modules/t_main.py:8746
 msgid "Could not establish connection"
 msgstr ""
 
-#: t_modules/t_main.py:8609
+#: t_modules/t_main.py:8765
 msgid "Could not establish connection/authorisation"
 msgstr ""
 
-#: t_modules/t_main.py:9202
+#: t_modules/t_main.py:9359
 msgid "Stop the sync before exiting!"
 msgstr ""
 
-#: t_modules/t_main.py:14121
+#: t_modules/t_main.py:14328
 msgid "Playlists + Queue"
 msgstr "プレイリストとキュー"
 
-#: t_modules/t_main.py:14122 t_modules/t_main.py:37925
+#: t_modules/t_main.py:14329 t_modules/t_main.py:38694
 msgid "Queue"
 msgstr "キュー"
 
-#: t_modules/t_main.py:14124
+#: t_modules/t_main.py:14331
 msgid "Artist List"
 msgstr "アーティスト"
 
-#: t_modules/t_main.py:14126
+#: t_modules/t_main.py:14333
 msgid "Folder Navigator"
 msgstr "フォルダーツリー"
 
-#: t_modules/t_main.py:14187
+#: t_modules/t_main.py:14394
 msgid "Track Renaming"
 msgstr "トラックの名前変更"
 
-#: t_modules/t_main.py:14190 t_modules/t_main.py:46042
+#: t_modules/t_main.py:14397 t_modules/t_main.py:46840
 msgid "Default"
 msgstr "デフォルト"
 
-#: t_modules/t_main.py:14214
+#: t_modules/t_main.py:14421
 msgid "BEFORE"
 msgstr "前"
 
-#: t_modules/t_main.py:14218
+#: t_modules/t_main.py:14425
 msgid "AFTER"
 msgstr "後"
 
-#: t_modules/t_main.py:14307
+#: t_modules/t_main.py:14514
 msgid "Rename complete."
 msgstr "名前変更完了。"
 
-#: t_modules/t_main.py:14308
+#: t_modules/t_main.py:14515
 msgid " filenames were written."
 msgstr "　ファイル名が書き込まれました。"
 
-#: t_modules/t_main.py:14381
+#: t_modules/t_main.py:14588
 msgid "Simple tag editor"
 msgstr ""
 
-#: t_modules/t_main.py:14383 t_modules/t_main.py:28036
-#: t_modules/t_main.py:28302 t_modules/t_main.py:29059
+#: t_modules/t_main.py:14590 t_modules/t_main.py:28389
+#: t_modules/t_main.py:28655 t_modules/t_main.py:29412
 msgid "?"
 msgstr ""
 
-#: t_modules/t_main.py:14384
+#: t_modules/t_main.py:14591
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
 
-#: t_modules/t_main.py:14385
+#: t_modules/t_main.py:14592
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
 
-#: t_modules/t_main.py:14389
+#: t_modules/t_main.py:14596
 msgid "Number of tracks selected: %d"
 msgstr ""
 
-#: t_modules/t_main.py:14424
+#: t_modules/t_main.py:14631
 msgid "<Multiple selected>"
 msgstr ""
 
-#: t_modules/t_main.py:14432
+#: t_modules/t_main.py:14639
 #, fuzzy
 msgid "Track title"
 msgstr "トラックリスト"
 
-#: t_modules/t_main.py:14434
+#: t_modules/t_main.py:14641
 #, fuzzy
 msgid "Album name"
 msgstr "アルバムゲイン"
 
-#: t_modules/t_main.py:14436
+#: t_modules/t_main.py:14643
 #, fuzzy
 msgid "Artist name"
 msgstr "アーティスト"
 
-#: t_modules/t_main.py:14438
+#: t_modules/t_main.py:14645
 #, fuzzy
 msgid "Album-artist name"
 msgstr "アルバム数"
 
-#: t_modules/t_main.py:14444
+#: t_modules/t_main.py:14651
 msgid "Editing network tracks is not recommended!"
 msgstr ""
 
-#: t_modules/t_main.py:14474 t_modules/t_main.py:14475
+#: t_modules/t_main.py:14682 t_modules/t_main.py:14685
 msgid "WRITE TAGS"
 msgstr ""
 
-#: t_modules/t_main.py:14477
+#: t_modules/t_main.py:14688
 msgid "Press enter on fields to apply your changes first!"
 msgstr ""
 
-#: t_modules/t_main.py:14489
+#: t_modules/t_main.py:14706
 msgid "Writing to a network track is not applicable!"
 msgstr ""
 
-#: t_modules/t_main.py:14492
+#: t_modules/t_main.py:14710
 msgid "Cannot write CUE sheet types!"
 msgstr ""
 
-#: t_modules/t_main.py:14500
+#: t_modules/t_main.py:14719
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
 
-#: t_modules/t_main.py:14518
+#: t_modules/t_main.py:14738
 #, fuzzy
 msgid "%d files rewritten"
 msgstr "　ファイル名が書き込まれました。"
 
-#: t_modules/t_main.py:14580
+#: t_modules/t_main.py:14804
 msgid "Substitute Lyric Search"
 msgstr ""
 
-#: t_modules/t_main.py:14586 t_modules/t_main.py:14608
+#: t_modules/t_main.py:14810 t_modules/t_main.py:14832
 msgid "Substitute"
 msgstr ""
 
-#: t_modules/t_main.py:14593 t_modules/t_main.py:14615
+#: t_modules/t_main.py:14817 t_modules/t_main.py:14839
 msgid "with"
 msgstr ""
 
-#: t_modules/t_main.py:14681
+#: t_modules/t_main.py:14905
 #, fuzzy
 msgid "Export Playlist"
 msgstr "統計をエクスポート"
 
-#: t_modules/t_main.py:14686
+#: t_modules/t_main.py:14910
 msgid "Save directory"
 msgstr ""
 
-#: t_modules/t_main.py:14705
+#: t_modules/t_main.py:14929
 msgid "Use relative paths"
 msgstr ""
 
-#: t_modules/t_main.py:14708
+#: t_modules/t_main.py:14932
 #, fuzzy
 msgid "Auto-export"
 msgstr "自動停止"
 
-#: t_modules/t_main.py:14711 t_modules/t_main.py:14716
+#: t_modules/t_main.py:14935 t_modules/t_main.py:14940
 #, fuzzy
 msgid "Export"
 msgstr "XSPFでエクスポート"
 
-#: t_modules/t_main.py:14724
+#: t_modules/t_main.py:14948
 msgid "Directory does not exist"
 msgstr ""
 
-#: t_modules/t_main.py:14774
+#: t_modules/t_main.py:14998
 msgid "Repeat OFF"
 msgstr "リピートOFF"
 
-#: t_modules/t_main.py:14775
+#: t_modules/t_main.py:14999
 msgid "Repeat Track"
 msgstr "繰り返しトラック"
 
-#: t_modules/t_main.py:14776
+#: t_modules/t_main.py:15000
 msgid "Repeat Album"
 msgstr "リピートアルバム"
 
-#: t_modules/t_main.py:14854
+#: t_modules/t_main.py:15078
 #, fuzzy
 msgid "Shuffle Lockdown"
 msgstr "シャッフルON"
 
-#: t_modules/t_main.py:14855
+#: t_modules/t_main.py:15079
 #, fuzzy
 msgid "Shuffle Lockdown Albums"
 msgstr "シャッフルON"
 
-#: t_modules/t_main.py:14857
+#: t_modules/t_main.py:15081
 msgid "Shuffle OFF"
 msgstr "シャッフルOFF"
 
-#: t_modules/t_main.py:14858
+#: t_modules/t_main.py:15082
 msgid "Shuffle Tracks"
 msgstr "シャッフルトラック"
 
-#: t_modules/t_main.py:14859
+#: t_modules/t_main.py:15083
 msgid "Random Albums"
 msgstr "ランダムアルバム"
 
-#: t_modules/t_main.py:14884
+#: t_modules/t_main.py:15108
 msgid "Make Large Size"
 msgstr "大サイズにする"
 
-#: t_modules/t_main.py:14886
+#: t_modules/t_main.py:15110
 msgid "Make Compact Size"
 msgstr "小サイズにする"
 
-#: t_modules/t_main.py:14919
+#: t_modules/t_main.py:15143
 msgid "Close Panel"
 msgstr "閉じる"
 
-#: t_modules/t_main.py:14920
+#: t_modules/t_main.py:15144
 msgid "Make Large"
 msgstr "大サイズにする"
 
-#: t_modules/t_main.py:15172
+#: t_modules/t_main.py:15396
 #, fuzzy
 msgid "Unlock Panel"
 msgstr "閉じる"
 
-#: t_modules/t_main.py:15174
+#: t_modules/t_main.py:15398
 #, fuzzy
 msgid "Lock Panel"
 msgstr "閉じる"
 
-#: t_modules/t_main.py:15177 t_modules/t_main.py:15178
-#: t_modules/t_main.py:15196 t_modules/t_main.py:19814
-#: t_modules/t_main.py:20807
+#: t_modules/t_main.py:15401 t_modules/t_main.py:15402
+#: t_modules/t_main.py:15420 t_modules/t_main.py:20027
+#: t_modules/t_main.py:21050
 msgid "Open Folder"
 msgstr "フォルダを開く"
 
-#: t_modules/t_main.py:15180 t_modules/t_main.py:15181
-#: t_modules/t_main.py:15182 t_modules/t_main.py:36194
+#: t_modules/t_main.py:15404 t_modules/t_main.py:15405
+#: t_modules/t_main.py:15406 t_modules/t_main.py:36856
 msgid "Filter to New Playlist"
 msgstr "新しいプレイリストへ"
 
-#: t_modules/t_main.py:15183 t_modules/t_main.py:15184
-#: t_modules/t_main.py:18153
+#: t_modules/t_main.py:15407 t_modules/t_main.py:15408
+#: t_modules/t_main.py:18366
 msgid "Rescan Folder"
 msgstr "フォルダースキャン"
 
-#: t_modules/t_main.py:15185 t_modules/t_main.py:15187
+#: t_modules/t_main.py:15409 t_modules/t_main.py:15411
 msgid "Move Playing Folder Here"
 msgstr "再生フォルダをここに移動"
 
-#: t_modules/t_main.py:15191 t_modules/t_main.py:20829
+#: t_modules/t_main.py:15415 t_modules/t_main.py:21072
 msgid "Collapse All"
 msgstr "すべて折りたたむ"
 
-#: t_modules/t_main.py:15198
+#: t_modules/t_main.py:15422
 msgid "Show in Playlist"
 msgstr "プレイリストに表示"
 
-#: t_modules/t_main.py:15278
+#: t_modules/t_main.py:15502
 msgid "Image…"
 msgstr ""
 
-#: t_modules/t_main.py:15279 t_modules/t_main.py:20812
-#: t_modules/t_main.py:20825
+#: t_modules/t_main.py:15503 t_modules/t_main.py:21055
+#: t_modules/t_main.py:21068
 msgid "Add Album to Queue"
 msgstr "キューに追加"
 
-#: t_modules/t_main.py:15280 t_modules/t_main.py:20813
-#: t_modules/t_main.py:20826
+#: t_modules/t_main.py:15504 t_modules/t_main.py:21056
+#: t_modules/t_main.py:21069
 msgid "Enqueue Album Next"
 msgstr "次をキューに入れる"
 
-#: t_modules/t_main.py:15291 t_modules/t_main.py:18346
-#: t_modules/t_main.py:29052
+#: t_modules/t_main.py:15515 t_modules/t_main.py:18559
+#: t_modules/t_main.py:29405
 msgid "Aborting Sync"
 msgstr ""
 
-#: t_modules/t_main.py:15294
+#: t_modules/t_main.py:15518
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: t_modules/t_main.py:15304
+#: t_modules/t_main.py:15528
 msgid "Hide Metadata Panel"
 msgstr "メタデータパネルを非表示"
 
-#: t_modules/t_main.py:15306
+#: t_modules/t_main.py:15530
 msgid "Show Metadata Panel"
 msgstr "メタデータパネルを表示"
 
-#: t_modules/t_main.py:15317
+#: t_modules/t_main.py:15541
 #, fuzzy
 msgid "Panel Below Lyrics"
 msgstr "歌詞をペースト"
 
-#: t_modules/t_main.py:15319
+#: t_modules/t_main.py:15543
 #, fuzzy
 msgid "Panel Above Lyrics"
 msgstr "歌詞をペースト"
 
-#: t_modules/t_main.py:15346 t_modules/t_main.py:15356
-#: t_modules/t_main.py:15364
+#: t_modules/t_main.py:15570 t_modules/t_main.py:15580
+#: t_modules/t_main.py:15588
 msgid "Hide Lyrics"
 msgstr "歌詞を隠す"
 
-#: t_modules/t_main.py:15348 t_modules/t_main.py:15358
-#: t_modules/t_main.py:15366
+#: t_modules/t_main.py:15572 t_modules/t_main.py:15582
+#: t_modules/t_main.py:15590
 msgid "Show Lyrics"
 msgstr "歌詞を示す"
 
-#: t_modules/t_main.py:15402
+#: t_modules/t_main.py:15626
 msgid "There are no lyric sources enabled."
 msgstr "有効な歌詞ソースはありません。"
 
-#: t_modules/t_main.py:15411
+#: t_modules/t_main.py:15635
 msgid "Let's be polite and try later."
 msgstr "礼儀正しく、後で試してみましょう。"
 
-#: t_modules/t_main.py:15428 t_modules/t_main.py:21046
-#: t_modules/t_main.py:21102 t_modules/t_main.py:35174
+#: t_modules/t_main.py:15652 t_modules/t_main.py:21289
+#: t_modules/t_main.py:21345 t_modules/t_main.py:35836
 msgid "Searching..."
 msgstr "検索中..."
 
-#: t_modules/t_main.py:15461
+#: t_modules/t_main.py:15685
 msgid "No lyrics for this track were found"
 msgstr "歌詞が見つかりません。"
 
-#: t_modules/t_main.py:15524 t_modules/t_main.py:15646
-#: t_modules/t_main.py:16101
+#: t_modules/t_main.py:15748 t_modules/t_main.py:15870
+#: t_modules/t_main.py:16336
 msgid "Search for Lyrics"
 msgstr "歌詞を検索"
 
-#: t_modules/t_main.py:15532 t_modules/t_main.py:15540
+#: t_modules/t_main.py:15756 t_modules/t_main.py:15764
 #, fuzzy
 msgid "Show static lyrics"
 msgstr "歌詞を示す"
 
-#: t_modules/t_main.py:15534 t_modules/t_main.py:15542
+#: t_modules/t_main.py:15758 t_modules/t_main.py:15766
 #, fuzzy
 msgid "Show synced lyrics"
 msgstr "歌詞を示す"
 
-#: t_modules/t_main.py:15559
+#: t_modules/t_main.py:15783
 #, fuzzy
 msgid "Search GuitarParty"
 msgstr "歌詞を検索"
 
-#: t_modules/t_main.py:15595
+#: t_modules/t_main.py:15819
 #, fuzzy
 msgid "Paste Chord Lyrics"
 msgstr "歌詞をペースト"
 
-#: t_modules/t_main.py:15596
+#: t_modules/t_main.py:15820
 #, fuzzy
 msgid "Clear Chord Lyrics"
 msgstr "歌詞を消す"
 
-#: t_modules/t_main.py:15636 t_modules/t_main.py:15647
-#: t_modules/t_main.py:16102
+#: t_modules/t_main.py:15860 t_modules/t_main.py:15871
+#: t_modules/t_main.py:16337
 msgid "Toggle Lyrics"
 msgstr "歌詞をトグル"
 
-#: t_modules/t_main.py:15638 t_modules/t_main.py:15649
+#: t_modules/t_main.py:15862 t_modules/t_main.py:15873
 msgid "Substitute Search..."
 msgstr ""
 
-#: t_modules/t_main.py:15639 t_modules/t_main.py:15650
+#: t_modules/t_main.py:15863 t_modules/t_main.py:15874
 msgid "Paste Lyrics"
 msgstr "歌詞をペースト"
 
-#: t_modules/t_main.py:15640 t_modules/t_main.py:15651
+#: t_modules/t_main.py:15864 t_modules/t_main.py:15875
 msgid "Copy Lyrics"
 msgstr "歌詞をコピー"
 
-#: t_modules/t_main.py:15641 t_modules/t_main.py:15652
+#: t_modules/t_main.py:15865 t_modules/t_main.py:15876
 msgid "Clear Lyrics"
 msgstr "歌詞を消す"
 
-#: t_modules/t_main.py:15735 t_modules/t_main.py:16106
+#: t_modules/t_main.py:15959 t_modules/t_main.py:16341
 msgid "Open Image"
 msgstr "画像を開く"
 
-#: t_modules/t_main.py:15773
+#: t_modules/t_main.py:15997
 #, fuzzy
 msgid "Next Image"
 msgstr "画像を開く"
 
-#: t_modules/t_main.py:15777 t_modules/t_main.py:16107
+#: t_modules/t_main.py:16001 t_modules/t_main.py:16342
 msgid "Extract Image"
 msgstr "画像を抽出"
 
-#: t_modules/t_main.py:15790
+#: t_modules/t_main.py:16014
 msgid "Cannot download art for network tracks."
 msgstr ""
 
-#: t_modules/t_main.py:15814
+#: t_modules/t_main.py:16038
 msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
 
-#: t_modules/t_main.py:15824
+#: t_modules/t_main.py:16048
 msgid "Looking up MusicBrainz ID..."
 msgstr "MBIDを探している"
 
-#: t_modules/t_main.py:15887
+#: t_modules/t_main.py:16111
 msgid "Cover art downloaded from fanart.tv"
 msgstr "カバーアートはfanart.tvからダウンロードされました"
 
-#: t_modules/t_main.py:15908
+#: t_modules/t_main.py:16132
 msgid "Cover art downloaded from MusicBrainz"
 msgstr "カバーアートはMusicBrainzからダウンロードされました"
 
-#: t_modules/t_main.py:15919
+#: t_modules/t_main.py:16143
 msgid "Matching cover art or ID could not be found."
 msgstr "カバーアートまたはIDが見つかりませんでした"
 
-#: t_modules/t_main.py:16003
+#: t_modules/t_main.py:16234
 msgid "Image removal failed."
 msgstr "画像の削除に失敗しました。"
 
-#: t_modules/t_main.py:16006
+#: t_modules/t_main.py:16237
 msgid "Deleted embedded picture from file"
 msgstr "ファイルから埋め込み画像を削除しました"
 
-#: t_modules/t_main.py:16035 t_modules/t_main.py:16042
+#: t_modules/t_main.py:16239
+#, fuzzy
+msgid "%d files processed"
+msgstr "　ファイル名が書き込まれました。"
+
+#: t_modules/t_main.py:16266 t_modules/t_main.py:16273
+#: t_modules/t_main.py:16304
 msgid "Delete Image File"
 msgstr "画像ファイルを削除"
 
-#: t_modules/t_main.py:16050
+#: t_modules/t_main.py:16281
 msgid "Delete Embedded | Folder"
 msgstr "埋め込みを削除 | フォルダ"
 
-#: t_modules/t_main.py:16052
+#: t_modules/t_main.py:16283
 msgid "Delete Embedded | Track"
 msgstr "埋め込みを削除 | トラック"
 
-#: t_modules/t_main.py:16072 t_modules/t_main.py:16110
+#: t_modules/t_main.py:16307 t_modules/t_main.py:16345
 msgid "Quick-Fetch Cover Art"
 msgstr "カバーアートを取得"
 
-#: t_modules/t_main.py:16104 t_modules/t_main.py:29519
-#: t_modules/t_main.py:29524
+#: t_modules/t_main.py:16339 t_modules/t_main.py:29878
+#: t_modules/t_main.py:29883
 msgid "Next"
 msgstr "次"
 
-#: t_modules/t_main.py:16105
+#: t_modules/t_main.py:16340
 msgid "Previous"
 msgstr "前"
 
-#: t_modules/t_main.py:16130
+#: t_modules/t_main.py:16365
 #, fuzzy
 msgid "Paste Spotify Album"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:16349 t_modules/t_main.py:16350
-#: t_modules/t_main.py:46053
+#: t_modules/t_main.py:16584 t_modules/t_main.py:16585
+#: t_modules/t_main.py:46851
 msgid "Rename"
 msgstr "リネーム"
 
-#: t_modules/t_main.py:16361
+#: t_modules/t_main.py:16596
 #, fuzzy
 msgid "Pin"
 msgstr "現在"
 
-#: t_modules/t_main.py:16363
+#: t_modules/t_main.py:16598
 msgid "Unpin"
 msgstr ""
 
-#: t_modules/t_main.py:16371
+#: t_modules/t_main.py:16606
 msgid "Unlock"
 msgstr "ロック解除"
 
-#: t_modules/t_main.py:16373 t_modules/t_main.py:16407
+#: t_modules/t_main.py:16608 t_modules/t_main.py:16642
 msgid "Lock"
 msgstr "掛ける"
 
-#: t_modules/t_main.py:16595 t_modules/t_main.py:21301
-#: t_modules/t_main.py:28369 t_modules/t_main.py:28372
-#: t_modules/t_main.py:28866 t_modules/t_main.py:28871
-#: t_modules/t_main.py:28879 t_modules/t_main.py:28883
-#: t_modules/t_main.py:28892
+#: t_modules/t_main.py:16830 t_modules/t_main.py:21605
+#: t_modules/t_main.py:28722 t_modules/t_main.py:28725
+#: t_modules/t_main.py:29219 t_modules/t_main.py:29224
+#: t_modules/t_main.py:29232 t_modules/t_main.py:29236
+#: t_modules/t_main.py:29245
 msgid "Clear"
 msgstr "クリア"
 
-#: t_modules/t_main.py:16652
+#: t_modules/t_main.py:16887
 msgid "Are you sure you want to delete this playlist?"
 msgstr ""
 
-#: t_modules/t_main.py:16653
+#: t_modules/t_main.py:16888
 msgid "Try again while holding shift to confirm"
 msgstr ""
 
-#: t_modules/t_main.py:16765
+#: t_modules/t_main.py:17000
 msgid "Are you sure you want to delete playlist: %s?"
 msgstr ""
 
-#: t_modules/t_main.py:16806
+#: t_modules/t_main.py:17041
 #, fuzzy
 msgid "Rescanning folders..."
 msgstr "フォルダースキャン"
 
-#: t_modules/t_main.py:17130 t_modules/t_main.py:17141
+#: t_modules/t_main.py:17365 t_modules/t_main.py:17376
 #, fuzzy
 msgid "Playlist is locked"
 msgstr "プレイリストが空です"
 
-#: t_modules/t_main.py:17238 t_modules/t_main.py:17240
-#: t_modules/t_main.py:46062
+#: t_modules/t_main.py:17473 t_modules/t_main.py:17475
+#: t_modules/t_main.py:46860
 msgid "Delete"
 msgstr "削除する"
 
-#: t_modules/t_main.py:17312
+#: t_modules/t_main.py:17547
 #, fuzzy
 msgid "Add Spotify Album"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:17415
+#: t_modules/t_main.py:17650
 msgid "Playlist contains non-Spotify tracks"
 msgstr ""
 
-#: t_modules/t_main.py:17421
+#: t_modules/t_main.py:17656
 #, fuzzy
 msgid "Created new Spotify playlist"
 msgstr "次"
 
-#: t_modules/t_main.py:17427
+#: t_modules/t_main.py:17662
 #, fuzzy
 msgid "Error creating Spotify playlist"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:17430
+#: t_modules/t_main.py:17665
 #, fuzzy
 msgid "Updated Spotify playlist"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:18100
+#: t_modules/t_main.py:18313
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
 
-#: t_modules/t_main.py:18101
+#: t_modules/t_main.py:18314
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
 
-#: t_modules/t_main.py:18106 t_modules/t_main.py:22151
-#: t_modules/t_main.py:22155
+#: t_modules/t_main.py:18319 t_modules/t_main.py:22455
+#: t_modules/t_main.py:22459
 msgid "New Playlist"
 msgstr "新しいプレイリスト"
 
-#: t_modules/t_main.py:18116 t_modules/t_main.py:18124
+#: t_modules/t_main.py:18329 t_modules/t_main.py:18337
 #, fuzzy
 msgid "Upload"
 msgstr "リロード"
 
-#: t_modules/t_main.py:18137
+#: t_modules/t_main.py:18350
 #, fuzzy
 msgid "Regenerate"
 msgstr "生成する"
 
-#: t_modules/t_main.py:18138
+#: t_modules/t_main.py:18351
 msgid "Generate…"
 msgstr "生成する..."
 
-#: t_modules/t_main.py:18139
+#: t_modules/t_main.py:18352
 msgid "Sort…"
 msgstr "ソート..."
 
-#: t_modules/t_main.py:18140
+#: t_modules/t_main.py:18353
 msgid "From Current…"
 msgstr "現行から..."
 
-#: t_modules/t_main.py:18145
+#: t_modules/t_main.py:18358
 #, fuzzy
 msgid "Sort by Imported"
 msgstr "ファイルパスで並べ替え"
 
-#: t_modules/t_main.py:18146
+#: t_modules/t_main.py:18359
 msgid "Sort by Filepath"
 msgstr "ファイルパスで並べ替え"
 
-#: t_modules/t_main.py:18147
+#: t_modules/t_main.py:18360
 msgid "Sort Track Numbers"
 msgstr "トラック番号を並べ替える"
 
-#: t_modules/t_main.py:18148
+#: t_modules/t_main.py:18361
 msgid "Sort Year per Artist"
 msgstr "アーティストごとのソート年"
 
-#: t_modules/t_main.py:18149
+#: t_modules/t_main.py:18362
 #, fuzzy
 msgid "Make Playlist Auto-Sorting"
 msgstr "プレイリストの長さ"
 
-#: t_modules/t_main.py:18155 t_modules/t_main.py:19980
-#: t_modules/t_main.py:21299
+#: t_modules/t_main.py:18368 t_modules/t_main.py:20233
+#: t_modules/t_main.py:21603
 msgid "Paste"
 msgstr "ペースト"
 
-#: t_modules/t_main.py:18156
+#: t_modules/t_main.py:18369
 msgid "Append Playing"
 msgstr "再生を追加"
 
-#: t_modules/t_main.py:18161
+#: t_modules/t_main.py:18374
 #, fuzzy
 msgid "Export…"
 msgstr "ソート..."
 
-#: t_modules/t_main.py:18163
+#: t_modules/t_main.py:18376
 msgid "Misc…"
 msgstr "その他..."
 
-#: t_modules/t_main.py:18212
+#: t_modules/t_main.py:18425
 msgid "No target folder selected"
 msgstr ""
 
-#: t_modules/t_main.py:18218
+#: t_modules/t_main.py:18431
 #, fuzzy
 msgid "Target folder could not be found"
 msgstr "カバーアートまたはIDが見つかりませんでした"
 
-#: t_modules/t_main.py:18258
+#: t_modules/t_main.py:18471
 #, fuzzy
 msgid "Deleting folders..."
 msgstr "フォルダースキャン"
 
-#: t_modules/t_main.py:18277 t_modules/t_main.py:18343
+#: t_modules/t_main.py:18490 t_modules/t_main.py:18556
 #, fuzzy
 msgid "Copying files to device"
 msgstr "設定ファイルが開かれました。"
 
-#: t_modules/t_main.py:18283
+#: t_modules/t_main.py:18496
 msgid "Sync aborted! Low disk space on target device"
 msgstr ""
 
-#: t_modules/t_main.py:18292 t_modules/t_main.py:18324
+#: t_modules/t_main.py:18505 t_modules/t_main.py:18537
 msgid "One or more folders to sync has the same name. Skipping."
 msgstr ""
 
-#: t_modules/t_main.py:18292 t_modules/t_main.py:18324
+#: t_modules/t_main.py:18505 t_modules/t_main.py:18537
 msgid "Sync warning"
 msgstr ""
 
-#: t_modules/t_main.py:18309 t_modules/t_main.py:31243
+#: t_modules/t_main.py:18522 t_modules/t_main.py:31602
 #, fuzzy
 msgid "Folders Remaining"
 msgstr "フォルダーツリー"
 
-#: t_modules/t_main.py:18311 t_modules/t_main.py:31241
+#: t_modules/t_main.py:18524 t_modules/t_main.py:31600
 #, fuzzy
 msgid "Folder Remaining"
 msgstr "フォルダーツリー"
 
-#: t_modules/t_main.py:18354
+#: t_modules/t_main.py:18567
 #, fuzzy
 msgid "Sync completed"
 msgstr "名前変更完了。"
 
-#: t_modules/t_main.py:18372 t_modules/t_main.py:18455
+#: t_modules/t_main.py:18585 t_modules/t_main.py:18668
 #, fuzzy
 msgid "Set as Sync Playlist"
 msgstr "プレイリストに表示"
 
-#: t_modules/t_main.py:18375
+#: t_modules/t_main.py:18588
 #, fuzzy
 msgid "Un-set as Sync Playlist"
 msgstr "プレイリストに表示"
 
-#: t_modules/t_main.py:18388 t_modules/t_main.py:18457
+#: t_modules/t_main.py:18601 t_modules/t_main.py:18670
 #, fuzzy
 msgid "Set as Downloads Playlist"
 msgstr "プレイリストに表示"
 
-#: t_modules/t_main.py:18391
+#: t_modules/t_main.py:18604
 #, fuzzy
 msgid "Un-set as Downloads Playlist"
 msgstr "プレイリストに表示"
 
-#: t_modules/t_main.py:18444
+#: t_modules/t_main.py:18657
 msgid "Export Playlist Stats"
 msgstr "統計をエクスポート"
 
-#: t_modules/t_main.py:18445
+#: t_modules/t_main.py:18658
 #, fuzzy
 msgid "Export Albums CSV"
 msgstr "CSVとしてエクスポート"
 
-#: t_modules/t_main.py:18446
+#: t_modules/t_main.py:18659
 msgid "Transcode All"
 msgstr "すべてをトランスコード"
 
-#: t_modules/t_main.py:18447 t_modules/t_main.py:20626
-#: t_modules/t_main.py:20873 t_modules/t_main.py:20974
+#: t_modules/t_main.py:18660 t_modules/t_main.py:20869
+#: t_modules/t_main.py:21116 t_modules/t_main.py:21217
 msgid "Rescan Tags"
 msgstr "タグの再スキャン"
 
-#: t_modules/t_main.py:18452
+#: t_modules/t_main.py:18665
 msgid "Toggle Breaks"
 msgstr "ブレークの切り替え"
 
-#: t_modules/t_main.py:18453
+#: t_modules/t_main.py:18666
 #, fuzzy
 msgid "Edit Generator..."
 msgstr "チャート"
 
-#: t_modules/t_main.py:18454
+#: t_modules/t_main.py:18667
 msgid "Engage Gallery Quick Add"
 msgstr ""
 
-#: t_modules/t_main.py:18459
+#: t_modules/t_main.py:18672
 #, fuzzy
 msgid "Remove Duplicates"
 msgstr "複写"
 
-#: t_modules/t_main.py:18504 t_modules/t_main.py:18593
-#: t_modules/t_main.py:18594
+#: t_modules/t_main.py:18717 t_modules/t_main.py:18806
+#: t_modules/t_main.py:18807
 #, fuzzy
 msgid "Top Rated Tracks"
 msgstr "人気のトラック"
 
-#: t_modules/t_main.py:18521 t_modules/t_main.py:18528
-#: t_modules/t_main.py:18529
+#: t_modules/t_main.py:18734 t_modules/t_main.py:18741
+#: t_modules/t_main.py:18742
 msgid "Top Played Tracks"
 msgstr "人気のトラック"
 
-#: t_modules/t_main.py:18583 t_modules/t_main.py:18590
-#: t_modules/t_main.py:18591
+#: t_modules/t_main.py:18796 t_modules/t_main.py:18803
+#: t_modules/t_main.py:18804
 msgid "Top Played Albums"
 msgstr "人気のアルバム"
 
-#: t_modules/t_main.py:18638 t_modules/t_main.py:18670
-#: t_modules/t_main.py:18671
+#: t_modules/t_main.py:18851 t_modules/t_main.py:18883
+#: t_modules/t_main.py:18884
 #, fuzzy
 msgid "Top Rated Albums"
 msgstr "人気のアルバム"
 
-#: t_modules/t_main.py:18660
+#: t_modules/t_main.py:18873
 #, fuzzy
 msgid "Tracks with lyrics"
 msgstr "このトラック数"
 
-#: t_modules/t_main.py:18667
+#: t_modules/t_main.py:18880
 #, fuzzy
 msgid "No tracks with lyrics were found."
 msgstr "歌詞が見つかりません。"
 
-#: t_modules/t_main.py:18718
+#: t_modules/t_main.py:18931
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
 msgstr ""
 
-#: t_modules/t_main.py:18719
+#: t_modules/t_main.py:18932
 #, fuzzy
 msgid "Incomplete Albums"
 msgstr "ランダムアルバム"
 
-#: t_modules/t_main.py:18726
+#: t_modules/t_main.py:18939
 #, fuzzy
 msgid "No incomplete albums were found."
 msgstr "歌詞が見つかりません。"
 
-#: t_modules/t_main.py:18738 t_modules/t_main.py:21654
+#: t_modules/t_main.py:18951 t_modules/t_main.py:21958
 msgid "Codec"
 msgstr "コーデック"
 
-#: t_modules/t_main.py:18794 t_modules/t_main.py:18801
-#: t_modules/t_main.py:18802
+#: t_modules/t_main.py:19007 t_modules/t_main.py:19014
+#: t_modules/t_main.py:19015
 msgid "File Modified"
 msgstr "変更されたファイル"
 
-#: t_modules/t_main.py:18825 t_modules/t_main.py:19215
-#: t_modules/t_main.py:19216 t_modules/t_main.py:21662
+#: t_modules/t_main.py:19038 t_modules/t_main.py:19428
+#: t_modules/t_main.py:19429 t_modules/t_main.py:21966
 msgid "Loved"
 msgstr "好き"
 
-#: t_modules/t_main.py:18856
+#: t_modules/t_main.py:19069
 msgid "Interesting Comments"
 msgstr ""
 
-#: t_modules/t_main.py:18899
+#: t_modules/t_main.py:19112
 #, fuzzy
 msgid "Duration Sorted"
 msgstr "遷移"
 
-#: t_modules/t_main.py:18906 t_modules/t_main.py:18907
+#: t_modules/t_main.py:19119 t_modules/t_main.py:19120
 msgid "Longest Tracks"
 msgstr "最長トラック"
 
-#: t_modules/t_main.py:18945 t_modules/t_main.py:18950
-#: t_modules/t_main.py:18951
+#: t_modules/t_main.py:19158 t_modules/t_main.py:19163
+#: t_modules/t_main.py:19164
 msgid "Longest Albums"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:18993
+#: t_modules/t_main.py:19206
 #, fuzzy
 msgid "Year Sorted"
 msgstr "パス"
 
-#: t_modules/t_main.py:19010 t_modules/t_main.py:19011
+#: t_modules/t_main.py:19223 t_modules/t_main.py:19224
 msgid "Year by Oldest"
 msgstr "年が古い"
 
-#: t_modules/t_main.py:19018 t_modules/t_main.py:19019
+#: t_modules/t_main.py:19231 t_modules/t_main.py:19232
 msgid "Year by Latest"
 msgstr "最新の年"
 
-#: t_modules/t_main.py:19030 t_modules/t_main.py:19037
-#: t_modules/t_main.py:19038
+#: t_modules/t_main.py:19243 t_modules/t_main.py:19250
+#: t_modules/t_main.py:19251
 msgid "Shuffled Tracks"
 msgstr "シャッフルトラック"
 
-#: t_modules/t_main.py:19066 t_modules/t_main.py:19073
-#: t_modules/t_main.py:19074
+#: t_modules/t_main.py:19279 t_modules/t_main.py:19286
+#: t_modules/t_main.py:19287
 msgid "Shuffled Albums"
 msgstr "シャッフルアルバム"
 
-#: t_modules/t_main.py:19089 t_modules/t_main.py:19097
-#: t_modules/t_main.py:19098
+#: t_modules/t_main.py:19302 t_modules/t_main.py:19310
+#: t_modules/t_main.py:19311
 msgid "Lucky Random"
 msgstr "ラッキーランダム"
 
-#: t_modules/t_main.py:19111
+#: t_modules/t_main.py:19324
 #, fuzzy
 msgid "Reversed"
 msgstr "元に戻す"
 
-#: t_modules/t_main.py:19118 t_modules/t_main.py:19119
+#: t_modules/t_main.py:19331 t_modules/t_main.py:19332
 msgid "Reverse Tracks"
 msgstr "リバーストラック"
 
-#: t_modules/t_main.py:19146
+#: t_modules/t_main.py:19359
 #, fuzzy
 msgid "Reversed Albums"
 msgstr "リバースアルバム"
 
-#: t_modules/t_main.py:19153 t_modules/t_main.py:19154
+#: t_modules/t_main.py:19366 t_modules/t_main.py:19367
 msgid "Reverse Albums"
 msgstr "リバースアルバム"
 
-#: t_modules/t_main.py:19160 t_modules/t_main.py:19168
-#: t_modules/t_main.py:19169
+#: t_modules/t_main.py:19373 t_modules/t_main.py:19381
+#: t_modules/t_main.py:19382
 msgid "Duplicate"
 msgstr "複写"
 
-#: t_modules/t_main.py:19179
+#: t_modules/t_main.py:19392
 #, fuzzy
 msgid "Filepath Sorted"
 msgstr "パス"
 
-#: t_modules/t_main.py:19194
+#: t_modules/t_main.py:19407
 #, fuzzy
 msgid "Artist Sorted"
 msgstr "アーティスト"
 
-#: t_modules/t_main.py:19209
+#: t_modules/t_main.py:19422
 #, fuzzy
 msgid "Album Sorted"
 msgstr "アルバム数"
 
-#: t_modules/t_main.py:19217 t_modules/t_main.py:19218
+#: t_modules/t_main.py:19430 t_modules/t_main.py:19431
 msgid "Has Comment"
 msgstr "コメントあり"
 
-#: t_modules/t_main.py:19219 t_modules/t_main.py:19220
-#: t_modules/t_main.py:21656
+#: t_modules/t_main.py:19432 t_modules/t_main.py:19433
+#: t_modules/t_main.py:21960
 msgid "Has Lyrics"
 msgstr "歌詞あり"
 
-#: t_modules/t_main.py:19253
+#: t_modules/t_main.py:19466
 msgid "Configuration reloaded"
 msgstr "設定がリロードされました"
 
-#: t_modules/t_main.py:19266
+#: t_modules/t_main.py:19479
 #, fuzzy
 msgid "Click \"Reload\" if you made any changes"
 msgstr "変更した場合は、「設定ファイルを再読み込み」をクリックします"
 
-#: t_modules/t_main.py:19266
+#: t_modules/t_main.py:19479
 msgid "Config file opened."
 msgstr "設定ファイルが開かれました。"
 
-#: t_modules/t_main.py:19332
+#: t_modules/t_main.py:19545
 msgid "Transcoding tracks from network locations is not supported"
 msgstr ""
 
-#: t_modules/t_main.py:19352
+#: t_modules/t_main.py:19565
 msgid "Transcoding spotify tracks not possible"
 msgstr ""
 
-#: t_modules/t_main.py:19722
+#: t_modules/t_main.py:19935
 #, fuzzy
 msgid "Add Playing Spotify Album"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:19724
+#: t_modules/t_main.py:19937
 #, fuzzy
 msgid "Add Playing Spotify Track"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:19815
+#: t_modules/t_main.py:20028
 msgid "Track Info…"
 msgstr "トラック情報..."
 
-#: t_modules/t_main.py:19861 t_modules/t_main.py:22661
+#: t_modules/t_main.py:20074 t_modules/t_main.py:23006
 msgid "Un-Love Track"
 msgstr "好きじゃない"
 
-#: t_modules/t_main.py:19863 t_modules/t_main.py:22664
-#: t_modules/t_main.py:22666
+#: t_modules/t_main.py:20076 t_modules/t_main.py:23009
+#: t_modules/t_main.py:23011
 msgid "Love Track"
 msgstr "好き"
 
-#: t_modules/t_main.py:19965 t_modules/t_main.py:37923
+#: t_modules/t_main.py:20107 t_modules/t_main.py:23062
+#, fuzzy
+msgid "Spotify Like Track"
+msgstr "「アーティストートラック」"
+
+#: t_modules/t_main.py:20112 t_modules/t_main.py:23067
+#, fuzzy
+msgid "Un-like Spotify Track"
+msgstr "「アーティストートラック」"
+
+#: t_modules/t_main.py:20218 t_modules/t_main.py:38692
 msgid "Add to Queue"
 msgstr "キューに追加する"
 
-#: t_modules/t_main.py:19967
+#: t_modules/t_main.py:20220
 msgid "↳ After Current Track"
 msgstr "現行のアルバムの後"
 
-#: t_modules/t_main.py:19969
+#: t_modules/t_main.py:20222
 msgid "Show in Gallery"
 msgstr "ギャラリーに表示"
 
-#: t_modules/t_main.py:19971
+#: t_modules/t_main.py:20224
 msgid "Meta…"
 msgstr "メタ..."
 
-#: t_modules/t_main.py:19976 t_modules/t_main.py:20986
-#: t_modules/t_main.py:20991 t_modules/t_main.py:20992
-#: t_modules/t_main.py:21297
+#: t_modules/t_main.py:20229 t_modules/t_main.py:21229
+#: t_modules/t_main.py:21234 t_modules/t_main.py:21235
+#: t_modules/t_main.py:21601
 msgid "Copy"
 msgstr "コピー"
 
-#: t_modules/t_main.py:19991
+#: t_modules/t_main.py:20244
 msgid "Cannot delete a network track"
 msgstr ""
 
-#: t_modules/t_main.py:20003 t_modules/t_main.py:20012
+#: t_modules/t_main.py:20256 t_modules/t_main.py:20265
 #, fuzzy
 msgid "File deleted"
 msgstr "変更されたファイル"
 
-#: t_modules/t_main.py:20005 t_modules/t_main.py:20014
+#: t_modules/t_main.py:20258 t_modules/t_main.py:20267
 msgid "Error deleting file"
 msgstr ""
 
-#: t_modules/t_main.py:20007
+#: t_modules/t_main.py:20260
 #, fuzzy
 msgid "File moved to trash"
 msgstr "リバーストラック"
 
-#: t_modules/t_main.py:20021
+#: t_modules/t_main.py:20274
 msgid "Delete Track File"
 msgstr "ファイルを削除する"
 
-#: t_modules/t_main.py:20028
+#: t_modules/t_main.py:20281
 msgid "Rename (Single track)"
 msgstr "リネーム （単一）"
 
-#: t_modules/t_main.py:20030 t_modules/t_main.py:20817
-#: t_modules/t_main.py:20819
+#: t_modules/t_main.py:20283 t_modules/t_main.py:21060
+#: t_modules/t_main.py:21062
 msgid "Rename Tracks…"
 msgstr "トラックの名前を変更"
 
-#: t_modules/t_main.py:20045 t_modules/t_main.py:20874
-#: t_modules/t_main.py:20976
+#: t_modules/t_main.py:20298 t_modules/t_main.py:21117
+#: t_modules/t_main.py:21219
 msgid "Edit fields…"
 msgstr ""
 
-#: t_modules/t_main.py:20052
+#: t_modules/t_main.py:20305
 msgid "Cannot physically delete"
 msgstr ""
 
-#: t_modules/t_main.py:20052
+#: t_modules/t_main.py:20305
 msgid "One or more tracks is from a network location!"
 msgstr ""
 
-#: t_modules/t_main.py:20073
+#: t_modules/t_main.py:20326
 msgid "Delete size safety limit reached!"
 msgstr ""
 
-#: t_modules/t_main.py:20111
+#: t_modules/t_main.py:20364
 #, fuzzy
 msgid "Folder could not be trashed."
 msgstr "カバーアートまたはIDが見つかりませんでした"
 
-#: t_modules/t_main.py:20238 t_modules/t_main.py:20809
-#: t_modules/t_main.py:20810 t_modules/t_main.py:20815
+#: t_modules/t_main.py:20491 t_modules/t_main.py:21052
+#: t_modules/t_main.py:21053 t_modules/t_main.py:21058
 msgid "Modify Folder…"
 msgstr "フォルダーを変更"
 
-#: t_modules/t_main.py:20527
+#: t_modules/t_main.py:20770
 #, fuzzy
 msgid "Tag editor app does not appear to be installed."
 msgstr "タグエディターアプリがインストールされていないようです。"
 
-#: t_modules/t_main.py:20530
+#: t_modules/t_main.py:20773
 msgid "App not found on host OR insufficient Flatpak permissions."
 msgstr "ホストでアプリが見つからないか、Flatpakの権限が不十分です。"
 
-#: t_modules/t_main.py:20646
+#: t_modules/t_main.py:20889
 msgid "Edit with "
 msgstr "編集: "
 
-#: t_modules/t_main.py:20659
+#: t_modules/t_main.py:20902
 msgid "Lyrics..."
 msgstr "歌詞..."
 
-#: t_modules/t_main.py:20762
+#: t_modules/t_main.py:21005
 msgid "Fix Mojibake"
 msgstr "文字化けを修正"
 
-#: t_modules/t_main.py:20868
+#: t_modules/t_main.py:21111
 msgid "Transcode Single"
 msgstr "１つトランスコード"
 
-#: t_modules/t_main.py:20870 t_modules/t_main.py:20876
-#: t_modules/t_main.py:20878 t_modules/t_main.py:21235
+#: t_modules/t_main.py:21113 t_modules/t_main.py:21119
+#: t_modules/t_main.py:21121 t_modules/t_main.py:21539
 msgid "Transcode Folder"
 msgstr "トランスコード"
 
-#: t_modules/t_main.py:20875
+#: t_modules/t_main.py:21118
 msgid "Vacuum Playtimes"
 msgstr "真空プレイタイム"
 
-#: t_modules/t_main.py:20888
+#: t_modules/t_main.py:21131
 msgid "Copy \"Artist - Album\""
 msgstr "「アーティストーアルバム」"
 
-#: t_modules/t_main.py:20896 t_modules/t_main.py:22800
+#: t_modules/t_main.py:21139 t_modules/t_main.py:23145
 #, fuzzy
 msgid "URL copied to clipboard"
 msgstr "テキストをクリップボードにコピーしました"
 
-#: t_modules/t_main.py:20898 t_modules/t_main.py:22802
-#: t_modules/t_main.py:22931 t_modules/t_main.py:22954
+#: t_modules/t_main.py:21141 t_modules/t_main.py:21428
+#: t_modules/t_main.py:21458 t_modules/t_main.py:23147
+#: t_modules/t_main.py:23281
 #, fuzzy
 msgid "No results found"
 msgstr "バイオが見つかりません"
 
-#: t_modules/t_main.py:20904
+#: t_modules/t_main.py:21147
 #, fuzzy
 msgid "Copy Spotify Album URL"
 msgstr "「アーティストーアルバム」"
 
-#: t_modules/t_main.py:20906
+#: t_modules/t_main.py:21149
 #, fuzzy
 msgid "Lookup Spotify Album URL"
 msgstr "「アーティストーアルバム」"
 
-#: t_modules/t_main.py:20916
+#: t_modules/t_main.py:21159
 msgid "Save Album to Spotify"
 msgstr ""
 
-#: t_modules/t_main.py:20922
+#: t_modules/t_main.py:21165
 #, fuzzy
 msgid "Un-save Spotify Album"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:20965
+#: t_modules/t_main.py:21208
 #, fuzzy
 msgid "Queue %d"
 msgstr "キュー"
 
-#: t_modules/t_main.py:20970
+#: t_modules/t_main.py:21213
 #, fuzzy
 msgid "Add to queue"
 msgstr "キューに追加する"
 
-#: t_modules/t_main.py:20987
+#: t_modules/t_main.py:21230
 msgid "Cut"
 msgstr "カット"
 
-#: t_modules/t_main.py:20988 t_modules/t_main.py:20996
-#: t_modules/t_main.py:20997 t_modules/t_main.py:39507
+#: t_modules/t_main.py:21231 t_modules/t_main.py:21239
+#: t_modules/t_main.py:21240 t_modules/t_main.py:40276
 msgid "Remove"
 msgstr "削除する"
 
-#: t_modules/t_main.py:20989
+#: t_modules/t_main.py:21232
 msgid "Delete Files"
 msgstr "ファイルを削除する"
 
-#: t_modules/t_main.py:21037
+#: t_modules/t_main.py:21280
 #, fuzzy
 msgid "No matching artist result found"
 msgstr "アーティスト画像が見つかりません"
 
-#: t_modules/t_main.py:21117
+#: t_modules/t_main.py:21360
 msgid "Search Artist on Wikipedia"
 msgstr "ウィキペディアで検索"
 
-#: t_modules/t_main.py:21119
+#: t_modules/t_main.py:21362
 msgid "Search Track on Genius"
 msgstr "Geniusでトラックを検索"
 
-#: t_modules/t_main.py:21125
+#: t_modules/t_main.py:21368
 msgid "Search Artist on Sonemic"
 msgstr "Sonemicで検索"
 
-#: t_modules/t_main.py:21132
+#: t_modules/t_main.py:21375
 #, fuzzy
 msgid "Search Artist on Bandcamp"
 msgstr "Sonemicで検索"
 
-#: t_modules/t_main.py:21145
+#: t_modules/t_main.py:21388
 msgid "Copy \"Artist - Track\""
 msgstr "「アーティストートラック」"
 
-#: t_modules/t_main.py:21164
+#: t_modules/t_main.py:21414
 #, fuzzy
-msgid "Copy Spotify Track URL"
+msgid "Spotify…"
+msgstr "最長アルバム"
+
+#: t_modules/t_main.py:21419 t_modules/t_main.py:23286
+#, fuzzy
+msgid "Show Full Artist"
+msgstr "プレイリストに表示"
+
+#: t_modules/t_main.py:21432
+msgid "Looks like that's the only track in the album"
+msgstr ""
+
+#: t_modules/t_main.py:21444 t_modules/t_main.py:23261
+#, fuzzy
+msgid "Show Full Album"
+msgstr "シャッフルアルバム"
+
+#: t_modules/t_main.py:21448
+#, fuzzy
+msgid "Copy Track URL"
 msgstr "「アーティストートラック」"
 
-#: t_modules/t_main.py:21266
+#: t_modules/t_main.py:21462 t_modules/t_main.py:23283
+#, fuzzy
+msgid "Fetching..."
+msgstr "検索中..."
+
+#: t_modules/t_main.py:21468
+msgid "Get Recommended"
+msgstr ""
+
+#: t_modules/t_main.py:21570
 msgid "Broadcast This"
 msgstr "これを放送する"
 
-#: t_modules/t_main.py:21280
+#: t_modules/t_main.py:21584
 #, fuzzy
 msgid "Minimize"
 msgstr "ミニ"
 
-#: t_modules/t_main.py:21281
+#: t_modules/t_main.py:21585
 msgid "Maximize"
 msgstr ""
 
-#: t_modules/t_main.py:21282 t_modules/t_main.py:23333
+#: t_modules/t_main.py:21586 t_modules/t_main.py:23660
 msgid "Exit"
 msgstr "終了"
 
-#: t_modules/t_main.py:21310 t_modules/t_main.py:27528
+#: t_modules/t_main.py:21614 t_modules/t_main.py:27881
 msgid "Off"
 msgstr "オフ"
 
-#: t_modules/t_main.py:21326
+#: t_modules/t_main.py:21630
 msgid "Level Meter"
 msgstr "騒音計"
 
-#: t_modules/t_main.py:21336
+#: t_modules/t_main.py:21640
 msgid "Spectrum Visualizer"
 msgstr "スペクトル"
 
-#: t_modules/t_main.py:21630
+#: t_modules/t_main.py:21934
 msgid "Time"
 msgstr "期間"
 
-#: t_modules/t_main.py:21631 t_modules/t_main.py:21658
+#: t_modules/t_main.py:21935 t_modules/t_main.py:21962
 msgid "Filepath"
 msgstr "パス"
 
-#: t_modules/t_main.py:21637
+#: t_modules/t_main.py:21941
 msgid "Auto Resize"
 msgstr "自動サイズ"
 
-#: t_modules/t_main.py:21638
+#: t_modules/t_main.py:21942
 msgid "Hide bar"
 msgstr "バーを隠す"
 
-#: t_modules/t_main.py:21639
+#: t_modules/t_main.py:21943
 msgid "Show bar"
 msgstr "バーに表示"
 
-#: t_modules/t_main.py:21641 t_modules/t_main.py:37654
+#: t_modules/t_main.py:21945 t_modules/t_main.py:38423
 msgid "Remove This"
 msgstr "これを削除"
 
-#: t_modules/t_main.py:21643 t_modules/t_main.py:45727
-#: t_modules/t_main.py:45733
+#: t_modules/t_main.py:21947 t_modules/t_main.py:46525
+#: t_modules/t_main.py:46531
 msgid "Artist"
 msgstr "アーティスト"
 
-#: t_modules/t_main.py:21644 t_modules/t_main.py:45708
-#: t_modules/t_main.py:45714
+#: t_modules/t_main.py:21948 t_modules/t_main.py:46506
+#: t_modules/t_main.py:46512
 msgid "Title"
 msgstr "タイトル"
 
-#: t_modules/t_main.py:21645 t_modules/t_main.py:45746
-#: t_modules/t_main.py:45752
+#: t_modules/t_main.py:21949 t_modules/t_main.py:46544
+#: t_modules/t_main.py:46550
 msgid "Album"
 msgstr "アルバム"
 
-#: t_modules/t_main.py:21646 t_modules/t_main.py:45816
-#: t_modules/t_main.py:45822
+#: t_modules/t_main.py:21950 t_modules/t_main.py:46614
+#: t_modules/t_main.py:46620
 msgid "Album Artist"
 msgstr "アルバム数"
 
-#: t_modules/t_main.py:21647 t_modules/t_main.py:45913
-#: t_modules/t_main.py:45919
+#: t_modules/t_main.py:21951 t_modules/t_main.py:46711
+#: t_modules/t_main.py:46717
 msgid "Composer"
 msgstr "作曲家"
 
-#: t_modules/t_main.py:21648 t_modules/t_main.py:45836
-#: t_modules/t_main.py:45842
+#: t_modules/t_main.py:21952 t_modules/t_main.py:46634
+#: t_modules/t_main.py:46640
 msgid "Duration"
 msgstr "遷移"
 
-#: t_modules/t_main.py:21649 t_modules/t_main.py:45898
-#: t_modules/t_main.py:45904
+#: t_modules/t_main.py:21953 t_modules/t_main.py:46696
+#: t_modules/t_main.py:46702
 msgid "Date"
 msgstr "日付"
 
-#: t_modules/t_main.py:21650 t_modules/t_main.py:45883
-#: t_modules/t_main.py:45889
+#: t_modules/t_main.py:21954 t_modules/t_main.py:46681
+#: t_modules/t_main.py:46687
 msgid "Genre"
 msgstr "ジャンル"
 
-#: t_modules/t_main.py:21651
+#: t_modules/t_main.py:21955
 msgid "Track Number"
 msgstr "番号"
 
-#: t_modules/t_main.py:21652
+#: t_modules/t_main.py:21956
 msgid "Play Count"
 msgstr "プレイ回数"
 
-#: t_modules/t_main.py:21653
+#: t_modules/t_main.py:21957
 msgid "Scrobble Count"
 msgstr ""
 
-#: t_modules/t_main.py:21655 t_modules/t_main.py:29094
-#: t_modules/t_main.py:45803
+#: t_modules/t_main.py:21959 t_modules/t_main.py:29447
+#: t_modules/t_main.py:46601
 msgid "Bitrate"
 msgstr "ビットレート"
 
-#: t_modules/t_main.py:21657 t_modules/t_main.py:45968
-#: t_modules/t_main.py:45974
+#: t_modules/t_main.py:21961 t_modules/t_main.py:46766
+#: t_modules/t_main.py:46772
 msgid "Comment"
 msgstr "コメント"
 
-#: t_modules/t_main.py:21659
+#: t_modules/t_main.py:21963
 #, fuzzy
 msgid "Filename"
 msgstr "リネーム"
 
-#: t_modules/t_main.py:21660
+#: t_modules/t_main.py:21964
 msgid "Starline"
 msgstr "星"
 
-#: t_modules/t_main.py:21661
+#: t_modules/t_main.py:21965
 msgid "Rating"
 msgstr ""
 
-#: t_modules/t_main.py:22149
+#: t_modules/t_main.py:22453
 #, fuzzy
 msgid "New Radio List"
 msgstr "新しいプレイリスト"
 
-#: t_modules/t_main.py:22173 t_modules/t_main.py:22176
+#: t_modules/t_main.py:22477 t_modules/t_main.py:22480
 #, fuzzy
 msgid "Clean Database!"
 msgstr "データベース..."
 
-#: t_modules/t_main.py:22202
+#: t_modules/t_main.py:22506
 #, fuzzy
 msgid "Paste Spotify Playlist"
 msgstr "プレイリストへの再生履歴"
 
-#: t_modules/t_main.py:22211
+#: t_modules/t_main.py:22515
 msgid "Music"
 msgstr ""
 
-#: t_modules/t_main.py:22222
+#: t_modules/t_main.py:22526
 msgid "Import Music Folder"
 msgstr "音楽フォルダをインポート"
 
-#: t_modules/t_main.py:22230
+#: t_modules/t_main.py:22534
 msgid "Settings"
 msgstr "設定"
 
-#: t_modules/t_main.py:22231
+#: t_modules/t_main.py:22535
 msgid "Database…"
 msgstr "データベース..."
 
-#: t_modules/t_main.py:22295
+#: t_modules/t_main.py:22599
 msgid "Export as CSV"
 msgstr "CSVとしてエクスポート"
 
-#: t_modules/t_main.py:22296
+#: t_modules/t_main.py:22600
 msgid "Play History to Playlist"
 msgstr "プレイリストへの再生履歴"
 
-#: t_modules/t_main.py:22297
+#: t_modules/t_main.py:22601
 msgid "Reset Image Cache"
 msgstr "画像キャッシュをリセット"
 
-#: t_modules/t_main.py:22316
+#: t_modules/t_main.py:22620
 #, fuzzy
 msgid "Remove Network Tracks"
 msgstr "リバーストラック"
 
-#: t_modules/t_main.py:22317
+#: t_modules/t_main.py:22621
 msgid "Remove Missing Tracks"
 msgstr "クリーン"
 
-#: t_modules/t_main.py:22338
-msgid "Import FMPS_Ratings from Tags"
+#: t_modules/t_main.py:22639
+msgid "Import FMPS Ratings"
 msgstr ""
 
-#: t_modules/t_main.py:22343
+#: t_modules/t_main.py:22676
+msgid "Import POPM Ratings"
+msgstr ""
+
+#: t_modules/t_main.py:22681
 msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
 
-#: t_modules/t_main.py:22344 t_modules/t_main.py:28917
+#: t_modules/t_main.py:22682 t_modules/t_main.py:29270
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
 msgstr ""
 
-#: t_modules/t_main.py:22354
+#: t_modules/t_main.py:22692
 msgid "Reset User Ratings"
 msgstr ""
 
-#: t_modules/t_main.py:22361
+#: t_modules/t_main.py:22699
 #, fuzzy
 msgid "Find Incomplete Albums"
 msgstr "ランダムアルバム"
 
-#: t_modules/t_main.py:22367
+#: t_modules/t_main.py:22705
 msgid "There are no tracks in this playlist to broadcast."
 msgstr ""
 
-#: t_modules/t_main.py:22370
+#: t_modules/t_main.py:22708
 msgid "You need to start the broadcast web server in settings."
 msgstr ""
 
-#: t_modules/t_main.py:22393
+#: t_modules/t_main.py:22731
 #, fuzzy
 msgid "Stop Broadcast"
 msgstr "放送開始"
 
-#: t_modules/t_main.py:22410
+#: t_modules/t_main.py:22748
 msgid "Start Broadcast"
 msgstr "放送開始"
 
-#: t_modules/t_main.py:22416
+#: t_modules/t_main.py:22754
 #, fuzzy
 msgid "Stop Cast"
 msgstr "放送開始"
 
-#: t_modules/t_main.py:22437
+#: t_modules/t_main.py:22775
 #, fuzzy
 msgid "Chromecast…"
 msgstr "これを放送する"
 
-#: t_modules/t_main.py:22479
+#: t_modules/t_main.py:22821
+msgid "Tab"
+msgstr ""
+
+#: t_modules/t_main.py:22822
 msgid "Mini"
 msgstr "ミニ"
 
-#: t_modules/t_main.py:22481
+#: t_modules/t_main.py:22824
+msgid "Slate"
+msgstr ""
+
+#: t_modules/t_main.py:22825
 msgid "Square"
 msgstr "平方"
 
-#: t_modules/t_main.py:22482
+#: t_modules/t_main.py:22826
 msgid "Square Large"
 msgstr "大平方"
 
-#: t_modules/t_main.py:22483
-msgid "Micro"
-msgstr "マイクロ"
-
-#: t_modules/t_main.py:22494
+#: t_modules/t_main.py:22837
 msgid "No metadata available to copy"
 msgstr ""
 
-#: t_modules/t_main.py:22498
+#: t_modules/t_main.py:22841
 #, fuzzy
 msgid "Copy Title to Clipboard"
 msgstr "テキストをクリップボードにコピーしました"
 
-#: t_modules/t_main.py:22516
+#: t_modules/t_main.py:22859
 msgid "Random Track"
 msgstr "ランダムトラック"
 
-#: t_modules/t_main.py:22544
+#: t_modules/t_main.py:22887
 msgid "Radio Random"
 msgstr "ラジオランダム"
 
-#: t_modules/t_main.py:22549
+#: t_modules/t_main.py:22892
 msgid "Revert"
 msgstr "元に戻す"
 
-#: t_modules/t_main.py:22555 t_modules/t_main.py:37660
+#: t_modules/t_main.py:22898 t_modules/t_main.py:38429
 msgid "Clear Queue"
 msgstr "キューをクリア"
 
-#: t_modules/t_main.py:22717
-#, fuzzy
-msgid "Spotify Like Track"
-msgstr "「アーティストートラック」"
-
-#: t_modules/t_main.py:22722
-#, fuzzy
-msgid "Un-like Spotify Track"
-msgstr "「アーティストートラック」"
-
-#: t_modules/t_main.py:22790
+#: t_modules/t_main.py:23135
 msgid "Global Search"
 msgstr "サーチ"
 
-#: t_modules/t_main.py:22807
+#: t_modules/t_main.py:23152
 #, fuzzy
 msgid "Copy Album URL"
 msgstr "「アルバムタイトル」"
 
-#: t_modules/t_main.py:22811 t_modules/t_main.py:22920
+#: t_modules/t_main.py:23156 t_modules/t_main.py:23265
 #, fuzzy
 msgid "Lookup Spotify Album"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:22821
+#: t_modules/t_main.py:23166
 msgid "Locate Artist"
 msgstr "アーティストを探す"
 
-#: t_modules/t_main.py:22823
+#: t_modules/t_main.py:23168
 msgid "Go To Playing"
 msgstr "現在の歌に行く"
 
-#: t_modules/t_main.py:22863 t_modules/t_main.py:22876
-#: t_modules/t_main.py:22887 t_modules/t_main.py:22903
+#: t_modules/t_main.py:23208 t_modules/t_main.py:23221
+#: t_modules/t_main.py:23232 t_modules/t_main.py:23248
 msgid "Please wait until current job is finished"
 msgstr ""
 
-#: t_modules/t_main.py:22865
+#: t_modules/t_main.py:23210
 msgid "Import Spotify…"
 msgstr ""
 
-#: t_modules/t_main.py:22867
+#: t_modules/t_main.py:23212
 #, fuzzy
 msgid "Liked Albums"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:22878
+#: t_modules/t_main.py:23223
 #, fuzzy
 msgid "Liked Tracks"
 msgstr "好き"
 
-#: t_modules/t_main.py:22882
+#: t_modules/t_main.py:23227
 #, fuzzy
 msgid "Importing Spotify playlists..."
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:22900
+#: t_modules/t_main.py:23245
 #, fuzzy
 msgid "> Import All Playlists"
 msgstr "音楽フォルダをインポート"
 
-#: t_modules/t_main.py:22905
+#: t_modules/t_main.py:23250
 #, fuzzy
 msgid "Playlist…"
 msgstr "新しいプレイリスト"
 
-#: t_modules/t_main.py:22911
+#: t_modules/t_main.py:23256
 msgid "Current Context"
 msgstr ""
 
-#: t_modules/t_main.py:22916
-#, fuzzy
-msgid "Show Full Album"
-msgstr "シャッフルアルバム"
-
-#: t_modules/t_main.py:22935
-msgid "Looks like that's the only track in the album"
-msgstr ""
-
-#: t_modules/t_main.py:22956
-#, fuzzy
-msgid "Fetching..."
-msgstr "検索中..."
-
-#: t_modules/t_main.py:22959
-#, fuzzy
-msgid "Show Full Artist"
-msgstr "プレイリストに表示"
-
-#: t_modules/t_main.py:22962
+#: t_modules/t_main.py:23289
 #, fuzzy
 msgid "Start Spotify Remote"
 msgstr "最長アルバム"
 
-#: t_modules/t_main.py:23126
+#: t_modules/t_main.py:23453
 msgid "ListenBrainz is Paused"
 msgstr "Listenが一時停止"
 
-#: t_modules/t_main.py:23128
+#: t_modules/t_main.py:23455
 msgid "Scrobbling is Paused"
 msgstr "Scrobblingが一時停止"
 
-#: t_modules/t_main.py:23132
+#: t_modules/t_main.py:23459
 msgid "ListenBrainz is Active"
 msgstr "Listenがアクティブ"
 
-#: t_modules/t_main.py:23134
+#: t_modules/t_main.py:23461
 msgid "Scrobbling is Active"
 msgstr "Scrobblingが一時停止"
 
-#: t_modules/t_main.py:23332
+#: t_modules/t_main.py:23659
 msgid "Exit Shuffle Lockdown"
 msgstr ""
 
-#: t_modules/t_main.py:23344
+#: t_modules/t_main.py:23671
 msgid "Disengage Quick Add"
 msgstr ""
 
-#: t_modules/t_main.py:24085
+#: t_modules/t_main.py:24428
 msgid "Press Tab key to switch to Spotify search"
 msgstr ""
 
-#: t_modules/t_main.py:24315
+#: t_modules/t_main.py:24658
 #, fuzzy
 msgid "Searching for albums by artist: "
 msgstr "歌詞を検索"
 
-#: t_modules/t_main.py:24315
+#: t_modules/t_main.py:24658
 #, fuzzy
 msgid "This may take a moment"
 msgstr "これには時間がかかる場合があります。"
 
-#: t_modules/t_main.py:25963
+#: t_modules/t_main.py:26314
 msgid "Permission error accessing one or more files."
 msgstr ""
 
-#: t_modules/t_main.py:25964
+#: t_modules/t_main.py:26315
 msgid "If this location is on external media, see"
 msgstr ""
 
-#: t_modules/t_main.py:25967
+#: t_modules/t_main.py:26318
 msgid "Permission error accessing one or more files"
 msgstr ""
 
-#: t_modules/t_main.py:26730
+#: t_modules/t_main.py:27083
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 
-#: t_modules/t_main.py:26781 t_modules/t_main.py:26795
-#: t_modules/t_main.py:26833
+#: t_modules/t_main.py:27134 t_modules/t_main.py:27148
+#: t_modules/t_main.py:27186
 msgid "Change will be applied on restart."
 msgstr "変更は再起動時に適用されます。"
 
-#: t_modules/t_main.py:26882
+#: t_modules/t_main.py:27235
 msgid "Tip: You can also toggle this from a right-click context menu"
 msgstr ""
 
-#: t_modules/t_main.py:26927
+#: t_modules/t_main.py:27280
 msgid "External connections will be accepted."
 msgstr ""
 
-#: t_modules/t_main.py:26927
+#: t_modules/t_main.py:27280
 msgid "Web server starting"
 msgstr ""
 
-#: t_modules/t_main.py:26969 t_modules/t_main.py:28346
+#: t_modules/t_main.py:27322 t_modules/t_main.py:28699
 msgid "One or more fields is missing."
 msgstr ""
 
-#: t_modules/t_main.py:27077
+#: t_modules/t_main.py:27430
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
 msgstr ""
 
-#: t_modules/t_main.py:27078
+#: t_modules/t_main.py:27431
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
 
-#: t_modules/t_main.py:27099
+#: t_modules/t_main.py:27452
 msgid ""
 "DANGER! This will delete the original files. You may want to have backups in "
 "case of malfunction."
 msgstr ""
 
-#: t_modules/t_main.py:27100
+#: t_modules/t_main.py:27453
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
 
-#: t_modules/t_main.py:27280 t_modules/t_main.py:27288
+#: t_modules/t_main.py:27633 t_modules/t_main.py:27641
 msgid "There was an error generating the chart"
 msgstr ""
 
-#: t_modules/t_main.py:27291
+#: t_modules/t_main.py:27644
 #, fuzzy
 msgid "Chart generated"
 msgstr "チャート"
 
-#: t_modules/t_main.py:27337
+#: t_modules/t_main.py:27690
 msgid "Function"
 msgstr "関数"
 
-#: t_modules/t_main.py:27338
+#: t_modules/t_main.py:27691
 msgid "Audio"
 msgstr "オーディオ"
 
-#: t_modules/t_main.py:27339
+#: t_modules/t_main.py:27692
 msgid "Tracklist"
 msgstr "トラックリスト"
 
-#: t_modules/t_main.py:27340 t_modules/t_main.py:27390
+#: t_modules/t_main.py:27693 t_modules/t_main.py:27743
 msgid "Theme"
 msgstr "テーマ"
 
-#: t_modules/t_main.py:27341
+#: t_modules/t_main.py:27694
 msgid "Window"
 msgstr "ウィンドウ"
 
-#: t_modules/t_main.py:27342
+#: t_modules/t_main.py:27695
 msgid "View"
 msgstr "ビュー "
 
-#: t_modules/t_main.py:27343
+#: t_modules/t_main.py:27696
 msgid "Transcode"
 msgstr "トランスコード"
 
-#: t_modules/t_main.py:27344 t_modules/t_main.py:45956
+#: t_modules/t_main.py:27697 t_modules/t_main.py:46754
 msgid "Lyrics"
 msgstr "歌詞"
 
-#: t_modules/t_main.py:27345
+#: t_modules/t_main.py:27698
 msgid "Accounts"
 msgstr "アカウント"
 
-#: t_modules/t_main.py:27346
+#: t_modules/t_main.py:27699
 msgid "Stats"
 msgstr "統計"
 
-#: t_modules/t_main.py:27347
+#: t_modules/t_main.py:27700
 msgid "About"
 msgstr "情報"
 
-#: t_modules/t_main.py:27394
+#: t_modules/t_main.py:27747
 msgid "Use album art as background"
 msgstr "アルバムアートを背景として使用する"
 
-#: t_modules/t_main.py:27398
+#: t_modules/t_main.py:27751
 msgid "Stronger"
 msgstr "より明るい"
 
-#: t_modules/t_main.py:27404
+#: t_modules/t_main.py:27757
 msgid "Blur"
 msgstr "ぼかす"
 
-#: t_modules/t_main.py:27407
+#: t_modules/t_main.py:27760
 msgid "Showcase only"
 msgstr "ショーケースのみ"
 
-#: t_modules/t_main.py:27412
+#: t_modules/t_main.py:27765
 #, fuzzy
 msgid "Pattern style"
 msgstr "カスケード"
 
-#: t_modules/t_main.py:27416
+#: t_modules/t_main.py:27769
 #, fuzzy
 msgid "Auto-theme from album art"
 msgstr "アルバムアートからテーマを生成する"
 
-#: t_modules/t_main.py:27511
+#: t_modules/t_main.py:27864
 msgid "Based on"
 msgstr ""
 
-#: t_modules/t_main.py:27519 t_modules/t_main.py:27598
-#: t_modules/t_main.py:29056 t_modules/t_main.py:29660
+#: t_modules/t_main.py:27872 t_modules/t_main.py:27951
+#: t_modules/t_main.py:29409 t_modules/t_main.py:30019
 msgid "Return"
 msgstr "戻る"
 
-#: t_modules/t_main.py:27525 t_modules/t_main.py:27691
+#: t_modules/t_main.py:27878 t_modules/t_main.py:28044
 msgid "ReplayGain"
 msgstr ""
 
-#: t_modules/t_main.py:27529
+#: t_modules/t_main.py:27882
 #, fuzzy
 msgid "Auto"
 msgstr "自動停止"
 
-#: t_modules/t_main.py:27531
+#: t_modules/t_main.py:27884
 msgid "Preserve album dynamics"
 msgstr ""
 
-#: t_modules/t_main.py:27533
+#: t_modules/t_main.py:27886
 msgid "Tracks equal loudness"
 msgstr ""
 
-#: t_modules/t_main.py:27536
+#: t_modules/t_main.py:27889
 msgid "Will only have effect if ReplayGain metadata is present."
 msgstr ""
 
-#: t_modules/t_main.py:27539
+#: t_modules/t_main.py:27892
 msgid "Pre-amp"
 msgstr ""
 
-#: t_modules/t_main.py:27590
+#: t_modules/t_main.py:27943
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
 
-#: t_modules/t_main.py:27607 t_modules/t_main.py:28200
-#: t_modules/t_main.py:28206 t_modules/t_main.py:28212
-#: t_modules/t_main.py:28378
+#: t_modules/t_main.py:27960 t_modules/t_main.py:28553
+#: t_modules/t_main.py:28559 t_modules/t_main.py:28565
+#: t_modules/t_main.py:28731
 msgid "Enable"
 msgstr "有効にする"
 
-#: t_modules/t_main.py:27684
+#: t_modules/t_main.py:28037
 msgid "Use fade on pause/stop"
 msgstr "停止時にフェード"
 
-#: t_modules/t_main.py:27686
+#: t_modules/t_main.py:28039
 msgid "Use fade on track jump"
 msgstr "ジャンプでフェード"
 
-#: t_modules/t_main.py:27688
+#: t_modules/t_main.py:28041
 msgid "Back restarts to beginning"
 msgstr ""
 
-#: t_modules/t_main.py:27696
+#: t_modules/t_main.py:28049
 msgid "Cache local files (for smb/nfs)"
 msgstr ""
 
-#: t_modules/t_main.py:27699
+#: t_modules/t_main.py:28052
 msgid "Use persistent network cache"
 msgstr ""
 
-#: t_modules/t_main.py:27704
+#: t_modules/t_main.py:28057
 #, fuzzy
 msgid "Cache size"
 msgstr "サイズ"
 
-#: t_modules/t_main.py:27723
+#: t_modules/t_main.py:28076
 msgid "Set audio output device"
 msgstr "デバイスを設定する"
 
-#: t_modules/t_main.py:27726
+#: t_modules/t_main.py:28079
 msgid "Avoid resampling"
 msgstr ""
 
-#: t_modules/t_main.py:27798
+#: t_modules/t_main.py:28151
 msgid "Enable chord lyrics"
 msgstr "コード歌詞を有効"
 
-#: t_modules/t_main.py:27801
+#: t_modules/t_main.py:28154
 msgid "Sources:"
 msgstr "ソース："
 
-#: t_modules/t_main.py:27818
+#: t_modules/t_main.py:28171
 msgid "*Uses scraping. Enable at your own discretion."
 msgstr "＊スクレイピングを使用します。 独自の裁量で有効にします。"
 
-#: t_modules/t_main.py:27821
+#: t_modules/t_main.py:28174
 msgid "Tip: The order enabled will be the order searched."
 msgstr "ヒント：有効な順序は検索された順序になります。"
 
-#: t_modules/t_main.py:27832
+#: t_modules/t_main.py:28185
 #, fuzzy
 msgid "Metadata side panel"
 msgstr "メタデータパネルを非表示"
 
-#: t_modules/t_main.py:27835
+#: t_modules/t_main.py:28188
 msgid "Use centered style"
 msgstr "中央揃えのスタイル"
 
-#: t_modules/t_main.py:27838
+#: t_modules/t_main.py:28191
 msgid "Zoom album art to fit"
 msgstr ""
 
-#: t_modules/t_main.py:27845 t_modules/t_main.py:40418
-#: t_modules/t_main.py:40421
+#: t_modules/t_main.py:28198 t_modules/t_main.py:41187
+#: t_modules/t_main.py:41190
 msgid "Gallery"
 msgstr "ギャラリー"
 
-#: t_modules/t_main.py:27849
+#: t_modules/t_main.py:28202
 msgid "Single click to play"
 msgstr "クリックしてプレイ"
 
-#: t_modules/t_main.py:27851
+#: t_modules/t_main.py:28204
 #, fuzzy
 msgid "Show titles"
 msgstr "ライセンス"
 
-#: t_modules/t_main.py:27856
+#: t_modules/t_main.py:28209
 msgid "Center alignment"
 msgstr "中央揃え"
 
-#: t_modules/t_main.py:27863 t_modules/t_main.py:27871
+#: t_modules/t_main.py:28216 t_modules/t_main.py:28224
 #, fuzzy
 msgid "Thumbnail size"
 msgstr "サイズ"
 
-#: t_modules/t_main.py:27867
+#: t_modules/t_main.py:28220
 msgid "Prefer thinner padding"
 msgstr "より薄いパディング"
 
-#: t_modules/t_main.py:27886
+#: t_modules/t_main.py:28239
 #, fuzzy
 msgid "Ready broadcaster"
 msgstr "放送開始"
 
-#: t_modules/t_main.py:27886
+#: t_modules/t_main.py:28239
 #, fuzzy
 msgid "Start web server for broadcasting"
 msgstr "ブロードキャストWebページを提供する"
 
-#: t_modules/t_main.py:27907
+#: t_modules/t_main.py:28260
 #, fuzzy
 msgid "Show artist info panel"
 msgstr "プレイリストを表示する"
 
-#: t_modules/t_main.py:27908
+#: t_modules/t_main.py:28261
 msgid "You can also toggle this with ctrl+o"
 msgstr ""
 
-#: t_modules/t_main.py:27915
+#: t_modules/t_main.py:28268
 #, fuzzy
 msgid "Auto fetch artist data"
 msgstr "歌詞の自動検索"
 
-#: t_modules/t_main.py:27916
+#: t_modules/t_main.py:28269
 msgid "Downloads data in background when artist panel is open"
 msgstr ""
 
-#: t_modules/t_main.py:27920
+#: t_modules/t_main.py:28273
 #, fuzzy
 msgid "Auto regenerate playlists"
 msgstr "繰り返す"
 
-#: t_modules/t_main.py:27921
+#: t_modules/t_main.py:28274
 msgid "Generated playlists reload when re-entering"
 msgstr ""
 
-#: t_modules/t_main.py:27925
+#: t_modules/t_main.py:28278
 #, fuzzy
 msgid "Tabs in top panel"
 msgstr "トップパネルのタブを使用する"
 
-#: t_modules/t_main.py:27926
+#: t_modules/t_main.py:28279
 msgid "Uncheck to disable the tab pin function"
 msgstr ""
 
-#: t_modules/t_main.py:27931 t_modules/t_main.py:27937
+#: t_modules/t_main.py:28284 t_modules/t_main.py:28290
 msgid "Open config file"
 msgstr "設定を開く"
 
-#: t_modules/t_main.py:27933 t_modules/t_main.py:27943
+#: t_modules/t_main.py:28286 t_modules/t_main.py:28296
 msgid "Open data folder"
 msgstr "データを開く"
 
-#: t_modules/t_main.py:27941
+#: t_modules/t_main.py:28294
 msgid "Reload"
 msgstr "リロード"
 
-#: t_modules/t_main.py:27947
+#: t_modules/t_main.py:28300
 msgid "Enable/Disable track context menu functions:"
 msgstr ""
 
-#: t_modules/t_main.py:27950
+#: t_modules/t_main.py:28303
 #, fuzzy
 msgid "Wikipedia artist search"
 msgstr "Wikipedia 検索"
 
-#: t_modules/t_main.py:27952
+#: t_modules/t_main.py:28305
 #, fuzzy
 msgid "Sonemic artist search"
 msgstr "Sonemic 検索"
 
-#: t_modules/t_main.py:27954
+#: t_modules/t_main.py:28307
 #, fuzzy
 msgid "Bandcamp artist page search"
 msgstr "Sonemic 検索"
 
-#: t_modules/t_main.py:27958
+#: t_modules/t_main.py:28311
 #, fuzzy
 msgid "Genius track search"
 msgstr "Genius 検索"
 
-#: t_modules/t_main.py:27960
+#: t_modules/t_main.py:28313
 #, fuzzy
 msgid "Transcode folder"
 msgstr "トランスコード"
 
-#: t_modules/t_main.py:27969
+#: t_modules/t_main.py:28322
 #, fuzzy
 msgid "Extract archives"
 msgstr "インポート時にアーカイブを抽出する"
 
-#: t_modules/t_main.py:27970
+#: t_modules/t_main.py:28323
 #, fuzzy
 msgid "Extracts zip archives on drag and drop"
 msgstr "インポート時にアーカイブを抽出する"
 
-#: t_modules/t_main.py:27972
+#: t_modules/t_main.py:28325
 msgid "Enable download monitor"
 msgstr ""
 
-#: t_modules/t_main.py:27973
+#: t_modules/t_main.py:28326
 msgid "One click import new archives and folders from downloads folder"
 msgstr ""
 
-#: t_modules/t_main.py:27975
+#: t_modules/t_main.py:28328
 msgid "Trash archive after extraction"
 msgstr "抽出後のゴミ箱アーカイブ"
 
-#: t_modules/t_main.py:27977
+#: t_modules/t_main.py:28330
 msgid "Always extract to Music folder"
 msgstr "常に音楽フォルダーに抽出する"
 
-#: t_modules/t_main.py:27981
+#: t_modules/t_main.py:28334
 msgid "Show icon in system tray"
 msgstr ""
 
-#: t_modules/t_main.py:27984 t_modules/t_main.py:27989
+#: t_modules/t_main.py:28337 t_modules/t_main.py:28342
 msgid "Close to tray"
 msgstr ""
 
-#: t_modules/t_main.py:27987
+#: t_modules/t_main.py:28340
 #, fuzzy
 msgid "Show title text"
 msgstr "ライセンス"
 
-#: t_modules/t_main.py:27996
+#: t_modules/t_main.py:28349
 msgid "Enable remote control"
 msgstr ""
 
-#: t_modules/t_main.py:27997
+#: t_modules/t_main.py:28350
 #, fuzzy
 msgid "Change requires restart"
 msgstr "変更は再起動時に適用されます。"
 
-#: t_modules/t_main.py:28006
+#: t_modules/t_main.py:28359
 msgid "Block suspend"
 msgstr ""
 
-#: t_modules/t_main.py:28007
+#: t_modules/t_main.py:28360
 msgid "Prevent system suspend during playback"
 msgstr ""
 
-#: t_modules/t_main.py:28010
+#: t_modules/t_main.py:28363
 msgid "Resume from suspend"
 msgstr ""
 
-#: t_modules/t_main.py:28011
+#: t_modules/t_main.py:28364
 msgid "Continue playback when waking from sleep"
 msgstr ""
 
-#: t_modules/t_main.py:28015
+#: t_modules/t_main.py:28368
 msgid "Record Radio"
 msgstr ""
 
-#: t_modules/t_main.py:28016
+#: t_modules/t_main.py:28369
 msgid "Record and split songs when playing internet radio"
 msgstr ""
 
-#: t_modules/t_main.py:28018
+#: t_modules/t_main.py:28371
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
 
-#: t_modules/t_main.py:28019
+#: t_modules/t_main.py:28372
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
 
-#: t_modules/t_main.py:28033
+#: t_modules/t_main.py:28386
 #, fuzzy
 msgid "Enable Discord Rich Presence"
 msgstr "コード歌詞を有効"
 
-#: t_modules/t_main.py:28037
+#: t_modules/t_main.py:28390
 msgid "For troubleshooting Discord RP"
 msgstr ""
 
-#: t_modules/t_main.py:28251
+#: t_modules/t_main.py:28604
 msgid "Show threshold marker"
 msgstr "しきい値マーカーを表示"
 
-#: t_modules/t_main.py:28262
+#: t_modules/t_main.py:28615
 msgid "IP"
 msgstr ""
 
-#: t_modules/t_main.py:28280
+#: t_modules/t_main.py:28633
 #, fuzzy
 msgid "Playlist name"
 msgstr "プレイリストの長さ"
 
-#: t_modules/t_main.py:28293
+#: t_modules/t_main.py:28646
 #, fuzzy
 msgid "Get playlist"
 msgstr "繰り返す"
 
-#: t_modules/t_main.py:28301
+#: t_modules/t_main.py:28654
 msgid "Maloja Server"
 msgstr ""
 
-#: t_modules/t_main.py:28303
+#: t_modules/t_main.py:28656
 msgid "Maloja is a self-hosted scrobble server."
 msgstr ""
 
-#: t_modules/t_main.py:28304
+#: t_modules/t_main.py:28657
 msgid "See here to lean more: %s"
 msgstr ""
 
-#: t_modules/t_main.py:28314 t_modules/t_main.py:28515
-#: t_modules/t_main.py:28576 t_modules/t_main.py:28649
+#: t_modules/t_main.py:28667 t_modules/t_main.py:28868
+#: t_modules/t_main.py:28929 t_modules/t_main.py:29002
 #, fuzzy
 msgid "Server URL"
 msgstr "ユーザー名："
 
-#: t_modules/t_main.py:28328
+#: t_modules/t_main.py:28681
 msgid "API Key"
 msgstr ""
 
-#: t_modules/t_main.py:28343 t_modules/t_main.py:28606
+#: t_modules/t_main.py:28696 t_modules/t_main.py:28959
 msgid "Test connectivity"
 msgstr ""
 
-#: t_modules/t_main.py:28368 t_modules/t_main.py:28370
-#: t_modules/t_main.py:28865 t_modules/t_main.py:28882
+#: t_modules/t_main.py:28721 t_modules/t_main.py:28723
+#: t_modules/t_main.py:29218 t_modules/t_main.py:29235
 #, fuzzy
 msgid "Get scrobble counts"
 msgstr "すきを消す"
 
-#: t_modules/t_main.py:28381
+#: t_modules/t_main.py:28734
 msgid "View setup instructions"
 msgstr ""
 
-#: t_modules/t_main.py:28388
+#: t_modules/t_main.py:28741
 msgid "Client ID"
 msgstr ""
 
-#: t_modules/t_main.py:28418
+#: t_modules/t_main.py:28771
 #, fuzzy
 msgid "Forget Account"
 msgstr "アカウントを忘れる"
 
-#: t_modules/t_main.py:28424
+#: t_modules/t_main.py:28777
 msgid "Authorise"
 msgstr ""
 
-#: t_modules/t_main.py:28434
+#: t_modules/t_main.py:28787
 msgid "Prefer launching web player"
 msgstr ""
 
-#: t_modules/t_main.py:28439
+#: t_modules/t_main.py:28792
 msgid "Enable local audio playback"
 msgstr ""
 
-#: t_modules/t_main.py:28462
+#: t_modules/t_main.py:28815
 msgid "Spofify password"
 msgstr ""
 
-#: t_modules/t_main.py:28477
+#: t_modules/t_main.py:28830
 msgid "Airsonic/Subsonic network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:28487 t_modules/t_main.py:28621
-#: t_modules/t_main.py:28678
+#: t_modules/t_main.py:28840 t_modules/t_main.py:28974
+#: t_modules/t_main.py:29031
 #, fuzzy
 msgid "Username / Email"
 msgstr "ユーザー名："
 
-#: t_modules/t_main.py:28501 t_modules/t_main.py:28562
-#: t_modules/t_main.py:28635 t_modules/t_main.py:28692
+#: t_modules/t_main.py:28854 t_modules/t_main.py:28915
+#: t_modules/t_main.py:28988 t_modules/t_main.py:29045
 msgid "Password"
 msgstr ""
 
-#: t_modules/t_main.py:28529 t_modules/t_main.py:28591
-#: t_modules/t_main.py:28664 t_modules/t_main.py:28720
+#: t_modules/t_main.py:28882 t_modules/t_main.py:28944
+#: t_modules/t_main.py:29017 t_modules/t_main.py:29073
 #, fuzzy
 msgid "Import music to playlist"
 msgstr "音楽フォルダをインポート"
 
-#: t_modules/t_main.py:28533
+#: t_modules/t_main.py:28886
 msgid "Use plain text authentication"
 msgstr ""
 
-#: t_modules/t_main.py:28534
+#: t_modules/t_main.py:28887
 msgid "Needed for Nextcloud Music"
 msgstr ""
 
-#: t_modules/t_main.py:28538
+#: t_modules/t_main.py:28891
 msgid "Jellyfin network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:28548
+#: t_modules/t_main.py:28901
 #, fuzzy
 msgid "Username"
 msgstr "ユーザー名："
 
-#: t_modules/t_main.py:28594
+#: t_modules/t_main.py:28947
 #, fuzzy
 msgid "Import playlists"
 msgstr "音楽フォルダをインポート"
 
-#: t_modules/t_main.py:28611
+#: t_modules/t_main.py:28964
 msgid "koel network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:28668
+#: t_modules/t_main.py:29021
 msgid "PLEX network streaming"
 msgstr ""
 
-#: t_modules/t_main.py:28706
+#: t_modules/t_main.py:29059
 #, fuzzy
 msgid "Server name"
 msgstr "ユーザー名："
 
-#: t_modules/t_main.py:28728
+#: t_modules/t_main.py:29081
 #, fuzzy
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr "Fanart.tvは、アーティスト画像の調達に使用できます。"
 
-#: t_modules/t_main.py:28735 t_modules/t_main.py:36314
+#: t_modules/t_main.py:29088 t_modules/t_main.py:36993
 msgid "They encourage you to contribute at https://fanart.tv"
 msgstr ""
 
-#: t_modules/t_main.py:28741
+#: t_modules/t_main.py:29094
 msgid "Cover art (Manual only)"
 msgstr ""
 
-#: t_modules/t_main.py:28744
+#: t_modules/t_main.py:29097
 msgid "Artist images (Automatic)"
 msgstr ""
 
-#: t_modules/t_main.py:28747
+#: t_modules/t_main.py:29100
 msgid "Artist backgrounds (Automatic)"
 msgstr ""
 
-#: t_modules/t_main.py:28750
+#: t_modules/t_main.py:29103
 msgid "Flip current"
 msgstr ""
 
-#: t_modules/t_main.py:28832 t_modules/t_main.py:28833
+#: t_modules/t_main.py:29185 t_modules/t_main.py:29186
 msgid "Username:"
 msgstr "ユーザー名："
 
-#: t_modules/t_main.py:28840 t_modules/t_main.py:28842
+#: t_modules/t_main.py:29193 t_modules/t_main.py:29195
 msgid "Login"
 msgstr "ログイン"
 
-#: t_modules/t_main.py:28841 t_modules/t_main.py:28843
+#: t_modules/t_main.py:29194 t_modules/t_main.py:29196
 msgid "Done"
 msgstr "完了"
 
-#: t_modules/t_main.py:28847
+#: t_modules/t_main.py:29200
 msgid "Use LibreFM"
 msgstr ""
 
-#: t_modules/t_main.py:28851
+#: t_modules/t_main.py:29204
 msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
 
-#: t_modules/t_main.py:28855
+#: t_modules/t_main.py:29208
 msgid "Forget account"
 msgstr "アカウントを忘れる"
 
-#: t_modules/t_main.py:28862 t_modules/t_main.py:28870
+#: t_modules/t_main.py:29215 t_modules/t_main.py:29223
 msgid "Get user loves"
 msgstr "すきを得る"
 
-#: t_modules/t_main.py:28863
+#: t_modules/t_main.py:29216
 msgid "Clear local loves"
 msgstr "すきを消す"
 
-#: t_modules/t_main.py:28864 t_modules/t_main.py:28878
+#: t_modules/t_main.py:29217 t_modules/t_main.py:29231
 msgid "Get friend loves"
 msgstr "友すきを得る"
 
-#: t_modules/t_main.py:28890 t_modules/t_main.py:28892
+#: t_modules/t_main.py:29243 t_modules/t_main.py:29245
 msgid "Paste Token"
 msgstr "トークンを貼り付け"
 
-#: t_modules/t_main.py:28916
+#: t_modules/t_main.py:29269
 msgid "This will mark all tracks in local database as unloved!"
 msgstr ""
 
-#: t_modules/t_main.py:28926
+#: t_modules/t_main.py:29279
 #, fuzzy
 msgid "Cleared all loves"
 msgstr "すきを消す"
 
-#: t_modules/t_main.py:28933 t_modules/t_main.py:28955
+#: t_modules/t_main.py:29286 t_modules/t_main.py:29308
 msgid "Press again while holding Shift if you understand"
 msgstr ""
 
-#: t_modules/t_main.py:28948
+#: t_modules/t_main.py:29301
 #, fuzzy
 msgid "Cleared all scrobble counts"
 msgstr "すきを消す"
 
-#: t_modules/t_main.py:28953
+#: t_modules/t_main.py:29306
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
 msgstr ""
 
-#: t_modules/t_main.py:28954
+#: t_modules/t_main.py:29307
 msgid "This feature is not recommended for accounts that have many friends."
 msgstr ""
 
-#: t_modules/t_main.py:28992
+#: t_modules/t_main.py:29345
 #, fuzzy
 msgid "Selected playlist:"
 msgstr "繰り返す"
 
-#: t_modules/t_main.py:28996
+#: t_modules/t_main.py:29349
 msgid "No sync playlist selected!"
 msgstr ""
 
-#: t_modules/t_main.py:28999
+#: t_modules/t_main.py:29352
 msgid "Path to device music folder:   "
 msgstr ""
 
-#: t_modules/t_main.py:29017
+#: t_modules/t_main.py:29370
 msgid "A mounted music folder was found!"
 msgstr ""
 
-#: t_modules/t_main.py:29019
+#: t_modules/t_main.py:29372
 msgid "Could not auto-detect mounted device path."
 msgstr ""
 
-#: t_modules/t_main.py:29020
+#: t_modules/t_main.py:29373
 msgid "Make sure the device is mounted and path is accessible."
 msgstr ""
 
-#: t_modules/t_main.py:29025
+#: t_modules/t_main.py:29378
 msgid "Delete all other folders in target"
 msgstr ""
 
-#: t_modules/t_main.py:29028
+#: t_modules/t_main.py:29381
 #, fuzzy
 msgid "Transcode files"
 msgstr "１つトランスコード"
 
-#: t_modules/t_main.py:29031
+#: t_modules/t_main.py:29384
 msgid "Bypass low bitrate"
 msgstr ""
 
-#: t_modules/t_main.py:29034
+#: t_modules/t_main.py:29387
 #, fuzzy
 msgid "Start Transcode and Sync"
 msgstr "１つトランスコード"
 
-#: t_modules/t_main.py:29037
+#: t_modules/t_main.py:29390
 msgid "Start Sync"
 msgstr ""
 
-#: t_modules/t_main.py:29041
+#: t_modules/t_main.py:29394
 #, fuzzy
 msgid "Stopping..."
 msgstr "検索中..."
 
-#: t_modules/t_main.py:29047
+#: t_modules/t_main.py:29400
 #, fuzzy
 msgid "Select a source playlist"
 msgstr "次"
 
-#: t_modules/t_main.py:29048
+#: t_modules/t_main.py:29401
 msgid "Right click tab > Misc... > Set as sync playlist"
 msgstr ""
 
-#: t_modules/t_main.py:29050
+#: t_modules/t_main.py:29403
 #, fuzzy
 msgid "Stop"
 msgstr "自動停止"
 
-#: t_modules/t_main.py:29067
+#: t_modules/t_main.py:29420
 msgid "Output codec setting:"
 msgstr "コーデック設定："
 
-#: t_modules/t_main.py:29069 t_modules/t_main.py:29070
+#: t_modules/t_main.py:29422 t_modules/t_main.py:29423
 msgid "Open output folder"
 msgstr "出力を開く"
 
-#: t_modules/t_main.py:29072 t_modules/t_main.py:29073
+#: t_modules/t_main.py:29425 t_modules/t_main.py:29426
 msgid "Sync..."
 msgstr ""
 
-#: t_modules/t_main.py:29081
+#: t_modules/t_main.py:29434
 msgid "Save opus as .ogg extension"
 msgstr "opusを.ogg拡張子として保存します"
 
-#: t_modules/t_main.py:29102
+#: t_modules/t_main.py:29455
 msgid "Save to output folder"
 msgstr "出力フォルダーに保存"
 
-#: t_modules/t_main.py:29104
+#: t_modules/t_main.py:29457
 msgid "Save and overwrite files inplace"
 msgstr "上書きする"
 
-#: t_modules/t_main.py:29126
+#: t_modules/t_main.py:29479
 msgid "Emit track change notifications"
 msgstr "通知"
 
-#: t_modules/t_main.py:29129
+#: t_modules/t_main.py:29482
 msgid "Draw own window decorations"
 msgstr "独自のウィンドウ装飾を描く"
 
-#: t_modules/t_main.py:29133
-msgid "Restore window position on restart"
-msgstr ""
-
-#: t_modules/t_main.py:29137
+#: t_modules/t_main.py:29490
 msgid "Show playing in titlebar"
 msgstr "タイトルバーに表示"
 
-#: t_modules/t_main.py:29144
-msgid "Top-panel level meter"
+#: t_modules/t_main.py:29498
+msgid "Mini-mode always on top"
 msgstr ""
 
-#: t_modules/t_main.py:29148
+#: t_modules/t_main.py:29503
+#, fuzzy
+msgid "Top-panel visualiser"
+msgstr "視覚化"
+
+#: t_modules/t_main.py:29507
 msgid "Showcase visualisation"
 msgstr "視覚化２"
 
-#: t_modules/t_main.py:29154
+#: t_modules/t_main.py:29513
 msgid "UI scale for HiDPI displays"
 msgstr ""
 
-#: t_modules/t_main.py:29212
+#: t_modules/t_main.py:29571
 #, fuzzy
 msgid "Auto scale"
 msgstr "自動サイズ"
 
-#: t_modules/t_main.py:29519 t_modules/t_main.py:29522
+#: t_modules/t_main.py:29878 t_modules/t_main.py:29881
 msgid "Credits"
 msgstr "クレジット"
 
-#: t_modules/t_main.py:29536
+#: t_modules/t_main.py:29895
 msgid "Chart Grid Generator"
 msgstr "チャート"
 
-#: t_modules/t_main.py:29539
+#: t_modules/t_main.py:29898
 msgid "Target playlist:   "
 msgstr "ターゲット:   "
 
-#: t_modules/t_main.py:29567
+#: t_modules/t_main.py:29926
 msgid "Rows"
 msgstr "行"
 
-#: t_modules/t_main.py:29569
+#: t_modules/t_main.py:29928
 msgid "Columns"
 msgstr "桁"
 
-#: t_modules/t_main.py:29575
+#: t_modules/t_main.py:29934
 msgid "Cascade style"
 msgstr "カスケード"
 
-#: t_modules/t_main.py:29577
+#: t_modules/t_main.py:29936
 msgid "Use padding"
 msgstr "パディング"
 
-#: t_modules/t_main.py:29582
+#: t_modules/t_main.py:29941
 #, fuzzy
 msgid "Include album titles"
 msgstr "アルバムのタイトルを含める"
 
-#: t_modules/t_main.py:29584
+#: t_modules/t_main.py:29943
 #, fuzzy
 msgid "Sort by top played"
 msgstr "ファイルパスで並べ替え"
 
-#: t_modules/t_main.py:29590
+#: t_modules/t_main.py:29949
 msgid "Randomise BG"
 msgstr "ランダムｂｇ"
 
-#: t_modules/t_main.py:29626
+#: t_modules/t_main.py:29985
 msgid "Generate"
 msgstr "生成する"
 
-#: t_modules/t_main.py:29640
+#: t_modules/t_main.py:29999
 msgid "Generating..."
 msgstr "生成中。。。"
 
-#: t_modules/t_main.py:29648
+#: t_modules/t_main.py:30007
 #, fuzzy
 msgid "Album chart"
 msgstr "アルバム数"
 
-#: t_modules/t_main.py:29653
+#: t_modules/t_main.py:30012
 msgid "Not enough albums in the playlist!"
 msgstr "十分なアルバムがありません！"
 
-#: t_modules/t_main.py:29672 t_modules/t_main.py:29673
+#: t_modules/t_main.py:30031 t_modules/t_main.py:30032
 msgid "Chart generator..."
 msgstr "チャート"
 
-#: t_modules/t_main.py:29680 t_modules/t_main.py:29720
+#: t_modules/t_main.py:30039 t_modules/t_main.py:30079
 msgid "Tracks in playlist"
 msgstr "このトラック数"
 
-#: t_modules/t_main.py:29681 t_modules/t_main.py:29723
+#: t_modules/t_main.py:30040 t_modules/t_main.py:30082
 msgid "Albums in playlist"
 msgstr "このアルバム数"
 
-#: t_modules/t_main.py:29682 t_modules/t_main.py:29726
+#: t_modules/t_main.py:30041 t_modules/t_main.py:30085
 msgid "Playlist duration"
 msgstr "プレイリストの長さ"
 
-#: t_modules/t_main.py:29683 t_modules/t_main.py:29754
+#: t_modules/t_main.py:30042 t_modules/t_main.py:30113
 msgid "Tracks in database"
 msgstr "総トラック数"
 
-#: t_modules/t_main.py:29684 t_modules/t_main.py:29757
+#: t_modules/t_main.py:30043 t_modules/t_main.py:30116
 msgid "Total albums"
 msgstr "合計アルバム"
 
-#: t_modules/t_main.py:29685 t_modules/t_main.py:29761
+#: t_modules/t_main.py:30044 t_modules/t_main.py:30120
 msgid "Total playtime"
 msgstr "総プレイ時間"
 
-#: t_modules/t_main.py:29822
+#: t_modules/t_main.py:30181
 #, fuzzy
 msgid "Track ratings"
 msgstr "トラックゲイン"
 
-#: t_modules/t_main.py:29824
+#: t_modules/t_main.py:30183
 #, fuzzy
 msgid "Album ratings"
 msgstr "アルバム数"
 
-#: t_modules/t_main.py:29832
+#: t_modules/t_main.py:30191
 #, fuzzy
 msgid "Show track loves"
 msgstr "Geniusでトラックを検索"
 
-#: t_modules/t_main.py:29840
+#: t_modules/t_main.py:30199
 #, fuzzy
 msgid "Represent playtime as stars"
 msgstr "星を表示"
 
-#: t_modules/t_main.py:29849
+#: t_modules/t_main.py:30208
 #, fuzzy
 msgid "Represent playcount as lines"
 msgstr "繰り返す"
 
-#: t_modules/t_main.py:29866
+#: t_modules/t_main.py:30225
 #, fuzzy
 msgid "Show album release year"
 msgstr "プレイリストの長さ"
 
-#: t_modules/t_main.py:29869
+#: t_modules/t_main.py:30228
 #, fuzzy
 msgid "Show album duration"
 msgstr "プレイリストの長さ"
 
-#: t_modules/t_main.py:29875
+#: t_modules/t_main.py:30234
 msgid "Font Size"
 msgstr "フォントサイズ"
 
-#: t_modules/t_main.py:29877
+#: t_modules/t_main.py:30236
 msgid "Row Size"
 msgstr "行サイズ"
 
-#: t_modules/t_main.py:29879
+#: t_modules/t_main.py:30238
 msgid "Baseline offset"
 msgstr ""
 
-#: t_modules/t_main.py:29884
+#: t_modules/t_main.py:30243
 msgid "Thin default"
 msgstr "薄いデフォルト"
 
-#: t_modules/t_main.py:29886
+#: t_modules/t_main.py:30245
 msgid "Thick default"
 msgstr "厚いデフォルト"
 
-#: t_modules/t_main.py:29892
+#: t_modules/t_main.py:30251
 msgid "End of playlist action"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:29895 t_modules/t_main.py:29899
+#: t_modules/t_main.py:30254 t_modules/t_main.py:30258
 msgid "Stop playback"
 msgstr "止まれ"
 
-#: t_modules/t_main.py:29896 t_modules/t_main.py:29901
+#: t_modules/t_main.py:30255 t_modules/t_main.py:30260
 msgid "Repeat playlist"
 msgstr "繰り返す"
 
-#: t_modules/t_main.py:29905
+#: t_modules/t_main.py:30264
 msgid "Play next playlist"
 msgstr "次"
 
-#: t_modules/t_main.py:29907
+#: t_modules/t_main.py:30266
 msgid "Cycle all playlists"
 msgstr "サイクル"
 
-#: t_modules/t_main.py:30240
+#: t_modules/t_main.py:30599
 msgid "Okay, it's a normal playlist now."
 msgstr ""
 
-#: t_modules/t_main.py:30249
+#: t_modules/t_main.py:30608
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
 msgstr ""
 
-#: t_modules/t_main.py:30785 t_modules/t_main.py:35480
+#: t_modules/t_main.py:31144 t_modules/t_main.py:36142
 msgid "Added station to: "
 msgstr ""
 
-#: t_modules/t_main.py:31177
+#: t_modules/t_main.py:31536
 #, fuzzy
 msgid "Buffering... "
 msgstr "検索中..."
 
-#: t_modules/t_main.py:31291
+#: t_modules/t_main.py:31650
 msgid "There are currently no connected clients"
 msgstr ""
 
-#: t_modules/t_main.py:31293
+#: t_modules/t_main.py:31652
 msgid "There is 1 inbound connection."
 msgstr ""
 
-#: t_modules/t_main.py:31295
+#: t_modules/t_main.py:31654
 msgid "There are %d inbound connections."
 msgstr ""
 
-#: t_modules/t_main.py:31870 t_modules/t_main.py:32450
+#: t_modules/t_main.py:32229 t_modules/t_main.py:32809
 #, fuzzy
 msgid "Play, RC: Go to playing"
 msgstr "現在の歌に行く"
 
-#: t_modules/t_main.py:31895 t_modules/t_main.py:32475
+#: t_modules/t_main.py:32254 t_modules/t_main.py:32834
 msgid "Pause"
 msgstr "一時停止"
 
-#: t_modules/t_main.py:31911
+#: t_modules/t_main.py:32270
 msgid "Stop, RC: Toggle auto-stop"
 msgstr ""
 
-#: t_modules/t_main.py:31934 t_modules/t_main.py:32496
+#: t_modules/t_main.py:32293 t_modules/t_main.py:32855
 msgid "Shuffle On"
 msgstr "シャッフルON"
 
-#: t_modules/t_main.py:31937 t_modules/t_main.py:32499
+#: t_modules/t_main.py:32296 t_modules/t_main.py:32858
 msgid "Shuffle Off"
 msgstr "シャッフルOFF"
 
-#: t_modules/t_main.py:31968
+#: t_modules/t_main.py:32327
 msgid "Repeat On"
 msgstr "リピートOFF"
 
-#: t_modules/t_main.py:31971
+#: t_modules/t_main.py:32330
 msgid "Repeat Off"
 msgstr "リピートOFF"
 
-#: t_modules/t_main.py:31978
+#: t_modules/t_main.py:32337
 msgid "Back, RC: Toggle repeat, MC: Revert"
 msgstr ""
 
-#: t_modules/t_main.py:32034 t_modules/t_main.py:32036
+#: t_modules/t_main.py:32393 t_modules/t_main.py:32395
 msgid "Shuffle"
 msgstr "シャッフル"
 
-#: t_modules/t_main.py:32083 t_modules/t_main.py:32091
+#: t_modules/t_main.py:32442 t_modules/t_main.py:32450
 msgid "Repeat album"
 msgstr "リピートアルバム"
 
-#: t_modules/t_main.py:32085 t_modules/t_main.py:32093
+#: t_modules/t_main.py:32444 t_modules/t_main.py:32452
 msgid "Repeat track"
 msgstr "繰り返しトラック"
 
-#: t_modules/t_main.py:33406
+#: t_modules/t_main.py:34062
 msgid "Playlist is empty"
 msgstr "プレイリストが空です"
 
-#: t_modules/t_main.py:33408
+#: t_modules/t_main.py:34064
 msgid "Drag and drop files to import"
 msgstr "インポートするファイルをドロップします"
 
-#: t_modules/t_main.py:33430
+#: t_modules/t_main.py:34086
 msgid "End of Playlist"
 msgstr "プレイリストの終わり"
 
-#: t_modules/t_main.py:34678
+#: t_modules/t_main.py:35340
 #, fuzzy
 msgid "Search Tag"
 msgstr "検索中..."
 
-#: t_modules/t_main.py:34679
+#: t_modules/t_main.py:35341
 #, fuzzy
 msgid "Search Country Code"
 msgstr "歌詞を検索"
 
-#: t_modules/t_main.py:34680
+#: t_modules/t_main.py:35342
 #, fuzzy
 msgid "Search Title"
 msgstr "検索中..."
 
-#: t_modules/t_main.py:34964
+#: t_modules/t_main.py:35626
 #, fuzzy
 msgid "Search text…"
 msgstr "検索中..."
 
-#: t_modules/t_main.py:34971
+#: t_modules/t_main.py:35633
 #, fuzzy
 msgid "Search"
 msgstr "検索中..."
 
-#: t_modules/t_main.py:34981 t_modules/t_main.py:34985
+#: t_modules/t_main.py:35643 t_modules/t_main.py:35647
 msgid "Get Top Voted"
 msgstr ""
 
-#: t_modules/t_main.py:34987
+#: t_modules/t_main.py:35649
 msgid "Developer Picks"
 msgstr ""
 
-#: t_modules/t_main.py:35133
+#: t_modules/t_main.py:35795
 msgid "Add Station"
 msgstr ""
 
-#: t_modules/t_main.py:35135
+#: t_modules/t_main.py:35797
 msgid "Edit Station"
 msgstr ""
 
-#: t_modules/t_main.py:35160
+#: t_modules/t_main.py:35822
 #, fuzzy
 msgid "Station Browser"
 msgstr "放送開始"
 
-#: t_modules/t_main.py:35164
+#: t_modules/t_main.py:35826
 #, fuzzy
 msgid "Connecting..."
 msgstr "生成中。。。"
 
-#: t_modules/t_main.py:35167
+#: t_modules/t_main.py:35829
 msgid "Failed to connect!"
 msgstr ""
 
-#: t_modules/t_main.py:35215
+#: t_modules/t_main.py:35877
 msgid "Name / Title"
 msgstr ""
 
-#: t_modules/t_main.py:35232
+#: t_modules/t_main.py:35894
 msgid "Raw Stream URL http://example.stream:1234"
 msgstr ""
 
-#: t_modules/t_main.py:35237 t_modules/t_main.py:35484
+#: t_modules/t_main.py:35899 t_modules/t_main.py:36146
 msgid "Save"
 msgstr ""
 
-#: t_modules/t_main.py:35241
+#: t_modules/t_main.py:35903
 msgid "Enter a stream URL"
 msgstr ""
 
-#: t_modules/t_main.py:35255
+#: t_modules/t_main.py:35917
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
 
-#: t_modules/t_main.py:35416 t_modules/t_main.py:35422
-#: t_modules/t_main.py:35428
+#: t_modules/t_main.py:36078 t_modules/t_main.py:36084
+#: t_modules/t_main.py:36090
 msgid "Record and auto split songs"
 msgstr ""
 
-#: t_modules/t_main.py:35418
+#: t_modules/t_main.py:36080
 msgid "Please stop playback first before toggling this setting"
 msgstr ""
 
-#: t_modules/t_main.py:35424
+#: t_modules/t_main.py:36086
 msgid "Please stop playback first to end current recording"
 msgstr ""
 
-#: t_modules/t_main.py:35431
+#: t_modules/t_main.py:36093
 msgid "Tracks will now be recorded."
 msgstr ""
 
-#: t_modules/t_main.py:35432
+#: t_modules/t_main.py:36094
 msgid "Tip: You can press F9 to view the output folder."
 msgstr ""
 
-#: t_modules/t_main.py:35435
+#: t_modules/t_main.py:36097
 msgid "Browse"
 msgstr ""
 
-#: t_modules/t_main.py:35439
+#: t_modules/t_main.py:36101
 msgid "Saved"
 msgstr ""
 
-#: t_modules/t_main.py:35483 t_modules/t_main.py:39498
+#: t_modules/t_main.py:36145 t_modules/t_main.py:40267
 msgid "Visit Website"
 msgstr ""
 
-#: t_modules/t_main.py:36196
+#: t_modules/t_main.py:36858
 #, fuzzy
 msgid "View..."
 msgstr "ビュー "
 
-#: t_modules/t_main.py:36221
+#: t_modules/t_main.py:36892
+msgid "Filter Small Artists"
+msgstr ""
+
+#: t_modules/t_main.py:36896 t_modules/t_main.py:36897
+#, fuzzy
+msgid "Include All Artists"
+msgstr "アルバムのタイトルを含める"
+
+#: t_modules/t_main.py:36899
 msgid "Sort Alphabetically"
 msgstr ""
 
-#: t_modules/t_main.py:36222
+#: t_modules/t_main.py:36900
 #, fuzzy
 msgid "Sort by Popularity"
 msgstr "ファイルパスで並べ替え"
 
-#: t_modules/t_main.py:36223
+#: t_modules/t_main.py:36901
 #, fuzzy
 msgid "Sort by Playtime"
 msgstr "ファイルパスで並べ替え"
 
-#: t_modules/t_main.py:36224
+#: t_modules/t_main.py:36902
 #, fuzzy
 msgid "Toggle Thumbnails"
 msgstr "歌詞をトグル"
 
-#: t_modules/t_main.py:36313
+#: t_modules/t_main.py:36992
 msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "イメージはfanart.tvからダウンロードされました"
 
-#: t_modules/t_main.py:36629 t_modules/t_main.py:36765
+#: t_modules/t_main.py:37310 t_modules/t_main.py:37446
 #, fuzzy
 msgid "Downloading data..."
 msgstr "ダウンロードしています...お待ちください"
 
-#: t_modules/t_main.py:36989
+#: t_modules/t_main.py:37758
 msgid "No artists in playlist"
 msgstr "アーティストなし"
 
-#: t_modules/t_main.py:36992
+#: t_modules/t_main.py:37761
 msgid "Artist threshold not met"
 msgstr "しきい値に達していません"
 
-#: t_modules/t_main.py:36994
+#: t_modules/t_main.py:37763
 msgid "Loading Artist List..."
 msgstr "アーティスト読み込み中..."
 
-#: t_modules/t_main.py:36996
+#: t_modules/t_main.py:37765
 msgid "Busy..."
 msgstr "忙しい"
 
-#: t_modules/t_main.py:37207
+#: t_modules/t_main.py:37976
 msgid "Loading Folder Tree..."
 msgstr "フォルダ読み込み中..."
 
-#: t_modules/t_main.py:37216 t_modules/t_main.py:37232
+#: t_modules/t_main.py:37985 t_modules/t_main.py:38001
 msgid "Folder Tree"
 msgstr "フォルダーツリー"
 
-#: t_modules/t_main.py:37621
+#: t_modules/t_main.py:38390
 msgid "Resume Queue"
 msgstr "キューを再開"
 
-#: t_modules/t_main.py:37623
+#: t_modules/t_main.py:38392
 msgid "Pause Queue"
 msgstr "キューをためらう"
 
-#: t_modules/t_main.py:37655
+#: t_modules/t_main.py:38424
 msgid "Play Now"
 msgstr "今すぐプレイ"
 
-#: t_modules/t_main.py:37662
+#: t_modules/t_main.py:38431
 msgid "↳ Except for This"
 msgstr "↳　これを除いて"
 
-#: t_modules/t_main.py:37664
+#: t_modules/t_main.py:38433
 msgid "Queue to New Playlist"
 msgstr "プレイリストへ"
 
-#: t_modules/t_main.py:37808
+#: t_modules/t_main.py:38577
 msgid "Cancel Auto-Stop"
 msgstr "自動停止をキャンセル"
 
-#: t_modules/t_main.py:37810
+#: t_modules/t_main.py:38579
 msgid "Auto-Stop"
 msgstr "自動停止"
 
-#: t_modules/t_main.py:38668 t_modules/t_main.py:38910
+#: t_modules/t_main.py:39437 t_modules/t_main.py:39679
 msgid "Looking up..."
 msgstr "探している"
 
-#: t_modules/t_main.py:38710
+#: t_modules/t_main.py:39479
 msgid "Cooldown..."
 msgstr "クールダウン。。。"
 
-#: t_modules/t_main.py:38725
+#: t_modules/t_main.py:39494
 msgid "Loading..."
 msgstr "検索中..."
 
-#: t_modules/t_main.py:38902
+#: t_modules/t_main.py:39671
 msgid "No artist data downloaded"
 msgstr "データがダウンロードされていません"
 
-#: t_modules/t_main.py:38916
+#: t_modules/t_main.py:39685
 msgid "No artist bio found"
 msgstr "バイオが見つかりません"
 
-#: t_modules/t_main.py:39025
+#: t_modules/t_main.py:39794
 msgid "Download Artist Data"
 msgstr ""
 
-#: t_modules/t_main.py:39026
+#: t_modules/t_main.py:39795
 msgid "Clear Bio"
 msgstr "クリアバイオ"
 
-#: t_modules/t_main.py:39497
+#: t_modules/t_main.py:40266
 msgid "Edit..."
 msgstr ""
 
-#: t_modules/t_main.py:39851
+#: t_modules/t_main.py:40620
 msgid "Playing"
 msgstr "現在"
 
-#: t_modules/t_main.py:39925
+#: t_modules/t_main.py:40694
 msgid "Auto-Scroll"
 msgstr "スクロール"
 
-#: t_modules/t_main.py:40403
+#: t_modules/t_main.py:41172
 #, fuzzy
 msgid "Tracks + Art"
 msgstr "トラックリスト"
 
-#: t_modules/t_main.py:40435
+#: t_modules/t_main.py:41204
 #, fuzzy
 msgid "Tracks only"
 msgstr "このトラック数"
 
-#: t_modules/t_main.py:40450
+#: t_modules/t_main.py:41219
 #, fuzzy
 msgid "Showcase + Lyrics"
 msgstr "歌詞を示す"
 
-#: t_modules/t_main.py:40463
+#: t_modules/t_main.py:41232
 msgid "Radio"
 msgstr ""
 
-#: t_modules/t_main.py:40477
+#: t_modules/t_main.py:41246
 #, fuzzy
 msgid "Toggle columns"
 msgstr "歌詞をトグル"
 
-#: t_modules/t_main.py:42116
+#: t_modules/t_main.py:42913
 msgid "Could not access! Possible insufficient Flatpak permissions."
 msgstr ""
 "アクセスできませんでした！ Flatpakの権限が不十分である可能性があります。"
 
-#: t_modules/t_main.py:43079
+#: t_modules/t_main.py:43877
 msgid "Enabled auto theme"
 msgstr "自動テーマを有効にしました"
 
-#: t_modules/t_main.py:43081
+#: t_modules/t_main.py:43879
 msgid "Disabled auto theme"
 msgstr "自動テーマを無効にしました"
 
-#: t_modules/t_main.py:43124
+#: t_modules/t_main.py:43922
 msgid "First select a source track by copying it into clipboard"
 msgstr ""
 
-#: t_modules/t_main.py:44684
+#: t_modules/t_main.py:45482
 #, fuzzy
 msgid "Rescan folders complete."
 msgstr "フォルダーの再スキャンが完了しました.。"
 
-#: t_modules/t_main.py:45330
+#: t_modules/t_main.py:46128
 msgid "Queue is Empty"
 msgstr ""
 
-#: t_modules/t_main.py:45710 t_modules/t_main.py:45729
-#: t_modules/t_main.py:45748 t_modules/t_main.py:45771
-#: t_modules/t_main.py:45818 t_modules/t_main.py:45839
-#: t_modules/t_main.py:45885 t_modules/t_main.py:45900
-#: t_modules/t_main.py:45915 t_modules/t_main.py:45970
+#: t_modules/t_main.py:46508 t_modules/t_main.py:46527
+#: t_modules/t_main.py:46546 t_modules/t_main.py:46569
+#: t_modules/t_main.py:46616 t_modules/t_main.py:46637
+#: t_modules/t_main.py:46683 t_modules/t_main.py:46698
+#: t_modules/t_main.py:46713 t_modules/t_main.py:46768
 msgid "Copied text to clipboard"
 msgstr "テキストをクリップボードにコピーしました"
 
-#: t_modules/t_main.py:45769 t_modules/t_main.py:45775
+#: t_modules/t_main.py:46567 t_modules/t_main.py:46573
 msgid "Path"
 msgstr "ファイル"
 
-#: t_modules/t_main.py:45790
+#: t_modules/t_main.py:46588
 msgid "Samplerate"
 msgstr "サンプル"
 
-#: t_modules/t_main.py:45849 t_modules/t_main.py:45871
+#: t_modules/t_main.py:46647 t_modules/t_main.py:46669
 msgid " of "
 msgstr " ／ "
 
-#: t_modules/t_main.py:45851
+#: t_modules/t_main.py:46649
 msgid "Track"
 msgstr "トラックリスト"
 
-#: t_modules/t_main.py:45859 t_modules/t_main.py:45865
+#: t_modules/t_main.py:46657 t_modules/t_main.py:46663
 msgid "File size"
 msgstr "サイズ"
 
-#: t_modules/t_main.py:45873
+#: t_modules/t_main.py:46671
 msgid "Disc"
 msgstr "ディスク"
 
-#: t_modules/t_main.py:45937
+#: t_modules/t_main.py:46735
 msgid "Play count"
 msgstr "プレイ回数"
 
-#: t_modules/t_main.py:45950
+#: t_modules/t_main.py:46748
 msgid "Play time"
 msgstr "プレイ時間"
 
-#: t_modules/t_main.py:46039
+#: t_modules/t_main.py:46837
 msgid "Folder Modification"
 msgstr "フォルダーを変更"
 
-#: t_modules/t_main.py:46054
+#: t_modules/t_main.py:46852
 msgid "Renames the physical folder based on the template"
 msgstr ""
 
-#: t_modules/t_main.py:46059
+#: t_modules/t_main.py:46857
 msgid "Trash"
 msgstr "ゴミ箱に移動"
 
-#: t_modules/t_main.py:46060
+#: t_modules/t_main.py:46858
 msgid "Moves folder to system trash"
 msgstr ""
 
-#: t_modules/t_main.py:46063
+#: t_modules/t_main.py:46861
 msgid "Physically deletes folder from disk"
 msgstr ""
 
-#: t_modules/t_main.py:46075
+#: t_modules/t_main.py:46873
 msgid "Raise"
 msgstr "上げる"
 
-#: t_modules/t_main.py:46076
+#: t_modules/t_main.py:46874
 msgid "Moves folder up 2 levels and deletes the old container folder"
 msgstr ""
 
-#: t_modules/t_main.py:46083
+#: t_modules/t_main.py:46881
 msgid "Deletes some unnecessary files from folder"
 msgstr ""
 
-#: t_modules/t_main.py:46471
+#: t_modules/t_main.py:47271
 #, fuzzy
 msgid "Loved track"
 msgstr "好き"
 
-#: t_modules/t_main.py:46474
+#: t_modules/t_main.py:47274
 #, fuzzy
 msgid "Un-Loved track"
 msgstr "好きじゃない"
+
+#~ msgid "Micro"
+#~ msgstr "マイクロ"
 
 #, fuzzy
 #~ msgid "Import Albums"
@@ -3234,9 +3271,6 @@ msgstr "好きじゃない"
 
 #~ msgid "Use gapless playback"
 #~ msgstr "ギャップレス"
-
-#~ msgid "Top-panel visualisation"
-#~ msgstr "視覚化"
 
 #, fuzzy
 #~ msgid "A stream needs to be playing first."
