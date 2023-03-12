@@ -45699,6 +45699,7 @@ while pctl.running:
                         elif gui.showcase_mode:
                             showcase.render()
 
+
                         # else:
                         #     combo_pl_render.full_render()
                     else:
@@ -45715,6 +45716,9 @@ while pctl.running:
                         #     combo_pl_render.cache_render()
                     else:
                         playlist_render.cache_render()
+
+                if gui.combo_mode and key_esc_press and is_level_zero():
+                    exit_combo()
 
                 if not gui.set_bar and gui.set_mode and not gui.combo_mode:
                     width = gui.plw
