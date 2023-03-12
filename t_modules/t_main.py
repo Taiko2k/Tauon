@@ -13854,6 +13854,13 @@ class Menu:
                 return False
         return True
 
+    def is_item_disabled(self, item):
+        if item.disable_test is not None:
+            if item.pass_ref_deco:
+                return item.disable_test(self.reference)
+            else:
+                return item.disable_test()
+
     def render_icon(self, x, y, icon, selected, fx):
 
         if colours.lm:
@@ -13893,6 +13900,9 @@ class Menu:
                 if not is_grey(colours.menu_background):
                     return  # Since these are currently pre-rendered greyscale, they are
                     # Incompatible with coloured backgrounds. Fix todo.
+                if selected and fx[0] == colours.menu_text_disabled:
+                    icon.base_asset.render(x, y)
+                    return
 
                 # Pre-rendered mode
                 if icon.mode_callback is not None:
@@ -13976,14 +13986,9 @@ class Menu:
                 else:
                     label = self.items[i].title
 
-                # Show text as disabled is pass disable test
-                if self.items[i].disable_test is not None:
-                    if self.items[i].pass_ref_deco:
-                        if self.items[i].disable_test(self.reference):
-                            fx[0] = colours.menu_text_disabled
-                    else:
-                        if self.items[i].disable_test():
-                            fx[0] = colours.menu_text_disabled
+                # Show text as disabled if disable_test() passes
+                if self.is_item_disabled(self.items[i]):
+                    fx[0] = colours.menu_text_disabled
 
                 # Draw item background, black by default
                 ddt.rect_a((x_run, y_run), (self.w, self.h), fx[1])
@@ -14124,7 +14129,7 @@ class Menu:
                             this_select = True
 
                             # Call Callback
-                            if self.clicked:
+                            if self.clicked and not self.is_item_disabled(self.subs[self.sub_active][w]):
 
                                 # If callback needs args
                                 if self.subs[self.sub_active][w].args is not None:
@@ -14141,6 +14146,10 @@ class Menu:
                             label = fx[2]
                         else:
                             label = self.subs[self.sub_active][w].title
+
+                        # Show text as disabled if disable_test() passes
+                        if self.is_item_disabled(self.subs[self.sub_active][w]):
+                            fx[0] = colours.menu_text_disabled
 
                         # Render sub items icon
                         icon = self.subs[self.sub_active][w].icon
@@ -14160,10 +14169,11 @@ class Menu:
             # Process Click Actions
             if to_call is not None:
 
-                if self.items[to_call].pass_ref:
-                    self.items[to_call].func(self.reference)
-                else:
-                    self.items[to_call].func()
+                if not self.is_item_disabled(self.items[to_call]):
+                    if self.items[to_call].pass_ref:
+                        self.items[to_call].func(self.reference)
+                    else:
+                        self.items[to_call].func()
 
             if self.clicked or key_esc_press or self.close_next_frame:
                 self.close_next_frame = False
@@ -14353,6 +14363,20 @@ class RenameTrackBox:
             self.single_only = True
         else:
             self.single_only = False
+
+    def disable_test(self, track_id):
+        if key_shift_down or key_shiftr_down:
+            single_only = True
+        else:
+            single_only = False
+
+        if not single_only:
+            for item in default_playlist:
+                if pctl.master_library[item].parent_folder_path == pctl.master_library[track_id].parent_folder_path:
+
+                    if pctl.master_library[item].is_network is True:
+                        return True
+        return False
 
     def render(self):
 
@@ -15186,9 +15210,13 @@ def open_folder_stem(path):
             subprocess.Popen(['xdg-open', line])
 
 
+def open_folder_disable_test(index):
+    track = pctl.master_library[index]
+    return track.is_network and not os.path.isdir(track.parent_folder_path)
+
 def open_folder(index):
     track = pctl.master_library[index]
-    if track.is_network and not os.path.isdir(track.parent_folder_path):
+    if open_folder_disable_test(index):
         show_message("Can't open folder of a network track.")
         return
 
@@ -15403,7 +15431,7 @@ def lock_folder_tree_deco():
 
 
 folder_tree_stem_menu.add(MenuItem(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon))
-folder_tree_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon))
+folder_tree_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
 
 lightning_menu.add(MenuItem(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon))
 folder_tree_menu.add(MenuItem(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon))
@@ -15421,7 +15449,7 @@ folder_tree_stem_menu.add(MenuItem(_('Collapse All'), collapse_tree, collapse_tr
 folder_tree_stem_menu.add(MenuItem("lock", lock_folder_tree, lock_folder_tree_deco))
 # folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
 
-gallery_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon))
+gallery_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
 
 gallery_menu.add(MenuItem(_("Show in Playlist"), show_in_playlist))
 
@@ -15882,6 +15910,10 @@ center_info_menu.add_to_sub(0, MenuItem('Toggle art panel', toggle_side_art, tog
 center_info_menu.add_to_sub(0, MenuItem('Toggle art position', toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco,
                             show_test=lyrics_in_side_show))
 
+def save_embed_img_disable_test(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
+    return track_object.is_network
 
 def save_embed_img(track_object):
     if type(track_object) is int:
@@ -15890,7 +15922,7 @@ def save_embed_img(track_object):
     folder = track_object.parent_folder_path
     ext = track_object.file_ext
 
-    if track_object.is_network:
+    if save_embed_img_disable_test(track_object):
         show_message("Saving network images not implemented")
         return
 
@@ -15938,6 +15970,11 @@ def open_image_deco(track_object):
     return [line_colour, colours.menu_background, None]
 
 
+def open_image_disable_test(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
+    return track_object.is_network
+
 def open_image(track_object):
     if type(track_object) is int:
         track_object = pctl.master_library[track_object]
@@ -15960,7 +15997,7 @@ def extract_image_deco(track_object):
     return [line_colour, colours.menu_background, None]
 
 
-picture_menu.add(MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True))
+picture_menu.add(MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
 
 
 def cycle_image_deco(track_object):
@@ -16002,7 +16039,7 @@ picture_menu.add(MenuItem(_("Next Image"), cycle_offset, cycle_image_deco, pass_
 #picture_menu.add(_("Previous"), cycle_offset_back, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
 
 # Extract embedded artwork from file
-picture_menu.add(MenuItem(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True))
+picture_menu.add(MenuItem(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
 
 
 def dl_art_deco(track_object):
@@ -16146,6 +16183,11 @@ def download_art1(tr):
     except:
         show_message(_("Matching cover art or ID could not be found."))
 
+
+def download_art1_fire_disable_test(track_object):
+    if type(track_object) is int:
+        track_object = pctl.master_library[track_object]
+    return track_object.is_network
 
 def download_art1_fire(track_object):
     if type(track_object) is int:
@@ -16308,7 +16350,7 @@ def delete_track_image(track_object):
 picture_menu.add(MenuItem(_("Delete Image File"), delete_track_image, delete_track_image_deco, pass_ref=True,
                  pass_ref_deco=True, icon=delete_icon))
 
-picture_menu.add(MenuItem(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True))
+picture_menu.add(MenuItem(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
 
 
 def toggle_gimage(mode=0):
@@ -16342,11 +16384,11 @@ picture_menu.add(MenuItem(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco,
 
 gallery_menu.add_to_sub(0, MenuItem(_("Next"), cycle_offset, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
 gallery_menu.add_to_sub(0, MenuItem(_("Previous"), cycle_offset_back, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
-gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True))
-gallery_menu.add_to_sub(0, MenuItem(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True))
+gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
+gallery_menu.add_to_sub(0, MenuItem(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
 gallery_menu.add_to_sub(0, MenuItem('Delete Image <combined>', delete_track_image, delete_track_image_deco, pass_ref=True,
                  pass_ref_deco=True)) #, icon=delete_icon)
-gallery_menu.add_to_sub(0, MenuItem(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True))
+gallery_menu.add_to_sub(0, MenuItem(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
 
 def append_here():
     global cargo
@@ -20028,7 +20070,7 @@ def show_in_gal(track, silent=False):
 # Create track context menu
 track_menu = Menu(195, show_icons=True)
 
-track_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon))
+track_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
 track_menu.add(MenuItem(_('Track Info…'), activate_track_box, pass_ref=True, icon=info_icon))
 
 
@@ -20280,7 +20322,7 @@ track_menu.add(MenuItem(_('Delete Track File'), delete_track, pass_ref=True, ico
 track_menu.br()
 
 
-def rename_tracks_deco():
+def rename_tracks_deco(track_id):
     if key_shift_down or key_shiftr_down:
         return [colours.menu_text, colours.menu_background, _("Rename (Single track)")]
     else:
@@ -20292,7 +20334,7 @@ def rename_tracks_deco():
 rename_tracks_icon.colour = [204, 100, 205, 255]
 rename_tracks_icon.xoff = 1
 track_menu.add_to_sub(0, MenuItem("Rename Tracks…", rename_track_box.activate, rename_tracks_deco, pass_ref=True,
-                      icon=rename_tracks_icon))
+                      pass_ref_deco=True, icon=rename_tracks_icon, disable_test=rename_track_box.disable_test))
 
 
 def activate_trans_editor():
@@ -20469,6 +20511,9 @@ def rename_parent(index, template):
     pctl.notify_change()
 
 
+def rename_folders_disable_test(index):
+    return pctl.g(index).is_network
+
 def rename_folders(index):
     global track_box
     global rename_index
@@ -20477,7 +20522,7 @@ def rename_folders(index):
     track_box = False
     rename_index = index
 
-    if pctl.g(index).is_network:
+    if rename_folders_disable_test(index):
         show_message("Not applicable for a network track.")
         return
 
@@ -20492,7 +20537,7 @@ def rename_folders(index):
 
 
 mod_folder_icon.colour = [229, 98, 98, 255]
-track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon))
+track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, pass_ref_deco=True, icon=mod_folder_icon, disable_test=rename_folders_disable_test))
 
 
 def move_folder_up(index, do=False):
@@ -20849,7 +20894,7 @@ def launch_editor(index):
         show_message("Sorry, this feature isn't (yet) available with Snap.")
         return
 
-    if pctl.g(index).is_network:
+    if launch_editor_disable_test(index):
         show_message("Cannot edit tags of a network track.")
         return
 
@@ -20857,12 +20902,16 @@ def launch_editor(index):
     mini_t.daemon = True
     mini_t.start()
 
-
-def launch_editor_selection(index):
+def launch_editor_selection_disable_test(index):
     for position in shift_selection:
         if pctl.g(default_playlist[position]).is_network:
-            show_message("Cannot edit tags of a network track.")
-            return
+            return True
+    return False
+
+def launch_editor_selection(index):
+    if launch_editor_selection_disable_test(index):
+        show_message("Cannot edit tags of a network track.")
+        return
 
     mini_t = threading.Thread(target=editor, args=[None])
     mini_t.daemon = True
@@ -20886,14 +20935,16 @@ if prefs.tag_editor_name == "Picard":
     edit_icon = mbp_icon
 
 
-def edit_deco():
+def edit_deco(index):
     if key_shift_down or key_shiftr_down:
         return [colours.menu_text, colours.menu_background, prefs.tag_editor_name + " (Single track)"]
     else:
         return [colours.menu_text, colours.menu_background, _("Edit with ") + prefs.tag_editor_name]
 
+def launch_editor_disable_test(index):
+    return pctl.g(index).is_network
 
-track_menu.add_to_sub(0, MenuItem("Edit with", launch_editor, pass_ref=True, icon=edit_icon, render_func=edit_deco))
+track_menu.add_to_sub(0, MenuItem("Edit with", launch_editor, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_disable_test))
 
 
 def show_lyrics_menu(index):
@@ -21051,23 +21102,23 @@ def clip_title(index):
 selection_menu = Menu(200, show_icons=False)
 folder_menu = Menu(193, show_icons=True)
 
-folder_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon))
+folder_menu.add(MenuItem(_('Open Folder'), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
 
-folder_menu.add(MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon))
-folder_tree_menu.add(MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon))
+folder_menu.add(MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, pass_ref_deco=True, icon=mod_folder_icon, disable_test=rename_folders_disable_test))
+folder_tree_menu.add(MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, pass_ref_deco=True, icon=mod_folder_icon, disable_test=rename_folders_disable_test))
 # folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_menu.add(MenuItem(_("Add Album to Queue"), add_album_to_queue, pass_ref=True))
 folder_menu.add(MenuItem(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True))
 
-gallery_menu.add(MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon))
+gallery_menu.add(MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, pass_ref_deco=True, icon=mod_folder_icon, disable_test=rename_folders_disable_test))
 
 folder_menu.add(MenuItem(_("Rename Tracks…"), rename_track_box.activate, rename_tracks_deco, pass_ref=True,
-                icon=rename_tracks_icon))
-folder_tree_menu.add(MenuItem(_("Rename Tracks…"), rename_track_box.activate, pass_ref=True, icon=rename_tracks_icon))
+                pass_ref_deco=True, icon=rename_tracks_icon, disable_test=rename_track_box.disable_test))
+folder_tree_menu.add(MenuItem(_("Rename Tracks…"), rename_track_box.activate, pass_ref=True, pass_ref_deco=True, icon=rename_tracks_icon, disable_test=rename_track_box.disable_test))
 
 if not snap_mode:
     folder_menu.add(MenuItem("Edit with", launch_editor_selection, pass_ref=True,
-                    icon=edit_icon, render_func=edit_deco))
+                    pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_selection_disable_test))
 
 folder_tree_menu.add(MenuItem(_("Add Album to Queue"), add_album_to_queue, pass_ref=True))
 folder_tree_menu.add(MenuItem(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True))
@@ -21222,7 +21273,7 @@ selection_menu.add(MenuItem(_('Rescan Tags'), reload_metadata_selection))
 
 selection_menu.add(MenuItem(_("Edit fields…"), activate_trans_editor))
 
-selection_menu.add(MenuItem("Edit with ", launch_editor_selection, pass_ref=True, icon=edit_icon, render_func=edit_deco))
+selection_menu.add(MenuItem("Edit with ", launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_selection_disable_test))
 
 selection_menu.br()
 folder_menu.br()
