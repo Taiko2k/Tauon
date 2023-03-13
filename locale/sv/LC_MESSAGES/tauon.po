@@ -118,9 +118,8 @@ msgid "Please authorise and click the enable toggle first!"
 msgstr "Klicka på \"Klar\" efter auktorisering."
 
 #: t_modules/t_main.py:7940
-#, fuzzy
 msgid "Spotify import complete"
-msgstr "Spotify-konto anslutet"
+msgstr "Spotifyimport klar"
 
 #: t_modules/t_main.py:7942
 msgid "day"
@@ -131,18 +130,16 @@ msgid "days"
 msgstr "dagar"
 
 #: t_modules/t_main.py:7945
-#, fuzzy
 msgid "Scanning for Chromecasts..."
-msgstr "Skannar om mappar..."
+msgstr "Skannar efter Chromecasts..."
 
 #: t_modules/t_main.py:7946
 msgid "Cast to: %s"
 msgstr ""
 
 #: t_modules/t_main.py:7947
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Inga träffar"
+msgstr "Inga Chomecastapparater funna"
 
 #: t_modules/t_main.py:7948
 #, fuzzy
@@ -158,23 +155,20 @@ msgid "Open Tauon Music Box"
 msgstr ""
 
 #: t_modules/t_main.py:7953
-#, fuzzy
 msgid "Play/Pause"
-msgstr "Paus"
+msgstr "Spela/Pausa"
 
 #: t_modules/t_main.py:7954
-#, fuzzy
 msgid "Next Track"
-msgstr "Repetera spår"
+msgstr "Nästa Spår"
 
 #: t_modules/t_main.py:7955
-#, fuzzy
 msgid "Previous Track"
-msgstr "Föregående"
+msgstr "Föregående Spår"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Avsluta"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
@@ -248,7 +242,7 @@ msgstr " filnamn skrevs."
 
 #: t_modules/t_main.py:14588
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Enkel taggredigerare"
 
 #: t_modules/t_main.py:14590 t_modules/t_main.py:28389
 #: t_modules/t_main.py:28655 t_modules/t_main.py:29412
@@ -267,21 +261,19 @@ msgstr ""
 
 #: t_modules/t_main.py:14596
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Antal spår valda: %d"
 
 #: t_modules/t_main.py:14631
 msgid "<Multiple selected>"
 msgstr ""
 
 #: t_modules/t_main.py:14639
-#, fuzzy
 msgid "Track title"
-msgstr "Spårlista"
+msgstr "Låttitel"
 
 #: t_modules/t_main.py:14641
-#, fuzzy
 msgid "Album name"
-msgstr "Album gain"
+msgstr "Albumnamn"
 
 #: t_modules/t_main.py:14643
 #, fuzzy
@@ -291,7 +283,7 @@ msgstr "Artist"
 #: t_modules/t_main.py:14645
 #, fuzzy
 msgid "Album-artist name"
-msgstr "Albumartist"
+msgstr "Albumartistnamn"
 
 #: t_modules/t_main.py:14651
 msgid "Editing network tracks is not recommended!"
@@ -335,9 +327,8 @@ msgid "with"
 msgstr "med"
 
 #: t_modules/t_main.py:14905
-#, fuzzy
 msgid "Export Playlist"
-msgstr "Exportera liststatistik"
+msgstr "Exportera Spellista"
 
 #: t_modules/t_main.py:14910
 msgid "Save directory"
@@ -566,9 +557,8 @@ msgid "Open Image"
 msgstr "Öppna bild"
 
 #: t_modules/t_main.py:15997
-#, fuzzy
 msgid "Next Image"
-msgstr "Öppna bild"
+msgstr "Nästa bild"
 
 #: t_modules/t_main.py:16001 t_modules/t_main.py:16342
 msgid "Extract Image"
@@ -758,9 +748,8 @@ msgid "From Current…"
 msgstr "Från aktuell…"
 
 #: t_modules/t_main.py:18358
-#, fuzzy
 msgid "Sort by Imported"
-msgstr "Sortera efter mest spelad"
+msgstr "Sortera efter importerad"
 
 #: t_modules/t_main.py:18359
 msgid "Sort by Filepath"
@@ -788,9 +777,8 @@ msgid "Append Playing"
 msgstr "Lägg till låten som spelas nu"
 
 #: t_modules/t_main.py:18374
-#, fuzzy
 msgid "Export…"
-msgstr "Sortera…"
+msgstr "Exportera…"
 
 #: t_modules/t_main.py:18376
 msgid "Misc…"
