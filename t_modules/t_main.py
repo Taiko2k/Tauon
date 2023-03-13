@@ -55,7 +55,10 @@ n_version = h.n_version
 t_version = h.t_version
 t_id = h.t_id
 t_agent = h.agent
+dev_mode = h.dev_mode
 print(f"Window size: {window_size}")
+
+should_save_state = True
 
 import os
 import pickle
@@ -22588,6 +22591,20 @@ settings_icon.colour = [232, 200, 96, 255]  # [230, 152, 118, 255]#[173, 255, 47
 # settings_icon.colour = [180, 140, 255, 255]
 x_menu.add(MenuItem(_("Settings"), activate_info_box, icon=settings_icon))
 x_menu.add_sub(_("Database…"), 190)
+if dev_mode:
+    def dev_mode_enable_save_state():
+        global should_save_state
+        should_save_state = True
+        show_message("Enabled saving state")
+
+    def dev_mode_disable_save_state():
+        global should_save_state
+        should_save_state = False
+        show_message("Disabled saving state")
+
+    x_menu.add_sub(_("Dev Mode"), 190)
+    x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), dev_mode_enable_save_state))
+    x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), dev_mode_disable_save_state))
 x_menu.br()
 
 
@@ -42529,7 +42546,11 @@ def window_is_focused():  # thread safe?
 
 
 def save_state():
-    print("Writing database to disk... ", end="")
+    if should_save_state:
+        print("Writing database to disk... ", end="")
+    else:
+        print("Dev mode, not saving state... ")
+        return
 
     # view_prefs['star-lines'] = star_lines
     view_prefs['update-title'] = update_title
@@ -47966,9 +47987,12 @@ while pctl.running:
 
     # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
-        console.print("Auto save playtime")
         try:
-            pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+            if should_save_state:
+                console.print("Auto save playtime")
+                pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+            else:
+                console.print("Dev mode, skip auto saving playtime")
         except PermissionError:
             show_message("Permission error encountered while writing database", "error")
         time_last_save = pctl.total_playtime
@@ -48013,15 +48037,17 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
     print("Saving play state...")
     prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
-pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
-pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
+if should_save_state:
+    pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+    pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
 
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 save_state()
 
 date = datetime.date.today()
-pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
-pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
+if should_save_state:
+    pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"))
+    pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
 if tauon.stream_proxy and tauon.stream_proxy.download_running:
     print("Stopping stream...")
