@@ -105,7 +105,8 @@ if install_mode:
 if not os.path.isdir(user_directory):
     os.makedirs(user_directory)
 
-if os.path.isfile(os.path.join(install_directory, '.gitignore')):
+dev_mode = os.path.isfile(os.path.join(install_directory, '.dev'))
+if dev_mode:
     print("Dev mode, ignoring single instancing")
 elif sys.platform != 'win32':
     pid_file = os.path.join(user_directory, 'program.pid')
@@ -325,6 +326,7 @@ h.n_version = n_version
 h.t_version = t_version
 h.t_id = t_id
 h.agent = t_agent
+h.dev_mode = dev_mode
 
 del raw_image
 del sdl_texture

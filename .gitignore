@@ -27,3 +27,4 @@ lib/
 *.DS_Store
 dist/
 *.exe
+.dev
