@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2022-11-05 22:05+0000\n"
+"PO-Revision-Date: 2023-03-13 20:43+0000\n"
 "Last-Translator: Daniel Uhrinyi <daniel.uhrinyi@gmail.com>\n"
-"Language-Team: Hungarian <https://hosted.weblate.org/projects/tauon-music-"
-"box/tauon-music-box/hu/>\n"
+"Language-Team: Hungarian <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/hu/>\n"
 "Language: hu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14.2\n"
+"X-Generator: Weblate 4.16.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -40,7 +40,7 @@ msgstr ""
 
 #: t_modules/t_main.py:6973
 msgid "You need to log in first"
-msgstr "Először jelentkezz be"
+msgstr "Először be kell jelentkezned"
 
 #: t_modules/t_main.py:7131
 msgid "Scanning failed. Try again?"
@@ -148,33 +148,31 @@ msgstr "Webszerver megállt."
 
 #: t_modules/t_main.py:7952
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Tauon Music Box megnyitása"
 
 #: t_modules/t_main.py:7953
 msgid "Play/Pause"
-msgstr ""
+msgstr "Lejátszás/Szünet"
 
 #: t_modules/t_main.py:7954
-#, fuzzy
 msgid "Next Track"
-msgstr "Számcím"
+msgstr "Következő szám"
 
 #: t_modules/t_main.py:7955
 msgid "Previous Track"
-msgstr ""
+msgstr "Előző szám"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Kilépés"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
 msgstr "Hiányzó név, jelszó és/vagy szervernév"
 
 #: t_modules/t_main.py:8215
-#, fuzzy
 msgid "Error connecting to PLEX server"
-msgstr "Kapcsolódási hiba: Plex szerver"
+msgstr "Hiba a Plex szerverhez kapcsolódáskor"
 
 #: t_modules/t_main.py:8216
 msgid "Try check login credentials and that server is accessible."
@@ -185,7 +183,6 @@ msgid "Missing username, password and/or server URL"
 msgstr "Hiányzó név, jelszó és/vagy szerver URL"
 
 #: t_modules/t_main.py:8746
-#, fuzzy
 msgid "Could not establish connection"
 msgstr "Kapcsolat létrehozása sikertelen"
 
