@@ -13983,6 +13983,8 @@ class Menu:
                         fx = self.items[i].render_func(self.reference)
                     else:
                         fx = self.items[i].render_func()
+                else:
+                    fx = self.deco()
 
                 if fx[2] is not None:
                     label = fx[2]
