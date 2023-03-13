@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-02-19 10:50+0000\n"
+"PO-Revision-Date: 2023-03-13 20:43+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16-dev\n"
+"X-Generator: Weblate 4.16.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -586,9 +586,8 @@ msgid "Deleted embedded picture from file"
 msgstr "Cancella immagine incorporata dal file"
 
 #: t_modules/t_main.py:16239
-#, fuzzy
 msgid "%d files processed"
-msgstr "%d file sovrascritti"
+msgstr "%d file processati"
 
 #: t_modules/t_main.py:16266 t_modules/t_main.py:16273
 #: t_modules/t_main.py:16304
@@ -1237,9 +1236,8 @@ msgid "Copy \"Artist - Track\""
 msgstr "Copia \"Artista - Traccia\""
 
 #: t_modules/t_main.py:21414
-#, fuzzy
 msgid "Spotify…"
-msgstr "Importa da Spotify…"
+msgstr "Spotify…"
 
 #: t_modules/t_main.py:21419 t_modules/t_main.py:23286
 msgid "Show Full Artist"
@@ -1264,7 +1262,7 @@ msgstr "Sto recuperando..."
 
 #: t_modules/t_main.py:21468
 msgid "Get Recommended"
-msgstr ""
+msgstr "Ottieni Raccomandazioni"
 
 #: t_modules/t_main.py:21570
 msgid "Broadcast This"
@@ -1441,14 +1439,12 @@ msgid "Remove Missing Tracks"
 msgstr "Rimuovi Tracce Mancanti"
 
 #: t_modules/t_main.py:22639
-#, fuzzy
 msgid "Import FMPS Ratings"
-msgstr "Importa Valutazioni_FMPS dai Metadati"
+msgstr "Importa Valutazioni FMPS"
 
 #: t_modules/t_main.py:22676
-#, fuzzy
 msgid "Import POPM Ratings"
-msgstr "Importa Valutazioni_FMPS dai Metadati"
+msgstr "Importa Valutazioni POPM"
 
 #: t_modules/t_main.py:22681
 msgid "This will delete all track and album ratings from the local database!"
@@ -1498,7 +1494,7 @@ msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22821
 msgid "Tab"
-msgstr ""
+msgstr "Scheda"
 
 #: t_modules/t_main.py:22822
 msgid "Mini"
@@ -1506,7 +1502,7 @@ msgstr "Mini"
 
 #: t_modules/t_main.py:22824
 msgid "Slate"
-msgstr ""
+msgstr "Lavagna"
 
 #: t_modules/t_main.py:22825
 msgid "Square"
@@ -2175,23 +2171,23 @@ msgstr "Usa autenticazione testuale"
 
 #: t_modules/t_main.py:28887
 msgid "Needed for Nextcloud Music"
-msgstr ""
+msgstr "Usato per Nextcloud Music"
 
 #: t_modules/t_main.py:28891
 msgid "Jellyfin network streaming"
-msgstr ""
+msgstr "Streaming in rete Jellyfin"
 
 #: t_modules/t_main.py:28901
 msgid "Username"
-msgstr ""
+msgstr "Nome utente"
 
 #: t_modules/t_main.py:28947
 msgid "Import playlists"
-msgstr ""
+msgstr "Importa scalette"
 
 #: t_modules/t_main.py:28964
 msgid "koel network streaming"
-msgstr ""
+msgstr "Streaming in rete Koel"
 
 #: t_modules/t_main.py:29021
 msgid "PLEX network streaming"
