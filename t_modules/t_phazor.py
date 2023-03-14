@@ -29,8 +29,6 @@ import shutil
 from t_modules.t_extra import *
 import mutagen
 import hashlib
-import gi
-from gi.repository import GLib
 
 def player4(tauon):
 
@@ -282,8 +280,7 @@ def player4(tauon):
         def __init__(self):
             self.direc = audio_cache2
             if prefs.tmp_cache:
-                tmp_dir = GLib.get_tmp_dir()
-                self.direc = os.path.join(tmp_dir, "TauonMusicBox", "audio-cache")
+                self.direc = os.path.join(tmp_cache_dir(), "audio-cache")
             if not os.path.exists(self.direc):
                 os.makedirs(self.direc)
             self.list = prefs.cache_list

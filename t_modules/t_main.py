@@ -23892,7 +23892,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         try:
             url, params = pctl.get_url(t)
             assert url
-            path = "/tmp/TauonMusicBox/" + str(t.index)
+            path = os.path.join(tmp_cache_dir(), str(t.index))
             if os.path.exists(path):
                 os.remove(path)
             print("Downloading file...")
@@ -26660,7 +26660,7 @@ def worker1():
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
 
-                cache_dir = "/tmp/TauonMusicBox"
+                cache_dir = tmp_cache_dir()
                 if not os.path.isdir(cache_dir):
                     os.makedirs(cache_dir)
 
@@ -48099,9 +48099,10 @@ SDL_Quit()
 exit_timer = Timer()
 exit_timer.set()
 
-if os.path.isdir("/tmp/TauonMusicBox"):
+cache_dir = tmp_cache_dir()
+if os.path.isdir(cache_dir):
     print("Clear tmp cache")
-    shutil.rmtree("/tmp/TauonMusicBox")
+    shutil.rmtree(cache_dir)
 
 if not tauon.quick_close:
     while tm.check_playback_running() or lfm_scrobbler.running:
