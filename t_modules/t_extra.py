@@ -32,6 +32,12 @@ import re
 import math
 import threading
 import urllib.parse
+import gi
+from gi.repository import GLib
+
+def tmp_cache_dir():
+    tmp_dir = GLib.get_tmp_dir()
+    return os.path.join(tmp_dir, "TauonMusicBox")
 
 # A seconds based timer
 class Timer:
