@@ -21570,9 +21570,9 @@ def gstreamer_test(_):
 #     shooter(chrome.one, [pl_to_id(pctl.active_playlist_viewing), track_id])
 
 
-if not msys:
-    track_menu.add(MenuItem(_('Broadcast This'), broadcast_select_track, pass_ref=True))
-    #track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
+# if not msys:
+#     track_menu.add(MenuItem(_('Broadcast This'), broadcast_select_track, pass_ref=True))
+#     #track_menu.add(_('Chromecast This'), chromecast_select_track, pass_ref=True, show_test=toggle_chromecast)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -22748,8 +22748,8 @@ def broadcast_colour():
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
 broadcast_icon.colour = [171, 102, 249, 255]
 broadcast_icon.colour_callback = broadcast_colour
-if not msys:
-    x_menu.add(MenuItem(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon))
+# if not msys:
+#     x_menu.add(MenuItem(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon))
 
 
 def cast_deco():
@@ -28240,14 +28240,14 @@ class Over:
             y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
-                               _("Ready broadcaster"), subtitle=_("Start web server for broadcasting"))
+                               _("Enable Listen Along"), subtitle=_("Start server for web playback"))
 
             if toggle_enable_web(1):
 
-                link_pa2 = draw_linked_text((x + 320 * gui.scale, y - 1 * gui.scale),
-                                            f"http://localhost:{str(prefs.metadata_page_port)}/radio",
+                link_pa2 = draw_linked_text((x + 300 * gui.scale, y - 1 * gui.scale),
+                                            f"http://localhost:{str(prefs.metadata_page_port)}/listenalong",
                                             colours.grey_blend_bg(190), 13)
-                link_rect2 = [x + 320 * gui.scale, y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
+                link_rect2 = [x + 300 * gui.scale, y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
 
                 if coll(link_rect2):
