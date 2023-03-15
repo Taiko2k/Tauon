@@ -77,22 +77,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
     if prefs.enable_web is False:
         return 0
 
-    def get_broadcast_track():
-        if pctl.broadcast_active is False:
-            return None, None
-        delay = 6
-        tr = None
-        t = time.time()
-        for item in reversed(pctl.broadcast_update_train):
-            if 20 > t - item[2] > delay:
-                tr = item
-                break
-        if tr is None:
-            return None, None
-        else:
-            return tr[0], tr[1]
-
-    chunker = tauon.chunker
     gui.web_running = True
 
     class Server(BaseHTTPRequestHandler):
@@ -117,7 +101,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
             if path == "/listenalong/":
                 self.send_response(302)
-                self.send_header('Location', "/radio")
+                self.send_header('Location', "/listenalong")
                 self.end_headers()
 
             elif path == "/listenalong":
@@ -125,9 +109,9 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             elif path == "/favicon.ico":
                 self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
             elif path == "/radio/radio.js":
-                self.send_file(install_directory + "/templates/radio/radio.js", "application/javascript")
+                self.send_file(install_directory + "/templates/radio.js", "application/javascript")
             elif path == "/radio/theme.css":
-                self.send_file(install_directory + "/templates/radio/theme.css", "text/css")
+                self.send_file(install_directory + "/templates/theme.css", "text/css")
             elif path == "/radio/logo-bg.png":
                 self.send_file(install_directory + "/templates/logo-bg.png", 'image/png')
 
@@ -174,35 +158,6 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 data = json.dumps(data).encode()
                 self.wfile.write(data)
 
-            # elif path == "/radio/update_radio":
-            #     self.send_response(200)
-            #     self.send_header("Content-type", "application/json")
-            #
-            #     track_id, p = get_broadcast_track()
-            #     if track_id is not None:
-            #
-            #         track = pctl.master_library[track_id]
-            #         if track.length > 2:
-            #             position = p / track.length
-            #         else:
-            #             position = 0
-            #         data = {"position": position,
-            #                 "index": track.index,
-            #                 "port": str(prefs.broadcast_port)}
-            #
-            #         data = json.dumps(data).replace(" ", "").encode()
-            #         self.send_header("Content-length", str(len(data)))
-            #         self.end_headers()
-            #         self.wfile.write(data)
-            #
-            #     else:
-            #         data = {"position": 0,
-            #                 "index": -1}
-            #         data = json.dumps(data).replace(" ", "").encode()
-            #         self.send_header("Content-length", str(len(data)))
-            #         self.end_headers()
-            #         self.wfile.write(data)
-
             elif path.startswith("/llapi/picture/"):
                 value = path[15:]
                 track = pctl.playing_object()
@@ -220,7 +175,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     base64 = album_art_gen.get_base64(track, (300, 300)).decode()
                     data = {"image_data": base64}
                 except:
-                    raise
+                    #raise
                     data = {"image_data": "None"}
 
                 data = json.dumps(data).encode()
@@ -229,102 +184,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 self.send_header("Content-length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
-            #
-            # elif path == "/radio/getpic":
-            #     self.send_response(200)
-            #     self.send_header("Content-type", "application/json")
-            #
-            #
-            #     track_id, p = get_broadcast_track()
-            #
-            #     if track_id is not None:
-            #
-            #         track = pctl.master_library[track_id]
-            #
-            #         # Lyrics ---
-            #         lyrics = ""
-            #
-            #         if prefs.radio_page_lyrics:
-            #             lyrics = tauon.synced_to_static_lyrics.get(track)
-            #             lyrics = html.escape(lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
-            #         try:
-            #             base64 = album_art_gen.get_base64(track, (300, 300)).decode()
-            #
-            #             data = {
-            #                 "index": track_id,
-            #                 "image": base64,
-            #                 "title": track.title,
-            #                 "artist": track.artist,
-            #                 "album": track.album,
-            #                 "lyrics": lyrics}
-            #
-            #             data = json.dumps(data).encode()
-            #             self.send_header("Content-length", str(len(data)))
-            #             self.end_headers()
-            #             self.wfile.write(data)
-            #         except:
-            #             # Failed getting image
-            #             data = {
-            #                 "index": track_id,
-            #                 "image": "None",
-            #                 "title": track.title,
-            #                 "artist": track.artist,
-            #                 "album": track.album,
-            #                 "lyrics": lyrics}
-            #
-            #             data = json.dumps(data).encode()
-            #             self.send_header("Content-length", str(len(data)))
-            #             self.end_headers()
-            #             self.wfile.write(data)
-            #     else:
-            #         # Broadcast is not active
-            #         data = {
-            #             "index": -1,
-            #             "image": "None",
-            #             "title": "",
-            #             "artist": "- - Broadcast Offline - -",
-            #             "album": "",
-            #             "lyrics": ""}
-            #
-            #         data = json.dumps(data).encode()
-            #         self.send_header("Content-length", str(len(data)))
-            #         self.end_headers()
-            #         self.wfile.write(data)
-            #
-            # elif path == "/stream.ogg":
-            #
-            #     ip = self.client_address[0]
-            #
-            #     self.send_response(200)
-            #     self.send_header("Content-type", "audio/ogg")
-            #     #self.send_header("Transfer-Encoding", "chunked")
-            #     self.end_headers()
-            #
-            #     position = max(chunker.master_count - 7, 1)
-            #     id = random.random()
-            #
-            #     for header in chunker.headers:
-            #         #self.wfile.write(hex(len(header))[2:].encode())
-            #         #self.wfile.write("\r\n".encode())
-            #         self.wfile.write(header)
-            #         #self.wfile.write("\r\n".encode())
-            #     while True:
-            #         if not pctl.broadcast_active:
-            #             return
-            #         if 1 < position < chunker.master_count:
-            #             while 1 < position < chunker.master_count:
-            #                 if not pctl.broadcast_active:
-            #                     return
-            #                 #self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
-            #
-            #                 #self.wfile.write("\r\n".encode())
-            #                 self.wfile.write(chunker.chunks[position])
-            #                 #self.wfile.write("\r\n".encode())
-            #
-            #                 position += 1
-            #         else:
-            #             time.sleep(0.01)
-            #             chunker.clients[id] = (ip, time.time())
+
             else:
                 self.send_response(404)
                 self.end_headers()

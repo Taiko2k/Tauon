@@ -1,6 +1,12 @@
+
+
 var connect_fault = 5;
-var index = -1;
-var status = 0;
+//var index = -1;
+var local_status = 0;
+var local_id = "";
+var local_duration = 0;
+var play = false;
+
 var sound = document.createElement("audio");
 sound.id = "audio-player";
 //sound.controls = 'controls';
@@ -20,106 +26,160 @@ vol_slider.addEventListener("input", volChange, false);
 
 var request = new XMLHttpRequest();
 
-function setArt() {
-    request.open("GET", "/radio/getpic", true);
+function setArt(id) {
+    request.open("GET", "/llapi/picture/" + id, true);
     request.onload = function () {
         var data = JSON.parse(this.response);
-        index = data.index;
-        if (data.image != "None") {
-            document.getElementById("picture").src = "data:image/jpeg;base64," + data.image;
+        if (data.image_data != "None") {
+            document.getElementById("picture").src = "data:image/jpeg;base64," + data.image_data;
         } else {
             document.getElementById("picture").src = "/radio/logo-bg.png";
         }
 
-        document.getElementById("title-text").innerText = data.title;
-        //document.getElementById("album-text").innerText = data.album;
-        document.getElementById("artist-text").innerText = data.artist;
-        document.getElementById("lyrics").innerHTML = data.lyrics;
+        // document.getElementById("title-text").innerText = data.title;
+        // document.getElementById("album-text").innerText = data.album;
+        // document.getElementById("artist-text").innerText = data.artist;
+        // document.getElementById("lyrics").innerHTML = data.lyrics;
     };
 
     request.send();
 }
 
 function update() {
+    console.log("Update");
     connect_fault = connect_fault - 1;
-    request.open("GET", "/radio/update_radio", true);
+    request.open("GET", "/llapi/poll", true);
     request.onload = function () {
         var data = JSON.parse(this.response);
-        connect_fault = 2;
-        document.getElementById("seekfront").style.width = Math.round(data.position * 100) + "%";
+    //     connect_fault = 2;
+        console.log(data.id);
+        document.getElementById("seekfront").style.width = Math.round((data.position / data.duration) * 100) + "%";
 
-        if (data.index != index) {
-            setArt();
-        }
-
-        console.log(data.index);
-
-        if (status > 0) {
-            if (status == 1 && data.index == -1) {
-                // The stream has stopped
+    //     if (data.index != index) {
+    //         setArt();
+    //     }
+        if (data.status == 0){
+            console.log("Idle");
+            if (local_status != 0){
+                local_status = 0;
                 document.getElementById("picture").src = "/radio/logo-bg.png";
-                console.log("STREAM STOPPED");
-                status = 2;
-                sound.src = "";
-                sound.load();
+                document.getElementById("artist-text").innerText = "";
+                document.getElementById("title-text").innerText = "";
             }
 
-            if (status == 2 && data.index > -1) {
-                // Stream starts again
-                status = 1;
-                sound.src = "/stream.ogg";
-                sound.load();
-                sound.play();
-                console.log("AUTO RESUME");
+            if (!sound.paused){
+                sound.pause();
+            }
+            return;
+        }
+
+        // the track has switched?
+        if (data.id != local_id && local_status == 1){
+            local_status = -1;
+            // if (2 < local_duration - sound.currentTime < 4){
+            //     console.log("Close to finish!");
+            //     return
+            // }
+
+        } else {
+            if (Math.abs(sound.currentTime - data.position) > 12){
+                console.log("seek")
+                sound.currentTime = data.position;
             }
         }
-    };
+        if (local_status == 1 && data.status == 2){
+            local_status = 2;
+            sound.pause();
+            return;
+        }
+        if (local_status == 2 && data.status == 1){
+            sound.play();
+            local_status = 1;
+            return;
+        }
+
+        if (local_status != data.status){
+            if (data.status == 1){
+                console.log("go start");
+                sound.src = "/llapi/audiofile/" + data.id;
+                if (data.position < 6){
+                    sound.currentTime = 0;
+                } else {
+                    sound.currentTime = data.position;
+                }
+                if (play){
+                    sound.load();
+                    sound.play();
+                }
+                local_status = 1;
+                local_id = data.id;
+                local_duration = data.duration;
+
+                document.getElementById("title-text").innerText = data.title;
+                document.getElementById("artist-text").innerText = data.artist;
+                setArt(data.id);
+
+
+            } else if (data.status == 0) {
+                console.log("go stop");
+                local_status = 0;
+                sound.pause();
+                document.getElementById("picture").src = "/radio/logo-bg.png";
+            }
+
+        }
+    }
+
+    request.onerror = function () {
+        local_status = 0;
+        document.getElementById("picture").src = "/radio/logo-bg.png";
+        document.getElementById("artist-text").innerText = "";
+        document.getElementById("title-text").innerText = "";
+        if (!sound.paused){
+            sound.pause();
+        }
+    }
 
     request.send();
 }
 
 var playbutton = document.getElementById("play-button");
 playbutton.onclick = function () {
-    if (status == 0) {
+    if (!play) {
+        play = true;
         document.getElementById("play-icon").style.display = "none";
         document.getElementById("stop-icon").style.display = "block";
-        if (index == -1) {
-            console.log("NO TRACK LOADED");
-            status = 2;
-        } else {
-            sound.src = "/stream.ogg"; //":" + port;
-            sound.load();
-            sound.play();
-            console.log("PRESS PLAY");
-            status = 1;
-        }
+        local_status = -1;
     } else {
+        play = false;
+        sound.pause();
         document.getElementById("play-icon").style.display = "block";
-        document.getElementById("stop-icon").style.display = "none";
-        status = 0;
-        sound.src = "";
-        sound.load();
-        console.log("PRESS PAUSE");
+        document.getElementById("stop-icon").style.display = "none";      
     }
+
+
 };
 
 function tick() {
+    console.log("TICK");
     update();
-    if (connect_fault > 0) {
-        setTimeout(tick, 5000);
-    } else {
-        console.log("CONNECTION LOST");
-        document.getElementById("picture").src = "/radio/logo-bg.png";
-        document.getElementById("title-text").innerText = "-- Server Offline --";
-        document.getElementById("artist-text").innerText = "";
-        document.getElementById("lyrics").innerHTML = "";
-        if (status == 1) {
-            status = 2;
-            sound.src = "";
-            sound.load();
-        }
-        setTimeout(tick, 15000);
-    }
+    setTimeout(tick, 2500);
+    // if (connect_fault > 0) {
+    //     
+    //     console.log("A");
+    // } else {
+    //     console.log("CONNECTION LOST");
+    //     // document.getElementById("picture").src = "/radio/logo-bg.png";
+    //     // document.getElementById("title-text").innerText = "-- Server Offline --";
+    //     // document.getElementById("artist-text").innerText = "";
+    //     // document.getElementById("lyrics").innerHTML = "";
+    //     // if (status == 1) {
+    //     //     status = 2;
+    //     //     sound.src = "";
+    //     //     sound.load();
+    //     // }
+    //     setTimeout(tick, 15000);
+    // }
 }
 
 tick();
