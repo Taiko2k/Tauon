@@ -192,6 +192,10 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                     #raise
                     data = {"image_data": "None"}
 
+                lyrics = tauon.synced_to_static_lyrics.get(track)
+                lyrics = html.escape(lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
+                data["lyrics"] = lyrics
+
                 data = json.dumps(data).encode()
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")

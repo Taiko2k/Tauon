@@ -56,7 +56,7 @@ function setArt(id) {
         // document.getElementById("title-text").innerText = data.title;
         // document.getElementById("album-text").innerText = data.album;
         // document.getElementById("artist-text").innerText = data.artist;
-        // document.getElementById("lyrics").innerHTML = data.lyrics;
+        document.getElementById("lyrics").innerHTML = data.lyrics;
     };
 
     request.send();

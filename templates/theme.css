@@ -30,14 +30,22 @@ p {
 
 
 #lyrics {
-  color: #CCC;
+  color: #f3c062;
+  font-weight: 500;
+  overflow-y: scroll;
   flex: auto;
 
-  max-width: 600px;
+  /* max-width: 600px; */
+  max-height: 300px;
+
   word-wrap: break-word;
-  padding-top: 25px;
-  padding-left: 2px;
+  background-color: rgb(26, 23, 22);
+  padding-top: 10px;
+  padding-left: 10px;
   padding-bottom: 50px;
+  margin-top: 30px;
+  /* margin-left: auto;
+  margin-right: auto; */
 }
 
 #img-holder {
