@@ -8008,6 +8008,7 @@ class Tauon:
         self.level_train = []
         self.radio_server = None
         self.mod_formats = MOD_Formats
+        self.listen_alongers = {}
 
         self.tray_lock = threading.Lock()
         self.tray_releases = 0
@@ -28059,7 +28060,7 @@ class Over:
             y += 23 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
-                               _("Enable Listen Along"), subtitle=_("Start server for web playback"))
+                               _("Enable Listen Along"), subtitle=_("Start server for remote web playback"))
 
             if toggle_enable_web(1):
 
@@ -31346,6 +31347,15 @@ class TopPanel:
             bg = [250, 250, 250, 255]
             last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, [250, 40, 40, 255])
             x += 21 * gui.scale
+        elif tauon.listen_alongers:
+            new = {}
+            for ip, timer in tauon.listen_alongers.items():
+                if timer.get() < 6:
+                    new[ip] = timer
+            tauon.listen_alongers = new
+
+            text = "%d listening along" % len(tauon.listen_alongers)
+            bg = [40, 190, 235, 255]
         else:
             status = False
 

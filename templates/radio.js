@@ -16,6 +16,23 @@ sound.volume = 0.85;
 
 document.getElementById("player").appendChild(sound);
 
+const splay = document.querySelector("#splay");
+const spause = document.querySelector("#spause");
+const sstop = document.querySelector("#sstop");
+
+function setServerIcons(mode) {
+    splay.style.filter = `brightness(20%) saturate(0%)`;
+    spause.style.filter = `brightness(20%) saturate(0%)`;
+    sstop.style.filter = `brightness(20%) saturate(0%)`;
+    if (mode == 1) splay.style.filter = `brightness(90%) saturate(0%)`;
+    if (mode == 2) spause.style.filter = `brightness(90%) saturate(0%)`;
+    if (mode == 0) sstop.style.filter = `brightness(90%) saturate(0%)`;
+}
+
+
+setServerIcons(mode=0);
+
+
 vol_slider = document.getElementById("vol-slider");
 
 function volChange() {
@@ -46,7 +63,6 @@ function setArt(id) {
 }
 
 function update() {
-    console.log("Update");
     connect_fault = connect_fault - 1;
     request.open("GET", "/llapi/poll", true);
     request.onload = function () {
@@ -55,13 +71,10 @@ function update() {
         console.log(data.id);
         document.getElementById("seekfront").style.width = Math.round((data.position / data.duration) * 100) + "%";
 
-    //     if (data.index != index) {
-    //         setArt();
-    //     }
         if (data.status == 0){
-            console.log("Idle");
             if (local_status != 0){
                 local_status = 0;
+                setServerIcons(mode=0);
                 document.getElementById("picture").src = "/radio/logo-bg.png";
                 document.getElementById("artist-text").innerText = "";
                 document.getElementById("title-text").innerText = "";
@@ -76,10 +89,6 @@ function update() {
         // the track has switched?
         if (data.id != local_id && local_status == 1){
             local_status = -1;
-            // if (2 < local_duration - sound.currentTime < 4){
-            //     console.log("Close to finish!");
-            //     return
-            // }
 
         } else {
             if (Math.abs(sound.currentTime - data.position) > 12){
@@ -89,10 +98,12 @@ function update() {
         }
         if (local_status == 1 && data.status == 2){
             local_status = 2;
+            setServerIcons(mode=2);
             sound.pause();
             return;
         }
         if (local_status == 2 && data.status == 1){
+            setServerIcons(mode=1);
             sound.play();
             local_status = 1;
             return;
@@ -100,7 +111,6 @@ function update() {
 
         if (local_status != data.status){
             if (data.status == 1){
-                console.log("go start");
                 sound.src = "/llapi/audiofile/" + data.id;
                 if (data.position < 6){
                     sound.currentTime = 0;
@@ -112,6 +122,7 @@ function update() {
                     sound.play();
                 }
                 local_status = 1;
+                setServerIcons(mode=1);
                 local_id = data.id;
                 local_duration = data.duration;
 
@@ -132,6 +143,7 @@ function update() {
 
     request.onerror = function () {
         local_status = 0;
+        setServerIcons(mode=-1);
         document.getElementById("picture").src = "/radio/logo-bg.png";
         document.getElementById("artist-text").innerText = "";
         document.getElementById("title-text").innerText = "";
@@ -154,32 +166,15 @@ playbutton.onclick = function () {
         play = false;
         sound.pause();
         document.getElementById("play-icon").style.display = "block";
-        document.getElementById("stop-icon").style.display = "none";      
+        document.getElementById("stop-icon").style.display = "none";
     }
 
 
 };
 
 function tick() {
-    console.log("TICK");
     update();
     setTimeout(tick, 2500);
-    // if (connect_fault > 0) {
-    //     
-    //     console.log("A");
-    // } else {
-    //     console.log("CONNECTION LOST");
-    //     // document.getElementById("picture").src = "/radio/logo-bg.png";
-    //     // document.getElementById("title-text").innerText = "-- Server Offline --";
-    //     // document.getElementById("artist-text").innerText = "";
-    //     // document.getElementById("lyrics").innerHTML = "";
-    //     // if (status == 1) {
-    //     //     status = 2;
-    //     //     sound.src = "";
-    //     //     sound.load();
-    //     // }
-    //     setTimeout(tick, 15000);
-    // }
 }
 
 tick();

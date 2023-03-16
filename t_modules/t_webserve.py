@@ -97,7 +97,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             path = self.path
 
             # print(self.headers)
-            print(path)
+            # print(path)
 
             if path == "/listenalong/":
                 self.send_response(302)
@@ -108,6 +108,12 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
             elif path == "/favicon.ico":
                 self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
+            elif path == "/listenalong/play.svg":
+                self.send_file(install_directory + "/templates/play.svg", 'image/svg+xml')
+            elif path == "/listenalong/pause.svg":
+                self.send_file(install_directory + "/templates/pause.svg", 'image/svg+xml')
+            elif path == "/listenalong/stop.svg":
+                self.send_file(install_directory + "/templates/stop.svg", 'image/svg+xml')
             elif path == "/radio/radio.js":
                 self.send_file(install_directory + "/templates/radio.js", "application/javascript")
             elif path == "/radio/theme.css":
@@ -143,6 +149,14 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             elif path == "/llapi/poll":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
+
+                ip = self.client_address[0]
+                timer = tauon.listen_alongers.get(ip)
+                if not timer:
+                    tauon.listen_alongers[ip] = Timer()
+                else:
+                    timer.set()
+
                 track = pctl.playing_object()
                 if track is None:
                     data = {"status": 0}
