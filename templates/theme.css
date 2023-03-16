@@ -34,6 +34,7 @@ p {
   font-weight: 500;
   overflow-y: scroll;
   flex: auto;
+  visibility: hidden;
 
   /* max-width: 600px; */
   max-height: 300px;
