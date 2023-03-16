@@ -25,6 +25,7 @@ import time
 import random
 import json
 import io
+import hashlib
 import os
 import subprocess
 from http.server import HTTPServer
@@ -32,27 +33,50 @@ from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from t_modules.t_extra import Timer
 
+
+def send_file(path, mime, server):
+    range_req = False
+    start = 0
+    end = 0
+
+    if "Range" in server.headers:
+        range_req = True
+        b = server.headers["Range"].split("=")[1]
+        start, end = b.split("-")
+        start = int(start)
+
+    with open(path, "rb") as f:
+
+        f.seek(0, 2)
+        length = f.tell()
+        f.seek(start, 0)
+
+        if range_req:
+            server.send_response(206)
+            server.send_header("Content-Range", f"bytes {start}-{length - 1}/{length}")
+            server.send_header("Content-Length", str(length))
+            server.send_header("Content-Type", mime)
+            f.seek(start)
+
+        else:
+            server.send_response(200)
+            server.send_header("Accept-Ranges", "bytes")
+            server.send_header("Content-Type", mime)
+            server.send_header("Content-Length", str(length))
+
+        server.end_headers()
+
+        while True:
+            data = f.read(1000)
+            if not data:
+                break
+            server.wfile.write(data)
+
 def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
 
     if prefs.enable_web is False:
         return 0
 
-    def get_broadcast_track():
-        if pctl.broadcast_active is False:
-            return None, None
-        delay = 6
-        tr = None
-        t = time.time()
-        for item in reversed(pctl.broadcast_update_train):
-            if 20 > t - item[2] > delay:
-                tr = item
-                break
-        if tr is None:
-            return None, None
-        else:
-            return tr[0], tr[1]
-
-    chunker = tauon.chunker
     gui.web_running = True
 
     class Server(BaseHTTPRequestHandler):
@@ -65,21 +89,31 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             with open(path, "rb") as f:
                 self.wfile.write(f.read())
 
+        def get_track_id(self, track):
+            return hashlib.md5((str(track.index) + track.title + track.artist).encode()).hexdigest()
+
         def do_GET(self):
 
             path = self.path
 
             # print(self.headers)
+            # print(path)
 
-            if path == "/radio/":
+            if path == "/listenalong/":
                 self.send_response(302)
-                self.send_header('Location', "/radio")
+                self.send_header('Location', "/listenalong")
                 self.end_headers()
 
-            elif path == "/radio":
+            elif path == "/listenalong":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
             elif path == "/favicon.ico":
                 self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
+            elif path == "/listenalong/play.svg":
+                self.send_file(install_directory + "/templates/play.svg", 'image/svg+xml')
+            elif path == "/listenalong/pause.svg":
+                self.send_file(install_directory + "/templates/pause.svg", 'image/svg+xml')
+            elif path == "/listenalong/stop.svg":
+                self.send_file(install_directory + "/templates/stop.svg", 'image/svg+xml')
             elif path == "/radio/radio.js":
                 self.send_file(install_directory + "/templates/radio.js", "application/javascript")
             elif path == "/radio/theme.css":
@@ -87,130 +121,88 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
             elif path == "/radio/logo-bg.png":
                 self.send_file(install_directory + "/templates/logo-bg.png", 'image/png')
 
-            elif path == "/radio/update_radio":
+            elif path.startswith("/llapi/audiofile/"):
+                value = path[17:]
+                track = pctl.playing_object()
+                if not track:
+                    self.send_response(403)
+                    self.end_headers()
+                    return
+                sid = self.get_track_id(track)
+                if sid != value or track.is_network:
+                    self.send_response(403)
+                    self.end_headers()
+                    return
+                if not track.fullpath or not os.path.isfile(track.fullpath):
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                mime = "audio/mpeg"
+                if track.file_ext == "FLAC":
+                    mime = "audio/flac"
+                if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
+                    mime = "audio/ogg"
+                if track.file_ext == "M4A":
+                    mime = "audio/mp4"
+                send_file(track.fullpath, mime, self)
+
+            elif path == "/llapi/poll":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-
-                track_id, p = get_broadcast_track()
-                if track_id is not None:
-
-                    track = pctl.master_library[track_id]
-                    if track.length > 2:
-                        position = p / track.length
-                    else:
-                        position = 0
-                    data = {"position": position,
-                            "index": track.index,
-                            "port": str(prefs.broadcast_port)}
-
-                    data = json.dumps(data).replace(" ", "").encode()
-                    self.send_header("Content-length", str(len(data)))
-                    self.end_headers()
-                    self.wfile.write(data)
-
-                else:
-                    data = {"position": 0,
-                            "index": -1}
-                    data = json.dumps(data).replace(" ", "").encode()
-                    self.send_header("Content-length", str(len(data)))
-                    self.end_headers()
-                    self.wfile.write(data)
-
-            elif path == "/radio/getpic":
-                self.send_response(200)
-                self.send_header("Content-type", "application/json")
-
-
-                track_id, p = get_broadcast_track()
-
-                if track_id is not None:
-
-                    track = pctl.master_library[track_id]
-
-                    # Lyrics ---
-                    lyrics = ""
-
-                    if prefs.radio_page_lyrics:
-                        lyrics = tauon.synced_to_static_lyrics.get(track)
-                        lyrics = html.escape(lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
-                    try:
-                        base64 = album_art_gen.get_base64(track, (300, 300)).decode()
-
-                        data = {
-                            "index": track_id,
-                            "image": base64,
-                            "title": track.title,
-                            "artist": track.artist,
-                            "album": track.album,
-                            "lyrics": lyrics}
-
-                        data = json.dumps(data).encode()
-                        self.send_header("Content-length", str(len(data)))
-                        self.end_headers()
-                        self.wfile.write(data)
-                    except:
-                        # Failed getting image
-                        data = {
-                            "index": track_id,
-                            "image": "None",
-                            "title": track.title,
-                            "artist": track.artist,
-                            "album": track.album,
-                            "lyrics": lyrics}
-
-                        data = json.dumps(data).encode()
-                        self.send_header("Content-length", str(len(data)))
-                        self.end_headers()
-                        self.wfile.write(data)
-                else:
-                    # Broadcast is not active
-                    data = {
-                        "index": -1,
-                        "image": "None",
-                        "title": "",
-                        "artist": "- - Broadcast Offline - -",
-                        "album": "",
-                        "lyrics": ""}
-
-                    data = json.dumps(data).encode()
-                    self.send_header("Content-length", str(len(data)))
-                    self.end_headers()
-                    self.wfile.write(data)
-
-            elif path == "/stream.ogg":
 
                 ip = self.client_address[0]
+                timer = tauon.listen_alongers.get(ip)
+                if not timer:
+                    tauon.listen_alongers[ip] = Timer()
+                else:
+                    timer.set()
 
-                self.send_response(200)
-                self.send_header("Content-type", "audio/ogg")
-                #self.send_header("Transfer-Encoding", "chunked")
+                track = pctl.playing_object()
+                if track is None:
+                    data = {"status": 0}
+                else:
+                    data = {"status": pctl.playing_state,
+                            "id": self.get_track_id(track),
+                            "position": pctl.playing_time,
+                            "duration": track.length,
+                            "title": track.title,
+                            "artist": track.artist,
+                            }
                 self.end_headers()
+                data = json.dumps(data).encode()
+                self.wfile.write(data)
 
-                position = max(chunker.master_count - 7, 1)
-                id = random.random()
+            elif path.startswith("/llapi/picture/"):
+                value = path[15:]
+                track = pctl.playing_object()
+                if not track:
+                    self.send_response(403)
+                    self.end_headers()
+                    return
+                sid = self.get_track_id(track)
+                if sid != value or track.is_network:
+                    self.send_response(403)
+                    self.end_headers()
+                    return
 
-                for header in chunker.headers:
-                    #self.wfile.write(hex(len(header))[2:].encode())
-                    #self.wfile.write("\r\n".encode())
-                    self.wfile.write(header)
-                    #self.wfile.write("\r\n".encode())
-                while True:
-                    if not pctl.broadcast_active:
-                        return
-                    if 1 < position < chunker.master_count:
-                        while 1 < position < chunker.master_count:
-                            if not pctl.broadcast_active:
-                                return
-                            #self.wfile.write(hex(len(chunker.chunks[position]))[2:].encode())
+                try:
+                    base64 = album_art_gen.get_base64(track, (300, 300)).decode()
+                    data = {"image_data": base64}
+                except:
+                    #raise
+                    data = {"image_data": "None"}
 
-                            #self.wfile.write("\r\n".encode())
-                            self.wfile.write(chunker.chunks[position])
-                            #self.wfile.write("\r\n".encode())
+                lyrics = tauon.synced_to_static_lyrics.get(track)
+                lyrics = html.escape(lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
+                data["lyrics"] = lyrics
 
-                            position += 1
-                    else:
-                        time.sleep(0.01)
-                        chunker.clients[id] = (ip, time.time())
+                data = json.dumps(data).encode()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.send_header("Content-length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
             else:
                 self.send_response(404)
                 self.end_headers()
@@ -280,45 +272,6 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
             data["can_download"] = not track.is_cue and not track.is_network
 
             return data
-
-        def send_file(self, path, mime):
-
-            range_req = False
-            start = 0
-            end = 0
-
-            if "Range" in self.headers:
-                range_req = True
-                b = self.headers["Range"].split("=")[1]
-                start, end = b.split("-")
-                start = int(start)
-
-            with open(path, "rb") as f:
-
-                f.seek(0, 2)
-                length = f.tell()
-                f.seek(start, 0)
-
-                if range_req:
-                    self.send_response(206)
-                    self.send_header("Content-Range", f"bytes {start}-{length-1}/{length}")
-                    self.send_header("Content-Length", str(length))
-                    self.send_header("Content-Type", mime)
-                    f.seek(start)
-
-                else:
-                    self.send_response(200)
-                    self.send_header("Accept-Ranges", "bytes")
-                    self.send_header("Content-Type", mime)
-                    self.send_header("Content-Length", str(length))
-
-                self.end_headers()
-
-                while True:
-                    data = f.read(1000)
-                    if not data:
-                        break
-                    self.wfile.write(data)
 
         def do_GET(self):
 
@@ -440,7 +393,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
                         mime = "audio/ogg"
                     if track.file_ext == "M4A":
                         mime = "audio/mp4"
-                    self.send_file(track.fullpath, mime)
+                    send_file(track.fullpath, mime, self)
 
             elif path.startswith("/api1/start/"):
 
