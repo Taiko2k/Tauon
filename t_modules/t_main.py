@@ -29602,13 +29602,9 @@ class Over:
             ddt.text((x, y + 1 * gui.scale), "Created by", colours.box_text_label, 13)
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
-            y += 35 * gui.scale
-            ddt.text((x, y + 1 * gui.scale), "Contributors", colours.box_text_label, 13)
-            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "RSKYS", colours.box_sub_text, 13)
-
-            y += 20 * gui.scale
+            y += 40 * gui.scale
             link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/TauonMusicBox/graphs/contributors",
-                                       colours.box_sub_text, 12, replace="Other contributors")
+                                       colours.box_sub_text, 12, replace="Contributors")
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
