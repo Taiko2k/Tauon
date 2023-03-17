@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.6.0
 
+ - Added rework of broadcast feature
  - Added new mini mode "Slate"
  - Added mini-mode always-on-top feature
  - Added function to import POPM ratings from tags
