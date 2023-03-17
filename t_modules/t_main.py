@@ -29390,8 +29390,8 @@ class Over:
         y += 25 * gui.scale
         old = prefs.mini_mode_on_top
         prefs.mini_mode_on_top = self.toggle_square(x, y, prefs.mini_mode_on_top, _("Mini-mode always on top"))
-        if prefs.mini_mode_on_top and prefs.mini_mode_on_top != old:
-            show_message("Always-on-top feature not yet implemented for Wayland mode")
+        if wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old:
+            show_message("Always-on-top feature not yet implemented for Wayland mode", "You can enable the x11 setting below as a workaround")
 
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualiser"))
@@ -29400,7 +29400,7 @@ class Over:
         if prefs.backend == 4:
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
 
-        y += round(35 * gui.scale)
+        y += round(30 * gui.scale)
         # if not msys:
         # y += round(15 * gui.scale)
 
@@ -29461,13 +29461,25 @@ class Over:
         ddt.rect(m3, colours.box_text_border)
         ddt.rect(grip, colours.box_text_label)
 
-        y += round(25 * gui.scale)
+        y += round(23 * gui.scale)
         self.toggle_square(x, y, self.toggle_x_scale, _("Auto scale"))
 
         if prefs.scale_want != gui.scale:
             gui.update += 1
             if not mouse_down:
                 gui.update_layout()
+
+        y += round(25 * gui.scale)
+        if not msys and not macos:
+            x11_path = os.path.join(user_directory, "x11")
+            x11 = os.path.exists(x11_path)
+            old = x11
+            x11 = self.toggle_square(x, y, x11, _("Prefer x11 under Wayland"))
+            if old is False and x11 is True:
+                with open(x11_path, 'a'):
+                    pass
+            elif old is True and x11 is False:
+                os.remove(x11_path)
 
     def toggle_x_scale(self, mode=0):
         if mode == 1:
