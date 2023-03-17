@@ -12795,7 +12795,9 @@ class StyleOverlay:
 
         if self.stage == 0:
 
-            if prefs.bg_showcase_only and not gui.combo_mode:
+            if (gui.mode == 3 and prefs.mini_mode_mode == 5):
+                pass
+            elif prefs.bg_showcase_only and not gui.combo_mode:
                 return
 
             if pctl.playing_ready() and self.min_on_timer.get() > 0:
@@ -12907,7 +12909,9 @@ class StyleOverlay:
                             self.parent_path != pctl.playing_object().parent_folder_path or self.current_track_album != pctl.playing_object().album):
                         self.stage = 0
 
-        if prefs.bg_showcase_only:
+        if gui.mode == 3 and prefs.mini_mode_mode == 5:
+            pass
+        elif prefs.bg_showcase_only:
             if not gui.combo_mode:
                 return
 
@@ -25275,7 +25279,7 @@ def worker3():
 def worker4():
     gui.style_worker_timer.set()
     while True:
-        if prefs.art_bg:
+        if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
             style_overlay.worker()
 
         time.sleep(0.01)
@@ -43258,8 +43262,8 @@ while pctl.running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
-                if event.window.data1 < 350:
-                    print("Grrr why this happen, stupid wm")
+                if event.window.data1 < 500:
+                    print("Grrr why this happen, stupid bug")
                     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
                 elif restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
                     gui.update = 2
