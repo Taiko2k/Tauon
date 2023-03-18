@@ -1187,9 +1187,7 @@ class Prefs:  # Used to hold any kind of settings
         self.download_dir1 = ""
         self.dd_index = False
 
-        self.broadcast_port = 8000
         self.metadata_page_port = 7590
-        self.broadcast_bitrate = 128
 
         self.custom_encoder_output = ""
         self.column_aa_fallback_artist = False
@@ -3762,9 +3760,7 @@ def save_prefs():
 
     cf.update_value("tau-url", prefs.sat_url)
 
-    # cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-page-port", prefs.metadata_page_port)
-    # cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
     cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
     cf.update_value("chart-columns", prefs.chart_columns)
@@ -4113,11 +4109,9 @@ def load_prefs():
                                                "Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
 
     cf.br()
-    cf.add_text("[broadcasting]")
-    # prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
+    cf.add_text("[listenalong]")
     prefs.metadata_page_port = cf.sync_add("int", "broadcast-page-port", prefs.metadata_page_port,
-                                           "Make sure to stop server first or restart app after changing this.")
-    # prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
+                                           "Change applies on app restart or setting re-enable")
 
     cf.br()
     cf.add_text("[chart]")
@@ -4971,8 +4965,6 @@ class PlayerCtl:
         self.b_start_time = 0
         self.playerCommand = ""
         self.playerSubCommand = ""
-        self.broadcastCommand = ""
-        self.broadcastCommandReady = False
         self.playerCommandReady = False
         self.playing_state = 0
         self.playing_length = 0
@@ -43597,9 +43589,6 @@ while pctl.running:
             if keymaps.test('toggle-last-left-panel'):
                 toggle_left_last()
                 update_layout_do()
-
-            if keymaps.test("toggle-broadcast"):
-                toggle_broadcast()
 
             if keymaps.test("escape"):
                 key_esc_press = True
