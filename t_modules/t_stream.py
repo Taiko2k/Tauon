@@ -115,7 +115,7 @@ class StreamEnc:
                 r.add_header('Icy-MetaData', '1')
                 r.add_header('User-Agent', self.tauon.t_agent)
                 print("Open URL.....")
-                r = urllib.request.urlopen(r, timeout=7, cafile=self.tauon.ca)
+                r = urllib.request.urlopen(r, timeout=20, cafile=self.tauon.ca)
                 print("URL opened.")
 
             except Exception as e:
@@ -179,7 +179,7 @@ class StreamEnc:
                         position += 1
                     else:
                         time.sleep(0.01)
-                    if not self.pump_running or not self.feed_running:
+                    if self.abort or not self.pump_running or not self.feed_running:
                         break
             except:
                 self.feed_running = False
@@ -506,9 +506,11 @@ class StreamEnc:
                         except:
                             r.close()
                             self.download_running = False
+                            self.abort = True
                             self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
                             raise
         except Exception as e:
             print("Stream download thread crashed!")
             self.download_running = False
+            self.abort = True
             return
