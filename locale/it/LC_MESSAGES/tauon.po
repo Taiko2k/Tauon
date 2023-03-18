@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-03-13 20:43+0000\n"
+"PO-Revision-Date: 2023-03-17 13:40+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -1252,9 +1252,8 @@ msgid "Show Full Album"
 msgstr "Mostra Disco Completo"
 
 #: t_modules/t_main.py:21448
-#, fuzzy
 msgid "Copy Track URL"
-msgstr "Copia URL Traccia Spotify"
+msgstr "Copia URL Traccia"
 
 #: t_modules/t_main.py:21462 t_modules/t_main.py:23283
 msgid "Fetching..."
@@ -2191,119 +2190,123 @@ msgstr "Streaming in rete Koel"
 
 #: t_modules/t_main.py:29021
 msgid "PLEX network streaming"
-msgstr ""
+msgstr "Streaming in rete PLEX"
 
 #: t_modules/t_main.py:29059
 msgid "Server name"
-msgstr ""
+msgstr "Nome server"
 
 #: t_modules/t_main.py:29081
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
-msgstr ""
+msgstr "Puoi usare Fanart.tv per cercare copertine e immagini artista."
 
 #: t_modules/t_main.py:29088 t_modules/t_main.py:36993
 msgid "They encourage you to contribute at https://fanart.tv"
-msgstr ""
+msgstr "Contribuisci su https://fanart.tv"
 
 #: t_modules/t_main.py:29094
 msgid "Cover art (Manual only)"
-msgstr ""
+msgstr "Copertina (Manuale)"
 
 #: t_modules/t_main.py:29097
 msgid "Artist images (Automatic)"
-msgstr ""
+msgstr "Immagine artista (Automatica)"
 
 #: t_modules/t_main.py:29100
 msgid "Artist backgrounds (Automatic)"
-msgstr ""
+msgstr "Info artista (Automatico)"
 
 #: t_modules/t_main.py:29103
 msgid "Flip current"
-msgstr ""
+msgstr "Cambia contenuto corrente"
 
 #: t_modules/t_main.py:29185 t_modules/t_main.py:29186
 msgid "Username:"
-msgstr ""
+msgstr "Nome utente:"
 
 #: t_modules/t_main.py:29193 t_modules/t_main.py:29195
 msgid "Login"
-msgstr ""
+msgstr "Accesso"
 
 #: t_modules/t_main.py:29194 t_modules/t_main.py:29196
 msgid "Done"
-msgstr ""
+msgstr "Fatto"
 
 #: t_modules/t_main.py:29200
 msgid "Use LibreFM"
-msgstr ""
+msgstr "Usa LibreFM"
 
 #: t_modules/t_main.py:29204
 msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
+"Clicca su accedi per aprire l'autorizzazione in rete di last.fm e segui le "
+"indicazioni. Poi torna qui e clicca su \"Fatto\"."
 
 #: t_modules/t_main.py:29208
 msgid "Forget account"
-msgstr ""
+msgstr "Cancella account"
 
 #: t_modules/t_main.py:29215 t_modules/t_main.py:29223
 msgid "Get user loves"
-msgstr ""
+msgstr "Ottieni cuori utente"
 
 #: t_modules/t_main.py:29216
 msgid "Clear local loves"
-msgstr ""
+msgstr "Pulisci cuori locali"
 
 #: t_modules/t_main.py:29217 t_modules/t_main.py:29231
 msgid "Get friend loves"
-msgstr ""
+msgstr "Ottieni cuori amici"
 
 #: t_modules/t_main.py:29243 t_modules/t_main.py:29245
 msgid "Paste Token"
-msgstr ""
+msgstr "Incolla Token"
 
 #: t_modules/t_main.py:29269
 msgid "This will mark all tracks in local database as unloved!"
-msgstr ""
+msgstr "Stai per segnare tutte le tracce locali come non piaciute!"
 
 #: t_modules/t_main.py:29279
 msgid "Cleared all loves"
-msgstr ""
+msgstr "Pulito tutti i cuori"
 
 #: t_modules/t_main.py:29286 t_modules/t_main.py:29308
 msgid "Press again while holding Shift if you understand"
-msgstr ""
+msgstr "Premi di nuovo mentre tieni premuto Shift se hai compreso"
 
 #: t_modules/t_main.py:29301
 msgid "Cleared all scrobble counts"
-msgstr ""
+msgstr "Puliti il conteggio di tutti gli invii"
 
 #: t_modules/t_main.py:29306
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
 msgstr ""
+"Attenzione: Questo processo potrebbe richiedere molto tempo! (anche un'ora o "
+"più)"
 
 #: t_modules/t_main.py:29307
 msgid "This feature is not recommended for accounts that have many friends."
-msgstr ""
+msgstr "Questa funzione non è raccomandata per account che hanno molti amici."
 
 #: t_modules/t_main.py:29345
 msgid "Selected playlist:"
-msgstr ""
+msgstr "Scaletta selezionata:"
 
 #: t_modules/t_main.py:29349
 msgid "No sync playlist selected!"
-msgstr ""
+msgstr "Nessuna scaletta di sincronizzazione selezionata!"
 
 #: t_modules/t_main.py:29352
 msgid "Path to device music folder:   "
-msgstr ""
+msgstr "Percorso della cartella musica:   "
 
 #: t_modules/t_main.py:29370
 msgid "A mounted music folder was found!"
-msgstr ""
+msgstr "È stata trovata una cartella musicale montata!"
 
 #: t_modules/t_main.py:29372
 msgid "Could not auto-detect mounted device path."
