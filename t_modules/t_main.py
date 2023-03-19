@@ -2698,6 +2698,45 @@ except:
 perf_timer.set()
 
 radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+
+primary_stations = []
+station = {
+    'title': "SomaFM Groove Salad",
+    "stream_url": "http://ice3.somafm.com/groovesalad-128-mp3",
+    'country': 'USA',
+    'website_url': 'http://somafm.com/groovesalad',
+    'icon': 'https://somafm.com/logos/120/groovesalad120.png'
+}
+primary_stations.append(station)
+station = {
+    'title': "SomaFM PopTron",
+    "stream_url": "http://ice3.somafm.com/poptron-128-mp3",
+    'country': 'USA',
+    'website_url': 'http://somafm.com/poptron/',
+    'icon': 'https://somafm.com/logos/120/poptron120.jpg'
+}
+primary_stations.append(station)
+station = {
+    'title': "SomaFM Vaporwaves",
+    "stream_url": "http://ice4.somafm.com/vaporwaves-128-mp3",
+    'country': 'USA',
+    'website_url': 'https://somafm.com/vaporwaves',
+    'icon': 'https://somafm.com/img3/vaporwaves400.png'
+}
+primary_stations.append(station)
+
+station = {
+    'title': "DKFM Shoegaze Radio",
+    "stream_url": "https://kathy.torontocast.com:2005/stream",
+    'country': 'Canada',
+    'website_url': 'https://decayfm.com',
+    'icon': 'https://cdn-profiles.tunein.com/s193842/images/logod.png'
+}
+primary_stations.append(station)
+
+for item in primary_stations:
+    radio_playlists[0]["items"].append(item)
+
 radio_playlist_viewing = 0
 
 pump = True
@@ -35483,7 +35522,7 @@ class RadioBox:
                 radio["stream_url_unresolved"] = "http://radio.plaza.one/ogg"
                 radio["stream_url"] = "http://radio.plaza.one/ogg"
                 radio["website_url"] = "https://plaza.one/"
-                radio["icon"] = "https://plaza.one//img/icons/mstile-144x144.png?v=7knqx0aR5k"
+                radio["icon"] = "https://plaza.one/icons/apple-touch-icon.png"
                 radio["country"] = "Japan"
                 self.temp_list.append(radio)
 
@@ -35515,15 +35554,6 @@ class RadioBox:
 
                 self.temp_list.append(radio)
 
-                # radio = {}
-                # radio["title"] = "DKFM Shoegaze Radio"
-                # radio["stream_url_unresolved"] = "https://maggie.torontocast.com:8090/live.mp3"
-                # radio["stream_url"] = "https://maggie.torontocast.com:8090/live.mp3"
-                # radio["website_url"] = "https://decayfm.com/"
-                # radio["icon"] = "https://decayfm.com/wp-content/uploads/2018/12/cropped-512-1-192x192.jpg"
-                # radio["country"] = "California"
-                # self.temp_list.append(radio)
-
                 radio = {}
                 radio["title"] = "HBR1 Dream Factory | Ambient"
                 radio["stream_url_unresolved"] = "http://radio.hbr1.com:19800/ambient.ogg"
@@ -35537,6 +35567,11 @@ class RadioBox:
                 radio["stream_url"] = "http://shirayuki.org:9200/"
                 radio["website_url"] = "https://yggdrasilradio.net/"
                 self.temp_list.append(radio)
+
+                for station in primary_stations:
+                    self.temp_list.append(station)
+    #
+    # def import_defau
 
     def search_radio_browser(self, param):
         if self.searching:
@@ -43697,6 +43732,7 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
+            print(pctl.radio_playlists)
             pass
 
         if gui.mode < 3:
