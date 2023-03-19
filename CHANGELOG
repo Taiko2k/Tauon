@@ -15,6 +15,7 @@ v7.6.0
  - Tweaked spotify artist lookup to give more accurate results
  - Tweaked artist panel click to locate behavior
  - Tweaked esc shortcut to exit radio and showcase views
+ - Updated built in radio list
  - Fixed radio view not exiting on search result activate
  - Fixed some internet features on Windows build not working
  - Fixed APE tag reading in various cases
