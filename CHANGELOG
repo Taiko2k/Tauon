@@ -20,6 +20,7 @@ v7.6.0
  - Fixed some internet features on Windows build not working
  - Fixed APE tag reading in various cases
  - Fixed playback not resumable on device reconnect [Thanks @dannysu]
+ - Fixed compatibility with some FLAC files with ID3 tags
  - Removed "restore window position" setting from GUI
 
 v7.5.0
