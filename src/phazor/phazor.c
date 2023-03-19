@@ -1367,19 +1367,16 @@ int load_next() {
     } else if (memcmp(peak, "wvpk", 4) == 0) {
         codec = WAVPACK;
         printf("Detected wavpack\n");
+
     } else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
+        int id3_size = (peak[6] << 21) | (peak[7] << 14) | (peak[8] << 7) | peak[9];
+        fseek(fptr, id3_size + 10, SEEK_SET);
         codec = MPG;
-        char peak2[10000];
-        memset(peak2, 0, sizeof(peak2));
-        rewind(fptr);
-        fread(peak2, sizeof(peak2), 1, fptr);
-        #ifndef WIN
-        if (memmem(peak2, sizeof(peak2), "fLaC", 4) != NULL){
-          codec = FLAC;
-          printf("ph: Detected FLAC with id3 header\n");
+        unsigned char flac_marker[4];
+        if (fread(flac_marker, 1, 4, fptr) == 4 && memcmp(flac_marker, "fLaC", 4) == 0) {
+            codec = FLAC;
+            printf("Detected FLAC with ID3 header\n");
         }
-        #endif
-        //printf("Detected mp3 id3\n");
     }
     fclose(fptr);
 
