@@ -81,6 +81,10 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
     class Server(BaseHTTPRequestHandler):
 
+        def log_message(self, format, *args):
+            gui.console.print(format % args)
+            return
+
         def send_file(self, path, mime):
             self.send_response(200)
             self.send_header("Content-type", mime)
@@ -225,6 +229,10 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
     play_timer = Timer()
 
     class Server(BaseHTTPRequestHandler):
+
+        def log_message(self, format, *args):
+            gui.console.print(format % args)
+            return
 
         def run_command(self, callback):
             self.send_response(200)
@@ -673,6 +681,11 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
 def controller(tauon):
     import base64
     class Server(BaseHTTPRequestHandler):
+
+        def log_message(self, format, *args):
+            gui.console.print(format % args)
+            return
+
         def do_GET(self):
 
             path = self.path
@@ -717,6 +730,10 @@ def controller(tauon):
 def authserve(tauon):
 
     class Server(BaseHTTPRequestHandler):
+
+        def log_message(self, format, *args):
+            gui.console.print(format % args)
+            return
 
         def do_GET(self):
             code = ""
@@ -859,6 +876,9 @@ vb = VorbisMonitor()
 def stream_proxy(tauon):
 
     class Server(BaseHTTPRequestHandler):
+        def log_message(self, format, *args):
+            gui.console.print(format % args)
+            return
 
         def do_GET(self):
 
