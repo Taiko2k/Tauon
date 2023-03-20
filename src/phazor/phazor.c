@@ -966,7 +966,7 @@ int get_audio(int max, float* buff){
 //                }
 
                 if (reset_set == 1 && reset_set_byte == low) {
-                    printf("pa: Reset position counter\n");
+                    //printf("pa: Reset position counter\n");
                     reset_set = 0;
                     position_count = reset_set_value;
                 }
@@ -2019,7 +2019,7 @@ void *main_loop(void *thread_id) {
 
                     if (using_fade == 0){
                             // Jump immediately
-                            printf("ph: Jump\n");
+                            //printf("ph: Jump\n");
                             position_count = 0;
                             buff_reset();
                             gate = 0;
