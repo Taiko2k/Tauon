@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2021-07-04 08:34+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2023-03-19 23:42+0000\n"
+"Last-Translator: Udon <UdonLearn@posteo.org>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
 "Language: de\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.8-dev\n"
+"X-Generator: Weblate 4.16.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -135,7 +135,7 @@ msgstr "Ordner neu scannen…"
 
 #: t_modules/t_main.py:7946
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Überträgt zu: %s"
 
 #: t_modules/t_main.py:7947
 #, fuzzy
@@ -156,23 +156,20 @@ msgid "Open Tauon Music Box"
 msgstr ""
 
 #: t_modules/t_main.py:7953
-#, fuzzy
 msgid "Play/Pause"
-msgstr "Pause"
+msgstr "Start/Pause"
 
 #: t_modules/t_main.py:7954
-#, fuzzy
 msgid "Next Track"
-msgstr "Titel wiederholen"
+msgstr "Nächster Titel"
 
 #: t_modules/t_main.py:7955
-#, fuzzy
 msgid "Previous Track"
-msgstr "Voriges"
+msgstr "Vorheriger Titel"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Beenden"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
@@ -191,9 +188,8 @@ msgid "Missing username, password and/or server URL"
 msgstr "Benutzername, Passwort oder Server-URL fehlen"
 
 #: t_modules/t_main.py:8746
-#, fuzzy
 msgid "Could not establish connection"
-msgstr "Fehler bei Verbindungsaufbau oder Anmeldung"
+msgstr "Konnte keine Verbindung herstellen"
 
 #: t_modules/t_main.py:8765
 msgid "Could not establish connection/authorisation"
@@ -245,7 +241,7 @@ msgstr " Dateinamen wurden geschrieben."
 
 #: t_modules/t_main.py:14588
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Einfacher Tag Editor"
 
 #: t_modules/t_main.py:14590 t_modules/t_main.py:28389
 #: t_modules/t_main.py:28655 t_modules/t_main.py:29412
@@ -255,16 +251,20 @@ msgstr "?"
 #: t_modules/t_main.py:14591
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Drücken Sie in jedem Feld die Eingabetaste, um die Änderungen in die lokale "
+"Datenbank zu übernehmen."
 
 #: t_modules/t_main.py:14592
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"Wenn Sie fertig sind, drücken Sie WRITE TAGS, um die Tags in den aktuellen "
+"Dateien zu speichern. (Optional, aber empfohlen)"
 
 #: t_modules/t_main.py:14596
 msgid "Number of tracks selected: %d"
-msgstr ""
+msgstr "Anzahl ausgewählter Titel: %d"
 
 #: t_modules/t_main.py:14631
 msgid "<Multiple selected>"
@@ -276,9 +276,8 @@ msgid "Track title"
 msgstr "Titelliste"
 
 #: t_modules/t_main.py:14641
-#, fuzzy
 msgid "Album name"
-msgstr "Album-Gain"
+msgstr "Album Name"
 
 #: t_modules/t_main.py:14643
 #, fuzzy
@@ -286,13 +285,12 @@ msgid "Artist name"
 msgstr "Künstler_in"
 
 #: t_modules/t_main.py:14645
-#, fuzzy
 msgid "Album-artist name"
-msgstr "Künstler_in des Albums"
+msgstr "Album Künstler_in"
 
 #: t_modules/t_main.py:14651
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Die Bearbeitung von Netzwerk Titeln wird nicht empfohlen!"
 
 #: t_modules/t_main.py:14682 t_modules/t_main.py:14685
 msgid "WRITE TAGS"
@@ -301,10 +299,12 @@ msgstr ""
 #: t_modules/t_main.py:14688
 msgid "Press enter on fields to apply your changes first!"
 msgstr ""
+"Drücken Sie die Eingabetaste in den Feldern, um Ihre Änderungen zu "
+"übernehmen!"
 
 #: t_modules/t_main.py:14706
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Das Schreiben auf eine Netzwerk Titel ist nicht möglich!"
 
 #: t_modules/t_main.py:14710
 msgid "Cannot write CUE sheet types!"
@@ -313,11 +313,12 @@ msgstr ""
 #: t_modules/t_main.py:14719
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
+"Kann nicht mit mehreren Feldern umgehen! Bitte verwenden Sie einen externen "
+"Tag-Editor"
 
 #: t_modules/t_main.py:14738
-#, fuzzy
 msgid "%d files rewritten"
-msgstr " Dateinamen wurden geschrieben."
+msgstr "%d Dateien umgeschrieben"
 
 #: t_modules/t_main.py:14804
 msgid "Substitute Lyric Search"
@@ -332,22 +333,20 @@ msgid "with"
 msgstr "mit"
 
 #: t_modules/t_main.py:14905
-#, fuzzy
 msgid "Export Playlist"
-msgstr "Wiedergabelistenstatistiken exportieren"
+msgstr "Wiedergabelisten exportieren"
 
 #: t_modules/t_main.py:14910
 msgid "Save directory"
-msgstr ""
+msgstr "Verzeichnis speichern"
 
 #: t_modules/t_main.py:14929
 msgid "Use relative paths"
-msgstr ""
+msgstr "Relative Pfade verwenden"
 
 #: t_modules/t_main.py:14932
-#, fuzzy
 msgid "Auto-export"
-msgstr "Auto-Stop"
+msgstr "Auto-Export"
 
 #: t_modules/t_main.py:14935 t_modules/t_main.py:14940
 #, fuzzy
