@@ -33298,7 +33298,6 @@ class MiniMode3:
 
             #if self.volume_timer.get() < 0.9:
             progress_w = pctl.player_volume * (volume_w - (4 * gui.scale)) / 100
-            gui.update += 1
             volume_colour = [210, 210, 210, 255]
             volume_r[2] = progress_w
             volume_r[0] += 2 * gui.scale
