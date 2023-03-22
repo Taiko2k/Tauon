@@ -12996,7 +12996,7 @@ class StyleOverlay:
                     self.flush()
                     return
 
-            if prefs.bg_showcase_only:
+            if prefs.bg_showcase_only and not (prefs.mini_mode_mode == 5 and gui.mode == 3):
                 tb = SDL_Rect(0, 0, window_size[0], gui.panelY)
                 bb = SDL_Rect(0, window_size[1] - gui.panelBY, window_size[0], gui.panelBY)
                 self.hole_punches.append(tb)
@@ -33332,7 +33332,6 @@ class MiniMode3:
                                     [255, 255, 255, hint])
 
         # Shuffle
-
         shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
         # fields.add(shuffle_area)
         # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
@@ -33384,6 +33383,7 @@ class MiniMode3:
         fields.add(tool_rect)
         if coll(tool_rect):
             draw_window_tools()
+
 
         # if w != h:
         #     ddt.rect_s((1, 1, w - 2, h - 2), colours.mini_mode_border, 1 * gui.scale)
