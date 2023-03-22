@@ -33279,7 +33279,7 @@ class MiniMode3:
 
             # Test click to volume
             if (mouse_up or mouse_down) and coll(volume_r_hit):
-
+                gui.update_on_drag = True
                 click_x = mouse_position[0]
                 if click_x > volume_r[0] + volume_r[2]:
                     click_x = volume_r[0] + volume_r[2]
