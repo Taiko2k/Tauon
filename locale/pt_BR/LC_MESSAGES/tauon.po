@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2022-11-11 17:47+0000\n"
+"PO-Revision-Date: 2023-03-21 16:39+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.15-dev\n"
+"X-Generator: Weblate 4.16.2-dev\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
 msgid "No artist image found."
@@ -432,7 +432,7 @@ msgstr "Mostrar na Playlist"
 
 #: t_modules/t_main.py:15502
 msgid "Image…"
-msgstr ""
+msgstr "Imagem…"
 
 #: t_modules/t_main.py:15503 t_modules/t_main.py:21055
 #: t_modules/t_main.py:21068
@@ -502,14 +502,12 @@ msgid "Search for Lyrics"
 msgstr "Buscar por Letra"
 
 #: t_modules/t_main.py:15756 t_modules/t_main.py:15764
-#, fuzzy
 msgid "Show static lyrics"
-msgstr "Mostrar Letra"
+msgstr "Mostrar letras estáticas"
 
 #: t_modules/t_main.py:15758 t_modules/t_main.py:15766
-#, fuzzy
 msgid "Show synced lyrics"
-msgstr "Mostrar Letra"
+msgstr "Mostrar letras sincronizadas"
 
 #: t_modules/t_main.py:15783
 msgid "Search GuitarParty"
@@ -549,9 +547,8 @@ msgid "Open Image"
 msgstr "Abrir Imagem"
 
 #: t_modules/t_main.py:15997
-#, fuzzy
 msgid "Next Image"
-msgstr "Abrir Imagem"
+msgstr "Próxima Imagem"
 
 #: t_modules/t_main.py:16001 t_modules/t_main.py:16342
 msgid "Extract Image"
@@ -590,9 +587,8 @@ msgid "Deleted embedded picture from file"
 msgstr "Apagada imagem inserida no arquivo"
 
 #: t_modules/t_main.py:16239
-#, fuzzy
 msgid "%d files processed"
-msgstr "%d arquivos re-escritos"
+msgstr "%d arquivos processados"
 
 #: t_modules/t_main.py:16266 t_modules/t_main.py:16273
 #: t_modules/t_main.py:16304
@@ -1026,9 +1022,8 @@ msgid "Add Playing Spotify Album"
 msgstr "Adicionar álbum do Spotify"
 
 #: t_modules/t_main.py:19937
-#, fuzzy
 msgid "Add Playing Spotify Track"
-msgstr "Adicionar álbum do Spotify"
+msgstr "Adicionar Faixa Atual do Spotify"
 
 #: t_modules/t_main.py:20028
 msgid "Track Info…"
@@ -1184,14 +1179,12 @@ msgid "Lookup Spotify Album URL"
 msgstr "Procurar URL do Álbum Spotify"
 
 #: t_modules/t_main.py:21159
-#, fuzzy
 msgid "Save Album to Spotify"
-msgstr "Salvar na Biblioteca Spotify"
+msgstr "Salvar Album no Spotify"
 
 #: t_modules/t_main.py:21165
-#, fuzzy
 msgid "Un-save Spotify Album"
-msgstr "Colar Álbum do Spotify"
+msgstr "Descartar Álbum do Spotify"
 
 #: t_modules/t_main.py:21208
 msgid "Queue %d"
@@ -1239,50 +1232,44 @@ msgid "Copy \"Artist - Track\""
 msgstr "Copiar \"Artista - Faixa\""
 
 #: t_modules/t_main.py:21414
-#, fuzzy
 msgid "Spotify…"
-msgstr "Curti no Spotify"
+msgstr "Spotify …"
 
 #: t_modules/t_main.py:21419 t_modules/t_main.py:23286
-#, fuzzy
 msgid "Show Full Artist"
-msgstr "Mostrar avaliações do álbum"
+msgstr "Mostrar Artista Completo"
 
 #: t_modules/t_main.py:21432
 msgid "Looks like that's the only track in the album"
-msgstr ""
+msgstr "Aparentemente esta é a única faixa no album"
 
 #: t_modules/t_main.py:21444 t_modules/t_main.py:23261
-#, fuzzy
 msgid "Show Full Album"
-msgstr "Álbuns Embaralhados"
+msgstr "Mostrar Álbum Completo"
 
 #: t_modules/t_main.py:21448
-#, fuzzy
 msgid "Copy Track URL"
-msgstr "Copiar URl da Faixa Spotify"
+msgstr "Copiar URL da Faixa"
 
 #: t_modules/t_main.py:21462 t_modules/t_main.py:23283
-#, fuzzy
 msgid "Fetching..."
-msgstr "Procurando..."
+msgstr "Obtendo..."
 
 #: t_modules/t_main.py:21468
 msgid "Get Recommended"
-msgstr ""
+msgstr "Obter Recomendado"
 
 #: t_modules/t_main.py:21570
 msgid "Broadcast This"
 msgstr "Transmitir Isto"
 
 #: t_modules/t_main.py:21584
-#, fuzzy
 msgid "Minimize"
-msgstr "Mini"
+msgstr "Minimizar"
 
 #: t_modules/t_main.py:21585
 msgid "Maximize"
-msgstr ""
+msgstr "Maximizar"
 
 #: t_modules/t_main.py:21586 t_modules/t_main.py:23660
 msgid "Exit"
@@ -1447,14 +1434,12 @@ msgid "Remove Missing Tracks"
 msgstr "Remover Faixas Perdidas"
 
 #: t_modules/t_main.py:22639
-#, fuzzy
 msgid "Import FMPS Ratings"
-msgstr "Importar FMPS_Ratings a partir das Etiquetas"
+msgstr "Importar avaliações FMPS"
 
 #: t_modules/t_main.py:22676
-#, fuzzy
 msgid "Import POPM Ratings"
-msgstr "Importar FMPS_Ratings a partir das Etiquetas"
+msgstr "Importar Classificações POPM"
 
 #: t_modules/t_main.py:22681
 msgid "This will delete all track and album ratings from the local database!"
@@ -1499,11 +1484,11 @@ msgstr "Parar Transmissão"
 
 #: t_modules/t_main.py:22775
 msgid "Chromecast…"
-msgstr "Chromecast…"
+msgstr "Chromecast …"
 
 #: t_modules/t_main.py:22821
 msgid "Tab"
-msgstr ""
+msgstr "Aba"
 
 #: t_modules/t_main.py:22822
 msgid "Mini"
@@ -1511,7 +1496,7 @@ msgstr "Mini"
 
 #: t_modules/t_main.py:22824
 msgid "Slate"
-msgstr ""
+msgstr "Slate"
 
 #: t_modules/t_main.py:22825
 msgid "Square"
@@ -1572,40 +1557,35 @@ msgstr "Por favor aguarde até que o trabalho finalize"
 
 #: t_modules/t_main.py:23210
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Importar Spotify…"
 
 #: t_modules/t_main.py:23212
-#, fuzzy
 msgid "Liked Albums"
-msgstr "Álbuns Mais Longos"
+msgstr "Álbuns Preferidos"
 
 #: t_modules/t_main.py:23223
-#, fuzzy
 msgid "Liked Tracks"
-msgstr "Gostar da Faixa"
+msgstr "Faixa Preferidas"
 
 #: t_modules/t_main.py:23227
 msgid "Importing Spotify playlists..."
 msgstr "Importando playlist do Spotify..."
 
 #: t_modules/t_main.py:23245
-#, fuzzy
 msgid "> Import All Playlists"
-msgstr "Importar playlist"
+msgstr "> Importar Todas Playlist"
 
 #: t_modules/t_main.py:23250
-#, fuzzy
 msgid "Playlist…"
-msgstr "Nova playlist"
+msgstr "Playlist…"
 
 #: t_modules/t_main.py:23256
 msgid "Current Context"
-msgstr ""
+msgstr "Contexto Atual"
 
 #: t_modules/t_main.py:23289
-#, fuzzy
 msgid "Start Spotify Remote"
-msgstr "Colar Álbum do Spotify"
+msgstr "Iniciar Spotify Remoto"
 
 #: t_modules/t_main.py:23453
 msgid "ListenBrainz is Paused"
@@ -2155,11 +2135,11 @@ msgstr "Preferir lançar reprodutor web"
 
 #: t_modules/t_main.py:28792
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Ativar reprodução de áudio local"
 
 #: t_modules/t_main.py:28815
 msgid "Spofify password"
-msgstr ""
+msgstr "Senha password"
 
 #: t_modules/t_main.py:28830
 msgid "Airsonic/Subsonic network streaming"
@@ -2408,12 +2388,11 @@ msgstr "Mostrar reproduzindo na barra de título"
 
 #: t_modules/t_main.py:29498
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Modo-mini sempre no topo"
 
 #: t_modules/t_main.py:29503
-#, fuzzy
 msgid "Top-panel visualiser"
-msgstr "Visualização no painel superior"
+msgstr "Visualizador do painel superior"
 
 #: t_modules/t_main.py:29507
 msgid "Showcase visualisation"
@@ -2772,12 +2751,11 @@ msgstr "Visão..."
 
 #: t_modules/t_main.py:36892
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Filtrar Artistas Pequenos"
 
 #: t_modules/t_main.py:36896 t_modules/t_main.py:36897
-#, fuzzy
 msgid "Include All Artists"
-msgstr "Incluir títulos de álbuns"
+msgstr "Incluir Todos Artistas"
 
 #: t_modules/t_main.py:36899
 msgid "Sort Alphabetically"
