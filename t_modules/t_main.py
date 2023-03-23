@@ -5283,8 +5283,19 @@ class PlayerCtl:
 
         return 0
 
-    def g(self, index):
-        return self.master_library[index]
+    # Get track object by id
+    def g(self, id):
+        return self.master_library[id]
+    # Get track object by playlist and index
+    def sg(self, i, pl):
+        if pl == -1:
+            pl = self.active_playlist_viewing
+        try:
+            playlist = self.multi_playlist[pl][2]
+            return self.g(playlist[i])
+        except IndexError:
+            pass
+        return None
 
     def show_object(self):  # The track to show in the metadata side panel
 
@@ -37466,7 +37477,11 @@ class ArtistList:
                     # Goto next artist section in playlist
                     c = pctl.selected_in_playlist
                     next = False
-                    track = pctl.g(default_playlist[c])
+                    track = pctl.sg(c, -1)
+                    if track is None:
+                        print("Index out of range!")
+                        pctl.selected_in_playlist = 0
+                        return
                     if track.artist.casefold != artist.casefold:
                         pctl.selected_in_playlist = 0
                         pctl.playlist_view_position = 0
