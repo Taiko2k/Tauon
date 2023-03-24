@@ -890,6 +890,17 @@ def player4(tauon):
                 length = 0
                 remain = 0
                 position = 0
+
+                if target_path and target_object and target_object.length == 0 and not target_object.is_cue:
+                    print("Track has duration of 0, scanning file")
+                    temp = tauon.TrackClass()
+                    temp.fullpath = target_path
+                    tauon.tag_scan(temp)
+                    target_object.length = temp.length
+                    if pctl.playing_object() is target_object:
+                        pctl.playing_length = target_object.length
+                    del temp
+
                 if state == 1 and not pctl.start_time_target and not pctl.jump_time and \
                         loaded_track:
 

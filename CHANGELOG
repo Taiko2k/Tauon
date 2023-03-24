@@ -1,6 +1,12 @@
 
 Changelog----------------------------
 
+v7.6.1
+
+ - Fixed black bars in slate mini mode
+ - Fixed high CPU in slate mini mode
+ - Tweaked to rescan files when duration is zero
+
 v7.6.0
 
  - Added rework of broadcast feature
