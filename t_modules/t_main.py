@@ -8082,6 +8082,7 @@ class Tauon:
         self.spotc = None
         self.librespot_p = None
         self.MenuItem = MenuItem
+        self.tag_scan = tag_scan
 
     def start_remote(self):
 
@@ -43746,7 +43747,7 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
-            print(pctl.radio_playlists)
+            pctl.playing_object().length = 0
             pass
 
         if gui.mode < 3:
