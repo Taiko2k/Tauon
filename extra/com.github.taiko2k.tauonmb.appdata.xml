@@ -64,7 +64,7 @@
 
   <releases>
 
-    <release version="7.6.1" date="2023-03-24">
+    <release version="7.6.2" date="2023-03-24">
       <description>
         <ul>
           <li>Added listen along feature</li>
