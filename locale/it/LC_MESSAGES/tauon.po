@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-03-17 13:40+0000\n"
+"PO-Revision-Date: 2023-03-24 13:40+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 4.17-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -2038,7 +2038,7 @@ msgstr "Previeni sospensione del sistema durante la riproduzione"
 
 #: t_modules/t_main.py:28363
 msgid "Resume from suspend"
-msgstr "Riprenda da sospensione"
+msgstr "Riprendi da sospensione"
 
 #: t_modules/t_main.py:28364
 msgid "Continue playback when waking from sleep"
@@ -2310,203 +2310,204 @@ msgstr "È stata trovata una cartella musicale montata!"
 
 #: t_modules/t_main.py:29372
 msgid "Could not auto-detect mounted device path."
-msgstr ""
+msgstr "Non posso trovare automaticamente il percorso del dispositivo."
 
 #: t_modules/t_main.py:29373
 msgid "Make sure the device is mounted and path is accessible."
-msgstr ""
+msgstr "Assicurati che il dispositivo sia montato ed il percorso accessibile."
 
 #: t_modules/t_main.py:29378
 msgid "Delete all other folders in target"
-msgstr ""
+msgstr "Cancella tutte le altre cartelle nella destinazione"
 
 #: t_modules/t_main.py:29381
 msgid "Transcode files"
-msgstr ""
+msgstr "Codifica file"
 
 #: t_modules/t_main.py:29384
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Bypassa bitrate basso"
 
 #: t_modules/t_main.py:29387
 msgid "Start Transcode and Sync"
-msgstr ""
+msgstr "Inizia Codifica e Sincronizzazione"
 
 #: t_modules/t_main.py:29390
 msgid "Start Sync"
-msgstr ""
+msgstr "Inizia Sincronizzazione"
 
 #: t_modules/t_main.py:29394
 msgid "Stopping..."
-msgstr ""
+msgstr "Sto fermando..."
 
 #: t_modules/t_main.py:29400
 msgid "Select a source playlist"
-msgstr ""
+msgstr "Scegli una scaletta come fonte"
 
 #: t_modules/t_main.py:29401
 msgid "Right click tab > Misc... > Set as sync playlist"
 msgstr ""
+"Tasto destro su Scheda> Gener...> Imposta come scaletta di sincronizzazione"
 
 #: t_modules/t_main.py:29403
 msgid "Stop"
-msgstr ""
+msgstr "Ferma"
 
 #: t_modules/t_main.py:29420
 msgid "Output codec setting:"
-msgstr ""
+msgstr "Impostazioni codec di destinazione:"
 
 #: t_modules/t_main.py:29422 t_modules/t_main.py:29423
 msgid "Open output folder"
-msgstr ""
+msgstr "Apri cartella di destinazione"
 
 #: t_modules/t_main.py:29425 t_modules/t_main.py:29426
 msgid "Sync..."
-msgstr ""
+msgstr "Sincronizzazione..."
 
 #: t_modules/t_main.py:29434
 msgid "Save opus as .ogg extension"
-msgstr ""
+msgstr "Salva opus con estensione .ogg"
 
 #: t_modules/t_main.py:29455
 msgid "Save to output folder"
-msgstr ""
+msgstr "Salva su cartella di destinazione"
 
 #: t_modules/t_main.py:29457
 msgid "Save and overwrite files inplace"
-msgstr ""
+msgstr "Salva e sostituisci i file già presenti"
 
 #: t_modules/t_main.py:29479
 msgid "Emit track change notifications"
-msgstr ""
+msgstr "Mostra notifica cambio traccia"
 
 #: t_modules/t_main.py:29482
 msgid "Draw own window decorations"
-msgstr ""
+msgstr "Disegna decorazioni finestre proprie"
 
 #: t_modules/t_main.py:29490
 msgid "Show playing in titlebar"
-msgstr ""
+msgstr "Mostra riproduzione su barra titolo"
 
 #: t_modules/t_main.py:29498
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Modalità mini sempre in vista"
 
 #: t_modules/t_main.py:29503
 msgid "Top-panel visualiser"
-msgstr ""
+msgstr "Visualizzatore su pannello superiore"
 
 #: t_modules/t_main.py:29507
 msgid "Showcase visualisation"
-msgstr ""
+msgstr "Mostra visualizzazione"
 
 #: t_modules/t_main.py:29513
 msgid "UI scale for HiDPI displays"
-msgstr ""
+msgstr "Adatta UI per display HiDPI"
 
 #: t_modules/t_main.py:29571
 msgid "Auto scale"
-msgstr ""
+msgstr "Adattamento automatico"
 
 #: t_modules/t_main.py:29878 t_modules/t_main.py:29881
 msgid "Credits"
-msgstr ""
+msgstr "Crediti"
 
 #: t_modules/t_main.py:29895
 msgid "Chart Grid Generator"
-msgstr ""
+msgstr "Generatore Griglie Classifiche"
 
 #: t_modules/t_main.py:29898
 msgid "Target playlist:   "
-msgstr ""
+msgstr "Scaletta di destinazione:   "
 
 #: t_modules/t_main.py:29926
 msgid "Rows"
-msgstr ""
+msgstr "File"
 
 #: t_modules/t_main.py:29928
 msgid "Columns"
-msgstr ""
+msgstr "Colonne"
 
 #: t_modules/t_main.py:29934
 msgid "Cascade style"
-msgstr ""
+msgstr "Stile a cascata"
 
 #: t_modules/t_main.py:29936
 msgid "Use padding"
-msgstr ""
+msgstr "Usa bordatura"
 
 #: t_modules/t_main.py:29941
 msgid "Include album titles"
-msgstr ""
+msgstr "Includi titoli disco"
 
 #: t_modules/t_main.py:29943
 msgid "Sort by top played"
-msgstr ""
+msgstr "Ordina per più riprodotti"
 
 #: t_modules/t_main.py:29949
 msgid "Randomise BG"
-msgstr ""
+msgstr "BG a caso"
 
 #: t_modules/t_main.py:29985
 msgid "Generate"
-msgstr ""
+msgstr "Genera"
 
 #: t_modules/t_main.py:29999
 msgid "Generating..."
-msgstr ""
+msgstr "Sto generando..."
 
 #: t_modules/t_main.py:30007
 msgid "Album chart"
-msgstr ""
+msgstr "Classifica dischi"
 
 #: t_modules/t_main.py:30012
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "Non ci sono abbastanza dischi nella scaletta!"
 
 #: t_modules/t_main.py:30031 t_modules/t_main.py:30032
 msgid "Chart generator..."
-msgstr ""
+msgstr "Generatore di classifiche..."
 
 #: t_modules/t_main.py:30039 t_modules/t_main.py:30079
 msgid "Tracks in playlist"
-msgstr ""
+msgstr "Tracce nella scaletta"
 
 #: t_modules/t_main.py:30040 t_modules/t_main.py:30082
 msgid "Albums in playlist"
-msgstr ""
+msgstr "Dischi nella scaletta"
 
 #: t_modules/t_main.py:30041 t_modules/t_main.py:30085
 msgid "Playlist duration"
-msgstr ""
+msgstr "Durata scaletta"
 
 #: t_modules/t_main.py:30042 t_modules/t_main.py:30113
 msgid "Tracks in database"
-msgstr ""
+msgstr "Tracce nel database"
 
 #: t_modules/t_main.py:30043 t_modules/t_main.py:30116
 msgid "Total albums"
-msgstr ""
+msgstr "Dischi totali"
 
 #: t_modules/t_main.py:30044 t_modules/t_main.py:30120
 msgid "Total playtime"
-msgstr ""
+msgstr "Durata riproduzione totale"
 
 #: t_modules/t_main.py:30181
 msgid "Track ratings"
-msgstr ""
+msgstr "Voti tracce"
 
 #: t_modules/t_main.py:30183
 msgid "Album ratings"
-msgstr ""
+msgstr "Voti dischi"
 
 #: t_modules/t_main.py:30191
 msgid "Show track loves"
-msgstr ""
+msgstr "Mostra mi piace traccia"
 
 #: t_modules/t_main.py:30199
 msgid "Represent playtime as stars"
-msgstr ""
+msgstr "Mostra tempo riproduzione come stelle"
 
 #: t_modules/t_main.py:30208
 msgid "Represent playcount as lines"
