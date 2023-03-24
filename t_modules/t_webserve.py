@@ -82,7 +82,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
     class Server(BaseHTTPRequestHandler):
 
         def log_message(self, format, *args):
-            gui.console.print(format % args)
+            tauon.gui.console.print(format % args)
             return
 
         def send_file(self, path, mime):
@@ -231,7 +231,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
     class Server(BaseHTTPRequestHandler):
 
         def log_message(self, format, *args):
-            gui.console.print(format % args)
+            tauon.gui.console.print(format % args)
             return
 
         def run_command(self, callback):
@@ -683,7 +683,7 @@ def controller(tauon):
     class Server(BaseHTTPRequestHandler):
 
         def log_message(self, format, *args):
-            gui.console.print(format % args)
+            tauon.gui.console.print(format % args)
             return
 
         def do_GET(self):
@@ -732,7 +732,7 @@ def authserve(tauon):
     class Server(BaseHTTPRequestHandler):
 
         def log_message(self, format, *args):
-            gui.console.print(format % args)
+            tauon.gui.console.print(format % args)
             return
 
         def do_GET(self):
@@ -877,7 +877,7 @@ def stream_proxy(tauon):
 
     class Server(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
-            gui.console.print(format % args)
+            tauon.gui.console.print(format % args)
             return
 
         def do_GET(self):
