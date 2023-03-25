@@ -30779,9 +30779,7 @@ class TopPanel:
         if gui.top_bar_mode2:
             offset = 0
 
-        else:
-            p_text_len = 180 * gui.scale
-
+        p_text_len = 180 * gui.scale
         right_space_es = p_text_len + offset
 
         x_start = x

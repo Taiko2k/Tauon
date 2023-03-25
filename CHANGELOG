@@ -1,6 +1,14 @@
 
 Changelog----------------------------
 
+v7.6.3
+
+ - Fixed a crash when resizing window narrow
+
+v7.6.2
+
+ - Fixed Spotify auth not working
+
 v7.6.1
 
  - Fixed black bars in slate mini mode
