@@ -5,6 +5,7 @@ v7.6.3
 
  - Fixed a crash when resizing window narrow
  - Fixed an issue with submenus after setting UI scale
+ - Fixed background art not reloading on window resize
 
 v7.6.2
 
