@@ -691,7 +691,6 @@ class TDraw:
 
         # Don't cache if using real background data
         if not real_bg or force_cache:
-            print("cache : " + text)
             self.ttc[key] = pack
             self.ttl.append(key)
             if len(self.ttl) > 350:
