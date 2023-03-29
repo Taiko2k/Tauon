@@ -33140,9 +33140,9 @@ class MiniMode3:
         w = window_size[0]
         h = window_size[1]
 
-        y1 = w
-        if w == h:
-            y1 -= 79 * gui.scale
+        y1 = w #+ 10 * gui.scale
+        # if w == h:
+        #     y1 -= 79 * gui.scale
 
         h1 = h - y1
 
@@ -33155,9 +33155,11 @@ class MiniMode3:
 
         style_overlay.display()
 
-        ddt.text_background_colour = list(gui.center_blur_pixel) + [255,] #bg
+        transit = False
+        #ddt.text_background_colour = list(gui.center_blur_pixel) + [255,] #bg
         if style_overlay.fade_on_timer.get() < 0.4 or style_overlay.stage != 2:
             ddt.alpha_bg = True
+            transit = True
 
         detect_mouse_rect = (3, 3, w - 6, h - 6)
         fields.add(detect_mouse_rect)
@@ -33191,7 +33193,7 @@ class MiniMode3:
 
             # Render album art
 
-            wid = (w // 2) + round(45 * gui.scale)
+            wid = (w // 2) + round(60 * gui.scale)
             ins = (window_size[0] - wid) / 2
             off = round(4 * gui.scale)
 
@@ -33223,17 +33225,22 @@ class MiniMode3:
             # Draw title texts
             line1 = track.artist
             line2 = track.title
-
+            key = None
             if not line1 and not line2:
+                if not ddt.alpha_bg:
+                    key = (track.filename, 214, style_overlay.current_track_id)
                 ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
-                         window_size[0] - 30 * gui.scale)
+                         window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
             else:
 
+                if not ddt.alpha_bg:
+                    key = (line1, 515, style_overlay.current_track_id)
                 ddt.text((w // 2, y1 + 5 * gui.scale, 2), line1, line2c, 515,
-                         window_size[0] - 30 * gui.scale)
-
+                         window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
+                if not ddt.alpha_bg:
+                    key = (line2, 415, style_overlay.current_track_id)
                 ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
-                         window_size[0] - 30 * gui.scale)
+                         window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
 
             y1 += round(10 * gui.scale)
 
@@ -33446,7 +33453,7 @@ def set_mini_mode():
     if prefs.mini_mode_mode == 4:
         size = (330, 80)
     if prefs.mini_mode_mode == 5:
-        size = (400, 600)
+        size = (350, 545)
         style_overlay.flush()
         tm.ready("style")
 

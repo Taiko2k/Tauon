@@ -496,16 +496,19 @@ class TDraw:
         SDL_RenderCopy(self.renderer, sd[1], None, sd[0])
 
 
-    def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
+    def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None, real_bg=False, key=None):
 
         #perf.set()
+        force_cache = False
+        if key:
+            force_cache = True
+
 
         self.was_truncated = False
 
         max_x += 12  # Hack
         max_x = round(max_x)
 
-        real_bg = False
         alpha_bg = self.alpha_bg
 
         x = round(location[0])
@@ -540,10 +543,10 @@ class TDraw:
         if len(text) == 0:
             return 0
 
+        if key is None:
+            key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
 
-        key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
-
-        if not real_bg:
+        if not real_bg or force_cache:
             sd = self.ttc.get(key)
             if sd:
 
@@ -552,7 +555,6 @@ class TDraw:
                 sd[0].y = round(y) - sd[2]
 
                 self.__render_text(sd, x, y, range_top, range_height, align)
-
                 self.ttl.remove(key)
                 self.ttl.append(key)
 
@@ -688,7 +690,8 @@ class TDraw:
         self.__render_text(pack, x, y, range_top, range_height, align)
 
         # Don't cache if using real background data
-        if not real_bg:
+        if not real_bg or force_cache:
+            print("cache : " + text)
             self.ttc[key] = pack
             self.ttl.append(key)
             if len(self.ttl) > 350:
@@ -813,7 +816,7 @@ class TDraw:
 
         return dst.w    
 
-    def text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
+    def text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None, real_bg=False, key=None):
 
         #print((text, font))
 
@@ -846,7 +849,7 @@ class TDraw:
                                                      range_top=range_top, range_height=range_height)
 
         if system == "linux":
-            return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align)
+            return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
         else:
             return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)
 
