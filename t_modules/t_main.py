@@ -2575,7 +2575,7 @@ view_prefs = {
 
 
 class TrackClass:  # This is the fundamental object/data structure of a track
-    # C-TC
+
     def __init__(self):
         self.index = 0
         self.fullpath = ""
@@ -2587,7 +2587,6 @@ class TrackClass:  # This is the fundamental object/data structure of a track
         self.modified_time = 0
 
         self.is_network = False
-        # self.url = ""
         self.url_key = ""
         self.art_url_key = ""
 
@@ -13816,7 +13815,7 @@ class Menu:
         self.items.append(None)
 
     def add_sub(self, title, width, show_test=None):
-        self.items.append(MenuItem(title, self.deco, sub_menu_width=width * gui.scale, show_test=show_test, is_sub_menu=True, sub_menu_number=self.sub_number))
+        self.items.append(MenuItem(title, self.deco, sub_menu_width=width, show_test=show_test, is_sub_menu=True, sub_menu_number=self.sub_number))
         self.sub_number += 1
         self.subs.append([])
 
@@ -14061,7 +14060,7 @@ class Menu:
 
                     # sub_pos = [x_run + self.w, self.pos[1] + i * self.h]
                     sub_pos = [x_run + self.w, self.sub_y_postion]
-                    sub_w = self.items[i].sub_menu_width
+                    sub_w = self.items[i].sub_menu_width * gui.scale
 
                     if sub_pos[0] + sub_w > window_size[0]:
                         sub_pos[0] = x_run - sub_w
