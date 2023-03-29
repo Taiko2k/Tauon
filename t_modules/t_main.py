@@ -42283,6 +42283,8 @@ def update_layout_do():
 
         update_set()
 
+    if prefs.art_bg:
+        tm.ready('style')
 
 # SDL_RenderClear(renderer)
 # SDL_RenderPresent(renderer)
