@@ -24320,14 +24320,13 @@ class SearchOverlay:
             ddt.rect((x, y, w, h), [3, 3, 3, 235])
             ddt.text_background_colour = [12, 12, 12, 255]
 
-            # if window_size[0] > 1200 * gui.scale:
-            #     hint_x = window_size[0] - 320 * gui.scale
-            #     hint_y = 100 * gui.scale
-            #     hint_colour = colours.grey(60)
-            #     ddt.draw_text((hint_x, hint_y, 2), "Right-click an item to locate.", hint_colour, 314)
-            #     hint_y += 23 * gui.scale
-            #     ddt.draw_text((hint_x, hint_y, 2), "Hold Ctrl and click to add items to current viewed playlist",
-            #                   hint_colour, 314)
+
+            input_text_x = 80 * gui.scale
+            highlight_x = 30 * gui.scale
+            thumbnail_rx = 100 * gui.scale
+            text_lx = 120 * gui.scale
+
+            #album_art_size_s = 0 * gui.scale
 
             # Search active animation
             if self.sip:
@@ -24360,7 +24359,7 @@ class SearchOverlay:
             # No results found message
             elif not self.results and len(self.search_text.text) > 1:
                 if self.input_timer.get() > 0.5 and not self.sip:
-                    ddt.text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216,
+                    ddt.text((window_size[0] // 2, 200 * gui.scale, 2), "No results found", [250, 250, 250, 255], 216,
                              bg=[12, 12, 12, 255])
 
             # Spotify search text
@@ -24369,7 +24368,7 @@ class SearchOverlay:
                 ddt.text((window_size[0] // 2, window_size[1] - 30 * gui.scale, 2), text, [250, 250, 250, 255], 212,
                          bg=[12, 12, 12, 255])
 
-            self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30,
+            self.search_text.draw(input_text_x, 60 * gui.scale, [230, 230, 230, 255], True, False, 30,
                                   window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
             if inp.key_tab_press:
@@ -24463,6 +24462,7 @@ class SearchOverlay:
             if self.on > 4:
                 p += self.on - 4
             p = self.on - 1
+            clear = False
 
             for i, item in enumerate(self.results):
 
@@ -24481,661 +24481,265 @@ class SearchOverlay:
                 # print(selected)
 
                 if selected != p:
-                    fade = 0.85
-
-                # # Block separating lower search results
-                # if item[4] < 4 and not sec:
-                #     if i != 0:
-                #         ddt.rect((50 * gui.scale, yy + 5 * gui.scale, 400 * gui.scale, 4 * gui.scale),
-                #                  [255, 255, 255, 40])
-                #         yy += 20 * gui.scale
-                #
-                #     sec = True
-
-                full = False
+                    fade = 0.8
 
                 start = yy
 
-                if item[0] == 0:
-                    cl = [250, 140, 190, int(255 * fade)]
-                    text = "Artist"
-                    yy += 3 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215,
-                                  bg=[12, 12, 12, 255])
+                n = item[0]
 
-                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                names = {
+                    0: "Artist",
+                    1: "Album",
+                    2: "Track",
+                    3: "Genre",
+                    5: "Folder",
+                    6: "Composer",
+                    7: "Year",
+                    8: "Playlist",
+                    10: "Artist",
+                    11: "Album",
+                    12: "Track",
+                }
+                type_colours = {
+                    0: [250, 140, 190, 255],  # Artist
+                    1: [250, 140, 190, 255],  # Album
+                    2: [250, 220, 190, 255],  # Track
+                    3: [240, 240, 160, 255],  # Genre
+                    5: [250, 100, 50, 255],   # Folder
+                    6: [180, 250, 190, 255],  # Composer
+                    7: [250, 50, 140, 255],   # Year
+                    8: [100, 210, 250, 255],  # Playlist
+                    10: [145, 245, 78, 255],  # Spotify Artist
+                    11: [130, 237, 69, 255],  # Spotify Album
+                    12: [200, 255, 150, 255]  # Spotify Track
+                }
+                if n not in names:
+                    name = "NYI"
+                    colour = [255, 255, 255, 255]
+                else:
+                    name = names[n]
+                    colour = type_colours[n]
+                    colour[3] = int(colour[3] * fade)
 
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
+                pad = round(4 * gui.scale)
+                height = round(25 * gui.scale)
+                if n in (1, 11):
+                    height = round(50 * gui.scale)
+                album_art_size = height
 
-                    show = False
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
 
-                        if gui.level_2_click:
+                # Selection bar
+                s_rect = (highlight_x, yy, 600 * gui.scale, height + pad + pad - 1)
+                fields.add(s_rect)
+                if fade == 1:
+                    ddt.rect((highlight_x, yy + pad, 4 * gui.scale, height), bar_colour)
+                if n in (2,):
+                    if key_ctrl_down and item[2] in default_playlist:
+                        ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
 
-                            if key_ctrl_down:
-                                default_playlist.extend(self.click_artist(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
+                # Type text
+                if n in (0, 3, 5, 6, 7, 8, 10, 12):
+                    ddt.text((thumbnail_rx, yy + pad + round(3 * gui.scale), 1), names[n], type_colours[n], 214)
 
-                                self.click_artist(item[1])
-                                # pctl.show_current(index=item[2], playing=False)
-                                self.active = False
-                                self.search_text.text = ""
+                # Thumbnail
+                if n in (1, 2):
+                    thl = thumbnail_rx - album_art_size
+                    ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
+                    gall_ren.render(pctl.g(item[2]), (thl, yy + pad), album_art_size)
+                    if fade != 1:
+                        ddt.rect((thl, yy + pad, album_art_size, album_art_size), [0, 0, 0, 70])
+                if n in (11,):
+                    thl = thumbnail_rx - album_art_size
+                    ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
+                    # gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
+                    if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
+                        try:
+                            gall_ren.lock.release()
+                        except:
+                            pass
 
-                        if level_2_right_click:
-                            show = True
-
-                    if enter and key_shift_down and fade == 1:
-                        show = True
-                    elif enter and fade == 1:
-                        if key_shift_down or key_shiftr_down:
-                            # self.click_artist(item[1])
-                            pctl.show_current(index=item[2], playing=False)
-                        else:
-                            # pctl.show_current(index=item[2], playing=False)
-                            self.click_artist(item[1])
-
-                        self.active = False
-                        self.search_text.text = ""
-                    if show:
-                        pctl.show_current(index=item[2], playing=False)
-                        self.active = False
-                        self.search_text.text = ""
-
-                    yy += 5 * gui.scale
-
-                # Spotify Artist
-                if item[0] == 10:
-                    cl = [145, 245, 78, int(255 * fade)]
-                    text = "Artist"
-                    yy += 3 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215,
-                                  bg=[12, 12, 12, 255])
-
-                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    go = False
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-
-                            if key_ctrl_down:
-                                # default_playlist.extend(self.click_artist(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
-                                go = True
-                                # spot_ctl.artist_playlist(item[2])
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
-                            # pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-
-                    if enter and fade == 1:
-                        go = True
-                        # spot_ctl.artist_playlist(item[2])
-                        self.active = False
-                        self.search_text.text = ""
-
-                    yy += 5 * gui.scale
-                    if go:
-                        show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
-                        shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
-                        shoot.daemon = True
-                        shoot.start()
-
-                # Spotify Album
-                if item[0] == 11:
-
-                    if not item[5]:
-                        cl = [130, 237, 69, int(255 * fade)]
-                        text = "Album"
-                        yy += 3 * gui.scale
-                        xx = ddt.text((120 * gui.scale, yy), " - ".join(item[1]), [255, 255, 255, int(255 * fade)], 214,
-                                      bg=[12, 12, 12, 255])
-
-                        ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-
-                        if fade == 1:
-                            ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
-
-                        rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                        fields.add(rect)
-                        full = False
-
-                    else:
-
-                        yy += 3 * gui.scale
-                        xx = ddt.text((120 * gui.scale, yy + round(5 * gui.scale)), item[1][0],
-                                      [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
-
-                        artist = item[1][1]
-
-                        ddt.text((125 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212,
-                                 bg=[12, 12, 12, 255])
-                        xx += 8 * gui.scale
-
-                        xx += ddt.text((150 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)],
-                                       15, bg=[12, 12, 12, 255])
-
-                        ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150])
-                        # gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
-                        if not item[5].draw(50 * gui.scale, yy + 5):
-                            try:
-                                gall_ren.lock.release()
-                            except:
-                                pass
-
-                        if fade != 1:
-                            ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70])
-                        full = True
-                        full_count += 1
-
-                        if fade == 1:
-                            ddt.rect((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), bar_colour)
-
-                        if key_ctrl_down and item[2] in default_playlist:
-                            ddt.rect((24 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), track_in_bar_colour)
-
-                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
-                        fields.add(rect)
-
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-
-                            if key_ctrl_down:
-                                # default_playlist.extend(self.click_artist(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
-                                spot_ctl.album_playlist(item[2])
-                                reload_albums()
-                                # self.click_artist(item[1])
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
-                            # pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-
-                    if enter and fade == 1:
-                        spot_ctl.album_playlist(item[2])
-                        reload_albums()
-                        # self.click_artist(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-
-                    if full:
-                        yy += 47 * gui.scale
-                    else:
-                        yy += 6 * gui.scale
-
-                if item[0] == 1:
-
-                    yy += 3 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy + round(5 * gui.scale)), item[1],
-                                  [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
-
-                    artist = pctl.master_library[item[2]].album_artist
-                    if artist == "":
-                        artist = pctl.master_library[item[2]].artist
-
-                    if full_count < 7:
-
-                        ddt.text((125 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212,
-                                 bg=[12, 12, 12, 255])
-                        xx += 8 * gui.scale
-
-                        xx += ddt.text((150 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)],
-                                       15, bg=[12, 12, 12, 255])
-
-                        ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50, 50, 50, 150])
-                        gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
-                        if fade != 1:
-                            ddt.rect((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70])
-                        full = True
-                        full_count += 1
-
-                        if fade == 1:
-                            ddt.rect((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), bar_colour)
-
-                        if key_ctrl_down and item[2] in default_playlist:
-                            ddt.rect((24 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), track_in_bar_colour)
-
-                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
-                        fields.add(rect)
-                    else:
-
-                        ddt.text((120 + xx + 11 * gui.scale, yy), "BY", [250, 240, 110, int(255 * fade)], 212,
-                                 bg=[12, 12, 12, 255])
-                        xx += 8 * gui.scale
-
-                        xx += ddt.text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15,
-                                       bg=[12, 12, 12, 255])
-
-                        rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                        fields.add(rect)
-
-                    show = False
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-                        if gui.level_2_click:
-
-                            if key_ctrl_down:
-
-                                for k, pl in enumerate(pctl.multi_playlist):
-                                    if item[2] in pl[2]:
-                                        default_playlist.extend(
-                                            get_album_from_first_track(pl[2].index(item[2]), item[2], k))
-                                        break
-                                gui.pl_update += 1
-
-                            else:
-
-                                self.click_album(item[2])
-                                pctl.playlist_view_position = pctl.selected_in_playlist
-                                console.print("DEBUG: Position changed by global search")
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
-                            show = True
-
-                    if enter and key_shift_down and fade == 1:
-                        show = True
-                    elif enter and fade == 1:
-                        self.click_album(item[2])
-                        pctl.show_current(index=item[2])
-                        pctl.playlist_view_position = pctl.selected_in_playlist
-                        console.print("DEBUG: Position changed by global search")
-                        self.active = False
-                        self.search_text.text = ""
-                    if show:
-                        pctl.show_current(index=item[2], playing=False)
-                        pctl.playlist_view_position = pctl.selected_in_playlist
-                        if album_mode:
-                            show_in_gal(0)
-                        self.active = False
-                        self.search_text.text = ""
-                    if keymaps.test("add-to-queue") and fade == 1:
-                        add_album_to_queue(item[2], pctl.multi_playlist[id_to_pl(item[3])][2].index(item[2]), item[3])
-
-                    if full:
-                        yy += 47 * gui.scale
-
-                if item[0] == 2:
-                    cl = [250, 220, 190, int(255 * fade)]
-                    text = "Track"
+                # Result text
+                if n in (0, 5, 6, 7, 8, 10):  # Bold
+                    xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], 215)
+                if n in (3,):  # Genre
+                    xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], 215)
+                    if item[1].endswith("+"):
+                        ddt.text((xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), "(Include multi-tag results)",
+                                 [255, 255, 255, int(255 * fade) // 2], 313)
+                if n == 11:  # Spotify Album
+                    xx = ddt.text((text_lx, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], 214)
+                    artist = item[1][1]
+                    ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212)
+                    xx += 8 * gui.scale
+                    xx += ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15)
+                if n in (12,):  # Spotify Track
+                    yyy = yy
+                    yyy += round(6 * gui.scale)
+                    xx = ddt.text((text_lx, yyy), item[1][0], [255, 255, 255, int(255 * fade)], 15)
+                    xx += 9 * gui.scale
+                    ddt.text((xx + text_lx, yyy), "BY", [250, 160, 110, int(255 * fade)], 212)
+                    xx += 25 * gui.scale
+                    xx += ddt.text((xx + text_lx, yyy), item[1][1], [255, 255, 255, int(255 * fade)], 214)
+                if n in (2, ):  # Track
+                    yyy = yy
+                    yyy += round(6 * gui.scale)
                     track = pctl.master_library[item[2]]
-
-                    #thumb = False
-                    #if True:
-                    #    thumb = True
-                    ddt.rect((75 * gui.scale, yy + 0, 25 * gui.scale, 25 * gui.scale), [50, 50, 50, 150])
-                    gall_ren.render(pctl.g(item[2]), (75 * gui.scale, yy + 0), 25 * gui.scale)
-
                     if track.artist == track.title == "":
-                        ddt.text((120 * gui.scale, yy), os.path.splitext(track.filename)[0],
-                                 [255, 255, 255, int(255 * fade)], 15,
-                                 bg=[12, 12, 12, 255])
+                        text = os.path.splitext(track.filename)[0]
+                        xx = ddt.text((text_lx, yyy + pad), text, [255, 255, 255, int(255 * fade)], 15)
                     else:
-                        xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15,
-                                      bg=[12, 12, 12, 255])
-
-                        ddt.text((xx + (120 + 11) * gui.scale, yy), "BY", [250, 160, 110, int(255 * fade)], 212,
-                                 bg=[12, 12, 12, 255])
-                        xx += 8 * gui.scale
+                        xx = ddt.text((text_lx, yyy), item[1], [255, 255, 255, int(255 * fade)], 15)
+                        xx += 9 * gui.scale
+                        ddt.text((xx + text_lx, yyy), "BY", [250, 160, 110, int(255 * fade)], 212)
+                        xx += 25 * gui.scale
                         artist = track.artist
-                        xx += ddt.text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214,
-                                       bg=[12, 12, 12, 255])
-
+                        xx += ddt.text((xx + text_lx, yyy), artist, [255, 255, 255, int(255 * fade)], 214)
                         if track.album:
                             xx += 9 * gui.scale
-                            xx += ddt.text((xx + (120 + 30) * gui.scale, yy), "FROM", [120, 120, 120, int(255 * fade)],
-                                           212,
-                                           bg=[12, 12, 12, 255])
+                            xx += ddt.text((xx + text_lx, yyy), "FROM", [120, 120, 120, int(255 * fade)], 212)
                             xx += 8 * gui.scale
-                            xx += ddt.text((xx + (120 + 30) * gui.scale, yy), track.album,
-                                           [80, 80, 80, int(255 * fade)], 212,
-                                           bg=[12, 12, 12, 255])
+                            xx += ddt.text((xx + text_lx, yyy), track.album, [80, 80, 80, int(255 * fade)], 212)
 
-                    #ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 25 * gui.scale), bar_colour)
+                if n in (1,):  # Two line album
+                    track = pctl.master_library[item[2]]
+                    artist = track.album_artist
+                    if not artist:
+                        artist = track.artist
 
-                    if key_ctrl_down and item[2] in default_playlist:
-                        ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour)
+                    xx = ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], 214)
 
-                    show = False
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-                            if key_ctrl_down:
-                                default_playlist.append(item[2])
-                                gui.pl_update += 1
-                            else:
-                                self.click_album(item[2])
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
-                            show = True
-                    #if thumb:
-                    yy += round(6 * gui.scale)
-
-                    if enter and key_shift_down and fade == 1:
-                        show = True
-                    elif enter and fade == 1:
-                        self.click_album(item[2])
-                        self.active = False
-                        self.search_text.text = ""
-                    if show:
-                        pctl.show_current(index=item[2], playing=False)
-                        if album_mode:
-                            show_in_gal(0)
-                        self.active = False
-                        self.search_text.text = ""
-
-                    if keymaps.test("add-to-queue") and fade == 1:
-                        queue_object = queue_item_gen(item[2],
-                                                      pctl.multi_playlist[id_to_pl(item[3])][2].index(item[2]),
-                                                      item[3])
-                        pctl.force_queue.append(queue_object)
-                        queue_timer_set(queue_object=queue_object)
-
-                # spotify track
-                if item[0] == 12:
-                    cl = [200, 255, 150, int(255 * fade)]
-                    text = "Track"
-
-                    xx = ddt.text((120 * gui.scale, yy), item[1][0], [255, 255, 255, int(255 * fade)], 15,
-                                  bg=[12, 12, 12, 255])
-                    ddt.text((xx + (120 + 11) * gui.scale, yy), "BY", [250, 160, 110, int(255 * fade)], 212,
-                             bg=[12, 12, 12, 255])
+                    ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212)
                     xx += 8 * gui.scale
-                    xx += ddt.text((xx + (120 + 30) * gui.scale, yy), item[1][1], [255, 255, 255, int(255 * fade)], 214,
-                                   bg=[12, 12, 12, 255])
+                    xx += ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15)
 
-                    ddt.text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour)
 
-                    if key_ctrl_down and item[2] in default_playlist:
-                        ddt.rect((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour)
+                yy += height + pad + pad
 
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-                        if gui.level_2_click:
+                show = False
+                go = False
+                extend = False
+                if coll(s_rect) and mouse_change:
+                    if self.force_select != p:
+                        self.force_select = p
+                        gui.update = 2
 
-                            if key_ctrl_down:
-                                # default_playlist.append(item[2])
-                                gui.pl_update += 1
-                            else:
-                                spot_ctl.append_track(item[2])
-                                reload_albums()
-                                self.active = False
-                                self.search_text.text = ""
+                    if gui.level_2_click:
+                        if key_ctrl_down:
+                            extend = True
+                        else:
+                            go = True
+                            clear = True
 
-                        if level_2_right_click:
-                            # pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-                    if enter and fade == 1:
-                        spot_ctl.append_track(item[2])
-                        reload_albums()
-                        self.active = False
-                        self.search_text.text = ""
 
-                if item[0] == 3:
-                    cl = [240, 240, 160, int(255 * fade)]
-                    text = "Genre"
-                    xx = ddt.text((120 * gui.scale, yy), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], 215,
-                                  bg=[12, 12, 12, 255])
-
-                    if item[1].endswith("+"):
-                        ddt.text((xx + 127 * gui.scale, yy - 1 * gui.scale), "(Include multi-tag results)",
-                                 [255, 255, 255, int(255 * fade) // 2], 313,
-                                 bg=[12, 12, 12, 255])
-
-                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 20 * gui.scale), bar_colour)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-                        if gui.level_2_click:
-
-                            if key_ctrl_down:
-                                default_playlist.extend(self.click_genre(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
-                                self.click_genre(item[1])
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
-                            pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-                    if enter and fade == 1:
-                        self.click_genre(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-
-                if item[0] == 5:
-                    cl = [250, 100, 50, int(255 * fade)]
-                    text = "FOLDER"
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214,
-                                  bg=[12, 12, 12, 255])
-
-                    ddt.text((49 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 20 * gui.scale), bar_colour)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    show = False
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-                        if gui.level_2_click:
-                            if key_ctrl_down:
-                                default_playlist.extend(self.click_meta(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
-                                self.click_meta(item[1])
-                                self.active = False
-                                self.search_text.text = ""
-                        if level_2_right_click:
-                            show = True
-
-                    if enter and key_shift_down and fade == 1:
+                    if level_2_right_click:
                         show = True
-                    elif enter and fade == 1:
-                        self.click_meta(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-                    if show:
-                        pctl.show_current(index=item[2], playing=False)
-                        self.active = False
-                        self.search_text.text = ""
+                        clear = True
 
-                if item[0] == 6:
-                    cl = [180, 250, 190, int(255 * fade)]
-                    text = "Composer"
-                    yy += 3 * gui.scale
-                    xx = ddt.text((124 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215,
-                                  bg=[12, 12, 12, 255])
+                if enter and key_shift_down and fade == 1:
+                    show = True
+                    clear = True
 
-                    ddt.text((40 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                elif enter and fade == 1:
+                    if key_shift_down or key_shiftr_down:
+                        show = True
+                        clear = True
+                    else:
+                        go = True
+                        clear = True
 
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
+                if extend:
+                    match n:
+                        case 0:
+                            default_playlist.extend(self.click_artist(item[1], get_list=True))
+                        case 1:
+                            for k, pl in enumerate(pctl.multi_playlist):
+                                if item[2] in pl[2]:
+                                    default_playlist.extend(
+                                        get_album_from_first_track(pl[2].index(item[2]), item[2], k))
+                                    break
+                        case 2:
+                            default_playlist.append(item[2])
+                        case 3:
+                            default_playlist.extend(self.click_genre(item[1], get_list=True))
+                        case 5:
+                            default_playlist.extend(self.click_meta(item[1], get_list=True))
+                        case 6:
+                            default_playlist.extend(self.click_composer(item[1], get_list=True))
+                        case 7:
+                            default_playlist.extend(self.click_year(item[1], get_list=True))
+                        case 8:
+                            default_playlist.extend(pctl.multi_playlist[pl][2])
+                        case 12:
+                            spot_ctl.append_track(item[2])
+                            reload_albums()
 
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-                            if key_ctrl_down:
-                                default_playlist.extend(self.click_composer(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
-                                self.click_composer(item[1])
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
+                    gui.pl_update += 1
+                elif show:
+                    match n:
+                        case 0 | 1 | 2 | 3 | 5 | 6 | 7 | 10:
                             pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-
-                    if enter and fade == 1:
-                        self.click_composer(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-
-                    yy += 5 * gui.scale
-
-                if item[0] == 7:
-                    cl = [250, 50, 140, int(255 * fade)]
-                    text = "Year"
-                    yy += 3 * gui.scale
-                    xx = ddt.text((124 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215,
-                                  bg=[12, 12, 12, 255])
-
-                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-                            if key_ctrl_down:
-                                default_playlist.extend(self.click_year(item[1], get_list=True))
-                                gui.pl_update += 1
-                            else:
-                                self.click_year(item[1])
-                                self.active = False
-                                self.search_text.text = ""
-
-                        if level_2_right_click:
-                            pctl.show_current(index=item[2], playing=False)
-                            self.active = False
-                            self.search_text.text = ""
-
-                    if enter and fade == 1:
-                        self.click_year(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-
-                    yy += 5 * gui.scale
-
-                if item[0] == 8:
-                    cl = [100, 210, 250, int(255 * fade)]
-                    text = "Playlist"
-                    yy += 3 * gui.scale
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215,
-                                  bg=[12, 12, 12, 255])
-
-                    ddt.text((105 * gui.scale, yy, 1), text, cl, 214, bg=[12, 12, 12, 255])
-
-                    if fade == 1:
-                        ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll(rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-                            if key_ctrl_down:
-                                pl = id_to_pl(item[3])
-                                if pl:
-                                    default_playlist.extend(pctl.multi_playlist[pl][2])
-                                gui.pl_update += 1
-                            else:
-                                pl = id_to_pl(item[3])
-                                if pl:
-                                    switch_playlist(pl)
-                                    self.active = False
-                                    self.search_text.text = ""
-
-                        if level_2_right_click:
-
+                            if album_mode:
+                                show_in_gal(0)
+                        case 8:
                             pl = id_to_pl(item[3])
                             if pl:
                                 switch_playlist(pl)
-                                self.active = False
-                                self.search_text.text = ""
 
-                    if enter and fade == 1:
-                        pl = id_to_pl(item[3])
-                        if pl:
-                            switch_playlist(pl)
-                            self.active = False
-                            self.search_text.text = ""
+                elif go:
+                    match n:
+                        case 0:
+                            self.click_artist(item[1])
+                        case 10:
+                            show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
+                            shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
+                            shoot.daemon = True
+                            shoot.start()
+                        case 1 | 2:
+                            self.click_album(item[2])
+                            pctl.show_current(index=item[2])
+                            pctl.playlist_view_position = pctl.selected_in_playlist
+                        case 3:
+                            self.click_genre(item[1])
+                        case 5:
+                            self.click_meta(item[1])
+                        case 6:
+                            self.click_composer(item[1])
+                        case 7:
+                            self.click_year(item[1])
+                        case 8:
+                            pl = id_to_pl(item[3])
+                            if pl:
+                                switch_playlist(pl)
+                        case 11:
+                            spot_ctl.album_playlist(item[2])
+                            reload_albums()
+                        case 12:
+                            spot_ctl.append_track(item[2])
+                            reload_albums()
 
-                    yy += 5 * gui.scale
+                if n in (2,) and keymaps.test("add-to-queue") and fade == 1:
+                    queue_object = queue_item_gen(item[2],
+                                                  pctl.multi_playlist[id_to_pl(item[3])][2].index(item[2]),
+                                                  item[3])
+                    pctl.force_queue.append(queue_object)
+                    queue_timer_set(queue_object=queue_object)
 
+                # ----
+
+                # ---
                 if i > 40:
                     break
-
                 if yy > window_size[1] - (100 * gui.scale):
                     break
 
-                yy += 22 * gui.scale
+                continue
 
-            if enter:
+            if clear:
+                self.active = False
+                self.search_text.text = ""
                 self.results.clear()
                 self.searched_text = ""
+
 
 
 search_over = SearchOverlay()

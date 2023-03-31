@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.6.3
 
+ - Tweaked search overly  # todo fix spot seach
  - Fixed a crash when resizing window narrow
  - Fixed an issue with submenus after setting UI scale
  - Fixed background art not reloading on window resize
