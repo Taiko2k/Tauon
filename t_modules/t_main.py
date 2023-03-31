@@ -24326,6 +24326,19 @@ class SearchOverlay:
             thumbnail_rx = 100 * gui.scale
             text_lx = 120 * gui.scale
 
+            s_font = 15
+            s_b_font = 214
+            b_font = 215
+
+            if window_size[0] < 400 * gui.scale:
+                input_text_x = 30 * gui.scale
+                highlight_x = 4 * gui.scale
+                thumbnail_rx = 65 * gui.scale
+                text_lx = 80 * gui.scale
+                s_font = 415
+                s_b_font = 514
+                d_font = 515
+
             #album_art_size_s = 0 * gui.scale
 
             # Search active animation
@@ -24560,40 +24573,40 @@ class SearchOverlay:
 
                 # Result text
                 if n in (0, 5, 6, 7, 8, 10):  # Bold
-                    xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], 215)
+                    xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], b_font)
                 if n in (3,):  # Genre
-                    xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], 215)
+                    xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], b_font)
                     if item[1].endswith("+"):
                         ddt.text((xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), "(Include multi-tag results)",
                                  [255, 255, 255, int(255 * fade) // 2], 313)
                 if n == 11:  # Spotify Album
-                    xx = ddt.text((text_lx, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], 214)
+                    xx = ddt.text((text_lx, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], s_b_font)
                     artist = item[1][1]
                     ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212)
                     xx += 8 * gui.scale
-                    xx += ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15)
+                    xx += ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], s_font)
                 if n in (12,):  # Spotify Track
                     yyy = yy
                     yyy += round(6 * gui.scale)
-                    xx = ddt.text((text_lx, yyy), item[1][0], [255, 255, 255, int(255 * fade)], 15)
+                    xx = ddt.text((text_lx, yyy), item[1][0], [255, 255, 255, int(255 * fade)], s_font)
                     xx += 9 * gui.scale
                     ddt.text((xx + text_lx, yyy), "BY", [250, 160, 110, int(255 * fade)], 212)
                     xx += 25 * gui.scale
-                    xx += ddt.text((xx + text_lx, yyy), item[1][1], [255, 255, 255, int(255 * fade)], 214)
+                    xx += ddt.text((xx + text_lx, yyy), item[1][1], [255, 255, 255, int(255 * fade)], s_b_font)
                 if n in (2, ):  # Track
                     yyy = yy
                     yyy += round(6 * gui.scale)
                     track = pctl.master_library[item[2]]
                     if track.artist == track.title == "":
                         text = os.path.splitext(track.filename)[0]
-                        xx = ddt.text((text_lx, yyy + pad), text, [255, 255, 255, int(255 * fade)], 15)
+                        xx = ddt.text((text_lx, yyy + pad), text, [255, 255, 255, int(255 * fade)], s_font)
                     else:
-                        xx = ddt.text((text_lx, yyy), item[1], [255, 255, 255, int(255 * fade)], 15)
+                        xx = ddt.text((text_lx, yyy), item[1], [255, 255, 255, int(255 * fade)], s_font)
                         xx += 9 * gui.scale
                         ddt.text((xx + text_lx, yyy), "BY", [250, 160, 110, int(255 * fade)], 212)
                         xx += 25 * gui.scale
                         artist = track.artist
-                        xx += ddt.text((xx + text_lx, yyy), artist, [255, 255, 255, int(255 * fade)], 214)
+                        xx += ddt.text((xx + text_lx, yyy), artist, [255, 255, 255, int(255 * fade)], s_b_font)
                         if track.album:
                             xx += 9 * gui.scale
                             xx += ddt.text((xx + text_lx, yyy), "FROM", [120, 120, 120, int(255 * fade)], 212)
@@ -24606,11 +24619,11 @@ class SearchOverlay:
                     if not artist:
                         artist = track.artist
 
-                    xx = ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], 214)
+                    xx = ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], s_b_font)
 
                     ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212)
                     xx += 8 * gui.scale
-                    xx += ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15)
+                    xx += ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], s_font)
 
 
                 yy += height + pad + pad
