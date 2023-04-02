@@ -64,11 +64,9 @@
 
   <releases>
 
-    <release version="7.6.2" date="2023-03-24">
+    <release version="7.6.3" date="2023-02-02">
       <description>
         <ul>
-          <li>Added listen along feature</li>
-          <li>Added new mini mode style</li>
           <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
