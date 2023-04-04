@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.6.4
 
+ - Improved loved playlist to order by timestamp (not retroactive)
  - Fixed APE tag scan
 
 v7.6.3
