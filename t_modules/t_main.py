@@ -4703,13 +4703,13 @@ def tag_scan(nt):
 
             # print(audio.title)
 
-            nt.length = audio.length
+            # nt.length = audio.length
             nt.title = audio.title
             nt.artist = audio.artist
             nt.album = audio.album
             nt.date = audio.date
             nt.composer = audio.composer
-            nt.bit_depth = audio.bit_depth
+            # nt.bit_depth = audio.bit_depth
             nt.track_number = audio.track_number
             nt.genre = audio.genre
             nt.album_artist = audio.album_artist
