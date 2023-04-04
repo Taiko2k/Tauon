@@ -37017,6 +37017,9 @@ class ArtistList:
 
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if inp.mouse_click:
+                if self.click_ref != artist:
+                    pctl.playlist_view_position = 0
+                    pctl.selected_in_playlist = 0
                 self.click_ref = artist
 
                 double_click = False
@@ -37103,6 +37106,7 @@ class ArtistList:
                 self.click_highlight_timer.set()
 
                 select = blocks[0][0]
+
                 if double_click:
                     # Stat first artist track in playlist
 
