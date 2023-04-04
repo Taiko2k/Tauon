@@ -1894,7 +1894,7 @@ class StarStore:
             if value < 0 and self.db[key][0] < 0:
                 self.db[key][0] = 0
         else:
-            self.db[key] = [value, "", 0]
+            self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
 
     # Returns the track play time
     def get(self, index):
@@ -1985,7 +1985,7 @@ class StarStore:
                 del tr.misc["FMPS_Rating"]
 
     def new_object(self):
-        return [0, "", 0]
+        return [0, "", 0, 0]
 
     def get_by_object(self, track):
 
@@ -2008,7 +2008,7 @@ class StarStore:
         self.db[key] = object
 
     def merge(self, index, object):
-        if object is None or object == [0, "", 0]:
+        if object is None or object == self.new_object():
             return
         key = self.key(index)
         if key not in self.db:
@@ -3628,6 +3628,13 @@ if db_version > 0:
                 f.write("\ntoggle-artistinfo O Ctrl\n")
                 f.write("cycle-theme ] Ctrl\n")
                 f.write("cycle-theme-reverse [ Ctrl\n")
+
+    if db_version <= 66:
+        print("Updating database to version 67")
+        for key, value in star_store.db.items():
+            if len(value) == 3:
+                value.append(0)
+                star_store.db[key] = value
 
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
@@ -7571,6 +7578,11 @@ def get_love_index(index):
     else:
         return False
 
+def get_love_timestamp_index(index):
+    star = star_store.full_get(index)
+    if star is None:
+        return 0
+    return star[3]
 
 def love(set=True, track_id=None, no_delay=False, notify=False):
     if len(pctl.track_queue) < 1:
@@ -7613,18 +7625,20 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
     if not lastfm.details_ready() or no_delay:
         delay = 0
 
+    star[3] = time.time()
+
     if loved:
         time.sleep(delay)
         gui.update += 1
         gui.pl_update += 1
-        star = [star[0], star[1] + "L", star[2]]
+        star[1] = star[1] + "L" # = [star[0], star[1] + "L", star[2]]
         star_store.insert(track_id, star)
         if prefs.last_fm_token:
             try:
                 lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
             except:
                 show_message(_("Failed updating last.fm love status"), mode='warning')
-                star = [star[0], star[1].strip("L"), star[2]]
+                star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
                 star_store.insert(track_id, star)
                 show_message(_("Error updating love to last.fm!"),
                              _("Maybe check your internet connection and try again?"), mode="error")
@@ -7636,14 +7650,14 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         time.sleep(delay)
         gui.update += 1
         gui.pl_update += 1
-        star = [star[0], star[1].replace("L", ""), star[2]]
+        star[1] = star[1].replace("L", "")
         star_store.insert(track_id, star)
         if prefs.last_fm_token:
             try:
                 lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
             except:
                 show_message("Failed updating last.fm love status", mode='warning')
-                star = [star[0], star[1] + "L", star[2]]
+                star[1] = star[1] + "L"
                 star_store.insert(track_id, star)
         if pctl.master_library[track_id].file_ext == "JELY":
             jellyfin.favorite(pctl.master_library[track_id], un=True)
@@ -19054,6 +19068,8 @@ def gen_love(pl, custom_list=None):
         if get_love_index(item):
             playlist.append(item)
 
+    playlist.sort(key=lambda x: get_love_timestamp_index(x), reverse=True)
+
     if custom_list is not None:
         return playlist
 
@@ -28829,7 +28845,7 @@ class Over:
             return
 
         for key, star in star_store.db.items():
-            star = [star[0], star[1].strip("L"), star[2]]
+            star[1] = star[1].replace("L", "")
             star_store.db[key] = star
 
         gui.pl_update += 1
@@ -42013,7 +42029,7 @@ def save_state():
             folder_image_offsets,
             None,  # lfm_username,
             None,  # lfm_hash,
-            66,  # Version, used for upgrading
+            67,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
