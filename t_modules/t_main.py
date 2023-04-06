@@ -29153,7 +29153,7 @@ class Over:
             x11_path = os.path.join(user_directory, "x11")
             x11 = os.path.exists(x11_path)
             old = x11
-            x11 = self.toggle_square(x, y, x11, _("Prefer x11 under Wayland"))
+            x11 = self.toggle_square(x, y, x11, _("Prefer x11 when running in Wayland"))
             if old is False and x11 is True:
                 with open(x11_path, 'a'):
                     pass
