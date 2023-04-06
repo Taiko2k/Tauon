@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-03-13 20:43+0000\n"
+"PO-Revision-Date: 2023-04-06 06:52+0000\n"
 "Last-Translator: Daniel Uhrinyi <daniel.uhrinyi@gmail.com>\n"
 "Language-Team: Hungarian <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/hu/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 4.17-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -1188,9 +1188,8 @@ msgid "No results found"
 msgstr "Nem talált előadó képet"
 
 #: t_modules/t_main.py:21147
-#, fuzzy
 msgid "Copy Spotify Album URL"
-msgstr "Spotify albumok"
+msgstr "Spotify album URL másolása"
 
 #: t_modules/t_main.py:21149
 #, fuzzy
@@ -1933,9 +1932,8 @@ msgid "Start web server for broadcasting"
 msgstr ""
 
 #: t_modules/t_main.py:28260
-#, fuzzy
 msgid "Show artist info panel"
-msgstr "Nem talált előadó képet."
+msgstr "Mutasd az előadó info paneljét"
 
 #: t_modules/t_main.py:28261
 msgid "You can also toggle this with ctrl+o"
