@@ -1094,14 +1094,24 @@ ma_device_info* pPlaybackDeviceInfos;
 ma_uint32 playbackDeviceCount = 0;
 ma_result result;
 ma_context context;
+context_allocated = 0;
 ma_uint32 iDevice;
+
+
+int initiate_ma_context(){
+    if (context_allocated == 0){
+        if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
+            printf("Failed to initialize context.\n");
+            return -1;
+        }
+        context_allocated = 1;
+    }
+    return 1;
+}
 
 int scan_devices(){
 
-    if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
-        printf("Failed to initialize context.\n");
-        return -1;
-    }
+    if (initiate_ma_context() == -1) return -1;
 
     result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
     if (result != MA_SUCCESS) {
@@ -1115,7 +1125,6 @@ int scan_devices(){
 //        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
 //    }
 
-    ma_context_uninit(&context);
     return playbackDeviceCount;
 
 }
@@ -1158,7 +1167,7 @@ int disconnect_pulse() {
 
     if (pulse_connected == 1) {
         ma_device_uninit(&device);
-        ma_context_uninit(&context);
+        //ma_context_uninit(&context);
     }
     pulse_connected = 0;
     return 0;
@@ -1184,15 +1193,11 @@ void connect_pulse() {
 
     ma_context_config c_config = ma_context_config_init();
     c_config.pulse.pApplicationName = "Tauon Music Box";
-    if (ma_context_init(NULL, 0, &c_config, &context) != MA_SUCCESS) {
-        printf("Failed to initialize context.\n");
-        return;
-    }
+    if (initiate_ma_context() == -1) return;
 
     result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
     if (result != MA_SUCCESS) {
         printf("Failed to retrieve device information.\n");
-        ma_context_uninit(&context);
         return;
     }
 
@@ -1212,7 +1217,6 @@ void connect_pulse() {
 
     if (ma_device_init(&context, &config, &device) != MA_SUCCESS) {
         printf("ph: Device init error\n");
-        ma_context_uninit(&context);
         mode = STOPPED;
         return;  // Failed to initialize the device.
     }
@@ -2138,6 +2142,9 @@ void *main_loop(void *thread_id) {
 
     stop_out();
     disconnect_pulse();
+    if (context_allocated == 1){
+        ma_context_uninit(&context);
+    }
     command = NONE;
 
     return thread_id;
@@ -2239,6 +2246,11 @@ int stop() {
     return 0;
 }
 
+int wait() {
+    while (command != NONE) {
+        usleep(1000);
+    }
+}
                                    
 int seek(int ms_absolute, int flag) {
 
