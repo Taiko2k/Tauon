@@ -78,7 +78,8 @@ def player4(tauon):
         devices = ["Default"]
         if n:
             for d in range(n):
-                devices.append(aud.get_device(d).decode())
+                st = aud.get_device(d).decode()
+                devices.append(st)
         prefs.phazor_devices = devices
         if prefs.phazor_device_selected not in devices:
             prefs.phazor_device_selected = devices[0]
@@ -507,9 +508,13 @@ def player4(tauon):
     def set_config(set_device=False):
         #aud.config_set_dev_buffer(prefs.device_buffer)
         aud.config_set_fade_duration(prefs.cross_fade_time)
-        aud.config_set_dev_name(prefs.phazor_device_selected.encode())
+        st = prefs.phazor_device_selected.encode()
+        aud.config_set_dev_name(st)
         if set_device:
             aud.pause()
+            aud.wait()
+            aud.stop_out()
+            aud.wait()
             aud.resume()
 
         if prefs.always_ffmpeg:
