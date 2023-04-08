@@ -2144,6 +2144,7 @@ void *main_loop(void *thread_id) {
     disconnect_pulse();
     if (context_allocated == 1){
         ma_context_uninit(&context);
+        context_allocated = 0;
     }
     command = NONE;
 
