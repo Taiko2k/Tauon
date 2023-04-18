@@ -4,7 +4,8 @@ Changelog----------------------------
 v7.6.4
 
  - Improved loved playlist to order by timestamp (not retroactive)
- - Fixed APE tag scan time duration reading 0
+ - Fixed APE tag scan time duration reading zero
+ - Fixed an issue with not being able to switch output device
  - Fixed switch artist in artist list not resetting to first album
  - Fixed spotify startup info message persisting
 
