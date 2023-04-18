@@ -118,7 +118,7 @@ def player4(tauon):
                     os.makedirs(cache)
 
                 cmd = ["librespot", "--username", username, "--password", prefs.spot_password, "--backend", "pipe", "-n", "Tauon Music Box", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
-                tauon.spot_ctl.preparing_spotify = True
+                #tauon.spot_ctl.preparing_spotify = True
                 gui.update += 1
 
                 startupinfo = None
@@ -131,7 +131,7 @@ def player4(tauon):
                 except Exception as e:
                     print(str(e))
                     print("Error starting librespot")
-                    tauon.spot_ctl.preparing_spotify = False
+                    #tauon.spot_ctl.preparing_spotify = False
                     gui.update += 1
                     return 1
 
@@ -730,10 +730,10 @@ def player4(tauon):
                 state = 4
                 spotc.go()
 
-
                 if not spotc.running:
                     shooter(spotc.worker)
                 #time.sleep(20)
+                #tauon.spot_ctl.preparing_spotify = False
 
             if command == "startchrome":
                 aud.stop()
@@ -800,24 +800,26 @@ def player4(tauon):
                                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                                 state = 4
                                 if not tauon.librespot_p:
+                                    tauon.spot_ctl.preparing_spotify = True
                                     f = True
                                 spotc.go()
                                 if not spotc.running:
                                     shooter(spotc.worker)
                             tauon.spot_ctl.play_target(target_object.url_key, force_new_device=f)
+                            tauon.spot_ctl.preparing_spotify = False
                             if state == 4 and pctl.playerCommand == "spotcon":  # such spaghetti code
                                 pctl.playerCommand = ""
                                 pctl.playerCommandReady = False
 
                         except:
-                            raise
-                            tauon.spot_ctl.preparing_spotify = False
+                            #tauon.spot_ctl.preparing_spotify = False
                             print("Failed to start Spotify track")
                             pctl.playerCommand = "stop"
                             pctl.playerCommandReady = True
                         continue
 
                     spotc.running = False
+                    #tauon.spot_ctl.preparing_spotify = False
                     pctl.spot_playing = False
                     timer = Timer()
                     timer.set()

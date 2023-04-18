@@ -23143,12 +23143,14 @@ def show_spot_playing():
 
 
 def spot_transfer_playback_here():
+    tauon.spot_ctl.preparing_spotify = True
     if not (spot_ctl.playing or spot_ctl.coasting):
         spot_ctl.update(start=True)
     pctl.playerCommand = 'spotcon'
     pctl.playerCommandReady = True
     pctl.playing_state = 3
     shooter(spot_ctl.transfer_to_tauon)
+
 
 extra_menu.br()
 extra_menu.add(MenuItem('Spotify Like Track', toggle_spotify_like_active, toggle_spotify_like_active_deco,
