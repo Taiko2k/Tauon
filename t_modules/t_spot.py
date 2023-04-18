@@ -370,14 +370,17 @@ class SpotCtl:
         return None
 
     def transfer_to_tauon(self, wait=7):
+        self.preparing_spotify = True
         self.connect()
         if not self.spotify:
+            self.preparing_spotify = False
             return
-        time.sleep(wait)
 
+        time.sleep(wait)
         p = self.spotify.playback()
         if not p or not p.is_playing:
             self.tauon.gui.show_message("Nothing playing")
+            self.preparing_spotify = False
             return
 
         devices = self.spotify.playback_devices()
@@ -389,8 +392,7 @@ class SpotCtl:
         else:
             self.tauon.gui.show_message("Error - Tauon device not found")
 
-        # if not self.coasting or self.playing:
-        #     self.update(start=True)
+        self.preparing_spotify = False
     def play_target(self, id, force_new_device=False, start_time=0):
 
         if not start_time:
@@ -449,6 +451,8 @@ class SpotCtl:
                 elif self.tauon.msys:
                     p = os.getenv('APPDATA') + "\\Spotify\\Spotify.exe"
                     if not os.path.isfile(p):
+                        self.launching_spotify = False
+                        self.preparing_spotify = False
                         return
                     subprocess.Popen([p])
                     time.sleep(3)
