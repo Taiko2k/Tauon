@@ -506,7 +506,7 @@ def player4(tauon):
     tauon.cachement = cachement
 
     def set_config(set_device=False):
-        #aud.config_set_dev_buffer(prefs.device_buffer)
+        aud.config_set_dev_buffer(prefs.device_buffer)
         aud.config_set_fade_duration(prefs.cross_fade_time)
         st = prefs.phazor_device_selected.encode()
         aud.config_set_dev_name(st)

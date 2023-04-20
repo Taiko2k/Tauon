@@ -1133,7 +1133,7 @@ class Prefs:  # Used to hold any kind of settings
         self.spec2_colour_mode = 0
         self.flatpak_mode = flatpak_mode
 
-        self.device_buffer = 70
+        self.device_buffer = 80
 
         self.eq = [0.0] * 10
         self.use_eq = False
@@ -3689,7 +3689,7 @@ def save_prefs():
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    #cf.update_value("device-buffer-length", prefs.device_buffer)
+    cf.update_value("device-buffer-ms", prefs.device_buffer)
     cf.update_value("output-samplerate", prefs.samplerate)
     cf.update_value("resample-quality", prefs.resample)
     cf.update_value("avoid_resampling", prefs.avoid_resampling)
@@ -3846,7 +3846,7 @@ def load_prefs():
     prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time,
                                         "In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
 
-    #prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In ms. Default: 40")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
     #prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
     #                               "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
     prefs.avoid_resampling = cf.sync_add("bool", "avoid_resampling", prefs.avoid_resampling,
@@ -4174,8 +4174,8 @@ save_prefs()
 # Temporary
 if 0 < db_version <= 34:
     prefs.theme_name = get_theme_name(theme)
-if 0 < db_version <= 51:
-    prefs.device_buffer = 70
+if 0 < db_version <= 66:
+    prefs.device_buffer = 80
 if 0 < db_version <= 53:
     print("Resetting fonts to defaults")
     prefs.linux_font = "Noto Sans"

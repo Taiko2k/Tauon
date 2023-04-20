@@ -164,7 +164,7 @@ float peak_r = 0.;
 float peak_roll_r = 0.;
 
 int config_fast_seek = 0;
-int config_dev_buffer = 40;
+int config_dev_buffer = 80;
 int config_fade_jump = 1;
 char config_output_sink[256]; // 256 just a conservative guess
 int config_fade_duration = 700;
@@ -1211,8 +1211,8 @@ void connect_pulse() {
     config.sampleRate        = set_samplerate;           // Set to 0 to use the device's native sample rate.
     config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
     config.notificationCallback = notification_callback;
-    config.periodSizeInFrames      = 750;   //
-    config.periods      = 6;   //
+    config.periodSizeInMilliseconds      = config_dev_buffer / 4;
+    config.periods      = 4;   //
 
     if (ma_device_init(&context, &config, &device) != MA_SUCCESS) {
         printf("ph: Device init error\n");
