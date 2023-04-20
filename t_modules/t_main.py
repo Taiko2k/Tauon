@@ -27157,25 +27157,6 @@ def reload_backend():
     gui.backend_reloading = False
 
 
-def set_player_phazor(mode=0):
-    if mode == 1:
-        return True if prefs.backend == 4 else False
-
-    if prefs.backend != 4:
-        prefs.backend = 4
-        reload_backend()
-
-
-def set_player_gstreamer(mode=0):
-    if mode == 1:
-        return True if prefs.backend == 2 else False
-
-    if prefs.backend != 2:
-        prefs.backend = 2
-        reload_backend()
-        gui.spec = None
-        pctl.bass_devices.clear()
-
 
 def gen_chart():
     try:
@@ -43392,7 +43373,6 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
-            pctl.playing_object().length = 0
             pass
 
         if gui.mode < 3:

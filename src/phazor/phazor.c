@@ -917,7 +917,6 @@ int get_audio(int max, float* buff){
 //            //printf("pa: Buffer underrun\n");
 //        }
 
-
         // Put fade buffer back
         if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && fade_lockout == 0){
 
@@ -1946,7 +1945,6 @@ void *main_loop(void *thread_id) {
                     if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
                         mode = PAUSED;
                         //stop_out();
-                        
                         command = NONE;
                     }
 
@@ -2221,10 +2219,11 @@ int pause() {
         usleep(1000);
     }
     if (mode == PAUSED) return 0;
-    if (mode == PLAYING) {
+    if (out_thread_running && (mode == PLAYING || mode == RAMP_DOWN)) {
         mode = RAMP_DOWN;
+        command = PAUSE;
     }
-    command = PAUSE;
+
     return 0;
 }
 
@@ -2426,6 +2425,9 @@ void feed_raw(int len, char* data){
     pthread_mutex_unlock(&buffer_mutex);
 }
 
+void print_status(){
+    printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
+}
 
 int phazor_shutdown() {
     while (command != NONE) {
