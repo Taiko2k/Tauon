@@ -3,7 +3,8 @@ Changelog----------------------------
 
 v7.6.4
 
- - Improved loved playlist to order by timestamp (not retroactive)
+ - Added loved playlist ordering by timestamp (not retroactive)
+ - Restored device buffer setting in config file
  - Fixed APE tag scan time duration reading zero
  - Fixed an issue with not being able to switch output device
  - Fixed switch artist in artist list not resetting to first album
