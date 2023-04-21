@@ -17029,7 +17029,7 @@ def delete_playlist_ask(index):
         delete_playlist_force(index)
         return
     gen = pctl.gen_codes.get(pl_to_id(index), "")
-    if (gen and not gen.startswith("self ")) or not pctl.multi_playlist[index][2]:
+    if (gen and not gen.startswith("self ")) or len(pctl.multi_playlist[index][2] < 2):
         delete_playlist(index)
         return
 
