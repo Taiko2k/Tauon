@@ -41220,7 +41220,7 @@ def hit_callback(win, point, data):
 
         elif top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
 
-            if tab_menu.active:
+            if tab_menu.active or mouse_up or mouse_down:  # mouse up/down is workaround for Wayland
                 return SDL_HITTEST_NORMAL
 
             if prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (
