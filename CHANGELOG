@@ -9,6 +9,7 @@ v7.6.4
  - Fixed an issue with not being able to switch output device
  - Fixed switch artist in artist list not resetting to first album
  - Fixed spotify startup info message persisting
+ - Fixed drag on top bar for new playlist now working under Wayland
 
 v7.6.3
 
