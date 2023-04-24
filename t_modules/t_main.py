@@ -38446,7 +38446,7 @@ class QueueBox:
                         i = pctl.playlist_playing_position + 1
 
 
-                    elif i > len(playlist) - 1 or (playlist[i] != item[0] and item[0] in playlist):
+                    elif (i < len(playlist) and playlist[i] != item[0]) or item[0] in playlist:
                         i = playlist.index(item[0])
 
                     while i < len(playlist):
