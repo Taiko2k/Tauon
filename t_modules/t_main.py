@@ -40865,7 +40865,12 @@ class DLMon:
 
                 elif min_age < 60 and os.path.isdir(
                         path) and path not in quick_import_done and "encode-output" not in path:
-                    size = get_folder_size(path)
+                    try:
+                        size = get_folder_size(path)
+                    except FileNotFoundError:
+                        if path in self.watching:
+                            del self.watching[path]
+                        continue
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
                         if size == self.watching[path]:
