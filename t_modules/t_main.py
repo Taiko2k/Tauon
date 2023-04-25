@@ -38445,7 +38445,7 @@ class QueueBox:
                         4] and playing_track and playing_track.parent_folder_path == album_parent_path:
                         i = pctl.playlist_playing_position + 1
 
-                    elif playlist[i] != item[0] and item[0] in playlist:
+                    elif item[0] in playlist and playlist[i] != item[0]:
                         i = playlist.index(item[0])
 
                     while i < len(playlist):
