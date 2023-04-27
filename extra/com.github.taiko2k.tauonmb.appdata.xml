@@ -64,7 +64,7 @@
 
   <releases>
 
-    <release version="7.6.3" date="2023-02-02">
+    <release version="7.6.4" date="2023-04-27">
       <description>
         <ul>
           <li>Various tweaks and bug fixes</li>
