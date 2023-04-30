@@ -34902,6 +34902,7 @@ class RadioBox:
 
         except Exception as e:
             print(f"Error: {e}")
+            raise
             return None
 
     def start(self, item):
