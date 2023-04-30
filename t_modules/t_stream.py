@@ -92,11 +92,13 @@ class StreamEnc:
         self.download_process.start()
         return True
 
+
     def start_request(self):
+        url = self.url
         def NiceToICY(self):
             class InterceptedHTTPResponse:
                 pass
-            if not self.url.endswith(".ts"):
+            if not url.endswith(".ts"):
                 line = self.fp.readline().replace(b"ICY 200 OK\r\n", b"HTTP/1.0 200 OK\r\n")
             InterceptedSelf = InterceptedHTTPResponse()
             InterceptedSelf.fp = io.BufferedReader(io.BytesIO(line))
