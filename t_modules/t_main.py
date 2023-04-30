@@ -34867,13 +34867,47 @@ class RadioBox:
         text = text.lower()
         self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&name=" + text)
 
+    def is_m3u(self, url):
+        return url.lower().endswith('.m3u') or url.lower().endswith('.m3u8')
+
+    def extract_stream_m3u(self, url, recursion_limit=5):
+        if recursion_limit <= 0:
+            return None
+        print("Fetching M3U...")
+
+        try:
+            response = requests.get(url)
+            if response.status_code != 200:
+                print(f"M3U Fetch error code: {response.status_code}")
+                return None
+
+            content = response.text
+            lines = content.strip().split('\n')
+
+            for line in lines:
+                line = line.strip()
+                if not line.startswith('#') and len(line) > 0:
+                    if self.is_m3u(line):
+                        return self.extract_stream_m3u(line, recursion_limit - 1)
+                    else:
+                        return line
+
+            return None
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
     def start(self, item):
         url = item["stream_url"]
         print("Start radio")
         print(url)
-        if url.endswith("m3u") or url.endswith("m3u8"):
-            show_message("Sorry, m3u parsing not fully implemented.")
-            return
+        if self.is_m3u(url):
+            url = self.extract_stream_m3u(url)
+            print(f"Extracted URL is: {url}")
+            if not url:
+                print("Failed to extract stream from M3U")
+                return
 
         if self.load_connecting:
             return
