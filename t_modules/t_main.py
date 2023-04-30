@@ -34893,9 +34893,10 @@ class RadioBox:
                 line = line.strip()
                 if not line.startswith('#') and len(line) > 0:
                     if self.is_m3u(line):
-                        return self.extract_stream_m3u(line, recursion_limit - 1)
+                        next_url = urllib.parse.urljoin(url, line)
+                        return self.extract_stream_m3u(next_url, recursion_limit - 1)
                     else:
-                        return line
+                        return urllib.parse.urljoin(url, line)
 
             return None
 

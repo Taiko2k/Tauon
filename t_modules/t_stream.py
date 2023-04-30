@@ -96,8 +96,8 @@ class StreamEnc:
         def NiceToICY(self):
             class InterceptedHTTPResponse:
                 pass
-
-            line = self.fp.readline().replace(b"ICY 200 OK\r\n", b"HTTP/1.0 200 OK\r\n")
+            if not self.url.endswith(".ts"):
+                line = self.fp.readline().replace(b"ICY 200 OK\r\n", b"HTTP/1.0 200 OK\r\n")
             InterceptedSelf = InterceptedHTTPResponse()
             InterceptedSelf.fp = io.BufferedReader(io.BytesIO(line))
             InterceptedSelf.debuglevel = self.debuglevel
@@ -112,7 +112,8 @@ class StreamEnc:
             try:
                 r = urllib.request.Request(self.url)
                 #r.add_header('GET', '1')
-                r.add_header('Icy-MetaData', '1')
+                if not self.url.endswith(".ts"):
+                    r.add_header('Icy-MetaData', '1')
                 r.add_header('User-Agent', self.tauon.t_agent)
                 print("Open URL.....")
                 r = urllib.request.urlopen(r, timeout=20, cafile=self.tauon.ca)
