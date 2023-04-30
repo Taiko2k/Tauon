@@ -100,6 +100,8 @@ class StreamEnc:
                 pass
             if not url.endswith(".ts"):
                 line = self.fp.readline().replace(b"ICY 200 OK\r\n", b"HTTP/1.0 200 OK\r\n")
+            else:
+                line = self.fp.readline()
             InterceptedSelf = InterceptedHTTPResponse()
             InterceptedSelf.fp = io.BufferedReader(io.BytesIO(line))
             InterceptedSelf.debuglevel = self.debuglevel
