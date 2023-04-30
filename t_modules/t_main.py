@@ -17079,6 +17079,10 @@ def re_import2(pl):
         show_message(_("Rescanning folders..."), mode='info')
 
 
+def rescan_all_folders():
+    for i, p in enumerate(pctl.multi_playlist):
+        re_import2(i)
+
 def s_append(index):
     paste(playlist_no=index)
 
@@ -22601,6 +22605,7 @@ def q_to_playlist():
 
 
 x_menu.add_to_sub(0, MenuItem(_("Export as CSV"), export_database))
+x_menu.add_to_sub(0, MenuItem(_('Rescan All Folders'), rescan_all_folders))
 x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), q_to_playlist))
 x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), clear_img_cache))
 
