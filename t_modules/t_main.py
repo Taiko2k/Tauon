@@ -34847,6 +34847,7 @@ class RadioBox:
         self.websocket = None
         self.ws_interval = 4.5
         self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
+        self.run_proxy = True
 
     def parse_vorbis_okay(self):
         return (self.loaded_url not in self.websocket_source_urls) and \
@@ -34942,7 +34943,11 @@ class RadioBox:
             prefs.auto_rec = False
             return
 
-        if not self.proxy_started and prefs.backend != 4:
+        self.run_proxy = True
+        if url.endswith(".ts") or True:
+            self.run_proxy = False
+
+        if self.run_proxy and not self.proxy_started and prefs.backend != 4:
             shoot = threading.Thread(target=stream_proxy, args=[tauon])
             shoot.daemon = True
             shoot.start()
@@ -34950,6 +34955,8 @@ class RadioBox:
 
         # pctl.url = url
         pctl.url = f"http://127.0.0.1:{7812}"
+        if not self.run_proxy:
+            pctl.url = item["stream_url"]
         self.loaded_url = None
         pctl.tag_meta = ""
         pctl.radio_meta_on = ""
@@ -34971,7 +34978,7 @@ class RadioBox:
 
     def start2(self, url):
 
-        if not tauon.stream_proxy.start_download(url):
+        if self.run_proxy and not tauon.stream_proxy.start_download(url):
             self.load_failed_timer.set()
             self.load_failed = True
             self.load_connecting = False

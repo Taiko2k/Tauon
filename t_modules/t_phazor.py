@@ -754,20 +754,25 @@ def player4(tauon):
             if command == "url":
                 pctl.download_time = 0
                 w = 0
-                while len(tauon.stream_proxy.chunks) < 200:
-                    time.sleep(0.1)
-                    w += 1
-                    if w > 100:
-                        print("Taking too long!")
-                        tauon.stream_proxy.stop()
-                        pctl.playerCommand = 'stop'
-                        pctl.playerCommandReady = True
-                        break
-                else:
-                    aud.config_set_feed_samplerate(prefs.samplerate)
-                    aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+                if not tauon.radiobox.run_proxy:
+                    aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(calc_rg(None)))
                     state = 3
                     player_timer.hit()
+                else:
+                    while len(tauon.stream_proxy.chunks) < 200:
+                        time.sleep(0.1)
+                        w += 1
+                        if w > 100:
+                            print("Taking too long!")
+                            tauon.stream_proxy.stop()
+                            pctl.playerCommand = 'stop'
+                            pctl.playerCommandReady = True
+                            break
+                    else:
+                        aud.config_set_feed_samplerate(prefs.samplerate)
+                        aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+                        state = 3
+                        player_timer.hit()
 
             if command == "open":
                 if state == 2:
