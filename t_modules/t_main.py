@@ -17180,7 +17180,7 @@ def sort_track_2(pl, custom_list=None):
             current_album = tr.album
         else:
             if tr.parent_folder_name != current_folder:
-                if tr.album == current_album and tr.album and tr.is_cue:
+                if tr.album == current_album and tr.album:
                     continue
                 else:
                     current_folder = tr.parent_folder_name
