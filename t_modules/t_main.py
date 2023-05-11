@@ -17166,6 +17166,7 @@ def sort_tracK_numbers_album_only(pl, custom_list=None):
 def sort_track_2(pl, custom_list=None):
     current_folder = ""
     current_album = ""
+    current_date = ""
     albums = []
     if custom_list is None:
         playlist = pctl.multi_playlist[pl][2]
@@ -17178,13 +17179,15 @@ def sort_track_2(pl, custom_list=None):
             albums.append(i)
             current_folder = tr.parent_folder_name
             current_album = tr.album
+            current_date = tr.date
         else:
             if tr.parent_folder_name != current_folder:
-                if tr.album == current_album and tr.album:
+                if tr.album == current_album and tr.album and tr.date == current_date:
                     continue
                 else:
                     current_folder = tr.parent_folder_name
                     current_album = tr.album
+                    current_date = tr.date
                     albums.append(i)
 
     i = 0
