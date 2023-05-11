@@ -1,6 +1,6 @@
 # Tauon Music Box - Lyrics scrape/fetch module
 
-# Copyright © 2018-2020, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2018-2023, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -19,9 +19,9 @@
 
 
 from isounidecode import unidecode
-from bs4 import BeautifulSoup  # Remember to add to dependency list if PyLyrics is removed
+from bs4 import BeautifulSoup
 import urllib.parse
-import requests  # Remember to add to dependency list if PyLyrics is removed
+import requests
 import re
 
 
@@ -52,21 +52,21 @@ def ovh(artist, title):
     return ""
 
 
-def happi(artist, title):
-    q = urllib.parse.quote(f"{artist} {title}")
-    point = f"https://api.happi.dev/v1/music?q={q}&limit=1&apikey=23b23b30Ca5nqZSe5JWJ8I4smmgO1JK6grVTEXpkBz1O8mNjTCmmCjnX&type=track"
-    r = requests.get(point)
-    j = r.json()
-    if not j["result"][0]["haslyrics"]:
-        return ""
-    a_id = j["result"][0]["id_artist"]
-    t_id = j["result"][0]["id_track"]
-    al_id = j["result"][0]["id_album"]
-
-    point = f"https://api.happi.dev/v1/music/artists/{a_id}/albums/{al_id}/tracks/{t_id}/lyrics?apikey=23b23b30Ca5nqZSe5JWJ8I4smmgO1JK6grVTEXpkBz1O8mNjTCmmCjnX"
-    r = requests.get(point)
-    j = r.json()
-    return j["result"]["lyrics"]
+# def happi(artist, title):
+#     q = urllib.parse.quote(f"{artist} {title}")
+#     point = f"https://api.happi.dev/v1/music?q={q}&limit=1&apikey=23b23b30Ca5nqZSe5JWJ8I4smmgO1JK6grVTEXpkBz1O8mNjTCmmCjnX&type=track"
+#     r = requests.get(point)
+#     j = r.json()
+#     if not j["result"][0]["haslyrics"]:
+#         return ""
+#     a_id = j["result"][0]["id_artist"]
+#     t_id = j["result"][0]["id_track"]
+#     al_id = j["result"][0]["id_album"]
+#
+#     point = f"https://api.happi.dev/v1/music/artists/{a_id}/albums/{al_id}/tracks/{t_id}/lyrics?apikey=23b23b30Ca5nqZSe5JWJ8I4smmgO1JK6grVTEXpkBz1O8mNjTCmmCjnX"
+#     r = requests.get(point)
+#     j = r.json()
+#     return j["result"]["lyrics"]
 
 def genius(artist, title, return_url=False):
 
@@ -138,10 +138,9 @@ def genius(artist, title, return_url=False):
 
 
 
-
 lyric_sources = {
     # "Apiseeds": apiseeds,
-    "Happi": happi,
+    # "Happi": happi,
     "Genius": genius,
     #"LyricWiki": lyricwiki,
     "lyrics.ovh": ovh,
