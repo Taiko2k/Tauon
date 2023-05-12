@@ -17642,7 +17642,9 @@ column_names = (
     "Lyrics",
     "Bitrate",
     "S",
-    "Filename"
+    "Filename",
+    "Disc",
+    "CUE"
 )
 
 
@@ -18736,10 +18738,14 @@ def best(index):
 def key_rating(index):
     return star_store.get_rating(index)
 
-
 def key_scrobbles(index):
     return pctl.g(index).lfm_scrobbles
 
+def key_disc(index):
+    return pctl.g(index).disc_number
+
+def key_cue(index):
+    return pctl.g(index).is_cue
 
 def key_playcount(index):
     # key = pctl.master_library[index].title + pctl.master_library[index].filename
@@ -21752,11 +21758,17 @@ def sa_lyrics():
     gui.pl_st.insert(set_menu.reference + 1, ["Lyrics", 50, True])
     gui.update_layout()
 
+def sa_cue():
+    gui.pl_st.insert(set_menu.reference + 1, ["CUE", 50, True])
+    gui.update_layout()
 
 def sa_star():
     gui.pl_st.insert(set_menu.reference + 1, ["Starline", 80, True])
     gui.update_layout()
 
+def sa_disc():
+    gui.pl_st.insert(set_menu.reference + 1, ["Disc", 50, True])
+    gui.update_layout()
 
 def sa_rating():
     gui.pl_st.insert(set_menu.reference + 1, ["Rating", 80, True])
@@ -21896,6 +21908,10 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
         key = key_hl
     if name == "❤":
         key = key_love
+    if name == "Disc":
+        key = key_disc
+    if name == "CUE":
+        key = key_cue
 
     if custom_list is None:
         if key is not None:
@@ -21951,24 +21967,28 @@ set_menu.br()
 set_menu.add(MenuItem("+ " + _("Artist"), sa_artist))
 set_menu.add(MenuItem("+ " + _("Title"), sa_title))
 set_menu.add(MenuItem("+ " + _("Album"), sa_album))
-set_menu.add(MenuItem("+ " + _("Album Artist"), sa_album_artist))
-set_menu.add(MenuItem("+ " + _("Composer"), sa_composer))
 set_menu.add(MenuItem("+ " + _("Duration"), sa_time))
 set_menu.add(MenuItem("+ " + _("Date"), sa_date))
 set_menu.add(MenuItem("+ " + _("Genre"), sa_genre))
 set_menu.add(MenuItem("+ " + _("Track Number"), sa_track))
 set_menu.add(MenuItem("+ " + _("Play Count"), sa_count))
-set_menu.add(MenuItem("+ " + _("Scrobble Count"), sa_scrobbles))
 set_menu.add(MenuItem("+ " + _("Codec"), sa_codec))
 set_menu.add(MenuItem("+ " + _("Bitrate"), sa_bitrate))
-set_menu.add(MenuItem("+ " + _("Has Lyrics"), sa_lyrics))
-set_menu.add(MenuItem("+ " + _("Comment"), sa_comment))
-set_menu.add(MenuItem("+ " + _("Filepath"), sa_file))
 set_menu.add(MenuItem("+ " + _("Filename"), sa_filename))
 set_menu.add(MenuItem("+ " + _("Starline"), sa_star))
 set_menu.add(MenuItem("+ " + _("Rating"), sa_rating))
 set_menu.add(MenuItem("+ " + _("Loved"), sa_love))
 
+set_menu.add_sub("+ " + _("More…"), 150)
+
+set_menu.add_to_sub(0, MenuItem("+ " + _("Album Artist"), sa_album_artist))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Comment"), sa_comment))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Filepath"), sa_file))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Scrobble Count"), sa_scrobbles))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Composer"), sa_composer))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Disc Number"), sa_disc))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Has Lyrics"), sa_lyrics))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Has CUE Sheet"), sa_cue))
 
 def bass_features_deco():
     line_colour = colours.menu_text
@@ -34344,6 +34364,12 @@ class StandardPlaylist:
                             text = clean_string(n_track.filename)
                             colour = colours.index_text
                             norm_colour = colour
+                        elif item[0] == "Disc":
+                            text = str(n_track.disc_number)
+                            colour = colours.index_text
+                            norm_colour = colour
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Codec":
                             text = n_track.file_ext
                             if text == "JELY" and "container" in tr.misc:
@@ -34355,6 +34381,14 @@ class StandardPlaylist:
                         elif item[0] == "Lyrics":
                             text = ""
                             if n_track.lyrics != "":
+                                text = 'Y'
+                            colour = colours.index_text
+                            norm_colour = colour
+                            if this_line_playing is True:
+                                colour = colours.index_playing
+                        elif item[0] == "CUE":
+                            text = ""
+                            if n_track.is_cue:
                                 text = 'Y'
                             colour = colours.index_text
                             norm_colour = colour
