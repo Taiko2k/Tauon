@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-03-24 13:40+0000\n"
+"PO-Revision-Date: 2023-05-11 12:39+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.17-dev\n"
+"X-Generator: Weblate 4.18-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -2511,112 +2511,113 @@ msgstr "Mostra tempo riproduzione come stelle"
 
 #: t_modules/t_main.py:30208
 msgid "Represent playcount as lines"
-msgstr ""
+msgstr "Mostra contatore riproduzioni come linee"
 
 #: t_modules/t_main.py:30225
 msgid "Show album release year"
-msgstr ""
+msgstr "Mostra data di uscita disco"
 
 #: t_modules/t_main.py:30228
 msgid "Show album duration"
-msgstr ""
+msgstr "Mostra durata album"
 
 #: t_modules/t_main.py:30234
 msgid "Font Size"
-msgstr ""
+msgstr "Dimensione carattere"
 
 #: t_modules/t_main.py:30236
 msgid "Row Size"
-msgstr ""
+msgstr "Dimensione linea"
 
 #: t_modules/t_main.py:30238
 msgid "Baseline offset"
-msgstr ""
+msgstr "Separatore linea"
 
 #: t_modules/t_main.py:30243
 msgid "Thin default"
-msgstr ""
+msgstr "Riduci predefinito"
 
 #: t_modules/t_main.py:30245
 msgid "Thick default"
-msgstr ""
+msgstr "Aumenta predefinito"
 
 #: t_modules/t_main.py:30251
 msgid "End of playlist action"
-msgstr ""
+msgstr "Fine azione scaletta"
 
 #: t_modules/t_main.py:30254 t_modules/t_main.py:30258
 msgid "Stop playback"
-msgstr ""
+msgstr "Ferma riproduzione"
 
 #: t_modules/t_main.py:30255 t_modules/t_main.py:30260
 msgid "Repeat playlist"
-msgstr ""
+msgstr "Ripeti scaletta"
 
 #: t_modules/t_main.py:30264
 msgid "Play next playlist"
-msgstr ""
+msgstr "Riproduci prossima scaletta"
 
 #: t_modules/t_main.py:30266
 msgid "Cycle all playlists"
-msgstr ""
+msgstr "Scorri tutte le scalette"
 
 #: t_modules/t_main.py:30599
 msgid "Okay, it's a normal playlist now."
-msgstr ""
+msgstr "Va bene, scaletta normale adesso."
 
 #: t_modules/t_main.py:30608
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
 msgstr ""
+"Hai aggiunto tracce al generatore di scalette. Vuoi pulire il generatore?"
 
 #: t_modules/t_main.py:31144 t_modules/t_main.py:36142
 msgid "Added station to: "
-msgstr ""
+msgstr "Aggiunta stazione a: "
 
 #: t_modules/t_main.py:31536
 msgid "Buffering... "
-msgstr ""
+msgstr "Sto caricando... "
 
 #: t_modules/t_main.py:31650
 msgid "There are currently no connected clients"
-msgstr ""
+msgstr "Non ci sono client connessi momentaneamente"
 
 #: t_modules/t_main.py:31652
 msgid "There is 1 inbound connection."
-msgstr ""
+msgstr "C'è 1 connessione entrante."
 
 #: t_modules/t_main.py:31654
 msgid "There are %d inbound connections."
-msgstr ""
+msgstr "Ci sono %d connessioni entranti."
 
 #: t_modules/t_main.py:32229 t_modules/t_main.py:32809
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Riproduci, RC: Vai a riproduzione"
 
 #: t_modules/t_main.py:32254 t_modules/t_main.py:32834
 msgid "Pause"
-msgstr ""
+msgstr "Pausa"
 
 #: t_modules/t_main.py:32270
 msgid "Stop, RC: Toggle auto-stop"
-msgstr ""
+msgstr "Ferma, RC: Cambia ferma-automatico"
 
 #: t_modules/t_main.py:32293 t_modules/t_main.py:32855
 msgid "Shuffle On"
-msgstr ""
+msgstr "Mischia Attivo"
 
 #: t_modules/t_main.py:32296 t_modules/t_main.py:32858
 msgid "Shuffle Off"
-msgstr ""
+msgstr "Mischia Disattivato"
 
 #: t_modules/t_main.py:32327
 msgid "Repeat On"
-msgstr ""
+msgstr "Ripeti Attivo"
 
 #: t_modules/t_main.py:32330
 msgid "Repeat Off"
-msgstr ""
+msgstr "Ripeti Disattivato"
 
 #: t_modules/t_main.py:32337
 msgid "Back, RC: Toggle repeat, MC: Revert"
