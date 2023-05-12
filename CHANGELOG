@@ -1,11 +1,12 @@
 
 Changelog----------------------------
 
-v7.4.5
+v7.6.5
 
  - Added M3U resolving for internet radio
  - Added rescan all folders function to MENU > Database
  - Added "disc number" and "has cue sheet" columns
+ - Moved some add column functions to submenu
  - Tweaked sort track number function to better sort multi disc albums
 
 v7.6.4
