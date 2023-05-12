@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-03-21 16:39+0000\n"
+"PO-Revision-Date: 2023-05-07 11:52+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,11 +16,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 4.18-dev\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
 msgid "No artist image found."
-msgstr "Sem Imagem do artista."
+msgstr "Imagem do artista não encontrada."
 
 #: t_modules/t_main.py:1853
 msgid "No providers are enabled in settings!"
@@ -32,7 +32,7 @@ msgstr "Fim da playlist"
 
 #: t_modules/t_main.py:6965
 msgid "Once authorised click the 'done' button."
-msgstr "Uma vez autorizado clique no botão 'feito'."
+msgstr "Uma vez autorizado, clique no botão 'feito'."
 
 #: t_modules/t_main.py:6965
 msgid "Web auth page opened"
@@ -40,11 +40,11 @@ msgstr "Página de autenticação aberta"
 
 #: t_modules/t_main.py:6973
 msgid "You need to log in first"
-msgstr "Necessário logar antes"
+msgstr "Necessário entrar antes"
 
 #: t_modules/t_main.py:7131
 msgid "Scanning failed. Try again?"
-msgstr "Digitalização falhou. Tentar novamente?"
+msgstr "Varredura falhou. Tentar novamente?"
 
 #: t_modules/t_main.py:7138 t_modules/t_main.py:7735
 msgid "Scanning scrobbles complete"
@@ -60,7 +60,7 @@ msgstr "Isto pode levar bastante tempo."
 
 #: t_modules/t_main.py:7656
 msgid "Failed updating last.fm love status"
-msgstr "Falha ao atualiza estado dos \"gostei\" do last.fm"
+msgstr "Falha ao atualizar estado dos \"gostei\" do last.fm"
 
 #: t_modules/t_main.py:7659
 msgid "Error updating love to last.fm!"
@@ -68,7 +68,7 @@ msgstr "Erro atualizando \"gostei\" do last.fm!"
 
 #: t_modules/t_main.py:7660
 msgid "Maybe check your internet connection and try again?"
-msgstr "Talvez verificar a conexão com a internet e tentar novamente?"
+msgstr "Talvez verificar sua conexão com a internet e tentar novamente?"
 
 #: t_modules/t_main.py:7929
 msgid "Spotify Likes"
