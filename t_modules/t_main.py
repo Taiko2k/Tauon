@@ -21988,7 +21988,7 @@ set_menu.add_to_sub(0, MenuItem("+ " + _("Scrobble Count"), sa_scrobbles))
 set_menu.add_to_sub(0, MenuItem("+ " + _("Composer"), sa_composer))
 set_menu.add_to_sub(0, MenuItem("+ " + _("Disc Number"), sa_disc))
 set_menu.add_to_sub(0, MenuItem("+ " + _("Has Lyrics"), sa_lyrics))
-set_menu.add_to_sub(0, MenuItem("+ " + _("Has CUE Sheet"), sa_cue))
+set_menu.add_to_sub(0, MenuItem("+ " + _("Is CUE Sheet"), sa_cue))
 
 def bass_features_deco():
     line_colour = colours.menu_text
