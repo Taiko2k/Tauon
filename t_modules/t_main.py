@@ -17417,11 +17417,30 @@ def imported_sort(pl):
         show_message(_("Playlist is locked"))
         return
 
-    pctl.multi_playlist[pl][2].sort(key=lambda x: pctl.g(x).index)
+    og = pctl.multi_playlist[pl][2]
+    og.sort(key=lambda x: pctl.g(x).index)
 
     reload_albums()
     tree_view_box.clear_target_pl(pl)
 
+def imported_sort_folders(pl):
+    if pl_is_locked(pl):
+        show_message(_("Playlist is locked"))
+        return
+
+    og = pctl.multi_playlist[pl][2]
+    og.sort(key=lambda x: pctl.g(x).index)
+
+    first_occurrences = {}
+    for i, x in enumerate(og):
+        b = pctl.g(x).parent_folder_path
+        if b not in first_occurrences:
+            first_occurrences[b] = i
+
+    og.sort(key=lambda x: first_occurrences[pctl.g(x).parent_folder_path])
+
+    reload_albums()
+    tree_view_box.clear_target_pl(pl)
 
 def standard_sort(pl):
     if pl_is_locked(pl):
@@ -18409,7 +18428,8 @@ extra_tab_menu.add_sub(_("From Current…"), 133)
 # tab_menu.add(_("Sort Track Numbers"), sort_track_2, pass_ref=True)
 # tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
-tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported"), imported_sort, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), imported_sort, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), imported_sort_folders, pass_ref=True))
 tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), standard_sort, pass_ref=True))
 tab_menu.add_to_sub(1, MenuItem(_('Sort Track Numbers'), sort_track_2, pass_ref=True))
 tab_menu.add_to_sub(1, MenuItem(_('Sort Year per Artist'), year_sort, pass_ref=True))
