@@ -6,6 +6,7 @@ v7.6.5
  - Added M3U resolving for internet radio
  - Added rescan all folders function to MENU > Database
  - Added "disc number" and "has cue sheet" columns
+ - Added "sort by imported folders" sorting option
  - Moved some add column functions to submenu
  - Tweaked sort track number function to better sort multi disc albums
 
