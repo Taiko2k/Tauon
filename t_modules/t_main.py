@@ -1366,6 +1366,7 @@ class Prefs:  # Used to hold any kind of settings
         self.artist_list_threshold = 4
         self.allow_video_formats = True
         self.mini_mode_on_top = True
+        self.tray_theme = "pink"
 
 
 prefs = Prefs()
@@ -3117,6 +3118,8 @@ for t in range(2):
             prefs.spot_password = save[175]
         if save[176] is not None:
             prefs.artist_list_threshold = save[176]
+        if save[177] is not None:
+            prefs.tray_theme = save[177]
 
         state_file.close()
         del save
@@ -8149,6 +8152,33 @@ class Tauon:
             show_message("FFMPEG fetch complete", mode="done")
 
         shooter(go)
+
+    def set_tray_icons(self, force=True):
+
+        indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
+        indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
+        indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+
+        if prefs.tray_theme == "gray":
+            indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play-g1.svg")
+            indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
+            indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
+
+        user_icon_dir = os.path.join(self.cache_directory, "icon-export")
+        def install_tray_icon(src, name):
+            alt = os.path.join(user_icon_dir, f"{name}.svg")
+            if not os.path.isfile(alt) or force:
+                shutil.copy(src, alt)
+
+        if not os.path.isdir(user_icon_dir):
+            os.makedirs(user_icon_dir)
+
+        install_tray_icon(indicator_icon_play, "tray-indicator-play")
+        install_tray_icon(indicator_icon_pause, "tray-indicator-pause")
+        install_tray_icon(indicator_icon_default, "tray-indicator-default")
+
+    def get_tray_icon(self, name):
+        return os.path.join(self.cache_directory, f"icon-export/{name}.svg")
 
     def test_ffmpeg(self):
         if self.get_ffmpeg():
@@ -27949,6 +27979,16 @@ class Over:
 
                 y += 25 * gui.scale
                 self.toggle_square(x + round(10 * gui.scale), y, toggle_text_tray, _("Show title text"))
+
+                old = prefs.tray_theme
+                if not self.toggle_square(x + round(190 * gui.scale), y, prefs.tray_theme == "gray", _("Monochrome")):
+                    prefs.tray_theme = "pink"
+                else:
+                    prefs.tray_theme = "gray"
+                if prefs.tray_theme != old:
+                    tauon.set_tray_icons(force=True)
+                    show_message("Restart Tauon for change to take effect")
+
             else:
                 self.toggle_square(x, y, toggle_min_tray, _("Close to tray"))
 
@@ -42293,7 +42333,8 @@ def save_state():
             gui.was_radio,
             prefs.spot_username,
             prefs.spot_password,
-            prefs.artist_list_threshold
+            prefs.artist_list_threshold,
+            prefs.tray_theme,
             ]
 
     try:

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="110.00002"
+   height="110"
+   viewBox="0 0 29.104173 29.104166"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="tray-indicator-default-g1.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2030"
+       id="linearGradient2066"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.098034,0,0,1.0981512,-28.979449,155.24762)"
+       x1="69.820984"
+       y1="16.022331"
+       x2="55.546982"
+       y2="36.762196" />
+    <linearGradient
+       id="linearGradient2030"
+       inkscape:collect="always">
+      <stop
+         id="stop2026"
+         offset="0"
+         style="stop-color:#c0c0c0;stop-opacity:0.99607843;" />
+      <stop
+         id="stop2028"
+         offset="1"
+         style="stop-color:#858585;stop-opacity:1;" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#212121"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.959798"
+     inkscape:cx="-51.517779"
+     inkscape:cy="38.385796"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1853"
+     inkscape:window-height="807"
+     inkscape:window-x="26"
+     inkscape:window-y="23"
+     inkscape:window-maximized="0"
+     inkscape:document-rotation="0"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#212121" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-22.868851,-174.73938)">
+    <ellipse
+       inkscape:export-ydpi="28.54953"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       style="display:inline;fill:url(#linearGradient2066);fill-opacity:1;stroke:none;stroke-width:2.92119;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       id="circle2054"
+       cx="37.418373"
+       cy="189.29033"
+       rx="13.383132"
+       ry="13.384562" />
+    <ellipse
+       style="display:inline;fill:#313131;fill-opacity:1;stroke:none;stroke-width:0.94436;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       id="circle2056"
+       cx="37.418373"
+       cy="189.29033"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-ydpi="28.54953"
+       rx="4.6428323"
+       ry="4.6433277" />
+    <ellipse
+       inkscape:export-ydpi="28.54953"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.92119;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       id="circle2058"
+       cx="37.418373"
+       cy="189.29033"
+       rx="0.78012902"
+       ry="0.78021222" />
+    <path
+       inkscape:export-ydpi="28.54953"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       d="m 46.75703,189.43707 a 9.3386574,9.339654 0 0 1 -5.377204,8.4577"
+       sodipodi:end="1.1327187"
+       sodipodi:start="0"
+       sodipodi:ry="9.339654"
+       sodipodi:rx="9.3386574"
+       sodipodi:cy="189.43707"
+       sodipodi:cx="37.418373"
+       sodipodi:type="arc"
+       id="path2060"
+       style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:5.32974;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.4;stroke-dasharray:none;stroke-opacity:0.376289"
+       sodipodi:arc-type="arc"
+       sodipodi:open="true" />
+    <path
+       inkscape:export-ydpi="28.54953"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       transform="scale(-1)"
+       style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:5.32974;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.4;stroke-dasharray:none;stroke-opacity:0.376289"
+       id="path2062"
+       sodipodi:type="arc"
+       sodipodi:cx="-37.358078"
+       sodipodi:cy="-189.25957"
+       sodipodi:rx="9.3386574"
+       sodipodi:ry="9.339654"
+       sodipodi:start="0"
+       sodipodi:end="1.1327187"
+       d="m -28.019421,-189.25957 a 9.3386574,9.339654 0 0 1 -5.377204,8.4577"
+       sodipodi:arc-type="arc"
+       sodipodi:open="true" />
+    <path
+       style="display:inline;opacity:0.187;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:2.92119;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       d="m 37.42275,175.91295 a 13.383133,13.384562 0 0 0 -13.383276,13.3847 13.383133,13.384562 0 0 0 0.0076,0.21509 13.383133,13.384562 0 0 1 13.375897,-13.23262 13.383133,13.384562 0 0 1 13.375912,13.16963 13.383133,13.384562 0 0 0 0.0077,-0.1521 13.383133,13.384562 0 0 0 -13.383281,-13.3847 z"
+       id="circle2038"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-ydpi="28.54953" />
+    <path
+       style="display:inline;fill:#000000;fill-opacity:0.0912281;stroke:none;stroke-width:2.92119;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       d="m 50.793062,189.05362 a 13.383133,13.384562 0 0 1 -13.374685,13.21565 13.383133,13.384562 0 0 1 -13.374687,-13.14602 13.383133,13.384562 0 0 0 -0.0085,0.16936 13.383133,13.384562 0 0 0 13.383137,13.38456 13.383133,13.384562 0 0 0 13.383139,-13.38456 13.383133,13.384562 0 0 0 -0.0085,-0.23899 z"
+       id="circle823"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/1.25x/v4-a.png"
+       inkscape:export-xdpi="28.54953"
+       inkscape:export-ydpi="28.54953" />
+  </g>
+</svg>
