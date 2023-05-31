@@ -8153,7 +8153,7 @@ class Tauon:
 
         shooter(go)
 
-    def set_tray_icons(self, force=True):
+    def set_tray_icons(self, force=False):
 
         indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
         indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
