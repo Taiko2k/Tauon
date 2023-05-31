@@ -36,34 +36,8 @@ class Gnome:
         self.tray_text = ""
         self.resume_playback = False
 
-        self.indicator_icon_play = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-play.svg")
-        self.indicator_icon_pause = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
-        self.indicator_icon_default = os.path.join(self.tauon.pctl.install_directory, "assets/svg/tray-indicator-default.svg")
 
-        if tauon.prefs.flatpak_mode:
-
-            # This is a workaround to make tray icons visible from outside the sandbox
-
-            export_dir = os.path.join(self.tauon.cache_directory, "icon-export")
-            if not os.path.isdir(export_dir):
-                os.makedirs(export_dir)
-
-            print("Copy tray icons to data directory...")
-
-            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-play.svg")
-            if os.path.isfile(self.indicator_icon_play):
-                shutil.copy(self.indicator_icon_play, alt)
-                self.indicator_icon_play = alt
-
-            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-pause.svg")
-            if os.path.isfile(self.indicator_icon_pause):
-                shutil.copy(self.indicator_icon_pause, alt)
-                self.indicator_icon_pause = alt
-
-            alt = os.path.join(self.tauon.cache_directory, "icon-export/tray-indicator-default.svg")
-            if os.path.isfile(self.indicator_icon_default):
-                shutil.copy(self.indicator_icon_default, alt)
-                self.indicator_icon_default = alt
+        tauon.set_tray_icons()
 
     def focus(self):
 
@@ -81,6 +55,7 @@ class Gnome:
             try:
                 self.start_indicator()
             except:
+                #raise
                 self.tauon.gui.show_message("Failed to start indicator", mode="error")
         else:
             self.indicator.set_status(1)
@@ -91,15 +66,15 @@ class Gnome:
 
     def indicator_play(self):
         if self.indicator_launched:
-            self.indicator.set_icon_full(self.indicator_icon_play, "playing")
+            self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
 
     def indicator_pause(self):
         if self.indicator_launched:
-            self.indicator.set_icon_full(self.indicator_icon_pause, "paused")
+            self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
 
     def indicator_stop(self):
         if self.indicator_launched:
-            self.indicator.set_icon_full(self.indicator_icon_default, "default")
+            self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
 
     def start_indicator(self):
 
@@ -111,7 +86,7 @@ class Gnome:
         from gi.repository import Gtk
         from gi.repository import AppIndicator3
 
-        self.indicator = AppIndicator3.Indicator.new("Tauon", self.indicator_icon_default, AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+        self.indicator = AppIndicator3.Indicator.new("Tauon", self.tauon.get_tray_icon("tray-indicator-default"), AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
         self.indicator.set_title(tauon.t_title)
         self.menu = Gtk.Menu()
