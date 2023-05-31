@@ -136,10 +136,8 @@ int reset_set = 0;
 int reset_set_value = 0;
 int reset_set_byte = 0;
 
-int rg_set = 0;
 int rg_byte = 0;
 float rg_value_want = 0.0;
-float rg_value_on = 0.0;
 
 
 char load_target_file[4096]; // 4069 bytes for max linux filepath
@@ -234,6 +232,16 @@ float ramp_step(int sample_rate, int milliseconds) {
 
 void fade_fx() {
     //pthread_mutex_lock(&fade_mutex);
+
+    if (rg_value_want != 0.0 && rg_value_want != 1.0){
+        bfr[high] *= rg_value_want;
+        bfl[high] *= rg_value_want;
+        if (bfl[high] > 1) bfl[high] = 1;
+        if (bfl[high] < -1) bfl[high] = -1;
+        if (bfr[high] > 1) bfr[high] = 1;
+        if (bfr[high] < -1) bfr[high] = -1;
+    }
+
     if (fade_mini < 1.0){
         fade_mini += ramp_step(sample_rate_out, 10); // 10ms ramp
         bfr[high] *= fade_mini;
@@ -354,9 +362,7 @@ void resample_to_buffer(int in_frames) {
         bfl[high] = re_out[i * 2];
         bfr[high] = re_out[(i * 2) + 1];
 
-        if (fade_fill > 0 || fade_mini < 1.0) {
-            fade_fx();
-        }
+        fade_fx();
 
         high += 1;
         i++;
@@ -528,9 +534,7 @@ int wave_decode(int read_frames) {
             bfl[high] = re_in[i * 2];
             bfr[high] = re_in[i * 2 + 1];
 
-            if (fade_fill > 0 || fade_mini < 1.0) {
-                fade_fx();
-            }
+            fade_fx();
 
             //buff_filled++;
             high++;
@@ -633,9 +637,7 @@ void read_to_buffer_char16(char src[], int n_bytes) {
         while (i < n_bytes) {
             bfl[high] = (float)((int16_t)((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
             bfr[high] = bfl[high];
-            if (fade_fill > 0 || fade_mini < 1.0) {
-                fade_fx();
-            }
+            fade_fx();
             high++;
             i += 2;
         }
@@ -643,9 +645,7 @@ void read_to_buffer_char16(char src[], int n_bytes) {
         while (i < n_bytes) {
             bfl[high] = (float)((int16_t)((src[i + 1] << 8) | (src[i + 0] & 0xFF)) / 32768.0);
             bfr[high] = (float)((int16_t)((src[i + 3] << 8) | (src[i + 2] & 0xFF)) / 32768.0);
-            if (fade_fill > 0 || fade_mini < 1.0) {
-                fade_fx();
-            }
+            fade_fx();
             high++;
             i += 4;
         }
@@ -688,9 +688,8 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
         while (i < n_samples){
             bfl[high] = src[i] / 32768.0;
             bfr[high] = bfl[high];
-            if (fade_fill > 0 || fade_mini < 1.0) {
-                fade_fx();
-            }
+            fade_fx();
+
             i+=1;
             //buff_filled++;
             high++;
@@ -701,9 +700,8 @@ void read_to_buffer_s16int(int16_t src[], int n_samples){
         while (i < n_samples){
             bfl[high] = src[i] / 32768.0;
             bfr[high] = src[i + 1] / 32768.0;
-            if (fade_fill > 0 || fade_mini < 1.0) {
-                fade_fx();
-            }
+            fade_fx();
+
             i+=2;
             high++;
         }
@@ -794,9 +792,8 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
                 }
             } else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
 
-            if (fade_fill > 0 || fade_mini < 1.0) {
-                fade_fx();
-            }
+            fade_fx();
+
 
             high++;
             i++;
@@ -970,24 +967,6 @@ int get_audio(int max, float* buff){
                     position_count = reset_set_value;
                 }
 
-                // Set new gain value
-                if (config_fade_jump == 0) {
-                    if (rg_set == 1 && reset_set_byte == low) {
-                        rg_value_on = rg_value_want;
-                        rg_set = 0;
-                    }
-                } else {
-                    if (rg_set == 1) {
-                        if (fabs(rg_value_on - rg_value_want) < 0.01) {
-                            // printf("pa: SET\n");
-                            rg_value_on = rg_value_want;
-                        }
-                        if (rg_value_on < rg_value_want) rg_value_on += ramp_step(current_sample_rate, 2000);
-                        if (rg_value_on > rg_value_want) rg_value_on -= ramp_step(current_sample_rate, 2000);
-                        if (rg_value_on == rg_value_want) rg_set = 0;
-                        // printf("%f\n", rg_value_on);
-                    }
-                }
 
                 // Ramp control ---
                 if (mode == RAMP_DOWN) {
@@ -1023,24 +1002,6 @@ int get_audio(int max, float* buff){
                 if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
                 if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
 
-                // Apply gain amp
-                if (rg_value_on != 0.0) {
-
-                    // Left channel
-                    if (l > 0 && l * rg_value_on <= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else if (l < 0 && l * rg_value_on >= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else l *= rg_value_on;
-
-                    // Right channel
-                    if (r > 0 && r * rg_value_on <= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else if (r < 0 && r * rg_value_on >= 0) {
-                        printf("pa: Warning: Audio clipped!\n");
-                    } else r *= rg_value_on;
-
-                } // End amp
 
                 // Apply final volume adjustment
                 float final_vol = pow((gate * volume_on), config_volume_power);
@@ -1093,7 +1054,7 @@ ma_device_info* pPlaybackDeviceInfos;
 ma_uint32 playbackDeviceCount = 0;
 ma_result result;
 ma_context context;
-context_allocated = 0;
+int context_allocated = 0;
 ma_uint32 iDevice;
 
 
@@ -1281,7 +1242,6 @@ int load_next() {
 
     if (loaded_target_file[0] == 'h') buffering = 1;
 
-    rg_set = 1;
     rg_byte = high;
 
     char peak[35];
@@ -1453,7 +1413,7 @@ int load_next() {
     if (codec == MPT){
 
       mod_file = uni_fopen(loaded_target_file);
-      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks2(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
       src_channels = 2;
       fclose(mod_file);
       pthread_mutex_lock(&buffer_mutex);
@@ -2246,7 +2206,7 @@ int stop() {
     return 0;
 }
 
-int wait() {
+void wait() {
     while (command != NONE) {
         usleep(1000);
     }
