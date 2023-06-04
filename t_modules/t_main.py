@@ -1368,6 +1368,8 @@ class Prefs:  # Used to hold any kind of settings
         self.mini_mode_on_top = True
         self.tray_theme = "pink"
 
+        self.lastfm_pull_love = False
+
 
 prefs = Prefs()
 
@@ -3808,6 +3810,8 @@ def save_prefs():
 
     cf.update_value("tau-url", prefs.sat_url)
 
+    cf.update_value("lastfm-pull-love", prefs.lastfm_pull_love)
+
     cf.update_value("broadcast-page-port", prefs.metadata_page_port)
     cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
@@ -4111,6 +4115,12 @@ def load_prefs():
     cf.br()
     cf.add_text("[tauon_satellite]")
     prefs.sat_url = cf.sync_add("string", "tau-url", prefs.sat_url, "Exclude the port")
+
+    cf.br()
+    cf.add_text("[lastfm]")
+    prefs.lastfm_pull_love = cf.sync_add("bool", "lastfm-pull-love", prefs.lastfm_pull_love,
+                                   "Overwrite local love status on scrobble")
+
 
     cf.br()
     cf.add_text("[maloja_account]")
@@ -4474,7 +4484,7 @@ def use_id3(tags, nt):
     track_no = natural_get(tags, None, "TRCK", None)
     nt.track_total = ""
     nt.track_number = ""
-    if track_no:
+    if track_no and track_no != "null":
         if "/" in track_no:
             a, b = track_no.split("/")
             nt.track_number = a
@@ -7157,6 +7167,40 @@ class LastFMapi:
 
         return ""
 
+    def sync_pull_love(self, track_object):
+        if not prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
+            return
+        if not last_fm_enable:
+            return
+        if prefs.auto_lfm:
+            self.connect(False)
+        if not self.connected:
+            return
+
+        try:
+            track = self.network.get_track(track_object.artist, track_object.title)
+            if not track:
+                print("Get love: track not found")
+                return
+            track.username = prefs.last_fm_username
+
+            remote_loved = track.get_userloved()
+
+            if track_object.title != track.get_correction() or track_object.artist != track.get_artist().get_correction():
+                print(f"Pylast/lastfm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
+                return
+
+            if remote_loved is None:
+                print("Error getting loved status")
+                return
+
+            local_loved = love(set=False, track_id=track_object.index, notify=False, sync=False)
+
+            if remote_loved != local_loved:
+                love(set=True, track_id=track_object.index, notify=False, sync=False)
+        except:
+            print("Failed to pull love")
+
     def scrobble(self, track_object, timestamp=None):
         if not last_fm_enable:
             return True
@@ -7189,6 +7233,12 @@ class LastFMapi:
                 else:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
                 # print('Scrobbled')
+
+                # Pull loved status
+
+                self.sync_pull_love(track_object)
+
+
             else:
                 print("Not sent, incomplete metadata")
 
@@ -7587,7 +7637,7 @@ def get_love_timestamp_index(index):
         return 0
     return star[3]
 
-def love(set=True, track_id=None, no_delay=False, notify=False):
+def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
     if len(pctl.track_queue) < 1:
         return False
 
@@ -7625,7 +7675,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         gui.delay_frame(1.81)
 
     delay = 0.3
-    if not lastfm.details_ready() or no_delay:
+    if no_delay or not sync or not lastfm.details_ready():
         delay = 0
 
     star[3] = time.time()
@@ -7636,18 +7686,19 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         gui.pl_update += 1
         star[1] = star[1] + "L" # = [star[0], star[1] + "L", star[2]]
         star_store.insert(track_id, star)
-        if prefs.last_fm_token:
-            try:
-                lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
-            except:
-                show_message(_("Failed updating last.fm love status"), mode='warning')
-                star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
-                star_store.insert(track_id, star)
-                show_message(_("Error updating love to last.fm!"),
-                             _("Maybe check your internet connection and try again?"), mode="error")
+        if sync:
+            if prefs.last_fm_token:
+                try:
+                    lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
+                except:
+                    show_message(_("Failed updating last.fm love status"), mode='warning')
+                    star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
+                    star_store.insert(track_id, star)
+                    show_message(_("Error updating love to last.fm!"),
+                                 _("Maybe check your internet connection and try again?"), mode="error")
 
-        if pctl.master_library[track_id].file_ext == "JELY":
-            jellyfin.favorite(pctl.master_library[track_id])
+            if pctl.master_library[track_id].file_ext == "JELY":
+                jellyfin.favorite(pctl.master_library[track_id])
 
     else:
         time.sleep(delay)
@@ -7655,19 +7706,20 @@ def love(set=True, track_id=None, no_delay=False, notify=False):
         gui.pl_update += 1
         star[1] = star[1].replace("L", "")
         star_store.insert(track_id, star)
-        if prefs.last_fm_token:
-            try:
-                lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
-            except:
-                show_message("Failed updating last.fm love status", mode='warning')
-                star[1] = star[1] + "L"
-                star_store.insert(track_id, star)
-        if pctl.master_library[track_id].file_ext == "JELY":
-            jellyfin.favorite(pctl.master_library[track_id], un=True)
+        if sync:
+            if prefs.last_fm_token:
+                try:
+                    lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
+                except:
+                    show_message("Failed updating last.fm love status", mode='warning')
+                    star[1] = star[1] + "L"
+                    star_store.insert(track_id, star)
+            if pctl.master_library[track_id].file_ext == "JELY":
+                jellyfin.favorite(pctl.master_library[track_id], un=True)
 
     gui.pl_update = 2
     gui.update += 1
-    if pctl.mpris is not None:
+    if sync and pctl.mpris is not None:
         pctl.mpris.update(force=True)
 
 
@@ -26331,6 +26383,7 @@ def worker1():
                 star_store.remove(track)
                 pctl.master_library[track] = tag_scan(pctl.master_library[track])
                 star_store.merge(track, star)
+                lastfm.sync_pull_love(pctl.master_library[track])
                 del to_scan[0]
                 gui.update += 1
             album_artist_dict.clear()
@@ -28250,7 +28303,7 @@ class Over:
         if self.button2(x + round(95 * gui.scale), y, "Satellite", width=84 * gui.scale):
             self.account_view = 11
 
-        if self.account_view in (9, 2, 1):
+        if self.account_view in (9, 2):
             self.toggle_square(x0 + 230 * gui.scale, y + 2 * gui.scale, toggle_scrobble_mark,
                                _("Show threshold marker"))
 
@@ -28885,6 +28938,20 @@ class Over:
             y += 26 * gui.scale
             self.button(x, y, _("Get scrobble counts"), self.get_scrobble_counts, width=ww)
             self.button(x + ww + round(12 * gui.scale), y, _("Clear"), self.clear_scrobble_counts, width=wcc)
+
+
+            y += 33 * gui.scale
+
+            old = prefs.lastfm_pull_love
+            prefs.lastfm_pull_love = self.toggle_square(x, y, prefs.lastfm_pull_love,
+                               _("Pull love on scrobble/rescan"))
+            if old != prefs.lastfm_pull_love and prefs.lastfm_pull_love:
+                show_message("Note that this will overwrite the local loved status if different to last.fm status")
+
+            y += 25 * gui.scale
+
+            self.toggle_square(x, y, toggle_scrobble_mark,
+                               _("Show threshold marker"))
 
         if self.account_view == 2:
 
