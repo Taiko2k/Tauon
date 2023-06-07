@@ -313,9 +313,6 @@ launch_prefix = ""
 if flatpak_mode:
     launch_prefix = "flatpak-spawn --host "
 
-# -------------------------------
-# Single Instancing
-
 pid = os.getpid()
 
 from sdl2 import *
@@ -47731,11 +47728,17 @@ if os.path.isdir(cache_dir):
     shutil.rmtree(cache_dir)
 
 if not tauon.quick_close:
-    while tm.check_playback_running() or lfm_scrobbler.running:
+    while tm.check_playback_running():
+        time.sleep(0.2)
+        if exit_timer.get() > 2:
+            print("Phazor unload timeout")
+            break
+
+    while lfm_scrobbler.running:
         time.sleep(0.2)
         lfm_scrobbler.running = False
-        if exit_timer.get() > 11:
-            print("Unload timeout")
+        if exit_timer.get() > 15:
+            print("Scrobble wait timeout")
             break
 
 if tauon.sleep_lock is not None:

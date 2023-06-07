@@ -420,11 +420,13 @@ class SpotCtl:
         print("SP: Get devices...")
         devices = self.spotify.playback_devices()
         print("SP: Devices found:")
-        for device in devices:
-            print(f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}")
+        if devices:
+            for device in devices:
+                print(f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}")
 
         d_id = None
         if not devices or force_new_device:
+            print("SP: No devices found...")
             start_new_device = True
         else:
             for device in devices:
@@ -459,7 +461,7 @@ class SpotCtl:
                     if d_id or start_new_device or done:
                         break
 
-        if not d_id or start_new_device:
+        if not d_id and not start_new_device:
             print("SP: Internal logic error, aborting.")
             return
 
