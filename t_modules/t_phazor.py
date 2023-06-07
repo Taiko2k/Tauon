@@ -95,7 +95,7 @@ def player4(tauon):
             aud.config_set_feed_samplerate(44100)
             aud.config_set_min_buffer(1000)
             if not shutil.which("librespot"):
-                gui.show_message("Error, librespot not found")
+                gui.show_message("SPP: Error, librespot not found")
                 return 1
             # if not prefs.spot_username or not prefs.spot_password:
             #     gui.show_message("Please enter your spotify username and password in settings")
@@ -106,12 +106,14 @@ def player4(tauon):
                 #     print("librespot died")
                 #     tauon.librespot_p = None
                 #     self.flush = False
+
             pctl.spot_playing = True
 
             if not tauon.librespot_p:
+                print("SPP: Librespot not running")
                 username = tauon.spot_ctl.get_username()
                 if not username or not prefs.spotify_token:
-                    print("Missing auth data")
+                    print("SPP: Error. Missing auth data")
                     return 1
 
                 cache = os.path.join(tauon.cache_directory, "lsspot")
@@ -128,10 +130,10 @@ def player4(tauon):
                     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 try:
                     tauon.librespot_p = subprocess.Popen(cmd, stdout=subprocess.PIPE, startupinfo=startupinfo)
-                    print("librespot started")
+                    print("SPP: Librespot now started")
                 except Exception as e:
                     print(str(e))
-                    print("Error starting librespot")
+                    print("SPP: Error starting librespot")
                     #tauon.spot_ctl.preparing_spotify = False
                     gui.update += 1
                     return 1
@@ -153,16 +155,18 @@ def player4(tauon):
 
         def worker(self):
             self.running = True
-
+            print("SPP: Enter librespot feeder thread")
             while True:
 
                 if self.running is False:
                     self.running = False
-                    print("End libertop workes theard")
+                    print("SPP: Exit Librespot worker thread")
                     return
                 if self.flush:
                     self.flush = False
+                    print("SPP: Flushing some data...")
                     tauon.librespot_p.stdout.read(70000)  # rough
+                    print("SPP: Done flush")
                 if aud.feed_ready(1000) == 1:
                     if aud.get_buff_fill() < 2000:
                         data = tauon.librespot_p.stdout.read(1000)
@@ -731,6 +735,7 @@ def player4(tauon):
             if command == "spotcon":
 
                 #aud.stop()
+                print("SPP: Start librespot command received. Set Phazor input raw mode")
                 aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
                 state = 4
                 spotc.go()
