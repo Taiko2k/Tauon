@@ -11,6 +11,7 @@ v7.6.5
  - Added "sort by imported folders" sorting option
  - Moved some add column functions to submenu
  - Tweaked sort track number function to better sort multi disc albums
+ - Tweaked spotify start track device selection
  - Fixed replay gain transition volume
 
 v7.6.4
