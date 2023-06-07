@@ -105,6 +105,7 @@ if install_mode:
 if not os.path.isdir(user_directory):
     os.makedirs(user_directory)
 
+fp = None
 dev_mode = os.path.isfile(os.path.join(install_directory, '.dev'))
 if dev_mode:
     print("Dev mode, ignoring single instancing")
@@ -327,6 +328,7 @@ h.t_version = t_version
 h.t_id = t_id
 h.agent = t_agent
 h.dev_mode = dev_mode
+h.lock = fp
 
 del raw_image
 del sdl_texture

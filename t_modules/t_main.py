@@ -56,6 +56,7 @@ t_version = h.t_version
 t_id = h.t_id
 t_agent = h.agent
 dev_mode = h.dev_mode
+instance_lock = h.lock
 print(f"Window size: {window_size}")
 
 should_save_state = True
@@ -47709,7 +47710,7 @@ if macos:
         pass
 
 try:
-    fp.close()
+    instance_lock.close()
 except:
     print("No lock object to close")
 
