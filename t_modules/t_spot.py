@@ -66,7 +66,8 @@ class SpotCtl:
         self.coast_context = ""
 
     def prep_cred(self):
-
+        if not tekore_imported:
+            self.tauon.gui.show_message("Dependency Tekore not found", mode="warning")
         rc = tk.RefreshingCredentials
         self.cred = rc(client_id=self.tauon.prefs.spot_client,
                                     redirect_uri=self.redirect_uri)
@@ -352,12 +353,16 @@ class SpotCtl:
         if not self.spotify:
             return
 
+        print("SP: Get devices...")
         devices = self.spotify.playback_devices()
+        print("SP: Devices found:")
+        for device in devices:
+            print(f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}")
 
         if devices:
             pass
         else:
-            print("No spotify devices found")
+            print("SP: No spotify devices found")
 
         if not devices:
             return False
@@ -407,20 +412,69 @@ class SpotCtl:
             self.tauon.gui.show_message("Error. You may need to click Authorise in Settings > Accounts > Spotify.", mode="warning")
             return
 
-        d_id = self.prime_device()
-        # if d_id is False:
-        #     return
+        print("SP: Want play spotify target " + str(id))
+        # Sort devices
+        start_new_device = False
+        done = False
 
-        print("play spotify target")
+        print("SP: Get devices...")
+        devices = self.spotify.playback_devices()
+        print("SP: Devices found:")
+        for device in devices:
+            print(f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}")
+
+        d_id = None
+        if not devices or force_new_device:
+            start_new_device = True
+        else:
+            for device in devices:
+                if not device.is_restricted and device.is_active:
+                    print("SP: Choosing the active device: " + device.name)
+                    d_id = device.id
+                    break
+            else:
+                for device in devices:
+                    if not device.is_restricted:
+                        print("SP: Found a device, but its not active...")
+                        print("SP: Try start track on: " + device.name)
+                        d_id = device.id
+
+                        self.spotify.playback_transfer(device.id)
+                        time.sleep(0.2)
+                        self.spotify.playback_start_tracks([id], device_id=d_id, position_ms=start_time)
+                        tries = 0
+                        while True:
+                            result = self.spotify.playback_currently_playing()
+                            if result and result.is_playing:
+                                done = True
+                                self.progress_timer.set()
+                                print("SP: Looks like starting on that device worked...")
+                                break
+                            time.sleep(1)
+                            tries += 1
+                            print("SP: Not playing on that inactive device yet, waiting...")
+                            if tries > 5:
+                                break
+
+                    if d_id or start_new_device or done:
+                        break
+
+        if not d_id or start_new_device:
+            print("SP: Internal logic error, aborting.")
+            return
+
+
         #if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
         #try:
-        if d_id is False or force_new_device:
-            if not force_new_device:
-                self.launching_spotify = True
+        if start_new_device:
+            #if not force_new_device:
+            print("SP: Launch new device...")
+            self.launching_spotify = True
             self.tauon.gui.update += 1
 
-            print("no devices")
+            print("SP: Initiate device...")
             if self.tauon.prefs.launch_spotify_web:
+                print("SP: Open web player...")
                 webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
                 tries = 0
                 while True:
@@ -443,7 +497,7 @@ class SpotCtl:
             else:
 
                 if self.tauon.prefs.launch_spotify_local:
-                    print("start librespot command")
+                    print("SP: Queue start librespot...")
                     self.tauon.tm.ready_playback()
                     self.tauon.pctl.playerCommand = 'spotcon'
                     self.tauon.pctl.playerCommandReady = True
@@ -453,29 +507,37 @@ class SpotCtl:
                     if not os.path.isfile(p):
                         self.launching_spotify = False
                         self.preparing_spotify = False
+                        print("SP: Spotify app exe not found, aborting.")
                         return
                     subprocess.Popen([p])
+                    print("SP: Launching spotify app exe")
                     time.sleep(3)
                 else:
                     subprocess.run(["xdg-open", "spotify:track"])
                     time.sleep(3)
-                print("LAUNCH SPOTIFY")
+                    print("SP: Launched spotify app via URI")
 
                 time.sleep(0.5)
                 tries = 0
-                playing = False
+
                 while True:
-                    print("WAIT FOR DEVICE...")
+                    print("SP: Waiting for device ready... try: " + str(tries + 1))
                     devices = self.spotify.playback_devices()
                     if devices and tries < 13:
-                        print("DEVICE FOUND")
+                        print("SP: Devices found:")
+                        for device in devices:
+                            print(f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}")
+
                         if not self.tauon.prefs.launch_spotify_local:
                             self.tauon.focus_window()
                         time.sleep(0.5)
-                        print("ATTEMPT START")
+                        print(f"SP: Selecting device: {devices[0].name}")
+
+                        print("SP: Attempt start track...")
                         try:
                             self.spotify.playback_start_tracks([id], device_id=devices[0].id, position_ms=start_time)
                         except Exception as e:
+                            print("SP: Error starting playback...")
                             print(str(e))
                             time.sleep(1)
                             tries += 2
@@ -483,21 +545,21 @@ class SpotCtl:
                         while True:
                             result = self.spotify.playback_currently_playing()
                             if result and result.is_playing:
-                                playing = True
+                                done = True
                                 self.progress_timer.set()
-                                print("TRACK START SUCCESS")
+                                print("SP: Looks like its playing now")
                                 break
                             time.sleep(1)
                             tries += 1
-                            print("NOT PLAYING YET...")
+                            print("SP: Not playing yet, waiting...")
                             if tries > 13:
                                 break
 
-                    if playing:
+                    if done:
                         break
                     tries += 1
                     if tries > 13:
-                        print("TOO MANY TRIES")
+                        print("SP: Too many retries, aborting.")
                         self.tauon.pctl.stop()
                         self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
                         self.launching_spotify = False
@@ -510,8 +572,9 @@ class SpotCtl:
             self.preparing_spotify = False
             self.tauon.gui.update += 1
 
-        else:
+        elif not done:
             #print(d_id)
+            print("SP: A ready device is present...")
             try:
                 self.progress_timer.set()
                 okay = False
@@ -523,24 +586,28 @@ class SpotCtl:
                     if result and result.item and result.is_playing:
                         remain = result.item.duration_ms - result.progress_ms
                         if 1400 < remain < 3500:
+                            print("SP: We are close to the end of the current track, queuing next.")
                             self.spotify.playback_queue_add("spotify:track:" + id,  device_id=d_id)
                             okay = True
+                            print("SP: Waiting for remainder of track...")
                             time.sleep(remain / 1000)
                             self.progress_timer.set()
-                            time.sleep(1)
+                            time.sleep(2)
                             result = self.spotify.playback_currently_playing()
                             if not (result and result.item and result.is_playing):
-                                print("A queue transition failed")
+                                print("SP: The queue transition failed")
                                 okay = False
 
                 # Force a transition
                 if not okay:
+                    print("SP: Starting track on live device.")
                     self.spotify.playback_start_tracks([id], device_id=d_id, position_ms=start_time)
 
             # except tk.client.decor.error.InternalServerError:
             #     self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
             #     return
             except Exception as e:
+                print("SP: Start track on device failed, aborting")
                 self.launching_spotify = False
                 self.preparing_spotify = False
                 print(str(e))
@@ -549,6 +616,7 @@ class SpotCtl:
 
         # except Exception as e:
         #     self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
+        print("SP: Done")
         self.playing = True
         self.started_once = True
         self.launching_spotify = False
@@ -558,6 +626,7 @@ class SpotCtl:
         self.tauon.pctl.decode_time = 0
         self.tauon.gui.pl_update += 1
         self.tauon.tm.ready_playback()
+
 
     def get_library_albums(self, return_list=False):
         self.connect()
