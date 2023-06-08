@@ -91,7 +91,7 @@ def player4(tauon):
 
             self.running = False
             self.flush = False
-        def go(self):
+        def go(self, force=False):
             aud.config_set_feed_samplerate(44100)
             aud.config_set_min_buffer(1000)
             if not shutil.which("librespot"):
@@ -101,11 +101,12 @@ def player4(tauon):
             #     gui.show_message("Please enter your spotify username and password in settings")
             #     return 1
             if tauon.librespot_p:
-                self.flush = True
-                # if tauon.librespot_p.poll() is None:
-                #     print("librespot died")
-                #     tauon.librespot_p = None
-                #     self.flush = False
+                if force:
+                    print("SPP: Force restart librespot")
+                    self.end()
+                    tauon.librespot_p = None
+                else:
+                    self.flush = True
 
             pctl.spot_playing = True
 
@@ -159,7 +160,6 @@ def player4(tauon):
             while True:
 
                 if self.running is False:
-                    self.running = False
                     print("SPP: Exit Librespot worker thread")
                     return
                 if self.flush:
@@ -620,6 +620,13 @@ def player4(tauon):
         else:
             tauon.chrome.start(track.index, enqueue=enqueue, t=t)
 
+    def start_librespot():
+        print("SPP: Start librespot command received. Set Phazor input raw mode")
+        aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+        spotc.go(force=True)
+        if not spotc.running:
+            shooter(spotc.worker)
+
     while True:
 
         time.sleep(0.016)
@@ -736,12 +743,8 @@ def player4(tauon):
 
                 #aud.stop()
                 print("SPP: Start librespot command received. Set Phazor input raw mode")
-                aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+                start_librespot()
                 state = 4
-                spotc.go()
-
-                if not spotc.running:
-                    shooter(spotc.worker)
                 #time.sleep(20)
                 #tauon.spot_ctl.preparing_spotify = False
 
@@ -820,9 +823,11 @@ def player4(tauon):
                                 spotc.go()
                                 if not spotc.running:
                                     shooter(spotc.worker)
-                            tauon.spot_ctl.play_target(target_object.url_key, force_new_device=f)
-                            tauon.spot_ctl.preparing_spotify = False
-                            if state == 4 and pctl.playerCommand == "spotcon":  # such spaghetti code
+
+                            tauon.spot_ctl.play_target(target_object.url_key, force_new_device=f, start_callback=start_librespot)
+                            #tauon.spot_ctl.preparing_spotify = False
+                            if pctl.playerCommand == "spotcon":  # such spaghetti code
+                                state = 4
                                 pctl.playerCommand = ""
                                 pctl.playerCommandReady = False
 
