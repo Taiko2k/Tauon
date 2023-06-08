@@ -1413,7 +1413,7 @@ int load_next() {
     if (codec == MPT){
 
       mod_file = uni_fopen(loaded_target_file);
-      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks2(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
       src_channels = 2;
       fclose(mod_file);
       pthread_mutex_lock(&buffer_mutex);
@@ -1884,7 +1884,7 @@ void *main_loop(void *thread_id) {
 
 //        test1++;
 //        if (test1 > 650){
-//        printf("pa: Status: mode %d, command %d, buffer %d\n", mode, command, get_buff_fill());
+//        printf("pa: Status: mode %d, command %d, buffer %d, gate %d\n", mode, command, get_buff_fill(), gate);
 //        test1 = 0;
 //        }
 
@@ -1922,7 +1922,7 @@ void *main_loop(void *thread_id) {
                     } else if (mode == PLAYING) {
                         mode = RAMP_DOWN;
                     }
-                    if ((mode == RAMP_DOWN && gate == 0) || mode == PAUSED) {
+                    if ((mode == RAMP_DOWN && (gate == 0 || get_buff_fill() == 0)) || mode == PAUSED) {
                         end();
                     }
                     break;
