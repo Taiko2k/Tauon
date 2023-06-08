@@ -398,7 +398,7 @@ class SpotCtl:
             self.tauon.gui.show_message("Error - Tauon device not found")
 
         self.preparing_spotify = False
-    def play_target(self, id, force_new_device=False, start_time=0):
+    def play_target(self, id, force_new_device=False, start_time=0, start_callback=None):
 
         if not start_time:
             start_time = None
@@ -503,6 +503,10 @@ class SpotCtl:
                     self.tauon.tm.ready_playback()
                     self.tauon.pctl.playerCommand = 'spotcon'
                     self.tauon.pctl.playerCommandReady = True
+                    if start_callback:
+                        print("SP: Callback start librespot")
+                        start_callback()
+
                     #self.tauon.pctl.playing_state = 3
                 elif self.tauon.msys:
                     p = os.getenv('APPDATA') + "\\Spotify\\Spotify.exe"
