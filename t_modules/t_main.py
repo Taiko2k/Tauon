@@ -34298,9 +34298,12 @@ class StandardPlaylist:
                 ddt.rect(track_box, colours.row_playing_highlight)
                 ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
 
-            if tr.file_ext == "SPTY" and not spot_ctl.started_once:
-                ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20])
-                ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
+            if tr.file_ext == "SPTY":
+                # if not spot_ctl.started_once:
+                #     ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20])
+                #     ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
+                ddt.rect((track_box[0] + track_box[2] - round(2 * gui.scale), track_box[1] + round(2 * gui.scale), round(2 * gui.scale), track_box[3] - round(3 * gui.scale)), [40, 190, 40, 230])
+
 
             # Blue drop line
             if drag_highlight:  # playlist_hold_position != p_track:
