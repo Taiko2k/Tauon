@@ -471,12 +471,13 @@ class SpotCtl:
         if start_new_device:
             #if not force_new_device:
             print("SP: Launch new device...")
-            self.launching_spotify = True
+
             self.tauon.gui.update += 1
 
             print("SP: Initiate device...")
             if self.tauon.prefs.launch_spotify_web:
                 print("SP: Open web player...")
+                self.launching_spotify = True
                 webbrowser.open("https://open.spotify.com/", new=2, autoraise=False)
                 tries = 0
                 while True:
@@ -499,6 +500,7 @@ class SpotCtl:
             else:
 
                 if self.tauon.prefs.launch_spotify_local:
+                    self.preparing_spotify = True
                     print("SP: Queue start librespot...")
                     self.tauon.tm.ready_playback()
                     self.tauon.pctl.playerCommand = 'spotcon'
@@ -509,6 +511,7 @@ class SpotCtl:
 
                     #self.tauon.pctl.playing_state = 3
                 elif self.tauon.msys:
+                    self.launching_spotify = True
                     p = os.getenv('APPDATA') + "\\Spotify\\Spotify.exe"
                     if not os.path.isfile(p):
                         self.launching_spotify = False
@@ -519,6 +522,7 @@ class SpotCtl:
                     print("SP: Launching spotify app exe")
                     time.sleep(3)
                 else:
+                    self.launching_spotify = True
                     subprocess.run(["xdg-open", "spotify:track"])
                     time.sleep(3)
                     print("SP: Launched spotify app via URI")
