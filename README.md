@@ -12,18 +12,17 @@
 <img src="https://user-images.githubusercontent.com/17271572/64146704-18d95280-ce72-11e9-9a6a-0d5575d52411.png" align="right" width="400px" hspace="0px" vspace="20px">
 
   - Fast, comfortable and responsive UI.
+  - Support for **gapless playback**.
   - Import tracks and create playlists by simple **drag and drop**.
-  - Supports most common codecs and **tracker** file types.  
+  - Supports most common codecs and tracker file types.  
   - Seamless support for CUE sheets. 
   - Stream music from your **PLEX**, **koel**, **Jellyfin** or **Airsonic** server.
+  - Import and play your **Spotify** library.
   - Large album art and gallery displays!
-  - Support for **gapless playback**.
-  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music.
   - Last.fm **scrobbling** with track love support :heart:  
   See which of your tracks your friends loved too! :purple_heart: :blue_heart:
   - Download cover art function.
   - **Lyrics** display with support for displaying **guitar chord** lyrics and synced `.lrc` files.
-  - Edit tags with MusicBrainz **Picard** (when also installed).
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Linux desktop integration with MPRIS2.
@@ -36,14 +35,13 @@
 
 ### Windows
 
-For installer, see the [releases](https://github.com/Taiko2k/TauonMusicBox/releases) page.
-
+For latest installer, see the [releases](https://github.com/Taiko2k/TauonMusicBox/releases) page.
 
 ### Linux
 
 Installation is available as a Flatpak.
 
-<a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
+<a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
 Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes. 
 
