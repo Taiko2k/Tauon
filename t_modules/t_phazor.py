@@ -805,10 +805,16 @@ def player4(tauon):
 
                     if target_object.file_ext == "SPTY":
                         tauon.level_train.clear()
+                        if target_object.found is False:
+                            pctl.playing_state = 0
+                            pctl.jump_time = 0
+                            pctl.advance(inplace=True, play=True)
+                            continue
                         if state > 0 and not state == 4:
                             aud.stop()
                         if not state == 4:
                             state = 0
+
                         try:
                             f = False
                             if spotc.running and state != 4:
