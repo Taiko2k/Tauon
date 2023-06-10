@@ -28452,20 +28452,20 @@ class Over:
             text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
                                   width=rect1[2] - 8 * gui.scale, click=self.click)
             prefs.spot_client = text_spot_client.text.strip()
-            #
-            # y += round(23 * gui.scale)
-            # ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
-            #          colours.box_text_label, 11)
-            # y += round(19 * gui.scale)
-            # rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-            # fields.add(rect1)
-            # if coll(rect1) and (self.click or level_2_right_click):
-            #     self.account_text_field = 1
-            # ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-            # text_spot_secret.text = prefs.spot_secret
-            # text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-            #                   width=rect1[2] - 8 * gui.scale, click=self.click)
-            # prefs.spot_secret = text_spot_secret.text.strip()
+
+            y += round(19 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Client Secret"),
+                     colours.box_text_label, 11)
+            y += round(19 * gui.scale)
+            rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+            fields.add(rect1)
+            if coll(rect1) and (self.click or level_2_right_click):
+                self.account_text_field = 1
+            ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+            text_spot_secret.text = prefs.spot_secret
+            text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+                              width=rect1[2] - 8 * gui.scale, click=self.click)
+            prefs.spot_secret = text_spot_secret.text.strip()
 
             y += round(27 * gui.scale)
 
@@ -28474,7 +28474,8 @@ class Over:
                     spot_ctl.delete_token()
                     spot_ctl.cache_saved_albums.clear()
                     prefs.spot_username = ""
-                    prefs.spot_password = ""
+                    if not prefs.launch_spotify_local:
+                        prefs.spot_password = ""
             else:
                 if self.button(x, y, _("Authorise")):
                     webThread = threading.Thread(target=authserve, args=[tauon])
@@ -28488,7 +28489,7 @@ class Over:
             prefs.launch_spotify_web = self.toggle_square(x, y, prefs.launch_spotify_web,
                                                           _("Prefer launching web player"))
 
-            y += round(25 * gui.scale)
+            y += round(24 * gui.scale)
 
             prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
                                                               _("Enable local audio playback"))
@@ -42373,7 +42374,7 @@ def save_state():
             top_panel.prime_side,
             prefs.sync_playlist,
             prefs.spot_client,
-            "",  # prefs.spot_secret,
+            prefs.spot_secret,
             prefs.show_band,
             prefs.download_playlist,
             spot_ctl.cache_saved_albums,

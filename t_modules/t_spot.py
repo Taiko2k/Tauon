@@ -53,7 +53,7 @@ class SpotCtl:
         self.spotify_com = False
         self.sender = None
         self.cache_saved_albums = []
-        self.scope = "user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
+        self.scope = "user-read-private user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
         self.launching_spotify = False
         self.preparing_spotify = False
         self.progress_timer = Timer()
@@ -62,6 +62,7 @@ class SpotCtl:
         self.token_path = os.path.join(self.tauon.user_directory, "spot-token-pkce")
         self.pkce_code = None
         self.local = True
+        self.country = None
 
         self.coast_context = ""
 
@@ -69,8 +70,10 @@ class SpotCtl:
         if not tekore_imported:
             self.tauon.gui.show_message("Dependency Tekore not found", mode="warning")
         rc = tk.RefreshingCredentials
-        self.cred = rc(client_id=self.tauon.prefs.spot_client,
-                                    redirect_uri=self.redirect_uri)
+        secret = self.tauon.prefs.spot_secret
+        if not secret or len(self.tauon.prefs.spot_secret) != 32:
+            secret = None
+        self.cred = rc(client_id=self.tauon.prefs.spot_client, client_secret=secret, redirect_uri=self.redirect_uri)
 
     def connect(self):
         if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
@@ -86,12 +89,18 @@ class SpotCtl:
                 print("Init spotify support")
                 self.sender = tk.RetryingSender(retries=3)
                 self.spotify = tk.Spotify(self.token, sender=self.sender)
+                self.country = self.spotify.current_user().country
 
     def paste_code(self, code):
         if self.cred is None:
             self.prep_cred()
 
-        self.token = self.cred.request_pkce_token(code.strip().strip("\n"), self.pkce_code)
+        if self.pkce_code:
+            self.token = self.cred.request_pkce_token(code.strip().strip("\n"), self.pkce_code)
+        else:
+            self.token = self.cred.request_user_token(code.strip().strip("\n"))
+
+
         if self.token:
             self.save_token()
             self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
@@ -111,9 +120,18 @@ class SpotCtl:
             f.close()
 
         if self.tauon.prefs.spotify_token:
+
+            secret = self.tauon.prefs.spot_secret
+            if not secret or len(self.tauon.prefs.spot_secret) != 32:
+                secret = None
+
             try:
-                self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
+                if secret:
+                    self.token = tk.refresh_user_token(self.tauon.prefs.spot_client, secret, self.tauon.prefs.spotify_token)
+                else:
+                    self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
             except:
+                raise
                 self.tauon.gui.show_message("Please re-authenticate Spotify in settings")
                 print("ERROR LOADING TOKEN")
                 self.tauon.prefs.spotify_token = ""
@@ -136,7 +154,18 @@ class SpotCtl:
             return
         if self.cred is None:
             self.prep_cred()
-        url, self.pkce_code = self.cred.pkce_user_authorisation(scope=self.scope)
+
+        secret = self.tauon.prefs.spot_secret
+        if not secret or len(self.tauon.prefs.spot_secret) != 32:
+            secret = None
+
+        if not secret:
+            print("SP: Using PKCE auth")
+            url, self.pkce_code = self.cred.pkce_user_authorisation(scope=self.scope)
+        else:
+            print("SP: Using user auth")
+            self.pkce_code = None
+            url = self.cred.user_authorisation_url(scope=self.scope)
         webbrowser.open(url, new=2, autoraise=True)
 
     def control(self, command, param=None):
@@ -682,7 +711,7 @@ class SpotCtl:
         if playlist_number is None:
             playlist_number = self.tauon.pctl.active_playlist_viewing
 
-        track = self.spotify.track(id)
+        track = self.spotify.track(id, market=self.country)
         tr = self.load_track(track)
         self.tauon.pctl.master_library[tr.index] = tr
         self.tauon.pctl.multi_playlist[playlist_number][2].append(tr.index)
@@ -735,7 +764,7 @@ class SpotCtl:
                 return []
             return
 
-        p = self.spotify.playlist(id)
+        p = self.spotify.playlist(id, market=self.country)
         playlist = []
         self.update_existing_import_list()
         pages = self.spotify.all_pages(p.tracks)
@@ -769,7 +798,7 @@ class SpotCtl:
         if track_url:
             track_ids = [track_url.strip("/").split("/")[-1]]
         artist = self.spotify.artist(id)
-        recs = self.spotify.recommendations(artist_ids=[id], track_ids=track_ids, limit=25)
+        recs = self.spotify.recommendations(artist_ids=[id], track_ids=track_ids, limit=25, market=self.country)
         playlist = []
         self.update_existing_import_list()
         for t in recs.tracks:
@@ -922,6 +951,9 @@ class SpotCtl:
             nt = self.tauon.TrackClass()
             nt.index = self.tauon.pctl.master_count
 
+        nt.found = False
+        if track.is_playable is True or track.is_playable is None:
+            nt.found = True
         nt.is_network = True
         nt.file_ext = "SPTY"
         nt.url_key = track.id
@@ -996,7 +1028,7 @@ class SpotCtl:
             return []
 
         self.update_existing_import_list()
-        tracks = self.spotify.saved_tracks()
+        tracks = self.spotify.saved_tracks(market=self.country)
 
         playlist = []
 
