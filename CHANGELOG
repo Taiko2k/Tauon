@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.6.6
+
+  - Fixed bug with radio not playing
+
 v7.6.5
 
  - Added setting "Pull loves" for last.fm
