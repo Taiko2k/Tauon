@@ -35117,7 +35117,7 @@ class RadioBox:
             return
 
         self.run_proxy = True
-        if url.endswith(".ts") or True:
+        if url.endswith(".ts"):
             self.run_proxy = False
 
         if self.run_proxy and not self.proxy_started and prefs.backend != 4:
