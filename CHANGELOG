@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.6.7
+
+ - Fix crash when pressing Get Scrobble Counts while not logged in
+
 v7.6.6
 
   - Fixed bug with radio not playing
