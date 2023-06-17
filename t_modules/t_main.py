@@ -28999,6 +28999,9 @@ class Over:
 
         if not key_shift_down:
             t = lastfm.get_all_scrobbles_estimate_time()
+            if not t:
+                show_message("Error, not  connected to last.fm")
+                return
             show_message(_("Warning: This process will take approximately %d minutes to complete." % (t // 60)),
                          _("Press again while holding Shift if you understand"), mode="warning")
             return
