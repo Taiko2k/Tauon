@@ -16,7 +16,7 @@
   - Import tracks and create playlists by simple **drag and drop**.
   - Supports most common codecs and tracker file types.  
   - Seamless support for CUE sheets. 
-  - Stream music from your **PLEX**, **koel**, **Jellyfin** or **Airsonic** server.
+  - Stream music from your **PLEX**, **Jellyfin** or **Airsonic** server.
   - Import and play your **Spotify** library.
   - Large album art and gallery displays!
   - Last.fm **scrobbling** with track love support :heart:  
