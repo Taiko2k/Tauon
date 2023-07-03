@@ -10,3 +10,4 @@ isounidecode
 setproctitle
 mutagen
 natsort
+PyGObject
