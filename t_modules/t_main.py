@@ -10326,7 +10326,7 @@ def find_synced_lyric_data(track):
 
     try:
         if os.path.isfile(os.path.join(direc, name)):
-            with open(os.path.join(direc, name), 'r') as f:
+            with open(os.path.join(direc, name), 'r', encoding='utf-8') as f:
                 data = f.readlines()
         else:
             return None
