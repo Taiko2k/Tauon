@@ -8830,6 +8830,7 @@ class KoelService:
 
     def connect(self):
 
+        print("Connect to koel...")
         if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
             show_message(_("Missing username, password and/or server URL"), mode='warning')
             self.scanning = False
@@ -8860,7 +8861,7 @@ class KoelService:
             r = requests.post(target, json=body, headers=headers)
         except:
             gui.show_message(_("Could not establish connection"), mode="error")
-
+            print("Could not establish connection")
             return
 
         if r.status_code == 200:
@@ -8869,6 +8870,7 @@ class KoelService:
             if self.token:
                 print("GOT KOEL TOKEN")
                 self.connected = True
+
             else:
                 print("AUTH ERROR")
 
@@ -8879,6 +8881,7 @@ class KoelService:
                 error = j["message"]
 
             gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
+
 
     def resolve_stream(self, id):
 
@@ -8891,8 +8894,18 @@ class KoelService:
             target = f"{self.server}/api/{id}/play/0/0"
         params = {"jwt-token": self.token, }
 
-        # print(target)
-        # print(urllib.parse.urlencode(params))
+        # if prefs.network_stream_bitrate > 0:
+        #     target = f"{self.server}/api/play/{id}/1/{prefs.network_stream_bitrate}"
+        # else:
+        #target = f"{self.server}/api/play/{id}/0/0"
+        #target = f"{self.server}/api/{id}/play"
+
+        #params = {"token": self.token, }
+
+        #target = f"{self.server}/api/download/songs"
+        #params["songs"] = [id,]
+        print(target)
+        print(urllib.parse.urlencode(params))
 
         return target, params
 
@@ -34138,6 +34151,9 @@ class StandardPlaylist:
                 # Is type ALBUM TITLE
                 album_artist_mode = False
                 date = ""
+                mode2 = False  # todo as setting
+                duration = ""
+
                 line = tr.parent_folder_name
 
                 # Use folder name if mixed/singles?
@@ -34150,7 +34166,7 @@ class StandardPlaylist:
                     if tr.album_artist != "" and tr.album != "":
                         line = tr.album_artist + " - " + tr.album
 
-                        if prefs.left_align_album_artist_title:
+                        if prefs.left_align_album_artist_title and not True:
                             album_artist_mode = True
                             line = tr.album
 
@@ -34202,23 +34218,16 @@ class StandardPlaylist:
                         qq += 1
 
                     if qq > 1:
-                        date += " [ " + get_display_time(
-                            total_time) + " ]"  # Hair space inside brackets for better visual spacing
+                        duration = " [ " + get_display_time(total_time) + " ]" # Hair space inside brackets for better visual spacing
+
+                        if mode2:
+                            pass
+                        else:
+                            date += duration
 
                 ex = left + highlight_left + highlight_width - 7 * gui.scale
 
                 height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
-
-                # if tr.file_ext == "SPTY":
-                #     ex -= round(20 * gui.scale)
-                #     yyy = (line_y + gui.playlist_row_height // 2) - spotify_row_icon.h // 2
-                #     colour = [255, 255, 255, 60]
-                #     if gui.tracklist_bg_is_light:
-                #         colour = [0,0,0,70]
-                #     xxx = ex + round(6 * gui.scale)
-                #     if colours.lm:
-                #         xxx -= round(4 * gui.scale)
-                #     spotify_row_icon.render(xxx, yyy, colour)
 
                 star_offset = 0
                 if gui.show_album_ratings:
@@ -34247,6 +34256,10 @@ class StandardPlaylist:
 
                 date_w = 0
                 if date:
+                    if mode2:
+                        ex -= round(2 * gui.scale)
+                        if duration:
+                            date += duration
                     date_w = ddt.text((ex, height, 1), date, colours.folder_title,
                                       gui.row_font_size + gui.pl_title_font_offset)
                     date_w += 4 * gui.scale
@@ -34254,7 +34267,12 @@ class StandardPlaylist:
                         date_w -= 1 * gui.scale
 
                 aa = 0
-                if album_artist_mode:
+
+                if mode2:
+                    aa = ddt.text((left + highlight_left + 14 * gui.scale, height), line, colours.folder_title,
+                                  gui.row_font_size + gui.pl_title_font_offset,
+                                  gui.plw - (date_w + round(40 * gui.scale)))
+                elif album_artist_mode:
                     colour = colours.artist_text
                     if "Album Artist" in colours.column_colours:
                         colour = colours.column_colours["Album Artist"]
@@ -34273,18 +34291,20 @@ class StandardPlaylist:
 
                 left_align -= extra
 
-                if ft_width > left_align:
-                    date_w += 19 * gui.scale
-                    ddt.text((left + highlight_left + 8 * gui.scale + extra, height), line,
-                             colours.folder_title,
-                             gui.row_font_size + gui.pl_title_font_offset,
-                             highlight_width - date_w - extra - star_offset)
-
+                if mode2:
+                    pass
                 else:
+                    if ft_width > left_align:
+                        date_w += 19 * gui.scale
+                        ddt.text((left + highlight_left + 8 * gui.scale + extra, height), line,
+                                 colours.folder_title,
+                                 gui.row_font_size + gui.pl_title_font_offset,
+                                 highlight_width - date_w - extra - star_offset)
 
-                    ddt.text((ex - date_w, height, 1), line,
-                             colours.folder_title,
-                             gui.row_font_size + gui.pl_title_font_offset)
+                    else:
+                        ddt.text((ex - date_w, height, 1), line,
+                                 colours.folder_title,
+                                 gui.row_font_size + gui.pl_title_font_offset)
 
                 # Draw separation line below title
                 ddt.rect((left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
