@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-05-11 12:39+0000\n"
+"PO-Revision-Date: 2023-07-02 23:53+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.18-dev\n"
+"X-Generator: Weblate 5.0-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -2621,280 +2621,280 @@ msgstr "Ripeti Disattivato"
 
 #: t_modules/t_main.py:32337
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Indietro, RC: Cambia ripeti, MC: Annulla"
 
 #: t_modules/t_main.py:32393 t_modules/t_main.py:32395
 msgid "Shuffle"
-msgstr ""
+msgstr "Mischia"
 
 #: t_modules/t_main.py:32442 t_modules/t_main.py:32450
 msgid "Repeat album"
-msgstr ""
+msgstr "Ripeti disco"
 
 #: t_modules/t_main.py:32444 t_modules/t_main.py:32452
 msgid "Repeat track"
-msgstr ""
+msgstr "Ripeti traccia"
 
 #: t_modules/t_main.py:34062
 msgid "Playlist is empty"
-msgstr ""
+msgstr "La scaletta è vuota"
 
 #: t_modules/t_main.py:34064
 msgid "Drag and drop files to import"
-msgstr ""
+msgstr "Trascina e rilascia dei file per importare"
 
 #: t_modules/t_main.py:34086
 msgid "End of Playlist"
-msgstr ""
+msgstr "Fine della Scaletta"
 
 #: t_modules/t_main.py:35340
 msgid "Search Tag"
-msgstr ""
+msgstr "Cerca Metadato"
 
 #: t_modules/t_main.py:35341
 msgid "Search Country Code"
-msgstr ""
+msgstr "Cerca Codice Paese"
 
 #: t_modules/t_main.py:35342
 msgid "Search Title"
-msgstr ""
+msgstr "Cerca Titolo"
 
 #: t_modules/t_main.py:35626
 msgid "Search text…"
-msgstr ""
+msgstr "Cerca testo…"
 
 #: t_modules/t_main.py:35633
 msgid "Search"
-msgstr ""
+msgstr "Cerca"
 
 #: t_modules/t_main.py:35643 t_modules/t_main.py:35647
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Ottieni i Più Votati"
 
 #: t_modules/t_main.py:35649
 msgid "Developer Picks"
-msgstr ""
+msgstr "Scelti dallo Sviluppatore"
 
 #: t_modules/t_main.py:35795
 msgid "Add Station"
-msgstr ""
+msgstr "Aggiungi Stazione"
 
 #: t_modules/t_main.py:35797
 msgid "Edit Station"
-msgstr ""
+msgstr "Modifica Stazione"
 
 #: t_modules/t_main.py:35822
 msgid "Station Browser"
-msgstr ""
+msgstr "Mostra Stazioni"
 
 #: t_modules/t_main.py:35826
 msgid "Connecting..."
-msgstr ""
+msgstr "In connessione..."
 
 #: t_modules/t_main.py:35829
 msgid "Failed to connect!"
-msgstr ""
+msgstr "Connessione fallita!"
 
 #: t_modules/t_main.py:35877
 msgid "Name / Title"
-msgstr ""
+msgstr "Nome/Titolo"
 
 #: t_modules/t_main.py:35894
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr ""
+msgstr "Collegamento URL grezzo http://example.stream:1234"
 
 #: t_modules/t_main.py:35899 t_modules/t_main.py:36146
 msgid "Save"
-msgstr ""
+msgstr "Salva"
 
 #: t_modules/t_main.py:35903
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Inserisci un collegamento URL"
 
 #: t_modules/t_main.py:35917
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr ""
+msgstr "Non posso convalidare l'URL. Deve iniziare con https:// o http://"
 
 #: t_modules/t_main.py:36078 t_modules/t_main.py:36084
 #: t_modules/t_main.py:36090
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Registra e taglia automaticamente le tracce"
 
 #: t_modules/t_main.py:36080
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Ferma la riproduzione prima di modificare questa impostazione"
 
 #: t_modules/t_main.py:36086
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Ferma la riproduzione per finire la registrazione corrente"
 
 #: t_modules/t_main.py:36093
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "La traccia verrà adesso registrata."
 
 #: t_modules/t_main.py:36094
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Suggerimento: Puoi premere F9 per vedere la cartella di destinazione."
 
 #: t_modules/t_main.py:36097
 msgid "Browse"
-msgstr ""
+msgstr "Sfoglia"
 
 #: t_modules/t_main.py:36101
 msgid "Saved"
-msgstr ""
+msgstr "Salvati"
 
 #: t_modules/t_main.py:36145 t_modules/t_main.py:40267
 msgid "Visit Website"
-msgstr ""
+msgstr "Visita Sito"
 
 #: t_modules/t_main.py:36858
 msgid "View..."
-msgstr ""
+msgstr "Vedi..."
 
 #: t_modules/t_main.py:36892
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Filtra Artisti con meno dischi"
 
 #: t_modules/t_main.py:36896 t_modules/t_main.py:36897
 msgid "Include All Artists"
-msgstr ""
+msgstr "Includi Tutti gli Artisti"
 
 #: t_modules/t_main.py:36899
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Ordina Alfabeticamente"
 
 #: t_modules/t_main.py:36900
 msgid "Sort by Popularity"
-msgstr ""
+msgstr "Ordina per Popolarità"
 
 #: t_modules/t_main.py:36901
 msgid "Sort by Playtime"
-msgstr ""
+msgstr "Ordina per Tempo di riproduzione"
 
 #: t_modules/t_main.py:36902
 msgid "Toggle Thumbnails"
-msgstr ""
+msgstr "Mostra Anteprime"
 
 #: t_modules/t_main.py:36992
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr ""
+msgstr "Info: Immagine Artista presa da fanart.tv"
 
 #: t_modules/t_main.py:37310 t_modules/t_main.py:37446
 msgid "Downloading data..."
-msgstr ""
+msgstr "Scaricando dati..."
 
 #: t_modules/t_main.py:37758
 msgid "No artists in playlist"
-msgstr ""
+msgstr "Nessun artista nella scaletta"
 
 #: t_modules/t_main.py:37761
 msgid "Artist threshold not met"
-msgstr ""
+msgstr "Soglia artista non raggiunta"
 
 #: t_modules/t_main.py:37763
 msgid "Loading Artist List..."
-msgstr ""
+msgstr "Sto caricando la lista Artisti..."
 
 #: t_modules/t_main.py:37765
 msgid "Busy..."
-msgstr ""
+msgstr "Occupato..."
 
 #: t_modules/t_main.py:37976
 msgid "Loading Folder Tree..."
-msgstr ""
+msgstr "Sto caricando l'Elenco delle Cartelle..."
 
 #: t_modules/t_main.py:37985 t_modules/t_main.py:38001
 msgid "Folder Tree"
-msgstr ""
+msgstr "Elenco Cartelle"
 
 #: t_modules/t_main.py:38390
 msgid "Resume Queue"
-msgstr ""
+msgstr "Riprendi Coda"
 
 #: t_modules/t_main.py:38392
 msgid "Pause Queue"
-msgstr ""
+msgstr "Metti in Pausa la Coda"
 
 #: t_modules/t_main.py:38424
 msgid "Play Now"
-msgstr ""
+msgstr "Riproduci Adesso"
 
 #: t_modules/t_main.py:38431
 msgid "↳ Except for This"
-msgstr ""
+msgstr "↳ A parte Questa"
 
 #: t_modules/t_main.py:38433
 msgid "Queue to New Playlist"
-msgstr ""
+msgstr "Accoda su Nuova Scaletta"
 
 #: t_modules/t_main.py:38577
 msgid "Cancel Auto-Stop"
-msgstr ""
+msgstr "Cancella Ferma Automatico"
 
 #: t_modules/t_main.py:38579
 msgid "Auto-Stop"
-msgstr ""
+msgstr "Ferma Automatico"
 
 #: t_modules/t_main.py:39437 t_modules/t_main.py:39679
 msgid "Looking up..."
-msgstr ""
+msgstr "Sto cercando..."
 
 #: t_modules/t_main.py:39479
 msgid "Cooldown..."
-msgstr ""
+msgstr "Fermiamoci..."
 
 #: t_modules/t_main.py:39494
 msgid "Loading..."
-msgstr ""
+msgstr "Caricamento..."
 
 #: t_modules/t_main.py:39671
 msgid "No artist data downloaded"
-msgstr ""
+msgstr "Nessun dato artista scaricato"
 
 #: t_modules/t_main.py:39685
 msgid "No artist bio found"
-msgstr ""
+msgstr "Nessuna biografia artista trovato"
 
 #: t_modules/t_main.py:39794
 msgid "Download Artist Data"
-msgstr ""
+msgstr "Scarica Dati Artista"
 
 #: t_modules/t_main.py:39795
 msgid "Clear Bio"
-msgstr ""
+msgstr "Pulisci Biografia"
 
 #: t_modules/t_main.py:40266
 msgid "Edit..."
-msgstr ""
+msgstr "Modifica..."
 
 #: t_modules/t_main.py:40620
 msgid "Playing"
-msgstr ""
+msgstr "In Riproduzione"
 
 #: t_modules/t_main.py:40694
 msgid "Auto-Scroll"
-msgstr ""
+msgstr "Scorrimento automatico"
 
 #: t_modules/t_main.py:41172
 msgid "Tracks + Art"
-msgstr ""
+msgstr "Tracce + Copertina"
 
 #: t_modules/t_main.py:41204
 msgid "Tracks only"
-msgstr ""
+msgstr "Solo Tracce"
 
 #: t_modules/t_main.py:41219
 msgid "Showcase + Lyrics"
-msgstr ""
+msgstr "Copertina grande + Testo"
 
 #: t_modules/t_main.py:41232
 msgid "Radio"
-msgstr ""
+msgstr "Radio"
 
 #: t_modules/t_main.py:41246
 msgid "Toggle columns"
-msgstr ""
+msgstr "Modifica colonne"
 
 #: t_modules/t_main.py:42913
 msgid "Could not access! Possible insufficient Flatpak permissions."

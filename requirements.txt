@@ -10,3 +10,5 @@ isounidecode
 setproctitle
 mutagen
 natsort
+PyGObject
+dbus-python
