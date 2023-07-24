@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-07-02 23:53+0000\n"
+"PO-Revision-Date: 2023-07-10 11:55+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -671,7 +671,7 @@ msgstr "Scaletta bloccata"
 #: t_modules/t_main.py:17473 t_modules/t_main.py:17475
 #: t_modules/t_main.py:46860
 msgid "Delete"
-msgstr "Cancella"
+msgstr "Elimina"
 
 #: t_modules/t_main.py:17547
 msgid "Add Spotify Album"
@@ -2898,27 +2898,27 @@ msgstr "Modifica colonne"
 
 #: t_modules/t_main.py:42913
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
+msgstr "Permesso negato! Hai i permessi per il Flatpak?"
 
 #: t_modules/t_main.py:43877
 msgid "Enabled auto theme"
-msgstr ""
+msgstr "Tema automatico attivato"
 
 #: t_modules/t_main.py:43879
 msgid "Disabled auto theme"
-msgstr ""
+msgstr "Tema automatico disattivato"
 
 #: t_modules/t_main.py:43922
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Scegli prima una traccia sorgente copiandola negli appunti"
 
 #: t_modules/t_main.py:45482
 msgid "Rescan folders complete."
-msgstr ""
+msgstr "Ricontrollo cartelle completato."
 
 #: t_modules/t_main.py:46128
 msgid "Queue is Empty"
-msgstr ""
+msgstr "La coda è Vuota"
 
 #: t_modules/t_main.py:46508 t_modules/t_main.py:46527
 #: t_modules/t_main.py:46546 t_modules/t_main.py:46569
@@ -2926,79 +2926,81 @@ msgstr ""
 #: t_modules/t_main.py:46683 t_modules/t_main.py:46698
 #: t_modules/t_main.py:46713 t_modules/t_main.py:46768
 msgid "Copied text to clipboard"
-msgstr ""
+msgstr "Testo copiato negli appunti"
 
 #: t_modules/t_main.py:46567 t_modules/t_main.py:46573
 msgid "Path"
-msgstr ""
+msgstr "Percorso"
 
 #: t_modules/t_main.py:46588
 msgid "Samplerate"
-msgstr ""
+msgstr "Campione qualità"
 
 #: t_modules/t_main.py:46647 t_modules/t_main.py:46669
 msgid " of "
-msgstr ""
+msgstr " di "
 
 #: t_modules/t_main.py:46649
 msgid "Track"
-msgstr ""
+msgstr "Traccia"
 
 #: t_modules/t_main.py:46657 t_modules/t_main.py:46663
 msgid "File size"
-msgstr ""
+msgstr "Dimensione file"
 
 #: t_modules/t_main.py:46671
 msgid "Disc"
-msgstr ""
+msgstr "Disco"
 
 #: t_modules/t_main.py:46735
 msgid "Play count"
-msgstr ""
+msgstr "Conteggio Riproduzioni"
 
 #: t_modules/t_main.py:46748
 msgid "Play time"
-msgstr ""
+msgstr "Tempo Riproduzioni"
 
 #: t_modules/t_main.py:46837
 msgid "Folder Modification"
-msgstr ""
+msgstr "Modifica alla cartella"
 
 #: t_modules/t_main.py:46852
 msgid "Renames the physical folder based on the template"
-msgstr ""
+msgstr "Rinomina la cartella fisica basandoti sul modello"
 
 #: t_modules/t_main.py:46857
 msgid "Trash"
-msgstr ""
+msgstr "Cestino"
 
 #: t_modules/t_main.py:46858
 msgid "Moves folder to system trash"
-msgstr ""
+msgstr "Muovi cartella sul cestino di sistema"
 
 #: t_modules/t_main.py:46861
 msgid "Physically deletes folder from disk"
-msgstr ""
+msgstr "Cancella fisicamente la cartella dal disco"
 
 #: t_modules/t_main.py:46873
 msgid "Raise"
-msgstr ""
+msgstr "Aumenta"
 
 #: t_modules/t_main.py:46874
 msgid "Moves folder up 2 levels and deletes the old container folder"
 msgstr ""
+"Muovi la cartella di 2 livelli e cancella la vecchia cartella che la "
+"conteneva"
 
 #: t_modules/t_main.py:46881
 msgid "Deletes some unnecessary files from folder"
-msgstr ""
+msgstr "Cancella alcuni file non necessari dalla cartella"
 
 #: t_modules/t_main.py:47271
 msgid "Loved track"
-msgstr ""
+msgstr "Tracce piaciute"
 
 #: t_modules/t_main.py:47274
 msgid "Un-Loved track"
-msgstr ""
+msgstr "Tracce non piaciute"
 
 #~ msgid "Micro"
 #~ msgstr "Micro"
