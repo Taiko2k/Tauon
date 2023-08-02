@@ -1367,7 +1367,9 @@ class Prefs:  # Used to hold any kind of settings
         self.tray_theme = "pink"
 
         self.lastfm_pull_love = False
-
+        self.row_title_format = 1
+        self.row_title_genre = False
+        self.row_title_separator_type = 1
 
 prefs = Prefs()
 
@@ -3120,6 +3122,12 @@ for t in range(2):
             prefs.artist_list_threshold = save[176]
         if save[177] is not None:
             prefs.tray_theme = save[177]
+        if save[178] is not None:
+            prefs.row_title_format = save[178]
+        if save[179] is not None:
+            prefs.row_title_genre = save[179]
+        if save[180] is not None:
+            prefs.row_title_separator_type = save[180]
 
         state_file.close()
         del save
@@ -28016,9 +28024,27 @@ class Over:
             self.toggle_square(x, y, toggle_gen, _("Genius track search"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_transcode, _("Transcode folder"))
-            y += 23 * gui.scale
-            #self.toggle_square(x, y, toggle_chromecast, _("Chromecast this"))
 
+            y += 28 * gui.scale
+
+            x = x0 + self.item_x_offset
+
+            ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 12)
+
+            y += 25 * gui.scale
+            wa = ddt.get_text_w(_("Stop playback"), 13) + 10 * gui.scale
+            wb = ddt.get_text_w(_("Repeat playlist"), 13) + 10 * gui.scale
+            wc = max(wa, wb) + 20 * gui.scale
+
+            self.toggle_square(x, y, self.set_playlist_stop, _("Stop playback"))
+            y += 25 * gui.scale
+            self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
+            # y += 25
+            y -= 25 * gui.scale
+            x += wc
+            self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
+            y += 25 * gui.scale
+            self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
 
         elif self.func_page == 2:
             y += 23 * gui.scale
@@ -29961,14 +29987,31 @@ class Over:
         # if gui.show_ratings:
         #     x -= round(10 * gui.scale)
 
+
+        y += round(25 * gui.scale)
+
+        if self.toggle_square(x, y, prefs.row_title_format == 2, _('Left align title style')):
+            prefs.row_title_format = 2
+        else:
+            prefs.row_title_format = 1
+
+        y += round(25 * gui.scale)
+
+        prefs.row_title_genre = self.toggle_square(x + round(10 * gui.scale), y, prefs.row_title_genre, _('Show album genre'))
         y += round(25 * gui.scale)
 
         self.toggle_square(x, y, toggle_append_date, _('Show album release year'))
         y += round(25 * gui.scale)
 
         self.toggle_square(x, y, toggle_append_total_time, _('Show album duration'))
-        y += round(25 * gui.scale)
+        y += round(35 * gui.scale)
 
+        if self.toggle_square(x, y, prefs.row_title_separator_type == 0, " - "):
+            prefs.row_title_separator_type = 0
+        if self.toggle_square(x + round(55 * gui.scale), y,  prefs.row_title_separator_type == 1, " ‒ "):
+            prefs.row_title_separator_type = 1
+        if self.toggle_square(x + round(110 * gui.scale), y,  prefs.row_title_separator_type == 2, " ⦁ "):
+            prefs.row_title_separator_type = 2
         x = x0 + 330 * gui.scale
         y = y0 + 25 * gui.scale
 
@@ -29985,26 +30028,6 @@ class Over:
         y += 27 * gui.scale
         self.button(x, y, _("Thick default"), self.large_preset, 124 * gui.scale)
 
-        y += 65 * gui.scale
-        # x -= 90 * gui.scale
-        x = x0 + self.item_x_offset
-
-        ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 12)
-
-        y += 25 * gui.scale
-        wa = ddt.get_text_w(_("Stop playback"), 13) + 10 * gui.scale
-        wb = ddt.get_text_w(_("Repeat playlist"), 13) + 10 * gui.scale
-        wc = max(wa, wb) + 20 * gui.scale
-
-        self.toggle_square(x, y, self.set_playlist_stop, _("Stop playback"))
-        y += 25 * gui.scale
-        self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
-        # y += 25
-        y -= 25 * gui.scale
-        x += wc
-        self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
-        y += 25 * gui.scale
-        self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
 
     def set_playlist_cycle(self, mode=0):
         if mode == 1:
@@ -34149,9 +34172,13 @@ class StandardPlaylist:
             if type == 1:
 
                 # Is type ALBUM TITLE
-                album_artist_mode = False
+                separator = " - "
+                if prefs.row_title_separator_type == 1:
+                    separator = " ‒ "
+                if prefs.row_title_separator_type == 2:
+                    separator = " ⦁ "
+
                 date = ""
-                mode2 = False  # todo as setting
                 duration = ""
 
                 line = tr.parent_folder_name
@@ -34164,7 +34191,7 @@ class StandardPlaylist:
                 else:
 
                     if tr.album_artist != "" and tr.album != "":
-                        line = tr.album_artist + " - " + tr.album
+                        line = tr.album_artist + separator + tr.album
 
                         if prefs.left_align_album_artist_title and not True:
                             album_artist_mode = True
@@ -34200,30 +34227,32 @@ class StandardPlaylist:
                     if "(" in line and year_search.search(line):
                         date = ""
 
+                line = line.replace(" - ", separator)
+
                 qq = 0
+                d_date = date
+                title_line = line
 
                 # Calculate folder duration
+
+                q = track_position
+
+                total_time = 0
+                while q < len(default_playlist):
+
+                    if pctl.g(default_playlist[q]).parent_folder_path != tr.parent_folder_path:
+                        break
+
+                    total_time += pctl.g(default_playlist[q]).length
+
+                    q += 1
+                    qq += 1
+
+                if qq > 1:
+                    duration = " [ " + get_display_time(total_time) + " ]" # Hair space inside brackets for better visual spacing
+
                 if prefs.append_total_time:
-                    q = track_position
-
-                    total_time = 0
-                    while q < len(default_playlist):
-
-                        if pctl.g(default_playlist[q]).parent_folder_path != tr.parent_folder_path:
-                            break
-
-                        total_time += pctl.g(default_playlist[q]).length
-
-                        q += 1
-                        qq += 1
-
-                    if qq > 1:
-                        duration = " [ " + get_display_time(total_time) + " ]" # Hair space inside brackets for better visual spacing
-
-                        if mode2:
-                            pass
-                        else:
-                            date += duration
+                    date += duration
 
                 ex = left + highlight_left + highlight_width - 7 * gui.scale
 
@@ -34254,46 +34283,76 @@ class StandardPlaylist:
                     ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * number),
                                (highlight_width, gui.playlist_row_height), colours.row_select_highlight)
 
-                date_w = 0
-                if date:
-                    if mode2:
-                        ex -= round(2 * gui.scale)
-                        if duration:
-                            date += duration
-                    date_w = ddt.text((ex, height, 1), date, colours.folder_title,
-                                      gui.row_font_size + gui.pl_title_font_offset)
-                    date_w += 4 * gui.scale
-                    if qq > 1:
-                        date_w -= 1 * gui.scale
 
-                aa = 0
+                # print(d_date) # date of album release / release year
+                # print(tr.parent_folder_name) # folder name
+                # print(tr.album)
+                # print(tr.artist)
+                # print(tr.album_artist)
+                # print(tr.genre)
 
-                if mode2:
-                    aa = ddt.text((left + highlight_left + 14 * gui.scale, height), line, colours.folder_title,
-                                  gui.row_font_size + gui.pl_title_font_offset,
-                                  gui.plw - (date_w + round(40 * gui.scale)))
-                elif album_artist_mode:
-                    colour = colours.artist_text
-                    if "Album Artist" in colours.column_colours:
-                        colour = colours.column_colours["Album Artist"]
-                    aa = ddt.text((left + highlight_left + 14 * gui.scale, height), tr.album_artist, colour,
-                                  gui.row_font_size + gui.pl_title_font_offset,
-                                  gui.plw // 3)
-                    aa += 12 * gui.scale
 
-                ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
 
-                left_align = highlight_width - date_w - 13 * gui.scale - light_offset
+                if prefs.row_title_format == 2:
 
-                left_align -= star_offset
+                    separator = " | "
 
-                extra = aa
+                    start_offset = round(15 * gui.scale)
+                    xx = left + highlight_left + start_offset
+                    ww = highlight_width
 
-                left_align -= extra
+                    was = False
+                    run = 0
+                    duration = get_display_time(total_time)
+                    colour = colours.folder_title
+                    colour = [colour[0], colour[1], colour[2], max(colour[3] - 50, 0)]
 
-                if mode2:
-                    pass
+                    if prefs.append_total_time and duration:
+                        was = True
+                        run += ddt.text((ex - run, height, 1), duration, colour,
+                                        gui.row_font_size + gui.pl_title_font_offset)
+                    if d_date:
+                        if was:
+                            run += ddt.text((ex - run, height, 1), separator, colour,
+                                            gui.row_font_size + gui.pl_title_font_offset)
+                        was = True
+                        run += ddt.text((ex - run, height, 1), d_date.rstrip(")").lstrip("("), colour,
+                                          gui.row_font_size + gui.pl_title_font_offset)
+                    if tr.genre and prefs.row_title_genre:
+                        if was:
+                            run += ddt.text((ex - run, height, 1), separator, colour,
+                                            gui.row_font_size + gui.pl_title_font_offset)
+                        was = True
+                        run += ddt.text((ex - run, height, 1), tr.genre, colour,
+                                          gui.row_font_size + gui.pl_title_font_offset)
+
+
+                    w2 = ddt.text((xx, height), title_line, colours.folder_title, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale)))
+
+
+
+
                 else:
+                    date_w = 0
+                    if date:
+                        date_w = ddt.text((ex, height, 1), date, colours.folder_title,
+                                          gui.row_font_size + gui.pl_title_font_offset)
+                        date_w += 4 * gui.scale
+                        if qq > 1:
+                            date_w -= 1 * gui.scale
+
+                    aa = 0
+
+                    ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
+
+                    left_align = highlight_width - date_w - 13 * gui.scale - light_offset
+
+                    left_align -= star_offset
+
+                    extra = aa
+
+                    left_align -= extra
+
                     if ft_width > left_align:
                         date_w += 19 * gui.scale
                         ddt.text((left + highlight_left + 8 * gui.scale + extra, height), line,
@@ -34305,6 +34364,8 @@ class StandardPlaylist:
                         ddt.text((ex - date_w, height, 1), line,
                                  colours.folder_title,
                                  gui.row_font_size + gui.pl_title_font_offset)
+
+                # -----
 
                 # Draw separation line below title
                 ddt.rect((left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
@@ -42427,6 +42488,9 @@ def save_state():
             prefs.spot_password,
             prefs.artist_list_threshold,
             prefs.tray_theme,
+            prefs.row_title_format,
+            prefs.row_title_genre,
+            prefs.row_title_separator_type,
             ]
 
     try:

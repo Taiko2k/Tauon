@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.6.8
+
+ - Added various options for tracklist row title format
+
 v7.6.7
 
  - Fix crash when pressing Get Scrobble Counts while not logged in
