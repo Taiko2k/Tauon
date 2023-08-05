@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-05-11 12:39+0000\n"
+"PO-Revision-Date: 2023-08-02 17:05+0000\n"
 "Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/zh_Hans/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.18-dev\n"
+"X-Generator: Weblate 5.0-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -241,7 +241,7 @@ msgstr "简单的标签编辑器"
 #: t_modules/t_main.py:14590 t_modules/t_main.py:28389
 #: t_modules/t_main.py:28655 t_modules/t_main.py:29412
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: t_modules/t_main.py:14591
 msgid "Press Enter in each field to apply its changes to local database."
