@@ -12014,7 +12014,7 @@ class AlbumArt():
                 if os.path.splitext(items_in_dir[i])[1][1:] in self.image_types:
                     dir_path = os.path.join(direc, items_in_dir[i]).replace('\\', "/")
                     # The image name "Folder" is likely desired to be prioritised over other names
-                    if os.path.splitext(os.path.basename(dir_path))[0] in ("Folder", "folder"):
+                    if os.path.splitext(os.path.basename(dir_path))[0] in ("Folder", "folder", "Cover", "cover"):
                         source_list.insert(ins, [0, dir_path])
                     else:
                         source_list.append([0, dir_path])
