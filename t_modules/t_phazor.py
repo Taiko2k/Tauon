@@ -1006,7 +1006,7 @@ def player4(tauon):
                         fade = 1
 
                     tauon.console.print("Transition jump")
-                    aud.start(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
+                    aud.start(target_path.encode(errors='surrogateescape'), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
                     loaded_track = target_object
                     pctl.playing_time = pctl.jump_time
                     if pctl.jump_time:
