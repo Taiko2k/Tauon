@@ -21480,7 +21480,7 @@ def ser_rym(index):
 
 
 def copy_to_clipboard(text):
-    SDL_SetClipboardText(text.encode())
+    SDL_SetClipboardText(text.encode(errors='surrogateescape'))
 
 
 def copy_from_clipboard():
@@ -43022,7 +43022,7 @@ while pctl.running:
             power += 5
             dropped_file_sdl = event.drop.file
             # print(dropped_file_sdl)
-            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r",
+            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8", errors='surrogateescape'))).replace("file:///", "/").replace("\r",
                                                                                                                   "")
             # print(target)
             drop_file(target)

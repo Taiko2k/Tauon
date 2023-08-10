@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.6.8
 
  - Added various options for tracklist row title format
+ - Fixed handling of non-utf8 filenames
 
 v7.6.7
 
