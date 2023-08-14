@@ -1371,6 +1371,7 @@ class Prefs:  # Used to hold any kind of settings
         self.row_title_format = 1
         self.row_title_genre = False
         self.row_title_separator_type = 1
+        self.search_on_letter = True
 
 prefs = Prefs()
 
@@ -3812,6 +3813,7 @@ def save_prefs():
     cf.update_value("enable-discord-rpc", prefs.discord_enable)
     cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
     cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
+    cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -4109,6 +4111,8 @@ def load_prefs():
 
     prefs.use_scancodes = cf.sync_add("bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
                                     "When enabled, shortcuts will map to the physical keyboard layout")
+    prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
+                                    "When enabled, pressing single letter keyboard key will activate the global search")
 
     cf.br()
     cf.add_text("[tokens]")
@@ -24464,7 +24468,7 @@ class SearchOverlay:
         if self.active is False:
 
             # Activate search overlay on key presses
-            if input_text != "" and gui.layer_focus == 0 and \
+            if prefs.search_on_letter and input_text != "" and gui.layer_focus == 0 and \
                     not key_lalt and not key_ralt and \
                     not key_ctrl_down and not radiobox.active and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
