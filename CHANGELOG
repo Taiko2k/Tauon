@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.6.7
 
  - Added various options for tracklist row title format
+ - Added feature to set playlist to use persistent time positions
  - Fixed handling of non-utf8 filenames
  - Fix crash when pressing Get Scrobble Counts while not logged in
 

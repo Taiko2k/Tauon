@@ -893,6 +893,7 @@ repeat_mode = False
 # 8 hidden (bool)
 # 9 Locked (bool)
 # 10 Filter parent playlist id (string)
+# 11 Persist time positioning
 
 
 def uid_gen():
@@ -916,7 +917,7 @@ def pl_gen(title='Default',
     notify_change()
 
     return copy.deepcopy(
-        [title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent])
+        [title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
 
 
 multi_playlist = [pl_gen()]  # Create default playlist
@@ -3647,6 +3648,12 @@ if db_version > 0:
                 value.append(0)
                 star_store.db[key] = value
 
+    if db_version <= 67:
+        print("Updating database to version 68")
+        for p in multi_playlist:
+            if len(p) == 11:
+                p.append(False)
+
 if playing_in_queue > len(QUE) - 1:
     playing_in_queue = len(QUE) - 1
 
@@ -5645,6 +5652,13 @@ class PlayerCtl:
         if tauon.stream_proxy and tauon.stream_proxy.download_running:
             tauon.stream_proxy.stop()
 
+        if pctl.multi_playlist[pctl.active_playlist_playing][11]:
+            t = target.misc.get("position", 0)
+            if t:
+                self.playing_time = 0
+                self.decode_time = 0
+                self.jump_time = t
+
         self.playerCommand = 'open'
         if jump:  # and not prefs.use_jump_crossfade:
             self.playerSubCommand = 'now'
@@ -5764,6 +5778,7 @@ class PlayerCtl:
         gui.pl_update += 1
 
     def stop(self, block=False, run=False):
+
         self.playerCommand = 'stop'
         if run:
             self.playerCommand = 'runstop'
@@ -6029,6 +6044,10 @@ class PlayerCtl:
         if self.commit is not None:
             return
 
+        if self.playing_state == 1 and pctl.multi_playlist[pctl.active_playlist_playing][11]:
+            tr = pctl.playing_object()
+            if tr:
+                tr.misc["position"] = pctl.decode_time
 
         if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
@@ -18771,12 +18790,20 @@ def set_download_playlist(pl):
     else:
         prefs.download_playlist = pl_to_id(pl)
 
+def set_podcast_playlist(pl):
+    pctl.multi_playlist[pl][11] ^= True
+
 
 def set_download_deco(pl):
     text = _("Set as Downloads Playlist")
-    id = pl_to_id(pl)
     if id == prefs.download_playlist:
         text = _("Un-set as Downloads Playlist")
+    return [colours.menu_text, colours.menu_background, text]
+
+def set_podcast_deco(pl):
+    text = _("Set Use Persistent Time")
+    if pctl.multi_playlist[pl][11]:
+        text = _("Un-set Use Persistent Time")
     return [colours.menu_text, colours.menu_background, text]
 
 
@@ -18843,6 +18870,8 @@ tab_menu.add_to_sub(2, MenuItem(_("Engage Gallery Quick Add"), start_quick_add, 
 tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), set_sync_playlist, sync_playlist_deco, pass_ref_deco=True,
                     pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), set_download_playlist, set_download_deco, pass_ref_deco=True,
+                    pass_ref=True))
+tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), set_podcast_playlist, set_podcast_deco, pass_ref_deco=True,
                     pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), remove_duplicates, pass_ref=True))
 
@@ -42327,7 +42356,7 @@ def save_state():
             folder_image_offsets,
             None,  # lfm_username,
             None,  # lfm_hash,
-            67,  # Version, used for upgrading
+            68,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
