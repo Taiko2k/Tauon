@@ -7348,8 +7348,11 @@ class LastFMapi:
 
         try:
             username = prefs.last_fm_username
+            print(f"Username is {username}")
 
             if not username:
+                self.scanning_friends = False
+                show_message("There was an error, try re-log in")
                 return
 
             if self.network is None:
@@ -7396,16 +7399,19 @@ class LastFMapi:
             return
 
         if len(username) > 25:
+            print("abort due to long username")
             return
 
         self.scanning_loves = True
+
+        print("Connect for friend scan")
 
         try:
             if self.network is None:
                 self.no_user_connect()
 
             self.network.enable_rate_limit()
-
+            print("Get user...")
             lastfm_user = self.network.get_user(username)
             tracks = lastfm_user.get_loved_tracks(limit=None)
 
@@ -29101,6 +29107,7 @@ class Over:
             return
 
         if not lastfm.scanning_friends and not lastfm.scanning_scrobbles and not lastfm.scanning_loves:
+            print("Launch friend love thread")
             shoot_dl = threading.Thread(target=lastfm.get_friends_love)
             shoot_dl.daemon = True
             shoot_dl.start()
