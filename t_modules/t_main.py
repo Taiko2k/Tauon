@@ -7245,7 +7245,7 @@ class LastFMapi:
 
         title = track_object.title
         album = track_object.album
-        artist = get_artist_strip_feat(track_object)
+        artist = track_object.artist #get_artist_strip_feat(track_object)
         album_artist = track_object.album_artist
 
         print("submitting scrobble...")
@@ -7469,7 +7469,7 @@ class LastFMapi:
 
         title = track_object.title
         album = track_object.album
-        artist = get_artist_strip_feat(track_object)
+        artist = track_object.artist #artist = get_artist_strip_feat(track_object)
 
         try:
             if title != "" and artist != "":
@@ -7532,7 +7532,7 @@ class ListenBrainz:
 
         title = track_object.title
         album = track_object.album
-        artist = get_artist_strip_feat(track_object)
+        artist = track_object.artist #artist = get_artist_strip_feat(track_object)
 
         if title == "" or artist == "":
             return True
@@ -7580,7 +7580,7 @@ class ListenBrainz:
             show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
         title = track_object.title
         album = track_object.album
-        artist = get_artist_strip_feat(track_object)
+        artist = track_object.artist #artist = get_artist_strip_feat(track_object)
 
         if title == "" or artist == "":
             return
