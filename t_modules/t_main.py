@@ -582,6 +582,11 @@ from collections import OrderedDict
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 arch = platform.machine()
+win_ver = platform.release()
+try:
+    win_ver = int(win_ver)
+except:
+    win_ver = 0
 
 
 # print(arch)
@@ -4262,7 +4267,7 @@ if prefs.use_gamepad:
 
 smtc = False
 
-if msys and int(py_platform.release()) >= 10:
+if msys and win_ver >= 10:
     
     #print(sss.info.win.window)
     try:
@@ -9339,7 +9344,7 @@ if (system == "windows" or msys):
 
     tray.start()
 
-    if int(py_platform.release()) < 10:
+    if win_ver < 10:
         import keyboard
 
         def key_callback(event):
