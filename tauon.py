@@ -256,10 +256,13 @@ else:
 if "--tray" in sys.argv:
     flags |= SDL_WINDOW_HIDDEN
 
+error = False
+
 t_window = SDL_CreateWindow(window_title,
                             o_x, o_y,
                             logical_size[0], logical_size[1],
                             flags) # | SDL_WINDOW_FULLSCREEN)
+
 
 
 if maximized:
@@ -267,6 +270,10 @@ if maximized:
 
 
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+
+if not renderer or not t_window:
+    print("ERROR CREATING WINDOW!")
+
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 SDL_SetWindowOpacity(t_window, window_opacity)
 
