@@ -2628,6 +2628,18 @@ class TrackClass:  # This is the fundamental object/data structure of a track
         self.lfm_scrobbles = 0
         self.misc = {}
 
+def get_end_folder(direc):
+    for w in range(len(direc)):
+        if direc[-w - 1] == '\\' or direc[-w - 1] == '/':
+            direc = direc[-w:]
+            return direc
+    return None
+def set_path(nt, path):
+    nt.fullpath = path.replace('\\', '/')
+    nt.filename = os.path.basename(path)
+    nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
+    nt.parent_folder_name = get_end_folder(os.path.dirname(path))
+    nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
 class LoadClass:  # Object for import track jobs (passed to worker thread)
     def __init__(self):
@@ -13442,7 +13454,7 @@ def load_m3u(path):
                 elif os.path.isfile(line):
                     nt = TrackClass()
                     nt.index = pctl.master_count
-                    nt.fullpath = line
+                    set_path(nt, line)
                     nt = tag_scan(nt)
                     pctl.master_library[pctl.master_count] = nt
                     playlist.append(pctl.master_count)
@@ -13672,11 +13684,7 @@ def load_xspf(path):
 
             if 'location' in track:
                 location = track['location']
-                nt.fullpath = location.replace('\\', '/')
-                nt.filename = os.path.basename(location)
-                nt.parent_folder_path = os.path.dirname(location.replace('\\', '/'))
-                nt.parent_folder_name = os.path.splitext(os.path.basename(nt.parent_folder_path))[0]
-                nt.file_ext = os.path.splitext(os.path.basename(location))[1][1:].upper()
+                set_path(nt, location)
                 if os.path.isfile(location):
                     nt.found = True
             elif 'album' in track:
@@ -25581,14 +25589,6 @@ def worker1():
     loaded_cue_cache = {}
     added = []
 
-    def get_end_folder(direc):
-
-        for w in range(len(direc)):
-            if direc[-w - 1] == '\\' or direc[-w - 1] == '/':
-                direc = direc[-w:]
-                return direc
-        return None
-
     def get_quoted_from_line(line):
 
         # e.g extract quoted file name from: 'FILE "01 - Track01.wav" WAVE'
@@ -26029,11 +26029,7 @@ def worker1():
         nt = TrackClass()
 
         nt.index = pctl.master_count
-        nt.fullpath = path.replace('\\', '/')
-        nt.filename = os.path.basename(path)
-        nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
-        nt.parent_folder_name = get_end_folder(os.path.dirname(path))
-        nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
+        set_path(nt, path)
 
         # nt = tag_scan(nt)
         if nt.cue_sheet != "":
@@ -43733,6 +43729,9 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
+            for i in default_playlist:
+                g = pctl.g(i)
+                print(g.parent_folder_path)
             pass
 
         if gui.mode < 3:
