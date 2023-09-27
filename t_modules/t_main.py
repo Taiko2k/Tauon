@@ -8490,6 +8490,7 @@ class PlexService:
 
             gui.to_got += 1
             gui.update += 1
+            gui.pl_update += 1
 
         self.scanning = False
 
