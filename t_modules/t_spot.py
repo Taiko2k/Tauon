@@ -770,9 +770,10 @@ class SpotCtl:
         pages = self.spotify.all_pages(p.tracks)
         for page in pages:
             for item in page.items:
-                nt = self.load_track(item.track, include_album_url=True)
-                self.tauon.pctl.master_library[nt.index] = nt
-                playlist.append(nt.index)
+                if type(item.track) == tk.model.FullPlaylistTrack:
+                    nt = self.load_track(item.track, include_album_url=True)
+                    self.tauon.pctl.master_library[nt.index] = nt
+                    playlist.append(nt.index)
 
         if return_list:
             return playlist
@@ -939,7 +940,7 @@ class SpotCtl:
     def load_track(self, track, update_master_count=True, include_album_url=False):
         if "spotify" in track.external_urls:
             pr = self.current_imports.get(track.external_urls["spotify"])
-        
+
         else:
             pr = False
 
@@ -991,7 +992,7 @@ class SpotCtl:
     def like_track(self, tract_object):
         self.connect()
         if not self.spotify:
-            return 
+            return
         track_url = tract_object.misc.get("spotify-track-url", False)
         if track_url:
             id = track_url.strip("/").split("/")[-1]
