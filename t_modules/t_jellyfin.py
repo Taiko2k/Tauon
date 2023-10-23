@@ -430,9 +430,12 @@ class Jellyfin():
                 params={
                     "recursive": True,
                     "filter": "music"
-                }
+                },
+                #stream=True
             )
+
         except:
+            print("ERROR")
             self.gui.show_message("Error connecting to Jellyfin for Import", mode="error")
             self.scanning = False
             return
@@ -449,6 +452,7 @@ class Jellyfin():
             # group by parent
             grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
         else:
+            print("ERROR")
             self.scanning = False
             self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
             return
