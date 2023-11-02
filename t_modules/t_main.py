@@ -6902,7 +6902,7 @@ def notify_song_fire(notification, delay, id):
     if id is None:
         return
 
-    time.sleep(15)
+    time.sleep(8)
     if id == gui.notify_main_id:
         notification.close()
 
@@ -38793,7 +38793,8 @@ class QueueBox:
 
                     if not item[0] in playlist:
                         continue
-
+                    elif i > len(playlist) - 1:
+                        continue
                     elif playlist[i] != item[0]:
                         i = playlist.index(item[0])
 

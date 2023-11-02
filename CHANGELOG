@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.6.8
 
  - Reverted change to last.fm album artist detection
+ - Fixed a possible crash with queue open
 
 v7.6.7
 
