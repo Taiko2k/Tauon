@@ -3,6 +3,7 @@ Changelog----------------------------
 
 v7.6.8
 
+ - Added setting for condensed fonts
  - Reverted change to last.fm album artist detection
  - Fixed a possible crash with queue open
 

@@ -3797,6 +3797,8 @@ def save_prefs():
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
     cf.update_value("font-main-bold", prefs.linux_font_bold)
+    cf.update_value("font-main-condensed", prefs.linux_font_condensed)
+    cf.update_value("font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
     cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
 
@@ -4050,13 +4052,18 @@ def load_prefs():
                                              "Setting to false will reset below settings to default on restart")
         if prefs.use_custom_fonts:
             prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font,
-                                           "Sugested alternate: Liberation Sans")
+                                           "Suggested alternate: Liberation Sans")
             prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
             prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+            prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+            prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+
         else:
-            cf.sync_add("string", "font-main-standard", prefs.linux_font, "Sugested alternate: Liberation Sans")
+            cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
             cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
             cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+            cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+            cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
         # prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
 
