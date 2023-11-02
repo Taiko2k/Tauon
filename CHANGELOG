@@ -3,7 +3,9 @@ Changelog----------------------------
 
 v7.6.8
 
+ - Moved artist background setting to theme settings tab
  - Added setting for condensed fonts
+ - Added last.fm artist image scraping for artist backgrounds
  - Reverted change to last.fm album artist detection
  - Fixed a possible crash with queue open
 
