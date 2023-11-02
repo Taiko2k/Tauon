@@ -12394,6 +12394,13 @@ class AlbumArt():
             print("Load cached background")
             return open(path, "rb")
 
+        else:
+            # Try last.fm background
+            path = artist_info_box.get_data(artist, get_img_path=True)
+            if os.path.isfile(path):
+                print("Load cached background lfm")
+                return open(path, "rb")
+
         # Check we've not already attempted a search for this artist
         if artist in prefs.failed_background_artists:
             return None
@@ -12439,6 +12446,14 @@ class AlbumArt():
 
         except:
             print("Failed to find fanart background for: %s" % artist)
+            if not gui.artist_info_panel:
+                artist_info_box.get_data(artist)
+                path = artist_info_box.get_data(artist, get_img_path=True)
+                if os.path.isfile(path):
+                    print("Downloaded background lfm")
+                    return open(path, "rb")
+
+
             prefs.failed_background_artists.append(artist)
             return None
 
@@ -27509,13 +27524,17 @@ class Over:
 
         y += 23 * gui.scale
 
+        prefs.enable_fanart_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.enable_fanart_bg,
+                                                    _("Prefer artist backgrounds (uses scraping)"))
+        y += 23 * gui.scale
+
         self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
         # self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
         # self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
         # self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
 
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
+        #y += 23 * gui.scale
+        self.toggle_square(x + 120 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
 
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
@@ -28885,9 +28904,9 @@ class Over:
             y += 25 * gui.scale
             prefs.enable_fanart_artist = self.toggle_square(x, y, prefs.enable_fanart_artist,
                                                             _("Artist images (Automatic)"))
-            y += 25 * gui.scale
-            prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg,
-                                                        _("Artist backgrounds (Automatic)"))
+            #y += 25 * gui.scale
+            # prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg,
+            #                                             _("Artist backgrounds (Automatic)"))
             y += 25 * gui.scale
             x += 23 * gui.scale
             if self.button(x, y, _("Flip current")):
