@@ -31455,6 +31455,10 @@ class BottomBarType1:
         self.play_button = asset_loader('play.png', True)
         self.forward_button = asset_loader('ff.png', True)
         self.back_button = asset_loader('bb.png', True)
+        self.repeat_button = asset_loader('tauon_repeat.png', True)
+        self.shuffle_button = asset_loader('tauon_shuffle.png', True)
+        self.repeat_button_a = asset_loader('tauon_repeat_a.png', True)
+        self.shuffle_button_a = asset_loader('tauon_shuffle_a.png', True)
 
         self.buffer_shard = asset_loader("shard.png", True)
 
@@ -32173,14 +32177,20 @@ class BottomBarType1:
                 if shuffle_menu.active and not pctl.random_mode is True:
                     rpbc = colours.mode_button_over
 
-                y += round(3 * gui.scale)
-                ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc)
+                #self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+
+                #y += round(3 * gui.scale)
+                #ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc)
 
                 if pctl.album_shuffle_mode:
-                    ddt.rect_a((x + 25 * gui.scale, y), (23 * gui.scale, 3 * gui.scale), rpbc)
+                    self.shuffle_button_a.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+                else:
+                    self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
 
-                y += round(5 * gui.scale)
-                ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc)
+                    #ddt.rect_a((x + 25 * gui.scale, y), (23 * gui.scale, 3 * gui.scale), rpbc)
+
+                #y += round(5 * gui.scale)
+                #ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc)
 
                 # REPEAT
                 x = window_size[0] - round(380 * gui.scale) - right_offset
@@ -32242,11 +32252,13 @@ class BottomBarType1:
                 h = round(5 * gui.scale)
 
                 if pctl.album_repeat_mode:
-                    ddt.rect_a((x + round(4 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
-
-                ddt.rect_a((ar - round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
-                ddt.rect_a((ar - w, y), (w, h), rpbc)
-                ddt.rect_a((ar - round(50 * gui.scale), y + h), (round(50 * gui.scale), w), rpbc)
+                    self.repeat_button_a.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+                    #ddt.rect_a((x + round(4 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
+                else:
+                    self.repeat_button.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+                #ddt.rect_a((ar - round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
+                #ddt.rect_a((ar - w, y), (w, h), rpbc)
+                #ddt.rect_a((ar - round(50 * gui.scale), y + h), (round(50 * gui.scale), w), rpbc)
 
                 # ddt.rect_a((x + round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
                 # ddt.rect_a((x + round(4 * gui.scale), y + round(5 * gui.scale)), (math.floor(46 * gui.scale), w), rpbc, True)
