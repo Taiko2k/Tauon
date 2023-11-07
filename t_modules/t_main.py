@@ -31456,6 +31456,8 @@ class BottomBarType1:
         self.forward_button = asset_loader('ff.png', True)
         self.back_button = asset_loader('bb.png', True)
         self.repeat_button = asset_loader('tauon_repeat.png', True)
+        self.repeat_button_off = asset_loader('tauon_repeat_off.png', True)
+        self.shuffle_button_off = asset_loader('tauon_shuffle_off.png', True)
         self.shuffle_button = asset_loader('tauon_shuffle.png', True)
         self.repeat_button_a = asset_loader('tauon_repeat_a.png', True)
         self.shuffle_button_a = asset_loader('tauon_shuffle_a.png', True)
@@ -32148,6 +32150,7 @@ class BottomBarType1:
                 fields.add(rect)
 
                 rpbc = colours.mode_button_off
+                off = True
                 if (inp.mouse_click or right_click) and coll(rect):
 
                     if inp.mouse_click:
@@ -32160,6 +32163,7 @@ class BottomBarType1:
 
                 if pctl.random_mode:
                     rpbc = colours.mode_button_active
+                    off = False
                     if coll(rect):
                         tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
                 elif coll(rect):
@@ -32185,7 +32189,10 @@ class BottomBarType1:
                 if pctl.album_shuffle_mode:
                     self.shuffle_button_a.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
                 else:
-                    self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+                    if off:
+                        self.shuffle_button_off.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+                    else:
+                        self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
 
                     #ddt.rect_a((x + 25 * gui.scale, y), (23 * gui.scale, 3 * gui.scale), rpbc)
 
@@ -32197,6 +32204,7 @@ class BottomBarType1:
                 y = window_size[1] - round(27 * gui.scale)
 
                 rpbc = colours.mode_button_off
+                off = True
 
                 rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
                 fields.add(rect)
@@ -32214,6 +32222,7 @@ class BottomBarType1:
 
                 if pctl.repeat_mode:
                     rpbc = colours.mode_button_active
+                    off = False
                     if coll(rect):
                         if pctl.album_repeat_mode:
                             tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
@@ -32255,7 +32264,10 @@ class BottomBarType1:
                     self.repeat_button_a.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
                     #ddt.rect_a((x + round(4 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
                 else:
-                    self.repeat_button.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+                    if off:
+                        self.repeat_button_off.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+                    else:
+                        self.repeat_button.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
                 #ddt.rect_a((ar - round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
                 #ddt.rect_a((ar - w, y), (w, h), rpbc)
                 #ddt.rect_a((ar - round(50 * gui.scale), y + h), (round(50 * gui.scale), w), rpbc)
