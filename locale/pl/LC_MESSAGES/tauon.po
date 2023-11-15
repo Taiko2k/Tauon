@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2022-09-27 21:18+0000\n"
-"Last-Translator: Triss03 <pr0trik520@gmail.com>\n"
+"PO-Revision-Date: 2023-11-16 07:15+0000\n"
+"Last-Translator: Eryk Michalak <gnu.ewm@protonmail.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
 "Language: pl\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.14.1\n"
+"X-Generator: Weblate 5.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -203,7 +203,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14329 t_modules/t_main.py:38694
 msgid "Queue"
-msgstr ""
+msgstr "Kolejka"
 
 #: t_modules/t_main.py:14331
 msgid "Artist List"
@@ -219,15 +219,15 @@ msgstr ""
 
 #: t_modules/t_main.py:14397 t_modules/t_main.py:46840
 msgid "Default"
-msgstr ""
+msgstr "Domyślne"
 
 #: t_modules/t_main.py:14421
 msgid "BEFORE"
-msgstr ""
+msgstr "PRZED"
 
 #: t_modules/t_main.py:14425
 msgid "AFTER"
-msgstr ""
+msgstr "PO"
 
 #: t_modules/t_main.py:14514
 msgid "Rename complete."
@@ -244,7 +244,7 @@ msgstr ""
 #: t_modules/t_main.py:14590 t_modules/t_main.py:28389
 #: t_modules/t_main.py:28655 t_modules/t_main.py:29412
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: t_modules/t_main.py:14591
 msgid "Press Enter in each field to apply its changes to local database."
@@ -318,7 +318,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14817 t_modules/t_main.py:14839
 msgid "with"
-msgstr ""
+msgstr "z"
 
 #: t_modules/t_main.py:14905
 msgid "Export Playlist"
@@ -334,11 +334,11 @@ msgstr ""
 
 #: t_modules/t_main.py:14932
 msgid "Auto-export"
-msgstr ""
+msgstr "Automatyczny eksport"
 
 #: t_modules/t_main.py:14935 t_modules/t_main.py:14940
 msgid "Export"
-msgstr ""
+msgstr "Eksport"
 
 #: t_modules/t_main.py:14948
 msgid "Directory does not exist"
@@ -449,7 +449,7 @@ msgstr ""
 
 #: t_modules/t_main.py:15518
 msgid "Cancel"
-msgstr ""
+msgstr "Anuluj"
 
 #: t_modules/t_main.py:15528
 msgid "Hide Metadata Panel"
@@ -488,7 +488,7 @@ msgstr ""
 #: t_modules/t_main.py:15652 t_modules/t_main.py:21289
 #: t_modules/t_main.py:21345 t_modules/t_main.py:35836
 msgid "Searching..."
-msgstr ""
+msgstr "Wyszukiwanie..."
 
 #: t_modules/t_main.py:15685
 msgid "No lyrics for this track were found"
@@ -621,23 +621,23 @@ msgstr ""
 #: t_modules/t_main.py:16584 t_modules/t_main.py:16585
 #: t_modules/t_main.py:46851
 msgid "Rename"
-msgstr ""
+msgstr "Zmień nazwę"
 
 #: t_modules/t_main.py:16596
 msgid "Pin"
-msgstr ""
+msgstr "Przypnij"
 
 #: t_modules/t_main.py:16598
 msgid "Unpin"
-msgstr ""
+msgstr "Odepnij"
 
 #: t_modules/t_main.py:16606
 msgid "Unlock"
-msgstr ""
+msgstr "Odblokuj"
 
 #: t_modules/t_main.py:16608 t_modules/t_main.py:16642
 msgid "Lock"
-msgstr ""
+msgstr "Zablokuj"
 
 #: t_modules/t_main.py:16830 t_modules/t_main.py:21605
 #: t_modules/t_main.py:28722 t_modules/t_main.py:28725
@@ -645,7 +645,7 @@ msgstr ""
 #: t_modules/t_main.py:29232 t_modules/t_main.py:29236
 #: t_modules/t_main.py:29245
 msgid "Clear"
-msgstr ""
+msgstr "Wyczyść"
 
 #: t_modules/t_main.py:16887
 msgid "Are you sure you want to delete this playlist?"
@@ -670,7 +670,7 @@ msgstr ""
 #: t_modules/t_main.py:17473 t_modules/t_main.py:17475
 #: t_modules/t_main.py:46860
 msgid "Delete"
-msgstr ""
+msgstr "Usuń"
 
 #: t_modules/t_main.py:17547
 msgid "Add Spotify Album"
@@ -708,7 +708,7 @@ msgstr ""
 
 #: t_modules/t_main.py:18329 t_modules/t_main.py:18337
 msgid "Upload"
-msgstr ""
+msgstr "Prześlij"
 
 #: t_modules/t_main.py:18350
 msgid "Regenerate"
@@ -716,11 +716,11 @@ msgstr ""
 
 #: t_modules/t_main.py:18351
 msgid "Generate…"
-msgstr ""
+msgstr "Generuj…"
 
 #: t_modules/t_main.py:18352
 msgid "Sort…"
-msgstr ""
+msgstr "Sortuj…"
 
 #: t_modules/t_main.py:18353
 msgid "From Current…"
@@ -749,7 +749,7 @@ msgstr ""
 #: t_modules/t_main.py:18368 t_modules/t_main.py:20233
 #: t_modules/t_main.py:21603
 msgid "Paste"
-msgstr ""
+msgstr "Wklej"
 
 #: t_modules/t_main.py:18369
 msgid "Append Playing"
@@ -757,11 +757,11 @@ msgstr ""
 
 #: t_modules/t_main.py:18374
 msgid "Export…"
-msgstr ""
+msgstr "Eksport…"
 
 #: t_modules/t_main.py:18376
 msgid "Misc…"
-msgstr ""
+msgstr "Różne…"
 
 #: t_modules/t_main.py:18425
 msgid "No target folder selected"
@@ -895,7 +895,7 @@ msgstr ""
 
 #: t_modules/t_main.py:18951 t_modules/t_main.py:21958
 msgid "Codec"
-msgstr ""
+msgstr "Kodek"
 
 #: t_modules/t_main.py:19007 t_modules/t_main.py:19014
 #: t_modules/t_main.py:19015
