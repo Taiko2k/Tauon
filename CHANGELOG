@@ -1,7 +1,7 @@
 
 Changelog----------------------------
 
-v7.6.8
+v7.7.0
 
  - Added new interactive icons for shuffle and repeat (Thanks @skylineone044 for help with that)
  - Added last.fm artist image scraping for artist backgrounds
@@ -10,6 +10,7 @@ v7.6.8
  - Reverted change to last.fm album artist detection
  - Fixed a possible crash with queue open
  - Fixed a possible crash dragging tracks
+ - Fixed an issue with fanart.tv artist images
 
 v7.6.7
 

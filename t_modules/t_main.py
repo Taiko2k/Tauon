@@ -12437,6 +12437,7 @@ class AlbumArt():
             assert l > 1000
 
             # Cache image for future use
+            path = os.path.join(a_cache_dir, artist + '-ftv-full.jpg')
             f = open(path, "wb")
             f.write(t.read())
             f.close()
@@ -12445,6 +12446,7 @@ class AlbumArt():
             return t
 
         except:
+            #raise
             print("Failed to find fanart background for: %s" % artist)
             if not gui.artist_info_panel:
                 artist_info_box.get_data(artist)
@@ -27524,8 +27526,13 @@ class Over:
 
         y += 23 * gui.scale
 
+        old = prefs.enable_fanart_bg
         prefs.enable_fanart_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.enable_fanart_bg,
-                                                    _("Prefer artist backgrounds (uses scraping)"))
+                                                    _("Prefer artist backgrounds"))
+        if prefs.enable_fanart_bg and prefs.enable_fanart_bg != old:
+            if not prefs.auto_dl_artist_data:
+                prefs.auto_dl_artist_data = True
+                show_message("Also enabling \"auto-fech artist data\" to scrape last.fm.", "You can toggle this back off under Settings > Function")
         y += 23 * gui.scale
 
         self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
