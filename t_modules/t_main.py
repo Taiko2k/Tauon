@@ -32676,6 +32676,8 @@ class MiniMode:
 
         self.left_slide = asset_loader("left-slide.png", True)
         self.right_slide = asset_loader("right-slide.png", True)
+        self.repeat = asset_loader("repeat-mini-mode.png", True)
+        self.shuffle = asset_loader("shuffle-mini-mode.png", True)
 
         self.shuffle_fade_timer = Timer(100)
         self.repeat_fade_timer = Timer(100)
@@ -32855,11 +32857,16 @@ class MiniMode:
             if pctl.random_mode:
                 colour = [255, 255, 255, 190]
 
-            sx = seek_r[0] + seek_w + 8 * gui.scale
-            sy = seek_r[1] - 1 * gui.scale
-            ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
-            sy += 4 * gui.scale
-            ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
+            sx = seek_r[0] + seek_w + 12 * gui.scale
+            sy = seek_r[1] - 2 * gui.scale
+            self.shuffle.render(sx, sy, colour)
+
+
+            # sx = seek_r[0] + seek_w + 8 * gui.scale
+            # sy = seek_r[1] - 1 * gui.scale
+            # ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
+            # sy += 4 * gui.scale
+            # ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
 
         shuffle_area = (seek_r[0] - 41 * gui.scale, seek_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
         if coll(control_hit_area) and not prefs.shuffle_lock:
@@ -32869,13 +32876,20 @@ class MiniMode:
             if pctl.repeat_mode:
                 colour = [255, 255, 255, 190]
 
-            sx = seek_r[0] - 39 * gui.scale
-            sy = seek_r[1] - 1 * gui.scale
 
-            tw = 2 * gui.scale
-            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)
-            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour)
-            ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour)
+            sx = seek_r[0] - 36 * gui.scale
+            sy = seek_r[1] - 1 * gui.scale
+            self.repeat.render(sx, sy, colour)
+
+
+            # sx = seek_r[0] - 39 * gui.scale
+            # sy = seek_r[1] - 1 * gui.scale
+
+            #tw = 2 * gui.scale
+            # ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)
+            # ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour)
+            # ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour)
+
 
         # Forward and back clicking
         if inp.mouse_click:
@@ -33267,11 +33281,16 @@ class MiniMode3:
             if pctl.random_mode:
                 colour = [255, 255, 255, 190]
 
-            sx = volume_r[0] + volume_w + 8 * gui.scale
-            sy = volume_r[1] - 1 * gui.scale
-            ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
-            sy += 4 * gui.scale
-            ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
+            sx = volume_r[0] + volume_w + 12 * gui.scale
+            sy = volume_r[1] - 3 * gui.scale
+            mini_mode.shuffle.render(sx, sy, colour)
+
+            #
+            # sx = volume_r[0] + volume_w + 8 * gui.scale
+            # sy = volume_r[1] - 1 * gui.scale
+            # ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour)
+            # sy += 4 * gui.scale
+            # ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour)
 
         shuffle_area = (volume_r[0] - 41 * gui.scale, volume_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
         if True: #coll(control_hit_area) and not prefs.shuffle_lock:
@@ -33283,11 +33302,15 @@ class MiniMode3:
 
             sx = volume_r[0] - 39 * gui.scale
             sy = volume_r[1] - 1 * gui.scale
+            mini_mode.repeat.render(sx, sy, colour)
 
-            tw = 2 * gui.scale
-            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)
-            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour)
-            ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour)
+            # sx = volume_r[0] - 39 * gui.scale
+            # sy = volume_r[1] - 1 * gui.scale
+            #
+            # tw = 2 * gui.scale
+            # ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour)
+            # ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour)
+            # ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour)
 
         # Forward and back clicking
         if inp.mouse_click:
@@ -36617,7 +36640,7 @@ class PlaylistBox:
 
             elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
                 for item in shift_selection:
-                    if default_playlist[item] in pl[2]:
+                    if len(default_playlist) > item and default_playlist[item] in pl[2]:
                         ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h),
                                  [190, 170, 20, 255])
                         break

@@ -9,6 +9,7 @@ v7.6.8
  - Moved artist background setting to theme settings tab
  - Reverted change to last.fm album artist detection
  - Fixed a possible crash with queue open
+ - Fixed a possible crash dragging tracks
 
 v7.6.7
 
