@@ -68,11 +68,11 @@ if "--no-start" in sys.argv:
 install_directory = os.path.dirname(os.path.abspath(__file__))
 
 pyinstaller_mode = False
-if 'base_library' in install_directory:
-    pyinstaller_mode = True
-    install_directory = os.path.dirname(install_directory)
 if hasattr(sys, "_MEIPASS"):
     pyinstaller_mode = True
+if install_directory.endswith("\\_internal"):
+    pyinstaller_mode = True
+    install_directory = os.path.dirname(install_directory)
 
 if pyinstaller_mode:
      os.environ["PATH"] += ":" + sys._MEIPASS
