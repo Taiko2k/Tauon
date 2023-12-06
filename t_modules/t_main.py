@@ -12384,7 +12384,7 @@ class AlbumArt():
         return sss
 
     def get_background(self, track):
-        print("Find background...")
+        #print("Find background...")
         # Determine artist name to use
         artist = get_artist_safe(track)
         if not artist:
@@ -24251,15 +24251,19 @@ def cue_scan(content, tn):
             # nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
             # nt.parent_folder_name = os.path.splitext(os.path.basename(filepath))[0]
             # nt.file_ext = os.path.splitext(os.path.basename(filepath))[1][1:].upper()
-
-            nt.album_artist = MAIN_PERFORMER
-            nt.artist = PERFORMER
-            nt.genre = GENRE
+            if MAIN_PERFORMER:
+                nt.album_artist = MAIN_PERFORMER
+            if PERFORMER:
+                nt.artist = PERFORMER
+            if GENRE:
+                nt.genre = GENRE
             nt.title = TITLE
             nt.length = LENGTH
             # nt.bitrate = source_track.bitrate
-            nt.album = ALBUM
-            nt.date = DATE.replace('"', '')
+            if ALBUM:
+                nt.album = ALBUM
+            if DATE:
+                nt.date = DATE.replace('"', '')
             nt.track_number = TN
             nt.start_time = START
             nt.is_cue = True
@@ -26060,6 +26064,7 @@ def worker1():
 
         # nt = tag_scan(nt)
         if nt.cue_sheet != "":
+            tag_scan(nt)
             cue_scan(nt.cue_sheet, nt)
             del nt
 
