@@ -224,6 +224,9 @@ class Flac:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
                         self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
+                    elif "artistsort" == a:
+                        self.misc["artist_sort"] = b.decode("utf-8")
+
                     # else:
                     #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
                     #     print(b)
@@ -528,6 +531,9 @@ class Opus:
                         self.composer = b.decode("utf-8")
                     elif "fmps_rating" == a:
                         self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
+                    elif "artistsort" == a:
+                        self.misc["artist_sort"] = b.decode("utf-8")
+
                     # else:
                     #     print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
                     #     print(b.decode("utf-8"))

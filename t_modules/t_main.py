@@ -4552,6 +4552,10 @@ def use_id3(tags, nt):
             if item.owner == "http://musicbrainz.org":
                 nt.misc['musicbrainz_recordingid'] = item.data.decode()
 
+    tx = tags.getall("TSOP")
+    if tx:
+        nt.misc["artist_sort"] = tx[0].text[0]
+
     tx = tags.getall("TXXX")
     if tx:
         for item in tx:
@@ -25322,11 +25326,12 @@ def worker2():
                         genre = t.genre.lower().replace("-", "")
                         filename = t.filename.lower().replace("-", "")
                         stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
+                        sartist = t.misc.get("artist_sort", "").lower()
 
                         if cache_string is None:
                             if not dia_mode:
                                 search_string_cache[
-                                    track] = title + artist + album_artist + composer + date + album + genre + filename + stem
+                                    track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
                         if dia_mode:
                             title = unidecode(title).decode()
@@ -25336,10 +25341,11 @@ def worker2():
                             composer = unidecode(composer).decode()
                             album = unidecode(album).decode()
                             filename = unidecode(filename).decode()
+                            sartist = unidecode(sartist).decode()
 
                             if cache_string is None:
                                 search_dia_string_cache[
-                                    track] = title + artist + album_artist + composer + date + album + genre + filename + stem
+                                    track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
                         stem = os.path.dirname(t.parent_folder_path)
 
@@ -25394,7 +25400,7 @@ def worker2():
                                     temp_results.append([7, year, track, playlist[6], 0])
                                     years[year] = 1000
 
-                        if search_magic(s_text, title + artist + filename + album + album_artist):
+                        if search_magic(s_text, title + artist + filename + album + sartist + album_artist):
 
                             if 'artists' in t.misc and t.misc['artists']:
                                 for a in t.misc['artists']:
@@ -25417,7 +25423,7 @@ def worker2():
                                             temp_results.append([1, t.album, track, playlist[6], 0])
                                             albums[t.album] = 1
 
-                            elif search_magic(s_text, artist):
+                            elif search_magic(s_text, artist + sartist):
 
                                 value = 1
                                 if artist.startswith(s_text):
@@ -25467,7 +25473,7 @@ def worker2():
                                     temp_results.append([1, t.album, track, playlist[6], 0])
                                     albums[t.album] = value
 
-                            if search_magic(s_text, artist) or search_magic(s_text, album):
+                            if search_magic(s_text, artist + sartist) or search_magic(s_text, album):
 
                                 if t.album in albums:
                                     albums[t.album] += 3
@@ -25475,7 +25481,7 @@ def worker2():
                                     temp_results.append([1, t.album, track, playlist[6], 0])
                                     albums[t.album] = 3
 
-                            elif search_magic_any(s_text, artist) and search_magic_any(s_text, album):
+                            elif search_magic_any(s_text, artist + sartist) and search_magic_any(s_text, album):
 
                                 if t.album in albums:
                                     albums[t.album] += 3
@@ -46997,7 +47003,7 @@ while pctl.running:
                             for item in default_playlist:
                                 tr = pctl.g(item)
                                 line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
-                                                 tr.album_artist]).lower()
+                                                 tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
 
                                 # if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
                                 #     line = str(unidecode(line))
@@ -47035,7 +47041,7 @@ while pctl.running:
                             search_terms = search_text.text.lower().split()
                             tr = pctl.g(default_playlist[search_index])
                             line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
-                                             tr.album_artist]).lower()
+                                             tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
 
                             # if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
                             #     line = str(unidecode(line))
