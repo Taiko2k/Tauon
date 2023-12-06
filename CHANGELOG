@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.7.1
+
+ - Fixed replay gain preamp setting not persisting
+
 v7.7.0
 
  - Added new interactive icons for shuffle and repeat (Thanks @skylineone044 for help with that)

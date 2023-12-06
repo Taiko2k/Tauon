@@ -3147,6 +3147,8 @@ for t in range(2):
             prefs.row_title_genre = save[179]
         if save[180] is not None:
             prefs.row_title_separator_type = save[180]
+        if save[181] is not None:
+            prefs.replay_preamp = save[181]
 
         state_file.close()
         del save
@@ -42614,6 +42616,7 @@ def save_state():
             prefs.row_title_format,
             prefs.row_title_genre,
             prefs.row_title_separator_type,
+            prefs.replay_preamp,  # 181
             ]
 
     try:
