@@ -520,6 +520,25 @@ def filename_safe(text, sub=""):
         text = text.replace(cha, sub)
     return text.rstrip(" .")
 
+def filename_to_metadata(filename):
+
+    # Remove the file extension
+    name_without_extension = filename.rsplit('.', 1)[0]
+
+    # Remove leading track numbers if present
+    name_without_track_number = re.sub(r'^\d{1,2}[. -]+', '', name_without_extension)
+
+    # Split the filename on ' - ' to separate the artist and the title
+    if ' - ' in name_without_track_number:
+        artist, title = name_without_track_number.split(' - ', 1)
+    else:
+        # If ' - ' is not present, return the whole name as title and empty string as artist
+        artist = ''
+        title = name_without_track_number
+
+    return artist, title
+
+
 def get_artist_strip_feat(track_object):
 
     artist_name = track_object.artist #.lower()
