@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-11-12 21:00+0000\n"
+"PO-Revision-Date: 2023-11-22 21:04+0000\n"
 "Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/zh_Hans/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.2-dev\n"
+"X-Generator: Weblate 5.2.1-rc\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -315,7 +315,7 @@ msgstr "替换"
 
 #: t_modules/t_main.py:14817 t_modules/t_main.py:14839
 msgid "with"
-msgstr ""
+msgstr "和"
 
 #: t_modules/t_main.py:14905
 msgid "Export Playlist"
@@ -2050,7 +2050,7 @@ msgstr "显示阈值标记"
 
 #: t_modules/t_main.py:28615
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: t_modules/t_main.py:28633
 msgid "Playlist name"
