@@ -386,6 +386,12 @@ class Gnome:
                                 'xesam:genre': dbus.Array([track.genre])
 
                             }
+                            if not track.title:
+                                a, t = filename_to_metadata(track.filename)
+                                if not track.artist:
+                                    d['xesam:artist'] = dbus.Array([a])
+                                d["xesam:title"] = t
+
                             try:
                                 d['xesam:url'] = "file://" + urllib.parse.quote(track.fullpath)
                             except:

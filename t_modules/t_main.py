@@ -6911,7 +6911,6 @@ if system == 'linux' and not macos and not msys:
 def notify_song_fire(notification, delay, id):
     time.sleep(delay)
     notification.show()
-
     if id is None:
         return
 
@@ -6928,13 +6927,12 @@ def notify_song(notify_of_end=False, delay=0.0):
         return
 
     if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused():
-
         if prefs.stop_notifications_mini_mode and gui.mode == 3:
             return
 
         track = pctl.playing_object()
 
-        if not track or not (track.title or track.artist or track.album):
+        if not track or not (track.title or track.artist or track.album or track.filename):
             return  # only display if we have at least one piece of metadata avaliable
 
         i_path = ""
@@ -6946,13 +6944,17 @@ def notify_song(notify_of_end=False, delay=0.0):
             print("Thumbnail error")
 
         top_line = track.title
-        if not top_line:
-            top_line = clean_string(track.filename)
 
         if prefs.notify_include_album:
             bottom_line = (track.artist + " | " + track.album).strip("| ")
         else:
             bottom_line = track.artist
+
+        if not track.title:
+            a, t = filename_to_metadata(clean_string(track.filename))
+            if not track.artist:
+                bottom_line = a
+            top_line = t
 
         gui.notify_main_id = uid_gen()
         id = gui.notify_main_id
@@ -6960,15 +6962,9 @@ def notify_song(notify_of_end=False, delay=0.0):
         if notify_of_end:
             bottom_line = "Tauon Music Box"
             top_line = _("End of playlist")
-
-            song_notification.update(top_line, bottom_line, i_path)
             id = None
 
-        elif track.album:
-            song_notification.update(top_line, bottom_line, i_path)
-
-        else:
-            song_notification.update(bottom_line, "", i_path)
+        song_notification.update(top_line, bottom_line, i_path)
 
         shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay, id]))
         shoot_dl.daemon = True
