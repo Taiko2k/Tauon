@@ -46431,9 +46431,9 @@ while pctl.running:
                     else:
 
                         if tc.file_ext == "JELY":
+                            e_colour = [130, 130, 130, 255]
                             if "container" in tc.misc:
                                 line = tc.misc["container"].upper()
-                                e_colour = [130, 130, 130, 255]
                                 if line in format_colours:
                                     e_colour = format_colours[line]
 
