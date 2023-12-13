@@ -369,6 +369,24 @@ def is_ignorable_file(string):
     return False
 
 
+# Pre-compile the regular expression pattern for dates starting with the year
+date_pattern = re.compile(r'\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*')
+
+def get_year_from_string(s):
+    # Search for the pattern in the string
+    match = date_pattern.search(s)
+
+    # Extract and return the year if a match is found
+    if match:
+        return match.group(2) if match.group(2) else match.group(3)
+
+    return ""
+
+
+# Example usage
+example_string = "Event date: 2021-12-31."
+print(get_year_from_string(example_string))  # Output: "2021"
+
 def is_music_related(string):
     for s in [
         "Folder.jpg",
@@ -824,18 +842,6 @@ class FunctionStore:
             item[0](*item[1])
 
 
-year_search = re.compile(r'\d{4}')
-
-
-
-def year_from_string(date_string):
-
-    result = year_search.search(date_string)
-    if result:
-        return result.group(0)
-    else:
-        return False
-
 
 def grow_rect(rect, px):
     return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
@@ -923,10 +929,18 @@ def shooter(func, args=()):
     shoot.daemon = True
     shoot.start()
 
+
+year_search = re.compile(r'\d{4}')
+
 def d_date_display(track):
     if 'rdat' in track.misc:
         return str(track.date) + " → " + track.misc["rdat"]
     return str(track.date)
+
+def d_date_display2(track):
+    if 'rdat' in track.misc:
+        return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.misc["rdat"])
+    return str(get_year_from_string(track.date))
 
 def process_odat(nt, odat):
     if odat and odat != nt.date and odat != nt.date[:4] and odat != nt.date[-4:] \

@@ -34332,7 +34332,10 @@ class StandardPlaylist:
                         line = tr.album
 
                     if prefs.append_date and year_search.search(tr.date):
-                        date = "(" + d_date_display(tr) + ")"
+                        year = d_date_display2(tr)
+                        if not year:
+                            year = d_date_display(tr)
+                        date = "(" + year + ")"
 
                     if line.endswith(")"):
                         b = line.split("(")
