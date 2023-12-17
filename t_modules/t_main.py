@@ -28401,10 +28401,10 @@ class Over:
 
         y += 15 * gui.scale
 
-        if self.button2(x, y, "koel", width=84 * gui.scale):
+        if key_shift_down and self.button2(x + round(95 * gui.scale), y, "koel", width=84 * gui.scale):
             self.account_view = 6
 
-        if self.button2(x + round(95 * gui.scale), y, "Jellyfin", width=84 * gui.scale):
+        if self.button2(x, y, "Jellyfin", width=84 * gui.scale):
             self.account_view = 10
 
         y += 28 * gui.scale

@@ -9,6 +9,7 @@ v7.7.1
  - Tweaked folder title to only show year in date
  - Fixed a repeat of first part of track when in an album queue
  - Fixed replay gain preamp setting not persisting
+ - Deprecated koel support
 
 v7.7.0
 
