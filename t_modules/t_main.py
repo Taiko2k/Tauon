@@ -6394,7 +6394,7 @@ class PlayerCtl:
                         return
 
                     if dry:
-                        return pl[self.playlist_playing_position]
+                        return pl[self.playlist_playing_position + 1]
                     self.track_queue.append(pl[self.playlist_playing_position])
                     self.queue_step = len(self.track_queue) - 1
                     # self.queue_target = len(self.track_queue) - 1

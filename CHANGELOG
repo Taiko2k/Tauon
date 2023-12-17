@@ -7,6 +7,7 @@ v7.7.1
  - Tweaked global search to include artist sort order tag
  - Tweaked MPRIS and notifications to fallback to filename if metadata missing
  - Tweaked folder title to only show year in date
+ - Fixed a repeat of first part of track when in an album queue
  - Fixed replay gain preamp setting not persisting
 
 v7.7.0
