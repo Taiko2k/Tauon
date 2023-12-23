@@ -532,6 +532,15 @@ except:
     last_fm_enable = False
     print("PyLast moduel not found, last fm will be disabled.")
 
+use_cc = False
+try:
+    import opencc
+    s2t = opencc.OpenCC('s2t.json')
+    t2s = opencc.OpenCC('t2s.json')
+    use_cc = True
+except:
+    print("OpenCC not found.")
+
 use_natsort = False
 try:
     import natsort
@@ -24655,8 +24664,9 @@ class SearchOverlay:
 
                 gui.update += 1
             else:
-                if self.input_timer.get() >= 0.20 and len(
-                        search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
+                if self.input_timer.get() >= 0.20 and \
+                        (len(search_over.search_text.text) > 1 or (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text) > 128)) \
+                         and search_over.search_text.text != search_over.searched_text:
                     try:
                         self.sip = True
                         worker2_lock.release()
@@ -25213,7 +25223,7 @@ def worker2():
     while True:
         worker2_lock.acquire()
 
-        if len(search_over.search_text.text) > 1:
+        if search_over.search_text.text and not (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text[0]) < 128):
 
             if search_over.spotify_mode:
                 t = spot_search_rate_timer.get()
@@ -25257,31 +25267,39 @@ def worker2():
                 search_over.sip = True
                 gui.update += 1
 
-                s_text = search_over.search_text.text.lower().replace("-", "")
+                o_text = search_over.search_text.text.lower().replace("-", "")
 
                 dia_mode = False
-                if all([ord(c) < 128 for c in s_text]):
+                if all([ord(c) < 128 for c in o_text]):
                     dia_mode = True
 
                 artist_mode = False
-                if s_text.startswith("artist "):
-                    s_text = s_text[7:]
+                if o_text.startswith("artist "):
+                    o_text = o_text[7:]
                     artist_mode = True
 
                 album_mode = False
-                if s_text.startswith("album "):
-                    s_text = s_text[6:]
+                if o_text.startswith("album "):
+                    o_text = o_text[6:]
                     album_mode = True
 
                 composer_mode = False
-                if s_text.startswith("composer "):
-                    s_text = s_text[9:]
+                if o_text.startswith("composer "):
+                    o_text = o_text[9:]
                     composer_mode = True
 
                 year_mode = False
-                if s_text.startswith("year "):
-                    s_text = s_text[5:]
+                if o_text.startswith("year "):
+                    o_text = o_text[5:]
                     year_mode = True
+
+                cn_mode = False
+                if use_cc and re.search(r'[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]', o_text):
+                    t_cn = s2t.convert(o_text)
+                    s_cn = t2s.convert(o_text)
+                    cn_mode = True
+
+                s_text = o_text
 
                 searched = set()
 
@@ -25297,6 +25315,18 @@ def worker2():
                             continue
                         else:
                             searched.add(track)
+
+
+                        if cn_mode:
+                            s_text = o_text
+                            cache_string = search_string_cache.get(track)
+                            if cache_string:
+                                if search_magic_any(s_text, cache_string):
+                                    pass
+                                elif search_magic_any(t_cn, cache_string):
+                                    s_text = t_cn
+                                elif search_magic_any(s_cn, cache_string):
+                                    s_text = s_cn
 
                         if dia_mode:
                             cache_string = search_dia_string_cache.get(track)
@@ -25328,6 +25358,16 @@ def worker2():
                             if not dia_mode:
                                 search_string_cache[
                                     track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+
+                            if cn_mode:
+                                cache_string = search_string_cache.get(track)
+                                if cache_string:
+                                    if search_magic_any(s_text, cache_string):
+                                        pass
+                                    elif search_magic_any(t_cn, cache_string):
+                                        s_text = t_cn
+                                    elif search_magic_any(s_cn, cache_string):
+                                        s_text = s_cn
 
                         if dia_mode:
                             title = unidecode(title).decode()
@@ -25387,7 +25427,7 @@ def worker2():
 
                         if s_text in date:
 
-                            year = year_from_string(date)
+                            year = get_year_from_string(date)
                             if year:
 
                                 if year in years:
