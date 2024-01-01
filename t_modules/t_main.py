@@ -12449,10 +12449,8 @@ class AlbumArt():
 
             # Cache image for future use
             path = os.path.join(a_cache_dir, artist + '-ftv-full.jpg')
-            f = open(path, "wb")
-            f.write(t.read())
-            f.close()
-
+            with open(path, "wb") as f:
+                f.write(t.read())
             t.seek(0)
             return t
 
