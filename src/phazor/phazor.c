@@ -1133,11 +1133,39 @@ int disconnect_pulse() {
     return 0;
 }
 
+void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
+    printf("Log [%u]: %s\n", level, pMessage);
+    // Additional logic for handling log messages can be added here
+}
+
 void connect_pulse() {
 
     if (pulse_connected == 1) {
         //printf("pa: reconnect pulse\n");
         disconnect_pulse();
+    }
+
+    if (getenv("MA_DEBUG")) {
+        ma_result result;
+        ma_log logger;
+
+        // Initialize the logger
+        result = ma_log_init(NULL, &logger);
+        if (result != MA_SUCCESS) {
+            printf("Failed to initialize logger.\n");
+            return;
+        }
+
+            // Create the log callback structure
+        ma_log_callback logCallback = ma_log_callback_init(my_log_callback, NULL);
+
+        // Register the log callback
+        result = ma_log_register_callback(&logger, logCallback);
+        if (result != MA_SUCCESS) {
+            printf("Failed to register log callback.\n");
+            ma_log_uninit(&logger);
+            return;
+        }
     }
 
     int n = -1;
@@ -1175,8 +1203,12 @@ void connect_pulse() {
     config.periodSizeInMilliseconds      = config_dev_buffer / 4;
     config.periods      = 4;   //
 
-    if (ma_device_init(&context, &config, &device) != MA_SUCCESS) {
+    ma_result result;
+    result = ma_device_init(&context, &config, &device);
+    if (result != MA_SUCCESS) {
         printf("ph: Device init error\n");
+        const char* description = ma_result_description(result);
+        printf("Result Description: %s\n", description);
         mode = STOPPED;
         return;  // Failed to initialize the device.
     }
@@ -2206,7 +2238,7 @@ int stop() {
     return 0;
 }
 
-void wait() {
+void wait_for_command() {
     while (command != NONE) {
         usleep(1000);
     }
