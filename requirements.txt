@@ -12,3 +12,4 @@ mutagen
 natsort
 PyGObject
 dbus-python
+opencc

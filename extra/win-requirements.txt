@@ -14,3 +14,4 @@ mutagen
 natsort
 tekore
 pypresence
+opencc
