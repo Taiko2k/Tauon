@@ -64,10 +64,11 @@
 
   <releases>
 
-    <release version="7.6.7" date="2023-09-24">
+    <release version="7.7.1" date="2024-01-22">
       <description>
         <ul>
-          <li>Various tweaks and bug fixes</li>
+          <li>Improved search with Chinese text</li>
+          <li>Various tweaks and fixes</li>
         </ul>
       </description>
     </release>
