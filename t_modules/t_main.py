@@ -535,8 +535,8 @@ except:
 use_cc = False
 try:
     import opencc
-    s2t = opencc.OpenCC('s2t.json')
-    t2s = opencc.OpenCC('t2s.json')
+    s2t = opencc.OpenCC('s2t')
+    t2s = opencc.OpenCC('t2s')
     use_cc = True
 except:
     print("OpenCC not found.")
