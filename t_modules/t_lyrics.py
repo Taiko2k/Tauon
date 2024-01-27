@@ -70,6 +70,8 @@ def ovh(artist, title):
 
 def genius(artist, title, return_url=False):
 
+    artist = artist.split('feat.')[0]
+    title = title.split('(feat.')[0]
     line = f"{artist}-{title}"
     line = re.sub("[,._@!#%^*+:;'()]", "", line)
     line = line.replace("]", "")
