@@ -489,8 +489,14 @@ class Jellyfin():
                     folder_name += " / "
                 folder_name += nt.album
 
-                if track.get("AlbumId") and folder_name:
-                    key = track.get("AlbumId") + nt.album
+                if folder_name and nt.date:
+                    folder_name += f" ({nt.date})"
+
+                album_id = track.get("AlbumId")
+
+                # keep the same folder title for same album id
+                if album_id and folder_name:  
+                    key = album_id + nt.album
                     if key not in mem_folder:
                         mem_folder[key] = folder_name
                     folder_name = mem_folder[key]
