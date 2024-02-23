@@ -51,6 +51,7 @@ You can also install from the [AUR](https://aur.archlinux.org/packages/tauon-mus
 
  - [SlackBuilds](https://slackbuilds.org/repository/15.0/audio/tauonmb/)
  - NixPkgs: tauon
+ - GURU: TauonMusicBox
 
 
 ___
