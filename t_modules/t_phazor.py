@@ -55,7 +55,12 @@ def player4(tauon):
     loaded_track = None
     fade_time = 400
 
-    aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
+    if os.path.isfile(pctl.install_directory + "/lib/libphazor.so"):
+        # XXX: May be unnecesary. It's only to ensure compatibility with WWindows
+        aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
+    else:
+        aud = ctypes.cdll.LoadLibrary("libphazor.so")
+
     aud.init()
 
     aud.get_device.restype = ctypes.c_char_p

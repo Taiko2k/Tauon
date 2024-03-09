@@ -78,11 +78,6 @@ if pyinstaller_mode:
      os.environ["PATH"] += ":" + sys._MEIPASS
      os.environ['SSL_CERT_FILE'] = os.path.join(install_directory, "certifi", "cacert.pem")
 
-user_directory = os.path.join(install_directory, "user-data")
-config_directory = user_directory
-
-asset_directory = os.path.join(install_directory, "assets")
-
 # If we're installed, use home data locations
 install_mode = False
 if install_directory.startswith("/opt/")\
@@ -90,6 +85,14 @@ if install_directory.startswith("/opt/")\
         or install_directory.startswith("/app/")\
         or install_directory.startswith("/snap/") or sys.platform == "darwin" or sys.platform == 'win32':
     install_mode = True
+
+# Assume that it's a classic Linux install, use standard paths
+if install_directory.startswith("/usr/"):
+    install_directory = "/usr/share/TauonMusicBox"
+
+user_directory = os.path.join(install_directory, "user-data")
+config_directory = user_directory
+asset_directory = os.path.join(install_directory, "assets")
 
 if install_directory.startswith("/app/"):
     # Its Flatpak
@@ -345,7 +348,7 @@ del rect
 del flags
 del img_path
 
-if pyinstaller_mode or sys.platform == "darwin":
+if pyinstaller_mode or sys.platform == "darwin" or install_mode:
     from t_modules import t_main
 else:
     # Using the above import method breaks previous pickles. Could be fixed
