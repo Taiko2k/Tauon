@@ -5059,6 +5059,9 @@ class PlayerCtl:
         self.after_import_flag = False
         self.quick_add_target = None
 
+        self.album_mbid_cache = {}
+        self.mbid_image_url_cache = {}
+
         # Misc player control
 
         self.url = ""
@@ -23724,6 +23727,68 @@ else:
 x_menu.add(MenuItem("LFM", lastfm.toggle, last_fm_menu_deco, icon=listen_icon, show_test=lastfm_menu_test))
 
 
+
+def get_album_art_url(tr):
+
+    artist = tr.album_artist
+    if not tr.album:
+        return
+    if not artist:
+        artist = tr.artist
+    if not artist:
+        return
+
+    mbid = None
+    if (artist, tr.album) in pctl.album_mbid_cache:
+        mbid = pctl.album_mbid_cache[(artist, tr.album)]
+        if mbid is None:
+            return
+        #print("got cached mbid")
+
+    if not mbid:
+        mbid = tr.misc.get('musicbrainz_albumid')
+    if not mbid:
+        try:
+            #print("lookup mbid")
+            s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
+            mbid = s['release-group-list'][0]['id']
+            tr.misc['musicbrainz_albumid'] = mbid
+            #print("got mbid")
+        except:
+            print("Error lookup mbid for discord")
+            pctl.album_mbid_cache[(artist, tr.album)] = None
+            return None
+
+    if mbid:
+        url = pctl.mbid_image_url_cache.get(mbid)
+        if url:
+            return url
+
+        base_url = "http://coverartarchive.org/release-group/"
+        url = f"{base_url}{mbid}"
+
+        try:
+            #print("lookup image url")
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except (requests.RequestException, ValueError):
+            #raise
+            pctl.album_mbid_cache[(artist, tr.album)] = None
+            return None
+
+        for image in data["images"]:
+            if image.get("front") and "250" in image["thumbnails"]:
+                pctl.album_mbid_cache[(artist, tr.album)] = mbid
+                url = image["thumbnails"]["250"]
+                if url:
+                    print("got mb image url for discord")
+                    pctl.mbid_image_url_cache[mbid] = url
+                    return url
+
+    pctl.album_mbid_cache[(artist, tr.album)] = None
+
+
 def discord_loop():
     prefs.discord_active = True
 
@@ -23824,11 +23889,19 @@ def discord_loop():
             if state == 1:
                 # print("PLAYING: " + title)
                 # print(start_time)
+                url = get_album_art_url(pctl.playing_object())
+
+                large_image = "tauon-standard"
+                small_image = None
+                if url:
+                    large_image = url
+                    small_image = "tauon-standard"
                 RPC.update(pid=pid,
                            state=album,
                            details=title,
                            start=int(start_time),
-                           large_image="tauon-standard", )
+                           large_image=large_image,
+                           small_image=small_image,)
 
             else:
                 # print("Discord RPC - Stop")
