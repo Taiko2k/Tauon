@@ -40,6 +40,7 @@
 #define MA_ENABLE_OSS
 #define MA_ENABLE_SNDIO
 #define MA_ENABLE_AUDIO4
+#define MA_DEBUG_OUTPUT
 
 #include "miniaudio/miniaudio.h"
 
@@ -1148,6 +1149,8 @@ void connect_pulse() {
     if (getenv("MA_DEBUG")) {
         ma_result result;
         ma_log logger;
+
+        printf("Initialize logger.\n");
 
         // Initialize the logger
         result = ma_log_init(NULL, &logger);
