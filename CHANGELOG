@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.7.2
 
  - Added album art for Discord rich presence
+ - Show error message when Airsonic auth fails
 
 v7.7.1
 

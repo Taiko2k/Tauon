@@ -8578,6 +8578,7 @@ class SubsonicService:
         # print(d)
 
         if d["subsonic-response"]["status"] != "ok":
+            show_message("Subsonic Error: " + response.text, mode="warning")
             print("Subsonic Error: " + response.text)
 
         return d
