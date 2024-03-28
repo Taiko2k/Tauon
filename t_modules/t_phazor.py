@@ -339,6 +339,7 @@ def player4(tauon):
                         shoot_dl.start()
                     return 0, path
 
+            # disable me for debugging
             for codec in (".opus", ".ogg", ".flac", ".mp3"):
                 idea = os.path.join(prefs.encoder_output, tauon.encode_folder_name(track), tauon.encode_track_name(track)) + codec
                 if os.path.isfile(idea):
@@ -994,6 +995,8 @@ def player4(tauon):
                         pt = pctl.playing_object()
                         if pt and pt.index != match:
                             print("MISSFIRE")
+                            pctl.play_target()
+                            continue
                         elif pctl.playerCommandReady and pctl.playerCommand == "open":
                             pctl.playerCommandReady = False
                             pctl.playerCommand = ""
