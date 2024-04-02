@@ -6,30 +6,33 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-04-03 09:02+0000\n"
+"Last-Translator: Roosa Huovinen <roosa.h@proton.me>\n"
+"Language-Team: Finnish <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/fi/>\n"
 "Language: fi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.5-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
 msgid "No artist image found."
-msgstr ""
+msgstr "Esittäjän kuvaa ei löydy."
 
 #: t_modules/t_main.py:1853
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "Asetuksissa ei ole otettu käyttöön yhtään palveluntarjoajaa!"
 
 #: t_modules/t_main.py:6913
 msgid "End of playlist"
-msgstr ""
+msgstr "Soittolistan loppu"
 
 #: t_modules/t_main.py:6965
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Valtuutuksen saatuasi paina 'valmis'-painiketta."
 
 #: t_modules/t_main.py:6965
 msgid "Web auth page opened"
@@ -37,11 +40,11 @@ msgstr ""
 
 #: t_modules/t_main.py:6973
 msgid "You need to log in first"
-msgstr ""
+msgstr "Sinun on ensin kirjauduttava sisään"
 
 #: t_modules/t_main.py:7131
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Skannaaminen epäonnistui. Yritetäänkö uudelleen?"
 
 #: t_modules/t_main.py:7138 t_modules/t_main.py:7735
 msgid "Scanning scrobbles complete"
@@ -49,11 +52,11 @@ msgstr ""
 
 #: t_modules/t_main.py:7302
 msgid "Getting friend data..."
-msgstr ""
+msgstr "Haetaan kaveridataa..."
 
 #: t_modules/t_main.py:7302
 msgid "This may take a very long time."
-msgstr ""
+msgstr "Tämä voi kestää todella pitkään."
 
 #: t_modules/t_main.py:7656
 msgid "Failed updating last.fm love status"
@@ -65,7 +68,7 @@ msgstr ""
 
 #: t_modules/t_main.py:7660
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Tarkistaisitko internet-yhteytesi ja yrittäisit uudelleen?"
 
 #: t_modules/t_main.py:7929
 msgid "Spotify Likes"
@@ -77,35 +80,35 @@ msgstr ""
 
 #: t_modules/t_main.py:7931
 msgid "Track removed from liked tracks"
-msgstr ""
+msgstr "Kappale poistettu tykätyistä kappaleista"
 
 #: t_modules/t_main.py:7932
 msgid "Track was already un-liked"
-msgstr ""
+msgstr "Kappale on jo ei-tykätty"
 
 #: t_modules/t_main.py:7933
 msgid "Track is already liked"
-msgstr ""
+msgstr "Kappale on jo tykätty"
 
 #: t_modules/t_main.py:7934
 msgid "Track added to liked tracks"
-msgstr ""
+msgstr "Kappale lisätty tykättyihin kappaleisiin"
 
 #: t_modules/t_main.py:7935
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Spotify-tili yhdistetty"
 
 #: t_modules/t_main.py:7936
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Tämä Spotify-tili ei toista juuri nyt mitään"
 
 #: t_modules/t_main.py:7937
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Virhe Spotifyn käynnistyksessä"
 
 #: t_modules/t_main.py:7938
 msgid "Please authorise Spotify in settings!"
-msgstr ""
+msgstr "Valtuutathan Spotifyn asetuksissa!"
 
 #: t_modules/t_main.py:7939
 msgid "Please authorise and click the enable toggle first!"
@@ -113,11 +116,11 @@ msgstr ""
 
 #: t_modules/t_main.py:7940
 msgid "Spotify import complete"
-msgstr ""
+msgstr "Spotify-tuonti valmis"
 
 #: t_modules/t_main.py:7942
 msgid "day"
-msgstr ""
+msgstr "päivä"
 
 #: t_modules/t_main.py:7943
 msgid "days"
@@ -141,7 +144,7 @@ msgstr ""
 
 #: t_modules/t_main.py:7950
 msgid "Web server stopped."
-msgstr ""
+msgstr "Verkkopalvelin pysäytetty."
 
 #: t_modules/t_main.py:7952
 msgid "Open Tauon Music Box"
@@ -149,23 +152,23 @@ msgstr ""
 
 #: t_modules/t_main.py:7953
 msgid "Play/Pause"
-msgstr ""
+msgstr "Toista/tauko"
 
 #: t_modules/t_main.py:7954
 msgid "Next Track"
-msgstr ""
+msgstr "Seuraava kappale"
 
 #: t_modules/t_main.py:7955
 msgid "Previous Track"
-msgstr ""
+msgstr "Edellinen kappale"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Sulje"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Käyttäjänimi, salasana ja/tai palvelimen nimi puuttuu"
 
 #: t_modules/t_main.py:8215
 msgid "Error connecting to PLEX server"
