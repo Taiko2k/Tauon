@@ -6,13 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-04-06 13:01+0000\n"
+"Last-Translator: zeskeertwee <zeskeertwee@gmail.com>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.5-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -2280,7 +2283,7 @@ msgstr ""
 
 #: t_modules/t_main.py:29394
 msgid "Stopping..."
-msgstr ""
+msgstr "Stoppen..."
 
 #: t_modules/t_main.py:29400
 msgid "Select a source playlist"
@@ -2304,11 +2307,11 @@ msgstr ""
 
 #: t_modules/t_main.py:29425 t_modules/t_main.py:29426
 msgid "Sync..."
-msgstr ""
+msgstr "Synchronizeer..."
 
 #: t_modules/t_main.py:29434
 msgid "Save opus as .ogg extension"
-msgstr ""
+msgstr "Sla opus op als .ogg extensie"
 
 #: t_modules/t_main.py:29455
 msgid "Save to output folder"
@@ -2316,7 +2319,7 @@ msgstr ""
 
 #: t_modules/t_main.py:29457
 msgid "Save and overwrite files inplace"
-msgstr ""
+msgstr "Sla op en overschrijf bestanden"
 
 #: t_modules/t_main.py:29479
 msgid "Emit track change notifications"
@@ -2929,7 +2932,7 @@ msgstr ""
 
 #: t_modules/t_main.py:46881
 msgid "Deletes some unnecessary files from folder"
-msgstr ""
+msgstr "Verwijder onnodige bestanden uit de map"
 
 #: t_modules/t_main.py:47271
 msgid "Loved track"
