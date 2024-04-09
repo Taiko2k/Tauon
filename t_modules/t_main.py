@@ -41377,7 +41377,12 @@ class DLMon:
                     continue
 
                 # stamp = os.stat(path)[stat.ST_MTIME]
-                stamp = os.path.getmtime(path)
+                try:
+                    stamp = os.path.getmtime(path)
+                except:
+                    self.done.add(path)
+                    print(f"Failed to scan item at {path}")
+                    continue
 
                 min_age = (time.time() - stamp) / 60
                 ext = os.path.splitext(path)[1][1:].lower()
