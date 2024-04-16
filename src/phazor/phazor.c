@@ -55,6 +55,7 @@
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
 #include "kissfft/kiss_fftr.h"
 #include "wavpack/wavpack.h"
+#include "gme/gme.h"
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -206,6 +207,7 @@ enum decoder_types {
     MPT,
     FEED,
     WAVPACK,
+    GME,
 };
 
 enum result_status_enum {
@@ -313,6 +315,10 @@ char parse_buffer[2048 * 2];
 
 FILE* mod_file = 0;
 openmpt_module* mod = 0;
+
+// GME related -------------------
+
+Music_Emu* emu;
 
 // FFMPEG related -----------------------------------------------------
 
@@ -884,6 +890,9 @@ void stop_decoder() {
         case MPT:
             openmpt_module_destroy(mod);
             break;
+        case GME:
+            gme_delete(emu);
+            break;
     }
     //src_reset(src);
     decoder_allocated = 0;
@@ -1119,6 +1128,9 @@ void decode_seek(int abs_ms, int sample_rate) {
             break;
         case MPT:
             openmpt_module_set_position_seconds(mod, abs_ms / 1000.0);
+            break;
+        case GME:
+            gme_seek(emu, (long) abs_ms);
             break;
     }
 }
@@ -1408,6 +1420,13 @@ int load_next() {
               )
             ) codec = MPT;
 
+    if (codec == UNKNOWN && ext != NULL && (
+            strcmp(ext, ".spc") == 0 || strcmp(ext, ".SPC") == 0 ||
+             strcmp(ext, ".minigsf") == 0 || strcmp(ext, ".MINIGSF") == 0 ||
+             strcmp(ext, ".gsf") == 0 || strcmp(ext, ".GSF") == 0
+              )
+            ) codec = GME;
+
     if (codec == UNKNOWN && ext != NULL) {
         if (strcmp(ext, ".flac") == 0 || strcmp(ext, ".FLAC") == 0) {
             codec = FLAC;
@@ -1443,6 +1462,25 @@ int load_next() {
         pthread_mutex_unlock(&buffer_mutex);
         if (decoder_allocated == 0) return 1;
         return 0;
+    }
+
+    if (codec == GME){
+
+        sample_rate_src = 48000;
+        gme_open_file(loaded_target_file, &emu, (long) sample_rate_src);
+        gme_start_track(emu, 0);
+
+        if (load_target_seek > 0) gme_seek(emu, (long) load_target_seek);
+
+        if (old_sample_rate != sample_rate_src) {
+            src_reset(src);
+        }
+
+        pthread_mutex_unlock(&buffer_mutex);
+        decoder_allocated = 1;
+
+        return 0;
+
     }
 
     if (codec == MPT){
@@ -1760,7 +1798,21 @@ void pump_decode() {
         samples_decoded += count * 2;
         pthread_mutex_unlock(&buffer_mutex);
       }
-    
+
+    } else if (codec == GME) {
+
+        gme_play(emu, 1024, temp16l);
+
+        pthread_mutex_lock(&buffer_mutex);
+        read_to_buffer_s16int(temp16l, 1024);
+        samples_decoded += 1024;
+        pthread_mutex_unlock(&buffer_mutex);
+
+        if (gme_track_ended(emu)){
+            decoder_eos();
+        }
+
+
     } else if (codec == FLAC) {
         // FLAC decoding
 

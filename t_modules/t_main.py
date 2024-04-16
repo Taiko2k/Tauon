@@ -852,7 +852,11 @@ DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
 VID_Formats = {'mp4', "webm"}
 
 MOD_Formats = {'xm', 'mod', 's3m', 'it', 'mptm', "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
+
+GME_Formats = {'gsf', 'minigsf', 'spc'}
+
 DA_Formats |= MOD_Formats
+DA_Formats |= GME_Formats
 
 Archive_Formats = {'zip'}
 
