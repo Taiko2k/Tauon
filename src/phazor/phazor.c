@@ -40,7 +40,7 @@
 #define MA_ENABLE_OSS
 #define MA_ENABLE_SNDIO
 #define MA_ENABLE_AUDIO4
-#define MA_DEBUG_OUTPUT
+//#define MA_DEBUG_OUTPUT
 
 #include "miniaudio/miniaudio.h"
 
@@ -315,6 +315,7 @@ char parse_buffer[2048 * 2];
 
 FILE* mod_file = 0;
 openmpt_module* mod = 0;
+
 
 // GME related -------------------
 
@@ -1421,10 +1422,18 @@ int load_next() {
             ) codec = MPT;
 
     if (codec == UNKNOWN && ext != NULL && (
-            strcmp(ext, ".spc") == 0 || strcmp(ext, ".SPC") == 0 ||
-             strcmp(ext, ".minigsf") == 0 || strcmp(ext, ".MINIGSF") == 0 ||
-             strcmp(ext, ".gsf") == 0 || strcmp(ext, ".GSF") == 0
-              )
+                strcmp(ext, ".spc") == 0 || strcmp(ext, ".SPC") == 0 ||
+                strcmp(ext, ".ay") == 0 || strcmp(ext, ".AY") == 0 ||
+                strcmp(ext, ".gbs") == 0 || strcmp(ext, ".GBS") == 0 ||
+                strcmp(ext, ".gym") == 0 || strcmp(ext, ".GYM") == 0 ||
+                strcmp(ext, ".hes") == 0 || strcmp(ext, ".HES") == 0 ||
+                strcmp(ext, ".kss") == 0 || strcmp(ext, ".KSS") == 0 ||
+                strcmp(ext, ".nsf") == 0 || strcmp(ext, ".NSF") == 0 ||
+                strcmp(ext, ".nsfe") == 0 || strcmp(ext, ".NSFE") == 0 ||
+                strcmp(ext, ".sap") == 0 || strcmp(ext, ".SAP") == 0 ||
+                strcmp(ext, ".vgm") == 0 || strcmp(ext, ".VGM") == 0 ||
+                strcmp(ext, ".vgz") == 0 || strcmp(ext, ".VGZ") == 0
+                )
             ) codec = GME;
 
     if (codec == UNKNOWN && ext != NULL) {
