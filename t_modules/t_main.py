@@ -4518,7 +4518,6 @@ gme = None
 p = None
 try:
     p = ctypes.util.find_library("libgme")
-    print(p)
     if p:
         gme = ctypes.cdll.LoadLibrary(p)
     elif msys:
@@ -4534,8 +4533,6 @@ try:
 
 except:
     print("Cannont find libgme")
-
-print(gme)
 
 def use_id3(tags, nt):
     def natural_get(tag, track, frame, attr):
