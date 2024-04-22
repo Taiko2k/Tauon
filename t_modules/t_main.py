@@ -853,7 +853,7 @@ VID_Formats = {'mp4', "webm"}
 
 MOD_Formats = {'xm', 'mod', 's3m', 'it', 'mptm', "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
 
-GME_Formats = {'gsf', 'minigsf', 'spc'}
+GME_Formats = {'ay', 'gbs', 'gym', 'hes', 'kss', 'nsf', 'nsfe', 'sap', 'spc', 'vgm', 'vgz'}
 
 DA_Formats |= MOD_Formats
 DA_Formats |= GME_Formats
@@ -4476,6 +4476,67 @@ except:
     print("Failed to load libopenmpt!")
 
 
+
+class GMETrackInfo(Structure):
+    _fields_ = [
+        ("length", c_int),
+        ("intro_length", c_int),
+        ("loop_length", c_int),
+        ("play_length", c_int),
+        ("fade_length", c_int),
+        ("i5", c_int),
+        ("i6", c_int),
+        ("i7", c_int),
+        ("i8", c_int),
+        ("i9", c_int),
+        ("i10", c_int),
+        ("i11", c_int),
+        ("i12", c_int),
+        ("i13", c_int),
+        ("i14", c_int),
+        ("i15", c_int),
+        ("system", c_char_p),
+        ("game", c_char_p),
+        ("song", c_char_p),
+        ("author", c_char_p),
+        ("copyright", c_char_p),
+        ("comment", c_char_p),
+        ("dumper", c_char_p),
+        ("s7", c_char_p),
+        ("s8", c_char_p),
+        ("s9", c_char_p),
+        ("s10", c_char_p),
+        ("s11", c_char_p),
+        ("s12", c_char_p),
+        ("s13", c_char_p),
+        ("s14", c_char_p),
+        ("s15", c_char_p)
+    ]
+
+
+gme = None
+p = None
+try:
+    p = ctypes.util.find_library("libgme")
+    print(p)
+    if p:
+        gme = ctypes.cdll.LoadLibrary(p)
+    elif msys:
+        gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
+    else:
+        gme = ctypes.cdll.LoadLibrary("libgme.so")
+
+    gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
+    gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
+    gme.gme_track_info.restype = ctypes.c_char_p
+    gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
+    gme.gme_open_file.restype = ctypes.c_char_p
+
+except:
+    print("Cannont find libgme")
+    raise
+print(gme)
+
 def use_id3(tags, nt):
     def natural_get(tag, track, frame, attr):
         frames = tag.getall(frame)
@@ -4664,7 +4725,25 @@ def tag_scan(nt):
 
         nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
-        if nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
+        if nt.file_ext.lower() in GME_Formats and gme:
+
+            emu = ctypes.c_void_p()
+            track_info = ctypes.POINTER(GMETrackInfo)()
+            err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
+            #print(err)
+            if not err:
+                err = gme.gme_track_info(emu, byref(track_info), 0)
+                #print(err)
+                if not err:
+                    nt.length = track_info.contents.play_length / 1000
+                    nt.title = track_info.contents.song.decode("utf-8")
+                    nt.artist = track_info.contents.author.decode("utf-8")
+                    nt.album = track_info.contents.game.decode("utf-8")
+                    nt.comment = track_info.contents.comment.decode("utf-8")
+                    gme.gme_free_info(track_info)
+                gme.gme_delete(emu)
+
+        elif nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
             f = open(nt.fullpath, "rb")
             data = f.read()
             f.close()
@@ -4935,6 +5014,7 @@ def tag_scan(nt):
 
 
     except Exception as err:
+        #raise
         try:
             if Exception is UnicodeDecodeError:
                 print("Unicode decode error on file:", nt.fullpath, "\n", err)
