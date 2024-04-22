@@ -4534,7 +4534,7 @@ try:
 
 except:
     print("Cannont find libgme")
-    raise
+
 print(gme)
 
 def use_id3(tags, nt):
