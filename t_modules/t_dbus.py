@@ -82,9 +82,9 @@ class Gnome:
         tauon = self.tauon
 
         import gi
-        gi.require_version('AppIndicator3', '0.1')
+        gi.require_version('AyatanaAppIndicator3', '0.1')
         from gi.repository import Gtk
-        from gi.repository import AppIndicator3
+        from gi.repository import AyatanaAppIndicator3 as AppIndicator3
 
         self.indicator = AppIndicator3.Indicator.new("Tauon", self.tauon.get_tray_icon("tray-indicator-default"), AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
