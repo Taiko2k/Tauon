@@ -23820,46 +23820,74 @@ def get_album_art_url(tr):
     if not artist:
         return
 
-    mbid = None
+    album_id = None
+    release_group_id = None
     if (artist, tr.album) in pctl.album_mbid_cache:
         mbid = pctl.album_mbid_cache[(artist, tr.album)]
         if mbid is None:
             return
         #print("got cached mbid")
 
-    if not mbid:
-        mbid = tr.misc.get('musicbrainz_albumid')
-    if not mbid:
-        try:
-            #print("lookup mbid")
-            s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
-            mbid = s['release-group-list'][0]['id']
-            tr.misc['musicbrainz_albumid'] = mbid
-            #print("got mbid")
-        except:
-            print("Error lookup mbid for discord")
-            pctl.album_mbid_cache[(artist, tr.album)] = None
-            return None
+    if not release_group_id:
+        release_group_id = tr.misc.get('musicbrainz_releasegroupid')
 
-    if mbid:
-        url = pctl.mbid_image_url_cache.get(mbid)
+    if not album_id:
+        album_id = tr.misc.get('musicbrainz_albumid')
+
+    if not release_group_id:
+        try:
+            #print("lookup release group id")
+            s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
+            release_group_id = s['release-group-list'][0]['id']
+            tr.misc['musicbrainz_releasegroupid'] = mbid
+            print("got release group id")
+        except:
+            #print("Error lookup mbid for discord")
+            pctl.album_mbid_cache[(artist, tr.album)] = None
+
+    print("Release Group:", release_group_id)
+    print("Album Id:", album_id)
+
+    image_data = None
+    mbid = None
+    if release_group_id:
+        url = pctl.mbid_image_url_cache.get(release_group_id)
         if url:
             return url
 
         base_url = "http://coverartarchive.org/release-group/"
-        url = f"{base_url}{mbid}"
+        url = f"{base_url}{release_group_id}"
 
         try:
-            #print("lookup image url")
+            #print("lookup image url from release group")
             response = requests.get(url)
             response.raise_for_status()
-            data = response.json()
+            image_data = response.json()
+            mbid = release_group_id
         except (requests.RequestException, ValueError):
-            #raise
+            #print("no image found for release group")
             pctl.album_mbid_cache[(artist, tr.album)] = None
-            return None
 
-        for image in data["images"]:
+    if album_id and not image_data:
+        url = pctl.mbid_image_url_cache.get(album_id)
+        if url:
+            return url
+
+        base_url = "http://coverartarchive.org/release/"
+        url = f"{base_url}{album_id}"
+
+        try:
+            #print("lookup image url from album id")
+            response = requests.get(url)
+            response.raise_for_status()
+            image_data = response.json()
+            mbid = album_id
+        except (requests.RequestException, ValueError):
+            #print("no image found for album id")
+            pctl.album_mbid_cache[(artist, tr.album)] = None
+
+    if image_data:
+        for image in image_data["images"]:
             if image.get("front") and "250" in image["thumbnails"]:
                 pctl.album_mbid_cache[(artist, tr.album)] = mbid
                 url = image["thumbnails"]["250"]
@@ -23867,6 +23895,8 @@ def get_album_art_url(tr):
                     print("got mb image url for discord")
                     pctl.mbid_image_url_cache[mbid] = url
                     return url
+    else:
+        return None
 
     pctl.album_mbid_cache[(artist, tr.album)] = None
 
