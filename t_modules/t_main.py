@@ -23820,7 +23820,7 @@ def get_album_art_url(tr):
     if not artist:
         return
 
-    album_id = None
+    release_id = None
     release_group_id = None
     if (artist, tr.album) in pctl.album_mbid_cache:
         mbid = pctl.album_mbid_cache[(artist, tr.album)]
@@ -23831,22 +23831,30 @@ def get_album_art_url(tr):
     if not release_group_id:
         release_group_id = tr.misc.get('musicbrainz_releasegroupid')
 
-    if not album_id:
-        album_id = tr.misc.get('musicbrainz_albumid')
+    if not release_id:
+        release_id = tr.misc.get('musicbrainz_albumid')
 
     if not release_group_id:
         try:
             #print("lookup release group id")
             s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
             release_group_id = s['release-group-list'][0]['id']
-            tr.misc['musicbrainz_releasegroupid'] = mbid
-            print("got release group id")
+            tr.misc['musicbrainz_releasegroupid'] = release_group_id
+            #print("got release group id")
         except:
             #print("Error lookup mbid for discord")
             pctl.album_mbid_cache[(artist, tr.album)] = None
 
-    print("Release Group:", release_group_id)
-    print("Album Id:", album_id)
+    if not release_id:
+        try:
+            #print("lookup release id")
+            s = musicbrainzngs.search_releases(tr.album, artist=artist, limit=1)
+            release_id = s['release-list'][0]['id']
+            tr.misc['musicbrainz_albumid'] = release_id
+            #print("got release group id")
+        except:
+            #print("Error lookup mbid for discord")
+            pctl.album_mbid_cache[(artist, tr.album)] = None
 
     image_data = None
     mbid = None
@@ -23868,20 +23876,20 @@ def get_album_art_url(tr):
             #print("no image found for release group")
             pctl.album_mbid_cache[(artist, tr.album)] = None
 
-    if album_id and not image_data:
-        url = pctl.mbid_image_url_cache.get(album_id)
+    if release_id and not image_data:
+        url = pctl.mbid_image_url_cache.get(release_id)
         if url:
             return url
 
         base_url = "http://coverartarchive.org/release/"
-        url = f"{base_url}{album_id}"
+        url = f"{base_url}{release_id}"
 
         try:
             #print("lookup image url from album id")
             response = requests.get(url)
             response.raise_for_status()
             image_data = response.json()
-            mbid = album_id
+            mbid = release_id
         except (requests.RequestException, ValueError):
             #print("no image found for album id")
             pctl.album_mbid_cache[(artist, tr.album)] = None
