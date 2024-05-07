@@ -115,6 +115,16 @@ def get_hms_time(seconds):
     else:
         return f'{m:02d}:{s:02d}'
 
+def hms_to_seconds(time_str):
+    components = time_str.split(':')
+    seconds = 0
+    if len(components) == 1:  # If only seconds provided
+        seconds = int(components[0])
+    elif len(components) == 2:  # If minutes and seconds provided
+        seconds = int(components[0]) * 60 + int(components[1])
+    elif len(components) == 3:  # If hours, minutes, and seconds provided
+        seconds = int(components[0]) * 3600 + int(components[1]) * 60 + int(components[2])
+    return seconds
 
 # Creates a string from number of bytes to X MB/kB etc with Locale adjustment
 def get_filesize_string(file_bytes, rounding=2):
