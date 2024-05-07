@@ -2605,6 +2605,7 @@ class TrackClass:  # This is the fundamental object/data structure of a track
 
     def __init__(self):
         self.index = 0
+        self.subtrack = 0
         self.fullpath = ""
         self.filename = ""
         self.parent_folder_path = ""
@@ -4729,7 +4730,8 @@ def tag_scan(nt):
             err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
             #print(err)
             if not err:
-                err = gme.gme_track_info(emu, byref(track_info), 0)
+                n = nt.subtrack
+                err = gme.gme_track_info(emu, byref(track_info), n)
                 #print(err)
                 if not err:
                     nt.length = track_info.contents.play_length / 1000
@@ -4739,6 +4741,36 @@ def tag_scan(nt):
                     nt.comment = track_info.contents.comment.decode("utf-8")
                     gme.gme_free_info(track_info)
                 gme.gme_delete(emu)
+
+                filepath = nt.fullpath  # this is the full file path
+                filename = nt.filename  # this is the name of the file
+
+                # Get the directory of the file
+                dir_path = os.path.dirname(filepath)
+
+                # Loop through all files in the directory to find any matching M3U
+                for file in os.listdir(dir_path):
+                    if file.endswith('.m3u'):
+                        with open(os.path.join(dir_path, file), encoding='utf-8', errors='replace') as f:
+                            content = f.read()
+                            if '�' in content:  # Check for replacement marker
+                                with open(os.path.join(dir_path, file), encoding='windows-1252') as b:
+                                    content = b.read()
+                            if "::" in content:
+                                a, b = content.split("::")
+                                if a == filename:
+                                    s = re.split(r'(?<!\\),', b)
+                                    try:
+                                        st = int(s[1])
+                                    except:
+                                        continue
+                                    if st == n:
+                                        nt.title = s[2].split(' - ')[0].replace("\\", "")
+                                        nt.artist = s[2].split(' - ')[1].replace("\\", "")
+                                        nt.album = s[2].split(' - ')[2].replace("\\", "")
+                                        nt.length = hms_to_seconds(s[3])
+                                        break
+
 
         elif nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
             f = open(nt.fullpath, "rb")
@@ -26243,14 +26275,12 @@ def worker1():
                 print("File has an associated .cue file... Skipping")
                 return
 
-            added.append(de)
-
-            # if gui.auto_play_import:
-            #     pctl.jump(copy.deepcopy(de))
-            #
-            #     gui.auto_play_import = False
-            # bm.get("dupe track")
-            return
+            if pctl.master_library[de].file_ext.lower() in GME_Formats:
+                # Skip cache for subtrack formats
+                pass
+            else:
+                added.append(de)
+                return
 
         time.sleep(0.002)
 
@@ -26261,14 +26291,7 @@ def worker1():
         nt.index = pctl.master_count
         set_path(nt, path)
 
-        # nt = tag_scan(nt)
-        if nt.cue_sheet != "":
-            tag_scan(nt)
-            cue_scan(nt.cue_sheet, nt)
-            del nt
-
-        else:
-
+        def commit_track(nt):
             pctl.master_library[pctl.master_count] = nt
             added.append(pctl.master_count)
 
@@ -26279,6 +26302,33 @@ def worker1():
                 tm.ready("worker")
 
             pctl.master_count += 1
+
+        # nt = tag_scan(nt)
+        if nt.cue_sheet != "":
+            tag_scan(nt)
+            cue_scan(nt.cue_sheet, nt)
+            del nt
+
+        elif nt.file_ext.lower() in GME_Formats and gme:
+
+            emu = ctypes.c_void_p()
+            err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
+            if not err:
+                n = gme.gme_track_count(emu)
+                for i in range(n):
+                    print(i)
+                    nt = TrackClass()
+                    set_path(nt, path)
+                    nt.index = pctl.master_count
+                    nt.subtrack = i
+                    commit_track(nt)
+                    print(nt.misc)
+
+                gme.gme_delete(emu)
+
+        else:
+
+            commit_track(nt)
 
         # bm.get("fill entry")
         if gui.auto_play_import:
