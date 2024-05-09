@@ -4781,7 +4781,8 @@ def tag_scan(nt):
                                         nt.album = s[2].split(' - ')[2].replace("\\", "")
                                         nt.length = hms_to_seconds(s[3])
                                         break
-
+            if not nt.title:
+                nt.title = "Track " + str(nt.subtrack + 1)
 
         elif nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
             f = open(nt.fullpath, "rb")

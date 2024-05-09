@@ -954,10 +954,6 @@ def player4(tauon):
                         length = loaded_track.length
                         remain = length - position
 
-                if loaded_track and loaded_track.file_ext.lower() in tauon.gme_formats:
-                    # GME formats may not have a physical end
-                    length = 0
-
                 fade = 0
                 error = False
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
@@ -965,10 +961,19 @@ def player4(tauon):
 
                     tauon.console.print("Transition gapless")
 
-                    aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
-
                     r_timer = Timer()
                     r_timer.set()
+
+                    if loaded_track and loaded_track.file_ext.lower() in tauon.gme_formats:
+                        # GME formats dont have a physical end so we don't do gapless
+                        while r_timer.get() <= remain - prefs.device_buffer / 1000:
+                            if pctl.commit:
+                                track(end=False)
+                            time.sleep(0.016)
+                        aud.stop()
+
+                    aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
+
                     cont = False
                     while r_timer.get() <= remain - prefs.device_buffer / 1000:
                         if pctl.commit:
