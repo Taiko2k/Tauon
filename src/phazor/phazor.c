@@ -149,6 +149,8 @@ unsigned int load_target_seek = 0;
 unsigned int next_ready = 0;
 unsigned int seek_request_ms = 0;
 
+int subtrack = 0;
+
 float volume_want = 1.0;
 float volume_on = 1.0;
 float volume_ramp_speed = 750;  // ms for 1 to 0
@@ -1477,7 +1479,7 @@ int load_next() {
 
         sample_rate_src = 48000;
         gme_open_file(loaded_target_file, &emu, (long) sample_rate_src);
-        gme_start_track(emu, 0);
+        gme_start_track(emu, subtrack);
 
         if (load_target_seek > 0) gme_seek(emu, (long) load_target_seek);
 
@@ -2479,6 +2481,10 @@ void feed_raw(int len, char* data){
     pthread_mutex_lock(&buffer_mutex);
     read_to_buffer_char16(data, len);
     pthread_mutex_unlock(&buffer_mutex);
+}
+
+void set_subtrack(int n){
+    subtrack = n;
 }
 
 void print_status(){
