@@ -3959,7 +3959,7 @@ def load_prefs():
     if system == 'windows' or msys:
         prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
         prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target",
-                                              "C:\Program Files (x86)\MusicBrainz Picard\picard.exe",
+                                              "C:\\Program Files (x86)\\MusicBrainz Picard\\picard.exe",
                                               "The path of the exe to run.")
     else:
         prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
@@ -10987,7 +10987,7 @@ class TextBox2:
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
+                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
@@ -11003,7 +11003,7 @@ class TextBox2:
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
+                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
@@ -11410,7 +11410,7 @@ class TextBox:
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
+                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
                     self.cursor_position += 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
@@ -11426,7 +11426,7 @@ class TextBox:
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
-                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~":
+                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
                     self.cursor_position -= 1
                     if not key_shift_down:
                         self.selection = self.cursor_position
