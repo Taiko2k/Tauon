@@ -797,6 +797,8 @@ def player4(tauon):
                 pctl.download_time = 0
                 target_object = pctl.target_object
                 target_path = target_object.fullpath
+                subtrack = target_object.subtrack
+                aud.set_subtrack(subtrack)
 
                 tauon.console.print(f"open - requested start was {int(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
                 try:
