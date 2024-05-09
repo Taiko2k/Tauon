@@ -954,6 +954,10 @@ def player4(tauon):
                         length = loaded_track.length
                         remain = length - position
 
+                if loaded_track and loaded_track.file_ext.lower() in tauon.gme_formats:
+                    # GME formats may not have a physical end
+                    length = 0
+
                 fade = 0
                 error = False
                 if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \

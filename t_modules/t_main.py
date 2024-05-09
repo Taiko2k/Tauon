@@ -821,28 +821,39 @@ clicked = False
 # Player Variables----------------------------------------------------------------------------
 
 format_colours = {  # These are the colours used for the label icon in UI 'track info box'
-    "MP3": [255, 130, 80, 255],
-    "FLAC": [156, 249, 79, 255],
-    "M4A": [81, 220, 225, 255],
-    "OGG": [244, 244, 78, 255],
-    "OGA": [244, 244, 78, 255],
-    "WMA": [213, 79, 247, 255],
-    "APE": [247, 79, 79, 255],
-    "TTA": [94, 78, 244, 255],
-    "OPUS": [247, 79, 146, 255],
-    "AAC": [79, 247, 168, 255],
-    "WV": [229, 23, 18, 255],
-    "PLEX": [229, 160, 13, 255],
-    "KOEL": [111, 98, 190, 255],
-    "TAU": [111, 98, 190, 255],
-    "SUB": [235, 140, 20, 255],
-    "SPTY": [30, 215, 96, 255],
-    "JELY": [190, 100, 210, 255],
-    "XM": [50, 50, 50, 255],
-    "MOD": [50, 50, 50, 255],
-    "S3M": [50, 50, 50, 255],
-    "IT": [50, 50, 50, 255],
-    "MPTM": [50, 50, 50, 255],
+    "MP3": [255, 130, 80, 255],  # Burnt orange
+    "FLAC": [156, 249, 79, 255],  # Bright lime green
+    "M4A": [81, 220, 225, 255],  # Soft cyan
+    "OGG": [244, 244, 78, 255],  # Light yellow
+    "OGA": [244, 244, 78, 255],  # Light yellow
+    "WMA": [213, 79, 247, 255],  # Magenta
+    "APE": [247, 79, 79, 255],  # Deep pink
+    "TTA": [94, 78, 244, 255],  # Purple
+    "OPUS": [247, 79, 146, 255],  # Pink
+    "AAC": [79, 247, 168, 255],  # Teal
+    "WV": [229, 23, 18, 255],  # Deep red
+    "PLEX": [229, 160, 13, 255],  # Orange-brown
+    "KOEL": [111, 98, 190, 255],  # Lavender
+    "TAU": [111, 98, 190, 255],  # Lavender
+    "SUB": [235, 140, 20, 255],  # Golden yellow
+    "SPTY": [30, 215, 96, 255],  # Bright green
+    "JELY": [190, 100, 210, 255],  # Fuchsia
+    "XM": [50, 50, 50, 255],  # Grey
+    "MOD": [50, 50, 50, 255],  # Grey
+    "S3M": [50, 50, 50, 255],  # Grey
+    "IT": [50, 50, 50, 255],  # Grey
+    "MPTM": [50, 50, 50, 255],  # Grey
+    "AY": [237, 212, 255, 255],  # Pastel purple
+    "GBS": [255, 165, 0, 255],  # Vibrant orange
+    "GYM": [0, 191, 255, 255],  # Bright blue
+    "HES": [176, 224, 230, 255],  # Light blue-green
+    "KSS": [255, 255, 153, 255],  # Bright yellow
+    "NSF": [255, 140, 0, 255],  # Deep orange
+    "NSFE": [255, 140, 0, 255],  # Deep orange
+    "SAP": [152, 255, 152, 255],  # Light green
+    "SPC": [255, 128, 0, 255],  # Bright orange
+    "VGM": [0, 128, 255, 255],  # Deep blue
+    "VGZ": [0, 128, 255, 255],  # Deep blue
 }
 
 # These will be the extensions of files to be added when importing
@@ -8341,6 +8352,8 @@ class Tauon:
         self.librespot_p = None
         self.MenuItem = MenuItem
         self.tag_scan = tag_scan
+
+        self.gme_formats = GME_Formats
 
     def start_remote(self):
 
@@ -26316,13 +26329,11 @@ def worker1():
             if not err:
                 n = gme.gme_track_count(emu)
                 for i in range(n):
-                    print(i)
                     nt = TrackClass()
                     set_path(nt, path)
                     nt.index = pctl.master_count
                     nt.subtrack = i
                     commit_track(nt)
-                    print(nt.misc)
 
                 gme.gme_delete(emu)
 
