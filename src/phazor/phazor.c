@@ -1281,6 +1281,7 @@ int load_next() {
     long rate;
     int e = 0;
     int old_sample_rate = sample_rate_src;
+    src_channels = 2;
 
     char *ext;
     ext = strrchr(loaded_target_file, '.');
@@ -1852,7 +1853,12 @@ void pump_decode() {
 
         unsigned int done;
 
-        done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
+        if(src_channels == 1){
+          done = op_read(opus_dec, opus_buffer, 4096, NULL);
+        }
+        else{
+          done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
+        }
 
         pthread_mutex_lock(&buffer_mutex);
         read_to_buffer_s16int(opus_buffer, done);
