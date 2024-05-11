@@ -31368,7 +31368,7 @@ class TopPanel:
             # Drag yellow line highlight if single track already in playlist
             elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
                 for item in shift_selection:
-                    if default_playlist[item] in tab[2]:
+                    if item < len(default_playlist) and default_playlist[item] in tab[2]:
                         ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size),
                                  [190, 160, 20, 255])
                         break
