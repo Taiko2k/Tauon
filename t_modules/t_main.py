@@ -26182,9 +26182,9 @@ def worker1():
                     if prefs.extract_to_music and music_directory is not None:
                         target_dir = os.path.join(music_directory, os.path.basename(target_dir))
                     # print(os.path.getsize(path))
-                    if os.path.getsize(path) > 2e+9:
+                    if os.path.getsize(path) > 4e+9:
                         print("Archive file is large!")
-                        show_message("Skipping oversize zip file (>2GB)")
+                        show_message("Skipping oversize zip file (>4GB)")
                         return 1
                     if not os.path.isdir(target_dir) and not os.path.isfile(target_dir):
                         if type == "zip":
