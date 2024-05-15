@@ -3,7 +3,8 @@ Changelog----------------------------
 
 v7.8.0
 
- - Added support for various game soundtrack file types
+ - Added support for various game music file types
+ - Tweaked shuffle mode for stricter repeat avoidance
 
 v7.7.2
 
