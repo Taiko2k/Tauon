@@ -5,6 +5,7 @@ v7.8.0
 
  - Added support for various game music file types
  - Tweaked shuffle mode for stricter repeat avoidance
+ - Fixed duplicate highlight album in gallery bug
 
 v7.7.2
 
