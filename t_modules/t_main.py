@@ -26812,6 +26812,7 @@ album_info_cache_key = (-1, -1)
 
 
 def get_album_info(position, pl=None):
+
     playlist = default_playlist
     if pl is not None:
         playlist = pctl.multi_playlist[pl][2]
@@ -26825,46 +26826,33 @@ def get_album_info(position, pl=None):
     if position in album_info_cache:
         return album_info_cache[position]
 
-    if position > len(playlist) - 1:
-        position = len(playlist) - 1
-    current = position
+    if album_dex and album_mode and (pl is None or pl == pctl.active_playlist_viewing):
+        dex = album_dex
+    else:
+        dex = reload_albums(custom_list=playlist)
 
-    while position > 0 and current > 0:
+    end = len(playlist)
+    start = 0
 
-        if pctl.master_library[playlist[position]].parent_folder_name == pctl.master_library[
-            playlist[current - 1]].parent_folder_name:
-            current -= 1
-            continue
-        else:
+    for i, p in enumerate(reversed(dex)):
+        if p <= position:
+            start = p
             break
+        end = p
 
-    album = []
+    album = list(range(start, end))
+
     playing = 0
     select = False
 
-    first_track = pctl.master_library[playlist[current]]
-    while current < len(playlist):
-        album.append(current)
-        if len(pctl.track_queue) > 0 and playlist[current] == pctl.track_queue[pctl.queue_step]:
+    if pctl.selected_in_playlist in album:
+        select = True
+
+    if len(pctl.track_queue) > 0 and p < len(playlist):
+        if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
             playing = 1
-        if current == pctl.selected_in_playlist:
-            select = True
-
-        if current < len(playlist) - 1 and first_track.parent_folder_name != pctl.master_library[
-            playlist[current + 1]].parent_folder_name:
-
-            if first_track.album and first_track.album == pctl.master_library[playlist[current + 1]].album:
-                current += 1
-            else:
-                break
-        else:
-            current += 1
-    if not album:
-        # album = [playlist[len(playlist) - 1]]
-        album = [len(playlist) - 1]
 
     album_info_cache[position] = playing, album, select
-
     return playing, album, select
 
 
@@ -27052,9 +27040,14 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
             dex.append(i)
             current_folder = tr.parent_folder_name
             current_album = tr.album
+            current_date = tr.date
+            current_artist = tr.artist
+
         else:
             if tr.parent_folder_name != current_folder:
-                if tr.album and tr.album == current_album:
+                if tr.date and tr.date != current_date:
+                    dex.append(i)
+                elif tr.album and tr.album == current_album and tr.artist and tr.artist == current_artist:
                     pass
                 else:
                     dex.append(i)
