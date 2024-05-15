@@ -5778,6 +5778,24 @@ class PlayerCtl:
         self.show_current()
         self.render_playlist()
 
+    def deduct_shuffle(self, track_id):
+        if pctl.multi_playlist and self.random_mode:
+            pl = pctl.multi_playlist[pctl.active_playlist_playing]
+            id = pl[6]
+
+            if id not in pctl.shuffle_pools:
+                self.update_shuffle_pool(pl[6])
+
+            pool = pctl.shuffle_pools[id]
+            if not pool:
+                del pctl.shuffle_pools[id]
+                self.update_shuffle_pool(pl[6])
+            pool = pctl.shuffle_pools[id]
+
+            if track_id in pool:
+                pool.remove(track_id)
+
+
     def play_target_rr(self):
         tm.ready_playback()
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
@@ -5806,6 +5824,8 @@ class PlayerCtl:
 
         if update_title:
             update_title_do()
+
+        self.deduct_shuffle(self.target_object.index)
 
     def play_target(self, gapless=False, jump=False):
 
@@ -5842,6 +5862,7 @@ class PlayerCtl:
 
         self.playing_state = 1
         self.update_change()
+        self.deduct_shuffle(target.index)
 
     def update_change(self):
         if update_title:
