@@ -5140,7 +5140,8 @@ class PlayerCtl:
         self.after_import_flag = False
         self.quick_add_target = None
 
-        self.album_mbid_cache = {}
+        self.album_mbid_release_cache = {}
+        self.album_mbid_release_group_cache = {}
         self.mbid_image_url_cache = {}
 
         # Misc player control
@@ -23822,11 +23823,11 @@ def get_album_art_url(tr):
 
     release_id = None
     release_group_id = None
-    if (artist, tr.album) in pctl.album_mbid_cache:
-        mbid = pctl.album_mbid_cache[(artist, tr.album)]
-        if mbid is None:
+    if (artist, tr.album) in pctl.album_mbid_release_cache or (artist, tr.album) in pctl.album_mbid_release_group_cache:
+        release_id = pctl.album_mbid_release_cache[(artist, tr.album)]
+        release_group_id = pctl.album_mbid_release_group_cache[(artist, tr.album)]
+        if release_id is None and release_group_id is None:
             return
-        #print("got cached mbid")
 
     if not release_group_id:
         release_group_id = tr.misc.get('musicbrainz_releasegroupid')
@@ -23843,7 +23844,7 @@ def get_album_art_url(tr):
             #print("got release group id")
         except:
             #print("Error lookup mbid for discord")
-            pctl.album_mbid_cache[(artist, tr.album)] = None
+            pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
 
     if not release_id:
         try:
@@ -23854,10 +23855,10 @@ def get_album_art_url(tr):
             #print("got release group id")
         except:
             #print("Error lookup mbid for discord")
-            pctl.album_mbid_cache[(artist, tr.album)] = None
+            pctl.album_mbid_release_cache[(artist, tr.album)] = None
 
     image_data = None
-    mbid = None
+    final_id = None
     if release_group_id:
         url = pctl.mbid_image_url_cache.get(release_group_id)
         if url:
@@ -23871,10 +23872,10 @@ def get_album_art_url(tr):
             response = requests.get(url)
             response.raise_for_status()
             image_data = response.json()
-            mbid = release_group_id
+            final_id = release_group_id
         except (requests.RequestException, ValueError):
             #print("no image found for release group")
-            pctl.album_mbid_cache[(artist, tr.album)] = None
+            pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
 
     if release_id and not image_data:
         url = pctl.mbid_image_url_cache.get(release_id)
@@ -23889,24 +23890,30 @@ def get_album_art_url(tr):
             response = requests.get(url)
             response.raise_for_status()
             image_data = response.json()
-            mbid = release_id
+            final_id = release_id
         except (requests.RequestException, ValueError):
             #print("no image found for album id")
-            pctl.album_mbid_cache[(artist, tr.album)] = None
+            pctl.album_mbid_release_cache[(artist, tr.album)] = None
 
     if image_data:
         for image in image_data["images"]:
-            if image.get("front") and "250" in image["thumbnails"]:
-                pctl.album_mbid_cache[(artist, tr.album)] = mbid
-                url = image["thumbnails"]["250"]
+            if image.get("front") and ("250" in image["thumbnails"] or "small" in image["thumbnails"]):
+                pctl.album_mbid_release_cache[(artist, tr.album)] = release_id
+                pctl.album_mbid_release_group_cache[(artist, tr.album)] = release_group_id
+
+                url = image["thumbnails"].get("250")
+                if url is None:
+                    url = image["thumbnails"].get("small")
+
                 if url:
                     print("got mb image url for discord")
-                    pctl.mbid_image_url_cache[mbid] = url
+                    pctl.mbid_image_url_cache[final_id] = url
                     return url
-    else:
-        return None
 
-    pctl.album_mbid_cache[(artist, tr.album)] = None
+    pctl.album_mbid_release_cache[(artist, tr.album)] = None
+    pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
+
+    return None
 
 
 def discord_loop():
