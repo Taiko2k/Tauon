@@ -76,6 +76,7 @@ class TestTimer:
     def test(self):
         return self.timer.get() > self.time
 
+j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
 
 
 # Test given proximity between two 2d points to given square
