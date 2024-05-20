@@ -110,8 +110,8 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
 
             elif path == "/listenalong":
                 self.send_file(install_directory + "/templates/radio.html", "text/html")
-            elif path == "/favicon.ico":
-                self.send_file(install_directory + "/assets/favicon.ico", 'image/x-icon')
+            elif path == "/favicon.png":
+                self.send_file(install_directory + "/assets/icon-64.png", 'image/png')
             elif path == "/listenalong/play.svg":
                 self.send_file(install_directory + "/templates/play.svg", 'image/svg+xml')
             elif path == "/listenalong/pause.svg":

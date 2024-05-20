@@ -3,7 +3,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2022, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2024, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29848,7 +29848,7 @@ class Over:
 
             ddt.text((x, y - 6 * gui.scale), t_version, colours.box_text_label, 313)
             y += 19 * gui.scale
-            ddt.text((x, y), "Copyright © 2015-2022 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
+            ddt.text((x, y), "Copyright © 2015-2024 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
 
             y += 19 * gui.scale
             link_pa = draw_linked_text((x, y), "https://tauonmusicbox.rocks", colours.box_sub_text, 12,
