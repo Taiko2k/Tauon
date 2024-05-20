@@ -25985,7 +25985,6 @@ def worker1():
                             pass
                         if not j:
                             with open(path, encoding='windows-1251') as f:
-                            #with open(path, encoding='shiftjis') as f:
                                 content = f.readlines()
                             print("CUE: Detected encoding as windows-1251")
 
