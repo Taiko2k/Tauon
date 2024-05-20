@@ -11,7 +11,7 @@ if sys.platform != 'win32':
 
 n_version = "7.8.0"
 t_version = "v" + n_version
-t_title = 'Tauon Music Box'
+t_title = 'Tauon'
 t_id = 'tauonmb'
 t_agent = "TauonMusicBox/" + n_version
 
