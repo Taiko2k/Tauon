@@ -21331,9 +21331,6 @@ def recode(text, enc):
     return text.encode("Latin-1", 'ignore').decode(enc, 'ignore')
 
 
-j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
-
-
 def intel_moji(index):
     gui.pl_update += 1
     gui.update += 1
@@ -25974,9 +25971,23 @@ def worker1():
                         print("CUE: Detected encoding as UTF-16")
                 except:
                     try:
-                        with open(path, encoding='shiftjis') as f:
-                            content = f.readlines()
-                        print("CUE: Detected encoding as SHIFT-JIS")
+                        j = False
+                        try:
+                            with open(path, encoding='shiftjis') as f:
+                                content = f.readlines()
+                                for line in content:
+                                    for c in j_chars:
+                                        if c in line:
+                                            j = True
+                                            print("CUE: Detected encoding as SHIFT-JIS")
+                                            break
+                        except:
+                            pass
+                        if not j:
+                            with open(path, encoding='windows-1251') as f:
+                            #with open(path, encoding='shiftjis') as f:
+                                content = f.readlines()
+                            print("CUE: Detected encoding as windows-1251")
 
                     except:
                         print("WARNING: Can't detect encoding of CUE file")
