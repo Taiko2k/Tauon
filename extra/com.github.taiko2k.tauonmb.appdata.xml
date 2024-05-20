@@ -2,7 +2,7 @@
 <!-- Copyright 2019 Taiko2k captain.gxj@gmail.com -->
 <component type="desktop-application">
   <id>com.github.taiko2k.tauonmb</id>
-  <name>Tauon Music Box</name>
+  <name>Tauon</name>
   <developer_name>Taiko2k</developer_name>
   <summary>Play your music with style</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
@@ -13,13 +13,18 @@
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/66533289-eb697e00-eb6e-11e9-8a93-513056a343f6.png</icon>
 
+  <branding>
+    <color type="primary" scheme_preference="light">#aa94c4</color>
+    <color type="primary" scheme_preference="dark">#7b20c3</color>
+  </branding>
+
   <requires>
     <control>keyboard</control>
     <control>pointing</control>
   </requires>
 
   <description>
-    <p>Tauon Music Box is a modern, comfortable and streamlined music player for the playback of your music collection.</p>
+    <p>Tauon is a modern, comfortable and streamlined music player for the playback of your music collection.</p>
     <p>Packed with features while maintaining simplicity. Use drag and drop for easy file importing and playlist management. Groups albums by folder and allows you to manage your music with built-in functions such as file and folder renaming, cover art downloading and file deleting.</p>
     <p>Features:</p>
     <ul>
@@ -65,7 +70,7 @@
   <releases>
 
 
-    <release version="7.7.2" date="2024-04-04">
+    <release version="7.8.0" date="2024-05-10">
       <description>
         <ul>
           <li>Various tweaks and fixes</li>

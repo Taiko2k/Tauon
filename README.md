@@ -1,7 +1,7 @@
 
 <img src="https://user-images.githubusercontent.com/17271572/51743494-a2b58600-2101-11e9-9e90-9c7c6c3394eb.png" align="left" height="157px" hspace="0px" vspace="20px">
 
-## Tauon Music Box
+## Tauon
 
 **A music player for the desktop.** Designed to be powerful and streamlined, putting the user in control of their music collection.
 
