@@ -33745,7 +33745,8 @@ def set_mini_mode():
     logical_size[0] = size[0]
     logical_size[1] = size[1]
 
-    SDL_SetWindowMinimumSize(t_window, logical_size[0], logical_size[1])
+    SDL_SetWindowMinimumSize(t_window, 100, 100)
+
     SDL_SetWindowResizable(t_window, False)
     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
@@ -33766,6 +33767,7 @@ restore_ignore_timer.force_set(100)
 
 
 def restore_full_mode():
+    print("RESTORE FULL")
     i_y = pointer(c_int(0))
     i_x = pointer(c_int(0))
     SDL_GetWindowPosition(t_window, i_x, i_y)
@@ -33778,14 +33780,16 @@ def restore_full_mode():
     logical_size[1] = gui.save_size[1]
 
     SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
-    if macos:
-        SDL_SetWindowMinimumSize(t_window, 560, 330)
-    else:
-        SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+
 
     SDL_SetWindowResizable(t_window, True)
     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
     SDL_SetWindowAlwaysOnTop(t_window, False)
+
+    # if macos:
+    #     SDL_SetWindowMinimumSize(t_window, 560, 330)
+    # else:
+    SDL_SetWindowMinimumSize(t_window, 560, 330)
 
     restore_ignore_timer.set()  # Hacky
 
@@ -33807,6 +33811,7 @@ def restore_full_mode():
 
         # print(window_size)
 
+    SDL_PumpEvents()
     SDL_GL_GetDrawableSize(t_window, i_x, i_y)
     window_size[0] = i_x.contents.value
     window_size[1] = i_y.contents.value
