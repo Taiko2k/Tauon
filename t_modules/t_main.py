@@ -1408,6 +1408,8 @@ class Prefs:  # Used to hold any kind of settings
         self.row_title_separator_type = 1
         self.search_on_letter = True
 
+        self.gallery_combine_disc = False
+
 prefs = Prefs()
 
 
@@ -3180,6 +3182,8 @@ for t in range(2):
             prefs.row_title_separator_type = save[180]
         if save[181] is not None:
             prefs.replay_preamp = save[181]
+        if save[182] is not None:
+            prefs.gallery_combine_disc = save[182]
 
         state_file.close()
         del save
@@ -17439,10 +17443,14 @@ def tryint(s):
 
 
 def index_key(index):
-    s = str(pctl.master_library[index].track_number)
-    d = str(pctl.master_library[index].disc_number)
+    tr = pctl.master_library[index]
+    s = str(tr.track_number)
+    d = str(tr.disc_number)
 
-    # Make sure the value for disc number is an interger, make 1 if 0, otherwise ignore
+    if "/" in d:
+        d = d.split("/")[0]
+
+    # Make sure the value for disc number is an int, make 1 if 0, otherwise ignore
     if d:
         try:
             dd = int(d)
@@ -17451,6 +17459,7 @@ def index_key(index):
             d = str(dd)
         except:
             d = ""
+
 
     # Add the disc number for sorting by CD, make it '1' if theres isnt one
     if s or d:
@@ -17462,7 +17471,10 @@ def index_key(index):
     # Use the filename if we dont have any metadata to sort by,
     # since it could likely have the track number in it
     else:
-        s = pctl.master_library[index].filename
+        s = tr.filename
+
+    if (not tr.disc_number or tr.disc_number == "0") and tr.is_cue:
+        s = tr.filename + "-" + s
 
     # This splits the line by groups of numbers, causing the sorting algorithum to sort
     # by those numbers. Should work for filenames, even with the disc number in the name.
@@ -17513,15 +17525,15 @@ def sort_track_2(pl, custom_list=None):
         tr = pctl.master_library[playlist[i]]
         if i == 0:
             albums.append(i)
-            current_folder = tr.parent_folder_name
+            current_folder = tr.parent_folder_path
             current_album = tr.album
             current_date = tr.date
         else:
-            if tr.parent_folder_name != current_folder:
-                if tr.album == current_album and tr.album and tr.date == current_date:
+            if tr.parent_folder_path != current_folder:
+                if tr.album == current_album and tr.album and tr.date == current_date and tr.disc_number:
                     continue
                 else:
-                    current_folder = tr.parent_folder_name
+                    current_folder = tr.parent_folder_path
                     current_album = tr.album
                     current_date = tr.date
                     albums.append(i)
@@ -22369,6 +22381,12 @@ def toggle_dim_albums(mode=0):
     gui.update += 1
 
 
+def toggle_gallery_combine(mode=0):
+    if mode == 1:
+        return prefs.gallery_combine_disc
+
+    prefs.gallery_combine_disc ^= True
+    reload_albums()
 def toggle_gallery_click(mode=0):
     if mode == 1:
         return prefs.gallery_single_click
@@ -27100,23 +27118,29 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     for i in range(len(playlist)):
         tr = pctl.master_library[playlist[i]]
 
+        split = False
         if i == 0:
+            split = True
+        elif tr.parent_folder_path != current_folder and tr.date and tr.date != current_date:
+            split = True
+        elif prefs.gallery_combine_disc and "Disc" in tr.album and "Disc" in current_album and tr.album.split("Disc")[0].rstrip(" ") == current_album.split("Disc")[0].rstrip(" "):
+            split = False
+        elif prefs.gallery_combine_disc and "CD" in tr.album and "CD" in current_album and tr.album.split("CD")[0].rstrip() == current_album.split("CD")[0].rstrip():
+            split = False
+        elif prefs.gallery_combine_disc and "cd" in tr.album and "cd" in current_album and tr.album.split("cd")[0].rstrip() == current_album.split("cd")[0].rstrip():
+            split = False
+        elif tr.album and tr.album == current_album and prefs.gallery_combine_disc:
+            split = False
+        elif tr.parent_folder_path != current_folder or current_title != tr.parent_folder_name:
+            split = True
+
+        if split:
             dex.append(i)
-            current_folder = tr.parent_folder_name
+            current_folder = tr.parent_folder_path
+            current_title = tr.parent_folder_name
             current_album = tr.album
             current_date = tr.date
             current_artist = tr.artist
-
-        else:
-            if tr.parent_folder_name != current_folder:
-                if tr.date and tr.date != current_date:
-                    dex.append(i)
-                elif tr.album and tr.album == current_album and tr.artist and tr.artist == current_artist:
-                    pass
-                else:
-                    dex.append(i)
-                current_folder = tr.parent_folder_name
-                current_album = tr.album
 
     if return_playlist > -1 or custom_list:
         return dex
@@ -28332,6 +28356,8 @@ class Over:
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_gallery_combine, _("Combine multi-discs"))
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, _("Show titles"))
         y += 25 * gui.scale
@@ -42972,6 +42998,7 @@ def save_state():
             prefs.row_title_genre,
             prefs.row_title_separator_type,
             prefs.replay_preamp,  # 181
+            prefs.gallery_combine_disc,
             ]
 
     try:
@@ -47480,6 +47507,7 @@ while pctl.running:
                     if not keymaps.test("shift-up"):
                         if pctl.selected_in_playlist > 0:
                             pctl.selected_in_playlist -= 1
+                            r_menu_index = default_playlist[pctl.selected_in_playlist]
                         shift_selection = []
 
                     if pctl.playlist_view_position > 0 and pctl.selected_in_playlist < pctl.playlist_view_position + 2:
@@ -47507,6 +47535,7 @@ while pctl.running:
                     if not keymaps.test("shift-down"):
                         if pctl.selected_in_playlist < len(default_playlist) - 1:
                             pctl.selected_in_playlist += 1
+                            r_menu_index = default_playlist[pctl.selected_in_playlist]
                         shift_selection = []
 
                     if pctl.playlist_view_position < len(

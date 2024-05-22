@@ -4,6 +4,7 @@ Changelog----------------------------
 v7.8.0
 
  - Added support for various game music file types
+ - Added gallery setting to combine discs
  - Tweaked shuffle mode for stricter repeat avoidance
  - Improved encoding detection for CUE sheets
  - Fixed duplicate highlight album in gallery bug
