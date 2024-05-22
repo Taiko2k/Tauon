@@ -32,6 +32,8 @@ import sys
 import socket
 
 from t_modules import t_bootstrap
+from t_modules.t_phazor import player4, phazor_exists
+
 
 h = t_bootstrap.holder
 t_window = h.w
@@ -28153,8 +28155,7 @@ class Over:
         colour = colours.box_sub_text
 
         # if system == "linux":
-        pha_detected = os.path.isfile(os.path.join(pctl.install_directory, "lib/libphazor.so"))
-        if not pha_detected:
+        if not phazor_exists(tauon.pctl):
             x += round(20 * gui.scale)
             ddt.text((x, y - 25 * gui.scale), "PHAzOR DLL not found!", colour, 213)
 
@@ -42069,7 +42070,6 @@ class ThreadManager:
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
             if prefs.backend == 4:
-                from t_modules.t_phazor import player4
                 self.playback = threading.Thread(target=player4, args=[tauon])
             # elif prefs.backend == 2:
             #     from t_modules.t_gstreamer import player3
