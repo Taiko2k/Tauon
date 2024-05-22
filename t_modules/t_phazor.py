@@ -17,9 +17,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import ctypes
 from ctypes import *
+from ctypes.util import find_library
 import os.path
 import time
 import requests
@@ -29,6 +29,21 @@ import shutil
 from t_modules.t_extra import *
 import mutagen
 import hashlib
+
+def get_phazor_pathname(pctl):
+    n = find_library("phazor")
+    if n:
+        return n
+
+    n = os.path.join(pctl.install_directory, "lib/libphazor.so")
+    if os.path.isfile(n):
+        return n
+
+def phazor_exists(pctl):
+    if get_phazor_pathname(pctl):
+        return True
+
+    return False
 
 def player4(tauon):
 
@@ -55,11 +70,7 @@ def player4(tauon):
     loaded_track = None
     fade_time = 400
 
-    if os.path.isfile(pctl.install_directory + "/lib/libphazor.so"):
-        # XXX: May be unnecesary. It's only to ensure compatibility with WWindows
-        aud = ctypes.cdll.LoadLibrary(pctl.install_directory + "/lib/libphazor.so")
-    else:
-        aud = ctypes.cdll.LoadLibrary("libphazor.so")
+    aud = ctypes.cdll.LoadLibrary(get_phazor_pathname(pctl))
 
     aud.init()
 
