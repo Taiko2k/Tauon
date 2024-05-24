@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2022-09-25 20:18+0000\n"
-"Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
+"PO-Revision-Date: 2024-05-26 00:09+0000\n"
+"Last-Translator: Patricio Carrau <duckycb@proton.me>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.14.1\n"
+"X-Generator: Weblate 5.6-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -150,7 +150,7 @@ msgstr "Le serveur Web s’est arrêté."
 
 #: t_modules/t_main.py:7952
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Ouvrir Tauon Music Box"
 
 #: t_modules/t_main.py:7953
 #, fuzzy
@@ -169,7 +169,7 @@ msgstr "Précédent"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Quitter"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
@@ -442,7 +442,7 @@ msgstr "Afficher dans la liste de lecture"
 
 #: t_modules/t_main.py:15502
 msgid "Image…"
-msgstr ""
+msgstr "Image…"
 
 #: t_modules/t_main.py:15503 t_modules/t_main.py:21055
 #: t_modules/t_main.py:21068
@@ -1269,7 +1269,7 @@ msgstr "Afficher dans la liste de lecture"
 
 #: t_modules/t_main.py:21432
 msgid "Looks like that's the only track in the album"
-msgstr ""
+msgstr "Il semble que c'est la seule piste de l'album"
 
 #: t_modules/t_main.py:21444 t_modules/t_main.py:23261
 #, fuzzy
@@ -1288,7 +1288,7 @@ msgstr "Recherche en cours…"
 
 #: t_modules/t_main.py:21468
 msgid "Get Recommended"
-msgstr ""
+msgstr "Obtenir des recommandations"
 
 #: t_modules/t_main.py:21570
 msgid "Broadcast This"
@@ -1301,7 +1301,7 @@ msgstr "Mini"
 
 #: t_modules/t_main.py:21585
 msgid "Maximize"
-msgstr ""
+msgstr "Maximiser"
 
 #: t_modules/t_main.py:21586 t_modules/t_main.py:23660
 msgid "Exit"
@@ -1524,7 +1524,7 @@ msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22821
 msgid "Tab"
-msgstr ""
+msgstr "Onglet"
 
 #: t_modules/t_main.py:22822
 msgid "Mini"
@@ -1593,7 +1593,7 @@ msgstr "Veuillez patienter jusqu’à ce que la tâche en cours soit terminée"
 
 #: t_modules/t_main.py:23210
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Importer depuis Spotify…"
 
 #: t_modules/t_main.py:23212
 #, fuzzy
@@ -1621,7 +1621,7 @@ msgstr "Nouvelle liste de lecture"
 
 #: t_modules/t_main.py:23256
 msgid "Current Context"
-msgstr ""
+msgstr "Contexte actuel"
 
 #: t_modules/t_main.py:23289
 #, fuzzy
@@ -2189,11 +2189,11 @@ msgstr "Préférer le lancement du lecteur Web"
 
 #: t_modules/t_main.py:28792
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Activer la lecture d'audio locale"
 
 #: t_modules/t_main.py:28815
 msgid "Spofify password"
-msgstr ""
+msgstr "Mot de passe de Spotify"
 
 #: t_modules/t_main.py:28830
 msgid "Airsonic/Subsonic network streaming"
@@ -2450,7 +2450,7 @@ msgstr "Afficher la piste en cours dans la barre de titre"
 
 #: t_modules/t_main.py:29498
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Mode mini toujours au-dessus"
 
 #: t_modules/t_main.py:29503
 #, fuzzy
@@ -2819,7 +2819,7 @@ msgstr "Affichage…"
 
 #: t_modules/t_main.py:36892
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Filtrer par les petits artistes"
 
 #: t_modules/t_main.py:36896 t_modules/t_main.py:36897
 #, fuzzy
