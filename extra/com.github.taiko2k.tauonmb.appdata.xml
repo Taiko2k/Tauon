@@ -3,13 +3,15 @@
 <component type="desktop-application">
   <id>com.github.taiko2k.tauonmb</id>
   <name>Tauon</name>
-  <developer_name>Taiko2k</developer_name>
+  <developer id="com.github.taiko2k">
+    <name>Taiko2k</name>
+  </developer>
   <summary>Play your music with style</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <url type="homepage">https://tauonmusicbox.rocks/</url>
-  <url type="bugtracker">https://github.com/Taiko2k/TauonMusicBox/issues</url>
+  <url type="bugtracker">https://github.com/Taiko2k/Tauon/issues</url>
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
   <icon type="remote" height="256" width="256">https://github.com/Taiko2k/Tauon/assets/17271572/c975e54a-5db1-4007-bab5-e6d14603822d</icon>
 
@@ -18,10 +20,10 @@
     <color type="primary" scheme_preference="dark">#7b20c3</color>
   </branding>
 
-  <requires>
+  <recommends>
     <control>keyboard</control>
     <control>pointing</control>
-  </requires>
+  </recommends>
 
   <description>
     <p>Tauon is a modern, comfortable and streamlined music player for the playback of your music collection.</p>
