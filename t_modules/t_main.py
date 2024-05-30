@@ -594,7 +594,7 @@ from send2trash import send2trash
 from isounidecode import unidecode
 from collections import OrderedDict
 
-musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
+musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
 
 arch = platform.machine()
 win_ver = platform.release()
@@ -21204,7 +21204,7 @@ def editor(index):
 
         if flatpak_mode:
             show_message(_("App not found on host OR insufficient Flatpak permissions."),
-                         'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps for details.',
+                         'See https://github.com/Taiko2k/Tauon/wiki/Flatpak-Extra-Steps for details.',
                          mode='bubble')
 
         return
@@ -28918,7 +28918,7 @@ class Over:
             y += round(30 * gui.scale)
 
             if self.button(x, y, _("View setup instructions")):
-                webbrowser.open("https://github.com/Taiko2k/TauonMusicBox/wiki/Spotify", new=2, autoraise=True)
+                webbrowser.open("https://github.com/Taiko2k/Tauon/wiki/Spotify", new=2, autoraise=True)
 
             field_width = round(245 * gui.scale)
 
@@ -29616,7 +29616,7 @@ class Over:
 
             if self.button(x + 485 * gui.scale, y, _("?")):
                 show_message("See here for detailed instructions",
-                             "https://github.com/Taiko2k/TauonMusicBox/wiki/Transcode-and-Sync", mode="link")
+                             "https://github.com/Taiko2k/Tauon/wiki/Transcode-and-Sync", mode="link")
 
             return
 
@@ -29910,7 +29910,7 @@ class Over:
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.box_sub_text, 13)
 
             y += 40 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/TauonMusicBox/graphs/contributors",
+            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/Tauon/graphs/contributors",
                                        colours.box_sub_text, 12, replace="Contributors")
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
