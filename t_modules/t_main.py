@@ -591,7 +591,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape, unescape
 from ctypes import *
 from send2trash import send2trash
-from isounidecode import unidecode
+from unidecode import unidecode
 from collections import OrderedDict
 
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
@@ -25663,14 +25663,14 @@ def worker2():
                                         s_text = s_cn
 
                         if dia_mode:
-                            title = unidecode(title).decode()
+                            title = unidecode(title)
 
-                            artist = unidecode(artist).decode()
-                            album_artist = unidecode(album_artist).decode()
-                            composer = unidecode(composer).decode()
-                            album = unidecode(album).decode()
-                            filename = unidecode(filename).decode()
-                            sartist = unidecode(sartist).decode()
+                            artist = unidecode(artist)
+                            album_artist = unidecode(album_artist)
+                            composer = unidecode(composer)
+                            album = unidecode(album)
+                            filename = unidecode(filename)
+                            sartist = unidecode(sartist)
 
                             if cache_string is None:
                                 search_dia_string_cache[
@@ -30054,9 +30054,9 @@ class Over:
                               click=self.click, replace="github")
 
             y += spacing
-            ddt.text((x, y), "isounidecode", colours.box_sub_text, font)
-            ddt.text((xx, y), "New BSD License", colours.box_text_label, font)
-            draw_linked_text2(xxx, y, "https://github.com/redvasily/isounidecode", colours.box_sub_text, font,
+            ddt.text((x, y), "unidecode", colours.box_sub_text, font)
+            ddt.text((xx, y), "GPL-2.0+", colours.box_text_label, font)
+            draw_linked_text2(xxx, y, "https://github.com/avian2/unidecode", colours.box_sub_text, font,
                               click=self.click, replace="github")
 
             y += spacing
