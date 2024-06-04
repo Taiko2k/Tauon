@@ -6,7 +6,7 @@ requests
 beautifulsoup4
 PlexAPI
 musicbrainzngs
-isounidecode
+unidecode
 setproctitle
 mutagen
 natsort

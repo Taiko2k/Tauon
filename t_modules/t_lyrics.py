@@ -18,7 +18,7 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from isounidecode import unidecode
+from unidecode import unidecode
 from bs4 import BeautifulSoup
 import urllib.parse
 import requests
@@ -81,7 +81,7 @@ def genius(artist, title, return_url=False):
     line = line.replace("/", "-")
     line = line.replace("-&-", "-and-")
     line = line.replace("&", "-and-")
-    line = unidecode(line).decode()
+    line = unidecode(line)
     line = urllib.parse.quote(line)
     line = f"https://genius.com/{line}-lyrics"
 
