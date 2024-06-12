@@ -17,7 +17,18 @@
 
 #ifdef _WIN32
 #define WIN
+#define MINI
 #include <windows.h>
+#endif
+
+#ifdef linux
+#define PIPE
+#endif
+
+//#define MINI
+
+#ifdef PIPE
+#include <pipewire/pipewire.h>
 #endif
 
 #define _GNU_SOURCE
@@ -29,6 +40,8 @@
 #include <pthread.h>
 #include <time.h>
 
+
+#ifdef MINI
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_NO_GENERATION
 #define MA_NO_DECODING
@@ -41,8 +54,8 @@
 #define MA_ENABLE_SNDIO
 #define MA_ENABLE_AUDIO4
 //#define MA_DEBUG_OUTPUT
-
 #include "miniaudio/miniaudio.h"
+#endif
 
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
@@ -60,9 +73,11 @@
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
 
+#ifdef MINI
 ma_context_config c_config;
 ma_device_config config;
 ma_device device;
+#endif
 
 float bfl[BUFF_SIZE];
 float bfr[BUFF_SIZE];
@@ -118,10 +133,10 @@ pthread_mutex_t fade_mutex;
 
 float out_buff[2048 * 2];
 
-#ifdef AO
-char out_buffc[2048 * 4];
-int32_t temp32 = 0;
-#endif
+//#ifdef AO
+//char out_buffc[2048 * 4];
+//int32_t temp32 = 0;
+//#endif
 
 int position_count = 0;
 int current_length_count = 0;
@@ -1048,7 +1063,7 @@ int get_audio(int max, float* buff){
         return 0;
 }
 
-
+#ifdef MINI
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
 
     get_audio(frameCount * 2, pOutput);
@@ -1061,7 +1076,6 @@ void notification_callback(const ma_device_notification* pNotification) {
         signaled_device_unavailable = 0;
     }
 }
-
 
 ma_device_info* pPlaybackDeviceInfos;
 ma_uint32 playbackDeviceCount = 0;
@@ -1082,24 +1096,29 @@ int initiate_ma_context(){
     return 1;
 }
 
+
+void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
+    printf("Log [%u]: %s\n", level, pMessage);
+    // Additional logic for handling log messages can be added here
+}
+
+#endif
+
 int scan_devices(){
 
+    #ifdef MINI
     if (initiate_ma_context() == -1) return -1;
-
     result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
     if (result != MA_SUCCESS) {
         printf("Failed to retrieve device information.\n");
         return -2;
     }
-
-//    printf("Playback Devices\n");
-//    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-//        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
-//        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
-//    }
-
     return playbackDeviceCount;
+    #endif
 
+    #ifdef PIPE
+    return 0;
+    #endif
 }
 
 
@@ -1142,17 +1161,16 @@ int disconnect_pulse() {
     //printf("ph: Disconnect Device\n");
 
     if (pulse_connected == 1) {
+        #ifdef MINI
         ma_device_uninit(&device);
-        //ma_context_uninit(&context);
+        #endif
+
     }
     pulse_connected = 0;
     return 0;
 }
 
-void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
-    printf("Log [%u]: %s\n", level, pMessage);
-    // Additional logic for handling log messages can be added here
-}
+
 
 void connect_pulse() {
 
@@ -1161,6 +1179,7 @@ void connect_pulse() {
         disconnect_pulse();
     }
 
+    #ifdef MINI
     if (getenv("MA_DEBUG")) {
         ma_result result;
         ma_log logger;
@@ -1249,6 +1268,7 @@ void connect_pulse() {
         buff_reset();
 
     }
+    #endif
 
     current_sample_rate = sample_rate_out;
 
@@ -1756,7 +1776,9 @@ void stop_out(){
     //printf("ph: stop\n");
     if (out_thread_running == 1){
         called_to_stop_device = 1;
+        #ifdef MINI
         ma_device_stop(&device);
+        #endif
         out_thread_running = 0;
     }
     disconnect_pulse();
@@ -1768,7 +1790,9 @@ void start_out(){
     if (out_thread_running == 0){
         called_to_stop_device = 0;
         device_stopped = 0;
+        #ifdef MINI
         ma_device_start(&device);
+        #endif
         out_thread_running = 1;
     }
 }
@@ -2204,10 +2228,14 @@ void *main_loop(void *thread_id) {
 
     stop_out();
     disconnect_pulse();
+    #ifdef MINI
     if (context_allocated == 1){
+
         ma_context_uninit(&context);
+
         context_allocated = 0;
     }
+    #endif
     command = NONE;
 
     return thread_id;
@@ -2426,7 +2454,12 @@ void set_callbacks(void *start, void *read, void *close, void *device_unavailabl
 
 
 char* get_device(int n){
+    #ifdef MINI
     return pPlaybackDeviceInfos[n].name;
+    #endif
+    #ifdef PIPE
+    return "";
+    #endif
 }
 
 int get_spectrum(int n_bins, float* bins) {
