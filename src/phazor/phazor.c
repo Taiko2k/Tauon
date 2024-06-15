@@ -29,6 +29,8 @@
 
 #ifdef PIPE
 #include <pipewire/pipewire.h>
+#include <spa/param/audio/format-utils.h>
+#include <spa/pod/builder.h>
 #endif
 
 #define _GNU_SOURCE
@@ -77,6 +79,41 @@
 ma_context_config c_config;
 ma_device_config config;
 ma_device device;
+#endif
+
+#ifdef PIPE
+pthread_t pw_thread;
+struct pw_main_loop *loop;
+struct pw_context *context;
+struct pw_core *core;
+struct pw_registry *registry;
+struct spa_hook registry_listener;
+struct pw_stream *global_stream;
+
+
+static void registry_event_global(void *data, uint32_t id,
+                uint32_t permissions, const char *type, uint32_t version,
+                const struct spa_dict *props)
+{
+        printf("object: id:%u type:%s/%d\n", id, type, version);
+}
+
+static const struct pw_registry_events registry_events = {
+        PW_VERSION_REGISTRY_EVENTS,
+        .global = registry_event_global,
+};
+
+void *pipewire_main_loop_thread(void *thread_id) {
+    pw_main_loop_run(loop);
+        pw_proxy_destroy((struct pw_proxy*)registry);
+        pw_core_disconnect(core);
+        pw_context_destroy(context);
+        pw_main_loop_destroy(loop);
+    return thread_id;
+}
+
+
+
 #endif
 
 float bfl[BUFF_SIZE];
@@ -1104,6 +1141,35 @@ void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
 
 #endif
 
+#ifdef PIPE
+
+static void on_process(void *userdata) {
+    struct pw_stream *stream = userdata; // todo, clean this up
+    struct pw_buffer *buffer;
+    struct spa_buffer *buf;
+    void *data;
+    int size;
+
+
+    if ((buffer = pw_stream_dequeue_buffer(global_stream)) == NULL)
+        return;
+
+    buf = buffer->buffer;
+
+    size = get_audio(6000, buf->datas[0].data) * 4;
+
+    buf->datas[0].chunk->size = size;
+    pw_stream_queue_buffer(global_stream, buffer);
+
+}
+
+static const struct pw_stream_events stream_events = {
+    PW_VERSION_STREAM_EVENTS,
+    .process = on_process,
+};
+
+#endif
+
 int scan_devices(){
 
     #ifdef MINI
@@ -1268,6 +1334,29 @@ void connect_pulse() {
         buff_reset();
 
     }
+    #endif
+
+    #ifdef PIPE
+        int set_samplerate = 48000;
+        if (sample_rate_src > 0) set_samplerate = sample_rate_src;
+
+        struct spa_pod_builder b = { 0 };
+        uint8_t buffer[1024];
+        const struct spa_pod *params[1];
+
+        spa_pod_builder_init(&b, buffer, sizeof(buffer));
+        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
+                                               &SPA_AUDIO_INFO_RAW_INIT(
+                                                   .format = SPA_AUDIO_FORMAT_F32,
+                                                   .channels = 2,
+                                                   .rate = set_samplerate));
+
+        pw_stream_connect(global_stream,
+                          PW_DIRECTION_OUTPUT,
+                          PW_ID_ANY,
+                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
+                                                 PW_STREAM_FLAG_MAP_BUFFERS),
+                          params, 1);
     #endif
 
     current_sample_rate = sample_rate_out;
@@ -2006,6 +2095,50 @@ void *main_loop(void *thread_id) {
 
     // ---------------------------------------------
 
+    // PIPEWIRE -----------
+    #ifdef PIPE
+        pw_init(NULL, NULL);
+        loop = pw_main_loop_new(NULL /* properties */);
+        context = pw_context_new(pw_main_loop_get_loop(loop),
+                        NULL /* properties */,
+                        0 /* user_data size */);
+
+        core = pw_context_connect(context,
+                        NULL /* properties */,
+                        0 /* user_data size */);
+
+        registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
+                        0 /* user_data size */);
+
+        spa_zero(registry_listener);
+        pw_registry_add_listener(registry, &registry_listener,
+                                       &registry_events, NULL);
+
+
+        global_stream = pw_stream_new_simple(
+            pw_main_loop_get_loop(loop),
+            "Tauon",
+            pw_properties_new(
+                PW_KEY_MEDIA_TYPE, "Audio",
+                PW_KEY_MEDIA_CATEGORY, "Playback",
+                PW_KEY_MEDIA_ROLE, "Music",
+                NULL),
+            &stream_events,
+            NULL
+        );
+
+        //start_out(); // todo, we need to start stop this async...
+        connect_pulse(); // todo, just for prototyping, remove later
+        out_thread_running = 1; // todo ""
+
+        if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+        fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+        }
+
+
+
+    #endif
+
     //int test1 = 0;
     // Main loop ---------------------------------------------------------------
     while (1) {
@@ -2235,6 +2368,11 @@ void *main_loop(void *thread_id) {
 
         context_allocated = 0;
     }
+    #endif
+
+    #ifdef PIPE
+        pw_main_loop_destroy(loop);
+
     #endif
     command = NONE;
 
