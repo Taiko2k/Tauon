@@ -428,6 +428,7 @@ class Jellyfin():
                     "x-emby-authorization": self._get_jellyfin_auth()
                 },
                 params={
+                    "fields": "Genres", #Specify additional field to return
                     "recursive": True,
                     "filter": "music"
                 },
@@ -483,6 +484,8 @@ class Jellyfin():
                 nt.album = track.get("Album", "")
                 nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
                 nt.date = str(track.get("ProductionYear"))
+                genres = track.get("Genres", [])
+                nt.genre = "; ".join(genres)
 
                 folder_name = nt.album_artist
                 if folder_name and nt.album:
