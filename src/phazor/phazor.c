@@ -91,13 +91,13 @@ struct pw_core *core;
 struct pw_registry *registry;
 struct spa_hook registry_listener;
 struct pw_stream *global_stream;
-
+int pipe_set_samplerate = 48000;
 
 static void registry_event_global(void *data, uint32_t id,
                 uint32_t permissions, const char *type, uint32_t version,
                 const struct spa_dict *props)
 {
-        printf("object: id:%u type:%s/%d\n", id, type, version);
+        //printf("object: id:%u type:%s/%d\n", id, type, version);
 }
 
 static const struct pw_registry_events registry_events = {
@@ -1225,6 +1225,11 @@ void decode_seek(int abs_ms, int sample_rate) {
     }
 }
 
+static int pipe_disconnect(struct spa_loop *loop, bool async, uint32_t seq,
+                     const void *_data, size_t size, void *user_data){
+        pw_stream_disconnect(global_stream);
+     }
+
 int disconnect_pulse() {
     //printf("ph: Disconnect Device\n");
 
@@ -1234,8 +1239,8 @@ int disconnect_pulse() {
         #endif
 
         #ifdef PIPE
-        pw_main_loop_quit(loop);
-        pthread_join(pw_thread, NULL);
+        pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_disconnect, SPA_ID_INVALID, NULL, 0,
+                                  true, NULL);
 
         #endif
 
@@ -1246,11 +1251,36 @@ int disconnect_pulse() {
 
 
 
+static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
+                     const void *_data, size_t size, void *user_data){
+    //printf("Invoke function called with seq: %u\n", seq);
+
+        struct spa_pod_builder b = { 0 };
+        uint8_t buffer[1024];
+        const struct spa_pod *params[1];
+
+        spa_pod_builder_init(&b, buffer, sizeof(buffer));
+        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
+                                               &SPA_AUDIO_INFO_RAW_INIT(
+                                                   .format = SPA_AUDIO_FORMAT_F32,
+                                                   .channels = 2,
+                                                   .rate = pipe_set_samplerate));
+
+        pw_stream_connect(global_stream,
+                          PW_DIRECTION_OUTPUT,
+                          PW_ID_ANY,
+                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
+                                                 PW_STREAM_FLAG_MAP_BUFFERS),
+                          params, 1);
+
+}
+
 void connect_pulse() {
 
     if (pulse_connected == 1) {
         //printf("pa: reconnect pulse\n");
         disconnect_pulse();
+
     }
 
     #ifdef MINI
@@ -1345,31 +1375,16 @@ void connect_pulse() {
     #endif
 
     #ifdef PIPE
+
         int set_samplerate = 48000;
-        if (sample_rate_src > 0) set_samplerate = sample_rate_src;
-        printf("SET PIPE SAMPLERATE: %d", set_samplerate)
+        if (sample_rate_src > 0) pipe_set_samplerate = sample_rate_src;
+        printf("SET PIPE SAMPLERATE: %d\n", set_samplerate);
+        sample_rate_out = pipe_set_samplerate;
 
-        struct spa_pod_builder b = { 0 };
-        uint8_t buffer[1024];
-        const struct spa_pod *params[1];
+        pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_connect, SPA_ID_INVALID, NULL, 0,
+                                  true, NULL);
 
-        spa_pod_builder_init(&b, buffer, sizeof(buffer));
-        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
-                                               &SPA_AUDIO_INFO_RAW_INIT(
-                                                   .format = SPA_AUDIO_FORMAT_F32,
-                                                   .channels = 2,
-                                                   .rate = set_samplerate));
 
-        pw_stream_connect(global_stream,
-                          PW_DIRECTION_OUTPUT,
-                          PW_ID_ANY,
-                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
-                                                 PW_STREAM_FLAG_MAP_BUFFERS),
-                          params, 1);
-
-        if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
-            fprintf(stderr, "Failed to create Pipewire main loop thread\n");
-        }
     #endif
 
     current_sample_rate = sample_rate_out;
@@ -1875,7 +1890,7 @@ void decoder_eos() {
 }
 
 void stop_out(){
-    //printf("ph: stop\n");
+
     if (out_thread_running == 1){
         called_to_stop_device = 1;
         #ifdef MINI
@@ -1907,7 +1922,7 @@ void pump_decode() {
         if (get_buff_fill() > 0){
             return;
         }
-
+        printf("ph: Pump wrong samplerate\n");
         stop_out();
         fade_fill = 0;
         fade_position = 0;
@@ -2140,6 +2155,9 @@ void *main_loop(void *thread_id) {
             NULL
         );
 
+    if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+            fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+    }
 
     #endif
 
@@ -2375,7 +2393,9 @@ void *main_loop(void *thread_id) {
     #endif
 
     #ifdef PIPE
-        //pw_main_loop_destroy(loop);  // segfault if already stopped
+
+     pw_main_loop_quit(loop);
+
 
     #endif
     command = NONE;
