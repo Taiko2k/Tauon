@@ -1233,6 +1233,12 @@ int disconnect_pulse() {
         ma_device_uninit(&device);
         #endif
 
+        #ifdef PIPE
+        pw_main_loop_quit(loop);
+        pthread_join(pw_thread, NULL);
+
+        #endif
+
     }
     pulse_connected = 0;
     return 0;
@@ -1341,6 +1347,7 @@ void connect_pulse() {
     #ifdef PIPE
         int set_samplerate = 48000;
         if (sample_rate_src > 0) set_samplerate = sample_rate_src;
+        printf("SET PIPE SAMPLERATE: %d", set_samplerate)
 
         struct spa_pod_builder b = { 0 };
         uint8_t buffer[1024];
@@ -1873,9 +1880,6 @@ void stop_out(){
         called_to_stop_device = 1;
         #ifdef MINI
         ma_device_stop(&device);
-        #endif
-        #ifdef PIPE
-        pw_main_loop_quit(loop);
         #endif
         out_thread_running = 0;
     }

@@ -28239,8 +28239,11 @@ class Over:
             ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_text_label, 212)
 
             if platform_system == "Linux":
+                old = prefs.pipewire
                 prefs.pipewire = self.toggle_square(x, self.box_y + self.h - 50 * gui.scale,
                                                             prefs.pipewire, _("Use Pipewire native (Experimental)"))
+                if old != prefs.pipewire:
+                    show_message("You may need to restart the app for change to take effect")
 
             old = prefs.avoid_resampling
             prefs.avoid_resampling = self.toggle_square(x, self.box_y + self.h - 27 * gui.scale, prefs.avoid_resampling, _("Avoid resampling"))
