@@ -15,14 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#define MINI
+
 #ifdef _WIN32
 #define WIN
-#define MINI
 #include <windows.h>
 #endif
 
-#ifdef linux
-#define PIPE
+#ifdef PIPE
+#undef MINI
 #endif
 
 //#define MINI
@@ -1357,6 +1359,10 @@ void connect_pulse() {
                           (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
                                                  PW_STREAM_FLAG_MAP_BUFFERS),
                           params, 1);
+
+        if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+            fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+        }
     #endif
 
     current_sample_rate = sample_rate_out;
@@ -1868,6 +1874,9 @@ void stop_out(){
         #ifdef MINI
         ma_device_stop(&device);
         #endif
+        #ifdef PIPE
+        pw_main_loop_quit(loop);
+        #endif
         out_thread_running = 0;
     }
     disconnect_pulse();
@@ -2127,15 +2136,6 @@ void *main_loop(void *thread_id) {
             NULL
         );
 
-        //start_out(); // todo, we need to start stop this async...
-        connect_pulse(); // todo, just for prototyping, remove later
-        out_thread_running = 1; // todo ""
-
-        if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
-        fprintf(stderr, "Failed to create Pipewire main loop thread\n");
-        }
-
-
 
     #endif
 
@@ -2371,7 +2371,7 @@ void *main_loop(void *thread_id) {
     #endif
 
     #ifdef PIPE
-        pw_main_loop_destroy(loop);
+        //pw_main_loop_destroy(loop);  // segfault if already stopped
 
     #endif
     command = NONE;
