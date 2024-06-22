@@ -15,9 +15,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#define MINI
+
 #ifdef _WIN32
 #define WIN
 #include <windows.h>
+#endif
+
+#ifdef PIPE
+#undef MINI
+#endif
+
+//#define MINI
+
+#ifdef PIPE
+#include <pipewire/pipewire.h>
+#include <spa/param/audio/format-utils.h>
+#include <spa/pod/builder.h>
 #endif
 
 #define _GNU_SOURCE
@@ -29,6 +44,8 @@
 #include <pthread.h>
 #include <time.h>
 
+
+#ifdef MINI
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_NO_GENERATION
 #define MA_NO_DECODING
@@ -41,8 +58,8 @@
 #define MA_ENABLE_SNDIO
 #define MA_ENABLE_AUDIO4
 //#define MA_DEBUG_OUTPUT
-
 #include "miniaudio/miniaudio.h"
+#endif
 
 #include <FLAC/stream_decoder.h>
 #include <mpg123.h>
@@ -60,9 +77,46 @@
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
 
+#ifdef MINI
 ma_context_config c_config;
 ma_device_config config;
 ma_device device;
+#endif
+
+#ifdef PIPE
+pthread_t pw_thread;
+struct pw_main_loop *loop;
+struct pw_context *context;
+struct pw_core *core;
+struct pw_registry *registry;
+struct spa_hook registry_listener;
+struct pw_stream *global_stream;
+int pipe_set_samplerate = 48000;
+
+static void registry_event_global(void *data, uint32_t id,
+                uint32_t permissions, const char *type, uint32_t version,
+                const struct spa_dict *props)
+{
+        //printf("object: id:%u type:%s/%d\n", id, type, version);
+}
+
+static const struct pw_registry_events registry_events = {
+        PW_VERSION_REGISTRY_EVENTS,
+        .global = registry_event_global,
+};
+
+void *pipewire_main_loop_thread(void *thread_id) {
+    pw_main_loop_run(loop);
+        pw_proxy_destroy((struct pw_proxy*)registry);
+        pw_core_disconnect(core);
+        pw_context_destroy(context);
+        pw_main_loop_destroy(loop);
+    return thread_id;
+}
+
+
+
+#endif
 
 float bfl[BUFF_SIZE];
 float bfr[BUFF_SIZE];
@@ -118,10 +172,10 @@ pthread_mutex_t fade_mutex;
 
 float out_buff[2048 * 2];
 
-#ifdef AO
-char out_buffc[2048 * 4];
-int32_t temp32 = 0;
-#endif
+//#ifdef AO
+//char out_buffc[2048 * 4];
+//int32_t temp32 = 0;
+//#endif
 
 int position_count = 0;
 int current_length_count = 0;
@@ -1048,7 +1102,7 @@ int get_audio(int max, float* buff){
         return 0;
 }
 
-
+#ifdef MINI
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){
 
     get_audio(frameCount * 2, pOutput);
@@ -1061,7 +1115,6 @@ void notification_callback(const ma_device_notification* pNotification) {
         signaled_device_unavailable = 0;
     }
 }
-
 
 ma_device_info* pPlaybackDeviceInfos;
 ma_uint32 playbackDeviceCount = 0;
@@ -1082,24 +1135,58 @@ int initiate_ma_context(){
     return 1;
 }
 
+
+void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
+    printf("Log [%u]: %s\n", level, pMessage);
+    // Additional logic for handling log messages can be added here
+}
+
+#endif
+
+#ifdef PIPE
+
+static void on_process(void *userdata) {
+    struct pw_stream *stream = userdata; // todo, clean this up
+    struct pw_buffer *buffer;
+    struct spa_buffer *buf;
+    void *data;
+    int size;
+
+
+    if ((buffer = pw_stream_dequeue_buffer(global_stream)) == NULL)
+        return;
+
+    buf = buffer->buffer;
+
+    size = get_audio(6000, buf->datas[0].data) * 4;
+
+    buf->datas[0].chunk->size = size;
+    pw_stream_queue_buffer(global_stream, buffer);
+
+}
+
+static const struct pw_stream_events stream_events = {
+    PW_VERSION_STREAM_EVENTS,
+    .process = on_process,
+};
+
+#endif
+
 int scan_devices(){
 
+    #ifdef MINI
     if (initiate_ma_context() == -1) return -1;
-
     result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
     if (result != MA_SUCCESS) {
         printf("Failed to retrieve device information.\n");
         return -2;
     }
-
-//    printf("Playback Devices\n");
-//    for (iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-//        printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
-//        //printf("    %s:\n", pPlaybackDeviceInfos[iDevice].id);
-//    }
-
     return playbackDeviceCount;
+    #endif
 
+    #ifdef PIPE
+    return 0;
+    #endif
 }
 
 
@@ -1138,20 +1225,54 @@ void decode_seek(int abs_ms, int sample_rate) {
     }
 }
 
+static int pipe_disconnect(struct spa_loop *loop, bool async, uint32_t seq,
+                     const void *_data, size_t size, void *user_data){
+        pw_stream_disconnect(global_stream);
+     }
+
 int disconnect_pulse() {
     //printf("ph: Disconnect Device\n");
 
     if (pulse_connected == 1) {
+        #ifdef MINI
         ma_device_uninit(&device);
-        //ma_context_uninit(&context);
+        #endif
+
+        #ifdef PIPE
+        pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_disconnect, SPA_ID_INVALID, NULL, 0,
+                                  true, NULL);
+
+        #endif
+
     }
     pulse_connected = 0;
     return 0;
 }
 
-void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
-    printf("Log [%u]: %s\n", level, pMessage);
-    // Additional logic for handling log messages can be added here
+
+
+static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
+                     const void *_data, size_t size, void *user_data){
+    //printf("Invoke function called with seq: %u\n", seq);
+
+        struct spa_pod_builder b = { 0 };
+        uint8_t buffer[1024];
+        const struct spa_pod *params[1];
+
+        spa_pod_builder_init(&b, buffer, sizeof(buffer));
+        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
+                                               &SPA_AUDIO_INFO_RAW_INIT(
+                                                   .format = SPA_AUDIO_FORMAT_F32,
+                                                   .channels = 2,
+                                                   .rate = pipe_set_samplerate));
+
+        pw_stream_connect(global_stream,
+                          PW_DIRECTION_OUTPUT,
+                          PW_ID_ANY,
+                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
+                                                 PW_STREAM_FLAG_MAP_BUFFERS),
+                          params, 1);
+
 }
 
 void connect_pulse() {
@@ -1159,8 +1280,10 @@ void connect_pulse() {
     if (pulse_connected == 1) {
         //printf("pa: reconnect pulse\n");
         disconnect_pulse();
+
     }
 
+    #ifdef MINI
     if (getenv("MA_DEBUG")) {
         ma_result result;
         ma_log logger;
@@ -1249,6 +1372,20 @@ void connect_pulse() {
         buff_reset();
 
     }
+    #endif
+
+    #ifdef PIPE
+
+        int set_samplerate = 48000;
+        if (sample_rate_src > 0) pipe_set_samplerate = sample_rate_src;
+        printf("SET PIPE SAMPLERATE: %d\n", set_samplerate);
+        sample_rate_out = pipe_set_samplerate;
+
+        pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_connect, SPA_ID_INVALID, NULL, 0,
+                                  true, NULL);
+
+
+    #endif
 
     current_sample_rate = sample_rate_out;
 
@@ -1753,10 +1890,12 @@ void decoder_eos() {
 }
 
 void stop_out(){
-    //printf("ph: stop\n");
+
     if (out_thread_running == 1){
         called_to_stop_device = 1;
+        #ifdef MINI
         ma_device_stop(&device);
+        #endif
         out_thread_running = 0;
     }
     disconnect_pulse();
@@ -1768,7 +1907,9 @@ void start_out(){
     if (out_thread_running == 0){
         called_to_stop_device = 0;
         device_stopped = 0;
+        #ifdef MINI
         ma_device_start(&device);
+        #endif
         out_thread_running = 1;
     }
 }
@@ -1781,7 +1922,7 @@ void pump_decode() {
         if (get_buff_fill() > 0){
             return;
         }
-
+        printf("ph: Pump wrong samplerate\n");
         stop_out();
         fade_fill = 0;
         fade_position = 0;
@@ -1981,6 +2122,44 @@ void *main_loop(void *thread_id) {
     dec = FLAC__stream_decoder_new();
 
     // ---------------------------------------------
+
+    // PIPEWIRE -----------
+    #ifdef PIPE
+        pw_init(NULL, NULL);
+        loop = pw_main_loop_new(NULL /* properties */);
+        context = pw_context_new(pw_main_loop_get_loop(loop),
+                        NULL /* properties */,
+                        0 /* user_data size */);
+
+        core = pw_context_connect(context,
+                        NULL /* properties */,
+                        0 /* user_data size */);
+
+        registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
+                        0 /* user_data size */);
+
+        spa_zero(registry_listener);
+        pw_registry_add_listener(registry, &registry_listener,
+                                       &registry_events, NULL);
+
+
+        global_stream = pw_stream_new_simple(
+            pw_main_loop_get_loop(loop),
+            "Tauon",
+            pw_properties_new(
+                PW_KEY_MEDIA_TYPE, "Audio",
+                PW_KEY_MEDIA_CATEGORY, "Playback",
+                PW_KEY_MEDIA_ROLE, "Music",
+                NULL),
+            &stream_events,
+            NULL
+        );
+
+    if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+            fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+    }
+
+    #endif
 
     //int test1 = 0;
     // Main loop ---------------------------------------------------------------
@@ -2204,10 +2383,21 @@ void *main_loop(void *thread_id) {
 
     stop_out();
     disconnect_pulse();
+    #ifdef MINI
     if (context_allocated == 1){
+
         ma_context_uninit(&context);
+
         context_allocated = 0;
     }
+    #endif
+
+    #ifdef PIPE
+
+     pw_main_loop_quit(loop);
+
+
+    #endif
     command = NONE;
 
     return thread_id;
@@ -2426,7 +2616,12 @@ void set_callbacks(void *start, void *read, void *close, void *device_unavailabl
 
 
 char* get_device(int n){
+    #ifdef MINI
     return pPlaybackDeviceInfos[n].name;
+    #endif
+    #ifdef PIPE
+    return "";
+    #endif
 }
 
 int get_spectrum(int n_bins, float* bins) {
