@@ -31,13 +31,22 @@ import mutagen
 import hashlib
 
 def get_phazor_pathname(pctl):
-    n = find_library("phazor")
-    if n:
-        return n
+    if pctl.prefs.pipewire:
+        n = find_library("phazor-pipe")
+        if n:
+            return n
 
-    n = os.path.join(pctl.install_directory, "lib/libphazor.so")
-    if os.path.isfile(n):
-        return n
+        n = os.path.join(pctl.install_directory, "lib/libphazor-pipe.so")
+        if os.path.isfile(n):
+            return n
+    else:
+        n = find_library("phazor")
+        if n:
+            return n
+
+        n = os.path.join(pctl.install_directory, "lib/libphazor.so")
+        if os.path.isfile(n):
+            return n
 
 def phazor_exists(pctl):
     if get_phazor_pathname(pctl):

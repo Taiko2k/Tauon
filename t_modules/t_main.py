@@ -598,6 +598,7 @@ musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Tai
 
 arch = platform.machine()
 win_ver = platform.release()
+platform_system = platform.system()
 try:
     win_ver = int(win_ver)
 except:
@@ -1409,6 +1410,7 @@ class Prefs:  # Used to hold any kind of settings
         self.search_on_letter = True
 
         self.gallery_combine_disc = False
+        self.pipewire = False
 
 prefs = Prefs()
 
@@ -3759,6 +3761,7 @@ def save_prefs():
 
     # cf.update_value("use-log-volume-scale", prefs.log_vol)
     # cf.update_value("audio-backend", prefs.backend)
+    cf.update_value("use-pipewire", prefs.pipewire)
     cf.update_value("seek-interval", prefs.seek_interval)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
@@ -3912,6 +3915,9 @@ def load_prefs():
     cf.add_text("[audio]")
 
     # prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
+    prefs.pipewire = cf.sync_add("bool", "use-pipewire", prefs.pipewire,
+                                      "Experimental setting to use Pipewire native only.")
+
     prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval,
                                       "In s. Interval to seek when using keyboard shortcut. Default is 15.")
     # prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
@@ -5174,6 +5180,7 @@ class PlayerCtl:
         self.install_directory = install_directory
         self.user_directory = user_directory
         self.config_directory = config_directory
+        self.prefs = prefs
 
         # Database
 
@@ -28231,6 +28238,13 @@ class Over:
             ddt.text_background_colour = colours.box_background
             ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), colours.box_text_label, 212)
 
+            if platform_system == "Linux":
+                old = prefs.pipewire
+                prefs.pipewire = self.toggle_square(x, self.box_y + self.h - 50 * gui.scale,
+                                                            prefs.pipewire, _("Use Pipewire native (Experimental)"))
+                if old != prefs.pipewire:
+                    show_message("You may need to restart the app for change to take effect")
+
             old = prefs.avoid_resampling
             prefs.avoid_resampling = self.toggle_square(x, self.box_y + self.h - 27 * gui.scale, prefs.avoid_resampling, _("Avoid resampling"))
             if prefs.avoid_resampling != old:
@@ -28251,7 +28265,8 @@ class Over:
             i = 0
             reload = False
             for name in prefs.phazor_devices:
-
+                if prefs.pipewire:
+                    break
                 if i < self.device_scroll_bar_position:
                     continue
                 if y > self.box_y + self.h - 40 * gui.scale:
