@@ -10889,6 +10889,9 @@ text_box_canvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXT
 SDL_SetTextureBlendMode(text_box_canvas, SDL_BLENDMODE_BLEND)
 
 
+def pixel_to_logical(x):
+    return round((x / window_size[0]) * logical_size)
+
 class TextBox2:
     cursor = True
 
@@ -11284,12 +11287,12 @@ class TextBox2:
                 gui.cursor_want = 2
 
         if active and editline != "" and editline != input_text:
-            ex = ddt.text((space + 4, 0), editline, [240, 230, 230, 255], font)
+            ex = ddt.text((space + round(4 * gui.scale), 0), editline, [240, 230, 230, 255], font)
             tw, th = ddt.get_text_wh(editline, font, max_x=2000)
             ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)),
                      [245, 245, 245, 255])
 
-            rect = SDL_Rect(round(x + space + tw + 5 * gui.scale), round(y + th + 4 * gui.scale), 1, 1)
+            rect = SDL_Rect(pixel_to_logical(x + space + tw + (5 * gui.scale)), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
             SDL_SetTextInputRect(rect)
 
         animate_monitor_timer.set()
@@ -11677,12 +11680,12 @@ class TextBox:
                     ddt.rect((xx, yy, 1 * gui.scale, 14 * gui.scale), colour)
 
         if active and editline != "" and editline != input_text:
-            ex = ddt.text((x + space + 4, y), editline, [240, 230, 230, 255], font)
+            ex = ddt.text((x + space + round(4 * gui.scale), y), editline, [240, 230, 230, 255], font)
             tw, th = ddt.get_text_wh(editline, font, max_x=2000)
             ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
                      [245, 245, 245, 255])
 
-            rect = SDL_Rect(round(round(x + space + tw + 5 * gui.scale)), round(y + th + 4 * gui.scale), 1, 1)
+            rect = SDL_Rect(pixel_to_logical(x + space + tw + 5 * gui.scale), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
             SDL_SetTextInputRect(rect)
 
         animate_monitor_timer.set()
