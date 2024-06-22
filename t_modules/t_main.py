@@ -28544,6 +28544,12 @@ class Over:
 
 
 
+        elif self.func_page == 4:
+            y += 23 * gui.scale
+            prefs.use_gamepad = self.toggle_square(x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
+                                                     subtitle=_("Change requires restart"))
+            y += 37 * gui.scale
+
         elif self.func_page == 3:
             y += 23 * gui.scale
             old = prefs.enable_remote
@@ -28612,10 +28618,10 @@ class Over:
             ddt.text((x, y), f"Status: {text}", colours.box_text, 11)
 
         # Switcher
-        pages = 4
-        x = x0 + round(23 * gui.scale)
-        y = (y0 + h0) - round(31 * gui.scale)
-        ww = round(31 * gui.scale)
+        pages = 5
+        x = x0 + round(18 * gui.scale)
+        y = (y0 + h0) - round(29 * gui.scale)
+        ww = round(40 * gui.scale)
 
         for p in range(pages):
             if self.button2(x, y, str(p + 1), width=ww, center_text=True, force_on=self.func_page == p):

@@ -1,6 +1,11 @@
 
 Changelog----------------------------
 
+v7.8.1
+
+ - Added Pipewire native output option (Linux only)
+ - Added setting in UI to disable gamepad
+
 v7.8.0
 
  - Added support for various game music file types
