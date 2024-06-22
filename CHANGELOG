@@ -5,6 +5,7 @@ v7.8.1
 
  - Added Pipewire native output option (Linux only)
  - Added setting in UI to disable gamepad
+ - Added support for importing files with .AIFF extension
 
 v7.8.0
 
