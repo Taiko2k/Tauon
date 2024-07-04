@@ -1225,10 +1225,14 @@ void decode_seek(int abs_ms, int sample_rate) {
     }
 }
 
+#ifdef PIPE
+
 static int pipe_disconnect(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
-        pw_stream_disconnect(global_stream);
+        return pw_stream_disconnect(global_stream);
      }
+
+#endif
 
 int disconnect_pulse() {
     //printf("ph: Disconnect Device\n");
@@ -1249,7 +1253,7 @@ int disconnect_pulse() {
     return 0;
 }
 
-
+#ifdef PIPE
 
 static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
@@ -1274,6 +1278,8 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
                           params, 1);
 
 }
+
+#endif
 
 void connect_pulse() {
 
