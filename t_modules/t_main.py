@@ -25178,6 +25178,15 @@ class SearchOverlay:
                         xx += 25 * gui.scale
                         artist = track.artist
                         xx += ddt.text((xx + text_lx, yyy), artist, [255, 255, 255, int(255 * fade)], s_b_font)
+                        if track.lyrics:
+                            xx += 9 * gui.scale
+                            xx += ddt.text((xx + text_lx, yyy), "LYRICS", [120, 120, 120, int(255 * fade)], 212)
+                            xx += 8 * gui.scale
+                            xx += ddt.text((xx + text_lx, yyy), track.lyrics, [80, 80, 80, int(255 * fade)], 212)
+                            if track.lyrics.lower() == search_text.text.lower():
+                                xx = text_lx
+                                yyy += line_height
+                                xx, yy = ddt.text((xx, yy), track.title, [255, 255, 255, int(255 * fade)], s_font)
                         if track.album:
                             xx += 9 * gui.scale
                             xx += ddt.text((xx + text_lx, yyy), "FROM", [120, 120, 120, int(255 * fade)], 212)
@@ -25650,7 +25659,8 @@ def worker2():
                         title = t.title.lower().replace("-", "")
                         artist = t.artist.lower().replace("-", "")
                         album_artist = t.album_artist.lower().replace("-", "")
-                        composer = t.composer.lower().replace("-", "")
+                        composer = t.composer.lower().replace("-", "") #maybe this place
+                        lyrics = str(t.lyrics).lower().replace("-", "")
                         date = t.date.lower().replace("-", "")
                         album = t.album.lower().replace("-", "")
                         genre = t.genre.lower().replace("-", "")
@@ -25763,7 +25773,7 @@ def worker2():
                                             temp_results.append([1, t.album, track, playlist[6], 0])
                                             albums[t.album] = 1
 
-                            elif search_magic(s_text, artist + sartist):
+                            elif search_magic(s_text, artist + sartist) or search_magic(s_text, lyrics):
 
                                 value = 1
                                 if artist.startswith(s_text):
@@ -25772,11 +25782,13 @@ def worker2():
                                 # Add artist
                                 if t.artist in artists:
                                     artists[t.artist] += value
+                                elif s_text in lyrics:
+                                    temp_results.append([1, t.lyrics, track, playlist[6], 0])
                                 else:
                                     temp_results.append([0, t.artist, track, playlist[6], 0])
                                     artists[t.artist] = value
 
-                                if t.album in albums:
+                                if t.album in albums: #maybe this place
                                     albums[t.album] += 1
                                 else:
                                     temp_results.append([1, t.album, track, playlist[6], 0])
@@ -25789,7 +25801,7 @@ def worker2():
                                 if t.album_artist.startswith(s_text):
                                     value = 5
 
-                                if t.album_artist in artists:
+                                if t.album_artist in artists: #maybe this place
                                     artists[t.album_artist] += value
                                 else:
                                     temp_results.append([0, t.album_artist, track, playlist[6], 0])
@@ -25810,7 +25822,7 @@ def worker2():
                                 if t.album in albums:
                                     albums[t.album] += value
                                 else:
-                                    temp_results.append([1, t.album, track, playlist[6], 0])
+                                    temp_results.append([1, t.album, track, playlist[6], 0]) # maybe this place
                                     albums[t.album] = value
 
                             if search_magic(s_text, artist + sartist) or search_magic(s_text, album):
@@ -25846,6 +25858,7 @@ def worker2():
                                     temp_results.append([2, t.title, track, playlist[6], 1])
 
                                     tracks.add(t)
+
 
                         br += 1
                         if br > 800:
@@ -35049,6 +35062,12 @@ class StandardPlaylist:
                             norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.album_playing
+                        elif item[0] == "Lyrics":
+                            text = n_track.lyric
+                            colour = colours.lyrics_text
+                            norm_colour = colour
+                            if this_line_playing is True:
+                                colour = colours.lyrics_playing
                         elif item[0] == "Album Artist":
                             text = n_track.album_artist
                             if not text and prefs.column_aa_fallback_artist:
