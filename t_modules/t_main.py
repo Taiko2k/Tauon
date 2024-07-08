@@ -24014,13 +24014,10 @@ def get_album_art_url(tr):
 def discord_loop():
     prefs.discord_active = True
 
-    if not pctl.playing_ready():
-        # show_message("Please start playing a track first")
-        return
-
-    asyncio.set_event_loop(asyncio.new_event_loop())
-
     try:
+        if not pctl.playing_ready(): return
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
         # print("Attempting to connect to Discord...")
         client_id = '954253873160286278'
         RPC = Presence(client_id)
@@ -24052,7 +24049,7 @@ def discord_loop():
                     idle_time.set()
 
                 if state != current_state or index != current_index:
-                    if pctl.playing_time > 4 or current_state != 1:
+                    if pctl.a_time > 4 or current_state != 1:
                         state = current_state
                         index = current_index
                         start_time = time.time() - pctl.playing_time
@@ -24131,7 +24128,7 @@ def discord_loop():
                            state="Idle",
                            large_image="tauon-standard", )
 
-            time.sleep(15)
+            time.sleep(5)
 
             if prefs.disconnect_discord:
                 RPC.clear(pid)
@@ -24144,7 +24141,8 @@ def discord_loop():
         gui.discord_status = "Error - Discord not running?"
         prefs.disconnect_discord = False
 
-    prefs.discord_active = False
+    finally:
+        prefs.discord_active = False
 
 
 def hit_discord():
