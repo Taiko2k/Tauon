@@ -471,9 +471,11 @@ class Jellyfin():
                     ["MediaStreams"][0].get("Comment", ""))
                 nt.disc_number = str(track.get("ParentIndexNumber", ""))
 
-                nt.misc["container"] = track.get("Container").upper()
-                nt.misc["codec"] = (track.get("MediaSources")[0]
-                    ["MediaStreams"][0]["Codec"])
+                try:
+                    nt.misc["container"] = track.get("MediaSources")[0]["Container"].upper()
+                    nt.misc["codec"] = track.get("MediaSources")[0]["MediaStreams"][0]["Codec"]
+                except:
+                    print("Jelly error get container")
 
                 self.pctl.master_library[id] = nt
                 if not replace_existing:
