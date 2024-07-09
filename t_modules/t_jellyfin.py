@@ -351,48 +351,6 @@ class Jellyfin():
             self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p['Name'], playlist=playlist))
             self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
-    def get_info(self, fast=False):
-        dones = []
-        i = 0
-        for p in self.pctl.multi_playlist:
-            for t in p[2]:
-                tr = self.pctl.g(t)
-                i += 1
-                if i % 1000 == 0:
-                    print(i)
-                if tr.file_ext == "JELY":
-                    if tr.fullpath and fast:
-                        continue
-                    if tr.url_key not in dones:
-                        dones.append(tr.url_key)
-
-                    # Get media info
-                    response = requests.get(
-                        f"{self.prefs.jelly_server_url}/Items/{tr.url_key}/PlaybackInfo",
-                        headers={
-                            "Token": self.accessToken,
-                            "X-Application": "Tauon/1.0",
-                            "x-emby-authorization": self._get_jellyfin_auth()
-                        },
-                        params={
-                            "UserId": self.userId,
-                        }
-                    )
-                    if response.status_code == 200:
-                        try:
-                            d = response.json()
-                            tr.fullpath = d["MediaSources"][0]["Path"]
-                            tr.filename = os.path.basename(tr.fullpath)
-                            tr.parent_folder_path = os.path.dirname(tr.fullpath)
-                            tr.parent_folder_name = os.path.basename(tr.parent_folder_path)
-                            tr.misc["container"] = d["MediaSources"][0]["Container"].upper()
-                            tr.misc["codec"] = d["MediaSources"][0]["MediaStreams"][0]["Codec"]
-                            tr.bitrate = round(d["MediaSources"][0]["MediaStreams"][0]["BitRate"] / 1000)
-                            tr.bit_depth = d["MediaSources"][0]["MediaStreams"][0].get("BitDepth", 0)
-                            tr.samplerate = round(d["MediaSources"][0]["MediaStreams"][0]["SampleRate"])
-                        except:
-                            print("ERROR")
-
     def ingest_library(self, return_list=False):
         self.gui.update += 1
         self.scanning = True
@@ -421,16 +379,18 @@ class Jellyfin():
 
         try:
             response = requests.get(
-                f"{self.prefs.jelly_server_url}/Users/{self.userId}/Items",
+                f"{self.prefs.jelly_server_url}/Items",
                 headers={
                     "Token": self.accessToken,
                     "X-Application": "Tauon/1.0",
                     "x-emby-authorization": self._get_jellyfin_auth()
                 },
                 params={
-                    "fields": "Genres", #Specify additional field to return
+                    "userId": self.userId,
+                    "fields": ["Genres","DateCreated","MediaSources","People"],
+                    "enableImages": 'false',
+                    "mediaTypes": ["Audio"],
                     "recursive": True,
-                    "filter": "music"
                 },
                 #stream=True
             )
@@ -442,7 +402,7 @@ class Jellyfin():
             return
 
         if response.status_code == 200:
-            print("Connection successful, soring items...")
+            print("Connection successful, storing items...")
 
             # filter audio items only
             audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
@@ -458,7 +418,6 @@ class Jellyfin():
             self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
             return
 
-        mem_folder = {}
         fav_status = {}
         for parent, items in grouped_items:
             for track in items:
@@ -472,46 +431,49 @@ class Jellyfin():
                 else:
                     nt = self.tauon.TrackClass()
                 nt.index = id  # this is tauons track id
-                nt.track_number = str(track.get("IndexNumber", ""))
-                nt.disc_number = str(track.get("ParentIndexNumber", ""))
+                nt.fullpath = track.get("MediaSources")[0]["Path"]
+                nt.filename = os.path.basename(nt.fullpath)
+                nt.parent_folder_path = os.path.dirname(nt.fullpath)
+                nt.parent_folder_name = os.path.basename(nt.parent_folder_path)
                 nt.file_ext = "JELY"
-                nt.album_artist = track.get("AlbumArtist", "")
+                nt.size = track.get("MediaSources")[0]["Size"]
+                nt.modified_time = time.mktime(time.strptime(
+                    track.get("DateCreated").rsplit(".", 1)[0],
+                    "%Y-%m-%dT%H:%M:%S"))
+
+                nt.is_network = True
+                nt.url_key = track.get("Id")
+                nt.art_url_key = (track.get("AlbumId")
+                    if track.get("AlbumPrimaryImageTag", False) else None)
+
                 artists = track.get("Artists", [])
                 nt.artist = "; ".join(artists)
                 if len(artists) > 1:
                     nt.misc["artists"] = artists
+                nt.album_artist = track.get("AlbumArtist", "")
                 nt.title = track.get("Name", "")
-                nt.album = track.get("Album", "")
+                nt.composer = "; ".join(d["Name"]
+                    for d in track.get("People", [])
+                    if d["Type"] == "Composer")
                 nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
+                nt.bitrate = round((track.get("MediaSources")[0]
+                    ["MediaStreams"][0]["BitRate"] / 1000))
+                nt.samplerate = round((track.get("MediaSources")[0]
+                    ["MediaStreams"][0].get("SampleRate", 0)))
+                nt.bit_depth = (track.get("MediaSources")[0]
+                    ["MediaStreams"][0].get("BitDepth", 0))
+                nt.album = track.get("Album", "")
                 nt.date = str(track.get("ProductionYear"))
+                nt.track_number = str(track.get("IndexNumber", ""))
                 genres = track.get("Genres", [])
                 nt.genre = "; ".join(genres)
+                nt.comment = (track.get("MediaSources")[0]
+                    ["MediaStreams"][0].get("Comment", ""))
+                nt.disc_number = str(track.get("ParentIndexNumber", ""))
 
-                folder_name = nt.album_artist
-                if folder_name and nt.album:
-                    folder_name += " / "
-                folder_name += nt.album
-
-                if folder_name and nt.date:
-                    folder_name += f" ({nt.date})"
-
-                album_id = track.get("AlbumId")
-
-                # keep the same folder title for same album id
-                if album_id and folder_name:  
-                    key = album_id + nt.album
-                    if key not in mem_folder:
-                        mem_folder[key] = folder_name
-                    folder_name = mem_folder[key]
-                elif nt.album:
-                    folder_name = nt.album
-
-                nt.parent_folder_path = folder_name
-                nt.parent_folder_name = nt.parent_folder_path
-                nt.is_network = True
-
-                nt.url_key = track.get("Id")
-                nt.art_url_key = track.get("AlbumId") if track.get("AlbumPrimaryImageTag", False) else None
+                nt.misc["container"] = track.get("Container").upper()
+                nt.misc["codec"] = (track.get("MediaSources")[0]
+                    ["MediaStreams"][0]["Codec"])
 
                 self.pctl.master_library[id] = nt
                 if not replace_existing:
@@ -548,7 +510,6 @@ class Jellyfin():
                         self.tauon.star_store.insert(tr.index, star)
 
         if return_list:
-            self.get_info(fast=True)
             playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
             self.tauon.sort_track_2(0, playlist)
             set_favs(fav_status)
@@ -559,7 +520,6 @@ class Jellyfin():
         self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
-        self.get_info()
         playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
         self.tauon.sort_track_2(0, playlist)
         set_favs(fav_status)
