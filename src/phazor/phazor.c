@@ -960,8 +960,6 @@ float gate = 1.0;  // Used for ramping
 int get_audio(int max, float* buff){
         int b = 0;
 
-        if (mode == PAUSED) return 0;
-
         pthread_mutex_lock(&buffer_mutex);
 
         if (buffering == 1 && get_buff_fill() > config_min_buffer) {
@@ -976,6 +974,7 @@ int get_audio(int max, float* buff){
                 buffering = 1;
             } else buffering = 0;
         }
+
 
 //        if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
 //            //printf("pa: Buffer underrun\n");
@@ -1002,7 +1001,10 @@ int get_audio(int max, float* buff){
             }
         }
 
-
+        if (mode == PAUSED || (mode == PLAYING && get_buff_fill() == 0)){
+            pthread_mutex_unlock(&buffer_mutex);
+            return max;
+        }
         // Process decoded audio data and send out
         if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
 
@@ -1099,7 +1101,7 @@ int get_audio(int max, float* buff){
 
         } // close if data
         pthread_mutex_unlock(&buffer_mutex);
-        return 0;
+        return max;
 }
 
 #ifdef MINI
@@ -1279,6 +1281,34 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
 
 }
 
+static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
+                     const void *_data, size_t size, void *user_data){
+
+
+        pw_stream_disconnect(global_stream);
+        struct spa_pod_builder b = { 0 };
+        uint8_t buffer[1024];
+        const struct spa_pod *params[1];
+
+        spa_pod_builder_init(&b, buffer, sizeof(buffer));
+        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
+                                               &SPA_AUDIO_INFO_RAW_INIT(
+                                                   .format = SPA_AUDIO_FORMAT_F32,
+                                                   .channels = 2,
+                                                   .rate = pipe_set_samplerate));
+
+        pw_stream_connect(global_stream,
+                          PW_DIRECTION_OUTPUT,
+                          PW_ID_ANY,
+                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
+                                                 PW_STREAM_FLAG_MAP_BUFFERS),
+                          params, 1);
+
+
+
+        printf("UPDATE SAMPLERATE PIPE TO %d\n", pipe_set_samplerate);
+
+}
 #endif
 
 void connect_pulse() {
@@ -1365,19 +1395,6 @@ void connect_pulse() {
 
     sample_rate_out = device.sampleRate;
 
-    if (decoder_allocated == 1 && current_sample_rate > 0 &&
-        sample_rate_out > 0 && position_count > get_buff_fill() &&
-        current_sample_rate != sample_rate_out && position_count > 0 && get_buff_fill() > 0){
-
-        src_reset(src);
-        printf("ph: The samplerate changed, rewinding\n");
-        if (reset_set == 0){
-            decode_seek(position_count / sample_rate_src * 1000, sample_rate_src);
-        }
-
-        buff_reset();
-
-    }
     #endif
 
     #ifdef PIPE
@@ -1390,8 +1407,20 @@ void connect_pulse() {
         pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_connect, SPA_ID_INVALID, NULL, 0,
                                   true, NULL);
 
-
     #endif
+
+    if (decoder_allocated == 1 && current_sample_rate > 0 &&
+        sample_rate_out > 0 && position_count > get_buff_fill() &&
+        current_sample_rate != sample_rate_out && position_count > 0 && get_buff_fill() > 0){
+
+        src_reset(src);
+        printf("ph: The samplerate changed, rewinding\n");
+        if (reset_set == 0){
+            decode_seek(position_count / sample_rate_src * 1000, sample_rate_src);
+        }
+
+        buff_reset();
+    }
 
     current_sample_rate = sample_rate_out;
 
@@ -1929,12 +1958,26 @@ void pump_decode() {
             return;
         }
         printf("ph: Pump wrong samplerate\n");
+
+        #ifdef MINI
         stop_out();
         fade_fill = 0;
         fade_position = 0;
         reset_set_value = 0;
         buff_reset();
         reconnect = 1;
+        #endif
+
+        #ifdef PIPE
+        fade_fill = 0;
+        fade_position = 0;
+        reset_set_value = 0;
+        buff_reset();
+        pipe_set_samplerate = sample_rate_src;
+        sample_rate_out = pipe_set_samplerate;
+        pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0,
+                                  true, NULL);
+        #endif
     }
 
     if (codec == WAVE) {
@@ -2164,6 +2207,8 @@ void *main_loop(void *thread_id) {
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
     }
+    usleep(200000);  // getting segfaults maybe a threading issue maybe this fixes it
+
 
     #endif
 
