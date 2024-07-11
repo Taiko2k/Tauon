@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2022-06-29 10:45+0000\n"
-"Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
+"PO-Revision-Date: 2024-06-27 21:09+0000\n"
+"Last-Translator: Sabri Ünal <yakushabb@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/tr/>\n"
 "Language: tr\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.13.1-dev\n"
+"X-Generator: Weblate 5.7-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -1243,9 +1243,8 @@ msgid "Copy \"Artist - Track\""
 msgstr "Kopyala \"Sanatçı - Parça\""
 
 #: t_modules/t_main.py:21414
-#, fuzzy
 msgid "Spotify…"
-msgstr "Spotify Beğenileri"
+msgstr "Spotify…"
 
 #: t_modules/t_main.py:21419 t_modules/t_main.py:23286
 #, fuzzy
@@ -1500,9 +1499,8 @@ msgid "Stop Cast"
 msgstr ""
 
 #: t_modules/t_main.py:22775
-#, fuzzy
 msgid "Chromecast…"
-msgstr "Bunu Chromecat İle Yayınla"
+msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22821
 msgid "Tab"
@@ -1597,9 +1595,8 @@ msgid "> Import All Playlists"
 msgstr "Tüm kullanıcı çalma listelerini içe aktar"
 
 #: t_modules/t_main.py:23250
-#, fuzzy
 msgid "Playlist…"
-msgstr "Yeni Çalma Listesi"
+msgstr "Çalma Listesi…"
 
 #: t_modules/t_main.py:23256
 msgid "Current Context"

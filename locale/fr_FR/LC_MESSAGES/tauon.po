@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2022-09-25 20:18+0000\n"
-"Last-Translator: Maxime Leroy <lisacintosh@gmail.com>\n"
+"PO-Revision-Date: 2024-06-15 18:09+0000\n"
+"Last-Translator: Loïc Guégant <loic.guegant@freesbee.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,12 +16,12 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.14.1\n"
+"X-Generator: Weblate 5.6-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
 msgid "No artist image found."
-msgstr "Aucune image trouvée pour l’artiste."
+msgstr "Aucune image d'artiste trouvée."
 
 #: t_modules/t_main.py:1853
 msgid "No providers are enabled in settings!"
@@ -61,11 +61,11 @@ msgstr "Ceci peut prendre un certain temps."
 
 #: t_modules/t_main.py:7656
 msgid "Failed updating last.fm love status"
-msgstr "Échec de la mis à jour du status « j'aime » sur last.fm"
+msgstr "Échec de la mis à jour du statut « j'aime » sur last.fm"
 
 #: t_modules/t_main.py:7659
 msgid "Error updating love to last.fm!"
-msgstr "Échec de la mise à jour sur last.fm !"
+msgstr "Échec de la mise à jour des « j'aime » sur last.fm !"
 
 #: t_modules/t_main.py:7660
 msgid "Maybe check your internet connection and try again?"
@@ -81,7 +81,7 @@ msgstr "Albums Spotify"
 
 #: t_modules/t_main.py:7931
 msgid "Track removed from liked tracks"
-msgstr "Piste retirée des pistes aimées"
+msgstr "Piste retirée des pistes appréciées"
 
 #: t_modules/t_main.py:7932
 msgid "Track was already un-liked"
@@ -93,7 +93,7 @@ msgstr "La piste est déjà aimée"
 
 #: t_modules/t_main.py:7934
 msgid "Track added to liked tracks"
-msgstr "Piste ajoutée aux pistes aimées"
+msgstr "Piste ajoutée aux pistes appréciées"
 
 #: t_modules/t_main.py:7935
 msgid "Spotify account connected"
@@ -150,26 +150,23 @@ msgstr "Le serveur Web s’est arrêté."
 
 #: t_modules/t_main.py:7952
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Ouvrir Tauon Music Box"
 
 #: t_modules/t_main.py:7953
-#, fuzzy
 msgid "Play/Pause"
-msgstr "Pause"
+msgstr "Lecture / Pause"
 
 #: t_modules/t_main.py:7954
-#, fuzzy
 msgid "Next Track"
-msgstr "Répéter la piste"
+msgstr "Piste suivante"
 
 #: t_modules/t_main.py:7955
-#, fuzzy
 msgid "Previous Track"
-msgstr "Précédent"
+msgstr "Piste précédente"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Quitter"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
@@ -182,7 +179,7 @@ msgstr "Erreur de connexion au serveur PLEX"
 #: t_modules/t_main.py:8216
 msgid "Try check login credentials and that server is accessible."
 msgstr ""
-"Essayez de vérifier les informations de connexion et si ce serveur est "
+"Essayez de vérifier les identifiants de connexion et que ce serveur est "
 "accessible."
 
 #: t_modules/t_main.py:8718
@@ -199,7 +196,7 @@ msgstr "Impossible d’établir la connexion / l’autorisation"
 
 #: t_modules/t_main.py:9359
 msgid "Stop the sync before exiting!"
-msgstr "Arrêtez la synchro avant de quitter !"
+msgstr "Arrêtez la synchronisation avant de quitter !"
 
 #: t_modules/t_main.py:14328
 msgid "Playlists + Queue"
@@ -211,15 +208,15 @@ msgstr "File d’attente"
 
 #: t_modules/t_main.py:14331
 msgid "Artist List"
-msgstr "Liste d’artistes"
+msgstr "Liste des artistes"
 
 #: t_modules/t_main.py:14333
 msgid "Folder Navigator"
-msgstr "Explorateur de dossiers"
+msgstr "Navigateur de dossiers"
 
 #: t_modules/t_main.py:14394
 msgid "Track Renaming"
-msgstr "Renommer la piste"
+msgstr "Renommage de piste"
 
 #: t_modules/t_main.py:14397 t_modules/t_main.py:46840
 msgid "Default"
@@ -239,7 +236,7 @@ msgstr "Renommage terminé."
 
 #: t_modules/t_main.py:14515
 msgid " filenames were written."
-msgstr " fichiers renommés."
+msgstr " fichiers ont été renommés."
 
 #: t_modules/t_main.py:14588
 msgid "Simple tag editor"
@@ -261,8 +258,8 @@ msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
-"Quand terminé, pressez ENREGISTRER ÉTIQUETTES pour sauvegarder ces "
-"étiquettes dans des fichiers. (Optionnel mais recommandé)"
+"Une fois fait, pressez ENREGISTRER LES ÉTIQUETTES pour enregistrer dans les "
+"étiquettes des fichiers réels. (Optionnel mais recommandé)"
 
 #: t_modules/t_main.py:14596
 msgid "Number of tracks selected: %d"
@@ -270,7 +267,7 @@ msgstr "Nombre de pistes sélectionnées : %d"
 
 #: t_modules/t_main.py:14631
 msgid "<Multiple selected>"
-msgstr "<Plusieurs sélectionnés>"
+msgstr "<Sélection multiple>"
 
 #: t_modules/t_main.py:14639
 msgid "Track title"
@@ -294,7 +291,7 @@ msgstr "L'édition de pistes en réseau n'est pas recommandée !"
 
 #: t_modules/t_main.py:14682 t_modules/t_main.py:14685
 msgid "WRITE TAGS"
-msgstr "ENREGISTRER ÉTIQUETTES"
+msgstr "ENREGISTRER LES ÉTIQUETTES"
 
 #: t_modules/t_main.py:14688
 msgid "Press enter on fields to apply your changes first!"
@@ -312,8 +309,8 @@ msgstr "Impossible d'écrire les types des fichiers CUE !"
 #: t_modules/t_main.py:14719
 msgid "Cannot handle multi-field! Please use external tag editor"
 msgstr ""
-"L'édition de plusieurs champs n'est pas supporté ! Veuillez utiliser un "
-"éditeur externe"
+"Impossible de traiter les champs multiples ! Veuillez utiliser un éditeur "
+"d'étiquettes externe"
 
 #: t_modules/t_main.py:14738
 msgid "%d files rewritten"
@@ -442,7 +439,7 @@ msgstr "Afficher dans la liste de lecture"
 
 #: t_modules/t_main.py:15502
 msgid "Image…"
-msgstr ""
+msgstr "Image…"
 
 #: t_modules/t_main.py:15503 t_modules/t_main.py:21055
 #: t_modules/t_main.py:21068
@@ -1269,7 +1266,7 @@ msgstr "Afficher dans la liste de lecture"
 
 #: t_modules/t_main.py:21432
 msgid "Looks like that's the only track in the album"
-msgstr ""
+msgstr "Il semble que c'est la seule piste de l'album"
 
 #: t_modules/t_main.py:21444 t_modules/t_main.py:23261
 #, fuzzy
@@ -1288,7 +1285,7 @@ msgstr "Recherche en cours…"
 
 #: t_modules/t_main.py:21468
 msgid "Get Recommended"
-msgstr ""
+msgstr "Obtenir des recommandations"
 
 #: t_modules/t_main.py:21570
 msgid "Broadcast This"
@@ -1301,7 +1298,7 @@ msgstr "Mini"
 
 #: t_modules/t_main.py:21585
 msgid "Maximize"
-msgstr ""
+msgstr "Maximiser"
 
 #: t_modules/t_main.py:21586 t_modules/t_main.py:23660
 msgid "Exit"
@@ -1455,7 +1452,7 @@ msgstr "Historique vers liste de lecture"
 
 #: t_modules/t_main.py:22601
 msgid "Reset Image Cache"
-msgstr "Effacer le cache des images"
+msgstr "Réinitialiser le cache des images"
 
 #: t_modules/t_main.py:22620
 msgid "Remove Network Tracks"
@@ -1463,23 +1460,21 @@ msgstr "Supprimer les pistes réseau"
 
 #: t_modules/t_main.py:22621
 msgid "Remove Missing Tracks"
-msgstr "Retirer les pistes manquante"
+msgstr "Supprimer les pistes manquantes"
 
 #: t_modules/t_main.py:22639
-#, fuzzy
 msgid "Import FMPS Ratings"
-msgstr "Importer des FMPS_Ratings à partir d’étiquettes"
+msgstr "Importer les évaluations FMPS"
 
 #: t_modules/t_main.py:22676
-#, fuzzy
 msgid "Import POPM Ratings"
-msgstr "Importer des FMPS_Ratings à partir d’étiquettes"
+msgstr "Importer des évaluations POPM"
 
 #: t_modules/t_main.py:22681
 msgid "This will delete all track and album ratings from the local database!"
 msgstr ""
-"Ceci supprimera toutes les évaluations de piste et d’album de la base de "
-"données locale !"
+"Ceci supprimera toutes les évaluations des pistes et albums de la base de "
+"données locale !"
 
 #: t_modules/t_main.py:22682 t_modules/t_main.py:29270
 msgid ""
@@ -1487,7 +1482,7 @@ msgid ""
 "that."
 msgstr ""
 "Appuyez à nouveau sur le bouton tout en maintenant la touche Maj enfoncée si "
-"vous êtes sûr·e de vouloir le faire."
+"vous êtes sûr·e de vouloir faire ça."
 
 #: t_modules/t_main.py:22692
 msgid "Reset User Ratings"
@@ -1495,7 +1490,7 @@ msgstr "Réinitialiser les évaluations des utilisateurs"
 
 #: t_modules/t_main.py:22699
 msgid "Find Incomplete Albums"
-msgstr "Trouver des albums incomplets"
+msgstr "Trouver les albums incomplets"
 
 #: t_modules/t_main.py:22705
 msgid "There are no tracks in this playlist to broadcast."
@@ -1524,7 +1519,7 @@ msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22821
 msgid "Tab"
-msgstr ""
+msgstr "Onglet"
 
 #: t_modules/t_main.py:22822
 msgid "Mini"
@@ -1532,7 +1527,7 @@ msgstr "Mini"
 
 #: t_modules/t_main.py:22824
 msgid "Slate"
-msgstr ""
+msgstr "Ardoise"
 
 #: t_modules/t_main.py:22825
 msgid "Square"
@@ -1593,7 +1588,7 @@ msgstr "Veuillez patienter jusqu’à ce que la tâche en cours soit terminée"
 
 #: t_modules/t_main.py:23210
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Importer depuis Spotify…"
 
 #: t_modules/t_main.py:23212
 #, fuzzy
@@ -1601,9 +1596,8 @@ msgid "Liked Albums"
 msgstr "Albums les plus longs"
 
 #: t_modules/t_main.py:23223
-#, fuzzy
 msgid "Liked Tracks"
-msgstr "Ajouter aux favoris"
+msgstr "Pistes appréciées"
 
 #: t_modules/t_main.py:23227
 msgid "Importing Spotify playlists..."
@@ -1621,7 +1615,7 @@ msgstr "Nouvelle liste de lecture"
 
 #: t_modules/t_main.py:23256
 msgid "Current Context"
-msgstr ""
+msgstr "Contexte actuel"
 
 #: t_modules/t_main.py:23289
 #, fuzzy
@@ -1814,7 +1808,7 @@ msgstr "Style de modèle"
 
 #: t_modules/t_main.py:27769
 msgid "Auto-theme from album art"
-msgstr "Thème auto depuis la pochette de l'album"
+msgstr "Auto-thème à partir de la couverture de l'album"
 
 #: t_modules/t_main.py:27864
 msgid "Based on"
@@ -1872,9 +1866,8 @@ msgid "Use fade on track jump"
 msgstr "Utiliser le fondu lors du changement de piste"
 
 #: t_modules/t_main.py:28041
-#, fuzzy
 msgid "Back restarts to beginning"
-msgstr "La touche retour fait reprendre au début"
+msgstr "Retour reprend au début"
 
 #: t_modules/t_main.py:28049
 msgid "Cache local files (for smb/nfs)"
@@ -2189,11 +2182,11 @@ msgstr "Préférer le lancement du lecteur Web"
 
 #: t_modules/t_main.py:28792
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Activer la lecture d'audio locale"
 
 #: t_modules/t_main.py:28815
 msgid "Spofify password"
-msgstr ""
+msgstr "Mot de passe de Spotify"
 
 #: t_modules/t_main.py:28830
 msgid "Airsonic/Subsonic network streaming"
@@ -2450,7 +2443,7 @@ msgstr "Afficher la piste en cours dans la barre de titre"
 
 #: t_modules/t_main.py:29498
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Mode mini toujours au-dessus"
 
 #: t_modules/t_main.py:29503
 #, fuzzy
@@ -2819,7 +2812,7 @@ msgstr "Affichage…"
 
 #: t_modules/t_main.py:36892
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Filtrer par les petits artistes"
 
 #: t_modules/t_main.py:36896 t_modules/t_main.py:36897
 #, fuzzy
