@@ -2207,6 +2207,8 @@ void *main_loop(void *thread_id) {
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
     }
+    usleep(300000);  // remove me maybe?
+    printf("CONTINUE\n");
 
     #endif
 
