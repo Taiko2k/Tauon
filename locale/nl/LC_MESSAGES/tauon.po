@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2024-04-06 13:01+0000\n"
+"PO-Revision-Date: 2024-06-05 13:09+0000\n"
 "Last-Translator: zeskeertwee <zeskeertwee@gmail.com>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/nl/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.6-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -28,7 +28,7 @@ msgstr ""
 
 #: t_modules/t_main.py:6913
 msgid "End of playlist"
-msgstr ""
+msgstr "Einde van de afspeellijst"
 
 #: t_modules/t_main.py:6965
 msgid "Once authorised click the 'done' button."
@@ -44,7 +44,7 @@ msgstr ""
 
 #: t_modules/t_main.py:7131
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Scannen mislukt. Opnieuw proberen?"
 
 #: t_modules/t_main.py:7138 t_modules/t_main.py:7735
 msgid "Scanning scrobbles complete"
@@ -56,7 +56,7 @@ msgstr ""
 
 #: t_modules/t_main.py:7302
 msgid "This may take a very long time."
-msgstr ""
+msgstr "Dit kan erg lang duren."
 
 #: t_modules/t_main.py:7656
 msgid "Failed updating last.fm love status"
@@ -76,7 +76,7 @@ msgstr ""
 
 #: t_modules/t_main.py:7930
 msgid "Spotify Albums"
-msgstr ""
+msgstr "Spotify Albums"
 
 #: t_modules/t_main.py:7931
 msgid "Track removed from liked tracks"
@@ -96,11 +96,11 @@ msgstr ""
 
 #: t_modules/t_main.py:7935
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Spotify account verbonden"
 
 #: t_modules/t_main.py:7936
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Dit Spotify account is momenteel niks aan het afspelen"
 
 #: t_modules/t_main.py:7937
 msgid "Error starting Spotify"
@@ -120,35 +120,35 @@ msgstr ""
 
 #: t_modules/t_main.py:7942
 msgid "day"
-msgstr ""
+msgstr "dag"
 
 #: t_modules/t_main.py:7943
 msgid "days"
-msgstr ""
+msgstr "dagen"
 
 #: t_modules/t_main.py:7945
 msgid "Scanning for Chromecasts..."
-msgstr ""
+msgstr "Zoeken naar Chromecasts..."
 
 #: t_modules/t_main.py:7946
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Cast naar: %s"
 
 #: t_modules/t_main.py:7947
 msgid "No Chromecast devices found"
-msgstr ""
+msgstr "Geen Chromecasts gevonden"
 
 #: t_modules/t_main.py:7948
 msgid "End Cast"
-msgstr ""
+msgstr "Beëindig Cast"
 
 #: t_modules/t_main.py:7950
 msgid "Web server stopped."
-msgstr ""
+msgstr "Webserver gestopt."
 
 #: t_modules/t_main.py:7952
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Open Tauon Music Box"
 
 #: t_modules/t_main.py:7953
 msgid "Play/Pause"
@@ -156,15 +156,15 @@ msgstr ""
 
 #: t_modules/t_main.py:7954
 msgid "Next Track"
-msgstr ""
+msgstr "Volgend Nummer"
 
 #: t_modules/t_main.py:7955
 msgid "Previous Track"
-msgstr ""
+msgstr "Vorig Nummer"
 
 #: t_modules/t_main.py:7956
 msgid "Quit"
-msgstr ""
+msgstr "Afsluiten"
 
 #: t_modules/t_main.py:8200
 msgid "Missing username, password and/or server name"
@@ -196,15 +196,15 @@ msgstr ""
 
 #: t_modules/t_main.py:14328
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Afspeellijsten + Wachtrij"
 
 #: t_modules/t_main.py:14329 t_modules/t_main.py:38694
 msgid "Queue"
-msgstr ""
+msgstr "Wachtrij"
 
 #: t_modules/t_main.py:14331
 msgid "Artist List"
-msgstr ""
+msgstr "Artiestlijst"
 
 #: t_modules/t_main.py:14333
 msgid "Folder Navigator"
@@ -259,7 +259,7 @@ msgstr ""
 
 #: t_modules/t_main.py:14631
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Meerdere geselecteerd>"
 
 #: t_modules/t_main.py:14639
 msgid "Track title"
@@ -267,15 +267,15 @@ msgstr ""
 
 #: t_modules/t_main.py:14641
 msgid "Album name"
-msgstr ""
+msgstr "Albumtitel"
 
 #: t_modules/t_main.py:14643
 msgid "Artist name"
-msgstr ""
+msgstr "Artiestnaam"
 
 #: t_modules/t_main.py:14645
 msgid "Album-artist name"
-msgstr ""
+msgstr "Album-artiestnaam"
 
 #: t_modules/t_main.py:14651
 msgid "Editing network tracks is not recommended!"
@@ -335,23 +335,23 @@ msgstr ""
 
 #: t_modules/t_main.py:14935 t_modules/t_main.py:14940
 msgid "Export"
-msgstr ""
+msgstr "Exporteer"
 
 #: t_modules/t_main.py:14948
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Map bestaat niet"
 
 #: t_modules/t_main.py:14998
 msgid "Repeat OFF"
-msgstr ""
+msgstr "Herhalen UIT"
 
 #: t_modules/t_main.py:14999
 msgid "Repeat Track"
-msgstr ""
+msgstr "Herhaal Nummer"
 
 #: t_modules/t_main.py:15000
 msgid "Repeat Album"
-msgstr ""
+msgstr "Herhaal Album"
 
 #: t_modules/t_main.py:15078
 msgid "Shuffle Lockdown"
@@ -383,30 +383,30 @@ msgstr ""
 
 #: t_modules/t_main.py:15143
 msgid "Close Panel"
-msgstr ""
+msgstr "Sluit Paneel"
 
 #: t_modules/t_main.py:15144
 msgid "Make Large"
-msgstr ""
+msgstr "Maak Groot"
 
 #: t_modules/t_main.py:15396
 msgid "Unlock Panel"
-msgstr ""
+msgstr "Ontgrendel Paneel"
 
 #: t_modules/t_main.py:15398
 msgid "Lock Panel"
-msgstr ""
+msgstr "Vergrendel Paneel"
 
 #: t_modules/t_main.py:15401 t_modules/t_main.py:15402
 #: t_modules/t_main.py:15420 t_modules/t_main.py:20027
 #: t_modules/t_main.py:21050
 msgid "Open Folder"
-msgstr ""
+msgstr "Open Map"
 
 #: t_modules/t_main.py:15404 t_modules/t_main.py:15405
 #: t_modules/t_main.py:15406 t_modules/t_main.py:36856
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Filter naar niewe afspeellijst"
 
 #: t_modules/t_main.py:15407 t_modules/t_main.py:15408
 #: t_modules/t_main.py:18366
@@ -432,7 +432,7 @@ msgstr ""
 #: t_modules/t_main.py:15503 t_modules/t_main.py:21055
 #: t_modules/t_main.py:21068
 msgid "Add Album to Queue"
-msgstr ""
+msgstr "Voeg Album toe aan Wachtrij"
 
 #: t_modules/t_main.py:15504 t_modules/t_main.py:21056
 #: t_modules/t_main.py:21069
