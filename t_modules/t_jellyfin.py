@@ -388,7 +388,7 @@ class Jellyfin():
                 params={
                     "userId": self.userId,
                     "fields": ["Genres","DateCreated","MediaSources","People"],
-                    "enableImages": 'false',
+                    "enableImages": False,
                     "mediaTypes": ["Audio"],
                     "recursive": True,
                 },
@@ -456,24 +456,27 @@ class Jellyfin():
                     for d in track.get("People", [])
                     if d["Type"] == "Composer")
                 nt.length = track.get("RunTimeTicks", 0) / 10000000   # needs to be in seconds
-                nt.bitrate = round((track.get("MediaSources")[0]
-                    ["MediaStreams"][0]["BitRate"] / 1000))
-                nt.samplerate = round((track.get("MediaSources")[0]
-                    ["MediaStreams"][0].get("SampleRate", 0)))
-                nt.bit_depth = (track.get("MediaSources")[0]
-                    ["MediaStreams"][0].get("BitDepth", 0))
                 nt.album = track.get("Album", "")
-                nt.date = str(track.get("ProductionYear"))
+                nt.date = str(track.get("ProductionYear", ""))
                 nt.track_number = str(track.get("IndexNumber", ""))
                 genres = track.get("Genres", [])
                 nt.genre = "; ".join(genres)
-                nt.comment = (track.get("MediaSources")[0]
-                    ["MediaStreams"][0].get("Comment", ""))
                 nt.disc_number = str(track.get("ParentIndexNumber", ""))
 
                 try:
-                    nt.misc["container"] = track.get("MediaSources")[0]["Container"].upper()
-                    nt.misc["codec"] = track.get("MediaSources")[0]["MediaStreams"][0]["Codec"]
+                    for d in track.get("MediaSources")[0]["MediaStreams"]:
+                        if d["Type"] == "Audio":
+                            nt.bitrate = round(d.get("BitRate", 0) / 1000)
+                            nt.samplerate = round(d.get("SampleRate", 0))
+                            nt.bit_depth = d.get("BitDepth", 0)
+                            nt.comment = d.get("Comment", "")
+                            nt.misc["codec"] = d.get("Codec", "")
+                            break
+                except:
+                    print("Jelly error getting audio mediastream")
+
+                try:
+                    nt.misc["container"] = track.get("MediaSources")[0].get("Container", "").upper()
                 except:
                     print("Jelly error get container")
 
