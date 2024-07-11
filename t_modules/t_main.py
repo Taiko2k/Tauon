@@ -17541,7 +17541,8 @@ def sort_track_2(pl, custom_list=None):
             current_date = tr.date
         else:
             if tr.parent_folder_path != current_folder:
-                if tr.album == current_album and tr.album and tr.date == current_date and tr.disc_number:
+                if tr.album == current_album and tr.album and tr.date == current_date and tr.disc_number \
+                        and os.path.dirname(tr.parent_folder_path) == os.path.dirname(current_folder):
                     continue
                 else:
                     current_folder = tr.parent_folder_path
@@ -28243,7 +28244,7 @@ class Over:
             if platform_system == "Linux":
                 old = prefs.pipewire
                 prefs.pipewire = self.toggle_square(x, self.box_y + self.h - 50 * gui.scale,
-                                                            prefs.pipewire, _("Use Pipewire native (Experimental)"))
+                                                            prefs.pipewire, _("Use Pipewire native (Unstable)"))
                 if old != prefs.pipewire:
                     show_message("You may need to restart the app for change to take effect")
 

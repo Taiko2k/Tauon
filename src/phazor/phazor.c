@@ -2207,8 +2207,6 @@ void *main_loop(void *thread_id) {
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
     }
-    usleep(200000);  // getting segfaults maybe a threading issue maybe this fixes it
-
 
     #endif
 
