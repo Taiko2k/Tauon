@@ -3,11 +3,12 @@ Changelog----------------------------
 
 v7.8.1
 
- - Added Pipewire native output option (Linux only)
+ - Added Pipewire native output option (Linux only, unstable)
  - Added setting in UI to disable gamepad
  - Added support for importing files with .AIFF extension
  - Fixed IME candidate list position when using UI scaling
- - Improved Jellyfin import speed
+ - Tweaked standard sort to avoid merging albums
+ - Improved Jellyfin import speed and track details
  - Improved Discord RPC update speed
 
 v7.8.0
