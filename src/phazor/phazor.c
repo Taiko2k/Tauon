@@ -1100,6 +1100,7 @@ int get_audio(int max, float* buff){
             } // sent data
 
         } // close if data
+        memset(buff, 0, max * sizeof(float));
         pthread_mutex_unlock(&buffer_mutex);
         return max;
 }
@@ -2207,7 +2208,7 @@ void *main_loop(void *thread_id) {
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
     }
-    usleep(300000);  // remove me maybe?
+    usleep(400000);
     printf("CONTINUE\n");
 
     #endif
