@@ -1002,11 +1002,10 @@ int get_audio(int max, float* buff){
         }
 
         if (mode == PAUSED || (mode == PLAYING && get_buff_fill() == 0)){
-            pthread_mutex_unlock(&buffer_mutex);
-            return max;
+
         }
         // Process decoded audio data and send out
-        if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
+        else if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
 
             //pthread_mutex_lock(&buffer_mutex);
 
