@@ -92,12 +92,41 @@ struct pw_registry *registry;
 struct spa_hook registry_listener;
 struct pw_stream *global_stream;
 int pipe_set_samplerate = 48000;
+#define MAX_DEVICES 64
+struct device_info {
+    char name[256];
+    char description[256];
+};
+struct pipe_devices_struct {
+    struct device_info devices[MAX_DEVICES];
+    int device_count;
+};
+
+struct pipe_devices_struct pipe_devices = {0};
+
 
 static void registry_event_global(void *data, uint32_t id,
                 uint32_t permissions, const char *type, uint32_t version,
                 const struct spa_dict *props)
 {
         //printf("object: id:%u type:%s/%d\n", id, type, version);
+            const char *media_class;
+
+    if (props == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
+        return;
+
+    media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+    if (media_class == NULL)
+        return;
+
+    if (spa_streq(media_class, "Audio/Sink")) {
+        const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
+        const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
+        strncpy(pipe_devices.devices[pipe_devices.device_count].name, name, sizeof(pipe_devices.devices[pipe_devices.device_count].name) - 1);
+        strncpy(pipe_devices.devices[pipe_devices.device_count].description, description, sizeof(pipe_devices.devices[pipe_devices.device_count].description) - 1);
+        pipe_devices.device_count++;
+        printf("Found audio sink: %s (%s)\n", name, description);
+    }
 }
 
 static const struct pw_registry_events registry_events = {
@@ -1123,37 +1152,6 @@ static const struct pw_stream_events stream_events = {
 
 void *pipewire_main_loop_thread(void *thread_id) {
 
-    pw_init(NULL, NULL);
-    loop = pw_main_loop_new(NULL /* properties */);
-    context = pw_context_new(pw_main_loop_get_loop(loop),
-                    NULL /* properties */,
-                    0 /* user_data size */);
-
-    core = pw_context_connect(context,
-                    NULL /* properties */,
-                    0 /* user_data size */);
-
-    registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
-                    0 /* user_data size */);
-
-    spa_zero(registry_listener);
-    pw_registry_add_listener(registry, &registry_listener,
-                                   &registry_events, NULL);
-
-
-    global_stream = pw_stream_new_simple(
-        pw_main_loop_get_loop(loop),
-        "Tauon",
-        pw_properties_new(
-            PW_KEY_MEDIA_TYPE, "Audio",
-            PW_KEY_MEDIA_CATEGORY, "Playback",
-            PW_KEY_MEDIA_ROLE, "Music",
-            NULL),
-        &stream_events,
-        NULL
-    );
-
-
     pthread_mutex_unlock(&buffer_mutex);
     pw_main_loop_run(loop);
     pw_proxy_destroy((struct pw_proxy*)registry);
@@ -1224,7 +1222,7 @@ int scan_devices(){
     #endif
 
     #ifdef PIPE
-    return 0;
+    return pipe_devices.device_count;
     #endif
 }
 
@@ -1309,12 +1307,28 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
                                                    .channels = 2,
                                                    .rate = pipe_set_samplerate));
 
+
+        // wip this device section broken
+        int select = -1;
+        for (int i = 0; i < pipe_devices.device_count; i++) {
+            if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) select = i;
+        }
+        if (select != -1){
+            const struct pw_properties *props = pw_stream_get_properties(global_stream);
+            struct pw_properties *mutable_props = pw_properties_copy(props);
+            pw_properties_set(mutable_props, PW_KEY_NODE_NAME, pipe_devices.devices[select].name);
+            pw_stream_update_properties(global_stream, &mutable_props->dict);
+            pw_properties_free(mutable_props);
+        }
+        printf("select: %d\n", select);
+
         pw_stream_connect(global_stream,
                           PW_DIRECTION_OUTPUT,
                           PW_ID_ANY,
                           (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
                                                  PW_STREAM_FLAG_MAP_BUFFERS),
                           params, 1);
+
 
 }
 
@@ -1983,6 +1997,10 @@ void start_out(){
         ma_device_start(&device);
         #endif
         out_thread_running = 1;
+
+        #ifdef PIPE
+
+        #endif
     }
 }
 
@@ -2211,15 +2229,49 @@ void *main_loop(void *thread_id) {
 
     // PIPEWIRE -----------
     #ifdef PIPE
+
+    pw_init(NULL, NULL);
+    loop = pw_main_loop_new(NULL /* properties */);
+    context = pw_context_new(pw_main_loop_get_loop(loop),
+                    NULL /* properties */,
+                    0 /* user_data size */);
+
+    core = pw_context_connect(context,
+                    NULL /* properties */,
+                    0 /* user_data size */);
+
+    registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
+                    0 /* user_data size */);
+
+    spa_zero(registry_listener);
+    pw_registry_add_listener(registry, &registry_listener,
+                                   &registry_events, NULL);
+
+
+    global_stream = pw_stream_new_simple(
+        pw_main_loop_get_loop(loop),
+        "Tauon",
+        pw_properties_new(
+            PW_KEY_MEDIA_TYPE, "Audio",
+            PW_KEY_MEDIA_CATEGORY, "Playback",
+            PW_KEY_MEDIA_ROLE, "Music",
+            NULL),
+        &stream_events,
+        NULL
+    );
+
+
+
+    connect_pulse();
+
     pthread_mutex_lock(&buffer_mutex);
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
     }
-
     pthread_mutex_lock(&buffer_mutex);
     pthread_mutex_unlock(&buffer_mutex);
-    #endif
 
+    #endif
     //int test1 = 0;
     // Main loop ---------------------------------------------------------------
     while (1) {
@@ -2679,7 +2731,7 @@ char* get_device(int n){
     return pPlaybackDeviceInfos[n].name;
     #endif
     #ifdef PIPE
-    return "";
+    return pipe_devices.devices[n].description;
     #endif
 }
 
