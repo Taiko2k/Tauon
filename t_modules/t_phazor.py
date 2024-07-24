@@ -62,18 +62,6 @@ def player4(tauon):
 
     print("Start PHAzOR backend...")
 
-    # # Get output device names
-    # if len(prefs.phazor_devices) < 2 and not tauon.macos and not tauon.msys:
-    #     try:
-    #         import pulsectl
-    #         pulse = pulsectl.Pulse('Tauon Music Box')
-    #         sink_list = pulse.sink_list()
-    #         for sink in sink_list:
-    #             prefs.phazor_devices[sink.description] = sink.name
-    #         pulse.close()
-    #     except:
-    #         print("Warning: Missing dependency Pulsectl")
-
     state = 0
     player_timer = Timer()
     loaded_track = None
@@ -109,6 +97,8 @@ def player4(tauon):
         if prefs.phazor_device_selected not in devices:
             prefs.phazor_device_selected = devices[0]
 
+    if prefs.pipewire and len(prefs.phazor_devices) == 1:
+        time.sleep(0.2)
     scan_device()
 
     class LibreSpot:
@@ -546,7 +536,6 @@ def player4(tauon):
             aud.stop_out()
             aud.wait()
             aud.resume()
-
         if prefs.always_ffmpeg:
             aud.config_set_always_ffmpeg(1)
         if prefs.volume_power < 0 or prefs.volume_power > 10:

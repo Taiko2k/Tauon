@@ -1287,6 +1287,7 @@ int disconnect_pulse() {
 
     }
     pulse_connected = 0;
+    gate = 0.0;
     return 0;
 }
 
@@ -2278,7 +2279,7 @@ void *main_loop(void *thread_id) {
 
 //        test1++;
 //        if (test1 > 650){
-//        printf("pa: Status: mode %d, command %d, buffer %d, gate %d\n", mode, command, get_buff_fill(), gate);
+//        printf("pa: Status: mode %d, command %d, buffer %d, gate %f\n", mode, command, get_buff_fill(), gate);
 //        test1 = 0;
 //        }
 
