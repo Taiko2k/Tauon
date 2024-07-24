@@ -28268,8 +28268,7 @@ class Over:
             i = 0
             reload = False
             for name in prefs.phazor_devices:
-                if prefs.pipewire:
-                    break
+
                 if i < self.device_scroll_bar_position:
                     continue
                 if y > self.box_y + self.h - 40 * gui.scale:

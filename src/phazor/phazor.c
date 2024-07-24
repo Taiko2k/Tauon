@@ -90,7 +90,9 @@ struct pw_context *context;
 struct pw_core *core;
 struct pw_registry *registry;
 struct spa_hook registry_listener;
+struct spa_hook core_listener;
 struct pw_stream *global_stream;
+int enum_done = 0;
 int pipe_set_samplerate = 48000;
 #define MAX_DEVICES 64
 struct device_info {
@@ -132,6 +134,17 @@ static void registry_event_global(void *data, uint32_t id,
 static const struct pw_registry_events registry_events = {
         PW_VERSION_REGISTRY_EVENTS,
         .global = registry_event_global,
+};
+
+static void on_core_done(void *userdata, uint32_t id, int seq){
+    if (id == PW_ID_CORE){
+        enum_done = 1;
+        }
+}
+
+static const struct pw_core_events core_events = {
+    PW_VERSION_CORE_EVENTS,
+    .done = on_core_done,
 };
 
 #endif
@@ -1222,6 +1235,9 @@ int scan_devices(){
     #endif
 
     #ifdef PIPE
+    while (enum_done != 1){
+        usleep(10000);
+    }
     return pipe_devices.device_count;
     #endif
 }
@@ -1314,14 +1330,20 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
         for (int i = 0; i < pipe_devices.device_count; i++) {
             if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) select = i;
         }
+
+        const struct pw_properties *props = pw_stream_get_properties(global_stream);
+        struct pw_properties *mutable_props = pw_properties_copy(props);
+
+
         if (select != -1){
-            const struct pw_properties *props = pw_stream_get_properties(global_stream);
-            struct pw_properties *mutable_props = pw_properties_copy(props);
-            pw_properties_set(mutable_props, PW_KEY_NODE_NAME, pipe_devices.devices[select].name);
-            pw_stream_update_properties(global_stream, &mutable_props->dict);
-            pw_properties_free(mutable_props);
+            pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, pipe_devices.devices[select].name);
+        } else {
+            pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
         }
-        printf("select: %d\n", select);
+        pw_stream_update_properties(global_stream, &mutable_props->dict);
+        pw_properties_free(mutable_props);
+
+        printf("SET DEVICE: %d\n", select + 1);
 
         pw_stream_connect(global_stream,
                           PW_DIRECTION_OUTPUT,
@@ -2248,6 +2270,10 @@ void *main_loop(void *thread_id) {
     pw_registry_add_listener(registry, &registry_listener,
                                    &registry_events, NULL);
 
+    pw_core_add_listener(core, &core_listener,
+                         &core_events, NULL);
+    pw_core_sync(core, PW_ID_CORE, 0);
+
 
     global_stream = pw_stream_new_simple(
         pw_main_loop_get_loop(loop),
@@ -2261,16 +2287,13 @@ void *main_loop(void *thread_id) {
         NULL
     );
 
-
-
-    connect_pulse();
-
-    pthread_mutex_lock(&buffer_mutex);
+    enum_done = 0;
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
     }
-    pthread_mutex_lock(&buffer_mutex);
-    pthread_mutex_unlock(&buffer_mutex);
+    while (enum_done != 1){
+        usleep(10000);
+    }
 
     #endif
     //int test1 = 0;
