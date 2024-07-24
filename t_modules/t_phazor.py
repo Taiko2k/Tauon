@@ -69,6 +69,8 @@ def player4(tauon):
 
     aud = ctypes.cdll.LoadLibrary(get_phazor_pathname(pctl))
 
+    aud.config_set_dev_name(prefs.phazor_device_selected.encode())
+
     aud.init()
 
     aud.get_device.restype = ctypes.c_char_p
@@ -97,8 +99,6 @@ def player4(tauon):
         if prefs.phazor_device_selected not in devices:
             prefs.phazor_device_selected = devices[0]
 
-    if prefs.pipewire and len(prefs.phazor_devices) == 1:
-        time.sleep(0.2)
     scan_device()
 
     class LibreSpot:
