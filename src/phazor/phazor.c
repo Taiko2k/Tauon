@@ -33,6 +33,7 @@
 #include <pipewire/pipewire.h>
 #include <spa/param/audio/format-utils.h>
 #include <spa/pod/builder.h>
+#include <spa/utils/result.h>
 #endif
 
 #define _GNU_SOURCE
@@ -1165,8 +1166,12 @@ static const struct pw_stream_events stream_events = {
 
 void *pipewire_main_loop_thread(void *thread_id) {
 
-    pthread_mutex_unlock(&buffer_mutex);
-    pw_main_loop_run(loop);
+    int res;
+    res = pw_main_loop_run(loop);
+    if (res < 0) {
+        fprintf(stderr, "Error: Main loop run failed: %s\n", spa_strerror(res));
+        return thread_id;
+    }
     pw_proxy_destroy((struct pw_proxy*)registry);
     pw_core_disconnect(core);
     pw_stream_destroy(global_stream);
@@ -2253,25 +2258,54 @@ void *main_loop(void *thread_id) {
     // PIPEWIRE -----------
     #ifdef PIPE
 
+    printf("Begin Pipewire init...\n");
     pw_init(NULL, NULL);
+
     loop = pw_main_loop_new(NULL /* properties */);
+    if (loop == NULL) {
+        fprintf(stderr, "Error: Failed to create main loop\n");
+        return thread_id;
+    }
+
     context = pw_context_new(pw_main_loop_get_loop(loop),
                     NULL /* properties */,
                     0 /* user_data size */);
+    if (context == NULL) {
+        fprintf(stderr, "Error: Failed to create context\n");
+        return thread_id;
+    }
 
     core = pw_context_connect(context,
                     NULL /* properties */,
                     0 /* user_data size */);
+    if (core == NULL) {
+        fprintf(stderr, "Error: Failed to connect to PipeWire\n");
+        return thread_id;
+    }
 
     registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
                     0 /* user_data size */);
+    if (registry == NULL) {
+        fprintf(stderr, "Error: Failed to get registry\n");
+        return thread_id;
+    }
 
     spa_zero(registry_listener);
-    pw_registry_add_listener(registry, &registry_listener,
+    int res;
+    res = pw_registry_add_listener(registry, &registry_listener,
                                    &registry_events, NULL);
 
-    pw_core_add_listener(core, &core_listener,
+    if (res < 0) {
+        fprintf(stderr, "Error: Failed to add registry listener: %s\n", spa_strerror(res));
+        return thread_id;
+    }
+
+    res = pw_core_add_listener(core, &core_listener,
                          &core_events, NULL);
+    if (res < 0) {
+        fprintf(stderr, "Error: Failed to add core listener: %s\n", spa_strerror(res));
+        return thread_id;
+    }
     pw_core_sync(core, PW_ID_CORE, 0);
 
 
@@ -2286,11 +2320,17 @@ void *main_loop(void *thread_id) {
         &stream_events,
         NULL
     );
-
+    if (global_stream == NULL) {
+        fprintf(stderr, "Error: Failed to create stream\n");
+        return thread_id;
+    }
+    printf("Start pipewire thread...\n");
     enum_done = 0;
     if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
             fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+            return thread_id;
     }
+    printf("Done Pipewire prep.\n");
     while (enum_done != 1){
         usleep(10000);
     }
