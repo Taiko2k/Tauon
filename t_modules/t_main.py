@@ -28243,10 +28243,12 @@ class Over:
 
             if platform_system == "Linux":
                 old = prefs.pipewire
+                prefs.pipewire = self.toggle_square(x + round(gui.scale * 110), self.box_y + self.h - 50 * gui.scale,
+                                                            prefs.pipewire, _("PipeWire (unstable)"))
                 prefs.pipewire = self.toggle_square(x, self.box_y + self.h - 50 * gui.scale,
-                                                            prefs.pipewire, _("Use Pipewire native (Unstable)"))
+                                                            prefs.pipewire ^ True, _("PulseAudio")) ^ True
                 if old != prefs.pipewire:
-                    show_message("You may need to restart the app for change to take effect")
+                    show_message("Please restart Tauon for this change to take effect")
 
             old = prefs.avoid_resampling
             prefs.avoid_resampling = self.toggle_square(x, self.box_y + self.h - 27 * gui.scale, prefs.avoid_resampling, _("Avoid resampling"))
