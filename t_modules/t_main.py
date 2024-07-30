@@ -25638,6 +25638,8 @@ def worker2():
                                     continue
                                 # if s_text not in cache_string:
                                 #     continue
+                            and_mode = False
+
                         else:
                             cache_string = search_string_cache.get(track)
                             if cache_string is not None:
@@ -25662,6 +25664,11 @@ def worker2():
                                 search_string_cache[
                                     track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
+                        if "and" in s_text:
+                            search_string_cache.clear()
+                            search_dia_string_cache.clear()
+                            and_mode = True
+
                             if cn_mode:
                                 cache_string = search_string_cache.get(track)
                                 if cache_string:
@@ -25673,8 +25680,18 @@ def worker2():
                                         s_text = s_cn
 
                         if dia_mode:
-                            title = unidecode(title)
+                            if and_mode and "&" in title:
+                                title = title.replace("&", "and")
+                            if and_mode and "&" in album:
+                                album = album.replace("&", "and")
+                            if and_mode and "&" in album_artist:
+                                album_artist = album_artist.replace("&", "and")
+                            if and_mode and "&" in composer:
+                                composer = composer.replace("&", "and")
+                            if and_mode and "&" in genre:
+                                genre = genre.replace("&", "and")
 
+                            title = unidecode(title)
                             artist = unidecode(artist)
                             album_artist = unidecode(album_artist)
                             composer = unidecode(composer)
