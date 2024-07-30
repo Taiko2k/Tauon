@@ -28255,6 +28255,8 @@ class Over:
             if prefs.avoid_resampling != old:
                 pctl.playerCommand = 'reload'
                 pctl.playerCommandReady = True
+                if not old:
+                    show_message("Tip: To get samplerate to DAC you may need to check some settings, see:", "https://github.com/Taiko2k/Tauon/wiki/Audio-Specs", mode="link")
 
             self.device_scroll_bar_position -= pref_box.scroll
             if self.device_scroll_bar_position < 0:
