@@ -17100,13 +17100,13 @@ def export_xspf(pl, direc=None, relative=False, show=True):
 
         xport.write('    <track>\n')
         if track.title != "":
-            xport.write('      <title>' + escape(track.title) + '</title>\n')
+            xport.write('      <title>' + urllib.parse.quote(track.title) + '</title>\n')
         if track.is_cue is False and track.fullpath != "":
-            xport.write('      <location>' + escape(path) + '</location>\n')
+            xport.write('      <location>' + urllib.parse.quote(path) + '</location>\n')
         if track.artist != "":
-            xport.write('      <creator>' + escape(track.artist) + '</creator>\n')
+            xport.write('      <creator>' + urllib.parse.quote(track.artist) + '</creator>\n')
         if track.album != "":
-            xport.write('      <album>' + escape(track.album) + '</album>\n')
+            xport.write('      <album>' + urllib.parse.quote(track.album) + '</album>\n')
         xport.write('      <duration>' + str(int(track.length * 1000)) + '</duration>\n')
         xport.write('    </track>\n')
     xport.write('  </trackList>\n')
@@ -44227,9 +44227,8 @@ while pctl.running:
             tauon.exit("Quit keyboard shortcut pressed")
 
         if keymaps.test('testkey'):  # F7: test
-            for i in default_playlist:
-                g = pctl.g(i)
-                print(g.parent_folder_path)
+            pctl.playerCommand = "unload"
+            pctl.playerCommandReady = True
             pass
 
         if gui.mode < 3:
