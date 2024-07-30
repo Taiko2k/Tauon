@@ -45262,7 +45262,7 @@ while pctl.running:
                                                 pctl.selected_in_playlist = album_dex[album_on]
                                                 gui.pl_update += 1
 
-                                        elif middle_click:
+                                        elif middle_click and is_level_zero():
                                             # Middle click to add album to queue
                                             if key_ctrl_down:
                                                 # Add to queue ungrouped
