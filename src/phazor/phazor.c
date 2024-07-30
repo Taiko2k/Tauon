@@ -1151,7 +1151,7 @@ static void on_process(void *userdata) {
 
     buf = buffer->buffer;
 
-    size = get_audio(6000, buf->datas[0].data) * 4;
+    size = get_audio(1000, buf->datas[0].data) * 4;
 
     buf->datas[0].chunk->size = size;
     pw_stream_queue_buffer(global_stream, buffer);
@@ -1345,6 +1345,12 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
         } else {
             pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
         }
+
+//        pw_properties_set(props, PW_KEY_NODE_LATENCY, "256/48000");
+//        pw_properties_set(props, PW_KEY_NODE_FORCE_QUANTUM, "64");
+//        pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
+
+
         pw_stream_update_properties(global_stream, &mutable_props->dict);
         pw_properties_free(mutable_props);
 
@@ -1354,7 +1360,7 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
                           PW_DIRECTION_OUTPUT,
                           PW_ID_ANY,
                           (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
-                                                 PW_STREAM_FLAG_MAP_BUFFERS),
+                                                 PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS ),
                           params, 1);
 
 
@@ -1363,28 +1369,8 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
 static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
 
-
         pw_stream_disconnect(global_stream);
-        struct spa_pod_builder b = { 0 };
-        uint8_t buffer[1024];
-        const struct spa_pod *params[1];
-
-        spa_pod_builder_init(&b, buffer, sizeof(buffer));
-        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
-                                               &SPA_AUDIO_INFO_RAW_INIT(
-                                                   .format = SPA_AUDIO_FORMAT_F32,
-                                                   .channels = 2,
-                                                   .rate = pipe_set_samplerate));
-
-        pw_stream_connect(global_stream,
-                          PW_DIRECTION_OUTPUT,
-                          PW_ID_ANY,
-                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
-                                                 PW_STREAM_FLAG_MAP_BUFFERS),
-                          params, 1);
-
-
-
+        pipe_connect(loop, async, seq, _data, size, user_data);
         printf("UPDATE SAMPLERATE PIPE TO %d\n", pipe_set_samplerate);
 
 }
