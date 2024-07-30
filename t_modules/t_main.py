@@ -30667,6 +30667,10 @@ class Over:
         tab_bg = colours.sys_tab_bg
         tab_hl = colours.sys_tab_hl
         tab_text = rgb_add_hls(tab_bg, 0, 0.3, -0.15)
+        if is_light(tab_bg):
+            h, l, s = rgb_to_hls(tab_bg[0], tab_bg[1], tab_bg[2])
+            l = 0.1
+            tab_text = hls_to_rgb(h, l, s)
         tab_over = alpha_mod(rgb_add_hls(tab_bg, 0, 0.5, 0), 13)
 
         if top_mode:
