@@ -1356,7 +1356,7 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
 
         printf("SET DEVICE: %d\n", select + 1);
 
-        pw_stream_connect(global_stream,
+        return pw_stream_connect(global_stream,
                           PW_DIRECTION_OUTPUT,
                           PW_ID_ANY,
                           (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
@@ -1370,9 +1370,7 @@ static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
 
         pw_stream_disconnect(global_stream);
-        pipe_connect(loop, async, seq, _data, size, user_data);
-        printf("UPDATE SAMPLERATE PIPE TO %d\n", pipe_set_samplerate);
-
+        return pipe_connect(loop, async, seq, _data, size, user_data);
 }
 #endif
 
@@ -1421,7 +1419,6 @@ void connect_pulse() {
 
     //printf("ph: Connect device\n");
 
-    ma_context_config c_config = ma_context_config_init();
     c_config.pulse.pApplicationName = "Tauon Music Box";
     if (initiate_ma_context() == -1) return;
 
@@ -1735,7 +1732,7 @@ int load_next() {
     if (codec == MPT){
 
       mod_file = uni_fopen(loaded_target_file);
-      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+      mod = openmpt_module_create2(openmpt_stream_get_file_callbacks2(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
       src_channels = 2;
       fclose(mod_file);
       pthread_mutex_lock(&buffer_mutex);
