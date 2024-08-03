@@ -2591,6 +2591,8 @@ def get_themes(deco=False):
                 continue
             paths = [os.path.join(folder, f) for f in os.listdir(folder)]
             for path in paths:
+                if os.path.islink(path):
+                    path = os.readlink(path)
                 if os.path.isfile(path):
                     if path[-7:] == '.ttheme':
                         themes.append((path, os.path.basename(path).split(".")[0]))
