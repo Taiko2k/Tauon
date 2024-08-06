@@ -61,11 +61,10 @@
   <releases>
 
 
-    <release version="7.8.0" date="2024-05-30">
+    <release version="7.8.1" date="2024-08-06">
       <description>
         <ul>
-          <li>Added support for SPC files</li>
-          <li>Various tweaks and fixes</li>
+          <li>Improved Pipewire support</li>
         </ul>
       </description>
     </release>
