@@ -24094,7 +24094,7 @@ def discord_loop():
             title = "Unknown Track"
             tr = pctl.playing_object()
             if tr.artist != "" and tr.title != "":
-                title = tr.artist + " - " + tr.title
+                title = tr.title + " | " + tr.artist
                 if len(title) > 150:
                     title = "Unknown Track"
 
