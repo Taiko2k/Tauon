@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-11-22 21:04+0000\n"
+"PO-Revision-Date: 2024-08-12 13:09+0000\n"
 "Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/zh_Hans/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.2.1-rc\n"
+"X-Generator: Weblate 5.7-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -1486,7 +1486,7 @@ msgstr "迷你"
 
 #: t_modules/t_main.py:22824
 msgid "Slate"
-msgstr ""
+msgstr "石板"
 
 #: t_modules/t_main.py:22825
 msgid "Square"
@@ -2191,7 +2191,7 @@ msgstr "艺术家背景图片（自动）"
 
 #: t_modules/t_main.py:29103
 msgid "Flip current"
-msgstr ""
+msgstr "旋转电流"
 
 #: t_modules/t_main.py:29185 t_modules/t_main.py:29186
 msgid "Username:"
@@ -2722,7 +2722,7 @@ msgstr "视图..."
 
 #: t_modules/t_main.py:36892
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "筛选短片艺术家"
 
 #: t_modules/t_main.py:36896 t_modules/t_main.py:36897
 msgid "Include All Artists"
