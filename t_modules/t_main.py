@@ -25969,20 +25969,24 @@ def worker1():
 
     def get_quoted_from_line(line):
 
-        # e.g extract quoted file name from: 'FILE "01 - Track01.wav" WAVE'
+        # Extract quoted or unquoted string from a line
+        # e.g., 'FILE "01 - Track01.wav" WAVE' or 'TITLE Track01' or "PERFORMER 'Artist Name'"
 
-        file_name = ""
-        enable = False
+        parts = line.split(None, 1)
+        if len(parts) < 2:
+            return ""
 
-        for cha in line:
-            if not enable and cha == "\"":
-                enable = True
-            elif enable:
-                if cha == "\"":
-                    return file_name
-                file_name += cha
+        content = parts[1].strip()
 
-        return file_name
+        if content.startswith('"'):
+            end = content.find('"', 1)
+            return content[1:end] if end != -1 else content[1:]
+        elif content.startswith("'"):
+            end = content.find("'", 1)
+            return content[1:end] if end != -1 else content[1:]
+        else:
+            # If not quoted, return the first word
+            return content.split()[0]
 
     def add_from_cue(path):
 
@@ -26074,31 +26078,29 @@ def worker1():
 
                 if i > len(content) - 1:
                     break
-
-                line = content[i]
-
-                line = line.strip()
+                    
+                line = content[i].strip()
 
                 if in_header:
                     if line.startswith("REM "):
                         line = line[4:]
 
-                    if line.startswith("TITLE \""):
+                    if line.startswith("TITLE "):
                         cue_album = get_quoted_from_line(line)
-                    if line.startswith("PERFORMER \""):
+                    if line.startswith("PERFORMER "):
                         cue_performer = get_quoted_from_line(line)
-                    if line.startswith("MAIN PERFORMER \""):
+                    if line.startswith("MAIN PERFORMER "):
                         cue_main_performer = get_quoted_from_line(line)
-                    if line.startswith("SONGWRITER \""):
+                    if line.startswith("SONGWRITER "):
                         cue_songwriter = get_quoted_from_line(line)
                     if line.startswith("GENRE "):
-                        cue_genre = line[5:].strip().replace("\"", "")
+                        cue_genre = get_quoted_from_line(line)
                     if line.startswith("DATE "):
-                        cue_date = line[5:].strip().replace("\"", "")
+                        cue_date = get_quoted_from_line(line)
                     if line.startswith("DISCNUMBER "):
-                        cue_disc = line[11:].strip().replace("\"", "")
+                        cue_disc = get_quoted_from_line(line)
                     if line.startswith("TOTALDISCS "):
-                        cue_disc_total = line[11:].strip().replace("\"", "")
+                        cue_disc_total = get_quoted_from_line(line)
 
                     if line.startswith("FILE "):
                         in_header = False
