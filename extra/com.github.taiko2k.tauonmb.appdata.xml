@@ -61,7 +61,7 @@
   <releases>
 
 
-    <release version="7.8.1" date="2024-08-06">
+    <release version="7.8.1" date="2024-08-24">
       <description>
         <ul>
           <li>Improved Pipewire support</li>
