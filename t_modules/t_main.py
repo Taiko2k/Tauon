@@ -36601,13 +36601,13 @@ class RenamePlaylistBox:
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "g\"genre\"", code_colour, code_font)
             ddt.text((xx2, yy), "Search genre", hint_colour, hint_font)
-            yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "p\"text\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Search filepath segment", hint_colour, hint_font)
+            # yy += round(12 * gui.scale)
+            # ddt.text((xx, yy), "p\"text\"", code_colour, code_font)
+            # ddt.text((xx2, yy), "Search filepath segment", hint_colour, hint_font)
 
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "f\"terms\"", code_colour, code_font)
-            ddt.text((xx2, yy), "Find / Search", hint_colour, hint_font)
+            ddt.text((xx2, yy), "Find / Search / Path", hint_colour, hint_font)
 
             # yy += round(12 * gui.scale)
             # ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
