@@ -861,7 +861,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 }
 
 # These will be the extensions of files to be added when importing
-DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape', 'aiff'
+DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape', 'aiff',
               'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'}
 
 VID_Formats = {'mp4', "webm"}
