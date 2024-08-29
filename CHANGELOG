@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.8.2
+
+ - Fixed M4A and AIFF not importing bug introduced by 7.8.1
+
 v7.8.1
 
  - Added Pipewire native output option (Linux only)
