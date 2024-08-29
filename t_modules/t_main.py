@@ -29006,8 +29006,12 @@ class Over:
 
             y += round(24 * gui.scale)
 
+            old = prefs.launch_spotify_local
             prefs.launch_spotify_local = self.toggle_square(x, y, prefs.launch_spotify_local,
                                                               _("Enable local audio playback"))
+            if prefs.launch_spotify_local != old and prefs.launch_spotify_local:
+                show_message("Due to Spotify authentication changes, local audio playback may be broken",
+                             "It is highly recommended to disable this setting to avoid your account being locked.", mode="warning")
 
             if prefs.launch_spotify_local and not tauon.enable_librespot:
                 show_message("Librespot not installed?")
@@ -42183,10 +42187,6 @@ tm.ready("worker")
 # thread.daemon = True
 # thread.start()
 
-# MAIN LOOP---------------------------------------------------------------------------
-
-
-# print("Almost done...")
 
 gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / 16) - 1)
 
@@ -43349,6 +43349,13 @@ c_xax_timer = Timer()
 c_xay = 0
 c_xay_timer = Timer()
 rt = 0
+
+
+if prefs.launch_spotify_local:
+    show_message("Due to Spotify authentication changes, local Spotify audio playback may be broken",
+                 "It is highly recommended to disable this setting to avoid your account being locked.", "See MENU > SETTINGS > ACCOUNT > SPOTIFY > Enable local audio playback.", mode="warning")
+
+# MAIN LOOP
 
 while pctl.running:
     # bm.get('main')
