@@ -587,6 +587,7 @@ import json
 import glob
 import xml.etree.ElementTree as ET
 import musicbrainzngs
+import traceback
 from pathlib import Path
 from xml.sax.saxutils import escape, unescape
 from ctypes import *
@@ -735,9 +736,16 @@ class DConsole:
             del self.messages[0]
 
         dtime = datetime.datetime.now()
-        self.messages.append((message, level, dtime, Timer()))
-        if level > 0:
-            print(message)
+
+        first = True
+        for line in message.split("\n"):
+            if first:
+                first = False
+            else:
+                level = -1
+            self.messages.append((line, level, dtime, Timer()))
+
+        print(message)
 
 
 console = DConsole()
@@ -26000,11 +26008,12 @@ def worker1():
             try:
                 with open(path, encoding="utf_8") as f:
                     content = f.readlines()
+                    console.print("-- Reading as UTF-8")
             except:
                 try:
                     with open(path, encoding="utf_16") as f:
                         content = f.readlines()
-                        print("CUE: Detected encoding as UTF-16")
+                        console.print("-- Reading as UTF-16")
                 except:
                     try:
                         j = False
@@ -26015,17 +26024,17 @@ def worker1():
                                     for c in j_chars:
                                         if c in line:
                                             j = True
-                                            print("CUE: Detected encoding as SHIFT-JIS")
+                                            console.print("-- Reading as SHIFT-JIS")
                                             break
                         except:
                             pass
                         if not j:
                             with open(path, encoding='windows-1251') as f:
                                 content = f.readlines()
-                            print("CUE: Detected encoding as windows-1251")
+                            console.print("-- Fallback encoding read as windows-1251")
 
                     except:
-                        print("WARNING: Can't detect encoding of CUE file")
+                        console.print("-- Abort: Can't detect encoding of CUE file")
                         return 1
 
             f.close()
@@ -26118,19 +26127,19 @@ def worker1():
 
                     if not os.path.isfile(file_path):
                         if files == 1:
-                            print("CUE: The referenced source file wasn't found. Searching for matching file name...")
+                            console.print("-- The referenced source file wasn't found. Searching for matching file name...")
                             for item in os.listdir(os.path.dirname(path)):
                                 if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
                                     if ".cue" not in item.lower() and item.split(".")[-1].lower() in DA_Formats:
                                         file_name = item
                                         file_path = os.path.join(os.path.dirname(path), file_name)
-                                        print("CUE: Source found")
+                                        console.print("-- Source found at: " + file_path)
                                         break
                             else:
-                                print("CUE: Source file not found")
+                                console.print("-- Abort: Source file not found")
                                 return 1
                         else:
-                            print("CUE: Source file not found")
+                            console.print("-- Abort: Source file not found")
                             return 1
 
                 if line.startswith("TRACK "):
@@ -26257,9 +26266,10 @@ def worker1():
                     loaded_pathes_cache[track.fullpath] = track.index
                     added.append(track.index)
 
-        except:
-            print("Error in processing CUE file")
-            # raise
+        except Exception as e:
+            console.print("-- Internal error in processing CUE file:")
+            console.print(str(e))
+            console.print(traceback.format_exc())
 
     def add_file(path, force_scan=False):
         # bm.get("add file start")
@@ -34273,7 +34283,7 @@ class StandardPlaylist:
 
             if pctl.playlist_view_position > len(default_playlist):
                 pctl.playlist_view_position = len(default_playlist)
-                console.print("DEBUG: Position changed by range bound")
+                #console.print("DEBUG: Position changed by range bound")
             if pctl.playlist_view_position < 1:
                 pctl.playlist_view_position = 0
                 if default_playlist:
@@ -47739,6 +47749,7 @@ while pctl.running:
             u = False
             for item in reversed(console.messages):
                 message = item[0]
+                level = item[1]
                 if yy < rect[1] + 5 * gui.scale:
                     break
 
@@ -47752,8 +47763,13 @@ while pctl.running:
                 if item[1] == 5:
                     text_colour = [255, 40, 90, fade]
 
-                w = ddt.text((rect[0] + 10 * gui.scale, yy), item[2].strftime('%H:%M:%S'), [255, 80, 160, fade], 311,
+                time_colour = [255, 80, 160, fade]
+                if level == -1:
+                    time_colour = [0,0,0,0]
+
+                w = ddt.text((rect[0] + 10 * gui.scale, yy), item[2].strftime('%H:%M:%S'), time_colour, 311,
                              rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+
                 ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
                 yy -= 14 * gui.scale
             if u:
