@@ -10900,7 +10900,7 @@ SDL_SetTextureBlendMode(text_box_canvas, SDL_BLENDMODE_BLEND)
 
 
 def pixel_to_logical(x):
-    return round((x / window_size[0]) * logical_size)
+    return round((x / window_size[0]) * logical_size[0])
 
 class TextBox2:
     cursor = True
