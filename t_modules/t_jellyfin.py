@@ -431,12 +431,18 @@ class Jellyfin():
                 else:
                     nt = self.tauon.TrackClass()
                 nt.index = id  # this is tauons track id
-                nt.fullpath = track.get("MediaSources")[0]["Path"]
+                try:
+                    nt.fullpath = track.get("MediaSources")[0]["Path"]
+                except:
+                    print("Jelly warning on get path")
                 nt.filename = os.path.basename(nt.fullpath)
                 nt.parent_folder_path = os.path.dirname(nt.fullpath)
                 nt.parent_folder_name = os.path.basename(nt.parent_folder_path)
                 nt.file_ext = "JELY"
-                nt.size = track.get("MediaSources")[0]["Size"]
+                try:
+                    nt.size = track.get("MediaSources")[0]["Size"]
+                except:
+                    print("Jelly warning on get size")
                 nt.modified_time = time.mktime(time.strptime(
                     track.get("DateCreated").rsplit(".", 1)[0],
                     "%Y-%m-%dT%H:%M:%S"))
