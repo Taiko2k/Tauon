@@ -28810,6 +28810,9 @@ class Over:
         if self.button2(x, y, "Jellyfin", width=84 * gui.scale):
             self.account_view = 10
 
+        if self.button2(x + round(95 * gui.scale), y, "TIDAL", width=84 * gui.scale):
+            self.account_view = 12
+
         y += 28 * gui.scale
 
         if self.button2(x, y, "Airsonic", width=84 * gui.scale):
@@ -28832,6 +28835,11 @@ class Over:
 
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
+
+        if self.account_view == 12:
+            ddt.text((x, y), 'TIDAL', colours.box_sub_text, 213)
+
+            y += round(30 * gui.scale)
 
         if self.account_view == 11:
             ddt.text((x, y), 'Tauon Satellite', colours.box_sub_text, 213)
