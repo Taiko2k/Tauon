@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
 "POT-Creation-Date: 2023-03-12 21:30+1300\n"
-"PO-Revision-Date: 2023-03-13 20:43+0000\n"
-"Last-Translator: ssantos <ssantos@web.de>\n"
+"PO-Revision-Date: 2024-09-02 21:11+0000\n"
+"Last-Translator: Ricardo Simões <xmcorporation@gmail.com>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_PT/>\n"
 "Language: pt_PT\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1851 t_modules/t_main.py:1853
@@ -417,7 +417,7 @@ msgstr "Filtrar para Nova Lista de Reprodução"
 #: t_modules/t_main.py:15407 t_modules/t_main.py:15408
 #: t_modules/t_main.py:18366
 msgid "Rescan Folder"
-msgstr "Reanalizar Pasta"
+msgstr "Reexaminar Pasta"
 
 #: t_modules/t_main.py:15409 t_modules/t_main.py:15411
 msgid "Move Playing Folder Here"
@@ -433,7 +433,7 @@ msgstr "Mostrar na Lista de Reprodução"
 
 #: t_modules/t_main.py:15502
 msgid "Image…"
-msgstr ""
+msgstr "Imagem…"
 
 #: t_modules/t_main.py:15503 t_modules/t_main.py:21055
 #: t_modules/t_main.py:21068
@@ -503,14 +503,12 @@ msgid "Search for Lyrics"
 msgstr "Procurar por Letra"
 
 #: t_modules/t_main.py:15756 t_modules/t_main.py:15764
-#, fuzzy
 msgid "Show static lyrics"
-msgstr "Mostrar Letra"
+msgstr "Mostrar Letras estáticas"
 
 #: t_modules/t_main.py:15758 t_modules/t_main.py:15766
-#, fuzzy
 msgid "Show synced lyrics"
-msgstr "Mostrar Letra"
+msgstr "Mostrar Letras sincronizadas"
 
 #: t_modules/t_main.py:15783
 msgid "Search GuitarParty"
@@ -550,9 +548,8 @@ msgid "Open Image"
 msgstr "Abrir Imagem"
 
 #: t_modules/t_main.py:15997
-#, fuzzy
 msgid "Next Image"
-msgstr "Abrir Imagem"
+msgstr "Imagem Seguinte"
 
 #: t_modules/t_main.py:16001 t_modules/t_main.py:16342
 msgid "Extract Image"
@@ -591,9 +588,8 @@ msgid "Deleted embedded picture from file"
 msgstr "Imagem inserida no ficheiro foi pagada"
 
 #: t_modules/t_main.py:16239
-#, fuzzy
 msgid "%d files processed"
-msgstr "%d ficheiros re-escritos"
+msgstr "%d ficheiros processados"
 
 #: t_modules/t_main.py:16266 t_modules/t_main.py:16273
 #: t_modules/t_main.py:16304
@@ -844,7 +840,7 @@ msgstr "Transcodificar Tudo"
 #: t_modules/t_main.py:18660 t_modules/t_main.py:20869
 #: t_modules/t_main.py:21116 t_modules/t_main.py:21217
 msgid "Rescan Tags"
-msgstr "Redetetar Etiquetas"
+msgstr "Reexaminar Etiquetas"
 
 #: t_modules/t_main.py:18665
 msgid "Toggle Breaks"
@@ -1030,9 +1026,8 @@ msgid "Add Playing Spotify Album"
 msgstr "Adicionar álbum do Spotify"
 
 #: t_modules/t_main.py:19937
-#, fuzzy
 msgid "Add Playing Spotify Track"
-msgstr "Adicionar álbum do Spotify"
+msgstr "Adicionar a Reprodução Atual da Faixa do Spotify"
 
 #: t_modules/t_main.py:20028
 msgid "Track Info…"
@@ -1188,14 +1183,12 @@ msgid "Lookup Spotify Album URL"
 msgstr "Procurar URL do Álbum Spotify"
 
 #: t_modules/t_main.py:21159
-#, fuzzy
 msgid "Save Album to Spotify"
-msgstr "Gravar na Biblioteca Spotify"
+msgstr "Salvar Álbum no Spotify"
 
 #: t_modules/t_main.py:21165
-#, fuzzy
 msgid "Un-save Spotify Album"
-msgstr "Colar Álbum do Spotify"
+msgstr "Cancelar Gravação do Álbum Spotify"
 
 #: t_modules/t_main.py:21208
 msgid "Queue %d"
@@ -1243,50 +1236,44 @@ msgid "Copy \"Artist - Track\""
 msgstr "Copiar \"Artista - Faixa\""
 
 #: t_modules/t_main.py:21414
-#, fuzzy
 msgid "Spotify…"
-msgstr "Curti no Spotify"
+msgstr "Spotify…"
 
 #: t_modules/t_main.py:21419 t_modules/t_main.py:23286
-#, fuzzy
 msgid "Show Full Artist"
-msgstr "Mostrar na Lista de Reprodução"
+msgstr "Mostrar Artista Completo"
 
 #: t_modules/t_main.py:21432
 msgid "Looks like that's the only track in the album"
-msgstr ""
+msgstr "Parece que essa é a única faixa do álbum"
 
 #: t_modules/t_main.py:21444 t_modules/t_main.py:23261
-#, fuzzy
 msgid "Show Full Album"
-msgstr "Álbuns Misturados"
+msgstr "Mostrar Álbum Completo"
 
 #: t_modules/t_main.py:21448
-#, fuzzy
 msgid "Copy Track URL"
-msgstr "Copiar URl da Faixa Spotify"
+msgstr "Copiar URL da Faixa"
 
 #: t_modules/t_main.py:21462 t_modules/t_main.py:23283
-#, fuzzy
 msgid "Fetching..."
-msgstr "A procurar..."
+msgstr "A buscar..."
 
 #: t_modules/t_main.py:21468
 msgid "Get Recommended"
-msgstr ""
+msgstr "Seja Recomendado"
 
 #: t_modules/t_main.py:21570
 msgid "Broadcast This"
 msgstr "Transmitir Isto"
 
 #: t_modules/t_main.py:21584
-#, fuzzy
 msgid "Minimize"
-msgstr "Mini"
+msgstr "Minimizar"
 
 #: t_modules/t_main.py:21585
 msgid "Maximize"
-msgstr ""
+msgstr "Maximizar"
 
 #: t_modules/t_main.py:21586 t_modules/t_main.py:23660
 msgid "Exit"
@@ -1451,14 +1438,12 @@ msgid "Remove Missing Tracks"
 msgstr "Remover Faixas em Falta"
 
 #: t_modules/t_main.py:22639
-#, fuzzy
 msgid "Import FMPS Ratings"
-msgstr "Importar FMPS_Ratings a partir das Etiquetas"
+msgstr "Importar Classificações FMPS"
 
 #: t_modules/t_main.py:22676
-#, fuzzy
 msgid "Import POPM Ratings"
-msgstr "Importar FMPS_Ratings a partir das Etiquetas"
+msgstr "Importar Classificações POPM"
 
 #: t_modules/t_main.py:22681
 msgid "This will delete all track and album ratings from the local database!"
@@ -1503,13 +1488,12 @@ msgid "Stop Cast"
 msgstr "Parar Transmissão"
 
 #: t_modules/t_main.py:22775
-#, fuzzy
 msgid "Chromecast…"
-msgstr "Transmitir isto via Chromecast"
+msgstr "Chromecast…"
 
 #: t_modules/t_main.py:22821
 msgid "Tab"
-msgstr ""
+msgstr "Separador"
 
 #: t_modules/t_main.py:22822
 msgid "Mini"
@@ -1517,7 +1501,7 @@ msgstr "Mini"
 
 #: t_modules/t_main.py:22824
 msgid "Slate"
-msgstr ""
+msgstr "Ardósia"
 
 #: t_modules/t_main.py:22825
 msgid "Square"
@@ -1578,40 +1562,35 @@ msgstr "Por favor aguarde até que o trabalho finalize"
 
 #: t_modules/t_main.py:23210
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Importar Spotify…"
 
 #: t_modules/t_main.py:23212
-#, fuzzy
 msgid "Liked Albums"
-msgstr "Álbuns Mais Longos"
+msgstr "Álbuns Gostados"
 
 #: t_modules/t_main.py:23223
-#, fuzzy
 msgid "Liked Tracks"
-msgstr "Gostar da Faixa"
+msgstr "Faixas Gostadas"
 
 #: t_modules/t_main.py:23227
 msgid "Importing Spotify playlists..."
 msgstr "Importando lista de reprodução do Spotify..."
 
 #: t_modules/t_main.py:23245
-#, fuzzy
 msgid "> Import All Playlists"
-msgstr "Importar todas as lista de reprodução de utilizador"
+msgstr "> Importar Todas as Listas de Reprodução"
 
 #: t_modules/t_main.py:23250
-#, fuzzy
 msgid "Playlist…"
-msgstr "Nova Lista de Reprodução"
+msgstr "Lista de Reprodução…"
 
 #: t_modules/t_main.py:23256
 msgid "Current Context"
-msgstr ""
+msgstr "Contexto Corrente"
 
 #: t_modules/t_main.py:23289
-#, fuzzy
 msgid "Start Spotify Remote"
-msgstr "Colar Álbum do Spotify"
+msgstr "Iniciar Spotify Remoto"
 
 #: t_modules/t_main.py:23453
 msgid "ListenBrainz is Paused"
@@ -2162,11 +2141,11 @@ msgstr "Preferir lançar reprodutor web"
 
 #: t_modules/t_main.py:28792
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Ativar a reprodução de áudio local"
 
 #: t_modules/t_main.py:28815
 msgid "Spofify password"
-msgstr ""
+msgstr "Palavra-passe do Spotify"
 
 #: t_modules/t_main.py:28830
 msgid "Airsonic/Subsonic network streaming"
@@ -2416,12 +2395,11 @@ msgstr "Mostrar a reproduzir na barra de título"
 
 #: t_modules/t_main.py:29498
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Modo-mini sempre no topo"
 
 #: t_modules/t_main.py:29503
-#, fuzzy
 msgid "Top-panel visualiser"
-msgstr "Visualização de Painel-topo"
+msgstr "Visualizador do Painel-topo"
 
 #: t_modules/t_main.py:29507
 msgid "Showcase visualisation"
@@ -2598,7 +2576,7 @@ msgstr "Adicionou faixas ao gerador de playlist. Quer removê-las do gerador?"
 
 #: t_modules/t_main.py:31144 t_modules/t_main.py:36142
 msgid "Added station to: "
-msgstr "Estação adicionada a:"
+msgstr "Estação adicionada a: "
 
 #: t_modules/t_main.py:31536
 msgid "Buffering... "
@@ -2779,12 +2757,11 @@ msgstr "Visão..."
 
 #: t_modules/t_main.py:36892
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Filtrar Pequenos Artistas"
 
 #: t_modules/t_main.py:36896 t_modules/t_main.py:36897
-#, fuzzy
 msgid "Include All Artists"
-msgstr "Incluir títulos de álbuns"
+msgstr "Incluir Todos os Artistas"
 
 #: t_modules/t_main.py:36899
 msgid "Sort Alphabetically"
@@ -2941,7 +2918,7 @@ msgstr ""
 
 #: t_modules/t_main.py:45482
 msgid "Rescan folders complete."
-msgstr "Reexame de Pastas Concluído."
+msgstr "Reverificação de pastas concluída."
 
 #: t_modules/t_main.py:46128
 msgid "Queue is Empty"
