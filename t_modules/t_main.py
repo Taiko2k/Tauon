@@ -43425,7 +43425,10 @@ while pctl.running:
         if event.type == SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
             if SDL_IsGameController(event.cdevice.which):
                 SDL_GameControllerOpen(event.cdevice.which)
-                print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
+                try:
+                    console.print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
+                except:
+                    console.print("Error get game controller")
 
         if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
             if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
