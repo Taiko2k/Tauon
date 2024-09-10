@@ -668,6 +668,7 @@ from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import *
 from t_modules.t_spot import SpotCtl
+from t_modules.t_tidal import Tidal
 from t_modules.t_search import *
 
 if system == 'linux':
@@ -21581,7 +21582,9 @@ gallery_menu.add(MenuItem(_('Transcode Folder'), convert_folder, transcode_deco,
 folder_menu.br()
 
 spot_ctl = SpotCtl(tauon)
+tidal = Tidal(tauon)
 tauon.spot_ctl = spot_ctl
+tauon.tidal = tidal
 
 spot_ctl.cache_saved_albums = spot_cache_saved_albums
 
@@ -28840,6 +28843,14 @@ class Over:
             ddt.text((x, y), 'TIDAL', colours.box_sub_text, 213)
 
             y += round(30 * gui.scale)
+
+            if self.button2(x, y, "Login", width=84 * gui.scale):
+                tidal.login1()
+
+            y += round(30 * gui.scale)
+
+            if self.button2(x, y, "Test", width=84 * gui.scale):
+                tidal.test()
 
         if self.account_view == 11:
             ddt.text((x, y), 'Tauon Satellite', colours.box_sub_text, 213)
