@@ -2,6 +2,10 @@
 import subprocess
 import os
 
+if not os.path.isfile("pygettext.py"):
+    print("ERROR: Please add a copy of pygettext.py to this dir from the Python Tools dir")
+    exit()
+
 locale_folder = "locale"
 pot_path = os.path.join(locale_folder, "messages.pot")
 
