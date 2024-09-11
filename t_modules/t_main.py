@@ -28844,8 +28844,27 @@ class Over:
 
             y += round(30 * gui.scale)
 
-            if self.button2(x, y, "Login", width=84 * gui.scale):
-                tidal.login1()
+            if os.path.isfile(tidal.save_path):
+                if self.button2(x, y, "Logout", width=84 * gui.scale):
+                    tidal.logout()
+            else:
+                if tidal.login_stage == 0:
+                    if self.button2(x, y, "Login", width=84 * gui.scale):
+                        # webThread = threading.Thread(target=authserve, args=[tauon])
+                        # webThread.daemon = True
+                        # webThread.start()
+                        # time.sleep(0.1)
+                        tidal.login1()
+                else:
+                    if self.button2(x, y, "Paste Redirect URL", width=84 * gui.scale):
+                        text = copy_from_clipboard()
+                        if text:
+                            tidal.login2(text)
+
+            y += round(30 * gui.scale)
+
+
+
 
             y += round(30 * gui.scale)
 

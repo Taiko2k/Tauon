@@ -738,6 +738,14 @@ def authserve(tauon):
         def do_GET(self):
             code = ""
             path = self.path
+            # if path.startswith("/tidalredir"):
+            #     self.send_response(200)
+            #     self.send_header("Content-type", "text/plain")
+            #     self.end_headers()
+            #
+            #     tauon.tidal.login2(path)
+            #     self.wfile.write(b"You can close this now and return to Tauon Music Box")
+
             if path.startswith("/spotredir"):
                 self.send_response(200)
                 self.send_header("Content-type", "text/plain")
