@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-08-12 13:09+0000\n"
+"PO-Revision-Date: 2024-09-12 13:09+0000\n"
 "Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
-"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
-"tauon-music-box/tauon-music-box/zh_Hans/>\n"
+"Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
+"projects/tauon-music-box/tauon-music-box/zh_Hans/>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.7-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1903 t_modules/t_main.py:1905
@@ -725,14 +725,12 @@ msgid "From Current…"
 msgstr "从当前..."
 
 #: t_modules/t_main.py:18801
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "按导入排序"
+msgstr "按导入曲目排序"
 
 #: t_modules/t_main.py:18802
-#, fuzzy
 msgid "Sort by Imported Folders"
-msgstr "按导入排序"
+msgstr "按导入的文件夹排序"
 
 #: t_modules/t_main.py:18803
 msgid "Sort by Filepath"
@@ -825,11 +823,11 @@ msgstr "取消设置为下载播放列表"
 
 #: t_modules/t_main.py:19054
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "设置使用持续时间"
 
 #: t_modules/t_main.py:19056
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "取消设置使用持续时间"
 
 #: t_modules/t_main.py:19109
 msgid "Export Playlist Stats"
@@ -861,9 +859,8 @@ msgid "Engage Gallery Quick Add"
 msgstr "从收藏中快速添加"
 
 #: t_modules/t_main.py:19124
-#, fuzzy
 msgid "Set podcast mode"
-msgstr "停止推流"
+msgstr "设置播客模式"
 
 #: t_modules/t_main.py:19126
 msgid "Remove Duplicates"
@@ -1377,7 +1374,7 @@ msgstr "评分"
 
 #: t_modules/t_main.py:22379
 msgid "More…"
-msgstr ""
+msgstr "更多…"
 
 #: t_modules/t_main.py:22381 t_modules/t_main.py:47003
 #: t_modules/t_main.py:47009
@@ -1399,13 +1396,12 @@ msgid "Composer"
 msgstr "作曲家"
 
 #: t_modules/t_main.py:22386
-#, fuzzy
 msgid "Disc Number"
-msgstr "曲编号"
+msgstr "光盘号"
 
 #: t_modules/t_main.py:22388
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "CUE 表"
 
 #: t_modules/t_main.py:22880
 msgid "New Radio List"
@@ -1437,25 +1433,23 @@ msgstr "数据库..."
 
 #: t_modules/t_main.py:22974
 msgid "Dev Mode"
-msgstr ""
+msgstr "开发模式"
 
 #: t_modules/t_main.py:22975
 msgid "Enable Saving State"
-msgstr ""
+msgstr "启用保存状态"
 
 #: t_modules/t_main.py:22976
-#, fuzzy
 msgid "Disable Saving State"
-msgstr "禁用自动主题"
+msgstr "禁用保存状态"
 
 #: t_modules/t_main.py:23040
 msgid "Export as CSV"
 msgstr "导出为 CSV"
 
 #: t_modules/t_main.py:23041
-#, fuzzy
 msgid "Rescan All Folders"
-msgstr "重新扫描文件夹"
+msgstr "重新扫描所有文件夹"
 
 #: t_modules/t_main.py:23042
 msgid "Play History to Playlist"
@@ -1630,7 +1624,7 @@ msgstr "退出随机锁定"
 
 #: t_modules/t_main.py:24173
 msgid "Donate"
-msgstr ""
+msgstr "捐助"
 
 #: t_modules/t_main.py:24186
 msgid "Disengage Quick Add"
@@ -1771,9 +1765,8 @@ msgid "Use album art as background"
 msgstr "将专辑艺术图作为背景"
 
 #: t_modules/t_main.py:27925
-#, fuzzy
 msgid "Prefer artist backgrounds"
-msgstr "将专辑艺术图作为背景"
+msgstr "首选艺术家背景"
 
 #: t_modules/t_main.py:27932
 msgid "Stronger"
@@ -1870,12 +1863,11 @@ msgstr "设置音频输出设备"
 
 #: t_modules/t_main.py:28261
 msgid "PipeWire (unstable)"
-msgstr ""
+msgstr "PipeWire（不稳定）"
 
 #: t_modules/t_main.py:28263
-#, fuzzy
 msgid "PulseAudio"
-msgstr "音频"
+msgstr "脉冲音频"
 
 #: t_modules/t_main.py:28268
 msgid "Avoid resampling"
@@ -1920,7 +1912,7 @@ msgstr "单击以播放"
 
 #: t_modules/t_main.py:28395
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "合并多张光盘"
 
 #: t_modules/t_main.py:28397
 msgid "Show titles"
@@ -1939,14 +1931,12 @@ msgid "Prefer thinner padding"
 msgstr "更小的间隙"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Enable Listen Along"
-msgstr "启用远程控制"
+msgstr "启用“一起聆听”"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Start server for remote web playback"
-msgstr "启动网络服务器进行推流"
+msgstr "启动远程 Web 播放服务器"
 
 #: t_modules/t_main.py:28453
 msgid "Show artist info panel"
@@ -2074,11 +2064,11 @@ msgstr "显示标题文本"
 
 #: t_modules/t_main.py:28554
 msgid "Monochrome"
-msgstr ""
+msgstr "单色"
 
 #: t_modules/t_main.py:28569
 msgid "Enable use of gamepad as input"
-msgstr ""
+msgstr "允许使用游戏手柄作为输入"
 
 #: t_modules/t_main.py:28570 t_modules/t_main.py:28577
 msgid "Change requires restart"
@@ -2184,9 +2174,8 @@ msgid "Client ID"
 msgstr "客户端 ID"
 
 #: t_modules/t_main.py:28982
-#, fuzzy
 msgid "Client Secret"
-msgstr "客户端 ID"
+msgstr "客户端机密"
 
 #: t_modules/t_main.py:28998
 msgid "Forget Account"
@@ -2471,7 +2460,7 @@ msgstr "自动缩放"
 
 #: t_modules/t_main.py:29833
 msgid "Prefer x11 when running in Wayland"
-msgstr ""
+msgstr "在 Wayland 中运行时首选 x11"
 
 #: t_modules/t_main.py:30136 t_modules/t_main.py:30139
 msgid "Credits"
@@ -2579,12 +2568,11 @@ msgstr "将播放次数表示为行"
 
 #: t_modules/t_main.py:30484
 msgid "Left align title style"
-msgstr ""
+msgstr "左对齐标题样式"
 
 #: t_modules/t_main.py:30491
-#, fuzzy
 msgid "Show album genre"
-msgstr "显示专辑持续时间"
+msgstr "显示专辑类型"
 
 #: t_modules/t_main.py:30494
 msgid "Show album release year"
