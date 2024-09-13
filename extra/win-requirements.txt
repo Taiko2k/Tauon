@@ -1,6 +1,6 @@
 comtypes
 keyboard
-pylast>=3.1.0
+pylast
 PySDL2
 pyinstaller
 Send2Trash
@@ -14,4 +14,4 @@ mutagen
 natsort
 tekore
 pypresence
-opencc
+opencc-python-reimplemented
