@@ -13,3 +13,4 @@ mingw-w64-x86_64-python3-gobject
 mingw-w64-x86_64-python3-pillow
 mingw-w64-x86_64-python3-pip
 mingw-w64-x86_64-python-websocket-client
+mingw-w64-x86_64-libgme
