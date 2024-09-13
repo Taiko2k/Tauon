@@ -13620,7 +13620,7 @@ def load_m3u(path):
     if not os.path.isfile(path):
         return
 
-    f = open(path)
+    f = open(path, encoding="utf-8")
     lines = f.readlines()
     f.close()
 
@@ -26289,7 +26289,7 @@ def worker1():
             load_xspf(path)
             return 0
 
-        if path.lower().endswith(".m3u"):
+        if path.lower().endswith(".m3u") or path.lower().endswith(".m3u8"):
             load_m3u(path)
             return 0
 
