@@ -83,6 +83,100 @@ class Tidal:
             with open(self.save_path, 'w') as f:
                 json.dump(session_data, f)
 
+    def resolve_stream(self, track_id):
+
+        self.try_load()
+        if not self.session:
+            print("Tidal: not logged in")
+            return
+
+        print("TRY HIGH")
+        self.session.audio_quality = Quality.high_lossless
+        try:
+            result = self.resolve_stream2(track_id)
+            if result:
+                return result
+        except Exception as e:
+            print(str(e))
+
+        print("TRY LOW")
+        self.session.audio_quality = Quality.low_320k
+        try:
+            result = self.resolve_stream2(track_id)
+            if result:
+                return result
+        except Exception as e:
+            print(str(e))
+
+    def resolve_stream2(self, track_id):
+
+        track = self.session.track(track_id)
+        print("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+        stream = track.get_stream()
+        print("MimeType:{}".format(stream.manifest_mime_type))
+
+        manifest = stream.get_stream_manifest()
+        audio_resolution = stream.get_audio_resolution()
+
+        print("track:{}, (quality:{}, codec:{}, {}bit/{}Hz)".format(track.id,
+                                                                    stream.audio_quality,
+                                                                    manifest.get_codecs(),
+                                                                    audio_resolution[0],
+                                                                    audio_resolution[1]))
+        if stream.is_MPD:
+            print("MPD!")
+            return manifest.get_urls()
+        if stream.is_BTS:
+            print("BTS!")
+            return manifest.get_urls()
+
+        return None
+
+    def append_album(self, id):
+        self.try_load()
+        if not self.session:
+            return
+
+        album = self.session.album(id)
+        tracks = album.tracks()
+
+        for track in tracks:
+            print("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+            #print(track.get_url())
+            print(album.cover)
+
+            # todo check for existing imports
+
+            new = True
+            nt = self.tauon.TrackClass()
+            nt.index = self.tauon.pctl.master_count
+
+            nt.is_network = True
+            nt.file_ext = "TIDAL"
+            nt.url_key = str(track.id)
+
+            nt.track_number = str(track.track_num)
+            nt.title = track.name
+            nt.artist = track.artist.name
+            nt.album = track.album.name
+            nt.length = track.duration
+            nt.album_artist = track.album.artist.name
+
+            parent = (nt.album_artist + " - " + nt.album).strip("- ")
+            nt.parent_folder_path = parent
+            nt.parent_folder_name = parent
+
+            nt.art_url_key = ""
+            if track.album.cover:
+                nt.art_url_key = track.album.image(dimensions=1280)
+
+            if new:
+                self.tauon.pctl.master_count += 1
+                self.tauon.pctl.master_library[nt.index] = nt
+
+            self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].append(nt.index)
+            self.tauon.gui.pl_update += 1
+
     def test(self):
         print("Test Tidal")
         self.try_load()

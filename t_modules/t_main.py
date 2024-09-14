@@ -850,6 +850,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "TAU": [111, 98, 190, 255],  # Lavender
     "SUB": [235, 140, 20, 255],  # Golden yellow
     "SPTY": [30, 215, 96, 255],  # Bright green
+    "TIDAL": [0, 0, 0, 255],  # Black
     "JELY": [190, 100, 210, 255],  # Fuchsia
     "XM": [50, 50, 50, 255],  # Grey
     "MOD": [50, 50, 50, 255],  # Grey
@@ -5453,6 +5454,9 @@ class PlayerCtl:
             tm.ready("style")
 
     def get_url(self, track_object):
+
+        if track_object.file_ext == "TIDAL":
+            return tidal.resolve_stream(track_object.url_key), None
         if track_object.file_ext == "PLEX":
             return plex.resolve_stream(track_object.url_key), None
 
@@ -9392,6 +9396,8 @@ tauon.tau = tau
 
 
 def get_network_thumbnail_url(track_object):
+    if track_object.file_ext == "TIDAL":
+        return track_object.art_url_key
     if track_object.file_ext == "SPTY":
         return track_object.art_url_key
     if track_object.file_ext == "PLEX":
@@ -20288,7 +20294,15 @@ def lightning_paste():
 
 def paste(playlist_no=None, track_id=None):
     clip = copy_from_clipboard()
-    if "spotify" in clip:
+    if "tidal.com/album/" in clip:
+        print(clip)
+        num = clip.split("/")[-1]
+        if num and num.isnumeric():
+            print(num)
+            tidal.append_album(num)
+
+        clip = False
+    elif "spotify" in clip:
         cargo.clear()
         for link in clip.split("\n"):
             print(link)
