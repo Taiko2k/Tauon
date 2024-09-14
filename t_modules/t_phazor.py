@@ -476,7 +476,8 @@ def player4(tauon):
                                 print(i, end=",")
                                 response = requests.get(url)
                                 if response.status_code == 200:
-                                    f.write(response.content)
+                                    c = response.content
+                                    f.write(c)
                                 else:
                                     print(f"ERROR CODE: {response.status_code}")
                                 if f.tell() > 250000:
