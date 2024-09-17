@@ -9,7 +9,7 @@ from gi.repository import GLib
 if sys.platform != 'win32':
     import fcntl
 
-n_version = "7.8.3"
+n_version = "7.9.0"
 t_version = "v" + n_version
 t_title = 'Tauon'
 t_id = 'tauonmb'

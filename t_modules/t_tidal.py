@@ -2,9 +2,14 @@ import io
 from datetime import datetime, timezone
 
 import requests
-import tidalapi
-from tidalapi import Session
-from tidalapi import Quality
+allow_tidal = False
+try:
+    import tidalapi
+    from tidalapi import Session
+    from tidalapi import Quality
+    allow_tidal = True
+except:
+    print("Tidalapi not found")
 import webbrowser
 from pathlib import Path
 import os
@@ -24,6 +29,9 @@ class Tidal:
         if os.path.isfile(self.save_path):
             os.remove(self.save_path)
     def login1(self):
+        if not allow_tidal:
+            self.tauon.show_message("Tidalapi package not loaded")
+            return
         print("LOGIN 1")
         session = tidalapi.Session()
         #session.config.pkce_uri_redirect = f"http://localhost:7811/tidalredir"
@@ -34,6 +42,8 @@ class Tidal:
 
     def login2(self, url):
         print("LOGIN 2")
+        if not allow_tidal:
+            return
         auth_token = self.session.pkce_get_auth_token(url)
         self.session.process_auth_token(auth_token, is_pkce_token=True)
         print("login2 done")
@@ -42,6 +52,9 @@ class Tidal:
         # https://tidal.com/android/login/auth?code=eyVyPty.WiGdw-abQ&state=na&appMode=android
 
     def try_load(self):
+        if not allow_tidal:
+            self.tauon.show_message("Tidalapi package not loaded")
+            return
         if not self.session and os.path.isfile(self.save_path):
             with open(self.save_path, 'r') as f:
                 session_data = json.load(f)
