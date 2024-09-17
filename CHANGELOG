@@ -1,6 +1,10 @@
 
 Changelog----------------------------
 
+v7.9.0
+
+ - Added TIDAL support
+
 v7.8.3
 
  - Fix crash when using IME
