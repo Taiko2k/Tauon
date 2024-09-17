@@ -28877,14 +28877,8 @@ class Over:
                             tidal.login2(text)
 
             y += round(30 * gui.scale)
-
-
-
-
-            y += round(30 * gui.scale)
-
-            if self.button2(x, y, "Test", width=84 * gui.scale):
-                tidal.test()
+            ddt.text((x + 0 * gui.scale, y), _("Paste album URL's to playlist using ctrl+v"),
+                     colours.box_text_label, 11)
 
         if self.account_view == 11:
             ddt.text((x, y), 'Tauon Satellite', colours.box_sub_text, 213)
