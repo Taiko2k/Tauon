@@ -28871,13 +28871,17 @@ class Over:
                         # time.sleep(0.1)
                         tidal.login1()
                 else:
+                    ddt.text((x + 0 * gui.scale, y), _("Copy the full URL of the resulting 'oops' page"),
+                             colours.box_text_label, 11)
+                    y += round(25 * gui.scale)
                     if self.button2(x, y, "Paste Redirect URL", width=84 * gui.scale):
                         text = copy_from_clipboard()
                         if text:
                             tidal.login2(text)
 
-            y += round(30 * gui.scale)
-            ddt.text((x + 0 * gui.scale, y), _("Paste album URL's to playlist using ctrl+v"),
+            if os.path.isfile(tidal.save_path):
+                y += round(30 * gui.scale)
+                ddt.text((x + 0 * gui.scale, y), _("Paste album URL's to playlist using ctrl+v"),
                      colours.box_text_label, 11)
 
         if self.account_view == 11:
