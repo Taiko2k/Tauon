@@ -668,6 +668,7 @@ from t_modules.t_stream import *
 from t_modules.t_lyrics import *
 from t_modules.t_themeload import *
 from t_modules.t_spot import SpotCtl
+from t_modules.t_tidal import Tidal
 from t_modules.t_search import *
 
 if system == 'linux':
@@ -849,6 +850,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "TAU": [111, 98, 190, 255],  # Lavender
     "SUB": [235, 140, 20, 255],  # Golden yellow
     "SPTY": [30, 215, 96, 255],  # Bright green
+    "TIDAL": [0, 0, 0, 255],  # Black
     "JELY": [190, 100, 210, 255],  # Fuchsia
     "XM": [50, 50, 50, 255],  # Grey
     "MOD": [50, 50, 50, 255],  # Grey
@@ -1420,6 +1422,7 @@ class Prefs:  # Used to hold any kind of settings
 
         self.gallery_combine_disc = False
         self.pipewire = False
+        self.tidal_quality = 1
 
 prefs = Prefs()
 
@@ -5452,6 +5455,9 @@ class PlayerCtl:
             tm.ready("style")
 
     def get_url(self, track_object):
+
+        if track_object.file_ext == "TIDAL":
+            return tidal.resolve_stream(track_object), None
         if track_object.file_ext == "PLEX":
             return plex.resolve_stream(track_object.url_key), None
 
@@ -9391,6 +9397,8 @@ tauon.tau = tau
 
 
 def get_network_thumbnail_url(track_object):
+    if track_object.file_ext == "TIDAL":
+        return track_object.art_url_key
     if track_object.file_ext == "SPTY":
         return track_object.art_url_key
     if track_object.file_ext == "PLEX":
@@ -20287,7 +20295,15 @@ def lightning_paste():
 
 def paste(playlist_no=None, track_id=None):
     clip = copy_from_clipboard()
-    if "spotify" in clip:
+    if "tidal.com/album/" in clip:
+        print(clip)
+        num = clip.split("/")[-1]
+        if num and num.isnumeric():
+            print(num)
+            tidal.append_album(num)
+
+        clip = False
+    elif "spotify" in clip:
         cargo.clear()
         for link in clip.split("\n"):
             print(link)
@@ -21581,7 +21597,9 @@ gallery_menu.add(MenuItem(_('Transcode Folder'), convert_folder, transcode_deco,
 folder_menu.br()
 
 spot_ctl = SpotCtl(tauon)
+tidal = Tidal(tauon)
 tauon.spot_ctl = spot_ctl
+tauon.tidal = tidal
 
 spot_ctl.cache_saved_albums = spot_cache_saved_albums
 
@@ -28810,6 +28828,9 @@ class Over:
         if self.button2(x, y, "Jellyfin", width=84 * gui.scale):
             self.account_view = 10
 
+        if self.button2(x + round(95 * gui.scale), y, "TIDAL", width=84 * gui.scale):
+            self.account_view = 12
+
         y += 28 * gui.scale
 
         if self.button2(x, y, "Airsonic", width=84 * gui.scale):
@@ -28832,6 +28853,32 @@ class Over:
 
         x = x0 + 230 * gui.scale
         y = y0 + round(20 * gui.scale)
+
+        if self.account_view == 12:
+            ddt.text((x, y), 'TIDAL', colours.box_sub_text, 213)
+
+            y += round(30 * gui.scale)
+
+            if os.path.isfile(tidal.save_path):
+                if self.button2(x, y, "Logout", width=84 * gui.scale):
+                    tidal.logout()
+            else:
+                if tidal.login_stage == 0:
+                    if self.button2(x, y, "Login", width=84 * gui.scale):
+                        # webThread = threading.Thread(target=authserve, args=[tauon])
+                        # webThread.daemon = True
+                        # webThread.start()
+                        # time.sleep(0.1)
+                        tidal.login1()
+                else:
+                    if self.button2(x, y, "Paste Redirect URL", width=84 * gui.scale):
+                        text = copy_from_clipboard()
+                        if text:
+                            tidal.login2(text)
+
+            y += round(30 * gui.scale)
+            ddt.text((x + 0 * gui.scale, y), _("Paste album URL's to playlist using ctrl+v"),
+                     colours.box_text_label, 11)
 
         if self.account_view == 11:
             ddt.text((x, y), 'Tauon Satellite', colours.box_sub_text, 213)
@@ -46855,8 +46902,7 @@ while pctl.running:
 
                     # Codec tag rendering
                     else:
-
-                        if tc.file_ext == "JELY":
+                        if tc.file_ext in ("JELY", "TIDAL"):
                             e_colour = [130, 130, 130, 255]
                             if "container" in tc.misc:
                                 line = tc.misc["container"].upper()

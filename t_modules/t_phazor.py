@@ -459,7 +459,51 @@ def player4(tauon):
             else:
                 try:
                     tauon.console.print("Download file")
+
                     network_url, params = pctl.get_url(track)
+                    if not network_url:
+                        print("No URL")
+                        return 1
+                    if type(network_url) in (list, tuple) and len(network_url) == 1:
+                        network_url = network_url[0]
+                    elif type(network_url) in (list, tuple):
+                        print("Multi part DL")
+                        print(path)
+                        ffmpeg_command = [
+                            tauon.get_ffmpeg(),
+                            "-i", "-",  # Input from stdin (pipe the data)
+                            "-f", "flac",  # Specify FLAC as the output format explicitly
+                            "-c:a", "copy",  # Copy FLAC data without re-encoding
+                            path  # Output file for extracted FLAC
+                        ]
+                        p = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
+                        i = 0
+                        for url in network_url:
+                            i += 1
+                            print(i, end=",")
+                            response = requests.get(url)
+                            if response.status_code == 200:
+                                p.stdin.write(response.content)
+                            else:
+                                print(f"ERROR CODE: {response.status_code}")
+                            if i == 3:
+                                self.ready = track
+
+                            gui.update += 1
+                            gui.buffering_text = str(math.floor(i / len(network_url) * 100)) + "%"
+                            if self.get_now is not None and self.get_now != track:
+                                tauon.console.print("ABORT")
+                                return
+
+                        print("done")
+                        p.stdin.close()
+                        p.wait()
+
+                        tauon.console.print("DONE")
+                        self.files.append(key)
+                        self.list.append(key)
+                        return
+
                     part = requests.get(network_url, stream=True, params=params, timeout=(3, 10))
 
                     if part.status_code == 404:
@@ -471,8 +515,9 @@ def player4(tauon):
                         self.error = track
                         return 1
 
-                except:
-                    gui.show_message("Could not connect to server", mode="error")
+                except Exception as e:
+                    print(str(e))
+                    gui.show_message("Error", str(e), mode="error")
                     self.error = track
                     return 1
 
