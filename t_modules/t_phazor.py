@@ -469,27 +469,35 @@ def player4(tauon):
                     elif type(network_url) in (list, tuple):
                         print("Multi part DL")
                         print(path)
+                        ffmpeg_command = [
+                            tauon.get_ffmpeg(),
+                            "-i", "-",  # Input from stdin (pipe the data)
+                            "-f", "flac",  # Specify FLAC as the output format explicitly
+                            "-c:a", "copy",  # Copy FLAC data without re-encoding
+                            path  # Output file for extracted FLAC
+                        ]
+                        p = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
                         i = 0
-                        with open(path, 'wb') as f:
-                            for url in network_url:
-                                i += 1
-                                print(i, end=",")
-                                response = requests.get(url)
-                                if response.status_code == 200:
-                                    c = response.content
-                                    f.write(c)
-                                else:
-                                    print(f"ERROR CODE: {response.status_code}")
-                                if f.tell() > 250000:
-                                    self.ready = track
+                        for url in network_url:
+                            i += 1
+                            print(i, end=",")
+                            response = requests.get(url)
+                            if response.status_code == 200:
+                                p.stdin.write(response.content)
+                            else:
+                                print(f"ERROR CODE: {response.status_code}")
+                            if i == 3:
+                                self.ready = track
 
-                                gui.update += 1
-                                gui.buffering_text = str(math.floor(i / len(network_url) * 100)) + "%"
-                                if self.get_now is not None and self.get_now != track:
-                                    tauon.console.print("ABORT")
-                                    return
+                            gui.update += 1
+                            gui.buffering_text = str(math.floor(i / len(network_url) * 100)) + "%"
+                            if self.get_now is not None and self.get_now != track:
+                                tauon.console.print("ABORT")
+                                return
 
                         print("done")
+                        p.stdin.close()
+                        p.wait()
 
                         tauon.console.print("DONE")
                         self.files.append(key)

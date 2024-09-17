@@ -83,33 +83,44 @@ class Tidal:
             with open(self.save_path, 'w') as f:
                 json.dump(session_data, f)
 
-    def resolve_stream(self, track_id):
-
+    def resolve_stream(self, tr):
+        track_id = tr.url_key
         self.try_load()
         if not self.session:
             print("Tidal: not logged in")
             return
 
-        print("TRY HIGH")
-        self.session.audio_quality = Quality.high_lossless
-        try:
-            result = self.resolve_stream2(track_id)
-            if result:
-                return result
-        except Exception as e:
-            print(str(e))
+        if self.tauon.prefs.tidal_quality == 2:
+            print("TRY 24 bit flac")
+            self.session.audio_quality = Quality.hi_res_lossless
+            try:
+                result = self.resolve_stream2(tr)
+                if result:
+                    return result
+            except Exception as e:
+                print(str(e))
+
+        if self.tauon.prefs.tidal_quality == 1:
+            print("TRY 16bit flac")
+            self.session.audio_quality = Quality.high_lossless
+            try:
+                result = self.resolve_stream2(tr)
+                if result:
+                    return result
+            except Exception as e:
+                print(str(e))
 
         print("TRY LOW")
         self.session.audio_quality = Quality.low_320k
         try:
-            result = self.resolve_stream2(track_id)
+            result = self.resolve_stream2(tr)
             if result:
                 return result
         except Exception as e:
             print(str(e))
 
-    def resolve_stream2(self, track_id):
-
+    def resolve_stream2(self, tr):
+        track_id = tr.url_key
         track = self.session.track(track_id)
         print("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
         stream = track.get_stream()
@@ -123,6 +134,9 @@ class Tidal:
                                                                     manifest.get_codecs(),
                                                                     audio_resolution[0],
                                                                     audio_resolution[1]))
+        tr.misc["container"] = manifest.get_codecs().upper()
+        tr.samplerate = str(audio_resolution[1])
+        tr.bit_depth = audio_resolution[0]
         if stream.is_MPD:
             print("MPD!")
             return manifest.get_urls()

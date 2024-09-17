@@ -1422,6 +1422,7 @@ class Prefs:  # Used to hold any kind of settings
 
         self.gallery_combine_disc = False
         self.pipewire = False
+        self.tidal_quality = 1
 
 prefs = Prefs()
 
@@ -5456,7 +5457,7 @@ class PlayerCtl:
     def get_url(self, track_object):
 
         if track_object.file_ext == "TIDAL":
-            return tidal.resolve_stream(track_object.url_key), None
+            return tidal.resolve_stream(track_object), None
         if track_object.file_ext == "PLEX":
             return plex.resolve_stream(track_object.url_key), None
 
@@ -46904,8 +46905,7 @@ while pctl.running:
 
                     # Codec tag rendering
                     else:
-
-                        if tc.file_ext == "JELY":
+                        if tc.file_ext in ("JELY", "TIDAL"):
                             e_colour = [130, 130, 130, 255]
                             if "container" in tc.misc:
                                 line = tc.misc["container"].upper()
