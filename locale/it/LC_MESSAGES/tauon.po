@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2023-07-10 11:55+0000\n"
+"PO-Revision-Date: 2024-09-12 13:09+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.0-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1903 t_modules/t_main.py:1905
@@ -733,14 +733,12 @@ msgid "From Current…"
 msgstr "Dalla corrente…"
 
 #: t_modules/t_main.py:18801
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "Ordina per importazione"
+msgstr "Ordina per Tracce Importate"
 
 #: t_modules/t_main.py:18802
-#, fuzzy
 msgid "Sort by Imported Folders"
-msgstr "Ordina per importazione"
+msgstr "Ordina per Cartelle Importate"
 
 #: t_modules/t_main.py:18803
 msgid "Sort by Filepath"
@@ -834,11 +832,11 @@ msgstr "Rimuovi come Scaletta di Scaricamenti"
 
 #: t_modules/t_main.py:19054
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Imposta Uso Tempo Persistente"
 
 #: t_modules/t_main.py:19056
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Rimuovi Uso Tempo Persistente"
 
 #: t_modules/t_main.py:19109
 msgid "Export Playlist Stats"
@@ -870,9 +868,8 @@ msgid "Engage Gallery Quick Add"
 msgstr "Attiva Aggiunta Veloce da Galleria"
 
 #: t_modules/t_main.py:19124
-#, fuzzy
 msgid "Set podcast mode"
-msgstr "Ferma Trasmissione"
+msgstr "Imposta modalità podcast"
 
 #: t_modules/t_main.py:19126
 msgid "Remove Duplicates"
@@ -1388,7 +1385,7 @@ msgstr "Valutazione"
 
 #: t_modules/t_main.py:22379
 msgid "More…"
-msgstr ""
+msgstr "Altro…"
 
 #: t_modules/t_main.py:22381 t_modules/t_main.py:47003
 #: t_modules/t_main.py:47009
@@ -1410,13 +1407,12 @@ msgid "Composer"
 msgstr "Compositore"
 
 #: t_modules/t_main.py:22386
-#, fuzzy
 msgid "Disc Number"
-msgstr "Numero Traccia"
+msgstr "Numero disco"
 
 #: t_modules/t_main.py:22388
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "È un file CUE"
 
 #: t_modules/t_main.py:22880
 msgid "New Radio List"
@@ -1448,25 +1444,23 @@ msgstr "Database…"
 
 #: t_modules/t_main.py:22974
 msgid "Dev Mode"
-msgstr ""
+msgstr "Modalità dev"
 
 #: t_modules/t_main.py:22975
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Abilità Stato Salvataggio"
 
 #: t_modules/t_main.py:22976
-#, fuzzy
 msgid "Disable Saving State"
-msgstr "Tema automatico disattivato"
+msgstr "Disabilità Stato Salvataggio"
 
 #: t_modules/t_main.py:23040
 msgid "Export as CSV"
 msgstr "Esporta in CSV"
 
 #: t_modules/t_main.py:23041
-#, fuzzy
 msgid "Rescan All Folders"
-msgstr "Ricontrolla Cartella"
+msgstr "Ricontrolla Tutte le Cartelle"
 
 #: t_modules/t_main.py:23042
 msgid "Play History to Playlist"
@@ -1645,7 +1639,7 @@ msgstr "Uscita dal Blocco Casuale"
 
 #: t_modules/t_main.py:24173
 msgid "Donate"
-msgstr ""
+msgstr "Donazioni"
 
 #: t_modules/t_main.py:24186
 msgid "Disengage Quick Add"
@@ -1791,9 +1785,8 @@ msgid "Use album art as background"
 msgstr "Usa copertina come sfondo"
 
 #: t_modules/t_main.py:27925
-#, fuzzy
 msgid "Prefer artist backgrounds"
-msgstr "Usa copertina come sfondo"
+msgstr "Usa artista come sfondo"
 
 #: t_modules/t_main.py:27932
 msgid "Stronger"
@@ -1892,12 +1885,11 @@ msgstr "Imposta audio di uscita dispositivo"
 
 #: t_modules/t_main.py:28261
 msgid "PipeWire (unstable)"
-msgstr ""
+msgstr "Pipewire (instabile)"
 
 #: t_modules/t_main.py:28263
-#, fuzzy
 msgid "PulseAudio"
-msgstr "Audio"
+msgstr "PulseAudio"
 
 #: t_modules/t_main.py:28268
 msgid "Avoid resampling"
@@ -1942,7 +1934,7 @@ msgstr "Click singolo per riprodurre"
 
 #: t_modules/t_main.py:28395
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Combina dischi multipli"
 
 #: t_modules/t_main.py:28397
 msgid "Show titles"
@@ -1961,14 +1953,12 @@ msgid "Prefer thinner padding"
 msgstr "Preferisci bordi più piccoli"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Enable Listen Along"
-msgstr "Abilita controllo remoto"
+msgstr "Abilita Ascolto Condiviso"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Start server for remote web playback"
-msgstr "Inizia server in rete per trasmettere"
+msgstr "Inizia server in rete per riproduzione remota"
 
 #: t_modules/t_main.py:28453
 msgid "Show artist info panel"
@@ -2097,11 +2087,11 @@ msgstr "Mostra titolo"
 
 #: t_modules/t_main.py:28554
 msgid "Monochrome"
-msgstr ""
+msgstr "Monocromatico"
 
 #: t_modules/t_main.py:28569
 msgid "Enable use of gamepad as input"
-msgstr ""
+msgstr "Abilita l'uso di un controller da gioco come input"
 
 #: t_modules/t_main.py:28570 t_modules/t_main.py:28577
 msgid "Change requires restart"
@@ -2209,9 +2199,8 @@ msgid "Client ID"
 msgstr "ID client"
 
 #: t_modules/t_main.py:28982
-#, fuzzy
 msgid "Client Secret"
-msgstr "ID client"
+msgstr "Segreto client"
 
 #: t_modules/t_main.py:28998
 msgid "Forget Account"
@@ -2346,7 +2335,7 @@ msgstr "Ottieni cuori amici"
 
 #: t_modules/t_main.py:29475
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Scarica cuoi degli scrobble/invii"
 
 #: t_modules/t_main.py:29489 t_modules/t_main.py:29491
 msgid "Paste Token"
@@ -2499,7 +2488,7 @@ msgstr "Adattamento automatico"
 
 #: t_modules/t_main.py:29833
 msgid "Prefer x11 when running in Wayland"
-msgstr ""
+msgstr "Preferisci x11 anche su Wayland"
 
 #: t_modules/t_main.py:30136 t_modules/t_main.py:30139
 msgid "Credits"
@@ -2607,12 +2596,11 @@ msgstr "Mostra contatore riproduzioni come linee"
 
 #: t_modules/t_main.py:30484
 msgid "Left align title style"
-msgstr ""
+msgstr "Stile titolo allineato a sinistra"
 
 #: t_modules/t_main.py:30491
-#, fuzzy
 msgid "Show album genre"
-msgstr "Mostra durata album"
+msgstr "Mostra genere album"
 
 #: t_modules/t_main.py:30494
 msgid "Show album release year"
