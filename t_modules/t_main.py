@@ -7825,9 +7825,20 @@ class ListenBrainz:
         if 'musicbrainz_trackid' in track_object.misc:
             additional['track_mbid'] = track_object.misc['musicbrainz_trackid']
 
-        if additional:
-            metadata['additional_info'] = additional
+        if track_object.track_number:
+            try:
+                additional = str(int(track_object.track_number))
+            except:
+                pass
 
+        if track_object.length:
+            additional["duration"] = str(track_object.length)
+
+        additional["media_player"] = t_title
+        additional["submission_client"] = t_title
+        additional["media_player_version"] = str(n_version)
+
+        metadata['additional_info'] = additional
         data["payload"].append({"track_metadata": metadata})
         # data["payload"][0]["listened_at"] = int(time.time())
 
