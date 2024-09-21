@@ -278,6 +278,7 @@ if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
 if not os.path.isdir(os.path.join(user_directory, "theme")):
     os.makedirs(os.path.join(user_directory, "theme"))
 
+
 if system == 'linux':
     system_config_directory = GLib.get_user_config_dir()
     xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
@@ -294,6 +295,16 @@ if system == 'linux':
                     if os.path.isdir(target):
                         download_directory = target
                     print(f"Found XDG-Downloads: {download_directory}")
+
+
+if os.getenv('XDG_MUSIC_DIR') and os.path.isdir(os.getenv('XDG_MUSIC_DIR')):
+    music_directory = os.getenv('XDG_MUSIC_DIR')
+    print("Override music to: " + music_directory)
+
+if os.getenv('XDG_DOWNLOAD_DIR') and os.path.isdir(os.getenv('XDG_DOWNLOAD_DIR')):
+    download_directory = os.getenv('XDG_DOWNLOAD_DIR')
+    print("Override downloads to: " + download_directory)
+
 
 if not os.path.isdir(music_directory):
     music_directory = None
