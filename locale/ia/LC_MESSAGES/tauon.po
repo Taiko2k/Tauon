@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-09-20 14:40+0000\n"
+"PO-Revision-Date: 2024-09-22 13:45+0000\n"
 "Last-Translator: Software In Interlingua <softinterlingua@gmail.com>\n"
 "Language-Team: Interlingua <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/ia/>\n"
@@ -120,15 +120,15 @@ msgstr ""
 
 #: t_modules/t_main.py:8229
 msgid "day"
-msgstr ""
+msgstr "die"
 
 #: t_modules/t_main.py:8230
 msgid "days"
-msgstr ""
+msgstr "dies"
 
 #: t_modules/t_main.py:8232
 msgid "Scanning for Chromecasts..."
-msgstr ""
+msgstr "Cercante Chromecasts..."
 
 #: t_modules/t_main.py:8233
 msgid "Cast to: %s"
@@ -148,19 +148,19 @@ msgstr ""
 
 #: t_modules/t_main.py:8239
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Aperir Tauon Music Box"
 
 #: t_modules/t_main.py:8240
 msgid "Play/Pause"
-msgstr ""
+msgstr "Reproducer/Pausar"
 
 #: t_modules/t_main.py:8241
 msgid "Next Track"
-msgstr ""
+msgstr "Tracia sequente"
 
 #: t_modules/t_main.py:8242
 msgid "Previous Track"
-msgstr ""
+msgstr "Tracia previe"
 
 #: t_modules/t_main.py:8243
 msgid "Quit"
@@ -196,15 +196,15 @@ msgstr ""
 
 #: t_modules/t_main.py:14695
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Listas de reproduction + Cauda"
 
 #: t_modules/t_main.py:14696 t_modules/t_main.py:39050
 msgid "Queue"
-msgstr ""
+msgstr "Cauda"
 
 #: t_modules/t_main.py:14698
 msgid "Artist List"
-msgstr ""
+msgstr "Lista de artistas"
 
 #: t_modules/t_main.py:14700
 msgid "Folder Navigator"
@@ -212,11 +212,11 @@ msgstr ""
 
 #: t_modules/t_main.py:14775
 msgid "Track Renaming"
-msgstr ""
+msgstr "Renomination de tracias"
 
 #: t_modules/t_main.py:14778 t_modules/t_main.py:47229
 msgid "Default"
-msgstr ""
+msgstr "Predefinite"
 
 #: t_modules/t_main.py:14802
 msgid "BEFORE"
