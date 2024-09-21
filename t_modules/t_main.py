@@ -297,14 +297,18 @@ if system == 'linux':
                     print(f"Found XDG-Downloads: {download_directory}")
 
 
-if os.getenv('XDG_MUSIC_DIR') and os.path.isdir(os.getenv('XDG_MUSIC_DIR')):
+if os.getenv('XDG_MUSIC_DIR'):
     music_directory = os.getenv('XDG_MUSIC_DIR')
     print("Override music to: " + music_directory)
 
-if os.getenv('XDG_DOWNLOAD_DIR') and os.path.isdir(os.getenv('XDG_DOWNLOAD_DIR')):
+if os.getenv('XDG_DOWNLOAD_DIR'):
     download_directory = os.getenv('XDG_DOWNLOAD_DIR')
     print("Override downloads to: " + download_directory)
 
+if music_directory:
+    music_directory = os.path.expandvars(music_directory)
+if download_directory:
+    download_directory = os.path.expandvars(download_directory)
 
 if not os.path.isdir(music_directory):
     music_directory = None
