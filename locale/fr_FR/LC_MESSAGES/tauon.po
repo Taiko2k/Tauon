@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-05 20:54+0000\n"
+"PO-Revision-Date: 2024-10-05 22:01+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -57,7 +57,7 @@ msgstr "Chargement des données des ami⋅e⋅s…"
 
 #: t_modules/t_main.py:7577
 msgid "This may take a very long time."
-msgstr "Ceci peut prendre un certain temps."
+msgstr "Cela peut prendre un très long moment."
 
 #: t_modules/t_main.py:7942
 msgid "Failed updating last.fm love status"
@@ -81,7 +81,7 @@ msgstr "Albums Spotify"
 
 #: t_modules/t_main.py:8218
 msgid "Track removed from liked tracks"
-msgstr "Piste retirée des pistes appréciées"
+msgstr "Piste retirée des pistes aimées"
 
 #: t_modules/t_main.py:8219
 msgid "Track was already un-liked"
@@ -93,7 +93,7 @@ msgstr "La piste est déjà aimée"
 
 #: t_modules/t_main.py:8221
 msgid "Track added to liked tracks"
-msgstr "Piste ajoutée aux pistes appréciées"
+msgstr "Piste ajoutée aux pistes aimées"
 
 #: t_modules/t_main.py:8222
 msgid "Spotify account connected"
@@ -709,13 +709,13 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Vous pouvez retirer ou modifier cela en allant dans > Divers... > Modifier "
-"le génerateur…"
+"Vous pouvez modifier cela en allant dans > Divers... > Modifier le "
+"génerateur…"
 
 #: t_modules/t_main.py:18762 t_modules/t_main.py:22882
 #: t_modules/t_main.py:22886
 msgid "New Playlist"
-msgstr "Nouvelle liste de lecture"
+msgstr "Nouvelle playlist"
 
 #: t_modules/t_main.py:18772 t_modules/t_main.py:18780
 msgid "Upload"
@@ -823,19 +823,19 @@ msgstr "Synchronisation terminée"
 
 #: t_modules/t_main.py:19029 t_modules/t_main.py:19120
 msgid "Set as Sync Playlist"
-msgstr "Définir comme liste de lecture de synchronisation"
+msgstr "Définir comme playlist de synchronisation"
 
 #: t_modules/t_main.py:19032
 msgid "Un-set as Sync Playlist"
-msgstr "Désactiver la synchronisation pour cette liste de lecture"
+msgstr "Ne plus définir comme playlist de synchronisation"
 
 #: t_modules/t_main.py:19048 t_modules/t_main.py:19122
 msgid "Set as Downloads Playlist"
-msgstr "Définir comme liste de lecture des téléchargements"
+msgstr "Définir comme playlist des téléchargements"
 
 #: t_modules/t_main.py:19050
 msgid "Un-set as Downloads Playlist"
-msgstr "Définir comme n’étant plus la liste de lecture des téléchargements"
+msgstr "Ne plus définir comme playlist des téléchargements"
 
 #: t_modules/t_main.py:19054
 msgid "Set Use Persistent Time"
@@ -847,7 +847,7 @@ msgstr "Ne plus reprendre là où Tauon s'est arrété"
 
 #: t_modules/t_main.py:19109
 msgid "Export Playlist Stats"
-msgstr "Exporter les statistiques de la liste de lecture"
+msgstr "Exporter les statistiques de la playlist"
 
 #: t_modules/t_main.py:19110
 msgid "Export Albums CSV"
@@ -1374,7 +1374,7 @@ msgstr "Numéro de piste"
 
 #: t_modules/t_main.py:22371
 msgid "Play Count"
-msgstr "Écouté X"
+msgstr "Nombre de lectures"
 
 #: t_modules/t_main.py:22373 t_modules/t_main.py:29697
 #: t_modules/t_main.py:46990
@@ -1434,7 +1434,7 @@ msgstr "Effacer la base de données !"
 
 #: t_modules/t_main.py:22933
 msgid "Paste Spotify Playlist"
-msgstr "Coller la liste de lecture Spotify"
+msgstr "Coller la playlist Spotify"
 
 #: t_modules/t_main.py:22942
 msgid "Music"
@@ -1474,7 +1474,7 @@ msgstr "Réanalyser tous les dossiers"
 
 #: t_modules/t_main.py:23042
 msgid "Play History to Playlist"
-msgstr "Historique vers liste de lecture"
+msgstr "Historique vers playlist"
 
 #: t_modules/t_main.py:23043
 msgid "Reset Image Cache"
@@ -1609,15 +1609,15 @@ msgstr "Pistes appréciées"
 
 #: t_modules/t_main.py:23623
 msgid "Importing Spotify playlists..."
-msgstr "Importation de listes de lecture Spotify…"
+msgstr "Importation de playlists Spotify…"
 
 #: t_modules/t_main.py:23641
 msgid "> Import All Playlists"
-msgstr "Importer toutes les listes de lecture"
+msgstr "Importer toutes les playlists"
 
 #: t_modules/t_main.py:23646
 msgid "Playlist…"
-msgstr "Liste de lecture…"
+msgstr "Playlist…"
 
 #: t_modules/t_main.py:23652
 msgid "Current Context"
@@ -1994,12 +1994,11 @@ msgstr ""
 
 #: t_modules/t_main.py:28466
 msgid "Auto regenerate playlists"
-msgstr "Régénérer automatiquement les listes de lecture"
+msgstr "Régénérer automatiquement les playlists"
 
 #: t_modules/t_main.py:28467
 msgid "Generated playlists reload when re-entering"
-msgstr ""
-"Les listes de lecture générées se rechargent lors d'une nouvelle entrée"
+msgstr "Les playlists générées se rechargent lors d'une nouvelle entrée"
 
 #: t_modules/t_main.py:28471
 msgid "Tabs in top panel"
@@ -2047,7 +2046,7 @@ msgstr "Transcoder le dossier"
 
 #: t_modules/t_main.py:28512
 msgid "End of playlist action"
-msgstr "Action en fin de liste de lecture"
+msgstr "Action en fin de playlist"
 
 #: t_modules/t_main.py:28515 t_modules/t_main.py:28519
 msgid "Stop playback"
@@ -2055,15 +2054,15 @@ msgstr "Arrêter la lecture"
 
 #: t_modules/t_main.py:28516 t_modules/t_main.py:28521
 msgid "Repeat playlist"
-msgstr "Répéter la liste de lecture"
+msgstr "Répéter la playlist"
 
 #: t_modules/t_main.py:28525
 msgid "Play next playlist"
-msgstr "Lancer la prochaine liste de lecture"
+msgstr "Lancer la prochaine playlist"
 
 #: t_modules/t_main.py:28527
 msgid "Cycle all playlists"
-msgstr "Boucler toutes les listes de lecture"
+msgstr "Boucler toutes les playlists"
 
 #: t_modules/t_main.py:28533
 msgid "Extract archives"
@@ -2151,8 +2150,7 @@ msgstr ""
 #: t_modules/t_main.py:28599
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
-"Les pistes seront enregistrées dans la liste de lecture \"Enregistrements "
-"Radio\"."
+"Les pistes seront enregistrées dans la playlist \"Enregistrements Radio\"."
 
 #: t_modules/t_main.py:28613
 msgid "Enable Discord Rich Presence"
@@ -2172,11 +2170,11 @@ msgstr "IP"
 
 #: t_modules/t_main.py:28860
 msgid "Playlist name"
-msgstr "Nom de la liste de lecture"
+msgstr "Nom de la playlist"
 
 #: t_modules/t_main.py:28873
 msgid "Get playlist"
-msgstr "Obtenir la liste de lecture"
+msgstr "Obtenir la playlist"
 
 #: t_modules/t_main.py:28881
 msgid "Maloja Server"
@@ -2257,7 +2255,7 @@ msgstr "Mot de passe"
 #: t_modules/t_main.py:29114 t_modules/t_main.py:29176
 #: t_modules/t_main.py:29249 t_modules/t_main.py:29305
 msgid "Import music to playlist"
-msgstr "Importer la musique dans la liste"
+msgstr "Importer la musique dans une playlist"
 
 #: t_modules/t_main.py:29118
 msgid "Use plain text authentication"
@@ -2277,7 +2275,7 @@ msgstr "Nom d’utilisateur"
 
 #: t_modules/t_main.py:29179
 msgid "Import playlists"
-msgstr "Importer des listes de lecture"
+msgstr "Importer des playlists"
 
 #: t_modules/t_main.py:29196
 msgid "koel network streaming"
@@ -2395,11 +2393,11 @@ msgstr ""
 
 #: t_modules/t_main.py:29595
 msgid "Selected playlist:"
-msgstr "Liste de lecture sélectionnée :"
+msgstr "Playlist sélectionnée :"
 
 #: t_modules/t_main.py:29599
 msgid "No sync playlist selected!"
-msgstr "Aucune liste de lecture de synchronisation sélectionnée !"
+msgstr "Aucune playlist de synchronisation sélectionnée !"
 
 #: t_modules/t_main.py:29602
 msgid "Path to device music folder:   "
@@ -2443,12 +2441,12 @@ msgstr "Arrêt en cours…"
 
 #: t_modules/t_main.py:29650
 msgid "Select a source playlist"
-msgstr "Sélectionner une source de liste de lecture"
+msgstr "Sélectionner une playlist source"
 
 #: t_modules/t_main.py:29651
 msgid "Right click tab > Misc... > Set as sync playlist"
 msgstr ""
-"Cliquez-droit sur l'onglet > Divers... > Définir comme liste de lecture de "
+"Cliquez-droit sur l'onglet > Divers... > Définir comme playlist de "
 "synchronisation"
 
 #: t_modules/t_main.py:29653
@@ -2525,7 +2523,7 @@ msgstr "Générateur de planches de contact"
 
 #: t_modules/t_main.py:30156
 msgid "Target playlist:   "
-msgstr "Liste de lecture cible :   "
+msgstr "Playlist cible :   "
 
 #: t_modules/t_main.py:30184
 msgid "Rows"
@@ -2569,7 +2567,7 @@ msgstr "Classement de l'album"
 
 #: t_modules/t_main.py:30270
 msgid "Not enough albums in the playlist!"
-msgstr "Pas assez d'albums dnas la liste de lecture !"
+msgstr "Pas assez d'albums dans la playlist !"
 
 #: t_modules/t_main.py:30289 t_modules/t_main.py:30290
 msgid "Chart generator..."
@@ -2577,15 +2575,15 @@ msgstr "Générateur de planches de contact…"
 
 #: t_modules/t_main.py:30297 t_modules/t_main.py:30337
 msgid "Tracks in playlist"
-msgstr "Pistes dans la liste de lecture"
+msgstr "Pistes dans la playlist"
 
 #: t_modules/t_main.py:30298 t_modules/t_main.py:30340
 msgid "Albums in playlist"
-msgstr "Albums dans la liste de lecture"
+msgstr "Albums dans la playlist"
 
 #: t_modules/t_main.py:30299 t_modules/t_main.py:30343
 msgid "Playlist duration"
-msgstr "Durée de la liste de lecture"
+msgstr "Durée de la playlist"
 
 #: t_modules/t_main.py:30300 t_modules/t_main.py:30371
 msgid "Tracks in database"
@@ -2663,8 +2661,8 @@ msgstr "Ok, cette liste est redevenue normale."
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
 msgstr ""
-"Vous avez ajouté des pistes à la liste générée. Voulez-vous effacer le "
-"générateur ?"
+"Vous avez ajouté des pistes dans une playlist génératrice. Voulez-vous "
+"effacer le générateur ?"
 
 #: t_modules/t_main.py:31385 t_modules/t_main.py:36490
 msgid "Added station to: "
@@ -2720,7 +2718,7 @@ msgstr "Répéter la piste"
 
 #: t_modules/t_main.py:34314
 msgid "Playlist is empty"
-msgstr "La liste de lecture est vide"
+msgstr "La playlist est vide"
 
 #: t_modules/t_main.py:34316
 msgid "Drag and drop files to import"
@@ -2728,7 +2726,7 @@ msgstr "Glisser-déposer les fichiers à importer"
 
 #: t_modules/t_main.py:34338
 msgid "End of Playlist"
-msgstr "Fin de la liste de lecture"
+msgstr "Fin de la playlist"
 
 #: t_modules/t_main.py:35650
 msgid "Search Tag"
@@ -2871,7 +2869,7 @@ msgstr "Téléchargement..."
 
 #: t_modules/t_main.py:38114
 msgid "No artists in playlist"
-msgstr "Aucun artiste dans la liste de lecture"
+msgstr "Aucun artiste dans la playlist"
 
 #: t_modules/t_main.py:38117
 msgid "Artist threshold not met"
@@ -2911,7 +2909,7 @@ msgstr "↳ Sauf pour celle-ci"
 
 #: t_modules/t_main.py:38789
 msgid "Queue to New Playlist"
-msgstr "Ajouter à une nouvelle liste de lecture"
+msgstr "Ajouter à une nouvelle playlist"
 
 #: t_modules/t_main.py:38933
 msgid "Cancel Auto-Stop"
@@ -3041,7 +3039,7 @@ msgstr "Disque"
 
 #: t_modules/t_main.py:47124
 msgid "Play count"
-msgstr "Nombre de lectures"
+msgstr "Écouté X"
 
 #: t_modules/t_main.py:47137
 msgid "Play time"
