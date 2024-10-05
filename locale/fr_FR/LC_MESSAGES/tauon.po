@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-05 22:05+0000\n"
+"PO-Revision-Date: 2024-10-05 23:13+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -529,7 +529,7 @@ msgstr "Effacer les partitions"
 #: t_modules/t_main.py:16245 t_modules/t_main.py:16256
 #: t_modules/t_main.py:16736
 msgid "Toggle Lyrics"
-msgstr "Afficher/Masquer les paroles"
+msgstr "Afficher / Masquer les paroles"
 
 #: t_modules/t_main.py:16247 t_modules/t_main.py:16258
 msgid "Substitute Search..."
@@ -864,7 +864,7 @@ msgstr "Réanalyser les métadonnées"
 
 #: t_modules/t_main.py:19117
 msgid "Toggle Breaks"
-msgstr "Afficher/Masquer les séparateurs"
+msgstr "Afficher / Masquer les séparateurs"
 
 #: t_modules/t_main.py:19118
 msgid "Edit Generator..."
@@ -1032,7 +1032,7 @@ msgstr "Configuration rechargée"
 
 #: t_modules/t_main.py:19931
 msgid "Click \"Reload\" if you made any changes"
-msgstr "Cliquez sur « Recharger » si vous avez effectué des modifications"
+msgstr "Cliquez sur « Charger » si vous avez effectué des modifications"
 
 #: t_modules/t_main.py:19931
 msgid "Config file opened."
@@ -1821,7 +1821,7 @@ msgstr "Style de modèle"
 
 #: t_modules/t_main.py:27950
 msgid "Auto-theme from album art"
-msgstr "Thème en fonction de la couverture de l'album"
+msgstr "Thème en fonction de la pochette de l'album"
 
 #: t_modules/t_main.py:28045
 msgid "Based on"
@@ -1884,7 +1884,7 @@ msgstr "Retour reprend au début"
 
 #: t_modules/t_main.py:28229
 msgid "Cache local files (for smb/nfs)"
-msgstr "Mettre les fichiers locaux en cache (pour smb/nfs)"
+msgstr "Fichiers locaux en cache (pour smb/nfs)"
 
 #: t_modules/t_main.py:28232
 msgid "Use persistent network cache"
@@ -1936,7 +1936,7 @@ msgstr "Utiliser le style centré"
 
 #: t_modules/t_main.py:28382
 msgid "Zoom album art to fit"
-msgstr "Zoomer sur la pochette de l’album pour l’adapter"
+msgstr "Zoom sur la pochette sans limites"
 
 #: t_modules/t_main.py:28389 t_modules/t_main.py:41546
 #: t_modules/t_main.py:41549
@@ -2010,11 +2010,11 @@ msgstr "Décocher pour désactiver la fonction de brochage des onglets"
 
 #: t_modules/t_main.py:28477 t_modules/t_main.py:28483
 msgid "Open config file"
-msgstr "Ouvrir la configuration"
+msgstr "Ouvrir la config."
 
 #: t_modules/t_main.py:28479 t_modules/t_main.py:28489
 msgid "Open data folder"
-msgstr "Explorer les données"
+msgstr "Ouvrir les données"
 
 #: t_modules/t_main.py:28487
 msgid "Reload"
@@ -2199,7 +2199,7 @@ msgstr "Clé API"
 
 #: t_modules/t_main.py:28923 t_modules/t_main.py:29191
 msgid "Test connectivity"
-msgstr "Tester la connectivité"
+msgstr "Tester la connection"
 
 #: t_modules/t_main.py:28948 t_modules/t_main.py:28950
 #: t_modules/t_main.py:29450 t_modules/t_main.py:29467
@@ -2240,7 +2240,7 @@ msgstr "Mot de passe de Spotify"
 
 #: t_modules/t_main.py:29062
 msgid "Airsonic/Subsonic network streaming"
-msgstr "Streaming réseau Airsonic/Subsonic"
+msgstr "Streaming réseau Airsonic / Subsonic"
 
 #: t_modules/t_main.py:29072 t_modules/t_main.py:29206
 #: t_modules/t_main.py:29263
@@ -2297,7 +2297,7 @@ msgstr ""
 
 #: t_modules/t_main.py:29320 t_modules/t_main.py:37341
 msgid "They encourage you to contribute at https://fanart.tv"
-msgstr "Contributions bienvenues sur https://fanart.tv"
+msgstr "Fanart.tv vous encourage à contribuer sur https://fanart.tv"
 
 #: t_modules/t_main.py:29326
 msgid "Cover art (Manual only)"
@@ -2467,7 +2467,7 @@ msgstr "Synchro…"
 
 #: t_modules/t_main.py:29684
 msgid "Save opus as .ogg extension"
-msgstr "Enregistrer les fichier opus sous l'extension .ogg"
+msgstr "Enregistrer les fichier opus en tant que .ogg"
 
 #: t_modules/t_main.py:29705
 msgid "Save to output folder"
@@ -2475,7 +2475,7 @@ msgstr "Enregistrer dans le dossier de sortie"
 
 #: t_modules/t_main.py:29707
 msgid "Save and overwrite files inplace"
-msgstr "Enregistrer et remplacer les fichiers présents"
+msgstr "Enregistrer et écraser les fichiers présents"
 
 #: t_modules/t_main.py:29729
 msgid "Emit track change notifications"
@@ -2483,7 +2483,7 @@ msgstr "Afficher les notifications de changement de piste"
 
 #: t_modules/t_main.py:29732
 msgid "Draw own window decorations"
-msgstr "Utiliser la décoration native des fenêtres"
+msgstr "Utiliser la décoration de fenêtre de Tauon"
 
 #: t_modules/t_main.py:29740
 msgid "Show playing in titlebar"
@@ -2503,7 +2503,7 @@ msgstr "Visualisation en mode présentation"
 
 #: t_modules/t_main.py:29763
 msgid "UI scale for HiDPI displays"
-msgstr "Mise à l'échelle de l'interface pour les écrans HiDPI"
+msgstr "Échelle de l'IU pour les écrans HiDPI"
 
 #: t_modules/t_main.py:29821
 msgid "Auto scale"
@@ -2611,11 +2611,11 @@ msgstr "Afficher les pistes favorites"
 
 #: t_modules/t_main.py:30457
 msgid "Represent playtime as stars"
-msgstr "Représenter le temps de lecture par des étoiles"
+msgstr "Des étoiles montrent le temps d'écoute"
 
 #: t_modules/t_main.py:30466
 msgid "Represent playcount as lines"
-msgstr "Représenter le nombre de lectures par des lignes"
+msgstr "Des traits montrent le nombre d'écoutes"
 
 #: t_modules/t_main.py:30484
 msgid "Left align title style"
@@ -2857,7 +2857,7 @@ msgstr "Trier par durée de lecture"
 
 #: t_modules/t_main.py:37250
 msgid "Toggle Thumbnails"
-msgstr "Afficher/Masquer les miniatures"
+msgstr "Afficher / Masquer les miniatures"
 
 #: t_modules/t_main.py:37340
 msgid "Notice: Artist image sourced from fanart.tv"
@@ -2977,7 +2977,7 @@ msgstr "Radio"
 
 #: t_modules/t_main.py:41605
 msgid "Toggle columns"
-msgstr "Afficher/Masquer les colonnes"
+msgstr "Afficher / Masquer les colonnes"
 
 #: t_modules/t_main.py:43289
 msgid "Could not access! Possible insufficient Flatpak permissions."
