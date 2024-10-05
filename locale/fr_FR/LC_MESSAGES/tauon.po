@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-05 23:13+0000\n"
+"PO-Revision-Date: 2024-10-06 08:58+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -703,7 +703,7 @@ msgstr "Playlist Spotify mise à jour"
 #: t_modules/t_main.py:18756
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
-"OK. Dès à présent, cette playlist sera automatiquement trié lors de l'import"
+"OK. Dès à présent, cette playlist sera automatiquement triée lors de l'import"
 
 #: t_modules/t_main.py:18757
 msgid ""
@@ -855,7 +855,7 @@ msgstr "Exporter des albums CSV"
 
 #: t_modules/t_main.py:19111
 msgid "Transcode All"
-msgstr "Encoder tout"
+msgstr "Encoder toute la playlist"
 
 #: t_modules/t_main.py:19112 t_modules/t_main.py:21328
 #: t_modules/t_main.py:21574 t_modules/t_main.py:21675
@@ -1032,7 +1032,7 @@ msgstr "Configuration rechargée"
 
 #: t_modules/t_main.py:19931
 msgid "Click \"Reload\" if you made any changes"
-msgstr "Cliquez sur « Charger » si vous avez effectué des modifications"
+msgstr "Cliquez sur « Recharger » si vous avez effectué des modifications"
 
 #: t_modules/t_main.py:19931
 msgid "Config file opened."
@@ -1040,8 +1040,7 @@ msgstr "Fichier de configuration ouvert."
 
 #: t_modules/t_main.py:19997
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
-"Transcoder des pistes depuis des emplacements réseau n'est pas supporté"
+msgstr "L'encodage de pistes depuis des emplacements réseau n'est pas supporté"
 
 #: t_modules/t_main.py:20017
 msgid "Transcoding spotify tracks not possible"
@@ -1172,7 +1171,7 @@ msgstr "Paroles..."
 
 #: t_modules/t_main.py:21463
 msgid "Fix Mojibake"
-msgstr "Réparer l'encodage de caractères"
+msgstr "Réparer l'encodage des caractères"
 
 #: t_modules/t_main.py:21569
 msgid "Transcode Single"
@@ -1797,7 +1796,7 @@ msgstr "À propos"
 
 #: t_modules/t_main.py:27919
 msgid "Use album art as background"
-msgstr "Utiliser la pochette comme arrière plan"
+msgstr "Utiliser la pochette comme arrière-plan"
 
 #: t_modules/t_main.py:27925
 msgid "Prefer artist backgrounds"
@@ -2413,7 +2412,7 @@ msgstr "Ne peut détecter automatiquement le chemin de l'appareil monté."
 
 #: t_modules/t_main.py:29623
 msgid "Make sure the device is mounted and path is accessible."
-msgstr "Vérifiez que l'appareil est monté et son chemin est accessible."
+msgstr "Vérifiez que l'appareil soit monté et son chemin, accessible."
 
 #: t_modules/t_main.py:29628
 msgid "Delete all other folders in target"
@@ -3047,7 +3046,7 @@ msgstr "Pendant"
 
 #: t_modules/t_main.py:47226
 msgid "Folder Modification"
-msgstr "Modifier le répertoire"
+msgstr "Modifier le dossier"
 
 #: t_modules/t_main.py:47241
 msgid "Renames the physical folder based on the template"
