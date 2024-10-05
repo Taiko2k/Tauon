@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-05 18:47+0000\n"
+"PO-Revision-Date: 2024-10-05 20:54+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -29,7 +29,7 @@ msgstr "Aucune source définie dans les paramètres !"
 
 #: t_modules/t_main.py:7151
 msgid "End of playlist"
-msgstr "Fin de la liste de lecture"
+msgstr "Fin de la playlist"
 
 #: t_modules/t_main.py:7197
 msgid "Once authorised click the 'done' button."
@@ -199,7 +199,7 @@ msgstr "Arrêtez la synchronisation avant de quitter !"
 
 #: t_modules/t_main.py:14695
 msgid "Playlists + Queue"
-msgstr "Listes de lecture + File d’attente"
+msgstr "Playlist + File d’attente"
 
 #: t_modules/t_main.py:14696 t_modules/t_main.py:39050
 msgid "Queue"
@@ -328,7 +328,7 @@ msgstr "par"
 
 #: t_modules/t_main.py:15286
 msgid "Export Playlist"
-msgstr "Exporter la liste de lecture"
+msgstr "Exporter la playlist"
 
 #: t_modules/t_main.py:15291
 msgid "Save directory"
@@ -416,7 +416,7 @@ msgstr "Ouvrir le dossier"
 #: t_modules/t_main.py:15789 t_modules/t_main.py:15790
 #: t_modules/t_main.py:15791 t_modules/t_main.py:37204
 msgid "Filter to New Playlist"
-msgstr "Placer dans une nouvelle liste de lecture"
+msgstr "Placer dans une nouvelle playlist"
 
 #: t_modules/t_main.py:15792 t_modules/t_main.py:15793
 #: t_modules/t_main.py:18810
@@ -433,7 +433,7 @@ msgstr "Tout replier"
 
 #: t_modules/t_main.py:15807
 msgid "Show in Playlist"
-msgstr "Afficher dans la liste de lecture"
+msgstr "Afficher dans la playlist"
 
 #: t_modules/t_main.py:15887
 msgid "Image…"
@@ -656,7 +656,7 @@ msgstr "Vider"
 
 #: t_modules/t_main.py:17286
 msgid "Are you sure you want to delete this playlist?"
-msgstr "Êtes-vous sûr·e de vouloir supprimer cette liste de lecture ?"
+msgstr "Êtes-vous sûr·e de vouloir supprimer cette playlist ?"
 
 #: t_modules/t_main.py:17287
 msgid "Try again while holding shift to confirm"
@@ -664,7 +664,7 @@ msgstr "Réessayez tout en maintenant la touche Maj enfoncée pour confirmer"
 
 #: t_modules/t_main.py:17399
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr "Êtes-vous sûr·e de vouloir supprimer la liste de lecture : %s ?"
+msgstr "Êtes-vous sûr·e de vouloir supprimer la playlist : %s ?"
 
 #: t_modules/t_main.py:17440
 msgid "Rescanning folders..."
@@ -673,7 +673,7 @@ msgstr "Réanalyse des dossiers…"
 #: t_modules/t_main.py:17787 t_modules/t_main.py:17798
 #: t_modules/t_main.py:17817
 msgid "Playlist is locked"
-msgstr "La liste de lecture est verrouillée"
+msgstr "La playlist est verrouillée"
 
 #: t_modules/t_main.py:17914 t_modules/t_main.py:17916
 #: t_modules/t_main.py:47249
@@ -686,32 +686,31 @@ msgstr "Ajouter un album Spotify"
 
 #: t_modules/t_main.py:18093
 msgid "Playlist contains non-Spotify tracks"
-msgstr "La liste de lecture contient des pistes non Spotify"
+msgstr "La playlist contient des pistes hors-Spotify"
 
 #: t_modules/t_main.py:18099
 msgid "Created new Spotify playlist"
-msgstr "Nouvelle liste de lecture Spotify créée"
+msgstr "Nouvelle playlist Spotify créée"
 
 #: t_modules/t_main.py:18105
 msgid "Error creating Spotify playlist"
-msgstr "Erreur lors de la création de la liste de lecture Spotify"
+msgstr "Erreur lors de la création de la playlist Spotify"
 
 #: t_modules/t_main.py:18108
 msgid "Updated Spotify playlist"
-msgstr "Liste de lecture Spotify mise à jour"
+msgstr "Playlist Spotify mise à jour"
 
 #: t_modules/t_main.py:18756
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
-"D’accord. Cette liste de lecture sera automatiquement triée lors de "
-"l’importation à partir de maintenant"
+"OK. Dès à présent, cette playlist sera automatiquement trié lors de l'import"
 
 #: t_modules/t_main.py:18757
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Vous retirez ou modifiez ce comportement en allant dans « Divers » > "
-"« Modifier le génerateur… »"
+"Vous pouvez retirer ou modifier cela en allant dans > Divers... > Modifier "
+"le génerateur…"
 
 #: t_modules/t_main.py:18762 t_modules/t_main.py:22882
 #: t_modules/t_main.py:22886
@@ -1053,9 +1052,8 @@ msgid "Add Playing Spotify Album"
 msgstr "Ajouter l’album Spotify en cours de lecture"
 
 #: t_modules/t_main.py:20389
-#, fuzzy
 msgid "Add Playing Spotify Track"
-msgstr "Ajouter l’album Spotify en cours de lecture"
+msgstr "Ajouter la piste Spotify en cours de lecture"
 
 #: t_modules/t_main.py:20480
 msgid "Track Info…"
@@ -1274,7 +1272,7 @@ msgstr "Afficher l'artiste complet"
 
 #: t_modules/t_main.py:21890
 msgid "Looks like that's the only track in the album"
-msgstr "Il semble que c'est la seule piste de l'album"
+msgstr "On dirait que c'est la seule piste de l'album"
 
 #: t_modules/t_main.py:21902 t_modules/t_main.py:23657
 msgid "Show Full Album"
@@ -1376,7 +1374,7 @@ msgstr "Numéro de piste"
 
 #: t_modules/t_main.py:22371
 msgid "Play Count"
-msgstr "Nombre de lectures"
+msgstr "Écouté X"
 
 #: t_modules/t_main.py:22373 t_modules/t_main.py:29697
 #: t_modules/t_main.py:46990
@@ -1402,7 +1400,7 @@ msgstr "Plus…"
 #: t_modules/t_main.py:22381 t_modules/t_main.py:47003
 #: t_modules/t_main.py:47009
 msgid "Album Artist"
-msgstr "Artiste de l'album"
+msgstr "Artiste d'album"
 
 #: t_modules/t_main.py:22382 t_modules/t_main.py:47155
 #: t_modules/t_main.py:47161
@@ -1823,7 +1821,7 @@ msgstr "Style de modèle"
 
 #: t_modules/t_main.py:27950
 msgid "Auto-theme from album art"
-msgstr "Auto-thème à partir de la couverture de l'album"
+msgstr "Thème en fonction de la couverture de l'album"
 
 #: t_modules/t_main.py:28045
 msgid "Based on"
@@ -1983,7 +1981,7 @@ msgstr "Afficher le panneau d'informations sur l'artiste"
 
 #: t_modules/t_main.py:28454
 msgid "You can also toggle this with ctrl+o"
-msgstr "Vous pouvez également basculer ceci avec ctrl+o"
+msgstr "Vous pouvez aussi utiliser Ctrl + O"
 
 #: t_modules/t_main.py:28461
 msgid "Auto fetch artist data"
@@ -1992,8 +1990,7 @@ msgstr "Récupérer automatiquement les données de l'artiste"
 #: t_modules/t_main.py:28462
 msgid "Downloads data in background when artist panel is open"
 msgstr ""
-"Télécharge les données en arrière-plan lorsque le panneau de l’artiste est "
-"ouvert"
+"Télécharge les données en arrière-plan si le panneau de l’artiste est ouvert"
 
 #: t_modules/t_main.py:28466
 msgid "Auto regenerate playlists"
@@ -2511,9 +2508,8 @@ msgid "UI scale for HiDPI displays"
 msgstr "Mise à l'échelle de l'interface pour les écrans HiDPI"
 
 #: t_modules/t_main.py:29821
-#, fuzzy
 msgid "Auto scale"
-msgstr "Redimensionnement automatique"
+msgstr "Échelle automatique"
 
 #: t_modules/t_main.py:29833
 msgid "Prefer x11 when running in Wayland"
@@ -2568,7 +2564,6 @@ msgid "Generating..."
 msgstr "Génération en cours..."
 
 #: t_modules/t_main.py:30265
-#, fuzzy
 msgid "Album chart"
 msgstr "Classement de l'album"
 
@@ -3026,7 +3021,7 @@ msgstr "Chemin"
 
 #: t_modules/t_main.py:46977
 msgid "Samplerate"
-msgstr "Taux d'échantillonnage"
+msgstr "Encodage"
 
 #: t_modules/t_main.py:47036 t_modules/t_main.py:47058
 msgid " of "
@@ -3038,7 +3033,7 @@ msgstr "Piste"
 
 #: t_modules/t_main.py:47046 t_modules/t_main.py:47052
 msgid "File size"
-msgstr "Taille du fichier"
+msgstr "Taille"
 
 #: t_modules/t_main.py:47060
 msgid "Disc"
@@ -3050,7 +3045,7 @@ msgstr "Nombre de lectures"
 
 #: t_modules/t_main.py:47137
 msgid "Play time"
-msgstr "Durée d'écoute"
+msgstr "Pendant"
 
 #: t_modules/t_main.py:47226
 msgid "Folder Modification"
