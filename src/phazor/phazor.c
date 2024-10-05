@@ -1014,7 +1014,7 @@ int get_audio(int max, float* buff){
 
         // Put fade buffer back
         if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && fade_lockout == 0){
-
+            //pthread_mutex_lock(&buffer_mutex);
             int i = 0;
             while (fade_position < fade_fill){
                 float cross = fade_position / (float) fade_fill;
@@ -1031,6 +1031,7 @@ int get_audio(int max, float* buff){
                 fade_fill = 0;
                 fade_position = 0;
             }
+            //pthread_mutex_unlock(&buffer_mutex);
         }
 
         if (mode == PAUSED || (mode == PLAYING && get_buff_fill() == 0)){
@@ -1151,7 +1152,7 @@ static void on_process(void *userdata) {
 
     buf = buffer->buffer;
 
-    size = get_audio(1000, buf->datas[0].data) * 4;
+    size = get_audio(buffer->requested * 2, buf->datas[0].data) * 4;
 
     buf->datas[0].chunk->size = size;
     pw_stream_queue_buffer(global_stream, buffer);
