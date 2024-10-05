@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-06-15 18:09+0000\n"
-"Last-Translator: Loïc Guégant <loic.guegant@freesbee.fr>\n"
+"PO-Revision-Date: 2024-10-05 18:47+0000\n"
+"Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.6-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1903 t_modules/t_main.py:1905
@@ -49,7 +49,7 @@ msgstr "L'analyse a échoué. Réessayer ?"
 
 #: t_modules/t_main.py:7370 t_modules/t_main.py:8022
 msgid "Scanning scrobbles complete"
-msgstr "Réanalyse du dossier terminée"
+msgstr "Analyse des scrobbles terminée"
 
 #: t_modules/t_main.py:7577
 msgid "Getting friend data..."
@@ -132,9 +132,8 @@ msgid "Scanning for Chromecasts..."
 msgstr "Recherche de Chromecasts…"
 
 #: t_modules/t_main.py:8233
-#, fuzzy
 msgid "Cast to: %s"
-msgstr "Diffuser sur : %s"
+msgstr "Diffuser sur : %s"
 
 #: t_modules/t_main.py:8234
 msgid "No Chromecast devices found"
@@ -240,7 +239,7 @@ msgstr " fichiers ont été renommés."
 
 #: t_modules/t_main.py:14969
 msgid "Simple tag editor"
-msgstr "Simple éditeur d'étiquettes"
+msgstr "Éditeur de tags"
 
 #: t_modules/t_main.py:14971 t_modules/t_main.py:28616
 #: t_modules/t_main.py:28882 t_modules/t_main.py:29662
@@ -250,16 +249,15 @@ msgstr "?"
 #: t_modules/t_main.py:14972
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
-"Pressez Entrée dans chaque champ pour appliquer les modifications dans la "
-"base de données locale."
+"Lorsqu'un champ est sélectionné, pressez Entrée pour l'appliquer dans Tauon."
 
 #: t_modules/t_main.py:14973
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
-"Une fois fait, pressez ENREGISTRER LES ÉTIQUETTES pour enregistrer dans les "
-"étiquettes des fichiers réels. (Optionnel mais recommandé)"
+"Pressez ÉCRIRE LES TAGS pour enregistrer dans les tags des fichiers eux-"
+"mêmes. (Optionnel mais recommandé)"
 
 #: t_modules/t_main.py:14977
 msgid "Number of tracks selected: %d"
@@ -275,7 +273,7 @@ msgstr "Titre de piste"
 
 #: t_modules/t_main.py:15022
 msgid "Album name"
-msgstr "Nom d'album"
+msgstr "Nom de l'album"
 
 #: t_modules/t_main.py:15024
 msgid "Artist name"
@@ -287,11 +285,11 @@ msgstr "Nom de l'artiste de l'album"
 
 #: t_modules/t_main.py:15032
 msgid "Editing network tracks is not recommended!"
-msgstr "L'édition de pistes en réseau n'est pas recommandée !"
+msgstr "L'édition de pistes en réseau est déconseillée !"
 
 #: t_modules/t_main.py:15063 t_modules/t_main.py:15066
 msgid "WRITE TAGS"
-msgstr "ENREGISTRER LES ÉTIQUETTES"
+msgstr "ÉCRIRE LES TAGS"
 
 #: t_modules/t_main.py:15069
 msgid "Press enter on fields to apply your changes first!"
@@ -318,11 +316,11 @@ msgstr "%d fichiers renommés"
 
 #: t_modules/t_main.py:15185
 msgid "Substitute Lyric Search"
-msgstr "Remplacer la recherche des paroles"
+msgstr "Changer les noms recherchés pour les paroles"
 
 #: t_modules/t_main.py:15191 t_modules/t_main.py:15213
 msgid "Substitute"
-msgstr "Remplacer"
+msgstr "Changer"
 
 #: t_modules/t_main.py:15198 t_modules/t_main.py:15220
 msgid "with"
@@ -509,14 +507,12 @@ msgid "Search for Lyrics"
 msgstr "Rechercher les paroles"
 
 #: t_modules/t_main.py:16141 t_modules/t_main.py:16149
-#, fuzzy
 msgid "Show static lyrics"
-msgstr "Afficher les paroles"
+msgstr "Afficher les paroles statiques"
 
 #: t_modules/t_main.py:16143 t_modules/t_main.py:16151
-#, fuzzy
 msgid "Show synced lyrics"
-msgstr "Afficher les paroles"
+msgstr "Afficher les paroles synchronisées"
 
 #: t_modules/t_main.py:16168
 msgid "Search GuitarParty"
@@ -537,7 +533,7 @@ msgstr "Afficher/Masquer les paroles"
 
 #: t_modules/t_main.py:16247 t_modules/t_main.py:16258
 msgid "Substitute Search..."
-msgstr "Recherche de remplacement…"
+msgstr "Changer les noms recherchés…"
 
 #: t_modules/t_main.py:16248 t_modules/t_main.py:16259
 msgid "Paste Lyrics"
@@ -556,9 +552,8 @@ msgid "Open Image"
 msgstr "Ouvrir l'image"
 
 #: t_modules/t_main.py:16391
-#, fuzzy
 msgid "Next Image"
-msgstr "Ouvrir l'image"
+msgstr "Prochaine image"
 
 #: t_modules/t_main.py:16395 t_modules/t_main.py:16741
 msgid "Extract Image"
@@ -597,9 +592,8 @@ msgid "Deleted embedded picture from file"
 msgstr "Supprimer la pochette des métadonnées du fichier"
 
 #: t_modules/t_main.py:16638
-#, fuzzy
 msgid "%d files processed"
-msgstr "%d fichiers renommés"
+msgstr "%d fichiers traités"
 
 #: t_modules/t_main.py:16665 t_modules/t_main.py:16672
 #: t_modules/t_main.py:16703
@@ -745,14 +739,12 @@ msgid "From Current…"
 msgstr "À partir de l’actuel…"
 
 #: t_modules/t_main.py:18801
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "Trier par date d'importation"
+msgstr "Trier par pistes importées"
 
 #: t_modules/t_main.py:18802
-#, fuzzy
 msgid "Sort by Imported Folders"
-msgstr "Trier par date d'importation"
+msgstr "Trier par dossiers importés"
 
 #: t_modules/t_main.py:18803
 msgid "Sort by Filepath"
@@ -848,11 +840,11 @@ msgstr "Définir comme n’étant plus la liste de lecture des téléchargements
 
 #: t_modules/t_main.py:19054
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Reprendre là où Tauon s'est arrété"
 
 #: t_modules/t_main.py:19056
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Ne plus reprendre là où Tauon s'est arrété"
 
 #: t_modules/t_main.py:19109
 msgid "Export Playlist Stats"
@@ -1220,14 +1212,12 @@ msgid "Lookup Spotify Album URL"
 msgstr "Chercher l’URL de l’album Spotify"
 
 #: t_modules/t_main.py:21617
-#, fuzzy
 msgid "Save Album to Spotify"
-msgstr "Enregistrer dans la bibliothèque Spotify"
+msgstr "Enregistrer l'album dans Spotify"
 
 #: t_modules/t_main.py:21623
-#, fuzzy
 msgid "Un-save Spotify Album"
-msgstr "Coller l'album Spotify"
+msgstr "Supprimer l'album de Spotify"
 
 #: t_modules/t_main.py:21666
 msgid "Queue %d"
@@ -1268,38 +1258,33 @@ msgstr "Rechercher l'artiste sur Sonemic"
 
 #: t_modules/t_main.py:21833
 msgid "Search Artist on Bandcamp"
-msgstr "Rechercher un artiste sur Bandcamp"
+msgstr "Rechercher l'artiste sur Bandcamp"
 
 #: t_modules/t_main.py:21846
 msgid "Copy \"Artist - Track\""
 msgstr "Copier « Artiste – Piste »"
 
 #: t_modules/t_main.py:21872
-#, fuzzy
 msgid "Spotify…"
-msgstr "Mentions J’aime Spotify"
+msgstr "Spotify…"
 
 #: t_modules/t_main.py:21877 t_modules/t_main.py:23682
-#, fuzzy
 msgid "Show Full Artist"
-msgstr "Afficher dans la liste de lecture"
+msgstr "Afficher l'artiste complet"
 
 #: t_modules/t_main.py:21890
 msgid "Looks like that's the only track in the album"
 msgstr "Il semble que c'est la seule piste de l'album"
 
 #: t_modules/t_main.py:21902 t_modules/t_main.py:23657
-#, fuzzy
 msgid "Show Full Album"
-msgstr "Albums aléatoires"
+msgstr "Montrer l'album complet"
 
 #: t_modules/t_main.py:21906
-#, fuzzy
 msgid "Copy Track URL"
-msgstr "Copier l'URL Spotify de la piste"
+msgstr "Copier l'URL de la piste"
 
 #: t_modules/t_main.py:21920 t_modules/t_main.py:23679
-#, fuzzy
 msgid "Fetching..."
 msgstr "Recherche en cours…"
 
@@ -1308,9 +1293,8 @@ msgid "Get Recommended"
 msgstr "Obtenir des recommandations"
 
 #: t_modules/t_main.py:21991
-#, fuzzy
 msgid "Minimize"
-msgstr "Mini"
+msgstr "Réduire"
 
 #: t_modules/t_main.py:21992
 msgid "Maximize"
@@ -1413,7 +1397,7 @@ msgstr "Évaluation"
 
 #: t_modules/t_main.py:22379
 msgid "More…"
-msgstr ""
+msgstr "Plus…"
 
 #: t_modules/t_main.py:22381 t_modules/t_main.py:47003
 #: t_modules/t_main.py:47009
@@ -1435,13 +1419,12 @@ msgid "Composer"
 msgstr "Compositeur"
 
 #: t_modules/t_main.py:22386
-#, fuzzy
 msgid "Disc Number"
-msgstr "Numéro de piste"
+msgstr "Numéro du disque"
 
 #: t_modules/t_main.py:22388
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "Relevé musical"
 
 #: t_modules/t_main.py:22880
 msgid "New Radio List"
@@ -1473,25 +1456,23 @@ msgstr "Base de données…"
 
 #: t_modules/t_main.py:22974
 msgid "Dev Mode"
-msgstr ""
+msgstr "Mode développeur"
 
 #: t_modules/t_main.py:22975
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Activer la sauvegarde de l'état"
 
 #: t_modules/t_main.py:22976
-#, fuzzy
 msgid "Disable Saving State"
-msgstr "Thème automatique désactivé"
+msgstr "Désactiver la sauvegarde de l'état"
 
 #: t_modules/t_main.py:23040
 msgid "Export as CSV"
 msgstr "Exporter en CSV"
 
 #: t_modules/t_main.py:23041
-#, fuzzy
 msgid "Rescan All Folders"
-msgstr "Réanalyser le dossier"
+msgstr "Réanalyser tous les dossiers"
 
 #: t_modules/t_main.py:23042
 msgid "Play History to Playlist"
@@ -1540,7 +1521,6 @@ msgid "Find Incomplete Albums"
 msgstr "Trouver les albums incomplets"
 
 #: t_modules/t_main.py:23148
-#, fuzzy
 msgid "Stop Cast"
 msgstr "Arrêter la diffusion"
 
@@ -1622,9 +1602,8 @@ msgid "Import Spotify…"
 msgstr "Importer depuis Spotify…"
 
 #: t_modules/t_main.py:23608
-#, fuzzy
 msgid "Liked Albums"
-msgstr "Albums les plus longs"
+msgstr "Albums aimés"
 
 #: t_modules/t_main.py:23619
 msgid "Liked Tracks"
@@ -1635,23 +1614,20 @@ msgid "Importing Spotify playlists..."
 msgstr "Importation de listes de lecture Spotify…"
 
 #: t_modules/t_main.py:23641
-#, fuzzy
 msgid "> Import All Playlists"
-msgstr "Importer des listes de lecture"
+msgstr "Importer toutes les listes de lecture"
 
 #: t_modules/t_main.py:23646
-#, fuzzy
 msgid "Playlist…"
-msgstr "Nouvelle liste de lecture"
+msgstr "Liste de lecture…"
 
 #: t_modules/t_main.py:23652
 msgid "Current Context"
 msgstr "Contexte actuel"
 
 #: t_modules/t_main.py:23685
-#, fuzzy
 msgid "Start Spotify Remote"
-msgstr "Coller l'album Spotify"
+msgstr "Démarrer la télécommande Spotify"
 
 #: t_modules/t_main.py:23849
 msgid "ListenBrainz is Paused"
@@ -1710,7 +1686,7 @@ msgid ""
 "Note that ratings are stored in the local database and not written to tags."
 msgstr ""
 "Notez que les évaluations sont stockées dans la base de données locale et "
-"non écrites dans les étiquettes."
+"non écrites dans les tags."
 
 #: t_modules/t_main.py:27325 t_modules/t_main.py:27339
 #: t_modules/t_main.py:27377
@@ -1740,8 +1716,8 @@ msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
 msgstr ""
-"DANGER ! Ceci supprimera les fichiers originaux. Il est recommandé de "
-"conserver une sauvegarde en cas de dysfonctionnement."
+"DANGER ! Les fichiers originaux seront supprimés. Il est recommandé de faire "
+"une sauvegarde en cas de problème."
 
 #: t_modules/t_main.py:27622
 msgid ""
@@ -1826,9 +1802,8 @@ msgid "Use album art as background"
 msgstr "Utiliser la pochette comme arrière plan"
 
 #: t_modules/t_main.py:27925
-#, fuzzy
 msgid "Prefer artist backgrounds"
-msgstr "Utiliser la pochette comme arrière plan"
+msgstr "Préférer l'artiste comme arrière-plan"
 
 #: t_modules/t_main.py:27932
 msgid "Stronger"
@@ -1899,11 +1874,11 @@ msgstr "Activer"
 
 #: t_modules/t_main.py:28217
 msgid "Use fade on pause/stop"
-msgstr "Utiliser le fondu lors de l'arrêt"
+msgstr "Fondu à la pause / l'arrêt"
 
 #: t_modules/t_main.py:28219
 msgid "Use fade on track jump"
-msgstr "Utiliser le fondu lors du changement de piste"
+msgstr "Fondu au changement de piste"
 
 #: t_modules/t_main.py:28221
 msgid "Back restarts to beginning"
@@ -1914,9 +1889,8 @@ msgid "Cache local files (for smb/nfs)"
 msgstr "Mettre les fichiers locaux en cache (pour smb/nfs)"
 
 #: t_modules/t_main.py:28232
-#, fuzzy
 msgid "Use persistent network cache"
-msgstr "Utiliser un cache réseau persistent"
+msgstr "Utiliser le cache réseau persistent"
 
 #: t_modules/t_main.py:28237
 msgid "Cache size"
@@ -1928,12 +1902,11 @@ msgstr "Définir le périphérique de sortie"
 
 #: t_modules/t_main.py:28261
 msgid "PipeWire (unstable)"
-msgstr ""
+msgstr "PipeWire (instable)"
 
 #: t_modules/t_main.py:28263
-#, fuzzy
 msgid "PulseAudio"
-msgstr "Audio"
+msgstr "PulseAudio"
 
 #: t_modules/t_main.py:28268
 msgid "Avoid resampling"
@@ -1949,7 +1922,7 @@ msgstr "Sources :"
 
 #: t_modules/t_main.py:28362
 msgid "*Uses scraping. Enable at your own discretion."
-msgstr "Utilises du scrapping. À utiliser à votre gré."
+msgstr "*Utilise du scrapping. À activer en connaissance de cause."
 
 #: t_modules/t_main.py:28365
 msgid "Tip: The order enabled will be the order searched."
@@ -1974,11 +1947,11 @@ msgstr "Galerie"
 
 #: t_modules/t_main.py:28393
 msgid "Single click to play"
-msgstr "Lire au simple clic"
+msgstr "Lire en un clic"
 
 #: t_modules/t_main.py:28395
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Fusionner les multi-disques"
 
 #: t_modules/t_main.py:28397
 msgid "Show titles"
@@ -1997,12 +1970,10 @@ msgid "Prefer thinner padding"
 msgstr "Espacement fin"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Enable Listen Along"
-msgstr "Activer le contrôle à distance"
+msgstr "Activer l'écoute partagée"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Start server for remote web playback"
 msgstr "Démarrer le serveur Web pour la diffusion"
 
@@ -2043,11 +2014,11 @@ msgstr "Décocher pour désactiver la fonction de brochage des onglets"
 
 #: t_modules/t_main.py:28477 t_modules/t_main.py:28483
 msgid "Open config file"
-msgstr "Ouvrir le fichier de configuration"
+msgstr "Ouvrir la configuration"
 
 #: t_modules/t_main.py:28479 t_modules/t_main.py:28489
 msgid "Open data folder"
-msgstr "Ouvrir le dossier de préférences de l'application"
+msgstr "Ouvrir le dossier de préférences"
 
 #: t_modules/t_main.py:28487
 msgid "Reload"
@@ -2059,19 +2030,19 @@ msgstr "Activer / désactiver les fonctions du menu contextuel de piste :"
 
 #: t_modules/t_main.py:28496
 msgid "Wikipedia artist search"
-msgstr "Recherche d'artistes sur Wikipédia"
+msgstr "Recherche de l'artiste sur Wikipédia"
 
 #: t_modules/t_main.py:28498
 msgid "Sonemic artist search"
-msgstr "Recherche d'artiste Sonemic"
+msgstr "Recherche de l'artiste sur Sonemic"
 
 #: t_modules/t_main.py:28500
 msgid "Bandcamp artist page search"
-msgstr "Recherche de page d’artiste Bandcamp"
+msgstr "Recherche de la page d’artiste sur Bandcamp"
 
 #: t_modules/t_main.py:28504
 msgid "Genius track search"
-msgstr "Recherche de morceaux Genius"
+msgstr "Recherche de la piste sur Genius"
 
 #: t_modules/t_main.py:28506
 msgid "Transcode folder"
@@ -2111,9 +2082,7 @@ msgstr "Activer le moniteur de téléchargement"
 
 #: t_modules/t_main.py:28537
 msgid "One click import new archives and folders from downloads folder"
-msgstr ""
-"L'importation en un clic des nouvelles archives et dossiers depuis les "
-"téléchargements"
+msgstr "Importer en un clic les archives et dossiers nouvellement téléchargés"
 
 #: t_modules/t_main.py:28539
 msgid "Trash archive after extraction"
@@ -2137,11 +2106,11 @@ msgstr "Afficher le texte du titre"
 
 #: t_modules/t_main.py:28554
 msgid "Monochrome"
-msgstr ""
+msgstr "Monochrome"
 
 #: t_modules/t_main.py:28569
 msgid "Enable use of gamepad as input"
-msgstr ""
+msgstr "Activer le contrôle à la manette"
 
 #: t_modules/t_main.py:28570 t_modules/t_main.py:28577
 msgid "Change requires restart"
@@ -2160,9 +2129,8 @@ msgid "Prevent system suspend during playback"
 msgstr "Empêcher la suspension du système pendant la lecture"
 
 #: t_modules/t_main.py:28590
-#, fuzzy
 msgid "Resume from suspend"
-msgstr "Reprendre depuis l'arrêt"
+msgstr "Reprendre lors du réveil"
 
 #: t_modules/t_main.py:28591
 msgid "Continue playback when waking from sleep"
@@ -2219,7 +2187,7 @@ msgstr "Serveur Majola"
 
 #: t_modules/t_main.py:28883
 msgid "Maloja is a self-hosted scrobble server."
-msgstr "Maloja est un serveur scrobble auto-hébergé."
+msgstr "Maloja est un serveur de scrobble auto-hébergé."
 
 #: t_modules/t_main.py:28884
 msgid "See here to lean more: %s"
@@ -2345,9 +2313,8 @@ msgid "Artist images (Automatic)"
 msgstr "Images d'artistes (automatique)"
 
 #: t_modules/t_main.py:29335
-#, fuzzy
 msgid "Flip current"
-msgstr "Pivoter l'actuel"
+msgstr "Retourner la sélection"
 
 #: t_modules/t_main.py:29417 t_modules/t_main.py:29418
 msgid "Username:"
@@ -2426,8 +2393,8 @@ msgstr ""
 #: t_modules/t_main.py:29556
 msgid "This feature is not recommended for accounts that have many friends."
 msgstr ""
-"Cette fonctionnalité n’est pas recommandée pour les comptes qui ont de "
-"nombreux amis."
+"Cette fonctionnalité n’est pas recommandée pour les comptes ayant beaucoup "
+"d'amis."
 
 #: t_modules/t_main.py:29595
 msgid "Selected playlist:"
@@ -2462,7 +2429,6 @@ msgid "Transcode files"
 msgstr "Transcoder les fichiers"
 
 #: t_modules/t_main.py:29634
-#, fuzzy
 msgid "Bypass low bitrate"
 msgstr "Ignorer les débits faibles"
 
@@ -2530,12 +2496,11 @@ msgstr "Afficher la piste en cours dans la barre de titre"
 
 #: t_modules/t_main.py:29748
 msgid "Mini-mode always on top"
-msgstr "Mode mini toujours au-dessus"
+msgstr "Mode mini toujours au dessus"
 
 #: t_modules/t_main.py:29753
-#, fuzzy
 msgid "Top-panel visualiser"
-msgstr "Visualisation dans le panneau supérieur"
+msgstr "Visualiseur du panneau supérieur"
 
 #: t_modules/t_main.py:29757
 msgid "Showcase visualisation"
@@ -2552,7 +2517,7 @@ msgstr "Redimensionnement automatique"
 
 #: t_modules/t_main.py:29833
 msgid "Prefer x11 when running in Wayland"
-msgstr ""
+msgstr "Préférer x11 lors d'une session Wayland"
 
 #: t_modules/t_main.py:30136 t_modules/t_main.py:30139
 msgid "Credits"
@@ -2613,7 +2578,7 @@ msgstr "Pas assez d'albums dnas la liste de lecture !"
 
 #: t_modules/t_main.py:30289 t_modules/t_main.py:30290
 msgid "Chart generator..."
-msgstr "Générateur de graphiques…"
+msgstr "Générateur de planches de contact…"
 
 #: t_modules/t_main.py:30297 t_modules/t_main.py:30337
 msgid "Tracks in playlist"
@@ -2661,12 +2626,11 @@ msgstr "Représenter le nombre de lectures par des lignes"
 
 #: t_modules/t_main.py:30484
 msgid "Left align title style"
-msgstr ""
+msgstr "Aligner les titres à gauche"
 
 #: t_modules/t_main.py:30491
-#, fuzzy
 msgid "Show album genre"
-msgstr "Afficher la durée de l'album"
+msgstr "Afficher le genre de l'album"
 
 #: t_modules/t_main.py:30494
 msgid "Show album release year"
@@ -2698,7 +2662,7 @@ msgstr "Large par défaut"
 
 #: t_modules/t_main.py:30858
 msgid "Okay, it's a normal playlist now."
-msgstr "Ok, c'est une liste de lecture normale maintenant."
+msgstr "Ok, cette liste est redevenue normale."
 
 #: t_modules/t_main.py:30867
 msgid ""
@@ -2773,7 +2737,7 @@ msgstr "Fin de la liste de lecture"
 
 #: t_modules/t_main.py:35650
 msgid "Search Tag"
-msgstr "Chercher une étiquette"
+msgstr "Rechercher une étiquette"
 
 #: t_modules/t_main.py:35651
 msgid "Search Country Code"
@@ -2785,15 +2749,15 @@ msgstr "Rechercher un titre"
 
 #: t_modules/t_main.py:35978
 msgid "Search text…"
-msgstr "Recherche du texte…"
+msgstr "Tapez pour rechercher…"
 
 #: t_modules/t_main.py:35985
 msgid "Search"
-msgstr "Chercher"
+msgstr "Rechercher"
 
 #: t_modules/t_main.py:35995 t_modules/t_main.py:35999
 msgid "Get Top Voted"
-msgstr "Récupérer les Mieux Votés"
+msgstr "Récupérer les plus votées"
 
 #: t_modules/t_main.py:36001
 msgid "Developer Picks"
@@ -2825,7 +2789,7 @@ msgstr "Nom / Titre"
 
 #: t_modules/t_main.py:36242
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr "URL du flux brut http://exemple.stream:1234"
+msgstr "URL du flux brut (http://exemple.stream:1234)"
 
 #: t_modules/t_main.py:36247 t_modules/t_main.py:36494
 msgid "Save"
@@ -2872,7 +2836,7 @@ msgstr "Sauvegardé"
 
 #: t_modules/t_main.py:36493 t_modules/t_main.py:40626
 msgid "Visit Website"
-msgstr "Visitez le site web"
+msgstr "Visiter le site Web"
 
 #: t_modules/t_main.py:37206
 msgid "View..."
@@ -2883,9 +2847,8 @@ msgid "Filter Small Artists"
 msgstr "Filtrer par les petits artistes"
 
 #: t_modules/t_main.py:37244 t_modules/t_main.py:37245
-#, fuzzy
 msgid "Include All Artists"
-msgstr "Inclure le titre des albums"
+msgstr "Inclure tous les artistes"
 
 #: t_modules/t_main.py:37247
 msgid "Sort Alphabetically"
@@ -3012,9 +2975,8 @@ msgid "Tracks only"
 msgstr "Pistes seulement"
 
 #: t_modules/t_main.py:41578
-#, fuzzy
 msgid "Showcase + Lyrics"
-msgstr "Showcase + Paroles"
+msgstr "Présentation + Paroles"
 
 #: t_modules/t_main.py:41591
 msgid "Radio"
