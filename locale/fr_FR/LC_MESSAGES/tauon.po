@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-06 08:58+0000\n"
+"PO-Revision-Date: 2024-10-06 09:15+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -1776,7 +1776,7 @@ msgstr "Affichage"
 
 #: t_modules/t_main.py:27868
 msgid "Transcode"
-msgstr "Encoder"
+msgstr "Encodage"
 
 #: t_modules/t_main.py:27869 t_modules/t_main.py:47143
 msgid "Lyrics"
@@ -2041,7 +2041,7 @@ msgstr "Recherche de la piste sur Genius"
 
 #: t_modules/t_main.py:28506
 msgid "Transcode folder"
-msgstr "Transcoder le dossier"
+msgstr "Encoder le dossier"
 
 #: t_modules/t_main.py:28512
 msgid "End of playlist action"
@@ -2420,7 +2420,7 @@ msgstr "Supprimer tous les autres dossiers de la cible"
 
 #: t_modules/t_main.py:29631
 msgid "Transcode files"
-msgstr "Transcoder les fichiers"
+msgstr "Encoder les fichiers"
 
 #: t_modules/t_main.py:29634
 msgid "Bypass low bitrate"
@@ -2428,7 +2428,7 @@ msgstr "Ignorer les débits faibles"
 
 #: t_modules/t_main.py:29637
 msgid "Start Transcode and Sync"
-msgstr "Démarrer le transcodage et la synchro"
+msgstr "Démarrer l'encodage et la synchro"
 
 #: t_modules/t_main.py:29640
 msgid "Start Sync"
