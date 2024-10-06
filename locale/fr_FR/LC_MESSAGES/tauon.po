@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-06 09:35+0000\n"
+"PO-Revision-Date: 2024-10-06 10:14+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -364,12 +364,11 @@ msgstr "Répéter l’album"
 
 #: t_modules/t_main.py:15459
 msgid "Shuffle Lockdown"
-msgstr "Mode aléatoire verrouillé"
+msgstr "Aléatoire verrouillé"
 
 #: t_modules/t_main.py:15460
-#, fuzzy
 msgid "Shuffle Lockdown Albums"
-msgstr "Mode aléatoire verrouillé"
+msgstr "Albums aléatoires verrouillé"
 
 #: t_modules/t_main.py:15462
 msgid "Shuffle OFF"
@@ -2320,7 +2319,7 @@ msgstr "Se connecter"
 
 #: t_modules/t_main.py:29426 t_modules/t_main.py:29428
 msgid "Done"
-msgstr "Terminé"
+msgstr "Valider"
 
 #: t_modules/t_main.py:29432
 msgid "Use LibreFM"
@@ -2331,8 +2330,8 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
-"Cliquez sur « Identification » pour ouvrir la page d’autorisation sur last."
-"fm et suivez les instructions, puis revenez ici et cliquez sur « Terminé »."
+"Pressez 'Se connecter' pour ouvrir la page de connection à last.fm, suivez "
+"les instructions, puis revenez ici et pressez 'Valider'."
 
 #: t_modules/t_main.py:29440
 msgid "Forget account"
@@ -2352,7 +2351,7 @@ msgstr "Charger les favoris des ami⋅e⋅s"
 
 #: t_modules/t_main.py:29475
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Récupérer 'Loved' lors d'un.e scrobble / ré-analyse"
 
 #: t_modules/t_main.py:29489 t_modules/t_main.py:29491
 msgid "Paste Token"
