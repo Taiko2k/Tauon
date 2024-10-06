@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-06 10:37+0000\n"
+"PO-Revision-Date: 2024-10-06 10:39+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -2019,7 +2019,7 @@ msgstr "Recharger"
 
 #: t_modules/t_main.py:28493
 msgid "Enable/Disable track context menu functions:"
-msgstr "Activer / désactiver les fonctions du menu contextuel de piste :"
+msgstr "Activer / Désactiver les fonctions du menu contextuel de piste :"
 
 #: t_modules/t_main.py:28496
 msgid "Wikipedia artist search"
@@ -2242,7 +2242,7 @@ msgstr "Streaming réseau Airsonic / Subsonic"
 #: t_modules/t_main.py:29072 t_modules/t_main.py:29206
 #: t_modules/t_main.py:29263
 msgid "Username / Email"
-msgstr "Nom d’utilisateur / courriel"
+msgstr "Nom d’utilisateur / Courriel"
 
 #: t_modules/t_main.py:29086 t_modules/t_main.py:29147
 #: t_modules/t_main.py:29220 t_modules/t_main.py:29277
