@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2023-09-29 01:01+0000\n"
+"PO-Revision-Date: 2024-09-22 13:45+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -14,9 +14,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 5.1-dev\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1903 t_modules/t_main.py:1905
@@ -734,14 +734,12 @@ msgid "From Current…"
 msgstr "Из текущего…"
 
 #: t_modules/t_main.py:18801
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "Сортировать по Импортировано"
+msgstr "Сортировать по импортированным трекам"
 
 #: t_modules/t_main.py:18802
-#, fuzzy
 msgid "Sort by Imported Folders"
-msgstr "Сортировать по Импортировано"
+msgstr "Сортировать по импортированным папкам"
 
 #: t_modules/t_main.py:18803
 msgid "Sort by Filepath"
@@ -835,11 +833,11 @@ msgstr "Отключить плейлист для загрузок"
 
 #: t_modules/t_main.py:19054
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Установить использование постоянного времени"
 
 #: t_modules/t_main.py:19056
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Снять использование постоянного времени"
 
 #: t_modules/t_main.py:19109
 msgid "Export Playlist Stats"
@@ -871,9 +869,8 @@ msgid "Engage Gallery Quick Add"
 msgstr "Быстрое добавление в галерею"
 
 #: t_modules/t_main.py:19124
-#, fuzzy
 msgid "Set podcast mode"
-msgstr "Остановить трансляцию"
+msgstr "Установить режим подкаста"
 
 #: t_modules/t_main.py:19126
 msgid "Remove Duplicates"
@@ -1389,7 +1386,7 @@ msgstr "Оценка"
 
 #: t_modules/t_main.py:22379
 msgid "More…"
-msgstr ""
+msgstr "Больше…"
 
 #: t_modules/t_main.py:22381 t_modules/t_main.py:47003
 #: t_modules/t_main.py:47009
@@ -1411,13 +1408,12 @@ msgid "Composer"
 msgstr "Композитор"
 
 #: t_modules/t_main.py:22386
-#, fuzzy
 msgid "Disc Number"
-msgstr "Номер дорожки"
+msgstr "Номер диска"
 
 #: t_modules/t_main.py:22388
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "Является CUE Sheet"
 
 #: t_modules/t_main.py:22880
 msgid "New Radio List"
@@ -1449,25 +1445,23 @@ msgstr "База данных…"
 
 #: t_modules/t_main.py:22974
 msgid "Dev Mode"
-msgstr ""
+msgstr "Режим разработчика"
 
 #: t_modules/t_main.py:22975
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Включить состояние сохранения"
 
 #: t_modules/t_main.py:22976
-#, fuzzy
 msgid "Disable Saving State"
-msgstr "Отключена автоматическая тема"
+msgstr "Отключить состояние сохранения"
 
 #: t_modules/t_main.py:23040
 msgid "Export as CSV"
 msgstr "Экспортировать в CSV"
 
 #: t_modules/t_main.py:23041
-#, fuzzy
 msgid "Rescan All Folders"
-msgstr "Пересканировать каталог"
+msgstr "Пересканировать все папки"
 
 #: t_modules/t_main.py:23042
 msgid "Play History to Playlist"
@@ -1644,7 +1638,7 @@ msgstr "Выйти из блокировки случайного порядка
 
 #: t_modules/t_main.py:24173
 msgid "Donate"
-msgstr ""
+msgstr "Пожертвовать"
 
 #: t_modules/t_main.py:24186
 msgid "Disengage Quick Add"
@@ -1793,9 +1787,8 @@ msgid "Use album art as background"
 msgstr "Использовать обложку альбома в качестве фона"
 
 #: t_modules/t_main.py:27925
-#, fuzzy
 msgid "Prefer artist backgrounds"
-msgstr "Использовать обложку альбома в качестве фона"
+msgstr "Предпочитать изображения артистов в качестве фона"
 
 #: t_modules/t_main.py:27932
 msgid "Stronger"
@@ -1894,12 +1887,11 @@ msgstr "Выбор устройства вывода звука"
 
 #: t_modules/t_main.py:28261
 msgid "PipeWire (unstable)"
-msgstr ""
+msgstr "PipeWire (нестабильно)"
 
 #: t_modules/t_main.py:28263
-#, fuzzy
 msgid "PulseAudio"
-msgstr "Аудио"
+msgstr "PulseAudio"
 
 #: t_modules/t_main.py:28268
 msgid "Avoid resampling"
@@ -1944,7 +1936,7 @@ msgstr "Играть по единичному щелчку"
 
 #: t_modules/t_main.py:28395
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Объединить несколько дисков"
 
 #: t_modules/t_main.py:28397
 msgid "Show titles"
@@ -1963,14 +1955,12 @@ msgid "Prefer thinner padding"
 msgstr "Предпочитать меньшие отступы"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Enable Listen Along"
-msgstr "Удалённое управление"
+msgstr "Включить совместное прослушивание"
 
 #: t_modules/t_main.py:28432
-#, fuzzy
 msgid "Start server for remote web playback"
-msgstr "Запустить веб-сервер для трансляции"
+msgstr "Запустить сервер для удалённого веб-проигрывания"
 
 #: t_modules/t_main.py:28453
 msgid "Show artist info panel"
@@ -2098,11 +2088,11 @@ msgstr "Показывать название дорожки"
 
 #: t_modules/t_main.py:28554
 msgid "Monochrome"
-msgstr ""
+msgstr "Монохромный"
 
 #: t_modules/t_main.py:28569
 msgid "Enable use of gamepad as input"
-msgstr ""
+msgstr "Разрешить использование ввода с геймпада"
 
 #: t_modules/t_main.py:28570 t_modules/t_main.py:28577
 msgid "Change requires restart"
@@ -2210,9 +2200,8 @@ msgid "Client ID"
 msgstr "ID клиента"
 
 #: t_modules/t_main.py:28982
-#, fuzzy
 msgid "Client Secret"
-msgstr "ID клиента"
+msgstr "Секретный ключ клиента"
 
 #: t_modules/t_main.py:28998
 msgid "Forget Account"
@@ -2348,7 +2337,7 @@ msgstr "Получить лайки друзей"
 
 #: t_modules/t_main.py:29475
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Отправлять избранное при скроббле/пересканировании"
 
 #: t_modules/t_main.py:29489 t_modules/t_main.py:29491
 msgid "Paste Token"
@@ -2499,7 +2488,7 @@ msgstr "Автоматическое масштабирование"
 
 #: t_modules/t_main.py:29833
 msgid "Prefer x11 when running in Wayland"
-msgstr ""
+msgstr "Предпочитать X11 при работе в Wayland"
 
 #: t_modules/t_main.py:30136 t_modules/t_main.py:30139
 msgid "Credits"
@@ -2607,12 +2596,11 @@ msgstr "Изображать счётчик прослушиваний в вид
 
 #: t_modules/t_main.py:30484
 msgid "Left align title style"
-msgstr ""
+msgstr "Стиль заголовка с выравниванием по левому краю"
 
 #: t_modules/t_main.py:30491
-#, fuzzy
 msgid "Show album genre"
-msgstr "Показать длительность альбома"
+msgstr "Показать жанр альбома"
 
 #: t_modules/t_main.py:30494
 msgid "Show album release year"
