@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-10-06 10:14+0000\n"
+"PO-Revision-Date: 2024-10-06 10:37+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -874,9 +874,8 @@ msgid "Engage Gallery Quick Add"
 msgstr "Activer l'ajout rapide depuis la galerie"
 
 #: t_modules/t_main.py:19124
-#, fuzzy
 msgid "Set podcast mode"
-msgstr "Arrêter la diffusion"
+msgstr "Définir en mode podcast"
 
 #: t_modules/t_main.py:19126
 msgid "Remove Duplicates"
@@ -2184,7 +2183,7 @@ msgstr "Maloja est un serveur de scrobble auto-hébergé."
 
 #: t_modules/t_main.py:28884
 msgid "See here to lean more: %s"
-msgstr "Voir ici pour en savoir plus : %s"
+msgstr "Cliquez ici pour en savoir plus : %s"
 
 #: t_modules/t_main.py:28894 t_modules/t_main.py:29100
 #: t_modules/t_main.py:29161 t_modules/t_main.py:29234
@@ -2330,8 +2329,8 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
-"Pressez 'Se connecter' pour ouvrir la page de connection à last.fm, suivez "
-"les instructions, puis revenez ici et pressez 'Valider'."
+"Cliquez sur 'Se connecter' pour ouvrir la page de connection à last.fm, "
+"suivez les instructions, puis revenez ici et appuyez sur 'Valider'."
 
 #: t_modules/t_main.py:29440
 msgid "Forget account"
@@ -2351,7 +2350,7 @@ msgstr "Charger les favoris des ami⋅e⋅s"
 
 #: t_modules/t_main.py:29475
 msgid "Pull love on scrobble/rescan"
-msgstr "Récupérer 'Loved' lors d'un.e scrobble / ré-analyse"
+msgstr "Récupérer 'Loved' au scrobble / re-scan"
 
 #: t_modules/t_main.py:29489 t_modules/t_main.py:29491
 msgid "Paste Token"
