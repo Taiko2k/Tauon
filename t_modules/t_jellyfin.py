@@ -71,7 +71,7 @@ class Jellyfin():
                 data=json.dumps({ "username": username, "Pw": password }), timeout=(5, 10)
             )
         except:
-            self.gui.show_message("Could not establish connection to server.", "Check server is running and URL is correct.", mode="error")
+            self.gui.show_message(_("Could not establish connection to server."), _("Check server is running and URL is correct."), mode="error")
             return
 
         if response.status_code == 200:
@@ -80,12 +80,12 @@ class Jellyfin():
             self.userId = info["User"]["Id"]
             self.connected = True
             if debug:
-                self.gui.show_message("Connection and authorisation successful", mode="done")
+                self.gui.show_message(_("Connection and authorisation successful"), mode="done")
         else:
             if response.status_code == 401:
-                self.gui.show_message("401 Authentication failed", "Check username and password.", mode="warning")
+                self.gui.show_message(_("401 Authentication failed"), _("Check username and password."), mode="warning")
             else:
-                self.gui.show_message("Jellyfin auth error", f"{response.status_code} {response.text}", mode="warning")
+                self.gui.show_message(_("Jellyfin auth error"), f"{response.status_code} {response.text}", mode="warning")
 
     def test(self):
         self._authenticate(debug=True)
@@ -364,7 +364,7 @@ class Jellyfin():
         if not self.connected:
             self.scanning = False
             if not return_list:
-                self.tauon.gui.show_message("Error connecting to Jellyfin")
+                self.tauon.gui.show_message(_("Error connecting to Jellyfin"))
             return []
 
         playlist = []
@@ -397,7 +397,7 @@ class Jellyfin():
 
         except:
             print("ERROR")
-            self.gui.show_message("Error connecting to Jellyfin for Import", mode="error")
+            self.gui.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
             self.scanning = False
             return
 
@@ -405,8 +405,8 @@ class Jellyfin():
             print("Connection successful, storing items...")
 
             # filter audio items only
-            audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
-            playlist_items = list(filter(lambda item: item["Type"] == "Playlist", response.json()["Items"]))
+            audio_items = list(filter(lambda item: item["Type"] == "Audio"), response.json()["Items"])
+            playlist_items = list(filter(lambda item: item["Type"] == "Playlist"), response.json()["Items"])
             self.playlists = playlist_items
             # sort by artist, then album, then track number
             sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
@@ -415,7 +415,7 @@ class Jellyfin():
         else:
             print("ERROR")
             self.scanning = False
-            self.tauon.gui.show_message("Error accessing Jellyfin", mode="warning")
+            self.tauon.gui.show_message(_("Error accessing Jellyfin"), mode="warning")
             return
 
         fav_status = {}
@@ -517,7 +517,7 @@ class Jellyfin():
                     if star is None:
                         pass
                     else:
-                        star = [star[0], star[1].replace("L", ""), star[2]]
+                        star = [star[0], star[1].replace("L"), "", star[2]]
                         self.tauon.star_store.insert(tr.index, star)
 
         if return_list:
@@ -527,7 +527,7 @@ class Jellyfin():
             self.scanning = False
             return playlist
 
-        self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection", playlist=playlist))
+        self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection"), playlist=playlist)
         self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 

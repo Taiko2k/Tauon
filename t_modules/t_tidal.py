@@ -30,7 +30,7 @@ class Tidal:
             os.remove(self.save_path)
     def login1(self):
         if not allow_tidal:
-            self.tauon.show_message("Tidalapi package not loaded")
+            self.tauon.show_message(_("Tidalapi package not loaded"))
             return
         print("LOGIN 1")
         session = tidalapi.Session()
@@ -53,7 +53,7 @@ class Tidal:
 
     def try_load(self):
         if not allow_tidal:
-            self.tauon.show_message("Tidalapi package not loaded")
+            self.tauon.show_message(_("Tidalapi package not loaded"))
             return
         if not self.session and os.path.isfile(self.save_path):
             with open(self.save_path, 'r') as f:
@@ -80,7 +80,7 @@ class Tidal:
                 print("loaded TIDAL login")
             else:
                 print("Failed to load TIDAL login")
-                self.tauon.show_message("Failed to load TIDAL login, please try log in again")
+                self.tauon.show_message(_("Failed to load TIDAL login, please try log in again"))
                 os.remove(self.save_path)
 
     def save_session(self):

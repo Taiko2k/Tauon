@@ -110,7 +110,7 @@ def player4(tauon):
             aud.config_set_feed_samplerate(44100)
             aud.config_set_min_buffer(1000)
             if not shutil.which("librespot"):
-                gui.show_message("SPP: Error, librespot not found")
+                gui.show_message(_("SPP: Error, librespot not found"))
                 return 1
             # if not prefs.spot_username or not prefs.spot_password:
             #     gui.show_message("Please enter your spotify username and password in settings")
@@ -507,17 +507,17 @@ def player4(tauon):
                     part = requests.get(network_url, stream=True, params=params, timeout=(3, 10))
 
                     if part.status_code == 404:
-                        gui.show_message("Server: File not found", mode="error")
+                        gui.show_message(_("Server: File not found"), mode="error")
                         self.error = track
                         return 1
                     elif part.status_code != 200:
-                        gui.show_message("Server Error", mode="error")
+                        gui.show_message(_("Server Error"), mode="error")
                         self.error = track
                         return 1
 
                 except Exception as e:
                     print(str(e))
-                    gui.show_message("Error", str(e), mode="error")
+                    gui.show_message(_("Error"), str(e), mode="error")
                     self.error = track
                     return 1
 
@@ -1111,7 +1111,7 @@ def player4(tauon):
                             else:
                                 aud.stop()
                                 if not gui.message_box:
-                                    gui.show_message("Error loading track", mode="warning")
+                                    gui.show_message(_("Error loading track"), mode="warning")
                                 error = True
                                 break
                         time.sleep(0.016)
