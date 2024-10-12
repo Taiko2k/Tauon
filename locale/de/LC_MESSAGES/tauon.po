@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-10-11 21:35+0200\n"
+"POT-Creation-Date: 2024-10-12 14:02+0200\n"
 "PO-Revision-Date: 2024-02-07 19:01+0000\n"
 "Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -2535,10 +2535,6 @@ msgstr "Zufallswiedergabe-Sperrmodus verlassen"
 #: t_modules/t_main.py:24217
 msgid "Donate"
 msgstr "Spenden"
-
-#: t_modules/t_main.py:24219
-msgid "User clicked menu exit button"
-msgstr ""
 
 #: t_modules/t_main.py:24230
 msgid "Disengage Quick Add"

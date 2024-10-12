@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2024-10-11 21:35+0200\n"
+"POT-Creation-Date: 2024-10-12 14:02+0200\n"
 "PO-Revision-Date: 2024-10-06 10:39+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -2540,10 +2540,6 @@ msgstr "Déverrouiller le mode aléatoire"
 #: t_modules/t_main.py:24217
 msgid "Donate"
 msgstr "Faire un don"
-
-#: t_modules/t_main.py:24219
-msgid "User clicked menu exit button"
-msgstr ""
 
 #: t_modules/t_main.py:24230
 msgid "Disengage Quick Add"

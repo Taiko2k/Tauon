@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2024-10-11 21:35+0200\n"
+"POT-Creation-Date: 2024-10-12 14:02+0200\n"
 "PO-Revision-Date: 2022-12-03 15:47+0000\n"
 "Last-Translator: Micke Nilsson <mikni@proton.me>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -2580,10 +2580,6 @@ msgstr ""
 #: t_modules/t_main.py:24217
 msgid "Donate"
 msgstr "Donera"
-
-#: t_modules/t_main.py:24219
-msgid "User clicked menu exit button"
-msgstr ""
 
 #: t_modules/t_main.py:24230
 msgid "Disengage Quick Add"

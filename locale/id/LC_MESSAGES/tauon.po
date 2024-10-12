@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-10-11 21:35+0200\n"
+"POT-Creation-Date: 2024-10-12 14:02+0200\n"
 "PO-Revision-Date: 2024-06-26 07:09+0000\n"
 "Last-Translator: Lieba Natur Brilian <gingalibadeidara@gmail.com>\n"
 "Language-Team: Indonesian <https://hosted.weblate.org/projects/tauon-music-"
@@ -2534,10 +2534,6 @@ msgstr "Keluar dari Kunci Acak"
 
 #: t_modules/t_main.py:24217
 msgid "Donate"
-msgstr ""
-
-#: t_modules/t_main.py:24219
-msgid "User clicked menu exit button"
 msgstr ""
 
 #: t_modules/t_main.py:24230

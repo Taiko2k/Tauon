@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-10-11 21:35+0200\n"
+"POT-Creation-Date: 2024-10-12 14:02+0200\n"
 "PO-Revision-Date: 2023-02-06 17:41+0000\n"
 "Last-Translator: Fjuro <ifjuro@proton.me>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -2435,10 +2435,6 @@ msgstr ""
 
 #: t_modules/t_main.py:24217
 msgid "Donate"
-msgstr ""
-
-#: t_modules/t_main.py:24219
-msgid "User clicked menu exit button"
 msgstr ""
 
 #: t_modules/t_main.py:24230

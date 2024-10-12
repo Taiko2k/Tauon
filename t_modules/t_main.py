@@ -24216,7 +24216,7 @@ def open_donate_link():
 
 x_menu.add(MenuItem(_("Donate"), open_donate_link))
 
-x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref=_("User clicked menu exit button"), pass_ref=+True))
+x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 
 
 def stop_quick_add():

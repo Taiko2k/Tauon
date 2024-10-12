@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-10-12 12:59+0200\n"
+"POT-Creation-Date: 2024-10-12 14:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2422,10 +2422,6 @@ msgstr ""
 
 #: t_modules/t_main.py:24217
 msgid "Donate"
-msgstr ""
-
-#: t_modules/t_main.py:24219
-msgid "User clicked menu exit button"
 msgstr ""
 
 #: t_modules/t_main.py:24230
