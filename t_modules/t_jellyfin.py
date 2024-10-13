@@ -405,8 +405,8 @@ class Jellyfin():
             print("Connection successful, storing items...")
 
             # filter audio items only
-            audio_items = list(filter(lambda item: item["Type"] == "Audio"), response.json()["Items"])
-            playlist_items = list(filter(lambda item: item["Type"] == "Playlist"), response.json()["Items"])
+            audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
+            playlist_items = list(filter(lambda item: item["Type"] == "Playlist", response.json()["Items"]))
             self.playlists = playlist_items
             # sort by artist, then album, then track number
             sorted_items = sorted(audio_items, key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)))
