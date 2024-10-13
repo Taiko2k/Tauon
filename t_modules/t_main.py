@@ -30014,7 +30014,8 @@ class Over:
             y += 27 * gui.scale
             ddt.text((x, y), _("This program comes with absolutely no warranty."), colours.box_text_label, 12)
             y += 16 * gui.scale
-            link_pa = draw_linked_text((x, y), _("See the license for details: https://") + "www.gnu.org/licenses/gpl-3.0.html",
+            link_gpl = "https://www.gnu.org/licenses/gpl-3.0.html"
+            link_pa = draw_linked_text((x, y), _(f"See the {link_gpl} license for details."),
                                        colours.box_text_label, 12, replace="GNU GPLv3+")
             link_rect = [x + link_pa[0], y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
