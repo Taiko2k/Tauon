@@ -7238,9 +7238,9 @@ class LastFMapi:
 
         except Exception as e:
             if 'Unauthorized Token' in str(e):
-                show_message(_("Error - Not authorized", mode='error'))
+                show_message(_("Error - Not authorized"), mode='error')
             else:
-                show_message(_("Error", 'Unknown error.', mode='error'))
+                show_message(_("Error", 'Unknown error.'), mode='error')
 
         if not toggle_lfm_auto(mode=1):
             toggle_lfm_auto()
@@ -7676,13 +7676,13 @@ class LastFMapi:
                 show_message(_("User has no loved tracks."))
                 return
             if matches > 0 and updated == 0:
-                show_message(str(matches) + _(" matched tracks are up to date."))
+                show_message(_(f"{str(matches)} matched tracks are up to date."))
                 return
             if matches > 0 and updated > 0:
-                show_message(str(matches) + _(" tracks matched. ") + str(updated) + _(" were updated."))
+                show_message(_(f"{str(matches)} tracks matched. {str(updated)} were updated."))
                 return
             else:
-                show_message(_("Of ") + str(len(tracks)) + _(" loved tracks, no matches were found in local db"))
+                show_message(_(f"Of {str(len(tracks))} loved tracks, no matches were found in local db"))
                 return
         except:
             show_message(_("This doesn't seem to be working :("), mode='error')
@@ -39392,6 +39392,7 @@ class QueueBox:
                         i += 1
 
         # Show total duration text "n Tracks [0:00:00]"
+        # TODOo
         if tracks and fq:
             plural = 's'
             if tracks < 2:
