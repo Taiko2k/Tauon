@@ -13823,7 +13823,6 @@ def load_xspf(path):
                                     l = l.replace('file:', "")
                                     l = l.lstrip("/")
                                     l = "/" + l
-                                    l = str(urllib.parse.unquote(l))
 
                                 b['location'] = l
                             if 'creator' in field.tag and field.text:
