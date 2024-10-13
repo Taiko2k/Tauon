@@ -517,7 +517,7 @@ class Jellyfin():
                     if star is None:
                         pass
                     else:
-                        star = [star[0], star[1].replace("L"), "", star[2]]
+                        star = [star[0], star[1].replace("L", ""), star[2]]
                         self.tauon.star_store.insert(tr.index, star)
 
         if return_list:
@@ -527,7 +527,7 @@ class Jellyfin():
             self.scanning = False
             return playlist
 
-        self.pctl.multi_playlist.append(self.tauon.pl_gen(title="Jellyfin Collection"), playlist=playlist)
+        self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Jellyfin Collection"), playlist=playlist))
         self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
         self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 

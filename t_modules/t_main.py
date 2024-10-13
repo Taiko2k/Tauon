@@ -7939,7 +7939,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
 
     # global lfm_username
     # if len(lfm_username) > 0 and not lastfm.connected and not prefs.auto_lfm:
-    #     show_message(_("You have a last.fm account ready but it is not enabled.", 'info',
+    #     show_message("You have a last.fm account ready but it is not enabled.", 'info',
     #                  'Either connect, enable auto connect, or remove the account.')
     #     return
 
@@ -8463,7 +8463,7 @@ class Tauon:
                         show_message(_(f"Downloading... {mb}/80MB"))
 
             except Exception as e:
-                show_message(_("Download failed", str(e)), mode="error")
+                show_message(_("Download failed"), str(e), mode="error")
 
             f.seek(0)
             if not hashlib.sha256(f.read()).hexdigest() == sha:
@@ -9488,7 +9488,7 @@ def plex_get_album_thread():
 
 def sub_get_album_thread():
     # if prefs.backend != 1:
-    #     show_message(_("This feature is currently only available with the BASS backend")
+    #     show_message("This feature is currently only available with the BASS backend")
     #     return
 
     pref_box.close()
@@ -9506,7 +9506,7 @@ def sub_get_album_thread():
 
 def koel_get_album_thread():
     # if prefs.backend != 1:
-    #     show_message(_("This feature is currently only available with the BASS backend")
+    #     show_message("This feature is currently only available with the BASS backend")
     #     return
 
     pref_box.close()
@@ -13971,7 +13971,7 @@ def load_xspf(path):
             console.print("-- -- Album: " + track['album'], level=2)
 
     if missing > 0:
-        show_message(_('Failed to locate ') + str(missing) + _(' out of ') + str(len(a)) + _(' tracks.'))
+        show_message(_(f'Failed to locate {str(missing)} out of {str(len(a))} tracks.'))
 
     # print(playlist)
     if playlist:
@@ -16021,7 +16021,7 @@ def toggle_lyrics(track_object):
         if prefs.show_lyrics_showcase and track_object.lyrics == "" and timed_lyrics_ren.generate(track_object):
             prefs.prefer_synced_lyrics = True
         # if prefs.show_lyrics_showcase and track_object.lyrics == "":
-        #     show_message(_("No lyrics for this track"))
+        #     show_message("No lyrics for this track")
     else:
 
         # Handling for alt panel layout
@@ -16034,7 +16034,7 @@ def toggle_lyrics(track_object):
         if prefs.show_lyrics_side and track_object.lyrics == "" and timed_lyrics_ren.generate(track_object):
             prefs.prefer_synced_lyrics = True
         # if prefs.show_lyrics_side and track_object.lyrics == "":
-        #     show_message(_("No lyrics for this track"))
+        #     show_message("No lyrics for this track")
 
 
 def get_lyric_fire(track_object, silent=False):
@@ -16730,7 +16730,7 @@ def delete_track_image(track_object):
         n = remove_embed_picture(track_object, dry=True)
         gui.message_box_confirm_callback = remove_embed_picture
         gui.message_box_confirm_reference = (track_object, False)
-        show_message(_("This will erase any embedded image in %d files. Are you sure?" % n), mode="confirm")
+        show_message(_("This will erase any embedded image in %d files. Are you sure?") % n, mode="confirm")
 
 
 
@@ -17690,19 +17690,19 @@ def export_stats(pl):
     total_size = sum(seen_files.values())
 
     stats_gen.update(pl)
-    line = _('Playlist:\n') + pctl.multi_playlist[pl][0] + "\n\n"
-    line += _('Generated:\n') + time.strftime("%c") + "\n\n"
-    line += _('Tracks in playlist:\n') + str(tracks_in_playlist)
+    line = _('Playlist:') + '\n' + pctl.multi_playlist[pl][0] + "\n\n"
+    line += _('Generated:') + '\n' + time.strftime("%c") + "\n\n"
+    line += _('Tracks in playlist:') + '\n' + str(tracks_in_playlist)
     line += "\n\n"
-    line += _("Repeats in playlist:\n")
+    line += _("Repeats in playlist:") + '\n'
     unique = len(set(pctl.multi_playlist[pl][2]))
     line += str(tracks_in_playlist - unique)
     line += "\n\n"
-    line += _('Total local size:\n') + get_filesize_string(total_size) + "\n\n"
-    line += _('Playlist duration:\n') + str(datetime.timedelta(seconds=int(playlist_time))) + "\n\n"
-    line += _('Total playtime:\n') + str(datetime.timedelta(seconds=int(play_time))) + "\n\n"
+    line += _('Total local size:') + '\n' + get_filesize_string(total_size) + "\n\n"
+    line += _('Playlist duration:') + '\n' + str(datetime.timedelta(seconds=int(playlist_time))) + "\n\n"
+    line += _('Total playtime:') + '\n' + str(datetime.timedelta(seconds=int(play_time))) + "\n\n"
 
-    line += _("Track types:\n")
+    line += _("Track types:") + '\n'
     if tracks_in_playlist:
         types = sorted(seen_types, key=seen_types.get, reverse=True)
         for type in types:
@@ -17718,7 +17718,7 @@ def export_stats(pl):
     line += "\n\n"
 
     if tracks_in_playlist:
-        line += _("Percent of tracks are CUE type:\n")
+        line += _("Percent of tracks are CUE type:") + '\n'
         perc = are_cue / tracks_in_playlist
         if perc == 0:
             perc = 0
@@ -17731,7 +17731,7 @@ def export_stats(pl):
         line += "\n\n"
 
     if tracks_in_playlist and mp3_bitrates:
-        line += _("MP3 bitrates (kbps):\n")
+        line += _("MP3 bitrates (kbps):") + '\n'
         rates = sorted(mp3_bitrates, key=mp3_bitrates.get, reverse=True)
         others = 0
         for rate in rates:
@@ -17750,7 +17750,7 @@ def export_stats(pl):
         line += "\n\n"
 
     if tracks_in_playlist and ogg_bitrates:
-        line += _("OGG bitrates (kbps):\n")
+        line += _("OGG bitrates (kbps):") + '\n'
         rates = sorted(ogg_bitrates, key=ogg_bitrates.get, reverse=True)
         others = 0
         for rate in rates:
@@ -17788,17 +17788,17 @@ def export_stats(pl):
     #     line = line.rstrip("; ")
     #     line += "\n\n"
 
-    line += _("\n-------------- Top Artists --------------------\n\n")
+    line += "\n" + _("-------------- Top Artists --------------------") + "\n\n"
 
     ls = stats_gen.artist_list
     for i, item in enumerate(ls[:50]):
         line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
 
-    line += _("\n\n-------------- Top Albums --------------------\n\n")
+    line += "\n\n" + _("-------------- Top Albums --------------------") + "\n\n"
     ls = stats_gen.album_list
     for i, item in enumerate(ls[:50]):
         line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
-    line += _("\n\n-------------- Top Genres --------------------\n\n")
+    line += "\n\n" + _("-------------- Top Genres --------------------") + "\n\n"
     ls = stats_gen.genre_list
     for i, item in enumerate(ls[:50]):
         line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
@@ -22074,7 +22074,7 @@ def level_on():
     gui.vis_want = 1
     gui.update_layout()
     # if prefs.backend == 2:
-    #     show_message(_("Visualisers not implemented in GStreamer mode")
+    #     show_message("Visualisers not implemented in GStreamer mode")
     # gui.turbo = True
 
 
@@ -22084,7 +22084,7 @@ vis_menu.add(MenuItem(_("Level Meter"), level_on))
 def spec_on():
     gui.vis_want = 2
     # if prefs.backend == 2:
-    #     show_message(_("Not implemented")
+    #     show_message("Not implemented")
     gui.update_layout()
 
 
@@ -25540,7 +25540,7 @@ class NagBox:
         #     webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
         # prefs.show_nag = False
         # if draw.button("I already am!", x + round(360), y, press=gui.level_2_click):
-        #     show_message(_("Oh hey, thanks! :)")
+        #     show_message("Oh hey, thanks! :)")
         #     prefs.show_nag = False
 
 
@@ -27564,7 +27564,7 @@ def toggle_ex_del(mode=0):
         return prefs.auto_del_zip
     prefs.auto_del_zip ^= True
     # if prefs.auto_del_zip is True:
-    #     show_message(_("Caution! This function deletes things!", mode='info', "This could result in data loss if the process were to malfunction.")
+    #     show_message("Caution! This function deletes things!", mode='info', "This could result in data loss if the process were to malfunction.")
 
 
 def toggle_dl_mon(mode=0):
@@ -28646,7 +28646,7 @@ class Over:
             if tauon.update_play_lock is None:
                 prefs.block_suspend = False
                 # if flatpak_mode:
-                #     show_message(_("Sandbox support not implemented")
+                #     show_message("Sandbox support not implemented")
             elif old != prefs.block_suspend:
                 tauon.update_play_lock()
 
@@ -29608,7 +29608,7 @@ class Over:
             if not t:
                 show_message(_("Error, not  connected to last.fm"))
                 return
-            show_message(_("Warning: This process will take approximately %d minutes to complete." % (t // 60)),
+            show_message(_("Warning: This process will take approximately %d minutes to complete.") % (t // 60),
                          _("Press again while holding Shift if you understand"), mode="warning")
             return
 
@@ -30281,7 +30281,7 @@ class Over:
         y = y0 + 100 * gui.scale
 
         # . Limited width. Max 13 chars.
-        if self.button(x, y, _("Randomize BG")):
+        if self.button(x, y, _("Randomise BG")):
 
             r = round(random.random() * 40)
             g = round(random.random() * 40)
@@ -32340,7 +32340,7 @@ class BottomBarType1:
                 window_size[0] - 710 * gui.scale, 30 * gui.scale)):
             # if pctl.playing_state == 3:
             #     copy_to_clipboard(pctl.tag_meta)
-            #     show_message(_("Copied text to clipboard"))
+            #     show_message("Copied text to clipboard")
             #     if input.mouse_click or right_click:
             #         input.mouse_click = False
             #         right_click = False
@@ -40924,7 +40924,7 @@ class RadioView:
             gui.update_on_drag = True
 
         if insert is not None:
-            radios.insert(insert, _("New"))
+            radios.insert(insert, "New")
             if self.drag in radios:
                 radios.remove(self.drag)
             else:
