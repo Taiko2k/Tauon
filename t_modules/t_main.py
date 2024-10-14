@@ -14857,7 +14857,7 @@ class RenameTrackBox:
                      [245, 90, 90, 255], 13)
             colour_warn = [180, 60, 60, 255]
 
-        label = "Write (" + str(len(r_todo)) + ")"
+        label = _("Write") + " (" + str(len(r_todo)) + ")"
 
         if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale,
                        text_highlight_colour=colours.grey(255), background_highlight_colour=colour_warn,
