@@ -39393,14 +39393,15 @@ class QueueBox:
                         i += 1
 
         # Show total duration text "n Tracks [0:00:00]"
-        # TODOo
-        if tracks and fq:
-            plural = 's'
+        if tracks and fq:           
             if tracks < 2:
-                plural = ''
+                line = _(f"{str(tracks)} Track") + " [" + get_hms_time(duration) + "]"
+                ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
+            else:
+                line = _(f"{str(tracks)} Tracks") + " [" + get_hms_time(duration) + "]"
+                ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
 
-            line = str(tracks) + _(" Track") + plural + " [" + get_hms_time(duration) + "]"
-            ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
+            
 
         if self.dragging:
 
