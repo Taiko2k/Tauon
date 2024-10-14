@@ -625,7 +625,7 @@ except:
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
 
-def _(message):
+def (message):
     return message
 
 
@@ -4418,7 +4418,7 @@ def auto_scale():
 
     if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
         print("Window overscale!")
-        show_message(_("Detected unsuitable UI scaling.", "Scaling setting reset to 1x"))
+        show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
         prefs.scale_want = 1.0
 
 auto_scale()
@@ -7206,7 +7206,7 @@ class LastFMapi:
 
     def auth1(self):
         if not last_fm_enable:
-            show_message(_("Optional module python-pylast not installed", mode='warning'))
+            show_message(_("Optional module python-pylast not installed"), mode='warning')
             return
         # This is step one where the user clicks "login"
 
@@ -7240,7 +7240,7 @@ class LastFMapi:
             if 'Unauthorized Token' in str(e):
                 show_message(_("Error - Not authorized"), mode='error')
             else:
-                show_message(_("Error", 'Unknown error.'), mode='error')
+                show_message(_("Error"), _('Unknown error.'), mode='error')
 
         if not toggle_lfm_auto(mode=1):
             toggle_lfm_auto()
@@ -7625,7 +7625,7 @@ class LastFMapi:
         if not last_fm_enable:
             return
         username = prefs.last_fm_username
-        show_message(_("Scanning loved tracks for: %s" % username), mode="info")
+        show_message(_("Scanning loved tracks for: %s") % username, mode="info")
         self.scanning_username = username
 
         if not username:
@@ -10203,11 +10203,11 @@ def bass_player_thread(player):
         player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon)
     except:
         # logging.exception('Exception on player thread')
-        show_message(_("Playback thread has crashed. Sorry about that.", "App will need to be restarted."), mode='error')
+        show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode='error')
         time.sleep(1)
-        show_message(_("Playback thread has crashed. Sorry about that.", "App will need to be restarted."), mode='error')
+        show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode='error')
         time.sleep(1)
-        show_message(_("Playback thread has crashed. Sorry about that.", "App will need to be restarted."), mode='error')
+        show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode='error')
         raise
 
 
@@ -12393,7 +12393,7 @@ class AlbumArt():
         if source[offset][0] > 0:
             pic = album_art_gen.get_embed(track_object)
             if not pic:
-                show_message(_("Image save error.", "No embedded album art."), mode='warning')
+                show_message(_("Image save error."), _("No embedded album art."), mode='warning')
                 return 0
 
             source_image = io.BytesIO(pic)
@@ -18200,7 +18200,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             for col in column_names:
 
-                if quote.lower() == col.lower() or _(quote).lower() == col.lower():
+                if quote.lower() == col.lower() or (quote).lower() == col.lower():
                     cm_found = True
 
                     if cm[-1] == ">":
@@ -28392,7 +28392,7 @@ class Over:
 
         for name in lyric_sources.keys():
             enabled = name in prefs.lyrics_enables
-            title = _(name)
+            title = (name)
             if name in uses_scraping:
                 title += "*"
             new = self.toggle_square(x, y, enabled, title)
@@ -30323,7 +30323,7 @@ class Over:
                 show_message(_("Be patient!"))
             else:
                 if not prefs.chart_font:
-                    show_message(_("No font set in config", mode='error'))
+                    show_message(_("No font set in config"), mode='error')
                 else:
                     shoot = threading.Thread(target=gen_chart)
                     shoot.daemon = True
@@ -31660,7 +31660,7 @@ class TopPanel:
             gui.pl_update = 1
             if not prefs.tabs_on_top:
                 if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
-                    gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing][0])
+                    gui.mode_toast_text = (pctl.multi_playlist[pctl.active_playlist_viewing][0])
                     toast_mode_timer.set()
                     gui.frame_callback_list.append(TestTimer(1))
                 else:
@@ -40782,7 +40782,7 @@ class RadioView:
                 colour = b_colour
                 if inp.mouse_click:
                     radios.append(radiobox.loaded_station)
-                    toast(_("Added station to: " + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"]))
+                    toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
 
             self.save_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colour)
 
@@ -46264,7 +46264,7 @@ while pctl.running:
                         ddt.rect(box, bg)
                         ddt.rect(grip, colours.column_grip)
 
-                        line = _(item[0])
+                        line = (item[0])
                         ddt.text_background_colour = bg
 
                         # # Remove columns if positioned out of view
