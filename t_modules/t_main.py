@@ -7676,7 +7676,7 @@ class LastFMapi:
                 show_message(_("User has no loved tracks."))
                 return
             if matches > 0 and updated == 0:
-                show_message(_("{track} matched tracks are up to date.)").format(track=str(matches)))
+                show_message(_("{track} matched tracks are up to date.").format(track=str(matches)))
                 return
             if matches > 0 and updated > 0:
                 show_message(_("{track} tracks matched. {track_upd} were updated.").format(track=str(matches), track_upd={str(updated)}))
