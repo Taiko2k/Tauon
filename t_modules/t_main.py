@@ -7679,10 +7679,10 @@ class LastFMapi:
                 show_message(_("{quantity} matched tracks are up to date.").format(quantity=str(matches)))
                 return
             if matches > 0 and updated > 0:
-                show_message(_("{quantity} tracks matched. {total} were updated.").format(quantity=str(matches), total={str(updated)}))
+                show_message(_("{quantity} tracks matched. {total} were updated.").format(quantity=str(matches), total=str(updated)))
                 return
             else:
-                show_message(_("Of {quantity} loved tracks, no matches were found in local db").format(quantity={str(len(tracks))}))
+                show_message(_("Of {quantity} loved tracks, no matches were found in local db").format(quantity=str(len(tracks)))) 
                 return
         except:
             show_message(_("This doesn't seem to be working :("), mode='error')
@@ -13971,7 +13971,7 @@ def load_xspf(path):
             console.print("-- -- Album: " + track['album'], level=2)
 
     if missing > 0:
-        show_message(_('Failed to locate {quantity} out of {total} tracks.').format(quantity=str(missing, total=str(len(a)))))
+        show_message(_('Failed to locate {quantity} out of {total} tracks.').format(quantity=str(missing), total=str(len(a))))
 
     # print(playlist)
     if playlist:
