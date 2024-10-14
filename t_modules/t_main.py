@@ -625,7 +625,7 @@ except:
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
 
-def (message):
+def _(message):
     return message
 
 
@@ -7676,13 +7676,13 @@ class LastFMapi:
                 show_message(_("User has no loved tracks."))
                 return
             if matches > 0 and updated == 0:
-                show_message(_(f"{str(matches)} matched tracks are up to date."))
+                show_message(_("{track} matched tracks are up to date.)").format(track=str(matches)))
                 return
             if matches > 0 and updated > 0:
-                show_message(_(f"{str(matches)} tracks matched. {str(updated)} were updated."))
+                show_message(_("{track} tracks matched. {track_upd} were updated.").format(track=str(matches), track_upd={str(updated)}))
                 return
             else:
-                show_message(_(f"Of {str(len(tracks))} loved tracks, no matches were found in local db"))
+                show_message(_("Of {track} loved tracks, no matches were found in local db").format(track={str(len(tracks))}))
                 return
         except:
             show_message(_("This doesn't seem to be working :("), mode='error')
@@ -8460,7 +8460,7 @@ class Tauon:
                     if mb > 90:
                         break
                     if mb % 5 == 0:
-                        show_message(_(f"Downloading... {mb}/80MB"))
+                        show_message(_("Downloading... %d/80MB") % mb)
 
             except Exception as e:
                 show_message(_("Download failed"), str(e), mode="error")
@@ -13971,7 +13971,7 @@ def load_xspf(path):
             console.print("-- -- Album: " + track['album'], level=2)
 
     if missing > 0:
-        show_message(_(f'Failed to locate {str(missing)} out of {str(len(a))} tracks.'))
+        show_message(_('Failed to locate {quantity} out of {total} tracks.').format(quantity=str(missing, total=str(len(a)))))
 
     # print(playlist)
     if playlist:
@@ -17745,7 +17745,7 @@ def export_stats(pl):
             others = round(others, 1)
             if others < 0.1:
                 others = "<0.1"
-            line += _(f"Others") + "({others}%);"
+            line += _("Others") + f"({others}%);"
         line = line.rstrip("; ")
         line += "\n\n"
 
@@ -17764,7 +17764,7 @@ def export_stats(pl):
             others = round(others, 1)
             if others < 0.1:
                 others = "<0.1"
-            line += _(f"Others") + "({others}%);"
+            line += _("Others") + f"({others}%);"
         line = line.rstrip("; ")
         line += "\n\n"
 
@@ -18867,9 +18867,9 @@ def remove_duplicates(pl):
 
     removed = len(pctl.multi_playlist[pl][2]) - len(playlist)
     if not removed:
-        show_message(_(f"No duplicates were found"))
+        show_message(_("No duplicates were found"))
     else:
-        show_message(_(f"{removed} duplicates removed"), mode="done")
+        show_message(_("{quantity} duplicates removed").format(quantity=removed), mode="done")
 
     pctl.multi_playlist[pl][2][:] = playlist[:]
 
@@ -22940,7 +22940,7 @@ def clean_db_fast():
         keys -= set(pl[2])
     for item in keys:
         pctl.purge_track(item, fast=True)
-    gui.show_message(_(f"Done! {len(keys)} old items were removed."), mode="done")
+    gui.show_message(_("Done! {quantity} old items were removed.").format(quantity=len(keys)), mode="done")
     gui.suggest_clean_db = False
 
 
@@ -30015,7 +30015,7 @@ class Over:
             ddt.text((x, y), _("This program comes with absolutely no warranty."), colours.box_text_label, 12)
             y += 16 * gui.scale
             link_gpl = "https://www.gnu.org/licenses/gpl-3.0.html"
-            link_pa = draw_linked_text((x, y), _(f"See the {link_gpl} license for details."),
+            link_pa = draw_linked_text((x, y), _("See the {link} license for details.").format(link=link_gpl),
                                        colours.box_text_label, 12, replace="GNU GPLv3+")
             link_rect = [x + link_pa[0], y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
@@ -39395,10 +39395,10 @@ class QueueBox:
         # Show total duration text "n Tracks [0:00:00]"
         if tracks and fq:           
             if tracks < 2:
-                line = _(f"{str(tracks)} Track") + " [" + get_hms_time(duration) + "]"
+                line = _("{number_of} Track").format(number_of=str(tracks)) + " [" + get_hms_time(duration) + "]"
                 ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
             else:
-                line = _(f"{str(tracks)} Tracks") + " [" + get_hms_time(duration) + "]"
+                line = _("{number_of} Tracks").format(number_of=str(tracks)) + " [" + get_hms_time(duration) + "]"
                 ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
 
             

@@ -753,7 +753,7 @@ def authserve(tauon):
                 code = path.split("code=")
                 if len(code) > 1:
                     code = code[1]
-                    self.wfile.write(_(b"You can close this now and return to Tauon Music Box"))
+                    self.wfile.write(_("You can close this now and return to Tauon Music Box").encode('UTF-8'))
                 tauon.wake()
 
             else:
