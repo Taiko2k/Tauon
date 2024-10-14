@@ -7676,13 +7676,13 @@ class LastFMapi:
                 show_message(_("User has no loved tracks."))
                 return
             if matches > 0 and updated == 0:
-                show_message(_("{track} matched tracks are up to date.").format(track=str(matches)))
+                show_message(_("{quantity} matched tracks are up to date.").format(quantity=str(matches)))
                 return
             if matches > 0 and updated > 0:
-                show_message(_("{track} tracks matched. {track_upd} were updated.").format(track=str(matches), track_upd={str(updated)}))
+                show_message(_("{quantity} tracks matched. {total} were updated.").format(quantity=str(matches), total={str(updated)}))
                 return
             else:
-                show_message(_("Of {track} loved tracks, no matches were found in local db").format(track={str(len(tracks))}))
+                show_message(_("Of {quantity} loved tracks, no matches were found in local db").format(quantity={str(len(tracks))}))
                 return
         except:
             show_message(_("This doesn't seem to be working :("), mode='error')
