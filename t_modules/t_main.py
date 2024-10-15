@@ -7573,7 +7573,7 @@ class LastFMapi:
             count += len(tr.lfm_friend_likes)
             tr.lfm_friend_likes.clear()
 
-        show_message(_("Removed {} loves.").format(count))
+        show_message(_("Removed {N} loves.").format(N=count))
 
     def get_friends_love(self):
         if not last_fm_enable:
@@ -7625,7 +7625,7 @@ class LastFMapi:
         if not last_fm_enable:
             return
         username = prefs.last_fm_username
-        show_message(_("Scanning loved tracks for: {name}").format(name=username), mode="info")
+        show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
         self.scanning_username = username
 
         if not username:
@@ -7676,13 +7676,13 @@ class LastFMapi:
                 show_message(_("User has no loved tracks."))
                 return
             if matches > 0 and updated == 0:
-                show_message(_("{quantity} matched tracks are up to date.").format(quantity=str(matches)))
+                show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
                 return
             if matches > 0 and updated > 0:
-                show_message(_("{quantity} tracks matched. {total} were updated.").format(quantity=str(matches), total=str(updated)))
+                show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
                 return
             else:
-                show_message(_("Of {quantity} loved tracks, no matches were found in local db").format(quantity=str(len(tracks)))) 
+                show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks)))) 
                 return
         except:
             show_message(_("This doesn't seem to be working :("), mode='error')
@@ -8460,7 +8460,7 @@ class Tauon:
                     if mb > 90:
                         break
                     if mb % 5 == 0:
-                        show_message(_("Downloading... {data}/80MB").format(data=mb))
+                        show_message(_("Downloading... {N}/80MB").format(N=mb))
 
             except Exception as e:
                 show_message(_("Download failed"), str(e), mode="error")
@@ -12639,7 +12639,7 @@ class AlbumArt():
             s = musicbrainzngs.search_artists(artist, limit=1)
             artist_id = s['artist-list'][0]['id']
         except:
-            print("Failed to find artist MBID for: {name}".format(name=artist))
+            print("Failed to find artist MBID for: {artist}".format(artist=artist))
             prefs.failed_background_artists.append(artist)
             return None
 
@@ -12674,7 +12674,7 @@ class AlbumArt():
 
         except:
             #raise
-            print("Failed to find fanart background for: {name}".format(name=artist))
+            print("Failed to find fanart background for: {artist}".format(artist=artist))
             if not gui.artist_info_panel:
                 artist_info_box.get_data(artist)
                 path = artist_info_box.get_data(artist, get_img_path=True)
@@ -13971,8 +13971,8 @@ def load_xspf(path):
             console.print("-- -- Album: " + track['album'], level=2)
 
     if missing > 0:
-        show_message(_('Failed to locate {quantity} out of {total} tracks.')
-                            .format(quantity=str(missing), total=str(len(a))))
+        show_message(_('Failed to locate {N} out of {T} tracks.')
+                            .format(N=str(missing), T=str(len(a))))
     # print(playlist)
     if playlist:
         pctl.multi_playlist.append(pl_gen(title=name,
@@ -14923,12 +14923,12 @@ class RenameTrackBox:
 
             if total_todo != len(r_todo):
                 show_message(_("Rename complete."),
-                             _("{quantity} / {total} filenames were written.")
-                       .format(quantity=str(total_todo), total=str(len(r_todo))), mode='warning')
+                             _("{N} / {T} filenames were written.")
+                       .format(N=str(total_todo), T=str(len(r_todo))), mode='warning')
             else:
                 show_message(_("Rename complete."),
-                             _("{quantity} / {total} filenames were written.")
-                       .format(quantity=str(total_todo), total=str(len(r_todo))), mode='done')
+                             _("{N} / {T} filenames were written.")
+                       .format(N=str(total_todo), T=str(len(r_todo))), mode='done')
             pctl.notify_change()
 
 
@@ -15009,7 +15009,7 @@ class TransEditBox:
                          mode="info")
 
         y += round(24 * gui.scale)
-        ddt.text((x, y), _("Number of tracks selected: {quantity}").format(quantity=len(select)), colours.box_title_text, 313)
+        ddt.text((x, y), _("Number of tracks selected: {N}").format(N=len(select)), colours.box_title_text, 313)
 
         y += round(24 * gui.scale)
 
@@ -15151,7 +15151,7 @@ class TransEditBox:
                     gui.update += 1
                 tauon.bg_save()
                 if not gui.message_box:
-                    show_message(_("{qunatity} files rewritten").format(quantity=gui.tag_write_count), mode="done")
+                    show_message(_("{N} files rewritten").format(N=gui.tag_write_count), mode="done")
                 gui.write_tag_in_progress = False
             if not gui.write_tag_in_progress:
                 gui.tag_write_count = 0
@@ -16731,7 +16731,7 @@ def delete_track_image(track_object):
         n = remove_embed_picture(track_object, dry=True)
         gui.message_box_confirm_callback = remove_embed_picture
         gui.message_box_confirm_reference = (track_object, False)
-        show_message(_("This will erase any embedded image in {quantity} files. Are you sure?").format(quantity=n), mode="confirm")
+        show_message(_("This will erase any embedded image in {N} files. Are you sure?").format(N=n), mode="confirm")
 
 
 
@@ -18870,7 +18870,7 @@ def remove_duplicates(pl):
     if not removed:
         show_message(_("No duplicates were found"))
     else:
-        show_message(_("{quantity} duplicates removed").format(quantity=removed), mode="done")
+        show_message(_("{N} duplicates removed").format(N=removed), mode="done")
 
     pctl.multi_playlist[pl][2][:] = playlist[:]
 
@@ -18998,9 +18998,9 @@ def auto_sync_thread(pl):
                 console.print("Need to transcode")
                 remain = len(todos) - i
                 if remain > 1:
-                    gui.sync_progress = _("{quantity} Folders Remaining").format(quantity=str(remain))
+                    gui.sync_progress = _("{N} Folders Remaining").format(N=str(remain))
                 else:
-                    gui.sync_progress = _("{quantity} Folder Remaining").format(quantity=str(remain))
+                    gui.sync_progress = _("{N} Folder Remaining").format(N=str(remain))
                 transcode_list.append(folder_dict[item])
                 tm.ready("worker")
                 while transcode_list:
@@ -20951,7 +20951,7 @@ def rename_parent(index, template):
             show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode='error')
             return
 
-    show_message(_("Folder renamed."), _("Renamed to: {object}").format(object=new), mode='done')
+    show_message(_("Folder renamed."), _("Renamed to: {name}").format(name=new), mode='done')
 
     if pre_state == 1:
         pctl.revert()
@@ -21708,7 +21708,7 @@ def selection_queue_deco():
 
     total = get_hms_time(total)
 
-    text = (_('Queue {quantity}').format(quantity=len(shift_selection))) + f" [{total}]"
+    text = (_('Queue {N}').format(N=len(shift_selection))) + f" [{total}]"
 
     return [colours.menu_text, colours.menu_background, text]
 
@@ -22941,7 +22941,7 @@ def clean_db_fast():
         keys -= set(pl[2])
     for item in keys:
         pctl.purge_track(item, fast=True)
-    gui.show_message(_("Done! {quantity} old items were removed.").format(quantity=len(keys)), mode="done")
+    gui.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
     gui.suggest_clean_db = False
 
 
@@ -23119,7 +23119,7 @@ def import_fmps():
                 star_store.set_rating(tr.index, rating)
                 unique.add(tr.index)
 
-    show_message(_("{quantity} ratings imported").format(quantity=str(len(unique))), mode="done")
+    show_message(_("{N} ratings imported").format(N=str(len(unique))), mode="done")
 
     gui.pl_update += 1
 
@@ -26714,14 +26714,14 @@ def worker1():
                     shutil.rmtree(job[0])
 
                 except:
-                    show_message(_("Something has gone horribly wrong!"), _("Could not delete {object}").format(object=job[0]), mode='error')
+                    show_message(_("Something has gone horribly wrong!"), _("Could not delete {name}").format(name=job[0]), mode='error')
                     gui.update += 1
                     move_in_progress = False
                     return
 
-                show_message(_("Folder move complete."), _("Folder name: {object}").format(object=job[3]), mode='done')
+                show_message(_("Folder move complete."), _("Folder name: {name}").format(name=job[3]), mode='done')
             else:
-                show_message(_("Folder copy complete."), _("Folder name: {object}").format(object=job[3]), mode='done')
+                show_message(_("Folder copy complete."), _("Folder name: {name}").format(name=job[3]), mode='done')
 
             move_in_progress = False
             load_orders.append(job[4])
@@ -26767,8 +26767,8 @@ def worker1():
                     items_removed += 1
 
             cm_clean_db = False
-            show_message(_("Cleaning complete."), _("{quantity} items were removed from the database.")
-                                                                    .format(quantity=str(items_removed)), mode='done')
+            show_message(_("Cleaning complete."), _("{N} items were removed from the database.")
+                                                                    .format(N=str(items_removed)), mode='done')
             if album_mode:
                 reload_albums(True)
             if gui.combo_mode:
@@ -29609,7 +29609,7 @@ class Over:
             if not t:
                 show_message(_("Error, not  connected to last.fm"))
                 return
-            show_message(_("Warning: This process will take approximately {time} minutes to complete.").format(time=(t // 60)),
+            show_message(_("Warning: This process will take approximately {T} minutes to complete.").format(T=(t // 60)),
                          _("Press again while holding Shift if you understand"), mode="warning")
             return
 
@@ -31795,7 +31795,7 @@ class TopPanel:
         elif after_scan:
             # bg = colours.status_info_text
             bg = [100, 200, 100, 255]
-            text = _("Scanning Tags...  {quantity} remaining").format(quantity=str(len(after_scan)))
+            text = _("Scanning Tags...  {N} remaining").format(N=str(len(after_scan)))
         elif move_in_progress:
             text = _("File copy in progress...")
             bg = colours.status_info_text
@@ -31804,7 +31804,7 @@ class TopPanel:
             text = _("Cleaning db...  ") + per + "%"
             bg = [100, 200, 100, 255]
         elif to_scan:
-            text = _("Rescanning Tags...  {quantity} remaining").format(quantity=str(len(to_scan)))
+            text = _("Rescanning Tags...  {N} remaining").format(N=str(len(to_scan)))
             bg = [100, 200, 100, 255]
         elif plex.scanning:
             text = _("Accessing PLEX library...")
@@ -31865,7 +31865,7 @@ class TopPanel:
                     new[ip] = timer
             tauon.listen_alongers = new
 
-            text = _("{quantity} listening along").format(quantity=len(tauon.listen_alongers))
+            text = _("{N} listening along").format(N=len(tauon.listen_alongers))
             bg = [40, 190, 235, 255]
         else:
             status = False
@@ -31922,9 +31922,9 @@ class TopPanel:
             if gui.sync_progress:
                 text = gui.sync_progress
             else:
-                text = _("{quantity} Folder Remaining {total}").format(quantity=str(len(transcode_list)), total=transcode_state)
+                text = _("{N} Folder Remaining {T}").format(N=str(len(transcode_list)), T=transcode_state)
                 if len(transcode_list) > 1:
-                    text = _("{quantity} Folders Remaining {total}").format(quantity=str(len(transcode_list)), total=transcode_state)
+                    text = _("{N} Folders Remaining {T}").format(N=str(len(transcode_list)), T=transcode_state)
 
             x += ddt.text((x, y), text, bg, 311) + 8 * gui.scale
 
@@ -37723,15 +37723,15 @@ class ArtistList:
         if not album_mode:
             count = self.current_artist_track_counts[artist]
             if count > 1:
-                text = _("{quantity} tracks").format(quantity=str(count))
+                text = _("{N} tracks").format(N=str(count))
             else:
-                text = _("{quantity} track").format(quantity=str(count))
+                text = _("{N} track").format(N=str(count))
         else:
             album_count = len(self.current_album_counts[artist])
             if album_count > 1:
-                text = _("{quantity} tracks").format(quantity=str(album_count))
+                text = _("{N} tracks").format(N=str(album_count))
             else:
-                text = _("{quantity} track").format(quantity=str(album_count))
+                text = _("{N} track").format(N=str(album_count))
 
         if gui.preview_artist_loading == artist:
             # . Max 20 chars. Alt: Downloading image, Loading image
@@ -37861,15 +37861,15 @@ class ArtistList:
             if not album_mode:
                 count = self.current_artist_track_counts[artist]
                 if count > 1:
-                    text = _("{quantity} tracks").format(quantity=str(count))
+                    text = _("{N} tracks").format(N=str(count))
                 else:
-                    text = _("{quantity} track").format(quantity=str(count))
+                    text = _("{N} track").format(N=str(count))
             else:
                 album_count = len(self.current_album_counts[artist])
                 if album_count > 1:
-                    text = _("{quantity} tracks").format(quantity=str(album_count))
+                    text = _("{N} tracks").format(N=str(album_count))
                 else:
-                    text = _("{quantity} track").format(quantity=str(album_count))                   
+                    text = _("{N} track").format(N=str(album_count))                   
 
             if gui.preview_artist_loading == artist:
                 # . Max 20 chars. Alt: Downloading image, Loading image
@@ -38051,10 +38051,12 @@ class ArtistList:
                         if len(block) > 1:
                             if c < block[0] or c >= block[-1]:
                                 select = block[0]
-                                toast(_("First of artist's albums ({quantity} albums)").format(quantity=len(block)))
+                                toast(_("First of artist's albums ({N} albums)")
+                                    .format(N=len(block)))
                             else:
                                 select = block[-1]
-                                toast(_("Last of artist's albums ({quantity} albums)").format(quantity=len(block)))
+                                toast(_("Last of artist's albums ({N} albums)")
+                                    .format(N=len(block)))
                     else:
                         select = None
                         for bb, block in enumerate(blocks):
@@ -38066,21 +38068,21 @@ class ArtistList:
                                     if i == 0:
                                        select = al
                                        if len(block) > 1:
-                                           toast(_("Start of location {current} of {total} ({quantity} albums)")
-                                                .format(current=bb + 1, total=len(blocks), quantity=len(block)))
+                                           toast(_("Start of location {N} of {T} ({Nb} albums)")
+                                                .format(N=bb + 1, T=len(blocks), Nb=len(block)))
                                        else:
-                                           toast(_("Location {current} of {total}")
-                                                .format(current=bb + 1, total=len(blocks)))
+                                           toast(_("Location {N} of {T}")
+                                                .format(N=bb + 1, T=len(blocks)))
                                        break
 
                             if next and not select:
                                 select = block[-1]
                                 if len(block) > 1:
-                                    toast(_("End of location {current} of {total} ({quantity} albums)")
-                                        .format(current=bb + 1, total=len(blocks), quantity=len(block)))
+                                    toast(_("End of location {N} of {T} ({Nb} albums)")
+                                        .format(N=bb + 1, T=len(blocks), Nb=len(block)))
                                 else:
-                                    toast(_("Location {current} of {total}")
-                                        .format(current=bb, total=len(blocks)))
+                                    toast(_("Location {N} of {T}")
+                                        .format(N=bb, T=len(blocks)))
                                 break
                             if select:
                                 break
@@ -38088,14 +38090,14 @@ class ArtistList:
                         select = blocks[0][0]
                         if len(blocks[0]) > 1:
                             if len(blocks) > 1:
-                                toast(_("Start of location 1 of {total} ({quantity} albums)")
-                                    .format(total=len(blocks), quantity=len(blocks[0])))
+                                toast(_("Start of location 1 of {N} ({Nb} albums)")
+                                    .format(N=len(blocks), Nb=len(blocks[0])))
                             else:
-                                toast(_("Location 1 of {total} ({quantity} albums)")
-                                    .format(total=len(blocks), quantity=len(blocks[0])))
+                                toast(_("Location 1 of {N} ({Nb} albums)")
+                                    .format(N=len(blocks), Nb=len(blocks[0])))
                         else:
-                            toast(_("Location 1 of {total}")
-                                .format(total=len(blocks)))
+                            toast(_("Location 1 of {N}")
+                                .format(N=len(blocks)))
 
                     pctl.playlist_view_position = select
                     pctl.selected_in_playlist = select
@@ -39406,10 +39408,10 @@ class QueueBox:
         # Show total duration text "n Tracks [0:00:00]"
         if tracks and fq:           
             if tracks < 2:
-                line = _("{number_of} Track").format(number_of=str(tracks)) + " [" + get_hms_time(duration) + "]"
+                line = _("{N} Track").format(N=str(tracks)) + " [" + get_hms_time(duration) + "]"
                 ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
             else:
-                line = _("{number_of} Tracks").format(number_of=str(tracks)) + " [" + get_hms_time(duration) + "]"
+                line = _("{N} Tracks").format(N=str(tracks)) + " [" + get_hms_time(duration) + "]"
                 ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
 
             
