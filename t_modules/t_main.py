@@ -16670,7 +16670,7 @@ def remove_embed_picture(track_object, dry=True):
     elif removed == 1:
         show_message(_("Deleted embedded picture from file"), mode='done')
     else:
-        show_message(_("{quantity} files processed").local(quantity=removed), mode='done')
+        show_message(_("{N} files processed").local(N=removed), mode='done')
     if pr == 1:
         pctl.revert()
 
