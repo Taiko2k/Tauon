@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-09-12 13:09+0000\n"
+"PO-Revision-Date: 2024-09-22 13:45+0000\n"
 "Last-Translator: gallegonovato <fran-carro@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -2337,7 +2337,7 @@ msgstr "Obtener los favoritos de tus amigos"
 
 #: t_modules/t_main.py:29475
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Enviar favoritos al escanear/volver a escanear"
 
 #: t_modules/t_main.py:29489 t_modules/t_main.py:29491
 msgid "Paste Token"
