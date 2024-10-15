@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-09-20 14:40+0000\n"
+"PO-Revision-Date: 2024-09-23 23:45+0000\n"
 "Last-Translator: Software In Interlingua <softinterlingua@gmail.com>\n"
 "Language-Team: Interlingua <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/ia/>\n"
@@ -120,15 +120,15 @@ msgstr ""
 
 #: t_modules/t_main.py:8229
 msgid "day"
-msgstr ""
+msgstr "die"
 
 #: t_modules/t_main.py:8230
 msgid "days"
-msgstr ""
+msgstr "dies"
 
 #: t_modules/t_main.py:8232
 msgid "Scanning for Chromecasts..."
-msgstr ""
+msgstr "Cercante Chromecasts..."
 
 #: t_modules/t_main.py:8233
 msgid "Cast to: %s"
@@ -148,19 +148,19 @@ msgstr ""
 
 #: t_modules/t_main.py:8239
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Aperir Tauon Music Box"
 
 #: t_modules/t_main.py:8240
 msgid "Play/Pause"
-msgstr ""
+msgstr "Reproducer/Pausar"
 
 #: t_modules/t_main.py:8241
 msgid "Next Track"
-msgstr ""
+msgstr "Tracia sequente"
 
 #: t_modules/t_main.py:8242
 msgid "Previous Track"
-msgstr ""
+msgstr "Tracia previe"
 
 #: t_modules/t_main.py:8243
 msgid "Quit"
@@ -192,19 +192,19 @@ msgstr ""
 
 #: t_modules/t_main.py:9742
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Stoppa le synchronisation antea de sortir!"
 
 #: t_modules/t_main.py:14695
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Listas de reproduction + Cauda"
 
 #: t_modules/t_main.py:14696 t_modules/t_main.py:39050
 msgid "Queue"
-msgstr ""
+msgstr "Cauda"
 
 #: t_modules/t_main.py:14698
 msgid "Artist List"
-msgstr ""
+msgstr "Lista de artistas"
 
 #: t_modules/t_main.py:14700
 msgid "Folder Navigator"
@@ -212,11 +212,11 @@ msgstr ""
 
 #: t_modules/t_main.py:14775
 msgid "Track Renaming"
-msgstr ""
+msgstr "Renomination de tracias"
 
 #: t_modules/t_main.py:14778 t_modules/t_main.py:47229
 msgid "Default"
-msgstr ""
+msgstr "Predefinite"
 
 #: t_modules/t_main.py:14802
 msgid "BEFORE"
@@ -1275,7 +1275,7 @@ msgstr ""
 
 #: t_modules/t_main.py:21993 t_modules/t_main.py:24175
 msgid "Exit"
-msgstr ""
+msgstr "Sortir"
 
 #: t_modules/t_main.py:22021 t_modules/t_main.py:28062
 msgid "Off"
@@ -1421,7 +1421,7 @@ msgstr ""
 
 #: t_modules/t_main.py:22961
 msgid "Settings"
-msgstr ""
+msgstr "Parametros"
 
 #: t_modules/t_main.py:22962
 msgid "Database…"
@@ -1614,11 +1614,11 @@ msgstr ""
 
 #: t_modules/t_main.py:24167
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Disblocar le modo aleatori"
 
 #: t_modules/t_main.py:24173
 msgid "Donate"
-msgstr ""
+msgstr "Facer un donation"
 
 #: t_modules/t_main.py:24186
 msgid "Disengage Quick Add"
@@ -1715,7 +1715,7 @@ msgstr ""
 
 #: t_modules/t_main.py:27866
 msgid "Window"
-msgstr ""
+msgstr "Fenestra"
 
 #: t_modules/t_main.py:27867
 msgid "View"
@@ -1735,11 +1735,11 @@ msgstr ""
 
 #: t_modules/t_main.py:27871
 msgid "Stats"
-msgstr ""
+msgstr "Statisticas"
 
 #: t_modules/t_main.py:27872
 msgid "About"
-msgstr ""
+msgstr "A proposito de"
 
 #: t_modules/t_main.py:27919
 msgid "Use album art as background"
@@ -2636,7 +2636,7 @@ msgstr ""
 
 #: t_modules/t_main.py:34314
 msgid "Playlist is empty"
-msgstr ""
+msgstr "Le lista de reproduction es vacue"
 
 #: t_modules/t_main.py:34316
 msgid "Drag and drop files to import"
@@ -2917,7 +2917,7 @@ msgstr ""
 
 #: t_modules/t_main.py:46517
 msgid "Queue is Empty"
-msgstr ""
+msgstr "Le cauda es vacue"
 
 #: t_modules/t_main.py:46897 t_modules/t_main.py:46916
 #: t_modules/t_main.py:46935 t_modules/t_main.py:46958
