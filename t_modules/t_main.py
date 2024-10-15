@@ -20327,8 +20327,14 @@ def paste(playlist_no=None, track_id=None):
         if num and num.isnumeric():
             print(num)
             tidal.append_album(num)
-
         clip = False
+
+    elif "tidal.com/playlist/" in clip:
+        print(clip)
+        num = clip.split("/")[-1]
+        tidal.playlist(num)
+        clip = False
+
     elif "spotify" in clip:
         cargo.clear()
         for link in clip.split("\n"):
