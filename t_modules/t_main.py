@@ -18201,7 +18201,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             for col in column_names:
 
-                if quote.lower() == col.lower() or (quote).lower() == col.lower():
+                if quote.lower() == col.lower() or _(quote).lower() == col.lower():
                     cm_found = True
 
                     if cm[-1] == ">":
@@ -28393,7 +28393,7 @@ class Over:
 
         for name in lyric_sources.keys():
             enabled = name in prefs.lyrics_enables
-            title = (name)
+            title = _(name)
             if name in uses_scraping:
                 title += "*"
             new = self.toggle_square(x, y, enabled, title)
@@ -31661,7 +31661,7 @@ class TopPanel:
             gui.pl_update = 1
             if not prefs.tabs_on_top:
                 if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
-                    gui.mode_toast_text = (pctl.multi_playlist[pctl.active_playlist_viewing][0])
+                    gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing][0])
                     toast_mode_timer.set()
                     gui.frame_callback_list.append(TestTimer(1))
                 else:
@@ -46277,7 +46277,7 @@ while pctl.running:
                         ddt.rect(box, bg)
                         ddt.rect(grip, colours.column_grip)
 
-                        line = (item[0])
+                        line = _(item[0])
                         ddt.text_background_colour = bg
 
                         # # Remove columns if positioned out of view
