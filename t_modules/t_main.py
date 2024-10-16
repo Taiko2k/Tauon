@@ -18223,6 +18223,12 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm.startswith("tpl\""):
             playlist.extend(tidal.playlist(quote, return_list=True))
 
+        elif cm.startswith("tar\""):
+            playlist.extend(tidal.artist(quote, return_list=True))
+
+        elif cm.startswith("tmix\""):
+            playlist.extend(tidal.mix(quote, return_list=True))
+
         elif cm == "sal":
             playlist.extend(spot_ctl.get_library_albums(return_list=True))
 
@@ -20324,9 +20330,10 @@ def lightning_paste():
 
 def paste(playlist_no=None, track_id=None):
     clip = copy_from_clipboard()
+    print(clip)
     if "tidal.com/album/" in clip:
         print(clip)
-        num = clip.split("/")[-1]
+        num = clip.split("/")[-1].split("?")[0]
         if num and num.isnumeric():
             print(num)
             tidal.append_album(num)
@@ -20334,8 +20341,26 @@ def paste(playlist_no=None, track_id=None):
 
     elif "tidal.com/playlist/" in clip:
         print(clip)
-        num = clip.split("/")[-1]
+        num = clip.split("/")[-1].split("?")[0]
         tidal.playlist(num)
+        clip = False
+
+    elif "tidal.com/mix/" in clip:
+        print(clip)
+        num = clip.split("/")[-1].split("?")[0]
+        tidal.mix(num)
+        clip = False
+
+    elif "tidal.com/browse/track/" in clip:
+        print(clip)
+        num = clip.split("/")[-1].split("?")[0]
+        tidal.track(num)
+        clip = False
+
+    elif "tidal.com/browse/artist/" in clip:
+        print(clip)
+        num = clip.split("/")[-1].split("?")[0]
+        tidal.artist(num)
         clip = False
 
     elif "spotify" in clip:
@@ -22775,6 +22800,8 @@ def check_auto_update_okay(code, pl=None):
                               not "slt" in cmds and
                               not "spl\"" in code and
                               not "tpl\"" in code and
+                              not "tar\"" in code and
+                              not "tmix\"" in code and
                               not "r" in cmds)
 
 
@@ -28917,7 +28944,7 @@ class Over:
 
             if os.path.isfile(tidal.save_path):
                 y += round(30 * gui.scale)
-                ddt.text((x + 0 * gui.scale, y), _("Paste album/playlist URL's to playlist using ctrl+v"),
+                ddt.text((x + 0 * gui.scale, y), _("Paste TIDAL URL's into Tauon using ctrl+v"),
                      colours.box_text_label, 11)
 
         if self.account_view == 11:
@@ -30950,6 +30977,10 @@ def clear_gen_ask(id):
     if "spl\"" in pctl.gen_codes.get(id, ""):
         return
     if "tpl\"" in pctl.gen_codes.get(id, ""):
+        return
+    if "tar\"" in pctl.gen_codes.get(id, ""):
+        return
+    if "tmix\"" in pctl.gen_codes.get(id, ""):
         return
     gui.message_box_confirm_callback = clear_gen
     gui.message_box_confirm_reference = (id,)
