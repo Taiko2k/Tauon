@@ -223,7 +223,7 @@ class Tidal:
             return playlist
 
         self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.name, playlist=playlist))
-
+        self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tpl\"{id}\""
 
     def append_album(self, id):
         self.try_load()
