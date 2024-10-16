@@ -18220,6 +18220,9 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm.startswith("spl\""):
             playlist.extend(spot_ctl.playlist(quote, return_list=True))
 
+        elif cm.startswith("tpl\""):
+            playlist.extend(tidal.playlist(quote, return_list=True))
+
         elif cm == "sal":
             playlist.extend(spot_ctl.get_library_albums(return_list=True))
 
@@ -22771,6 +22774,7 @@ def check_auto_update_okay(code, pl=None):
                               not "sal" in cmds and
                               not "slt" in cmds and
                               not "spl\"" in code and
+                              not "tpl\"" in code and
                               not "r" in cmds)
 
 
@@ -28913,7 +28917,7 @@ class Over:
 
             if os.path.isfile(tidal.save_path):
                 y += round(30 * gui.scale)
-                ddt.text((x + 0 * gui.scale, y), _("Paste album URL's to playlist using ctrl+v"),
+                ddt.text((x + 0 * gui.scale, y), _("Paste album/playlist URL's to playlist using ctrl+v"),
                      colours.box_text_label, 11)
 
         if self.account_view == 11:
@@ -30944,6 +30948,8 @@ def clear_gen_ask(id):
     if "jelly\"" in pctl.gen_codes.get(id, ""):
         return
     if "spl\"" in pctl.gen_codes.get(id, ""):
+        return
+    if "tpl\"" in pctl.gen_codes.get(id, ""):
         return
     gui.message_box_confirm_callback = clear_gen
     gui.message_box_confirm_reference = (id,)
