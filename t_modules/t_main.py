@@ -965,7 +965,7 @@ def uid_gen():
 notify_change = lambda: None
 
 
-def pl_gen(title='Default',
+def pl_gen(title=_('Default'),
            playing=0,
            playlist=None,
            position=0,
@@ -1447,7 +1447,7 @@ def open_uri(uri):
     load_order = LoadClass()
 
     for w in range(len(pctl.multi_playlist)):
-        if pctl.multi_playlist[w][0] == "Default":
+        if pctl.multi_playlist[w][0] == _("Default"):
             load_order.playlist = pctl.multi_playlist[w][6]
             break
     else:
@@ -2782,7 +2782,7 @@ except:
 
 perf_timer.set()
 
-radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+radio_playlists = [{"uid": uid_gen(), "name": _("Default"), "items": []}]
 
 primary_stations = []
 station = {
@@ -8727,7 +8727,7 @@ class PlexService:
         if return_list:
             return playlist
 
-        pctl.multi_playlist.append(pl_gen(title="PLEX Collection", playlist=playlist))
+        pctl.multi_playlist.append(pl_gen(title=_("PLEX Collection"), playlist=playlist))
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex path"
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -8980,7 +8980,7 @@ class SubsonicService:
         if return_list:
             return playlist
 
-        pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
+        pctl.multi_playlist.append(pl_gen(title=_("Airsonic Collection"), playlist=playlist))
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -9303,7 +9303,7 @@ class KoelService:
         if return_list:
             return playlist
 
-        pctl.multi_playlist.append(pl_gen(title="Koel Collection", playlist=playlist))
+        pctl.multi_playlist.append(pl_gen(title=_("Koel Collection"), playlist=playlist))
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "koel path tn"
         standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
@@ -13618,7 +13618,7 @@ def prep_gal():
 def add_stations(stations, name):
     if len(stations) == 1:
         for i, s in enumerate(pctl.radio_playlists):
-            if s["name"] == "Default":
+            if s["name"] == _("Default"):
                 s["items"].insert(0, stations[0])
                 s["scroll"] = 0
                 pctl.radio_playlist_viewing = i
@@ -13626,7 +13626,7 @@ def add_stations(stations, name):
         else:
             r = {}
             r["uid"] = uid_gen()
-            r["name"] = 'Default'
+            r["name"] = _('Default')
             r["items"] = stations
             r["scroll"] = 0
             pctl.radio_playlists.append(r)
@@ -17301,7 +17301,7 @@ def delete_playlist(index, force=False, check_lock=False):
     if gui.radio_view:
         del pctl.radio_playlists[index]
         if not pctl.radio_playlists:
-            pctl.radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+            pctl.radio_playlists = [{"uid": uid_gen(), "name": _("Default"), "items": []}]
         return
 
     global default_playlist
@@ -17974,13 +17974,13 @@ def new_playlist(switch=True):
     if gui.radio_view:
         r = {}
         r["uid"] = uid_gen()
-        r["name"] = "New Radio List"
+        r["name"] = _("New Radio List")
         r["items"] = []  # copy.copy(prefs.radio_urls)
         r["scroll"] = 0
         pctl.radio_playlists.append(r)
         return
 
-    title = gen_unique_pl_title("New Playlist")
+    title = gen_unique_pl_title(_("New Playlist"))
 
     top_panel.prime_side = 1
     top_panel.prime_tab = len(pctl.multi_playlist)
@@ -19441,7 +19441,7 @@ def gen_codec_pl(codec):
                 playlist.append(item)
 
     if len(playlist) > 0:
-        pctl.multi_playlist.append(pl_gen(title=_("Codec") + ": " + codec,
+        pctl.multi_playlist.append(pl_gen(title=_("Codec: ") + codec,
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
@@ -19576,7 +19576,7 @@ def gen_replay(pl):
             playlist.append(item)
 
     if len(playlist) > 0:
-        pctl.multi_playlist.append(pl_gen(title="ReplayGain Tracks",
+        pctl.multi_playlist.append(pl_gen(title=_("ReplayGain Tracks"),
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
     else:
@@ -23074,7 +23074,7 @@ def export_database():
 
 
 def q_to_playlist():
-    pctl.multi_playlist.append(pl_gen(title="Play History",
+    pctl.multi_playlist.append(pl_gen(title=_("Play History"),
                                       playing=0,
                                       playlist=lisft(reversed(copy.deepcopy(pctl.track_queue))),
                                       position=0,
@@ -37249,7 +37249,7 @@ def create_artist_pl(artist, replace=False):
 
     if replace:
         pctl.multi_playlist[this_pl][2][:] = playlist[:]
-        pctl.multi_playlist[this_pl][0] = "Artist: " + artist
+        pctl.multi_playlist[this_pl][0] = _("Artist: ") + artist
         if album_mode:
             reload_albums()
 
@@ -37268,7 +37268,7 @@ def create_artist_pl(artist, replace=False):
 
     else:
 
-        pctl.multi_playlist.append(pl_gen(title="Artist: " + artist,
+        pctl.multi_playlist.append(pl_gen(title=_("Artist: ") + artist,
                                           playlist=playlist,
                                           hide_title=0,
                                           parent=pl_to_id(source_pl)))
@@ -38915,7 +38915,7 @@ class QueueBox:
                     for part in parts:
                         playlist.append(part[0])
 
-            pctl.multi_playlist.append(pl_gen(title="Queued Tracks",
+            pctl.multi_playlist.append(pl_gen(title=_("Queued Tracks"),
                                               playlist=copy.deepcopy(playlist),
                                               hide_title=0))
 
@@ -45973,7 +45973,7 @@ while pctl.running:
                             pctl.active_playlist_playing = pctl.active_playlist_viewing
 
                             # If already in playlist, delete latest add
-                            if "Default" == pctl.multi_playlist[target_pl][0]:
+                            if _("Default") == pctl.multi_playlist[target_pl][0]:
                                 if default_playlist.count(order.tracks[0]) > 1:
                                     for q in reversed(range(len(default_playlist))):
                                         if default_playlist[q] == order.tracks[0]:
@@ -47528,7 +47528,7 @@ while pctl.running:
                                 if all(word in line for word in search_terms):
                                     playlist.append(item)
                             if len(playlist) > 0:
-                                pctl.multi_playlist.append(pl_gen(title="Search Results",
+                                pctl.multi_playlist.append(pl_gen(title=_("Search Results"),
                                                                   playlist=copy.deepcopy(playlist)))
                                 pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[
                                     pctl.active_playlist_viewing][0] + "\" f\"" + search_text.text + "\""
