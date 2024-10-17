@@ -132,29 +132,29 @@ def get_filesize_string(file_bytes, rounding=2):
     if not file_bytes:
         return "0"
     if file_bytes < 1000:
-        line = locale.str(file_bytes) + " B"
+        line = locale.str(file_bytes) + _(" B")
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000, rounding)
-        line = locale.str(file_kb) + " KB"
+        line = locale.str(file_kb) + _(" KB")
     elif file_bytes < 1000000000:
         file_mb = round(file_bytes / 1000000, rounding)
-        line = locale.str(file_mb) + " MB"
+        line = locale.str(file_mb) + _(" MB")
     else:
         file_mb = round(file_bytes / 1000000000, 1)
-        line = locale.str(file_mb) + " GB"
+        line = locale.str(file_mb) + _(" GB")
     return line
 
 def get_filesize_string_rounded(file_bytes):
     if not file_bytes:
         return "0"
     if file_bytes < 1000:
-        line = str(round(file_bytes)) + " B"
+        line = str(round(file_bytes)) + _(" B")
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000)
-        line = str(file_kb) + " KB"
+        line = str(file_kb) + _(" KB")
     else:
         file_mb = round(file_bytes / 1000000, 1)
-        line = str(file_mb) + " MB"
+        line = str(file_mb) + _(" MB")
     return line
 
 # Estimates the perceived luminance of a colour
