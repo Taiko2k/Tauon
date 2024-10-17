@@ -1158,7 +1158,6 @@ def player4(tauon):
                         i = 0
                         while True:
                             status, path = cachement.get_file(loaded_track)
-                            print(f"AA: {pctl.buffering_percent}, {pctl.new_time / loaded_track.length}")
                             if status == 1:
                                 per = (pctl.new_time / loaded_track.length) * 100
                                 if per < 1:

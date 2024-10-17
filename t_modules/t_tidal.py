@@ -211,6 +211,59 @@ class Tidal:
         self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].append(nt.index)
         self.tauon.gui.pl_update += 1
 
+    def fav_albums(self, return_list=False):
+
+        self.try_load()
+        if not self.session:
+            return []
+        self.build_cache()
+
+        try:
+            f = tidalapi.Favorites(self.session, self.session.user.id)
+        except Exception as e:
+            print("Error getting tidal user favorites")
+            print(str(e))
+            return []
+
+        playlist = []
+        for album in f.albums():
+            for track in album.tracks():
+                nt = self.new_track(track)
+                playlist.append(nt.index)
+
+        if return_list:
+            return playlist
+
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Albums", playlist=playlist))
+        self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tfa"
+        self.tauon.gui.show_message("Playlist load complete", mode="done")
+
+    def fav_tracks(self, return_list=False):
+
+        self.try_load()
+        if not self.session:
+            return []
+        self.build_cache()
+
+        try:
+            f = tidalapi.Favorites(self.session, self.session.user.id)
+        except Exception as e:
+            print("Error getting tidal user favorites")
+            print(str(e))
+            return []
+
+        playlist = []
+        for track in f.tracks():
+            nt = self.new_track(track)
+            playlist.append(nt.index)
+
+        if return_list:
+            return playlist
+
+        self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Tracks", playlist=playlist))
+        self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tft"
+        self.tauon.gui.show_message("Playlist load complete", mode="done")
+
     def playlist(self, id, return_list=False):
 
         self.try_load()

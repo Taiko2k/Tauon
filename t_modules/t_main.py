@@ -18225,6 +18225,12 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm.startswith("tpl\""):
             playlist.extend(tidal.playlist(quote, return_list=True))
 
+        elif cm == "tfa":
+            playlist.extend(tidal.fav_albums(return_list=True))
+
+        elif cm == "tft":
+            playlist.extend(tidal.fav_tracks(return_list=True))
+
         elif cm.startswith("tar\""):
             playlist.extend(tidal.artist(quote, return_list=True))
 
@@ -28948,6 +28954,15 @@ class Over:
                 y += round(30 * gui.scale)
                 ddt.text((x + 0 * gui.scale, y), _("Paste TIDAL URL's into Tauon using ctrl+v"),
                      colours.box_text_label, 11)
+                y += round(30 * gui.scale)
+                if self.button(x, y, _("Import Albums")):
+                    show_message(_("Fetching playlist..."))
+                    shooter(tidal.fav_albums)
+
+                y += round(30 * gui.scale)
+                if self.button(x, y, _("Import Tracks")):
+                    show_message(_("Fetching playlist..."))
+                    shooter(tidal.fav_tracks)
 
         if self.account_view == 11:
             ddt.text((x, y), 'Tauon Satellite', colours.box_sub_text, 213)
