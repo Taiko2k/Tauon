@@ -5330,6 +5330,8 @@ class PlayerCtl:
         self.commit = None
         self.spot_playing = False
 
+        self.buffering_percent = 0
+
     def notify_change(self):
         self.db_inc += 1
         tauon.bg_save()
@@ -32207,6 +32209,8 @@ class BottomBarType1:
             else:
                 gui.seek_cur_show = False
 
+        if gui.buffering and pctl.buffering_percent:
+            ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1] + self.seek_bar_size[1] - round(3 * gui.scale)), (self.seek_bar_size[0] * pctl.buffering_percent / 100, round(3 * gui.scale)), [255, 255, 255, 50])
         # Volume mouse wheel control -----------------------------------------
         if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(mouse_position,
                                                                                                      self.seek_bar_position + self.seek_bar_size):
