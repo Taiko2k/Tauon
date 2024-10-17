@@ -420,6 +420,7 @@ def player4(tauon):
                     break
 
         def dl_file(self, track):
+            pctl.buffering_percent = 0
             key = self.get_key(track)
             path = os.path.join(self.direc, key)
             if os.path.exists(path):
@@ -490,7 +491,8 @@ def player4(tauon):
                                 self.ready = track
 
                             gui.update += 1
-                            gui.buffering_text = str(math.floor(i / len(network_url) * 100)) + "%"
+                            pctl.buffering_percent = math.floor(i / len(network_url) * 100)
+                            gui.buffering_text = str(pctl.buffering_percent) + "%"
                             if self.get_now is not None and self.get_now != track:
                                 tauon.console.print("ABORT")
                                 return
@@ -542,10 +544,9 @@ def player4(tauon):
                                     #tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
                                     if length:
                                         gui.update += 1
-                                        if True: #a > 2000:
-                                            gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
-                                        else:
-                                            gui.buffering_text = str(round(a / 2100 * 100)) + "%"
+                                        pctl.buffering_percent = round(a * 1000 / length * 100)
+                                        gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
+
 
                                 if self.get_now is not None and self.get_now != track:
                                     tauon.console.print("ABORT")
@@ -918,6 +919,7 @@ def player4(tauon):
                             break
                         if timer.get() > 0.25 and gui.buffering is False:
                             gui.buffering_text = ""
+                            pctl.buffering_percent = 0
                             gui.buffering = True
                             gui.update += 1
                             tauon.wake()
@@ -948,6 +950,7 @@ def player4(tauon):
                             break
                         if timer.get() > 0.25 and gui.buffering is False:
                             gui.buffering_text = ""
+                            pctl.buffering_percent = 0
                             gui.buffering = True
                             gui.update += 1
                             tauon.wake()
@@ -1095,6 +1098,7 @@ def player4(tauon):
                             break
                         if r == 2:
                             if loaded_track.is_network:
+                                pctl.buffering_percent = 0
                                 gui.buffering = True
                                 gui.buffering_text = ""
 
@@ -1151,21 +1155,37 @@ def player4(tauon):
 
                         timer = Timer()
                         timer.set()
+                        i = 0
                         while True:
                             status, path = cachement.get_file(loaded_track)
+                            print(f"AA: {pctl.buffering_percent}, {pctl.new_time / loaded_track.length}")
+                            if status == 1:
+                                per = (pctl.new_time / loaded_track.length) * 100
+                                if per < 1:
+                                    break
+                                if pctl.buffering_percent - per > 5:
+                                    break
                             if status == 0 or status == 2:
                                 break
                             if timer.get() > 0.25 and gui.buffering is False:
                                 gui.buffering_text = ""
+                                pctl.buffering_percent = 0
                                 gui.buffering = True
                                 gui.update += 1
                                 tauon.wake()
+                            if i * 0.05 > 2:
+                                aud.pause()
+                            if pctl.playerCommandReady:
+                                break
 
                             time.sleep(0.05)
+                            i += 1
 
                         gui.buffering = False
                         gui.update += 1
                         tauon.wake()
+                        if pctl.playerCommandReady:
+                            continue
 
                         if status == 2:
                             loaded_track.found = False
