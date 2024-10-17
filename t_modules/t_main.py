@@ -965,7 +965,7 @@ def uid_gen():
 notify_change = lambda: None
 
 
-def pl_gen(title=_('Default'),
+def pl_gen(title='Default',
            playing=0,
            playlist=None,
            position=0,
@@ -1447,7 +1447,7 @@ def open_uri(uri):
     load_order = LoadClass()
 
     for w in range(len(pctl.multi_playlist)):
-        if pctl.multi_playlist[w][0] == _("Default"):
+        if pctl.multi_playlist[w][0] == "Default":
             load_order.playlist = pctl.multi_playlist[w][6]
             break
     else:
@@ -2782,7 +2782,7 @@ except:
 
 perf_timer.set()
 
-radio_playlists = [{"uid": uid_gen(), "name": _("Default"), "items": []}]
+radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 
 primary_stations = []
 station = {
@@ -13618,7 +13618,7 @@ def prep_gal():
 def add_stations(stations, name):
     if len(stations) == 1:
         for i, s in enumerate(pctl.radio_playlists):
-            if s["name"] == _("Default"):
+            if s["name"] == "Default":
                 s["items"].insert(0, stations[0])
                 s["scroll"] = 0
                 pctl.radio_playlist_viewing = i
@@ -13626,7 +13626,7 @@ def add_stations(stations, name):
         else:
             r = {}
             r["uid"] = uid_gen()
-            r["name"] = _('Default')
+            r["name"] = 'Default'
             r["items"] = stations
             r["scroll"] = 0
             pctl.radio_playlists.append(r)
@@ -17301,7 +17301,7 @@ def delete_playlist(index, force=False, check_lock=False):
     if gui.radio_view:
         del pctl.radio_playlists[index]
         if not pctl.radio_playlists:
-            pctl.radio_playlists = [{"uid": uid_gen(), "name": _("Default"), "items": []}]
+            pctl.radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
         return
 
     global default_playlist
@@ -45973,7 +45973,7 @@ while pctl.running:
                             pctl.active_playlist_playing = pctl.active_playlist_viewing
 
                             # If already in playlist, delete latest add
-                            if _("Default") == pctl.multi_playlist[target_pl][0]:
+                            if "Default" == pctl.multi_playlist[target_pl][0]:
                                 if default_playlist.count(order.tracks[0]) > 1:
                                     for q in reversed(range(len(default_playlist))):
                                         if default_playlist[q] == order.tracks[0]:
