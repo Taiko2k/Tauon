@@ -84,6 +84,8 @@ ma_device_config config;
 ma_device device;
 #endif
 
+pthread_mutex_t device_mutex;
+
 #ifdef PIPE
 pthread_t pw_thread;
 struct pw_main_loop *loop;
@@ -112,23 +114,38 @@ static void registry_event_global(void *data, uint32_t id,
                 uint32_t permissions, const char *type, uint32_t version,
                 const struct spa_dict *props)
 {
-     //printf("object: id:%u type:%s/%d\n", id, type, version);
-     const char *media_class;
 
-    if (props == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
+    if (props == NULL || type == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
         return;
+
+
+    //printf("object: id:%u type:%s/%d\n", id, type, version);
+    const char *media_class;
 
     media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
     if (media_class == NULL)
         return;
 
     if (spa_streq(media_class, "Audio/Sink")) {
+
+        pthread_mutex_lock(&device_mutex);
+        if (pipe_devices.device_count >= MAX_DEVICES){
+            printf("Error: Max devices\n");
+            pthread_mutex_unlock(&device_mutex);
+            return;
+        }
         const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
         const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
-        strncpy(pipe_devices.devices[pipe_devices.device_count].name, name, sizeof(pipe_devices.devices[pipe_devices.device_count].name) - 1);
-        strncpy(pipe_devices.devices[pipe_devices.device_count].description, description, sizeof(pipe_devices.devices[pipe_devices.device_count].description) - 1);
+        if (!name || !description) {
+            printf("Error: Missing name or description for device\n");
+            return;
+        }
+        snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
+        snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
         pipe_devices.device_count++;
         printf("Found audio sink: %s (%s)\n", name, description);
+        pthread_mutex_unlock(&device_mutex);
+
     }
 }
 
@@ -200,6 +217,7 @@ int fade_2_flag = 0;
 
 pthread_mutex_t buffer_mutex;
 pthread_mutex_t fade_mutex;
+
 //pthread_mutex_t pulse_mutex;
 
 float out_buff[2048 * 2];
@@ -1406,7 +1424,6 @@ static int pipe_exit(struct spa_loop *loopo, bool async, uint32_t seq,
 
 static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
-    //printf("Invoke function called with seq: %u\n", seq);
 
         struct spa_pod_builder b = { 0 };
         uint8_t buffer[1024];
@@ -1436,11 +1453,6 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
             pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
         }
 
-//        pw_properties_set(props, PW_KEY_NODE_LATENCY, "256/48000");
-//        pw_properties_set(props, PW_KEY_NODE_FORCE_QUANTUM, "64");
-//        pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
-
-
         pw_stream_update_properties(global_stream, &mutable_props->dict);
         pw_properties_free(mutable_props);
 
@@ -1453,8 +1465,8 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
                                                  PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS ),
                           params, 1);
 
-
 }
+
 
 static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
