@@ -155,12 +155,22 @@ static void registry_event_global(void *data, uint32_t id,
         const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
         if (!name || !description) {
             printf("Error: Missing name or description for device\n");
+            pthread_mutex_unlock(&pipe_devices_mutex);
             return;
         }
+
+        // Check if already added
+        for (size_t i = 0; i < pipe_devices.device_count; i++) {
+            if (pipe_devices.devices[i].id == id) {
+                pthread_mutex_unlock(&pipe_devices_mutex);
+                return;
+                }
+            }
         pipe_devices.devices[pipe_devices.device_count].id = id;
         snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
         snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
         pipe_devices.device_count++;
+        printf("ttt %d\n", pipe_devices.device_count);
         printf("Found audio sink: %s (%s)\n", name, description);
         pthread_mutex_unlock(&pipe_devices_mutex);
 
