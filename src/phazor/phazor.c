@@ -98,6 +98,7 @@ struct pw_stream *global_stream;
 int enum_done = 0;
 int pipe_set_samplerate = 48000;
 #define MAX_DEVICES 64
+#define POD_BUFFER_SIZE 2048
 struct device_info {
     char name[256];
     char description[256];
@@ -1422,51 +1423,100 @@ static int pipe_exit(struct spa_loop *loopo, bool async, uint32_t seq,
     return 0;
                      }
 
+struct pw_stream *global_stream = NULL; // Initialize appropriately
+
 static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
-                     const void *_data, size_t size, void *user_data){
+                       const void *_data, size_t size, void *user_data) {
 
-        struct spa_pod_builder b = { 0 };
-        uint8_t buffer[1024];
-        const struct spa_pod *params[1];
+    struct spa_pod_builder b = { 0 };
+    uint8_t buffer[POD_BUFFER_SIZE];
+    const struct spa_pod *params[1];
+    int ret;
 
-        spa_pod_builder_init(&b, buffer, sizeof(buffer));
-        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
-                                               &SPA_AUDIO_INFO_RAW_INIT(
-                                                   .format = SPA_AUDIO_FORMAT_F32,
-                                                   .channels = 2,
-                                                   .rate = pipe_set_samplerate));
+    // Initialize the pod builder
+    spa_pod_builder_init(&b, buffer, sizeof(buffer));
 
+    // Build audio format parameters
+    params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
+                                          &SPA_AUDIO_INFO_RAW_INIT(
+                                              .format = SPA_AUDIO_FORMAT_F32,
+                                              .channels = 2,
+                                              .rate = pipe_set_samplerate));
+    if (params[0] == NULL) {
+        fprintf(stderr, "Failed to build audio format parameters\n");
+        return -EINVAL;
+    }
 
-        // wip this device section broken
-        int select = -1;
-        for (int i = 0; i < pipe_devices.device_count; i++) {
-            if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) select = i;
+    // Select the appropriate device
+    ssize_t selected_index = -1;
+
+    pthread_mutex_lock(&device_mutex);
+    for (size_t i = 0; i < pipe_devices.device_count; i++) {
+        if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) {
+            selected_index = i;
+            break; // Stop at the first match
         }
+    }
+    pthread_mutex_unlock(&device_mutex);
 
-        const struct pw_properties *props = pw_stream_get_properties(global_stream);
-        struct pw_properties *mutable_props = pw_properties_copy(props);
+    // Get and copy stream properties
+    const struct pw_properties *props = pw_stream_get_properties(global_stream);
+    if (props == NULL) {
+        fprintf(stderr, "Failed to get stream properties\n");
+        return -EINVAL;
+    }
 
+    struct pw_properties *mutable_props = pw_properties_copy(props);
+    if (mutable_props == NULL) {
+        fprintf(stderr, "Failed to copy stream properties\n");
+        return -ENOMEM;
+    }
 
-        if (select != -1){
-            pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, pipe_devices.devices[select].name);
+    // Set the target device if selected
+    if (selected_index != -1) {
+        pthread_mutex_lock(&device_mutex);
+        const char *device_name = pipe_devices.devices[selected_index].name;
+        pthread_mutex_unlock(&device_mutex);
+
+        if (device_name) {
+            pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, device_name);
+            printf("Selected device index: %zu (%s)\n", selected_index, device_name);
         } else {
+            fprintf(stderr, "Selected device has no name\n");
             pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
         }
+    } else {
+        // Optionally, handle the case where no device is selected
+        pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
+        printf("Using default device.\n");
+    }
 
-        pw_stream_update_properties(global_stream, &mutable_props->dict);
+    // Update the stream properties
+    ret = pw_stream_update_properties(global_stream, &mutable_props->dict);
+    if (ret < 0) {
+        fprintf(stderr, "Failed to update stream properties: %d\n", ret);
         pw_properties_free(mutable_props);
+        return ret;
+    }
 
-        printf("SET DEVICE: %d\n", select + 1);
+    pw_properties_free(mutable_props);
 
-        return pw_stream_connect(global_stream,
-                          PW_DIRECTION_OUTPUT,
-                          PW_ID_ANY,
-                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
-                                                 PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS ),
-                          params, 1);
+    // Connect the stream
+    ret = pw_stream_connect(global_stream,
+                            PW_DIRECTION_OUTPUT,
+                            PW_ID_ANY,
+                            PW_STREAM_FLAG_AUTOCONNECT |
+                            PW_STREAM_FLAG_MAP_BUFFERS |
+                            PW_STREAM_FLAG_RT_PROCESS,
+                            params, 1);
+    if (ret < 0) {
+        fprintf(stderr, "Failed to connect stream: %d\n", ret);
+        return ret;
+    }
 
+    printf("Stream connected successfully.\n");
+    return 0; // Success
 }
-
 
 static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
                      const void *_data, size_t size, void *user_data){
