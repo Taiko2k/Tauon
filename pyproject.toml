@@ -1,0 +1,14 @@
+[tool.ruff]
+# Target non-EOL releases at minimum - https://devguide.python.org/versions/
+target-version = "py39"
+# Soft 80 and hard break at 120
+line-length = 120
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = 'single'
+docstring-quotes = 'double'
+
+[tool.ruff.format]
+quote-style = 'single'
+indent-style = 'space' # Change to tabs?
+
