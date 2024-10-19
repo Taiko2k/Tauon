@@ -1,4 +1,4 @@
-"""Tauon Music Box - Configuration file module.
+"""Tauon Music Box - Configuration file module
 
 The purpose of this module is to update, parse and write to a configuration file
 """
