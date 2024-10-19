@@ -84,10 +84,10 @@ ma_device_config config;
 ma_device device;
 #endif
 
-pthread_mutex_t device_mutex;
 
 #ifdef PIPE
 pthread_t pw_thread;
+pthread_mutex_t pipe_devices_mutex;
 struct pw_main_loop *loop;
 struct pw_context *context;
 struct pw_core *core;
@@ -100,6 +100,7 @@ int pipe_set_samplerate = 48000;
 #define MAX_DEVICES 64
 #define POD_BUFFER_SIZE 2048
 struct device_info {
+    uint32_t id;
     char name[256];
     char description[256];
 };
@@ -110,6 +111,21 @@ struct pipe_devices_struct {
 
 struct pipe_devices_struct pipe_devices = {0};
 
+static void registry_event_remove_global(void *data, uint32_t id) {
+    pthread_mutex_lock(&pipe_devices_mutex);
+    for (size_t i = 0; i < pipe_devices.device_count; i++) {
+        if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
+            // Shift remaining devices to fill the gap
+            for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
+                pipe_devices.devices[j] = pipe_devices.devices[j + 1];
+            }
+            pipe_devices.device_count--;
+            printf("Removed device with ID: %u\n", id);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&pipe_devices_mutex);
+}
 
 static void registry_event_global(void *data, uint32_t id,
                 uint32_t permissions, const char *type, uint32_t version,
@@ -129,10 +145,10 @@ static void registry_event_global(void *data, uint32_t id,
 
     if (spa_streq(media_class, "Audio/Sink")) {
 
-        pthread_mutex_lock(&device_mutex);
+        pthread_mutex_lock(&pipe_devices_mutex);
         if (pipe_devices.device_count >= MAX_DEVICES){
             printf("Error: Max devices\n");
-            pthread_mutex_unlock(&device_mutex);
+            pthread_mutex_unlock(&pipe_devices_mutex);
             return;
         }
         const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
@@ -141,11 +157,12 @@ static void registry_event_global(void *data, uint32_t id,
             printf("Error: Missing name or description for device\n");
             return;
         }
+        pipe_devices.devices[pipe_devices.device_count].id = id;
         snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
         snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
         pipe_devices.device_count++;
         printf("Found audio sink: %s (%s)\n", name, description);
-        pthread_mutex_unlock(&device_mutex);
+        pthread_mutex_unlock(&pipe_devices_mutex);
 
     }
 }
@@ -153,6 +170,7 @@ static void registry_event_global(void *data, uint32_t id,
 static const struct pw_registry_events registry_events = {
         PW_VERSION_REGISTRY_EVENTS,
         .global = registry_event_global,
+        .global_remove = registry_event_remove_global,
 };
 
 static void on_core_done(void *userdata, uint32_t id, int seq){
@@ -1450,14 +1468,14 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
     // Select the appropriate device
     ssize_t selected_index = -1;
 
-    pthread_mutex_lock(&device_mutex);
+    pthread_mutex_lock(&pipe_devices_mutex);
     for (size_t i = 0; i < pipe_devices.device_count; i++) {
         if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) {
             selected_index = i;
             break; // Stop at the first match
         }
     }
-    pthread_mutex_unlock(&device_mutex);
+    pthread_mutex_unlock(&pipe_devices_mutex);
 
     // Get and copy stream properties
     const struct pw_properties *props = pw_stream_get_properties(global_stream);
@@ -1474,9 +1492,9 @@ static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
 
     // Set the target device if selected
     if (selected_index != -1) {
-        pthread_mutex_lock(&device_mutex);
+        pthread_mutex_lock(&pipe_devices_mutex);
         const char *device_name = pipe_devices.devices[selected_index].name;
-        pthread_mutex_unlock(&device_mutex);
+        pthread_mutex_unlock(&pipe_devices_mutex);
 
         if (device_name) {
             pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, device_name);
