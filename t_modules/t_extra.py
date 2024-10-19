@@ -638,7 +638,6 @@ def fader_timer(time_point, start, duration, off=True, range=255):
 
 
 id3_genre_dict = {
-    
     0: "Blues",
     1: "Classic Rock",
     2: "Country",
@@ -927,12 +926,12 @@ def seconds_to_day_hms(seconds, s_day, s_days):
 
     days, seconds = divmod(seconds, 86400)
     hours, seconds = divmod(seconds, 3600)
-    minuites, seconds = divmod(seconds, 60)
+    minutes, seconds = divmod(seconds, 60)
 
     if days == 1:
-        return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minuites))}:{str(int(seconds))}"
+        return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minutes))}:{str(int(seconds))}"
     else:
-        return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minuites)).zfill(2)}:{str(int(seconds)).zfill(2)}"
+        return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
 
 
 def shooter(func, args=()):

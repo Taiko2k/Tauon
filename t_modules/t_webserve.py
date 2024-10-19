@@ -1,5 +1,5 @@
 
-# Tauon Music Box - Web interface module
+"""Tauon Music Box - Web interface module"""
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -17,6 +17,7 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
 import sys
 if sys.platform != 'win32':
     import fcntl
@@ -32,7 +33,9 @@ from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from t_modules.t_extra import Timer
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from t_modules.t_main import Tauon
 
 def send_file(path, mime, server):
     range_req = False
@@ -72,7 +75,7 @@ def send_file(path, mime, server):
                 break
             server.wfile.write(data)
 
-def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
+def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon: Tauon):
 
     if prefs.enable_web is False:
         return 0
@@ -224,7 +227,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon)
         print("Not starting radio page server, already running?")
 
 
-def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon):
+def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon: Tauon):
 
     play_timer = Timer()
 
@@ -678,7 +681,7 @@ def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon
         print("Not starting web api server, already running?")
 
 
-def controller(tauon):
+def controller(tauon: Tauon):
     import base64
     class Server(BaseHTTPRequestHandler):
 
@@ -727,7 +730,7 @@ def controller(tauon):
         print("Not starting controller server, already running?")
 
 
-def authserve(tauon):
+def authserve(tauon: Tauon):
 
     class Server(BaseHTTPRequestHandler):
 
@@ -881,7 +884,7 @@ class VorbisMonitor():
 
 vb = VorbisMonitor()
 
-def stream_proxy(tauon):
+def stream_proxy(tauon: Tauon):
 
     class Server(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
@@ -920,4 +923,3 @@ def stream_proxy(tauon):
     httpd = HTTPServer(("127.0.0.1", 7812), Server)
     httpd.serve_forever()
     httpd.server_close()
-

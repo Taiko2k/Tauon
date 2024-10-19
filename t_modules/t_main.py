@@ -4359,7 +4359,7 @@ if prefs.use_gamepad:
 smtc = False
 
 if msys and win_ver >= 10:
-    
+
     #print(sss.info.win.window)
     try:
         sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
@@ -4920,7 +4920,7 @@ def tag_scan(nt):
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
         elif nt.file_ext == "APE":
-            
+
             audio = mutagen.File(nt.fullpath)
             nt.length = audio.info.length
             nt.bit_depth = audio.info.bits_per_sample
@@ -10746,7 +10746,7 @@ class TimedLyricsRen:
         if index != self.index:
             self.ready = False
             self.generate(pctl.master_library[index])
-            
+
         if right_click and x and y and coll((x, y, w, h)):
             showcase_menu.activate(pctl.master_library[index])
 
@@ -26176,7 +26176,7 @@ def worker1():
 
                 if i > len(content) - 1:
                     break
-                    
+
                 line = content[i].strip()
 
                 if in_header:
@@ -36073,7 +36073,7 @@ class RadioBox:
         """
         Get all base urls of all currently available radiobrowser servers
 
-        Returns: 
+        Returns:
         list: a list of strings
 
         """

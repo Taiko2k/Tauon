@@ -322,4 +322,3 @@ class TopChart:
         im.save(output_path2, 'JPEG', quality=92)
 
         return output_path2
-

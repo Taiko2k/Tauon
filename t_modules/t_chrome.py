@@ -137,4 +137,3 @@ class Chrome:
             self.active = False
         self.tauon.chrome_mode = False
         self.tauon.pctl.player_volume = self.save_vol
-
