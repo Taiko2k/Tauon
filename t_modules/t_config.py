@@ -187,5 +187,3 @@ class Config:
                     pass
             self.live.append(['float', key, default_value, comment])
             return default_value
-
-

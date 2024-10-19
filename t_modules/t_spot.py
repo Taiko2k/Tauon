@@ -1228,5 +1228,3 @@ class SpotCtl:
                 self.artist_playlist(result.context.uri)
 
         self.tauon.gui.pl_update += 1
-
-

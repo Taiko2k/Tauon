@@ -159,7 +159,7 @@ if system == "windows":
 
         def __init__(self, name, height, weight=win32con.FW_NORMAL,
                      italic=False, underline=False):
-                     
+
             self.font = win32ui.CreateFont({
                 'name': name, 'height': height,
                 'weight': weight, 'italic': italic, 'underline': underline,}) #'charset': win32con.MAC_CHARSET})
@@ -178,7 +178,7 @@ if system == "windows":
         def get_metrics(self, text, max_x, wrap):
 
             #return self.drawDC.GetTextExtent(text)
-            
+
             rect = RECT(0,0,0,0)
             rect.left = 0
             rect.right = round(max_x)
@@ -187,15 +187,15 @@ if system == "windows":
 
                 #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
             t = self.drawDC.GetSafeHdc()
-            
+
             if wrap:
-        
+
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_WORDBREAK | win32con.DT_CALCRECT)
             else:
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_CALCRECT | win32con.DT_END_ELLIPSIS)
-                
+
             return rect.right, rect.bottom
-            
+
 
         def renderText(self, text, bg, fg, wrap=False, max_x=100, max_y=None):
 
@@ -245,7 +245,7 @@ if system == "windows":
                 #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_WORDBREAK)
             else:
-                
+
                 rect = RECT(0,0,0,0)
                 rect.left = 0
                 rect.right = round(max_x)
@@ -253,9 +253,9 @@ if system == "windows":
                 rect.bottom = round(h)
 
                 #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
-                windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_END_ELLIPSIS)                
-                
-                
+                windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_END_ELLIPSIS)
+
+
                 #windll.gdi32.TextOutW(t, 0, 0, text, len(text))
 
             # print(rects)
@@ -313,7 +313,7 @@ class TDraw:
             self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
             self.context = cairo.Context(self.surf)
             self.layout = PangoCairo.create_layout(self.context)
-            
+
         else:
             self.cache = {}
             self.ca_li = []
@@ -411,7 +411,7 @@ class TDraw:
         self.ttl.clear()
 
     def win_prime_font(self, name, size, user_handle, weight, y_offset=0):
-    
+
         self.f_dict[user_handle] = Win32Font(name, int(size * self.scale), weight)
         self.y_offset_dict[user_handle] = y_offset
 
@@ -718,10 +718,10 @@ class TDraw:
         return self.f_dict[font].get_metrics(text, max_x, wrap)
 
     def __win_render_text(self, key, x, y, range_top, range_height, align):
-   
+
 
         sd = key
-        
+
         sd[0].x = round(x)
         sd[0].y = round(y)
         if align == 1:
@@ -730,7 +730,7 @@ class TDraw:
             sd[0].x -= int(sd[0].w / 2)
 
         if range_height is not None and range_height < sd[0].h - 20:
-        
+
             if range_top + range_height > sd[0].h:
                 # range_top = 0
                 range_height = sd[0].h - range_top
@@ -743,7 +743,7 @@ class TDraw:
             self.dest_rect.y = sd[0].y
             self.dest_rect.w = sd[0].w
             self.dest_rect.h = round(range_height)
-            
+
             SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, SDL_FLIP_VERTICAL)
             return
 
@@ -772,7 +772,7 @@ class TDraw:
         #perf_timer.set()
 
         f = self.f_dict[font]
-        
+
         w, h = f.get_metrics(text, max_x, wrap)
         if max_y and max_y > h:
             max_y = h
@@ -813,7 +813,7 @@ class TDraw:
             del self.cache[self.ca_li[0]]
             del self.ca_li[0]
 
-        return dst.w    
+        return dst.w
 
     def text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None, real_bg=False, key=None):
 
@@ -839,7 +839,7 @@ class TDraw:
                 max_h = None
                 if len(location) > 4:
                     max_h = location[4]
-                    
+
                 if system == "linux":
                     return self.__draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_h, wrap=True,
                                                   range_top=range_top, range_height=range_height)
@@ -851,4 +851,3 @@ class TDraw:
             return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
         else:
             return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)
-

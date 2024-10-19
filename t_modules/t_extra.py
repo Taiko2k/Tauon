@@ -638,7 +638,6 @@ def fader_timer(time_point, start, duration, off=True, range=255):
 
 
 id3_genre_dict = {
-    
     0: "Blues",
     1: "Classic Rock",
     2: "Country",
