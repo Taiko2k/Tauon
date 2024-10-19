@@ -10,4 +10,4 @@ docstring-quotes = 'double'
 
 [tool.ruff.format]
 quote-style = 'double'
-indent-style = 'space' # Change to tabs?
+indent-style = 'tab'
