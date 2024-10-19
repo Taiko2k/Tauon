@@ -235,10 +235,10 @@ def player4(tauon):
             return 0
 
     ff_run = FFRun()
-    
+
     def pause_when_device_unavailable():
         pctl.pause_only()
-    
+
     FUNCTYPE = CFUNCTYPE
     if tauon.msys:
         FUNCTYPE = WINFUNCTYPE
@@ -1311,5 +1311,3 @@ def player4(tauon):
 
             if state == 1:
                 track()
-
-

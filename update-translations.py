@@ -23,7 +23,7 @@ for l in lang:
         continue
 
     po_path = os.path.join(locale_folder, l, "LC_MESSAGES", "tauon.po")
-    
+
     if os.path.exists(po_path):
         subprocess.run(['msgmerge', '-U', po_path, pot_path])
 
@@ -33,4 +33,3 @@ for l in lang:
         print(f"Missing po file: {po_path}")
 
 print("Done")
-

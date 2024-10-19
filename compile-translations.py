@@ -21,4 +21,3 @@ for l in lang:
         print(f"Missing po file: {po_path}")
 
 print("Done")
-
