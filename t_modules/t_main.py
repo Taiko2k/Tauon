@@ -40946,7 +40946,7 @@ class RadioView:
             else:
                 toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
 
-            radios[radios.index_("New")] = self.drag
+            radios[radios.index("New")] = self.drag
             self.drag = None
             gui.update += 1
 
