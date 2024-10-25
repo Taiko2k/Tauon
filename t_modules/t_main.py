@@ -8998,7 +8998,7 @@ class SubsonicService:
     #     try:
     #         a = self.r("getIndexes")
     #     except:
-    #         show_message(_("Error connecting to Airsonic server", mode="error")
+    #         show_message(_("Error connecting to Airsonic server"), mode="error")
     #         self.scanning = False
     #         return []
     #
@@ -9025,7 +9025,7 @@ class SubsonicService:
     #
     #         except json.decoder.JSONDecodeError:
     #             print("Error reading Airsonic directory")
-    #             show_message(_("Error reading Airsonic directory!", mode="warning")
+    #             show_message(_("Error reading Airsonic directory!)", mode="warning")
     #             return
     #
     #         items = d["subsonic-response"]["directory"]["child"]
@@ -16044,7 +16044,7 @@ def get_lyric_fire(track_object, silent=False):
     if not prefs.lyrics_enables:
         if not silent:
             show_message(_("There are no lyric sources enabled."),
-                         "See 'lyrics settings' under 'functions' tab in settings.", mode='info')
+                         _("See 'lyrics settings' under 'functions' tab in settings."), mode='info')
         return
 
     t = lyrics_fetch_timer.get()
@@ -21721,7 +21721,7 @@ selection_menu.add(MenuItem(_('Rescan Tags'), reload_metadata_selection))
 
 selection_menu.add(MenuItem(_("Edit fields…"), activate_trans_editor))
 
-selection_menu.add(MenuItem("Edit with ", launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_selection_disable_test))
+selection_menu.add(MenuItem(_("Edit with "), launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_selection_disable_test))
 
 selection_menu.br()
 folder_menu.br()
@@ -21765,7 +21765,7 @@ def toggle_wiki(mode=0):
 #     if mode == 1:
 #         return prefs.discord_show
 #     if prefs.discord_show is False and discord_allow is False:
-#         show_message(_("Warning: pypresence package not installed")
+#         show_message(_("Warning: pypresence package not installed"))
 #     prefs.discord_show ^= True
 
 def toggle_gen(mode=0):
