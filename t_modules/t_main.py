@@ -1,7 +1,12 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Tauon Music Box
 
-# Tauon Music Box
+Preamble
+
+Welcome to the Tauon Music Box source code. I started this project when I was first
+learning python, as a result this code can be quite messy. No doubt I have
+written some things terribly wrong or inefficiently in places.
+I would highly recommend not using this project as an example on how to code cleanly or correctly.
+"""
 
 # Copyright © 2015-2024, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -18,21 +23,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# --------------------------------------------------------------------
-# Preamble
-
-# Welcome to the Tauon Music Box source code. I started this project when I was first
-# learning python, as a result this code can be quite messy. No doubt I have
-# written some things terribly wrong or inefficiently in places.
-# I would highly recommend not using this project as an example on how to code cleanly or correctly.
-
-# --------------------------------------------------------------------
-
+from __future__ import annotations
 import sys
 import socket
 
 from t_modules import t_bootstrap
 from t_modules.t_phazor import player4, phazor_exists
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from t_modules.t_phazor import Cachement, LibreSpot
 
 
 h = t_bootstrap.holder
@@ -5214,7 +5213,7 @@ class PlayerCtl:
         # Database
 
         self.master_count = master_count
-        self.total_playtime = 0
+        self.total_playtime: float = 0
         self.master_library = master_library
         self.db_inc = random.randint(0, 10000)
         # self.star_library = star_library
@@ -8369,7 +8368,7 @@ class Tauon:
         self.desktop = desktop
         self.device = socket.gethostname()
 
-        self.cachement = None
+        self.cachement: Cachement | None = None
         self.dummy_event = SDL_Event()
         self.translate = _
         self.strings = strings
@@ -8416,7 +8415,7 @@ class Tauon:
 
         self.copied_track = None
         self.macos = macos
-        self.aud = None
+        self.aud: CDLL | None = None
 
         self.recorded_songs = []
         self.ca = None
@@ -8429,12 +8428,15 @@ class Tauon:
         self.remote_limited = True
         self.enable_librespot = shutil.which("librespot")
 
-        self.spotc = None
+        self.spotc: LibreSpot | None = None
         self.librespot_p = None
         self.MenuItem = MenuItem
         self.tag_scan = tag_scan
 
         self.gme_formats = GME_Formats
+
+        self.spot_ctl: SpotCtl | None = None
+        self.chrome: Chrome | None = None
 
     def start_remote(self):
 

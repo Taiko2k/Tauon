@@ -35,7 +35,7 @@ from socketserver import ThreadingMixIn
 from t_modules.t_extra import Timer
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from t_modules.t_main import Tauon
+    from t_modules.t_main import Tauon, PlayerCtl
 
 def send_file(path, mime, server):
     range_req = False
@@ -75,7 +75,7 @@ def send_file(path, mime, server):
                 break
             server.wfile.write(data)
 
-def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon: Tauon):
+def webserve(pctl: PlayerCtl, prefs, gui, album_art_gen, install_directory, strings, tauon: Tauon):
 
     if prefs.enable_web is False:
         return 0
@@ -227,7 +227,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon:
         print("Not starting radio page server, already running?")
 
 
-def webserve2(pctl, prefs, gui, album_art_gen, install_directory, strings, tauon: Tauon):
+def webserve2(pctl: PlayerCtl, prefs, gui, album_art_gen, install_directory, strings, tauon: Tauon):
 
     play_timer = Timer()
 
