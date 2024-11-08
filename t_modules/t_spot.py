@@ -16,6 +16,7 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import os
 try:
     import tekore as tk
@@ -31,11 +32,14 @@ import subprocess
 import time
 import json
 from t_modules.t_extra import Timer
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from t_modules.t_main import Tauon
 
 
 class SpotCtl:
 
-    def __init__(self, tauon):
+    def __init__(self, tauon: Tauon):
         self.tauon = tauon
         self.strings = tauon.strings
         self.start_timer = Timer()

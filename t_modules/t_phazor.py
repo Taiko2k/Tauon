@@ -1,4 +1,4 @@
-# Tauon Music Box - Phazor audio backend module
+"""Tauon Music Box - Phazor audio backend module"""
 
 # Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -17,8 +17,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import ctypes
-from ctypes import *
+import sys
+if sys.platform == "win32":
+    from ctypes import WINFUNCTYPE
+from ctypes import c_int, c_void_p, c_char, c_char_p, cast, POINTER, CFUNCTYPE
 from ctypes.util import find_library
 import os.path
 import time
@@ -26,11 +30,15 @@ import requests
 from requests.models import PreparedRequest
 import threading
 import shutil
-from t_modules.t_extra import *
-import mutagen
+from t_modules.t_extra import Timer, tmp_cache_dir, shooter
+import subprocess
+import math
 import hashlib
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from t_modules.t_main import Tauon, PlayerCtl
 
-def get_phazor_pathname(pctl):
+def get_phazor_pathname(pctl: PlayerCtl) -> str | None:
     if pctl.prefs.pipewire:
         n = find_library("phazor-pipe")
         if n:
@@ -48,13 +56,13 @@ def get_phazor_pathname(pctl):
         if os.path.isfile(n):
             return n
 
-def phazor_exists(pctl):
+def phazor_exists(pctl: PlayerCtl) -> bool:
     if get_phazor_pathname(pctl):
         return True
 
     return False
 
-def player4(tauon):
+def player4(tauon: Tauon) -> None:
 
     pctl = tauon.pctl
     gui = tauon.gui
@@ -102,11 +110,11 @@ def player4(tauon):
     scan_device()
 
     class LibreSpot:
-        def __init__(self):
+        def __init__(self) -> None:
 
             self.running = False
             self.flush = False
-        def go(self, force=False):
+        def go(self, force: bool=False) -> int:
             aud.config_set_feed_samplerate(44100)
             aud.config_set_min_buffer(1000)
             if not shutil.which("librespot"):
@@ -141,7 +149,7 @@ def player4(tauon):
                 gui.update += 1
 
                 startupinfo = None
-                if tauon.msys:
+                if sys.platform == "win32":
                     startupinfo = subprocess.STARTUPINFO()
                     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 try:
@@ -216,7 +224,7 @@ def player4(tauon):
                 cmd += ["-ss", f"{start_ms}ms"]
             cmd += ["-i", uri.decode(), "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", f"{samplerate}", "-"]
             startupinfo = None
-            if tauon.msys:
+            if sys.platform == "win32":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             try:
@@ -226,7 +234,7 @@ def player4(tauon):
                 return 1
             return 0
 
-        def read(self, buffer: POINTER(c_char), max):
+        def read(self, buffer, max): # buffer: POINTER(c_char)
             if self.decoder:
                 data = self.decoder.stdout.read(max)
                 p = cast(buffer, POINTER(c_char * max))
@@ -239,9 +247,10 @@ def player4(tauon):
     def pause_when_device_unavailable():
         pctl.pause_only()
 
-    FUNCTYPE = CFUNCTYPE
-    if tauon.msys:
+    if sys.platform == "win32":
         FUNCTYPE = WINFUNCTYPE
+    else:
+        FUNCTYPE = CFUNCTYPE
     start_callback = FUNCTYPE(c_int, c_char_p, c_int, c_int)(ff_run.start)
     read_callback = FUNCTYPE(c_int, c_void_p, c_int)(ff_run.read)
     close_callback = FUNCTYPE(c_void_p)(ff_run.close)
@@ -696,10 +705,10 @@ def player4(tauon):
         if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
             active_timer.set()
         if active_timer.get() > 7:
-           aud.stop()
-           aud.phazor_shutdown()
-           spotc.soft_end()
-           break
+            aud.stop()
+            aud.phazor_shutdown()
+            spotc.soft_end()
+            break
 
         # Level meter
         if (state == 1 or state == 3) and gui.vis == 1:
