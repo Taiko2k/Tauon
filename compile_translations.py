@@ -1,23 +1,29 @@
-
-import subprocess
+"""Compile language files from ./locale"""
 import os
+import subprocess
+from pathlib import Path
 
-locale_folder = "locale"
-lang = os.listdir(locale_folder)
 
-for l in lang:
+def main() -> None:
+	locale_folder = "locale"
+	languages = os.listdir(locale_folder)
 
-    if l == "messages.pot":
-        continue
+	for lang_file in languages:
 
-    po_path = os.path.join(locale_folder, l, "LC_MESSAGES", "tauon.po")
-    mo_path = os.path.join(locale_folder, l, "LC_MESSAGES", "tauon.mo")
+		if lang_file == "messages.pot":
+			continue
 
-    if os.path.exists(po_path):
-        subprocess.run(['msgfmt', '-o', mo_path, po_path])
-        print(f"Compiled: {l}")
+		po_path = Path(locale_folder) / lang_file / "LC_MESSAGES" / "tauon.po"
+		mo_path = Path(locale_folder) / lang_file / "LC_MESSAGES" / "tauon.mo"
 
-    else:
-        print(f"Missing po file: {po_path}")
+		if Path(po_path).exists():
+			subprocess.run(["msgfmt", "-o", mo_path, po_path])
+			print(f"Compiled: {lang_file}")
 
-print("Done")
+		else:
+			print(f"Missing po file: {po_path}")
+
+	print("Done")
+
+if __name__ == "__main__":
+	main()

@@ -1,35 +1,41 @@
-
-import subprocess
+"""Update language files from ./locale"""
 import os
+import subprocess
+import sys
+from pathlib import Path
 
-if not os.path.isfile("pygettext.py"):
-    print("ERROR: Please add a copy of pygettext.py to this dir from the Python Tools dir")
-    exit()
 
-locale_folder = "locale"
-pot_path = os.path.join(locale_folder, "messages.pot")
+def main() -> None:
+	if not Path("pygettext.py").is_file():
+		print("ERROR: Please add a copy of pygettext.py to this dir from the Python Tools dir")
+		sys.exit()
 
-print("Generate template")
-subprocess.run(['python', "pygettext.py", "t_modules/t_main.py"])
-print("Copy template")
-subprocess.run(['cp', "messages.pot", pot_path])
-subprocess.run(['rm', "messages.pot"])
+	locale_folder = "locale"
+	pot_path = Path(locale_folder) / "messages.pot"
 
-lang = os.listdir(locale_folder)
+	print("Generate template")
+	subprocess.run(["python", "pygettext.py", "t_modules/t_main.py"])
+	print("Copy template")
+	subprocess.run(["cp", "messages.pot", pot_path])
+	subprocess.run(["rm", "messages.pot"])
 
-for l in lang:
+	languages = os.listdir(locale_folder)
 
-    if l == "messages.pot":
-        continue
+	for lang_file in languages:
+		if lang_file == "messages.pot":
+			continue
 
-    po_path = os.path.join(locale_folder, l, "LC_MESSAGES", "tauon.po")
+		po_path = Path(locale_folder) / lang_file / "LC_MESSAGES" / "tauon.po"
 
-    if os.path.exists(po_path):
-        subprocess.run(['msgmerge', '-U', po_path, pot_path])
+		if Path(po_path).exists():
+			subprocess.run(["msgmerge", "-U", po_path, pot_path])
 
-        print(f"Updated: {l}")
+			print(f"Updated: {lang_file}")
 
-    else:
-        print(f"Missing po file: {po_path}")
+		else:
+			print(f"Missing po file: {po_path}")
 
-print("Done")
+	print("Done")
+
+if __name__ == "__main__":
+	main()
