@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2024-11-13 01:00+0000\n"
+"PO-Revision-Date: 2024-11-14 22:00+0000\n"
 "Last-Translator: Priit Jõerüüt <hwlate@joeruut.com>\n"
 "Language-Team: Estonian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/et/>\n"
@@ -24,15 +24,15 @@ msgstr "Ühtegi esitaja pilti ei leidunud."
 
 #: t_modules/t_main.py:1905
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "Ühtegi teenusepakkujat pole seadistustes kasutusele võetud!"
 
 #: t_modules/t_main.py:7151
 msgid "End of playlist"
-msgstr ""
+msgstr "Esitusloendi lõpp"
 
 #: t_modules/t_main.py:7197
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Kui autentimine on lõppenud, siis klõpsi nuppu „Valmis“."
 
 #: t_modules/t_main.py:7197
 msgid "Web auth page opened"
@@ -40,15 +40,15 @@ msgstr ""
 
 #: t_modules/t_main.py:7205
 msgid "You need to log in first"
-msgstr ""
+msgstr "Sa pead esmalt sisse logima"
 
 #: t_modules/t_main.py:7363
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Skaneerimine ei õnnestunud. Kas proovime uuesti?"
 
 #: t_modules/t_main.py:7370 t_modules/t_main.py:8022
 msgid "Scanning scrobbles complete"
-msgstr ""
+msgstr "Kraasimiste tuvastamine on lõppenud"
 
 #: t_modules/t_main.py:7577
 msgid "Getting friend data..."
@@ -72,11 +72,11 @@ msgstr ""
 
 #: t_modules/t_main.py:8216
 msgid "Spotify Likes"
-msgstr ""
+msgstr "Spotify meeldimised"
 
 #: t_modules/t_main.py:8217
 msgid "Spotify Albums"
-msgstr ""
+msgstr "Spotify albumid"
 
 #: t_modules/t_main.py:8218
 msgid "Track removed from liked tracks"
@@ -96,15 +96,15 @@ msgstr ""
 
 #: t_modules/t_main.py:8222
 msgid "Spotify account connected"
-msgstr ""
+msgstr "Spotify kasutajakonto on seotud"
 
 #: t_modules/t_main.py:8223
 msgid "This Spotify account isn't currently playing anything"
-msgstr ""
+msgstr "Sellelt Spotify kasutajakontolt ei esitata hetkel mitte midagi"
 
 #: t_modules/t_main.py:8224
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Viga Spotify käivitamisel"
 
 #: t_modules/t_main.py:8225
 msgid "Please authorise Spotify in settings!"
@@ -116,15 +116,15 @@ msgstr ""
 
 #: t_modules/t_main.py:8227
 msgid "Spotify import complete"
-msgstr ""
+msgstr "Spotify import on valmis"
 
 #: t_modules/t_main.py:8229
 msgid "day"
-msgstr ""
+msgstr "päev"
 
 #: t_modules/t_main.py:8230
 msgid "days"
-msgstr ""
+msgstr "päeva"
 
 #: t_modules/t_main.py:8232
 msgid "Scanning for Chromecasts..."
@@ -148,7 +148,7 @@ msgstr ""
 
 #: t_modules/t_main.py:8239
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Ava Tauon Music Box"
 
 #: t_modules/t_main.py:8240
 msgid "Play/Pause"
@@ -172,7 +172,7 @@ msgstr "Puudub kasutajanimi, salasõna ja/või serveri nimi"
 
 #: t_modules/t_main.py:8583
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "Viga ühendamisel PLEXi serveriga"
 
 #: t_modules/t_main.py:8584
 msgid "Try check login credentials and that server is accessible."
@@ -196,19 +196,19 @@ msgstr ""
 
 #: t_modules/t_main.py:14695
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Esitusloendid + esitusjärjekord"
 
 #: t_modules/t_main.py:14696 t_modules/t_main.py:39050
 msgid "Queue"
-msgstr ""
+msgstr "Esitusjärjekord"
 
 #: t_modules/t_main.py:14698
 msgid "Artist List"
-msgstr ""
+msgstr "Esitajate loend"
 
 #: t_modules/t_main.py:14700
 msgid "Folder Navigator"
-msgstr ""
+msgstr "Kaustade sirvija"
 
 #: t_modules/t_main.py:14775
 msgid "Track Renaming"
@@ -265,19 +265,19 @@ msgstr ""
 
 #: t_modules/t_main.py:15022
 msgid "Album name"
-msgstr ""
+msgstr "Albumi nimi"
 
 #: t_modules/t_main.py:15024
 msgid "Artist name"
-msgstr ""
+msgstr "Esitaja nimi"
 
 #: t_modules/t_main.py:15026
 msgid "Album-artist name"
-msgstr ""
+msgstr "Albumi-esitaja nimi"
 
 #: t_modules/t_main.py:15032
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Võrgus asuvate lugude muutmine pole soovitatav!"
 
 #: t_modules/t_main.py:15063 t_modules/t_main.py:15066
 msgid "WRITE TAGS"
@@ -317,7 +317,7 @@ msgstr ""
 
 #: t_modules/t_main.py:15286
 msgid "Export Playlist"
-msgstr ""
+msgstr "Ekspordi esitusloend"
 
 #: t_modules/t_main.py:15291
 msgid "Save directory"
@@ -337,19 +337,19 @@ msgstr ""
 
 #: t_modules/t_main.py:15329
 msgid "Directory does not exist"
-msgstr ""
+msgstr "Kausta pole olemas"
 
 #: t_modules/t_main.py:15379
 msgid "Repeat OFF"
-msgstr ""
+msgstr "Kordamine pole kasutusel"
 
 #: t_modules/t_main.py:15380
 msgid "Repeat Track"
-msgstr ""
+msgstr "Korda lugu"
 
 #: t_modules/t_main.py:15381
 msgid "Repeat Album"
-msgstr ""
+msgstr "Korda albumit"
 
 #: t_modules/t_main.py:15459
 msgid "Shuffle Lockdown"
@@ -404,38 +404,38 @@ msgstr ""
 #: t_modules/t_main.py:15789 t_modules/t_main.py:15790
 #: t_modules/t_main.py:15791 t_modules/t_main.py:37204
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Filtreeri uueks esitusloendiks"
 
 #: t_modules/t_main.py:15792 t_modules/t_main.py:15793
 #: t_modules/t_main.py:18810
 msgid "Rescan Folder"
-msgstr ""
+msgstr "Skaneeri kaust uuesti"
 
 #: t_modules/t_main.py:15794 t_modules/t_main.py:15796
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Teisalda esitamisel kaust siia"
 
 #: t_modules/t_main.py:15800 t_modules/t_main.py:21530
 msgid "Collapse All"
-msgstr ""
+msgstr "Ahenda kõik"
 
 #: t_modules/t_main.py:15807
 msgid "Show in Playlist"
-msgstr ""
+msgstr "Näita esitusloendis"
 
 #: t_modules/t_main.py:15887
 msgid "Image…"
-msgstr ""
+msgstr "Pilt…"
 
 #: t_modules/t_main.py:15888 t_modules/t_main.py:21513
 #: t_modules/t_main.py:21526
 msgid "Add Album to Queue"
-msgstr ""
+msgstr "Lisa album esitusjärjekorda"
 
 #: t_modules/t_main.py:15889 t_modules/t_main.py:21514
 #: t_modules/t_main.py:21527
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Lisa album esitusjärjekorras järgmiseks"
 
 #: t_modules/t_main.py:15900 t_modules/t_main.py:19003
 #: t_modules/t_main.py:29655
@@ -517,7 +517,7 @@ msgstr ""
 #: t_modules/t_main.py:16245 t_modules/t_main.py:16256
 #: t_modules/t_main.py:16736
 msgid "Toggle Lyrics"
-msgstr ""
+msgstr "Lülita laulusõnad sisse/välja"
 
 #: t_modules/t_main.py:16247 t_modules/t_main.py:16258
 msgid "Substitute Search..."
@@ -529,7 +529,7 @@ msgstr ""
 
 #: t_modules/t_main.py:16249 t_modules/t_main.py:16260
 msgid "Copy Lyrics"
-msgstr ""
+msgstr "Kopeeri laulusõnad"
 
 #: t_modules/t_main.py:16250 t_modules/t_main.py:16261
 msgid "Clear Lyrics"
@@ -537,23 +537,25 @@ msgstr ""
 
 #: t_modules/t_main.py:16353 t_modules/t_main.py:16740
 msgid "Open Image"
-msgstr ""
+msgstr "Ava pilt"
 
 #: t_modules/t_main.py:16391
 msgid "Next Image"
-msgstr ""
+msgstr "Järgmine pilt"
 
 #: t_modules/t_main.py:16395 t_modules/t_main.py:16741
 msgid "Extract Image"
-msgstr ""
+msgstr "Eralda pilt"
 
 #: t_modules/t_main.py:16408
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Kaanepiltide allalaadimine võrgus asuvate lugude puhul pole võimalik."
 
 #: t_modules/t_main.py:16432
 msgid "It doesn't look like this folder belongs to a single album, sorry"
 msgstr ""
+"Tundub, et see kaust sisaldab midagi muud kui üht albumit. Vabandust, et "
+"nüüd nii juhtus"
 
 #: t_modules/t_main.py:16442
 msgid "Looking up MusicBrainz ID..."
@@ -603,36 +605,36 @@ msgstr ""
 #: t_modules/t_main.py:16738 t_modules/t_main.py:30136
 #: t_modules/t_main.py:30141
 msgid "Next"
-msgstr ""
+msgstr "Järgmine"
 
 #: t_modules/t_main.py:16739
 msgid "Previous"
-msgstr ""
+msgstr "Eelmine"
 
 #: t_modules/t_main.py:16764
 msgid "Paste Spotify Album"
-msgstr ""
+msgstr "Aseta Spotify album"
 
 #: t_modules/t_main.py:16983 t_modules/t_main.py:16984
 #: t_modules/t_main.py:47240
 msgid "Rename"
-msgstr ""
+msgstr "Muuda nime"
 
 #: t_modules/t_main.py:16995
 msgid "Pin"
-msgstr ""
+msgstr "Kinnita"
 
 #: t_modules/t_main.py:16997
 msgid "Unpin"
-msgstr ""
+msgstr "Eemalda kinnitus"
 
 #: t_modules/t_main.py:17005
 msgid "Unlock"
-msgstr ""
+msgstr "Eemalda lukustus"
 
 #: t_modules/t_main.py:17007 t_modules/t_main.py:17041
 msgid "Lock"
-msgstr ""
+msgstr "Lukusta"
 
 #: t_modules/t_main.py:17229 t_modules/t_main.py:22012
 #: t_modules/t_main.py:28949 t_modules/t_main.py:28952
@@ -640,11 +642,11 @@ msgstr ""
 #: t_modules/t_main.py:29464 t_modules/t_main.py:29468
 #: t_modules/t_main.py:29491
 msgid "Clear"
-msgstr ""
+msgstr "Tühjenda"
 
 #: t_modules/t_main.py:17286
 msgid "Are you sure you want to delete this playlist?"
-msgstr ""
+msgstr "Kas sa oled kindel, et soovid selle esitusloendi kustutada?"
 
 #: t_modules/t_main.py:17287
 msgid "Try again while holding shift to confirm"
@@ -652,7 +654,7 @@ msgstr ""
 
 #: t_modules/t_main.py:17399
 msgid "Are you sure you want to delete playlist: %s?"
-msgstr ""
+msgstr "Kas sa oled kindel, et soovid kustutada esitusloendi nimega %s?"
 
 #: t_modules/t_main.py:17440
 msgid "Rescanning folders..."
@@ -661,7 +663,7 @@ msgstr ""
 #: t_modules/t_main.py:17787 t_modules/t_main.py:17798
 #: t_modules/t_main.py:17817
 msgid "Playlist is locked"
-msgstr ""
+msgstr "Esitusloend on lukus"
 
 #: t_modules/t_main.py:17914 t_modules/t_main.py:17916
 #: t_modules/t_main.py:47249
@@ -674,23 +676,24 @@ msgstr ""
 
 #: t_modules/t_main.py:18093
 msgid "Playlist contains non-Spotify tracks"
-msgstr ""
+msgstr "Esitusloendis leidub Spotify-väliseid palu"
 
 #: t_modules/t_main.py:18099
 msgid "Created new Spotify playlist"
-msgstr ""
+msgstr "Tegime uue Spotify esitusloendi"
 
 #: t_modules/t_main.py:18105
 msgid "Error creating Spotify playlist"
-msgstr ""
+msgstr "Viga Spotify esitusloendi loomisel"
 
 #: t_modules/t_main.py:18108
 msgid "Updated Spotify playlist"
-msgstr ""
+msgstr "Uuendasime Spotify esitusloendit"
 
 #: t_modules/t_main.py:18756
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr ""
+"Sobib. See esitusloend saab alates praegusest olema järjestatud automaatselt"
 
 #: t_modules/t_main.py:18757
 msgid "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
@@ -699,7 +702,7 @@ msgstr ""
 #: t_modules/t_main.py:18762 t_modules/t_main.py:22882
 #: t_modules/t_main.py:22886
 msgid "New Playlist"
-msgstr ""
+msgstr "Uus esitusloend"
 
 #: t_modules/t_main.py:18772 t_modules/t_main.py:18780
 msgid "Upload"
@@ -743,7 +746,7 @@ msgstr ""
 
 #: t_modules/t_main.py:18806
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Tee esitusloend automaatselt järjestuvaks"
 
 #: t_modules/t_main.py:18812 t_modules/t_main.py:20685
 #: t_modules/t_main.py:22010
@@ -776,7 +779,7 @@ msgstr ""
 
 #: t_modules/t_main.py:18934 t_modules/t_main.py:19000
 msgid "Copying files to device"
-msgstr ""
+msgstr "Kopeerime faile seadmesse"
 
 #: t_modules/t_main.py:18940
 msgid "Sync aborted! Low disk space on target device"
@@ -804,19 +807,19 @@ msgstr ""
 
 #: t_modules/t_main.py:19029 t_modules/t_main.py:19120
 msgid "Set as Sync Playlist"
-msgstr ""
+msgstr "Märgi esitusloend sünkroniseeritavaks"
 
 #: t_modules/t_main.py:19032
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Märgi esitusloend mittesünkroniseeritavaks"
 
 #: t_modules/t_main.py:19048 t_modules/t_main.py:19122
 msgid "Set as Downloads Playlist"
-msgstr ""
+msgstr "Märgi allalaadimiste esitusloendiks"
 
 #: t_modules/t_main.py:19050
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Eemalda allalaadimiste esitusloendi märge"
 
 #: t_modules/t_main.py:19054
 msgid "Set Use Persistent Time"
@@ -828,7 +831,7 @@ msgstr ""
 
 #: t_modules/t_main.py:19109
 msgid "Export Playlist Stats"
-msgstr ""
+msgstr "Ekspordi esitusloendi statistika"
 
 #: t_modules/t_main.py:19110
 msgid "Export Albums CSV"
@@ -1054,7 +1057,7 @@ msgstr ""
 
 #: t_modules/t_main.py:20670 t_modules/t_main.py:39048
 msgid "Add to Queue"
-msgstr ""
+msgstr "Lisa esitusjärjekorda"
 
 #: t_modules/t_main.py:20672
 msgid "↳ After Current Track"
@@ -1062,7 +1065,7 @@ msgstr ""
 
 #: t_modules/t_main.py:20674
 msgid "Show in Gallery"
-msgstr ""
+msgstr "Näita galeriis"
 
 #: t_modules/t_main.py:20676
 msgid "Meta…"
@@ -1072,41 +1075,41 @@ msgstr ""
 #: t_modules/t_main.py:21692 t_modules/t_main.py:21693
 #: t_modules/t_main.py:22008
 msgid "Copy"
-msgstr ""
+msgstr "Kopeeri"
 
 #: t_modules/t_main.py:20696
 msgid "Cannot delete a network track"
-msgstr ""
+msgstr "Võrgus asuvat lugu ei saa kustutada"
 
 #: t_modules/t_main.py:20708 t_modules/t_main.py:20717
 msgid "File deleted"
-msgstr ""
+msgstr "Fail on kustutatud"
 
 #: t_modules/t_main.py:20710 t_modules/t_main.py:20719
 msgid "Error deleting file"
-msgstr ""
+msgstr "Viga faili kustutamisel"
 
 #: t_modules/t_main.py:20712
 msgid "File moved to trash"
-msgstr ""
+msgstr "Fail on visatud prügikasti"
 
 #: t_modules/t_main.py:20726
 msgid "Delete Track File"
-msgstr ""
+msgstr "Kustuta loo fail"
 
 #: t_modules/t_main.py:20733
 msgid "Rename (Single track)"
-msgstr ""
+msgstr "Muuda nime (ühe loo puhul)"
 
 #: t_modules/t_main.py:20735 t_modules/t_main.py:21518
 #: t_modules/t_main.py:21520
 msgid "Rename Tracks…"
-msgstr ""
+msgstr "Muuda lugude nimesid…"
 
 #: t_modules/t_main.py:20750 t_modules/t_main.py:21575
 #: t_modules/t_main.py:21677
 msgid "Edit fields…"
-msgstr ""
+msgstr "Muuda välju…"
 
 #: t_modules/t_main.py:20757
 msgid "Cannot physically delete"
@@ -1164,7 +1167,7 @@ msgstr ""
 
 #: t_modules/t_main.py:21589
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "Kopeeri „Esitaja - Album“"
 
 #: t_modules/t_main.py:21597 t_modules/t_main.py:23539
 msgid "URL copied to clipboard"
@@ -1178,7 +1181,7 @@ msgstr ""
 
 #: t_modules/t_main.py:21605
 msgid "Copy Spotify Album URL"
-msgstr ""
+msgstr "Kopeeri Spotify albumi võrguaadress"
 
 #: t_modules/t_main.py:21607
 msgid "Lookup Spotify Album URL"
@@ -1194,11 +1197,11 @@ msgstr ""
 
 #: t_modules/t_main.py:21666
 msgid "Queue %d"
-msgstr ""
+msgstr "Esitusjärjekord %d"
 
 #: t_modules/t_main.py:21671
 msgid "Add to queue"
-msgstr ""
+msgstr "Lisa esitusjärjekorda"
 
 #: t_modules/t_main.py:21688
 msgid "Cut"
@@ -1235,7 +1238,7 @@ msgstr ""
 
 #: t_modules/t_main.py:21846
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "Kopeeri „Esitaja - Loo nimi“"
 
 #: t_modules/t_main.py:21872
 msgid "Spotify…"
@@ -1255,7 +1258,7 @@ msgstr ""
 
 #: t_modules/t_main.py:21906
 msgid "Copy Track URL"
-msgstr ""
+msgstr "Kopeeri loo võrguaadress"
 
 #: t_modules/t_main.py:21920 t_modules/t_main.py:23679
 msgid "Fetching..."
@@ -1275,7 +1278,7 @@ msgstr ""
 
 #: t_modules/t_main.py:21993 t_modules/t_main.py:24175
 msgid "Exit"
-msgstr ""
+msgstr "Välju"
 
 #: t_modules/t_main.py:22021 t_modules/t_main.py:28062
 msgid "Off"
@@ -1303,62 +1306,62 @@ msgstr ""
 
 #: t_modules/t_main.py:22359
 msgid "Hide bar"
-msgstr ""
+msgstr "Peida riba"
 
 #: t_modules/t_main.py:22360
 msgid "Show bar"
-msgstr ""
+msgstr "Näita riba"
 
 #: t_modules/t_main.py:22362 t_modules/t_main.py:38779
 msgid "Remove This"
-msgstr ""
+msgstr "Eemalda see"
 
 #: t_modules/t_main.py:22364 t_modules/t_main.py:46914
 #: t_modules/t_main.py:46920
 msgid "Artist"
-msgstr ""
+msgstr "Esitaja"
 
 #: t_modules/t_main.py:22365 t_modules/t_main.py:46895
 #: t_modules/t_main.py:46901
 msgid "Title"
-msgstr ""
+msgstr "Pealkiri"
 
 #: t_modules/t_main.py:22366 t_modules/t_main.py:46933
 #: t_modules/t_main.py:46939
 msgid "Album"
-msgstr ""
+msgstr "Album"
 
 #: t_modules/t_main.py:22367 t_modules/t_main.py:47023
 #: t_modules/t_main.py:47029
 msgid "Duration"
-msgstr ""
+msgstr "Kestus"
 
 #: t_modules/t_main.py:22368 t_modules/t_main.py:47085
 #: t_modules/t_main.py:47091
 msgid "Date"
-msgstr ""
+msgstr "Kuupäev"
 
 #: t_modules/t_main.py:22369 t_modules/t_main.py:47070
 #: t_modules/t_main.py:47076
 msgid "Genre"
-msgstr ""
+msgstr "Žanr"
 
 #: t_modules/t_main.py:22370
 msgid "Track Number"
-msgstr ""
+msgstr "Loo number"
 
 #: t_modules/t_main.py:22371
 msgid "Play Count"
-msgstr ""
+msgstr "Esituskordi"
 
 #: t_modules/t_main.py:22373 t_modules/t_main.py:29697
 #: t_modules/t_main.py:46990
 msgid "Bitrate"
-msgstr ""
+msgstr "Bitikiirus"
 
 #: t_modules/t_main.py:22374
 msgid "Filename"
-msgstr ""
+msgstr "Faili nimi"
 
 #: t_modules/t_main.py:22375
 msgid "Starline"
@@ -1366,34 +1369,34 @@ msgstr ""
 
 #: t_modules/t_main.py:22376
 msgid "Rating"
-msgstr ""
+msgstr "Hinnang"
 
 #: t_modules/t_main.py:22379
 msgid "More…"
-msgstr ""
+msgstr "Veel…"
 
 #: t_modules/t_main.py:22381 t_modules/t_main.py:47003
 #: t_modules/t_main.py:47009
 msgid "Album Artist"
-msgstr ""
+msgstr "Albumi esitaja"
 
 #: t_modules/t_main.py:22382 t_modules/t_main.py:47155
 #: t_modules/t_main.py:47161
 msgid "Comment"
-msgstr ""
+msgstr "Kommentaar"
 
 #: t_modules/t_main.py:22384
 msgid "Scrobble Count"
-msgstr ""
+msgstr "Kraasimiste arv"
 
 #: t_modules/t_main.py:22385 t_modules/t_main.py:47100
 #: t_modules/t_main.py:47106
 msgid "Composer"
-msgstr ""
+msgstr "Helilooja"
 
 #: t_modules/t_main.py:22386
 msgid "Disc Number"
-msgstr ""
+msgstr "Plaadi number"
 
 #: t_modules/t_main.py:22388
 msgid "Is CUE Sheet"
@@ -1409,7 +1412,7 @@ msgstr ""
 
 #: t_modules/t_main.py:22933
 msgid "Paste Spotify Playlist"
-msgstr ""
+msgstr "Aseta Spotify esitusloend"
 
 #: t_modules/t_main.py:22942
 msgid "Music"
@@ -1449,7 +1452,7 @@ msgstr ""
 
 #: t_modules/t_main.py:23042
 msgid "Play History to Playlist"
-msgstr ""
+msgstr "Muuda esitamiste ajalugu esitusloendiks"
 
 #: t_modules/t_main.py:23043
 msgid "Reset Image Cache"
@@ -1517,11 +1520,11 @@ msgstr ""
 
 #: t_modules/t_main.py:23231
 msgid "No metadata available to copy"
-msgstr ""
+msgstr "Kopeerimiseks ei leidu metateavet"
 
 #: t_modules/t_main.py:23235
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Kopeeri pealkiri lõikelauale"
 
 #: t_modules/t_main.py:23253
 msgid "Random Track"
@@ -1537,7 +1540,7 @@ msgstr ""
 
 #: t_modules/t_main.py:23292 t_modules/t_main.py:38785
 msgid "Clear Queue"
-msgstr ""
+msgstr "Tühjenda esitusjärjekord"
 
 #: t_modules/t_main.py:23529
 msgid "Global Search"
@@ -1545,7 +1548,7 @@ msgstr ""
 
 #: t_modules/t_main.py:23546
 msgid "Copy Album URL"
-msgstr ""
+msgstr "Kopeeri albumi võrguaadress"
 
 #: t_modules/t_main.py:23550 t_modules/t_main.py:23661
 msgid "Lookup Spotify Album"
@@ -1578,15 +1581,15 @@ msgstr ""
 
 #: t_modules/t_main.py:23623
 msgid "Importing Spotify playlists..."
-msgstr ""
+msgstr "Impordime Spotify esitusloendeid..."
 
 #: t_modules/t_main.py:23641
 msgid "> Import All Playlists"
-msgstr ""
+msgstr "> Impordi kõik esitusloendid"
 
 #: t_modules/t_main.py:23646
 msgid "Playlist…"
-msgstr ""
+msgstr "Esitusloend…"
 
 #: t_modules/t_main.py:23652
 msgid "Current Context"
@@ -1602,7 +1605,7 @@ msgstr ""
 
 #: t_modules/t_main.py:23851
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "Kraasimine on peatatud"
 
 #: t_modules/t_main.py:23855
 msgid "ListenBrainz is Active"
@@ -1610,7 +1613,7 @@ msgstr ""
 
 #: t_modules/t_main.py:23857
 msgid "Scrobbling is Active"
-msgstr ""
+msgstr "Kraasimine on kasutusel"
 
 #: t_modules/t_main.py:24167
 msgid "Exit Shuffle Lockdown"
@@ -1935,11 +1938,11 @@ msgstr ""
 
 #: t_modules/t_main.py:28466
 msgid "Auto regenerate playlists"
-msgstr ""
+msgstr "Loo esitusloendid automaatselt uuesti"
 
 #: t_modules/t_main.py:28467
 msgid "Generated playlists reload when re-entering"
-msgstr ""
+msgstr "Uuesti sisenemisel loodud esitusloendid laaditakse uuesti"
 
 #: t_modules/t_main.py:28471
 msgid "Tabs in top panel"
@@ -1987,7 +1990,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28512
 msgid "End of playlist action"
-msgstr ""
+msgstr "Esitusloendi toimingute lõpp"
 
 #: t_modules/t_main.py:28515 t_modules/t_main.py:28519
 msgid "Stop playback"
@@ -1995,15 +1998,15 @@ msgstr ""
 
 #: t_modules/t_main.py:28516 t_modules/t_main.py:28521
 msgid "Repeat playlist"
-msgstr ""
+msgstr "Korda esitusloendit"
 
 #: t_modules/t_main.py:28525
 msgid "Play next playlist"
-msgstr ""
+msgstr "Esita uut esitusloendit"
 
 #: t_modules/t_main.py:28527
 msgid "Cycle all playlists"
-msgstr ""
+msgstr "Mängi läbi kõik esitusloendid"
 
 #: t_modules/t_main.py:28533
 msgid "Extract archives"
@@ -2087,7 +2090,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28599
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Lood salvestatakse esitusloendisse „Salvestatud lood raadiost“."
 
 #: t_modules/t_main.py:28613
 msgid "Enable Discord Rich Presence"
@@ -2107,7 +2110,7 @@ msgstr ""
 
 #: t_modules/t_main.py:28860
 msgid "Playlist name"
-msgstr ""
+msgstr "Esitusloendi nimi"
 
 #: t_modules/t_main.py:28873
 msgid "Get playlist"
@@ -2115,11 +2118,11 @@ msgstr ""
 
 #: t_modules/t_main.py:28881
 msgid "Maloja Server"
-msgstr ""
+msgstr "Maloja server"
 
 #: t_modules/t_main.py:28883
 msgid "Maloja is a self-hosted scrobble server."
-msgstr ""
+msgstr "Maloja on sinu enda hallatav kraasimiste server."
 
 #: t_modules/t_main.py:28884
 msgid "See here to lean more: %s"
@@ -2141,7 +2144,7 @@ msgstr ""
 #: t_modules/t_main.py:28948 t_modules/t_main.py:28950
 #: t_modules/t_main.py:29450 t_modules/t_main.py:29467
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Tuvasta kraasimiste arv"
 
 #: t_modules/t_main.py:28961
 msgid "View setup instructions"
@@ -2304,7 +2307,7 @@ msgstr ""
 
 #: t_modules/t_main.py:29550
 msgid "Cleared all scrobble counts"
-msgstr ""
+msgstr "Kustutasime kõik kraasimiste loendamised"
 
 #: t_modules/t_main.py:29555
 msgid "Warning: This process can take a long time to complete! (up to an hour or more)"
@@ -2805,19 +2808,19 @@ msgstr ""
 
 #: t_modules/t_main.py:38341 t_modules/t_main.py:38357
 msgid "Folder Tree"
-msgstr ""
+msgstr "Kaustapuu"
 
 #: t_modules/t_main.py:38746
 msgid "Resume Queue"
-msgstr ""
+msgstr "Jätka esitusjärjekorra mängimist"
 
 #: t_modules/t_main.py:38748
 msgid "Pause Queue"
-msgstr ""
+msgstr "Peata esitusjärjekorra mängimine"
 
 #: t_modules/t_main.py:38780
 msgid "Play Now"
-msgstr ""
+msgstr "Esita kohe"
 
 #: t_modules/t_main.py:38787
 msgid "↳ Except for This"
@@ -2825,7 +2828,7 @@ msgstr ""
 
 #: t_modules/t_main.py:38789
 msgid "Queue to New Playlist"
-msgstr ""
+msgstr "Tee esitusjärjekorrast uus esitusloend"
 
 #: t_modules/t_main.py:38933
 msgid "Cancel Auto-Stop"
@@ -2865,11 +2868,11 @@ msgstr ""
 
 #: t_modules/t_main.py:40625
 msgid "Edit..."
-msgstr ""
+msgstr "Muuda..."
 
 #: t_modules/t_main.py:40979
 msgid "Playing"
-msgstr ""
+msgstr "Esitamisel"
 
 #: t_modules/t_main.py:41053
 msgid "Auto-Scroll"
@@ -2909,15 +2912,15 @@ msgstr ""
 
 #: t_modules/t_main.py:44307
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Esmalt vali lähtelugu kopeerides ta lõikelauale"
 
 #: t_modules/t_main.py:45867
 msgid "Rescan folders complete."
-msgstr ""
+msgstr "Kaustade uuesti skaneerimine on lõppenud."
 
 #: t_modules/t_main.py:46517
 msgid "Queue is Empty"
-msgstr ""
+msgstr "Esitusjärjekord on tühi"
 
 #: t_modules/t_main.py:46897 t_modules/t_main.py:46916
 #: t_modules/t_main.py:46935 t_modules/t_main.py:46958
@@ -2925,43 +2928,43 @@ msgstr ""
 #: t_modules/t_main.py:47072 t_modules/t_main.py:47087
 #: t_modules/t_main.py:47102 t_modules/t_main.py:47157
 msgid "Copied text to clipboard"
-msgstr ""
+msgstr "Tekst on kopeeritud lõikelauale"
 
 #: t_modules/t_main.py:46956 t_modules/t_main.py:46962
 msgid "Path"
-msgstr ""
+msgstr "Asukoht"
 
 #: t_modules/t_main.py:46977
 msgid "Samplerate"
-msgstr ""
+msgstr "Diskreetimissagedus"
 
 #: t_modules/t_main.py:47036 t_modules/t_main.py:47058
 msgid " of "
-msgstr ""
+msgstr " / "
 
 #: t_modules/t_main.py:47038
 msgid "Track"
-msgstr ""
+msgstr "Lugu"
 
 #: t_modules/t_main.py:47046 t_modules/t_main.py:47052
 msgid "File size"
-msgstr ""
+msgstr "Faili suurus"
 
 #: t_modules/t_main.py:47060
 msgid "Disc"
-msgstr ""
+msgstr "Plaat"
 
 #: t_modules/t_main.py:47124
 msgid "Play count"
-msgstr ""
+msgstr "Esituskordi"
 
 #: t_modules/t_main.py:47137
 msgid "Play time"
-msgstr ""
+msgstr "Esitusaeg"
 
 #: t_modules/t_main.py:47226
 msgid "Folder Modification"
-msgstr ""
+msgstr "Kausta muutmine"
 
 #: t_modules/t_main.py:47241
 msgid "Renames the physical folder based on the template"
