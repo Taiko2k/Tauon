@@ -16,7 +16,7 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 
 import colorsys
 import glob
@@ -31,42 +31,47 @@ import threading
 import time
 import urllib.parse
 import zipfile
+from typing import TYPE_CHECKING
 
 import gi
 from gi.repository import GLib
 
+if TYPE_CHECKING:
+	from collections.abc import Callable
 
-def tmp_cache_dir():
+	from t_modules.t_main import TrackClass
+
+def tmp_cache_dir() -> str:
 	tmp_dir = GLib.get_tmp_dir()
 	return os.path.join(tmp_dir, "TauonMusicBox")
 
 class Timer:
 	"""A seconds based timer"""
 
-	def __init__(self, force=None):
+	def __init__(self, force: bool | None = None) -> None:
 		self.start = 0
 		self.end = 0
 		self.set()
 		if force:
 			self.force_set(force)
 
-	def set(self):
+	def set(self) -> None:
 		"""Reset"""
 		self.start = time.monotonic()
 
-	def hit(self):
+	def hit(self) -> float:
 		"""Return time and reset"""
 		self.end = time.monotonic()
 		elapsed = self.end - self.start
 		self.start = time.monotonic()
 		return elapsed
 
-	def get(self):
+	def get(self) -> float:
 		"""Return time only"""
 		self.end = time.monotonic()
 		return self.end - self.start
 
-	def force_set(self, sec):
+	def force_set(self, sec: float) -> None:
 		self.start = time.monotonic()
 		self.start -= sec
 
@@ -74,55 +79,54 @@ class Timer:
 class TestTimer:
 	"""Simple bool timer object"""
 
-	def __init__(self, time):
+	def __init__(self, time: float) -> None:
 		self.timer = Timer()
 		self.time = time
 
-	def test(self):
+	def test(self) -> bool:
 		return self.timer.get() > self.time
 
 j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
 
 
-def point_proximity_test(a, b, p):
+def point_proximity_test(a: dict, b: dict, p: dict) -> bool:
 	"""Test given proximity between two 2d points to given square"""
 	return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
-def point_distance(a, b):
+def point_distance(a: dict, b: dict) -> float:
 	"""Get distance between two points"""
 	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
 
-def rm_16(line):
+def rm_16(line: str) -> str:
 	"""Removes whatever this is from a line, I forgot"""
 	if "ÿ þ" in line:
 		for c in line:
 			line = line[1:]
-			if c == 'þ':
+			if c == "þ":
 				break
 
 		line = line[::2]
 	return line
 
 
-def get_display_time(seconds):
+def get_display_time(seconds: str) -> str:
 	"""Returns a string from seconds to a compact time format, e.g 2h:23"""
 	result = divmod(int(seconds), 60)
 	if result[0] > 99:
 		result = divmod(result[0], 60)
-		return str(result[0]) + 'h ' + str(result[1]).zfill(2)
+		return str(result[0]) + "h " + str(result[1]).zfill(2)
 	return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
 
 
-def get_hms_time(seconds):
+def get_hms_time(seconds: float) -> str:
 	m, s = divmod(round(seconds), 60)
 	h, m = divmod(m, 60)
 	if h:
-		return f'{h:d}:{m:02d}:{s:02d}'
-	else:
-		return f'{m:02d}:{s:02d}'
+		return f"{h:d}:{m:02d}:{s:02d}"
+	return f"{m:02d}:{s:02d}"
 
-def hms_to_seconds(time_str):
-	components = time_str.split(':')
+def hms_to_seconds(time_str: str) -> int:
+	components = time_str.split(":")
 	seconds = 0
 	if len(components) == 1:  # If only seconds provided
 		seconds = int(components[0])
@@ -132,7 +136,7 @@ def hms_to_seconds(time_str):
 		seconds = int(components[0]) * 3600 + int(components[1]) * 60 + int(components[2])
 	return seconds
 
-def get_filesize_string(file_bytes, rounding=2):
+def get_filesize_string(file_bytes: int, rounding: int = 2) -> str:
 	"""Creates a string from number of bytes to X MB/kB etc with Locale adjustment"""
 	if not file_bytes:
 		return "0"
@@ -149,7 +153,7 @@ def get_filesize_string(file_bytes, rounding=2):
 		line = locale.str(file_mb) + " GB"
 	return line
 
-def get_filesize_string_rounded(file_bytes):
+def get_filesize_string_rounded(file_bytes: int) -> str:
 	if not file_bytes:
 		return "0"
 	if file_bytes < 1000:
@@ -162,11 +166,11 @@ def get_filesize_string_rounded(file_bytes):
 		line = str(file_mb) + " MB"
 	return line
 
-# Estimates the perceived luminance of a colour
-def test_lumi(c1):
+def test_lumi(c1: dict) -> float:
+	"""Estimates the perceived luminance of a colour"""
 	return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
-def rel_luminance(colour):
+def rel_luminance(colour: dict) -> float:
 	r = colour[0] / 255
 	g = colour[1] / 255
 	b = colour[2] / 255
@@ -189,7 +193,7 @@ def rel_luminance(colour):
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def contrast_ratio(c1, c2):
+def contrast_ratio(c1: dict, c2: dict) -> float:
 
 	l1 = rel_luminance(c1)
 	l2 = rel_luminance(c2)
@@ -199,47 +203,51 @@ def contrast_ratio(c1, c2):
 
 	return (l1 + 0.05) / (l2 + 0.05)
 
-def colour_value(c1):
+def colour_value(c1: dict) -> int:
 	"""Give the sum of first 3 elements in a list"""
 	return c1[0] + c1[1] + c1[2]
 
 
-def alpha_blend(colour, base):
+def alpha_blend(colour: dict, base: dict) -> list[int]:
 	"""Perform alpha blending of one colour (rgba) onto another (rgb)"""
 	alpha = colour[3] / 255
-	return [int(alpha * colour[0] + (1 - alpha) * base[0]),
-			int(alpha * colour[1] + (1 - alpha) * base[1]),
-			int(alpha * colour[2] + (1 - alpha) * base[2]), 255]
+	return [
+		int(alpha * colour[0] + (1 - alpha) * base[0]),
+		int(alpha * colour[1] + (1 - alpha) * base[1]),
+		int(alpha * colour[2] + (1 - alpha) * base[2]),
+		255]
 
 
-def alpha_mod(colour, alpha):
+def alpha_mod(colour: dict, alpha: int) -> list[int]:
 	"""Change the alpha component of an RGBA list"""
 	return [colour[0], colour[1], colour[2], alpha]
 
 
-def colour_slide(a, b, x, x_limit):
+def colour_slide(a: dict, b: dict, x: int, x_limit: int) -> tuple[int, int, int, int]:
 	"""Shift between two colours based on x where x is between 0 and limit"""
-	return (min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
+	return (
+		min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
 		min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
-		min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255), 255)
+		min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255),
+		255)
 
 
-def hex_to_rgb(colour):
+def hex_to_rgb(colour: str) -> list[int]:
 	colour = colour.strip("#")
 	return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
 
 
-def check_equal(lst):
+def check_equal(lst: list) -> bool:
 	"""Check if all the numbers in a list are the same"""
 	return not lst or lst.count(lst[0]) == len(lst)
 
 
-def is_grey(lst):
+def is_grey(lst: list) -> bool:
 	"""Check if the first 3 elements of a list are the same"""
 	return lst[0] == lst[1] == lst[2]
 
 
-def star_count(sec, dur):
+def star_count(sec: float, dur: float) -> int:
 	"""Give a score from 0-7 based on number of seconds"""
 	stars = 0
 	if dur and sec / dur > 0.95:
@@ -261,7 +269,7 @@ def star_count(sec, dur):
 	return stars
 
 
-def star_count3(sec, dur):
+def star_count3(sec: float, dur: float) -> int:
 	stars = 0
 	if dur and sec / dur > 0.95:
 		stars += 1
@@ -288,7 +296,7 @@ def star_count3(sec, dur):
 	return stars
 
 
-def star_count2(sec):
+def star_count2(sec: float) -> float:
 	"""Give a score from 0.0 - 1.0 based on number of seconds"""
 	star = 0
 	star += min(sec / (60 * 4), 0.2)
@@ -297,50 +305,51 @@ def star_count2(sec):
 	return float(round(min(star, 1), 1))
 
 
-def search_magic(terms, evaluate):
+def search_magic(terms: str, evaluate: str) -> bool:
 	return all(word in evaluate for word in terms.split())
 
 
-def search_magic_any(terms, evaluate):
+def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
 
 
-def random_colour(saturation, luminance):
+def random_colour(saturation: int, luminance: int) -> list[int]:
 
 	h = round(random.random(), 2)
 	colour = colorsys.hls_to_rgb(h, luminance, saturation)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
 
-def hsl_to_rgb(h, s, l):
+def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def hls_to_rgb(h, l, s):
+def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
+	"""Duplicate HSL function so it works for the less common alt name too"""
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def rgb_to_hls(r, g, b):
+def rgb_to_hls(r: int, g: int, b: int) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def rgb_add_hls(source, h=0, l=0, s=0):
+def rgb_add_hls(source: dict, h: int=0, l: int=0, s: int=0) -> list[int]:
 	c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
 
 
-def is_light(colour):
+def is_light(colour: dict) -> bool:
 	return test_lumi(colour) < 0.2
 
 class ColourGenCache:
 
-	def __init__(self, saturation, luminance):
+	def __init__(self, saturation: int, luminance: int) -> None:
 
 		self.saturation = saturation
 		self.luminance = luminance
 		self.store = {}
 
-	def get(self, key):
+	def get(self, key: str) -> list[int]:
 
 		if key in self.store:
 			return self.store[key]
@@ -353,13 +362,13 @@ class ColourGenCache:
 
 
 
-def folder_file_scan(path, extensions):
+def folder_file_scan(path: str, extensions: str) -> float:
 
 	match = 0
 	count = sum([len(files) for r, d, files in os.walk(path)])
 	for ext in extensions:
 
-		match += len(glob.glob(path + '/**/*.' + ext.lower(), recursive=True))
+		match += len(glob.glob(path + "/**/*." + ext.lower(), recursive=True))
 
 	if count == 0:
 		return 0
@@ -370,24 +379,14 @@ def folder_file_scan(path, extensions):
 	return match / count
 
 
-def is_ignorable_file(string):
-	for s in [
-		"Thumbs.db",
-		".log",
-		"desktop.ini",
-		"DS_Store",
-		".nfo",
-		"yric"
-	]:
-		if s in string:
-			return True
-	return False
+def is_ignorable_file(string: str) -> bool:
+	return any(s in string for s in ["Thumbs.db", ".log", "desktop.ini", "DS_Store", ".nfo", "yric"])
 
 
 # Pre-compile the regular expression pattern for dates starting with the year
 date_pattern = re.compile(r'\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*')
 
-def get_year_from_string(s):
+def get_year_from_string(s: str) -> str:
 	# Search for the pattern in the string
 	match = date_pattern.search(s)
 
@@ -402,7 +401,7 @@ def get_year_from_string(s):
 example_string = "Event date: 2021-12-31."
 print(get_year_from_string(example_string))  # Output: "2021"
 
-def is_music_related(string):
+def is_music_related(string: str) -> bool:
 	for s in [
 		"Folder.jpg",
 		"folder.jpg",
@@ -419,28 +418,28 @@ def is_music_related(string):
 	return False
 
 
-def archive_file_scan(path, extensions, launch_prefix=""):
+def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> float:
 	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
 	# print(path)
 	# print(ext)
 	try:
-		if ext == 'rar':
+		if ext == "rar":
 			matches = 0
 			count = 0
 			line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
 			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-			file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			# print(file_list)
 			for fi in file_list:
 				for ty in extensions:
 					if fi[len(ty) * -1:].lower() == ty:
 						matches += 1
 						break
-					elif is_ignorable_file(fi):
+					if is_ignorable_file(fi):
 						count -= 1
 						break
-					elif is_music_related(fi):
+					if is_music_related(fi):
 						matches += 5
 				count += 1
 			if count > 200:
@@ -456,26 +455,26 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 				#print("   --- " + path)
 				return 0
 
-		elif ext == '7z':
+		elif ext == "7z":
 			matches = 0
 			count = 0
 			line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
 			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-			file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			# print(file_list)
 
 			for fi in file_list:
 
-				if '....A' not in fi:
+				if "....A" not in fi:
 					continue
 				for ty in extensions:
 					if fi[len(ty) * -1:].lower() == ty:
 						matches += 1
 						break
-					elif is_ignorable_file(fi):
+					if is_ignorable_file(fi):
 						count -= 1
 						break
-					elif is_music_related(fi):
+					if is_music_related(fi):
 						matches += 5
 				count += 1
 
@@ -494,7 +493,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 
 		elif ext == "zip":
 
-			zip_ref = zipfile.ZipFile(path, 'r')
+			zip_ref = zipfile.ZipFile(path, "r")
 			matches = 0
 			count = 0
 			#print(zip_ref.namelist())
@@ -503,10 +502,10 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 					if fi[len(ty) * -1:].lower() == ty:
 						matches += 1
 						break
-					elif is_ignorable_file(fi):
+					if is_ignorable_file(fi):
 						count -= 1
 						break
-					elif is_music_related(fi):
+					if is_music_related(fi):
 						matches += 5
 				count += 1
 			if count == 0:
@@ -524,7 +523,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 		else:
 			return 0
 
-	except:
+	except Exception:
 		print("Archive test error")
 
 		return 0
@@ -538,7 +537,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 	return ratio
 
 
-def get_folder_size(path):
+def get_folder_size(path: str) -> int:
 	total_size = 0
 	for dirpath, dirnames, filenames in os.walk(path):
 		for f in filenames:
@@ -547,31 +546,31 @@ def get_folder_size(path):
 	return total_size
 
 
-def filename_safe(text, sub=""):
+def filename_safe(text: str, sub: str="") -> str:
 	for cha in '/\\<>:"|?*':
 		text = text.replace(cha, sub)
 	return text.rstrip(" .")
 
-def filename_to_metadata(filename):
+def filename_to_metadata(filename: str) -> tuple[str, str]:
 
 	# Remove the file extension
-	name_without_extension = filename.rsplit('.', 1)[0]
+	name_without_extension = filename.rsplit(".", 1)[0]
 
 	# Remove leading track numbers if present
-	name_without_track_number = re.sub(r'^\d{1,2}[. -]+', '', name_without_extension)
+	name_without_track_number = re.sub(r"^\d{1,2}[. -]+", "", name_without_extension)
 
 	# Split the filename on ' - ' to separate the artist and the title
-	if ' - ' in name_without_track_number:
-		artist, title = name_without_track_number.split(' - ', 1)
+	if " - " in name_without_track_number:
+		artist, title = name_without_track_number.split(" - ", 1)
 	else:
 		# If ' - ' is not present, return the whole name as title and empty string as artist
-		artist = ''
+		artist = ""
 		title = name_without_track_number
 
 	return artist, title
 
 
-def get_artist_strip_feat(track_object):
+def get_artist_strip_feat(track_object: TrackClass) -> str:
 
 	artist_name = track_object.artist #.lower()
 	if track_object.album_artist:
@@ -581,7 +580,7 @@ def get_artist_strip_feat(track_object):
 				artist_name = track_object.album_artist
 	return artist_name
 
-def get_artist_safe(track):
+def get_artist_safe(track: TrackClass) -> str:
 
 	if track:
 		artist = track.album_artist
@@ -594,13 +593,13 @@ def get_artist_safe(track):
 		return artist
 	return ""
 
-def get_split_artists(track):
-	if 'artists' in track.misc:
-		return track.misc['artists']
+def get_split_artists(track: TrackClass) -> list[str]:
+	if "artists" in track.misc:
+		return track.misc["artists"]
 	artist = track.artist.split("feat")[0].strip()
-	return re.split(r'; |, |& ', artist)
+	return re.split(r"; |, |& ", artist)
 
-def coll_rect(rect1, rect2):
+def coll_rect(rect1: dict, rect2: dict) -> bool:
 
 	if rect1[0] + rect1[2] < rect2[0] or \
 			rect1[1] + rect1[3] < rect2[1] or \
@@ -610,10 +609,10 @@ def coll_rect(rect1, rect2):
 	return True
 
 
-def commonprefix(l):
+def commonprefix(l: str) -> str:
 
 	cp = []
-	ls = [p.split('/') for p in l]
+	ls = [p.split("/") for p in l]
 	ml = min(len(p) for p in ls)
 
 	for i in range(ml):
@@ -624,16 +623,16 @@ def commonprefix(l):
 
 		cp.append(s.pop())
 
-	return '/'.join(cp)
+	return "/".join(cp)
 
 
-def fader_timer(time_point, start, duration, off=True, range=255):
+def fader_timer(time_point: float, start: float, duration: float, off: bool = True, fade_range: int = 255):
 
 	if time_point < start:
-		fade = range
+		fade = fade_range
 	elif time_point < start + duration:
 		p = (time_point - start) / duration
-		fade = int(range - (range * p))
+		fade = int(fade_range - (fade_range * p))
 	else:
 		fade = 0
 
@@ -840,15 +839,15 @@ id3_genre_dict = {
 class FunctionStore:
 	"""Stores functions and arguments for calling later"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 
 		self.items = []
 
-	def store(self, function, args=()):
+	def store(self, function: Callable[..., None], args: tuple = ()) -> None:
 
 		self.items.append((function, args))
 
-	def recall_all(self):
+	def recall_all(self) -> None:
 
 		while self.items:
 			item = self.items.pop()
@@ -856,7 +855,7 @@ class FunctionStore:
 
 
 
-def grow_rect(rect, px):
+def grow_rect(rect: dict, px: float) -> tuple[float, float, float, float]:
 	return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
 
 # def get_hash(f_path, mode='sha256'):
@@ -867,9 +866,18 @@ def grow_rect(rect, px):
 #	 digest = h.hexdigest()
 #	 return digest
 
-def subtract_rect(base, hole):
+def subtract_rect(
+	base: tuple[float, float, float, float],
+	hole: tuple[float, float, float, float],
+) -> (
+	tuple[
+		tuple[float, float, float, float],
+		tuple[float, float, float, float],
+		tuple[float, float, float, float],
+		tuple[float, float, float, float],
+	]
+):
 	"""Return 4 rects from 1 minus 1 inner (with overlaps)"""
-
 	west = base[0], base[1], hole[0], base[3]
 	north = base[0], base[1], base[2], hole[1] - base[1]
 	east = base[0] + hole[0] + hole[2], base[1], base[2] - (hole[0] + hole[2]), base[3]
@@ -886,7 +894,7 @@ genre_corrections = [
 
 genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
 
-def genre_correct(text):
+def genre_correct(text: str) -> str:
 
 	parsed = text.lower().replace("-", "").replace(" ", "").strip()
 	if parsed.startswith("post"):
@@ -896,7 +904,7 @@ def genre_correct(text):
 	return text.title().strip()
 
 
-def reduce_paths(paths):
+def reduce_paths(paths: list[str]) -> None:
 	"""In-place remove of redundant sub-paths from list of folder paths"""
 	paths[:] = list(set(paths))[:]  # remove duplicates
 
@@ -921,12 +929,12 @@ def reduce_paths(paths):
 		if not remove_path:
 			break
 
-def fit_box(inner, outer):
+def fit_box(inner: dict, outer: dict) -> tuple[float, float]:
 	scale = min(outer[0]/inner[0], outer[1]/inner[1])
 	return round(inner[0] * scale), round(inner[1] * scale)
 
 
-def seconds_to_day_hms(seconds, s_day, s_days):
+def seconds_to_day_hms(seconds: float, s_day: float, s_days: float) -> str:
 
 	days, seconds = divmod(seconds, 86400)
 	hours, seconds = divmod(seconds, 3600)
@@ -934,29 +942,28 @@ def seconds_to_day_hms(seconds, s_day, s_days):
 
 	if days == 1:
 		return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minutes))}:{str(int(seconds))}"
-	else:
-		return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
+	return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
 
 
-def shooter(func, args=()):
+def shooter(func: Callable[..., None], args: tuple = ()) -> None:
 	shoot = threading.Thread(target=func, args=args)
 	shoot.daemon = True
 	shoot.start()
 
 
-year_search = re.compile(r'\d{4}')
+year_search = re.compile(r"\d{4}")
 
-def d_date_display(track):
-	if 'rdat' in track.misc:
+def d_date_display(track: TrackClass) -> str:
+	if "rdat" in track.misc:
 		return str(track.date) + " → " + track.misc["rdat"]
 	return str(track.date)
 
-def d_date_display2(track):
-	if 'rdat' in track.misc:
+def d_date_display2(track: TrackClass) -> str:
+	if "rdat" in track.misc:
 		return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.misc["rdat"])
 	return str(get_year_from_string(track.date))
 
-def process_odat(nt, odat):
+def process_odat(nt: TrackClass, odat: str) -> None:
 	if odat and odat != nt.date and odat != nt.date[:4] and odat != nt.date[-4:] \
 			and nt.date != odat[:4] and nt.date != odat[-4:]:
 		if not nt.date:
@@ -965,10 +972,10 @@ def process_odat(nt, odat):
 			nt.misc["rdat"] = nt.date
 			nt.date = odat
 
-def clean_string(s):
-	return s.encode('utf-8', 'surrogatepass').decode('utf-8', 'replace')
+def clean_string(s: str) -> str:
+	return s.encode("utf-8", "surrogatepass").decode("utf-8", "replace")
 
-def uri_parse(s):
+def uri_parse(s: str) -> str:
 	if s.startswith("file://"):
 		s = str(urllib.parse.unquote(s)).replace("file://", "").replace("\r", "")
 	return s
@@ -980,10 +987,10 @@ mac_styles = {
 	"sweet": None,
 	"dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
 	"nordic": None,
-	"juno": None
+	"juno": None,
 }
 
-def sleep_timeout(condition_function, time_limit=2):
+def sleep_timeout(condition_function: Callable[[], bool], time_limit: int = 2) -> None:
 	if condition_function():
 		return
 	timer = Timer()
