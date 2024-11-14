@@ -18696,9 +18696,14 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 
             for i in reversed(range(len(playlist))):
                 tr = pctl.g(playlist[i])
-                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment])
-                if not search_magic(quote.lower(), line.lower()):
+                line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+                  
+                if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
+                    line = str(unidecode(line))              
+                
+                if not search_magic(quote.lower(), line):
                     del playlist[i]
+                    
             playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm.startswith("fx\""):
