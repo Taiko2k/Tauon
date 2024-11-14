@@ -1,5 +1,4 @@
-
-# Tauon Music Box - Misc Functions Module
+"""Tauon Music Box - Misc Functions Module"""
 
 # Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -19,28 +18,31 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import time
-import random
 import colorsys
-import subprocess
-import os
-import shlex
-import zipfile
 import glob
 import locale
-import re
 import math
+import os
+import random
+import re
+import shlex
+import subprocess
 import threading
+import time
 import urllib.parse
+import zipfile
+
 import gi
 from gi.repository import GLib
+
 
 def tmp_cache_dir():
 	tmp_dir = GLib.get_tmp_dir()
 	return os.path.join(tmp_dir, "TauonMusicBox")
 
-# A seconds based timer
 class Timer:
+	"""A seconds based timer"""
+
 	def __init__(self, force=None):
 		self.start = 0
 		self.end = 0
@@ -48,17 +50,19 @@ class Timer:
 		if force:
 			self.force_set(force)
 
-	def set(self):  # Reset
+	def set(self):
+		"""Reset"""
 		self.start = time.monotonic()
 
-	def hit(self):  # Return time and reset
-
+	def hit(self):
+		"""Return time and reset"""
 		self.end = time.monotonic()
 		elapsed = self.end - self.start
 		self.start = time.monotonic()
 		return elapsed
 
-	def get(self):  # Return time only
+	def get(self):
+		"""Return time only"""
 		self.end = time.monotonic()
 		return self.end - self.start
 
@@ -67,8 +71,9 @@ class Timer:
 		self.start -= sec
 
 
-# Simple bool timer object
 class TestTimer:
+	"""Simple bool timer object"""
+
 	def __init__(self, time):
 		self.timer = Timer()
 		self.time = time
@@ -79,16 +84,16 @@ class TestTimer:
 j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
 
 
-# Test given proximity between two 2d points to given square
 def point_proximity_test(a, b, p):
+	"""Test given proximity between two 2d points to given square"""
 	return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
-# Get distance between two points
 def point_distance(a, b):
+	"""Get distance between two points"""
 	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
 
-# Removes whatever this is from a line, I forgot
 def rm_16(line):
+	"""Removes whatever this is from a line, I forgot"""
 	if "ÿ þ" in line:
 		for c in line:
 			line = line[1:]
@@ -99,8 +104,8 @@ def rm_16(line):
 	return line
 
 
-# Returns a string from seconds to a compact time format, e.g 2h:23
 def get_display_time(seconds):
+	"""Returns a string from seconds to a compact time format, e.g 2h:23"""
 	result = divmod(int(seconds), 60)
 	if result[0] > 99:
 		result = divmod(result[0], 60)
@@ -127,8 +132,8 @@ def hms_to_seconds(time_str):
 		seconds = int(components[0]) * 3600 + int(components[1]) * 60 + int(components[2])
 	return seconds
 
-# Creates a string from number of bytes to X MB/kB etc with Locale adjustment
 def get_filesize_string(file_bytes, rounding=2):
+	"""Creates a string from number of bytes to X MB/kB etc with Locale adjustment"""
 	if not file_bytes:
 		return "0"
 	if file_bytes < 1000:
@@ -194,27 +199,26 @@ def contrast_ratio(c1, c2):
 
 	return (l1 + 0.05) / (l2 + 0.05)
 
-# Gives the sum of first 3 elements in a list
 def colour_value(c1):
+	"""Give the sum of first 3 elements in a list"""
 	return c1[0] + c1[1] + c1[2]
 
 
-# Performs alpha blending of one colour (rgba) onto another (rgb)
 def alpha_blend(colour, base):
+	"""Perform alpha blending of one colour (rgba) onto another (rgb)"""
 	alpha = colour[3] / 255
 	return [int(alpha * colour[0] + (1 - alpha) * base[0]),
 			int(alpha * colour[1] + (1 - alpha) * base[1]),
 			int(alpha * colour[2] + (1 - alpha) * base[2]), 255]
 
 
-# Change the alpha component of an RGBA list
 def alpha_mod(colour, alpha):
+	"""Change the alpha component of an RGBA list"""
 	return [colour[0], colour[1], colour[2], alpha]
 
 
-# Shift between two colours based on x where x is between 0 and limit
 def colour_slide(a, b, x, x_limit):
-
+	"""Shift between two colours based on x where x is between 0 and limit"""
 	return (min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
 		min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
 		min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255), 255)
@@ -225,18 +229,18 @@ def hex_to_rgb(colour):
 	return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
 
 
-# Checks if all the numbers in a list are the same
 def check_equal(lst):
+	"""Check if all the numbers in a list are the same"""
 	return not lst or lst.count(lst[0]) == len(lst)
 
 
-# Check if the first 3 elements of a list are the same
 def is_grey(lst):
+	"""Check if the first 3 elements of a list are the same"""
 	return lst[0] == lst[1] == lst[2]
 
 
-# Gives a score from 0-7 based on number of seconds
 def star_count(sec, dur):
+	"""Give a score from 0-7 based on number of seconds"""
 	stars = 0
 	if dur and sec / dur > 0.95:
 		stars += 1
@@ -284,8 +288,8 @@ def star_count3(sec, dur):
 	return stars
 
 
-# Gives a score from 0.0 - 1.0 based on number of seconds
 def star_count2(sec):
+	"""Give a score from 0.0 - 1.0 based on number of seconds"""
 	star = 0
 	star += min(sec / (60 * 4), 0.2)
 	star += min(sec / (60 * 60), 0.4)
@@ -415,9 +419,8 @@ def is_music_related(string):
 	return False
 
 
-# Get ratio of given file extensions in archive
 def archive_file_scan(path, extensions, launch_prefix=""):
-
+	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
 	# print(path)
 	# print(ext)
@@ -835,7 +838,7 @@ id3_genre_dict = {
 
 
 class FunctionStore:
-	# Stores functions and arguments for calling later
+	"""Stores functions and arguments for calling later"""
 
 	def __init__(self):
 
@@ -864,7 +867,8 @@ def grow_rect(rect, px):
 #	 digest = h.hexdigest()
 #	 return digest
 
-def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with overlaps)
+def subtract_rect(base, hole):
+	"""Return 4 rects from 1 minus 1 inner (with overlaps)"""
 
 	west = base[0], base[1], hole[0], base[3]
 	north = base[0], base[1], base[2], hole[1] - base[1]
@@ -892,8 +896,8 @@ def genre_correct(text):
 	return text.title().strip()
 
 
-def reduce_paths(paths):  # in-place remove of redundant sub-paths from list of folder paths
-
+def reduce_paths(paths):
+	"""In-place remove of redundant sub-paths from list of folder paths"""
 	paths[:] = list(set(paths))[:]  # remove duplicates
 
 	while "" in paths:
