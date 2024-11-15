@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-
-# Tauon Music Box
+"""Tauon Music Box"""
 
 # Copyright © 2015-2024, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -20,11 +19,48 @@
 import os
 import pickle
 import sys
-from ctypes import pointer
+from ctypes import c_int, pointer
 
 from gi.repository import GLib
-from sdl2 import *
-from sdl2.sdlimage import *
+from sdl2 import (
+	SDL_BLENDMODE_BLEND,
+	SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH,
+	SDL_HINT_RENDER_SCALE_QUALITY,
+	SDL_HINT_VIDEO_ALLOW_SCREENSAVER,
+	SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,
+	SDL_INIT_VIDEO,
+	SDL_MESSAGEBOX_ERROR,
+	SDL_RENDERER_ACCELERATED,
+	SDL_RENDERER_PRESENTVSYNC,
+	SDL_WINDOW_ALLOW_HIGHDPI,
+	SDL_WINDOW_BORDERLESS,
+	SDL_WINDOW_FULLSCREEN_DESKTOP,
+	SDL_WINDOW_HIDDEN,
+	SDL_WINDOW_RESIZABLE,
+	SDL_WINDOWPOS_UNDEFINED,
+	SDL_CreateRenderer,
+	SDL_CreateTextureFromSurface,
+	SDL_CreateWindow,
+	SDL_DestroyTexture,
+	SDL_FreeSurface,
+	SDL_GetError,
+	SDL_GetWindowSize,
+	SDL_GL_GetDrawableSize,
+	SDL_Init,
+	SDL_MaximizeWindow,
+	SDL_Rect,
+	SDL_RenderClear,
+	SDL_RenderCopy,
+	SDL_RenderPresent,
+	SDL_SetHint,
+	SDL_SetRenderDrawBlendMode,
+	SDL_SetRenderDrawColor,
+	SDL_SetWindowOpacity,
+	SDL_ShowSimpleMessageBox,
+)
+from sdl2.sdlimage import IMG_Load
+
+from t_modules import t_bootstrap
 
 if sys.platform != "win32":
 	import fcntl
@@ -37,10 +73,10 @@ t_agent = "TauonMusicBox/" + n_version
 
 
 print(f"{t_title} {t_version}")
-print('Copyright 2015-2023 Taiko2k captain.gxj@gmail.com\n')
+print("Copyright 2015-2023 Taiko2k captain.gxj@gmail.com\n")
 
 # Early arg processing
-def transfer_args_and_exit():
+def transfer_args_and_exit() -> None:
 	import urllib.request
 	base = "http://localhost:7813/"
 
@@ -96,14 +132,11 @@ if install_directory.endswith("\\_internal"):
 
 if pyinstaller_mode:
 	os.environ["PATH"] += ":" + sys._MEIPASS
-	os.environ['SSL_CERT_FILE'] = os.path.join(install_directory, "certifi", "cacert.pem")
+	os.environ["SSL_CERT_FILE"] = os.path.join(install_directory, "certifi", "cacert.pem")
 
 # If we're installed, use home data locations
 install_mode = False
-if install_directory.startswith("/opt/")\
-		or install_directory.startswith("/usr/")\
-		or install_directory.startswith("/app/")\
-		or install_directory.startswith("/snap/") or sys.platform == "darwin" or sys.platform == 'win32':
+if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.platform == "darwin" or sys.platform == "win32":
 	install_mode = True
 
 # Assume that it's a classic Linux install, use standard paths
@@ -129,26 +162,26 @@ if not os.path.isdir(user_directory):
 	os.makedirs(user_directory)
 
 fp = None
-dev_mode = os.path.isfile(os.path.join(install_directory, '.dev'))
+dev_mode = os.path.isfile(os.path.join(install_directory, ".dev"))
 if dev_mode:
 	print("Dev mode, ignoring single instancing")
-elif sys.platform != 'win32':
-	pid_file = os.path.join(user_directory, 'program.pid')
-	fp = open(pid_file, 'w')
+elif sys.platform != "win32":
+	pid_file = os.path.join(user_directory, "program.pid")
+	fp = open(pid_file, "w")
 	try:
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-	except IOError:
+	except OSError:
 		# another instance is running
 		print("Program is already running")
 		transfer_args_and_exit()
 else:
 	if sys.platform == "win32":
-		pid_file = os.path.join(user_directory, 'program.pid')
+		pid_file = os.path.join(user_directory, "program.pid")
 		try:
 			if os.path.isfile(pid_file):
 				os.remove(pid_file)
-			fp = open(pid_file, 'w')
-		except IOError:
+			fp = open(pid_file, "w")
+		except OSError:
 			# another instance is running
 			print("Program is already running")
 			transfer_args_and_exit()
@@ -156,7 +189,7 @@ else:
 		os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
-d = os.environ.get('XDG_CURRENT_DESKTOP')
+d = os.environ.get("XDG_CURRENT_DESKTOP")
 if d in ["GNOME:Phosh"]:
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
 	phone = True
@@ -165,7 +198,7 @@ if pyinstaller_mode: # and sys.platform == 'darwin':
 	os.environ["PYSDL2_DLL_PATH"] = install_directory
 
 fs_mode = False
-if os.environ.get('GAMESCOPE_WAYLAND_DISPLAY') is not None:
+if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	fs_mode = True
 	print("Running in GAMESCOPE MODE")
 
@@ -173,7 +206,7 @@ allow_hidpi = True
 if sys.platform == "win32" and sys.getwindowsversion().major < 10 or os.path.isfile(os.path.join(user_directory, "nohidpi")):
 	allow_hidpi = False
 
-SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
+SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
@@ -215,11 +248,11 @@ if os.path.isfile(window_p) and not fs_mode:
 		old_window_position = save[5]
 		del save
 
-	except:
-		print('Corrupted window state file?!')
-		print('Please restart app')
+	except Exception:
+		print("Corrupted window state file?!")
+		print("Please restart app")
 		os.remove(window_p)
-		exit(1)
+		sys.exit(1)
 else:
 	print("No window state file")
 
@@ -227,7 +260,7 @@ else:
 if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	try:
 		import gi.repository
-		gi.require_version('Gtk', '3.0')
+		gi.require_version("Gtk", "3.0")
 		from gi.repository import Gtk
 
 		gtk_settings = Gtk.Settings().get_default()
@@ -235,7 +268,7 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 		xsize = gtk_settings.get_property("gtk-cursor-theme-size")
 		os.environ["XCURSOR_THEME"] = xtheme
 		os.environ["XCURSOR_SIZE"] = str(xsize)
-	except:
+	except Exception:
 		pass
 
 if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
@@ -244,7 +277,6 @@ if os.path.exists(os.path.join(user_directory, "x11")):
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
 SDL_Init(SDL_INIT_VIDEO)
-
 err = SDL_GetError()
 if err and "GLX" in err.decode():
 	print(f"SDL init error: {err.decode()}")
@@ -254,7 +286,7 @@ if err and "GLX" in err.decode():
 	sys.exit()
 
 window_title = t_title
-window_title = window_title.encode('utf-8')
+window_title = window_title.encode("utf-8")
 
 flags = SDL_WINDOW_RESIZABLE
 
@@ -286,10 +318,8 @@ t_window = SDL_CreateWindow(
 	flags) # | SDL_WINDOW_FULLSCREEN)
 
 
-
 if maximized:
 	SDL_MaximizeWindow(t_window)
-
 
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
@@ -333,7 +363,6 @@ SDL_RenderPresent(renderer)
 SDL_FreeSurface(raw_image)
 SDL_DestroyTexture(sdl_texture)
 
-from t_modules import t_bootstrap
 h = t_bootstrap.holder
 h.w = t_window
 h.r = renderer
@@ -372,9 +401,9 @@ if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 else:
 	# Using the above import method breaks previous pickles. Could be fixed
 	# but yet to decide what best method is.
-	big_boy_path = os.path.join(install_directory, 't_modules/t_main.py')
+	big_boy_path = os.path.join(install_directory, "t_modules/t_main.py")
 	f = open(big_boy_path, "rb")
-	main = compile(f.read(), big_boy_path, 'exec')
+	main = compile(f.read(), big_boy_path, "exec")
 	f.close()
 	del big_boy_path
 	del f
