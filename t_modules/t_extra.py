@@ -166,11 +166,11 @@ def get_filesize_string_rounded(file_bytes: int) -> str:
 		line = str(file_mb) + " MB"
 	return line
 
-def test_lumi(c1: dict) -> float:
+def test_lumi(c1: list[int]) -> float:
 	"""Estimates the perceived luminance of a colour"""
 	return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
-def rel_luminance(colour: dict) -> float:
+def rel_luminance(colour: tuple[int, int, int, int]) -> float:
 	r = colour[0] / 255
 	g = colour[1] / 255
 	b = colour[2] / 255
@@ -193,7 +193,7 @@ def rel_luminance(colour: dict) -> float:
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def contrast_ratio(c1: dict, c2: dict) -> float:
+def contrast_ratio(c1: tuple[int, int, int, int], c2: tuple[int, int, int, int]) -> float:
 
 	l1 = rel_luminance(c1)
 	l2 = rel_luminance(c2)
@@ -203,12 +203,12 @@ def contrast_ratio(c1: dict, c2: dict) -> float:
 
 	return (l1 + 0.05) / (l2 + 0.05)
 
-def colour_value(c1: dict) -> int:
+def colour_value(c1: list[int]) -> int:
 	"""Give the sum of first 3 elements in a list"""
 	return c1[0] + c1[1] + c1[2]
 
 
-def alpha_blend(colour: dict, base: dict) -> list[int]:
+def alpha_blend(colour: tuple[int, int, int, int], base: tuple[int, int, int, int]) -> list[int]:
 	"""Perform alpha blending of one colour (rgba) onto another (rgb)"""
 	alpha = colour[3] / 255
 	return [
@@ -218,12 +218,12 @@ def alpha_blend(colour: dict, base: dict) -> list[int]:
 		255]
 
 
-def alpha_mod(colour: dict, alpha: int) -> list[int]:
+def alpha_mod(colour: list[int], alpha: int) -> list[int]:
 	"""Change the alpha component of an RGBA list"""
 	return [colour[0], colour[1], colour[2], alpha]
 
 
-def colour_slide(a: dict, b: dict, x: int, x_limit: int) -> tuple[int, int, int, int]:
+def colour_slide(a: list[int], b: list[int], x: int, x_limit: int) -> tuple[int, int, int, int]:
 	"""Shift between two colours based on x where x is between 0 and limit"""
 	return (
 		min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
@@ -320,11 +320,11 @@ def random_colour(saturation: int, luminance: int) -> list[int]:
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
 
-def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
+def hsl_to_rgb(h: int, s: int, l: int) -> list[int]:
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
+def hls_to_rgb(h: int, l: int, s: int) -> list[int]:
 	"""Duplicate HSL function so it works for the less common alt name too"""
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
@@ -332,13 +332,13 @@ def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
 def rgb_to_hls(r: int, g: int, b: int) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def rgb_add_hls(source: dict, h: int=0, l: int=0, s: int=0) -> list[int]:
+def rgb_add_hls(source: list[int], h: int=0, l: int=0, s: int=0) -> list[int]:
 	c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
 
 
-def is_light(colour: dict) -> bool:
+def is_light(colour: list[int]) -> bool:
 	return test_lumi(colour) < 0.2
 
 class ColourGenCache:
@@ -599,7 +599,7 @@ def get_split_artists(track: TrackClass) -> list[str]:
 	artist = track.artist.split("feat")[0].strip()
 	return re.split(r"; |, |& ", artist)
 
-def coll_rect(rect1: dict, rect2: dict) -> bool:
+def coll_rect(rect1: list[int], rect2: list[int]) -> bool:
 
 	if rect1[0] + rect1[2] < rect2[0] or \
 			rect1[1] + rect1[3] < rect2[1] or \
@@ -855,7 +855,7 @@ class FunctionStore:
 
 
 
-def grow_rect(rect: dict, px: float) -> tuple[float, float, float, float]:
+def grow_rect(rect: tuple[int, int, int, int], px: int) -> tuple[int, int, int, int]:
 	return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
 
 # def get_hash(f_path, mode='sha256'):
@@ -867,14 +867,14 @@ def grow_rect(rect: dict, px: float) -> tuple[float, float, float, float]:
 #	 return digest
 
 def subtract_rect(
-	base: tuple[float, float, float, float],
-	hole: tuple[float, float, float, float],
+	base: tuple[int, int, int, int],
+	hole: tuple[int, int, int, int],
 ) -> (
 	tuple[
-		tuple[float, float, float, float],
-		tuple[float, float, float, float],
-		tuple[float, float, float, float],
-		tuple[float, float, float, float],
+		tuple[int, int, int, int],
+		tuple[int, int, int, int],
+		tuple[int, int, int, int],
+		tuple[int, int, int, int],
 	]
 ):
 	"""Return 4 rects from 1 minus 1 inner (with overlaps)"""
@@ -929,7 +929,7 @@ def reduce_paths(paths: list[str]) -> None:
 		if not remove_path:
 			break
 
-def fit_box(inner: dict, outer: dict) -> tuple[float, float]:
+def fit_box(inner: dict, outer: dict) -> tuple[int, int]:
 	scale = min(outer[0]/inner[0], outer[1]/inner[1])
 	return round(inner[0] * scale), round(inner[1] * scale)
 
