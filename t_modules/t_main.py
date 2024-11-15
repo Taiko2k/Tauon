@@ -24,6 +24,7 @@ I would highly recommend not using this project as an example on how to code cle
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from collections.abc import Callable
 import sys
 import socket
 
@@ -1449,7 +1450,7 @@ class Prefs:  # Used to hold any kind of settings
 prefs = Prefs()
 
 
-def open_uri(uri):
+def open_uri(uri:str):
     print("OPEN URI")
     load_order = LoadClass()
 
@@ -8366,6 +8367,33 @@ class MenuItem:
         self.sub_menu_width = sub_menu_width
 
 
+def encode_track_name(t):
+    if t.is_cue or not t.filename:
+        out_line = str(t.track_number) + ". "
+        out_line += t.artist + " - " + t.title
+        return filename_safe(out_line)
+    else:
+        return os.path.splitext(t.filename)[0]
+
+
+def encode_folder_name(track_object: TrackClass) -> str:
+    folder_name = track_object.artist + " - " + track_object.album
+
+    if folder_name == " - ":
+        folder_name = track_object.parent_folder_name
+
+    folder_name = filename_safe(folder_name).strip()
+
+    if not folder_name:
+        folder_name = str(track_object.index)
+
+    if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
+        if track_object.disc_total not in ("", "0", 0, "1", 1) or (
+                str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
+            folder_name += " CD" + str(track_object.disc_number)
+
+    return folder_name
+
 class Tauon:
 
     def __init__(self):
@@ -8412,6 +8440,8 @@ class Tauon:
         self.radio_server = None
         self.mod_formats = MOD_Formats
         self.listen_alongers = {}
+        self.encode_folder_name = encode_folder_name
+        self.encode_track_name = encode_track_name
 
         self.tray_lock = threading.Lock()
         self.tray_releases = 0
@@ -26029,40 +26059,6 @@ def worker2():
                 search_over.on = 0
                 search_over.force_select = 0
                 # print(perf_timer.get())
-
-
-def encode_track_name(t):
-    if t.is_cue or not t.filename:
-        out_line = str(t.track_number) + ". "
-        out_line += t.artist + " - " + t.title
-        return filename_safe(out_line)
-    else:
-        return os.path.splitext(t.filename)[0]
-
-
-tauon.encode_track_name = encode_track_name
-
-
-def encode_folder_name(track_object):
-    folder_name = track_object.artist + " - " + track_object.album
-
-    if folder_name == " - ":
-        folder_name = track_object.parent_folder_name
-
-    folder_name = filename_safe(folder_name).strip()
-
-    if not folder_name:
-        folder_name = str(track_object.index)
-
-    if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
-        if track_object.disc_total not in ("", "0", 0, "1", 1) or (
-                str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
-            folder_name += " CD" + str(track_object.disc_number)
-
-    return folder_name
-
-
-tauon.encode_folder_name = encode_folder_name
 
 
 def worker1():
