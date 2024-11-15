@@ -17,11 +17,14 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import ctypes
 import io
 import math
 import sys
 from ctypes import c_int, pointer
+from typing import TYPE_CHECKING
 
 from PIL import Image
 from sdl2 import (
@@ -53,6 +56,9 @@ from sdl2 import (
 from sdl2.sdlimage import IMG_Load_RW
 
 from t_modules.t_extra import Timer, coll_rect
+
+if TYPE_CHECKING:
+	from sdl2 import SDL_Renderer
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -88,11 +94,11 @@ else:
 
 class QuickThumbnail:
 
-	renderer = None
+	renderer: SDL_Renderer | None = None
 	items = []
 	queue = []
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.rect = SDL_Rect(0, 0)
 		self.texture = None
 		self.surface = None
@@ -100,7 +106,7 @@ class QuickThumbnail:
 		self.alive = False
 		self.url = None
 
-	def destruct(self):
+	def destruct(self) -> None:
 		if self.surface:
 			SDL_FreeSurface(self.surface)
 			self.surface = None
@@ -109,12 +115,12 @@ class QuickThumbnail:
 			self.texture = None
 		self.alive = False
 
-	def read_and_thumbnail(self, f, w, h):
+	def read_and_thumbnail(self, f: str, width: int, height: int) -> None:
 
 		g = io.BytesIO()
 		g.seek(0)
 		im = Image.open(f)
-		im.thumbnail((w, h), Image.Resampling.LANCZOS)
+		im.thumbnail((width, height), Image.Resampling.LANCZOS)
 		im.save(g, "PNG")
 		g.seek(0)
 		wop = rw_from_object(g)
@@ -122,7 +128,7 @@ class QuickThumbnail:
 		#self.items.append(self)
 		self.alive = True
 
-	def prime(self):
+	def prime(self) -> None:
 
 		texture = SDL_CreateTextureFromSurface(self.renderer, self.surface)
 		SDL_FreeSurface(self.surface)
@@ -134,7 +140,7 @@ class QuickThumbnail:
 		self.rect.h = int(tex_h.contents.value)
 		self.texture = texture
 
-	def draw(self, x, y):
+	def draw(self, x: int, y: int) -> bool | None:
 		if len(self.items) > 30:
 			img = self.items[0]
 			img.destruct()
@@ -161,14 +167,13 @@ if system == "windows":
 			("bottom", ctypes.c_long),
 		]
 
-	def RGB(r, g, b):
+	def RGB(r: int, g: int, b: int) -> int:
 		return r | (g << 8) | (b << 16)
 
-	def Wcolour(colour):
+	def Wcolour(colour: list[int]) -> int:
 		return colour[0] | (colour[1] << 8) | (colour[2] << 16)
 
-	def native_bmp_to_sdl(hdc, bitmap_handle, width, height):
-
+	def native_bmp_to_sdl(hdc, bitmap_handle, width: int, height: int): # -> tuple[Unknown, Array[c_char]]
 		bmpheader = struct.pack(
 			"LHHHH", struct.calcsize("LHHHH"),
 			width, height, 1, 24) #w,h, planes=1, bitcount)
@@ -186,6 +191,8 @@ if system == "windows":
 		if not res:
 			raise OSError("native_bmp_to_pil failed: GetDIBits")
 
+		# TODO(Martin): Add the rest of the types in this function:
+		#print(f"HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24))}")
 		# We need to keep c_bits pass else it may be garbage collected
 		return SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24), c_bits
 
@@ -193,12 +200,12 @@ if system == "windows":
 	class Win32Font:
 
 		def __init__(
-			self, name, height, weight=win32con.FW_NORMAL,
-			italic=False, underline=False):
+			self, name: str, height: int, weight:int = win32con.FW_NORMAL,
+			italic: bool = False, underline: bool = False) -> None:
 
 			self.font = win32ui.CreateFont({
 				"name": name, "height": height,
-				"weight": weight, "italic": italic, "underline": underline,}) #'charset': win32con.MAC_CHARSET})
+				"weight": weight, "italic": italic, "underline": underline}) #'charset': win32con.MAC_CHARSET})
 
 			#create a compatible DC we can use to draw:
 
@@ -211,7 +218,7 @@ if system == "windows":
 
 			self.drawDC.SelectObject(self.font)
 
-		def get_metrics(self, text, max_x, wrap):
+		def get_metrics(self, text: str, max_x: int, wrap: bool) -> tuple[int, int]:
 
 			#return self.drawDC.GetTextExtent(text)
 
@@ -233,7 +240,7 @@ if system == "windows":
 			return rect.right, rect.bottom
 
 
-		def renderText(self, text, bg, fg, wrap=False, max_x=100, max_y=None):
+		def renderText(self, text: str, bg: list[int], fg: list[int], wrap: bool = False, max_x: int = 100, max_y: int | None = None):
 
 			self.drawDC.SetTextColor(Wcolour(fg))
 
@@ -305,21 +312,21 @@ if system == "windows":
 			return im, c_bits
 
 
-		def __del__(self):
+		def __del__(self) -> None:
 
 			self.mfcDC.DeleteDC()
 			self.drawDC.DeleteDC()
 			win32gui.ReleaseDC(self.desktopHwnd, self.desktopDC)
 			win32gui.DeleteObject(self.font.GetSafeHandle())
 
-		def __del__(self):
+		def __del__(self) -> None:
 
 			win32gui.DeleteObject(self.font.GetSafeHandle())
 
 
 
 # Performs alpha blending of one colour (RGB-A) onto another (RGB)
-def alpha_blend(colour, base):
+def alpha_blend(colour: list[int], base: list[int]) -> list[int]:
 	alpha = colour[3] / 255
 	return [
 		int(alpha * colour[0] + (1 - alpha) * base[0]),
@@ -331,7 +338,7 @@ perf = Timer()
 
 class TDraw:
 
-	def __init__(self, renderer=None):
+	def __init__(self, renderer: SDL_Renderer | None = None) -> None:
 
 		# All
 		self.renderer = renderer
@@ -357,18 +364,17 @@ class TDraw:
 			self.y_offset_dict = {}
 
 		self.text_background_colour = [0, 0, 0, 255]
-		#self.pretty_rect = [0, 0, 0, 0]
-		self.pretty_rect = None
-		self.real_bg = False
-		self.alpha_bg = False
-		self.force_gray = False
+		self.pretty_rect: tuple[int, int, int, int] | None = None
+		self.real_bg:     bool = False
+		self.alpha_bg:    bool = False
+		self.force_gray:  bool = False
 		self.f_dict = {}
 		self.ttc = {}
 		self.ttl = []
 
 		self.was_truncated = False
 
-	def rect_s(self, rectangle, colour, thickness):
+	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
 		SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 		x, y, w, h = (round(x) for x in rectangle)
 		th = math.floor(thickness)
@@ -393,10 +399,10 @@ class TDraw:
 		self.sdl_rect.h = h + th
 		SDL_RenderFillRect(self.renderer, self.sdl_rect) # right
 
-	def rect_a(self, location_xy, size_wh, colour):
+	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: tuple[int, int, int, int]) -> None:
 		self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
-	def rect(self, rectangle, colour):
+	def rect(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int]) -> None:
 
 		self.sdl_rect.x = round(rectangle[0])
 		self.sdl_rect.y = round(rectangle[1])
@@ -410,7 +416,7 @@ class TDraw:
 		# else:
 		#	 SDL_RenderDrawRect(self.renderer, self.sdl_rect)
 
-	def bordered_rect(self, rectangle, fill_colour, outer_colour, border_size):
+	def bordered_rect(self, rectangle: tuple[int, int, int, int], fill_colour: list[int], outer_colour: list[int], border_size: int) -> None:
 
 		self.sdl_rect.x = round(rectangle[0]) - border_size
 		self.sdl_rect.y = round(rectangle[1]) - border_size
@@ -425,20 +431,19 @@ class TDraw:
 		SDL_SetRenderDrawColor(self.renderer, fill_colour[0], fill_colour[1], fill_colour[2], fill_colour[3])
 		SDL_RenderFillRect(self.renderer, self.sdl_rect)
 
-	def line(self, x1, y1, x2, y2, colour):
+	def line(self, x1: int, y1: int, x2: int, y2: int, colour: list[int]) -> None:
 
 		SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 		SDL_RenderDrawLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
-	def get_text_w(self, text, font, height=False):
+	def get_text_w(self, text: str, font: str, height: bool = False) -> int:
 
 		x, y = self.get_text_wh(text, font, 3000)
 		if height:
 			return y
-		else:
-			return x
+		return x
 
-	def clear_text_cache(self):
+	def clear_text_cache(self) -> None:
 
 		for key in self.ttl:
 			so = self.ttc[key]
@@ -447,16 +452,16 @@ class TDraw:
 		self.ttc.clear()
 		self.ttl.clear()
 
-	def win_prime_font(self, name, size, user_handle, weight, y_offset=0):
+	def win_prime_font(self, name: str, size: int, user_handle: str, weight: int, y_offset: int = 0) -> None:
 
 		self.f_dict[user_handle] = Win32Font(name, int(size * self.scale), weight)
 		self.y_offset_dict[user_handle] = y_offset
 
-	def prime_font(self, name, size, user_handle, offset=0):
+	def prime_font(self, name: str, size: int, user_handle: str, offset: int = 0) -> None:
 
-		self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale )
+		self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale)
 
-	def get_text_wh(self, text, font, max_x, wrap=False):
+	def get_text_wh(self, text: str, font: str, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
 
 		if system == "linux":
 			self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
@@ -473,11 +478,11 @@ class TDraw:
 				self.layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 
 			return self.layout.get_pixel_size()
-		else:
-			#return self.__win_text_xy(text, font)
-			return self.__win_text_xy(text, font, max_x, wrap)
+		#return self.__win_text_xy(text, font)
+		return self.__win_text_xy(text, font, max_x, wrap)
 
-	def get_y_offset(self, text, font, max_x, wrap=False):  # HACKY
+	def get_y_offset(self, text: str, font: str, max_x: int, wrap: bool = False) -> int:
+		"""HACKY"""
 
 		self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -497,7 +502,7 @@ class TDraw:
 
 		return y_off
 
-	def __render_text(self, key, x, y, range_top, range_height, align):
+	def __render_text(self, key: dict, x: int, y: int, range_top: int, range_height: int, align: int) -> None:
 
 		sd = key
 
@@ -533,7 +538,12 @@ class TDraw:
 		SDL_RenderCopy(self.renderer, sd[1], None, sd[0])
 
 
-	def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None, real_bg=False, key=None):
+	def __draw_text_cairo(
+		self,
+		location: list[int], text: str, colour: list[int], font: str, max_x: int, bg: tuple[int, int, int, int],
+		align: int = 0, max_y: int | None = None, wrap: bool = False, range_top: int = 0,
+		range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None,
+		) -> int:
 
 		#perf.set()
 		force_cache = False
@@ -714,7 +724,7 @@ class TDraw:
 		SDL_FreeSurface(sdl_surface)
 
 		if alpha_bg:
-			blend_mode = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
+			blend_mode = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD)
 			SDL_SetTextureBlendMode(c, blend_mode)
 
 		dst = SDL_Rect(round(x), round(y))
@@ -743,7 +753,7 @@ class TDraw:
 
 	# WINDOWS --------------------------------------------------------
 
-	def __win_text_xy(self, text, font, max_x, wrap):
+	def __win_text_xy(self, text: str, font: str, max_x: int, wrap: bool) -> tuple[int, int] | None:
 
 		if font is None or font not in self.f_dict:
 
@@ -754,7 +764,7 @@ class TDraw:
 
 		return self.f_dict[font].get_metrics(text, max_x, wrap)
 
-	def __win_render_text(self, key, x, y, range_top, range_height, align):
+	def __win_render_text(self, key: dict, x: int, y: int, range_top: int, range_height: int, align: int) -> None:
 
 
 		sd = key
@@ -786,7 +796,9 @@ class TDraw:
 
 		SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
 
-	def __draw_text_windows(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None, range_top=0, range_height=None):
+	def __draw_text_windows(self, x: int, y: int, text: str, bg: list[int], fg: list[int], font: str | None = None,
+		align: int = 0, wrap: bool = False, max_x: int = 100, max_y: int | None = None,
+		range_top: int = 0, range_height: int | None = None) -> int:
 
 		y += self.y_offset_dict[font]
 
@@ -852,7 +864,8 @@ class TDraw:
 
 		return dst.w
 
-	def text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None, real_bg=False, key=None):
+	def text(self, location: list[int], text: str, colour: list[int], font: str, max_w: int = 4000, bg: list[int] | None = None,
+		range_top: int = 0, range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None) -> int | None:
 
 		#print((text, font))
 
@@ -880,13 +893,13 @@ class TDraw:
 				if system == "linux":
 					return self.__draw_text_cairo(
 						location, text, colour, font, location[3], bg, max_y=max_h, wrap=True,
-						range_top=range_top, range_height=range_height)
-				else:
-					return self.__draw_text_windows(
-						location[0], location[1], text, bg, colour, font, 0, True, location[3], max_y=max_h,
-						range_top=range_top, range_height=range_height)
+						range_top=range_top, range_height=range_height,
+					)
+				return self.__draw_text_windows(
+					location[0], location[1], text, bg, colour, font, 0, True, location[3], max_y=max_h,
+					range_top=range_top, range_height=range_height,
+				)
 
 		if system == "linux":
 			return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
-		else:
-			return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)
+		return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)
