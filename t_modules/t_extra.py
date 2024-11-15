@@ -626,7 +626,7 @@ def commonprefix(l: str) -> str:
 	return "/".join(cp)
 
 
-def fader_timer(time_point: float, start: float, duration: float, off: bool = True, fade_range: int = 255):
+def fader_timer(time_point: float, start: float, duration: float, off: bool = True, fade_range: int = 255) -> int:
 
 	if time_point < start:
 		fade = fade_range
