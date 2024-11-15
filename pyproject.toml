@@ -1,0 +1,72 @@
+[project]
+	name = "tauon-music-box"
+	version = "7.9.0"
+	description = "Tauon Music Box is a music player"
+	readme = "README.md"
+	license = { text = "GPL-3.0-or-later" }
+	requires-python = ">=3.9"
+	classifiers = [
+		"Programming Language :: Python :: 3"
+	]
+	dynamic = ["dependencies"]
+
+[project.gui-scripts]
+	tauonmb = "tauon:main"
+
+[project.entry-points."distutils.commands"]
+	compile_translations = "compile_translations:main"
+
+[project.urls]
+	homepage = "https://tauonmusicbox.rocks/"
+
+[build-system]
+	requires = ["setuptools>=75.3", "setuptools_scm"]
+	build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+	include-package-data = true
+	# https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
+	# This is terribly formatted as in TOML 1.0 it all has to be inline, can only be changed when TOML 1.1 ships
+	ext-modules = [
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
+		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
+
+# Should we care about these options or is it fine to omit them here?
+#    -shared -o libphazor.so -fPIC -Wall -O3 -g #-Wextra
+#    -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -DPIPE #-Wextra
+
+[tool.setuptools.dynamic]
+	dependencies = {file = "requirements.txt"}
+
+[tool.ruff]
+	# Target non-EOL releases at minimum - https://devguide.python.org/versions/
+	target-version = "py39"
+	# Soft 80 and hard break at 120
+	line-length = 120
+
+[tool.ruff.lint.flake8-quotes]
+	inline-quotes = "double"
+	docstring-quotes = "double"
+
+[tool.ruff.format]
+	quote-style = "double"
+	indent-style = "tab"
+
+# https://docs.astral.sh/ruff/rules/
+[tool.ruff.lint]
+select = ['ALL']
+	ignore = [
+		'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
+		'D206',   # indent-with-spaces                        - ^
+		'D400',   # ends-in-period                            - We do not care if docstrings end with a period
+		'D415',   # ends-in-punctuation                       - ^
+		'D401',   # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable
+		'EM101',  # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
+		'EM102',  # f-string-in-exception                     - ^
+		'EM103',  # dot-format-in-exception                   - ^
+		'ERA001', # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
+		'FBT001', # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
+		'FBT002', # boolean-default-value-positional-argument - ^
+		'FBT003', # boolean-positional-value-in-call          - ^
+		'TD003',  # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
+	]

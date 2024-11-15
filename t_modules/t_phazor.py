@@ -1,4 +1,4 @@
-# Tauon Music Box - Phazor audio backend module
+"""Tauon Music Box - Phazor audio backend module"""
 
 # Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -17,44 +17,95 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import ctypes
-from ctypes import *
-from ctypes.util import find_library
+import sys
+
+if sys.platform == "win32":
+    from ctypes import WINFUNCTYPE
+import hashlib
+import importlib.machinery
+import math
 import os.path
+import shutil
+import subprocess
+import sysconfig
+import threading
 import time
+from ctypes import CFUNCTYPE, POINTER, c_char, c_char_p, c_int, c_void_p, cast
+from pathlib import Path
+from typing import TYPE_CHECKING
+
 import requests
 from requests.models import PreparedRequest
-import threading
-import shutil
-from t_modules.t_extra import *
-import mutagen
-import hashlib
 
-def get_phazor_pathname(pctl):
-    if pctl.prefs.pipewire:
-        n = find_library("phazor-pipe")
-        if n:
-            return n
+from t_modules.t_extra import Timer, shooter, tmp_cache_dir
 
-        n = os.path.join(pctl.install_directory, "lib/libphazor-pipe.so")
-        if os.path.isfile(n):
-            return n
-    else:
-        n = find_library("phazor")
-        if n:
-            return n
+if TYPE_CHECKING:
+    from t_modules.t_main import PlayerCtl, Tauon
 
-        n = os.path.join(pctl.install_directory, "lib/libphazor.so")
-        if os.path.isfile(n):
-            return n
+def find_library(libname: str) -> Path | None:
+	"""Search for 'libname.so'.
 
-def phazor_exists(pctl):
-    if get_phazor_pathname(pctl):
-        return True
+	Return library Path loadable with ctypes.CDLL, otherwise return None
+	"""
+	# Can look like ~/Projects/Tauon/t_modules
+	base_path = Path(__file__).parent
+	search_paths: list[Path] = []
+	so_extensions = importlib.machinery.EXTENSION_SUFFIXES
+	site_packages_path = sysconfig.get_path("purelib")
 
-    return False
+	# Try looking in site-packages of the current environment, pwd and ../pwd
+	for extension in so_extensions:
+		search_paths += [
+			(Path(site_packages_path)                       / (libname + extension)).resolve(),
+			(Path(base_path)          / ".."                / (libname + extension)).resolve(),
+			(Path(base_path)          / ".." / ".."         / (libname + extension)).resolve(),
+			# Compat with old way to store .so files
+			(Path(base_path)          / ".." / ".." / "lib" / (libname + ".so")).resolve(),
+		]
 
-def player4(tauon):
+	for path in search_paths:
+		if path.exists:
+			print(f"Lib {libname} found in {path!s}")
+			return path
+
+#	raise OSError(f"Can't find {libname}.so. Searched at:\n" + "\n".join(str(p) for p in search_paths))
+	return None
+
+def get_phazor_path(pctl: PlayerCtl) -> Path:
+	if pctl.prefs.pipewire:
+		n = find_library("phazor-pw")
+		if n:
+			return n
+
+		n = find_library("libphazor-pw")
+		if n:
+			return n
+		# Compat with old -pipe naming, remove later
+		n = find_library("phazor-pipe")
+		if n:
+			return n
+		# Compat with old -pipe naming, remove later
+		n = find_library("libphazor-pipe")
+		if n:
+			return n
+	else:
+		n = find_library("phazor")
+		if n:
+			return n
+
+		n = find_library("libphazor")
+		if n:
+			return n
+	raise Exception("Failed to load PHaZOR")
+
+def phazor_exists(pctl: PlayerCtl) -> bool:
+	"""Check for the existence of the PHaZOR library on the FS"""
+	return get_phazor_path(pctl).exists()
+
+def player4(tauon: Tauon) -> None:
 
     pctl = tauon.pctl
     gui = tauon.gui
@@ -67,7 +118,7 @@ def player4(tauon):
     loaded_track = None
     fade_time = 400
 
-    aud = ctypes.cdll.LoadLibrary(get_phazor_pathname(pctl))
+    aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
 
     aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
@@ -102,11 +153,11 @@ def player4(tauon):
     scan_device()
 
     class LibreSpot:
-        def __init__(self):
+        def __init__(self) -> None:
 
             self.running = False
             self.flush = False
-        def go(self, force=False):
+        def go(self, force: bool=False) -> int:
             aud.config_set_feed_samplerate(44100)
             aud.config_set_min_buffer(1000)
             if not shutil.which("librespot"):
@@ -141,7 +192,7 @@ def player4(tauon):
                 gui.update += 1
 
                 startupinfo = None
-                if tauon.msys:
+                if sys.platform == "win32":
                     startupinfo = subprocess.STARTUPINFO()
                     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 try:
@@ -216,7 +267,7 @@ def player4(tauon):
                 cmd += ["-ss", f"{start_ms}ms"]
             cmd += ["-i", uri.decode(), "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", f"{samplerate}", "-"]
             startupinfo = None
-            if tauon.msys:
+            if sys.platform == "win32":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             try:
@@ -226,7 +277,7 @@ def player4(tauon):
                 return 1
             return 0
 
-        def read(self, buffer: POINTER(c_char), max):
+        def read(self, buffer, max): # buffer: POINTER(c_char)
             if self.decoder:
                 data = self.decoder.stdout.read(max)
                 p = cast(buffer, POINTER(c_char * max))
@@ -235,13 +286,14 @@ def player4(tauon):
             return 0
 
     ff_run = FFRun()
-    
+
     def pause_when_device_unavailable():
         pctl.pause_only()
-    
-    FUNCTYPE = CFUNCTYPE
-    if tauon.msys:
+
+    if sys.platform == "win32":
         FUNCTYPE = WINFUNCTYPE
+    else:
+        FUNCTYPE = CFUNCTYPE
     start_callback = FUNCTYPE(c_int, c_char_p, c_int, c_int)(ff_run.start)
     read_callback = FUNCTYPE(c_int, c_void_p, c_int)(ff_run.read)
     close_callback = FUNCTYPE(c_void_p)(ff_run.close)
@@ -420,6 +472,7 @@ def player4(tauon):
                     break
 
         def dl_file(self, track):
+            pctl.buffering_percent = 0
             key = self.get_key(track)
             path = os.path.join(self.direc, key)
             if os.path.exists(path):
@@ -490,7 +543,8 @@ def player4(tauon):
                                 self.ready = track
 
                             gui.update += 1
-                            gui.buffering_text = str(math.floor(i / len(network_url) * 100)) + "%"
+                            pctl.buffering_percent = math.floor(i / len(network_url) * 100)
+                            gui.buffering_text = str(pctl.buffering_percent) + "%"
                             if self.get_now is not None and self.get_now != track:
                                 tauon.console.print("ABORT")
                                 return
@@ -542,10 +596,9 @@ def player4(tauon):
                                     #tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
                                     if length:
                                         gui.update += 1
-                                        if True: #a > 2000:
-                                            gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
-                                        else:
-                                            gui.buffering_text = str(round(a / 2100 * 100)) + "%"
+                                        pctl.buffering_percent = round(a * 1000 / length * 100)
+                                        gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
+
 
                                 if self.get_now is not None and self.get_now != track:
                                     tauon.console.print("ABORT")
@@ -695,10 +748,10 @@ def player4(tauon):
         if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
             active_timer.set()
         if active_timer.get() > 7:
-           aud.stop()
-           aud.phazor_shutdown()
-           spotc.soft_end()
-           break
+            aud.stop()
+            aud.phazor_shutdown()
+            spotc.soft_end()
+            break
 
         # Level meter
         if (state == 1 or state == 3) and gui.vis == 1:
@@ -918,6 +971,7 @@ def player4(tauon):
                             break
                         if timer.get() > 0.25 and gui.buffering is False:
                             gui.buffering_text = ""
+                            pctl.buffering_percent = 0
                             gui.buffering = True
                             gui.update += 1
                             tauon.wake()
@@ -948,6 +1002,7 @@ def player4(tauon):
                             break
                         if timer.get() > 0.25 and gui.buffering is False:
                             gui.buffering_text = ""
+                            pctl.buffering_percent = 0
                             gui.buffering = True
                             gui.update += 1
                             tauon.wake()
@@ -1095,6 +1150,7 @@ def player4(tauon):
                             break
                         if r == 2:
                             if loaded_track.is_network:
+                                pctl.buffering_percent = 0
                                 gui.buffering = True
                                 gui.buffering_text = ""
 
@@ -1151,21 +1207,36 @@ def player4(tauon):
 
                         timer = Timer()
                         timer.set()
+                        i = 0
                         while True:
                             status, path = cachement.get_file(loaded_track)
+                            if status == 1:
+                                per = (pctl.new_time / loaded_track.length) * 100
+                                if per < 1:
+                                    break
+                                if pctl.buffering_percent - per > 5:
+                                    break
                             if status == 0 or status == 2:
                                 break
                             if timer.get() > 0.25 and gui.buffering is False:
                                 gui.buffering_text = ""
+                                pctl.buffering_percent = 0
                                 gui.buffering = True
                                 gui.update += 1
                                 tauon.wake()
+                            if i * 0.05 > 2:
+                                aud.pause()
+                            if pctl.playerCommandReady:
+                                break
 
                             time.sleep(0.05)
+                            i += 1
 
                         gui.buffering = False
                         gui.update += 1
                         tauon.wake()
+                        if pctl.playerCommandReady:
+                            continue
 
                         if status == 2:
                             loaded_track.found = False
@@ -1292,5 +1363,3 @@ def player4(tauon):
 
             if state == 1:
                 track()
-
-

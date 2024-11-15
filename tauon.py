@@ -378,4 +378,3 @@ else:
     del big_boy_path
     del f
     exec(main)
-
