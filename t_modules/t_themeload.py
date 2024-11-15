@@ -1,4 +1,4 @@
-# Tauon Music Box - Theme reading module
+"""Tauon Music Box - Theme reading module"""
 
 # Copyright © 2015-2022, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -16,19 +16,37 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
 
-import io
-import os
-import json
-from PIL import Image, ImageDraw, ImageFilter
-from sdl2 import *
-from sdl2.sdlimage import *
-from t_modules.t_extra import *
 import base64
+import io
+import json
+import os
+from typing import TYPE_CHECKING
 
-def get_colour_from_line(cline):
+from PIL import Image
+from sdl2 import (
+	SDL_CreateTextureFromSurface,
+	SDL_DestroyTexture,
+	SDL_FreeSurface,
+	SDL_Rect,
+	SDL_RenderCopy,
+	SDL_SetTextureAlphaMod,
+	rw_from_object,
+)
+from sdl2.sdlimage import IMG_Load_RW
 
-	colour = ["", "", "", ""]
+from t_modules.t_extra import rgb_add_hls, test_lumi
+
+if TYPE_CHECKING:
+	from t_modules.t_draw import TDraw
+	from t_modules.t_main import GuiVar, Tauon
+
+
+def get_colour_from_line(cline: str) -> list[int]:
+
+	colour     = [-1, -1, -1, -1]
+	colour_str = ["", "", "", ""]
 	mode = 0
 
 	is_hex = False
@@ -54,23 +72,24 @@ def get_colour_from_line(cline):
 		if ll[6].isalnum() and ll[7].isalnum():
 			a = int(ll[6] + ll[7], 16)
 		return [r, g, b, a]
-	else:
-		# rgb mode
-		for i in cline:
-			if i.isdigit():
-				colour[mode] += i
-			elif i == ",":
-				mode += 1
+	# rgb mode
+	for i in cline:
+		if i.isdigit():
+			colour_str[mode] += i
+		elif i == ",":
+			mode += 1
 
-		for b in range(len(colour)):
-			if colour[b] == "":
-				colour[b] = "255"
-			colour[b] = int(colour[b])
+	# Convert str list to int list
+	for b in range(len(colour_str)):
+		if colour_str[b] == "":
+			colour[b] = 255
+		else:
+			colour[b] = int(colour_str[b])
 
-		return colour
+	return colour
 
 
-def load_theme(colours, path):
+def load_theme(colours: GuiVar, path: str) -> None:
 
 	f = open(path, encoding="utf-8")
 	content = f.readlines()
@@ -314,7 +333,7 @@ def load_theme(colours, path):
 
 
 class Drawable:
-	def __int__(self):
+	def __int__(self) -> None:
 		self.location = 1
 		self.x = 0
 		self.y = 0
@@ -324,19 +343,19 @@ class Drawable:
 		self.texture = None
 
 class Deco:
-	def __init__(self, tauon):
+	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.renderer = None
 		self.pctl = tauon.pctl
 		self.prefs = tauon.prefs
 		self.drawables = []
 
-	def unload(self):
+	def unload(self) -> None:
 		for item in self.drawables:
 			SDL_DestroyTexture(item.texture)
 		self.drawables.clear()
 
-	def load(self, name):
+	def load(self, name: str) -> None:
 		self.unload()
 		if not name:
 			return
@@ -403,7 +422,7 @@ class Deco:
 		drawable.texture = texture
 		self.drawables.append(drawable)
 
-	def draw(self, ddt, x, y, pretty_text=False):
+	def draw(self, ddt: TDraw, x: int, y: int, pretty_text: bool = False) -> None:
 		if self.drawables:
 			d = self.drawables[0]
 			d.rect.x = round(x - int(d.w + round(d.x * self.tauon.gui.scale)))
