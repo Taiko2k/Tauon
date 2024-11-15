@@ -17,15 +17,43 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+import ctypes
+import io
 import math
 import sys
-from sdl2 import *
-from sdl2.sdlimage import IMG_Load_RW
-from t_modules.t_extra import *
-import ctypes
-from ctypes import pointer
-import io
+from ctypes import c_int, pointer
+
 from PIL import Image
+from sdl2 import (
+	SDL_BLENDFACTOR_ONE,
+	SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+	SDL_BLENDOPERATION_ADD,
+	SDL_FLIP_VERTICAL,
+	SDL_PIXELFORMAT_ARGB8888,
+	SDL_PIXELFORMAT_BGR24,
+	SDL_PIXELFORMAT_RGB888,
+	SDL_ComposeCustomBlendMode,
+	SDL_CreateRGBSurfaceWithFormatFrom,
+	SDL_CreateTextureFromSurface,
+	SDL_DestroyTexture,
+	SDL_FreeSurface,
+	SDL_MapRGB,
+	SDL_QueryTexture,
+	SDL_Rect,
+	SDL_RenderCopy,
+	SDL_RenderCopyEx,
+	SDL_RenderDrawLine,
+	SDL_RenderFillRect,
+	SDL_RenderReadPixels,
+	SDL_SetColorKey,
+	SDL_SetRenderDrawColor,
+	SDL_SetTextureBlendMode,
+	rw_from_object,
+)
+from sdl2.sdlimage import IMG_Load_RW
+
+from t_modules.t_extra import Timer, coll_rect
+
 try:
 	from jxlpy import JXLImagePlugin
 	print("Found jxlpy for JPEG XL support")
@@ -40,17 +68,22 @@ if sys.platform == 'win32':
 	os.environ["PANGOCAIRO_BACKEND"] = "fc"
 
 if system == "linux":
+	import struct
+
 	import cairo
 	import gi
 	gi.require_version('Pango', '1.0')
 	gi.require_version('PangoCairo', '1.0')
-	from gi.repository import Pango
-	from gi.repository import PangoCairo
+	from gi.repository import Pango, PangoCairo
 
 else:
-	from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
-	import win32con, win32api, win32gui, win32ui
 	import struct
+	from ctypes import CFUNCTYPE, POINTER, byref, c_void_p, windll
+
+	import win32api
+	import win32con
+	import win32gui
+	import win32ui
 
 
 class QuickThumbnail:
