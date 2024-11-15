@@ -18,49 +18,92 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import ctypes
 import sys
+
 if sys.platform == "win32":
     from ctypes import WINFUNCTYPE
-from ctypes import c_int, c_void_p, c_char, c_char_p, cast, POINTER, CFUNCTYPE
-from ctypes.util import find_library
+import hashlib
+import importlib.machinery
+import math
 import os.path
+import shutil
+import subprocess
+import sysconfig
+import threading
 import time
+from ctypes import CFUNCTYPE, POINTER, c_char, c_char_p, c_int, c_void_p, cast
+from pathlib import Path
+from typing import TYPE_CHECKING
+
 import requests
 from requests.models import PreparedRequest
-import threading
-import shutil
-from t_modules.t_extra import Timer, tmp_cache_dir, shooter
-import subprocess
-import math
-import hashlib
-from typing import TYPE_CHECKING
+
+from t_modules.t_extra import Timer, shooter, tmp_cache_dir
+
 if TYPE_CHECKING:
-    from t_modules.t_main import Tauon, PlayerCtl
+    from t_modules.t_main import PlayerCtl, Tauon
 
-def get_phazor_pathname(pctl: PlayerCtl) -> str | None:
-    if pctl.prefs.pipewire:
-        n = find_library("phazor-pipe")
-        if n:
-            return n
+def find_library(libname: str) -> Path | None:
+	"""Search for 'libname.so'.
 
-        n = os.path.join(pctl.install_directory, "lib/libphazor-pipe.so")
-        if os.path.isfile(n):
-            return n
-    else:
-        n = find_library("phazor")
-        if n:
-            return n
+	Return library Path loadable with ctypes.CDLL, otherwise return None
+	"""
+	# Can look like ~/Projects/Tauon/t_modules
+	base_path = Path(__file__).parent
+	search_paths: list[Path] = []
+	so_extensions = importlib.machinery.EXTENSION_SUFFIXES
+	site_packages_path = sysconfig.get_path("purelib")
 
-        n = os.path.join(pctl.install_directory, "lib/libphazor.so")
-        if os.path.isfile(n):
-            return n
+	# Try looking in site-packages of the current environment, pwd and ../pwd
+	for extension in so_extensions:
+		search_paths += [
+			(Path(site_packages_path)                       / (libname + extension)).resolve(),
+			(Path(base_path)          / ".."                / (libname + extension)).resolve(),
+			(Path(base_path)          / ".." / ".."         / (libname + extension)).resolve(),
+			# Compat with old way to store .so files
+			(Path(base_path)          / ".." / ".." / "lib" / (libname + ".so")).resolve(),
+		]
+
+	for path in search_paths:
+		if path.exists:
+			print(f"Lib {libname} found in {path!s}")
+			return path
+
+#	raise OSError(f"Can't find {libname}.so. Searched at:\n" + "\n".join(str(p) for p in search_paths))
+	return None
+
+def get_phazor_path(pctl: PlayerCtl) -> Path:
+	if pctl.prefs.pipewire:
+		n = find_library("phazor-pw")
+		if n:
+			return n
+
+		n = find_library("libphazor-pw")
+		if n:
+			return n
+		# Compat with old -pipe naming, remove later
+		n = find_library("phazor-pipe")
+		if n:
+			return n
+		# Compat with old -pipe naming, remove later
+		n = find_library("libphazor-pipe")
+		if n:
+			return n
+	else:
+		n = find_library("phazor")
+		if n:
+			return n
+
+		n = find_library("libphazor")
+		if n:
+			return n
+	raise Exception("Failed to load PHaZOR")
 
 def phazor_exists(pctl: PlayerCtl) -> bool:
-    if get_phazor_pathname(pctl):
-        return True
-
-    return False
+	"""Check for the existence of the PHaZOR library on the FS"""
+	return get_phazor_path(pctl).exists()
 
 def player4(tauon: Tauon) -> None:
 
@@ -75,7 +118,7 @@ def player4(tauon: Tauon) -> None:
     loaded_track = None
     fade_time = 400
 
-    aud = ctypes.cdll.LoadLibrary(get_phazor_pathname(pctl))
+    aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
 
     aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
