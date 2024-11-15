@@ -27,11 +27,17 @@ from __future__ import annotations
 import sys
 import socket
 
+from dataclasses import dataclass
 from t_modules import t_bootstrap
 from t_modules.t_phazor import player4, phazor_exists
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from t_modules.t_phazor import Cachement, LibreSpot
+	from t_modules.t_phazor import Cachement, LibreSpot
+
+import os
+import pickle
+import shutil
+
 
 
 h = t_bootstrap.holder
@@ -62,25 +68,21 @@ print(f"Window size: {window_size}")
 
 should_save_state = True
 
-import os
-import pickle
-import shutil
-
 # Detect platform
 windows_native = False
 macos = False
 msys = False
-if sys.platform == 'win32':
-    # system = 'windows'
-    # windows_native = False
-    system = 'linux'
-    msys = True
+if sys.platform == "win32":
+	# system = 'windows'
+	# windows_native = False
+	system = "linux"
+	msys = True
 else:
-    system = 'linux'
-    import fcntl
+	system = "linux"
+	import fcntl
 
 if sys.platform == "darwin":
-    macos = True
+	macos = True
 
 if not windows_native:
     import gi
@@ -115,7 +117,7 @@ mac_close = (253, 70, 70, 255)
 mac_maximize = (254, 176, 36, 255)
 mac_minimize = (42, 189, 49, 255)
 try:
-    gi.require_version('Gtk', '3.0')
+    gi.require_version("Gtk", "3.0")
     from gi.repository import Gtk
 
     gtk_settings = Gtk.Settings().get_default()
@@ -136,15 +138,15 @@ try:
                 mac_maximize = v[1]
                 mac_minimize = v[2]
 
-except:
-    print("Error accessing GTK settings")
+except Exception:
+	print("Error accessing GTK settings")
 
 # if system == "windows" or msys:
 #     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 
 # Assume that it's a classic Linux install, use standard paths
 if install_directory.startswith("/usr/"):
-    install_directory = "/usr/share/TauonMusicBox"
+	install_directory = "/usr/share/TauonMusicBox"
 
 # Set data folders (portable mode)
 user_directory = install_directory
@@ -158,7 +160,7 @@ scaled_asset_directory = asset_directory
 
 music_directory = os.path.join(os.path.expanduser('~'), "Music")
 if not os.path.isdir(music_directory):
-    music_directory = os.path.join(os.path.expanduser('~'), "music")
+	music_directory = os.path.join(os.path.expanduser('~'), "music")
 
 download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 
@@ -941,47 +943,53 @@ repeat_mode = False
 
 
 # Functions to generate empty playlist
-# Playlist is [Name, playing, playlist, position, hide folder title, selected, uid, last_folder, hidden(bool)]
+@dataclass
+class TauonPlaylist:
+	"""Playlist is [Name, playing, playlist, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]"""
 
-# 0 Name (string)
-# 1 Playing (int)
-# 2 list  (list of int)
-# 3 View Position (int)
-# 4 hide playlist folder titles (bool)
-# 5 selected (int)
-# 6 Unique id (int)
-# 7 last folder import path (string)
-# 8 hidden (bool)
-# 9 Locked (bool)
-# 10 Filter parent playlist id (string)
-# 11 Persist time positioning
+	title: str
+	playing: int
+	playlist: list[int] | None
+	position: int                  # View Position
+	hide_title: bool               # hide playlist folder titles (bool)
+	selected: int
+	uuid_int: int
+	last_folder: list[str]         # last folder import path (string) - string but usign list in gen?
+	hidden: bool
+	locked: bool
+	parent_playlist_id: str        # Filter parent playlist id (string)
+	persist_time_positioning: bool # Persist time positioning
 
 
-def uid_gen():
-    return random.randrange(1, 100000000)
+def uid_gen() -> int:
+	return random.randrange(1, 100000000)
 
 
 notify_change = lambda: None
 
 
-def pl_gen(title='Default',
-           playing=0,
-           playlist=None,
-           position=0,
-           hide_title=0,
-           selected=0,
-           parent="",
-           hidden=False):
-    if playlist == None:
-        playlist = []
+def pl_gen(
+	title:      str = "Default",
+	playing:    int = 0,
+	playlist:   list[int] | None = None,
+	position:   int = 0,
+	hide_title: int = 0,
+	selected:   int = 0,
+	parent:     str = "",
+	hidden:     bool = False) -> TauonPlaylist:
+	"""Generate a playlist
 
-    notify_change()
+	Create a default playlist when called without parameters"""
+	if playlist == None:
+		playlist = []
 
-    return copy.deepcopy(
-        [title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
+	notify_change()
+
+	return copy.deepcopy(
+		[title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
 
 
-multi_playlist = [pl_gen()]  # Create default playlist
+multi_playlist = [pl_gen()]
 
 
 def queue_item_gen(trackid, position, pl_id, type=0, album_stage=0):
@@ -2635,61 +2643,61 @@ def get_themes(deco=False):
 
 # This is legacy. New settings are added straight to the save list (need to overhaul)
 view_prefs = {
-
-    'split-line': True,
-    'update-title': False,
-    'star-lines': False,
-    'side-panel': True,
-    'dim-art': False,
-    'pl-follow': False,
-    'scroll-enable': True
+	"split-line": True,
+	"update-title": False,
+	"star-lines": False,
+	"side-panel": True,
+	"dim-art": False,
+	"pl-follow": False,
+	"scroll-enable": True,
 }
 
 
-class TrackClass:  # This is the fundamental object/data structure of a track
+class TrackClass:
+	"""This is the fundamental object/data structure of a track"""
 
-    def __init__(self):
-        self.index = 0
-        self.subtrack = 0
-        self.fullpath = ""
-        self.filename = ""
-        self.parent_folder_path = ""
-        self.parent_folder_name = ""
-        self.file_ext = ""
-        self.size = 0
-        self.modified_time = 0
+	def __init__(self) -> None:
+		self.index:              int = 0
+		self.subtrack:           int = 0
+		self.fullpath:           str = ""
+		self.filename:           str = ""
+		self.parent_folder_path: str = ""
+		self.parent_folder_name: str = ""
+		self.file_ext:           str = ""
+		self.size:               int = 0
+		self.modified_time:      float = 0
 
-        self.is_network = False
-        self.url_key = ""
-        self.art_url_key = ""
+		self.is_network:   bool = False
+		self.url_key:      str = ""
+		self.art_url_key:  str = ""
 
-        self.artist = ""
-        self.album_artist = ""
-        self.title = ""
-        self.composer = ""
-        self.length = 0
-        self.bitrate = 0
-        self.samplerate = 0
-        self.bit_depth = 0
-        self.album = ""
-        self.date = ""
-        self.track_number = ""
-        self.track_total = ""
-        self.start_time = 0
-        self.is_cue = False
-        self.is_embed_cue = False
-        self.cue_sheet = ""
-        self.genre = ""
-        self.found = True
-        self.skips = 0
-        self.comment = ""
-        self.disc_number = ""
-        self.disc_total = ""
-        self.lyrics = ""
+		self.artist:       str = ""
+		self.album_artist: str = ""
+		self.title:        str = ""
+		self.composer:     str = ""
+		self.length:       int = 0
+		self.bitrate:      int = 0
+		self.samplerate:   int = 0
+		self.bit_depth:    int = 0
+		self.album:        str = ""
+		self.date:         str = ""
+		self.track_number: str = ""
+		self.track_total:  str = ""
+		self.start_time:   int = 0
+		self.is_cue:       bool = False
+		self.is_embed_cue: bool = False
+		self.cue_sheet:    str = ""
+		self.genre:        str = ""
+		self.found:        bool = True
+		self.skips:        int = 0
+		self.comment:      str = ""
+		self.disc_number:  str = ""
+		self.disc_total:   str = ""
+		self.lyrics:       str = ""
 
-        self.lfm_friend_likes = set()
-        self.lfm_scrobbles = 0
-        self.misc = {}
+		self.lfm_friend_likes = set()
+		self.lfm_scrobbles: int = 0
+		self.misc: list = {}
 
 def get_end_folder(direc):
     for w in range(len(direc)):
@@ -2704,17 +2712,18 @@ def set_path(nt, path):
     nt.parent_folder_name = get_end_folder(os.path.dirname(path))
     nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
-class LoadClass:  # Object for import track jobs (passed to worker thread)
-    def __init__(self):
-        self.target = ""
-        self.playlist = 0  # Playlist UID
-        self.tracks = []
-        self.stage = 0
-        self.playlist_position = None
-        self.replace_stem = False
-        self.notify = False
-        self.play = False
-        self.force_scan = False
+class LoadClass:
+	"""Object for import track jobs (passed to worker thread)"""
+	def __init__(self) -> None:
+		self.target:            str = ""
+		self.playlist:          int = 0  # Playlist UID
+		self.tracks:            dict = []
+		self.stage:             int = 0
+		self.playlist_position: int | None = None
+		self.replace_stem:      bool = False
+		self.notify:            bool = False
+		self.play:              bool = False
+		self.force_scan:        bool = False
 
 
 # url_saves = []
@@ -2725,15 +2734,15 @@ p_force_queue = []
 reload_state = None
 
 
-def show_message(line1, line2="", line3="", mode='info'):
-    gui.message_box = True
-    gui.message_text = line1
-    gui.message_mode = mode
-    gui.message_subtext = line2
-    gui.message_subtext2 = line3
-    message_box_min_timer.set()
-    console.print("Message: " + line1)
-    gui.update = 1
+def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
+	gui.message_box = True
+	gui.message_text = line1
+	gui.message_mode = mode
+	gui.message_subtext = line2
+	gui.message_subtext2 = line3
+	message_box_min_timer.set()
+	console.print("Message: " + line1)
+	gui.update = 1
 
 
 # -----------------------------------------------------
@@ -5574,7 +5583,7 @@ class PlayerCtl:
 
         return target_track
 
-    def playing_object(self):
+    def playing_object(self) -> TrackClass | None:
 
         if self.playing_state == 3:
             return radiobox.dummy_track
