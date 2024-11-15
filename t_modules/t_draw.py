@@ -57,12 +57,12 @@ from t_modules.t_extra import Timer, coll_rect
 try:
 	from jxlpy import JXLImagePlugin
 	print("Found jxlpy for JPEG XL support")
-except:
+except Exception:
 	pass
 
 
 system = "linux"
-if sys.platform == 'win32':
+if sys.platform == "win32":
 	system = "linux" #"windows"
 	import os
 	os.environ["PANGOCAIRO_BACKEND"] = "fc"
@@ -72,8 +72,8 @@ if system == "linux":
 
 	import cairo
 	import gi
-	gi.require_version('Pango', '1.0')
-	gi.require_version('PangoCairo', '1.0')
+	gi.require_version("Pango", "1.0")
+	gi.require_version("PangoCairo", "1.0")
 	from gi.repository import Pango, PangoCairo
 
 else:
@@ -115,7 +115,7 @@ class QuickThumbnail:
 		g.seek(0)
 		im = Image.open(f)
 		im.thumbnail((w, h), Image.Resampling.LANCZOS)
-		im.save(g, 'PNG')
+		im.save(g, "PNG")
 		g.seek(0)
 		wop = rw_from_object(g)
 		self.surface = IMG_Load_RW(wop, 0)
@@ -155,10 +155,10 @@ if system == "windows":
 
 	class RECT(ctypes.Structure):
 		_fields_ = [
-			('left', ctypes.c_long),
-			('top', ctypes.c_long),
-			('right', ctypes.c_long),
-			('bottom', ctypes.c_long),
+			("left", ctypes.c_long),
+			("top", ctypes.c_long),
+			("right", ctypes.c_long),
+			("bottom", ctypes.c_long),
 		]
 
 	def RGB(r, g, b):
@@ -184,7 +184,7 @@ if system == "windows":
 			win32con.DIB_RGB_COLORS)
 
 		if not res:
-			raise IOError("native_bmp_to_pil failed: GetDIBits")
+			raise OSError("native_bmp_to_pil failed: GetDIBits")
 
 		# We need to keep c_bits pass else it may be garbage collected
 		return SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24), c_bits
@@ -197,8 +197,8 @@ if system == "windows":
 			italic=False, underline=False):
 
 			self.font = win32ui.CreateFont({
-				'name': name, 'height': height,
-				'weight': weight, 'italic': italic, 'underline': underline,}) #'charset': win32con.MAC_CHARSET})
+				"name": name, "height": height,
+				"weight": weight, "italic": italic, "underline": underline,}) #'charset': win32con.MAC_CHARSET})
 
 			#create a compatible DC we can use to draw:
 
@@ -252,7 +252,7 @@ if system == "windows":
 			#if wrap:
 			#	h = int((w / max_x) * h) + h
 			#	w = max_x + 1
-			if max_y != None:
+			if max_y is not None:
 				h = max_y
 
 			saveBitMap = win32ui.CreateBitmap()
@@ -469,8 +469,8 @@ class TDraw:
 
 			try:
 				self.layout.set_text(text, -1)
-			except:
-				self.layout.set_text(text.encode('utf-8', 'replace').decode("utf-8"), -1)
+			except Exception:
+				self.layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 
 			return self.layout.get_pixel_size()
 		else:
@@ -489,8 +489,8 @@ class TDraw:
 
 		try:
 			self.layout.set_text(text, -1)
-		except:
-			self.layout.set_text(text.encode('utf-8', 'replace').decode("utf-8"), -1)
+		except Exception:
+			self.layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 
 		y_off = self.layout.get_baseline() / 1000
 		y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
@@ -687,8 +687,8 @@ class TDraw:
 
 		try:
 			layout.set_text(text, -1)
-		except:
-			layout.set_text(text.encode('utf-8', 'replace').decode("utf-8"), -1)
+		except Exception:
+			layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 			#print(f"Text error on text: {text}")
 
 		#print(layout.get_direction(0))
@@ -745,12 +745,12 @@ class TDraw:
 
 	def __win_text_xy(self, text, font, max_x, wrap):
 
-		if font == None or font not in self.f_dict:
+		if font is None or font not in self.f_dict:
 
 			print("Missing Font")
 			print(font)
 
-			return
+			return None
 
 		return self.f_dict[font].get_metrics(text, max_x, wrap)
 
