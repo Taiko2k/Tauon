@@ -24,21 +24,307 @@ I would highly recommend not using this project as an example on how to code cle
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import sys
-import socket
 
+import base64
+import colorsys
+import copy
+import ctypes
+import ctypes.util
+import datetime
+import gc as gbc
+import gettext
+import glob
+import hashlib
+import io
+import json
+import locale as py_locale
+import logging
+import math
+import os
+import pickle
+import platform
+import random
+import re
+import secrets
+import shlex
+import shutil
+import socket
+import stat
+import subprocess
+import sys
+import threading
+import time
+import traceback
+import urllib.parse
+import urllib.request
+import warnings
+import webbrowser
+import xml.etree.ElementTree as ET
+import zipfile
+from collections import OrderedDict
+from collections.abc import Callable
+from ctypes import c_char_p, pointer, Structure
 from dataclasses import dataclass
-from t_modules import t_bootstrap
-from t_modules.t_phazor import player4, phazor_exists
+from pathlib import Path
 from typing import TYPE_CHECKING
+from xml.sax.saxutils import escape, unescape
+
+import musicbrainzngs
+import mutagen
+import mutagen.flac
+import mutagen.id3
+import mutagen.mp4
+import mutagen.oggvorbis
+import requests
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+from sdl2 import (
+	SDL_BLENDMODE_NONE,
+	SDL_BLENDMODE_BLEND,
+	SDL_BUTTON_LEFT,
+	SDL_BUTTON_MIDDLE,
+	SDL_BUTTON_RIGHT,
+	SDL_BUTTON_X1,
+	SDL_BUTTON_X2,
+	SDL_CONTROLLER_AXIS_LEFTY,
+	SDL_CONTROLLER_AXIS_RIGHTX,
+	SDL_CONTROLLER_AXIS_RIGHTY,
+	SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+	SDL_CONTROLLER_BUTTON_A,
+	SDL_CONTROLLER_BUTTON_B,
+	SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+	SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+	SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+	SDL_CONTROLLER_BUTTON_DPAD_UP,
+	SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+	SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+	SDL_CONTROLLER_BUTTON_X,
+	SDL_CONTROLLER_BUTTON_Y,
+	SDL_CONTROLLERAXISMOTION,
+	SDL_CONTROLLERBUTTONDOWN,
+	SDL_CONTROLLERDEVICEADDED,
+	SDL_DROPFILE,
+	SDL_DROPTEXT,
+	SDL_HITTEST_DRAGGABLE,
+	SDL_HITTEST_NORMAL,
+	SDL_INIT_EVERYTHING,
+	SDL_INIT_GAMECONTROLLER,
+	SDL_KEYDOWN,
+	SDL_KEYUP,
+	SDL_MOUSEBUTTONDOWN,
+	SDL_MOUSEBUTTONUP,
+	SDL_MOUSEMOTION,
+	SDL_MOUSEWHEEL,
+	SDL_PIXELFORMAT_ARGB8888,
+	SDL_QUIT,
+	SDL_RENDER_TARGETS_RESET,
+	SDL_SCANCODE_A,
+	SDL_SCANCODE_C,
+	SDL_SCANCODE_V,
+	SDL_SCANCODE_X,
+	SDL_SCANCODE_Z,
+	SDL_SYSTEM_CURSOR_ARROW,
+	SDL_SYSTEM_CURSOR_HAND,
+	SDL_SYSTEM_CURSOR_IBEAM,
+	SDL_SYSTEM_CURSOR_SIZEWE,
+	SDL_SYSWM_COCOA,
+	SDL_SYSWM_UNKNOWN,
+	SDL_SYSWM_WAYLAND,
+	SDL_TEXTEDITING,
+	SDL_TEXTINPUT,
+	SDL_TEXTUREACCESS_TARGET,
+	SDL_WINDOW_INPUT_FOCUS,
+	SDL_WINDOWEVENT,
+	SDL_WINDOWEVENT_DISPLAY_CHANGED,
+	SDL_WINDOWEVENT_ENTER,
+	SDL_WINDOWEVENT_EXPOSED,
+	SDL_WINDOWEVENT_FOCUS_GAINED,
+	SDL_WINDOWEVENT_FOCUS_LOST,
+	SDL_WINDOWEVENT_LEAVE,
+	SDL_WINDOWEVENT_MAXIMIZED,
+	SDL_WINDOWEVENT_MINIMIZED,
+	SDL_WINDOWEVENT_RESIZED,
+	SDL_WINDOWEVENT_RESTORED,
+	SDL_WINDOWEVENT_SHOWN,
+	SDLK_BACKSPACE,
+	SDLK_DELETE,
+	SDLK_DOWN,
+	SDLK_END,
+	SDLK_HOME,
+	SDLK_KP_ENTER,
+	SDLK_LALT,
+	SDLK_LCTRL,
+	SDLK_LEFT,
+	SDLK_LGUI,
+	SDLK_LSHIFT,
+	SDLK_RALT,
+	SDLK_RCTRL,
+	SDLK_RETURN,
+	SDLK_RETURN2,
+	SDLK_RIGHT,
+	SDLK_RSHIFT,
+	SDLK_TAB,
+	SDLK_UP,
+	SDL_CreateRGBSurfaceWithFormatFrom,
+	SDL_CreateSystemCursor,
+	SDL_CreateTexture,
+	SDL_CreateTextureFromSurface,
+	SDL_Delay,
+	SDL_DestroyWindow,
+	SDL_Event,
+	SDL_FreeSurface,
+	SDL_GetClipboardText,
+	SDL_GetGlobalMouseState,
+	SDL_GetKeyFromName,
+	SDL_GetMouseState,
+	SDL_GetScancodeFromName,
+	SDL_GetVersion,
+	SDL_GetWindowFlags,
+	SDL_GetWindowPosition,
+	SDL_GetWindowWMInfo,
+	SDL_HasClipboardText,
+	SDL_HitTest,
+	SDL_InitSubSystem,
+	SDL_MinimizeWindow,
+	SDL_PollEvent,
+	SDL_PumpEvents,
+	SDL_PushEvent,
+	SDL_QueryTexture,
+	SDL_Quit,
+	SDL_QuitSubSystem,
+	SDL_RenderFillRect,
+	SDL_RestoreWindow,
+	SDL_SetClipboardText,
+	SDL_SetCursor,
+	SDL_SetRenderDrawBlendMode,
+	SDL_SetRenderTarget,
+	SDL_SetTextureAlphaMod,
+	SDL_SetTextureBlendMode,
+	SDL_SetTextureColorMod,
+	SDL_SetWindowAlwaysOnTop,
+	SDL_SetWindowBordered,
+	SDL_SetWindowFullscreen,
+	SDL_SetWindowHitTest,
+	SDL_SetWindowIcon,
+	SDL_SetWindowMinimumSize,
+	SDL_SetWindowPosition,
+	SDL_SetWindowResizable,
+	SDL_SetWindowSize,
+	SDL_StartTextInput,
+	SDL_SysWMinfo,
+	SDL_version,
+	SDL_WaitEventTimeout,
+	SDLK_a,
+	SDLK_c,
+	SDLK_v,
+	SDLK_x,
+	SDLK_z,
+	rw_from_object,
+)
+
+from sdl2.sdlimage import IMG_Load_RW, IMG_Quit
+from send2trash import send2trash
+from unidecode import unidecode
+
+from t_modules import t_bootstrap
+from t_modules.t_config import Config
+from t_modules.t_extra import *
+from t_modules.t_draw import TDraw, QuickThumbnail
+from t_modules.t_jellyfin import Jellyfin
+from t_modules.t_launch import *
+from t_modules.t_lyrics import *
+from t_modules.t_phazor import phazor_exists, player4
+from t_modules.t_search import *
+from t_modules.t_spot import SpotCtl
+from t_modules.t_stream import *
+from t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block
+from t_modules.t_themeload import *
+from t_modules.t_tidal import Tidal
+from t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
+
 if TYPE_CHECKING:
 	from t_modules.t_phazor import Cachement, LibreSpot
 
-import os
-import pickle
-import shutil
+try:
+	from jxlpy import JXLImagePlugin
+	print("Found jxlpy for JPEG XL support")
+except Exception:
+	pass
 
+try:
+	import setproctitle
+	setproctitle.setproctitle("tauonmb")
+except Exception:
+	print("Could not set process title.")
 
+# try:
+#	 import rpc
+#	 discord_allow = True
+# except Exception:
+#	 pass
+try:
+	from pypresence import Presence
+	import asyncio
+
+	discord_allow = True
+except Exception:
+	discord_allow = False
+
+try:
+	import pylast
+	last_fm_enable = True
+	if pyinstaller_mode:
+		pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
+except Exception:
+	last_fm_enable = False
+	print("PyLast moduel not found, last fm will be disabled.")
+
+use_cc = False
+try:
+	import opencc
+	s2t = opencc.OpenCC("s2t")
+	t2s = opencc.OpenCC("t2s")
+	use_cc = True
+except Exception:
+	print("OpenCC not found.")
+
+use_natsort = False
+try:
+	import natsort
+
+	use_natsort = True
+except Exception:
+	print("Warning: Python module natsort not found")
+
+# Detect platform
+windows_native = False
+macos = False
+msys = False
+system = None
+if sys.platform == "win32":
+	# system = 'windows'
+	# windows_native = False
+	system = "linux"
+	msys = True
+else:
+	system = "linux"
+	import fcntl
+
+if sys.platform == "darwin":
+	macos = True
+
+if system == "windows":
+	import win32con
+	import win32api
+	import win32gui
+	import win32ui
+	import comtypes
+	import atexit
+
+if system == "linux":
+	from t_modules import t_topchart
+
+if system == "linux" and not macos and not msys:
+	from t_modules.t_dbus import Gnome
 
 h = t_bootstrap.holder
 t_window = h.w
@@ -68,22 +354,6 @@ print(f"Window size: {window_size}")
 
 should_save_state = True
 
-# Detect platform
-windows_native = False
-macos = False
-msys = False
-if sys.platform == "win32":
-	# system = 'windows'
-	# windows_native = False
-	system = "linux"
-	msys = True
-else:
-	system = "linux"
-	import fcntl
-
-if sys.platform == "darwin":
-	macos = True
-
 if not windows_native:
     import gi
     from gi.repository import GLib
@@ -108,8 +378,6 @@ draw_min_button = True
 draw_max_button = True
 left_window_control = False
 xdpi = 0
-
-from t_modules.t_extra import *
 
 detect_macstyle = False
 gtk_settings = None
@@ -319,15 +587,14 @@ print('Install directory: ' + install_directory)
 old_backend = 2
 
 # Things for detecting and launching programs outside of flatpak sandbox
-def whicher(target):
+def whicher(target) -> bool | str:
     try:
         if flatpak_mode:
             complete = subprocess.run(shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE)
             r = complete.stdout.decode()
             return "bin/" + target in r
-        else:
-            return shutil.which(target)
+        return shutil.which(target)
     except:
         return False
 
@@ -337,10 +604,6 @@ if flatpak_mode:
     launch_prefix = "flatpak-spawn --host "
 
 pid = os.getpid()
-
-from sdl2 import *
-from sdl2.sdlimage import *
-from ctypes import pointer
 
 if not macos:
     icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
@@ -494,7 +757,6 @@ def asset_loader(name, mod=False):
 if maximized:
     i_x = pointer(c_int(0))
     i_y = pointer(c_int(0))
-    import time
 
     time.sleep(0.02)
     SDL_PumpEvents()
@@ -518,98 +780,9 @@ if install_directory != config_directory and not os.path.isfile(os.path.join(con
 
 last_fm_enable = False
 
-try:
-    import setproctitle
-
-    setproctitle.setproctitle("tauonmb")
-except:
-    print("Could not set process title.")
-
-# try:
-#     import rpc
-#     discord_allow = True
-# except:
-#     pass
-try:
-    from pypresence import Presence
-    import asyncio
-
-    discord_allow = True
-except:
-    discord_allow = False
-
 if snap_mode:
     discord_allow = False
 
-if system == "windows":
-    import win32con, win32api, win32gui, win32ui, comtypes
-    import atexit
-
-try:
-    import pylast
-    last_fm_enable = True
-    if pyinstaller_mode:
-        pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
-except:
-    last_fm_enable = False
-    print("PyLast moduel not found, last fm will be disabled.")
-
-use_cc = False
-try:
-    import opencc
-    s2t = opencc.OpenCC('s2t')
-    t2s = opencc.OpenCC('t2s')
-    use_cc = True
-except:
-    print("OpenCC not found.")
-
-use_natsort = False
-try:
-    import natsort
-
-    use_natsort = True
-except:
-    print("Warning: Python module natsort not found")
-
-import platform as py_platform
-import time
-import ctypes
-import ctypes.util
-import random
-import threading
-import logging
-import io
-import copy
-import subprocess
-import urllib.parse
-import urllib.request
-import datetime
-import shlex
-import math
-import locale as py_locale
-import webbrowser
-import base64
-import re
-import zipfile
-import warnings
-import colorsys
-import requests
-import stat
-import hashlib
-import platform
-import gettext
-import secrets
-import json
-import glob
-import xml.etree.ElementTree as ET
-import musicbrainzngs
-import traceback
-from pathlib import Path
-from xml.sax.saxutils import escape, unescape
-from ctypes import *
-from send2trash import send2trash
-from unidecode import unidecode
-from collections import OrderedDict
 
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
 
@@ -637,31 +810,16 @@ except:
 
 # ------------------------------------------------
 
-if system == 'windows':
+if system == "windows":
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 elif not msys and not macos:
     try:
-        gi.require_version('Notify', '0.7')
+        gi.require_version("Notify", "0.7")
     except:
-        gi.require_version('Notify', '0.8')
+        gi.require_version("Notify", "0.8")
     from gi.repository import Notify
 
-# Other imports
 
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
-
-try:
-    from jxlpy import JXLImagePlugin
-
-    print("Found jxlpy for JPEG XL support")
-except:
-    pass
-
-import mutagen
-import mutagen.id3
-import mutagen.flac
-import mutagen.mp4
-import mutagen.oggvorbis
 
 
 def no_padding(info):
@@ -673,25 +831,6 @@ if not os.environ.get('SDL_VIDEODRIVER') == "wayland":
     wayland = False
     os.environ['GDK_BACKEND'] = "x11"
 
-from t_modules.t_tagscan import Flac
-from t_modules.t_tagscan import Opus
-from t_modules.t_tagscan import Ape
-from t_modules.t_tagscan import Wav
-from t_modules.t_tagscan import M4a
-from t_modules.t_tagscan import parse_picture_block
-
-from t_modules.t_stream import *
-from t_modules.t_lyrics import *
-from t_modules.t_themeload import *
-from t_modules.t_spot import SpotCtl
-from t_modules.t_tidal import Tidal
-from t_modules.t_search import *
-
-if system == 'linux':
-    from t_modules import t_topchart
-
-if system == "linux" and not macos and not msys:
-    from t_modules.t_dbus import Gnome
 
 # Setting various timers
 
@@ -2748,8 +2887,6 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
-import gc as gbc
-
 gbc.disable()
 ggc = 2
 
@@ -3764,8 +3901,6 @@ if os.path.isdir(download_directory):
 
 if music_directory is not None and os.path.isdir(music_directory):
     download_directories.append(music_directory)
-
-from t_modules.t_config import Config
 
 cf = Config()
 
@@ -7692,7 +7827,7 @@ class LastFMapi:
                 show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
                 return
             else:
-                show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks)))) 
+                show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
                 return
         except:
             show_message(_("This doesn't seem to be working :("), mode='error')
@@ -8246,9 +8381,6 @@ class LastScrob:
 
 lfm_scrobbler = LastScrob()
 
-from t_modules.t_draw import TDraw
-from t_modules.t_draw import QuickThumbnail
-
 QuickThumbnail.renderer = renderer
 
 
@@ -8310,12 +8442,6 @@ class Chunker:
         self.h2 = None
 
         self.clients = {}
-
-from t_modules.t_webserve import webserve2
-from t_modules.t_webserve import webserve
-from t_modules.t_webserve import authserve
-from t_modules.t_webserve import controller
-from t_modules.t_webserve import stream_proxy
 
 class MenuIcon:
 
@@ -8747,8 +8873,6 @@ class PlexService:
 
 plex = PlexService()
 tauon.plex = plex
-
-from t_modules.t_jellyfin import Jellyfin
 
 jellyfin = Jellyfin(tauon)
 tauon.jellyfin = jellyfin
@@ -10297,8 +10421,6 @@ def coll(r):
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
 ddt.force_subpixel_text = prefs.force_subpixel_text
-
-from t_modules.t_launch import *
 
 launch = Launch(tauon, pctl, gui, ddt)
 
@@ -18707,13 +18829,13 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             for i in reversed(range(len(playlist))):
                 tr = pctl.g(playlist[i])
                 line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
-                  
+
                 if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
-                    line = str(unidecode(line))              
-                
+                    line = str(unidecode(line))
+
                 if not search_magic(quote.lower(), line):
                     del playlist[i]
-                    
+
             playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm.startswith("fx\""):
@@ -37947,7 +38069,7 @@ class ArtistList:
                 if album_count > 1:
                     text = _("{N} tracks").format(N=str(album_count))
                 else:
-                    text = _("{N} track").format(N=str(album_count))                   
+                    text = _("{N} track").format(N=str(album_count))
 
             if gui.preview_artist_loading == artist:
                 # . Max 20 chars. Alt: Downloading image, Loading image
@@ -39484,7 +39606,7 @@ class QueueBox:
                         i += 1
 
         # Show total duration text "n Tracks [0:00:00]"
-        if tracks and fq:           
+        if tracks and fq:
             if tracks < 2:
                 line = _("{N} Track").format(N=str(tracks)) + " [" + get_hms_time(duration) + "]"
                 ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
@@ -39492,7 +39614,7 @@ class QueueBox:
                 line = _("{N} Tracks").format(N=str(tracks)) + " [" + get_hms_time(duration) + "]"
                 ddt.text((x + 12 * gui.scale, yy), line, text_colour, 11.5, bg=colours.queue_background)
 
-            
+
 
         if self.dragging:
 
@@ -43976,7 +44098,7 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
                 if event.window.data1 < 500:
-                    print("Grrr why this happen, stupid bug")
+                    print("Grrr why this happen, stupid bug - reproducible when moving window from one screen to another in Plasma")
                     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
                 elif restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
                     gui.update = 2
