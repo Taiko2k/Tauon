@@ -46,7 +46,7 @@ renderer = h.r
 logical_size = h.wl
 window_size = h.wr
 maximized = h.m
-scale = h.s
+scale: float = h.s
 window_opacity = h.o
 draw_border = h.d
 transfer_args_and_exit = h.e
@@ -1121,7 +1121,7 @@ class Prefs:  # Used to hold any kind of settings
 
         self.log_vol = False
 
-        self.ui_scale = scale
+        self.ui_scale: float = scale
 
         # if flatpak_mode:
 
