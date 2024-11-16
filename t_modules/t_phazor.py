@@ -366,8 +366,7 @@ def player4(tauon: Tauon) -> None:
 		def get_key(self, track: TrackClass) -> str:
 			if track.is_network:
 				return hashlib.sha256((str(track.index) + track.url_key).encode()).hexdigest()
-			else:
-				return hashlib.sha256(track.fullpath.encode()).hexdigest()
+			return hashlib.sha256(track.fullpath.encode()).hexdigest()
 
 		def get_file_cached_only(self, track: TrackClass) -> str | None:
 			key = self.get_key(track)
@@ -437,9 +436,9 @@ def player4(tauon: Tauon) -> None:
 						self.running = False
 						return
 				tauon.console.print("Precache next track")
-				next = pctl.advance(dry=True)
-				if next is not None:
-					self.dl_file(pctl.g(next))
+				next_track = pctl.advance(dry=True)
+				if next_track is not None:
+					self.dl_file(pctl.g(next_track))
 
 			self.trim_cache()
 			self.running = False
@@ -912,7 +911,7 @@ def player4(tauon: Tauon) -> None:
 				except Exception:
 					pass
 
-				if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and not target_object.file_ext == "SPTY":
+				if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and target_object.file_ext != "SPTY":
 					tauon.spot_ctl.control("stop")
 
 				if target_object.is_network:
@@ -924,9 +923,9 @@ def player4(tauon: Tauon) -> None:
 							pctl.jump_time = 0
 							pctl.advance(inplace=True, play=True)
 							continue
-						if state > 0 and not state == 4:
+						if state > 0 and state != 4:
 							aud.stop()
-						if not state == 4:
+						if state != 4:
 							state = 0
 
 						try:
