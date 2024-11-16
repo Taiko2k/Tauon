@@ -18,7 +18,7 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from gi.repository import GLib, Gdk
+import logging
 import urllib.parse
 from t_modules.t_extra import *
 import shutil
@@ -46,16 +46,15 @@ class Gnome:
 				# this is what gives us the multi media keys.
 				dbus_interface = "org.gnome.SettingsDaemon.MediaKeys"
 				self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0, dbus_interface=dbus_interface)
-			except:
-				# Error connecting to org.gnome.SettingsDaemon.MediaKeys
-				pass
+			except Exception:
+				logging.exception("Error connecting to org.gnome.SettingsDaemon.MediaKeys")
 
 	def show_indicator(self):
 		if not self.indicator_launched:
 			try:
 				self.start_indicator()
-			except:
-				#raise
+			except Exception:
+				logging.exception("Failed to start indicator")
 				self.tauon.gui.show_message(_("Failed to start indicator"), mode="error")
 		else:
 			self.indicator.set_status(1)
@@ -87,7 +86,8 @@ class Gnome:
 		try:
 			gi.require_version("AyatanaAppIndicator3", "0.1")
 			from gi.repository import AyatanaAppIndicator3 as AppIndicator3
-		except:
+		except Exception:
+			logging.exception("Failed to load AyatanaAppIndicator3")
 			gi.require_version("AppIndicator3", "0.1")
 			from gi.repository import AppIndicator3
 
@@ -101,7 +101,7 @@ class Gnome:
 			tauon.raise_window()
 
 		def menu_quit(_):
-			print("Exit via tray")
+			logging.info("Exit via tray")
 			tauon.exit("Exit received from app indicator")
 			self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
 
@@ -290,7 +290,7 @@ class Gnome:
 			def PrepareForSleep(active):
 
 				if active == 1 and tauon.sleep_lock is not None:
-					print("System is suspending!")
+					logging.info("System is suspending!")
 					if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
 						pctl.stop(block=True)
 						if prefs.resume_play_wake:
@@ -311,12 +311,12 @@ class Gnome:
 							pctl.playing_state = 0
 							time.sleep(4)
 							pctl.play()
-							print("Resume Radio")
+							logging.info("Resume Radio")
 						else:
 							pctl.play()
 
 			def PrepareForShutdown(active):
-				print("The system is shutting down!")
+				logging.info("The system is shutting down!")
 				tauon.quick_close = True
 				tauon.exit("System shutdown signal received")
 
@@ -324,8 +324,8 @@ class Gnome:
 			iface.connect_to_signal("PrepareForShutdown", PrepareForShutdown)
 
 
-		except:
-			print("Failure to connect to login1")
+		except Exception:
+			logging.exception("Failure to connect to login1")
 
 
 		# t_bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
@@ -336,7 +336,7 @@ class Gnome:
 		#		"com.github.taiko2k.tauonmb",
 		#		in_signature='a{sv}', out_signature='')
 		#	 def start(self, options={}):
-		#		 print("START")
+		#		 logging.info("START")
 		#
 		#	 def __init__(self, object_path):
 		#		 dbus.service.Object.__init__(self, t_bus, object_path, bus_name=t_bus_name)
@@ -403,17 +403,16 @@ class Gnome:
 
 							try:
 								d["xesam:url"] = "file://" + urllib.parse.quote(track.fullpath)
-							except:
-								print("Uri encode error")
+							except Exception:
+								logging.exception("Uri encode error")
 
 							try:
 								i_path = tauon.thumb_tracks.path(track)
 								if i_path is not None:
 									d["mpris:artUrl"] = "file://" + urllib.parse.quote(i_path)
-							except Exception as e:
-								print(str(e))
-								print("Thumbnail error")
-								print(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
+							except Exception:
+								logging.exception("Thumbnail error")
+								logging.debug(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
 
 							self.update_progress()
 
@@ -434,11 +433,10 @@ class Gnome:
 						if len(changed) > 0:
 							try:
 								self.PropertiesChanged("org.mpris.MediaPlayer2.Player", changed, [])
-							except Exception as e:
-								print("Error updating MPRIS")
-								print(str(e))
-								print(changed)
-								print(pctl.playing_object().fullpath)
+							except Exception:
+								logging.exception("Error updating MPRIS")
+								logging.debug(changed)
+								logging.debug(pctl.playing_object().fullpath)
 
 					def update_progress(self):
 						self.player_properties["Position"] = dbus.Int64(int(pctl.playing_time * 1000000))
@@ -635,8 +633,8 @@ class Gnome:
 
 				pctl.mpris = MPRIS("/org/mpris/MediaPlayer2")
 
-			except:
-				print("MPRIS2 CONNECT FAILED")
+			except Exception:
+				logging.exception("MPRIS2 CONNECT FAILED")
 
 		mainloop = GLib.MainLoop()
 		mainloop.run()
