@@ -142,10 +142,9 @@ class Gnome:
 					if self.indicator_mode != 2:
 						self.indicator_mode = 2
 						self.indicator_pause()
-				else:
-					if self.indicator_mode != 0:
-						self.indicator_mode = 0
-						self.indicator_stop()
+				elif self.indicator_mode != 0:
+					self.indicator_mode = 0
+					self.indicator_stop()
 
 				text = ""
 				if self.tauon.prefs.tray_show_title:
@@ -158,15 +157,14 @@ class Gnome:
 					if pctl.playing_state == 0:
 						text = ""
 
-				if self.indicator_launched:
-					if text != self.tray_text:
-						if text:
-							self.indicator.set_label(" " + text, text)
-							self.indicator.set_title(text)
-						else:
-							self.indicator.set_label("", "")
-							self.indicator.set_title(tauon.t_title)
-						self.tray_text = text
+				if self.indicator_launched and text != self.tray_text:
+					if text:
+						self.indicator.set_label(" " + text, text)
+						self.indicator.set_title(text)
+					else:
+						self.indicator.set_label("", "")
+						self.indicator.set_title(tauon.t_title)
+					self.tray_text = text
 
 		item = Gtk.MenuItem(tauon.strings.menu_open_tauon)
 		item.connect("activate", restore)
@@ -523,8 +521,9 @@ class Gnome:
 						if interface_name == "org.mpris.MediaPlayer2":
 							#return self.GetAll(interface_name)[property_name]
 							return self.root_properties[property_name]
-						elif interface_name == "org.mpris.MediaPlayer2.Player":
+						if interface_name == "org.mpris.MediaPlayer2.Player":
 							return self.player_properties[property_name]
+						return None
 
 					@dbus.service.method(
 						dbus_interface=dbus.PROPERTIES_IFACE,
@@ -533,10 +532,9 @@ class Gnome:
 
 						if interface_name == "org.mpris.MediaPlayer2":
 							return self.root_properties
-						elif interface_name == "org.mpris.MediaPlayer2.Player":
+						if interface_name == "org.mpris.MediaPlayer2.Player":
 							return self.player_properties
-						else:
-							return {}
+						return {}
 
 					@dbus.service.method(
 						dbus_interface=dbus.PROPERTIES_IFACE,
