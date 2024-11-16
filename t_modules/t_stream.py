@@ -134,7 +134,7 @@ class StreamEnc:
                 else:
                     print("Connection failed")
                     print(str(e))
-                    self.tauon.gui.show_message("Failed to establish a connection", str(e), mode="error")
+                    self.tauon.gui.show_message(_("Failed to establish a connection"), str(e), mode="error")
                     return False
             break
 
@@ -512,7 +512,7 @@ class StreamEnc:
                             r.close()
                             self.download_running = False
                             self.abort = True
-                            self.tauon.gui.show_message("Data malformation detected. Stream aborted.", mode='error')
+                            self.tauon.gui.show_message(_("Data malformation detected. Stream aborted."), mode='error')
                             raise
         except Exception as e:
             print("Stream download thread crashed!")

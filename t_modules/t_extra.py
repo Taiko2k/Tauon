@@ -136,35 +136,35 @@ def hms_to_seconds(time_str: str) -> int:
 		seconds = int(components[0]) * 3600 + int(components[1]) * 60 + int(components[2])
 	return seconds
 
-def get_filesize_string(file_bytes: int, rounding: int = 2) -> str:
-	"""Creates a string from number of bytes to X MB/kB etc with Locale adjustment"""
-	if not file_bytes:
-		return "0"
-	if file_bytes < 1000:
-		line = locale.str(file_bytes) + " B"
-	elif file_bytes < 1000000:
-		file_kb = round(file_bytes / 1000, rounding)
-		line = locale.str(file_kb) + " KB"
-	elif file_bytes < 1000000000:
-		file_mb = round(file_bytes / 1000000, rounding)
-		line = locale.str(file_mb) + " MB"
-	else:
-		file_mb = round(file_bytes / 1000000000, 1)
-		line = locale.str(file_mb) + " GB"
-	return line
+# Creates a string from number of bytes to X MB/kB etc with Locale adjustment
+def get_filesize_string(file_bytes, rounding=2):
+    if not file_bytes:
+        return "0"
+    if file_bytes < 1000:
+        line = locale.str(file_bytes) + _(" B")
+    elif file_bytes < 1000000:
+        file_kb = round(file_bytes / 1000, rounding)
+        line = locale.str(file_kb) + _(" KB")
+    elif file_bytes < 1000000000:
+        file_mb = round(file_bytes / 1000000, rounding)
+        line = locale.str(file_mb) + _(" MB")
+    else:
+        file_mb = round(file_bytes / 1000000000, 1)
+        line = locale.str(file_mb) + _(" GB")
+    return line
 
-def get_filesize_string_rounded(file_bytes: int) -> str:
-	if not file_bytes:
-		return "0"
-	if file_bytes < 1000:
-		line = str(round(file_bytes)) + " B"
-	elif file_bytes < 1000000:
-		file_kb = round(file_bytes / 1000)
-		line = str(file_kb) + " KB"
-	else:
-		file_mb = round(file_bytes / 1000000, 1)
-		line = str(file_mb) + " MB"
-	return line
+def get_filesize_string_rounded(file_bytes):
+    if not file_bytes:
+        return "0"
+    if file_bytes < 1000:
+        line = str(round(file_bytes)) + _(" B")
+    elif file_bytes < 1000000:
+        file_kb = round(file_bytes / 1000)
+        line = str(file_kb) + _(" KB")
+    else:
+        file_mb = round(file_bytes / 1000000, 1)
+        line = str(file_mb) + _(" MB")
+    return line
 
 def test_lumi(c1: dict) -> float:
 	"""Estimates the perceived luminance of a colour"""
