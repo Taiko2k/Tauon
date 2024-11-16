@@ -20,21 +20,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-	from collections.abc import Callable
-
 import requests
 from bs4 import BeautifulSoup
 
-logging.basicConfig(
-	level=logging.DEBUG,
-	format="%(asctime)s [%(levelname)s] %(message)s",
-	handlers=[
-		logging.StreamHandler(),
-	],
-)
-# INFO and higher to STDERR
-logging.getLogger().handlers[0].setLevel(logging.INFO)
+if TYPE_CHECKING:
+	from collections.abc import Callable
+
+
 
 def bandcamp_search(artist: str, callback: Callable[[str | None], None] | None = None) -> str | None:
 	"""Search Bandcamp for the artist and return their URL"""

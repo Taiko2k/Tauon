@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import ctypes
 import io
+import logging
 import math
 import sys
 from ctypes import c_int, pointer
@@ -62,10 +63,9 @@ if TYPE_CHECKING:
 
 try:
 	from jxlpy import JXLImagePlugin
-	print("Found jxlpy for JPEG XL support")
+	logging.info("Found jxlpy for JPEG XL support")
 except Exception:
-	pass
-
+	logging.exception("Unable to import jxlpy")
 
 system = "linux"
 if sys.platform == "win32":
@@ -192,7 +192,7 @@ if system == "windows":
 			raise OSError("native_bmp_to_pil failed: GetDIBits")
 
 		# TODO(Martin): Add the rest of the types in this function:
-		#print(f"HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24))}")
+		logging.debug(f"IF YOU SEE THIS MESSAGE, ADD THESE TYPES TO native_bmp_to_sdl(): HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24))}")
 		# We need to keep c_bits pass else it may be garbage collected
 		return SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24), c_bits
 
@@ -253,7 +253,7 @@ if system == "windows":
 			#w,h = self.drawDC.GetTextExtent(text)
 			w, h = self.get_metrics(text, max_x, wrap)
 
-			#print(self.drawDC.GetTextFace())
+			#logging.info(self.drawDC.GetTextFace())
 
 			#w += 1
 			#if wrap:
@@ -301,8 +301,8 @@ if system == "windows":
 
 				#windll.gdi32.TextOutW(t, 0, 0, text, len(text))
 
-			# print(rects)
-			#print(text)
+			#logging.info(rects)
+			#logging.info(text)
 			#windll.gdi32.ExtTextOutW(t, 0, 0, None, rect, text, len(text), None)
 			#convert to SDL surface
 			im, c_bits = native_bmp_to_sdl(self.drawDC.GetSafeHdc(), saveBitMap.GetHandle(), w, h)
@@ -475,6 +475,7 @@ class TDraw:
 			try:
 				self.layout.set_text(text, -1)
 			except Exception:
+				logging.exception(f"Exception in get_text_wh for: {text}")
 				self.layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 
 			return self.layout.get_pixel_size()
@@ -483,7 +484,6 @@ class TDraw:
 
 	def get_y_offset(self, text: str, font: str, max_x: int, wrap: bool = False) -> int:
 		"""HACKY"""
-
 		self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
 		self.layout.set_width(max_x * 1000)
@@ -495,6 +495,7 @@ class TDraw:
 		try:
 			self.layout.set_text(text, -1)
 		except Exception:
+			logging.exception(f"Exception in get_y_offset for: {text}")
 			self.layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 
 		y_off = self.layout.get_baseline() / 1000
@@ -687,7 +688,7 @@ class TDraw:
 		context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
 
 		if font not in self.f_dict:
-			print("Font not loaded: " + str(font))
+			logging.info("Font not loaded: " + str(font))
 			return 10
 
 		# desc = Pango.FontDescription(self.f_dict[font][0])
@@ -698,10 +699,10 @@ class TDraw:
 		try:
 			layout.set_text(text, -1)
 		except Exception:
+			logging.exception(f"Text error on text: {text}")
 			layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
-			#print(f"Text error on text: {text}")
 
-		#print(layout.get_direction(0))
+		#logging.info(layout.get_direction(0))
 
 		y_off = layout.get_baseline() / 1000
 		y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
@@ -757,8 +758,8 @@ class TDraw:
 
 		if font is None or font not in self.f_dict:
 
-			print("Missing Font")
-			print(font)
+			logging.info("Missing Font")
+			logging.info(font)
 
 			return None
 
@@ -814,8 +815,8 @@ class TDraw:
 
 		if font is None or font not in self.f_dict:
 
-			print("Missing Font")
-			print(font)
+			logging.info("Missing Font")
+			logging.info(font)
 			return 0
 
 		#perf_timer.set()
@@ -851,7 +852,7 @@ class TDraw:
 		#SDL_RenderCopy(renderer, c, None, dst)
 		#SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
 
-		#print(perf_timer.get())
+		#logging.info(perf_timer.get())
 		self.cache[key] = [dst, c]
 		self.__win_render_text([dst, c], x, y, range_top, range_height, align)
 
@@ -867,7 +868,7 @@ class TDraw:
 	def text(self, location: list[int], text: str, colour: list[int], font: str, max_w: int = 4000, bg: list[int] | None = None,
 		range_top: int = 0, range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None) -> int | None:
 
-		#print((text, font))
+		#logging.info((text, font))
 
 		if not text:
 			return 0
