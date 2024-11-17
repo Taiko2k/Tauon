@@ -5,7 +5,7 @@
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
 	# Change the version for the tools below too when bumping up
-	requires-python = ">=3.9"
+	requires-python = ">=3.10"
 	classifiers = [
 		"Programming Language :: Python :: 3"
 	]
@@ -43,7 +43,7 @@
 [tool.pyright]
 	#defineConstant = { DEBUG = true }
 
-	pythonVersion = "3.9"
+	pythonVersion = "3.10"
 
 	#	Pyright does not support this, needs to be defined via `__builtins__.pyi`, see https://github.com/microsoft/pyright/issues/9471
 	# Translations
@@ -98,7 +98,7 @@
 # https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
 	# Target non-EOL releases at minimum - https://devguide.python.org/versions/
-	target-version = "py39"
+	target-version = "py310"
 	# Soft 80 and hard break at 120
 	line-length = 120
 	# Translations
