@@ -24,6 +24,9 @@ import time
 import urllib.parse
 from typing import TYPE_CHECKING
 
+import gi
+
+gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, GLib
 
 from t_modules.t_extra import filename_to_metadata, star_count2
