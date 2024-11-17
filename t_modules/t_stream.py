@@ -16,29 +16,39 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-import mimetypes
-import urllib.request
-import threading
-import time
-import subprocess
-import os
-import sys
-if sys.platform != "win32":
-	import fcntl
+from __future__ import annotations
+
+import copy
 import datetime
 import io
+import logging
+import os
 import shutil
+import subprocess
+import sys
+import threading
+import time
+import urllib.request
+
 import mutagen
-import copy
-from PIL import Image
-from mutagen.flac import Picture
-import base64
+
 from t_modules.t_extra import filename_safe
 from t_modules.t_webserve import vb
 
+if sys.platform != "win32":
+	import fcntl
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from subprocess import Popen
+	from urllib.request import _UrlopenRet
+
+	from t_modules.t_main import Tauon
+
+
 class StreamEnc:
 
-	def __init__(self, tauon):
+	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.download_running = False
 		self.encode_running = False
@@ -59,18 +69,18 @@ class StreamEnc:
 		self.c = 0
 		self.url = None
 
-	def stop(self):
+	def stop(self) -> None:
 
 		try:
 			self.tauon.radiobox.websocket.close()
-			print("Websocket closed")
-		except:
-			print("No socket to close?")
+			logging.info("Websocket closed")
+		except Exception:
+			logging.exception("No socket to close?")
 
 		self.abort = True
 		self.tauon.radiobox.loaded_url = None
 
-	def start_download(self, url):
+	def start_download(self, url: str) -> bool:
 
 		self.abort = True
 		while self.download_running:
@@ -93,9 +103,9 @@ class StreamEnc:
 		return True
 
 
-	def start_request(self):
+	def start_request(self) -> bool:
 		url = self.url
-		def NiceToICY(self):
+		def NiceToICY(self) -> None:
 			class InterceptedHTTPResponse:
 				pass
 			if not url.endswith(".ts"):
@@ -124,18 +134,16 @@ class StreamEnc:
 				print("URL opened.")
 
 			except Exception as e:
-
-				print("URL error...")
+				# TODO(Martin): Specify the exception better and turn the top part into debug statements, then  only throw except when Connection fails below
+				logging.exception("URL error...")
 				retry -= 1
 				if retry > 0 and "Temporary" in str(e):
 					time.sleep(2)
-					print("RETRYING...")
+					logging.debug("RETRYING...")
 					continue
-				else:
-					print("Connection failed")
-					print(str(e))
-					self.tauon.gui.show_message(_("Failed to establish a connection"), str(e), mode="error")
-					return False
+				logging.exception("Connection failed")
+				self.tauon.gui.show_message(_("Failed to establish a connection"), str(e), mode="error")
+				return False
 			break
 
 		self.download_process = threading.Thread(target=self.run_download, args=([r]))
@@ -144,7 +152,7 @@ class StreamEnc:
 		self.download_running = True
 		return True
 
-	def pump(self):
+	def pump(self) -> None:
 		aud = self.tauon.aud
 		if self.tauon.prefs.backend != 4 or not aud:
 			print("Radio error: Phazor not loaded")
@@ -169,14 +177,14 @@ class StreamEnc:
 		vb.reset()
 		vb.tauon = self.tauon
 
-		def feed(decoder):
+		def feed(decoder: Popen[bytes]) -> None:
 			position = 0
 			self.feed_running = True
 			try:
 				while True:
 					if position < self.tauon.stream_proxy.c:
 						if position not in self.tauon.stream_proxy.chunks:
-							print("The buffer was deleted too soon!")
+							logging.info("The buffer was deleted too soon!")
 							break
 
 						chunk = self.chunks[position]
@@ -187,10 +195,11 @@ class StreamEnc:
 						time.sleep(0.01)
 					if self.abort or not self.pump_running or not self.feed_running:
 						break
-			except:
+			except Exception:
+				logging.exception("Feed not running!")
 				self.feed_running = False
 				raise
-			print("Exit feeder")
+			logging.info("Exit feeder")
 
 		feeder = threading.Thread(target=feed, args=[decoder])
 		feeder.daemon = True
@@ -219,13 +228,13 @@ class StreamEnc:
 		time.sleep(0.1)
 		try:
 			decoder.kill()
-		except:
-			pass
+		except Exception:
+			logging.exception("Failed to kill decoder")
 
 		self.pump_running = False
 
 
-	def encode(self):
+	def encode(self) -> None:
 
 		self.encode_running = True
 
@@ -339,19 +348,19 @@ class StreamEnc:
 					time.sleep(0.1)
 					try:
 						decoder.kill()
-					except:
-						pass
+					except Exception:
+						logging.exception("Failed to kill decoder")
 					try:
 						encoder.kill()
-					except:
-						pass
+					except Exception:
+						logging.exception("Failed to kill encoder")
 
 					if os.path.exists(target_file):
 						if os.path.getsize(target_file) > 256000:
-							print("Save file")
+							logging.info("Save file")
 							save_track()
 						else:
-							print("Discard small file")
+							logging.info("Discard small file")
 							os.remove(target_file)
 
 					self.encode_running = False
@@ -364,21 +373,21 @@ class StreamEnc:
 					elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
 						old_metadata = self.tauon.radiobox.song_key
 					else:
-						print("Split and save file")
+						logging.info("Split and save file")
 						encoder.stdin.close()
 						try:
 							encoder.wait(timeout=4)
-						except:
-							pass
+						except Exception:
+							logging.exception("Encoder timed out")
 						try:
 							encoder.kill()
-						except:
-							pass
+						except Exception:
+							logging.exception("Failed to kill encoder")
 						if os.path.exists(target_file):
 							if os.path.getsize(target_file) > 256000:
 								save_track()
 							else:
-								print("Discard small file")
+								logging.info("Discard small file")
 								os.remove(target_file)
 						encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
@@ -393,14 +402,13 @@ class StreamEnc:
 				else:
 					time.sleep(0.005)
 
-		except Exception as e:
-			print("Encoder thread crashed!")
-			print(str(e))
+		except Exception:
+			logging.exception("Encoder thread crashed!")
 			#raise
 			self.encode_running = False
 			return
 
-	def run_download(self, r):
+	def run_download(self, r: _UrlopenRet):
 
 		h = r.info()
 
@@ -411,7 +419,7 @@ class StreamEnc:
 		self.s_description = h.get("icy-description")
 		self.s_mime = h.get("Content-Type")
 
-		print(self.s_mime)
+		logging.info(self.s_mime)
 		if self.s_mime == "audio/mpeg":
 			self.s_format = "MP3"
 		if self.s_mime == "audio/ogg":
@@ -445,7 +453,7 @@ class StreamEnc:
 
 				if self.abort:
 					r.close()
-					print("Abort stream connection")
+					logging.info("Abort stream connection")
 					self.download_running = False
 					return
 
@@ -464,9 +472,8 @@ class StreamEnc:
 						m_remain -= len(chunk)
 
 						continue
-					else:
-						# It may contain the metadata block, put it aside
-						maybe += chunk
+					# It may contain the metadata block, put it aside
+					maybe += chunk
 
 				# Try to extract ICY tag
 				if maybe:
@@ -509,14 +516,15 @@ class StreamEnc:
 										#print("Set meta")
 										self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
 										break
-						except:
+						except Exception:
+							logging.exception("Data malformation detected. Stream aborted.")
 							r.close()
 							self.download_running = False
 							self.abort = True
 							self.tauon.gui.show_message(_("Data malformation detected. Stream aborted."), mode="error")
 							raise
-		except Exception as e:
-			print("Stream download thread crashed!")
+		except Exception:
+			logging.exception("Stream download thread crashed!")
 			self.download_running = False
 			self.abort = True
 			return
