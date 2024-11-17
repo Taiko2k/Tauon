@@ -637,7 +637,7 @@ class Ape:
 
 		# If its not an ape footer, seek through the file for a bit to see if we find it
 		if b"".join(footer[0:8]) != b"APETAGEX":
-			found = False
+			found = 0
 			a.seek(0, 2)
 			g = 1000
 			while g > 0:
