@@ -1,5 +1,4 @@
-
-# Tauon Music Box - Basic Drawing and Text Drawing Functions Module
+"""Tauon Music Box - Basic Drawing and Text Drawing Functions Module"""
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
