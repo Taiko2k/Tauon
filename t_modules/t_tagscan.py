@@ -1,4 +1,7 @@
-# Tauon Music Box - Tag Module
+"""Tauon Music Box - Tag Module
+
+The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
+"""
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -17,15 +20,16 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 
-# The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
-
+import io
+import logging
+import os
 import struct
 import wave
-import io
-import os
-import math
+
 from t_modules.t_extra import process_odat
+
 
 def parse_mbids_from_vorbis(object, key, value):
 
@@ -57,42 +61,42 @@ def parse_mbids_from_vorbis(object, key, value):
 def parse_picture_block(f):
 	a = f.read(4)
 	a = int.from_bytes(a, byteorder='big')
-	# print("Picture type: " + str(a))
+	# logging.info("Picture type: " + str(a))
 
 	a = f.read(4)
 	b = int.from_bytes(a, byteorder='big')
-	# print("MIME len: " + str(b))
+	# logging.info("MIME len: " + str(b))
 
 	a = f.read(b)
-	# print(a)
-	# print("MIME: " + a.decode('ascii'))
+	# logging.info(a)
+	# logging.info("MIME: " + a.decode('ascii'))
 
 	a = f.read(4)
 	a = int.from_bytes(a, byteorder='big')
-	# print("Description len: " + str(a))
+	# logging.info("Description len: " + str(a))
 
 	a = f.read(a)
-	# print("Description: " + a.decode('utf-8'))
+	# logging.info("Description: " + a.decode('utf-8'))
 
 	a = f.read(4)
 	# a = int.from_bytes(a, byteorder='big')
-	# print("Width: " + str(a))
+	# logging.info("Width: " + str(a))
 
 	a = f.read(4)
 	# a = int.from_bytes(a, byteorder='big')
-	# print("Height: " + str(a))
+	# logging.info("Height: " + str(a))
 
 	a = f.read(4)
 	# a = int.from_bytes(a, byteorder='big')
-	# print("BPP: " + str(a))
+	# logging.info("BPP: " + str(a))
 
 	a = f.read(4)
 	# a = int.from_bytes(a, byteorder='big')
-	# print("Index colour: " + str(a))
+	# logging.info("Index colour: " + str(a))
 
 	a = f.read(4)
 	a = int.from_bytes(a, byteorder='big')
-	# print("Bin len: " + str(a))
+	# logging.info("Bin len: " + str(a))
 
 	return f.read(a)
 
@@ -145,7 +149,7 @@ class Flac:
 		buffer = f.read(4)
 		block_position += 4
 		fields = int.from_bytes(buffer, byteorder='little')
-		# print(fields)
+		# logging.info(fields)
 		artists = []
 		genres = []
 		odat = ""
@@ -158,12 +162,12 @@ class Flac:
 			buffer = f.read(jump)
 			block_position += jump
 
-			# print(buffer.decode('utf-8'))
+			# logging.info(buffer.decode('utf-8'))
 
 			position = 0
 
 			while position < 40:
-				# print(sss[position:position+1])
+				# logging.info(sss[position:position+1])
 				position += 1
 
 
@@ -174,9 +178,9 @@ class Flac:
 
 					if parse_mbids_from_vorbis(self, a, b.decode()):
 						pass
-						# print("Found MBID data:")
-						# print(a)
-						# print(b)
+						# logging.info("Found MBID data:")
+						# logging.info(a)
+						# logging.info(b)
 					elif a == "genre":
 						#self.genre = b.decode("utf-8")
 						genres.append(b.decode())
@@ -208,8 +212,8 @@ class Flac:
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
 					elif a == "metadata_block_picture":
-						print("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
-						print("	  In file: " + self.filepath)
+						logging.info("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
+						logging.info("      In file: " + self.filepath)
 					elif a == 'lyrics' or a == 'unsyncedlyrics':
 						self.lyrics = b.decode("utf-8")
 					elif "replaygain_track_gain" == a:
@@ -228,9 +232,9 @@ class Flac:
 						self.misc["artist_sort"] = b.decode("utf-8")
 
 					# else:
-					#	 print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
-					#	 print(b)
-					#	 print("\n-------------------------------------------\n")
+					#	 logging.info("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
+					#	 logging.info(b)
+					#	 logging.info("\n-------------------------------------------\n")
 
 		f.seek(block_position * -1, 1)
 
@@ -294,15 +298,15 @@ class Flac:
 
 			if z[1] == 5:
 
-				print("Tag Scan: Flac file has native embedded CUE. Not supported")
-				print("	  In file: " + self.filepath)
+				logging.info("Tag Scan: Flac file has native embedded CUE. Not supported")
+				logging.info("      In file: " + self.filepath)
 				# mark = f.tell()
 				#
-				# print("Found flac cue")
+				# logging.info("Found flac cue")
 				#
 				# a = f.read(16*8)
 				# a = int.from_bytes(a, byteorder='big')
-				# print(("Catalog Number: " + str(a)))
+				# logging.info(("Catalog Number: " + str(a)))
 				#
 				#
 				# f.seek(mark)
@@ -393,12 +397,12 @@ class Opus:
 
 		header = struct.unpack('<4sBBqIIiB', f.read(27))
 
-		# print(header)
+		# logging.info(header)
 
 		segs = struct.unpack('B'*header[7], f.read(header[7]))
 
 		# l = sum(segs)
-		# print(f.read(l + 4))
+		# logging.info(f.read(l + 4))
 		# f.seek(l * -1)
 
 		s = f.read(7)
@@ -472,14 +476,14 @@ class Opus:
 					a = s[0:position].decode("utf-8").lower()
 					b = s[position + 1:]
 
-					# print(a)  # Key
-					# print(b)  # Value
+					# logging.info(a)  # Key
+					# logging.info(b)  # Value
 
 					if parse_mbids_from_vorbis(self, a, b.decode()):
 						pass
-						# print("Found MBID data:")
-						# print(a)
-						# print(b)
+						# logging.info("Found MBID data:")
+						# logging.info(a)
+						# logging.info(b)
 
 					elif a == "genre":
 						#self.genre = b.decode("utf-8")
@@ -507,11 +511,11 @@ class Opus:
 						artists.append(b.decode())
 					elif a == "metadata_block_picture":
 
-						print("Tag Scanner: Found picture in OGG/OPUS file.")
-						print("	  In file: " + self.filepath)
+						logging.info("Tag Scanner: Found picture in OGG/OPUS file.")
+						logging.info("      In file: " + self.filepath)
 						self.has_picture = True
 						self.picture = b
-						# print(b)
+						# logging.info(b)
 
 					elif 'replaygain_track_gain' == a:
 						self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
@@ -535,9 +539,9 @@ class Opus:
 						self.misc["artist_sort"] = b.decode("utf-8")
 
 					# else:
-					#	 print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
-					#	 print(b.decode("utf-8"))
-					#	 print("	  In file: " + self.filepath)
+					#	 logging.info("Tag Scanner: Found unhandled Vorbis comment field: " + a)
+					#	 logging.info(b.decode("utf-8"))
+					#	 logging.info("	  In file: " + self.filepath)
 
 					break
 
@@ -651,15 +655,15 @@ class Ape:
 					footer = struct.unpack('<8c6i', b)
 
 		if found == 0:
-			print("Tag Scanner: Cant find APE tag")
+			logging.info("Tag Scanner: Cant find APE tag")
 		else:
 
 			self.found_tag = True
 			tag_len = footer[9]  # The size of the tag data (excludes header)
 			num_items = footer[10]  # Number of fields in tag
 
-			# print("Tag len: " + str(tag_len))
-			# print("Items: " + str(num_items))
+			# logging.info("Tag len: " + str(tag_len))
+			# logging.info("Items: " + str(num_items))
 
 			# Seek to start of tag (after any header)
 			if found == 1:
@@ -682,10 +686,10 @@ class Ape:
 					name += ch
 
 				key = name.decode('utf-8').lower()
-				#print("Key: " + key)
+				#logging.info("Key: " + key)
 
 				value = a.read(ta[0])
-				#print(value)
+				#logging.info(value)
 
 				if ta[1] == 0:
 					value = value.decode('utf-8')
@@ -759,12 +763,12 @@ class Ape:
 							break
 						off += 1
 					else:
-						print("Tag Scanner: Error reading APE album art")
+						logging.info("Tag Scanner: Error reading APE album art")
 						continue
 
 					self.picture = value[off:]
 					self.has_picture = True
-					# print(value)
+					# logging.info(value)
 
 		# Back to start of file to see if we can find sample rate and duration information
 		a.seek(0)
@@ -786,7 +790,7 @@ class Ape:
 
 				self.length = (frames * blocks) / self.sample_rate
 			else:
-				print("Note: Old APE file format version")
+				logging.info("Note: Old APE file format version")
 
 		elif ".tta" in self.filepath:
 
@@ -801,10 +805,10 @@ class Ape:
 				# channels = header[5]
 				self.length = header[8] / self.sample_rate
 			elif b"".join(header[0:3]) != b'TTA2':
-				print("WARNING: TTA2 type TTA file not supported")
+				logging.info("WARNING: TTA2 type TTA file not supported")
 				# To do
 			else:
-				print("WARNING: Does not appear to be a valid TTA file")
+				logging.info("WARNING: Does not appear to be a valid TTA file")
 
 		elif '.wv' in self.filepath:
 			#  We can handle WavPack files here too
@@ -828,10 +832,10 @@ class Ape:
 					self.length = header[8] / self.sample_rate
 					break
 			else:
-				print("Tag Scanner: Cannot verify WavPack file")
+				logging.info("Tag Scanner: Cannot verify WavPack file")
 
 		else:
-			print("Tag Scanner: Does not appear to be an APE file")
+			logging.info("Tag Scanner: Does not appear to be an APE file")
 
 		a.close()
 
@@ -1118,8 +1122,8 @@ class M4a:
 			if name == b'':
 				return False
 
-			# print("NAME: ", end="")
-			# print(tail + b"." + name)
+			# logging.info("NAME: ", end="")
+			# logging.info(tail + b"." + name)
 
 			# Too lazy to parse each sub atom, lets just grab the data out the sub atom and
 			# hope the file is formatted normally
@@ -1182,8 +1186,8 @@ class M4a:
 			#	 elif name == b'data' and s_name != b"":
 			#		 data = f.read(size - 8)
 			#		 f.seek((size - 8) * -1, 1)
-			#		 print(s_name)
-			#		 print(data)
+			#		 logging.info(s_name)
+			#		 logging.info(data)
 
 			if name in k:
 
