@@ -23,7 +23,7 @@ import time
 import subprocess
 import os
 import sys
-if sys.platform != 'win32':
+if sys.platform != "win32":
 	import fcntl
 import datetime
 import io
@@ -117,8 +117,8 @@ class StreamEnc:
 				r = urllib.request.Request(self.url)
 				#r.add_header('GET', '1')
 				if not self.url.endswith(".ts"):
-					r.add_header('Icy-MetaData', '1')
-				r.add_header('User-Agent', self.tauon.t_agent)
+					r.add_header("Icy-MetaData", "1")
+				r.add_header("User-Agent", self.tauon.t_agent)
 				print("Open URL.....")
 				r = urllib.request.urlopen(r, timeout=20, cafile=self.tauon.ca)
 				print("URL opened.")
@@ -161,7 +161,7 @@ class StreamEnc:
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
-		if sys.platform != 'win32':
+		if sys.platform != "win32":
 			fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 		raw_audio = None
@@ -257,7 +257,7 @@ class StreamEnc:
 			cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
 			decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			if sys.platform != 'win32':
+			if sys.platform != "win32":
 				fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 			position = 0
@@ -271,7 +271,7 @@ class StreamEnc:
 			def save_track():
 				#self.tauon.recorded_songs.append(song)
 
-				save_file = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now())
+				save_file = "{:%Y-%m-%d %H-%M-%S} - ".format(datetime.datetime.now())
 				save_file += filename_safe(old_metadata)
 				save_file = save_file.strip() + ext
 				save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
@@ -503,9 +503,9 @@ class StreamEnc:
 						try:
 							meta = text.decode().rstrip("\x00")
 							for tag in meta.split(";"):
-								if '=' in tag:
-									a, b = tag.split('=', 1)
-									if a == 'StreamTitle':
+								if "=" in tag:
+									a, b = tag.split("=", 1)
+									if a == "StreamTitle":
 										#print("Set meta")
 										self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
 										break
@@ -513,7 +513,7 @@ class StreamEnc:
 							r.close()
 							self.download_running = False
 							self.abort = True
-							self.tauon.gui.show_message(_("Data malformation detected. Stream aborted."), mode='error')
+							self.tauon.gui.show_message(_("Data malformation detected. Stream aborted."), mode="error")
 							raise
 		except Exception as e:
 			print("Stream download thread crashed!")
