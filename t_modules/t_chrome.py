@@ -1,24 +1,33 @@
-import pychromecast
-from t_modules.t_extra import shooter
-import time
-import socket
+from __future__ import annotations
 
-def get_ip():
+import logging
+import socket
+from typing import TYPE_CHECKING
+
+import pychromecast
+
+from t_modules.t_extra import shooter
+
+if TYPE_CHECKING:
+	from t_modules.t_main import Tauon
+
+def get_ip() -> str:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.settimeout(0)
 	try:
 		# doesn't even have to be reachable
-		s.connect(('10.255.255.255', 1))
+		s.connect(("10.255.255.255", 1))
 		IP = s.getsockname()[0]
 	except Exception:
-		IP = '127.0.0.1'
+		logging.exception("Failed to get socket name.")
+		IP = "127.0.0.1"
 	finally:
 		s.close()
 	return IP
 
 
 class Chrome:
-	def __init__(self, tauon):
+	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.services = []
 		self.active = False
@@ -27,8 +36,8 @@ class Chrome:
 		self.target_id = None
 		self.save_vol = 100
 
-	def rescan(self):
-		print("Scanning for chromecasts...")
+	def rescan(self) -> None:
+		logging.info("Scanning for chromecasts...")
 
 		if True: #not self.services:
 			try:
@@ -43,15 +52,15 @@ class Chrome:
 					self.services.append([str(item.uuid), str(item.friendly_name)])
 					menu.add_to_sub(1, MenuItem(self.tauon.strings.cast_to % str(item.friendly_name), self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)]))
 				menu.add_to_sub(1, MenuItem(self.tauon.strings.stop_cast, self.end, show_test=lambda x: self.active))
-			except:
+			except Exception:
+				logging.exception("Failed to get chromecasts")
 				raise
-				print("Failed to get chromecasts")
 
 
-	def three(self, _, item):
+	def three(self, _, item: tuple) -> None:
 		shooter(self.four, [item])
 
-	def four(self, item):
+	def four(self, item: dict) -> None:
 		if self.active:
 			self.end()
 		self.tauon.start_remote()
@@ -74,21 +83,21 @@ class Chrome:
 		self.tauon.tm.ready_playback()
 
 
-	def update(self):
+	def update(self) -> None:
 		self.cast.media_controller.update_status()
 		return self.cast.media_controller.status.current_time, \
 			self.cast.media_controller.status.media_custom_data.get("id"), \
 			self.cast.media_controller.status.player_state, \
 			self.cast.media_controller.status.duration
 
-	def start(self, track_id, enqueue=False, t=0, url=None):
+	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> None:
 		self.cast.wait()
 		tr = self.tauon.pctl.g(track_id)
 		n = 0
 		try:
 			n = int(tr.track_number)
-		except:
-			pass
+		except Exception:
+			logging.exception("Failed to get track number")
 		d = {
 			"metadataType": 3,
 			"albumName": tr.album,
@@ -101,7 +110,7 @@ class Chrome:
 		}
 		m = {
 			"duration": round(float(tr.length), 1),
-			"customData": {"id": str(tr.index)}
+			"customData": {"id": str(tr.index)},
 		}
 
 		if url is None:
@@ -110,24 +119,24 @@ class Chrome:
 			url = url.replace("localhost", self.ip)
 			url = url.replace("127.0.0.1", self.ip)
 
-		self.cast.media_controller.play_media(url, 'audio/mpeg', media_info=m, metadata=d, current_time=t, enqueue=enqueue)
+		self.cast.media_controller.play_media(url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue)
 
-	def stop(self):
+	def stop(self) -> None:
 		self.cast.media_controller.stop()
 
-	def play(self):
+	def play(self) -> None:
 		self.cast.media_controller.play()
 
-	def pause(self):
+	def pause(self) -> None:
 		self.cast.media_controller.pause()
 
-	def seek(self, t):
+	def seek(self, t: str) -> None:
 		self.cast.media_controller.seek(t)
 
-	def volume(self, decimal):
+	def volume(self, decimal: int) -> None:
 		self.cast.set_volume(decimal)
 
-	def end(self):
+	def end(self) -> None:
 		self.tauon.pctl.playerCommand = "endchrome"
 		self.tauon.pctl.playerCommandReady = True
 		if self.active:
