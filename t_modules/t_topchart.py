@@ -1,4 +1,4 @@
-# Tauon Music Box - Album chart image generator
+"""Tauon Music Box - Album chart image generator"""
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -16,28 +16,39 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
 
+import logging
+import os
 
 import gi
-gi.require_version('Pango', '1.0')
-gi.require_version('PangoCairo', '1.0')
+
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
+
+from typing import TYPE_CHECKING
+
 import cairo
-from gi.repository import Pango
-from gi.repository import PangoCairo
-import os
+from gi.repository import Pango, PangoCairo
 from PIL import Image
 
+if TYPE_CHECKING:
+	from t_modules.t_main import AlbumArt, Tauon, TrackClass
 
 class TopChart:
 
-	def __init__(self, tauon, album_art_gen):
+	def __init__(self, tauon: Tauon, album_art_gen: AlbumArt) -> None:
 
 		self.pctl = tauon.pctl
 		self.cache_dir = tauon.cache_directory
 		self.user_dir = tauon.user_directory
 		self.album_art_gen = album_art_gen
 
-	def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10", tile=False, cascade=False):
+	def generate(
+		self, tracks: list[TrackClass], bg: tuple[int, int, int] = (10,10,10), rows: int = 3, columns: int = 3,
+		show_lables: bool = True, font: str = "Monospace 10", tile: bool = False, cascade: tuple[tuple[int, int, int],
+		tuple[int, int, int]] | None = None,
+	) -> bool | str:
 
 		# Main control variables
 		border = 29
@@ -62,7 +73,7 @@ class TopChart:
 		if mode == 2:
 
 			r1, r2, r3 = cascade[0]
-			print(r1 * 2 + r2 * 2 + r3 * 2)
+			logging.info(r1 * 2 + r2 * 2 + r3 * 2)
 			sets = []
 			for q in range(100, 10000):
 
@@ -146,7 +157,7 @@ class TopChart:
 				for cl in range(r2):
 					i += 1
 					x = border + (spacing + size) * cl
-					print(x)
+					logging.info(x)
 					if i > len(tracks) - 1:
 						break
 					positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
@@ -237,7 +248,8 @@ class TopChart:
 			# Export the album art to file object
 			try:
 				art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True, zoom=True)
-			except:
+			except Exception:
+				logging.exception("Failed to save album art as file object")
 				continue
 
 			# Skip drawing this album if loading of artwork failed
@@ -279,8 +291,8 @@ class TopChart:
 					font = " ".join(font_comp) + " " + str(font_size)
 					layout.set_font_description(Pango.FontDescription(font))
 					layout.set_text(text, -1)
-			except:
-				print("error adjusting font size")
+			except Exception:
+				logging.exception("Failed to adjust font size")
 
 			# All good to render now
 			y_text_padding = 3
@@ -319,6 +331,6 @@ class TopChart:
 		# Convert to JPEG for convenience
 		output_path2 = os.path.join(self.user_dir, "chart.jpg")
 		im = Image.open(output_path)
-		im.save(output_path2, 'JPEG', quality=92)
+		im.save(output_path2, "JPEG", quality=92)
 
 		return output_path2
