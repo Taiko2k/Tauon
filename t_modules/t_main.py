@@ -63,7 +63,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from collections.abc import Callable
-from ctypes import c_char_p, c_double, c_int, c_void_p, pointer, Structure
+from ctypes import c_char_p, c_double, c_int, c_uint32, c_void_p, pointer, Structure
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
