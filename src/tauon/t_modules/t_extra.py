@@ -386,6 +386,13 @@ def is_ignorable_file(string: str) -> bool:
 date_pattern = re.compile(r'\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*')
 
 def get_year_from_string(s: str) -> str:
+	"""Gets year in form of YYYY from a string
+
+	Example usage:
+		example_string = "Event date: 2021-12-31."
+		print(get_year_from_string(example_string))
+		> "2021"
+	"""
 	# Search for the pattern in the string
 	match = date_pattern.search(s)
 
@@ -394,11 +401,6 @@ def get_year_from_string(s: str) -> str:
 		return match.group(2) if match.group(2) else match.group(3)
 
 	return ""
-
-
-# Example usage
-example_string = "Event date: 2021-12-31."
-print(get_year_from_string(example_string))  # Output: "2021"
 
 def is_music_related(string: str) -> bool:
 	for s in [
