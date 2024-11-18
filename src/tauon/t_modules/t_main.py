@@ -48382,12 +48382,6 @@ else:
         except Exception:
             logging.exception("uninit notification error")
 
-if macos:
-    try:
-        tap.stop()
-    except Exception:
-        logging.exception("Failed to stop tap")
-
 try:
     instance_lock.close()
 except Exception:
