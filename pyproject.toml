@@ -4,7 +4,8 @@
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
-	requires-python = ">=3.9"
+	# Change the version for the tools below too when bumping up
+	requires-python = ">=3.10"
 	classifiers = [
 		"Programming Language :: Python :: 3"
 	]
@@ -31,18 +32,77 @@
 		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
 		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
 
-# Should we care about these options or is it fine to omit them here?
-#    -shared -o libphazor.so -fPIC -Wall -O3 -g #-Wextra
-#    -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -DPIPE #-Wextra
+	# Should we care about these options or is it fine to omit them here?
+	#   -shared -o libphazor.so -fPIC -Wall -O3 -g #-Wextra
+	#   -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -DPIPE #-Wextra
 
 [tool.setuptools.dynamic]
 	dependencies = {file = "requirements.txt"}
 
+# https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
+[tool.pyright]
+	#defineConstant = { DEBUG = true }
+
+	pythonVersion = "3.10"
+
+	#	Pyright does not support this, needs to be defined via `__builtins__.pyi`, see https://github.com/microsoft/pyright/issues/9471
+	# Translations
+	#builtins = ["_"]
+
+	# Defaults: https://github.com/microsoft/pyright/blob/main/docs/configuration.md#diagnostic-settings-defaults
+	#enableExperimentalFeatures          = false
+	strictListInference                 = true
+	strictDictionaryInference           = true
+	strictSetInference                  = true
+	deprecateTypingAliases              = true
+	reportMissingTypeStubs              = "error"
+	reportConstantRedefinition          = "error"
+	reportDeprecated                    = "error"
+	reportDuplicateImport               = "error"
+	reportIncompleteStub                = "error"
+	reportInconsistentConstructor       = "error"
+	reportInvalidStubStatement          = "error"
+	reportMatchNotExhaustive            = "error"
+	reportMissingParameterType          = "error"
+	reportMissingTypeArgument           = "warning"
+	reportPrivateUsage                  = "error"
+	reportTypeCommentUsage              = "error"
+	reportUnknownArgumentType           = "warning"
+	reportUnknownLambdaType             = "error"
+	reportUnknownMemberType             = "warning"
+	reportUnknownParameterType          = "warning"
+	reportUnknownVariableType           = "warning"
+	reportUnnecessaryCast               = "error"
+	reportUnnecessaryComparison         = "error"
+	reportUnnecessaryContains           = "error"
+	reportUnnecessaryIsInstance         = "error"
+	reportUnusedClass                   = "error"
+	reportUnusedImport                  = "error"
+	reportUnusedFunction                = "error"
+	reportUnusedVariable                = "warning"
+	reportUntypedBaseClass              = "error"
+	reportUntypedClassDecorator         = "error"
+	reportUntypedFunctionDecorator      = "error"
+	reportUntypedNamedTuple             = "error"
+	reportCallInDefaultInitializer      = "warning"
+	reportImplicitOverride              = "warning"
+	reportImplicitStringConcatenation   = "warning"
+	reportImportCycles                  = "warning"
+	reportMissingSuperCall              = "warning"
+	reportPropertyTypeMismatch          = "warning"
+	reportShadowedImports               = "warning"
+	reportUninitializedInstanceVariable = "warning"
+	reportUnnecessaryTypeIgnoreComment  = "warning"
+	reportUnusedCallResult              = "warning"
+
+# https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
 	# Target non-EOL releases at minimum - https://devguide.python.org/versions/
-	target-version = "py39"
+	target-version = "py310"
 	# Soft 80 and hard break at 120
 	line-length = 120
+	# Translations
+	builtins = ["_"]
 
 [tool.ruff.lint.flake8-quotes]
 	inline-quotes = "double"
@@ -58,6 +118,14 @@ select = ['ALL']
 	ignore = [
 		'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
 		'D206',   # indent-with-spaces                        - ^
+		'D100',   # undocumented-public-module                - TODO(Martin): We currently don't even have typing fully implemented, let's maybe care about undocumented functions/classes later
+		'D101',   # undocumented-public-class                 - ^
+		'D102',   # public-method                             - ^
+		'D103',   # undocumented-public-function              - ^
+		'D104',   # undocumented-public-package               - ^
+		#'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
+		'D106',   # undocumented-public-nested-class          - ^
+		'D107',   # undocumented-public-init                  - ^
 		'D400',   # ends-in-period                            - We do not care if docstrings end with a period
 		'D415',   # ends-in-punctuation                       - ^
 		'D401',   # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable

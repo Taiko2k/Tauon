@@ -23,10 +23,12 @@ tar --strip-components=1 -xvf miniaudio.tar.gz -C ./src/phazor/miniaudio/
 python -m venv .env
 source .env/bin/activate
 pip install -r requirements.txt
+pip install -r requirements_optional.txt
+#pip install -r requirements_devel.txt
 pip install build
 python -m compile_translations
 python -m build --wheel
 #python -m installer --destdir=".env" dist/*.whl
 pip install --prefix ".env" dist/*.whl --force-reinstall
 
-./extra/tauonmb.sh "$@"
+tauonmb "$@"
