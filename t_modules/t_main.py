@@ -42132,10 +42132,9 @@ tauon.tm = tm
 tm.ready_playback()
 
 try:
-    tm.d['caster'] = [enc, [tauon], None]
+	tm.d['caster'] = [lambda: x, [tauon], None]
 except Exception:
-    logging.exception("Failed to cast, trying differently")
-    tm.d['caster'] = [lambda: x, [tauon], None]
+	logging.exception("Failed to cast")
 
 tm.d['worker'] = [worker1, (), None]
 tm.d['search'] = [worker2, (), None]
