@@ -504,8 +504,7 @@ if (install_mode and system == 'linux') or macos or msys:
 #	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
 #	 config_directory = user_directory
 #	 cache_directory = user_directory + "\\cache"
-#	 logging.info("User Directroy: ", end="")
-#	 logging.info(user_directory)
+#	 logging.info(f"User Directory: {user_directory}")
 #	 install_mode = True
 #	 if not os.path.isdir(user_directory):
 #		 os.makedirs(user_directory)
@@ -898,7 +897,7 @@ class DConsole:
 		self.messages = []
 		self.show = False
 
-	def print(self, message, level=0):
+	def print(self, message: str, level: int = 0):
 
 		if len(self.messages) > 50:
 			del self.messages[0]
@@ -5013,11 +5012,11 @@ def tag_scan(nt):
             emu = ctypes.c_void_p()
             track_info = ctypes.POINTER(GMETrackInfo)()
             err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
-            #print(err)
+            #logging.error(err)
             if not err:
                 n = nt.subtrack
                 err = gme.gme_track_info(emu, byref(track_info), n)
-                #print(err)
+                #logging.error(err)
                 if not err:
                     nt.length = track_info.contents.play_length / 1000
                     nt.title = track_info.contents.song.decode("utf-8")
@@ -5127,11 +5126,11 @@ def tag_scan(nt):
 
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
-            # print("get opus")
+            #logging.info("get opus")
             audio = Opus(nt.fullpath)
             audio.read()
 
-            # print(audio.title)
+            #logging.info(audio.title)
 
             nt.length = audio.length
             nt.title = audio.title
@@ -5167,7 +5166,7 @@ def tag_scan(nt):
             # # def getter(audio, key, type):
             # #     if
             # t = audio.tags
-            # print(t.keys())
+            # logging.info(t.keys())
             # nt.size = os.path.getsize(nt.fullpath)
             # nt.title = str(t.get("title", ""))
             # nt.album = str(t.get("album", ""))
@@ -5181,7 +5180,7 @@ def tag_scan(nt):
             audio = Ape(nt.fullpath)
             audio.read()
 
-            # print(audio.title)
+            # logging.info(audio.title)
 
             # nt.length = audio.length
             nt.title = audio.title
@@ -5205,7 +5204,7 @@ def tag_scan(nt):
             audio = Ape(nt.fullpath)
             audio.read()
 
-            # print(audio.title)
+            # logging.info(audio.title)
 
             nt.length = audio.length
             nt.title = audio.title
@@ -5689,7 +5688,7 @@ class PlayerCtl:
                     image_path = ""
 
                 image_path = image_path.replace("/", "\\")
-                #print(image_path)
+                #logging.info(image_path)
 
                 sm.update(state, tr.title.encode("utf-16"), len(tr.title), tr.artist.encode("utf-16"), len(tr.artist),
                           image_path.encode("utf-16"), len(image_path))
@@ -5852,13 +5851,13 @@ class PlayerCtl:
     def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None,
                      no_switch=False, folder_list=True):
 
-        # print("show------")
-        # print(select)
-        # print(playing)
-        # print(quiet)
-        # print(this_only)
-        # print(highlight)
-        # print("--------")
+        # logging.info("show------")
+        # logging.info(select)
+        # logging.info(playing)
+        # logging.info(quiet)
+        # logging.info(this_only)
+        # logging.info(highlight)
+        # logging.info("--------")
         console.print("DEBUG: Position set by show playing")
 
         global shift_selection
@@ -10341,6 +10340,7 @@ elif not msys and system == "linux":
         try:
             xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
         except Exception:
+            logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
             xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
         xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
@@ -10366,7 +10366,7 @@ elif not msys and system == "linux":
             SDL_SetCursor(cursor_standard)
 
     except Exception:
-        print("Error loading xcursor")
+        logging.exception("Error loading xcursor")
 
 
 if not maximized and gui.maximized:
@@ -43248,9 +43248,9 @@ def window_is_focused():  # thread safe?
 
 def save_state():
     if should_save_state:
-        print("Writing database to disk... ", end="")
+        logging.info("Writing database to disk... ")
     else:
-        print("Dev mode, not saving state... ")
+        logging.warning("Dev mode, not saving state... ")
         return
 
     # view_prefs['star-lines'] = star_lines
@@ -43490,7 +43490,7 @@ def save_state():
                 continue
             export_playlist_box.run_export(item, key, warnings=False)
 
-        logging.info("done")
+        logging.info("Done writing database")
 
     except PermissionError:
         logging.exception("Permission error encountered while writing database")
@@ -48293,7 +48293,7 @@ while pctl.running:
         input_text = ""
         gui.update -= 1
 
-        # print("FRAME " + str(core_timer.get()))
+        # logging.info("FRAME " + str(core_timer.get()))
         if gui.update > 1:
             gui.update = 1
         gui.present = True
@@ -48306,7 +48306,7 @@ while pctl.running:
 
     # if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
     #
-    #     # print(gui.level_peak)
+    #     # logging.info(gui.level_peak)
     #     gui.time_passed = gui.level_time.hit()
     #     if gui.time_passed > 1:
     #         gui.time_passed = 0
@@ -48333,7 +48333,7 @@ while pctl.running:
             # Scrolling spectrogram
 
             # if not vis_update:
-            #     print("No UPDATE " + str(random.randint(1,50)))
+            #     logging.info("No UPDATE " + str(random.randint(1,50)))
             if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
                 # gui.spec2_timer.force_set(gui.spec2_timer.get() - 0.04)
                 gui.spec2_timer.set()
@@ -48361,7 +48361,7 @@ while pctl.running:
 
             #
             # else:
-            #     print("animation stall" + str(random.randint(1, 10)))
+            #     logging.info("animation stall" + str(random.randint(1, 10)))
 
             if prefs.spec2_scroll:
 
@@ -48738,7 +48738,7 @@ pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
 if prefs.reload_play_state and pctl.playing_state in (1, 2):
-    print("Saving play state...")
+    logging.info("Saving play state...")
     prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
 if should_save_state:
@@ -48796,7 +48796,7 @@ except Exception:
 IMG_Quit()
 SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
 SDL_Quit()
-# print("SDL unloaded")
+#logging.info("SDL unloaded")
 
 exit_timer = Timer()
 exit_timer.set()
