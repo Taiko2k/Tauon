@@ -570,7 +570,7 @@ int wave_open(char *filename) {
         fseek(wave_file, i, SEEK_CUR);
     }
 
-                                
+
     //fread(b, 4, 1, wave_file);
     //printf("pa: fmt : %s\n", b);
 
@@ -627,7 +627,7 @@ int wave_open(char *filename) {
             return 1;
         }
         // Is audio data?
-      //printf("label %s\n", b);  
+      //printf("label %s\n", b);
       if (memcmp(b, "data", 4) == 0) {
             wave_start = ftell(wave_file);
             wave_size = i;
@@ -635,7 +635,7 @@ int wave_open(char *filename) {
         }
         // Skip to next block
         fseek(wave_file, i, SEEK_CUR);
-        
+
     }
 
     return 0;
@@ -899,7 +899,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
         pthread_mutex_unlock(&buffer_mutex);
         return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
     }
-                             
+
     if (frame->header.blocksize > (BUFF_SIZE - get_buff_fill())) {
         printf("pa: critical: BUFFER OVERFLOW!");
     }
@@ -1931,12 +1931,12 @@ int load_next() {
           reset_set = 1;
           reset_set_byte = high;
           load_target_seek = 0;
-      }                                          
+      }
       pthread_mutex_unlock(&buffer_mutex);
       decoder_allocated = 1;
-                 
+
       return 0;
-                 
+
     }
 
 
@@ -2234,9 +2234,9 @@ void pump_decode() {
         if (result == 1) {
             decoder_eos();
         }
-                         
+
     } else if (codec == MPT) {
-      int count;  
+      int count;
       count = openmpt_module_read_interleaved_stereo(mod, 48000, 4096, temp16l);
       if (count == 0){
         decoder_eos();
@@ -2673,7 +2673,7 @@ void *main_loop(void *thread_id) {
 
     #endif
     command = NONE;
-    printf("Exit Phazor\n");
+    printf("Exit PHAzOR\n");
     return thread_id;
 }
 
@@ -2694,7 +2694,7 @@ int init() {
 int get_status() {
     return mode;
 }
-                                   
+
 int get_result() {
   return result_status;
 }
@@ -2728,7 +2728,7 @@ int next(char *filename, int start_ms, float rg) {
         usleep(1000);
     }
 
-    result_status = WAITING;                                         
+    result_status = WAITING;
 
     if (mode == STOPPED) {
         start(filename, start_ms, 0, rg);
@@ -2779,7 +2779,7 @@ void wait_for_command() {
         usleep(1000);
     }
 }
-                                   
+
 int seek(int ms_absolute, int flag) {
 
     while (command != NONE) {
@@ -2811,9 +2811,9 @@ int get_position_ms() {
         return (int) ((position_count / (float) current_sample_rate) * 1000.0);
     } else return 0;
 }
-                                   
+
 void set_position_ms(int ms) {
-    position_count = ((float)(ms / 1000.0)) * current_sample_rate; 
+    position_count = ((float)(ms / 1000.0)) * current_sample_rate;
 }
 
 int get_length_ms() {
@@ -2973,5 +2973,3 @@ int phazor_shutdown() {
     command = EXIT;
     return 0;
 }
-
-                                      
