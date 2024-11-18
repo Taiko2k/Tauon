@@ -63,7 +63,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from collections.abc import Callable
-from ctypes import c_char_p, pointer, Structure
+from ctypes import c_char_p, c_double, c_int, c_void_p, pointer, Structure
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -191,11 +191,14 @@ from sdl2 import (
 	SDL_QueryTexture,
 	SDL_Quit,
 	SDL_QuitSubSystem,
+	SDL_RenderClear,
 	SDL_RenderFillRect,
+	SDL_RenderPresent,
 	SDL_RestoreWindow,
 	SDL_SetClipboardText,
 	SDL_SetCursor,
 	SDL_SetRenderDrawBlendMode,
+	SDL_SetRenderDrawColor,
 	SDL_SetRenderTarget,
 	SDL_SetTextureAlphaMod,
 	SDL_SetTextureBlendMode,
@@ -221,7 +224,7 @@ from sdl2 import (
 	rw_from_object,
 )
 
-from sdl2.sdlimage import IMG_Load_RW, IMG_Quit
+from sdl2.sdlimage import IMG_Load, IMG_Load_RW, IMG_Quit
 from send2trash import send2trash
 from unidecode import unidecode
 
