@@ -252,45 +252,56 @@ if TYPE_CHECKING:
 try:
 	from jxlpy import JXLImagePlugin
 	logging.info("Found jxlpy for JPEG XL support")
+except ModuleNotFoundError:
+	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
 except Exception:
-	logging.exception("Unable to import jxlpy")
+	logging.exception("Unkown error trying to import jxlpy, JPEG XL support will be disabled.")
 
 try:
 	import setproctitle
-	setproctitle.setproctitle("tauonmb")
+except ModuleNotFoundError:
+	logging.warning("Unable to import setproctitle, won't be setting process title.")
 except Exception:
-	logging.exception("Could not set process title.")
+	logging.exception("Unkown error trying to import setproctitle, JPEG XL support will be disabled.")
+else:
+	setproctitle.setproctitle("tauonmb")
 
 # try:
 #	 import rpc
 #	 discord_allow = True
 # except Exception:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+discord_allow = False
 try:
 	from pypresence import Presence
-	import asyncio
-
-	discord_allow = True
+except ModuleNotFoundError:
+	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
 except Exception:
-	logging.exception("Unable to import python-pypresence, Discord Rich Presence will be disabled.")
-	discord_allow = False
-
+	logging.exception("Unkown error trying to import pypresence, Discord Rich Presence will be disabled.")
+else:
+	import asyncio
+	discord_allow = True
 use_cc = False
 try:
 	import opencc
+except ModuleNotFoundError:
+	logging.warning("Unable to import opencc, TODO(Martin): <what is lost?>.")
+except Exception:
+	logging.exception("Unkown error trying to import opencc, TODO(Martin): <what is lost?>.")
+else:
 	s2t = opencc.OpenCC("s2t")
 	t2s = opencc.OpenCC("t2s")
 	use_cc = True
-except Exception:
-	logging.exception("OpenCC not found.")
 
 use_natsort = False
 try:
 	import natsort
-
-	use_natsort = True
+except ModuleNotFoundError:
+	logging.warning("Unable to import natsort, TODO(Martin): <what is lost?>.")
 except Exception:
-	logging.exception("Python module natsort not found")
+	logging.exception("Unknown error trying to import natsort, TODO(Martin): <what is lost?>.")
+else:
+	use_natsort = True
 
 # Detect platform
 windows_native = False
