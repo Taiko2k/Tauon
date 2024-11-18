@@ -44301,7 +44301,7 @@ while pctl.running:
                     new[0] = fr_s[0] + to_s[0]  # playtime
                     new[1] = fr_s[1]  # flags
                     if to_s[1]:
-                        new[1] = so_s[1]  # keep target flags
+                        new[1] = to_s[1]  # keep target flags
                     new[2] = fr_s[2]  # raiting
                     if to_s[2] > 0 and fr_s[2] == 0:
                         new[2] = to_s[2]  # keep target rating
