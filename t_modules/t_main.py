@@ -273,15 +273,6 @@ except Exception:
 	logging.exception("Unable to import python-pypresence, Discord Rich Presence will be disabled.")
 	discord_allow = False
 
-try:
-	import pylast
-	last_fm_enable = True
-	if pyinstaller_mode:
-		pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
-except Exception:
-	last_fm_enable = False
-	print("PyLast moduel not found, last fm will be disabled.")
-
 use_cc = False
 try:
 	import opencc
@@ -357,6 +348,15 @@ instance_lock = h.lock
 logging.info(f"Window size: {window_size}")
 
 should_save_state = True
+
+try:
+	import pylast
+	last_fm_enable = True
+	if pyinstaller_mode:
+		pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
+except Exception:
+	logging.exception("PyLast module not found, last fm will be disabled.")
+	last_fm_enable = False
 
 if not windows_native:
 	import gi
