@@ -55,7 +55,7 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load_RW
 
-from t_modules.t_extra import Timer, coll_rect
+from t_modules.t_extra import Timer, alpha_blend, coll_rect
 
 if TYPE_CHECKING:
 	from sdl2 import SDL_Renderer
@@ -321,17 +321,6 @@ if system == "windows":
 		def __del__(self) -> None:
 
 			win32gui.DeleteObject(self.font.GetSafeHandle())
-
-
-
-# Performs alpha blending of one colour (RGB-A) onto another (RGB)
-def alpha_blend(colour: list[int], base: list[int]) -> list[int]:
-	alpha = colour[3] / 255
-	return [
-		int(alpha * colour[0] + (1 - alpha) * base[0]),
-		int(alpha * colour[1] + (1 - alpha) * base[1]),
-		int(alpha * colour[2] + (1 - alpha) * base[2]), 255]
-
 
 perf = Timer()
 

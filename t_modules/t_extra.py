@@ -207,9 +207,8 @@ def colour_value(c1: list[int]) -> int:
 	"""Give the sum of first 3 elements in a list"""
 	return c1[0] + c1[1] + c1[2]
 
-
 def alpha_blend(colour: tuple[int, int, int, int], base: tuple[int, int, int, int]) -> list[int]:
-	"""Perform alpha blending of one colour (rgba) onto another (rgb)"""
+	"""Performs alpha blending of one colour (RGB-A) onto another (RGB)"""
 	alpha = colour[3] / 255
 	return [
 		int(alpha * colour[0] + (1 - alpha) * base[0]),
