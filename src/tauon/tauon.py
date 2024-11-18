@@ -358,6 +358,9 @@ logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
 img_path = Path(asset_directory) / "loading.png"
+if not img_path.exists():
+	raise FileNotFoundError(f"{str(img_path)} not found, exiting!")
+
 if scale != 1:
 	img_path2 = Path(user_directory) / "scaled-icons" / "loading.png"
 	if Path(img_path2).is_file():
