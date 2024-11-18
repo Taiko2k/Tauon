@@ -234,7 +234,7 @@ from t_modules.t_extra import *
 from t_modules.t_db_migrate import database_migrate
 from t_modules.t_draw import TDraw, QuickThumbnail
 from t_modules.t_jellyfin import Jellyfin
-from t_modules.t_launch import *
+from t_modules.t_launch import Launch
 from t_modules.t_lyrics import *
 from t_modules.t_phazor import phazor_exists, player4
 from t_modules.t_search import *
