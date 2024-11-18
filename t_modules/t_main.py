@@ -249,27 +249,28 @@ if TYPE_CHECKING:
 
 try:
 	from jxlpy import JXLImagePlugin
-	print("Found jxlpy for JPEG XL support")
+	logging.info("Found jxlpy for JPEG XL support")
 except Exception:
-	pass
+	logging.exception("Unable to import jxlpy")
 
 try:
 	import setproctitle
 	setproctitle.setproctitle("tauonmb")
 except Exception:
-	print("Could not set process title.")
+	logging.exception("Could not set process title.")
 
 # try:
 #	 import rpc
 #	 discord_allow = True
 # except Exception:
-#	 pass
+#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
 	from pypresence import Presence
 	import asyncio
 
 	discord_allow = True
 except Exception:
+	logging.exception("Unable to import python-pypresence, Discord Rich Presence will be disabled.")
 	discord_allow = False
 
 try:
@@ -288,7 +289,7 @@ try:
 	t2s = opencc.OpenCC("t2s")
 	use_cc = True
 except Exception:
-	print("OpenCC not found.")
+	logging.exception("OpenCC not found.")
 
 use_natsort = False
 try:
@@ -296,7 +297,7 @@ try:
 
 	use_natsort = True
 except Exception:
-	print("Warning: Python module natsort not found")
+	logging.exception("Python module natsort not found")
 
 # Detect platform
 windows_native = False
@@ -353,7 +354,7 @@ t_id = h.t_id
 t_agent = h.agent
 dev_mode = h.dev_mode
 instance_lock = h.lock
-print(f"Window size: {window_size}")
+logging.info(f"Window size: {window_size}")
 
 should_save_state = True
 
@@ -400,7 +401,7 @@ try:
 	if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
 		left_window_control = True
 	gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-	#print(f"GTK theme is: {gtk_theme}")
+	#logging.info(f"GTK theme is: {gtk_theme}")
 	for k, v in mac_styles.items():
 		if k in gtk_theme:
 			detect_macstyle = True
@@ -410,7 +411,7 @@ try:
 				mac_minimize = v[2]
 
 except Exception:
-	print("Error accessing GTK settings")
+	logging.exception("Error accessing GTK settings")
 
 # if system == "windows" or msys:
 #	 os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
@@ -449,7 +450,7 @@ if install_directory.startswith("/opt/") \
 		snap_mode = True
 	if install_directory[:5] == "/app/":
 		# Flatpak mode
-		print("Detected running as Flatpak")
+		logging.info("Detected running as Flatpak")
 
 		# [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
 		if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
@@ -462,10 +463,10 @@ if install_directory.startswith("/opt/") \
 				# if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
 				#	 shutil.rmtree(flatpak_fcfg)
 				if os.path.islink(flatpak_fcfg):
-					print("-- Symlink to fonconfig exists, removing")
+					logging.info("-- Symlink to fonconfig exists, removing")
 					os.unlink(flatpak_fcfg)
 				# else:
-				#	 print("-- Symlinking user fonconfig")
+				#	 logging.info("-- Symlinking user fonconfig")
 				#	 #os.symlink(host_fcfg, flatpak_fcfg)
 
 		flatpak_mode = True
@@ -484,13 +485,13 @@ if (install_mode and system == 'linux') or macos or msys:
 		os.makedirs(config_directory)
 
 	if snap_mode:
-		print("Installed as Snap")
+		logging.info("Installed as Snap")
 	elif flatpak_mode:
-		print("Installed as Flatpak")
+		logging.info("Installed as Flatpak")
 	else:
-		print("Running from installed location")
+		logging.info("Running from installed location")
 
-	print("User files location: " + user_directory)
+	logging.info("User files location: " + user_directory)
 
 	if not os.path.isdir(os.path.join(user_directory, "encoder")):
 		os.makedirs(os.path.join(user_directory, "encoder"))
@@ -503,15 +504,15 @@ if (install_mode and system == 'linux') or macos or msys:
 #	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
 #	 config_directory = user_directory
 #	 cache_directory = user_directory + "\\cache"
-#	 print("User Directroy: ", end="")
-#	 print(user_directory)
+#	 logging.info("User Directroy: ", end="")
+#	 logging.info(user_directory)
 #	 install_mode = True
 #	 if not os.path.isdir(user_directory):
 #		 os.makedirs(user_directory)
 
 
 else:
-	print("Running in portable mode")
+	logging.info("Running in portable mode")
 
 	user_directory = os.path.join(install_directory, "user-data")
 	config_directory = user_directory
@@ -521,8 +522,8 @@ else:
 
 if not os.path.isfile(os.path.join(user_directory, "state.p")):
 	if os.path.isdir(cache_directory):
-		print("Clearing old cache directory")
-		print(cache_directory)
+		logging.info("Clearing old cache directory")
+		logging.info(cache_directory)
 		shutil.rmtree(cache_directory)
 
 n_cache_dir = os.path.join(cache_directory, "network")
@@ -562,21 +563,21 @@ if system == 'linux':
 				if line.startswith("XDG_MUSIC_DIR="):
 					music_directory = os.path.expanduser(
 						os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-					print(f"Found XDG-Music: {music_directory}")
+					logging.info(f"Found XDG-Music: {music_directory}")
 				if line.startswith("XDG_DOWNLOAD_DIR="):
 					target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
 					if os.path.isdir(target):
 						download_directory = target
-					print(f"Found XDG-Downloads: {download_directory}")
+					logging.info(f"Found XDG-Downloads: {download_directory}")
 
 
 if os.getenv('XDG_MUSIC_DIR'):
 	music_directory = os.getenv('XDG_MUSIC_DIR')
-	print("Override music to: " + music_directory)
+	logging.info("Override music to: " + music_directory)
 
 if os.getenv('XDG_DOWNLOAD_DIR'):
 	download_directory = os.getenv('XDG_DOWNLOAD_DIR')
-	print("Override downloads to: " + download_directory)
+	logging.info("Override downloads to: " + download_directory)
 
 if music_directory:
 	music_directory = os.path.expandvars(music_directory)
@@ -586,7 +587,7 @@ if download_directory:
 if not os.path.isdir(music_directory):
 	music_directory = None
 
-print('Install directory: ' + install_directory)
+logging.info('Install directory: ' + install_directory)
 
 old_backend = 2
 
@@ -601,6 +602,7 @@ def whicher(target) -> bool | str:
 			return "bin/" + target in r
 		return shutil.which(target)
 	except Exception:
+		logging.exception("Failed to run flatpak-spawn")
 		return False
 
 
@@ -779,11 +781,11 @@ if maximized:
 # SDL_RenderPresent(renderer)
 
 # if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
-#	 print("Config file is missing... copying template from program files")
+#	 logging.info("Config file is missing... copying template from program files")
 #	 shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
 
 if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "input.txt")):
-	print("Input config file is missing... copying template from program files")
+	logging.info("Input config file is missing... copying template from program files")
 	shutil.copy(os.path.join(install_directory, "input.txt"), config_directory)
 
 last_fm_enable = False
@@ -800,10 +802,11 @@ platform_system = platform.system()
 try:
 	win_ver = int(win_ver)
 except Exception:
+	logging.exception("Failed getting Windows version from platform.release()")
 	win_ver = 0
 
 
-# print(arch)
+# logging.info(arch)
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
 
@@ -814,7 +817,7 @@ def _(message):
 try:
 	py_locale.setlocale(py_locale.LC_ALL, '')
 except Exception:
-	print("SET LOCALE ERROR")
+	logging.exception("SET LOCALE ERROR")
 
 # ------------------------------------------------
 
@@ -824,6 +827,7 @@ elif not msys and not macos:
 	try:
 		gi.require_version("Notify", "0.7")
 	except Exception:
+		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
 		gi.require_version("Notify", "0.8")
 	from gi.repository import Notify
 
@@ -909,7 +913,7 @@ class DConsole:
 				level = -1
 			self.messages.append((line, level, dtime, Timer()))
 
-		print(message)
+		logging.info(message)
 
 
 console = DConsole()
@@ -1599,7 +1603,7 @@ prefs = Prefs()
 
 
 def open_uri(uri:str):
-	print("OPEN URI")
+	logging.info("OPEN URI")
 	load_order = LoadClass()
 
 	for w in range(len(pctl.multi_playlist)):
@@ -2150,7 +2154,7 @@ class StarStore:
 			shooter(subsonic.set_rating, (tr, value))
 
 		if prefs.write_ratings and write:
-			print("Writing rating..")
+			logging.info("Writing rating..")
 			assert value <= 10
 			assert value >= 0
 
@@ -2916,26 +2920,26 @@ try:
 		s2 = os.path.getsize(sp2)
 	to_load = sp1
 	if s2 > s1:
-		print("Loading backup star.p")
+		logging.info("Loading backup star.p")
 		to_load = sp2
 
 	star_store.db = pickle.load(open(to_load, "rb"))
 
 except Exception:
-	print('No existing star.p file')
+	logging.exception('No existing star.p file')
 
 try:
 	album_star_store.db = pickle.load(open(user_directory + "/album-star.p", "rb"))
 
 except Exception:
-	print('No existing album-star.p file')
+	logging.exception('No existing album-star.p file')
 
 try:
 	if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
 		with open(user_directory + "/lyrics_substitutions.json", 'r') as f:
 			prefs.lyrics_subs = json.load(f)
 except Exception:
-	print("Error loading lyrics_substitutions.json")
+	logging.exception("Error loading lyrics_substitutions.json")
 
 perf_timer.set()
 
@@ -3011,14 +3015,14 @@ for t in range(2):
 
 		# def tt():
 		#	 while True:
-		#		 print(state_file.tell())
+		#		 logging.info(state_file.tell())
 		#		 time.sleep(0.01)
 		# shooter(tt)
 
 		save = pickle.load(state_file)
 
 		if t == 1:
-			print("Using backup state")
+			logging.info("Using backup state")
 
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
@@ -3378,13 +3382,15 @@ for t in range(2):
 		break
 
 	except IndexError:
+		logging.exception("Index error")
 		break
 	except Exception:
+		logging.exception("Failed to load save file")
 		if os.path.isfile(user_directory + "/state.p"):
-			print('Error loading save file')
+			logging.error('Error loading save file')
 
 core_timer.set()
-print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
+logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
 perf_timer.set()
 keys = set(master_library.keys())
@@ -3392,7 +3398,7 @@ for pl in multi_playlist:
 	keys -= set(pl[2])
 if len(keys) > 5000:
 	gui.suggest_clean_db = True
-# print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
+# logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
 pump = False
 shoot_pump.join()
@@ -3432,7 +3438,7 @@ def get_theme_name(number):
 		return 'Mindaro'
 	number -= 1
 	themes = get_themes()
-	print((number, themes))
+	logging.info((number, themes))
 	if len(themes) > number:
 		return themes[number][1]
 	return ""
@@ -4086,7 +4092,7 @@ def save_prefs():
 	if os.path.isdir(config_directory):
 		cf.dump(os.path.join(config_directory, "tauon.conf"))
 	else:
-		print("ERROR: Missing config directory")
+		logging.error("Missing config directory")
 
 
 def load_prefs():
@@ -4243,7 +4249,7 @@ def load_prefs():
 	prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
 	if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
 		prefs.custom_bg_opacity = 40
-		print("Warning: Invalid value for mascot-opacity")
+		logging.warning("Invalid value for mascot-opacity")
 
 	prefs.sync_lyrics_time_offset = cf.sync_add(
 		"int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset,
@@ -4381,7 +4387,7 @@ def load_prefs():
 		if os.path.isdir(prefs.download_dir1):
 			download_directories.append(prefs.download_dir1)
 		else:
-			print("Warning: Invalid download directory in config")
+			logging.warning("Invalid download directory in config")
 
 	cf.br()
 	cf.add_text("[app]")
@@ -4433,7 +4439,7 @@ def load_prefs():
 	if not temp:
 		prefs.discogs_pat = ""
 	elif len(temp) != 40:
-		print("Warning: Invalid discogs token in config")
+		logging.warning("Invalid discogs token in config")
 	else:
 		prefs.discogs_pat = temp
 
@@ -4530,7 +4536,7 @@ if 0 < db_version <= 34:
 if 0 < db_version <= 66:
 	prefs.device_buffer = 80
 if 0 < db_version <= 53:
-	print("Resetting fonts to defaults")
+	logging.info("Resetting fonts to defaults")
 	prefs.linux_font = "Noto Sans"
 	prefs.linux_font_semibold = "Noto Sans Medium"
 	prefs.linux_font_bold = "Noto Sans Bold"
@@ -4558,9 +4564,9 @@ if lang:
 		translation.install()
 		_ = translation.gettext
 
-		print("Translation file loaded")
+		logging.info("Translation file loaded")
 	else:
-		print("No translation file available")
+		logging.info("No translation file available")
 
 else:
 	# Auto detect lang
@@ -4571,9 +4577,9 @@ else:
 		translation.install()
 		_ = translation.gettext
 
-		print("Translation file loaded")
+		logging.info("Translation file loaded")
 	# else:
-	#	 print("No translation file available")
+	#	 logging.info("No translation file available")
 
 # ----
 
@@ -4587,7 +4593,7 @@ smtc = False
 
 if msys and win_ver >= 10:
 
-	#print(sss.info.win.window)
+	#logging.info(sss.info.win.window)
 	try:
 		sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
 
@@ -4609,7 +4615,7 @@ if msys and win_ver >= 10:
 		close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
 		smtc = sm.init(close_callback) == 0
 	except Exception:
-		print("Failed to load TauonSMTC.dll")
+		logging.exception("Failed to load TauonSMTC.dll")
 
 def auto_scale():
 
@@ -4619,12 +4625,12 @@ def auto_scale():
 		if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
 			prefs.scale_want = window_size[0] / logical_size[0]
 			if old != prefs.scale_want:
-				print("Applying scale based on buffer size")
+				logging.info("Applying scale based on buffer size")
 		elif sss.subsystem == SDL_SYSWM_X11:
 			if xdpi > 40:
 				prefs.scale_want = xdpi / 96
 				if old != prefs.scale_want:
-					print("Applying scale based on xft setting")
+					logging.info("Applying scale based on xft setting")
 
 	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
 
@@ -4638,13 +4644,13 @@ def auto_scale():
 		prefs.scale_want = 2.0
 
 	if old != prefs.scale_want:
-		print(f"Using UI scale: {prefs.scale_want}")
+		logging.info(f"Using UI scale: {prefs.scale_want}")
 
 	if prefs.scale_want < 0.5:
 		prefs.scale_want = 1.0
 
 	if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
-		print("Window overscale!")
+		logging.info("Window overscale!")
 		show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
 		prefs.scale_want = 1.0
 
@@ -4657,7 +4663,7 @@ def scale_assets(scale_want, force=False):
 		scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
 		if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
 				os.listdir(scaled_asset_directory)):
-			print("Force rerender icons")
+			logging.info("Force rerender icons")
 			force = True
 	else:
 		scaled_asset_directory = asset_directory
@@ -4670,10 +4676,10 @@ def scale_assets(scale_want, force=False):
 			from t_modules.t_svgout import render_icons
 
 			if scaled_asset_directory != asset_directory:
-				print("Rendering icons...")
+				logging.info("Rendering icons...")
 				render_icons(svg_directory, scaled_asset_directory, scale_want)
 
-		print("Done rendering icons")
+		logging.info("Done rendering icons")
 
 		diff_ratio = scale_want / prefs.ui_scale
 		prefs.ui_scale = scale_want
@@ -4713,7 +4719,7 @@ try:
 	# thick_lines = view_prefs['thick-lines']
 	prefs.append_date = view_prefs['append-date']
 except Exception:
-	print("warning: error loading settings")
+	logging.exception("Failed to load settings!")
 
 if prefs.prefer_side is False:
 	gui.rsp = False
@@ -4753,7 +4759,7 @@ try:
 	mpt.openmpt_module_get_metadata.restype = c_char_p
 	mpt.openmpt_module_get_duration_seconds.restype = c_double
 except Exception:
-	print("Failed to load libopenmpt!")
+	logging.exception("Failed to load libopenmpt!")
 
 
 
@@ -4812,7 +4818,7 @@ try:
 	gme.gme_open_file.restype = ctypes.c_char_p
 
 except Exception:
-	print("Cannont find libgme")
+	logging.exception("Cannont find libgme")
 
 def use_id3(tags, nt):
 	def natural_get(tag, track, frame, attr):
@@ -4934,8 +4940,8 @@ def use_id3(tags, nt):
 				if desc == "replaygain_album_peak":
 					nt.misc['replaygain_album_peak'] = float(item.text[0])
 			except Exception:
-				print("Tag Scan: Read Replay Gain MP3 error")
-				print(nt.fullpath)
+				logging.exception("Tag Scan: Read Replay Gain MP3 error")
+				logging.exception(nt.fullpath)
 
 			if item.desc == "FMPS_RATING":
 				nt.misc['FMPS_Rating'] = float(item.text[0])
@@ -4951,37 +4957,37 @@ def scan_ffprobe(nt):
                                  "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.length = float(result.stdout.decode())
     except Exception:
-        print("FFPROBE couldn't supply a duration")
+        logging.exception("FFPROBE couldn't supply a duration")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
                                  "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.title = str(result.stdout.decode())
     except Exception:
-        print("FFPROBE couldn't supply a title")
+        logging.exception("FFPROBE couldn't supply a title")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
                                  "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.artist = str(result.stdout.decode())
     except Exception:
-        print("FFPROBE couldn't supply a artist")
+        logging.exception("FFPROBE couldn't supply a artist")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
                                  "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.album = str(result.stdout.decode())
     except Exception:
-        print("FFPROBE couldn't supply a album")
+        logging.exception("FFPROBE couldn't supply a album")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
                                  "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.date = str(result.stdout.decode())
     except Exception:
-        print("FFPROBE couldn't supply a date")
+        logging.exception("FFPROBE couldn't supply a date")
     try:
         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
                                  "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
         nt.track_number = str(result.stdout.decode())
     except Exception:
-        print("FFPROBE couldn't supply a track")
+        logging.exception("FFPROBE couldn't supply a track")
 
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
@@ -5042,6 +5048,7 @@ def tag_scan(nt):
                                     try:
                                         st = int(s[1])
                                     except Exception:
+                                        logging.exception("Failed to assign st to int")
                                         continue
                                     if st == n:
                                         nt.title = s[2].split(' - ')[0].replace("\\", "")
@@ -5108,6 +5115,7 @@ def tag_scan(nt):
                 nt.track_number = audio.track_number
 
             except Exception:
+                logging.exception("Failed saving WAV file as a Track, will try again differently")
                 audio = mutagen.File(nt.fullpath)
                 nt.samplerate = audio.info.sample_rate
                 nt.bitrate = audio.info.bitrate // 1000
@@ -5231,7 +5239,7 @@ def tag_scan(nt):
                 try:
                     audio = mutagen.File(nt.fullpath)
                 except Exception:
-                    print("Mutagen scan failed, falling back to FFPROBE")
+                    logging.exception("Mutagen scan failed, falling back to FFPROBE")
                     scan_ffprobe(nt)
                     return nt
 
@@ -5249,7 +5257,7 @@ def tag_scan(nt):
                         result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
                         nt.length = float(result.stdout.decode())
                     except Exception:
-                        print("FFPROBE couldn't supply a duration")
+                        logging.exception("FFPROBE couldn't supply a duration")
 
                 if type(audio.tags) == mutagen.mp4.MP4Tags:
                     tags = audio.tags
@@ -5306,7 +5314,8 @@ def tag_scan(nt):
                     use_id3(audio.tags, nt)
 
 
-            except Exception as e:
+            except Exception:
+                logging.exception("Failed loading file through Mutagen")
                 raise
 
 
@@ -5322,15 +5331,14 @@ def tag_scan(nt):
                         nt.misc["artists"].append(a)
 
 
-    except Exception as err:
-        #raise
+    except Exception:
         try:
             if Exception is UnicodeDecodeError:
-                print("Unicode decode error on file:", nt.fullpath, "\n", err)
+                logging.exception("Unicode decode error on file:", nt.fullpath, "\n")
             else:
-                print("Error: Tag read failed on file:", nt.fullpath, "\n", err)
+                logging.exception("Error: Tag read failed on file:", nt.fullpath, "\n")
         except Exception:
-            print("Error printing error. Non utf8 not allowed:", nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace'), "\n", err)
+            logging.exception("Error printing error. Non utf8 not allowed:", nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace'), "\n")
         return nt
 
     return nt
@@ -5621,13 +5629,13 @@ class PlayerCtl:
                 self.update_tag_history()
                 if radiobox.loaded_url not in radiobox.websocket_source_urls:
                     pctl.radio_image_bin = None
-                print("NEXT RADIO TRACK")
+                logging.info("NEXT RADIO TRACK")
 
                 try:
                     get_radio_art()
                 except Exception:
                     # raise
-                    print("Get art error")
+                    logging.exception("Get art error")
 
                 pctl.notify_update(mpris=False)
                 if pctl.mpris:
@@ -5661,7 +5669,7 @@ class PlayerCtl:
         try:
             tauon.tray_lock.release()
         except Exception:
-            pass
+            logging.exception("Failed to release tray_lock")
 
         if mpris and smtc:
             tr = pctl.playing_object()
@@ -5675,8 +5683,7 @@ class PlayerCtl:
                 try:
                     image_path = tauon.thumb_tracks.path(tr)
                 except Exception:
-                    pass
-                    #raise
+                    logging.exception("Failed to set image_path from thumb_tracks.path")
 
                 if image_path is None:
                     image_path = ""
@@ -6218,6 +6225,7 @@ class PlayerCtl:
                 try:
                     p = self.playing_playlist().index(self.track_queue[self.queue_step])
                 except Exception:
+                    logging.exception("Failed to change playing_playlist")
                     p = random.randrange(len(self.playing_playlist()))
                 if p is not None:
                     self.playlist_playing_position = p
@@ -6231,7 +6239,7 @@ class PlayerCtl:
             self.queue_step -= 1
             self.play_target(jump=True)
         else:
-            print("BACK: NO CASE!")
+            logging.info("BACK: NO CASE!")
             self.show_current()
 
         if self.active_playlist_viewing == self.active_playlist_playing:
@@ -6261,7 +6269,7 @@ class PlayerCtl:
         try:
             tm.player_lock.release()
         except Exception:
-            pass
+            logging.exception("Failed to release player_lock")
 
         self.record_stream = False
         if len(self.track_queue) > 0:
@@ -6289,7 +6297,7 @@ class PlayerCtl:
                 sleep_timeout(lambda: tauon.stream_proxy.download_running, 2)
 
         if spot_ctl.playing or spot_ctl.coasting:
-            print("Spotify stop")
+            logging.info("Spotify stop")
             spot_ctl.control("stop")
 
         self.notify_update()
@@ -7115,7 +7123,7 @@ class PlayerCtl:
                         self.playlist_playing_position = self.playing_playlist().index(
                             self.track_queue[self.queue_step])
                     except Exception:
-                        pass
+                        logging.exception("Failed to set playlist_playing_position")
 
                 if len(self.playing_playlist()) == self.playlist_playing_position + 1:
                     return
@@ -7337,7 +7345,7 @@ if system == 'linux' and not macos and not msys:
         de_notify_support = True
 
     except Exception:
-        print("Failed init notifications")
+        logging.exception("Failed init notifications")
 
     if de_notify_support:
         song_notification = Notify.Notification.new("Next track notification")
@@ -7377,8 +7385,8 @@ def notify_song(notify_of_end=False, delay=0.0):
             if not notify_of_end:
                 i_path = thumb_tracks.path(track)
         except Exception:
-            print(track.fullpath.encode('utf-8', 'replace').decode("utf-8"))
-            print("Thumbnail error")
+            logging.exception(track.fullpath.encode('utf-8', 'replace').decode("utf-8"))
+            logging.error("Thumbnail error")
 
         top_line = track.title
 
@@ -7467,8 +7475,10 @@ class LastFMapi:
 
         except Exception as e:
             if 'Unauthorized Token' in str(e):
+                logging.exception("Not authorized")
                 show_message(_("Error - Not authorized"), mode='error')
             else:
+                logging.exception("Unknown error")
                 show_message(_("Error"), _('Unknown error.'), mode='error')
 
         if not toggle_lfm_auto(mode=1):
@@ -7511,8 +7521,8 @@ class LastFMapi:
             return True
 
         except Exception as e:
+            logging.exception("Error connecting to Last.fm network")
             show_message(_("Error connecting to Last.fm network"), str(e), mode='warning')
-            # print(e)
             return False
 
     def toggle(self):
@@ -7534,7 +7544,7 @@ class LastFMapi:
 
         except Exception as e:
             show_message(_("Error communicating with Last.fm network"), str(e), mode='warning')
-            print(e)
+            logging.exception("Error communicating with Last.fm network")
             return False
 
     def no_user_connect(self):
@@ -7547,7 +7557,7 @@ class LastFMapi:
 
         except Exception as e:
             show_message(_("Error communicating with Last.fm network"), str(e), mode='warning')
-            print(e)
+            logging.exception("Error communicating with Last.fm network")
             return False
 
     def get_all_scrobbles_estimate_time(self):
@@ -7607,13 +7617,13 @@ class LastFMapi:
                                 track.lfm_scrobbles = value
                                 touched.append(track.index)
         except Exception:
+            logging.exception("Scanning failed. Try again?")
             gui.pl_update += 1
-            # raise
             self.scanning_scrobbles = False
             show_message(_("Scanning failed. Try again?"), mode="error")
             return
 
-        print(perf_timer.get())
+        logging.info(perf_timer.get())
         gui.pl_update += 1
         self.scanning_scrobbles = False
         tauon.bg_save()
@@ -7637,7 +7647,7 @@ class LastFMapi:
 
                 return True, bio, "", mbid, url
         except Exception:
-            print("last.fm get artist info failed")
+            logging.exception("last.fm get artist info failed")
 
         return False, "", "", "", ""
 
@@ -7655,7 +7665,7 @@ class LastFMapi:
                 mbid = l_artist.get_mbid()
                 return mbid
         except Exception:
-            print("last.fm get artist mbid info failed")
+            logging.exception("last.fm get artist mbid info failed")
 
         return ""
 
@@ -7672,18 +7682,18 @@ class LastFMapi:
         try:
             track = self.network.get_track(track_object.artist, track_object.title)
             if not track:
-                print("Get love: track not found")
+                logging.error("Get love: track not found")
                 return
             track.username = prefs.last_fm_username
 
             remote_loved = track.get_userloved()
 
             if track_object.title != track.get_correction() or track_object.artist != track.get_artist().get_correction():
-                print(f"Pylast/lastfm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
+                logging.warning(f"Pylast/lastfm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
                 return
 
             if remote_loved is None:
-                print("Error getting loved status")
+                logging.error("Error getting loved status")
                 return
 
             local_loved = love(set=False, track_id=track_object.index, notify=False, sync=False)
@@ -7691,7 +7701,7 @@ class LastFMapi:
             if remote_loved != local_loved:
                 love(set=True, track_id=track_object.index, notify=False, sync=False)
         except Exception:
-            print("Failed to pull love")
+            logging.exception("Failed to pull love")
 
     def scrobble(self, track_object, timestamp=None):
         if not last_fm_enable:
@@ -7711,7 +7721,7 @@ class LastFMapi:
         artist = get_artist_strip_feat(track_object)
         album_artist = track_object.album_artist
 
-        print("submitting scrobble...")
+        logging.info("Submitting scrobble...")
 
         # Act
         try:
@@ -7724,7 +7734,7 @@ class LastFMapi:
                         self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
                 else:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-                # print('Scrobbled')
+                # logging.info('Scrobbled')
 
                 # Pull loved status
 
@@ -7732,20 +7742,20 @@ class LastFMapi:
 
 
             else:
-                print("Not sent, incomplete metadata")
+                logging.warning("Not sent, incomplete metadata")
 
         except Exception as e:
-
+            logging.exception("Failed to Scrobble!")
             if 'retry' in str(e):
-                print("Retrying...")
+                logging.warning("Retrying in a couple seconds...")
                 time.sleep(7)
 
                 try:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-                    # print('Scrobbled')
+                    # logging.info('Scrobbled')
                     return True
                 except Exception:
-                    pass
+                    logging.exception("Failed to retry!")
 
             # show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
             console.print("Error connecting to last.fm", level=5)
@@ -7811,7 +7821,7 @@ class LastFMapi:
 
         try:
             username = prefs.last_fm_username
-            print(f"Username is {username}")
+            logging.info(f"Username is {username}")
 
             if not username:
                 self.scanning_friends = False
@@ -7827,12 +7837,12 @@ class LastFMapi:
             show_message(_("Getting friend data..."), _("This may take a very long time."), mode='info')
             for friend in friends:
                 self.scanning_username = friend.name
-                print("Getting friend loves: " + friend.name)
+                logging.info("Getting friend loves: " + friend.name)
 
                 try:
                     loves = friend.get_loved_tracks(limit=None)
                 except Exception:
-                    continue
+                    logging.exception("Failed to get_loved_tracks!")
 
                 for track in loves:
                     title = track.track.title.casefold()
@@ -7841,11 +7851,12 @@ class LastFMapi:
 
                         if tr.title.casefold() == title and tr.artist.casefold() == artist:
                             tr.lfm_friend_likes.add(friend.name)
-                            print("MATCH")
-                            print("     " + artist + " - " + title)
-                            print("      ----- " + friend.name)
+                            logging.info("MATCH")
+                            logging.info("     " + artist + " - " + title)
+                            logging.info("      ----- " + friend.name)
 
         except Exception:
+            logging.exception("There was an error getting friends loves")
             show_message(_("There was an error getting friends loves"), "", mode='warning')
 
         self.scanning_friends = False
@@ -7862,19 +7873,19 @@ class LastFMapi:
             return
 
         if len(username) > 25:
-            print("abort due to long username")
+            logging.error("Aborted due to long username")
             return
 
         self.scanning_loves = True
 
-        print("Connect for friend scan")
+        logging.info("Connect for friend scan")
 
         try:
             if self.network is None:
                 self.no_user_connect()
 
             self.network.enable_rate_limit()
-            print("Get user...")
+            logging.info("Get user...")
             lastfm_user = self.network.get_user(username)
             tracks = lastfm_user.get_loved_tracks(limit=None)
 
@@ -7888,14 +7899,14 @@ class LastFMapi:
                 for index, tr in pctl.master_library.items():
                     if tr.title.casefold() == title and tr.artist.casefold() == artist:
                         matches += 1
-                        print("MATCH:")
-                        print("     " + artist + " - " + title)
+                        logging.info("MATCH:")
+                        logging.info("     " + artist + " - " + title)
                         star = star_store.full_get(index)
                         if star is None:
                             star = star_store.new_object()
                         if "L" not in star[1]:
                             updated += 1
-                            print("     NEW LOVE")
+                            logging.info("     NEW LOVE")
                             star[1] += "L"
 
                         star_store.insert(index, star)
@@ -7914,6 +7925,7 @@ class LastFMapi:
                 show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
                 return
         except Exception:
+            logging.exception("This doesn't seem to be working :(")
             show_message(_("This doesn't seem to be working :("), mode='error')
         self.scanning_loves = False
 
@@ -7940,10 +7952,10 @@ class LastFMapi:
                     artist=artist, title=title, album=album)
                 return 0
             else:
-                print("Not sent, incomplete metadata")
+                logging.error("Not sent, incomplete metadata")
                 return 0
         except Exception as e:
-
+            logging.exception("Error connecting to last.fm.")
             console.print("Error connecting to last.fm.", level=3)
             console.print("-- " + str(e), level=3)
             # print(e)
@@ -24290,18 +24302,18 @@ def get_album_art_url(tr):
             tr.misc['musicbrainz_releasegroupid'] = release_group_id
             #print("got release group id")
         except Exception:
-            #print("Error lookup mbid for discord")
+            #logging.info("Error lookup mbid for discord")
             pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
 
     if not release_id:
         try:
-            #print("lookup release id")
+            #logging.info("lookup release id")
             s = musicbrainzngs.search_releases(tr.album, artist=artist, limit=1)
             release_id = s['release-list'][0]['id']
             tr.misc['musicbrainz_albumid'] = release_id
-            #print("got release group id")
+            #logging.info("got release group id")
         except Exception:
-            #print("Error lookup mbid for discord")
+            logging.exception("Error lookup mbid for discord")
             pctl.album_mbid_release_cache[(artist, tr.album)] = None
 
     image_data = None
@@ -24321,8 +24333,10 @@ def get_album_art_url(tr):
             image_data = response.json()
             final_id = release_group_id
         except (requests.RequestException, ValueError):
-            #print("no image found for release group")
+            logging.exception("No image found for release group")
             pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
+        except Exception:
+            logging.exception("Unknown error finding image for release group")
 
     if release_id and not image_data:
         url = pctl.mbid_image_url_cache.get(release_id)
@@ -24333,13 +24347,13 @@ def get_album_art_url(tr):
         url = f"{base_url}{release_id}"
 
         try:
-            #print("lookup image url from album id")
+            #logging.print("lookup image url from album id")
             response = requests.get(url)
             response.raise_for_status()
             image_data = response.json()
             final_id = release_id
         except (requests.RequestException, ValueError):
-            #print("no image found for album id")
+            logging.exception("No image found for album id")
             pctl.album_mbid_release_cache[(artist, tr.album)] = None
 
     if image_data:
@@ -24489,6 +24503,7 @@ def discord_loop():
                 break
 
     except Exception:
+        logging.exception("Error connecting to Discord - is Discord running?")
         # show_message(_("Error connecting to Discord", mode='error')
         gui.discord_status = _("Error - Discord not running?")
         prefs.disconnect_discord = False
@@ -24677,13 +24692,13 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
             path = os.path.join(tmp_cache_dir(), str(t.index))
             if os.path.exists(path):
                 os.remove(path)
-            print("Downloading file...")
+            logging.info("Downloading file...")
             with requests.get(url, params=params) as response, open(path, 'wb') as out_file:
                 out_file.write(response.content)
-            print("Download complete")
+            logging.info("Download complete")
             cleanup = True
         except Exception:
-            print("Error downloading file")
+            logging.exception("Error downloading file")
         dl_use -= 1
 
     if not os.path.isfile(path):
@@ -24725,7 +24740,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     command += '"' + target_out.replace('"', '\\"') + '"'
 
-    # print(shlex.split(command))
+    # logging.info(shlex.split(command))
     startupinfo = None
     if system == 'windows' or msys:
         startupinfo = subprocess.STARTUPINFO()
@@ -24737,11 +24752,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     subprocess.call(command, stdout=subprocess.PIPE, shell=False,
                     startupinfo=startupinfo)
 
-    print("FFmpeg finished")
+    logging.info("FFmpeg finished")
     if codec == "opus" and prefs.transcode_opus_as:
         codec = 'ogg'
 
-    # print(target_out)
+    # logging.info(target_out)
 
     if manual_name is None:
         final_out = output + out_line + "." + codec
@@ -24753,10 +24768,10 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         os.rename(target_out, final_out)
 
     if prefs.transcode_inplace and not t.is_network and not t.is_cue:
-        print("MOVE AND REPLACE!")
+        logging.info("MOVE AND REPLACE!")
         if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
             new_name = os.path.join(t.parent_folder_path, final_name)
-            print(new_name)
+            logging.info(new_name)
             shutil.move(final_out, new_name)
 
             old_key = star_store.key(track)
@@ -24765,13 +24780,13 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
             try:
                 send2trash(pctl.master_library[track].fullpath)
             except Exception:
-                print("File trash error")
+                logging.exception("File trash error")
 
             if os.path.isfile(pctl.master_library[track].fullpath):
                 try:
                     os.remove(pctl.master_library[track].fullpath)
                 except Exception:
-                    print("File detete error")
+                    logging.exception("File delete error")
 
             pctl.master_library[track].fullpath = new_name
             pctl.master_library[track].file_ext = codec.upper()
@@ -24898,6 +24913,7 @@ def cue_scan(content, tn):
             # try:
             #     bitrate = audio.info.bitrate
             # except Exception:
+            #     logging.exception("Failed to set audio bitrate")
             #     bitrate = 0
 
             if PERFORMER == "":
@@ -25311,7 +25327,7 @@ class SearchOverlay:
                 try:
                     worker2_lock.release()
                 except Exception:
-                    pass
+                    logging.exception("Failed to release worker2 lock")
 
             if input_text or key_backspace_press:
                 self.input_timer.set()
@@ -25325,7 +25341,7 @@ class SearchOverlay:
                         self.sip = True
                         worker2_lock.release()
                     except Exception:
-                        pass
+                        logging.exception("Failed to release worker2 lock")
 
             if self.input_timer.get() < 10:
                 gui.frame_callback_list.append(TestTimer(0.1))
@@ -25490,7 +25506,7 @@ class SearchOverlay:
                         try:
                             gall_ren.lock.release()
                         except Exception:
-                            pass
+                            logging.exception("Failed to release gall_ren lock")
 
                 # Result text
                 if n in (0, 5, 6, 7, 8, 10):  # Bold
@@ -26317,11 +26333,13 @@ def worker1():
                     content = f.readlines()
                     console.print("-- Reading as UTF-8")
             except Exception:
+                logging.exception("Failed opening file as UTF-8")
                 try:
                     with open(path, encoding="utf_16") as f:
                         content = f.readlines()
                         console.print("-- Reading as UTF-16")
                 except Exception:
+                    logging.exception("Failed opening file as UTF-16")
                     try:
                         j = False
                         try:
@@ -26334,13 +26352,14 @@ def worker1():
                                             console.print("-- Reading as SHIFT-JIS")
                                             break
                         except Exception:
-                            pass
+                            logging.exception("Failed opening file as shiftjis")
                         if not j:
                             with open(path, encoding='windows-1251') as f:
                                 content = f.readlines()
                             console.print("-- Fallback encoding read as windows-1251")
 
                     except Exception:
+                        logging.exception("Abort: Can't detect encoding of CUE file")
                         console.print("-- Abort: Can't detect encoding of CUE file")
                         return 1
 
@@ -26574,6 +26593,7 @@ def worker1():
                     added.append(track.index)
 
         except Exception as e:
+            logging.exception("Internal error processing CUE file")
             console.print("-- Internal error in processing CUE file:")
             console.print(str(e))
             console.print(traceback.format_exc())
@@ -26584,7 +26604,7 @@ def worker1():
         global to_got
 
         if not os.path.isfile(path):
-            print("file to import missing")
+            logging.error("File to import missing")
             return 0
 
         if os.path.splitext(path)[1][1:] in {"CUE", 'cue'}:
@@ -26592,7 +26612,7 @@ def worker1():
             return 0
 
         if path.lower().endswith('.xspf'):
-            print('found XSPF file at: ' + path)
+            logging.info('Found XSPF file at: ' + path)
             load_xspf(path)
             return 0
 
@@ -26807,7 +26827,7 @@ def worker1():
             else:
                 items_in_dir.sort()
         except PermissionError:
-
+            logging.exception("Permission error accessing one or more files")
             if snap_mode:
                 show_message(_("Permission error accessing one or more files."),
                              _("If this location is on external media, see https://") + "github.com/Taiko2k/TauonMusicBox/wiki/Snap-Permissions",
@@ -26815,6 +26835,9 @@ def worker1():
             else:
                 show_message(_("Permission error accessing one or more files"), mode='warning')
 
+            return
+        except Exception:
+            logging.exception("Unknown error accessing one or more files")
             return
 
         for q in range(len(items_in_dir)):
@@ -26929,11 +26952,12 @@ def worker1():
                     try:
                         if check_auto_update_okay(code, pl=i):
                             if not pl_is_locked(i):
-                                print("Reloading smart playlist: " + plist[0])
+                                logging.info("Reloading smart playlist: " + plist[0])
                                 regenerate_playlist(i, silent=True)
                                 time.sleep(0.02)
                     except Exception:
-                        pass
+                        logging.exception("Failed to handle playlist")
+
             tree_view_box.clear_all()
 
         if tauon.worker_save_state and \
@@ -26966,6 +26990,7 @@ def worker1():
             try:
                 shutil.copytree(job[0], job[1])
             except Exception:
+                logging.exception("Failed to copy directory")
                 move_in_progress = False
                 gui.update += 1
                 show_message(_("The folder copy has failed!"), _('Some files may have been written.'), mode='warning')
@@ -26976,6 +27001,7 @@ def worker1():
                     shutil.rmtree(job[0])
 
                 except Exception:
+                    logging.exception("Failed to delete directory")
                     show_message(_("Something has gone horribly wrong!"), _("Could not delete {name}").format(name=job[0]), mode='error')
                     gui.update += 1
                     move_in_progress = False
@@ -27120,7 +27146,7 @@ def worker1():
                             break
 
                 else:
-                    print("Codec error")
+                    logging.error("Codec error")
 
                 output_dir = prefs.encoder_output + folder_name + "/"
                 if prefs.transcode_inplace:
@@ -27128,7 +27154,7 @@ def worker1():
                     try:
                         os.remove(remove_target)
                     except Exception:
-                        print("Encode folder not removed")
+                        logging.exception("Encode folder not removed")
                     reload_metadata(folder_items[0])
                 else:
                     album_art_gen.save_thumb(pctl.g(folder_items[0]), (1080, 1080), output_dir + "cover")
@@ -27140,6 +27166,7 @@ def worker1():
                 gui.update += 1
 
             except Exception:
+                logging.exception("Transcode failed")
                 transcode_state = "Transcode Error"
                 time.sleep(0.2)
                 show_message(_("Transcode failed."), _("An error was encountered."), mode='error')
@@ -28049,7 +28076,7 @@ key_lalt = False
 
 def reload_backend():
     gui.backend_reloading = True
-    print("Reload backend...")
+    logging.info("Reload backend...")
     wait = 0
     pre_state = pctl.stop(True)
 
@@ -28061,7 +28088,7 @@ def reload_backend():
     try:
         tm.player_lock.release()
     except Exception:
-        pass
+        logging.exception("Failed to release player_lock")
 
     pctl.playerCommand = "unload"
     pctl.playerCommandReady = True
@@ -28108,6 +28135,7 @@ def gen_chart():
                                  prefs.chart_font, prefs.chart_tile, cascade)
 
     except Exception:
+        logging.exception("There was an error generating the chart")
         gui.generating_chart = False
         show_message(_("There was an error generating the chart"), _("Sorry!"), mode='error')
         return
@@ -29290,6 +29318,7 @@ class Over:
                         else:
                             show_message(_("The Maloja server returned an error"), r.text, mode='warning')
                     except Exception:
+                        logging.exception("Could not communicate with the Maloja server")
                         show_message(_("Could not communicate with the Maloja server"), mode='warning')
 
             y += round(30 * gui.scale)
@@ -30777,7 +30806,7 @@ class Over:
                         if self.click:
                             gen_codec_pl(key)
             except Exception:
-                print("Error draw ext bar")
+                logging.exception("Error draw ext bar")
 
     def config_v(self, x0, y0, w0, h0):
 
@@ -36043,12 +36072,12 @@ class RadioBox:
     def extract_stream_m3u(self, url, recursion_limit=5):
         if recursion_limit <= 0:
             return None
-        print("Fetching M3U...")
+        logging.info("Fetching M3U...")
 
         try:
             response = requests.get(url)
             if response.status_code != 200:
-                print(f"M3U Fetch error code: {response.status_code}")
+                logging.error(f"M3U Fetch error code: {response.status_code}")
                 return None
 
             content = response.text
@@ -36065,19 +36094,19 @@ class RadioBox:
 
             return None
 
-        except Exception as e:
-            print(f"Error: {e}")
+        except Exception:
+            logging.exception("Failed to extract M3U")
             return None
 
     def start(self, item):
         url = item["stream_url"]
-        print("Start radio")
-        print(url)
+        logging.info("Start radio")
+        logging.info(url)
         if self.is_m3u(url):
             url = self.extract_stream_m3u(url)
-            print(f"Extracted URL is: {url}")
+            logging.info(f"Extracted URL is: {url}")
             if not url:
-                print("Failed to extract stream from M3U")
+                logging.info("Failed to extract stream from M3U")
                 return
 
         if self.load_connecting:
@@ -36088,9 +36117,9 @@ class RadioBox:
 
         try:
             self.websocket.close()
-            print("Websocket closed")
+            logging.info("Websocket closed")
         except Exception:
-            print("No socket to close?")
+            logging.exception("No socket to close?")
 
         self.playing_title = ""
         self.playing_title = item["title"]
@@ -36229,11 +36258,11 @@ class RadioBox:
                             pctl.radio_image_bin = io.BytesIO(art_response.content)
                             pctl.radio_image_bin.seek(0)
                             radiobox.dummy_track.art_url_key = "ok"
-                            print("Got new art")
+                            logging.info("Got new art")
 
 
                     except Exception:
-                        print("No image")
+                        logging.exception("No image")
                         if pctl.radio_image_bin:
                             pctl.radio_image_bin.close()
                             pctl.radio_image_bin = None
@@ -36241,12 +36270,12 @@ class RadioBox:
                     gui.update += 1
 
             def on_error(ws, error):
-                pass
-                print(error)
+#                pass
+                logging.error(error)
 
             def on_close(ws):
-                pass
-                print("### closed ###")
+#                pass
+                logging.info("### closed ###")
 
             def on_open(ws):
                 def run(*args):
@@ -36309,7 +36338,7 @@ class RadioBox:
                 if host_addr[0] not in hosts:
                     hosts.append(host_addr[0])
             except Exception:
-                print("Ip lookup fail")
+                logging.exception("IPv4 lookup fail")
 
         # sort list of names
         hosts.sort()
@@ -37696,7 +37725,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
             prefs.fanart_notify = False
             show_message(_("Notice: Artist image sourced from fanart.tv"),
                          _("They encourage you to contribute at {link}").format(link="https://fanart.tv"), mode='link')
-        print("Found artist thumbnail from fanart.tv")
+        logging.info("Found artist thumbnail from fanart.tv")
 
 
 class ArtistList:
@@ -37776,7 +37805,7 @@ class ArtistList:
 
                 self.thumb_cache[artist] = [texture, sdl_rect]
             except Exception:
-                print("Artist thumbnail processing error")
+                logging.exception("Artist thumbnail processing error")
                 self.thumb_cache[artist] = None
 
         elif artist in prefs.failed_artists:
@@ -37820,7 +37849,7 @@ class ArtistList:
             got_image = False
             try:
                 # Lookup artist info on last.fm
-                print("lastfm lookup artist: " + artist)
+                logging.info("lastfm lookup artist: " + artist)
                 mbid = lastfm.artist_mbid(artist)
                 get_lfm_wait_timer.set()
                 # if data[0] is not False:
@@ -37837,19 +37866,19 @@ class ArtistList:
                     got_image = True
 
             except Exception:
-                print("Failed to find image from fanart.tv")
+                logging.exception("Failed to find image from fanart.tv")
 
             if not got_image and verify_discogs():
                 try:
                     save_discogs_artist_thumb(artist, filepath4)
                 except Exception:
-                    print("Failed to find image from discogs")
+                    logging.exception("Failed to find image from discogs")
 
             if os.path.exists(filepath3) or os.path.exists(filepath4):
                 gui.update += 1
             else:
                 if artist not in prefs.failed_artists:
-                    print("Failed featching: " + artist)
+                    logging.error("Failed fetching: " + artist)
                     prefs.failed_artists.append(artist)
 
             self.to_fetch = ""
@@ -37933,7 +37962,7 @@ class ArtistList:
                 all.sort(key=lambda y: y.lower().removeprefix("the "))
 
         except Exception:
-            print("Album scan failure")
+            logging.exception("Album scan failure")
             time.sleep(4)
             return
 
@@ -40338,7 +40367,7 @@ class ArtistInfoBox:
     def get_data(self, artist, get_img_path=False, force_dl=False):
 
         if not get_img_path:
-            print("Load Bio Data")
+            logging.info("Load Bio Data")
 
         if artist is None and not get_img_path:
             self.artist_on = artist
@@ -40377,7 +40406,7 @@ class ArtistInfoBox:
         try:
 
             if os.path.isfile(text_filepath):
-                print("Load cached bio and image")
+                logging.info("Load cached bio and image")
 
                 artist_picture_render.show = False
 
@@ -40425,7 +40454,7 @@ class ArtistInfoBox:
                 f = open(text_filepath, 'w', encoding='utf-8')
                 f.write(self.text)
                 f.close()
-                print("save bio text")
+                logging.info("Save bio text")
 
                 artist_picture_render.show = False
                 if data[3] and prefs.enable_fanart_artist:
@@ -40435,7 +40464,7 @@ class ArtistInfoBox:
 
                         artist_picture_render.show = True
                     except Exception:
-                        print("Failed to find image from fanart.tv")
+                        logging.exception("Failed to find image from fanart.tv")
                 if not artist_picture_render.show:
                     if verify_discogs():
                         try:
@@ -40444,7 +40473,7 @@ class ArtistInfoBox:
 
                             artist_picture_render.show = True
                         except Exception:
-                            print("Failed to find image from discogs")
+                            logging.exception("Failed to find image from discogs")
                 if not artist_picture_render.show and data[4]:
                     try:
                         r = requests.get(data[4])
@@ -40458,9 +40487,8 @@ class ArtistInfoBox:
                                 f.write(r.content)
                             artist_picture_render.load(standard_path, box_size)
                             artist_picture_render.show = True
-                    except Exception as e:
-                        print("error scraping art")
-                        print(str(e))
+                    except Exception:
+                        logging.exception("Failed to scrape art")
 
                 # Trigger reload of thumbnail in artist list box
                 for key, value in list(artist_list_box.thumb_cache.items()):
@@ -40493,13 +40521,14 @@ class ArtistInfoBox:
             #             gui.update = 2
             #     # except HTTPError as e:
             #     #     self.status = e
-            #     #     print("request failed")
+            #     #     logging.exception("request failed")
             #     except Exception:
-            #         print("request failed")
+            #         logging.exception("request failed")
             #         self.status = "Request Failed"
 
 
         except Exception:
+            logging.exception("Failed to load bio")
             self.status = _("Load Failed")
 
         self.artist_on = artist
@@ -40675,6 +40704,7 @@ class GuitarChords:
             self.ready[cache_title] = 1
 
         except Exception:
+            logging.exception("Could not find matching track on GuitarParty")
             show_message(_("Could not find matching track on GuitarParty"))
             inp.mouse_click = False
             self.ready[cache_title] = 2
@@ -40906,7 +40936,7 @@ class RadioThumbGen:
                 f.close()
                 src.seek(0)
             else:
-                # print("no icon")
+                # logging.info("no icon")
                 self.cache[key] = [0, ]
                 continue
 
@@ -40915,7 +40945,7 @@ class RadioThumbGen:
                 if im.mode != "RGBA":
                     im = im.convert("RGBA")
             except Exception:
-                print("malform get radio thumb")
+                logging.exception("malform get radio thumb")
                 self.cache[key] = [0, ]
                 if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
                     prefs.radio_thumb_bans.append(station.get("icon"))
@@ -42052,8 +42082,8 @@ class DLMon:
                 try:
                     stamp = os.path.getmtime(path)
                 except Exception:
+                    logging.exception(f"Failed to scan item at {path}")
                     self.done.add(path)
-                    print(f"Failed to scan item at {path}")
                     continue
 
                 min_age = (time.time() - stamp) / 60
@@ -42102,9 +42132,12 @@ class DLMon:
                     try:
                         size = get_folder_size(path)
                     except FileNotFoundError:
+                        logging.warning(f"Failed to find watched folder {path}, deleting from watchlist")
                         if path in self.watching:
                             del self.watching[path]
                         continue
+                    except Exception:
+                        logging.exception("Unkown error getting folder size")
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
                         if size == self.watching[path]:
@@ -42309,6 +42342,7 @@ def download_img(link, target_folder, track):
         gui.image_downloading = False
 
     except Exception as e:
+        logging.exception("Image download failed")
         show_message(_("Image download failed."), str(e), mode='warning')
         gui.image_downloading = False
 
@@ -42541,6 +42575,7 @@ tm.ready_playback()
 try:
     tm.d['caster'] = [enc, [tauon], None]
 except Exception:
+    logging.exception("Failed to cast, trying differently")
     tm.d['caster'] = [lambda: x, [tauon], None]
 
 tm.d['worker'] = [worker1, (), None]
@@ -43455,10 +43490,13 @@ def save_state():
                 continue
             export_playlist_box.run_export(item, key, warnings=False)
 
-        print("done")
+        logging.info("done")
 
     except PermissionError:
+        logging.exception("Permission error encountered while writing database")
         show_message(_("Permission error encountered while writing database"), "error")
+    except Exception:
+        logging.exception("Unkown error encountered while writing database")
 
 
 SDL_StartTextInput()
@@ -43800,6 +43838,7 @@ while pctl.running:
                 try:
                     console.print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
                 except Exception:
+                    logging.exception("Error get game controller")
                     console.print("Error get game controller")
 
         if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
@@ -44280,7 +44319,7 @@ while pctl.running:
         try:
             tm.player_lock.release()
         except Exception:
-            pass
+            logging.exception("Failed to release player lock")
 
     if gui.frame_callback_list:
         i = len(gui.frame_callback_list) - 1
@@ -45134,7 +45173,7 @@ while pctl.running:
 
                 load_theme(colours, theme_item[0])
                 deco.load(colours.deco)
-                print("Applying theme: " + gui.theme_name)
+                logging.info("Applying theme: " + gui.theme_name)
 
                 if colours.lm:
                     info_icon.colour = [60, 60, 60, 255]
@@ -45157,6 +45196,7 @@ while pctl.running:
                     radiorandom_icon.colour = [153, 229, 133, 255]
 
             except Exception:
+                logging.exception("Error loading theme file")
                 raise
                 show_message(_("Error loading theme file"), "", mode='warning')
 
@@ -46188,7 +46228,7 @@ while pctl.running:
                     gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale),
                                              20 * gui.scale)
                 except Exception:
-                    print("Gallery render error!")
+                    logging.exception("Gallery render error!")
                 # END POWER BAR ------------------------
 
             # End of gallery view
@@ -48656,7 +48696,10 @@ while pctl.running:
             else:
                 console.print("Dev mode, skip auto saving playtime")
         except PermissionError:
+            logging.exception("Permission error encountered while writing database")
             show_message(_("Permission error encountered while writing database"), "error")
+        except Exception:
+            logging.exception("Unknown error encountered while writing database")
         time_last_save = pctl.total_playtime
 
     # Always render at least one frame per minute (to avoid SDL bugs I guess)
@@ -48675,7 +48718,7 @@ if spot_ctl.playing:
 # Send scrobble if pending
 if lfm_scrobbler.queue and not lfm_scrobbler.running:
     lfm_scrobbler.start_queue()
-    print("Sending scrobble before close...")
+    logging.info("Sending scrobble before close...")
 
 if gui.mode < 3:
     old_window_position = get_window_position()
@@ -48711,19 +48754,19 @@ if should_save_state:
     pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
 if tauon.stream_proxy and tauon.stream_proxy.download_running:
-    print("Stopping stream...")
+    logging.info("Stopping stream...")
     tauon.stream_proxy.stop()
     time.sleep(2)
 
 try:
     tm.player_lock.release()
 except Exception:
-    pass
+    logging.exception("Failed to release player_lock")
 
 try:
     tauon.radio_server.server_close()
 except Exception:
-    pass
+    logging.exception("Failed to close radio server")
 
 if system == "windows" or msys:
     tray.stop()
@@ -48736,18 +48779,18 @@ else:
             g_tc_notify.close()
             Notify.uninit()
         except Exception:
-            print("uninit notification error")
+            logging.exception("uninit notification error")
 
 if macos:
     try:
         tap.stop()
     except Exception:
-        pass
+        logging.exception("Failed to stop tap")
 
 try:
     instance_lock.close()
 except Exception:
-    print("No lock object to close")
+    logging.exception("No lock object to close")
 
 
 IMG_Quit()
@@ -48760,21 +48803,21 @@ exit_timer.set()
 
 cache_dir = tmp_cache_dir()
 if os.path.isdir(cache_dir):
-    print("Clear tmp cache")
+    logging.info("Clearing tmp cache")
     shutil.rmtree(cache_dir)
 
 if not tauon.quick_close:
     while tm.check_playback_running():
         time.sleep(0.2)
         if exit_timer.get() > 2:
-            print("Phazor unload timeout")
+            logging.warning("Phazor unload timeout")
             break
 
     while lfm_scrobbler.running:
         time.sleep(0.2)
         lfm_scrobbler.running = False
         if exit_timer.get() > 15:
-            print("Scrobble wait timeout")
+            logging.warning("Scrobble wait timeout")
             break
 
 if tauon.sleep_lock is not None:
@@ -48786,8 +48829,8 @@ if tauon.play_lock is not None:
 
 if tauon.librespot_p:
 	time.sleep(1)
-	print("Kill liberspot")
+	logging.info("Killing librespot")
 	tauon.librespot_p.kill()
 	#tauon.librespot_p.communicate()
 
-print("bye")
+logging.info("Bye!")
