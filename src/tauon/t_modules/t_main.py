@@ -63,7 +63,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from collections.abc import Callable
-from ctypes import c_char_p, c_double, c_int, c_uint32, c_void_p, pointer, Structure
+from ctypes import byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer, Structure
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -261,23 +261,24 @@ from unidecode import unidecode
 
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
-from tauon.t_modules.t_extra import *
+from tauon.t_modules.t_extra import FunctionStore, Timer, rgb_add_hls, alpha_blend, alpha_mod, colour_value, test_lumi, shooter, ColourGenCache, year_search, get_display_time, point_proximity_test, is_light, clean_string, mac_styles, tmp_cache_dir, TestTimer, filename_to_metadata, get_artist_strip_feat, get_split_artists, get_artist_safe, filename_safe, sleep_timeout, fit_box, contrast_ratio, rgb_to_hls, process_odat, commonprefix, check_equal, search_magic, search_magic_any, get_hms_time, hms_to_seconds, is_grey, hls_to_rgb, get_filesize_string, get_filesize_string_rounded, uri_parse, reduce_paths, j_chars, star_count, star_count3, genre_correct, hsl_to_rgb, grow_rect, point_distance, seconds_to_day_hms, d_date_display, d_date_display2, colour_slide, archive_file_scan, subtract_rect, folder_file_scan, get_folder_size, get_year_from_string
 from tauon.t_modules.t_db_migrate import database_migrate
 from tauon.t_modules.t_draw import TDraw, QuickThumbnail
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_launch import Launch
-from tauon.t_modules.t_lyrics import *
+from tauon.t_modules.t_lyrics import lyric_sources, genius, uses_scraping
 from tauon.t_modules.t_phazor import phazor_exists, player4
-from tauon.t_modules.t_search import *
+from tauon.t_modules.t_search import bandcamp_search
 from tauon.t_modules.t_spot import SpotCtl
 from tauon.t_modules.t_stream import StreamEnc
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block
-from tauon.t_modules.t_themeload import *
+from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_phazor import Cachement, LibreSpot
+	from ctypes import CDLL
 
 try:
 	from jxlpy import JXLImagePlugin
