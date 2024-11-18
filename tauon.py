@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import pickle
 import sys
@@ -61,6 +62,20 @@ from sdl2 import (
 from sdl2.sdlimage import IMG_Load
 
 from t_modules import t_bootstrap
+
+# DEBUG+ to file and std_err
+logging.basicConfig(
+	level=logging.DEBUG,
+#	filename=user_directory + '/crash.log',
+#	format='%(asctime)s %(levelname)s %(name)s %(message)s')
+	format="%(asctime)s [%(levelname)s] [%(module)s] %(message)s",
+	handlers=[
+		logging.StreamHandler(),
+#		logging.FileHandler('/tmp/tauon.log'),
+	],
+)
+# INFO+ to std_err
+logging.getLogger().handlers[0].setLevel(logging.INFO)
 
 if sys.platform != "win32":
 	import fcntl

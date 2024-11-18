@@ -21,6 +21,7 @@ from __future__ import annotations
 import io
 import itertools
 import json
+import logging
 import threading
 import time
 from http import HTTPStatus
@@ -149,7 +150,7 @@ class Jellyfin:
 
 		if response.status_code == HTTPStatus.OK:
 			return io.BytesIO(response.content)
-		print("Jellyfin album art api error:", response.status_code, response.text)
+		logging.error(f"Jellyfin album art api error: {response.status_code} {response.text}")
 		return None
 
 	def favorite(self, track: TrackClass, un: bool = False) -> None:
@@ -175,10 +176,10 @@ class Jellyfin:
 
 			if response.status_code == HTTPStatus.OK:
 				return
-			print("Jellyfin fav api error")
+			logging.error("Jellyfin fav api error")
 
 		except Exception:
-			print("Failed to submit favorite to Jellyfin server")
+			logging.exception("Failed to submit favorite to Jellyfin server")
 
 	def upload_playlist(self, pl: TauonPlaylist) -> None:
 		if not self.connected or not self.accessToken:
@@ -216,7 +217,7 @@ class Jellyfin:
 
 			playlist_id = response.json()["Id"]
 			self.pctl.gen_codes[self.pctl.multi_playlist[pl][6]] = f"jelly\"{playlist_id}\""
-			print("New jellyfin playlist created")
+			logging.info("New jellyfin playlist created")
 
 		else:
 			code = codes.split(" ")[0]
@@ -240,7 +241,7 @@ class Jellyfin:
 				timeout=10,
 			)
 			if response.status_code != HTTPStatus.OK:
-				print("error")
+				logging.error("error")
 				return
 
 			d_ids = []
@@ -262,7 +263,7 @@ class Jellyfin:
 			)
 
 			if response.status_code not in (200, 204):
-				print("error2")
+				logging.error("error2")
 				return
 
 			response = requests.post(
@@ -280,7 +281,7 @@ class Jellyfin:
 				},
 				timeout=10,
 			)
-		print("DONE")
+		logging.info("DONE")
 
 
 	def get_playlist(self, playlist_id: int, name: str ="", return_list: bool = False) -> list | None:
@@ -369,7 +370,7 @@ class Jellyfin:
 		self.scanning = True
 		self.gui.to_got = 0
 
-		print("Prepare for Jellyfin library import...")
+		logging.info("Prepare for Jellyfin library import...")
 
 		if not self.connected or not self.accessToken:
 			self._authenticate()
@@ -388,7 +389,7 @@ class Jellyfin:
 			if track.is_network and track.file_ext == "JELY":
 				existing[track.url_key] = track_id
 
-		print("Get items...")
+		logging.info("Get items...")
 
 		try:
 			response = requests.get(
@@ -410,13 +411,13 @@ class Jellyfin:
 			)
 
 		except Exception:
-			print("ERROR")
+			logging.exception("ERROR")
 			self.gui.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
 			self.scanning = False
 			return None
 
 		if response.status_code == HTTPStatus.OK:
-			print("Connection successful, storing items...")
+			logging.info("Connection successful, storing items...")
 
 			# filter audio items only
 			audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
@@ -427,7 +428,7 @@ class Jellyfin:
 			# group by parent
 			grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
 		else:
-			print("ERROR")
+			logging.error("ERROR")
 			self.scanning = False
 			self.tauon.gui.show_message(_("Error accessing Jellyfin"), mode="warning")
 			return None
@@ -448,7 +449,7 @@ class Jellyfin:
 				try:
 					nt.fullpath = track.get("MediaSources")[0]["Path"]
 				except Exception:
-					print("Jelly warning on get path")
+					logging.exception("Jelly exception on get path")
 				nt.filename = Path(nt.fullpath).name
 				nt.parent_folder_path = str(Path(nt.fullpath).parent)
 				nt.parent_folder_name = Path(nt.parent_folder_path).name
@@ -456,7 +457,7 @@ class Jellyfin:
 				try:
 					nt.size = track.get("MediaSources")[0]["Size"]
 				except Exception:
-					print("Jelly warning on get size")
+					logging.exception("Jelly exception on get size")
 				nt.modified_time = time.mktime(time.strptime(
 					track.get("DateCreated").rsplit(".", 1)[0],
 					"%Y-%m-%dT%H:%M:%S"))
@@ -493,12 +494,12 @@ class Jellyfin:
 							nt.misc["codec"] = d.get("Codec", "")
 							break
 				except Exception:
-					print("Jelly error getting audio mediastream")
+					logging.exception("Jelly exception getting audio mediastream")
 
 				try:
 					nt.misc["container"] = track.get("MediaSources")[0].get("Container", "").upper()
 				except Exception:
-					print("Jelly error get container")
+					logging.exception("Jelly exception get container")
 
 				self.pctl.master_library[track_id] = nt
 				if not replace_existing:
@@ -513,7 +514,7 @@ class Jellyfin:
 					fav_status[nt] = user_data.get("IsFavorite")
 
 
-		print("Jellyfin import complete")
+		logging.info("Jellyfin import complete")
 		self.gui.update += 1
 		self.tauon.wake()
 
@@ -575,7 +576,7 @@ class Jellyfin:
 			time.sleep(1)
 			track = self.pctl.playing_object()
 			if track is None:
-				#print("Jellyfin playing track is None, skipping loop")
+				#logging.debug("Jellyfin playing track is None, skipping loop")
 				continue
 
 			if track.file_ext != "JELY" or (self.session_status == 0 and self.pctl.playing_state == 0):
