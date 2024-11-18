@@ -228,25 +228,25 @@ from sdl2.sdlimage import IMG_Load, IMG_Load_RW, IMG_Quit
 from send2trash import send2trash
 from unidecode import unidecode
 
-from t_modules import t_bootstrap
-from t_modules.t_config import Config
-from t_modules.t_extra import *
-from t_modules.t_db_migrate import database_migrate
-from t_modules.t_draw import TDraw, QuickThumbnail
-from t_modules.t_jellyfin import Jellyfin
-from t_modules.t_launch import Launch
-from t_modules.t_lyrics import *
-from t_modules.t_phazor import phazor_exists, player4
-from t_modules.t_search import *
-from t_modules.t_spot import SpotCtl
-from t_modules.t_stream import StreamEnc
-from t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block
-from t_modules.t_themeload import *
-from t_modules.t_tidal import Tidal
-from t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
+from tauon.t_modules import t_bootstrap
+from tauon.t_modules.t_config import Config
+from tauon.t_modules.t_extra import *
+from tauon.t_modules.t_db_migrate import database_migrate
+from tauon.t_modules.t_draw import TDraw, QuickThumbnail
+from tauon.t_modules.t_jellyfin import Jellyfin
+from tauon.t_modules.t_launch import Launch
+from tauon.t_modules.t_lyrics import *
+from tauon.t_modules.t_phazor import phazor_exists, player4
+from tauon.t_modules.t_search import *
+from tauon.t_modules.t_spot import SpotCtl
+from tauon.t_modules.t_stream import StreamEnc
+from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block
+from tauon.t_modules.t_themeload import *
+from tauon.t_modules.t_tidal import Tidal
+from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
 
 if TYPE_CHECKING:
-	from t_modules.t_phazor import Cachement, LibreSpot
+	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -317,10 +317,10 @@ if system == "windows":
 	import atexit
 
 if system == "linux":
-	from t_modules import t_topchart
+	from tauon.t_modules import t_topchart
 
 if system == "linux" and not macos and not msys:
-	from t_modules.t_dbus import Gnome
+	from tauon.t_modules.t_dbus import Gnome
 
 h = t_bootstrap.holder
 t_window = h.w
@@ -4231,7 +4231,7 @@ def scale_assets(scale_want, force=False):
 		if scale_want != 1:
 			if os.path.isdir(scaled_asset_directory) and scaled_asset_directory != asset_directory:
 				shutil.rmtree(scaled_asset_directory)
-			from t_modules.t_svgout import render_icons
+			from tauon.t_modules.t_svgout import render_icons
 
 			if scaled_asset_directory != asset_directory:
 				logging.info("Rendering icons...")
@@ -8402,7 +8402,7 @@ if prefs.backend != 4:
 chrome = None
 
 try:
-    from t_modules.t_chrome import Chrome
+    from tauon.t_modules.t_chrome import Chrome
 
     chrome = Chrome(tauon)
 except Exception:
@@ -13023,7 +13023,7 @@ class AlbumArt():
         colours.last_album = ""
 
 
-# from t_modules.t_art_render import AlbumArt
+# from tauon.t_modules.t_art_render import AlbumArt
 
 album_art_gen = AlbumArt()
 
@@ -42112,7 +42112,7 @@ class ThreadManager:
             if prefs.backend == 4:
                 self.playback = threading.Thread(target=player4, args=[tauon])
             # elif prefs.backend == 2:
-            #     from t_modules.t_gstreamer import player3
+            #     from tauon.t_modules.t_gstreamer import player3
             #     self.playback = threading.Thread(target=player3, args=[tauon])
             self.playback.daemon = True
             self.playback.start()

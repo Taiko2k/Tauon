@@ -55,7 +55,7 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load_RW
 
-from t_modules.t_extra import Timer, alpha_blend, coll_rect
+from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
 
 if TYPE_CHECKING:
 	from sdl2 import SDL_Renderer

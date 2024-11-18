@@ -39,7 +39,7 @@ from gi.repository import GLib
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
-	from t_modules.t_main import TrackClass
+	from tauon.t_modules.t_main import TrackClass
 
 def tmp_cache_dir() -> str:
 	tmp_dir = GLib.get_tmp_dir()

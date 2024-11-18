@@ -28,7 +28,7 @@ import os
 import struct
 import wave
 
-from t_modules.t_extra import process_odat
+from tauon.t_modules.t_extra import process_odat
 
 
 def parse_mbids_from_vorbis(object, key, value):

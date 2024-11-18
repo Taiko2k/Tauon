@@ -30,12 +30,12 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from t_modules.t_extra import Timer
+from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
 	from io import BytesIO
 
-	from t_modules.t_main import Tauon, TauonPlaylist, TrackClass
+	from tauon.t_modules.t_main import Tauon, TauonPlaylist, TrackClass
 
 
 class Jellyfin:

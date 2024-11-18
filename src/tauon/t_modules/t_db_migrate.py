@@ -7,7 +7,7 @@ import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-	from t_modules.t_main import GuiVar, Prefs, StarStore, TauonPlaylist
+	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TauonPlaylist
 
 
 def database_migrate(
@@ -34,7 +34,7 @@ def database_migrate(
 	Returns all the objects that could've been possibly changed:
 		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
 	"""
-	from t_modules.t_main import show_message, uid_gen
+	from tauon.t_modules.t_main import show_message, uid_gen
 
 	if db_version <= 0:
 		logging.error("Called database_migrate with db_version equal to or below 0!")

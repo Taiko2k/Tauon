@@ -36,11 +36,11 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load_RW
 
-from t_modules.t_extra import rgb_add_hls, test_lumi
+from tauon.t_modules.t_extra import rgb_add_hls, test_lumi
 
 if TYPE_CHECKING:
-	from t_modules.t_draw import TDraw
-	from t_modules.t_main import GuiVar, Tauon
+	from tauon.t_modules.t_draw import TDraw
+	from tauon.t_modules.t_main import GuiVar, Tauon
 
 
 def get_colour_from_line(cline: str) -> list[int]:

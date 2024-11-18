@@ -62,7 +62,7 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load
 
-from t_modules import t_bootstrap
+from tauon.t_modules import t_bootstrap
 
 # DEBUG+ to file and std_err
 logging.basicConfig(
@@ -367,7 +367,7 @@ if scale != 1:
 		img_path = img_path2
 	del img_path2
 
-raw_image = IMG_Load(img_path.encode())
+raw_image = IMG_Load(str(img_path).encode())
 sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 w = raw_image.contents.w
 h = raw_image.contents.h
@@ -414,7 +414,7 @@ del flags
 del img_path
 
 if pyinstaller_mode or sys.platform == "darwin" or install_mode:
-	from t_modules import t_main
+	from tauon.t_modules import t_main
 else:
 	# Using the above import method breaks previous pickles. Could be fixed
 	# but yet to decide what best method is.

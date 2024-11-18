@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 
 import pychromecast
 
-from t_modules.t_extra import shooter
+from tauon.t_modules.t_extra import shooter
 
 if TYPE_CHECKING:
-	from t_modules.t_main import Tauon
+	from tauon.t_modules.t_main import Tauon
 
 def get_ip() -> str:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

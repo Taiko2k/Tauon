@@ -31,10 +31,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
-from t_modules.t_extra import Timer
+from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
-	from t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Tauon, TrackClass
 
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False

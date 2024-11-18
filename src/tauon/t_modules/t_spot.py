@@ -30,10 +30,10 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from t_modules.t_extra import Timer
+from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
-	from t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
 try:
 	import tekore as tk
