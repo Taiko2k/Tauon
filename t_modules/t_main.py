@@ -355,20 +355,20 @@ print(f"Window size: {window_size}")
 should_save_state = True
 
 if not windows_native:
-    import gi
-    from gi.repository import GLib
+	import gi
+	from gi.repository import GLib
 
-    font_folder = os.path.join(install_directory, "fonts")
-    if os.path.isdir(font_folder):
-        import ctypes
+	font_folder = os.path.join(install_directory, "fonts")
+	if os.path.isdir(font_folder):
+		import ctypes
 
-        fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
-        fc.FcConfigReference.restype = ctypes.c_void_p
-        fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
-        fc.FcConfigAppFontAddDir.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
-        config = ctypes.c_void_p()
-        config.contents = fc.FcConfigGetCurrent()
-        fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
+		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
+		fc.FcConfigReference.restype = ctypes.c_void_p
+		fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
+		fc.FcConfigAppFontAddDir.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
+		config = ctypes.c_void_p()
+		config.contents = fc.FcConfigGetCurrent()
+		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
@@ -385,32 +385,32 @@ mac_close = (253, 70, 70, 255)
 mac_maximize = (254, 176, 36, 255)
 mac_minimize = (42, 189, 49, 255)
 try:
-    gi.require_version("Gtk", "3.0")
-    from gi.repository import Gtk
+	gi.require_version("Gtk", "3.0")
+	from gi.repository import Gtk
 
-    gtk_settings = Gtk.Settings().get_default()
-    xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
-    if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-        draw_min_button = False
-    if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-        draw_max_button = False
-    if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
-        left_window_control = True
-    gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-    #print(f"GTK theme is: {gtk_theme}")
-    for k, v in mac_styles.items():
-        if k in gtk_theme:
-            detect_macstyle = True
-            if v is not None:
-                mac_close = v[0]
-                mac_maximize = v[1]
-                mac_minimize = v[2]
+	gtk_settings = Gtk.Settings().get_default()
+	xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+	if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+		draw_min_button = False
+	if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+		draw_max_button = False
+	if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
+		left_window_control = True
+	gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
+	#print(f"GTK theme is: {gtk_theme}")
+	for k, v in mac_styles.items():
+		if k in gtk_theme:
+			detect_macstyle = True
+			if v is not None:
+				mac_close = v[0]
+				mac_maximize = v[1]
+				mac_minimize = v[2]
 
 except Exception:
 	print("Error accessing GTK settings")
 
 # if system == "windows" or msys:
-#     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+#	 os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 
 # Assume that it's a classic Linux install, use standard paths
 if install_directory.startswith("/usr/"):
@@ -437,89 +437,90 @@ install_mode = False
 flatpak_mode = False
 snap_mode = False
 if install_directory.startswith("/opt/") \
-        or install_directory.startswith("/usr/") \
-        or install_directory.startswith("/app/") \
-        or install_directory.startswith("/snap/"):
+		or install_directory.startswith("/usr/") \
+		or install_directory.startswith("/app/") \
+		or install_directory.startswith("/snap/"):
 
-    install_mode = True
-    if install_directory[:6] == "/snap/":
-        snap_mode = True
-    if install_directory[:5] == "/app/":
-        # Flatpak mode
-        print("Detected running as Flatpak")
+	install_mode = True
+	if install_directory[:6] == "/snap/":
+		snap_mode = True
+	if install_directory[:5] == "/app/":
+		# Flatpak mode
+		print("Detected running as Flatpak")
 
-        # [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
-        if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
+		# [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
+		if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
 
-            host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
-            flatpak_fcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
+			host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
+			flatpak_fcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
 
-            if os.path.exists(host_fcfg):
+			if os.path.exists(host_fcfg):
 
-                # if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
-                #     shutil.rmtree(flatpak_fcfg)
-                if os.path.islink(flatpak_fcfg):
-                    print("-- Symlink to fonconfig exists, removing")
-                    os.unlink(flatpak_fcfg)
-                # else:
-                #     print("-- Symlinking user fonconfig")
-                #     #os.symlink(host_fcfg, flatpak_fcfg)
+				# if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
+				#	 shutil.rmtree(flatpak_fcfg)
+				if os.path.islink(flatpak_fcfg):
+					print("-- Symlink to fonconfig exists, removing")
+					os.unlink(flatpak_fcfg)
+				# else:
+				#	 print("-- Symlinking user fonconfig")
+				#	 #os.symlink(host_fcfg, flatpak_fcfg)
 
-        flatpak_mode = True
+		flatpak_mode = True
 
 # If we're installed, use home data locations
 if (install_mode and system == 'linux') or macos or msys:
 
-    cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
-    user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
-    config_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
+	cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
+	user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
+	config_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
 
-    if not os.path.isdir(user_directory):
-        os.makedirs(user_directory)
+	if not os.path.isdir(user_directory):
+		os.makedirs(user_directory)
 
-    if not os.path.isdir(config_directory):
-        os.makedirs(config_directory)
+	if not os.path.isdir(config_directory):
+		os.makedirs(config_directory)
 
-    if snap_mode:
-        print("Installed as Snap")
-    elif flatpak_mode:
-        print("Installed as Flatpak")
-    else:
-        print("Running from installed location")
+	if snap_mode:
+		print("Installed as Snap")
+	elif flatpak_mode:
+		print("Installed as Flatpak")
+	else:
+		print("Running from installed location")
 
-    print("User files location: " + user_directory)
+	print("User files location: " + user_directory)
 
-    if not os.path.isdir(os.path.join(user_directory, "encoder")):
-        os.makedirs(os.path.join(user_directory, "encoder"))
+	if not os.path.isdir(os.path.join(user_directory, "encoder")):
+		os.makedirs(os.path.join(user_directory, "encoder"))
 
 
-# elif (system == 'windows' or msys) and ('Program Files' in install_directory or
-#                                         os.path.isfile(install_directory + '\\unins000.exe')):
+# elif (system == 'windows' or msys) and (
+# 	'Program Files' in install_directory or
+# 	os.path.isfile(install_directory + '\\unins000.exe')):
 #
-#     user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
-#     config_directory = user_directory
-#     cache_directory = user_directory + "\\cache"
-#     print("User Directroy: ", end="")
-#     print(user_directory)
-#     install_mode = True
-#     if not os.path.isdir(user_directory):
-#         os.makedirs(user_directory)
+#	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
+#	 config_directory = user_directory
+#	 cache_directory = user_directory + "\\cache"
+#	 print("User Directroy: ", end="")
+#	 print(user_directory)
+#	 install_mode = True
+#	 if not os.path.isdir(user_directory):
+#		 os.makedirs(user_directory)
 
 
 else:
-    print("Running in portable mode")
+	print("Running in portable mode")
 
-    user_directory = os.path.join(install_directory, "user-data")
-    config_directory = user_directory
+	user_directory = os.path.join(install_directory, "user-data")
+	config_directory = user_directory
 
-    if not os.path.isdir(user_directory):
-        os.makedirs(user_directory)
+	if not os.path.isdir(user_directory):
+		os.makedirs(user_directory)
 
 if not os.path.isfile(os.path.join(user_directory, "state.p")):
-    if os.path.isdir(cache_directory):
-        print("Clearing old cache directory")
-        print(cache_directory)
-        shutil.rmtree(cache_directory)
+	if os.path.isdir(cache_directory):
+		print("Clearing old cache directory")
+		print(cache_directory)
+		shutil.rmtree(cache_directory)
 
 n_cache_dir = os.path.join(cache_directory, "network")
 e_cache_dir = os.path.join(cache_directory, "export")
@@ -529,58 +530,58 @@ r_cache_dir = os.path.join(cache_directory, "radio-thumbs")
 b_cache_dir = os.path.join(user_directory, "artist-backgrounds")
 
 if not os.path.isdir(n_cache_dir):
-    os.makedirs(n_cache_dir)
+	os.makedirs(n_cache_dir)
 if not os.path.isdir(e_cache_dir):
-    os.makedirs(e_cache_dir)
+	os.makedirs(e_cache_dir)
 if not os.path.isdir(g_cache_dir):
-    os.makedirs(g_cache_dir)
+	os.makedirs(g_cache_dir)
 if not os.path.isdir(a_cache_dir):
-    os.makedirs(a_cache_dir)
+	os.makedirs(a_cache_dir)
 if not os.path.isdir(b_cache_dir):
-    os.makedirs(b_cache_dir)
+	os.makedirs(b_cache_dir)
 if not os.path.isdir(r_cache_dir):
-    os.makedirs(r_cache_dir)
+	os.makedirs(r_cache_dir)
 
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
-    os.makedirs(os.path.join(user_directory, "artist-pictures"))
+	os.makedirs(os.path.join(user_directory, "artist-pictures"))
 
 if not os.path.isdir(os.path.join(user_directory, "theme")):
-    os.makedirs(os.path.join(user_directory, "theme"))
+	os.makedirs(os.path.join(user_directory, "theme"))
 
 
 if system == 'linux':
-    system_config_directory = GLib.get_user_config_dir()
-    xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
+	system_config_directory = GLib.get_user_config_dir()
+	xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
 
-    if os.path.isfile(xdg_dir_file):
-        with open(xdg_dir_file) as f:
-            for line in f.readlines():
-                if line.startswith("XDG_MUSIC_DIR="):
-                    music_directory = os.path.expanduser(
-                        os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-                    print(f"Found XDG-Music: {music_directory}")
-                if line.startswith("XDG_DOWNLOAD_DIR="):
-                    target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-                    if os.path.isdir(target):
-                        download_directory = target
-                    print(f"Found XDG-Downloads: {download_directory}")
+	if os.path.isfile(xdg_dir_file):
+		with open(xdg_dir_file) as f:
+			for line in f.readlines():
+				if line.startswith("XDG_MUSIC_DIR="):
+					music_directory = os.path.expanduser(
+						os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
+					print(f"Found XDG-Music: {music_directory}")
+				if line.startswith("XDG_DOWNLOAD_DIR="):
+					target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
+					if os.path.isdir(target):
+						download_directory = target
+					print(f"Found XDG-Downloads: {download_directory}")
 
 
 if os.getenv('XDG_MUSIC_DIR'):
-    music_directory = os.getenv('XDG_MUSIC_DIR')
-    print("Override music to: " + music_directory)
+	music_directory = os.getenv('XDG_MUSIC_DIR')
+	print("Override music to: " + music_directory)
 
 if os.getenv('XDG_DOWNLOAD_DIR'):
-    download_directory = os.getenv('XDG_DOWNLOAD_DIR')
-    print("Override downloads to: " + download_directory)
+	download_directory = os.getenv('XDG_DOWNLOAD_DIR')
+	print("Override downloads to: " + download_directory)
 
 if music_directory:
-    music_directory = os.path.expandvars(music_directory)
+	music_directory = os.path.expandvars(music_directory)
 if download_directory:
-    download_directory = os.path.expandvars(download_directory)
+	download_directory = os.path.expandvars(download_directory)
 
 if not os.path.isdir(music_directory):
-    music_directory = None
+	music_directory = None
 
 print('Install directory: ' + install_directory)
 
@@ -588,48 +589,51 @@ old_backend = 2
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target) -> bool | str:
-    try:
-        if flatpak_mode:
-            complete = subprocess.run(shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
-            r = complete.stdout.decode()
-            return "bin/" + target in r
-        return shutil.which(target)
-    except Exception:
-        return False
+	try:
+		if flatpak_mode:
+			complete = subprocess.run(
+				shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE)
+			r = complete.stdout.decode()
+			return "bin/" + target in r
+		return shutil.which(target)
+	except Exception:
+		return False
 
 
 launch_prefix = ""
 if flatpak_mode:
-    launch_prefix = "flatpak-spawn --host "
+	launch_prefix = "flatpak-spawn --host "
 
 pid = os.getpid()
 
 if not macos:
-    icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+	icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
 else:
-    icon = IMG_Load(os.path.join(asset_directory, "tau-mac.png").encode())
+	icon = IMG_Load(os.path.join(asset_directory, "tau-mac.png").encode())
 
 SDL_SetWindowIcon(t_window, icon)
 
 if not phone:
-    if window_size[0] != logical_size[0]:
-        SDL_SetWindowMinimumSize(t_window, 560, 330)
-    else:
-        SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+	if window_size[0] != logical_size[0]:
+		SDL_SetWindowMinimumSize(t_window, 560, 330)
+	else:
+		SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
 
 max_window_tex = 1000
 if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
 
-    while window_size[0] > max_window_tex:
-        max_window_tex += 1000
-    while window_size[1] > max_window_tex:
-        max_window_tex += 1000
+	while window_size[0] > max_window_tex:
+		max_window_tex += 1000
+	while window_size[1] > max_window_tex:
+		max_window_tex += 1000
 
-main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
-                                 max_window_tex)
-main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
-                                              max_window_tex, max_window_tex)
+main_texture = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
+	max_window_tex)
+main_texture_overlay_temp = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
+	max_window_tex, max_window_tex)
 
 overlay_texture_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, 300, 300)
 SDL_SetTextureBlendMode(overlay_texture_texture, SDL_BLENDMODE_BLEND)
@@ -638,8 +642,9 @@ SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 SDL_RenderClear(renderer)
 SDL_SetRenderTarget(renderer, None)
 
-tracklist_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
-                                      max_window_tex)
+tracklist_texture = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
+	max_window_tex)
 tracklist_texture_rect = SDL_Rect(0, 0, max_window_tex, max_window_tex)
 SDL_SetTextureBlendMode(tracklist_texture, SDL_BLENDMODE_BLEND)
 
@@ -665,123 +670,123 @@ SDL_RenderClear(renderer)
 
 
 class LoadImageAsset:
-    assets = []
+	assets = []
 
-    def __init__(self, path, is_full_path=False, reload=False, scale_name=""):
-        if not reload:
-            self.assets.append(self)
+	def __init__(self, path, is_full_path=False, reload=False, scale_name=""):
+		if not reload:
+			self.assets.append(self)
 
-        self.path = path
-        self.scale_name = scale_name
+		self.path = path
+		self.scale_name = scale_name
 
-        raw_image = IMG_Load(self.path.encode())
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+		raw_image = IMG_Load(self.path.encode())
+		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+		p_w = pointer(c_int(0))
+		p_h = pointer(c_int(0))
+		SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
 
-        if is_full_path:
-            SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
+		if is_full_path:
+			SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
 
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-        SDL_FreeSurface(raw_image)
-        self.w = p_w.contents.value
-        self.h = p_h.contents.value
+		self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+		SDL_FreeSurface(raw_image)
+		self.w = p_w.contents.value
+		self.h = p_h.contents.value
 
-    def reload(self):
-        SDL_DestroyTexture(self.sdl_texture)
-        if self.scale_name:
-            self.path = os.path.join(scaled_asset_directory, self.scale_name)
-        self.__init__(self.path, reload=True, scale_name=self.scale_name)
+	def reload(self):
+		SDL_DestroyTexture(self.sdl_texture)
+		if self.scale_name:
+			self.path = os.path.join(scaled_asset_directory, self.scale_name)
+		self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
-    def render(self, x, y, colour=None):
-        self.rect.x = round(x)
-        self.rect.y = round(y)
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+	def render(self, x, y, colour=None):
+		self.rect.x = round(x)
+		self.rect.y = round(y)
+		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 
 class WhiteModImageAsset:
-    assets = []
+	assets = []
 
-    def __init__(self, path, reload=False, scale_name=""):
-        if not reload:
-            self.assets.append(self)
-        self.path = path
-        self.scale_name = scale_name
-        raw_image = IMG_Load(path.encode())
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-        self.colour = [255, 255, 255, 255]
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-        SDL_FreeSurface(raw_image)
-        self.w = p_w.contents.value
-        self.h = p_h.contents.value
+	def __init__(self, path, reload=False, scale_name=""):
+		if not reload:
+			self.assets.append(self)
+		self.path = path
+		self.scale_name = scale_name
+		raw_image = IMG_Load(path.encode())
+		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+		self.colour = [255, 255, 255, 255]
+		p_w = pointer(c_int(0))
+		p_h = pointer(c_int(0))
+		SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+		self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+		SDL_FreeSurface(raw_image)
+		self.w = p_w.contents.value
+		self.h = p_h.contents.value
 
-    def reload(self):
-        SDL_DestroyTexture(self.sdl_texture)
-        if self.scale_name:
-            self.path = os.path.join(scaled_asset_directory, self.scale_name)
-        self.__init__(self.path, reload=True, scale_name=self.scale_name)
+	def reload(self):
+		SDL_DestroyTexture(self.sdl_texture)
+		if self.scale_name:
+			self.path = os.path.join(scaled_asset_directory, self.scale_name)
+		self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
-    def render(self, x, y, colour):
-        if colour != self.colour:
-            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
-            SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
-            self.colour = colour
-        self.rect.x = round(x)
-        self.rect.y = round(y)
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+	def render(self, x, y, colour):
+		if colour != self.colour:
+			SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
+			SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
+			self.colour = colour
+		self.rect.x = round(x)
+		self.rect.y = round(y)
+		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 
 loaded_asset_dc = {}
 
 
 def asset_loader(name, mod=False):
-    if name in loaded_asset_dc:
-        return loaded_asset_dc[name]
+	if name in loaded_asset_dc:
+		return loaded_asset_dc[name]
 
-    target = os.path.join(scaled_asset_directory, name)
-    if mod:
-        item = WhiteModImageAsset(target, scale_name=name)
-    else:
-        item = LoadImageAsset(target, scale_name=name)
-    loaded_asset_dc[name] = item
-    return item
+	target = os.path.join(scaled_asset_directory, name)
+	if mod:
+		item = WhiteModImageAsset(target, scale_name=name)
+	else:
+		item = LoadImageAsset(target, scale_name=name)
+	loaded_asset_dc[name] = item
+	return item
 
 
 # loading_image = asset_loader('loading.png')
 
 if maximized:
-    i_x = pointer(c_int(0))
-    i_y = pointer(c_int(0))
+	i_x = pointer(c_int(0))
+	i_y = pointer(c_int(0))
 
-    time.sleep(0.02)
-    SDL_PumpEvents()
-    SDL_GetWindowSize(t_window, i_x, i_y)
-    logical_size[0] = i_x.contents.value
-    logical_size[1] = i_y.contents.value
-    SDL_GL_GetDrawableSize(t_window, i_x, i_y)
-    window_size[0] = i_x.contents.value
-    window_size[1] = i_y.contents.value
+	time.sleep(0.02)
+	SDL_PumpEvents()
+	SDL_GetWindowSize(t_window, i_x, i_y)
+	logical_size[0] = i_x.contents.value
+	logical_size[1] = i_y.contents.value
+	SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+	window_size[0] = i_x.contents.value
+	window_size[1] = i_y.contents.value
 
 # loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 # SDL_RenderPresent(renderer)
 
 # if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
-#     print("Config file is missing... copying template from program files")
-#     shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
+#	 print("Config file is missing... copying template from program files")
+#	 shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
 
 if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "input.txt")):
-    print("Input config file is missing... copying template from program files")
-    shutil.copy(os.path.join(install_directory, "input.txt"), config_directory)
+	print("Input config file is missing... copying template from program files")
+	shutil.copy(os.path.join(install_directory, "input.txt"), config_directory)
 
 last_fm_enable = False
 
 if snap_mode:
-    discord_allow = False
+	discord_allow = False
 
 
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
@@ -790,9 +795,9 @@ arch = platform.machine()
 win_ver = platform.release()
 platform_system = platform.system()
 try:
-    win_ver = int(win_ver)
+	win_ver = int(win_ver)
 except Exception:
-    win_ver = 0
+	win_ver = 0
 
 
 # print(arch)
@@ -800,36 +805,36 @@ except Exception:
 # Detect locale for translations (currently none available)
 
 def _(message):
-    return message
+	return message
 
 
 try:
-    py_locale.setlocale(py_locale.LC_ALL, '')
+	py_locale.setlocale(py_locale.LC_ALL, '')
 except Exception:
-    print("SET LOCALE ERROR")
+	print("SET LOCALE ERROR")
 
 # ------------------------------------------------
 
 if system == "windows":
-    os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+	os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 elif not msys and not macos:
-    try:
-        gi.require_version("Notify", "0.7")
-    except Exception:
-        gi.require_version("Notify", "0.8")
-    from gi.repository import Notify
+	try:
+		gi.require_version("Notify", "0.7")
+	except Exception:
+		gi.require_version("Notify", "0.8")
+	from gi.repository import Notify
 
 
 
 
 def no_padding(info):
-    # this will remove all padding
-    return 0
+	# this will remove all padding
+	return 0
 
 wayland = True
 if not os.environ.get('SDL_VIDEODRIVER') == "wayland":
-    wayland = False
-    os.environ['GDK_BACKEND'] = "x11"
+	wayland = False
+	os.environ['GDK_BACKEND'] = "x11"
 
 
 # Setting various timers
@@ -882,26 +887,26 @@ vis_update = False
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
 class DConsole:
-    def __init__(self):
-        self.messages = []
-        self.show = False
+	def __init__(self):
+		self.messages = []
+		self.show = False
 
-    def print(self, message, level=0):
+	def print(self, message, level=0):
 
-        if len(self.messages) > 50:
-            del self.messages[0]
+		if len(self.messages) > 50:
+			del self.messages[0]
 
-        dtime = datetime.datetime.now()
+		dtime = datetime.datetime.now()
 
-        first = True
-        for line in message.split("\n"):
-            if first:
-                first = False
-            else:
-                level = -1
-            self.messages.append((line, level, dtime, Timer()))
+		first = True
+		for line in message.split("\n"):
+			if first:
+				first = False
+			else:
+				level = -1
+			self.messages.append((line, level, dtime, Timer()))
 
-        print(message)
+		print(message)
 
 
 console = DConsole()
@@ -988,46 +993,48 @@ clicked = False
 # Player Variables----------------------------------------------------------------------------
 
 format_colours = {  # These are the colours used for the label icon in UI 'track info box'
-    "MP3": [255, 130, 80, 255],  # Burnt orange
-    "FLAC": [156, 249, 79, 255],  # Bright lime green
-    "M4A": [81, 220, 225, 255],  # Soft cyan
-    "AIFF": [81, 220, 225, 255],  # Soft cyan
-    "OGG": [244, 244, 78, 255],  # Light yellow
-    "OGA": [244, 244, 78, 255],  # Light yellow
-    "WMA": [213, 79, 247, 255],  # Magenta
-    "APE": [247, 79, 79, 255],  # Deep pink
-    "TTA": [94, 78, 244, 255],  # Purple
-    "OPUS": [247, 79, 146, 255],  # Pink
-    "AAC": [79, 247, 168, 255],  # Teal
-    "WV": [229, 23, 18, 255],  # Deep red
-    "PLEX": [229, 160, 13, 255],  # Orange-brown
-    "KOEL": [111, 98, 190, 255],  # Lavender
-    "TAU": [111, 98, 190, 255],  # Lavender
-    "SUB": [235, 140, 20, 255],  # Golden yellow
-    "SPTY": [30, 215, 96, 255],  # Bright green
-    "TIDAL": [0, 0, 0, 255],  # Black
-    "JELY": [190, 100, 210, 255],  # Fuchsia
-    "XM": [50, 50, 50, 255],  # Grey
-    "MOD": [50, 50, 50, 255],  # Grey
-    "S3M": [50, 50, 50, 255],  # Grey
-    "IT": [50, 50, 50, 255],  # Grey
-    "MPTM": [50, 50, 50, 255],  # Grey
-    "AY": [237, 212, 255, 255],  # Pastel purple
-    "GBS": [255, 165, 0, 255],  # Vibrant orange
-    "GYM": [0, 191, 255, 255],  # Bright blue
-    "HES": [176, 224, 230, 255],  # Light blue-green
-    "KSS": [255, 255, 153, 255],  # Bright yellow
-    "NSF": [255, 140, 0, 255],  # Deep orange
-    "NSFE": [255, 140, 0, 255],  # Deep orange
-    "SAP": [152, 255, 152, 255],  # Light green
-    "SPC": [255, 128, 0, 255],  # Bright orange
-    "VGM": [0, 128, 255, 255],  # Deep blue
-    "VGZ": [0, 128, 255, 255],  # Deep blue
+	"MP3":   [255, 130, 80,  255],  # Burnt orange
+	"FLAC":  [156, 249, 79,  255],  # Bright lime green
+	"M4A":   [81,  220, 225, 255],  # Soft cyan
+	"AIFF":  [81,  220, 225, 255],  # Soft cyan
+	"OGG":   [244, 244, 78,  255],  # Light yellow
+	"OGA":   [244, 244, 78,  255],  # Light yellow
+	"WMA":   [213, 79,  247, 255],  # Magenta
+	"APE":   [247, 79,  79,  255],  # Deep pink
+	"TTA":   [94,  78,  244, 255],  # Purple
+	"OPUS":  [247, 79,  146, 255],  # Pink
+	"AAC":   [79,  247, 168, 255],  # Teal
+	"WV":    [229, 23,  18,  255],  # Deep red
+	"PLEX":  [229, 160, 13,  255],  # Orange-brown
+	"KOEL":  [111, 98,  190, 255],  # Lavender
+	"TAU":   [111, 98,  190, 255],  # Lavender
+	"SUB":   [235, 140, 20,  255],  # Golden yellow
+	"SPTY":  [30,  215, 96,  255],  # Bright green
+	"TIDAL": [0,   0,   0,   255],  # Black
+	"JELY":  [190, 100, 210, 255],  # Fuchsia
+	"XM":    [50,  50,  50,  255],  # Grey
+	"MOD":   [50,  50,  50,  255],  # Grey
+	"S3M":   [50,  50,  50,  255],  # Grey
+	"IT":    [50,  50,  50,  255],  # Grey
+	"MPTM":  [50,  50,  50,  255],  # Grey
+	"AY":    [237, 212, 255, 255],  # Pastel purple
+	"GBS":   [255, 165, 0,   255],  # Vibrant orange
+	"GYM":   [0,   191, 255, 255],  # Bright blue
+	"HES":   [176, 224, 230, 255],  # Light blue-green
+	"KSS":   [255, 255, 153, 255],  # Bright yellow
+	"NSF":   [255, 140, 0,   255],  # Deep orange
+	"NSFE":  [255, 140, 0,   255],  # Deep orange
+	"SAP":   [152, 255, 152, 255],  # Light green
+	"SPC":   [255, 128, 0,   255],  # Bright orange
+	"VGM":   [0,   128, 255, 255],  # Deep blue
+	"VGZ":   [0,   128, 255, 255],  # Deep blue
 }
 
 # These will be the extensions of files to be added when importing
-DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape', 'aiff',
-              'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'}
+DA_Formats = {
+	'mp3', 'wav', 'opus', 'flac', 'ape', 'aiff',
+	'm4a', 'ogg', 'oga', 'aac', 'tta', 'wv', 'wma'
+}
 
 VID_Formats = {'mp4', "webm"}
 
@@ -1041,10 +1048,10 @@ DA_Formats |= GME_Formats
 Archive_Formats = {'zip'}
 
 if whicher('unrar'):
-    Archive_Formats.add("rar")
+	Archive_Formats.add("rar")
 
 if whicher('7z'):
-    Archive_Formats.add("7z")
+	Archive_Formats.add("7z")
 
 cargo = []
 
@@ -1132,10 +1139,10 @@ multi_playlist = [pl_gen()]
 
 
 def queue_item_gen(trackid, position, pl_id, type=0, album_stage=0):
-    # type; 0 is track, 1 is album
-    auto_stop = False
+	# type; 0 is track, 1 is album
+	auto_stop = False
 
-    return [trackid, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+	return [trackid, position, pl_id, type, album_stage, uid_gen(), auto_stop]
 
 
 default_playlist = multi_playlist[0][2]
@@ -1178,1064 +1185,1066 @@ album_position = 0
 
 class Prefs:  # Used to hold any kind of settings
 
-    def __init__(self):
-        self.colour_from_image = False
-        self.dim_art = False
-        self.prefer_side = True  # Saves whether side panel is shown or not
-        self.pause_fade_time = 400
-        self.change_volume_fade_time = 400
-        self.cross_fade_time = 700  # 700
-        self.volume_wheel_increment = 2
-        self.encoder_output = user_directory + '/encoder/'
-        if music_directory is not None:
-            self.encoder_output = music_directory + '/encode-output/'
-        self.rename_folder_template = "<albumartist> - <album>"
-        self.rename_tracks_template = "<tn>. <artist> - <title>.<ext>"
-
-        self.enable_web = False
-        self.allow_remote = False
-        self.expose_web = True
-
-        self.enable_transcode = True
-        self.show_rym = False
-        self.show_band = False
-        self.show_wiki = False
-        self.show_transfer = True
-        self.show_queue = True
-        self.prefer_bottom_title = True
-        self.append_date = True
+	def __init__(self):
+		self.colour_from_image = False
+		self.dim_art = False
+		self.prefer_side = True  # Saves whether side panel is shown or not
+		self.pause_fade_time = 400
+		self.change_volume_fade_time = 400
+		self.cross_fade_time = 700  # 700
+		self.volume_wheel_increment = 2
+		self.encoder_output = user_directory + '/encoder/'
+		if music_directory is not None:
+			self.encoder_output = music_directory + '/encode-output/'
+		self.rename_folder_template = "<albumartist> - <album>"
+		self.rename_tracks_template = "<tn>. <artist> - <title>.<ext>"
+
+		self.enable_web = False
+		self.allow_remote = False
+		self.expose_web = True
+
+		self.enable_transcode = True
+		self.show_rym = False
+		self.show_band = False
+		self.show_wiki = False
+		self.show_transfer = True
+		self.show_queue = True
+		self.prefer_bottom_title = True
+		self.append_date = True
 
-        self.transcode_codec = 'opus'
-        self.transcode_mode = 'single'
-        self.transcode_bitrate = 64
+		self.transcode_codec = 'opus'
+		self.transcode_mode = 'single'
+		self.transcode_bitrate = 64
 
-        # self.line_style = 1
-        self.device = 1
-        self.device_name = ""
+		# self.line_style = 1
+		self.device = 1
+		self.device_name = ""
 
-        self.cache_gallery = True
-        self.gallery_row_scroll = True
-        self.gallery_scroll_wheel_px = 90
+		self.cache_gallery = True
+		self.gallery_row_scroll = True
+		self.gallery_scroll_wheel_px = 90
 
-        self.playlist_font_size = 15
-        self.playlist_row_height = 27
+		self.playlist_font_size = 15
+		self.playlist_row_height = 27
 
-        self.tag_editor_name = ""
-        self.tag_editor_target = ""
-        self.tag_editor_path = ""
+		self.tag_editor_name = ""
+		self.tag_editor_target = ""
+		self.tag_editor_path = ""
 
-        self.use_title = False
-        self.auto_extract = False
-        self.auto_del_zip = False
-        self.pl_thumb = False
+		self.use_title = False
+		self.auto_extract = False
+		self.auto_del_zip = False
+		self.pl_thumb = False
 
-        self.use_custom_fonts = False
-        self.linux_font = "Noto Sans, Noto Sans CJK JP, Arial,"
-        self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP, Arial, Medium"
-        self.linux_font_bold = "Noto Sans, Noto Sans CJK JP, Bold"
-        self.linux_font_condensed = "Noto Sans, Extra-Condensed"
-        self.linux_font_condensed_bold = "Noto Sans, Extra-Condensed Bold"
+		self.use_custom_fonts = False
+		self.linux_font = "Noto Sans, Noto Sans CJK JP, Arial,"
+		self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP, Arial, Medium"
+		self.linux_font_bold = "Noto Sans, Noto Sans CJK JP, Bold"
+		self.linux_font_condensed = "Noto Sans, Extra-Condensed"
+		self.linux_font_condensed_bold = "Noto Sans, Extra-Condensed Bold"
 
-        self.spec2_scroll = True
+		self.spec2_scroll = True
 
-        self.spec2_p_base = [10, 10, 100]
-        self.spec2_p_multiply = [0.5, 1, 1]
+		self.spec2_p_base = [10, 10, 100]
+		self.spec2_p_multiply = [0.5, 1, 1]
 
-        self.spec2_base = [10, 10, 100]
-        self.spec2_multiply = [0.5, 1, 1]
-        self.spec2_colour_setting = 'custom'
+		self.spec2_base = [10, 10, 100]
+		self.spec2_multiply = [0.5, 1, 1]
+		self.spec2_colour_setting = 'custom'
 
-        self.auto_lfm = False
-        self.scrobble_mark = False
-        self.enable_mpris = True
+		self.auto_lfm = False
+		self.scrobble_mark = False
+		self.enable_mpris = True
 
-        self.replay_gain = 0  # 0=off 1=track 2=album
-        self.replay_preamp = 0  # db
-        self.radio_page_lyrics = True
+		self.replay_gain = 0  # 0=off 1=track 2=album
+		self.replay_preamp = 0  # db
+		self.radio_page_lyrics = True
 
-        self.show_gimage = False
-        self.end_setting = "stop"
-        self.show_gen = False
-        self.show_lyrics_side = True
+		self.show_gimage = False
+		self.end_setting = "stop"
+		self.show_gen = False
+		self.show_lyrics_side = True
 
-        self.log_vol = False
+		self.log_vol = False
 
-        self.ui_scale: float = scale
+		self.ui_scale: float = scale
 
-        # if flatpak_mode:
+		# if flatpak_mode:
 
-        self.transcode_opus_as = False
+		self.transcode_opus_as = False
 
-        self.discord_active = False
-        self.discord_ready = False
-        self.disconnect_discord = False
+		self.discord_active = False
+		self.discord_ready = False
+		self.disconnect_discord = False
 
-        self.monitor_downloads = True
-        self.extract_to_music = False
+		self.monitor_downloads = True
+		self.extract_to_music = False
 
-        self.enable_lb = False
-        self.lb_token = ""
+		self.enable_lb = False
+		self.lb_token = ""
 
-        self.use_jump_crossfade = True
-        self.use_transition_crossfade = False
-        self.use_pause_fade = True
+		self.use_jump_crossfade = True
+		self.use_transition_crossfade = False
+		self.use_pause_fade = True
 
-        self.show_notifications = True
+		self.show_notifications = True
 
-        self.true_shuffle = True
-        self.append_total_time = False
-        self.backend = 4  # 2 gstreamer, 4 phazor
+		self.true_shuffle = True
+		self.append_total_time = False
+		self.backend = 4  # 2 gstreamer, 4 phazor
 
-        self.album_repeat_mode = False  # passed to pctl
-        self.album_shuffle_mode = False  # passed to pctl
+		self.album_repeat_mode = False  # passed to pctl
+		self.album_shuffle_mode = False  # passed to pctl
 
-        self.finish_current = False  # Finish current album when adding to queue
+		self.finish_current = False  # Finish current album when adding to queue
 
-        self.reload_play_state = False  # Resume playback on app restart
-        self.resume_play_wake = False  # Resume playback on wake
-        self.reload_state = None
+		self.reload_play_state = False  # Resume playback on app restart
+		self.resume_play_wake = False  # Resume playback on wake
+		self.reload_state = None
 
-        self.mono = False
+		self.mono = False
 
-        self.last_fm_token = None
-        self.last_fm_username = ""
+		self.last_fm_token = None
+		self.last_fm_username = ""
 
-        self.use_card_style = True
+		self.use_card_style = True
 
-        self.plex_username = ""
-        self.plex_password = ""
-        self.plex_servername = ""
+		self.plex_username = ""
+		self.plex_password = ""
+		self.plex_servername = ""
 
-        self.koel_username = "admin@example.com"
-        self.koel_password = "admin"
-        self.koel_server_url = "http://localhost:8050"
+		self.koel_username = "admin@example.com"
+		self.koel_password = "admin"
+		self.koel_server_url = "http://localhost:8050"
 
-        self.auto_lyrics = False  # Function has been disabled
-        self.jelly_username = ""
-        self.jelly_password = ""
-        self.jelly_server_url = "http://localhost:8096"
+		self.auto_lyrics = False  # Function has been disabled
+		self.jelly_username = ""
+		self.jelly_password = ""
+		self.jelly_server_url = "http://localhost:8096"
 
-        self.auto_lyrics_checked = []
+		self.auto_lyrics_checked = []
 
-        self.show_side_art = True
-        self.always_pin_playlists = True
+		self.show_side_art = True
+		self.always_pin_playlists = True
 
-        self.user_directory = user_directory
-        self.cache_directory = cache_directory
+		self.user_directory = user_directory
+		self.cache_directory = cache_directory
 
-        self.window_opacity = window_opacity
-        self.gallery_single_click = True
-        self.custom_bg_opacity = 40
+		self.window_opacity = window_opacity
+		self.gallery_single_click = True
+		self.custom_bg_opacity = 40
 
-        self.tabs_on_top = True
-        self.desktop = desktop
+		self.tabs_on_top = True
+		self.desktop = desktop
 
-        self.dc_device = False  # (BASS) Disconnect device on pause
-        if desktop == "KDE":
-            self.dc_device = True
+		self.dc_device = False  # (BASS) Disconnect device on pause
+		if desktop == "KDE":
+			self.dc_device = True
 
-        self.showcase_vis = True
-        self.show_lyrics_showcase = True
+		self.showcase_vis = True
+		self.show_lyrics_showcase = True
 
-        self.spec2_colour_mode = 0
-        self.flatpak_mode = flatpak_mode
+		self.spec2_colour_mode = 0
+		self.flatpak_mode = flatpak_mode
 
-        self.device_buffer = 80
+		self.device_buffer = 80
 
-        self.eq = [0.0] * 10
-        self.use_eq = False
+		self.eq = [0.0] * 10
+		self.use_eq = False
 
-        self.bio_large = False
-        self.discord_allow = discord_allow
-        self.discord_show = False
+		self.bio_large = False
+		self.discord_allow = discord_allow
+		self.discord_show = False
 
-        self.min_to_tray = False
+		self.min_to_tray = False
 
-        self.guitar_chords = False
-        self.prefer_synced_lyrics = True
-        self.sync_lyrics_time_offset = 0
+		self.guitar_chords = False
+		self.prefer_synced_lyrics = True
+		self.sync_lyrics_time_offset = 0
 
-        self.playback_follow_cursor = False
-        self.short_buffer = False
+		self.playback_follow_cursor = False
+		self.short_buffer = False
 
-        self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
+		self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
-        self.art_bg = False
-        self.art_bg_stronger = 1
-        self.art_bg_opacity = 10
-        self.art_bg_blur = 9
-        self.art_bg_always_blur = False
+		self.art_bg = False
+		self.art_bg_stronger = 1
+		self.art_bg_opacity = 10
+		self.art_bg_blur = 9
+		self.art_bg_always_blur = False
 
-        self.random_mode = False
-        self.repeat_mode = False
+		self.random_mode = False
+		self.repeat_mode = False
 
-        self.failed_artists = []
-        self.failed_background_artists = []
+		self.failed_artists = []
+		self.failed_background_artists = []
 
-        self.artist_list = False
-        self.auto_sort = False
+		self.artist_list = False
+		self.auto_sort = False
 
-        self.transcode_inplace = False
+		self.transcode_inplace = False
 
-        self.bg_showcase_only = False
+		self.bg_showcase_only = False
 
-        self.lyrics_enables = []
+		self.lyrics_enables = []
 
-        self.fatvap = "6b2a9499238ce6416783fc8129b8ac67"
+		self.fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 
-        self.fanart_notify = True
-        self.discogs_pat = ""
+		self.fanart_notify = True
+		self.discogs_pat = ""
 
-        self.artist_list_prefer_album_artist = True
+		self.artist_list_prefer_album_artist = True
 
-        self.mini_mode_mode = 0
-        self.dc_device_setting = "on"
+		self.mini_mode_mode = 0
+		self.dc_device_setting = "on"
 
-        self.download_dir1 = ""
-        self.dd_index = False
+		self.download_dir1 = ""
+		self.dd_index = False
 
-        self.metadata_page_port = 7590
+		self.metadata_page_port = 7590
 
-        self.custom_encoder_output = ""
-        self.column_aa_fallback_artist = False
+		self.custom_encoder_output = ""
+		self.column_aa_fallback_artist = False
 
-        self.meta_persists_stop = False
-        self.meta_shows_selected = False
-        self.meta_shows_selected_always = False
+		self.meta_persists_stop = False
+		self.meta_shows_selected = False
+		self.meta_shows_selected_always = False
 
-        self.left_align_album_artist_title = False
-        self.stop_notifications_mini_mode = False
-        self.scale_want = 1
-        self.x_scale = True
-        self.hide_queue = True
-        self.show_playlist_list = True
-        self.thin_gallery_borders = False
-        self.show_current_on_transition = False
+		self.left_align_album_artist_title = False
+		self.stop_notifications_mini_mode = False
+		self.scale_want = 1
+		self.x_scale = True
+		self.hide_queue = True
+		self.show_playlist_list = True
+		self.thin_gallery_borders = False
+		self.show_current_on_transition = False
 
-        self.force_subpixel_text = False
-        if gtk_settings:
-            if gtk_settings.get_property("gtk-xft-rgba") == "rgb":
-                self.force_subpixel_text = True
+		self.force_subpixel_text = False
+		if gtk_settings:
+			if gtk_settings.get_property("gtk-xft-rgba") == "rgb":
+				self.force_subpixel_text = True
 
-        self.chart_rows = 3
-        self.chart_columns = 3
-        self.chart_bg = [7, 7, 7]
-        self.chart_text = True
-        self.chart_font = "Monospace 10"
-        self.chart_tile = False
+		self.chart_rows = 3
+		self.chart_columns = 3
+		self.chart_bg = [7, 7, 7]
+		self.chart_text = True
+		self.chart_font = "Monospace 10"
+		self.chart_tile = False
 
-        self.chart_cascade = False
-        self.chart_c1 = 5
-        self.chart_c2 = 6
-        self.chart_c3 = 10
-        self.chart_d1 = 2
-        self.chart_d2 = 2
-        self.chart_d3 = 2
+		self.chart_cascade = False
+		self.chart_c1 = 5
+		self.chart_c2 = 6
+		self.chart_c3 = 10
+		self.chart_d1 = 2
+		self.chart_d2 = 2
+		self.chart_d3 = 2
 
-        self.art_in_top_panel = True
-        self.always_art_header = False
+		self.art_in_top_panel = True
+		self.always_art_header = False
 
-        # self.center_bg = True
-        self.ui_lang = 'auto'
-        self.side_panel_layout = 0
-        self.use_absolute_track_index = False
+		# self.center_bg = True
+		self.ui_lang = 'auto'
+		self.side_panel_layout = 0
+		self.use_absolute_track_index = False
 
-        self.hide_bottom_title = True
-        self.auto_goto_playing = False
+		self.hide_bottom_title = True
+		self.auto_goto_playing = False
 
-        self.diacritic_search = True
-        self.increase_gallery_row_spacing = False
-        self.center_gallery_text = False
+		self.diacritic_search = True
+		self.increase_gallery_row_spacing = False
+		self.center_gallery_text = False
 
-        self.tracklist_y_text_offset = 0
-        self.theme_name = "Turbo"
-        self.left_panel_mode = "playlist"
+		self.tracklist_y_text_offset = 0
+		self.theme_name = "Turbo"
+		self.left_panel_mode = "playlist"
 
-        self.folder_tree_codec_colours = False
+		self.folder_tree_codec_colours = False
 
-        self.network_stream_bitrate = 0  # 0 is off
+		self.network_stream_bitrate = 0  # 0 is off
 
-        self.show_side_lyrics_art_panel = True
+		self.show_side_lyrics_art_panel = True
 
-        self.gst_use_custom_output = False
+		self.gst_use_custom_output = False
 
-        self.notify_include_album = True
+		self.notify_include_album = True
 
-        self.auto_dl_artist_data = False
+		self.auto_dl_artist_data = False
 
-        self.enable_fanart_artist = False
-        self.enable_fanart_bg = False
-        self.enable_fanart_cover = False
+		self.enable_fanart_artist = False
+		self.enable_fanart_bg = False
+		self.enable_fanart_cover = False
 
-        self.always_auto_update_playlists = False
+		self.always_auto_update_playlists = False
 
-        self.subsonic_server = "http://localhost:4040"
-        self.subsonic_user = ""
-        self.subsonic_password = ""
-        self.subsonic_password_plain = False
+		self.subsonic_server = "http://localhost:4040"
+		self.subsonic_user = ""
+		self.subsonic_password = ""
+		self.subsonic_password_plain = False
 
-        self.subsonic_playlists = {}
+		self.subsonic_playlists = {}
 
-        self.write_ratings = False
-        self.rating_playtime_stars = False
+		self.write_ratings = False
+		self.rating_playtime_stars = False
 
-        self.lyrics_subs = {}
+		self.lyrics_subs = {}
 
-        self.radio_urls = []
+		self.radio_urls = []
 
-        self.lyric_metadata_panel_top = False
-        self.showcase_overlay_texture = False
+		self.lyric_metadata_panel_top = False
+		self.showcase_overlay_texture = False
 
-        self.sync_target = ""
-        self.sync_deletes = False
-        self.sync_playlist = None
-        self.download_playlist = None
+		self.sync_target = ""
+		self.sync_deletes = False
+		self.sync_playlist = None
+		self.download_playlist = None
 
-        self.sep_genre_multi = False
-        self.topchart_sorts_played = True
+		self.sep_genre_multi = False
+		self.topchart_sorts_played = True
 
-        self.spot_client = ""
-        self.spot_secret = ""
-        self.spot_username = ""
-        self.spot_password = ""
-        self.spot_mode = False
-        self.launch_spotify_web = False
-        self.launch_spotify_local = False
-        self.remove_network_tracks = False
-        self.bypass_transcode = False
-        self.force_hide_max_button = False
-        self.zoom_art = False
-        self.auto_rec = False
-        self.radio_record_codec = "OPUS"
-        self.pa_fast_seek = False
-        self.precache = False
-        self.cache_list = []
-        self.cache_limit = 2000  # in mb
-        self.save_window_position = True
-        self.spotify_token = ""
-        self.always_ffmpeg = False
+		self.spot_client = ""
+		self.spot_secret = ""
+		self.spot_username = ""
+		self.spot_password = ""
+		self.spot_mode = False
+		self.launch_spotify_web = False
+		self.launch_spotify_local = False
+		self.remove_network_tracks = False
+		self.bypass_transcode = False
+		self.force_hide_max_button = False
+		self.zoom_art = False
+		self.auto_rec = False
+		self.radio_record_codec = "OPUS"
+		self.pa_fast_seek = False
+		self.precache = False
+		self.cache_list = []
+		self.cache_limit = 2000  # in mb
+		self.save_window_position = True
+		self.spotify_token = ""
+		self.always_ffmpeg = False
 
-        self.use_libre_fm = False
-        self.back_restarts = False
+		self.use_libre_fm = False
+		self.back_restarts = False
 
-        self.old_playlist_box_position = 0
-        self.listenbrainz_url = ""
-        self.maloja_enable = False
-        self.maloja_url = ""
-        self.maloja_key = ""
+		self.old_playlist_box_position = 0
+		self.listenbrainz_url = ""
+		self.maloja_enable = False
+		self.maloja_url = ""
+		self.maloja_key = ""
 
-        self.scrobble_hold = False
+		self.scrobble_hold = False
 
-        self.artist_list_sort_mode = "alpha"
+		self.artist_list_sort_mode = "alpha"
 
-        self.phazor_device_selected = "Default"
-        self.phazor_devices = ["Default"]
-        self.bg_flips = set()
-        self.use_tray = False
-        self.tray_show_title = False
-        self.drag_to_unpin = True
-        self.enable_remote = False
+		self.phazor_device_selected = "Default"
+		self.phazor_devices = ["Default"]
+		self.bg_flips = set()
+		self.use_tray = False
+		self.tray_show_title = False
+		self.drag_to_unpin = True
+		self.enable_remote = False
 
-        self.artist_list_style = 1
-        self.discord_enable = False
-        self.stop_end_queue = False
+		self.artist_list_style = 1
+		self.discord_enable = False
+		self.stop_end_queue = False
 
-        self.block_suspend = False
-        self.smart_bypass = True
-        self.seek_interval = 15
-        self.shuffle_lock = False
-        self.album_shuffle_lock_mode = False
-        self.premium = False
-        self.power_save = False
-        if macos or phone:
-            self.power_save = True
-        self.left_window_control = macos or left_window_control
-        self.macstyle = macos or detect_macstyle
-        self.radio_thumb_bans = []
-        self.show_nag = False
+		self.block_suspend = False
+		self.smart_bypass = True
+		self.seek_interval = 15
+		self.shuffle_lock = False
+		self.album_shuffle_lock_mode = False
+		self.premium = False
+		self.power_save = False
+		if macos or phone:
+			self.power_save = True
+		self.left_window_control = macos or left_window_control
+		self.macstyle = macos or detect_macstyle
+		self.radio_thumb_bans = []
+		self.show_nag = False
 
-        self.playlist_exports = {}
-        self.show_chromecast = False
+		self.playlist_exports = {}
+		self.show_chromecast = False
 
-        self.samplerate = 48000
-        self.resample = 1
-        self.volume_power = 2
+		self.samplerate = 48000
+		self.resample = 1
+		self.volume_power = 2
 
-        self.tmp_cache = True
+		self.tmp_cache = True
 
-        self.sat_url = ""
-        self.lyrics_font_size = 15
+		self.sat_url = ""
+		self.lyrics_font_size = 15
 
-        self.use_gamepad = True
-        self.avoid_resampling = False
-        self.use_scancodes = False
+		self.use_gamepad = True
+		self.avoid_resampling = False
+		self.use_scancodes = False
 
-        self.artist_list_threshold = 4
-        self.allow_video_formats = True
-        self.mini_mode_on_top = True
-        self.tray_theme = "pink"
+		self.artist_list_threshold = 4
+		self.allow_video_formats = True
+		self.mini_mode_on_top = True
+		self.tray_theme = "pink"
 
-        self.lastfm_pull_love = False
-        self.row_title_format = 1
-        self.row_title_genre = False
-        self.row_title_separator_type = 1
-        self.search_on_letter = True
+		self.lastfm_pull_love = False
+		self.row_title_format = 1
+		self.row_title_genre = False
+		self.row_title_separator_type = 1
+		self.search_on_letter = True
 
-        self.gallery_combine_disc = False
-        self.pipewire = False
-        self.tidal_quality = 1
+		self.gallery_combine_disc = False
+		self.pipewire = False
+		self.tidal_quality = 1
 
 prefs = Prefs()
 
 
 def open_uri(uri:str):
-    print("OPEN URI")
-    load_order = LoadClass()
+	print("OPEN URI")
+	load_order = LoadClass()
 
-    for w in range(len(pctl.multi_playlist)):
-        if pctl.multi_playlist[w][0] == "Default":
-            load_order.playlist = pctl.multi_playlist[w][6]
-            break
-    else:
-        pctl.multi_playlist.append(pl_gen())
-        load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
-        switch_playlist(len(pctl.multi_playlist) - 1)
+	for w in range(len(pctl.multi_playlist)):
+		if pctl.multi_playlist[w][0] == "Default":
+			load_order.playlist = pctl.multi_playlist[w][6]
+			break
+	else:
+		pctl.multi_playlist.append(pl_gen())
+		load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
+		switch_playlist(len(pctl.multi_playlist) - 1)
 
-    load_order.target = str(urllib.parse.unquote(uri)).replace("file:///", "/").replace("\r", "")
+	load_order.target = str(urllib.parse.unquote(uri)).replace("file:///", "/").replace("\r", "")
 
-    if gui.auto_play_import is False:
-        load_order.play = True
-        gui.auto_play_import = True
+	if gui.auto_play_import is False:
+		load_order.play = True
+		gui.auto_play_import = True
 
-    load_orders.append(copy.deepcopy(load_order))
-    gui.update += 1
+	load_orders.append(copy.deepcopy(load_order))
+	gui.update += 1
 
 
 class GuiVar:  # Use to hold any variables for use in relation to UI
-    def update_layout(self):
-        global update_layout
-        update_layout = True
-
-    def show_message(self, line1, line2="", line3="", mode="info"):
-        show_message(line1, line2, line3, mode=mode)
-
-    def delay_frame(self, t):
-        gui.frame_callback_list.append(TestTimer(t))
-
-    def destroy_textures(self):
-        SDL_DestroyTexture(self.spec4_tex)
-        SDL_DestroyTexture(self.spec1_tex)
-        SDL_DestroyTexture(self.spec2_tex)
-        SDL_DestroyTexture(self.spec_level_tex)
-
-    # def test_text_input(self):
-    #     if self.text_input_request and not self.text_input_active:
-    #         SDL_StartTextInput()
-    #         self.update += 1
-    #     if not self.text_input_request and self.text_input_active:
-    #         SDL_StopTextInput()
-    #     self.text_input_request = False
-
-    def rescale(self):
-        self.spec_y = int(round(5 * self.scale))
-        self.spec_w = int(round(80 * self.scale))
-        self.spec_h = int(round(20 * self.scale))
-        self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
-
-        self.spec4_y = int(round(200 * self.scale))
-        self.spec4_w = int(round(322 * self.scale))
-        self.spec4_h = int(round(100 * self.scale))
-        self.spec4_rec = SDL_Rect(0, self.spec4_y, self.spec4_w, self.spec4_h)
-
-        self.bar = SDL_Rect(10, 10, round(3 * self.scale), 10)  # spec bar bin
-        self.bar4 = SDL_Rect(10, 10, round(3 * self.scale), 10)  # spec bar bin
-        self.set_height = round(25 * self.scale)
-        self.panelBY = round(51 * self.scale)
-        self.panelY = round(30 * self.scale)
-        self.panelY2 = round(30 * self.scale)
-        self.playlist_top = self.panelY + (8 * self.scale)
-        self.playlist_top_bk = self.playlist_top
-        self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
-
-        self.spec2_y = int(round(22 * self.scale))
-        self.spec2_w = int(round(140 * self.scale))
-        self.spec2 = [0] * self.spec2_y
-        self.spec2_phase = 0
-        self.spec2_buffers = []
-        self.spec2_rec = SDL_Rect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
-        self.spec2_source = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
-        self.spec2_dest = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
-        self.spec2_position = 0
-        self.spec2_timer = Timer()
-        self.spec2_timer.set()
-
-        self.level_w = 5 * self.scale
-        self.level_y = 16 * self.scale
-        self.level_s = 1 * self.scale
-        self.level_ww = round(79 * self.scale)
-        self.level_hh = round(18 * self.scale)
-        self.spec_level_rec = SDL_Rect(0, round(self.level_y - 10 * self.scale), round(self.level_ww),
-                                       round(self.level_hh))
-
-        self.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w,
-                                           self.spec2_y)
-        self.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w,
-                                           self.spec4_y)
-        self.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w,
-                                           self.spec_h)
-        self.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
-                                                self.level_ww, self.level_hh)
-        SDL_SetTextureBlendMode(self.spec4_tex, SDL_BLENDMODE_BLEND)
-        self.artist_panel_height = 320 * self.scale
-        self.last_artist_panel_height = self.artist_panel_height
-
-        self.window_control_hit_area_w = 100 * self.scale
-        self.window_control_hit_area_h = 30 * self.scale
-
-    def __init__(self):
-
-        self.scale = prefs.ui_scale
-
-        self.window_id = 0
-        self.update = 2  # UPDATE
-        self.turbo = True
-        self.turbo_next = 0
-        self.pl_update = 1
-        self.lowered = False
-        self.request_raise = False
-        self.maximized = False
-
-        self.message_box = False
-        self.message_text = ""
-        self.message_mode = 'info'
-        self.message_subtext = ""
-        self.message_subtext2 = ""
-        self.message_box_confirm_reference = None
-        self.message_box_use_reference = True
-        self.message_box_confirm_callback = None
+	def update_layout(self):
+		global update_layout
+		update_layout = True
+
+	def show_message(self, line1, line2="", line3="", mode="info"):
+		show_message(line1, line2, line3, mode=mode)
+
+	def delay_frame(self, t):
+		gui.frame_callback_list.append(TestTimer(t))
+
+	def destroy_textures(self):
+		SDL_DestroyTexture(self.spec4_tex)
+		SDL_DestroyTexture(self.spec1_tex)
+		SDL_DestroyTexture(self.spec2_tex)
+		SDL_DestroyTexture(self.spec_level_tex)
+
+	# def test_text_input(self):
+	#	 if self.text_input_request and not self.text_input_active:
+	#		 SDL_StartTextInput()
+	#		 self.update += 1
+	#	 if not self.text_input_request and self.text_input_active:
+	#		 SDL_StopTextInput()
+	#	 self.text_input_request = False
+
+	def rescale(self):
+		self.spec_y = int(round(5 * self.scale))
+		self.spec_w = int(round(80 * self.scale))
+		self.spec_h = int(round(20 * self.scale))
+		self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
+
+		self.spec4_y = int(round(200 * self.scale))
+		self.spec4_w = int(round(322 * self.scale))
+		self.spec4_h = int(round(100 * self.scale))
+		self.spec4_rec = SDL_Rect(0, self.spec4_y, self.spec4_w, self.spec4_h)
+
+		self.bar = SDL_Rect(10, 10, round(3 * self.scale), 10)  # spec bar bin
+		self.bar4 = SDL_Rect(10, 10, round(3 * self.scale), 10)  # spec bar bin
+		self.set_height = round(25 * self.scale)
+		self.panelBY = round(51 * self.scale)
+		self.panelY = round(30 * self.scale)
+		self.panelY2 = round(30 * self.scale)
+		self.playlist_top = self.panelY + (8 * self.scale)
+		self.playlist_top_bk = self.playlist_top
+		self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
+
+		self.spec2_y = int(round(22 * self.scale))
+		self.spec2_w = int(round(140 * self.scale))
+		self.spec2 = [0] * self.spec2_y
+		self.spec2_phase = 0
+		self.spec2_buffers = []
+		self.spec2_rec = SDL_Rect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_source = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_dest = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_position = 0
+		self.spec2_timer = Timer()
+		self.spec2_timer.set()
+
+		self.level_w = 5 * self.scale
+		self.level_y = 16 * self.scale
+		self.level_s = 1 * self.scale
+		self.level_ww = round(79 * self.scale)
+		self.level_hh = round(18 * self.scale)
+		self.spec_level_rec = SDL_Rect(
+			0, round(self.level_y - 10 * self.scale), round(self.level_ww),round(self.level_hh))
+
+		self.spec2_tex = SDL_CreateTexture(
+					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
+		self.spec4_tex = SDL_CreateTexture(
+					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
+		self.spec1_tex = SDL_CreateTexture(
+					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
+		self.spec_level_tex = SDL_CreateTexture(
+					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
+		SDL_SetTextureBlendMode(self.spec4_tex, SDL_BLENDMODE_BLEND)
+		self.artist_panel_height = 320 * self.scale
+		self.last_artist_panel_height = self.artist_panel_height
+
+		self.window_control_hit_area_w = 100 * self.scale
+		self.window_control_hit_area_h = 30 * self.scale
+
+	def __init__(self):
+
+		self.scale = prefs.ui_scale
+
+		self.window_id = 0
+		self.update = 2  # UPDATE
+		self.turbo = True
+		self.turbo_next = 0
+		self.pl_update = 1
+		self.lowered = False
+		self.request_raise = False
+		self.maximized = False
+
+		self.message_box = False
+		self.message_text = ""
+		self.message_mode = 'info'
+		self.message_subtext = ""
+		self.message_subtext2 = ""
+		self.message_box_confirm_reference = None
+		self.message_box_use_reference = True
+		self.message_box_confirm_callback = None
 
-        self.save_size = [450, 310]
-        self.show_playlist = True
-        self.show_bottom_title = False
-        # self.show_top_title = True
-        self.search_error = False
+		self.save_size = [450, 310]
+		self.show_playlist = True
+		self.show_bottom_title = False
+		# self.show_top_title = True
+		self.search_error = False
 
-        self.level_update = False
-        self.level_time = Timer()
-        self.level_peak = [0, 0]
-        self.level = 0
-        self.time_passed = 0
-        self.level_meter_colour_mode = 3
+		self.level_update = False
+		self.level_time = Timer()
+		self.level_peak = [0, 0]
+		self.level = 0
+		self.time_passed = 0
+		self.level_meter_colour_mode = 3
 
-        self.vis = 0  # visualiser mode actual
-        self.vis_want = 2  # visualiser mode setting
-        self.spec = None
-        self.s_spec = [0] * 24
-        self.s4_spec = [0] * 45
-        self.update_spec = 0
+		self.vis = 0  # visualiser mode actual
+		self.vis_want = 2  # visualiser mode setting
+		self.spec = None
+		self.s_spec = [0] * 24
+		self.s4_spec = [0] * 45
+		self.update_spec = 0
 
-        # self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
+		# self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
 
-        self.spec4_array = []
+		self.spec4_array = []
 
-        self.draw_spec4 = False
+		self.draw_spec4 = False
 
-        self.combo_mode = False
-        self.showcase_mode = False
-        self.display_time_mode = 0
+		self.combo_mode = False
+		self.showcase_mode = False
+		self.display_time_mode = 0
 
-        self.pl_text_real_height = 12
-        self.pl_title_real_height = 11
+		self.pl_text_real_height = 12
+		self.pl_title_real_height = 11
 
-        self.row_extra = 0
-        self.test = False
-        self.light_mode = False
+		self.row_extra = 0
+		self.test = False
+		self.light_mode = False
 
-        self.level_2_click = False
-        self.universal_y_text_offset = 0
+		self.level_2_click = False
+		self.universal_y_text_offset = 0
 
-        self.star_text_y_offset = 0
-        if system == "windows":
-            self.star_text_y_offset = -2
+		self.star_text_y_offset = 0
+		if system == "windows":
+			self.star_text_y_offset = -2
 
-        self.set_bar = True
-        self.set_mode = False
-        self.set_hold = -1
-        self.set_label_hold = -1
-        self.set_label_point = (0, 0)
-        self.set_point = 0
-        self.set_old = 0
-        self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False],
-                      ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True],
-                      ['Time', 53, True]]
+		self.set_bar = True
+		self.set_mode = False
+		self.set_hold = -1
+		self.set_label_hold = -1
+		self.set_label_point = (0, 0)
+		self.set_point = 0
+		self.set_old = 0
+		self.pl_st = [
+			['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False],
+			['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True],
+			['Time', 53, True]]
 
-        for item in self.pl_st:
-            item[1] = item[1] * self.scale
+		for item in self.pl_st:
+			item[1] = item[1] * self.scale
 
-        self.offset_extra = 0
+		self.offset_extra = 0
 
-        self.playlist_row_height = 16
-        self.playlist_text_offset = 0
-        self.row_font_size = 13
-        self.compact_bar = False
-        self.tracklist_texture_rect = tracklist_texture_rect
-        self.tracklist_texture = tracklist_texture
+		self.playlist_row_height = 16
+		self.playlist_text_offset = 0
+		self.row_font_size = 13
+		self.compact_bar = False
+		self.tracklist_texture_rect = tracklist_texture_rect
+		self.tracklist_texture = tracklist_texture
 
-        self.trunk_end = "..."  # "…"
-        self.temp_themes = {}
-        self.theme_temp_current = -1
+		self.trunk_end = "..."  # "…"
+		self.temp_themes = {}
+		self.theme_temp_current = -1
 
-        self.pl_title_y_offset = 0
-        self.pl_title_font_offset = -1
+		self.pl_title_y_offset = 0
+		self.pl_title_font_offset = -1
 
-        self.playlist_box_d_click = -1
+		self.playlist_box_d_click = -1
 
-        self.gallery_show_text = True
-        self.bb_show_art = False
+		self.gallery_show_text = True
+		self.bb_show_art = False
 
-        self.rename_folder_box = False
+		self.rename_folder_box = False
 
-        self.present = False
-        self.drag_source_position = (0, 0)
-        self.drag_source_position_persist = (0, 0)
-        self.album_tab_mode = False
-        self.main_art_box = (0, 0, 10, 10)
-        self.gall_tab_enter = False
+		self.present = False
+		self.drag_source_position = (0, 0)
+		self.drag_source_position_persist = (0, 0)
+		self.album_tab_mode = False
+		self.main_art_box = (0, 0, 10, 10)
+		self.gall_tab_enter = False
 
-        self.lightning_copy = False
+		self.lightning_copy = False
 
-        self.gallery_animate_highlight_on = 0
+		self.gallery_animate_highlight_on = 0
 
-        self.seek_cur_show = False
-        self.cur_time = "0"
-        self.force_showcase_index = -1
+		self.seek_cur_show = False
+		self.cur_time = "0"
+		self.force_showcase_index = -1
 
-        self.frame_callback_list = []
+		self.frame_callback_list = []
 
-        self.playlist_left = None
-        self.image_downloading = False
-        self.tc_cancel = False
-        self.im_cancel = False
-        self.force_search = False
+		self.playlist_left = None
+		self.image_downloading = False
+		self.tc_cancel = False
+		self.im_cancel = False
+		self.force_search = False
 
-        self.pl_pulse = False
+		self.pl_pulse = False
 
-        self.view_name = "S"
-        self.restart_album_mode = False
+		self.view_name = "S"
+		self.restart_album_mode = False
 
-        self.dtm3_index = -1
-        self.dtm3_cum = 0
-        self.dtm3_total = 0
-        self.previous_playlist_id = ""
+		self.dtm3_index = -1
+		self.dtm3_cum = 0
+		self.dtm3_total = 0
+		self.previous_playlist_id = ""
 
-        self.star_mode = "line"
-        self.heart_fields = []
-        self.show_ratings = False
+		self.star_mode = "line"
+		self.heart_fields = []
+		self.show_ratings = False
 
-        self.web_running = False
+		self.web_running = False
 
-        self.rsp = True
-        if phone:
-            self.rsp = False
-        self.rspw = round(300 * self.scale)
-        self.lsp = False
-        self.lspw = round(220 * self.scale)
-        self.plw = None
+		self.rsp = True
+		if phone:
+			self.rsp = False
+		self.rspw = round(300 * self.scale)
+		self.lsp = False
+		self.lspw = round(220 * self.scale)
+		self.plw = None
 
-        self.pref_rspw = 300
+		self.pref_rspw = 300
 
-        self.pref_gallery_w = 600
+		self.pref_gallery_w = 600
 
-        self.artist_info_panel = False
+		self.artist_info_panel = False
 
-        self.show_hearts = True
+		self.show_hearts = True
 
-        self.cursor_is = 0
-        self.cursor_want = 0
-        # 0 standard
-        # 1 drag horizontal
-        # 2 text
-        # 3 hand
+		self.cursor_is = 0
+		self.cursor_want = 0
+		# 0 standard
+		# 1 drag horizontal
+		# 2 text
+		# 3 hand
 
-        self.power_bar = None
-        self.gallery_scroll_field_left = 1
-        self.combo_was_album = False
+		self.power_bar = None
+		self.gallery_scroll_field_left = 1
+		self.combo_was_album = False
 
-        self.gallery_positions = {}
+		self.gallery_positions = {}
 
-        self.remember_library_mode = False
+		self.remember_library_mode = False
 
-        self.first_in_grid = None
+		self.first_in_grid = None
 
-        self.art_aspect_ratio = 1
-        self.art_drawn_rect = None
-        self.art_unlock_ratio = False
-        self.art_max_ratio_lock = 1
-        self.side_bar_drag_source = 0
-        self.side_bar_drag_original = 0
+		self.art_aspect_ratio = 1
+		self.art_drawn_rect = None
+		self.art_unlock_ratio = False
+		self.art_max_ratio_lock = 1
+		self.side_bar_drag_source = 0
+		self.side_bar_drag_original = 0
 
-        self.scroll_direction = 0
-        self.add_music_folder_ready = False
+		self.scroll_direction = 0
+		self.add_music_folder_ready = False
 
-        self.playlist_current_visible_tracks = 0
-        self.playlist_current_visible_tracks_id = 0
+		self.playlist_current_visible_tracks = 0
+		self.playlist_current_visible_tracks_id = 0
 
-        self.theme_name = ""
-        self.rename_playlist_box = False
-        self.queue_frame_draw = None  # Set when need draw frame later
+		self.theme_name = ""
+		self.rename_playlist_box = False
+		self.queue_frame_draw = None  # Set when need draw frame later
 
-        self.mode = 1
+		self.mode = 1
 
-        self.save_position = [0, 0]
+		self.save_position = [0, 0]
 
-        self.draw_vis4_top = False
-        # self.vis_4_colour = [0,0,0,255]
-        self.vis_4_colour = None
+		self.draw_vis4_top = False
+		# self.vis_4_colour = [0,0,0,255]
+		self.vis_4_colour = None
 
-        self.layer_focus = 0
-        self.tab_menu_pl = 0
+		self.layer_focus = 0
+		self.tab_menu_pl = 0
 
-        self.tool_tip_lock_off_f = False
-        self.tool_tip_lock_off_b = False
+		self.tool_tip_lock_off_f = False
+		self.tool_tip_lock_off_b = False
 
-        self.auto_play_import = False
+		self.auto_play_import = False
 
-        self.transcoding_batch_total = 0
-        self.transcoding_bach_done = 0
+		self.transcoding_batch_total = 0
+		self.transcoding_bach_done = 0
 
-        self.seek_bar_rect = (0, 0, 0, 0)
-        self.volume_bar_rect = (0, 0, 0, 0)
+		self.seek_bar_rect = (0, 0, 0, 0)
+		self.volume_bar_rect = (0, 0, 0, 0)
 
-        self.mini_mode_return_maximized = False
+		self.mini_mode_return_maximized = False
 
-        self.opened_config_file = False
+		self.opened_config_file = False
 
-        self.notify_main_id = None
+		self.notify_main_id = None
 
-        self.halt_image_rendering = False
-        self.generating_chart = False
+		self.halt_image_rendering = False
+		self.generating_chart = False
 
-        self.top_bar_mode2 = False
-        self.mode_toast_text = ""
+		self.top_bar_mode2 = False
+		self.mode_toast_text = ""
 
-        self.rescale()
-        # self.smooth_scrolling = False
+		self.rescale()
+		# self.smooth_scrolling = False
 
-        self.compact_artist_list = False
+		self.compact_artist_list = False
 
-        self.rsp_full_lock = False
+		self.rsp_full_lock = False
 
-        self.album_scroll_px = album_v_slide_value
-        self.queue_toast_plural = False
-        self.reload_theme = False
-        self.theme_number = 0
-        self.toast_queue_object = None
-        self.toast_love_object = None
-        self.toast_love_added = True
+		self.album_scroll_px = album_v_slide_value
+		self.queue_toast_plural = False
+		self.reload_theme = False
+		self.theme_number = 0
+		self.toast_queue_object = None
+		self.toast_love_object = None
+		self.toast_love_added = True
 
-        self.force_side_on_drag = False
-        self.last_left_panel_mode = "playlist"
-        self.showing_l_panel = False
+		self.force_side_on_drag = False
+		self.last_left_panel_mode = "playlist"
+		self.showing_l_panel = False
 
-        self.downloading_bass = False
-        self.d_click_ref = -1
+		self.downloading_bass = False
+		self.d_click_ref = -1
 
-        self.max_window_tex = max_window_tex
-        self.main_texture = main_texture
-        self.main_texture_overlay_temp = main_texture_overlay_temp
+		self.max_window_tex = max_window_tex
+		self.main_texture = main_texture
+		self.main_texture_overlay_temp = main_texture_overlay_temp
 
-        self.preview_artist = ""
-        self.preview_artist_location = (0, 0)
-        self.preview_artist_loading = ""
-        self.mouse_left_window = False
+		self.preview_artist = ""
+		self.preview_artist_location = (0, 0)
+		self.preview_artist_loading = ""
+		self.mouse_left_window = False
 
-        self.rendered_playlist_position = 0
+		self.rendered_playlist_position = 0
 
-        self.console = console
-        self.show_album_ratings = False
-        self.gen_code_errors = False
+		self.console = console
+		self.show_album_ratings = False
+		self.gen_code_errors = False
 
-        self.regen_single = -1
-        self.regen_single_id = None
+		self.regen_single = -1
+		self.regen_single_id = None
 
-        self.tracklist_bg_is_light = False
-        self.clear_image_cache_next = 0
+		self.tracklist_bg_is_light = False
+		self.clear_image_cache_next = 0
 
-        self.column_d_click_timer = Timer(10)
-        self.column_d_click_on = -1
-        self.column_sort_ani_timer = Timer(10)
-        self.column_sort_down_icon = asset_loader("sort-down.png", True)
-        self.column_sort_up_icon = asset_loader("sort-up.png", True)
-        self.column_sort_ani_direction = 1
-        self.column_sort_ani_x = 0
+		self.column_d_click_timer = Timer(10)
+		self.column_d_click_on = -1
+		self.column_sort_ani_timer = Timer(10)
+		self.column_sort_down_icon = asset_loader("sort-down.png", True)
+		self.column_sort_up_icon = asset_loader("sort-up.png", True)
+		self.column_sort_ani_direction = 1
+		self.column_sort_ani_x = 0
 
-        self.restore_showcase_view = False
-        self.restore_radio_view = False
+		self.restore_showcase_view = False
+		self.restore_radio_view = False
 
-        self.tracklist_center_mode = False
-        self.tracklist_inset_left = 0
-        self.tracklist_inset_width = 0
-        self.tracklist_highlight_width = 0
-        self.tracklist_highlight_left = 0
+		self.tracklist_center_mode = False
+		self.tracklist_inset_left = 0
+		self.tracklist_inset_width = 0
+		self.tracklist_highlight_width = 0
+		self.tracklist_highlight_left = 0
 
-        self.hide_tracklist_in_gallery = False
+		self.hide_tracklist_in_gallery = False
 
-        self.saved_prime_tab = 0
-        self.saved_prime_direction = 0
+		self.saved_prime_tab = 0
+		self.saved_prime_direction = 0
 
-        self.stop_sync = False
-        self.sync_progress = ""
-        self.sync_speed = ""
+		self.stop_sync = False
+		self.sync_progress = ""
+		self.sync_speed = ""
 
-        self.bar_hover_timer = Timer()
+		self.bar_hover_timer = Timer()
 
-        self.level_decay_timer = Timer()
+		self.level_decay_timer = Timer()
 
-        self.showed_title = False
+		self.showed_title = False
 
-        self.to_get = 0
-        self.to_got = 0
-        self.switch_showcase_off = False
+		self.to_get = 0
+		self.to_got = 0
+		self.switch_showcase_off = False
 
-        self.backend_reloading = False
+		self.backend_reloading = False
 
-        self.spot_info_icon = asset_loader("spot-info.png", True)
-        self.tray_active = False
-        self.buffering = False
-        self.buffering_text = ""
+		self.spot_info_icon = asset_loader("spot-info.png", True)
+		self.tray_active = False
+		self.buffering = False
+		self.buffering_text = ""
 
-        self.update_on_drag = False
-        self.pl_update_on_drag = False
-        self.drop_playlist_target = 0
-        self.discord_status = "Standby"
-        self.mouse_unknown = False
-        self.macstyle = prefs.macstyle
-        if macos or detect_macstyle:
-            self.macstyle = True
-        self.radio_view = False
-        self.window_size = window_size
-        self.box_over = False
-        self.suggest_clean_db = False
-        self.style_worker_timer = Timer()
+		self.update_on_drag = False
+		self.pl_update_on_drag = False
+		self.drop_playlist_target = 0
+		self.discord_status = "Standby"
+		self.mouse_unknown = False
+		self.macstyle = prefs.macstyle
+		if macos or detect_macstyle:
+			self.macstyle = True
+		self.radio_view = False
+		self.window_size = window_size
+		self.box_over = False
+		self.suggest_clean_db = False
+		self.style_worker_timer = Timer()
 
-        self.shuffle_was_showcase = False
-        self.shuffle_was_random = True
-        self.shuffle_was_repeat = False
+		self.shuffle_was_showcase = False
+		self.shuffle_was_random = True
+		self.shuffle_was_repeat = False
 
-        self.was_radio = False
-        self.fullscreen = False
-        self.mouse_in_window = True
+		self.was_radio = False
+		self.fullscreen = False
+		self.mouse_in_window = True
 
-        self.write_tag_in_progress = False
-        self.tag_write_count = 0
-        # self.text_input_request = False
-        # self.text_input_active = False
-        self.center_blur_pixel = (0, 0, 0)
+		self.write_tag_in_progress = False
+		self.tag_write_count = 0
+		# self.text_input_request = False
+		# self.text_input_active = False
+		self.center_blur_pixel = (0, 0, 0)
 
 
 gui = GuiVar()
 
 
 def toast(text):
-    gui.mode_toast_text = text
-    toast_mode_timer.set()
-    gui.frame_callback_list.append(TestTimer(1.5))
+	gui.mode_toast_text = text
+	toast_mode_timer.set()
+	gui.frame_callback_list.append(TestTimer(1.5))
 
 
 def set_artist_preview(path, artist, x, y):
-    m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
-    artist_preview_render.load(path, box_size=(m, m))
-    artist_preview_render.show = True
-    ah = artist_preview_render.size[1]
-    ay = round(y) - (ah // 2)
-    if ay < gui.panelY + 20 * gui.scale:
-        ay = gui.panelY + round(20 * gui.scale)
-    if ay + ah > window_size[1] - (gui.panelBY + 5 * gui.scale):
-        ay = window_size[1] - (gui.panelBY + ah + round(5 * gui.scale))
-    gui.preview_artist = artist
-    gui.preview_artist_location = (x + 15 * gui.scale,
-                                   ay)
+	m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
+	artist_preview_render.load(path, box_size=(m, m))
+	artist_preview_render.show = True
+	ah = artist_preview_render.size[1]
+	ay = round(y) - (ah // 2)
+	if ay < gui.panelY + 20 * gui.scale:
+		ay = gui.panelY + round(20 * gui.scale)
+	if ay + ah > window_size[1] - (gui.panelBY + 5 * gui.scale):
+		ay = window_size[1] - (gui.panelBY + ah + round(5 * gui.scale))
+	gui.preview_artist = artist
+	gui.preview_artist_location = (x + 15 * gui.scale, ay)
 
 
 def get_artist_preview(artist, x, y):
-    # show_message(_("Loading artist image..."))
+	# show_message(_("Loading artist image..."))
 
-    gui.preview_artist_loading = artist
-    artist_info_box.get_data(artist, force_dl=True)
-    path = artist_info_box.get_data(artist, get_img_path=True)
-    if not path:
-        show_message(_("No artist image found."))
-        if not prefs.enable_fanart_artist and not verify_discogs():
-            show_message(_("No artist image found."), _("No providers are enabled in settings!"), mode='warning')
-        gui.preview_artist_loading = ""
-        return
-    set_artist_preview(path, artist, x, y)
-    gui.message_box = False
-    gui.preview_artist_loading = ""
+	gui.preview_artist_loading = artist
+	artist_info_box.get_data(artist, force_dl=True)
+	path = artist_info_box.get_data(artist, get_img_path=True)
+	if not path:
+		show_message(_("No artist image found."))
+		if not prefs.enable_fanart_artist and not verify_discogs():
+			show_message(_("No artist image found."), _("No providers are enabled in settings!"), mode='warning')
+		gui.preview_artist_loading = ""
+		return
+	set_artist_preview(path, artist, x, y)
+	gui.message_box = False
+	gui.preview_artist_loading = ""
 
 
 def set_drag_source():
-    gui.drag_source_position = tuple(click_location)
-    gui.drag_source_position_persist = tuple(click_location)
+	gui.drag_source_position = tuple(click_location)
+	gui.drag_source_position_persist = tuple(click_location)
 
 
 # Functions for reading and setting play counts
 class StarStore:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.db = {}
+		self.db = {}
 
-    def key(self, track_id):
+	def key(self, track_id):
 
-        track_object = pctl.master_library[track_id]
-        return track_object.artist, track_object.title, track_object.filename
+		track_object = pctl.master_library[track_id]
+		return track_object.artist, track_object.title, track_object.filename
 
-    def object_key(self, track):
+	def object_key(self, track):
 
-        return track.artist, track.title, track.filename
+		return track.artist, track.title, track.filename
 
-    # Increments the play time
-    def add(self, index, value):
+	# Increments the play time
+	def add(self, index, value):
 
-        track_object = pctl.master_library[index]
+		track_object = pctl.master_library[index]
 
-        if after_scan:
-            if track_object in after_scan:
-                return
+		if after_scan:
+			if track_object in after_scan:
+				return
 
-        key = track_object.artist, track_object.title, track_object.filename
+		key = track_object.artist, track_object.title, track_object.filename
 
-        if key in self.db:
-            self.db[key][0] += value
-            if value < 0 and self.db[key][0] < 0:
-                self.db[key][0] = 0
-        else:
-            self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
+		if key in self.db:
+			self.db[key][0] += value
+			if value < 0 and self.db[key][0] < 0:
+				self.db[key][0] = 0
+		else:
+			self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
 
-    # Returns the track play time
-    def get(self, index):
-        if index < 0:
-            return 0
-        return self.db.get(self.key(index), (0,))[0]
+	# Returns the track play time
+	def get(self, index):
+		if index < 0:
+			return 0
+		return self.db.get(self.key(index), (0,))[0]
 
-    # Returns the track user rating
-    def get_rating(self, index):
-        key = self.key(index)
-        if key in self.db:
-            # self.db[key]
-            return self.db[key][2]
-        return 0
+	# Returns the track user rating
+	def get_rating(self, index):
+		key = self.key(index)
+		if key in self.db:
+			# self.db[key]
+			return self.db[key][2]
+		return 0
 
-    # Sets the track user rating
-    def set_rating(self, index, value, write=False):
-        key = self.key(index)
-        if key not in self.db:
-            self.db[key] = self.new_object()
-        self.db[key][2] = value
+	# Sets the track user rating
+	def set_rating(self, index, value, write=False):
+		key = self.key(index)
+		if key not in self.db:
+			self.db[key] = self.new_object()
+		self.db[key][2] = value
 
-        tr = pctl.g(index)
-        if tr.file_ext == "SUB":
-            self.db[key][2] = math.ceil(value / 2) * 2
-            shooter(subsonic.set_rating, (tr, value))
+		tr = pctl.g(index)
+		if tr.file_ext == "SUB":
+			self.db[key][2] = math.ceil(value / 2) * 2
+			shooter(subsonic.set_rating, (tr, value))
 
-        if prefs.write_ratings and write:
-            print("Writing rating..")
-            assert value <= 10
-            assert value >= 0
+		if prefs.write_ratings and write:
+			print("Writing rating..")
+			assert value <= 10
+			assert value >= 0
 
-            if tr.file_ext == "OGG" or tr.file_ext == "OPUS":
-                tag = mutagen.oggvorbis.OggVorbis(tr.fullpath)
-                if value == 0:
-                    if "FMPS_RATING" in tag:
-                        del tag["FMPS_RATING"]
-                        tag.save()
-                else:
-                    tag["FMPS_RATING"] = ['{:.2f}'.format(value / 10)]
-                    tag.save()
+			if tr.file_ext == "OGG" or tr.file_ext == "OPUS":
+				tag = mutagen.oggvorbis.OggVorbis(tr.fullpath)
+				if value == 0:
+					if "FMPS_RATING" in tag:
+						del tag["FMPS_RATING"]
+						tag.save()
+				else:
+					tag["FMPS_RATING"] = ['{:.2f}'.format(value / 10)]
+					tag.save()
 
-            elif tr.file_ext == "MP3":
-                tag = mutagen.id3.ID3(tr.fullpath)
+			elif tr.file_ext == "MP3":
+				tag = mutagen.id3.ID3(tr.fullpath)
 
-                # if True:
-                #     if value == 0:
-                #         tag.delall("POPM")
-                #     else:
-                #         p_rating = 0
-                #
-                #     tag.add(mutagen.id3.POPM(email="Windows Media Player 9 Series", rating=int))
+				# if True:
+				#	 if value == 0:
+				#		 tag.delall("POPM")
+				#	 else:
+				#		 p_rating = 0
+				#
+				#	 tag.add(mutagen.id3.POPM(email="Windows Media Player 9 Series", rating=int))
 
-                if value == 0:
-                    changed = False
-                    frames = tag.getall("TXXX")
-                    for i in reversed(range(len(frames))):
-                        if frames[i].desc.lower() == "fmps_rating":
-                            changed = True
-                    if changed:
-                        tag.delall("TXXX:FMPS_RATING")
-                        tag.save()
-                else:
-                    changed = False
-                    frames = tag.getall("TXXX")
-                    for i in reversed(range(len(frames))):
-                        if frames[i].desc.lower() == "fmps_rating":
-                            frames[i].text = '{:.2f}'.format(value / 10)
-                            changed = True
-                    if not changed:
-                        tag.add(mutagen.id3.TXXX(encoding=mutagen.id3.Encoding.UTF8, text='{:.2f}'.format(value / 10),
-                                                 desc="FMPS_RATING"))
-                    tag.save()
+				if value == 0:
+					changed = False
+					frames = tag.getall("TXXX")
+					for i in reversed(range(len(frames))):
+						if frames[i].desc.lower() == "fmps_rating":
+							changed = True
+					if changed:
+						tag.delall("TXXX:FMPS_RATING")
+						tag.save()
+				else:
+					changed = False
+					frames = tag.getall("TXXX")
+					for i in reversed(range(len(frames))):
+						if frames[i].desc.lower() == "fmps_rating":
+							frames[i].text = '{:.2f}'.format(value / 10)
+							changed = True
+					if not changed:
+						tag.add(
+							mutagen.id3.TXXX(
+								encoding=mutagen.id3.Encoding.UTF8, text='{:.2f}'.format(value / 10),
+								desc="FMPS_RATING"))
+					tag.save()
 
-            elif tr.file_ext == "FLAC":
-                audio = mutagen.flac.FLAC(tr.fullpath)
-                tags = audio.tags
-                if value == 0:
-                    if "FMPS_Rating" in tags:
-                        del tags["FMPS_Rating"]
-                        audio.save()
-                else:
-                    tags["FMPS_Rating"] = '{:.2f}'.format(value / 10)
-                    audio.save()
+			elif tr.file_ext == "FLAC":
+				audio = mutagen.flac.FLAC(tr.fullpath)
+				tags = audio.tags
+				if value == 0:
+					if "FMPS_Rating" in tags:
+						del tags["FMPS_Rating"]
+						audio.save()
+				else:
+					tags["FMPS_Rating"] = '{:.2f}'.format(value / 10)
+					audio.save()
 
-            tr.misc["FMPS_Rating"] = float(value / 10)
-            if value == 0:
-                del tr.misc["FMPS_Rating"]
+			tr.misc["FMPS_Rating"] = float(value / 10)
+			if value == 0:
+				del tr.misc["FMPS_Rating"]
 
-    def new_object(self):
-        return [0, "", 0, 0]
+	def new_object(self):
+		return [0, "", 0, 0]
 
-    def get_by_object(self, track):
+	def get_by_object(self, track):
 
-        return self.db.get(self.object_key(track), (0,))[0]
+		return self.db.get(self.object_key(track), (0,))[0]
 
-    def get_total(self):
+	def get_total(self):
 
-        return sum(item[0] for item in self.db.values())
+		return sum(item[0] for item in self.db.values())
 
-    def full_get(self, index):
-        return self.db.get(self.key(index))
+	def full_get(self, index):
+		return self.db.get(self.key(index))
 
-    def remove(self, index):
-        key = self.key(index)
-        if key in self.db:
-            del self.db[key]
+	def remove(self, index):
+		key = self.key(index)
+		if key in self.db:
+			del self.db[key]
 
-    def insert(self, index, object):
-        key = self.key(index)
-        self.db[key] = object
+	def insert(self, index, object):
+		key = self.key(index)
+		self.db[key] = object
 
-    def merge(self, index, object):
-        if object is None or object == self.new_object():
-            return
-        key = self.key(index)
-        if key not in self.db:
-            self.db[key] = object
-        else:
-            self.db[key][0] += object[0]
-            self.db[key][2] = object[2]
-            for cha in object[1]:
-                if cha not in self.db[key][1]:
-                    self.db[key][1] += cha
+	def merge(self, index, object):
+		if object is None or object == self.new_object():
+			return
+		key = self.key(index)
+		if key not in self.db:
+			self.db[key] = object
+		else:
+			self.db[key][0] += object[0]
+			self.db[key][2] = object[2]
+			for cha in object[1]:
+				if cha not in self.db[key][1]:
+					self.db[key][1] += cha
 
 
 star_store = StarStore()
@@ -2243,29 +2252,29 @@ star_store = StarStore()
 
 class AlbumStarStore:
 
-    def __init__(self):
-        self.db = {}
+	def __init__(self):
+		self.db = {}
 
-    def get_key(self, track_object):
-        artist = track_object.album_artist
-        if not artist:
-            artist = track_object.artist
-        return artist + ":" + track_object.album
+	def get_key(self, track_object):
+		artist = track_object.album_artist
+		if not artist:
+			artist = track_object.artist
+		return artist + ":" + track_object.album
 
-    def get_rating(self, track_object):
-        return self.db.get(self.get_key(track_object), 0)
+	def get_rating(self, track_object):
+		return self.db.get(self.get_key(track_object), 0)
 
-    def set_rating(self, track_object, rating):
-        self.db[self.get_key(track_object)] = rating
-        if track_object.file_ext == "SUB":
-            self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
-            subsonic.set_album_rating(track_object, rating)
+	def set_rating(self, track_object, rating):
+		self.db[self.get_key(track_object)] = rating
+		if track_object.file_ext == "SUB":
+			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
+			subsonic.set_album_rating(track_object, rating)
 
-    def set_rating_artist_title(self, artist, album, rating):
-        self.db[artist + ":" + album] = rating
+	def set_rating_artist_title(self, artist, album, rating):
+		self.db[artist + ":" + album] = rating
 
-    def get_rating_artist_title(self, artist, album):
-        return self.db.get(artist + ":" + album, 0)
+	def get_rating_artist_title(self, artist, album):
+		return self.db.get(artist + ":" + album, 0)
 
 
 album_star_store = AlbumStarStore()
@@ -2273,17 +2282,17 @@ album_star_store = AlbumStarStore()
 
 class Fonts:  # Used to hold font sizes (I forget to use this)
 
-    def __init__(self):
-        self.tabs = 211
-        self.panel_title = 213
+	def __init__(self):
+		self.tabs = 211
+		self.panel_title = 213
 
-        self.side_panel_line1 = 214
-        self.side_panel_line2 = 13
+		self.side_panel_line1 = 214
+		self.side_panel_line2 = 13
 
-        self.bottom_panel_time = 212
+		self.bottom_panel_time = 212
 
-        # if system == 'windows':
-        #     self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
+		# if system == 'windows':
+		#	 self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
 
 
 fonts = Fonts()
@@ -2291,35 +2300,35 @@ fonts = Fonts()
 
 class Input:  # Used to keep track of button states (or should be)
 
-    def __init__(self):
-        self.mouse_click = False
-        # self.right_click = False
-        self.level_2_enter = False
-        self.key_return_press = False
-        self.key_tab_press = False
-        self.backspace_press = 0
+	def __init__(self):
+		self.mouse_click = False
+		# self.right_click = False
+		self.level_2_enter = False
+		self.key_return_press = False
+		self.key_tab_press = False
+		self.backspace_press = 0
 
-        self.media_key = ""
+		self.media_key = ""
 
-    def m_key_play(self):
-        self.media_key = "Play"
-        gui.update += 1
+	def m_key_play(self):
+		self.media_key = "Play"
+		gui.update += 1
 
-    def m_key_pause(self):
-        self.media_key = "Pause"
-        gui.update += 1
+	def m_key_pause(self):
+		self.media_key = "Pause"
+		gui.update += 1
 
-    def m_key_stop(self):
-        self.media_key = "Stop"
-        gui.update += 1
+	def m_key_stop(self):
+		self.media_key = "Stop"
+		gui.update += 1
 
-    def m_key_next(self):
-        self.media_key = "Next"
-        gui.update += 1
+	def m_key_next(self):
+		self.media_key = "Next"
+		gui.update += 1
 
-    def m_key_previous(self):
-        self.media_key = "Previous"
-        gui.update += 1
+	def m_key_previous(self):
+		self.media_key = "Previous"
+		gui.update += 1
 
 
 inp = Input()
@@ -2327,67 +2336,67 @@ inp = Input()
 
 class KeyMap:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.hits = []  # The keys hit this frame
-        self.maps = {}  # Loaded from input.txt
+		self.hits = []  # The keys hit this frame
+		self.maps = {}  # Loaded from input.txt
 
-    def load(self):
+	def load(self):
 
-        path = os.path.join(config_directory, "input.txt")
-        with open(path, encoding="utf_8") as f:
-            content = f.read().splitlines()
-            for p in content:
-                if len(p) == 0 or len(p) > 100:
-                    continue
-                if p[0] == " " or p[0] == "#":
-                    continue
+		path = os.path.join(config_directory, "input.txt")
+		with open(path, encoding="utf_8") as f:
+			content = f.read().splitlines()
+			for p in content:
+				if len(p) == 0 or len(p) > 100:
+					continue
+				if p[0] == " " or p[0] == "#":
+					continue
 
-                items = p.split()
-                if 1 < len(items) < 5:
-                    function = items[0]
+				items = p.split()
+				if 1 < len(items) < 5:
+					function = items[0]
 
-                    if items[1] in ("MB4", "MB5"):
-                        key = items[1]
-                    else:
-                        if prefs.use_scancodes:
-                            key = SDL_GetScancodeFromName(items[1].encode())
-                        else:
-                            key = SDL_GetKeyFromName(items[1].encode())
-                        if key == 0:
-                            continue
+					if items[1] in ("MB4", "MB5"):
+						key = items[1]
+					else:
+						if prefs.use_scancodes:
+							key = SDL_GetScancodeFromName(items[1].encode())
+						else:
+							key = SDL_GetKeyFromName(items[1].encode())
+						if key == 0:
+							continue
 
-                    mod = []
+					mod = []
 
-                    if len(items) > 2:
-                        mod.append(items[2].lower())
-                    if len(items) > 3:
-                        mod.append(items[3].lower())
+					if len(items) > 2:
+						mod.append(items[2].lower())
+					if len(items) > 3:
+						mod.append(items[3].lower())
 
-                    if function in self.maps:
-                        self.maps[function].append((key, mod))
-                    else:
-                        self.maps[function] = [(key, mod)]
+					if function in self.maps:
+						self.maps[function].append((key, mod))
+					else:
+						self.maps[function] = [(key, mod)]
 
-    def test(self, function):
+	def test(self, function):
 
-        if not self.hits:
-            return False
-        if function not in self.maps:
-            return False
+		if not self.hits:
+			return False
+		if function not in self.maps:
+			return False
 
-        for code, mod in self.maps[function]:
+		for code, mod in self.maps[function]:
 
-            if code in self.hits:
+			if code in self.hits:
 
-                ctrl = (key_ctrl_down or key_rctrl_down) * 1
-                shift = (key_shift_down or key_shiftr_down) * 10
-                alt = (key_lalt or key_ralt) * 100
+				ctrl = (key_ctrl_down or key_rctrl_down) * 1
+				shift = (key_shift_down or key_shiftr_down) * 10
+				alt = (key_lalt or key_ralt) * 100
 
-                if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
-                    return True
+				if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
+					return True
 
-        return False
+		return False
 
 
 keymaps = KeyMap()
@@ -2395,351 +2404,351 @@ keymaps = KeyMap()
 
 def update_set():  # This is used to scale columns when windows is resized or items added/removed
 
-    wid = gui.plw - round(16 * gui.scale)
-    if gui.tracklist_center_mode:
-        wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+	wid = gui.plw - round(16 * gui.scale)
+	if gui.tracklist_center_mode:
+		wid = gui.tracklist_highlight_width - round(16 * gui.scale)
 
-    total = 0
-    for item in gui.pl_st:
-        if item[2] is False:
-            total += item[1]
-        else:
-            wid -= item[1]
+	total = 0
+	for item in gui.pl_st:
+		if item[2] is False:
+			total += item[1]
+		else:
+			wid -= item[1]
 
-    if wid <= 75:
-        wid = 75
+	if wid <= 75:
+		wid = 75
 
-    for i in range(len(gui.pl_st)):
-        if gui.pl_st[i][2] is False and total:
-            gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid))  # + 1
+	for i in range(len(gui.pl_st)):
+		if gui.pl_st[i][2] is False and total:
+			gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid))  # + 1
 
 
 def auto_size_columns():
-    fixed_n = 0
+	fixed_n = 0
 
-    wid = gui.plw - round(16 * gui.scale)
-    if gui.tracklist_center_mode:
-        wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+	wid = gui.plw - round(16 * gui.scale)
+	if gui.tracklist_center_mode:
+		wid = gui.tracklist_highlight_width - round(16 * gui.scale)
 
-    total = wid
-    for item in gui.pl_st:
+	total = wid
+	for item in gui.pl_st:
 
-        if item[2]:
-            fixed_n += 1
+		if item[2]:
+			fixed_n += 1
 
-        if item[0] == "Lyrics":
-            item[1] = round(50 * gui.scale)
-            total -= round(50 * gui.scale)
+		if item[0] == "Lyrics":
+			item[1] = round(50 * gui.scale)
+			total -= round(50 * gui.scale)
 
-        if item[0] == "Rating":
-            item[1] = round(80 * gui.scale)
-            total -= round(80 * gui.scale)
+		if item[0] == "Rating":
+			item[1] = round(80 * gui.scale)
+			total -= round(80 * gui.scale)
 
-        if item[0] == "Starline":
-            item[1] = round(78 * gui.scale)
-            total -= round(78 * gui.scale)
+		if item[0] == "Starline":
+			item[1] = round(78 * gui.scale)
+			total -= round(78 * gui.scale)
 
-        if item[0] == "Time":
-            item[1] = round(58 * gui.scale)
-            total -= round(58 * gui.scale)
+		if item[0] == "Time":
+			item[1] = round(58 * gui.scale)
+			total -= round(58 * gui.scale)
 
-        if item[0] == "Codec":
-            item[1] = round(58 * gui.scale)
-            total -= round(58 * gui.scale)
+		if item[0] == "Codec":
+			item[1] = round(58 * gui.scale)
+			total -= round(58 * gui.scale)
 
-        if item[0] == "P" or item[0] == "S" or item[0] == "#":
-            item[1] = round(32 * gui.scale)
-            total -= round(32 * gui.scale)
+		if item[0] == "P" or item[0] == "S" or item[0] == "#":
+			item[1] = round(32 * gui.scale)
+			total -= round(32 * gui.scale)
 
-        if item[0] == "Date":
-            item[1] = round(55 * gui.scale)
-            total -= round(55 * gui.scale)
+		if item[0] == "Date":
+			item[1] = round(55 * gui.scale)
+			total -= round(55 * gui.scale)
 
-        if item[0] == "Bitrate":
-            item[1] = round(67 * gui.scale)
-            total -= round(67 * gui.scale)
+		if item[0] == "Bitrate":
+			item[1] = round(67 * gui.scale)
+			total -= round(67 * gui.scale)
 
-        if item[0] == "❤":
-            item[1] = round(27 * gui.scale)
-            total -= round(27 * gui.scale)
+		if item[0] == "❤":
+			item[1] = round(27 * gui.scale)
+			total -= round(27 * gui.scale)
 
-    vr = len(gui.pl_st) - fixed_n
+	vr = len(gui.pl_st) - fixed_n
 
-    if vr > 0 and total > 50:
+	if vr > 0 and total > 50:
 
-        space = round(total / vr)
+		space = round(total / vr)
 
-        for item in gui.pl_st:
-            if not item[2]:
-                item[1] = space
+		for item in gui.pl_st:
+			if not item[2]:
+				item[1] = space
 
-    gui.pl_update += 1
-    update_set()
+	gui.pl_update += 1
+	update_set()
 
 
 class ColoursClass:  # Used to store colour values for UI elements. These are changed for themes.
-    def grey(self, value):
-        return [value, value, value, 255]
+	def grey(self, value):
+		return [value, value, value, 255]
 
-    def alpha_grey(self, value):
-        return [255, 255, 255, value]
+	def alpha_grey(self, value):
+		return [255, 255, 255, value]
 
-    def grey_blend_bg(self, value):
-        return alpha_blend((255, 255, 255, value), self.box_background)
+	def grey_blend_bg(self, value):
+		return alpha_blend((255, 255, 255, value), self.box_background)
 
-    def __init__(self):
+	def __init__(self):
 
-        self.deco = None
-        self.column_colours = {}
-        self.column_colours_playing = {}
+		self.deco = None
+		self.column_colours = {}
+		self.column_colours_playing = {}
 
-        self.last_album = ""
-        self.link_text = [100, 200, 252, 255]
+		self.last_album = ""
+		self.link_text = [100, 200, 252, 255]
 
-        self.tb_line = self.grey(21)  # not currently used
-        self.art_box = self.grey(24)
+		self.tb_line = self.grey(21)  # not currently used
+		self.art_box = self.grey(24)
 
-        self.volume_bar_background = self.grey(30)
-        self.volume_bar_fill = self.grey(125)
-        self.seek_bar_background = self.grey(30)
-        self.seek_bar_fill = self.grey(80)
+		self.volume_bar_background = self.grey(30)
+		self.volume_bar_fill = self.grey(125)
+		self.seek_bar_background = self.grey(30)
+		self.seek_bar_fill = self.grey(80)
 
-        self.tab_text_active = self.grey(230)
-        self.tab_text = self.grey(215)
-        self.tab_background = self.grey(25)
-        self.tab_highlight = self.grey(40)
-        self.tab_background_active = self.grey(45)
+		self.tab_text_active = self.grey(230)
+		self.tab_text = self.grey(215)
+		self.tab_background = self.grey(25)
+		self.tab_highlight = self.grey(40)
+		self.tab_background_active = self.grey(45)
 
-        self.title_text = [190, 190, 190, 255]
-        self.index_text = self.grey(70)
-        self.time_text = self.grey(180)
-        self.artist_text = [195, 255, 104, 255]
-        self.album_text = [245, 240, 90, 255]
+		self.title_text = [190, 190, 190, 255]
+		self.index_text = self.grey(70)
+		self.time_text = self.grey(180)
+		self.artist_text = [195, 255, 104, 255]
+		self.album_text = [245, 240, 90, 255]
 
-        self.index_playing = self.grey(190)
-        self.artist_playing = [195, 255, 104, 255]
-        self.album_playing = [245, 240, 90, 255]
-        self.title_playing = self.grey(230)
+		self.index_playing = self.grey(190)
+		self.artist_playing = [195, 255, 104, 255]
+		self.album_playing = [245, 240, 90, 255]
+		self.title_playing = self.grey(230)
 
-        self.time_playing = [180, 194, 107, 255]
+		self.time_playing = [180, 194, 107, 255]
 
-        self.playlist_text_missing = self.grey(85)
-        self.bar_time = self.grey(70)
+		self.playlist_text_missing = self.grey(85)
+		self.bar_time = self.grey(70)
 
-        self.top_panel_background = self.grey(15)
-        self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
-        self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
+		self.top_panel_background = self.grey(15)
+		self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
+		self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
 
-        self.side_panel_background = self.grey(18)
-        self.gallery_background = self.side_panel_background
-        self.playlist_panel_background = self.grey(21)
-        self.bottom_panel_colour = self.grey(15)
+		self.side_panel_background = self.grey(18)
+		self.gallery_background = self.side_panel_background
+		self.playlist_panel_background = self.grey(21)
+		self.bottom_panel_colour = self.grey(15)
 
-        self.row_playing_highlight = [255, 255, 255, 4]
-        self.row_select_highlight = [255, 255, 255, 5]
+		self.row_playing_highlight = [255, 255, 255, 4]
+		self.row_select_highlight = [255, 255, 255, 5]
 
-        self.side_bar_line1 = self.grey(230)
-        self.side_bar_line2 = self.grey(210)
+		self.side_bar_line1 = self.grey(230)
+		self.side_bar_line2 = self.grey(210)
 
-        self.mode_button_off = self.grey(50)
-        self.mode_button_over = self.grey(200)
-        self.mode_button_active = self.grey(190)
+		self.mode_button_off = self.grey(50)
+		self.mode_button_over = self.grey(200)
+		self.mode_button_active = self.grey(190)
 
-        self.media_buttons_over = self.grey(220)
-        self.media_buttons_active = self.grey(220)
-        self.media_buttons_off = self.grey(55)
+		self.media_buttons_over = self.grey(220)
+		self.media_buttons_active = self.grey(220)
+		self.media_buttons_off = self.grey(55)
 
-        self.star_line = [100, 100, 100, 255]
-        self.star_line_playing = None
-        self.folder_title = [130, 130, 130, 255]
-        self.folder_line = [40, 40, 40, 255]
+		self.star_line = [100, 100, 100, 255]
+		self.star_line_playing = None
+		self.folder_title = [130, 130, 130, 255]
+		self.folder_line = [40, 40, 40, 255]
 
-        self.scroll_colour = [45, 45, 45, 255]
+		self.scroll_colour = [45, 45, 45, 255]
 
-        self.level_1_bg = [0, 30, 0, 255]
-        self.level_2_bg = [30, 30, 0, 255]
-        self.level_3_bg = [30, 0, 0, 255]
-        self.level_green = [20, 120, 20, 255]
-        self.level_red = [190, 30, 30, 255]
-        self.level_yellow = [135, 135, 30, 255]
+		self.level_1_bg = [0, 30, 0, 255]
+		self.level_2_bg = [30, 30, 0, 255]
+		self.level_3_bg = [30, 0, 0, 255]
+		self.level_green = [20, 120, 20, 255]
+		self.level_red = [190, 30, 30, 255]
+		self.level_yellow = [135, 135, 30, 255]
 
-        self.vis_colour = self.grey(200)
-        self.vis_bg = [0, 0, 0, 255]
+		self.vis_colour = self.grey(200)
+		self.vis_bg = [0, 0, 0, 255]
 
-        self.menu_background = None  # self.grey(12)
-        self.menu_highlight_background = None
-        self.menu_text = [230, 230, 230, 255]
-        self.menu_text_disabled = self.grey(50)
-        self.menu_icons = [255, 255, 255, 25]
-        self.menu_tab = self.grey(30)
+		self.menu_background = None  # self.grey(12)
+		self.menu_highlight_background = None
+		self.menu_text = [230, 230, 230, 255]
+		self.menu_text_disabled = self.grey(50)
+		self.menu_icons = [255, 255, 255, 25]
+		self.menu_tab = self.grey(30)
 
-        self.gallery_highlight = self.artist_playing
+		self.gallery_highlight = self.artist_playing
 
-        self.status_info_text = [245, 205, 0, 255]
-        self.streaming_text = [220, 75, 60, 255]
-        self.lyrics = self.grey(245)
+		self.status_info_text = [245, 205, 0, 255]
+		self.streaming_text = [220, 75, 60, 255]
+		self.lyrics = self.grey(245)
 
-        self.corner_button = [255, 255, 255, 50]  # [60, 60, 60, 255]
-        self.corner_button_active = [255, 255, 255, 230]  # [230, 230, 230, 255]
+		self.corner_button = [255, 255, 255, 50]  # [60, 60, 60, 255]
+		self.corner_button_active = [255, 255, 255, 230]  # [230, 230, 230, 255]
 
-        self.window_buttons_bg = [0, 0, 0, 50]
-        self.window_buttons_bg_over = [255, 255, 255, 10]  # [80, 80, 80, 120]
-        self.window_buttons_icon_over = (255, 255, 255, 60)
-        self.window_button_icon_off = (255, 255, 255, 40)
-        self.window_button_x_on = None
-        self.window_button_x_off = self.window_button_icon_off
+		self.window_buttons_bg = [0, 0, 0, 50]
+		self.window_buttons_bg_over = [255, 255, 255, 10]  # [80, 80, 80, 120]
+		self.window_buttons_icon_over = (255, 255, 255, 60)
+		self.window_button_icon_off = (255, 255, 255, 40)
+		self.window_button_x_on = None
+		self.window_button_x_off = self.window_button_icon_off
 
-        self.message_box_bg = self.grey(0)
-        self.message_box_text = self.grey(230)
+		self.message_box_bg = self.grey(0)
+		self.message_box_text = self.grey(230)
 
-        self.sys_title = self.grey(220)
-        self.sys_title_strong = self.grey(230)
-        self.lm = False
+		self.sys_title = self.grey(220)
+		self.sys_title_strong = self.grey(230)
+		self.lm = False
 
-        self.pluse_colour = [244, 212, 66, 255]
+		self.pluse_colour = [244, 212, 66, 255]
 
-        self.mini_mode_background = [19, 19, 19, 255]
-        self.mini_mode_border = [45, 45, 45, 255]
-        self.mini_mode_text_1 = [255, 255, 255, 240]
-        self.mini_mode_text_2 = [255, 255, 255, 77]
+		self.mini_mode_background = [19, 19, 19, 255]
+		self.mini_mode_border = [45, 45, 45, 255]
+		self.mini_mode_text_1 = [255, 255, 255, 240]
+		self.mini_mode_text_2 = [255, 255, 255, 77]
 
-        self.queue_drag_indicator_colour = [200, 50, 240, 255]
+		self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
-        self.playlist_box_background = self.side_panel_background
+		self.playlist_box_background = self.side_panel_background
 
-        self.bar_title_text = None
+		self.bar_title_text = None
 
-        self.corner_icon = [40, 40, 40, 255]
-        self.queue_background = None  # self.side_panel_background #self.grey(18) # 18
-        self.queue_card_background = self.grey(23)
+		self.corner_icon = [40, 40, 40, 255]
+		self.queue_background = None  # self.side_panel_background #self.grey(18) # 18
+		self.queue_card_background = self.grey(23)
 
-        self.column_bar_background = [30, 30, 30, 255]
-        self.column_grip = [255, 255, 255, 14]
-        self.column_bar_text = [240, 240, 240, 255]
+		self.column_bar_background = [30, 30, 30, 255]
+		self.column_grip = [255, 255, 255, 14]
+		self.column_bar_text = [240, 240, 240, 255]
 
-        self.window_frame = [30, 30, 30, 255]
+		self.window_frame = [30, 30, 30, 255]
 
-        self.box_background = [16, 16, 16, 255]
-        self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
-        self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
-        self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
-        self.box_sub_highlight = rgb_add_hls(self.box_background, 0, 0.07, -0.05)  # 58, 47, 85
-        self.box_check_border = [255, 255, 255, 18]
+		self.box_background = [16, 16, 16, 255]
+		self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
+		self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
+		self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
+		self.box_sub_highlight = rgb_add_hls(self.box_background, 0, 0.07, -0.05)  # 58, 47, 85
+		self.box_check_border = [255, 255, 255, 18]
 
-        self.box_title_text = self.grey(245)
-        self.box_text = self.grey(240)
-        self.box_sub_text = self.grey_blend_bg(225)
-        self.box_input_text = self.grey(225)
-        self.box_button_text_highlight = self.grey(250)
-        self.box_button_text = self.grey(225)
-        self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
-        self.box_thumb_background = None
-        self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
+		self.box_title_text = self.grey(245)
+		self.box_text = self.grey(240)
+		self.box_sub_text = self.grey_blend_bg(225)
+		self.box_input_text = self.grey(225)
+		self.box_button_text_highlight = self.grey(250)
+		self.box_button_text = self.grey(225)
+		self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
+		self.box_thumb_background = None
+		self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
 
-        self.artist_bio_background = [27, 27, 27, 255]
-        self.artist_bio_text = [230, 230, 230, 255]
+		self.artist_bio_background = [27, 27, 27, 255]
+		self.artist_bio_text = [230, 230, 230, 255]
 
-    def post_config(self):
+	def post_config(self):
 
-        if self.box_thumb_background is None:
-            self.box_thumb_background = alpha_mod(self.box_button_background, 175)
+		if self.box_thumb_background is None:
+			self.box_thumb_background = alpha_mod(self.box_button_background, 175)
 
-        # Pre calculate alpha blend for spec background
-        self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
-        self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
-        self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
+		# Pre calculate alpha blend for spec background
+		self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
+		self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
+		self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
 
-        self.message_box_bg = self.box_background
-        self.sys_tab_bg = self.tab_background
-        self.sys_tab_hl = self.tab_background_active
-        self.toggle_box_on = self.folder_title
-        self.toggle_box_on = [255, 150, 100, 255]
-        self.toggle_box_on = self.artist_playing
-        if colour_value(self.toggle_box_on) < 150:
-            self.toggle_box_on = [160, 160, 160, 255]
-        # self.time_sub = [255, 255, 255, 80]#alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
+		self.message_box_bg = self.box_background
+		self.sys_tab_bg = self.tab_background
+		self.sys_tab_hl = self.tab_background_active
+		self.toggle_box_on = self.folder_title
+		self.toggle_box_on = [255, 150, 100, 255]
+		self.toggle_box_on = self.artist_playing
+		if colour_value(self.toggle_box_on) < 150:
+			self.toggle_box_on = [160, 160, 160, 255]
+		# self.time_sub = [255, 255, 255, 80]#alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
 
-        self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, 0.29, 0)
+		self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, 0.29, 0)
 
-        if test_lumi(colours.bottom_panel_colour) < 0.2:
-            # self.time_sub = [0, 0, 0, 80]
-            self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, -0.15, -0.3)
-        elif test_lumi(colours.bottom_panel_colour) < 0.8:
-            self.time_sub = [255, 255, 255, 135]
-        # self.time_sub = self.mode_button_off
+		if test_lumi(colours.bottom_panel_colour) < 0.2:
+			# self.time_sub = [0, 0, 0, 80]
+			self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, -0.15, -0.3)
+		elif test_lumi(colours.bottom_panel_colour) < 0.8:
+			self.time_sub = [255, 255, 255, 135]
+		# self.time_sub = self.mode_button_off
 
-        if self.bar_title_text is None:
-            self.bar_title_text = self.side_bar_line1
+		if self.bar_title_text is None:
+			self.bar_title_text = self.side_bar_line1
 
-        self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
+		self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
-        if self.menu_highlight_background is None:
-            self.menu_highlight_background = [40, 40, 40, 255]
+		if self.menu_highlight_background is None:
+			self.menu_highlight_background = [40, 40, 40, 255]
 
-        if not self.queue_background:
-            self.queue_background = self.side_panel_background
+		if not self.queue_background:
+			self.queue_background = self.side_panel_background
 
-        if test_lumi(self.queue_background) > 0.8:
-            self.queue_card_background = alpha_blend([255, 255, 255, 10], self.queue_background)
+		if test_lumi(self.queue_background) > 0.8:
+			self.queue_card_background = alpha_blend([255, 255, 255, 10], self.queue_background)
 
-        if self.menu_background is None and not self.lm:
-            self.menu_background = self.bottom_panel_colour
+		if self.menu_background is None and not self.lm:
+			self.menu_background = self.bottom_panel_colour
 
-        self.message_box_text = self.box_text
-        self.message_box_border = self.box_border
+		self.message_box_text = self.box_text
+		self.message_box_border = self.box_border
 
-        if self.window_button_x_on is None:
-            self.window_button_x_on = self.artist_playing
+		if self.window_button_x_on is None:
+			self.window_button_x_on = self.artist_playing
 
-        if test_lumi(self.column_bar_background) < 0.4:
-            self.column_bar_text = [40, 40, 40, 200]
-            self.column_grip = [255, 255, 255, 20]
+		if test_lumi(self.column_bar_background) < 0.4:
+			self.column_bar_text = [40, 40, 40, 200]
+			self.column_grip = [255, 255, 255, 20]
 
-    def light_mode(self):
+	def light_mode(self):
 
-        self.lm = True
-        self.star_line_playing = [255, 255, 255, 255]
-        self.sys_tab_bg = self.grey(25)
-        self.sys_tab_hl = self.grey(45)
-        # self.box_background = self.grey(30)
-        self.toggle_box_on = self.tab_background_active
-        # if colour_value(self.tab_background_active) < 250:
-        #    self.toggle_box_on = [255, 255, 255, 200]
+		self.lm = True
+		self.star_line_playing = [255, 255, 255, 255]
+		self.sys_tab_bg = self.grey(25)
+		self.sys_tab_hl = self.grey(45)
+		# self.box_background = self.grey(30)
+		self.toggle_box_on = self.tab_background_active
+		# if colour_value(self.tab_background_active) < 250:
+		#	self.toggle_box_on = [255, 255, 255, 200]
 
-        # self.time_sub = [0, 0, 0, 200]
-        self.gallery_artist_line = self.grey(40)
-        # self.bar_title_text = self.grey(30)
-        self.status_text_normal = self.grey(70)
-        self.status_text_over = self.grey(40)
-        self.status_info_text = [40, 40, 40, 255]
+		# self.time_sub = [0, 0, 0, 200]
+		self.gallery_artist_line = self.grey(40)
+		# self.bar_title_text = self.grey(30)
+		self.status_text_normal = self.grey(70)
+		self.status_text_over = self.grey(40)
+		self.status_info_text = [40, 40, 40, 255]
 
-        # self.bar_title_text = self.grey(255)
-        self.vis_bg = [235, 235, 235, 255]
-        # self.menu_background = [240, 240, 240, 250]
-        # self.menu_text = self.grey(40)
-        # self.menu_text_disabled = self.grey(180)
-        # self.menu_highlight_background = [200, 200, 200, 250]
-        if self.menu_background is None:
-            self.menu_background = [15, 15, 15, 250]
-        if not self.menu_icons:
-            self.menu_icons = [0, 0, 0, 40]
+		# self.bar_title_text = self.grey(255)
+		self.vis_bg = [235, 235, 235, 255]
+		# self.menu_background = [240, 240, 240, 250]
+		# self.menu_text = self.grey(40)
+		# self.menu_text_disabled = self.grey(180)
+		# self.menu_highlight_background = [200, 200, 200, 250]
+		if self.menu_background is None:
+			self.menu_background = [15, 15, 15, 250]
+		if not self.menu_icons:
+			self.menu_icons = [0, 0, 0, 40]
 
-        # self.menu_background = [40, 40, 40, 250]
-        # self.menu_text = self.grey(220)
-        # self.menu_text_disabled = self.grey(120)
-        # self.menu_highlight_background = [120, 80, 220, 250]
+		# self.menu_background = [40, 40, 40, 250]
+		# self.menu_text = self.grey(220)
+		# self.menu_text_disabled = self.grey(120)
+		# self.menu_highlight_background = [120, 80, 220, 250]
 
-        self.corner_button = self.grey(160)
-        self.corner_button_active = self.grey(35)
-        # self.window_buttons_bg = [0, 0, 0, 5]
-        self.message_box_bg = [245, 245, 245, 255]
-        self.message_box_text = self.grey(20)
-        self.message_box_border = self.grey(40)
-        self.gallery_background = self.grey(230)
-        self.gallery_artist_line = self.grey(40)
-        self.pluse_colour = [212, 66, 244, 255]
+		self.corner_button = self.grey(160)
+		self.corner_button_active = self.grey(35)
+		# self.window_buttons_bg = [0, 0, 0, 5]
+		self.message_box_bg = [245, 245, 245, 255]
+		self.message_box_text = self.grey(20)
+		self.message_box_border = self.grey(40)
+		self.gallery_background = self.grey(230)
+		self.gallery_artist_line = self.grey(40)
+		self.pluse_colour = [212, 66, 244, 255]
 
-        # view_box.off_colour = self.grey(200)
+		# view_box.off_colour = self.grey(200)
 
 
 colours = ColoursClass()
@@ -2747,37 +2756,37 @@ colours.post_config()
 
 
 def set_colour(colour):
-    SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
+	SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
 
 
 def get_themes(deco=False):
-    themes = []  # full, name
-    decos = {}
-    direcs = [install_directory + '/theme']
-    if user_directory != install_directory:
-        direcs.append(user_directory + '/theme')
+	themes = []  # full, name
+	decos = {}
+	direcs = [install_directory + '/theme']
+	if user_directory != install_directory:
+		direcs.append(user_directory + '/theme')
 
-    def scan_folders(folders):
-        for folder in folders:
-            if not os.path.isdir(folder):
-                continue
-            paths = [os.path.join(folder, f) for f in os.listdir(folder)]
-            for path in paths:
-                if os.path.islink(path):
-                    path = os.readlink(path)
-                if os.path.isfile(path):
-                    if path[-7:] == '.ttheme':
-                        themes.append((path, os.path.basename(path).split(".")[0]))
-                    elif path[-6:] == '.tdeco':
-                        decos[os.path.basename(path).split(".")[0]] = path
-                elif os.path.isdir(path):
-                    scan_folders([path])
+	def scan_folders(folders):
+		for folder in folders:
+			if not os.path.isdir(folder):
+				continue
+			paths = [os.path.join(folder, f) for f in os.listdir(folder)]
+			for path in paths:
+				if os.path.islink(path):
+					path = os.readlink(path)
+				if os.path.isfile(path):
+					if path[-7:] == '.ttheme':
+						themes.append((path, os.path.basename(path).split(".")[0]))
+					elif path[-6:] == '.tdeco':
+						decos[os.path.basename(path).split(".")[0]] = path
+				elif os.path.isdir(path):
+					scan_folders([path])
 
-    scan_folders(direcs)
-    themes.sort()
-    if deco:
-        return decos
-    return themes
+	scan_folders(direcs)
+	themes.sort()
+	if deco:
+		return decos
+	return themes
 
 
 # This is legacy. New settings are added straight to the save list (need to overhaul)
@@ -2839,17 +2848,17 @@ class TrackClass:
 		self.misc: list = {}
 
 def get_end_folder(direc):
-    for w in range(len(direc)):
-        if direc[-w - 1] == '\\' or direc[-w - 1] == '/':
-            direc = direc[-w:]
-            return direc
-    return None
+	for w in range(len(direc)):
+		if direc[-w - 1] == '\\' or direc[-w - 1] == '/':
+			direc = direc[-w:]
+			return direc
+	return None
 def set_path(nt, path):
-    nt.fullpath = path.replace('\\', '/')
-    nt.filename = os.path.basename(path)
-    nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
-    nt.parent_folder_name = get_end_folder(os.path.dirname(path))
-    nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
+	nt.fullpath = path.replace('\\', '/')
+	nt.filename = os.path.basename(path)
+	nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
+	nt.parent_folder_name = get_end_folder(os.path.dirname(path))
+	nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
@@ -2892,38 +2901,38 @@ ggc = 2
 
 try:
 
-    sp1 = user_directory + "/star.p"
-    sp2 = user_directory + "/star.p.backup"
+	sp1 = user_directory + "/star.p"
+	sp2 = user_directory + "/star.p.backup"
 
-    s1 = 0
-    s2 = 0
+	s1 = 0
+	s2 = 0
 
-    if os.path.isfile(sp1):
-        s1 = os.path.getsize(sp1)
-    if os.path.isfile(sp2):
-        s2 = os.path.getsize(sp2)
-    to_load = sp1
-    if s2 > s1:
-        print("Loading backup star.p")
-        to_load = sp2
+	if os.path.isfile(sp1):
+		s1 = os.path.getsize(sp1)
+	if os.path.isfile(sp2):
+		s2 = os.path.getsize(sp2)
+	to_load = sp1
+	if s2 > s1:
+		print("Loading backup star.p")
+		to_load = sp2
 
-    star_store.db = pickle.load(open(to_load, "rb"))
+	star_store.db = pickle.load(open(to_load, "rb"))
 
 except Exception:
-    print('No existing star.p file')
+	print('No existing star.p file')
 
 try:
-    album_star_store.db = pickle.load(open(user_directory + "/album-star.p", "rb"))
+	album_star_store.db = pickle.load(open(user_directory + "/album-star.p", "rb"))
 
 except Exception:
-    print('No existing album-star.p file')
+	print('No existing album-star.p file')
 
 try:
-    if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
-        with open(user_directory + "/lyrics_substitutions.json", 'r') as f:
-            prefs.lyrics_subs = json.load(f)
+	if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
+		with open(user_directory + "/lyrics_substitutions.json", 'r') as f:
+			prefs.lyrics_subs = json.load(f)
 except Exception:
-    print("Error loading lyrics_substitutions.json")
+	print("Error loading lyrics_substitutions.json")
 
 perf_timer.set()
 
@@ -2931,41 +2940,41 @@ radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 
 primary_stations = []
 station = {
-    'title': "SomaFM Groove Salad",
-    "stream_url": "http://ice3.somafm.com/groovesalad-128-mp3",
-    'country': 'USA',
-    'website_url': 'http://somafm.com/groovesalad',
-    'icon': 'https://somafm.com/logos/120/groovesalad120.png'
+	'title': "SomaFM Groove Salad",
+	"stream_url": "http://ice3.somafm.com/groovesalad-128-mp3",
+	'country': 'USA',
+	'website_url': 'http://somafm.com/groovesalad',
+	'icon': 'https://somafm.com/logos/120/groovesalad120.png'
 }
 primary_stations.append(station)
 station = {
-    'title': "SomaFM PopTron",
-    "stream_url": "http://ice3.somafm.com/poptron-128-mp3",
-    'country': 'USA',
-    'website_url': 'http://somafm.com/poptron/',
-    'icon': 'https://somafm.com/logos/120/poptron120.jpg'
+	'title': "SomaFM PopTron",
+	"stream_url": "http://ice3.somafm.com/poptron-128-mp3",
+	'country': 'USA',
+	'website_url': 'http://somafm.com/poptron/',
+	'icon': 'https://somafm.com/logos/120/poptron120.jpg'
 }
 primary_stations.append(station)
 station = {
-    'title': "SomaFM Vaporwaves",
-    "stream_url": "http://ice4.somafm.com/vaporwaves-128-mp3",
-    'country': 'USA',
-    'website_url': 'https://somafm.com/vaporwaves',
-    'icon': 'https://somafm.com/img3/vaporwaves400.png'
+	'title': "SomaFM Vaporwaves",
+	"stream_url": "http://ice4.somafm.com/vaporwaves-128-mp3",
+	'country': 'USA',
+	'website_url': 'https://somafm.com/vaporwaves',
+	'icon': 'https://somafm.com/img3/vaporwaves400.png'
 }
 primary_stations.append(station)
 
 station = {
-    'title': "DKFM Shoegaze Radio",
-    "stream_url": "https://kathy.torontocast.com:2005/stream",
-    'country': 'Canada',
-    'website_url': 'https://decayfm.com',
-    'icon': 'https://cdn-profiles.tunein.com/s193842/images/logod.png'
+	'title': "DKFM Shoegaze Radio",
+	"stream_url": "https://kathy.torontocast.com:2005/stream",
+	'country': 'Canada',
+	'website_url': 'https://decayfm.com',
+	'icon': 'https://cdn-profiles.tunein.com/s193842/images/logod.png'
 }
 primary_stations.append(station)
 
 for item in primary_stations:
-    radio_playlists[0]["items"].append(item)
+	radio_playlists[0]["items"].append(item)
 
 radio_playlist_viewing = 0
 
@@ -2973,11 +2982,11 @@ pump = True
 
 
 def pumper():
-    if macos:
-        return
-    while pump:
-        time.sleep(0.005)
-        SDL_PumpEvents()
+	if macos:
+		return
+	while pump:
+		time.sleep(0.005)
+		SDL_PumpEvents()
 
 
 shoot_pump = threading.Thread(target=pumper)
@@ -2985,391 +2994,391 @@ shoot_pump.daemon = True
 shoot_pump.start()
 
 for t in range(2):
-    try:
+	try:
 
-        # if os.path.isfile(user_directory + "/state.p.backup") and (
-        #
-        #     not os.path.isfile(user_directory + "/state.p") or
-        #     os.path.getsize(user_directory + "/state.p") < 100
-        # )
-        if t == 0:
-            state_file = open(user_directory + "/state.p", "rb")
-        if t == 1:
-            state_file = open(user_directory + "/state.p.backup", "rb")
+		# if os.path.isfile(user_directory + "/state.p.backup") and (
+		#
+		#	 not os.path.isfile(user_directory + "/state.p") or
+		#	 os.path.getsize(user_directory + "/state.p") < 100
+		# )
+		if t == 0:
+			state_file = open(user_directory + "/state.p", "rb")
+		if t == 1:
+			state_file = open(user_directory + "/state.p.backup", "rb")
 
-        # def tt():
-        #     while True:
-        #         print(state_file.tell())
-        #         time.sleep(0.01)
-        # shooter(tt)
+		# def tt():
+		#	 while True:
+		#		 print(state_file.tell())
+		#		 time.sleep(0.01)
+		# shooter(tt)
 
-        save = pickle.load(state_file)
+		save = pickle.load(state_file)
 
-        if t == 1:
-            print("Using backup state")
+		if t == 1:
+			print("Using backup state")
 
-        if save[63] is not None:
-            prefs.ui_scale = save[63]
-            # prefs.ui_scale = 1.3
-            # gui.__init__()
+		if save[63] is not None:
+			prefs.ui_scale = save[63]
+			# prefs.ui_scale = 1.3
+			# gui.__init__()
 
-        if save[0] is not None:
-            master_library = save[0]
-        master_count = save[1]
-        playlist_playing = save[2]
-        playlist_active = save[3]
-        playlist_view_position = save[4]
-        multi_playlist = save[5]
-        volume = save[6]
-        QUE = save[7]
-        playing_in_queue = save[8]
-        default_playlist = save[9]
-        # playlist_playing = save[10]
-        # cue_list = save[11]
-        # radio_field_text = save[12]
-        theme = save[13]
-        folder_image_offsets = save[14]
-        # lfm_username = save[15]
-        # lfm_hash = save[16]
-        db_version = save[17]
-        view_prefs = save[18]
-        # window_size = save[19]
-        gui.save_size = copy.copy(save[19])
-        gui.rspw = save[20]
-        # savetime = save[21]
-        gui.vis_want = save[22]
-        selected_in_playlist = save[23]
-        if save[24] is not None:
-            album_mode_art_size = save[24]
-        if save[25] is not None:
-            draw_border = save[25]
-        if save[26] is not None:
-            prefs.enable_web = save[26]
-        if save[27] is not None:
-            prefs.allow_remote = save[27]
-        if save[28] is not None:
-            prefs.expose_web = save[28]
-        if save[29] is not None:
-            prefs.enable_transcode = save[29]
-        if save[30] is not None:
-            prefs.show_rym = save[30]
-        # if save[31] is not None:
-        #     combo_mode_art_size = save[31]
-        if save[32] is not None:
-            gui.maximized = save[32]
-        if save[33] is not None:
-            prefs.prefer_bottom_title = save[33]
-        if save[34] is not None:
-            gui.display_time_mode = save[34]
-        # if save[35] is not None:
-        #     prefs.transcode_mode = save[35]
-        if save[36] is not None:
-            prefs.transcode_codec = save[36]
-        if save[37] is not None:
-            prefs.transcode_bitrate = save[37]
-        # if save[38] is not None:
-        #     prefs.line_style = save[38]
-        # if save[39] is not None:
-        #     prefs.cache_gallery = save[39]
-        if save[40] is not None:
-            prefs.playlist_font_size = save[40]
-        if save[41] is not None:
-            prefs.use_title = save[41]
-        if save[42] is not None:
-            gui.pl_st = save[42]
-        # if save[43] is not None:
-        #     gui.set_mode = save[43]
-        #     gui.set_bar = gui.set_mode
-        if save[45] is not None:
-            prefs.playlist_row_height = save[45]
-        if save[46] is not None:
-            prefs.show_wiki = save[46]
-        if save[47] is not None:
-            prefs.auto_extract = save[47]
-        if save[48] is not None:
-            prefs.colour_from_image = save[48]
-        if save[49] is not None:
-            gui.set_bar = save[49]
-        if save[50] is not None:
-            gui.gallery_show_text = save[50]
-        if save[51] is not None:
-            gui.bb_show_art = save[51]
-        # if save[52] is not None:
-        #     gui.show_stars = save[52]
-        if save[53] is not None:
-            prefs.auto_lfm = save[53]
-        if save[54] is not None:
-            prefs.scrobble_mark = save[54]
-        if save[55] is not None:
-            prefs.replay_gain = save[55]
-        # if save[56] is not None:
-        #     prefs.radio_page_lyrics = save[56]
-        if save[57] is not None:
-            prefs.show_gimage = save[57]
-        if save[58] is not None:
-            prefs.end_setting = save[58]
-        if save[59] is not None:
-            prefs.show_gen = save[59]
-        # if save[60] is not None:
-        #     url_saves = save[60]
-        if save[61] is not None:
-            prefs.auto_del_zip = save[61]
-        if save[62] is not None:
-            gui.level_meter_colour_mode = save[62]
-        if save[64] is not None:
-            prefs.show_lyrics_side = save[64]
-        # if save[65] is not None:
-        #     prefs.last_device = save[65]
-        if save[66] is not None:
-            gui.restart_album_mode = save[66]
-        if save[67] is not None:
-            album_playlist_width = save[67]
-        if save[68] is not None:
-            prefs.transcode_opus_as = save[68]
-        if save[69] is not None:
-            gui.star_mode = save[69]
-        if save[70] is not None:
-            gui.rsp = save[70]
-        if save[71] is not None:
-            gui.lsp = save[71]
-        if save[72] is not None:
-            gui.rspw = save[72]
-        if save[73] is not None:
-            gui.pref_gallery_w = save[73]
-        if save[74] is not None:
-            gui.pref_rspw = save[74]
-        if save[75] is not None:
-            gui.show_hearts = save[75]
-        if save[76] is not None:
-            prefs.monitor_downloads = save[76]
-        if save[77] is not None:
-            gui.artist_info_panel = save[77]
-        if save[78] is not None:
-            prefs.extract_to_music = save[78]
-        if save[79] is not None:
-            prefs.enable_lb = save[79]
-        # if save[80] is not None:
-        #     prefs.lb_token = save[80]
-        #     if prefs.lb_token is None:
-        #         prefs.lb_token = ""
-        if save[81] is not None:
-            rename_files_previous = save[81]
-        if save[82] is not None:
-            rename_folder_previous = save[82]
-        if save[83] is not None:
-            prefs.use_jump_crossfade = save[83]
-        if save[84] is not None:
-            prefs.use_transition_crossfade = save[84]
-        if save[85] is not None:
-            prefs.show_notifications = save[85]
-        # if save[86] is not None:
-        #     prefs.true_shuffle = save[86]
-        if save[87] is not None:
-            gui.remember_library_mode = save[87]
-        # if save[88] is not None:
-        #     prefs.show_queue = save[88]
-        # if save[89] is not None:
-        #     prefs.show_transfer = save[89]
-        if save[90] is not None:
-            p_force_queue = save[90]
-        if save[91] is not None:
-            prefs.use_pause_fade = save[91]
-        if save[92] is not None:
-            prefs.append_total_time = save[92]
-        if save[93] is not None:
-            prefs.backend = save[93]  # moved to config file
-        if save[94] is not None:
-            prefs.album_shuffle_mode = save[94]
-        if save[95] is not None:
-            prefs.album_repeat_mode = save[95]
-        # if save[96] is not None:
-        #     prefs.finish_current = save[96]
-        if save[97] is not None:
-            reload_state = save[97]
-        # if save[98] is not None:
-        #     prefs.reload_play_state = save[98]
-        if save[99] is not None:
-            prefs.last_fm_token = save[99]
-        if save[100] is not None:
-            prefs.last_fm_username = save[100]
-        # if save[101] is not None:
-        #     prefs.use_card_style = save[101]
-        # if save[102] is not None:
-        #     prefs.auto_lyrics = save[102]
-        if save[103] is not None:
-            prefs.auto_lyrics_checked = save[103]
-        if save[104] is not None:
-            prefs.show_side_art = save[104]
-        if save[105] is not None:
-            prefs.window_opacity = save[105]
-        if save[106] is not None:
-            prefs.gallery_single_click = save[106]
-        if save[107] is not None:
-            prefs.tabs_on_top = save[107]
-        if save[108] is not None:
-            prefs.showcase_vis = save[108]
-        if save[109] is not None:
-            prefs.spec2_colour_mode = save[109]
-        # if save[110] is not None:
-        #     prefs.device_buffer = save[110]
-        if save[111] is not None:
-            prefs.use_eq = save[111]
-        if save[112] is not None:
-            prefs.eq = save[112]
-        if save[113] is not None:
-            prefs.bio_large = save[113]
-        if save[114] is not None:
-            prefs.discord_show = save[114]
-        if save[115] is not None:
-            prefs.min_to_tray = save[115]
-        if save[116] is not None:
-            prefs.guitar_chords = save[116]
-        if save[117] is not None:
-            prefs.playback_follow_cursor = save[117]
-        if save[118] is not None:
-            prefs.art_bg = save[118]
-        if save[119] is not None:
-            prefs.random_mode = save[119]
-        if save[120] is not None:
-            prefs.repeat_mode = save[120]
-        if save[121] is not None:
-            prefs.art_bg_stronger = save[121]
-        if save[122] is not None:
-            prefs.art_bg_always_blur = save[122]
-        if save[123] is not None:
-            prefs.failed_artists = save[123]
-        if save[124] is not None:
-            prefs.artist_list = save[124]
-        if save[125] is not None:
-            prefs.auto_sort = save[125]
-        if save[126] is not None:
-            prefs.lyrics_enables = save[126]
-        if save[127] is not None:
-            prefs.fanart_notify = save[127]
-        if save[128] is not None:
-            prefs.bg_showcase_only = save[128]
-        if save[129] is not None:
-            prefs.discogs_pat = save[129]
-        if save[130] is not None:
-            prefs.mini_mode_mode = save[130]
-        if save[131] is not None:
-            after_scan = save[131]
-        if save[132] is not None:
-            gui.gallery_positions = save[132]
-        if save[133] is not None:
-            prefs.chart_bg = save[133]
-        if save[134] is not None:
-            prefs.left_panel_mode = save[134]
-        if save[135] is not None:
-            gui.last_left_panel_mode = save[135]
-        # if save[136] is not None:
-        #     prefs.gst_device = save[136]
-        if save[137] is not None:
-            search_string_cache = save[137]
-        if save[138] is not None:
-            search_dia_string_cache = save[138]
-        if save[139] is not None:
-            gen_codes = save[139]
-        if save[140] is not None:
-            gui.show_ratings = save[140]
-        if save[141] is not None:
-            gui.show_album_ratings = save[141]
-        if save[142] is not None:
-            prefs.radio_urls = save[142]
-        if save[143] is not None:
-            gui.restore_showcase_view = save[143]
-        if save[144] is not None:
-            gui.saved_prime_tab = save[144]
-        if save[145] is not None:
-            gui.saved_prime_direction = save[145]
-        if save[146] is not None:
-            prefs.sync_playlist = save[146]
-        if save[147] is not None:
-            prefs.spot_client = save[147]
-        if save[148] is not None:
-            prefs.spot_secret = save[148]
-        if save[149] is not None:
-            prefs.show_band = save[149]
-        if save[150] is not None:
-            prefs.download_playlist = save[150]
-        if save[151] is not None:
-            spot_cache_saved_albums = save[151]
-        if save[152] is not None:
-            prefs.auto_rec = save[152]
-        if save[153] is not None:
-            prefs.spotify_token = save[153]
-        if save[154] is not None:
-            prefs.use_libre_fm = save[154]
-        if save[155] is not None:
-            prefs.old_playlist_box_position = save[155]
-        if save[156] is not None:
-            prefs.artist_list_sort_mode = save[156]
-        if save[157] is not None:
-            prefs.phazor_device_selected = save[157]
-        if save[158] is not None:
-            prefs.failed_background_artists = save[158]
-        if save[159] is not None:
-            prefs.bg_flips = save[159]
-        if save[160] is not None:
-            prefs.tray_show_title = save[160]
-        if save[161] is not None:
-            prefs.artist_list_style = save[161]
-        if save[162] is not None:
-            ds = save[162]
-            for d in ds:
-                nt = TrackClass()
-                nt.__dict__.update(d)
-                master_library[d["index"]] = nt
-        if save[163] is not None:
-            prefs.premium = save[163]
-        if save[164] is not None:
-            gui.restore_radio_view = save[164]
-        if save[165] is not None:
-            radio_playlists = save[165]
-        if save[166] is not None:
-            radio_playlist_viewing = save[166]
-        if save[167] is not None:
-            prefs.radio_thumb_bans = save[167]
-        if save[168] is not None:
-            prefs.playlist_exports = save[168]
-        if save[169] is not None:
-            prefs.show_chromecast = save[169]
-        if save[170] is not None:
-            prefs.cache_list = save[170]
-        if save[171] is not None:
-            prefs.shuffle_lock = save[171]
-        if save[172] is not None:
-            prefs.album_shuffle_lock_mode = save[172]
-        if save[173] is not None:
-            gui.was_radio = save[173]
-        if save[174] is not None:
-            prefs.spot_username = save[174]
-        if save[175] is not None:
-            prefs.spot_password = save[175]
-        if save[176] is not None:
-            prefs.artist_list_threshold = save[176]
-        if save[177] is not None:
-            prefs.tray_theme = save[177]
-        if save[178] is not None:
-            prefs.row_title_format = save[178]
-        if save[179] is not None:
-            prefs.row_title_genre = save[179]
-        if save[180] is not None:
-            prefs.row_title_separator_type = save[180]
-        if save[181] is not None:
-            prefs.replay_preamp = save[181]
-        if save[182] is not None:
-            prefs.gallery_combine_disc = save[182]
+		if save[0] is not None:
+			master_library = save[0]
+		master_count = save[1]
+		playlist_playing = save[2]
+		playlist_active = save[3]
+		playlist_view_position = save[4]
+		multi_playlist = save[5]
+		volume = save[6]
+		QUE = save[7]
+		playing_in_queue = save[8]
+		default_playlist = save[9]
+		# playlist_playing = save[10]
+		# cue_list = save[11]
+		# radio_field_text = save[12]
+		theme = save[13]
+		folder_image_offsets = save[14]
+		# lfm_username = save[15]
+		# lfm_hash = save[16]
+		db_version = save[17]
+		view_prefs = save[18]
+		# window_size = save[19]
+		gui.save_size = copy.copy(save[19])
+		gui.rspw = save[20]
+		# savetime = save[21]
+		gui.vis_want = save[22]
+		selected_in_playlist = save[23]
+		if save[24] is not None:
+			album_mode_art_size = save[24]
+		if save[25] is not None:
+			draw_border = save[25]
+		if save[26] is not None:
+			prefs.enable_web = save[26]
+		if save[27] is not None:
+			prefs.allow_remote = save[27]
+		if save[28] is not None:
+			prefs.expose_web = save[28]
+		if save[29] is not None:
+			prefs.enable_transcode = save[29]
+		if save[30] is not None:
+			prefs.show_rym = save[30]
+		# if save[31] is not None:
+		#	 combo_mode_art_size = save[31]
+		if save[32] is not None:
+			gui.maximized = save[32]
+		if save[33] is not None:
+			prefs.prefer_bottom_title = save[33]
+		if save[34] is not None:
+			gui.display_time_mode = save[34]
+		# if save[35] is not None:
+		#	 prefs.transcode_mode = save[35]
+		if save[36] is not None:
+			prefs.transcode_codec = save[36]
+		if save[37] is not None:
+			prefs.transcode_bitrate = save[37]
+		# if save[38] is not None:
+		#	 prefs.line_style = save[38]
+		# if save[39] is not None:
+		#	 prefs.cache_gallery = save[39]
+		if save[40] is not None:
+			prefs.playlist_font_size = save[40]
+		if save[41] is not None:
+			prefs.use_title = save[41]
+		if save[42] is not None:
+			gui.pl_st = save[42]
+		# if save[43] is not None:
+		#	 gui.set_mode = save[43]
+		#	 gui.set_bar = gui.set_mode
+		if save[45] is not None:
+			prefs.playlist_row_height = save[45]
+		if save[46] is not None:
+			prefs.show_wiki = save[46]
+		if save[47] is not None:
+			prefs.auto_extract = save[47]
+		if save[48] is not None:
+			prefs.colour_from_image = save[48]
+		if save[49] is not None:
+			gui.set_bar = save[49]
+		if save[50] is not None:
+			gui.gallery_show_text = save[50]
+		if save[51] is not None:
+			gui.bb_show_art = save[51]
+		# if save[52] is not None:
+		#	 gui.show_stars = save[52]
+		if save[53] is not None:
+			prefs.auto_lfm = save[53]
+		if save[54] is not None:
+			prefs.scrobble_mark = save[54]
+		if save[55] is not None:
+			prefs.replay_gain = save[55]
+		# if save[56] is not None:
+		#	 prefs.radio_page_lyrics = save[56]
+		if save[57] is not None:
+			prefs.show_gimage = save[57]
+		if save[58] is not None:
+			prefs.end_setting = save[58]
+		if save[59] is not None:
+			prefs.show_gen = save[59]
+		# if save[60] is not None:
+		#	 url_saves = save[60]
+		if save[61] is not None:
+			prefs.auto_del_zip = save[61]
+		if save[62] is not None:
+			gui.level_meter_colour_mode = save[62]
+		if save[64] is not None:
+			prefs.show_lyrics_side = save[64]
+		# if save[65] is not None:
+		#	 prefs.last_device = save[65]
+		if save[66] is not None:
+			gui.restart_album_mode = save[66]
+		if save[67] is not None:
+			album_playlist_width = save[67]
+		if save[68] is not None:
+			prefs.transcode_opus_as = save[68]
+		if save[69] is not None:
+			gui.star_mode = save[69]
+		if save[70] is not None:
+			gui.rsp = save[70]
+		if save[71] is not None:
+			gui.lsp = save[71]
+		if save[72] is not None:
+			gui.rspw = save[72]
+		if save[73] is not None:
+			gui.pref_gallery_w = save[73]
+		if save[74] is not None:
+			gui.pref_rspw = save[74]
+		if save[75] is not None:
+			gui.show_hearts = save[75]
+		if save[76] is not None:
+			prefs.monitor_downloads = save[76]
+		if save[77] is not None:
+			gui.artist_info_panel = save[77]
+		if save[78] is not None:
+			prefs.extract_to_music = save[78]
+		if save[79] is not None:
+			prefs.enable_lb = save[79]
+		# if save[80] is not None:
+		#	 prefs.lb_token = save[80]
+		#	 if prefs.lb_token is None:
+		#		 prefs.lb_token = ""
+		if save[81] is not None:
+			rename_files_previous = save[81]
+		if save[82] is not None:
+			rename_folder_previous = save[82]
+		if save[83] is not None:
+			prefs.use_jump_crossfade = save[83]
+		if save[84] is not None:
+			prefs.use_transition_crossfade = save[84]
+		if save[85] is not None:
+			prefs.show_notifications = save[85]
+		# if save[86] is not None:
+		#	 prefs.true_shuffle = save[86]
+		if save[87] is not None:
+			gui.remember_library_mode = save[87]
+		# if save[88] is not None:
+		#	 prefs.show_queue = save[88]
+		# if save[89] is not None:
+		#	 prefs.show_transfer = save[89]
+		if save[90] is not None:
+			p_force_queue = save[90]
+		if save[91] is not None:
+			prefs.use_pause_fade = save[91]
+		if save[92] is not None:
+			prefs.append_total_time = save[92]
+		if save[93] is not None:
+			prefs.backend = save[93]  # moved to config file
+		if save[94] is not None:
+			prefs.album_shuffle_mode = save[94]
+		if save[95] is not None:
+			prefs.album_repeat_mode = save[95]
+		# if save[96] is not None:
+		#	 prefs.finish_current = save[96]
+		if save[97] is not None:
+			reload_state = save[97]
+		# if save[98] is not None:
+		#	 prefs.reload_play_state = save[98]
+		if save[99] is not None:
+			prefs.last_fm_token = save[99]
+		if save[100] is not None:
+			prefs.last_fm_username = save[100]
+		# if save[101] is not None:
+		#	 prefs.use_card_style = save[101]
+		# if save[102] is not None:
+		#	 prefs.auto_lyrics = save[102]
+		if save[103] is not None:
+			prefs.auto_lyrics_checked = save[103]
+		if save[104] is not None:
+			prefs.show_side_art = save[104]
+		if save[105] is not None:
+			prefs.window_opacity = save[105]
+		if save[106] is not None:
+			prefs.gallery_single_click = save[106]
+		if save[107] is not None:
+			prefs.tabs_on_top = save[107]
+		if save[108] is not None:
+			prefs.showcase_vis = save[108]
+		if save[109] is not None:
+			prefs.spec2_colour_mode = save[109]
+		# if save[110] is not None:
+		#	 prefs.device_buffer = save[110]
+		if save[111] is not None:
+			prefs.use_eq = save[111]
+		if save[112] is not None:
+			prefs.eq = save[112]
+		if save[113] is not None:
+			prefs.bio_large = save[113]
+		if save[114] is not None:
+			prefs.discord_show = save[114]
+		if save[115] is not None:
+			prefs.min_to_tray = save[115]
+		if save[116] is not None:
+			prefs.guitar_chords = save[116]
+		if save[117] is not None:
+			prefs.playback_follow_cursor = save[117]
+		if save[118] is not None:
+			prefs.art_bg = save[118]
+		if save[119] is not None:
+			prefs.random_mode = save[119]
+		if save[120] is not None:
+			prefs.repeat_mode = save[120]
+		if save[121] is not None:
+			prefs.art_bg_stronger = save[121]
+		if save[122] is not None:
+			prefs.art_bg_always_blur = save[122]
+		if save[123] is not None:
+			prefs.failed_artists = save[123]
+		if save[124] is not None:
+			prefs.artist_list = save[124]
+		if save[125] is not None:
+			prefs.auto_sort = save[125]
+		if save[126] is not None:
+			prefs.lyrics_enables = save[126]
+		if save[127] is not None:
+			prefs.fanart_notify = save[127]
+		if save[128] is not None:
+			prefs.bg_showcase_only = save[128]
+		if save[129] is not None:
+			prefs.discogs_pat = save[129]
+		if save[130] is not None:
+			prefs.mini_mode_mode = save[130]
+		if save[131] is not None:
+			after_scan = save[131]
+		if save[132] is not None:
+			gui.gallery_positions = save[132]
+		if save[133] is not None:
+			prefs.chart_bg = save[133]
+		if save[134] is not None:
+			prefs.left_panel_mode = save[134]
+		if save[135] is not None:
+			gui.last_left_panel_mode = save[135]
+		# if save[136] is not None:
+		#	 prefs.gst_device = save[136]
+		if save[137] is not None:
+			search_string_cache = save[137]
+		if save[138] is not None:
+			search_dia_string_cache = save[138]
+		if save[139] is not None:
+			gen_codes = save[139]
+		if save[140] is not None:
+			gui.show_ratings = save[140]
+		if save[141] is not None:
+			gui.show_album_ratings = save[141]
+		if save[142] is not None:
+			prefs.radio_urls = save[142]
+		if save[143] is not None:
+			gui.restore_showcase_view = save[143]
+		if save[144] is not None:
+			gui.saved_prime_tab = save[144]
+		if save[145] is not None:
+			gui.saved_prime_direction = save[145]
+		if save[146] is not None:
+			prefs.sync_playlist = save[146]
+		if save[147] is not None:
+			prefs.spot_client = save[147]
+		if save[148] is not None:
+			prefs.spot_secret = save[148]
+		if save[149] is not None:
+			prefs.show_band = save[149]
+		if save[150] is not None:
+			prefs.download_playlist = save[150]
+		if save[151] is not None:
+			spot_cache_saved_albums = save[151]
+		if save[152] is not None:
+			prefs.auto_rec = save[152]
+		if save[153] is not None:
+			prefs.spotify_token = save[153]
+		if save[154] is not None:
+			prefs.use_libre_fm = save[154]
+		if save[155] is not None:
+			prefs.old_playlist_box_position = save[155]
+		if save[156] is not None:
+			prefs.artist_list_sort_mode = save[156]
+		if save[157] is not None:
+			prefs.phazor_device_selected = save[157]
+		if save[158] is not None:
+			prefs.failed_background_artists = save[158]
+		if save[159] is not None:
+			prefs.bg_flips = save[159]
+		if save[160] is not None:
+			prefs.tray_show_title = save[160]
+		if save[161] is not None:
+			prefs.artist_list_style = save[161]
+		if save[162] is not None:
+			ds = save[162]
+			for d in ds:
+				nt = TrackClass()
+				nt.__dict__.update(d)
+				master_library[d["index"]] = nt
+		if save[163] is not None:
+			prefs.premium = save[163]
+		if save[164] is not None:
+			gui.restore_radio_view = save[164]
+		if save[165] is not None:
+			radio_playlists = save[165]
+		if save[166] is not None:
+			radio_playlist_viewing = save[166]
+		if save[167] is not None:
+			prefs.radio_thumb_bans = save[167]
+		if save[168] is not None:
+			prefs.playlist_exports = save[168]
+		if save[169] is not None:
+			prefs.show_chromecast = save[169]
+		if save[170] is not None:
+			prefs.cache_list = save[170]
+		if save[171] is not None:
+			prefs.shuffle_lock = save[171]
+		if save[172] is not None:
+			prefs.album_shuffle_lock_mode = save[172]
+		if save[173] is not None:
+			gui.was_radio = save[173]
+		if save[174] is not None:
+			prefs.spot_username = save[174]
+		if save[175] is not None:
+			prefs.spot_password = save[175]
+		if save[176] is not None:
+			prefs.artist_list_threshold = save[176]
+		if save[177] is not None:
+			prefs.tray_theme = save[177]
+		if save[178] is not None:
+			prefs.row_title_format = save[178]
+		if save[179] is not None:
+			prefs.row_title_genre = save[179]
+		if save[180] is not None:
+			prefs.row_title_separator_type = save[180]
+		if save[181] is not None:
+			prefs.replay_preamp = save[181]
+		if save[182] is not None:
+			prefs.gallery_combine_disc = save[182]
 
-        state_file.close()
-        del save
-        break
+		state_file.close()
+		del save
+		break
 
-    except IndexError:
-        break
-    except Exception:
-        if os.path.isfile(user_directory + "/state.p"):
-            print('Error loading save file')
+	except IndexError:
+		break
+	except Exception:
+		if os.path.isfile(user_directory + "/state.p"):
+			print('Error loading save file')
 
 core_timer.set()
 print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
@@ -3377,9 +3386,9 @@ print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 perf_timer.set()
 keys = set(master_library.keys())
 for pl in multi_playlist:
-    keys -= set(pl[2])
+	keys -= set(pl[2])
 if len(keys) > 5000:
-    gui.suggest_clean_db = True
+	gui.suggest_clean_db = True
 # print(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
 pump = False
@@ -3387,506 +3396,510 @@ shoot_pump.join()
 
 # temporary
 if window_size is None:
-    window_size = window_default_size
-    gui.rspw = 200
+	window_size = window_default_size
+	gui.rspw = 200
 
 
 def track_number_process(line):
-    line = str(line).split("/", 1)[0].lstrip("0")
-    if prefs.dd_index and len(line) == 1:
-        return "0" + line
-    return line
+	line = str(line).split("/", 1)[0].lstrip("0")
+	if prefs.dd_index and len(line) == 1:
+		return "0" + line
+	return line
 
 
 def advance_theme():
-    global theme
+	global theme
 
-    theme += 1
-    gui.reload_theme = True
+	theme += 1
+	gui.reload_theme = True
 
 
 def get_theme_number(name):
-    if name == "Mindaro":
-        return 0
-    themes = get_themes()
-    for i, theme in enumerate(themes):
-        if theme[1] == name:
-            return i + 1
-    return 0
+	if name == "Mindaro":
+		return 0
+	themes = get_themes()
+	for i, theme in enumerate(themes):
+		if theme[1] == name:
+			return i + 1
+	return 0
 
 
 def get_theme_name(number):
-    if number == 0:
-        return 'Mindaro'
-    number -= 1
-    themes = get_themes()
-    print((number, themes))
-    if len(themes) > number:
-        return themes[number][1]
-    return ""
+	if number == 0:
+		return 'Mindaro'
+	number -= 1
+	themes = get_themes()
+	print((number, themes))
+	if len(themes) > number:
+		return themes[number][1]
+	return ""
 
 
 # Upgrading from older versions
 if db_version > 0:
 
-    if db_version <= 0.8:
-        print("Updating database from version 0.8 to 0.9")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'skips', 0)
-
-    if db_version <= 0.9:
-        print("Updating database from version 0.9 to 1.1")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'comment', "")
-
-    if db_version <= 1.1:
-        print("Updating database from version 1.1 to 1.2")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'album_artist', "")
-
-    if db_version <= 1.2:
-        print("Updating database to version 1.3")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'disc_number', "")
-            setattr(master_library[key], 'disc_total', "")
-
-    if db_version <= 1.3:
-        print("Updating database to version 1.4")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'lyrics', "")
-            setattr(master_library[key], 'track_total', "")
-        show_message(
-            "Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
-
-    if db_version <= 1.4:
-        print("Updating database to version 1.5")
-        for playlist in multi_playlist:
-            playlist.append(uid_gen())
-
-    if db_version <= 1.5:
-        print("Updating database to version 1.6")
-        for i in range(len(multi_playlist)):
-            if len(multi_playlist[i]) == 7:
-                multi_playlist[i].append("")
-
-    if db_version <= 1.6:
-        print("Updating preferences to 1.7")
-        # gui.show_stars = False
-        if install_mode:
-            # shutil.copy(install_directory + "/config.txt", user_directory)
-            print("Rewrote user config file")
-
-    if db_version <= 1.7:
-        print("Updating database to version 1.8")
-        if install_mode:
-            print(".... Overwriting user config file")
-            # shutil.copy(install_directory + "/config.txt", user_directory)
-
-        try:
-            print(".... Updating playtime database")
-
-            old = star_store.db
-            # perf_timer.set()
-            old_total = sum(old.values())
-            # print(perf_timer.get())
-            print("Old total: ", end='')
-            print(old_total)
-            star_store.db = {}
-
-            new = {}
-            for track in master_library.values():
-                key = track.title + track.filename
-                if key in old:
-                    n_value = [old[key], ""]
-                    n_key = star_store.object_key(track)
-                    star_store.db[n_key] = n_value
-
-            print("New total: ", end='')
-            diff = old_total - star_store.get_total()
-            print(int(diff), end='')
-            print(" Secconds could not be matched to tracks. Total playtime won't be affected")
-            star_store.db[("", "", "LOST")] = [diff, ""]
-            print("Upgrade Complete")
-        except Exception:
-            print("Error upgrading database")
-            show_message(_("Error loading old database, did the program not exit properly after updating? Oh well."))
-
-    if db_version <= 1.8:
-        print("Updating database to 1.9")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'track_gain', None)
-            setattr(master_library[key], 'album_gain', None)
-        show_message(_("Upgrade complete. Run a tag rescan if you want enable ReplayGain"))
-
-    if db_version <= 1.9:
-        print("Updating database to version 2.0")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'modified_time', 0)
-        show_message(_("Upgrade complete. New sorting option may require tag rescan."))
-
-    if db_version <= 2.0:
-        print("Updating database to version 2.1")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'is_embed_cue', False)
-            setattr(master_library[key], 'cue_sheet', "")
-        show_message(_("Updated to v2.6.3"))
-
-    if db_version <= 2.1:
-        print("Updating database to version 2.1")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'lfm_friend_likes', set())
-
-    if db_version <= 2.2:
-        for i in range(len(multi_playlist)):
-            if len(multi_playlist[i]) < 9:
-                multi_playlist[i].append(True)
-
-    if db_version <= 2.3:
-        print("Updating database to version 2.4")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'bit_depth', 0)
-
-    if db_version <= 2.4:
-        if theme > 0:
-            theme += 1
-
-    if db_version <= 2.5:
-        print("Updating database to version 2.6")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'is_network', False)
-        # for i in range(len(multi_playlist)):
-        #     if len(multi_playlist[i]) < 10:
-        #         multi_playlist[i].append(False)
-
-    if db_version <= 26:
-        print("Updating database to version 27")
-        for i in range(len(multi_playlist)):
-            if len(multi_playlist[i]) == 9:
-                multi_playlist[i].append(False)
-
-    if db_version <= 27:
-        print("Updating database to version 28")
-        for i in range(len(multi_playlist)):
-            if len(multi_playlist[i]) <= 10:
-                multi_playlist[i].append("")
-
-    if db_version <= 29:
-        print("Updating database to version 30")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'composer', "")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("global-search G Ctrl\n")
-                f.write("cycle-theme-reverse\n")
-                f.write("reload-theme F10\n")
-
-        show_message(_("Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."))
-
-    if db_version <= 30:
-        for i, item in enumerate(p_force_queue):
-            try:
-                assert item[6]
-            except Exception:
-                p_force_queue[i].append(False)
-
-    if db_version <= 31:
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("love-selected\n")
-        gui.set_bar = True
-
-    if db_version <= 32:
-        if theme > 1:
-            theme += 1
-
-    if db_version <= 33:
-        print("Update to db 34")
-        for key, value in master_library.items():
-            if not hasattr(master_library[key], 'misc'):
-                setattr(master_library[key], 'misc', {})
-
-    if db_version <= 34:
-        print("Update to dv 35")
-        # Moved to after config load
-
-    if db_version <= 35:
-        print("Updating database to version 36")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("toggle-show-art H Ctrl\n")
-
-    if db_version <= 37:
-        print("Updating database to version 38")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("toggle-console `\n")
-
-    if db_version <= 38:
-        print("Updating database to version 39")
-
-        for key, value in star_store.db.items():
-            print(value)
-            if len(value) == 2:
-                value.append(0)
-                star_store.db[key] = value
-
-    if db_version <= 39:
-        print("Updating database to version 40")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            f = open(os.path.join(config_directory, "input.txt"), 'r')
-            text = f.read()
-            f.close()
-            lines = text.splitlines()
-            if "l ctrl" not in text.lower():
-                f = open(os.path.join(config_directory, "input.txt"), 'w')
-                for line in lines:
-                    line = line.strip()
-                    if line == "love-selected":
-                        line = "love-selected L Ctrl"
-                    f.write(line + "\n")
-                f.close()
-
-    if db_version <= 40:
-        print("Updating database to version 41")
-        old = copy.deepcopy(prefs.lyrics_enables)
-        prefs.lyrics_enables.clear()
-        if "apiseeds" in old:
-            prefs.lyrics_enables.append("Apiseeds")
-        if "lyricwiki" in old:
-            prefs.lyrics_enables.append("LyricWiki")
-        if "genius" in old:
-            prefs.lyrics_enables.append("Genius")
-
-    if db_version <= 41:
-        print("Updating database to version 42")
-
-        for key, value in gen_codes.items():
-            gen_codes[key] = value.replace("f\"", "p\"")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            f = open(os.path.join(config_directory, "input.txt"), 'r')
-            text = f.read()
-            f.close()
-            lines = text.splitlines()
-
-            f = open(os.path.join(config_directory, "input.txt"), 'w')
-            for line in lines:
-                line = line.strip()
-                if "rename-playlist" in line:
-
-                    f.write(line + "\n")
-
-                    line = "new-playlist T Ctrl\n"
-                    f.write(line)
-
-                    line = "\nnew-generator-playlist\n"
-                    f.write(line)
-                    if "e ctrl" in text.lower():
-                        line = "edit-generator\n\n"
-                    else:
-                        line = "edit-generator E Ctrl\n\n"
-                    f.write(line)
-
-                    line = "search-lyrics-selected\n"
-                    f.write(line)
-                    line = "substitute-search-selected"
-
-                f.write(line + "\n")
-
-            f.close()
-
-    if db_version <= 42:
-        print("Updating database to version 43")
-
-    if db_version <= 43:
-        print("Updating database to version 44")
-        # Repair db
-        for key, value in star_store.db.items():
-            if len(value) == 2:
-                value.append(0)
-                star_store.db[key] = value
-
-    if db_version <= 44:
-        print("Updating database to version 45")
-        print("Cleaning cache directory")
-        for item in os.listdir(cache_directory):
-            path = os.path.join(cache_directory, item)
-            if "-lfm." in item or "-ftv." in item or "-dcg." in item:
-                os.rename(path, os.path.join(a_cache_dir, item))
-        for item in os.listdir(cache_directory):
-            path = os.path.join(cache_directory, item)
-            if os.path.isfile(path):
-                os.remove(path)
-
-    if db_version <= 45:
-        print("Updating database to version 46")
-        for p in multi_playlist:
-            if type(p[7]) != list:
-                p[7] = [p[7]]
-
-    if db_version <= 46:
-        print("Updating database to version 47")
-        for p in multi_playlist:
-            if type(p[7]) != list:
-                p[7] = [p[7]]
-
-    if db_version <= 47:
-        print("Updating database to version 48")
-        if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
-            show_message(_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
-                         _("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"))
-
-    if db_version <= 48:
-        print("Fix bad upgrade, now 49")
-        for key, value in master_library.items():
-            if not hasattr(master_library[key], 'url_key'):
-                setattr(master_library[key], 'url_key', "")
-            if not hasattr(master_library[key], 'art_url_key'):
-                setattr(master_library[key], 'art_url_key', "")
-
-    if db_version <= 49:
-        print("Updating database to version 50")
-        if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
-            show_message(_("Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"),
-                         _("You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"))
-            os.remove(os.path.join(user_directory, "spot-r-token"))
-
-    if db_version <= 54:
-        print("Updating database to version 55")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'lfm_scrobbles', 0)
-
-    if db_version <= 55:
-        print("Update to db 56")
-        for key, value in master_library.items():
-
-            if hasattr(value, "track_gain"):
-                if value.track_gain != 0:
-                    value.misc["replaygain_track_gain"] = value.track_gain
-                del value.track_gain
-
-            if hasattr(value, "album_gain"):
-                if value.album_gain != 0:
-                    value.misc["replaygain_album_gain"] = value.album_gain
-                del value.album_gain
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("toggle-right-panel MB5\n")
-                f.write("toggle-gallery MB4\n")
-
-    if db_version <= 56:
-        print("Update to db 57")
-        if "Apiseeds" in prefs.lyrics_enables:
-            prefs.lyrics_enables.remove("Apiseeds")
-            prefs.lyrics_enables.append("Happi")
-
-    if db_version <= 57:
-        print("Updating database to version 58")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("\nregenerate-playlist R Alt\n")
-                f.write("clear-queue Q Shift Alt\n")
-                f.write("resize-window-16:9 F11 Alt\n")
-                f.write("delete-playlist-force W Shift Ctrl\n")
-
-    if db_version <= 58:
-        print("Updating database to version 59")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("\nrandom-album ; Alt\n")
-
-    if db_version <= 59:
-        print("Updating database to version 60")
-
-        if prefs.spotify_token:
-            show_message(_("Upgrade to v6.5.1. It looks like you are using Spotify."),
-                         _("Please click 'Authorise' again in the settings"))
-        prefs.spotify_token = ""
-
-    if db_version <= 60:
-        print("Updating database to version 61")
-
-        token_path = os.path.join(user_directory, "spot-token-pkce")
-        if os.path.exists(token_path):
-            prefs.spotify_token = ""
-            os.remove(token_path)
-            show_message(_("Upgrade to v6.5.3 complete"),
-                         _("It looks like you are using Spotify. Please re-setup Spotify again in the settings"))
-
-    if db_version <= 61:
-        print("Updating database to version 62")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("\ntransfer-playtime-to P Ctrl Shift\n")
-
-    if db_version <= 62:
-        print("Updating database to version 63")
-        for item in gui.pl_st:
-            if item[0] == "T":
-                item[0] = "#"
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'r') as f:
-                lines = f.readlines()
-            with open(os.path.join(config_directory, "input.txt"), 'w') as f:
-                for line in lines:
-                    if line == "vol-up Up Shift\n" or line == "vol-down Down Shift\n":
-                        continue
-                    f.write(line)
-                f.write("\n")
-                f.write("shift-up Up Shift\n")
-                f.write("shift-down Down Shift\n")
-                f.write("vol-up Up Ctrl\n")
-                f.write("vol-down Down Ctrl\n")
-
-    if db_version <= 63:
-        print("Updating database to version 64")
-        if prefs.radio_urls:
-            radio_playlists[0]["items"].extend(prefs.radio_urls)
-            prefs.radio_urls = []
-        # prefs.show_nag = True
-
-    if db_version <= 64:
-        print("Updating database to version 65")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("\nescape Escape\n")
-                f.write("toggle-mute M Ctrl\n")
-
-    if db_version <= 65:
-        print("Updating database to version 66")
-
-        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
-            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
-                f.write("\ntoggle-artistinfo O Ctrl\n")
-                f.write("cycle-theme ] Ctrl\n")
-                f.write("cycle-theme-reverse [ Ctrl\n")
-
-    if db_version <= 66:
-        print("Updating database to version 67")
-        for key, value in star_store.db.items():
-            if len(value) == 3:
-                value.append(0)
-                star_store.db[key] = value
-
-    if db_version <= 67:
-        print("Updating database to version 68")
-        for p in multi_playlist:
-            if len(p) == 11:
-                p.append(False)
+	if db_version <= 0.8:
+		print("Updating database from version 0.8 to 0.9")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'skips', 0)
+
+	if db_version <= 0.9:
+		print("Updating database from version 0.9 to 1.1")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'comment', "")
+
+	if db_version <= 1.1:
+		print("Updating database from version 1.1 to 1.2")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'album_artist', "")
+
+	if db_version <= 1.2:
+		print("Updating database to version 1.3")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'disc_number', "")
+			setattr(master_library[key], 'disc_total', "")
+
+	if db_version <= 1.3:
+		print("Updating database to version 1.4")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'lyrics', "")
+			setattr(master_library[key], 'track_total', "")
+		show_message(
+			"Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
+
+	if db_version <= 1.4:
+		print("Updating database to version 1.5")
+		for playlist in multi_playlist:
+			playlist.append(uid_gen())
+
+	if db_version <= 1.5:
+		print("Updating database to version 1.6")
+		for i in range(len(multi_playlist)):
+			if len(multi_playlist[i]) == 7:
+				multi_playlist[i].append("")
+
+	if db_version <= 1.6:
+		print("Updating preferences to 1.7")
+		# gui.show_stars = False
+		if install_mode:
+			# shutil.copy(install_directory + "/config.txt", user_directory)
+			print("Rewrote user config file")
+
+	if db_version <= 1.7:
+		print("Updating database to version 1.8")
+		if install_mode:
+			print(".... Overwriting user config file")
+			# shutil.copy(install_directory + "/config.txt", user_directory)
+
+		try:
+			print(".... Updating playtime database")
+
+			old = star_store.db
+			# perf_timer.set()
+			old_total = sum(old.values())
+			# print(perf_timer.get())
+			print("Old total: ", end='')
+			print(old_total)
+			star_store.db = {}
+
+			new = {}
+			for track in master_library.values():
+				key = track.title + track.filename
+				if key in old:
+					n_value = [old[key], ""]
+					n_key = star_store.object_key(track)
+					star_store.db[n_key] = n_value
+
+			print("New total: ", end='')
+			diff = old_total - star_store.get_total()
+			print(int(diff), end='')
+			print(" Secconds could not be matched to tracks. Total playtime won't be affected")
+			star_store.db[("", "", "LOST")] = [diff, ""]
+			print("Upgrade Complete")
+		except Exception:
+			print("Error upgrading database")
+			show_message(_("Error loading old database, did the program not exit properly after updating? Oh well."))
+
+	if db_version <= 1.8:
+		print("Updating database to 1.9")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'track_gain', None)
+			setattr(master_library[key], 'album_gain', None)
+		show_message(_("Upgrade complete. Run a tag rescan if you want enable ReplayGain"))
+
+	if db_version <= 1.9:
+		print("Updating database to version 2.0")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'modified_time', 0)
+		show_message(_("Upgrade complete. New sorting option may require tag rescan."))
+
+	if db_version <= 2.0:
+		print("Updating database to version 2.1")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'is_embed_cue', False)
+			setattr(master_library[key], 'cue_sheet', "")
+		show_message(_("Updated to v2.6.3"))
+
+	if db_version <= 2.1:
+		print("Updating database to version 2.1")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'lfm_friend_likes', set())
+
+	if db_version <= 2.2:
+		for i in range(len(multi_playlist)):
+			if len(multi_playlist[i]) < 9:
+				multi_playlist[i].append(True)
+
+	if db_version <= 2.3:
+		print("Updating database to version 2.4")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'bit_depth', 0)
+
+	if db_version <= 2.4:
+		if theme > 0:
+			theme += 1
+
+	if db_version <= 2.5:
+		print("Updating database to version 2.6")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'is_network', False)
+		# for i in range(len(multi_playlist)):
+		#	 if len(multi_playlist[i]) < 10:
+		#		 multi_playlist[i].append(False)
+
+	if db_version <= 26:
+		print("Updating database to version 27")
+		for i in range(len(multi_playlist)):
+			if len(multi_playlist[i]) == 9:
+				multi_playlist[i].append(False)
+
+	if db_version <= 27:
+		print("Updating database to version 28")
+		for i in range(len(multi_playlist)):
+			if len(multi_playlist[i]) <= 10:
+				multi_playlist[i].append("")
+
+	if db_version <= 29:
+		print("Updating database to version 30")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'composer', "")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("global-search G Ctrl\n")
+				f.write("cycle-theme-reverse\n")
+				f.write("reload-theme F10\n")
+
+		show_message(_("Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."))
+
+	if db_version <= 30:
+		for i, item in enumerate(p_force_queue):
+			try:
+				assert item[6]
+			except Exception:
+				p_force_queue[i].append(False)
+
+	if db_version <= 31:
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("love-selected\n")
+		gui.set_bar = True
+
+	if db_version <= 32:
+		if theme > 1:
+			theme += 1
+
+	if db_version <= 33:
+		print("Update to db 34")
+		for key, value in master_library.items():
+			if not hasattr(master_library[key], 'misc'):
+				setattr(master_library[key], 'misc', {})
+
+	if db_version <= 34:
+		print("Update to dv 35")
+		# Moved to after config load
+
+	if db_version <= 35:
+		print("Updating database to version 36")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("toggle-show-art H Ctrl\n")
+
+	if db_version <= 37:
+		print("Updating database to version 38")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("toggle-console `\n")
+
+	if db_version <= 38:
+		print("Updating database to version 39")
+
+		for key, value in star_store.db.items():
+			print(value)
+			if len(value) == 2:
+				value.append(0)
+				star_store.db[key] = value
+
+	if db_version <= 39:
+		print("Updating database to version 40")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			f = open(os.path.join(config_directory, "input.txt"), 'r')
+			text = f.read()
+			f.close()
+			lines = text.splitlines()
+			if "l ctrl" not in text.lower():
+				f = open(os.path.join(config_directory, "input.txt"), 'w')
+				for line in lines:
+					line = line.strip()
+					if line == "love-selected":
+						line = "love-selected L Ctrl"
+					f.write(line + "\n")
+				f.close()
+
+	if db_version <= 40:
+		print("Updating database to version 41")
+		old = copy.deepcopy(prefs.lyrics_enables)
+		prefs.lyrics_enables.clear()
+		if "apiseeds" in old:
+			prefs.lyrics_enables.append("Apiseeds")
+		if "lyricwiki" in old:
+			prefs.lyrics_enables.append("LyricWiki")
+		if "genius" in old:
+			prefs.lyrics_enables.append("Genius")
+
+	if db_version <= 41:
+		print("Updating database to version 42")
+
+		for key, value in gen_codes.items():
+			gen_codes[key] = value.replace("f\"", "p\"")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			f = open(os.path.join(config_directory, "input.txt"), 'r')
+			text = f.read()
+			f.close()
+			lines = text.splitlines()
+
+			f = open(os.path.join(config_directory, "input.txt"), 'w')
+			for line in lines:
+				line = line.strip()
+				if "rename-playlist" in line:
+
+					f.write(line + "\n")
+
+					line = "new-playlist T Ctrl\n"
+					f.write(line)
+
+					line = "\nnew-generator-playlist\n"
+					f.write(line)
+					if "e ctrl" in text.lower():
+						line = "edit-generator\n\n"
+					else:
+						line = "edit-generator E Ctrl\n\n"
+					f.write(line)
+
+					line = "search-lyrics-selected\n"
+					f.write(line)
+					line = "substitute-search-selected"
+
+				f.write(line + "\n")
+
+			f.close()
+
+	if db_version <= 42:
+		print("Updating database to version 43")
+
+	if db_version <= 43:
+		print("Updating database to version 44")
+		# Repair db
+		for key, value in star_store.db.items():
+			if len(value) == 2:
+				value.append(0)
+				star_store.db[key] = value
+
+	if db_version <= 44:
+		print("Updating database to version 45")
+		print("Cleaning cache directory")
+		for item in os.listdir(cache_directory):
+			path = os.path.join(cache_directory, item)
+			if "-lfm." in item or "-ftv." in item or "-dcg." in item:
+				os.rename(path, os.path.join(a_cache_dir, item))
+		for item in os.listdir(cache_directory):
+			path = os.path.join(cache_directory, item)
+			if os.path.isfile(path):
+				os.remove(path)
+
+	if db_version <= 45:
+		print("Updating database to version 46")
+		for p in multi_playlist:
+			if type(p[7]) != list:
+				p[7] = [p[7]]
+
+	if db_version <= 46:
+		print("Updating database to version 47")
+		for p in multi_playlist:
+			if type(p[7]) != list:
+				p[7] = [p[7]]
+
+	if db_version <= 47:
+		print("Updating database to version 48")
+		if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
+			show_message(
+			_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
+			_("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"))
+
+	if db_version <= 48:
+		print("Fix bad upgrade, now 49")
+		for key, value in master_library.items():
+			if not hasattr(master_library[key], 'url_key'):
+				setattr(master_library[key], 'url_key', "")
+			if not hasattr(master_library[key], 'art_url_key'):
+				setattr(master_library[key], 'art_url_key', "")
+
+	if db_version <= 49:
+		print("Updating database to version 50")
+		if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
+			show_message(
+				_("Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"),
+				_("You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"))
+			os.remove(os.path.join(user_directory, "spot-r-token"))
+
+	if db_version <= 54:
+		print("Updating database to version 55")
+		for key, value in master_library.items():
+			setattr(master_library[key], 'lfm_scrobbles', 0)
+
+	if db_version <= 55:
+		print("Update to db 56")
+		for key, value in master_library.items():
+
+			if hasattr(value, "track_gain"):
+				if value.track_gain != 0:
+					value.misc["replaygain_track_gain"] = value.track_gain
+				del value.track_gain
+
+			if hasattr(value, "album_gain"):
+				if value.album_gain != 0:
+					value.misc["replaygain_album_gain"] = value.album_gain
+				del value.album_gain
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("toggle-right-panel MB5\n")
+				f.write("toggle-gallery MB4\n")
+
+	if db_version <= 56:
+		print("Update to db 57")
+		if "Apiseeds" in prefs.lyrics_enables:
+			prefs.lyrics_enables.remove("Apiseeds")
+			prefs.lyrics_enables.append("Happi")
+
+	if db_version <= 57:
+		print("Updating database to version 58")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("\nregenerate-playlist R Alt\n")
+				f.write("clear-queue Q Shift Alt\n")
+				f.write("resize-window-16:9 F11 Alt\n")
+				f.write("delete-playlist-force W Shift Ctrl\n")
+
+	if db_version <= 58:
+		print("Updating database to version 59")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("\nrandom-album ; Alt\n")
+
+	if db_version <= 59:
+		print("Updating database to version 60")
+
+		if prefs.spotify_token:
+			show_message(
+				_("Upgrade to v6.5.1. It looks like you are using Spotify."),
+				_("Please click 'Authorise' again in the settings"))
+		prefs.spotify_token = ""
+
+	if db_version <= 60:
+		print("Updating database to version 61")
+
+		token_path = os.path.join(user_directory, "spot-token-pkce")
+		if os.path.exists(token_path):
+			prefs.spotify_token = ""
+			os.remove(token_path)
+			show_message(
+				_("Upgrade to v6.5.3 complete"),
+				_("It looks like you are using Spotify. Please re-setup Spotify again in the settings"))
+
+	if db_version <= 61:
+		print("Updating database to version 62")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("\ntransfer-playtime-to P Ctrl Shift\n")
+
+	if db_version <= 62:
+		print("Updating database to version 63")
+		for item in gui.pl_st:
+			if item[0] == "T":
+				item[0] = "#"
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'r') as f:
+				lines = f.readlines()
+			with open(os.path.join(config_directory, "input.txt"), 'w') as f:
+				for line in lines:
+					if line == "vol-up Up Shift\n" or line == "vol-down Down Shift\n":
+						continue
+					f.write(line)
+				f.write("\n")
+				f.write("shift-up Up Shift\n")
+				f.write("shift-down Down Shift\n")
+				f.write("vol-up Up Ctrl\n")
+				f.write("vol-down Down Ctrl\n")
+
+	if db_version <= 63:
+		print("Updating database to version 64")
+		if prefs.radio_urls:
+			radio_playlists[0]["items"].extend(prefs.radio_urls)
+			prefs.radio_urls = []
+		# prefs.show_nag = True
+
+	if db_version <= 64:
+		print("Updating database to version 65")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("\nescape Escape\n")
+				f.write("toggle-mute M Ctrl\n")
+
+	if db_version <= 65:
+		print("Updating database to version 66")
+
+		if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+			with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+				f.write("\ntoggle-artistinfo O Ctrl\n")
+				f.write("cycle-theme ] Ctrl\n")
+				f.write("cycle-theme-reverse [ Ctrl\n")
+
+	if db_version <= 66:
+		print("Updating database to version 67")
+		for key, value in star_store.db.items():
+			if len(value) == 3:
+				value.append(0)
+				star_store.db[key] = value
+
+	if db_version <= 67:
+		print("Updating database to version 68")
+		for p in multi_playlist:
+			if len(p) == 11:
+				p.append(False)
 
 if playing_in_queue > len(QUE) - 1:
-    playing_in_queue = len(QUE) - 1
+	playing_in_queue = len(QUE) - 1
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -3897,544 +3910,612 @@ shoot.start()
 download_directories = []
 
 if os.path.isdir(download_directory):
-    download_directories.append(download_directory)
+	download_directories.append(download_directory)
 
 if music_directory is not None and os.path.isdir(music_directory):
-    download_directories.append(music_directory)
+	download_directories.append(music_directory)
 
 cf = Config()
 
 
 def save_prefs():
-    cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
-    cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
-    cf.update_value("radio-record-codec", prefs.radio_record_codec)
+	cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
+	cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
+	cf.update_value("radio-record-codec", prefs.radio_record_codec)
 
-    cf.update_value("plex-username", prefs.plex_username)
-    cf.update_value("plex-password", prefs.plex_password)
-    cf.update_value("plex-servername", prefs.plex_servername)
+	cf.update_value("plex-username", prefs.plex_username)
+	cf.update_value("plex-password", prefs.plex_password)
+	cf.update_value("plex-servername", prefs.plex_servername)
 
-    cf.update_value("subsonic-username", prefs.subsonic_user)
-    cf.update_value("subsonic-password", prefs.subsonic_password)
-    cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
-    cf.update_value("subsonic-server-url", prefs.subsonic_server)
+	cf.update_value("subsonic-username", prefs.subsonic_user)
+	cf.update_value("subsonic-password", prefs.subsonic_password)
+	cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
+	cf.update_value("subsonic-server-url", prefs.subsonic_server)
 
-    cf.update_value("jelly-username", prefs.jelly_username)
-    cf.update_value("jelly-password", prefs.jelly_password)
-    cf.update_value("jelly-server-url", prefs.jelly_server_url)
+	cf.update_value("jelly-username", prefs.jelly_username)
+	cf.update_value("jelly-password", prefs.jelly_password)
+	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 
-    cf.update_value("koel-username", prefs.koel_username)
-    cf.update_value("koel-password", prefs.koel_password)
-    cf.update_value("koel-server-url", prefs.koel_server_url)
-    cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
+	cf.update_value("koel-username", prefs.koel_username)
+	cf.update_value("koel-password", prefs.koel_password)
+	cf.update_value("koel-server-url", prefs.koel_server_url)
+	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
 
-    cf.update_value("display-language", prefs.ui_lang)
-    # cf.update_value("decode-search", prefs.diacritic_search)
+	cf.update_value("display-language", prefs.ui_lang)
+	# cf.update_value("decode-search", prefs.diacritic_search)
 
-    # cf.update_value("use-log-volume-scale", prefs.log_vol)
-    # cf.update_value("audio-backend", prefs.backend)
-    cf.update_value("use-pipewire", prefs.pipewire)
-    cf.update_value("seek-interval", prefs.seek_interval)
-    cf.update_value("pause-fade-time", prefs.pause_fade_time)
-    cf.update_value("cross-fade-time", prefs.cross_fade_time)
-    cf.update_value("device-buffer-ms", prefs.device_buffer)
-    cf.update_value("output-samplerate", prefs.samplerate)
-    cf.update_value("resample-quality", prefs.resample)
-    cf.update_value("avoid_resampling", prefs.avoid_resampling)
-    # cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
-    cf.update_value("precache-local-files", prefs.precache)
-    cf.update_value("cache-use-tmp", prefs.tmp_cache)
-    cf.update_value("cache-limit", prefs.cache_limit)
-    cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
-    cf.update_value("volume-curve", prefs.volume_power)
-    # cf.update_value("force-mono", prefs.mono)
-    # cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
-    # cf.update_value("use-short-buffering", prefs.short_buffer)
+	# cf.update_value("use-log-volume-scale", prefs.log_vol)
+	# cf.update_value("audio-backend", prefs.backend)
+	cf.update_value("use-pipewire", prefs.pipewire)
+	cf.update_value("seek-interval", prefs.seek_interval)
+	cf.update_value("pause-fade-time", prefs.pause_fade_time)
+	cf.update_value("cross-fade-time", prefs.cross_fade_time)
+	cf.update_value("device-buffer-ms", prefs.device_buffer)
+	cf.update_value("output-samplerate", prefs.samplerate)
+	cf.update_value("resample-quality", prefs.resample)
+	cf.update_value("avoid_resampling", prefs.avoid_resampling)
+	# cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
+	cf.update_value("precache-local-files", prefs.precache)
+	cf.update_value("cache-use-tmp", prefs.tmp_cache)
+	cf.update_value("cache-limit", prefs.cache_limit)
+	cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
+	cf.update_value("volume-curve", prefs.volume_power)
+	# cf.update_value("force-mono", prefs.mono)
+	# cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
+	# cf.update_value("use-short-buffering", prefs.short_buffer)
 
-    # cf.update_value("gst-output", prefs.gst_output)
-    # cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
+	# cf.update_value("gst-output", prefs.gst_output)
+	# cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
 
-    cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
+	cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
 
-    cf.update_value("tag-editor-name", prefs.tag_editor_name)
-    cf.update_value("tag-editor-target", prefs.tag_editor_target)
+	cf.update_value("tag-editor-name", prefs.tag_editor_name)
+	cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
-    cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
-    cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
-    cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
-    cf.update_value("back-restarts", prefs.back_restarts)
-    cf.update_value("end-queue-stop", prefs.stop_end_queue)
-    cf.update_value("block-suspend", prefs.block_suspend)
-    cf.update_value("allow-video-formats", prefs.allow_video_formats)
+	cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
+	cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
+	cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
+	cf.update_value("back-restarts", prefs.back_restarts)
+	cf.update_value("end-queue-stop", prefs.stop_end_queue)
+	cf.update_value("block-suspend", prefs.block_suspend)
+	cf.update_value("allow-video-formats", prefs.allow_video_formats)
 
-    cf.update_value("ui-scale", prefs.scale_want)
-    cf.update_value("auto-scale", prefs.x_scale)
-    cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
-    cf.update_value("theme-name", prefs.theme_name)
-    cf.update_value("mac-style", prefs.macstyle)
-    cf.update_value("allow-art-zoom", prefs.zoom_art)
+	cf.update_value("ui-scale", prefs.scale_want)
+	cf.update_value("auto-scale", prefs.x_scale)
+	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
+	cf.update_value("theme-name", prefs.theme_name)
+	cf.update_value("mac-style", prefs.macstyle)
+	cf.update_value("allow-art-zoom", prefs.zoom_art)
 
-    cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
-    cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
-    cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
-    cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
-    cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
+	cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
+	cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
+	cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
+	cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
+	cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
 
-    cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
-    cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
-    cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
-    cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
-    cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
-    cf.update_value("hide-queue-when-empty", prefs.hide_queue)
-    # cf.update_value("show-playlist-list", prefs.show_playlist_list)
-    cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
-    cf.update_value("always-art-header-bar", prefs.always_art_header)
-    # cf.update_value("prefer-center-bg", prefs.center_bg)
-    cf.update_value("showcase-texture-background", prefs.showcase_overlay_texture)
-    cf.update_value("side-panel-style", prefs.side_panel_layout)
-    cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
-    cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
-    cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
-    cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
-    cf.update_value("auto-show-playing", prefs.auto_goto_playing)
-    cf.update_value("notify-include-album", prefs.notify_include_album)
-    cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
-    cf.update_value("drag-tab-to-unpin", prefs.drag_to_unpin)
+	cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
+	cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
+	cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
+	cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
+	cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
+	cf.update_value("hide-queue-when-empty", prefs.hide_queue)
+	# cf.update_value("show-playlist-list", prefs.show_playlist_list)
+	cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
+	cf.update_value("always-art-header-bar", prefs.always_art_header)
+	# cf.update_value("prefer-center-bg", prefs.center_bg)
+	cf.update_value("showcase-texture-background", prefs.showcase_overlay_texture)
+	cf.update_value("side-panel-style", prefs.side_panel_layout)
+	cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
+	cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
+	cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
+	cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
+	cf.update_value("auto-show-playing", prefs.auto_goto_playing)
+	cf.update_value("notify-include-album", prefs.notify_include_album)
+	cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
+	cf.update_value("drag-tab-to-unpin", prefs.drag_to_unpin)
 
-    cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
-    cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
-    cf.update_value("gallery-center-text", prefs.center_gallery_text)
+	cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
+	cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
+	cf.update_value("gallery-center-text", prefs.center_gallery_text)
 
-    cf.update_value("use-custom-fonts", prefs.use_custom_fonts)
-    cf.update_value("font-main-standard", prefs.linux_font)
-    cf.update_value("font-main-medium", prefs.linux_font_semibold)
-    cf.update_value("font-main-bold", prefs.linux_font_bold)
-    cf.update_value("font-main-condensed", prefs.linux_font_condensed)
-    cf.update_value("font-main-condensed-bold", prefs.linux_font_condensed_bold)
+	cf.update_value("use-custom-fonts", prefs.use_custom_fonts)
+	cf.update_value("font-main-standard", prefs.linux_font)
+	cf.update_value("font-main-medium", prefs.linux_font_semibold)
+	cf.update_value("font-main-bold", prefs.linux_font_bold)
+	cf.update_value("font-main-condensed", prefs.linux_font_condensed)
+	cf.update_value("font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
-    cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
+	cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
 
-    cf.update_value("double-digit-indices", prefs.dd_index)
-    cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
-    cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
-    cf.update_value("import-auto-sort", prefs.auto_sort)
+	cf.update_value("double-digit-indices", prefs.dd_index)
+	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
+	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
+	cf.update_value("import-auto-sort", prefs.auto_sort)
 
-    cf.update_value("encode-output-dir", prefs.custom_encoder_output)
-    cf.update_value("sync-device-music-dir", prefs.sync_target)
-    cf.update_value("add_download_directory", prefs.download_dir1)
+	cf.update_value("encode-output-dir", prefs.custom_encoder_output)
+	cf.update_value("sync-device-music-dir", prefs.sync_target)
+	cf.update_value("add_download_directory", prefs.download_dir1)
 
-    cf.update_value("use-system-tray", prefs.use_tray)
-    cf.update_value("use-gamepad", prefs.use_gamepad)
-    cf.update_value("enable-remote-interface", prefs.enable_remote)
+	cf.update_value("use-system-tray", prefs.use_tray)
+	cf.update_value("use-gamepad", prefs.use_gamepad)
+	cf.update_value("enable-remote-interface", prefs.enable_remote)
 
-    cf.update_value("enable-mpris", prefs.enable_mpris)
-    cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
-    cf.update_value("restore-window-position", prefs.save_window_position)
-    cf.update_value("mini-mode-always-on-top", prefs.mini_mode_on_top)
-    cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
-    cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
-    cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
+	cf.update_value("enable-mpris", prefs.enable_mpris)
+	cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
+	cf.update_value("restore-window-position", prefs.save_window_position)
+	cf.update_value("mini-mode-always-on-top", prefs.mini_mode_on_top)
+	cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
+	cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
+	cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
 
-    cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
-    cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
-    cf.update_value("fanart.tv-background", prefs.enable_fanart_bg)
-    cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
-    cf.update_value("write-ratings-to-tag", prefs.write_ratings)
-    cf.update_value("enable-spotify", prefs.spot_mode)
-    cf.update_value("enable-discord-rpc", prefs.discord_enable)
-    cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
-    cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
-    cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
+	cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
+	cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
+	cf.update_value("fanart.tv-background", prefs.enable_fanart_bg)
+	cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
+	cf.update_value("write-ratings-to-tag", prefs.write_ratings)
+	cf.update_value("enable-spotify", prefs.spot_mode)
+	cf.update_value("enable-discord-rpc", prefs.discord_enable)
+	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
+	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
+	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
 
-    cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
-    cf.update_value("listenbrainz-token", prefs.lb_token)
-    cf.update_value("custom-listenbrainz-url", prefs.listenbrainz_url)
+	cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
+	cf.update_value("listenbrainz-token", prefs.lb_token)
+	cf.update_value("custom-listenbrainz-url", prefs.listenbrainz_url)
 
-    cf.update_value("maloja-key", prefs.maloja_key)
-    cf.update_value("maloja-url", prefs.maloja_url)
-    cf.update_value("maloja-enable", prefs.maloja_enable)
+	cf.update_value("maloja-key", prefs.maloja_key)
+	cf.update_value("maloja-url", prefs.maloja_url)
+	cf.update_value("maloja-enable", prefs.maloja_enable)
 
-    cf.update_value("tau-url", prefs.sat_url)
+	cf.update_value("tau-url", prefs.sat_url)
 
-    cf.update_value("lastfm-pull-love", prefs.lastfm_pull_love)
+	cf.update_value("lastfm-pull-love", prefs.lastfm_pull_love)
 
-    cf.update_value("broadcast-page-port", prefs.metadata_page_port)
-    cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
+	cf.update_value("broadcast-page-port", prefs.metadata_page_port)
+	cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
-    cf.update_value("chart-columns", prefs.chart_columns)
-    cf.update_value("chart-rows", prefs.chart_rows)
-    cf.update_value("chart-uses-text", prefs.chart_text)
-    cf.update_value("chart-font", prefs.chart_font)
-    cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
+	cf.update_value("chart-columns", prefs.chart_columns)
+	cf.update_value("chart-rows", prefs.chart_rows)
+	cf.update_value("chart-uses-text", prefs.chart_text)
+	cf.update_value("chart-font", prefs.chart_font)
+	cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
 
-    if os.path.isdir(config_directory):
-        cf.dump(os.path.join(config_directory, "tauon.conf"))
-    else:
-        print("ERROR: Missing config directory")
+	if os.path.isdir(config_directory):
+		cf.dump(os.path.join(config_directory, "tauon.conf"))
+	else:
+		print("ERROR: Missing config directory")
 
 
 def load_prefs():
-    cf.reset()
-    cf.load(os.path.join(config_directory, "tauon.conf"))
+	cf.reset()
+	cf.load(os.path.join(config_directory, "tauon.conf"))
 
-    cf.add_comment("Tauon Music Box configuration file")
-    cf.br()
-    cf.add_comment(
-        "This file will be regenerated while app is running. Formatting and additional comments will be lost.")
-    cf.add_comment("Tip: Use TOML syntax highlighting")
+	cf.add_comment("Tauon Music Box configuration file")
+	cf.br()
+	cf.add_comment(
+		"This file will be regenerated while app is running. Formatting and additional comments will be lost.")
+	cf.add_comment("Tip: Use TOML syntax highlighting")
 
-    cf.br()
-    cf.add_text("[audio]")
+	cf.br()
+	cf.add_text("[audio]")
 
-    # prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
-    prefs.pipewire = cf.sync_add("bool", "use-pipewire", prefs.pipewire,
-                                      "Experimental setting to use Pipewire native only.")
+	# prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
+	prefs.pipewire = cf.sync_add(
+		"bool", "use-pipewire", prefs.pipewire,
+		"Experimental setting to use Pipewire native only.")
 
-    prefs.seek_interval = cf.sync_add("int", "seek-interval", prefs.seek_interval,
-                                      "In s. Interval to seek when using keyboard shortcut. Default is 15.")
-    # prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
+	prefs.seek_interval = cf.sync_add(
+		"int", "seek-interval", prefs.seek_interval,
+		"In s. Interval to seek when using keyboard shortcut. Default is 15.")
+	# prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
-    if prefs.pause_fade_time < 100:
-        prefs.pause_fade_time = 100
-    if prefs.pause_fade_time > 5000:
-        prefs.pause_fade_time = 5000
+	if prefs.pause_fade_time < 100:
+		prefs.pause_fade_time = 100
+	if prefs.pause_fade_time > 5000:
+		prefs.pause_fade_time = 5000
 
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time,
-                                        "In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
+	prefs.cross_fade_time = cf.sync_add(
+		"int", "cross-fade-time", prefs.cross_fade_time,
+		"In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
 
-    prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
-    #prefs.samplerate = cf.sync_add("int", "output-samplerate", prefs.samplerate,
-    #                               "In hz. Default: 48000, alt: 44100. (restart app to apply change)")
-    prefs.avoid_resampling = cf.sync_add("bool", "avoid_resampling", prefs.avoid_resampling,
-                                 "Only implemented for FLAC, MP3, OGG, OPUS")
-    prefs.resample = cf.sync_add("int", "resample-quality", prefs.resample,
-                                 "0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
-    if prefs.resample < 0 or prefs.resample > 4:
-        prefs.resample = 1
-    # prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
-    prefs.cache_limit = cf.sync_add("int", "cache-limit", prefs.cache_limit,
-                                    "Limit size of network audio file cache. In MB.")
-    prefs.tmp_cache = cf.sync_add("bool", "cache-use-tmp", prefs.tmp_cache,
-                                  "Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
-    prefs.precache = cf.sync_add("bool", "precache-local-files", prefs.precache,
-                                 "Cache files from local sources too. (Useful for mounted network drives)")
-    prefs.always_ffmpeg = cf.sync_add("bool", "always-ffmpeg", prefs.always_ffmpeg,
-                                      "Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
-    prefs.volume_power = cf.sync_add("int", "volume-curve", prefs.volume_power,
-                                     "1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
+	prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
+	#prefs.samplerate = cf.sync_add(
+	#	"int", "output-samplerate", prefs.samplerate,
+	#	"In hz. Default: 48000, alt: 44100. (restart app to apply change)")
+	prefs.avoid_resampling = cf.sync_add(
+		"bool", "avoid_resampling", prefs.avoid_resampling,
+		"Only implemented for FLAC, MP3, OGG, OPUS")
+	prefs.resample = cf.sync_add(
+		"int", "resample-quality", prefs.resample,
+		"0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
+	if prefs.resample < 0 or prefs.resample > 4:
+		prefs.resample = 1
+	# prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
+	prefs.cache_limit = cf.sync_add(
+		"int", "cache-limit", prefs.cache_limit,
+		"Limit size of network audio file cache. In MB.")
+	prefs.tmp_cache = cf.sync_add(
+		"bool", "cache-use-tmp", prefs.tmp_cache,
+		"Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
+	prefs.precache = cf.sync_add(
+		"bool", "precache-local-files", prefs.precache,
+		"Cache files from local sources too. (Useful for mounted network drives)")
+	prefs.always_ffmpeg = cf.sync_add(
+		"bool", "always-ffmpeg", prefs.always_ffmpeg,
+		"Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
+	prefs.volume_power = cf.sync_add(
+		"int", "volume-curve", prefs.volume_power,
+		"1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
 
-    # prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
-    # prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
-    # prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
+	# prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
+	# prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
+	# prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
-    # cf.br()
-    # cf.add_text("[audio (gstreamer only)]")
-    #
-    # prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
-    # prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
+	# cf.br()
+	# cf.add_text("[audio (gstreamer only)]")
+	#
+	# prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
+	# prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
 
-    if prefs.dc_device_setting == 'on':
-        prefs.dc_device = True
-    elif prefs.dc_device_setting == 'off':
-        prefs.dc_device = False
+	if prefs.dc_device_setting == 'on':
+		prefs.dc_device = True
+	elif prefs.dc_device_setting == 'off':
+		prefs.dc_device = False
 
-    cf.br()
-    cf.add_text("[locale]")
-    prefs.ui_lang = cf.sync_add("string", "display-language", prefs.ui_lang, "Override display language to use if "
-                                                                             "available. E.g. \"en\", \"ja\", \"zh_CH\". "
-                                                                             "Default: \"auto\"")
-    # prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
-    cf.br()
-    cf.add_text("[search]")
-    prefs.sep_genre_multi = cf.sync_add("bool", "separate-multi-genre", prefs.sep_genre_multi,
-                                        "If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
+	cf.br()
+	cf.add_text("[locale]")
+	prefs.ui_lang = cf.sync_add(
+		"string", "display-language", prefs.ui_lang, "Override display language to use if "
+		"available. E.g. \"en\", \"ja\", \"zh_CH\". "
+		"Default: \"auto\"")
+	# prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
+	cf.br()
+	cf.add_text("[search]")
+	prefs.sep_genre_multi = cf.sync_add(
+		"bool", "separate-multi-genre", prefs.sep_genre_multi,
+		"If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
 
-    cf.br()
-    cf.add_text("[tag-editor]")
-    if system == 'windows' or msys:
-        prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
-        prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target",
-                                              "C:\\Program Files (x86)\\MusicBrainz Picard\\picard.exe",
-                                              "The path of the exe to run.")
-    else:
-        prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
-        prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "picard",
-                                              "The name of the binary to call.")
+	cf.br()
+	cf.add_text("[tag-editor]")
+	if system == 'windows' or msys:
+		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+		prefs.tag_editor_target = cf.sync_add(
+			"string", "tag-editor-target",
+			"C:\\Program Files (x86)\\MusicBrainz Picard\\picard.exe",
+			"The path of the exe to run.")
+	else:
+		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+		prefs.tag_editor_target = cf.sync_add(
+			"string", "tag-editor-target", "picard",
+			"The name of the binary to call.")
 
-    cf.br()
-    cf.add_text("[playback]")
-    prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor,
-                                               "When advancing, always play the track that is selected.")
-    prefs.launch_spotify_web = cf.sync_add("bool", "spotify-prefer-web", prefs.launch_spotify_web,
-                                           "Launch the web client rather than attempting to launch the desktop client.")
-    prefs.launch_spotify_local = cf.sync_add("bool", "spotify-allow-local", prefs.launch_spotify_local,
-                                           "Play Spotify audio through Tauon.")
-    prefs.back_restarts = cf.sync_add("bool", "back-restarts", prefs.back_restarts,
-                                      "Pressing the back button restarts playing track on first press.")
-    prefs.stop_end_queue = cf.sync_add("bool", "end-queue-stop", prefs.stop_end_queue,
-                                       "Queue will always enable auto-stop on last track")
-    prefs.block_suspend = cf.sync_add("bool", "block-suspend", prefs.block_suspend,
-                                      "Prevent system suspend during playback")
-    prefs.allow_video_formats = cf.sync_add("bool", "allow-video-formats", prefs.allow_video_formats,
-                                      "Allow the import of MP4 and WEBM formats")
-    if prefs.allow_video_formats:
-        for item in VID_Formats:
-            if item not in DA_Formats:
-                DA_Formats.add(item)
+	cf.br()
+	cf.add_text("[playback]")
+	prefs.playback_follow_cursor = cf.sync_add(
+		"bool", "playback-follow-cursor", prefs.playback_follow_cursor,
+		"When advancing, always play the track that is selected.")
+	prefs.launch_spotify_web = cf.sync_add(
+		"bool", "spotify-prefer-web", prefs.launch_spotify_web,
+		"Launch the web client rather than attempting to launch the desktop client.")
+	prefs.launch_spotify_local = cf.sync_add(
+		"bool", "spotify-allow-local", prefs.launch_spotify_local,
+		"Play Spotify audio through Tauon.")
+	prefs.back_restarts = cf.sync_add(
+		"bool", "back-restarts", prefs.back_restarts,
+		"Pressing the back button restarts playing track on first press.")
+	prefs.stop_end_queue = cf.sync_add(
+		"bool", "end-queue-stop", prefs.stop_end_queue,
+		"Queue will always enable auto-stop on last track")
+	prefs.block_suspend = cf.sync_add(
+		"bool", "block-suspend", prefs.block_suspend,
+		"Prevent system suspend during playback")
+	prefs.allow_video_formats = cf.sync_add(
+		"bool", "allow-video-formats", prefs.allow_video_formats,
+		"Allow the import of MP4 and WEBM formats")
+	if prefs.allow_video_formats:
+		for item in VID_Formats:
+			if item not in DA_Formats:
+				DA_Formats.add(item)
 
-    cf.br()
-    cf.add_text("[HiDPI]")
-    prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want,
-                                   "UI scale factor. Default is 1.0, try increase if using a HiDPI display.")
-    prefs.x_scale = cf.sync_add("bool", "auto-scale", prefs.x_scale, "Automatically choose above setting")
-    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset,
-                                                "If you're using a UI scale, you may need to tweak this.")
+	cf.br()
+	cf.add_text("[HiDPI]")
+	prefs.scale_want = cf.sync_add(
+		"float", "ui-scale", prefs.scale_want,
+		"UI scale factor. Default is 1.0, try increase if using a HiDPI display.")
+	prefs.x_scale = cf.sync_add("bool", "auto-scale", prefs.x_scale, "Automatically choose above setting")
+	prefs.tracklist_y_text_offset = cf.sync_add(
+		"int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset,
+		"If you're using a UI scale, you may need to tweak this.")
 
-    cf.br()
-    cf.add_text("[ui]")
+	cf.br()
+	cf.add_text("[ui]")
 
-    prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-    macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
-    prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
-    prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
-    prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90,
-                                                "Only has effect if scroll-gallery-by-row is false.")
-    prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
-    prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
-    if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
-        prefs.custom_bg_opacity = 40
-        print("Warning: Invalid value for mascot-opacity")
+	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
+	macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
+	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
+	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
+	prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90,
+												"Only has effect if scroll-gallery-by-row is false.")
+	prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
+	prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
+	if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
+		prefs.custom_bg_opacity = 40
+		print("Warning: Invalid value for mascot-opacity")
 
-    prefs.sync_lyrics_time_offset = cf.sync_add("int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset,
-                                                "In milliseconds. May be negative.")
-    prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist",
-                                                        prefs.artist_list_prefer_album_artist,
-                                                        "May require restart for change to take effect.")
-    prefs.meta_persists_stop = cf.sync_add("bool", "side-panel-info-persists", prefs.meta_persists_stop,
-                                           "Show album art and metadata of last played track when stopped.")
-    prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected,
-                                            "Show album art and metadata of selected track when stopped. (overides above setting)")
-    prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always",
-                                                   prefs.meta_shows_selected_always,
-                                                   "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
-    prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications",
-                                                     prefs.stop_notifications_mini_mode,
-                                                     "Avoid sending track change notifications when in Mini Mode")
-    prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
-    # prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
+	prefs.sync_lyrics_time_offset = cf.sync_add(
+		"int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset,
+		"In milliseconds. May be negative.")
+	prefs.artist_list_prefer_album_artist = cf.sync_add(
+		"bool", "artist-list-prefers-album-artist",
+		prefs.artist_list_prefer_album_artist,
+		"May require restart for change to take effect.")
+	prefs.meta_persists_stop = cf.sync_add(
+		"bool", "side-panel-info-persists", prefs.meta_persists_stop,
+		"Show album art and metadata of last played track when stopped.")
+	prefs.meta_shows_selected = cf.sync_add(
+		"bool", "side-panel-info-selected", prefs.meta_shows_selected,
+		"Show album art and metadata of selected track when stopped. (overides above setting)")
+	prefs.meta_shows_selected_always = cf.sync_add(
+		"bool", "side-panel-info-selected-always",
+		prefs.meta_shows_selected_always,
+		"Show album art and metadata of selected track at all times. (overides the above 2 settings)")
+	prefs.stop_notifications_mini_mode = cf.sync_add(
+		"bool", "mini-mode-avoid-notifications",
+		prefs.stop_notifications_mini_mode,
+		"Avoid sending track change notifications when in Mini Mode")
+	prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
+	# prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
-    prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition",
-                                                   prefs.show_current_on_transition,
-                                                   "Always jump to new playing track even with natural transition (broken setting, is always enabled")
-    prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel,
-                                         "Show art in top panel when window is narrow")
-    prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header,
-                                          "Show art in top panel at any size. (Requires enable-art-header-bar)")
+	prefs.show_current_on_transition = cf.sync_add(
+		"bool", "show-current-on-transition",
+		prefs.show_current_on_transition,
+		"Always jump to new playing track even with natural transition (broken setting, is always enabled")
+	prefs.art_in_top_panel = cf.sync_add(
+		"bool", "enable-art-header-bar", prefs.art_in_top_panel,
+		"Show art in top panel when window is narrow")
+	prefs.always_art_header = cf.sync_add(
+		"bool", "always-art-header-bar", prefs.always_art_header,
+		"Show art in top panel at any size. (Requires enable-art-header-bar)")
 
-    # prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
-    prefs.showcase_overlay_texture = cf.sync_add("bool", "showcase-texture-background", prefs.showcase_overlay_texture,
-                                                 "Draw pattern over background art")
-    prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
-    prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
-    prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
-    prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index,
-                                                 "For playlists with titles disabled only")
-    prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title,
-                                          "Hide title in bottom panel when already shown in side panel")
-    prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing,
-                                          "Show playing track in current playlist on track and playlist change even if not the playing playlist")
+	# prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
+	prefs.showcase_overlay_texture = cf.sync_add(
+		"bool", "showcase-texture-background", prefs.showcase_overlay_texture,
+		"Draw pattern over background art")
+	prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
+	prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
+	prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
+	prefs.use_absolute_track_index = cf.sync_add(
+		"bool", "absolute-track-indices", prefs.use_absolute_track_index,
+		"For playlists with titles disabled only")
+	prefs.hide_bottom_title = cf.sync_add(
+		"bool", "auto-hide-bottom-title", prefs.hide_bottom_title,
+		"Hide title in bottom panel when already shown in side panel")
+	prefs.auto_goto_playing = cf.sync_add(
+		"bool", "auto-show-playing", prefs.auto_goto_playing,
+		"Show playing track in current playlist on track and playlist change even if not the playing playlist")
 
-    prefs.notify_include_album = cf.sync_add("bool", "notify-include-album", prefs.notify_include_album,
-                                             "Include album name in track change notifications")
-    prefs.rating_playtime_stars = cf.sync_add("bool", "show-rating-hint", prefs.rating_playtime_stars,
-                                              "Indicate playtime in rating stars")
+	prefs.notify_include_album = cf.sync_add(
+		"bool", "notify-include-album", prefs.notify_include_album,
+		"Include album name in track change notifications")
+	prefs.rating_playtime_stars = cf.sync_add(
+		"bool", "show-rating-hint", prefs.rating_playtime_stars,
+		"Indicate playtime in rating stars")
 
-    prefs.drag_to_unpin = cf.sync_add("bool", "drag-tab-to-unpin", prefs.drag_to_unpin,
-                                      "Dragging a tab off the top-panel un-pins it")
+	prefs.drag_to_unpin = cf.sync_add(
+		"bool", "drag-tab-to-unpin", prefs.drag_to_unpin,
+		"Dragging a tab off the top-panel un-pins it")
 
-    cf.br()
-    cf.add_text("[gallery]")
-    prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
-    prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
-    prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
+	cf.br()
+	cf.add_text("[gallery]")
+	prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
+	prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
+	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
-    # show-current-on-transition", prefs.show_current_on_transition)
-    if system != 'windows':
-        cf.br()
-        cf.add_text("[fonts]")
-        cf.add_comment("Changes will require app restart.")
-        prefs.use_custom_fonts = cf.sync_add("bool", "use-custom-fonts", prefs.use_custom_fonts,
-                                             "Setting to false will reset below settings to default on restart")
-        if prefs.use_custom_fonts:
-            prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font,
-                                           "Suggested alternate: Liberation Sans")
-            prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
-            prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
-            prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
-            prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+	# show-current-on-transition", prefs.show_current_on_transition)
+	if system != 'windows':
+		cf.br()
+		cf.add_text("[fonts]")
+		cf.add_comment("Changes will require app restart.")
+		prefs.use_custom_fonts = cf.sync_add(
+			"bool", "use-custom-fonts", prefs.use_custom_fonts,
+			"Setting to false will reset below settings to default on restart")
+		if prefs.use_custom_fonts:
+			prefs.linux_font = cf.sync_add(
+				"string", "font-main-standard", prefs.linux_font,
+				"Suggested alternate: Liberation Sans")
+			prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+			prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+			prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+			prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
-        else:
-            cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
-            cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
-            cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
-            cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
-            cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+		else:
+			cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
+			cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+			cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+			cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+			cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
-        # prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
+		# prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
 
-    cf.br()
-    cf.add_text("[tracklist]")
-    prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
-    prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback",
-                                                  prefs.column_aa_fallback_artist,
-                                                  "'Album artist' column shows 'artist' if otherwise blank.")
-    prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title",
-                                                      prefs.left_align_album_artist_title,
-                                                      "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
-    prefs.auto_sort = cf.sync_add("bool", "import-auto-sort", prefs.auto_sort,
-                                  "This setting is deprecated and will be removed in a future version")
+	cf.br()
+	cf.add_text("[tracklist]")
+	prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
+	prefs.column_aa_fallback_artist = cf.sync_add(
+		"bool", "column-album-artist-fallsback",
+		prefs.column_aa_fallback_artist,
+		"'Album artist' column shows 'artist' if otherwise blank.")
+	prefs.left_align_album_artist_title = cf.sync_add(
+		"bool", "left-aligned-album-artist-title",
+		prefs.left_align_album_artist_title,
+		"Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
+	prefs.auto_sort = cf.sync_add(
+		"bool", "import-auto-sort", prefs.auto_sort,
+		"This setting is deprecated and will be removed in a future version")
 
-    cf.br()
-    cf.add_text("[transcode]")
-    prefs.bypass_transcode = cf.sync_add("bool", "sync-bypass-transcode", prefs.bypass_transcode,
-                                         "Don't transcode files with sync function")
-    prefs.smart_bypass = cf.sync_add("bool", "sync-bypass-low-bitrate", prefs.smart_bypass,
-                                     "Skip transcode of <=128kbs folders")
-    prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec,
-                                           "Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
+	cf.br()
+	cf.add_text("[transcode]")
+	prefs.bypass_transcode = cf.sync_add(
+		"bool", "sync-bypass-transcode", prefs.bypass_transcode,
+		"Don't transcode files with sync function")
+	prefs.smart_bypass = cf.sync_add("bool", "sync-bypass-low-bitrate", prefs.smart_bypass,
+		"Skip transcode of <=128kbs folders")
+	prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec,
+		"Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
 
-    cf.br()
-    cf.add_text("[directories]")
-    cf.add_comment("Use full paths")
-    prefs.sync_target = cf.sync_add("string", "sync-device-music-dir", prefs.sync_target)
-    prefs.custom_encoder_output = cf.sync_add("string", "encode-output-dir", prefs.custom_encoder_output,
-                                              "E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
-    if prefs.custom_encoder_output:
-        prefs.encoder_output = prefs.custom_encoder_output
-    prefs.download_dir1 = cf.sync_add("string", "add_download_directory", prefs.download_dir1,
-                                      "Add another folder to monitor in addition to home downloads and music.")
-    if prefs.download_dir1 and prefs.download_dir1 not in download_directories:
-        if os.path.isdir(prefs.download_dir1):
-            download_directories.append(prefs.download_dir1)
-        else:
-            print("Warning: Invalid download directory in config")
+	cf.br()
+	cf.add_text("[directories]")
+	cf.add_comment("Use full paths")
+	prefs.sync_target = cf.sync_add("string", "sync-device-music-dir", prefs.sync_target)
+	prefs.custom_encoder_output = cf.sync_add(
+		"string", "encode-output-dir", prefs.custom_encoder_output,
+		"E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
+	if prefs.custom_encoder_output:
+		prefs.encoder_output = prefs.custom_encoder_output
+	prefs.download_dir1 = cf.sync_add(
+		"string", "add_download_directory", prefs.download_dir1,
+		"Add another folder to monitor in addition to home downloads and music.")
+	if prefs.download_dir1 and prefs.download_dir1 not in download_directories:
+		if os.path.isdir(prefs.download_dir1):
+			download_directories.append(prefs.download_dir1)
+		else:
+			print("Warning: Invalid download directory in config")
 
-    cf.br()
-    cf.add_text("[app]")
-    prefs.enable_remote = cf.sync_add("bool", "enable-remote-interface", prefs.enable_remote,
-                                      "For use with Tauon Music Remote for Android")
-    prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control, restart on change.")
-    prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
-    prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
-    prefs.save_window_position = cf.sync_add("bool", "restore-window-position", prefs.save_window_position,
-                                             "Save and restore the last window position on desktop on open")
-    prefs.mini_mode_on_top  = cf.sync_add("bool", "mini-mode-always-on-top", prefs.mini_mode_on_top)
-    prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
-    prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
-    prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
-    prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data,
-                                            "Enable automatic downloading of thumbnails in artist list")
-    prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
-    prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
-    prefs.enable_fanart_bg = cf.sync_add("bool", "fanart.tv-background", prefs.enable_fanart_bg)
-    prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists",
-                                                     prefs.always_auto_update_playlists,
-                                                     "Automatically update generator playlists")
-    prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings,
-                                      "This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
-    prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
-    prefs.discord_enable = cf.sync_add("bool", "enable-discord-rpc", prefs.discord_enable,
-                                       "Show track info in running Discord application")
-    prefs.auto_lyrics = cf.sync_add("bool", "auto-search-lyrics", prefs.auto_lyrics,
-                                    "Automatically search internet for lyrics when display is wanted")
+	cf.br()
+	cf.add_text("[app]")
+	prefs.enable_remote = cf.sync_add(
+		"bool", "enable-remote-interface", prefs.enable_remote,
+		"For use with Tauon Music Remote for Android")
+	prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control, restart on change.")
+	prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
+	prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
+	prefs.save_window_position = cf.sync_add(
+		"bool", "restore-window-position", prefs.save_window_position,
+		"Save and restore the last window position on desktop on open")
+	prefs.mini_mode_on_top  = cf.sync_add("bool", "mini-mode-always-on-top", prefs.mini_mode_on_top)
+	prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
+	prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
+	prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
+	prefs.auto_dl_artist_data = cf.sync_add(
+		"bool", "auto-dl-artist-data", prefs.auto_dl_artist_data,
+		"Enable automatic downloading of thumbnails in artist list")
+	prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
+	prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
+	prefs.enable_fanart_bg = cf.sync_add("bool", "fanart.tv-background", prefs.enable_fanart_bg)
+	prefs.always_auto_update_playlists = cf.sync_add(
+		"bool", "auto-update-playlists",
+		prefs.always_auto_update_playlists,
+		"Automatically update generator playlists")
+	prefs.write_ratings = cf.sync_add(
+		"bool", "write-ratings-to-tag", prefs.write_ratings,
+		"This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
+	prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
+	prefs.discord_enable = cf.sync_add(
+		"bool", "enable-discord-rpc", prefs.discord_enable,
+		"Show track info in running Discord application")
+	prefs.auto_lyrics = cf.sync_add(
+		"bool", "auto-search-lyrics", prefs.auto_lyrics,
+		"Automatically search internet for lyrics when display is wanted")
 
-    prefs.use_scancodes = cf.sync_add("bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
-                                    "When enabled, shortcuts will map to the physical keyboard layout")
-    prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
-                                    "When enabled, pressing single letter keyboard key will activate the global search")
+	prefs.use_scancodes = cf.sync_add(
+		"bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
+		"When enabled, shortcuts will map to the physical keyboard layout")
+	prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
+		"When enabled, pressing single letter keyboard key will activate the global search")
 
-    cf.br()
-    cf.add_text("[tokens]")
-    temp = cf.sync_add("string", "discogs-personal-access-token", prefs.discogs_pat,
-                       "Used for sourcing of artist thumbnails.")
-    if not temp:
-        prefs.discogs_pat = ""
-    elif len(temp) != 40:
-        print("Warning: Invalid discogs token in config")
-    else:
-        prefs.discogs_pat = temp
+	cf.br()
+	cf.add_text("[tokens]")
+	temp = cf.sync_add(
+		"string", "discogs-personal-access-token", prefs.discogs_pat,
+		"Used for sourcing of artist thumbnails.")
+	if not temp:
+		prefs.discogs_pat = ""
+	elif len(temp) != 40:
+		print("Warning: Invalid discogs token in config")
+	else:
+		prefs.discogs_pat = temp
 
-    prefs.listenbrainz_url = cf.sync_add("string", "custom-listenbrainz-url", prefs.listenbrainz_url,
-                                         "Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
-    prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
+	prefs.listenbrainz_url = cf.sync_add(
+		"string", "custom-listenbrainz-url", prefs.listenbrainz_url,
+		"Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
+	prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
 
-    cf.br()
-    cf.add_text("[tauon_satellite]")
-    prefs.sat_url = cf.sync_add("string", "tau-url", prefs.sat_url, "Exclude the port")
+	cf.br()
+	cf.add_text("[tauon_satellite]")
+	prefs.sat_url = cf.sync_add("string", "tau-url", prefs.sat_url, "Exclude the port")
 
-    cf.br()
-    cf.add_text("[lastfm]")
-    prefs.lastfm_pull_love = cf.sync_add("bool", "lastfm-pull-love", prefs.lastfm_pull_love,
-                                   "Overwrite local love status on scrobble")
+	cf.br()
+	cf.add_text("[lastfm]")
+	prefs.lastfm_pull_love = cf.sync_add(
+		"bool", "lastfm-pull-love", prefs.lastfm_pull_love,
+		"Overwrite local love status on scrobble")
 
 
-    cf.br()
-    cf.add_text("[maloja_account]")
-    prefs.maloja_url = cf.sync_add("string", "maloja-url", prefs.maloja_url,
-                                   "A Maloja server URL, e.g. http://localhost:32400")
-    prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key, "One of your Maloja API keys")
-    prefs.maloja_enable = cf.sync_add("bool", "maloja-enable", prefs.maloja_enable)
+	cf.br()
+	cf.add_text("[maloja_account]")
+	prefs.maloja_url = cf.sync_add(
+		"string", "maloja-url", prefs.maloja_url,
+		"A Maloja server URL, e.g. http://localhost:32400")
+	prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key, "One of your Maloja API keys")
+	prefs.maloja_enable = cf.sync_add("bool", "maloja-enable", prefs.maloja_enable)
 
-    cf.br()
-    cf.add_text("[plex_account]")
-    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username,
-                                      "Probably the email address you used to make your PLEX account.")
-    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password,
-                                      "The password associated with your PLEX account.")
-    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername,
-                                        "Probably your servers hostname.")
+	cf.br()
+	cf.add_text("[plex_account]")
+	prefs.plex_username = cf.sync_add(
+		"string", "plex-username", prefs.plex_username,
+		"Probably the email address you used to make your PLEX account.")
+	prefs.plex_password = cf.sync_add(
+		"string", "plex-password", prefs.plex_password,
+		"The password associated with your PLEX account.")
+	prefs.plex_servername = cf.sync_add(
+		"string", "plex-servername", prefs.plex_servername,
+		"Probably your servers hostname.")
 
-    cf.br()
-    cf.add_text("[subsonic_account]")
-    prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
-    prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
-    prefs.subsonic_password_plain = cf.sync_add("bool", "subsonic-password-plain", prefs.subsonic_password_plain)
-    prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
+	cf.br()
+	cf.add_text("[subsonic_account]")
+	prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
+	prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
+	prefs.subsonic_password_plain = cf.sync_add("bool", "subsonic-password-plain", prefs.subsonic_password_plain)
+	prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
 
-    cf.br()
-    cf.add_text("[koel_account]")
-    prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
-    prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
-    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url,
-                                        "The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
-    prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
+	cf.br()
+	cf.add_text("[koel_account]")
+	prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
+	prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
+	prefs.koel_server_url = cf.sync_add(
+		"string", "koel-server-url", prefs.koel_server_url,
+		"The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
+	prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
 
-    cf.br()
-    cf.add_text("[jellyfin_account]")
-    prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
-    prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
-    prefs.jelly_server_url = cf.sync_add("string", "jelly-server-url", prefs.jelly_server_url,
-                                         "The IP:Port where the jellyfin server is hosted.")
-    prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
+	cf.br()
+	cf.add_text("[jellyfin_account]")
+	prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
+	prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
+	prefs.jelly_server_url = cf.sync_add(
+		"string", "jelly-server-url", prefs.jelly_server_url,
+		"The IP:Port where the jellyfin server is hosted.")
+	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
 
-    cf.br()
-    cf.add_text("[network]")
-    prefs.network_stream_bitrate = cf.sync_add("int", "stream-bitrate", prefs.network_stream_bitrate,
-                                               "Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
+	cf.br()
+	cf.add_text("[network]")
+	prefs.network_stream_bitrate = cf.sync_add(
+		"int", "stream-bitrate", prefs.network_stream_bitrate,
+		"Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
 
-    cf.br()
-    cf.add_text("[listenalong]")
-    prefs.metadata_page_port = cf.sync_add("int", "broadcast-page-port", prefs.metadata_page_port,
-                                           "Change applies on app restart or setting re-enable")
+	cf.br()
+	cf.add_text("[listenalong]")
+	prefs.metadata_page_port = cf.sync_add(
+		"int", "broadcast-page-port", prefs.metadata_page_port,
+		"Change applies on app restart or setting re-enable")
 
-    cf.br()
-    cf.add_text("[chart]")
-    prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
-    prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
-    prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
-    prefs.topchart_sorts_played = cf.sync_add("bool", "chart-sorts-top-played", prefs.topchart_sorts_played)
-    prefs.chart_font = cf.sync_add("string", "chart-font", prefs.chart_font,
-                                   "Format is fontname + size. Default is Monospace 10")
+	cf.br()
+	cf.add_text("[chart]")
+	prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
+	prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
+	prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
+	prefs.topchart_sorts_played = cf.sync_add("bool", "chart-sorts-top-played", prefs.topchart_sorts_played)
+	prefs.chart_font = cf.sync_add(
+		"string", "chart-font", prefs.chart_font,
+		"Format is fontname + size. Default is Monospace 10")
 
 
 load_prefs()
@@ -4442,54 +4523,54 @@ save_prefs()
 
 # Temporary
 if 0 < db_version <= 34:
-    prefs.theme_name = get_theme_name(theme)
+	prefs.theme_name = get_theme_name(theme)
 if 0 < db_version <= 66:
-    prefs.device_buffer = 80
+	prefs.device_buffer = 80
 if 0 < db_version <= 53:
-    print("Resetting fonts to defaults")
-    prefs.linux_font = "Noto Sans"
-    prefs.linux_font_semibold = "Noto Sans Medium"
-    prefs.linux_font_bold = "Noto Sans Bold"
-    save_prefs()
+	print("Resetting fonts to defaults")
+	prefs.linux_font = "Noto Sans"
+	prefs.linux_font_semibold = "Noto Sans Medium"
+	prefs.linux_font_bold = "Noto Sans Bold"
+	save_prefs()
 
 lang = ""
 
 locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
-    locale_dir = "/app/share/locale"
+	locale_dir = "/app/share/locale"
 elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
-    locale_dir = "/usr/share/locale"
+	locale_dir = "/usr/share/locale"
 
 lang = []
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
-    lang = [prefs.ui_lang]
+	lang = [prefs.ui_lang]
 
 if lang:
-    # Force set lang
-    f = gettext.find('tauon', localedir=locale_dir, languages=lang)
+	# Force set lang
+	f = gettext.find('tauon', localedir=locale_dir, languages=lang)
 
-    if f:
-        translation = gettext.translation('tauon', localedir=locale_dir, languages=lang)
-        translation.install()
-        _ = translation.gettext
+	if f:
+		translation = gettext.translation('tauon', localedir=locale_dir, languages=lang)
+		translation.install()
+		_ = translation.gettext
 
-        print("Translation file loaded")
-    else:
-        print("No translation file available")
+		print("Translation file loaded")
+	else:
+		print("No translation file available")
 
 else:
-    # Auto detect lang
-    f = gettext.find('tauon', localedir=locale_dir)
+	# Auto detect lang
+	f = gettext.find('tauon', localedir=locale_dir)
 
-    if f:
-        translation = gettext.translation('tauon', localedir=locale_dir)
-        translation.install()
-        _ = translation.gettext
+	if f:
+		translation = gettext.translation('tauon', localedir=locale_dir)
+		translation.install()
+		_ = translation.gettext
 
-        print("Translation file loaded")
-    # else:
-    #     print("No translation file available")
+		print("Translation file loaded")
+	# else:
+	#	 print("No translation file available")
 
 # ----
 
@@ -4497,364 +4578,364 @@ sss = SDL_SysWMinfo()
 SDL_GetWindowWMInfo(t_window, sss)
 
 if prefs.use_gamepad:
-    SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
+	SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
 
 smtc = False
 
 if msys and win_ver >= 10:
 
-    #print(sss.info.win.window)
-    try:
-        sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
+	#print(sss.info.win.window)
+	try:
+		sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
 
-        def SMTC_button_callback(button):
+		def SMTC_button_callback(button):
 
-            if button == 1:
-                inp.media_key = 'Play'
-            if button == 2:
-                inp.media_key = 'Pause'
-            if button == 3:
-                inp.media_key = "Next"
-            if button == 4:
-                inp.media_key = "Previous"
-            if button == 5:
-                inp.media_key = "Stop"
-            gui.update += 1
-            tauon.wake()
+			if button == 1:
+				inp.media_key = 'Play'
+			if button == 2:
+				inp.media_key = 'Pause'
+			if button == 3:
+				inp.media_key = "Next"
+			if button == 4:
+				inp.media_key = "Previous"
+			if button == 5:
+				inp.media_key = "Stop"
+			gui.update += 1
+			tauon.wake()
 
-        close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
-        smtc = sm.init(close_callback) == 0
-    except Exception:
-        print("Failed to load TauonSMTC.dll")
+		close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
+		smtc = sm.init(close_callback) == 0
+	except Exception:
+		print("Failed to load TauonSMTC.dll")
 
 def auto_scale():
 
-    old = prefs.scale_want
+	old = prefs.scale_want
 
-    if prefs.x_scale:
-        if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
-            prefs.scale_want = window_size[0] / logical_size[0]
-            if old != prefs.scale_want:
-                print("Applying scale based on buffer size")
-        elif sss.subsystem == SDL_SYSWM_X11:
-            if xdpi > 40:
-                prefs.scale_want = xdpi / 96
-                if old != prefs.scale_want:
-                    print("Applying scale based on xft setting")
+	if prefs.x_scale:
+		if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
+			prefs.scale_want = window_size[0] / logical_size[0]
+			if old != prefs.scale_want:
+				print("Applying scale based on buffer size")
+		elif sss.subsystem == SDL_SYSWM_X11:
+			if xdpi > 40:
+				prefs.scale_want = xdpi / 96
+				if old != prefs.scale_want:
+					print("Applying scale based on xft setting")
 
-    prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
+	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
 
-    if prefs.scale_want == 0.95:
-        prefs.scale_want = 1.0
-    if prefs.scale_want == 1.05:
-        prefs.scale_want = 1.0
-    if prefs.scale_want == 1.95:
-        prefs.scale_want = 2.0
-    if prefs.scale_want == 2.05:
-        prefs.scale_want = 2.0
+	if prefs.scale_want == 0.95:
+		prefs.scale_want = 1.0
+	if prefs.scale_want == 1.05:
+		prefs.scale_want = 1.0
+	if prefs.scale_want == 1.95:
+		prefs.scale_want = 2.0
+	if prefs.scale_want == 2.05:
+		prefs.scale_want = 2.0
 
-    if old != prefs.scale_want:
-        print(f"Using UI scale: {prefs.scale_want}")
+	if old != prefs.scale_want:
+		print(f"Using UI scale: {prefs.scale_want}")
 
-    if prefs.scale_want < 0.5:
-        prefs.scale_want = 1.0
+	if prefs.scale_want < 0.5:
+		prefs.scale_want = 1.0
 
-    if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
-        print("Window overscale!")
-        show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
-        prefs.scale_want = 1.0
+	if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
+		print("Window overscale!")
+		show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
+		prefs.scale_want = 1.0
 
 auto_scale()
 
 
 def scale_assets(scale_want, force=False):
-    global scaled_asset_directory
-    if scale_want != 1:
-        scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
-        if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
-                os.listdir(scaled_asset_directory)):
-            print("Force rerender icons")
-            force = True
-    else:
-        scaled_asset_directory = asset_directory
+	global scaled_asset_directory
+	if scale_want != 1:
+		scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
+		if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
+				os.listdir(scaled_asset_directory)):
+			print("Force rerender icons")
+			force = True
+	else:
+		scaled_asset_directory = asset_directory
 
-    if scale_want != prefs.ui_scale or force:
+	if scale_want != prefs.ui_scale or force:
 
-        if scale_want != 1:
-            if os.path.isdir(scaled_asset_directory) and scaled_asset_directory != asset_directory:
-                shutil.rmtree(scaled_asset_directory)
-            from t_modules.t_svgout import render_icons
+		if scale_want != 1:
+			if os.path.isdir(scaled_asset_directory) and scaled_asset_directory != asset_directory:
+				shutil.rmtree(scaled_asset_directory)
+			from t_modules.t_svgout import render_icons
 
-            if scaled_asset_directory != asset_directory:
-                print("Rendering icons...")
-                render_icons(svg_directory, scaled_asset_directory, scale_want)
+			if scaled_asset_directory != asset_directory:
+				print("Rendering icons...")
+				render_icons(svg_directory, scaled_asset_directory, scale_want)
 
-        print("Done rendering icons")
+		print("Done rendering icons")
 
-        diff_ratio = scale_want / prefs.ui_scale
-        prefs.ui_scale = scale_want
-        prefs.playlist_row_height = round(22 * prefs.ui_scale)
+		diff_ratio = scale_want / prefs.ui_scale
+		prefs.ui_scale = scale_want
+		prefs.playlist_row_height = round(22 * prefs.ui_scale)
 
-        # Save user values
-        column_backup = gui.pl_st
-        rspw = gui.pref_rspw
-        grspw = gui.pref_gallery_w
+		# Save user values
+		column_backup = gui.pl_st
+		rspw = gui.pref_rspw
+		grspw = gui.pref_gallery_w
 
-        gui.destroy_textures()
-        gui.rescale()
+		gui.destroy_textures()
+		gui.rescale()
 
-        # Scale saved values
-        gui.pl_st = column_backup
-        for item in gui.pl_st:
-            item[1] *= diff_ratio
-        gui.pref_rspw = rspw * diff_ratio
-        gui.pref_gallery_w = grspw * diff_ratio
-        global album_mode_art_size
-        album_mode_art_size = int(album_mode_art_size * diff_ratio)
+		# Scale saved values
+		gui.pl_st = column_backup
+		for item in gui.pl_st:
+			item[1] *= diff_ratio
+		gui.pref_rspw = rspw * diff_ratio
+		gui.pref_gallery_w = grspw * diff_ratio
+		global album_mode_art_size
+		album_mode_art_size = int(album_mode_art_size * diff_ratio)
 
 
 scale_assets(scale_want=prefs.scale_want)
 
 try:
-    # star_lines = view_prefs['star-lines']
-    update_title = view_prefs['update-title']
-    prefs.prefer_side = view_prefs['side-panel']
-    prefs.dim_art = False  # view_prefs['dim-art']
-    #gui.turbo = view_prefs['level-meter']
-    # pl_follow = view_prefs['pl-follow']
-    scroll_enable = view_prefs['scroll-enable']
-    break_enable = view_prefs['break-enable']
-    # dd_index = view_prefs['dd-index']
-    # custom_line_mode = view_prefs['custom-line']
-    # thick_lines = view_prefs['thick-lines']
-    prefs.append_date = view_prefs['append-date']
+	# star_lines = view_prefs['star-lines']
+	update_title = view_prefs['update-title']
+	prefs.prefer_side = view_prefs['side-panel']
+	prefs.dim_art = False  # view_prefs['dim-art']
+	#gui.turbo = view_prefs['level-meter']
+	# pl_follow = view_prefs['pl-follow']
+	scroll_enable = view_prefs['scroll-enable']
+	break_enable = view_prefs['break-enable']
+	# dd_index = view_prefs['dd-index']
+	# custom_line_mode = view_prefs['custom-line']
+	# thick_lines = view_prefs['thick-lines']
+	prefs.append_date = view_prefs['append-date']
 except Exception:
-    print("warning: error loading settings")
+	print("warning: error loading settings")
 
 if prefs.prefer_side is False:
-    gui.rsp = False
+	gui.rsp = False
 
 
 def get_global_mouse():
-    i_y = pointer(c_int(0))
-    i_x = pointer(c_int(0))
-    SDL_GetGlobalMouseState(i_x, i_y)
-    return i_x.contents.value, i_y.contents.value
+	i_y = pointer(c_int(0))
+	i_x = pointer(c_int(0))
+	SDL_GetGlobalMouseState(i_x, i_y)
+	return i_x.contents.value, i_y.contents.value
 
 
 def get_window_position():
-    i_y = pointer(c_int(0))
-    i_x = pointer(c_int(0))
-    SDL_GetWindowPosition(t_window, i_x, i_y)
-    return i_x.contents.value, i_y.contents.value
+	i_y = pointer(c_int(0))
+	i_x = pointer(c_int(0))
+	SDL_GetWindowPosition(t_window, i_x, i_y)
+	return i_x.contents.value, i_y.contents.value
 
 
 # Access functions from libopenmpt for scanning tracker files
 class MOD(Structure):
-    _fields_ = [('ctl', c_char_p),
-                ('value', c_char_p)]
+	_fields_ = [('ctl', c_char_p),
+				('value', c_char_p)]
 
 
 mpt = None
 try:
-    p = ctypes.util.find_library("libopenmpt")
-    if p:
-        mpt = ctypes.cdll.LoadLibrary(p)
-    elif msys:
-        mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-    else:
-        mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+	p = ctypes.util.find_library("libopenmpt")
+	if p:
+		mpt = ctypes.cdll.LoadLibrary(p)
+	elif msys:
+		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
+	else:
+		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
 
-    mpt.openmpt_module_create_from_memory.restype = c_void_p
-    mpt.openmpt_module_get_metadata.restype = c_char_p
-    mpt.openmpt_module_get_duration_seconds.restype = c_double
+	mpt.openmpt_module_create_from_memory.restype = c_void_p
+	mpt.openmpt_module_get_metadata.restype = c_char_p
+	mpt.openmpt_module_get_duration_seconds.restype = c_double
 except Exception:
-    print("Failed to load libopenmpt!")
+	print("Failed to load libopenmpt!")
 
 
 
 class GMETrackInfo(Structure):
-    _fields_ = [
-        ("length", c_int),
-        ("intro_length", c_int),
-        ("loop_length", c_int),
-        ("play_length", c_int),
-        ("fade_length", c_int),
-        ("i5", c_int),
-        ("i6", c_int),
-        ("i7", c_int),
-        ("i8", c_int),
-        ("i9", c_int),
-        ("i10", c_int),
-        ("i11", c_int),
-        ("i12", c_int),
-        ("i13", c_int),
-        ("i14", c_int),
-        ("i15", c_int),
-        ("system", c_char_p),
-        ("game", c_char_p),
-        ("song", c_char_p),
-        ("author", c_char_p),
-        ("copyright", c_char_p),
-        ("comment", c_char_p),
-        ("dumper", c_char_p),
-        ("s7", c_char_p),
-        ("s8", c_char_p),
-        ("s9", c_char_p),
-        ("s10", c_char_p),
-        ("s11", c_char_p),
-        ("s12", c_char_p),
-        ("s13", c_char_p),
-        ("s14", c_char_p),
-        ("s15", c_char_p)
-    ]
+	_fields_ = [
+		("length", c_int),
+		("intro_length", c_int),
+		("loop_length", c_int),
+		("play_length", c_int),
+		("fade_length", c_int),
+		("i5", c_int),
+		("i6", c_int),
+		("i7", c_int),
+		("i8", c_int),
+		("i9", c_int),
+		("i10", c_int),
+		("i11", c_int),
+		("i12", c_int),
+		("i13", c_int),
+		("i14", c_int),
+		("i15", c_int),
+		("system", c_char_p),
+		("game", c_char_p),
+		("song", c_char_p),
+		("author", c_char_p),
+		("copyright", c_char_p),
+		("comment", c_char_p),
+		("dumper", c_char_p),
+		("s7", c_char_p),
+		("s8", c_char_p),
+		("s9", c_char_p),
+		("s10", c_char_p),
+		("s11", c_char_p),
+		("s12", c_char_p),
+		("s13", c_char_p),
+		("s14", c_char_p),
+		("s15", c_char_p)
+	]
 
 
 gme = None
 p = None
 try:
-    p = ctypes.util.find_library("libgme")
-    if p:
-        gme = ctypes.cdll.LoadLibrary(p)
-    elif msys:
-        gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
-    else:
-        gme = ctypes.cdll.LoadLibrary("libgme.so")
+	p = ctypes.util.find_library("libgme")
+	if p:
+		gme = ctypes.cdll.LoadLibrary(p)
+	elif msys:
+		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
+	else:
+		gme = ctypes.cdll.LoadLibrary("libgme.so")
 
-    gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
-    gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
-    gme.gme_track_info.restype = ctypes.c_char_p
-    gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
-    gme.gme_open_file.restype = ctypes.c_char_p
+	gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
+	gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
+	gme.gme_track_info.restype = ctypes.c_char_p
+	gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
+	gme.gme_open_file.restype = ctypes.c_char_p
 
 except Exception:
-    print("Cannont find libgme")
+	print("Cannont find libgme")
 
 def use_id3(tags, nt):
-    def natural_get(tag, track, frame, attr):
-        frames = tag.getall(frame)
-        if frames and frames[0].text:
-            if track is None:
-                return str(frames[0].text[0])
-            setattr(track, attr, str(frames[0].text[0]))
-        elif track is None:
-            return ""
-        else:
-            setattr(track, attr, "")
+	def natural_get(tag, track, frame, attr):
+		frames = tag.getall(frame)
+		if frames and frames[0].text:
+			if track is None:
+				return str(frames[0].text[0])
+			setattr(track, attr, str(frames[0].text[0]))
+		elif track is None:
+			return ""
+		else:
+			setattr(track, attr, "")
 
-    tag = tags
+	tag = tags
 
-    natural_get(tags, nt, "TIT2", "title")
-    natural_get(tags, nt, "TPE1", "artist")
-    natural_get(tags, nt, "TPE2", "album_artist")
-    natural_get(tags, nt, "TCON", "genre")  # content type
-    natural_get(tags, nt, "TALB", "album")
-    natural_get(tags, nt, "TDRC", "date")
-    natural_get(tags, nt, "TCOM", "composer")
-    natural_get(tags, nt, "COMM", "comment")
+	natural_get(tags, nt, "TIT2", "title")
+	natural_get(tags, nt, "TPE1", "artist")
+	natural_get(tags, nt, "TPE2", "album_artist")
+	natural_get(tags, nt, "TCON", "genre")  # content type
+	natural_get(tags, nt, "TALB", "album")
+	natural_get(tags, nt, "TDRC", "date")
+	natural_get(tags, nt, "TCOM", "composer")
+	natural_get(tags, nt, "COMM", "comment")
 
-    process_odat(nt, natural_get(tags, None, "TDOR", None))
+	process_odat(nt, natural_get(tags, None, "TDOR", None))
 
-    frames = tag.getall("POPM")
-    rating = 0
-    if frames:
-        for frame in frames:
-            if frame.rating:
-                rating = frame.rating
-                nt.misc['POPM'] = frame.rating
+	frames = tag.getall("POPM")
+	rating = 0
+	if frames:
+		for frame in frames:
+			if frame.rating:
+				rating = frame.rating
+				nt.misc['POPM'] = frame.rating
 
-    if len(nt.comment) > 4 and nt.comment[2] == "+":
-        nt.comment = ""
-    if nt.comment[0:3] == "000":
-        nt.comment = ""
+	if len(nt.comment) > 4 and nt.comment[2] == "+":
+		nt.comment = ""
+	if nt.comment[0:3] == "000":
+		nt.comment = ""
 
-    frames = tag.getall("USLT")
-    if frames:
-        nt.lyrics = frames[0].text
-        if 0 < len(nt.lyrics) < 150:
-            if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
-                nt.lyrics = ""
+	frames = tag.getall("USLT")
+	if frames:
+		nt.lyrics = frames[0].text
+		if 0 < len(nt.lyrics) < 150:
+			if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
+				nt.lyrics = ""
 
-    frames = tag.getall("TPE1")
-    if frames:
-        d = []
-        for frame in frames:
-            for t in frame.text:
-                d.append(t)
-        if len(d) > 1:
-            nt.misc['artists'] = d
-            nt.artist = "; ".join(d)
+	frames = tag.getall("TPE1")
+	if frames:
+		d = []
+		for frame in frames:
+			for t in frame.text:
+				d.append(t)
+		if len(d) > 1:
+			nt.misc['artists'] = d
+			nt.artist = "; ".join(d)
 
-    frames = tag.getall("TCON")
-    if frames:
-        d = []
-        for frame in frames:
-            for t in frame.text:
-                d.append(t)
-        if len(d) > 1:
-            nt.misc['genres'] = d
-        nt.genre = " / ".join(d)
+	frames = tag.getall("TCON")
+	if frames:
+		d = []
+		for frame in frames:
+			for t in frame.text:
+				d.append(t)
+		if len(d) > 1:
+			nt.misc['genres'] = d
+		nt.genre = " / ".join(d)
 
-    track_no = natural_get(tags, None, "TRCK", None)
-    nt.track_total = ""
-    nt.track_number = ""
-    if track_no and track_no != "null":
-        if "/" in track_no:
-            a, b = track_no.split("/")
-            nt.track_number = a
-            nt.track_total = b
-        else:
-            nt.track_number = track_no
+	track_no = natural_get(tags, None, "TRCK", None)
+	nt.track_total = ""
+	nt.track_number = ""
+	if track_no and track_no != "null":
+		if "/" in track_no:
+			a, b = track_no.split("/")
+			nt.track_number = a
+			nt.track_total = b
+		else:
+			nt.track_number = track_no
 
-    disc = natural_get(tags, None, "TPOS", None)  # set ? or ?/?
-    nt.disc_total = ""
-    nt.disc_number = ""
-    if disc:
-        if "/" in disc:
-            a, b = disc.split("/")
-            nt.disc_number = a
-            nt.disc_total = b
-        else:
-            nt.disc_number = disc
+	disc = natural_get(tags, None, "TPOS", None)  # set ? or ?/?
+	nt.disc_total = ""
+	nt.disc_number = ""
+	if disc:
+		if "/" in disc:
+			a, b = disc.split("/")
+			nt.disc_number = a
+			nt.disc_total = b
+		else:
+			nt.disc_number = disc
 
-    tx = tags.getall("UFID")
-    if tx:
-        for item in tx:
-            if item.owner == "http://musicbrainz.org":
-                nt.misc['musicbrainz_recordingid'] = item.data.decode()
+	tx = tags.getall("UFID")
+	if tx:
+		for item in tx:
+			if item.owner == "http://musicbrainz.org":
+				nt.misc['musicbrainz_recordingid'] = item.data.decode()
 
-    tx = tags.getall("TSOP")
-    if tx:
-        nt.misc["artist_sort"] = tx[0].text[0]
+	tx = tags.getall("TSOP")
+	if tx:
+		nt.misc["artist_sort"] = tx[0].text[0]
 
-    tx = tags.getall("TXXX")
-    if tx:
-        for item in tx:
-            if item.desc == "MusicBrainz Release Track Id":
-                nt.misc['musicbrainz_trackid'] = item.text[0]
-            if item.desc == "MusicBrainz Album Id":
-                nt.misc['musicbrainz_albumid'] = item.text[0]
-            if item.desc == "MusicBrainz Release Group Id":
-                nt.misc['musicbrainz_releasegroupid'] = item.text[0]
-            if item.desc == "MusicBrainz Artist Id":
-                nt.misc['musicbrainz_artistids'] = list(item.text)
+	tx = tags.getall("TXXX")
+	if tx:
+		for item in tx:
+			if item.desc == "MusicBrainz Release Track Id":
+				nt.misc['musicbrainz_trackid'] = item.text[0]
+			if item.desc == "MusicBrainz Album Id":
+				nt.misc['musicbrainz_albumid'] = item.text[0]
+			if item.desc == "MusicBrainz Release Group Id":
+				nt.misc['musicbrainz_releasegroupid'] = item.text[0]
+			if item.desc == "MusicBrainz Artist Id":
+				nt.misc['musicbrainz_artistids'] = list(item.text)
 
-            try:
-                desc = item.desc.lower()
-                if desc == "replaygain_track_gain":
-                    nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
-                if desc == "replaygain_track_peak":
-                    nt.misc['replaygain_track_peak'] = float(item.text[0])
-                if desc == "replaygain_album_gain":
-                    nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
-                if desc == "replaygain_album_peak":
-                    nt.misc['replaygain_album_peak'] = float(item.text[0])
-            except Exception:
-                print("Tag Scan: Read Replay Gain MP3 error")
-                print(nt.fullpath)
+			try:
+				desc = item.desc.lower()
+				if desc == "replaygain_track_gain":
+					nt.misc['replaygain_track_gain'] = float(item.text[0].strip(" dB"))
+				if desc == "replaygain_track_peak":
+					nt.misc['replaygain_track_peak'] = float(item.text[0])
+				if desc == "replaygain_album_gain":
+					nt.misc['replaygain_album_gain'] = float(item.text[0].strip(" dB"))
+				if desc == "replaygain_album_peak":
+					nt.misc['replaygain_album_peak'] = float(item.text[0])
+			except Exception:
+				print("Tag Scan: Read Replay Gain MP3 error")
+				print(nt.fullpath)
 
-            if item.desc == "FMPS_RATING":
-                nt.misc['FMPS_Rating'] = float(item.text[0])
+			if item.desc == "FMPS_RATING":
+				nt.misc['FMPS_Rating'] = float(item.text[0])
 
 
 def scan_ffprobe(nt):
@@ -48701,9 +48782,9 @@ if tauon.play_lock is not None:
     del tauon.play_lock
 
 if tauon.librespot_p:
-    time.sleep(1)
-    print("Kill liberspot")
-    tauon.librespot_p.kill()
-    #tauon.librespot_p.communicate()
+	time.sleep(1)
+	print("Kill liberspot")
+	tauon.librespot_p.kill()
+	#tauon.librespot_p.communicate()
 
 print("bye")
