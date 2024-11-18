@@ -239,7 +239,7 @@ from t_modules.t_lyrics import *
 from t_modules.t_phazor import phazor_exists, player4
 from t_modules.t_search import *
 from t_modules.t_spot import SpotCtl
-from t_modules.t_stream import *
+from t_modules.t_stream import StreamEnc
 from t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block
 from t_modules.t_themeload import *
 from t_modules.t_tidal import Tidal
