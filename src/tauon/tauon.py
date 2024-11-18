@@ -86,7 +86,7 @@ t_title = "Tauon"
 t_id = "tauonmb"
 t_agent = "TauonMusicBox/" + n_version
 
-
+# Leave these outside of logging for prettiness
 print(f"{t_title} {t_version}")
 print("Copyright 2015-2023 Taiko2k captain.gxj@gmail.com\n")
 
@@ -179,15 +179,14 @@ if not os.path.isdir(user_directory):
 fp = None
 dev_mode = os.path.isfile(os.path.join(install_directory, ".dev"))
 if dev_mode:
-	print("Dev mode, ignoring single instancing")
+	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
 	pid_file = os.path.join(user_directory, "program.pid")
 	fp = open(pid_file, "w")
 	try:
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
 	except OSError:
-		# another instance is running
-		print("Program is already running")
+		logging.exception("Another Tauon instance is already running")
 		transfer_args_and_exit()
 else:
 	if sys.platform == "win32":
@@ -197,8 +196,7 @@ else:
 				os.remove(pid_file)
 			fp = open(pid_file, "w")
 		except OSError:
-			# another instance is running
-			print("Program is already running")
+			logging.exception("Another Tauon instance is already running")
 			transfer_args_and_exit()
 	if pyinstaller_mode:
 		os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
@@ -215,7 +213,7 @@ if pyinstaller_mode: # and sys.platform == 'darwin':
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	fs_mode = True
-	print("Running in GAMESCOPE MODE")
+	logging.info("Running in GAMESCOPE MODE")
 
 allow_hidpi = True
 if sys.platform == "win32" and sys.getwindowsversion().major < 10 or os.path.isfile(os.path.join(user_directory, "nohidpi")):
@@ -264,12 +262,12 @@ if os.path.isfile(window_p) and not fs_mode:
 		del save
 
 	except Exception:
-		print("Corrupted window state file?!")
-		print("Please restart app")
+		logging.exception("Corrupted window state file?!")
+		logging.error("Please restart app")
 		os.remove(window_p)
 		sys.exit(1)
 else:
-	print("No window state file")
+	logging.info("No window state file")
 
 
 if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
@@ -284,7 +282,7 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 		os.environ["XCURSOR_THEME"] = xtheme
 		os.environ["XCURSOR_SIZE"] = str(xsize)
 	except Exception:
-		pass
+		logging.exception("Failed to set cursor")
 
 if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
@@ -294,7 +292,7 @@ if os.path.exists(os.path.join(user_directory, "x11")):
 SDL_Init(SDL_INIT_VIDEO)
 err = SDL_GetError()
 if err and "GLX" in err.decode():
-	print(f"SDL init error: {err.decode()}")
+	logging.error(f"SDL init error: {err.decode()}")
 	SDL_ShowSimpleMessageBox(
 		SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
 		b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
@@ -339,7 +337,7 @@ if maximized:
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
 if not renderer or not t_window:
-	print("ERROR CREATING WINDOW!")
+	logging.error("ERROR CREATING WINDOW!")
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 SDL_SetWindowOpacity(t_window, window_opacity)
