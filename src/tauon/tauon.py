@@ -21,6 +21,7 @@ import os
 import pickle
 import sys
 from ctypes import c_int, pointer
+from pathlib import Path
 
 from gi.repository import GLib
 from sdl2 import (
@@ -101,7 +102,7 @@ def transfer_args_and_exit() -> None:
 
 	for item in sys.argv:
 
-		if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or os.path.exists(item)):
+		if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or Path(item).exists()):
 			import base64
 			url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
 			urllib.request.urlopen(url)
@@ -136,18 +137,18 @@ def transfer_args_and_exit() -> None:
 if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
-install_directory = os.path.dirname(os.path.abspath(__file__))
+install_directory = str(Path(__file__).resolve().parent)
 
 pyinstaller_mode = False
 if hasattr(sys, "_MEIPASS"):
 	pyinstaller_mode = True
 if install_directory.endswith("\\_internal"):
 	pyinstaller_mode = True
-	install_directory = os.path.dirname(install_directory)
+	install_directory = str(Path(install_directory).parent)
 
 if pyinstaller_mode:
 	os.environ["PATH"] += ":" + sys._MEIPASS
-	os.environ["SSL_CERT_FILE"] = os.path.join(install_directory, "certifi", "cacert.pem")
+	os.environ["SSL_CERT_FILE"] = Path(install_directory) / "certifi" / "cacert.pem"
 
 # If we're installed, use home data locations
 install_mode = False
@@ -158,9 +159,9 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.pl
 if install_directory.startswith("/usr/"):
 	install_directory = "/usr/share/TauonMusicBox"
 
-user_directory = os.path.join(install_directory, "user-data")
+user_directory = Path(install_directory) / "user-data"
 config_directory = user_directory
-asset_directory = os.path.join(install_directory, "assets")
+asset_directory = Path(install_directory) / "assets"
 
 if install_directory.startswith("/app/"):
 	# Its Flatpak
@@ -168,20 +169,20 @@ if install_directory.startswith("/app/"):
 os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 
-if os.path.isfile(os.path.join(install_directory, "portable")):
+if Path(Path(install_directory) / "portable").is_file():
 	install_mode = False
 
 if install_mode:
-	user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
-if not os.path.isdir(user_directory):
-	os.makedirs(user_directory)
+	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+if not Path(user_directory).is_dir():
+	Path(user_directory).mkdir(parents=True)
 
 fp = None
-dev_mode = os.path.isfile(os.path.join(install_directory, ".dev"))
+dev_mode = Path(Path(install_directory) / ".dev").is_file()
 if dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
-	pid_file = os.path.join(user_directory, "program.pid")
+	pid_file = Path(user_directory) / "program.pid"
 	fp = open(pid_file, "w")
 	try:
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -190,16 +191,16 @@ elif sys.platform != "win32":
 		transfer_args_and_exit()
 else:
 	if sys.platform == "win32":
-		pid_file = os.path.join(user_directory, "program.pid")
+		pid_file = Path(user_directory) / "program.pid"
 		try:
-			if os.path.isfile(pid_file):
-				os.remove(pid_file)
+			if Path(pid_file).is_file():
+				Path(pid_file).unlink()
 			fp = open(pid_file, "w")
 		except OSError:
 			logging.exception("Another Tauon instance is already running")
 			transfer_args_and_exit()
 	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
+		os.environ["FONTCONFIG_PATH"] = Path(install_directory) / "etc\\fonts" #"C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
@@ -216,7 +217,7 @@ if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	logging.info("Running in GAMESCOPE MODE")
 
 allow_hidpi = True
-if sys.platform == "win32" and sys.getwindowsversion().major < 10 or os.path.isfile(os.path.join(user_directory, "nohidpi")):
+if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(Path(user_directory) / "nohidpi").is_file():
 	allow_hidpi = False
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
@@ -243,8 +244,8 @@ if phone:
 maximized = False
 old_window_position = None
 
-window_p = os.path.join(user_directory, "window.p")
-if os.path.isfile(window_p) and not fs_mode:
+window_p = Path(user_directory) / "window.p"
+if Path(window_p).is_file() and not fs_mode:
 	try:
 		state_file = open(window_p, "rb")
 		save = pickle.load(state_file)
@@ -264,7 +265,7 @@ if os.path.isfile(window_p) and not fs_mode:
 	except Exception:
 		logging.exception("Corrupted window state file?!")
 		logging.error("Please restart app")
-		os.remove(window_p)
+		Path(window_p).unlink()
 		sys.exit(1)
 else:
 	logging.info("No window state file")
@@ -273,7 +274,7 @@ else:
 if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	try:
 		import gi.repository
-		gi.require_version("Gtk", "3.0")
+		gi.require_version("Gtk", "4.0")
 		from gi.repository import Gtk
 
 		gtk_settings = Gtk.Settings().get_default()
@@ -286,7 +287,7 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 
 if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
-if os.path.exists(os.path.join(user_directory, "x11")):
+if Path(Path(user_directory) / "x11").exists():
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
 SDL_Init(SDL_INIT_VIDEO)
@@ -356,10 +357,10 @@ SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
-img_path = os.path.join(asset_directory, "loading.png")
+img_path = Path(asset_directory) / "loading.png"
 if scale != 1:
-	img_path2 = os.path.join(user_directory, "scaled-icons", "loading.png")
-	if os.path.isfile(img_path2):
+	img_path2 = Path(user_directory) / "scaled-icons" / "loading.png"
+	if Path(img_path2).is_file():
 		img_path = img_path2
 	del img_path2
 
@@ -414,7 +415,7 @@ if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 else:
 	# Using the above import method breaks previous pickles. Could be fixed
 	# but yet to decide what best method is.
-	big_boy_path = os.path.join(install_directory, "t_modules/t_main.py")
+	big_boy_path = Path(install_directory) / "t_modules/t_main.py"
 	f = open(big_boy_path, "rb")
 	main = compile(f.read(), big_boy_path, "exec")
 	f.close()
