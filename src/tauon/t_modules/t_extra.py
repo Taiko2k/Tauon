@@ -21,6 +21,7 @@ from __future__ import annotations
 import colorsys
 import glob
 import locale
+import logging
 import math
 import os
 import random
@@ -422,8 +423,8 @@ def is_music_related(string: str) -> bool:
 def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> float:
 	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
-	# print(path)
-	# print(ext)
+	#logging.info(path)
+	#logging.info(ext)
 	try:
 		if ext == "rar":
 			matches = 0
@@ -431,7 +432,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
 			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
-			# print(file_list)
+			#logging.info(file_list)
 			for fi in file_list:
 				for ty in extensions:
 					if fi[len(ty) * -1:].lower() == ty:
@@ -444,16 +445,16 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 						matches += 5
 				count += 1
 			if count > 200:
-				#print("RAR archive has many files")
-				#print("   --- " + path)
+				#logging.info("RAR archive has many files")
+				#logging.info("   --- " + path)
 				return 0
 			if matches == 0:
-				#print("RAR archive does not appear to contain audio files")
-				#print("   --- " + path)
+				#logging.info("RAR archive does not appear to contain audio files")
+				#logging.info("   --- " + path)
 				return 0
 			if count == 0:
-				#print("Archive has no files")
-				#print("   --- " + path)
+				#logging.info("Archive has no files")
+				#logging.info("   --- " + path)
 				return 0
 
 		elif ext == "7z":
@@ -462,7 +463,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
 			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
-			# print(file_list)
+			#logging.info(file_list)
 
 			for fi in file_list:
 
@@ -480,16 +481,16 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 				count += 1
 
 			if count > 200:
-				#print("7z archive has many files")
-				#print("   --- " + path)
+				#logging.info("7z archive has many files")
+				#logging.info("   --- " + path)
 				return 0
 			if matches == 0:
-				#print("7z archive does not appear to contain audio files")
-				#print("   --- " + path)
+				#logging.info("7z archive does not appear to contain audio files")
+				#logging.info("   --- " + path)
 				return 0
 			if count == 0:
-				#print("7z archive has no files")
-				#print("   --- " + path)
+				#logging.info("7z archive has no files")
+				#logging.info("   --- " + path)
 				return 0
 
 		elif ext == "zip":
@@ -497,7 +498,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			zip_ref = zipfile.ZipFile(path, "r")
 			matches = 0
 			count = 0
-			#print(zip_ref.namelist())
+			#logging.info(zip_ref.namelist())
 			for fi in zip_ref.namelist():
 				for ty in extensions:
 					if fi[len(ty) * -1:].lower() == ty:
@@ -510,22 +511,22 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 						matches += 5
 				count += 1
 			if count == 0:
-				#print("Archive has no files")
-				#print("   --- " + path)
+				#logging.info("Archive has no files")
+				#logging.info("   --- " + path)
 				return 0
 			if count > 300:
-				#print("Zip archive has many files")
-				#print("   --- " + path)
+				#logging.info("Zip archive has many files")
+				#logging.info("   --- " + path)
 				return 0
 			if matches == 0:
-				#print("Zip archive does not appear to contain audio files")
-				#print("   --- " + path)
+				#logging.info("Zip archive does not appear to contain audio files")
+				#logging.info("   --- " + path)
 				return 0
 		else:
 			return 0
 
 	except Exception:
-		print("Archive test error")
+		logging.exception("Archive test error")
 
 		return 0
 
