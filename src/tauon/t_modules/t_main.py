@@ -191,6 +191,7 @@ from sdl2 import (
 	SDL_QueryTexture,
 	SDL_Quit,
 	SDL_QuitSubSystem,
+	SDL_Rect,
 	SDL_RenderClear,
 	SDL_RenderFillRect,
 	SDL_RenderPresent,
