@@ -840,13 +840,14 @@ if snap_mode:
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
 
 arch = platform.machine()
-win_ver = platform.release()
+platform_release = platform.release()
 platform_system = platform.system()
-try:
-	win_ver = int(win_ver)
-except Exception:
-	logging.exception("Failed getting Windows version from platform.release()")
-	win_ver = 0
+win_ver = 0
+if platform.system() == 'Windows':
+	try:
+		win_ver = int(platform_release)
+	except Exception:
+		logging.exception("Failed getting Windows version from platform.release()")
 
 
 # logging.info(arch)
