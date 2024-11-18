@@ -88,7 +88,7 @@ t_agent = "TauonMusicBox/" + n_version
 
 # Leave these outside of logging for prettiness
 print(f"{t_title} {t_version}")
-print("Copyright 2015-2023 Taiko2k captain.gxj@gmail.com\n")
+print("Copyright 2015-2024 Taiko2k captain.gxj@gmail.com\n")
 
 # Early arg processing
 def transfer_args_and_exit() -> None:
