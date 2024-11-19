@@ -322,6 +322,7 @@ except Exception:
 else:
 	import asyncio
 	discord_allow = True
+
 use_cc = False
 try:
 	import opencc
@@ -27075,6 +27076,7 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     dex = []
     current_folder = ""
     current_album = ""
+    current_artist = ""
     current_date = ""
     current_title = ""
 
