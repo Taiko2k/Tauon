@@ -4602,8 +4602,9 @@ def scan_ffprobe(nt):
         logging.exception("FFPROBE couldn't supply a track")
 
 
-# This function takes a track object and scans metadata for it. (Filepath needs to be set)
+
 def tag_scan(nt):
+    """This function takes a track object and scans metadata for it. (Filepath needs to be set)"""
     if nt.is_embed_cue:
         return nt
     if nt.is_network or not nt.fullpath:
@@ -4613,6 +4614,11 @@ def tag_scan(nt):
             nt.modified_time = os.path.getmtime(nt.fullpath)
             nt.found = True
         except FileNotFoundError:
+            logging.debug("File not found when executing getmtime!")
+            nt.found = False
+            return nt
+        except Exception:
+            logging.exception("Unknown error executing getmtime!")
             nt.found = False
             return nt
 
@@ -5246,7 +5252,6 @@ class PlayerCtl:
                 try:
                     get_radio_art()
                 except Exception:
-                    # raise
                     logging.exception("Get art error")
 
                 pctl.notify_update(mpris=False)
@@ -5384,21 +5389,25 @@ class PlayerCtl:
 
         return 0
 
-    # Get track object by id
     def g(self, id):
+        """Get track object by id"""
         return self.master_library[id]
-    # Get track object by playlist and index
+
     def sg(self, i, pl):
+        """Get track object by playlist and index"""
         if pl == -1:
             pl = self.active_playlist_viewing
         try:
             playlist = self.multi_playlist[pl][2]
             return self.g(playlist[i])
         except IndexError:
-            pass
+            logging.exception("Failed getting track object by playlist and index!")
+        except Exception:
+            logging.exception("Unknown error getting track object by playlist and index!")
         return None
 
-    def show_object(self):  # The track to show in the metadata side panel
+    def show_object(self):
+        """The track to show in the metadata side panel"""
 
         target_track = None
 
@@ -7155,8 +7164,8 @@ class LastFMapi:
             return True
 
         except Exception as e:
-            show_message(_("Error communicating with Last.fm network"), str(e), mode='warning')
             logging.exception("Error communicating with Last.fm network")
+            show_message(_("Error communicating with Last.fm network"), str(e), mode='warning')
             return False
 
     def no_user_connect(self):
@@ -7164,12 +7173,12 @@ class LastFMapi:
             return False
         try:
             self.network = self.get_network()(api_key=self.API_KEY, api_secret=self.API_SECRET)
-            print('Connection appears successful')
+            logging.info('Connection appears successful')
             return True
 
         except Exception as e:
-            show_message(_("Error communicating with Last.fm network"), str(e), mode='warning')
             logging.exception("Error communicating with Last.fm network")
+            show_message(_("Error communicating with Last.fm network"), str(e), mode='warning')
             return False
 
     def get_all_scrobbles_estimate_time(self):
@@ -7697,7 +7706,7 @@ class ListenBrainz:
             try:
                 additional = str(int(track_object.track_number))
             except Exception:
-                pass
+                logging.exception("Error trying to get track_number")
 
         if track_object.length:
             additional["duration"] = str(track_object.length)
@@ -7713,9 +7722,9 @@ class ListenBrainz:
         r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
             show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode='warning')
-            print("error")
-            print(r.status_code)
-            print(r.json())
+            logging.error("There was an error submitting data to ListenBrainz")
+            logging.error(r.status_code)
+            logging.error(r.json())
 
     def paste_key(self):
 
@@ -7824,6 +7833,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
                 try:
                     lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
                 except Exception:
+                    logging.exception("Failed updating last.fm love status")
                     show_message(_("Failed updating last.fm love status"), mode='warning')
                     star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
                     star_store.insert(track_id, star)
@@ -7844,6 +7854,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
                 try:
                     lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
                 except Exception:
+                    logging.exception("Failed updating last.fm love status")
                     show_message(_("Failed updating last.fm love status"), mode='warning')
                     star[1] = star[1] + "L"
                     star_store.insert(track_id, star)
@@ -7873,6 +7884,7 @@ def maloja_get_scrobble_counts():
             lastfm.scanning_scrobbles = False
             return
     except Exception:
+        logging.exception("There was an error reaching the Maloja server")
         show_message(_("There was an error reaching the Maloja server"), mode='warning')
         lastfm.scanning_scrobbles = False
         return
@@ -7907,6 +7919,7 @@ def maloja_get_scrobble_counts():
         show_message(_("Scanning scrobbles complete"), mode="done")
 
     except Exception:
+        logging.exception("There was an error parsing the data")
         show_message(_("There was an error parsing the data"), mode="warning")
 
     gui.pl_update += 1
@@ -7936,6 +7949,7 @@ def maloja_scrobble(track):
             show_message(_("There was an error submitting data to Maloja server"), r.text, mode='warning')
             return False
     except Exception:
+        logging.exception("There was an error submitting data to Maloja server")
         show_message(_("There was an error submitting data to Maloja server"), mode='warning')
         return False
     return True
@@ -7968,7 +7982,7 @@ class LastScrob:
                 tr = self.queue.pop()
 
                 gui.pl_update = 1
-                print("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
+                logging.info("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
 
                 success = True
 
@@ -7984,14 +7998,13 @@ class LastScrob:
                     success = koel.listen(tr[0], submit=True)
 
                 if not success:
-                    print("Re-queue scrobble")
+                    logging.info("Re-queue scrobble")
                     self.queue.append(tr)
                     time.sleep(10)
                     break
 
             except Exception:
-                print("SCROBBLE QUEUE ERROR")
-                # raise
+                logging.exception("SCROBBLE QUEUE ERROR")
 
         if not self.queue:
             scrobble_warning_timer.force_set(1000)
@@ -8001,7 +8014,7 @@ class LastScrob:
     def update(self, add_time):
 
         if pctl.queue_step > len(pctl.track_queue) - 1:
-            print("Queue step error 1")
+            logging.info("Queue step error 1")
             return
 
         if self.a_index != pctl.track_queue[pctl.queue_step]:
@@ -8011,7 +8024,7 @@ class LastScrob:
             self.a_pt = False
             self.a_sc = False
         if pctl.playing_time == 0 and self.a_sc is True:
-            print("Reset scrobble timer")
+            logging.info("Reset scrobble timer")
             pctl.a_time = 0
             pctl.b_time = 0
             self.a_pt = False
@@ -8339,6 +8352,7 @@ class Tauon:
                         show_message(_("Downloading... {N}/80MB").format(N=mb))
 
             except Exception as e:
+                logging.exception("Download failed")
                 show_message(_("Download failed"), str(e), mode="error")
 
             f.seek(0)
@@ -8505,7 +8519,7 @@ class PlexService:
         self.connected = True
 
     def resolve_stream(self, location):
-        print("Get plex stream")
+        logging.info("Get plex stream")
         if not self.connected:
             self.connect()
 
@@ -8552,8 +8566,7 @@ class PlexService:
             for track in album.tracks():
 
                 if not track.duration:
-                    print(
-                        "Warning: Skipping track with invalid duration - " + track.title + " - " + track.grandparentTitle)
+                    logging.warning("Skipping track with invalid duration - " + track.title + " - " + track.grandparentTitle)
                     continue
 
                 id = pctl.master_count
@@ -8657,11 +8670,11 @@ class SubsonicService:
             return response.content
 
         d = json.loads(response.text)
-        # print(d)
+        # logging.info(d)
 
         if d["subsonic-response"]["status"] != "ok":
             show_message(_("Subsonic Error: ") + response.text, mode="warning")
-            print("Subsonic Error: " + response.text)
+            logging.error("Subsonic Error: " + response.text)
 
         return d
 
@@ -8676,14 +8689,14 @@ class SubsonicService:
             p['maxBitRate'] = prefs.network_stream_bitrate
 
         return self.r("stream", p={"id": key}, get_url=True)
-        # print(responce.content)
+        # logging.info(response.content)
 
     def listen(self, track_object, submit=False):
 
         try:
             a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
         except Exception:
-            print("Error connect for scrobble on airsonic")
+            logging.exception("Error connect for scrobble on airsonic")
         return True
 
     def set_rating(self, track_object, rating):
@@ -8691,7 +8704,7 @@ class SubsonicService:
         try:
             a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
         except Exception:
-            print("Error connect for set rating on airsonic")
+            logging.exception("Error connect for set rating on airsonic")
         return True
 
     def set_album_rating(self, track_object, rating):
@@ -8700,7 +8713,7 @@ class SubsonicService:
             try:
                 a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
             except Exception:
-                print("Error connect for set rating on airsonic")
+                logging.exception("Error connect for set rating on airsonic")
         return True
 
     def get_music3(self, return_list=False):
