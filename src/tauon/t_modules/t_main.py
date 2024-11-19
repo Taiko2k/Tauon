@@ -327,9 +327,9 @@ use_cc = False
 try:
 	import opencc
 except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, TODO(Martin): <what is lost?>.")
+	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
 except Exception:
-	logging.exception("Unkown error trying to import opencc, TODO(Martin): <what is lost?>.")
+	logging.exception("Unkown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
 else:
 	s2t = opencc.OpenCC("s2t")
 	t2s = opencc.OpenCC("t2s")
@@ -339,9 +339,9 @@ use_natsort = False
 try:
 	import natsort
 except ModuleNotFoundError:
-	logging.warning("Unable to import natsort, TODO(Martin): <what is lost?>.")
+	logging.warning("Unable to import natsort, playlists may not sort as intended!")
 except Exception:
-	logging.exception("Unknown error trying to import natsort, TODO(Martin): <what is lost?>.")
+	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
 else:
 	use_natsort = True
 
