@@ -78,29 +78,33 @@ def find_library(libname: str) -> Path | None:
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
 	if pctl.prefs.pipewire:
+		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.so")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dll")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dylib")
+		if os.path.isfile(n):
+			return n
 		n = find_library("phazor-pw")
 		if n:
 			return n
 
-		n = find_library("libphazor-pw")
-		if n:
-			return n
-		# Compat with old -pipe naming, remove later
-		n = find_library("phazor-pipe")
-		if n:
-			return n
-		# Compat with old -pipe naming, remove later
-		n = find_library("libphazor-pipe")
-		if n:
-			return n
 	else:
+		n = os.path.join(pctl.install_directory, "lib", "libphazor.so")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor.dll")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor.dylib")
+		if os.path.isfile(n):
+			return n
 		n = find_library("phazor")
 		if n:
 			return n
 
-		n = find_library("libphazor")
-		if n:
-			return n
 	raise Exception("Failed to load PHaZOR")
 
 def phazor_exists(pctl: PlayerCtl) -> bool:
@@ -120,6 +124,7 @@ def player4(tauon: Tauon) -> None:
 	loaded_track = None
 	fade_time = 400
 
+	print(get_phazor_path(pctl))
 	aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
 
 	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
