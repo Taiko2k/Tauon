@@ -27075,6 +27075,8 @@ def reload_albums(quiet=False, return_playlist=-1, custom_list=None):
     dex = []
     current_folder = ""
     current_album = ""
+    current_date = ""
+    current_title = ""
 
     if custom_list is not None:
         playlist = custom_list
