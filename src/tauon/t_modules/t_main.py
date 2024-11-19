@@ -281,6 +281,15 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 	from ctypes import CDLL
 
+# Log to debug as we don't care at all when user does not have this
+try:
+	import colored_traceback.always
+	logging.debug("Found colored_traceback for colored crash tracebacks")
+except ModuleNotFoundError:
+	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
+except Exception:
+	logging.exception("Unkown error trying to import colored_traceback, tracebacks will be dull.")
+
 try:
 	from jxlpy import JXLImagePlugin
 	logging.info("Found jxlpy for JPEG XL support")
@@ -793,7 +802,7 @@ class WhiteModImageAsset:
 loaded_asset_dc = {}
 
 
-def asset_loader(name, mod=False):
+def asset_loader(name: str, mod: bool = False) -> WhiteModImageAsset | LoadImageAsset:
 	if name in loaded_asset_dc:
 		return loaded_asset_dc[name]
 
@@ -4260,7 +4269,7 @@ def auto_scale():
 auto_scale()
 
 
-def scale_assets(scale_want, force=False):
+def scale_assets(scale_want: int, force: bool = False) -> None:
 	global scaled_asset_directory
 	if scale_want != 1:
 		scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
@@ -4344,8 +4353,7 @@ def get_window_position():
 
 # Access functions from libopenmpt for scanning tracker files
 class MOD(Structure):
-	_fields_ = [('ctl', c_char_p),
-				('value', c_char_p)]
+	_fields_ = [('ctl', c_char_p), ('value', c_char_p)]
 
 
 mpt = None
@@ -4399,7 +4407,7 @@ class GMETrackInfo(Structure):
 		("s12", c_char_p),
 		("s13", c_char_p),
 		("s14", c_char_p),
-		("s15", c_char_p)
+		("s15", c_char_p),
 	]
 
 
@@ -4421,7 +4429,7 @@ try:
 	gme.gme_open_file.restype = ctypes.c_char_p
 
 except Exception:
-	logging.exception("Cannont find libgme")
+	logging.exception("Cannot find libgme")
 
 def use_id3(tags, nt):
 	def natural_get(tag, track, frame, attr):

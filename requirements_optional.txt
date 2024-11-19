@@ -1,3 +1,4 @@
+colored_traceback
 jxlpy
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
 natsort
