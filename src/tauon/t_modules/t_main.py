@@ -3500,7 +3500,7 @@ def get_theme_name(number):
 	return ""
 
 # Run upgrades if we're behind the current DB standard
-if db_version < latest_db_version:
+if db_version > 0 and db_version < latest_db_version:
 	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 	try:
 		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
