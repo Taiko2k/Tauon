@@ -28,7 +28,7 @@ def database_migrate(
 	radio_playlists: list[TauonPlaylist],
 	p_force_queue: list,
 	theme: int,
-) -> tuple[dict, list[TauonPlaylist], StarStore, list, int, Prefs, GuiVar, dict, list[TauonPlaylist]] | None:
+) -> tuple[dict, list[TauonPlaylist], StarStore, list, int, Prefs, GuiVar, dict, list[TauonPlaylist]]:
 	"""Migrate database to a newer version if we're behind
 
 	Returns all the objects that could've been possibly changed:
@@ -38,7 +38,7 @@ def database_migrate(
 
 	if db_version <= 0:
 		logging.error("Called database_migrate with db_version equal to or below 0!")
-		return None
+		raise ValueError
 
 	logging.warning(f"Running migrations as DB version was {db_version}!")
 	if db_version <= 0.8:
