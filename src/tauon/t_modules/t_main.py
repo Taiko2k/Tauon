@@ -68,6 +68,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 from xml.sax.saxutils import escape, unescape
+from bs4 import BeautifulSoup
 
 import musicbrainzngs
 import mutagen
