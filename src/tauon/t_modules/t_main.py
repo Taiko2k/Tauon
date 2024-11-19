@@ -8456,11 +8456,14 @@ if prefs.backend != 4:
 chrome = None
 
 try:
-    from tauon.t_modules.t_chrome import Chrome
-
-    chrome = Chrome(tauon)
+	from tauon.t_modules.t_chrome import Chrome
+	chrome = Chrome(tauon)
+	logging.debug("Found import Chrome(pychromecast) for chromecast support")
+except ModuleNotFoundError:
+	logging.debug("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
-    print("Pychromecast not found")
+	logging.exception("Unkown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+
 tauon.chrome = chrome
 
 class PlexService:
