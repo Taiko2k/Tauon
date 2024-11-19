@@ -63,8 +63,10 @@ if TYPE_CHECKING:
 try:
 	from jxlpy import JXLImagePlugin
 	logging.info("Found jxlpy for JPEG XL support")
+except ModuleNotFoundError:
+	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
 except Exception:
-	logging.exception("Unable to import jxlpy")
+	logging.exception("Unkown error trying to import jxlpy, JPEG XL support will be disabled.")
 
 system = "linux"
 if sys.platform == "win32":
