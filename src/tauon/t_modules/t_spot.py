@@ -96,7 +96,7 @@ class SpotCtl:
 			if self.token is None:
 				self.load_token()
 			if self.token:
-				print("Init spotify support")
+				logging.info("Init spotify support")
 				self.sender = tk.RetryingSender(retries=3)
 				self.spotify = tk.Spotify(self.token, sender=self.sender)
 				self.country = self.spotify.current_user().country
@@ -212,7 +212,7 @@ class SpotCtl:
 
 		except Exception as e:
 			logging.exception("Control failure")
-			#print(repr(e))
+			#logging.info(repr(e))
 			if "No active device found" in repr(e):
 				try:
 					tr = self.tauon.pctl.playing_object()
@@ -628,7 +628,7 @@ class SpotCtl:
 			self.tauon.gui.update += 1
 
 		elif not done:
-			#print(d_id)
+			#logging.info(d_id)
 			logging.info("A ready device is present...")
 			try:
 				self.progress_timer.set()
@@ -636,7 +636,7 @@ class SpotCtl:
 
 				# Check conditions for a proper transition
 				if self.playing:
-					#print("already playing")
+					#logging.info("already playing")
 					result = self.spotify.playback_currently_playing()
 					if result and result.item and result.is_playing:
 						remain = result.item.duration_ms - result.progress_ms
@@ -776,7 +776,7 @@ class SpotCtl:
 				id = url
 
 		if len(id) != 22:
-			print("ID Error")
+			logging.error("ID Error")
 			if return_list:
 				return []
 			return None
@@ -915,7 +915,7 @@ class SpotCtl:
 		id = album.id
 		parent = (album_artist + " - " + album_name).strip("- ")
 
-		# print(a.release_date, a.name)
+		# logging.info(a.release_date, a.name)
 		for track in album.tracks.items:
 
 			pr = None
@@ -1121,12 +1121,12 @@ class SpotCtl:
 			p = result.progress_ms
 			if p is not None:
 				#if abs(self.tauon.pctl.playing_time - (p / 1000)) > 0.4:
-					# print("DESYNC")
-					# print(abs(self.tauon.pctl.playing_time - (p / 1000)))
+					# logging.info("DESYNC")
+					# logging.info(abs(self.tauon.pctl.playing_time - (p / 1000)))
 				self.tauon.pctl.playing_time = p / 1000
 				self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
 				# else:
-				#	 print("SYNCED")
+				#	 logging.info("SYNCED")
 
 	def update(self, start: bool = False) -> None:
 

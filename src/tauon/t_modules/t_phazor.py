@@ -952,8 +952,8 @@ def player4(tauon: Tauon) -> None:
 								pctl.playerCommandReady = False
 
 						except Exception:
-							#tauon.spot_ctl.preparing_spotify = False
 							logging.exception("Failed to start Spotify track")
+							#tauon.spot_ctl.preparing_spotify = False
 							pctl.playerCommand = "stop"
 							pctl.playerCommandReady = True
 						continue

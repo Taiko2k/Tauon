@@ -404,7 +404,6 @@ class StreamEnc:
 
 		except Exception:
 			logging.exception("Encoder thread crashed!")
-			#raise
 			self.encode_running = False
 			return
 

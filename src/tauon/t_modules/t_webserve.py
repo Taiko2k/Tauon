@@ -195,7 +195,6 @@ def webserve(pctl: PlayerCtl, prefs: dict, gui: GuiVar, album_art_gen: AlbumArt,
 					data = {"image_data": base64}
 				except Exception:
 					logging.exception("No image data")
-					#raise
 					data = {"image_data": "None"}
 
 				lyrics = tauon.synced_to_static_lyrics.get(track)

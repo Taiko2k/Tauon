@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import logging
 import os
 from typing import TYPE_CHECKING
 
@@ -363,7 +364,7 @@ class Deco:
 		decos = self.get_themes(deco=True)
 
 		if name not in decos:
-			print("Missing deco file")
+			logging.error("Missing deco file")
 			return
 
 		target = decos[name]

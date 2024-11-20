@@ -2963,7 +2963,6 @@ gbc.disable()
 ggc = 2
 
 try:
-
 	sp1 = user_directory + "/star.p"
 	sp2 = user_directory + "/star.p.backup"
 
@@ -2980,22 +2979,26 @@ try:
 		to_load = sp2
 
 	star_store.db = pickle.load(open(to_load, "rb"))
-
+except FileNotFoundError:
+	logging.error('No existing star.p file')
 except Exception:
-	logging.exception('No existing star.p file')
+	logging.exception('Unknown error loading star.p file')
 
 try:
 	album_star_store.db = pickle.load(open(user_directory + "/album-star.p", "rb"))
-
+except FileNotFoundError:
+	logging.error('No existing album-star.p file')
 except Exception:
-	logging.exception('No existing album-star.p file')
+	logging.exception('Unknown error loading album-star.p file')
 
 try:
 	if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
 		with open(user_directory + "/lyrics_substitutions.json", 'r') as f:
 			prefs.lyrics_subs = json.load(f)
+except FileNotFoundError:
+	logging.error('No existing lyrics_substitutions.json file')
 except Exception:
-	logging.exception("Error loading lyrics_substitutions.json")
+	logging.exception("Unknown error loading lyrics_substitutions.json")
 
 perf_timer.set()
 
@@ -3078,7 +3081,7 @@ for t in range(2):
 		save = pickle.load(state_file)
 
 		if t == 1:
-			logging.info("Using backup state")
+			logging.warning("Using backup state")
 
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
@@ -5602,7 +5605,7 @@ class PlayerCtl:
             pctl.playlist_view_position = 0
 
         # if pctl.playlist_view_position > len(self.multi_playlist[self.active_playlist_viewing][2]) - 1:
-        #     print("Run Over")
+        #     logging.info("Run Over")
 
         if select:
             shift_selection = []
@@ -5669,7 +5672,7 @@ class PlayerCtl:
             self.decode_time = 0
 
         if not len(self.track_queue) > self.queue_step >= 0:
-            print("ERROR - there is no previous track?")
+            logging.error("There is no previous track?")
             return
 
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
@@ -5740,7 +5743,7 @@ class PlayerCtl:
 
         tm.ready_playback()
 
-        # print(self.track_queue)
+        #logging.info(self.track_queue)
         self.playing_time = 0
         self.decode_time = 0
         target = pctl.master_library[self.track_queue[self.queue_step]]
@@ -5998,7 +6001,7 @@ class PlayerCtl:
             elif decimal < 0:
                 decimal = 0
             self.new_time = pctl.playing_length * decimal
-            # print('seek to:' + str(pctl.new_time))
+            #logging.info('seek to:' + str(pctl.new_time))
             self.playerCommand = 'seek'
             self.playerCommandReady = True
             self.playing_time = self.new_time
@@ -6229,7 +6232,7 @@ class PlayerCtl:
                     pctl.selected_in_playlist] != self.playing_object().index \
                         and -1 < pctl.selected_in_playlist < len(default_playlist):
 
-                    print("Repeat follow cursor")
+                    logging.info("Repeat follow cursor")
 
                     self.playing_time = 0
                     self.decode_time = 0
@@ -6275,7 +6278,7 @@ class PlayerCtl:
                 if not self.playing_time + 0.1 >= self.playing_length:
                     return
 
-                print("Do transition CUE")
+                logging.info("Do transition CUE")
                 self.playlist_playing_position += 1
                 self.queue_step += 1
                 self.track_queue.append(pp[self.playlist_playing_position])
@@ -6298,7 +6301,7 @@ class PlayerCtl:
 
                 id = self.advance(quiet=True, end=True, dry=True)
                 if id is not None and not spot_ctl.playing:
-                    #print("Commit")
+                    #logging.info("Commit")
                     self.start_commit(id)
                     return
 
@@ -6351,7 +6354,7 @@ class PlayerCtl:
         if not dry:
             if self.playing_state == 1 and 1 < self.left_time < 45:
                 pctl.master_library[self.left_index].skips += 1
-                # print('skip registered')
+                #logging.info('skip registered')
 
         if not dry:
             pctl.playing_time = 0
@@ -6460,7 +6463,7 @@ class PlayerCtl:
                     if len(pl) <= self.playlist_playing_position:
                         if dry:
                             return None
-                        print("END OF PLAYLIST!")
+                        logging.info("END OF PLAYLIST!")
                         del self.force_queue[0]
                         self.advance()
                         return
@@ -6479,7 +6482,7 @@ class PlayerCtl:
                     if dry:
                         return None
 
-                    print("Remove expired album from queue")
+                    logging.info("Remove expired album from queue")
                     del self.force_queue[0]
 
                     if q[6]:
@@ -6566,7 +6569,7 @@ class PlayerCtl:
                     if ti.index not in pp:
                         if dry:
                             return None
-                        print("No tracks to repeat!")
+                        logging.info("No tracks to repeat!")
                         return 0
 
                     matches = []
@@ -6603,7 +6606,7 @@ class PlayerCtl:
                                     # pool.remove(ref)
 
                                     if ref[1] not in pp:  # Check track still in the live playlist
-                                        print("Track not in pool")
+                                        logging.info("Track not in pool")
                                         continue
 
                                     i, p = ref  # Find position of reference in playlist
@@ -6614,7 +6617,7 @@ class PlayerCtl:
                                     random.shuffle(matches)
                                     pctl.shuffle_pools[id] = matches
 
-                                    print("Refill folder shuffle pool")
+                                    logging.info("Refill folder shuffle pool")
 
                         self.playlist_playing_position = i
                         self.track_queue.append(p)
@@ -6760,7 +6763,7 @@ class PlayerCtl:
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 
-                # print("standand advance")
+                # logging.info("standand advance")
                 # self.queue_target = len(self.track_queue) - 1
                 # if end:
                 #     self.play_target_gapless(jump= not end)
@@ -6774,7 +6777,7 @@ class PlayerCtl:
             if self.random_mode and (self.album_shuffle_mode or prefs.album_shuffle_lock_mode):
 
                 # Album shuffle mode
-                print("Album shuffle mode")
+                logging.info("Album shuffle mode")
 
                 po = self.playing_object()
 
@@ -6839,11 +6842,11 @@ class PlayerCtl:
                                 self.queue_step = len(self.track_queue) - 1
                                 if play:
                                     self.play_target(jump=not end)
-                                # print("THERS ONLY ONE ALBUM IN THE PLAYLIST")
+                                # logging.info("THERE IS ONLY ONE ALBUM IN THE PLAYLIST")
                                 # self.stop()
 
             else:
-                print("ADVANCE ERROR - NO CASE!")
+                logging.error("ADVANCE ERROR - NO CASE!")
 
         if dry:
             return None
@@ -7133,7 +7136,7 @@ class LastFMapi:
             show_message(_("No Last.Fm account registered"), _("Authorise an account in settings"), mode='info')
             return
 
-        print('Attempting to connect to Last.fm network')
+        logging.info('Attempting to connect to Last.fm network')
 
         try:
 
@@ -7144,7 +7147,7 @@ class LastFMapi:
             if m_notify:
                 show_message(_("Connection to Last.fm was successful."), mode='done')
 
-            print('Connection to lastfm appears successful')
+            logging.info('Connection to lastfm appears successful')
             return True
 
         except Exception as e:
@@ -7166,7 +7169,7 @@ class LastFMapi:
             return False
         try:
             self.lastfm_network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
-            print('Connection appears successful')
+            logging.info('Connection appears successful')
             return True
 
         except Exception as e:
@@ -7391,7 +7394,6 @@ class LastFMapi:
             gui.update += 1
             gui.delay_frame(5)
 
-            # print(e)
             return False
         return True
 
@@ -7403,11 +7405,11 @@ class LastFMapi:
 
         artist_object = pylast.Artist(artist, self.lastfm_network)
         bio = artist_object.get_bio_summary(language="en")
-        # print(artist_object.get_cover_image())
-        # print("\n\n")
-        # print(bio)
-        # print("\n\n")
-        # print(artist_object.get_bio_content())
+        # logging.info(artist_object.get_cover_image())
+        # logging.info("\n\n")
+        # logging.info(bio)
+        # logging.info("\n\n")
+        # logging.info(artist_object.get_bio_content())
         return bio
         # else:
         #    return ""
@@ -7567,7 +7569,7 @@ class LastFMapi:
         else:
             return 0
 
-        # print('Updating Now Playing')
+        # logging.info('Updating Now Playing')
 
         title = track_object.title
         album = track_object.album
@@ -7585,7 +7587,6 @@ class LastFMapi:
             logging.exception("Error connecting to last.fm.")
             console.print("Error connecting to last.fm.", level=3)
             console.print("-- " + str(e), level=3)
-            # print(e)
             if 'retry' in str(e):
                 return 2
                 # show_message(_("Could not update Last.fm. ", str(e), mode='warning')
@@ -7663,7 +7664,7 @@ class ListenBrainz:
         if additional:
             metadata['additional_info'] = additional
 
-        # print(additional)
+        # logging.info(additional)
         data["payload"].append({"track_metadata": metadata})
         data["payload"][0]["listened_at"] = time
 
@@ -8069,7 +8070,7 @@ class LastScrob:
             self.scrob_full_track(pctl.master_library[self.a_index])
 
     def listen_track(self, track_object):
-        # print("LISTEN")
+        # logging.info("LISTEN")
 
         if track_object.is_network:
             if track_object.file_ext == "SUB":
@@ -8087,7 +8088,7 @@ class LastScrob:
                 mini_t.start()
 
     def scrob_full_track(self, track_object):
-        # print("SCROBBLE")
+        # logging.info("SCROBBLE")
         track_object.lfm_scrobbles += 1
         gui.pl_update += 1
 
@@ -8439,7 +8440,7 @@ class Tauon:
         tm.ready("worker")
 
     def exit(self, reason):
-        print("Shutting down. Reason: " + reason)
+        logging.info("Shutting down. Reason: " + reason)
         pctl.running = False
         self.wake()
 
@@ -8927,7 +8928,7 @@ class SubsonicService:
     #                 return
     #
     #         except json.decoder.JSONDecodeError:
-    #             print("Error reading Airsonic directory")
+    #             logging.error("Error reading Airsonic directory")
     #             show_message(_("Error reading Airsonic directory!)", mode="warning")
     #             return
     #
@@ -9019,7 +9020,7 @@ class KoelService:
 
     def connect(self):
 
-        print("Connect to koel...")
+        logging.info("Connect to koel...")
         if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
             show_message(_("Missing username, password and/or server URL"), mode='warning')
             self.scanning = False
@@ -9027,7 +9028,7 @@ class KoelService:
 
         if self.token:
             self.connected = True
-            print("Already authorised")
+            logging.info("Already authorised")
             return
 
         password = prefs.koel_password
@@ -9054,7 +9055,7 @@ class KoelService:
             return
 
         if r.status_code == 200:
-            # print(r.json())
+            # logging.info(r.json())
             self.token = r.json()["token"]
             if self.token:
                 logging.info("GOT KOEL TOKEN")
@@ -9109,8 +9110,8 @@ class KoelService:
                 }
 
                 r = requests.post(target, headers=headers, json={"song": track_object.url_key})
-                # print(r.status_code)
-                # print(r.text)
+                # logging.info(r.status_code)
+                # logging.info(r.text)
             except Exception:
                 logging.exception("error submitting listen to koel")
 
@@ -9638,7 +9639,7 @@ class GStats:
             self.genre_list = copy.deepcopy(sorted_list)
             self.genre_dict = genre_dict
 
-            # print('\n-----------------------\n')
+            # logging.info('\n-----------------------\n')
 
             g_albums = {}
 
@@ -10014,14 +10015,14 @@ elif not msys and system == "linux":
 if not maximized and gui.maximized:
     SDL_MaximizeWindow(t_window)
 
-# print(SDL_GetError())
+# logging.error(SDL_GetError())
 
 # t_window = SDL_CreateShapedWindow(window_title,
 #                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 #                              window_size[0], window_size[1],
 #                              flags)
 
-# print(SDL_GetError())
+# logging.error(SDL_GetError())
 
 if system == 'windows' or msys:
     gui.window_id = sss.info.win.window
@@ -10031,7 +10032,7 @@ if system == 'windows' or msys:
 #     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 #
 # except Exception:
-#     print("old version of SDL detected")
+#     logging.exception("old version of SDL detected")
 
 # get window surface and set up renderer
 # renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
@@ -10164,12 +10165,12 @@ if (system == 'windows' or msys) and taskbar_progress:
 
 
     if os.path.isfile(install_directory + "/TaskbarLib.tlb"):
-        print("Taskbar progress enabled")
+        logging.info("Taskbar progress enabled")
         pctl.windows_progress = WinTask()
 
     else:
         pctl.taskbar_progress = False
-        print("Could not find TaskbarLib.tlb")
+        logging.warning("Could not find TaskbarLib.tlb")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -10637,7 +10638,7 @@ class TimedLyricsRen:
                 continue
 
         self.data = sorted(self.data, key=lambda x: x[0])
-        # print(self.data)
+        # logging.info(self.data)
 
         self.ready = True
         return True
@@ -11563,9 +11564,9 @@ class TextBox:
                         self.selection = 0
 
             a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
-            # print("")
-            # print(self.selection)
-            # print(self.cursor_position)
+            # logging.info("")
+            # logging.info(self.selection)
+            # logging.info(self.cursor_position)
 
             b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
 
@@ -11762,7 +11763,7 @@ class GallClass:
                     img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(offset)
                     if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
                         source_image = open(os.path.join(g_cache_dir, img_name + '.jpg'), 'rb')
-                        # print('load from cache')
+                        # logging.info('load from cache')
                         cache_load = True
                     else:
                         slow_load = True
@@ -11783,11 +11784,11 @@ class GallClass:
 
                     if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + '.jpg')):
                         source_image = open(os.path.join(g_cache_dir, img_name + '.jpg'), 'rb')
-                        print("slow load image")
+                        logging.info("slow load image")
                         cache_load = True
 
                     # elif source[0] == 1:
-                    #     # print('tag')
+                    #     #logging.info('tag')
                     #     source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
                     #
                     # elif source[0] == 2:
@@ -11882,7 +11883,7 @@ class GallClass:
         key = (track, size, offset)
 
         if key in self.gall:
-            # print("old")
+            #logging.info("old")
 
             order = self.gall[key]
 
@@ -12062,7 +12063,7 @@ def clear_track_image_cache(track):
             n = item.split("-")
             if len(n) > 2 and n[2] == str(track.index):
                 os.remove(os.path.join(direc, item))
-                print("Cleared cache thumbnail: " + os.path.join(direc, item))
+                logging.info("Cleared cache thumbnail: " + os.path.join(direc, item))
 
     keys = set()
     for key, value in gall_ren.gall.items():
@@ -12369,7 +12370,7 @@ class AlbumArt():
 
         # cached = self.embed_cached
         # if cached[0] == track:
-        #    # print("used cached")
+        #    #logging.info("used cached")
         #    return cached[1]
 
         filepath = track.fullpath
@@ -12516,7 +12517,7 @@ class AlbumArt():
         return sss
 
     def get_background(self, track):
-        #print("Find background...")
+        #logging.info("Find background...")
         # Determine artist name to use
         artist = get_artist_safe(track)
         if not artist:
@@ -12525,14 +12526,14 @@ class AlbumArt():
         # Check cache for existing image
         path = os.path.join(b_cache_dir, artist)
         if os.path.isfile(path):
-            print("Load cached background")
+            logging.info("Load cached background")
             return open(path, "rb")
 
         else:
             # Try last.fm background
             path = artist_info_box.get_data(artist, get_img_path=True)
             if os.path.isfile(path):
-                print("Load cached background lfm")
+                logging.info("Load cached background lfm")
                 return open(path, "rb")
 
         # Check we've not already attempted a search for this artist
@@ -12622,7 +12623,7 @@ class AlbumArt():
         if im.format == "JPEG":
             format = "JPG"
 
-        # print(im.size)
+        #logging.info(im.size)
         if im.mode != "RGB":
             im = im.convert("RGB")
 
@@ -12630,7 +12631,7 @@ class AlbumArt():
         ratio += 0.2
 
         if (oy_size * ratio) - ((oy_size * ratio) // 4) < window_size[1]:
-            print("Adjust bg vertical")
+            logging.info("Adjust bg vertical")
             ratio = window_size[1] / (oy_size - (oy_size // 4))
             ratio += 0.2
 
@@ -12654,7 +12655,7 @@ class AlbumArt():
                     enhancer = ImageEnhance.Brightness(im)
                     deduct = 1 - ((pixel_sum - 0.6) * 1.5)
                     im = enhancer.enhance(deduct)
-                    print(deduct)
+                    logging.info(deduct)
 
                 gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
 
@@ -12682,7 +12683,7 @@ class AlbumArt():
         sources = self.get_sources(track_object)
 
         if len(sources) == 0:
-            print("Error thumbnailing; no source images found")
+            logging.error("Error thumbnailing; no source images found")
             return False
 
         offset = self.get_offset(filepath, sources)
@@ -12898,9 +12899,9 @@ class AlbumArt():
 
                 im.thumbnail((50, 50), Image.Resampling.LANCZOS)
                 pixels = im.getcolors(maxcolors=2500)
-                # print(pixels)
+                #logging.info(pixels)
                 pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
-                # print(pixels)
+                #logging.info(pixels)
 
                 min_colour_varience = 75
 
@@ -12915,7 +12916,7 @@ class AlbumArt():
                     else:
                         x_colours.append(colour)
 
-                # print(x_colours)
+                #logging.info(x_colours)
                 colours.playlist_panel_bg = colours.side_panel_background
                 colours.playlist_box_background = colours.side_panel_background
 
@@ -13011,7 +13012,7 @@ class AlbumArt():
 
             wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
-            # print(IMG_GetError())
+            #logging.error(IMG_GetError())
 
             c = SDL_CreateTextureFromSurface(renderer, s_image)
 
@@ -13603,10 +13604,10 @@ def load_m3u(path):
                             titles[value.artist + " - " + value.title] = value
 
                 # Is file path already imported?
-                print(line)
+                logging.info(line)
                 if line in location_dict:
                     playlist.append(location_dict[line].index)
-                    print("found imported")
+                    logging.info("found imported")
                 # Or... does the file exist? Then import it
                 elif os.path.isfile(line):
                     nt = TrackClass()
@@ -13616,13 +13617,13 @@ def load_m3u(path):
                     pctl.master_library[pctl.master_count] = nt
                     playlist.append(pctl.master_count)
                     pctl.master_count += 1
-                    print("found file")
+                    logging.info("found file")
                 # Last resort, guess based on title
                 elif line_title in titles:
                     playlist.append(titles[line_title].index)
-                    print("found title")
+                    logging.info("found title")
                 else:
-                    print("not found")
+                    logging.info("not found")
 
     if playlist:
         pctl.multi_playlist.append(pl_gen(title=name,
@@ -13717,8 +13718,8 @@ def load_xspf(path):
                 for track in top:
                     if track.tag.endswith("track"):
                         for field in track:
-                            print(field.tag)
-                            print(field.text)
+                            logging.info(field.tag)
+                            logging.info(field.text)
                             if 'title' in field.tag and field.text:
                                 b['title'] = field.text
                             if 'location' in field.tag and field.text:
@@ -13879,7 +13880,7 @@ def load_xspf(path):
     if missing > 0:
         show_message(_('Failed to locate {N} out of {T} tracks.')
                             .format(N=str(missing), T=str(len(a))))
-    # print(playlist)
+    #logging.info(playlist)
     if playlist:
         pctl.multi_playlist.append(pl_gen(title=name,
                                           playlist=playlist))
@@ -14235,7 +14236,7 @@ class Menu:
             x_run = self.pos[0]
 
             for i in range(len(self.items)):
-                # print(self.items[i])
+                #logging.info(self.items[i])
 
                 # Draw menu break
                 if self.items[i] is None:
@@ -14784,7 +14785,7 @@ class RenameTrackBox:
                     oldname = pctl.master_library[item].filename
                     oldpath = pctl.master_library[item].fullpath
 
-                    print('Renaming...')
+                    logging.info('Renaming...')
 
                     star = star_store.full_get(item)
                     star_store.remove(item)
@@ -14794,17 +14795,17 @@ class RenameTrackBox:
                     oldsplit = os.path.split(oldpath)
 
                     if os.path.exists(os.path.join(oldsplit[0], afterline)):
-                        print("A file with that name already exists")
+                        logging.error("A file with that name already exists")
                         total_todo -= 1
                         continue
 
                     if not afterline:
-                        print("Rename Error")
+                        logging.error("Rename Error")
                         total_todo -= 1
                         continue
 
                     if "." in afterline and not afterline.split(".")[0]:
-                        print("A file does not have a target filename")
+                        logging.error("A file does not have a target filename")
                         total_todo -= 1
                         continue
 
@@ -14880,9 +14881,9 @@ class TransEditBox:
         albums = [pctl.g(default_playlist[s]).album for s in select]
         album_artists = [pctl.g(default_playlist[s]).album_artist for s in select]
 
-        # print(select)
+        #logging.info(select)
         if select != self.selected or pctl.active_playlist_viewing != self.playlist:
-            # print("reset")
+            #logging.info("reset")
             self.selected = select
             self.playlist = pctl.active_playlist_viewing
             edit_album.clear()
@@ -15259,7 +15260,7 @@ class ExportPlaylistBox:
             self.run_export(current, self.id, warnings=True)
 
     def run_export(self, current, id, warnings=True):
-        print("Export playlist")
+        logging.info("Export playlist")
         path = current["path"]
         if not os.path.isdir(path):
             if warnings:
@@ -15636,14 +15637,14 @@ def move_playing_folder_to_stem(path, pl_id=None):
         if pctl.g(item).fullpath.startswith(artist_folder):
             insert = i
 
-    print("The folder to be moved is: " + move_folder)
+    logging.info("The folder to be moved is: " + move_folder)
     load_order = LoadClass()
     load_order.target = os.path.join(artist_folder, track.parent_folder_name)
     load_order.playlist = pl_id
     load_order.playlist_position = insert
 
-    print(artist_folder)
-    print(os.path.join(artist_folder, track.parent_folder_name))
+    logging.info(artist_folder)
+    logging.info(os.path.join(artist_folder, track.parent_folder_name))
     move_jobs.append((move_folder, os.path.join(artist_folder, track.parent_folder_name), True,
                       track.parent_folder_name, load_order))
     tm.ready("worker")
@@ -15950,9 +15951,9 @@ def get_lyric_fire(track_object, silent=False):
         return
 
     t = lyrics_fetch_timer.get()
-    print("Lyric rate limit timer is: " + str(t) + " / -60")
+    logging.info("Lyric rate limit timer is: " + str(t) + " / -60")
     if t < -40:
-        print("Lets try again later")
+        logging.info("Lets try again later")
         if not silent:
             show_message(_("Let's be polite and try later."))
 
@@ -16024,11 +16025,11 @@ def get_lyric_wiki(track_object):
     shoot_dl.daemon = True
     shoot_dl.start()
 
-    print("..Done")
+    logging.info("..Done")
 
 
 def get_lyric_wiki_silent(track_object):
-    print("Searching for lyrics...")
+    logging.info("Searching for lyrics...")
 
     if track_object.artist == "" or track_object.title == "":
         return
@@ -16037,7 +16038,7 @@ def get_lyric_wiki_silent(track_object):
     shoot_dl.daemon = True
     shoot_dl.start()
 
-    print("..Done")
+    logging.info("..Done")
 
 
 def test_auto_lyrics(track_object):
@@ -16118,11 +16119,11 @@ def paste_lyrics_deco():
 def paste_lyrics(track_object):
     if SDL_HasClipboardText():
         clip = SDL_GetClipboardText()
-        # print(clip)
+        #logging.info(clip)
         track_object.lyrics = clip.decode('utf-8')
 
     else:
-        print('NO TEXT TO PASTE')
+        logging.warning('NO TEXT TO PASTE')
 
 
 def paste_chord_lyrics(track_object):
@@ -16383,7 +16384,7 @@ def download_art1(tr):
         if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc[
             'musicbrainz_artistids']:
 
-            print("MusicBrainz ID lookup...")
+            logging.info("MusicBrainz ID lookup...")
 
             artist = tr.album_artist
             if not tr.album:
@@ -16396,16 +16397,16 @@ def download_art1(tr):
             album_id = s['release-group-list'][0]['id']
             artist_id = s['release-group-list'][0]['artist-credit'][0]['artist']['id']
 
-            print("Found release group ID: " + album_id)
-            print("Found artist ID: " + artist_id)
+            logging.info("Found release group ID: " + album_id)
+            logging.info("Found artist ID: " + artist_id)
 
         else:
 
             album_id = tr.misc['musicbrainz_releasegroupid']
             artist_id = tr.misc['musicbrainz_artistids'][0]
 
-            print("Using tagged release group ID: " + album_id)
-            print("Using tagged artist ID: " + artist_id)
+            logging.info("Using tagged release group ID: " + album_id)
+            logging.info("Using tagged artist ID: " + artist_id)
 
         if prefs.enable_fanart_cover:
             try:
@@ -16546,10 +16547,10 @@ def remove_embed_picture(track_object, dry=True):
                     show_message(_("Removing vorbis image not implemented"))
                     # try:
                     #     tag = mutagen.File(tr.fullpath).tags
-                    #     print(tag)
+                    #     logging.info(tag)
                     #     removed += 1
                     # except Exception:
-                    #     pass
+                    #     logging.exception("Failed to manipulate tags")
 
                 if "FLAC" == tr.file_ext:
                     try:
@@ -16593,7 +16594,7 @@ def delete_file_image(track_object):
             os.remove(source)
             # clear_img_cache()
             clear_track_image_cache(track_object)
-            print("Deleted file: " + source)
+            logging.info("Deleted file: " + source)
     except Exception:
         logging.exception("Failed to delete file")
         show_message(_("Something went wrong"), mode='error')
@@ -17098,7 +17099,7 @@ def clear_playlist(index):
     pctl.multi_playlist[index][7].clear()  # clear import folder list
 
     if not pctl.multi_playlist[index][2]:
-        print("Playlist is already empty")
+        logging.info("Playlist is already empty")
         return
 
     li = []
@@ -17265,7 +17266,7 @@ def delete_playlist(index, force=False, check_lock=False):
             pctl.active_playlist_viewing = i
             break
     else:
-        # print("Lost the viewed playlist!")
+        # logging.info("Lost the viewed playlist!")
         # Try find the playing playlist and make it the viewed playlist
         for i, pl in enumerate(pctl.multi_playlist):
             if pl[6] == old_playing_id:
@@ -17295,7 +17296,7 @@ def delete_playlist(index, force=False, check_lock=False):
             pctl.active_playlist_playing = i
             break
     else:
-        print("Lost the playing playlist!")
+        logging.info("Lost the playing playlist!")
         pctl.active_playlist_playing = pctl.active_playlist_viewing
         pctl.playlist_playing_position = -1
 
@@ -17833,7 +17834,7 @@ def year_sort(pl, custom_list=None):
 
         plt.append((album, date, artist + " " + get_object(playlist[p]).album))
         p += len(album)
-        # print(album)
+        #logging.info(album)
 
     if plt:
         pl2 += year_s(plt)
@@ -18097,8 +18098,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             code.startswith("sal")
 
     #
-    # print(cmds)
-    # print(quotes)
+    #logging.info(cmds)
+    #logging.info(quotes)
 
     pctl.regen_in_progress = True
 
@@ -18558,7 +18559,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                         break
 
             if not found_name:
-                print("No genre search result found")
+                logging.warning("No genre search result found")
                 continue
 
             search_over.clear()
@@ -18590,7 +18591,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                     found_name = result[1]
                     break
             else:
-                print("No artist search result found")
+                logging.warning("No artist search result found")
                 continue
 
             search_over.clear()
@@ -18675,14 +18676,14 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                     break
             else:
                 for p in pctl.multi_playlist:
-                    # print(p[0].lower())
-                    # print(pl_name.lower())
+                    #logging.info(p[0].lower())
+                    #logging.info(pl_name.lower())
                     if p[0].lower().startswith(pl_name.lower()):
                         target = p[2]
                         break
             if target is None:
-                print(f"not found: {pl_name}")
-                print("Target playlist not found")
+                logging.warning(f"not found: {pl_name}")
+                logging.warning("Target playlist not found")
                 if cm.startswith("s\""):
                     selections_searched += 1
                 errors = "playlist"
@@ -18712,7 +18713,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
     reload()
     pctl.notify_change()
 
-    # print(cmds)
+    #logging.info(cmds)
 
 
 def make_auto_sorting(pl):
@@ -18905,7 +18906,7 @@ def auto_sync_thread(pl):
             break
 
         if prefs.bypass_transcode or (prefs.smart_bypass and 0 < pctl.g(folder_dict[item][0]).bitrate <= 128):
-            print("Smart bypass...")
+            logging.info("Smart bypass...")
 
             source_parent = pctl.g(folder_dict[item][0]).parent_folder_path
             if os.path.exists(source_parent):
@@ -19187,14 +19188,14 @@ def gen_folder_top(pl, get_sets=False, custom_list=None):
     sets.append(copy.deepcopy(se))
 
     def best(folder):
-        # print(folder)
+        #logging.info(folder)
         total_star = 0
         for item in folder:
             # key = pctl.master_library[item].title + pctl.master_library[item].filename
             # if key in pctl.star_library:
             #     total_star += int(pctl.star_library[key])
             total_star += int(star_store.get(item))
-        # print(total_star)
+        #logging.info(total_star)
         return total_star
 
     if get_sets:
@@ -19983,8 +19984,8 @@ def convert_folder(index):
 
                 if item not in folder:
                     folder.append(item)
-                # print(prefs.transcode_codec)
-                # print(track_object.file_ext)
+                #logging.info(prefs.transcode_codec)
+                #logging.info(track_object.file_ext)
                 if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
                                                                                          'mp4', 'ogg',
                                                                                          'aac'):
@@ -19993,7 +19994,7 @@ def convert_folder(index):
 
                     return
 
-    # print(folder)
+    #logging.info(folder)
     transcode_list.append(folder)
     tm.ready("worker")
 
@@ -20158,9 +20159,9 @@ def lightning_paste():
         if (len(t_artist) > 0 and t_artist in level) or \
                 (len(ta_artist) > 0 and ta_artist in level):
 
-            print("found target artist level")
-            print(t_artist)
-            print("Upper folder is: " + upper)
+            logging.info("found target artist level")
+            logging.info(t_artist)
+            logging.info("Upper folder is: " + upper)
 
             if len(move_path) < 4:
                 show_message(_("Safety interupt! The source path seems oddly short."), move_path, mode='error')
@@ -20201,15 +20202,15 @@ def lightning_paste():
 
             artist_folder = os.path.join(upper, artist)
 
-            print("Target will be: " + artist_folder)
+            logging.info("Target will be: " + artist_folder)
 
             if os.path.isdir(artist_folder):
-                print("The target artist folder already exists")
+                logging.info("The target artist folder already exists")
             else:
-                print("Need to make artist folder")
+                logging.info("Need to make artist folder")
                 os.makedirs(artist_folder)
 
-            print("The folder to be moved is: " + move_path)
+            logging.info("The folder to be moved is: " + move_path)
             load_order = LoadClass()
             load_order.target = os.path.join(artist_folder, move_track.parent_folder_name)
             load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
@@ -20251,35 +20252,35 @@ def lightning_paste():
 
 def paste(playlist_no=None, track_id=None):
     clip = copy_from_clipboard()
-    print(clip)
+    logging.info(clip)
     if "tidal.com/album/" in clip:
-        print(clip)
+        logging.info(clip)
         num = clip.split("/")[-1].split("?")[0]
         if num and num.isnumeric():
-            print(num)
+            logging.info(num)
             tidal.append_album(num)
         clip = False
 
     elif "tidal.com/playlist/" in clip:
-        print(clip)
+        logging.info(clip)
         num = clip.split("/")[-1].split("?")[0]
         tidal.playlist(num)
         clip = False
 
     elif "tidal.com/mix/" in clip:
-        print(clip)
+        logging.info(clip)
         num = clip.split("/")[-1].split("?")[0]
         tidal.mix(num)
         clip = False
 
     elif "tidal.com/browse/track/" in clip:
-        print(clip)
+        logging.info(clip)
         num = clip.split("/")[-1].split("?")[0]
         tidal.track(num)
         clip = False
 
     elif "tidal.com/browse/artist/" in clip:
-        print(clip)
+        logging.info(clip)
         num = clip.split("/")[-1].split("?")[0]
         tidal.artist(num)
         clip = False
@@ -20287,7 +20288,7 @@ def paste(playlist_no=None, track_id=None):
     elif "spotify" in clip:
         cargo.clear()
         for link in clip.split("\n"):
-            print(link)
+            logging.info(link)
             link = link.strip()
             if clip.startswith("https://open.spotify.com/track/") or clip.startswith("spotify:track:"):
                 spot_ctl.append_track(link)
@@ -20834,7 +20835,7 @@ def rename_parent(index, template):
         return
 
     old = track.parent_folder_path
-    # print(old)
+    #logging.info(old)
 
     new = parse_template2(template, track)
 
@@ -20857,11 +20858,11 @@ def rename_parent(index, template):
             show_message(_("Woah, careful there!"), _("I don't think we should rename that folder."), mode='warning')
             return
 
-    print(track.parent_folder_path)
+    logging.info(track.parent_folder_path)
     re = os.path.dirname(track.parent_folder_path.rstrip("/\\"))
-    print(re)
+    logging.info(re)
     new_parent_path = os.path.join(re, new)
-    print(new_parent_path)
+    logging.info(new_parent_path)
 
     pre_state = 0
 
@@ -20905,7 +20906,7 @@ def rename_parent(index, template):
     if new_parent_path is not None:
         try:
             os.rename(old, new_parent_path)
-            print(new_parent_path)
+            logging.info(new_parent_path)
         except Exception:
             logging.exception("Rename failed, something went wrong!")
             show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode='error')
@@ -21008,8 +21009,8 @@ def move_folder_up(index, do=False):
             search_string_cache.pop(object.index, None)
             search_dia_string_cache.pop(object.index, None)
 
-            print(object.fullpath)
-            print(object.parent_folder_path)
+            logging.info(object.fullpath)
+            logging.info(object.parent_folder_path)
 
     if pre_state == 1:
         pctl.revert()
@@ -21040,13 +21041,13 @@ def clean_folder(index, do=False):
                 found += 1
                 found += 1
                 if do:
-                    print("Deleting Folder: " + os.path.join(folder, item))
+                    logging.info("Deleting Folder: " + os.path.join(folder, item))
                     shutil.rmtree(os.path.join(folder, item))
 
         if do:
             for item in to_purge:
                 if os.path.isfile(os.path.join(folder, item)):
-                    print('Deleting File: ' + os.path.join(folder, item))
+                    logging.info('Deleting File: ' + os.path.join(folder, item))
                     os.remove(os.path.join(folder, item))
             # clear_img_cache()
 
@@ -21098,10 +21099,10 @@ def vacuum_playtimes(index):
         key = star_store.object_key(tr)
         value = [total_playtime, flags, 0]
         if key not in star_store.db:
-            print("Saving value")
+            logging.info("Saving value")
             star_store.db[key] = value
         else:
-            print("ERROR KEY ALREADY HERE?")
+            logging.error("ERROR KEY ALREADY HERE?")
 
 
 def reload_metadata(input, keep_star=True):
@@ -21128,7 +21129,7 @@ def reload_metadata(input, keep_star=True):
         search_string_cache.pop(track.index, None)
         search_dia_string_cache.pop(track.index, None)
 
-        #print('Reloading Metadata for ' + track.filename)
+        #logging.info('Reloading Metadata for ' + track.filename)
         if keep_star:
             to_scan.append(track.index)
         else:
@@ -21219,7 +21220,7 @@ def editor(index):
     else:
 
         if not os.path.isfile(prefs.tag_editor_target.strip('"')):
-            print(prefs.tag_editor_target)
+            logging.info(prefs.tag_editor_target)
             show_message(_("Application not found"), prefs.tag_editor_target, mode='info')
             return
 
@@ -21258,12 +21259,12 @@ def editor(index):
                     if pctl.master_library[track].fullpath == a:
                         pctl.master_library[track].fullpath = b
                         pctl.master_library[track].filename = os.path.basename(b)
-                        print("External Edit: File rename detected.")
-                        print("    Renaming: " + a)
-                        print("          To: " + b)
+                        logging.info("External Edit: File rename detected.")
+                        logging.info("    Renaming: " + a)
+                        logging.info("          To: " + b)
                         break
                 else:
-                    print("External Edit: A file rename was detected but track was not found.")
+                    logging.warning("External Edit: A file rename was detected but track was not found.")
 
     gui.message_box = False
     reload_metadata(obs, keep_star=False)
@@ -21422,7 +21423,7 @@ def intel_moji(index):
                 for cha in test:
                     if cha in j_chars:
                         detect = enc
-                        print("This looks like Japanese: " + test)
+                        logging.info("This looks like Japanese: " + test)
                         break
                     if detect is not None:
                         break
@@ -21433,7 +21434,7 @@ def intel_moji(index):
                 for cha in test:
                     if cha in j_chars:
                         detect = enc
-                        print("This looks like Japanese: " + test)
+                        logging.info("This looks like Japanese: " + test)
                         break
                     if detect is not None:
                         break
@@ -21441,7 +21442,7 @@ def intel_moji(index):
             break
 
     if detect is not None:
-        print("Fix Mojibake: Detected encoding as: " + detect)
+        logging.info("Fix Mojibake: Detected encoding as: " + detect)
         for item in lot:
             track = pctl.master_library[item]
             # key = pctl.master_library[item].title + pctl.master_library[item].filename
@@ -21642,7 +21643,7 @@ def add_to_spotify_library2(album_url):
     for i, p in enumerate(pctl.multi_playlist):
         code = pctl.gen_codes.get(p[6])
         if code and code.startswith("sal"):
-            print("Fetching Spotify Library...")
+            logging.info("Fetching Spotify Library...")
             regenerate_playlist(i, silent=True)
 
 
@@ -23116,7 +23117,7 @@ def import_popm():
                     star_store.set_rating(tr.index, t_rating)
                     unique.add(tr.index)
                 else:
-                    print("Won't import POPM because track is already rated")
+                    logging.info("Won't import POPM because track is already rated")
                     skipped.add(tr.index)
 
     s = str(len(unique)) + " ratings imported"
@@ -23450,7 +23451,7 @@ def toggle_spotify_like_active2(tr):
     for i, p in enumerate(pctl.multi_playlist):
         code = pctl.gen_codes.get(p[6])
         if code and code.startswith("slt"):
-            print("Fetching Spotify likes...")
+            logging.info("Fetching Spotify likes...")
             regenerate_playlist(i, silent=True)
     gui.pl_update += 1
 
@@ -23954,11 +23955,11 @@ def get_album_art_url(tr):
 
     if not release_group_id:
         try:
-            #print("lookup release group id")
+            #logging.info("lookup release group id")
             s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
             release_group_id = s['release-group-list'][0]['id']
             tr.misc['musicbrainz_releasegroupid'] = release_group_id
-            #print("got release group id")
+            #logging.info("got release group id")
         except Exception:
             logging.exception("Error lookup mbid for discord")
             pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
@@ -23985,7 +23986,7 @@ def get_album_art_url(tr):
         url = f"{base_url}{release_group_id}"
 
         try:
-            #print("lookup image url from release group")
+            #logging.info("lookup image url from release group")
             response = requests.get(url)
             response.raise_for_status()
             image_data = response.json()
@@ -24027,7 +24028,7 @@ def get_album_art_url(tr):
                     url = image["thumbnails"].get("small")
 
                 if url:
-                    print("got mb image url for discord")
+                    logging.info("got mb image url for discord")
                     pctl.mbid_image_url_cache[final_id] = url
                     return url
 
@@ -24044,12 +24045,12 @@ def discord_loop():
         if not pctl.playing_ready(): return
         asyncio.set_event_loop(asyncio.new_event_loop())
 
-        # print("Attempting to connect to Discord...")
+        # logging.info("Attempting to connect to Discord...")
         client_id = '954253873160286278'
         RPC = Presence(client_id)
         RPC.connect()
 
-        print("Discord RPC connection successful.")
+        logging.info("Discord RPC connection successful.")
         time.sleep(1)
         start_time = time.time()
         idle_time = Timer()
@@ -24083,7 +24084,7 @@ def discord_loop():
                         break
 
                 if current_state == 0 and idle_time.get() > 13:
-                    print("Pause discord RPC...")
+                    logging.info("Pause discord RPC...")
                     gui.discord_status = "Idle"
                     RPC.clear(pid)
                     # RPC.close()
@@ -24092,7 +24093,7 @@ def discord_loop():
                         if prefs.disconnect_discord:
                             break
                         if pctl.playing_state == 1:
-                            print("Reconnect discord...")
+                            logging.info("Reconnect discord...")
                             RPC.connect()
                             gui.discord_status = "Connected"
                             break
@@ -24132,8 +24133,8 @@ def discord_loop():
                 album += " "
 
             if state == 1:
-                # print("PLAYING: " + title)
-                # print(start_time)
+                #logging.info("PLAYING: " + title)
+                #logging.info(start_time)
                 url = get_album_art_url(pctl.playing_object())
 
                 large_image = "tauon-standard"
@@ -24149,7 +24150,7 @@ def discord_loop():
                            small_image=small_image,)
 
             else:
-                # print("Discord RPC - Stop")
+                #logging.info("Discord RPC - Stop")
                 RPC.update(pid=pid,
                            state="Idle",
                            large_image="tauon-standard", )
@@ -24488,7 +24489,7 @@ def cue_scan(content, tn):
     content = content.replace("\r", "")
     content = content.split("\n")
 
-    # print(content)
+    #logging.info(content)
 
     global added
 
@@ -25088,7 +25089,7 @@ class SearchOverlay:
                 if self.force_select > -1:
                     selected = self.force_select
 
-                # print(selected)
+                #logging.info(selected)
 
                 if selected != p:
                     fade = 0.8
@@ -25560,7 +25561,7 @@ def worker2():
                 if t < 1:
                     time.sleep(1 - t)
                     spot_search_rate_timer.set()
-                print("Spotify search")
+                logging.info("Spotify search")
                 search_over.results.clear()
                 results = spot_ctl.search(search_over.search_text.text)
                 if results is not None:
@@ -25636,7 +25637,7 @@ def worker2():
                 for playlist in pctl.multi_playlist:
 
                     # if "<" in playlist[0]:
-                    #     # print("Skipping search on derivative playlist: " + playlist[0])
+                    #     #logging.info("Skipping search on derivative playlist: " + playlist[0])
                     #     continue
 
                     for track in playlist[2]:
@@ -25927,7 +25928,7 @@ def worker2():
 
                 temp_results[:] = [item for item in temp_results if item is not None]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
-                # print(search_over.results)
+                #logging.info(search_over.results)
 
                 i = 0
                 for playlist in pctl.multi_playlist:
@@ -25940,7 +25941,7 @@ def worker2():
 
                 search_over.on = 0
                 search_over.force_select = 0
-                # print(perf_timer.get())
+                #logging.info(perf_timer.get())
 
 
 def worker1():
@@ -26295,7 +26296,7 @@ def worker1():
                     target_dir = split[0]
                     if prefs.extract_to_music and music_directory is not None:
                         target_dir = os.path.join(music_directory, os.path.basename(target_dir))
-                    # print(os.path.getsize(path))
+                    #logging.info(os.path.getsize(path))
                     if os.path.getsize(path) > 4e+9:
                         logging.warning("Archive file is large!")
                         show_message(_("Skipping oversize zip file (>4GB)"))
@@ -26338,7 +26339,7 @@ def worker1():
                                 line = launch_prefix + "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(
                                     target_dir) + os.sep
                                 result = subprocess.run(shlex.split(line))
-                                print(result)
+                                logging.info(result)
                             except Exception:
                                 logging.exception("Failed to extract rar archive.")
                                 to_got = b
@@ -26354,7 +26355,7 @@ def worker1():
                                 line = launch_prefix + "7z x -y " + shlex.quote(path) + " -o" + shlex.quote(
                                     target_dir) + os.sep
                                 result = subprocess.run(shlex.split(line))
-                                print(result)
+                                logging.info(result)
                             except Exception:
                                 logging.exception("Failed to extract 7z archive.")
                                 to_got = b
@@ -26367,7 +26368,7 @@ def worker1():
                         new = upper + "/temporaryfolderd"
                         error = False
                         if len(cont) == 1 and os.path.isdir(split[0] + "/" + cont[0]):
-                            print("one thing")
+                            logging.info("one thing")
                             os.rename(target_dir, new)
                             try:
                                 shutil.move(new + "/" + cont[0], upper)
@@ -26404,7 +26405,7 @@ def worker1():
             de = loaded_pathes_cache[path]
 
             if pctl.master_library[de].fullpath in cue_list:
-                print("File has an associated .cue file... Skipping")
+                logging.info("File has an associated .cue file... Skipping")
                 return
 
             if pctl.master_library[de].file_ext.lower() in GME_Formats:
@@ -26542,7 +26543,7 @@ def worker1():
         return dic, dic2
 
 
-    # print(pctl.master_library)
+    #logging.info(pctl.master_library)
 
     global transcode_list
     global transcode_state
@@ -26758,7 +26759,7 @@ def worker1():
                         folder_name = ref_track_object.parent_folder_name
                         break
 
-                print("Transcoding folder: " + folder_name)
+                logging.info("Transcoding folder: " + folder_name)
 
                 # Remove any existing matching folder
                 if os.path.isdir(prefs.encoder_output + folder_name):
@@ -26823,7 +26824,7 @@ def worker1():
                 else:
                     album_art_gen.save_thumb(pctl.g(folder_items[0]), (1080, 1080), output_dir + "cover")
 
-                # print(transcode_list[0])
+                #logging.info(transcode_list[0])
 
                 del transcode_list[0]
                 transcode_state = ""
@@ -26894,7 +26895,7 @@ def worker1():
                         break
 
                     loaderCommand = LC_Done
-                    # print("LOAD ORDER")
+                    #logging.info("LOAD ORDER")
                     order.tracks = added
 
                     # Double check for cue dupes
@@ -26906,7 +26907,7 @@ def worker1():
                     added = []
                     order.stage = 2
                     loaderCommandReady = False
-                    # print("DONE LOADING")
+                    #logging.info("DONE LOADING")
                     break
 
 
@@ -27077,7 +27078,7 @@ def gen_power2():
                 break
 
     if noise > len(album_dex) / 2:
-        # print("Playlist is too noisy for power bar.")
+        #logging.info("Playlist is too noisy for power bar.")
         return []
 
     tag_list_sort = sorted(tag_list, key=key, reverse=True)
@@ -28119,7 +28120,7 @@ class Over:
         if prefs.replay_preamp == 0:
             colour = colours.box_text_label
         ddt.text((x + sw + round(14 * gui.scale), y - round(8 * gui.scale)), text, colour, 11)
-        # print(prefs.replay_preamp)
+        #logging.info(prefs.replay_preamp)
 
         y += round(18 * gui.scale)
         ddt.text((x, y, 4, 310 * gui.scale, 300 * gui.scale),
@@ -29603,7 +29604,7 @@ class Over:
             return
 
         if not lastfm.scanning_friends and not lastfm.scanning_scrobbles and not lastfm.scanning_loves:
-            print("Launch friend love thread")
+            logging.info("Launch friend love thread")
             shoot_dl = threading.Thread(target=lastfm.get_friends_love)
             shoot_dl.daemon = True
             shoot_dl.start()
@@ -30854,7 +30855,7 @@ class Fields:
             return True
 
         self.last_id = self.id
-        # print(len(self.id))
+        #logging.info(len(self.id))
         self.id = []
 
         for f in self.field_array:
@@ -31159,7 +31160,7 @@ class TopPanel:
             gui.update_on_drag = True
 
         # List all tabs eligible to be shown
-        # print("-------------")
+        #logging.info("-------------")
         ready_tabs = []
         show_tabs = []
 
@@ -31235,8 +31236,8 @@ class TopPanel:
                         break
 
             # for tab in show_tabs:
-            #     print(pctl.multi_playlist[tab][0])
-            # print("---")
+            #     logging.info(pctl.multi_playlist[tab][0])
+            #logging.info("---")
             left_overflow = [x for x in left_tabs if x not in show_tabs]
             right_overflow = [x for x in right_tabs if x not in show_tabs]
             self.shown_tabs = show_tabs
@@ -32075,7 +32076,7 @@ class BottomBarType1:
             seek = bargetX / self.seek_bar_size[0]
 
             pctl.seek_decimal(seek)
-            # print(seek)
+            #logging.info(seek)
 
             self.seek_time = pctl.playing_time
 
@@ -33896,7 +33897,7 @@ restore_ignore_timer.force_set(100)
 
 
 def restore_full_mode():
-    print("RESTORE FULL")
+    logging.info("RESTORE FULL")
     i_y = pointer(c_int(0))
     i_x = pointer(c_int(0))
     SDL_GetWindowPosition(t_window, i_x, i_y)
@@ -33938,7 +33939,7 @@ def restore_full_mode():
         logical_size[0] = i_x.contents.value
         logical_size[1] = i_y.contents.value
 
-        # print(window_size)
+        #logging.info(window_size)
 
     SDL_PumpEvents()
     SDL_GL_GetDrawableSize(t_window, i_x, i_y)
@@ -34887,12 +34888,12 @@ class StandardPlaylist:
                                (highlight_width, gui.playlist_row_height), colours.row_select_highlight)
 
 
-                # print(d_date) # date of album release / release year
-                # print(tr.parent_folder_name) # folder name
-                # print(tr.album)
-                # print(tr.artist)
-                # print(tr.album_artist)
-                # print(tr.genre)
+                #logging.info(d_date) # date of album release / release year
+                #logging.info(tr.parent_folder_name) # folder name
+                #logging.info(tr.album)
+                #logging.info(tr.artist)
+                #logging.info(tr.album_artist)
+                #logging.info(tr.genre)
 
 
 
@@ -35333,7 +35334,7 @@ class StandardPlaylist:
                                      max_w=wid)
 
                             if ddt.was_truncated:
-                                # print(text)
+                                #logging.info(text)
                                 rect = (run, y, wid - 1, gui.playlist_row_height - 1)
                                 gui.heart_fields.append(rect)
 
@@ -35843,7 +35844,7 @@ class RadioBox:
             self.load_failed = True
             self.load_connecting = False
             gui.update += 1
-            print("Start radio failed")
+            logging.error("Starting radio failed")
             # show_message(_("Failed to establish a connection"), mode="error")
             return
 
@@ -35873,18 +35874,18 @@ class RadioBox:
         if url == "https://listen.moe/stream":
             wss = "wss://listen.moe/gateway_v2"
         if wss:
-            print("Connecting to Listen.moe")
+            logging.info("Connecting to Listen.moe")
             import websocket
             import _thread as th
 
             def send_heartbeat(ws):
-                # print(self.ws_interval)
+                #logging.info(self.ws_interval)
                 time.sleep(self.ws_interval)
                 ws.send("{\"op\":9}")
-                print("Send heatbeat")
+                logging.info("Send heatbeat")
 
             def on_message(ws, message):
-                print(message)
+                logging.info(message)
                 d = json.loads(message)
                 if d["op"] == 10:
                     shoot = threading.Thread(target=send_heartbeat, args=[ws])
@@ -35914,9 +35915,9 @@ class RadioBox:
                         filename = d["d"]["song"]["albums"][0]["image"]
                         fulllink = "https://cdn.listen.moe/covers/" + filename
 
-                        # print(fulllink)
+                        #logging.info(fulllink)
                         art_response = requests.get(fulllink)
-                        # print(art_response.status_code)
+                        #logging.info(art_response.status_code)
 
                         if art_response.status_code == 200:
                             if pctl.radio_image_bin:
@@ -35952,12 +35953,12 @@ class RadioBox:
                     #     ws.send("{\"op\":9}")
                     # time.sleep(10)
                     # ws.close()
-                    # print("thread terminating...")
+                    #logging.info("thread terminating...")
 
                 th.start_new_thread(run, ())
 
             # websocket.enableTrace(True)
-            # print(wss)
+            #logging.info(wss)
             ws = websocket.WebSocketApp(wss,
                                         on_message=on_message,
                                         on_error=on_error)
@@ -36142,7 +36143,7 @@ class RadioBox:
 
         for station in data:
             radio = {}
-            # print(station)
+            #logging.info(station)
             radio["title"] = station["name"]
             radio["stream_url_unresolved"] = station["url"]
             radio["stream_url"] = station["url_resolved"]
@@ -37234,7 +37235,7 @@ def create_artist_pl(artist, replace=False):
             tr = pctl.playing_object()
             if new is not None and tr and pctl.active_playlist_playing == this_pl:
                 if tr.index not in pctl.multi_playlist[this_pl][2] and tr.index in pctl.multi_playlist[source_pl][2]:
-                    print("Transfer back playing")
+                    logging.info("Transfer back playing")
                     pctl.active_playlist_playing = source_pl
                     pctl.playlist_playing_position = pctl.multi_playlist[source_pl][2].index(tr.index)
 
@@ -37309,7 +37310,7 @@ def verify_discogs():
 
 
 def save_discogs_artist_thumb(artist, filepath):
-    print("Searching discogs for artist image...")
+    logging.info("Searching discogs for artist image...")
 
     # Make artist name url safe
     artist = artist.replace("/", "").replace("\\", "").replace(":", "")
@@ -37333,7 +37334,7 @@ def save_discogs_artist_thumb(artist, filepath):
     # Find a square image in list of images
     for image in images:
         if image['height'] == image['width']:
-            print("Found square")
+            logging.info("Found square")
             url = image['uri']
             break
     else:
@@ -37359,15 +37360,15 @@ def save_discogs_artist_thumb(artist, filepath):
     im = im.crop((left, upper, right, lower))
     im.save(filepath, 'JPEG', quality=90)
     im.close()
-    print("Found artist image from Discogs")
+    logging.info("Found artist image from Discogs")
 
 
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
-    print("Searching fanart.tv for image...")
-    # print("mbid is " + mbid)
+    logging.info("Searching fanart.tv for image...")
+    #logging.info("mbid is " + mbid)
     r = requests.get("http://webservice.fanart.tv/v3/music/" \
                      + mbid + "?api_key=" + prefs.fatvap, timeout=5)
-    # print(r.json())
+    #logging.info(r.json())
     thumblink = r.json()['artistthumb'][0]['url']
     if preview:
         thumblink = thumblink.replace("/fanart/music", "/preview/music")
@@ -37959,7 +37960,7 @@ class ArtistList:
                     blocks.append(current_block)
                     current_block = []
 
-                # print(blocks)
+                #logging.info(blocks)
                 # return
 
                 # block_starts = []
@@ -37977,7 +37978,7 @@ class ArtistList:
                 #             current = False
                 #
                 # if not block_starts:
-                #     print("No matching artists found in playlist")
+                #     logging.info("No matching artists found in playlist")
                 #     return
 
                 if not blocks:
@@ -38015,7 +38016,7 @@ class ArtistList:
                     next = False
                     track = pctl.sg(c, -1)
                     if track is None:
-                        print("Index out of range!")
+                        logging.error("Index out of range!")
                         pctl.selected_in_playlist = 0
                         return
                     if track.artist.casefold != artist.casefold:
@@ -38684,7 +38685,7 @@ class TreeView:
             playlist_hold = True
 
             self.dragging_name = self.click_drag_source[0]
-            print(self.dragging_name)
+            logging.info(self.dragging_name)
 
             if "/" in self.dragging_name:
                 self.dragging_name = os.path.basename(self.dragging_name)
@@ -38870,7 +38871,7 @@ class QueueBox:
 
                     pl = id_to_pl(item[2])
                     if pl is None:
-                        print("Lost the target playlist")
+                        logging.info("Lost the target playlist")
                         continue
 
                     pp = pctl.multi_playlist[pl][2]
@@ -39775,7 +39776,7 @@ class PictureRender:
     def load(self, path, box_size=None):
 
         if not os.path.isfile(path):
-            print("NO PICTURE FILE TO LOAD")
+            logging.warning("NO PICTURE FILE TO LOAD")
             return
 
         g = io.BytesIO()
@@ -39788,7 +39789,7 @@ class PictureRender:
         im.save(g, 'BMP')
         g.seek(0)
         self.image_data = g
-        print("Save BMP to memory")
+        logging.info("Save BMP to memory")
         self.size = im.size[0], im.size[1]
 
     def draw(self, x, y):
@@ -39801,7 +39802,7 @@ class PictureRender:
                 SDL_DestroyTexture(self.texture)
 
             # Convert raw image to sdl texture
-            # print("Create Texture")
+            #logging.info("Create Texture")
             wop = rw_from_object(self.image_data)
             s_image = IMG_Load_RW(wop, 0)
             self.texture = SDL_CreateTextureFromSurface(renderer, s_image)
@@ -40169,17 +40170,17 @@ class ArtistInfoBox:
             # if cover_link and 'http' in cover_link:
             #     # Fetch cover_link
             #     try:
-            #         # print("Fetching artist image...")
+            #         #logging.info("Fetching artist image...")
             #         response = urllib.request.urlopen(cover_link)
             #         info = response.info()
-            #         # print("got response")
+            #         #logging.info("got response")
             #         if info.get_content_maintype() == 'image':
             #
             #             f = open(filepath, 'wb')
             #             f.write(response.read())
             #             f.close()
             #
-            #             # print("written file, now loading...")
+            #             #logging.info("written file, now loading...")
             #
             #             artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
             #             artist_picture_render.show = True
@@ -40457,7 +40458,7 @@ class GuitarChords:
 
             final.append(("".join(lyrics), chords))
 
-        print(final)
+        logging.info(final)
         self.data = final
 
     def get_cache_title(self, track):
@@ -40573,7 +40574,7 @@ class RadioThumbGen:
 
             if src:
                 pass
-                # print("found cached")
+                #logging.info("found cached")
             elif station.get("icon") and station["icon"] not in prefs.radio_thumb_bans:
                 try:
                     r = requests.get(station.get("icon"), headers={'User-Agent': t_agent}, timeout=5, stream=True)
@@ -40718,7 +40719,7 @@ class RadioView:
         # box = min(window_size[0] // 2, box)
         bg = colours.playlist_panel_background
         ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), bg)
-        # print(prefs.radio_urls)
+        #logging.info(prefs.radio_urls)
 
         # Add station button
         x = window_size[0] - round(60 * gui.scale)
@@ -41591,7 +41592,7 @@ class ViewBox:
         #     low = (0, 0.5, 0)
 
         # ----
-        # print(hls_to_rgb(.55, .6, .75))
+        #logging.info(hls_to_rgb(.55, .6, .75))
         high = [76, 183, 229, 255]  # (.55, .6, .75)
         if colours.lm:
             # high = (.55, .75, .75)
@@ -41761,12 +41762,12 @@ class DLMon:
 
                 if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
                     size = os.path.getsize(path)
-                    # print("Check: " + path)
+                    #logging.info("Check: " + path)
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
-                        # print("watching...")
+                        #logging.info("watching...")
                         if size == self.watching[path] and size != 0:
-                            # print("scan")
+                            #logging.info("scan")
                             del self.watching[path]
 
                             # Check if folder to extract to exists
@@ -41777,22 +41778,22 @@ class DLMon:
 
                             if os.path.exists(target_dir):
                                 pass
-                                # print("Target folder for archive already exists")
+                                #logging.info("Target folder for archive already exists")
 
                             elif archive_file_scan(path, DA_Formats, launch_prefix) >= 0.4:
                                 self.ready.add(path)
                                 gui.update += 1
-                                # print("Archive detected as music")
+                                #logging.info("Archive detected as music")
                             else:
                                 pass
-                                # print("Archive rejected as music")
+                                #logging.info("Archive rejected as music")
                             self.done.add(path)
                         else:
-                            # print("update.")
+                            #logging.info("update.")
                             self.watching[path] = size
                     else:
                         self.watching[path] = size
-                        # print("add.")
+                        #logging.info("add.")
 
                 elif min_age < 60 and os.path.isdir(
                         path) and path not in quick_import_done and "encode-output" not in path:
@@ -41834,14 +41835,14 @@ class DLMon:
 
         if len(self.ready) > 0:
             temp = set()
-            # print(quick_import_done)
-            # print(self.ready)
+            #logging.info(quick_import_done)
+            #logging.info(self.ready)
             for item in self.ready:
                 if item not in quick_import_done:
                     if os.path.exists(path):
                         temp.add(item)
                 # else:
-                #     print("FILE IMPORTED")
+                #     logging.info("FILE IMPORTED")
             self.ready = temp
 
         if len(self.watching) > 0:
@@ -42292,11 +42293,11 @@ for item in sys.argv:
 sv = SDL_version()
 SDL_GetVersion(sv)
 sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
-print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
+logging.info("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 
 # C-ML
 # if prefs.backend == 2:
-#     print("Using GStreamer as fallback. Some functions disabled")
+#     logging.warning("Using GStreamer as fallback. Some functions disabled")
 if prefs.backend == 0:
     show_message(_("ERROR: No backend found"), mode='error')
 
@@ -42329,13 +42330,13 @@ class Undo:
                     switch_playlist(i)
                     break
             else:
-                print("No matching playlist ID to restore tracks to")
+                logging.info("No matching playlist ID to restore tracks to")
                 return
 
             for i, ref in reversed(li):
 
                 if i > len(pl):
-                    print("restore track error - playlist not correct length")
+                    logging.error("restore track error - playlist not correct length")
                     continue
                 pl.insert(i, ref)
 
@@ -42412,7 +42413,7 @@ def update_layout_do():
         gui.reload_theme = True
         global theme
         theme = get_theme_number(prefs.theme_name)
-        # print("Config reload theme...")
+        #logging.info("Config reload theme...")
 
     # Restore in case of error
     if gui.rspw < 30 * gui.scale:
@@ -42524,12 +42525,12 @@ def update_layout_do():
     #     prefs.art_bg_blur = 15
     #
     # if w / h == 16 / 9:
-    #     print("YEP")
+    #     logging.info("YEP")
     # elif w / h < 16 / 9:
-    #     print("too low")
+    #     logging.info("too low")
     # else:
-    #     print("too high")
-    # print((w, h))
+    #     logging.info("too high")
+    #logging.info((w, h))
 
     # input.mouse_click = False
 
@@ -42678,7 +42679,7 @@ def update_layout_do():
                 gui.art_max_ratio_lock = gui.art_aspect_ratio
 
 
-        # print("Avaliabe: " + str(box_r))
+        #logging.info("Avaliabe: " + str(box_r))
         elif box_r <= 1:
             gui.art_unlock_ratio = False
             gui.art_max_ratio_lock = 1
@@ -43273,8 +43274,8 @@ for menu in Menu.instances:
                     ww = test_width
 
             if ww > item.sub_menu_width:
-                # print("extend")
-                # print(item)
+                #logging.info("extend")
+                #logging.info(item)
                 item.sub_menu_width = ww
 
     if w > menu.w:
@@ -43307,9 +43308,9 @@ def drop_file(target):
         i_y = i_y.contents.value / logical_size[0] * window_size[0]
         i_x = i_x.contents.value / logical_size[0] * window_size[0]
 
-    # print((i_x, i_y))
+    #logging.info((i_x, i_y))
     gui.drop_playlist_target = 0
-    # print(event.drop)
+    #logging.info(event.drop)
 
     if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
         x = top_panel.tabs_left_x
@@ -43321,12 +43322,12 @@ def drop_file(target):
                 tab_pulse.pulse()
                 gui.update += 1
                 gui.pl_pulse = True
-                print("Direct drop")
+                logging.info("Direct drop")
                 break
 
             x += wid
         else:
-            print("MISS")
+            logging.info("MISS")
             if new_playlist_cooldown:
                 gui.drop_playlist_target = pctl.active_playlist_viewing
             else:
@@ -43346,7 +43347,7 @@ def drop_file(target):
                 tab_pulse.pulse()
                 gui.update += 1
                 gui.pl_pulse = True
-                print("Direct drop")
+                logging.info("Direct drop")
                 break
             y += playlist_box.tab_h + playlist_box.gap
         else:
@@ -43379,7 +43380,7 @@ def drop_file(target):
     load_order.playlist = pctl.multi_playlist[gui.drop_playlist_target][6]
     load_orders.append(copy.deepcopy(load_order))
 
-    # print('dropped: ' + str(dropped_file))
+    #logging.info('dropped: ' + str(dropped_file))
     gui.update += 1
     mouse_down = False
     drag_mode = False
@@ -43496,7 +43497,7 @@ while pctl.running:
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
         # if event.type == SDL_SYSWMEVENT:
-        #      print(event.syswm.msg.contents) # Not implemented by pysdl2
+        #      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
 
         if event.type == SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
             if SDL_IsGameController(event.cdevice.which):
@@ -43614,7 +43615,7 @@ while pctl.running:
             power += 5
 
             link = event.drop.file.decode()
-            # print(link)
+            #logging.info(link)
 
             if pctl.playing_ready() and link.startswith('http'):
                 if system != 'windows' and sdl_version >= 204:
@@ -43639,8 +43640,8 @@ while pctl.running:
                     i_x = i_x.contents.value / logical_size[0] * window_size[0]
 
                 if coll_point((i_x, i_y), gui.main_art_box):
-                    print('Drop picture...')
-                    # print(link)
+                    logging.info('Drop picture...')
+                    #logging.info(link)
                     gui.image_downloading = True
                     track = pctl.playing_object()
                     target_dir = track.parent_folder_path
@@ -43661,10 +43662,10 @@ while pctl.running:
 
             power += 5
             dropped_file_sdl = event.drop.file
-            # print(dropped_file_sdl)
+            #logging.info(dropped_file_sdl)
             target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8", errors='surrogateescape'))).replace("file:///", "/").replace("\r",
                                                                                                                   "")
-            # print(target)
+            #logging.info(target)
             drop_file(target)
 
 
@@ -43682,9 +43683,9 @@ while pctl.running:
                 break
         elif event.type == SDL_TEXTEDITING:
             power += 5
-            # print("edit text")
+            #logging.info("edit text")
             editline = event.edit.text
-            # print(editline)
+            #logging.info(editline)
             editline = editline.decode("utf-8", 'ignore')
             k_input = True
             gui.update += 1
@@ -43709,9 +43710,9 @@ while pctl.running:
             if event.button.button == SDL_BUTTON_RIGHT:
                 right_click = True
                 right_down = True
-                # print("RIGHT DOWN")
+                #logging.info("RIGHT DOWN")
             elif event.button.button == SDL_BUTTON_LEFT:
-                # print("LEFT DOWN")
+                #logging.info("LEFT DOWN")
 
                 # if mouse_position[1] > 1 and mouse_position[0] > 1:
                 #     mouse_down = True
@@ -43847,7 +43848,7 @@ while pctl.running:
             input_text += event.text.text.decode('utf-8')
 
             gui.update += 1
-            # print(input_text)
+            #logging.info(input_text)
 
         elif event.type == SDL_MOUSEWHEEL:
             k_input = True
@@ -43857,10 +43858,10 @@ while pctl.running:
         elif event.type == SDL_WINDOWEVENT:
 
             power += 5
-            # print(event.window.event)
+            #logging.info(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-                #print("SDL_WINDOWEVENT_FOCUS_GAINED")
+                #logging.info("SDL_WINDOWEVENT_FOCUS_GAINED")
 
                 if system == "linux" and not macos and not msys:
                     gnome.focus()
@@ -43882,7 +43883,7 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
                 if event.window.data1 < 500:
-                    print("Grrr why this happen, stupid bug - reproducible when moving window from one screen to another in Plasma")
+                    logging.error("Grrr why this happen, stupid bug - reproducible when moving window from one screen to another in Plasma")
                     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
                 elif restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
                     gui.update = 2
@@ -43905,7 +43906,7 @@ while pctl.running:
 
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
-                # print("ENTER")
+                #logging.info("ENTER")
                 mouse_enter_window = True
                 gui.mouse_in_window = True
                 gui.update += 1
@@ -43913,7 +43914,7 @@ while pctl.running:
             # elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
             #
             elif event.window.event == SDL_WINDOWEVENT_EXPOSED:
-                # print("expose")
+                #logging.info("expose")
                 gui.lowered = False
 
             elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
@@ -43931,7 +43932,7 @@ while pctl.running:
 
                 if update_title:
                     update_title_do()
-                    # print("restore")
+                    #logging.info("restore")
 
             elif event.window.event == SDL_WINDOWEVENT_SHOWN:
                 focused = True
@@ -43939,7 +43940,7 @@ while pctl.running:
                 gui.update += 1
 
             # elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-            #     print("FOCUS GAINED")
+            #     logging.info("FOCUS GAINED")
             #     # input.mouse_enter_event = True
             #     # gui.update += 1
             #     # k_input = True
@@ -43962,7 +43963,7 @@ while pctl.running:
 
     if gui.request_raise:
         gui.request_raise = False
-        print("Raise")
+        logging.info("Raise")
         SDL_ShowWindow(t_window)
         SDL_RestoreWindow(t_window)
         SDL_RaiseWindow(t_window)
@@ -44073,17 +44074,17 @@ while pctl.running:
         dl_mon.scan()
 
     if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
-        # print(SDL_GetMouseState(None, None))
+        #logging.info(SDL_GetMouseState(None, None))
         if SDL_GetGlobalMouseState(None, None) == 0:
             mouse_down = False
             mouse_up = True
             quick_drag = False
 
-    # print(window_size)
+    #logging.info(window_size)
     # if window_size[0] / window_size[1] == 16 / 9:
-    #     print('OK')
+    #     logging.info('OK')
     # if window_size[0] / window_size[1] > 16 / 9:
-    #     print("A")
+    #     logging.info("A")
 
     if key_meta:
         input_text = ""
@@ -44379,7 +44380,7 @@ while pctl.running:
 
                     tauon.copied_track = None
                     gui.pl_update += 1
-                    print("Transferred track stats!")
+                    logging.info("Transferred track stats!")
                 elif tauon.copied_track is None:
                     show_message(_("First select a source track by copying it into clipboard"))
 
@@ -44868,7 +44869,7 @@ while pctl.running:
 
         if theme == 0:
             gui.theme_name = "Mindaro"
-            print("Applying default theme: Mindaro")
+            logging.info("Applying default theme: Mindaro")
             colours.lm = False
             colours.__init__()
             colours.post_config()
@@ -44876,14 +44877,14 @@ while pctl.running:
 
         prefs.theme_name = gui.theme_name
 
-        # print("Theme number: " + str(theme))
+        #logging.info("Theme number: " + str(theme))
         gui.reload_theme = False
         ddt.text_background_colour = colours.playlist_panel_background
 
     # ---------------------------------------------------------------------------------------------------------
     # GUI DRAWING------
-    # print(gui.update)
-    # print(gui.lowered)
+    #logging.info(gui.update)
+    #logging.info(gui.lowered)
     if gui.mode == 3:
         gui.pl_update = 0
 
@@ -44895,7 +44896,7 @@ while pctl.running:
             gui.update = 2
 
         if reset_render:
-            print("Reset render targets!")
+            logging.info("Reset render targets!")
             clear_img_cache(delete_disk=False)
             ddt.clear_text_cache()
             for item in WhiteModImageAsset.assets:
@@ -44953,7 +44954,7 @@ while pctl.running:
             elif ggc == 1:
                 ggc = 0
                 gbc.enable()
-                # print("Enabling garbage collecting")
+                #logging.info("Enabling garbage collecting")
 
         if gui.mode == 4:
             launch.render()
@@ -45114,7 +45115,7 @@ while pctl.running:
 
                     row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
 
-                    # print(row_len)
+                    #logging.info(row_len)
 
                     compact = 40 * gui.scale
                     a_offset = 7 * gui.scale
@@ -45915,7 +45916,7 @@ while pctl.running:
                                 break
                         else:
                             del load_orders[i]
-                            print("Error: Target playlist lost")
+                            logging.error("Target playlist lost")
                             break
 
                         if order.replace_stem:
@@ -45927,9 +45928,9 @@ while pctl.running:
                                                 len(order.target.rstrip("/\\"))] in ("/", "\\")):
                                         del pctl.multi_playlist[target_pl][2][ii]
 
-                        # print(order.tracks)
+                        #logging.info(order.tracks)
                         if order.playlist_position is not None:
-                            # print(order.playlist_position)
+                            #logging.info(order.playlist_position)
                             pctl.multi_playlist[target_pl][2][
                             order.playlist_position:order.playlist_position] = order.tracks
                         # else:
@@ -45985,7 +45986,7 @@ while pctl.running:
                                 if pctl.multi_playlist[target_pl][9]:
                                     show_message(_("Auto sort skipped because playlist is locked."))
                                 else:
-                                    print("Auto sorting")
+                                    logging.info("Auto sorting")
                                     standard_sort(target_pl)
                                     year_sort(target_pl)
 
@@ -46095,7 +46096,7 @@ while pctl.running:
 
                                         gui.pl_update = 1
                                         gui.set_label_hold = -1
-                                        # print("MOVE")
+                                        #logging.info("MOVE")
                                         break
 
                                     gui.set_label_hold = -1
@@ -46135,7 +46136,7 @@ while pctl.running:
 
                     if not mouse_down:
                         gui.set_label_hold = -1
-                    # print(in_grip)
+                    #logging.info(in_grip)
                     if gui.set_label_hold == -1:
                         if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
                             gui.cursor_want = 1
@@ -46673,7 +46674,7 @@ while pctl.running:
                                 pctl.playlist_view_position = 0
 
                             # if playlist_position == len(default_playlist):
-                            #     print("END")
+                            #     logging.info("END")
 
                         # elif mouse_position[1] < sbp:
                         #     pctl.playlist_view_position -= 2
@@ -47118,7 +47119,7 @@ while pctl.running:
                         x -= int(170 * gui.scale)
 
                     y1 += int(15 * gui.scale)
-                    # print(tc.size)
+                    #logging.info(tc.size)
                     if tc.is_cue and tc.misc.get("parent-length", 0) > 0 and tc.misc.get("parent-size", 0) > 0:
                         ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
                         estimate = (tc.length / tc.misc.get("parent-length")) * tc.misc.get("parent-size")

@@ -354,7 +354,7 @@ class Tidal:
 		tracks = album.tracks()
 
 		for track in tracks:
-			print("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+			logging.info("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
 
 			nt = self.new_track(track)
 			self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].append(nt.index)

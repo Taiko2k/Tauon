@@ -83,6 +83,7 @@ class Jellyfin:
 				data=json.dumps({ "username": username, "Pw": password }), timeout=(5, 10),
 			)
 		except Exception:
+			logging.exception("Could not establish connection to server. Check server is running and URL is correct.")
 			self.gui.show_message(_("Could not establish connection to server."), _("Check server is running and URL is correct."), mode="error")
 			return
 
@@ -411,7 +412,7 @@ class Jellyfin:
 			)
 
 		except Exception:
-			logging.exception("ERROR")
+			logging.exception("Error connecting to Jellyfin for Import")
 			self.gui.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
 			self.scanning = False
 			return None
@@ -428,7 +429,7 @@ class Jellyfin:
 			# group by parent
 			grouped_items = itertools.groupby(sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- "))
 		else:
-			logging.error("ERROR")
+			logging.error("Error accessing Jellyfin")
 			self.scanning = False
 			self.tauon.gui.show_message(_("Error accessing Jellyfin"), mode="warning")
 			return None
@@ -439,7 +440,7 @@ class Jellyfin:
 				track_id = self.pctl.master_count  # id here is tauons track_id for the track
 				existing_track = existing.get(track.get("Id"))
 				replace_existing = existing_track is not None
-				#print(track.items())
+				#logging.info(track.items())
 				if replace_existing:
 					track_id = existing_track
 					nt = self.pctl.g(track_id)
