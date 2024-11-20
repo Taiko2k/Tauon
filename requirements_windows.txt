@@ -1,17 +1,20 @@
-comtypes
-keyboard
-pylast
-PySDL2
-pyinstaller
-Send2Trash
-requests
 beautifulsoup4
-PlexAPI
-musicbrainzngs
-unidecode
+comtypes # Windows dep
+# dbus-python # Linux dep
 infi.systray
+keyboard # Windows dep
+musicbrainzngs
 mutagen
-natsort
-tekore
-pypresence
-opencc-python-reimplemented
+natsort # optdep
+opencc-python-reimplemented # Windows version of openCC optdep
+# Pillow # Linux dep
+PlexAPI
+PyGObject
+pyinstaller
+pylast>=3.1.0
+pypresence # optdep
+PySDL2
+requests
+Send2Trash
+tekore # optdep
+unidecode
