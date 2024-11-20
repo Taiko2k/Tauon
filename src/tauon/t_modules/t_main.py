@@ -641,7 +641,15 @@ if download_directory:
 if not os.path.isdir(music_directory):
 	music_directory = None
 
-logging.info("Install directory: " + install_directory)
+logging.info(f"Install directory:      {install_directory}")
+logging.info(f"Config directory:       {config_directory}")
+logging.info(f"Cache directory:        {cache_directory}")
+logging.info(f"Home directory:         {home_directory}")
+logging.info(f"Music directory:        {music_directory}")
+logging.info(f"Download directory:     {download_directory}")
+logging.info(f"Asset directory:        {asset_directory}")
+#logging.info(f"SVG directory:          {svg_directory}")
+#logging.info(f"Scaled Asset Directory: {scaled_asset_directory}")
 
 old_backend = 2
 
@@ -9968,78 +9976,79 @@ cursor_left_side = cursor_standard
 cursor_bottom_side = cursor_standard
 
 if msys:
-    cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
-    cursor_right_side = cursor_shift
-    cursor_left_side = cursor_shift
-    cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
-    cursor_bottom_side = cursor_top_side
+	cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
+	cursor_right_side = cursor_shift
+	cursor_left_side = cursor_shift
+	cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
+	cursor_bottom_side = cursor_top_side
 elif not msys and system == "linux":
-    try:
-        class XcursorImage(ctypes.Structure):
-            _fields_ = [
-                        ("version", c_uint32),
-                        ("size", c_uint32),
-                        ("width", c_uint32),
-                        ("height", c_uint32),
-                        ("xhot", c_uint32),
-                        ("yhot", c_uint32),
-                        ("delay", c_uint32),
-                        ("pixels", c_void_p),
-                        ]
+	try:
+		class XcursorImage(ctypes.Structure):
+			_fields_ = [
+						("version", c_uint32),
+						("size", c_uint32),
+						("width", c_uint32),
+						("height", c_uint32),
+						("xhot", c_uint32),
+						("yhot", c_uint32),
+						("delay", c_uint32),
+						("pixels", c_void_p),
+						]
 
-        try:
-            xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
-        except Exception:
-            logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
-            xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
-        xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
+		try:
+			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
+		except Exception:
+			logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
+			xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
+		xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
-        def get_xcursor(name):
-            c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(os.environ["XCURSOR_THEME"].encode()), c_int(int(os.environ["XCURSOR_SIZE"]))).contents
-            sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
-            cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
-            xcu.XcursorImageDestroy(ctypes.byref(c1))
-            SDL_FreeSurface(sdl_surface)
-            return cursor
+		def get_xcursor(name):
+			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(os.environ["XCURSOR_THEME"].encode()), c_int(int(os.environ["XCURSOR_SIZE"]))).contents
+			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
+			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
+			xcu.XcursorImageDestroy(ctypes.byref(c1))
+			SDL_FreeSurface(sdl_surface)
+			return cursor
 
-        cursor_br_corner = get_xcursor("se-resize")
-        cursor_right_side = get_xcursor("right_side")
-        cursor_top_side = get_xcursor("top_side")
-        cursor_left_side = get_xcursor("left_side")
-        cursor_bottom_side = get_xcursor("bottom_side")
+		cursor_br_corner = get_xcursor("se-resize")
+		cursor_right_side = get_xcursor("right_side")
+		cursor_top_side = get_xcursor("top_side")
+		cursor_left_side = get_xcursor("left_side")
+		cursor_bottom_side = get_xcursor("bottom_side")
 
-        if SDL_GetCurrentVideoDriver() == b"wayland":
-            cursor_standard = get_xcursor("left_ptr")
-            cursor_text = get_xcursor("xterm")
-            cursor_shift = get_xcursor("sb_h_double_arrow")
-            cursor_hand = get_xcursor("hand2")
-            SDL_SetCursor(cursor_standard)
+		if SDL_GetCurrentVideoDriver() == b"wayland":
+			cursor_standard = get_xcursor("left_ptr")
+			cursor_text = get_xcursor("xterm")
+			cursor_shift = get_xcursor("sb_h_double_arrow")
+			cursor_hand = get_xcursor("hand2")
+			SDL_SetCursor(cursor_standard)
 
-    except Exception:
-        logging.exception("Error loading xcursor")
+	except Exception:
+		logging.exception("Error loading xcursor")
 
 
 if not maximized and gui.maximized:
-    SDL_MaximizeWindow(t_window)
+	SDL_MaximizeWindow(t_window)
 
 # logging.error(SDL_GetError())
 
-# t_window = SDL_CreateShapedWindow(window_title,
-#                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-#                              window_size[0], window_size[1],
-#                              flags)
+# t_window = SDL_CreateShapedWindow(
+# window_title,
+#	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+#	window_size[0], window_size[1],
+#	flags)
 
 # logging.error(SDL_GetError())
 
 if system == "windows" or msys:
-    gui.window_id = sss.info.win.window
+	gui.window_id = sss.info.win.window
 
 
 # try:
-#     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+#	 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 #
 # except Exception:
-#     logging.exception("old version of SDL detected")
+#	 logging.exception("old version of SDL detected")
 
 # get window surface and set up renderer
 # renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
@@ -10064,10 +10073,10 @@ if system == "windows" or msys:
 # gui.max_window_tex = 1000
 # if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
 #
-#     while window_size[0] > gui.max_window_tex:
-#         gui.max_window_tex += 1000
-#     while window_size[1] > gui.max_window_tex:
-#         gui.max_window_tex += 1000
+#	 while window_size[0] > gui.max_window_tex:
+#		 gui.max_window_tex += 1000
+#	 while window_size[1] > gui.max_window_tex:
+#		 gui.max_window_tex += 1000
 #
 # gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
 #
@@ -10108,76 +10117,76 @@ if system == "windows" or msys:
 
 
 def bass_player_thread(player):
-    # logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
-    #                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
+	# logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
+	#					 format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
-    try:
-        player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon)
-    except Exception:
-        logging.exception("Exception on player thread")
-        show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-        time.sleep(1)
-        show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-        time.sleep(1)
-        show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-        raise
+	try:
+		player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon)
+	except Exception:
+		logging.exception("Exception on player thread")
+		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
+		time.sleep(1)
+		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
+		time.sleep(1)
+		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
+		raise
 
 
 if (system == "windows" or msys) and taskbar_progress:
 
-    class WinTask:
+	class WinTask:
 
-        def __init__(self, ):
-            self.start = time.time()
-            self.updated_state = 0
-            self.window_id = gui.window_id
-            import comtypes.client as cc
-            cc.GetModule(install_directory + "\\TaskbarLib.tlb")
-            import comtypes.gen.TaskbarLib as tbl
-            self.taskbar = cc.CreateObject(
-                "{56FDF344-FD6D-11d0-958A-006097C9A090}",
-                interface=tbl.ITaskbarList3)
-            self.taskbar.HrInit()
+		def __init__(self, ):
+			self.start = time.time()
+			self.updated_state = 0
+			self.window_id = gui.window_id
+			import comtypes.client as cc
+			cc.GetModule(install_directory + "\\TaskbarLib.tlb")
+			import comtypes.gen.TaskbarLib as tbl
+			self.taskbar = cc.CreateObject(
+				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
+				interface=tbl.ITaskbarList3)
+			self.taskbar.HrInit()
 
-            self.d_timer = Timer()
+			self.d_timer = Timer()
 
-        def update(self, force=False):
-            if self.d_timer.get() > 2 or force:
-                self.d_timer.set()
+		def update(self, force=False):
+			if self.d_timer.get() > 2 or force:
+				self.d_timer.set()
 
-                if pctl.playing_state == 1 and self.updated_state != 1:
-                    self.taskbar.SetProgressState(self.window_id, 0x2)
+				if pctl.playing_state == 1 and self.updated_state != 1:
+					self.taskbar.SetProgressState(self.window_id, 0x2)
 
-                if pctl.playing_state == 1:
-                    self.updated_state = 1
-                    if pctl.playing_length > 2:
-                        perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
-                        if perc < 2:
-                            perc = 1
-                        elif perc > 100:
-                            prec = 100
-                    else:
-                        perc = 0
+				if pctl.playing_state == 1:
+					self.updated_state = 1
+					if pctl.playing_length > 2:
+						perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
+						if perc < 2:
+							perc = 1
+						elif perc > 100:
+							prec = 100
+					else:
+						perc = 0
 
-                    self.taskbar.SetProgressValue(self.window_id, perc, 100)
+					self.taskbar.SetProgressValue(self.window_id, perc, 100)
 
-                elif pctl.playing_state == 2 and self.updated_state != 2:
-                    self.updated_state = 2
-                    self.taskbar.SetProgressState(self.window_id, 0x8)
+				elif pctl.playing_state == 2 and self.updated_state != 2:
+					self.updated_state = 2
+					self.taskbar.SetProgressState(self.window_id, 0x8)
 
-                elif pctl.playing_state == 0 and self.updated_state != 0:
-                    self.updated_state = 0
-                    self.taskbar.SetProgressState(self.window_id, 0x2)
-                    self.taskbar.SetProgressValue(self.window_id, 0, 100)
+				elif pctl.playing_state == 0 and self.updated_state != 0:
+					self.updated_state = 0
+					self.taskbar.SetProgressState(self.window_id, 0x2)
+					self.taskbar.SetProgressValue(self.window_id, 0, 100)
 
 
-    if os.path.isfile(install_directory + "/TaskbarLib.tlb"):
-        logging.info("Taskbar progress enabled")
-        pctl.windows_progress = WinTask()
+	if os.path.isfile(install_directory + "/TaskbarLib.tlb"):
+		logging.info("Taskbar progress enabled")
+		pctl.windows_progress = WinTask()
 
-    else:
-        pctl.taskbar_progress = False
-        logging.warning("Could not find TaskbarLib.tlb")
+	else:
+		pctl.taskbar_progress = False
+		logging.warning("Could not find TaskbarLib.tlb")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -10185,12 +10194,12 @@ if (system == "windows" or msys) and taskbar_progress:
 
 
 def coll_point(l, r):
-    # rect point collision detection
-    return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
+	# rect point collision detection
+	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
 
 def coll(r):
-    return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
+	return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
 
 ddt = TDraw(renderer)
@@ -10202,50 +10211,51 @@ launch = Launch(tauon, pctl, gui, ddt)
 
 class Drawing:
 
-    def button(self, text, x, y, w=None, h=None, font=212, text_highlight_colour=None, text_colour=None,
-               background_colour=None, background_highlight_colour=None, press=None, tooltip=""):
+	def button(
+		self, text, x, y, w=None, h=None, font=212, text_highlight_colour=None, text_colour=None,
+		background_colour=None, background_highlight_colour=None, press=None, tooltip=""):
 
-        if w is None:
-            w = ddt.get_text_w(text, font) + 18 * gui.scale
-        if h is None:
-            h = 22 * gui.scale
+		if w is None:
+			w = ddt.get_text_w(text, font) + 18 * gui.scale
+		if h is None:
+			h = 22 * gui.scale
 
-        rect = (x, y, w, h)
-        fields.add(rect)
+		rect = (x, y, w, h)
+		fields.add(rect)
 
-        if text_highlight_colour is None:
-            text_highlight_colour = colours.box_button_text_highlight
-        if text_colour is None:
-            text_colour = colours.box_button_text
-        if background_colour is None:
-            background_colour = colours.box_button_background
-        if background_highlight_colour is None:
-            background_highlight_colour = colours.box_button_background_highlight
+		if text_highlight_colour is None:
+			text_highlight_colour = colours.box_button_text_highlight
+		if text_colour is None:
+			text_colour = colours.box_button_text
+		if background_colour is None:
+			background_colour = colours.box_button_background
+		if background_highlight_colour is None:
+			background_highlight_colour = colours.box_button_background_highlight
 
-        click = False
+		click = False
 
-        if press is None:
-            press = inp.mouse_click
+		if press is None:
+			press = inp.mouse_click
 
-        if coll(rect):
-            if tooltip:
-                tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
-            ddt.rect(rect, background_highlight_colour)
+		if coll(rect):
+			if tooltip:
+				tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
+			ddt.rect(rect, background_highlight_colour)
 
-            # if background_highlight_colour[3] != 255:
-            #     background_highlight_colour = None
+			# if background_highlight_colour[3] != 255:
+			#	 background_highlight_colour = None
 
-            ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_highlight_colour, font,
-                     bg=background_highlight_colour)
-            if press:
-                click = True
-        else:
-            ddt.rect(rect, background_colour)
-            if background_highlight_colour[3] != 255:
-                background_colour = None
-            ddt.text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_colour, font,
-                     bg=background_colour)
-        return click
+			ddt.text(
+				(rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
+			if press:
+				click = True
+		else:
+			ddt.rect(rect, background_colour)
+			if background_highlight_colour[3] != 255:
+				background_colour = None
+			ddt.text(
+				(rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_colour, font, bg=background_colour)
+		return click
 
 
 draw = Drawing()
