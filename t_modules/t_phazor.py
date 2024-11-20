@@ -536,7 +536,7 @@ def player4(tauon: Tauon) -> None:
 					i = 0
 					for url in network_url:
 						i += 1
-						logging.info(i, end=",")
+						logging.info(i)
 						response = requests.get(url, timeout=10)
 						if response.status_code == HTTPStatus.OK:
 							p.stdin.write(response.content)
