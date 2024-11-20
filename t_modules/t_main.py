@@ -623,9 +623,8 @@ except Exception:
     win_ver = 0
 
 
-# print(arch)
 # -----------------------------------------------------------
-# Detect locale for translations (currently none available)
+# Detect locale for translations
 
 def _(message):
     return message
