@@ -4559,7 +4559,7 @@ def use_id3(tags, nt):
 					nt.misc['replaygain_album_peak'] = float(item.text[0])
 			except Exception:
 				logging.exception("Tag Scan: Read Replay Gain MP3 error")
-				logging.exception(nt.fullpath)
+				logging.debug(nt.fullpath)
 
 			if item.desc == "FMPS_RATING":
 				nt.misc['FMPS_Rating'] = float(item.text[0])
@@ -4620,7 +4620,7 @@ def tag_scan(nt):
             nt.modified_time = os.path.getmtime(nt.fullpath)
             nt.found = True
         except FileNotFoundError:
-            logging.debug("File not found when executing getmtime!")
+            logging.error("File not found when executing getmtime!")
             nt.found = False
             return nt
         except Exception:
@@ -8480,7 +8480,7 @@ try:
 	chrome = Chrome(tauon)
 	logging.debug("Found import Chrome(pychromecast) for chromecast support")
 except ModuleNotFoundError:
-	logging.debug("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
+	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unkown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 
@@ -8502,7 +8502,10 @@ class PlexService:
 
         try:
             from plexapi.myplex import MyPlexAccount
+        except ModuleNotFoundError:
+            logging.warning("Unable to import python-plexapi, plex support will be disabled.")
         except Exception:
+            logging.exception("Unknown error to import python-plexapi, plex support will be disabled.")
             show_message(_("Error importing python-plexapi"), mode='error')
             self.scanning = False
             return
@@ -8511,8 +8514,9 @@ class PlexService:
             account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
             self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
         except Exception:
+            logging.exception("Error connecting to PLEX server, check login credentials and server accessibility.")
             show_message(_("Error connecting to PLEX server"),
-                         _("Try check login credentials and that server is accessible."), mode='error')
+                         _("Try checking login credentials and that the server is accessible."), mode='error')
             self.scanning = False
             return
 
@@ -8702,7 +8706,7 @@ class SubsonicService:
         try:
             a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
         except Exception:
-            logging.exception("Error connect for scrobble on airsonic")
+            logging.exception("Error connecting for scrobble on airsonic")
         return True
 
     def set_rating(self, track_object, rating):
@@ -8736,6 +8740,7 @@ class SubsonicService:
         try:
             a = self.r("getIndexes")
         except Exception:
+            logging.exception("Error connecting to Airsonic server")
             show_message(_("Error connecting to Airsonic server"), mode="error")
             self.scanning = False
             return []
@@ -8770,11 +8775,13 @@ class SubsonicService:
                     return
 
             except json.decoder.JSONDecodeError:
-                print("Error reading Airsonic directory")
+                logging.exception("Error reading Airsonic directory")
                 if not inner:
                     statuses[index] = 2
                 show_message(_("Error reading Airsonic directory!"), mode="warning")
                 return
+            except Exception:
+                logging.exception("Unknown Error reading Airsonic directory")
 
             items = d["subsonic-response"]["directory"]["child"]
 
@@ -9042,19 +9049,19 @@ class KoelService:
         try:
             r = requests.post(target, json=body, headers=headers)
         except Exception:
+            logging.exception("Could not establish connection")
             gui.show_message(_("Could not establish connection"), mode="error")
-            print("Could not establish connection")
             return
 
         if r.status_code == 200:
             # print(r.json())
             self.token = r.json()["token"]
             if self.token:
-                print("GOT KOEL TOKEN")
+                logging.info("GOT KOEL TOKEN")
                 self.connected = True
 
             else:
-                print("AUTH ERROR")
+                logging.info("AUTH ERROR")
 
         else:
             error = ""
@@ -9086,8 +9093,8 @@ class KoelService:
 
         #target = f"{self.server}/api/download/songs"
         #params["songs"] = [id,]
-        print(target)
-        print(urllib.parse.urlencode(params))
+        logging.info(target)
+        logging.info(urllib.parse.urlencode(params))
 
         return target, params
 
@@ -9105,7 +9112,7 @@ class KoelService:
                 # print(r.status_code)
                 # print(r.text)
             except Exception:
-                print("error submitting listen to koel")
+                logging.exception("error submitting listen to koel")
 
     def get_albums(self, return_list=False):
 
@@ -9226,7 +9233,7 @@ class TauService:
             r = requests.get(url + point)
             data = r.json()
         except Exception as e:
-            print("Error")
+            logging.exception("Network error")
             show_message(_("Network error"), str(e), mode="error")
         return data
 
@@ -9259,7 +9266,7 @@ class TauService:
         try:
             t = self.get("tracklist/" + id)
         except Exception:
-            print("error getting tracklist")
+            logging.exception("error getting tracklist")
             return []
         at = t["tracks"]
 
@@ -9480,7 +9487,7 @@ if system == "linux" and not macos and not msys:
         gnomeThread.daemon = True
         gnomeThread.start()
     except Exception:
-        print("ERROR: Could not start Dbus thread")
+        logging.exception("Could not start Dbus thread")
 
 if (system == "windows" or msys):
 
@@ -10099,7 +10106,7 @@ def bass_player_thread(player):
     try:
         player(pctl, gui, prefs, lfm_scrobbler, star_store, tauon)
     except Exception:
-        # logging.exception('Exception on player thread')
+        logging.exception('Exception on player thread')
         show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode='error')
         time.sleep(1)
         show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode='error')
@@ -10514,7 +10521,7 @@ def find_synced_lyric_data(track):
         else:
             return None
     except Exception:
-        print("Read lyrics file error")
+        logging.exception("Read lyrics file error")
         return None
 
     return data
@@ -10626,6 +10633,7 @@ class TimedLyricsRen:
                     if len(t) < 10:
                         break
             except Exception:
+                logging.exception("Failed generating timed lyrics")
                 continue
 
         self.data = sorted(self.data, key=lambda x: x[0])
@@ -11730,7 +11738,7 @@ class GallClass:
                 # key = self.queue[0]
                 key = self.queue.pop(0)
             except Exception:
-                print("thumb queue empty")
+                logging.exception("thumb queue empty")
                 break
 
             if key not in self.gall:
@@ -11788,7 +11796,7 @@ class GallClass:
                     #         response = urllib.request.urlopen(url)
                     #         source_image = response
                     #     except Exception:
-                    #         print("IMAGE NETWORK LOAD ERROR")
+                    #         logging.exception("IMAGE NETWORK LOAD ERROR")
                     # else:
                     #     source_image = open(source[1], 'rb')
                     source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
@@ -11808,6 +11816,7 @@ class GallClass:
                             im = im.convert("RGB")
                         im.thumbnail((size, size), Image.Resampling.LANCZOS)
                     except Exception:
+                        logging.exception("Failed to work with thumbnail")
                         im = album_art_gen.get_error_img(size)
                         error = True
 
@@ -11830,8 +11839,7 @@ class GallClass:
                 time.sleep(0.001)
 
             except Exception:
-                # raise
-                # print('ERROR: Image load failed on track: ' + key[0].fullpath)
+                logging.exception('Image load failed on track: ' + key[0].fullpath)
                 console.print('ERROR: Image load failed on track: ')
                 console.print("- " + key[0].fullpath)
                 order = [0, None, None, None]
@@ -11939,6 +11947,7 @@ class GallClass:
                 try:
                     self.lock.release()
                 except Exception:
+                    logging.exception("Failed to release lock")
                     pass
 
         return False
@@ -12171,7 +12180,7 @@ class AlbumArt():
                 direc = os.path.dirname(filepath)
                 items_in_dir = os.listdir(direc)
             except Exception:
-                print(f"Error loading directory: {direc}")
+                logging.exception(f"Error loading directory: {direc}")
                 return []
 
         # Check for embedded image
@@ -12180,6 +12189,7 @@ class AlbumArt():
             if pic:
                 source_list.append([1, filepath])
         except Exception:
+            logging.exception("Failed to get embedded image")
             pass
 
         if not tr.is_network:
@@ -12377,8 +12387,8 @@ class AlbumArt():
                 tag = mutagen.id3.ID3(filepath)
                 frame = tag.getall("APIC")
                 pic = frame[0].data
-            except Exception as e:
-                pass
+            except Exception:
+                logging.exception("Failed to get tags")
 
             if len(pic) < 30:
                 pic = None
@@ -12451,7 +12461,7 @@ class AlbumArt():
                         source_image.seek(0)
 
             except Exception:
-                pass
+                logging.exception("Failed to get source")
 
         else:
             source_image = open(subsource[1], 'rb')
@@ -12534,7 +12544,7 @@ class AlbumArt():
             s = musicbrainzngs.search_artists(artist, limit=1)
             artist_id = s['artist-list'][0]['id']
         except Exception:
-            print("Failed to find artist MBID for: {artist}".format(artist=artist))
+            logging.exception("Failed to find artist MBID for: {artist}".format(artist=artist))
             prefs.failed_background_artists.append(artist)
             return None
 
@@ -12568,13 +12578,12 @@ class AlbumArt():
             return t
 
         except Exception:
-            #raise
-            print("Failed to find fanart background for: {artist}".format(artist=artist))
+            logging.exception("Failed to find fanart background for: {artist}".format(artist=artist))
             if not gui.artist_info_panel:
                 artist_info_box.get_data(artist)
                 path = artist_info_box.get_data(artist, get_img_path=True)
                 if os.path.isfile(path):
-                    print("Downloaded background lfm")
+                    logging.debug("Downloaded background lfm")
                     return open(path, "rb")
 
 
@@ -12793,7 +12802,7 @@ class AlbumArt():
 
 
                     except Exception:
-                        print("IMAGE NETWORK LOAD ERROR")
+                        logging.exception("IMAGE NETWORK LOAD ERROR")
                         raise
 
             else:
@@ -12815,6 +12824,7 @@ class AlbumArt():
                 if im.mode != "RGB":
                     im = im.convert("RGB")
             except Exception:
+                logging.exception("Failed to convert image")
                 if theme_only:
                     return
                 im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
@@ -12828,6 +12838,7 @@ class AlbumArt():
                     try:
                         im = im.resize(new_size, Image.Resampling.LANCZOS)
                     except Exception:
+                        logging.exception("Failed to resize image")
                         im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
                         o_size = im.size
                         new_size = fit_box(o_size, box)
@@ -12836,6 +12847,7 @@ class AlbumArt():
                     try:
                         im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
                     except Exception:
+                        logging.exception("Failed to convert image to thumbnail")
                         im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
                         o_size = im.size
                         im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
@@ -12849,7 +12861,7 @@ class AlbumArt():
                 try:
                     im.thumbnail((50, 50), Image.Resampling.LANCZOS)
                 except Exception:
-                    print("theme gen error")
+                    logging.exception("theme gen error")
                     return
                 pixels = im.getcolors(maxcolors=2500)
                 pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
@@ -13047,8 +13059,7 @@ class AlbumArt():
             playlist_hold = False
 
         except Exception as error:
-            # raise
-            # print("Image processing error: " + str(error))
+            logging.exception("Image processing error")
             console.print("Image load error")
             console.print("-- Associated track: " + track.fullpath)
             console.print("-- Exception: " + str(error))
@@ -13057,7 +13068,7 @@ class AlbumArt():
             try:
                 del self.source_cache[index][offset]
             except Exception:
-                print(" -- Error, no source cache?")
+                logging.exception(" -- Error, no source cache?")
 
             return 1
 
@@ -13161,11 +13172,10 @@ class StyleOverlay:
 
                 try:
                     self.im = album_art_gen.get_blur_im(track)
-                except Exception as e:
-                    print("Blur blackground error")
-                    print(str(e))
+                except Exception:
+                    logging.exception("Blur blackground error")
                     raise
-                    #print(track.fullpath)
+                    #logging.debug(track.fullpath)
 
                 if self.im is None or self.im is False:
                     if self.a_texture:
@@ -13659,12 +13669,12 @@ def read_pls(lines, path, followed=False):
             if ".pls" in radio["stream_url"]:
                 if not followed:
                     try:
-                        print("Download .pls")
+                        logging.info("Download .pls")
                         response = requests.get(radio["stream_url"], stream=True)
                         if int(response.headers["Content-Length"]) < 2000:
                             read_pls(response.content.decode().splitlines(), path, followed=True)
                     except Exception:
-                        print("Failed to retrieve .pls")
+                        logging.exception("Failed to retrieve .pls")
             else:
                 stations.append(radio)
                 if gui.auto_play_import:
@@ -13733,6 +13743,7 @@ def load_xspf(path):
                         b = {}
 
     except Exception:
+        logging.exception("Error importing/parsing XSPF playlist")
         show_message(_("Error importing XSPF playlist."), _("Sorry about that."), mode='warning')
         # tauon.log("-- Error parsing XSPF file")
         console.print("-- Error parsing XSPF file")
@@ -14809,10 +14820,11 @@ class RenameTrackBox:
                         star_store.insert(item, star)
 
                 except Exception:
+                    logging.exception("Rendering error")
                     total_todo -= 1
 
             rename_track_box.active = False
-            print('Done')
+            logging.info('Done')
             if pre_state == 1:
                 pctl.revert()
 
@@ -15985,6 +15997,7 @@ def get_lyric_fire(track_object, silent=False):
                     found = True
                     break
             except Exception as e:
+                logging.exception("Failed to find lyrics")
                 console.print(str(e))
 
             if not found:
@@ -16229,6 +16242,7 @@ def save_embed_img(track_object):
         open_folder(track_object.index)
 
     except Exception:
+        logging.exception("Unknown error trying to save an image")
         show_message(_("Image save error."), _("A mysterious error occurred"), mode='error')
 
 
@@ -16434,7 +16448,7 @@ def download_art1(tr):
                             clear_track_image_cache(pctl.g(track_id))
                     return
             except Exception:
-                print("Failed to get from fanart.tv")
+                logging.exception("Failed to get from fanart.tv")
 
         show_message(_("Searching MusicBrainz for cover art..."))
         t = io.BytesIO(musicbrainzngs.get_release_group_image_front(album_id, size=None))
@@ -16459,6 +16473,7 @@ def download_art1(tr):
             return
 
     except Exception:
+        logging.exception("Matching cover art or ID could not be found.")
         show_message(_("Matching cover art or ID could not be found."))
 
 
@@ -16515,8 +16530,8 @@ def remove_embed_picture(track_object, dry=True):
                         remove = True
                         tag.save(padding=no_padding)
                         removed += 1
-                    except Exception as e:
-                        print("No APIC found")
+                    except Exception:
+                        logging.exception("No MP3 APIC found")
 
                 if tr.file_ext == "M4A":
                     try:
@@ -16525,7 +16540,7 @@ def remove_embed_picture(track_object, dry=True):
                         tag.save(padding=no_padding)
                         removed += 1
                     except Exception:
-                        pass
+                        logging.exception("No m4A covr tag found")
 
                 if tr.file_ext in ("OGA", "OPUS", "OGG"):
                     show_message(_("Removing vorbis image not implemented"))
@@ -16543,11 +16558,12 @@ def remove_embed_picture(track_object, dry=True):
                         tag.save(padding=no_padding)
                         removed += 1
                     except Exception:
-                        pass
+                        logging.exception("Failed to save tags on FLAC")
 
                 clear_track_image_cache(tr)
 
     except Exception as e:
+        logging.exception("Image remove error")
         show_message(_("Image remove error"), mode='error')
         return
 
@@ -16579,6 +16595,7 @@ def delete_file_image(track_object):
             clear_track_image_cache(track_object)
             print("Deleted file: " + source)
     except Exception:
+        logging.exception("Failed to delete file")
         show_message(_("Something went wrong"), mode='error')
 
 
@@ -17164,7 +17181,7 @@ def move_radio_playlist(source, dest):
         pctl.radio_playlists.remove("old")
         pctl.radio_playlist_viewing = pctl.radio_playlists.index(temp)
     except Exception:
-        print("Warning: Playlist move error")
+        logging.exception("Playlist move error")
 
 
 def move_playlist(source, dest):
@@ -17184,7 +17201,7 @@ def move_playlist(source, dest):
         pctl.active_playlist_viewing = pctl.multi_playlist.index(view)
         default_playlist = default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
     except Exception:
-        print("Warning: Playlist move error")
+        logging.exception("Playlist move error")
 
 
 def delete_playlist(index, force=False, check_lock=False):
@@ -17385,6 +17402,7 @@ def tryint(s):
     try:
         return int(s)
     except Exception:
+        logging.exception("Failed to parse as int")
         return s
 
 
@@ -17404,6 +17422,7 @@ def index_key(index):
                 dd = 1
             d = str(dd)
         except Exception:
+            logging.exception("Failed to parse as index as int")
             d = ""
 
 
@@ -17427,6 +17446,7 @@ def index_key(index):
     try:
         return [tryint(c) for c in re.split('([0-9]+)', s)]
     except Exception:
+        logging.exception("Failed to parse as int, returning 'a'")
         return "a"
 
 
@@ -18270,9 +18290,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                         temp.append(item)
                 playlist = temp
             except Exception:
+                logging.exception("Failed to get rating")
                 errors = True
-                pass
-                # raise
 
         elif cm[:4] == "rat<":
             value = cm[4:]
@@ -18284,8 +18303,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                         temp.append(item)
                 playlist = temp
             except Exception:
+                logging.exception("Failed to get rating")
                 errors = True
-                pass
 
         elif cm[:4] == "rat>":
             value = cm[4:]
@@ -18297,8 +18316,8 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                         temp.append(item)
                 playlist = temp
             except Exception:
+                logging.exception("Failed to get rating")
                 errors = True
-                pass
 
         elif cm == "rat":
             temp = []
@@ -18481,7 +18500,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             try:
                 worker2_lock.release()
             except Exception:
-                pass
+                logging.exception("Failed to release worker2 lock")
             while search_over.sip:
                 time.sleep(0.01)
 
@@ -18492,7 +18511,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                     found_name = result[1]
                     break
             else:
-                print("No folder search result found")
+                logging.info("No folder search result found")
                 continue
 
             search_over.clear()
@@ -18516,7 +18535,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             try:
                 worker2_lock.release()
             except Exception:
-                pass
+                logging.exception("Failed to release worker2 lock")
             while search_over.sip:
                 time.sleep(0.01)
 
@@ -18560,7 +18579,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             try:
                 worker2_lock.release()
             except Exception:
-                pass
+                logging.exception("Failed to release worker2 lock")
             while search_over.sip:
                 time.sleep(0.01)
 
@@ -20412,6 +20431,7 @@ def del_selected(force_delete=False):
                     send2trash(tr.fullpath)
                     show_message(_("Tracks sent to trash"))
                 except Exception:
+                    logging.exception("One or more tracks could not be sent to trash")
                     show_message(_("One or more tracks could not be sent to trash"))
 
                     if force_delete:
@@ -20419,6 +20439,7 @@ def del_selected(force_delete=False):
                             os.remove(tr.fullpath)
                             show_message(_("Files deleted"), mode='info')
                         except Exception:
+                            logging.exception("Error deleting one or more files")
                             show_message(_("Error deleting one or more files"), mode='error')
 
     else:
@@ -20685,6 +20706,7 @@ def delete_track(track_ref):
                 os.remove(fullpath)
                 show_message(_("File deleted"), fullpath, mode='info')
             except Exception:
+                logging.exception("Error deleting file")
                 show_message(_("Error deleting file"), fullpath, mode='error')
         else:
             show_message(_("File moved to trash"))
@@ -20694,6 +20716,7 @@ def delete_track(track_ref):
             os.remove(fullpath)
             show_message(_("File deleted"), fullpath, mode='info')
         except Exception:
+            logging.exception("Error deleting file")
             show_message(_("Error deleting file"), fullpath, mode='error')
 
     reload()
@@ -20789,8 +20812,10 @@ def delete_folder(index, force=False):
 
     except Exception:
         if force:
-            show_message(_("Unable to comply."), _("Could not delete folder. Try check permissions."), mode='error')
+            logging.exception("Unable to comply, could not delete folder. Try checking permissions.")
+            show_message(_("Unable to comply."), _("Could not delete folder. Try checking permissions."), mode='error')
         else:
+            logging.exception("Folder could not be trashed, try again while holding shift to force delete.")
             show_message(_("Folder could not be trashed."), _("Try again while holding shift to force delete."),
                          mode='error')
 
@@ -20882,7 +20907,7 @@ def rename_parent(index, template):
             os.rename(old, new_parent_path)
             print(new_parent_path)
         except Exception:
-
+            logging.exception("Rename failed, something went wrong!")
             show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode='error')
             return
 
@@ -20966,6 +20991,7 @@ def move_folder_up(index, do=False):
         os.rename(os.path.join(upper_folder, "RMTEMP000"), os.path.join(upper_folder, folder_name))
 
     except Exception as e:
+        logging.exception("System Error!")
         show_message(_("System Error!"), str(e), mode='error')
 
     # Fix any other tracks paths that contain the old path
@@ -21028,8 +21054,8 @@ def clean_folder(index, do=False):
                 if pctl.g(track_id).parent_folder_path == folder:
                     clear_track_image_cache(pctl.g(track_id))
 
-    except Exception as e:
-        # show_message(str(e))
+    except Exception:
+        logging.exception("Error deleting files, may not have permission or file may be set to read-only")
         show_message(_("Error deleting files."), _("May not have permission or file may be set to read-only"), mode='warning')
         return 0
 
@@ -21373,6 +21399,7 @@ def intel_moji(index):
                     detect = enc
                     break
             except Exception:
+                logging.exception("Error decoding artist")
                 continue
 
     if detect is None and track.album not in track.parent_folder_path:
@@ -21383,6 +21410,7 @@ def intel_moji(index):
                     detect = enc
                     break
             except Exception:
+                logging.exception("Error decoding album")
                 continue
 
     for item in lot:
@@ -22683,7 +22711,7 @@ def check_auto_update_okay(code, pl=None):
     try:
         cmds = shlex.split(code)
     except Exception:
-        print("Malformed generator code!")
+        logging.exception("Malformed generator code!")
         return False
     return "auto" in cmds or (prefs.always_auto_update_playlists and
                               pctl.active_playlist_playing != pl and
@@ -23932,7 +23960,7 @@ def get_album_art_url(tr):
             tr.misc['musicbrainz_releasegroupid'] = release_group_id
             #print("got release group id")
         except Exception:
-            #logging.info("Error lookup mbid for discord")
+            logging.exception("Error lookup mbid for discord")
             pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
 
     if not release_id:
@@ -23985,6 +24013,8 @@ def get_album_art_url(tr):
         except (requests.RequestException, ValueError):
             logging.exception("No image found for album id")
             pctl.album_mbid_release_cache[(artist, tr.album)] = None
+        except Exception:
+            logging.exception("Unknown error getting image found for album id")
 
     if image_data:
         for image in image_data["images"]:
@@ -26267,7 +26297,7 @@ def worker1():
                         target_dir = os.path.join(music_directory, os.path.basename(target_dir))
                     # print(os.path.getsize(path))
                     if os.path.getsize(path) > 4e+9:
-                        print("Archive file is large!")
+                        logging.warning("Archive file is large!")
                         show_message(_("Skipping oversize zip file (>4GB)"))
                         return 1
                     if not os.path.isdir(target_dir) and not os.path.isfile(target_dir):
@@ -26281,8 +26311,8 @@ def worker1():
                                 zip_ref.extractall(target_dir)
                                 zip_ref.close()
                             except RuntimeError as e:
+                                logging.exception("Zip error")
                                 to_got = b
-                                print("Zip error")
                                 if 'encrypted' in e:
                                     show_message(_("Failed to extract zip archive."),
                                                  _("The archive is encrypted. You'll need to extract it manually with the password."),
@@ -26293,7 +26323,7 @@ def worker1():
                                                  mode='warning')
                                 return 1
                             except Exception:
-                                print("Zip error 2")
+                                logging.exception("Zip error 2")
                                 to_got = b
                                 show_message(_("Failed to extract zip archive."),
                                              _("Maybe archive is corrupted? Does disk have enough space and have write permission?"),
@@ -26310,6 +26340,7 @@ def worker1():
                                 result = subprocess.run(shlex.split(line))
                                 print(result)
                             except Exception:
+                                logging.exception("Failed to extract rar archive.")
                                 to_got = b
                                 show_message(_("Failed to extract rar archive."), mode='warning')
 
@@ -26325,6 +26356,7 @@ def worker1():
                                 result = subprocess.run(shlex.split(line))
                                 print(result)
                             except Exception:
+                                logging.exception("Failed to extract 7z archive.")
                                 to_got = b
                                 show_message(_("Failed to extract 7z archive."), mode='warning')
 
@@ -26340,18 +26372,20 @@ def worker1():
                             try:
                                 shutil.move(new + "/" + cont[0], upper)
                             except Exception:
+                                logging.exception("Could not move file")
                                 error = True
                             shutil.rmtree(new)
-                            print(new)
+                            logging.info(new)
                             target_dir = upper + "/" + cont[0]
                             if not os.path.isdir(target_dir):
-                                print("Extract error, expected directory not found")
+                                logging.error("Extract error, expected directory not found")
 
                         if True and not error and prefs.auto_del_zip:
-                            print("Moving archive file to trash: " + path)
+                            logging.info("Moving archive file to trash: " + path)
                             try:
                                 send2trash(path)
                             except Exception:
+                                logging.exception("Could not move archive to trash")
                                 show_message(_("Could not move archive to trash"), path, mode='info')
 
                         to_got = b
@@ -40546,7 +40580,7 @@ class RadioThumbGen:
                     if r.status_code != 200 or int(r.headers.get('Content-Length', 0)) > 2000000:
                         raise Exception("Error get radio thumb")
                 except Exception:
-                    print("error get radio thumb")
+                    logging.exception("error get radio thumb")
                     self.cache[key] = [0, ]
                     if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
                         prefs.radio_thumb_bans.append(station.get("icon"))
