@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 	from t_modules.t_main import Tauon, TrackClass
 
 _ = lambda m: m
+
 class Tidal:
 
 	def __init__(self, tauon: Tauon) -> None:
