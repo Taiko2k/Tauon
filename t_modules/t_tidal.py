@@ -191,6 +191,7 @@ class Tidal:
 		nt.album = track.album.name
 		nt.length = track.duration
 		nt.album_artist = track.album.artist.name
+		nt.misc["tidal_album"] = track.album.id
 
 		parent = (nt.album_artist + " - " + nt.album).strip("- ")
 		nt.parent_folder_path = parent
