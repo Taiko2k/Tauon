@@ -384,7 +384,7 @@ def is_ignorable_file(string: str) -> bool:
 
 
 # Pre-compile the regular expression pattern for dates starting with the year
-date_pattern = re.compile(r'\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*')
+date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
 
 def get_year_from_string(s: str) -> str:
 	"""Gets year in form of YYYY from a string

@@ -39,7 +39,7 @@ tekore_imported = False
 try:
 	import tekore as tk
 except ModuleNotFoundError:
-	logging.warning("Unable to import Tekore, Spotify support will be disabled..")
+	logging.warning("Unable to import Tekore, Spotify support will be disabled.")
 except Exception:
 	logging.exception("Unkown error trying to import Tekore, Spotify support will be disabled.")
 else:
