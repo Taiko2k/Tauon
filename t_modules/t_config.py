@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import os
 
+_ = lambda m: m
 
 class Config:
 

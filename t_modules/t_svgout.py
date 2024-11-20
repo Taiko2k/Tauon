@@ -27,7 +27,7 @@ from gi import require_version
 require_version("Rsvg", "2.0")
 from gi.repository import Rsvg
 
-
+_ = lambda m: m
 def render_icons(source_directory: str, output_directory: str, scale: int) -> None:
 	"""Render SVG files to PNG"""
 	targets = []
