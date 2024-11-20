@@ -834,13 +834,11 @@ if maximized:
 # loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 # SDL_RenderPresent(renderer)
 
-# if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
-#	 logging.info("Config file is missing... copying template from program files")
-#	 shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
-
-if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "input.txt")):
-	logging.info("Input config file is missing... copying template from program files")
-	shutil.copy(os.path.join(install_directory, "input.txt"), config_directory)
+if install_directory != config_directory and not Path(Path(config_directory) / "input.txt").is_file():
+	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
+	#logging.warning(install_directory)
+	#logging.warning(config_directory)
+	shutil.copy(Path(install_directory) / "templates" / "input.txt", config_directory)
 
 last_fm_enable = False
 
