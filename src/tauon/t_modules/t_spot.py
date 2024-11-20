@@ -35,12 +35,15 @@ from tauon.t_modules.t_extra import Timer
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
+tekore_imported = False
 try:
 	import tekore as tk
-	tekore_imported = True
+except ModuleNotFoundError:
+	logging.warning("Unable to import Tekore, Spotify support will be disabled..")
 except Exception:
-	logging.exception("Failed to load Tekore")
-	tekore_imported = False
+	logging.exception("Unkown error trying to import Tekore, Spotify support will be disabled.")
+else:
+	tekore_imported = True
 
 
 class SpotCtl:
