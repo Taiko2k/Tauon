@@ -10008,7 +10008,7 @@ elif not msys and system == "linux":
 				xcursor_theme = os.environ["XCURSOR_THEME"]
 			xcursor_size = "0"
 			if "XCURSOR_SIZE" in os.environ:
-				xcursor_theme = os.environ["XCURSOR_SIZE"]
+				xcursor_size = os.environ["XCURSOR_SIZE"]
 			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
 			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
 			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
