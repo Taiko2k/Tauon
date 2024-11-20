@@ -2968,43 +2968,44 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 gbc.disable()
 ggc = 2
 
-try:
-	sp1 = user_directory + "/star.p"
-	sp2 = user_directory + "/star.p.backup"
+star_path1 = Path(user_directory) / "star.p"
+star_path2 = Path(user_directory) / "star.p.backup"
+star_size1 = 0
+star_size2 = 0
+to_load = star_path1
+if star_path1.is_file():
+	star_size1 = star_path1.stat().st_size
+if star_path2.is_file():
+	star_size2 = star_path2.stat().st_size
+if star_size2 > star_size1:
+	logging.warning("Loading backup star.p as it was bigger than regular file!")
+	to_load = star_path2
+if star_size1 == 0 and star_size2 == 0:
+	logging.warning("Star database file is missing, first run? Will create one anew!")
+else:
+	try:
+		star_store.db = pickle.load(open(to_load, "rb"))
+	except Exception:
+		logging.exception("Unknown error loading star.p file")
 
-	s1 = 0
-	s2 = 0
 
-	if os.path.isfile(sp1):
-		s1 = os.path.getsize(sp1)
-	if os.path.isfile(sp2):
-		s2 = os.path.getsize(sp2)
-	to_load = sp1
-	if s2 > s1:
-		logging.info("Loading backup star.p")
-		to_load = sp2
+album_star_path = Path(user_directory) / "album-star.p"
+if album_star_path.is_file():
+	try:
+		album_star_store.db = pickle.load(open(album_star_path, "rb"))
+	except Exception:
+		logging.exception("Unknown error loading album-star.p file")
+else:
+	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
-	star_store.db = pickle.load(open(to_load, "rb"))
-except FileNotFoundError:
-	logging.error("No existing star.p file")
-except Exception:
-	logging.exception("Unknown error loading star.p file")
-
-try:
-	album_star_store.db = pickle.load(open(user_directory + "/album-star.p", "rb"))
-except FileNotFoundError:
-	logging.error("No existing album-star.p file")
-except Exception:
-	logging.exception("Unknown error loading album-star.p file")
-
-try:
-	if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
+if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
+	try:
 		with open(user_directory + "/lyrics_substitutions.json", "r") as f:
 			prefs.lyrics_subs = json.load(f)
-except FileNotFoundError:
-	logging.error("No existing lyrics_substitutions.json file")
-except Exception:
-	logging.exception("Unknown error loading lyrics_substitutions.json")
+	except FileNotFoundError:
+		logging.error("No existing lyrics_substitutions.json file")
+	except Exception:
+		logging.exception("Unknown error loading lyrics_substitutions.json")
 
 perf_timer.set()
 
@@ -3065,18 +3066,20 @@ shoot_pump = threading.Thread(target=pumper)
 shoot_pump.daemon = True
 shoot_pump.start()
 
+state_path1 = Path(user_directory) / "state.p"
+state_path2 = Path(user_directory) / "state.p.backup"
 for t in range(2):
+	#	 os.path.getsize(user_directory + "/state.p") < 100
 	try:
-
-		# if os.path.isfile(user_directory + "/state.p.backup") and (
-		#
-		#	 not os.path.isfile(user_directory + "/state.p") or
-		#	 os.path.getsize(user_directory + "/state.p") < 100
-		# )
 		if t == 0:
-			state_file = open(user_directory + "/state.p", "rb")
+			if not state_path1.is_file():
+				continue
+			state_file = open(state_path1, "rb")
 		if t == 1:
-			state_file = open(user_directory + "/state.p.backup", "rb")
+			if not state_path2.is_file():
+				logging.warning("State database file is missing, first run? Will create one anew!")
+				break
+			state_file = open(state_path2, "rb")
 
 		# def tt():
 		#	 while True:
@@ -3087,7 +3090,7 @@ for t in range(2):
 		save = pickle.load(state_file)
 
 		if t == 1:
-			logging.warning("Using backup state")
+			logging.warning("Loading backup state.p!")
 
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
@@ -3451,8 +3454,6 @@ for t in range(2):
 		break
 	except Exception:
 		logging.exception("Failed to load save file")
-		if os.path.isfile(user_directory + "/state.p"):
-			logging.error("Error loading save file")
 
 core_timer.set()
 logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
