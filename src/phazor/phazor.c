@@ -84,8 +84,10 @@ ma_device_config config;
 ma_device device;
 #endif
 
+
 #ifdef PIPE
 pthread_t pw_thread;
+pthread_mutex_t pipe_devices_mutex;
 struct pw_main_loop *loop;
 struct pw_context *context;
 struct pw_core *core;
@@ -96,7 +98,9 @@ struct pw_stream *global_stream;
 int enum_done = 0;
 int pipe_set_samplerate = 48000;
 #define MAX_DEVICES 64
+#define POD_BUFFER_SIZE 2048
 struct device_info {
+    uint32_t id;
     char name[256];
     char description[256];
 };
@@ -107,34 +111,75 @@ struct pipe_devices_struct {
 
 struct pipe_devices_struct pipe_devices = {0};
 
+static void registry_event_remove_global(void *data, uint32_t id) {
+    pthread_mutex_lock(&pipe_devices_mutex);
+    for (size_t i = 0; i < pipe_devices.device_count; i++) {
+        if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
+            // Shift remaining devices to fill the gap
+            for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
+                pipe_devices.devices[j] = pipe_devices.devices[j + 1];
+            }
+            pipe_devices.device_count--;
+            printf("Removed device with ID: %u\n", id);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&pipe_devices_mutex);
+}
 
 static void registry_event_global(void *data, uint32_t id,
                 uint32_t permissions, const char *type, uint32_t version,
                 const struct spa_dict *props)
 {
-     //printf("object: id:%u type:%s/%d\n", id, type, version);
-     const char *media_class;
 
-    if (props == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
+    if (props == NULL || type == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
         return;
+
+
+    //printf("object: id:%u type:%s/%d\n", id, type, version);
+    const char *media_class;
 
     media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
     if (media_class == NULL)
         return;
 
     if (spa_streq(media_class, "Audio/Sink")) {
+
+        pthread_mutex_lock(&pipe_devices_mutex);
+        if (pipe_devices.device_count >= MAX_DEVICES){
+            printf("Error: Max devices\n");
+            pthread_mutex_unlock(&pipe_devices_mutex);
+            return;
+        }
         const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
         const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
-        strncpy(pipe_devices.devices[pipe_devices.device_count].name, name, sizeof(pipe_devices.devices[pipe_devices.device_count].name) - 1);
-        strncpy(pipe_devices.devices[pipe_devices.device_count].description, description, sizeof(pipe_devices.devices[pipe_devices.device_count].description) - 1);
+        if (!name || !description) {
+            printf("Error: Missing name or description for device\n");
+            pthread_mutex_unlock(&pipe_devices_mutex);
+            return;
+        }
+
+        // Check if already added
+        for (size_t i = 0; i < pipe_devices.device_count; i++) {
+            if (pipe_devices.devices[i].id == id) {
+                pthread_mutex_unlock(&pipe_devices_mutex);
+                return;
+                }
+            }
+        pipe_devices.devices[pipe_devices.device_count].id = id;
+        snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
+        snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
         pipe_devices.device_count++;
         printf("Found audio sink: %s (%s)\n", name, description);
+        pthread_mutex_unlock(&pipe_devices_mutex);
+
     }
 }
 
 static const struct pw_registry_events registry_events = {
         PW_VERSION_REGISTRY_EVENTS,
         .global = registry_event_global,
+        .global_remove = registry_event_remove_global,
 };
 
 static void on_core_done(void *userdata, uint32_t id, int seq){
@@ -200,6 +245,7 @@ int fade_2_flag = 0;
 
 pthread_mutex_t buffer_mutex;
 pthread_mutex_t fade_mutex;
+
 //pthread_mutex_t pulse_mutex;
 
 float out_buff[2048 * 2];
@@ -524,7 +570,7 @@ int wave_open(char *filename) {
         fseek(wave_file, i, SEEK_CUR);
     }
 
-                                
+
     //fread(b, 4, 1, wave_file);
     //printf("pa: fmt : %s\n", b);
 
@@ -581,7 +627,7 @@ int wave_open(char *filename) {
             return 1;
         }
         // Is audio data?
-      //printf("label %s\n", b);  
+      //printf("label %s\n", b);
       if (memcmp(b, "data", 4) == 0) {
             wave_start = ftell(wave_file);
             wave_size = i;
@@ -589,7 +635,7 @@ int wave_open(char *filename) {
         }
         // Skip to next block
         fseek(wave_file, i, SEEK_CUR);
-        
+
     }
 
     return 0;
@@ -853,7 +899,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
         pthread_mutex_unlock(&buffer_mutex);
         return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
     }
-                             
+
     if (frame->header.blocksize > (BUFF_SIZE - get_buff_fill())) {
         printf("pa: critical: BUFFER OVERFLOW!");
     }
@@ -1014,7 +1060,7 @@ int get_audio(int max, float* buff){
 
         // Put fade buffer back
         if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && fade_lockout == 0){
-
+            //pthread_mutex_lock(&buffer_mutex);
             int i = 0;
             while (fade_position < fade_fill){
                 float cross = fade_position / (float) fade_fill;
@@ -1031,6 +1077,7 @@ int get_audio(int max, float* buff){
                 fade_fill = 0;
                 fade_position = 0;
             }
+            //pthread_mutex_unlock(&buffer_mutex);
         }
 
         if (mode == PAUSED || (mode == PLAYING && get_buff_fill() == 0)){
@@ -1151,7 +1198,7 @@ static void on_process(void *userdata) {
 
     buf = buffer->buffer;
 
-    size = get_audio(1000, buf->datas[0].data) * 4;
+    size = get_audio(buffer->requested * 2, buf->datas[0].data) * 4;
 
     buf->datas[0].chunk->size = size;
     pw_stream_queue_buffer(global_stream, buffer);
@@ -1403,56 +1450,99 @@ static int pipe_exit(struct spa_loop *loopo, bool async, uint32_t seq,
     return 0;
                      }
 
+struct pw_stream *global_stream = NULL; // Initialize appropriately
+
 static int pipe_connect(struct spa_loop *loop, bool async, uint32_t seq,
-                     const void *_data, size_t size, void *user_data){
-    //printf("Invoke function called with seq: %u\n", seq);
+                       const void *_data, size_t size, void *user_data) {
 
-        struct spa_pod_builder b = { 0 };
-        uint8_t buffer[1024];
-        const struct spa_pod *params[1];
+    struct spa_pod_builder b = { 0 };
+    uint8_t buffer[POD_BUFFER_SIZE];
+    const struct spa_pod *params[1];
+    int ret;
 
-        spa_pod_builder_init(&b, buffer, sizeof(buffer));
-        params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
-                                               &SPA_AUDIO_INFO_RAW_INIT(
-                                                   .format = SPA_AUDIO_FORMAT_F32,
-                                                   .channels = 2,
-                                                   .rate = pipe_set_samplerate));
+    // Initialize the pod builder
+    spa_pod_builder_init(&b, buffer, sizeof(buffer));
 
+    // Build audio format parameters
+    params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
+                                          &SPA_AUDIO_INFO_RAW_INIT(
+                                              .format = SPA_AUDIO_FORMAT_F32,
+                                              .channels = 2,
+                                              .rate = pipe_set_samplerate));
+    if (params[0] == NULL) {
+        fprintf(stderr, "Failed to build audio format parameters\n");
+        return -EINVAL;
+    }
 
-        // wip this device section broken
-        int select = -1;
-        for (int i = 0; i < pipe_devices.device_count; i++) {
-            if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) select = i;
+    // Select the appropriate device
+    ssize_t selected_index = -1;
+
+    pthread_mutex_lock(&pipe_devices_mutex);
+    for (size_t i = 0; i < pipe_devices.device_count; i++) {
+        if (strcmp(pipe_devices.devices[i].description, config_output_sink) == 0) {
+            selected_index = i;
+            break; // Stop at the first match
         }
+    }
+    pthread_mutex_unlock(&pipe_devices_mutex);
 
-        const struct pw_properties *props = pw_stream_get_properties(global_stream);
-        struct pw_properties *mutable_props = pw_properties_copy(props);
+    // Get and copy stream properties
+    const struct pw_properties *props = pw_stream_get_properties(global_stream);
+    if (props == NULL) {
+        fprintf(stderr, "Failed to get stream properties\n");
+        return -EINVAL;
+    }
 
+    struct pw_properties *mutable_props = pw_properties_copy(props);
+    if (mutable_props == NULL) {
+        fprintf(stderr, "Failed to copy stream properties\n");
+        return -ENOMEM;
+    }
 
-        if (select != -1){
-            pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, pipe_devices.devices[select].name);
+    // Set the target device if selected
+    if (selected_index != -1) {
+        pthread_mutex_lock(&pipe_devices_mutex);
+        const char *device_name = pipe_devices.devices[selected_index].name;
+        pthread_mutex_unlock(&pipe_devices_mutex);
+
+        if (device_name) {
+            pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, device_name);
+            printf("Selected device index: %zu (%s)\n", selected_index, device_name);
         } else {
+            fprintf(stderr, "Selected device has no name\n");
             pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
         }
+    } else {
+        // Optionally, handle the case where no device is selected
+        pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
+        printf("Using default device.\n");
+    }
 
-//        pw_properties_set(props, PW_KEY_NODE_LATENCY, "256/48000");
-//        pw_properties_set(props, PW_KEY_NODE_FORCE_QUANTUM, "64");
-//        pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
-
-
-        pw_stream_update_properties(global_stream, &mutable_props->dict);
+    // Update the stream properties
+    ret = pw_stream_update_properties(global_stream, &mutable_props->dict);
+    if (ret < 0) {
+        fprintf(stderr, "Failed to update stream properties: %d\n", ret);
         pw_properties_free(mutable_props);
+        return ret;
+    }
 
-        printf("SET DEVICE: %d\n", select + 1);
+    pw_properties_free(mutable_props);
 
-        return pw_stream_connect(global_stream,
-                          PW_DIRECTION_OUTPUT,
-                          PW_ID_ANY,
-                          (enum pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT |
-                                                 PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS ),
-                          params, 1);
+    // Connect the stream
+    ret = pw_stream_connect(global_stream,
+                            PW_DIRECTION_OUTPUT,
+                            PW_ID_ANY,
+                            PW_STREAM_FLAG_AUTOCONNECT |
+                            PW_STREAM_FLAG_MAP_BUFFERS |
+                            PW_STREAM_FLAG_RT_PROCESS,
+                            params, 1);
+    if (ret < 0) {
+        fprintf(stderr, "Failed to connect stream: %d\n", ret);
+        return ret;
+    }
 
-
+    printf("Stream connected successfully.\n");
+    return 0; // Success
 }
 
 static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
@@ -1841,12 +1931,12 @@ int load_next() {
           reset_set = 1;
           reset_set_byte = high;
           load_target_seek = 0;
-      }                                          
+      }
       pthread_mutex_unlock(&buffer_mutex);
       decoder_allocated = 1;
-                 
+
       return 0;
-                 
+
     }
 
 
@@ -2144,9 +2234,9 @@ void pump_decode() {
         if (result == 1) {
             decoder_eos();
         }
-                         
+
     } else if (codec == MPT) {
-      int count;  
+      int count;
       count = openmpt_module_read_interleaved_stereo(mod, 48000, 4096, temp16l);
       if (count == 0){
         decoder_eos();
@@ -2583,7 +2673,7 @@ void *main_loop(void *thread_id) {
 
     #endif
     command = NONE;
-    printf("Exit Phazor\n");
+    printf("Exit PHAzOR\n");
     return thread_id;
 }
 
@@ -2604,7 +2694,7 @@ int init() {
 int get_status() {
     return mode;
 }
-                                   
+
 int get_result() {
   return result_status;
 }
@@ -2638,7 +2728,7 @@ int next(char *filename, int start_ms, float rg) {
         usleep(1000);
     }
 
-    result_status = WAITING;                                         
+    result_status = WAITING;
 
     if (mode == STOPPED) {
         start(filename, start_ms, 0, rg);
@@ -2689,7 +2779,7 @@ void wait_for_command() {
         usleep(1000);
     }
 }
-                                   
+
 int seek(int ms_absolute, int flag) {
 
     while (command != NONE) {
@@ -2721,9 +2811,9 @@ int get_position_ms() {
         return (int) ((position_count / (float) current_sample_rate) * 1000.0);
     } else return 0;
 }
-                                   
+
 void set_position_ms(int ms) {
-    position_count = ((float)(ms / 1000.0)) * current_sample_rate; 
+    position_count = ((float)(ms / 1000.0)) * current_sample_rate;
 }
 
 int get_length_ms() {
@@ -2883,5 +2973,3 @@ int phazor_shutdown() {
     command = EXIT;
     return 0;
 }
-
-                                      
