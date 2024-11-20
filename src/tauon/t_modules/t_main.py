@@ -43905,11 +43905,15 @@ while pctl.running:
                 key_focused = 1
                 gui.update += 1
 
-            elif event.window.event == SDL_WINDOWEVENT_RESIZED or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
+            elif event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
+                # SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
+                pass
+            elif event.window.event == SDL_WINDOWEVENT_RESIZED:
+                # SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
                 if event.window.data1 < 500:
-                    logging.error("Grrr why this happen, stupid bug - reproducible when moving window from one screen to another in Plasma")
+                    logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
                     SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-                elif restore_ignore_timer.get() > 1 or event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:  # Hacky
+                elif restore_ignore_timer.get() > 1:  # Hacky
                     gui.update = 2
 
                     logical_size[0] = event.window.data1
