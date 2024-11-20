@@ -14998,11 +14998,6 @@ class TransEditBox:
             if changed:
                 show_message(_("Press enter on fields to apply your changes first!"))
                 return
-            try:
-                import mutagen
-            except Exception:
-                show_message(_("Please install package python-mutagen for this feature"))
-                return
 
             if gui.write_tag_in_progress:
                 return
