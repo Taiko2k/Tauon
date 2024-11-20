@@ -10002,8 +10002,14 @@ elif not msys and system == "linux":
 			xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
 		xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
-		def get_xcursor(name):
-			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(os.environ["XCURSOR_THEME"].encode()), c_int(int(os.environ["XCURSOR_SIZE"]))).contents
+		def get_xcursor(name: str):
+			xcursor_theme = ""
+			if "XCURSOR_THEME" in os.environ:
+				xcursor_theme = os.environ["XCURSOR_THEME"]
+			xcursor_size = "0"
+			if "XCURSOR_SIZE" in os.environ:
+				xcursor_theme = os.environ["XCURSOR_SIZE"]
+			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
 			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
 			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
 			xcu.XcursorImageDestroy(ctypes.byref(c1))
