@@ -5067,8 +5067,8 @@ def get_radio_art():
 	gui.clear_image_cache_next += 1
 
 
-# Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
 class PlayerCtl:
+	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 	# C-PC
 	def __init__(self):
 
@@ -48433,14 +48433,15 @@ if tauon.stream_proxy and tauon.stream_proxy.download_running:
     time.sleep(2)
 
 try:
-    tm.player_lock.release()
+	tm.player_lock.release()
 except Exception:
-    logging.exception("Failed to release player_lock")
+	logging.exception("Failed to release player_lock")
 
-try:
-    tauon.radio_server.server_close()
-except Exception:
-    logging.exception("Failed to close radio server")
+if tauon.radio_server is not None:
+	try:
+		tauon.radio_server.server_close()
+	except Exception:
+		logging.exception("Failed to close radio server")
 
 if system == "windows" or msys:
     tray.stop()
