@@ -9981,19 +9981,19 @@ if msys:
 	cursor_left_side = cursor_shift
 	cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
 	cursor_bottom_side = cursor_top_side
-elif not msys and system == "linux":
+elif not msys and system == "linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 	try:
 		class XcursorImage(ctypes.Structure):
 			_fields_ = [
-						("version", c_uint32),
-						("size", c_uint32),
-						("width", c_uint32),
-						("height", c_uint32),
-						("xhot", c_uint32),
-						("yhot", c_uint32),
-						("delay", c_uint32),
-						("pixels", c_void_p),
-						]
+					("version", c_uint32),
+					("size", c_uint32),
+					("width", c_uint32),
+					("height", c_uint32),
+					("xhot", c_uint32),
+					("yhot", c_uint32),
+					("delay", c_uint32),
+					("pixels", c_void_p)
+				]
 
 		try:
 			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
@@ -10003,12 +10003,12 @@ elif not msys and system == "linux":
 		xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
 		def get_xcursor(name: str):
-			xcursor_theme = ""
-			if "XCURSOR_THEME" in os.environ:
-				xcursor_theme = os.environ["XCURSOR_THEME"]
-			xcursor_size = "0"
-			if "XCURSOR_SIZE" in os.environ:
-				xcursor_size = os.environ["XCURSOR_SIZE"]
+			if "XCURSOR_THEME" not in os.environ:
+				raise ValueError("Missing XCURSOR_THEME in env")
+			if "XCURSOR_SIZE" not in os.environ:
+				raise ValueError("Missing XCURSOR_SIZE in env")
+			xcursor_theme = os.environ["XCURSOR_THEME"]
+			xcursor_size = os.environ["XCURSOR_SIZE"]
 			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
 			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
 			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
