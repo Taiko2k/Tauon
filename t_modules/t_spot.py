@@ -42,6 +42,7 @@ except Exception:
 	logging.exception("Failed to load Tekore")
 	tekore_imported = False
 
+_ = lambda m: m
 
 class SpotCtl:
 

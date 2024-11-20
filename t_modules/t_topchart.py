@@ -35,6 +35,7 @@ from PIL import Image
 if TYPE_CHECKING:
 	from t_modules.t_main import AlbumArt, Tauon, TrackClass
 
+_ = lambda m: m
 class TopChart:
 
 	def __init__(self, tauon: Tauon, album_art_gen: AlbumArt) -> None:

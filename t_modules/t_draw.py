@@ -66,6 +66,8 @@ try:
 except Exception:
 	logging.exception("Unable to import jxlpy")
 
+_ = lambda m: m
+
 system = "linux"
 if sys.platform == "win32":
 	system = "linux" #"windows"

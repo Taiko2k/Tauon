@@ -47,6 +47,7 @@ from t_modules.t_extra import Timer, shooter, tmp_cache_dir
 if TYPE_CHECKING:
 	from t_modules.t_main import PlayerCtl, Tauon, TrackClass
 
+_ = lambda m: m
 def find_library(libname: str) -> Path | None:
 	"""Search for 'libname.so'.
 

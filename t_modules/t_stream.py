@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
 	from t_modules.t_main import Tauon
 
+_ = lambda m: m
 
 class StreamEnc:
 
