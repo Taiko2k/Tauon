@@ -68,7 +68,8 @@ logging.basicConfig(
 	level=logging.DEBUG,
 #	filename=user_directory + '/crash.log',
 #	format='%(asctime)s %(levelname)s %(name)s %(message)s')
-	format="%(asctime)s [%(levelname)s] [%(module)s] %(message)s",
+	format="%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s",
+	datefmt="%Y-%m-%d %H:%M:%S",
 	handlers=[
 		logging.StreamHandler(),
 #		logging.FileHandler('/tmp/tauon.log'),
