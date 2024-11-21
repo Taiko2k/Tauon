@@ -6,9 +6,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
-"POT-Creation-Date: 2024-09-11 23:19+1200\n"
-"PO-Revision-Date: 2023-03-13 20:43+0000\n"
-"Last-Translator: ssantos <ssantos@web.de>\n"
+"POT-Creation-Date: 2023-03-12 21:30+1300\n"
+"PO-Revision-Date: 2024-09-02 21:11+0000\n"
+"Last-Translator: Ricardo Simões <xmcorporation@gmail.com>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_PT/>\n"
 "Language: pt_PT\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: t_modules/t_main.py:1903 t_modules/t_main.py:1905 t_modules/t_main.py:1851
@@ -1377,6 +1377,10 @@ msgstr "A buscar..."
 #: t_modules/t_main.py:21468
 msgid "Get Recommended"
 msgstr "Seja Recomendado"
+
+#: t_modules/t_main.py:21570
+msgid "Broadcast This"
+msgstr "Transmitir Isto"
 
 #: t_modules/t_main.py:21584
 msgid "Minimize"
