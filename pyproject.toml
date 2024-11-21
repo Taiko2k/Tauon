@@ -38,7 +38,7 @@
 	# opusfile includes opus libraries without opus/ wtf copy them over
 # Windows
 #	ext-modules = [
-#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpack", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreads", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
+#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
 
 # Linux
 	ext-modules = [
