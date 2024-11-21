@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 
 export PYTHONPATH=".":"${PYTHONPATH-}"
 
-rm -rf .env build dist tauon_music_box.egg-info ./src/phazor/kissfft/* ./src/phazor/miniaudio/*
+rm -rf .venv build dist tauon_music_box.egg-info ./src/phazor/kissfft/* ./src/phazor/miniaudio/*
 
 _kissfftver=131.1.0
 _miniaudiocommit=4a5b74bef029b3592c54b6048650ee5f972c1a48
@@ -20,15 +20,15 @@ fi
 tar --strip-components=1 -xvf kissfft.tar.gz   -C ./src/phazor/kissfft/
 tar --strip-components=1 -xvf miniaudio.tar.gz -C ./src/phazor/miniaudio/
 
-python -m venv .env
-source .env/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 pip install -r requirements_optional.txt
 #pip install -r requirements_devel.txt
 pip install build
 python -m compile_translations
 python -m build --wheel
-#python -m installer --destdir=".env" dist/*.whl
-pip install --prefix ".env" dist/*.whl --force-reinstall
+#python -m installer --destdir=".venv" dist/*.whl
+pip install --prefix ".venv" dist/*.whl --force-reinstall
 
 tauonmb "$@"
