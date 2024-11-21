@@ -11,6 +11,8 @@ from tauon.t_modules.t_extra import shooter
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
 
+_ = lambda m: m
+
 def get_ip() -> str:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.settimeout(0)

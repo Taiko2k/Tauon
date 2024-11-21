@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import Tauon, TauonPlaylist, TrackClass
 
+_ = lambda m: m
 
 class Jellyfin:
 

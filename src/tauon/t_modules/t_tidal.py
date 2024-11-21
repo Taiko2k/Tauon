@@ -19,6 +19,8 @@ except Exception:
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
+_ = lambda m: m
+
 class Tidal:
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -191,6 +193,7 @@ class Tidal:
 		nt.album = track.album.name
 		nt.length = track.duration
 		nt.album_artist = track.album.artist.name
+		nt.misc["tidal_album"] = track.album.id
 
 		parent = (nt.album_artist + " - " + nt.album).strip("- ")
 		nt.parent_folder_path = parent

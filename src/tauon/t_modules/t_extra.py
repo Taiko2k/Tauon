@@ -42,6 +42,8 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import TrackClass
 
+_ = lambda m: m
+
 def tmp_cache_dir() -> str:
 	tmp_dir = GLib.get_tmp_dir()
 	return os.path.join(tmp_dir, "TauonMusicBox")

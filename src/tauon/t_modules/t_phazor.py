@@ -47,6 +47,8 @@ from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import PlayerCtl, Tauon, TrackClass
 
+_ = lambda m: m
+
 def find_library(libname: str) -> Path | None:
 	"""Search for 'libname.so'.
 
@@ -78,29 +80,33 @@ def find_library(libname: str) -> Path | None:
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
 	if pctl.prefs.pipewire:
+		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.so")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dll")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dylib")
+		if os.path.isfile(n):
+			return n
 		n = find_library("phazor-pw")
 		if n:
 			return n
 
-		n = find_library("libphazor-pw")
-		if n:
-			return n
-		# Compat with old -pipe naming, remove later
-		n = find_library("phazor-pipe")
-		if n:
-			return n
-		# Compat with old -pipe naming, remove later
-		n = find_library("libphazor-pipe")
-		if n:
-			return n
 	else:
+		n = os.path.join(pctl.install_directory, "lib", "libphazor.so")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor.dll")
+		if os.path.isfile(n):
+			return n
+		n = os.path.join(pctl.install_directory, "lib", "libphazor.dylib")
+		if os.path.isfile(n):
+			return n
 		n = find_library("phazor")
 		if n:
 			return n
 
-		n = find_library("libphazor")
-		if n:
-			return n
 	raise Exception("Failed to load PHaZOR")
 
 def phazor_exists(pctl: PlayerCtl) -> bool:
@@ -532,7 +538,7 @@ def player4(tauon: Tauon) -> None:
 					i = 0
 					for url in network_url:
 						i += 1
-						logging.info(i, end=",")
+						logging.info(i)
 						response = requests.get(url, timeout=10)
 						if response.status_code == HTTPStatus.OK:
 							p.stdin.write(response.content)

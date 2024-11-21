@@ -869,7 +869,7 @@ if platform.system() == "Windows":
 
 # logging.info(arch)
 # -----------------------------------------------------------
-# Detect locale for translations (currently none available)
+# Detect locale for translations
 
 def _(message):
 	return message
@@ -21878,6 +21878,19 @@ def clip_ar_tr(index):
 # Copy metadata to clipboard
 track_menu.add(MenuItem(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True))
 
+def tidal_copy_album(index):
+    t = pctl.master_library.get(index)
+    if t and t.file_ext == "TIDAL":
+        id = t.misc.get("tidal_album")
+        if id:
+            url = "https://listen.tidal.com/album/" + str(id)
+            copy_to_clipboard(url)
+
+def is_tidal_track(_):
+    return pctl.master_library[r_menu_index].file_ext == "TIDAL"
+
+
+track_menu.add(MenuItem(_('Copy TIDAL Album URL'), tidal_copy_album, show_test=is_tidal_track, pass_ref=True))
 
 # def get_track_spot_url_show_test(_):
 #     if pctl.g(r_menu_index).misc.get("spotify-track-url"):

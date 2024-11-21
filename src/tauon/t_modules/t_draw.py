@@ -68,6 +68,8 @@ except ModuleNotFoundError:
 except Exception:
 	logging.exception("Unkown error trying to import jxlpy, JPEG XL support will be disabled.")
 
+_ = lambda m: m
+
 system = "linux"
 if sys.platform == "win32":
 	system = "linux" #"windows"

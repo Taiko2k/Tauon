@@ -45,6 +45,7 @@ except Exception:
 else:
 	tekore_imported = True
 
+_ = lambda m: m
 
 class SpotCtl:
 

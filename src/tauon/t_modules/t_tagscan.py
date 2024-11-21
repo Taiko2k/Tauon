@@ -30,6 +30,7 @@ import wave
 
 from tauon.t_modules.t_extra import process_odat
 
+_ = lambda m: m
 
 def parse_mbids_from_vorbis(object, key, value):
 
