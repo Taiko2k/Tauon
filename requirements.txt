@@ -2,8 +2,6 @@ beautifulsoup4
 dbus-python
 musicbrainzngs
 mutagen
-natsort
-opencc
 Pillow
 PlexAPI
 PyGObject
@@ -11,5 +9,4 @@ pylast>=3.1.0
 PySDL2
 requests
 Send2Trash
-setproctitle
 unidecode

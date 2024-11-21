@@ -1,4 +1,4 @@
-# Tauon Music Box - URL stream download and encoding module
+"""Tauon Music Box - URL stream download and encoding module"""
 
 # Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
 
@@ -32,8 +32,8 @@ import urllib.request
 
 import mutagen
 
-from t_modules.t_extra import filename_safe
-from t_modules.t_webserve import vb
+from tauon.t_modules.t_extra import filename_safe
+from tauon.t_modules.t_webserve import vb
 
 if sys.platform != "win32":
 	import fcntl
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 	from subprocess import Popen
 	from urllib.request import _UrlopenRet
 
-	from t_modules.t_main import Tauon
+	from tauon.t_modules.t_main import Tauon
 
 _ = lambda m: m
 
@@ -130,19 +130,19 @@ class StreamEnc:
 				if not self.url.endswith(".ts"):
 					r.add_header("Icy-MetaData", "1")
 				r.add_header("User-Agent", self.tauon.t_agent)
-				print("Open URL.....")
+				logging.info("Open URL.....")
 				r = urllib.request.urlopen(r, timeout=20, cafile=self.tauon.ca)
-				print("URL opened.")
+				logging.info("URL opened.")
 
 			except Exception as e:
-				# TODO(Martin): Specify the exception better and turn the top part into debug statements, then  only throw except when Connection fails below
+				# TODO(Martin): Specify the exception better and turn the top part into debug statements, then only throw except when Connection fails below
 				logging.exception("URL error...")
 				retry -= 1
 				if retry > 0 and "Temporary" in str(e):
 					time.sleep(2)
 					logging.debug("RETRYING...")
 					continue
-				logging.exception("Connection failed")
+				logging.error("Connection failed")
 				self.tauon.gui.show_message(_("Failed to establish a connection"), str(e), mode="error")
 				return False
 			break
@@ -156,7 +156,7 @@ class StreamEnc:
 	def pump(self) -> None:
 		aud = self.tauon.aud
 		if self.tauon.prefs.backend != 4 or not aud:
-			print("Radio error: Phazor not loaded")
+			logging.error("Radio error: Phazor not loaded")
 			return
 		self.pump_running = True
 
@@ -291,12 +291,12 @@ class StreamEnc:
 					os.makedirs(self.tauon.prefs.encoder_output)
 				shutil.move(target_file, save_file)
 
-				# print(self.tauon.pctl.tag_history)
-				# print(old_metadata)
+				# logging.info(self.tauon.pctl.tag_history)
+				# logging.info(old_metadata)
 				tags = self.tauon.pctl.tag_history.get(old_metadata, None)
 				if tags:
-					print("Save metadata to file")
-					#print(tags)
+					logging.info("Save metadata to file")
+					#logging.info(tags)
 					muta = mutagen.File(save_file, easy=True)
 					muta["artist"] = tags.get("artist", "")
 					muta["title"] = tags.get("title", "")
@@ -405,7 +405,6 @@ class StreamEnc:
 
 		except Exception:
 			logging.exception("Encoder thread crashed!")
-			#raise
 			self.encode_running = False
 			return
 
@@ -514,7 +513,7 @@ class StreamEnc:
 								if "=" in tag:
 									a, b = tag.split("=", 1)
 									if a == "StreamTitle":
-										#print("Set meta")
+										#logging.info("Set meta")
 										self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
 										break
 						except Exception:

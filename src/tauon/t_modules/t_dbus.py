@@ -29,12 +29,12 @@ import gi
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, GLib
 
-from t_modules.t_extra import filename_to_metadata, star_count2
+from tauon.t_modules.t_extra import filename_to_metadata, star_count2
 
 if TYPE_CHECKING:
 	from gi.repository import AppIndicator3
 
-	from t_modules.t_main import Tauon
+	from tauon.t_modules.t_main import Tauon
 
 _ = lambda m: m
 

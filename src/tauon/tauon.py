@@ -21,6 +21,7 @@ import os
 import pickle
 import sys
 from ctypes import c_int, pointer
+from pathlib import Path
 
 from gi.repository import GLib
 from sdl2 import (
@@ -61,15 +62,43 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load
 
-from t_modules import t_bootstrap
+from tauon.t_modules import t_bootstrap
+
+
+class CustomLoggingFormatter(logging.Formatter):
+	"""Nicely format logging.loglevel logs"""
+
+	grey        = "\x1b[38;20m"
+	grey_bold   = "\x1b[38;1m"
+	yellow      = "\x1b[33;20m"
+	yellow_bold = "\x1b[33;1m"
+	red         = "\x1b[31;20m"
+	bold_red    = "\x1b[31;1m"
+	reset       = "\x1b[0m"
+	format         = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s"
+	format_verbose = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s (%(filename)s:%(lineno)d)"
+
+	FORMATS = {
+		logging.DEBUG:    grey_bold   + format_verbose + reset,
+		logging.INFO:     yellow      + format         + reset,
+		logging.WARNING:  yellow_bold + format         + reset,
+		logging.ERROR:    red         + format         + reset,
+		logging.CRITICAL: bold_red    + format_verbose + reset,
+	}
+
+	def format(self, record: dict) -> str:
+		log_fmt = self.FORMATS.get(record.levelno)
+		# Remove the miliseconds(%f) from the default string
+		date_fmt = "%Y-%m-%d %H:%M:%S"
+		formatter = logging.Formatter(log_fmt, date_fmt)
+		# Center align + min length things to prevent logs jumping around when switching between different values
+		record.levelname = f"{record.levelname:^7}"
+		record.module = f"{record.module:^10}"
+		return formatter.format(record)
 
 # DEBUG+ to file and std_err
 logging.basicConfig(
 	level=logging.DEBUG,
-#	filename=user_directory + '/crash.log',
-#	format='%(asctime)s %(levelname)s %(name)s %(message)s')
-	format="%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s",
-	datefmt="%Y-%m-%d %H:%M:%S",
 	handlers=[
 		logging.StreamHandler(),
 #		logging.FileHandler('/tmp/tauon.log'),
@@ -77,6 +106,7 @@ logging.basicConfig(
 )
 # INFO+ to std_err
 logging.getLogger().handlers[0].setLevel(logging.INFO)
+logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 if sys.platform != "win32":
 	import fcntl
@@ -87,9 +117,9 @@ t_title = "Tauon"
 t_id = "tauonmb"
 t_agent = "TauonMusicBox/" + n_version
 
-
+# Leave these outside of logging for prettiness
 print(f"{t_title} {t_version}")
-print("Copyright 2015-2023 Taiko2k captain.gxj@gmail.com\n")
+print("Copyright 2015-2024 Taiko2k captain.gxj@gmail.com\n")
 
 # Early arg processing
 def transfer_args_and_exit() -> None:
@@ -102,7 +132,7 @@ def transfer_args_and_exit() -> None:
 
 	for item in sys.argv:
 
-		if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or os.path.exists(item)):
+		if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or Path(item).exists()):
 			import base64
 			url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
 			urllib.request.urlopen(url)
@@ -137,18 +167,18 @@ def transfer_args_and_exit() -> None:
 if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
-install_directory = os.path.dirname(os.path.abspath(__file__))
+install_directory = str(Path(__file__).resolve().parent)
 
 pyinstaller_mode = False
 if hasattr(sys, "_MEIPASS"):
 	pyinstaller_mode = True
 if install_directory.endswith("\\_internal"):
 	pyinstaller_mode = True
-	install_directory = os.path.dirname(install_directory)
+	install_directory = str(Path(install_directory).parent)
 
 if pyinstaller_mode:
 	os.environ["PATH"] += ":" + sys._MEIPASS
-	os.environ["SSL_CERT_FILE"] = os.path.join(install_directory, "certifi", "cacert.pem")
+	os.environ["SSL_CERT_FILE"] = Path(install_directory) / "certifi" / "cacert.pem"
 
 # If we're installed, use home data locations
 install_mode = False
@@ -159,9 +189,9 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.pl
 if install_directory.startswith("/usr/"):
 	install_directory = "/usr/share/TauonMusicBox"
 
-user_directory = os.path.join(install_directory, "user-data")
+user_directory = Path(install_directory) / "user-data"
 config_directory = user_directory
-asset_directory = os.path.join(install_directory, "assets")
+asset_directory = Path(install_directory) / "assets"
 
 if install_directory.startswith("/app/"):
 	# Its Flatpak
@@ -169,40 +199,38 @@ if install_directory.startswith("/app/"):
 os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 
-if os.path.isfile(os.path.join(install_directory, "portable")):
+if Path(Path(install_directory) / "portable").is_file():
 	install_mode = False
 
 if install_mode:
-	user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
-if not os.path.isdir(user_directory):
-	os.makedirs(user_directory)
+	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+if not Path(user_directory).is_dir():
+	Path(user_directory).mkdir(parents=True)
 
 fp = None
-dev_mode = os.path.isfile(os.path.join(install_directory, ".dev"))
+dev_mode = Path(Path(install_directory) / ".dev").is_file()
 if dev_mode:
-	print("Dev mode, ignoring single instancing")
+	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
-	pid_file = os.path.join(user_directory, "program.pid")
+	pid_file = Path(user_directory) / "program.pid"
 	fp = open(pid_file, "w")
 	try:
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
 	except OSError:
-		# another instance is running
-		print("Program is already running")
+		logging.exception("Another Tauon instance is already running")
 		transfer_args_and_exit()
 else:
 	if sys.platform == "win32":
-		pid_file = os.path.join(user_directory, "program.pid")
+		pid_file = Path(user_directory) / "program.pid"
 		try:
-			if os.path.isfile(pid_file):
-				os.remove(pid_file)
+			if Path(pid_file).is_file():
+				Path(pid_file).unlink()
 			fp = open(pid_file, "w")
 		except OSError:
-			# another instance is running
-			print("Program is already running")
+			logging.exception("Another Tauon instance is already running")
 			transfer_args_and_exit()
 	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = os.path.join(install_directory, "etc\\fonts")#"C:\\msys64\\mingw64\\etc\\fonts"
+		os.environ["FONTCONFIG_PATH"] = Path(install_directory) / "etc\\fonts" #"C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
@@ -216,10 +244,10 @@ if pyinstaller_mode: # and sys.platform == 'darwin':
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	fs_mode = True
-	print("Running in GAMESCOPE MODE")
+	logging.info("Running in GAMESCOPE MODE")
 
 allow_hidpi = True
-if sys.platform == "win32" and sys.getwindowsversion().major < 10 or os.path.isfile(os.path.join(user_directory, "nohidpi")):
+if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(Path(user_directory) / "nohidpi").is_file():
 	allow_hidpi = False
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
@@ -246,8 +274,8 @@ if phone:
 maximized = False
 old_window_position = None
 
-window_p = os.path.join(user_directory, "window.p")
-if os.path.isfile(window_p) and not fs_mode:
+window_p = Path(user_directory) / "window.p"
+if Path(window_p).is_file() and not fs_mode:
 	try:
 		state_file = open(window_p, "rb")
 		save = pickle.load(state_file)
@@ -265,12 +293,12 @@ if os.path.isfile(window_p) and not fs_mode:
 		del save
 
 	except Exception:
-		print("Corrupted window state file?!")
-		print("Please restart app")
-		os.remove(window_p)
+		logging.exception("Corrupted window state file?!")
+		logging.error("Please restart app")
+		Path(window_p).unlink()
 		sys.exit(1)
 else:
-	print("No window state file")
+	logging.info("No window state file")
 
 
 if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
@@ -285,17 +313,17 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 		os.environ["XCURSOR_THEME"] = xtheme
 		os.environ["XCURSOR_SIZE"] = str(xsize)
 	except Exception:
-		pass
+		logging.exception("Failed to set cursor")
 
 if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
-if os.path.exists(os.path.join(user_directory, "x11")):
+if Path(Path(user_directory) / "x11").exists():
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
 SDL_Init(SDL_INIT_VIDEO)
 err = SDL_GetError()
 if err and "GLX" in err.decode():
-	print(f"SDL init error: {err.decode()}")
+	logging.error(f"SDL init error: {err.decode()}")
 	SDL_ShowSimpleMessageBox(
 		SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
 		b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
@@ -340,7 +368,7 @@ if maximized:
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
 if not renderer or not t_window:
-	print("ERROR CREATING WINDOW!")
+	logging.error("ERROR CREATING WINDOW!")
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 SDL_SetWindowOpacity(t_window, window_opacity)
@@ -359,14 +387,17 @@ SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
-img_path = os.path.join(asset_directory, "loading.png")
+img_path = Path(asset_directory) / "loading.png"
+if not img_path.exists():
+	raise FileNotFoundError(f"{str(img_path)} not found, exiting!")
+
 if scale != 1:
-	img_path2 = os.path.join(user_directory, "scaled-icons", "loading.png")
-	if os.path.isfile(img_path2):
+	img_path2 = Path(user_directory) / "scaled-icons" / "loading.png"
+	if Path(img_path2).is_file():
 		img_path = img_path2
 	del img_path2
 
-raw_image = IMG_Load(img_path.encode())
+raw_image = IMG_Load(str(img_path).encode())
 sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 w = raw_image.contents.w
 h = raw_image.contents.h
@@ -413,11 +444,11 @@ del flags
 del img_path
 
 if pyinstaller_mode or sys.platform == "darwin" or install_mode:
-	from t_modules import t_main
+	from tauon.t_modules import t_main
 else:
 	# Using the above import method breaks previous pickles. Could be fixed
 	# but yet to decide what best method is.
-	big_boy_path = os.path.join(install_directory, "t_modules/t_main.py")
+	big_boy_path = Path(install_directory) / "t_modules/t_main.py"
 	f = open(big_boy_path, "rb")
 	main = compile(f.read(), big_boy_path, "exec")
 	f.close()

@@ -12,7 +12,7 @@
 	dynamic = ["dependencies"]
 
 [project.gui-scripts]
-	tauonmb = "tauon:main"
+	tauonmb = "tauon.tauon:main"
 
 [project.entry-points."distutils.commands"]
 	compile_translations = "compile_translations:main"
@@ -25,19 +25,28 @@
 	build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-	include-package-data = true
 	# https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
 	# This is terribly formatted as in TOML 1.0 it all has to be inline, can only be changed when TOML 1.1 ships
 	ext-modules = [
 		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
 		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
 
+	package-dir = {"" = "src"}
+
 	# Should we care about these options or is it fine to omit them here?
 	#   -shared -o libphazor.so -fPIC -Wall -O3 -g #-Wextra
 	#   -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -DPIPE #-Wextra
 
+	packages = [
+		"tauon",
+		"tauon.t_modules"
+	]
+
 [tool.setuptools.dynamic]
 	dependencies = {file = "requirements.txt"}
+
+[tool.setuptools.package-data]
+"tauon" = ["assets/*", "templates/*", "theme/*"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
