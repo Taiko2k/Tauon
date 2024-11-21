@@ -21,6 +21,7 @@ from __future__ import annotations
 import colorsys
 import glob
 import locale
+import logging
 import math
 import os
 import random
@@ -39,7 +40,7 @@ from gi.repository import GLib
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
-	from t_modules.t_main import TrackClass
+	from tauon.t_modules.t_main import TrackClass
 
 _ = lambda m: m
 
@@ -209,9 +210,8 @@ def colour_value(c1: list[int]) -> int:
 	"""Give the sum of first 3 elements in a list"""
 	return c1[0] + c1[1] + c1[2]
 
-
 def alpha_blend(colour: tuple[int, int, int, int], base: tuple[int, int, int, int]) -> list[int]:
-	"""Perform alpha blending of one colour (rgba) onto another (rgb)"""
+	"""Performs alpha blending of one colour (RGB-A) onto another (RGB)"""
 	alpha = colour[3] / 255
 	return [
 		int(alpha * colour[0] + (1 - alpha) * base[0]),
@@ -386,9 +386,16 @@ def is_ignorable_file(string: str) -> bool:
 
 
 # Pre-compile the regular expression pattern for dates starting with the year
-date_pattern = re.compile(r'\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*')
+date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
 
 def get_year_from_string(s: str) -> str:
+	"""Gets year in form of YYYY from a string
+
+	Example usage:
+		example_string = "Event date: 2021-12-31."
+		print(get_year_from_string(example_string))
+		> "2021"
+	"""
 	# Search for the pattern in the string
 	match = date_pattern.search(s)
 
@@ -397,11 +404,6 @@ def get_year_from_string(s: str) -> str:
 		return match.group(2) if match.group(2) else match.group(3)
 
 	return ""
-
-
-# Example usage
-example_string = "Event date: 2021-12-31."
-print(get_year_from_string(example_string))  # Output: "2021"
 
 def is_music_related(string: str) -> bool:
 	for s in [
@@ -423,8 +425,8 @@ def is_music_related(string: str) -> bool:
 def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> float:
 	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
-	# print(path)
-	# print(ext)
+	#logging.info(path)
+	#logging.info(ext)
 	try:
 		if ext == "rar":
 			matches = 0
@@ -432,7 +434,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
 			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
-			# print(file_list)
+			#logging.info(file_list)
 			for fi in file_list:
 				for ty in extensions:
 					if fi[len(ty) * -1:].lower() == ty:
@@ -445,16 +447,16 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 						matches += 5
 				count += 1
 			if count > 200:
-				#print("RAR archive has many files")
-				#print("   --- " + path)
+				#logging.info("RAR archive has many files")
+				#logging.info("   --- " + path)
 				return 0
 			if matches == 0:
-				#print("RAR archive does not appear to contain audio files")
-				#print("   --- " + path)
+				#logging.info("RAR archive does not appear to contain audio files")
+				#logging.info("   --- " + path)
 				return 0
 			if count == 0:
-				#print("Archive has no files")
-				#print("   --- " + path)
+				#logging.info("Archive has no files")
+				#logging.info("   --- " + path)
 				return 0
 
 		elif ext == "7z":
@@ -463,7 +465,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
 			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
-			# print(file_list)
+			#logging.info(file_list)
 
 			for fi in file_list:
 
@@ -481,16 +483,16 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 				count += 1
 
 			if count > 200:
-				#print("7z archive has many files")
-				#print("   --- " + path)
+				#logging.info("7z archive has many files")
+				#logging.info("   --- " + path)
 				return 0
 			if matches == 0:
-				#print("7z archive does not appear to contain audio files")
-				#print("   --- " + path)
+				#logging.info("7z archive does not appear to contain audio files")
+				#logging.info("   --- " + path)
 				return 0
 			if count == 0:
-				#print("7z archive has no files")
-				#print("   --- " + path)
+				#logging.info("7z archive has no files")
+				#logging.info("   --- " + path)
 				return 0
 
 		elif ext == "zip":
@@ -498,7 +500,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			zip_ref = zipfile.ZipFile(path, "r")
 			matches = 0
 			count = 0
-			#print(zip_ref.namelist())
+			#logging.info(zip_ref.namelist())
 			for fi in zip_ref.namelist():
 				for ty in extensions:
 					if fi[len(ty) * -1:].lower() == ty:
@@ -511,22 +513,22 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 						matches += 5
 				count += 1
 			if count == 0:
-				#print("Archive has no files")
-				#print("   --- " + path)
+				#logging.info("Archive has no files")
+				#logging.info("   --- " + path)
 				return 0
 			if count > 300:
-				#print("Zip archive has many files")
-				#print("   --- " + path)
+				#logging.info("Zip archive has many files")
+				#logging.info("   --- " + path)
 				return 0
 			if matches == 0:
-				#print("Zip archive does not appear to contain audio files")
-				#print("   --- " + path)
+				#logging.info("Zip archive does not appear to contain audio files")
+				#logging.info("   --- " + path)
 				return 0
 		else:
 			return 0
 
 	except Exception:
-		print("Archive test error")
+		logging.exception("Archive test error")
 
 		return 0
 

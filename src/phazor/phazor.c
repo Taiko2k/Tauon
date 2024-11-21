@@ -66,7 +66,7 @@
 #include <mpg123.h>
 #include "vorbis/codec.h"
 #include "vorbis/vorbisfile.h"
-#include "opusfile.h"
+#include "opus/opusfile.h"
 #include <sys/stat.h>
 #include <samplerate.h>
 #include <libopenmpt/libopenmpt.h>

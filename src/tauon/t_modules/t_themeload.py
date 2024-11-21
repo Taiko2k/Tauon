@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import logging
 import os
 from typing import TYPE_CHECKING
 
@@ -36,11 +37,11 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load_RW
 
-from t_modules.t_extra import rgb_add_hls, test_lumi
+from tauon.t_modules.t_extra import rgb_add_hls, test_lumi
 
 if TYPE_CHECKING:
-	from t_modules.t_draw import TDraw
-	from t_modules.t_main import GuiVar, Tauon
+	from tauon.t_modules.t_draw import TDraw
+	from tauon.t_modules.t_main import GuiVar, Tauon
 
 _ = lambda m: m
 def get_colour_from_line(cline: str) -> list[int]:
@@ -363,7 +364,7 @@ class Deco:
 		decos = self.get_themes(deco=True)
 
 		if name not in decos:
-			print("Missing deco file")
+			logging.error("Missing deco file")
 			return
 
 		target = decos[name]

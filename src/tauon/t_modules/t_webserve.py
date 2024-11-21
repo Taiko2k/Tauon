@@ -31,10 +31,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
-from t_modules.t_extra import Timer
+from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
-	from t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Tauon, TrackClass
 
 _ = lambda m: m
 def send_file(path: str, mime: str, server) -> None:
@@ -196,7 +196,6 @@ def webserve(pctl: PlayerCtl, prefs: dict, gui: GuiVar, album_art_gen: AlbumArt,
 					data = {"image_data": base64}
 				except Exception:
 					logging.exception("No image data")
-					#raise
 					data = {"image_data": "None"}
 
 				lyrics = tauon.synced_to_static_lyrics.get(track)

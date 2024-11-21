@@ -28,7 +28,7 @@ import os
 import struct
 import wave
 
-from t_modules.t_extra import process_odat
+from tauon.t_modules.t_extra import process_odat
 
 _ = lambda m: m
 

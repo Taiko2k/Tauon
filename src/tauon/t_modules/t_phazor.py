@@ -42,10 +42,10 @@ from typing import TYPE_CHECKING
 import requests
 from requests.models import PreparedRequest
 
-from t_modules.t_extra import Timer, shooter, tmp_cache_dir
+from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 
 if TYPE_CHECKING:
-	from t_modules.t_main import PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_main import PlayerCtl, Tauon, TrackClass
 
 _ = lambda m: m
 
@@ -958,8 +958,8 @@ def player4(tauon: Tauon) -> None:
 								pctl.playerCommandReady = False
 
 						except Exception:
-							#tauon.spot_ctl.preparing_spotify = False
 							logging.exception("Failed to start Spotify track")
+							#tauon.spot_ctl.preparing_spotify = False
 							pctl.playerCommand = "stop"
 							pctl.playerCommandReady = True
 						continue

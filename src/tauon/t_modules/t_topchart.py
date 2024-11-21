@@ -33,7 +33,7 @@ from gi.repository import Pango, PangoCairo
 from PIL import Image
 
 if TYPE_CHECKING:
-	from t_modules.t_main import AlbumArt, Tauon, TrackClass
+	from tauon.t_modules.t_main import AlbumArt, Tauon, TrackClass
 
 _ = lambda m: m
 class TopChart:

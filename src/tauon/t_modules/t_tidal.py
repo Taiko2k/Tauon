@@ -17,7 +17,7 @@ except Exception:
 	logging.exception("Tidalapi not found")
 
 if TYPE_CHECKING:
-	from t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
 _ = lambda m: m
 
@@ -357,7 +357,7 @@ class Tidal:
 		tracks = album.tracks()
 
 		for track in tracks:
-			print("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+			logging.info("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
 
 			nt = self.new_track(track)
 			self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing][2].append(nt.index)
