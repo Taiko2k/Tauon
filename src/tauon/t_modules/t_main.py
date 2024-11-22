@@ -495,9 +495,9 @@ asset_directory = os.path.join(install_directory, "assets")
 svg_directory = os.path.join(install_directory, "assets/svg")
 scaled_asset_directory = asset_directory
 
-music_directory = os.path.join(os.path.expanduser("~"), "Music")
-if not Path(music_directory).is_dir():
-	music_directory = os.path.join(os.path.expanduser("~"), "music")
+music_directory = Path("~").expanduser() / "Music"
+if not music_directory.is_dir():
+	music_directory = Path("~").expanduser() / "music"
 
 download_directory = Path("~").expanduser() / "Downloads"
 
@@ -624,7 +624,7 @@ if platform_system == "Linux":
 		with xdg_dir_file.open() as f:
 			for line in f:
 				if line.startswith("XDG_MUSIC_DIR="):
-					music_directory = str(Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser())
+					music_directory = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
 					logging.info(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
 				if line.startswith("XDG_DOWNLOAD_DIR="):
 					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
@@ -634,7 +634,7 @@ if platform_system == "Linux":
 
 
 if os.getenv("XDG_MUSIC_DIR"):
-	music_directory = os.getenv("XDG_MUSIC_DIR")
+	music_directory = Path(os.getenv("XDG_MUSIC_DIR"))
 	logging.info("Override music to: " + music_directory)
 
 if os.getenv("XDG_DOWNLOAD_DIR"):
@@ -642,11 +642,11 @@ if os.getenv("XDG_DOWNLOAD_DIR"):
 	logging.info("Override downloads to: " + download_directory)
 
 if music_directory:
-	music_directory = os.path.expandvars(music_directory)
+	music_directory = Path(os.path.expandvars(music_directory))
 if download_directory:
 	download_directory = Path(os.path.expandvars(download_directory))
 
-if not Path(music_directory).is_dir():
+if not music_directory.is_dir():
 	music_directory = None
 
 logging.info(f"Install directory:      {install_directory}")
@@ -1261,7 +1261,7 @@ class Prefs:  # Used to hold any kind of settings
 		self.volume_wheel_increment = 2
 		self.encoder_output = user_directory + "/encoder/"
 		if music_directory is not None:
-			self.encoder_output = music_directory + "/encode-output/"
+			self.encoder_output = str(music_directory / "encode-output")
 		self.rename_folder_template = "<albumartist> - <album>"
 		self.rename_tracks_template = "<tn>. <artist> - <title>.<ext>"
 
@@ -3542,13 +3542,13 @@ shoot.start()
 
 # Loading Config -----------------
 
-download_directories = []
+download_directories: list[str] = []
 
 if download_directory.is_dir():
 	download_directories.append(str(download_directory))
 
-if music_directory is not None and os.path.isdir(music_directory):
-	download_directories.append(music_directory)
+if music_directory is not None and music_directory.is_dir():
+	download_directories.append(str(music_directory))
 
 cf = Config()
 
@@ -8294,7 +8294,7 @@ class Tauon:
 		self.prefs = prefs
 		self.cache_directory = cache_directory
 		self.user_directory = user_directory
-		self.music_directory = music_directory
+		self.music_directory:   Path | None = music_directory
 		self.worker_save_state = False
 		self.launch_prefix = launch_prefix
 		self.whicher = whicher
@@ -15207,7 +15207,7 @@ class ExportPlaylistBox:
         self.id = None
         self.directory_text_box = TextBox2()
         self.default = {
-            "path": music_directory if music_directory else os.path.join(user_directory, "playlists"),
+            "path": str(music_directory) if music_directory else os.path.join(user_directory, "playlists"),
             "type": "xspf",
             "relative": False,
             "auto": False,
@@ -22994,10 +22994,10 @@ def show_import_music(_):
 
 def import_music():
     pl = pl_gen(_("Music"))
-    pl[7] = [music_directory]
+    pl[7] = [str(music_directory)]
     pctl.multi_playlist.append(pl)
     load_order = LoadClass()
-    load_order.target = music_directory
+    load_order.target = str(music_directory)
     load_order.playlist = pl[6]
     load_orders.append(load_order)
     switch_playlist(len(pctl.multi_playlist) - 1)
@@ -26337,7 +26337,7 @@ def worker1():
                     split = os.path.splitext(path)
                     target_dir = split[0]
                     if prefs.extract_to_music and music_directory is not None:
-                        target_dir = os.path.join(music_directory, os.path.basename(target_dir))
+                        target_dir = os.path.join(str(music_directory), os.path.basename(target_dir))
                     #logging.info(os.path.getsize(path))
                     if os.path.getsize(path) > 4e+9:
                         logging.warning("Archive file is large!")
@@ -41816,7 +41816,7 @@ class DLMon:
                             split = os.path.splitext(path)
                             target_dir = split[0]
                             if prefs.extract_to_music and music_directory is not None:
-                                target_dir = os.path.join(music_directory, os.path.basename(target_dir))
+                                target_dir = os.path.join(str(music_directory), os.path.basename(target_dir))
 
                             if os.path.exists(target_dir):
                                 pass
@@ -43223,7 +43223,7 @@ def test_show_add_home_music():
         return
 
     for item in pctl.multi_playlist:
-        if item[7] == music_directory:
+        if item[7] == str(music_directory):
             gui.add_music_folder_ready = False
             break
 
