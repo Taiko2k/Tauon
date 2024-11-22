@@ -186,7 +186,7 @@ if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")) or s
 	install_mode = True
 
 # Assume that it's a classic Linux install, use standard paths
-if str(install_directory).startswith("/usr/"):
+if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
 	install_directory = Path("/usr/share/TauonMusicBox")
 
 user_directory = install_directory / "user-data"
