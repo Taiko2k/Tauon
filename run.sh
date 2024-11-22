@@ -22,10 +22,12 @@ tar --strip-components=1 -xvf kissfft.tar.gz   -C ./src/phazor/kissfft/
 tar --strip-components=1 -xvf miniaudio.tar.gz -C ./src/phazor/miniaudio/
 
 python -m venv .venv
+# Windows: .\.venv\Scripts\activate
 source .venv/bin/activate
 pip install -r requirements.txt
 pip install -r requirements_optional.txt
 #pip install -r requirements_devel.txt
+#pip install -r requirements_windows.txt
 pip install build
 python -m compile_translations
 python -m build --wheel
