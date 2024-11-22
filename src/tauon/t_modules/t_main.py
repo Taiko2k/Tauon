@@ -386,30 +386,30 @@ if system == "Linux":
 if system == "Linux" and not macos and not msys:
 	from tauon.t_modules.t_dbus import Gnome
 
-h = t_bootstrap.holder
-t_window = h.w
-renderer = h.r
-logical_size = h.wl
-window_size = h.wr
-maximized = h.m
-scale: float = h.s
-window_opacity = h.o
-draw_border = h.d
-transfer_args_and_exit = h.e
-old_window_position = h.ow
-install_directory = h.id
-pyinstaller_mode = h.py
-phone = h.p
-window_default_size = h.wdf
-window_title = h.window_title
-fs_mode = h.fs_mode
-t_title = h.title
-n_version = h.n_version
-t_version = h.t_version
-t_id = h.t_id
-t_agent = h.agent
-dev_mode = h.dev_mode
-instance_lock = h.lock
+holder                 = t_bootstrap.holder
+t_window               = holder.t_window
+renderer               = holder.renderer
+logical_size           = holder.logical_size
+window_size            = holder.window_size
+maximized              = holder.maximized
+scale: float           = holder.scale
+window_opacity         = holder.window_opacity
+draw_border            = holder.draw_border
+transfer_args_and_exit = holder.transfer_args_and_exit
+old_window_position    = holder.old_window_position
+install_directory      = str(holder.install_directory) # TODO(Martin): Convert to Path proper
+pyinstaller_mode       = holder.pyinstaller_mode
+phone                  = holder.phone
+window_default_size    = holder.window_default_size
+window_title           = holder.window_title
+fs_mode                = holder.fs_mode
+t_title                = holder.t_title
+n_version              = holder.n_version
+t_version              = holder.t_version
+t_id                   = holder.t_id
+t_agent                = holder.t_agent
+dev_mode               = holder.dev_mode
+instance_lock          = holder.instance_lock
 logging.info(f"Window size: {window_size}")
 
 should_save_state = True
