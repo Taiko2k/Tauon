@@ -292,7 +292,8 @@ except Exception:
 
 try:
 	from jxlpy import JXLImagePlugin
-	logging.info("Found jxlpy for JPEG XL support")
+	# We've already logged this once to INFO from t_draw, so just log to DEBUG
+	logging.debug("Found jxlpy for JPEG XL support")
 except ModuleNotFoundError:
 	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
 except Exception:
