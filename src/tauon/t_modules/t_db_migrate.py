@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ def database_migrate(
 	multi_playlist: list[TauonPlaylist],
 	star_store: StarStore,
 	a_cache_dir: str,
-	cache_directory: str,
+	cache_directory: Path,
 	config_directory: str,
 	install_directory: str,
 	user_directory: str,
@@ -324,14 +325,14 @@ def database_migrate(
 	if db_version <= 44:
 		logging.info("Updating database to version 45")
 		logging.info("Cleaning cache directory")
-		for item in os.listdir(cache_directory):
-			path = os.path.join(cache_directory, item)
-			if "-lfm." in item or "-ftv." in item or "-dcg." in item:
-				os.rename(path, os.path.join(a_cache_dir, item))
-		for item in os.listdir(cache_directory):
-			path = os.path.join(cache_directory, item)
-			if os.path.isfile(path):
-				os.remove(path)
+		for item in cache_directory.iterdir():
+			path = cache_directory / item
+			if "-lfm." in str(item) or "-ftv." in str(item) or "-dcg." in str(item):
+				path.rename(a_cache_dir / item)
+		for item in cache_directory.iterdir():
+			path = cache_directory / item
+			if path.is_file():
+				path.unlink()
 
 	if db_version <= 45:
 		logging.info("Updating database to version 46")
@@ -347,7 +348,7 @@ def database_migrate(
 
 	if db_version <= 47:
 		logging.info("Updating database to version 48")
-		if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
+		if Path(Path(user_directory) / "spot-r-token").is_file():
 			show_message(
 			_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
 			_("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"))

@@ -32,7 +32,7 @@ pyinstaller \
 
 mkdir -p dist/tauon/tekore
 
-#cp C:/msys64/mingw64/lib/python3.10/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
+#cp C:/msys64/mingw64/lib/python3.13/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
 
 cp -r src/tauon/theme     dist/tauon/
 cp -r src/tauon/assets    dist/tauon/

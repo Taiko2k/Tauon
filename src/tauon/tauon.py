@@ -167,53 +167,53 @@ def transfer_args_and_exit() -> None:
 if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
-install_directory = str(Path(__file__).resolve().parent)
+install_directory: Path = Path(__file__).resolve().parent
 
 pyinstaller_mode = False
 if hasattr(sys, "_MEIPASS"):
 	pyinstaller_mode = True
-if install_directory.endswith("\\_internal"):
+if str(install_directory).endswith("\\_internal"):
 	pyinstaller_mode = True
-	install_directory = str(Path(install_directory).parent)
+	install_directory = install_directory.parent
 
 if pyinstaller_mode:
 	os.environ["PATH"] += ":" + sys._MEIPASS
-	os.environ["SSL_CERT_FILE"] = Path(install_directory) / "certifi" / "cacert.pem"
+	os.environ["SSL_CERT_FILE"] = str(install_directory / "certifi" / "cacert.pem")
 
 # If we're installed, use home data locations
 install_mode = False
-if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.platform == "darwin" or sys.platform == "win32":
+if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.platform == "darwin" or sys.platform == "win32":
 	install_mode = True
 
 # Assume that it's a classic Linux install, use standard paths
-if install_directory.startswith("/usr/"):
-	install_directory = "/usr/share/TauonMusicBox"
+if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
+	install_directory = Path("/usr/share/TauonMusicBox")
 
-user_directory = Path(install_directory) / "user-data"
+user_directory = install_directory / "user-data"
 config_directory = user_directory
-asset_directory = Path(install_directory) / "assets"
+asset_directory = install_directory / "assets"
 
-if install_directory.startswith("/app/"):
+if str(install_directory).startswith("/app/"):
 	# Its Flatpak
 	t_id = "com.github.taiko2k.tauonmb"
 os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 
-if Path(Path(install_directory) / "portable").is_file():
+if Path(install_directory / "portable").is_file():
 	install_mode = False
 
 if install_mode:
 	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
-if not Path(user_directory).is_dir():
-	Path(user_directory).mkdir(parents=True)
+if not user_directory.is_dir():
+	user_directory.mkdir(parents=True)
 
 fp = None
-dev_mode = Path(Path(install_directory) / ".dev").is_file()
+dev_mode = Path(install_directory / ".dev").is_file()
 if dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
-	pid_file = Path(user_directory) / "program.pid"
-	fp = open(pid_file, "w")
+	pid_file = user_directory / "program.pid"
+	fp = pid_file.open("w")
 	try:
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
 	except OSError:
@@ -221,16 +221,16 @@ elif sys.platform != "win32":
 		transfer_args_and_exit()
 else:
 	if sys.platform == "win32":
-		pid_file = Path(user_directory) / "program.pid"
+		pid_file = user_directory / "program.pid"
 		try:
-			if Path(pid_file).is_file():
-				Path(pid_file).unlink()
-			fp = open(pid_file, "w")
+			if pid_file.is_file():
+				pid_file.unlink()
+			fp = pid_file.open("w")
 		except OSError:
 			logging.exception("Another Tauon instance is already running")
 			transfer_args_and_exit()
 	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = Path(install_directory) / "etc\\fonts" #"C:\\msys64\\mingw64\\etc\\fonts"
+		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts") #"C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
@@ -239,7 +239,7 @@ if d in ["GNOME:Phosh"]:
 	phone = True
 
 if pyinstaller_mode: # and sys.platform == 'darwin':
-	os.environ["PYSDL2_DLL_PATH"] = install_directory
+	os.environ["PYSDL2_DLL_PATH"] = str(install_directory)
 
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
@@ -247,7 +247,7 @@ if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	logging.info("Running in GAMESCOPE MODE")
 
 allow_hidpi = True
-if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(Path(user_directory) / "nohidpi").is_file():
+if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(user_directory / "nohidpi").is_file():
 	allow_hidpi = False
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
@@ -261,9 +261,9 @@ h = 600
 if phone:
 	w = 720
 	h = 1800
-window_default_size = [w, h]
-window_size = [w, h]
-logical_size = [w, h]
+window_default_size: tuple[int, int] = (w, h)
+window_size:         list[int] = [w, h]
+logical_size:        list[int] = [w, h]
 window_opacity = 1
 scale = 1
 if sys.platform == "darwin":
@@ -272,12 +272,12 @@ if phone:
 	scale = 1.3
 
 maximized = False
-old_window_position = None
+old_window_position: tuple [int, int] | None = None
 
-window_p = Path(user_directory) / "window.p"
-if Path(window_p).is_file() and not fs_mode:
+window_p = user_directory / "window.p"
+if window_p.is_file() and not fs_mode:
 	try:
-		state_file = open(window_p, "rb")
+		state_file = window_p.open("rb")
 		save = pickle.load(state_file)
 		state_file.close()
 
@@ -293,9 +293,8 @@ if Path(window_p).is_file() and not fs_mode:
 		del save
 
 	except Exception:
-		logging.exception("Corrupted window state file?!")
-		logging.error("Please restart app")
-		Path(window_p).unlink()
+		logging.exception("Corrupted window state file?! Please restart app!")
+		window_p.unlink()
 		sys.exit(1)
 else:
 	logging.info("No window state file")
@@ -317,7 +316,7 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 
 if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
-if Path(Path(user_directory) / "x11").exists():
+if Path(user_directory / "x11").exists():
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
 SDL_Init(SDL_INIT_VIDEO)
@@ -387,13 +386,13 @@ SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
-img_path = Path(asset_directory) / "loading.png"
+img_path = asset_directory / "loading.png"
 if not img_path.exists():
 	raise FileNotFoundError(f"{str(img_path)} not found, exiting!")
 
 if scale != 1:
-	img_path2 = Path(user_directory) / "scaled-icons" / "loading.png"
-	if Path(img_path2).is_file():
+	img_path2 = user_directory / "scaled-icons" / "loading.png"
+	if img_path2.is_file():
 		img_path = img_path2
 	del img_path2
 
@@ -410,30 +409,30 @@ SDL_RenderPresent(renderer)
 SDL_FreeSurface(raw_image)
 SDL_DestroyTexture(sdl_texture)
 
-h = t_bootstrap.holder
-h.w = t_window
-h.r = renderer
-h.wl = logical_size
-h.wr = window_size
-h.wdf = window_default_size
-h.s = scale
-h.m = maximized
-h.e = transfer_args_and_exit
-h.d = draw_border
-h.o = window_opacity
-h.ow = old_window_position
-h.id = install_directory
-h.py = pyinstaller_mode
-h.p = phone
-h.window_title = window_title
-h.fs_mode = fs_mode
-h.title = t_title
-h.n_version = n_version
-h.t_version = t_version
-h.t_id = t_id
-h.agent = t_agent
-h.dev_mode = dev_mode
-h.lock = fp
+holder                        = t_bootstrap.holder
+holder.t_window               = t_window
+holder.renderer               = renderer
+holder.logical_size           = logical_size
+holder.window_size            = window_size
+holder.window_default_size    = window_default_size
+holder.scale                  = scale
+holder.maximized              = maximized
+holder.transfer_args_and_exit = transfer_args_and_exit
+holder.draw_border            = draw_border
+holder.window_opacity         = window_opacity
+holder.old_window_position    = old_window_position
+holder.install_directory      = install_directory
+holder.pyinstaller_mode       = pyinstaller_mode
+holder.phone                  = phone
+holder.window_title           = window_title
+holder.fs_mode                = fs_mode
+holder.t_title                = t_title
+holder.n_version              = n_version
+holder.t_version              = t_version
+holder.t_id                   = t_id
+holder.t_agent                = t_agent
+holder.dev_mode               = dev_mode
+holder.instance_lock          = fp
 
 del raw_image
 del sdl_texture
@@ -446,12 +445,18 @@ del img_path
 if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 	from tauon.t_modules import t_main
 else:
-	# Using the above import method breaks previous pickles. Could be fixed
-	# but yet to decide what best method is.
-	big_boy_path = Path(install_directory) / "t_modules/t_main.py"
-	f = open(big_boy_path, "rb")
-	main = compile(f.read(), big_boy_path, "exec")
+	# Using the above import method breaks previous pickles.
+	# Could be fixed, but yet to decide what best method is.
+	big_boy_path = install_directory / "t_modules/t_main.py"
+	f = big_boy_path.open("rb")
+	main_func = compile(f.read(), big_boy_path, "exec")
 	f.close()
 	del big_boy_path
 	del f
-	exec(main)
+
+#	main = main_func
+#	exec(main)
+
+	def main() -> None:
+		"""Execute the compiled code and return"""
+		exec(main_func, {})

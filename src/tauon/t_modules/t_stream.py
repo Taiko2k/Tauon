@@ -260,7 +260,7 @@ class StreamEnc:
 				ext = ".flac"
 				rate = "44100"
 
-			target_file = os.path.join(self.tauon.cache_directory, "stream" + ext)
+			target_file = str(self.tauon.cache_directory / "stream" / ext)
 			if os.path.isfile(target_file):
 				os.remove(target_file)
 

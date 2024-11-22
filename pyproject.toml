@@ -27,6 +27,22 @@
 [tool.setuptools]
 	# https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
 	# This is terribly formatted as in TOML 1.0 it all has to be inline, can only be changed when TOML 1.1 ships
+
+	# Windows - MSVC - does not work as PyGobject, GTK, Cairo and et al won't build under MVSC
+	#   One option would be to test https://github.com/wingtk/gvsbuild + https://stackoverflow.com/a/72737752
+	# ./vcpkg.exe install libsndfile:x64-windows # TODO download the necessities instead of this bundle, libflac at minimum
+	# ./vcpkg.exe install mpg123:x64-windows # Hack 1.29.3 in first see https://sourceforge.net/p/mpg123/bugs/374/
+	# ./vcpkg.exe install libsamplerate:x64-windows
+	# ./vcpkg.exe install libopenmpt:x64-windows
+	# ./vcpkg.exe install wavpack:x64-windows
+	# ./vcpkg.exe install libgme:x64-windows
+	# ./vcpkg.exe install pthreads:x64-windows
+	# wavpack.lib is trying to be found but it is wavpackdll.lib
+	# opusfile includes opus libraries without opus/ wtf copy them over
+#	ext-modules = [
+#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
+
+	# Linux
 	ext-modules = [
 		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
 		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
@@ -43,6 +59,9 @@
 	]
 
 [tool.setuptools.dynamic]
+	# Windows
+#	dependencies = {file = "requirements_windows.txt"}
+	# Linux
 	dependencies = {file = "requirements.txt"}
 
 [tool.setuptools.package-data]

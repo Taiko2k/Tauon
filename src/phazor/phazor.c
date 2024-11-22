@@ -21,6 +21,9 @@
 #ifdef _WIN32
 #define WIN
 #include <windows.h>
+#define usleep(usec) Sleep((usec) / 1000)  // Convert microseconds to milliseconds
+#else
+#include <unistd.h>
 #endif
 
 #ifdef PIPE
@@ -40,7 +43,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <math.h>
 #include <pthread.h>
 #include <time.h>
@@ -74,6 +76,31 @@
 #include "kissfft/kiss_fftr.h"
 #include "wavpack/wavpack.h"
 #include "gme/gme.h"
+
+#include <Python.h>
+
+// Module method definitions (if any)
+static PyMethodDef PhazorMethods[] = {
+	{NULL, NULL, 0, NULL} // Sentinel
+};
+
+// Module definition
+static struct PyModuleDef phazor_module = {
+	PyModuleDef_HEAD_INIT,
+	"phazor",                  // Module name
+	NULL,                      // Module documentation (may be NULL)
+	-1,                        // Size of per-interpreter state of the module
+	PhazorMethods              // Methods table
+};
+
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+// Entry point for the module
+PyMODINIT_FUNC PyInit_phazor(void) {
+	return PyModule_Create(&phazor_module);
+}
+
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
