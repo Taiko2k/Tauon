@@ -26,7 +26,7 @@ class Tidal:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.session = None
-		self.save_path = os.path.join(tauon.cache_directory, "tidal.json")
+		self.save_path = str(tauon.cache_directory / "tidal.json")
 		self.login_stage = 0
 		self.import_cache = {}
 

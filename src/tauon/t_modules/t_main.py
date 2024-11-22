@@ -478,7 +478,7 @@ if install_directory.startswith("/usr/"):
 # Set data folders (portable mode)
 user_directory = install_directory
 config_directory = user_directory
-cache_directory = os.path.join(user_directory, "cache")
+cache_directory = Path(user_directory) / "cache"
 home_directory = os.path.join(os.path.expanduser("~"))
 
 asset_directory = os.path.join(install_directory, "assets")
@@ -486,7 +486,7 @@ svg_directory = os.path.join(install_directory, "assets/svg")
 scaled_asset_directory = asset_directory
 
 music_directory = os.path.join(os.path.expanduser("~"), "Music")
-if not os.path.isdir(music_directory):
+if not Path(music_directory).is_dir():
 	music_directory = os.path.join(os.path.expanduser("~"), "music")
 
 download_directory = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -529,14 +529,14 @@ if install_directory.startswith("/opt/") \
 # If we're installed, use home data locations
 if (install_mode and system == "linux") or macos or msys:
 
-	cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
-	user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
-	config_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
+	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
+	user_directory   = Path(GLib.get_user_data_dir())  / "TauonMusicBox"
+	config_directory = Path(GLib.get_user_data_dir())  / "TauonMusicBox"
 
-	if not os.path.isdir(user_directory):
+	if not Path(user_directory).is_dir():
 		os.makedirs(user_directory)
 
-	if not os.path.isdir(config_directory):
+	if not Path(config_directory).is_dir():
 		os.makedirs(config_directory)
 
 	if snap_mode:
@@ -548,8 +548,8 @@ if (install_mode and system == "linux") or macos or msys:
 
 	logging.info("User files location: " + user_directory)
 
-	if not os.path.isdir(os.path.join(user_directory, "encoder")):
-		os.makedirs(os.path.join(user_directory, "encoder"))
+	if not Path(Path(user_directory) / "encoder").is_dir():
+		os.makedirs(Path(user_directory) / "encoder")
 
 
 # elif (system == 'windows' or msys) and (
@@ -558,7 +558,7 @@ if (install_mode and system == "linux") or macos or msys:
 #
 #	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
 #	 config_directory = user_directory
-#	 cache_directory = user_directory + "\\cache"
+#	 cache_directory = user_directory / "cache"
 #	 logging.info(f"User Directory: {user_directory}")
 #	 install_mode = True
 #	 if not os.path.isdir(user_directory):
@@ -568,24 +568,23 @@ if (install_mode and system == "linux") or macos or msys:
 else:
 	logging.info("Running in portable mode")
 
-	user_directory = os.path.join(install_directory, "user-data")
+	user_directory = str(Path(install_directory) / "user-data")
 	config_directory = user_directory
 
-	if not os.path.isdir(user_directory):
+	if not Path(user_directory).is_dir():
 		os.makedirs(user_directory)
 
-if not os.path.isfile(os.path.join(user_directory, "state.p")):
-	if os.path.isdir(cache_directory):
-		logging.info("Clearing old cache directory")
-		logging.info(cache_directory)
-		shutil.rmtree(cache_directory)
+if not Path(Path(user_directory) / "state.p").is_file() and cache_directory.is_dir():
+	logging.info("Clearing old cache directory")
+	logging.info(str(cache_directory))
+	shutil.rmtree(str(cache_directory))
 
-n_cache_dir = os.path.join(cache_directory, "network")
-e_cache_dir = os.path.join(cache_directory, "export")
-g_cache_dir = os.path.join(cache_directory, "gallery")
-a_cache_dir = os.path.join(cache_directory, "artist")
-r_cache_dir = os.path.join(cache_directory, "radio-thumbs")
-b_cache_dir = os.path.join(user_directory, "artist-backgrounds")
+n_cache_dir = str(cache_directory / "network")
+e_cache_dir = str(cache_directory / "export")
+g_cache_dir = str(cache_directory / "gallery")
+a_cache_dir = str(cache_directory / "artist")
+r_cache_dir = str(cache_directory / "radio-thumbs")
+b_cache_dir = str(Path(user_directory)  / "artist-backgrounds")
 
 if not os.path.isdir(n_cache_dir):
 	os.makedirs(n_cache_dir)
@@ -607,22 +606,21 @@ if not os.path.isdir(os.path.join(user_directory, "theme")):
 	os.makedirs(os.path.join(user_directory, "theme"))
 
 
-if system == "linux":
-	system_config_directory = GLib.get_user_config_dir()
-	xdg_dir_file = os.path.join(system_config_directory, "user-dirs.dirs")
+if platform_system == "Linux":
+	system_config_directory = Path(GLib.get_user_config_dir())
+	xdg_dir_file = system_config_directory / "user-dirs.dirs"
 
-	if os.path.isfile(xdg_dir_file):
-		with open(xdg_dir_file) as f:
-			for line in f.readlines():
+	if xdg_dir_file.is_file():
+		with xdg_dir_file.open() as f:
+			for line in f:
 				if line.startswith("XDG_MUSIC_DIR="):
-					music_directory = os.path.expanduser(
-						os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-					logging.info(f"Found XDG-Music: {music_directory}")
+					music_directory = str(Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser())
+					logging.info(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
 				if line.startswith("XDG_DOWNLOAD_DIR="):
-					target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-					if os.path.isdir(target):
-						download_directory = target
-					logging.info(f"Found XDG-Downloads: {download_directory}")
+					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
+					if Path(target).is_dir():
+						download_directory = str(target)
+					logging.info(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
 
 
 if os.getenv("XDG_MUSIC_DIR"):
@@ -8421,7 +8419,7 @@ class Tauon:
 			indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
 			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
 
-		user_icon_dir = os.path.join(self.cache_directory, "icon-export")
+		user_icon_dir = str(self.cache_directory / "icon-export")
 		def install_tray_icon(src, name):
 			alt = os.path.join(user_icon_dir, f"{name}.svg")
 			if not os.path.isfile(alt) or force:
@@ -8434,8 +8432,8 @@ class Tauon:
 		install_tray_icon(indicator_icon_pause, "tray-indicator-pause")
 		install_tray_icon(indicator_icon_default, "tray-indicator-default")
 
-	def get_tray_icon(self, name):
-		return os.path.join(self.cache_directory, f"icon-export/{name}.svg")
+	def get_tray_icon(self, name: str) -> str:
+		return str(self.cache_directory / "icon-export" / f"{name}.svg")
 
 	def test_ffmpeg(self):
 		if self.get_ffmpeg():
@@ -12340,7 +12338,7 @@ class AlbumArt():
             ext = "." + im.format.lower()
             if im.format == "JPEG":
                 ext = ".jpg"
-            target = os.path.join(cache_directory, "open-image")
+            target = str(cache_directory / "open-image")
             if not os.path.exists(target):
                 os.makedirs(target)
             target = os.path.join(target, "embed-" + str(im.height) + "px-" + str(track_object.index) + ext)
