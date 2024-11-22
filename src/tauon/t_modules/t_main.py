@@ -4335,18 +4335,26 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 scale_assets(scale_want=prefs.scale_want)
 
 try:
-	# star_lines = view_prefs['star-lines']
-	update_title = view_prefs["update-title"]
+	#star_lines        = view_prefs['star-lines']
+	update_title      = view_prefs["update-title"]
 	prefs.prefer_side = view_prefs["side-panel"]
-	prefs.dim_art = False  # view_prefs['dim-art']
-	#gui.turbo = view_prefs['level-meter']
-	# pl_follow = view_prefs['pl-follow']
-	scroll_enable = view_prefs["scroll-enable"]
-	break_enable = view_prefs["break-enable"]
-	# dd_index = view_prefs['dd-index']
-	# custom_line_mode = view_prefs['custom-line']
-	# thick_lines = view_prefs['thick-lines']
-	prefs.append_date = view_prefs["append-date"]
+	prefs.dim_art     = False  # view_prefs['dim-art']
+	#gui.turbo         = view_prefs['level-meter']
+	#pl_follow         = view_prefs['pl-follow']
+	scroll_enable     = view_prefs["scroll-enable"]
+	if "break-enable" in view_prefs:
+		break_enable    = view_prefs["break-enable"]
+	else:
+		logging.warning("break-enable not found in view_prefs[] when trying to load settings! First run?")
+	#dd_index          = view_prefs['dd-index']
+	#custom_line_mode  = view_prefs['custom-line']
+	#thick_lines       = view_prefs['thick-lines']
+	if "append-date" in view_prefs:
+		prefs.append_date = view_prefs["append-date"]
+	else:
+		logging.warning("append-date not found in view_prefs[] when trying to load settings! First run?")
+except KeyError:
+	logging.exception("Failed to load settings - pref not found!")
 except Exception:
 	logging.exception("Failed to load settings!")
 
