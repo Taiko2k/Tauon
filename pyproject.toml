@@ -66,7 +66,6 @@
 
 [tool.setuptools.package-data]
 "tauon" = ["assets/*", "templates/*", "theme/*"]
-#"phazor" = ["miniaudio/miniaudio.h"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
