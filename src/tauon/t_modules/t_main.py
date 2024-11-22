@@ -7064,562 +7064,562 @@ def notify_song(notify_of_end=False, delay=0.0):
 
 # Last.FM -----------------------------------------------------------------
 class LastFMapi:
-    API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
-    connected = False
-    API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
-    scanning_username = ""
+	API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
+	connected = False
+	API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
+	scanning_username = ""
 
-    network = None
-    lastfm_network = None
-    tries = 0
+	network = None
+	lastfm_network = None
+	tries = 0
 
-    scanning_friends = False
-    scanning_loves = False
-    scanning_scrobbles = False
+	scanning_friends = False
+	scanning_loves = False
+	scanning_scrobbles = False
 
-    def __init__(self):
-        self.sg = None
-        self.url = None
+	def __init__(self):
+		self.sg = None
+		self.url = None
 
-    def get_network(self):
-        if prefs.use_libre_fm:
-            return pylast.LibreFMNetwork
-        else:
-            return pylast.LastFMNetwork
-
-    def auth1(self):
-        if not last_fm_enable:
-            show_message(_("Optional module python-pylast not installed"), mode="warning")
-            return
-        # This is step one where the user clicks "login"
-
-        if self.network is None:
-            self.no_user_connect()
-
-        self.sg = pylast.SessionKeyGenerator(self.network)
-        self.url = self.sg.get_web_auth_url()
-        show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
-        webbrowser.open(self.url, new=2, autoraise=True)
-
-    def auth2(self):
-
-        # This is step 2 where the user clicks "Done"
-
-        if self.sg is None:
-            show_message(_("You need to log in first"))
-            return
-
-        try:
-            # session_key = self.sg.get_web_auth_session_key(self.url)
-            session_key, username = self.sg.get_web_auth_session_key_username(self.url)
-            prefs.last_fm_token = session_key
-            self.network = self.get_network()(api_key=self.API_KEY, api_secret=
-            self.API_SECRET, session_key=prefs.last_fm_token)
-            # user = self.network.get_authenticated_user()
-            # username = user.get_name()
-            prefs.last_fm_username = username
-
-        except Exception as e:
-            if "Unauthorized Token" in str(e):
-                logging.exception("Not authorized")
-                show_message(_("Error - Not authorized"), mode="error")
-            else:
-                logging.exception("Unknown error")
-                show_message(_("Error"), _("Unknown error."), mode="error")
-
-        if not toggle_lfm_auto(mode=1):
-            toggle_lfm_auto()
-
-    def auth3(self):
-
-        # This is used for "logout"
-
-        prefs.last_fm_token = None
-        prefs.last_fm_username = ""
-        show_message(_("Logout will complete on app restart."))
-
-    def connect(self, m_notify=True):
-
-        if not last_fm_enable:
-            return False
-
-        if self.connected is True:
-            if m_notify:
-                show_message(_("Already connected to Last.fm"))
-            return True
-
-        if prefs.last_fm_token is None:
-            show_message(_("No Last.Fm account registered"), _("Authorise an account in settings"), mode="info")
-            return
-
-        logging.info("Attempting to connect to Last.fm network")
-
-        try:
-
-            self.network = self.get_network()(api_key=self.API_KEY, api_secret=
-            self.API_SECRET, session_key=prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
-
-            self.connected = True
-            if m_notify:
-                show_message(_("Connection to Last.fm was successful."), mode="done")
-
-            logging.info("Connection to lastfm appears successful")
-            return True
-
-        except Exception as e:
-            logging.exception("Error connecting to Last.fm network")
-            show_message(_("Error connecting to Last.fm network"), str(e), mode="warning")
-            return False
-
-    def toggle(self):
-        prefs.scrobble_hold ^= True
-
-    def details_ready(self):
-        if prefs.last_fm_token:
-            return True
-        else:
-            return False
-
-    def last_fm_only_connect(self):
-        if not last_fm_enable:
-            return False
-        try:
-            self.lastfm_network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
-            logging.info("Connection appears successful")
-            return True
-
-        except Exception as e:
-            logging.exception("Error communicating with Last.fm network")
-            show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
-            return False
-
-    def no_user_connect(self):
-        if not last_fm_enable:
-            return False
-        try:
-            self.network = self.get_network()(api_key=self.API_KEY, api_secret=self.API_SECRET)
-            logging.info("Connection appears successful")
-            return True
-
-        except Exception as e:
-            logging.exception("Error communicating with Last.fm network")
-            show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
-            return False
-
-    def get_all_scrobbles_estimate_time(self):
-
-        if not self.connected:
-            self.connect(False)
-        if not self.connected or not prefs.last_fm_username:
-            return
-
-        user = pylast.User(prefs.last_fm_username, self.network)
-        total = user.get_playcount()
-
-        if total:
-            return 0.04364 * total
-        return 0
-
-    def get_all_scrobbles(self):
-
-        if not self.connected:
-            self.connect(False)
-        if not self.connected or not prefs.last_fm_username:
-            return
-
-        try:
-            self.scanning_scrobbles = True
-            self.network.enable_rate_limit()
-            user = pylast.User(prefs.last_fm_username, self.network)
-            # username = user.get_name()
-            perf_timer.set()
-            tracks = user.get_recent_tracks(None)
-
-            counts = {}
-
-            # Count up the unique pairs
-            for track in tracks:
-                key = (str(track.track.artist), str(track.track.title))
-                c = counts.get(key, 0)
-                counts[key] = c + 1
-
-            touched = []
-
-            # Add counts to matching tracks
-            for key, value in counts.items():
-                artist, title = key
-                artist = artist.lower()
-                title = title.lower()
-
-                for track in pctl.master_library.values():
-                    t_artist = track.artist.lower()
-                    artists = [x.lower() for x in get_split_artists(track)]
-                    if t_artist == artist or artist in artists or (
-                            track.album_artist and track.album_artist.lower() == artist):
-                        if track.title.lower() == title:
-                            if track.index in touched:
-                                track.lfm_scrobbles += value
-                            else:
-                                track.lfm_scrobbles = value
-                                touched.append(track.index)
-        except Exception:
-            logging.exception("Scanning failed. Try again?")
-            gui.pl_update += 1
-            self.scanning_scrobbles = False
-            show_message(_("Scanning failed. Try again?"), mode="error")
-            return
-
-        logging.info(perf_timer.get())
-        gui.pl_update += 1
-        self.scanning_scrobbles = False
-        tauon.bg_save()
-        show_message(_("Scanning scrobbles complete"), mode="done")
-
-    def artist_info(self, artist):
-
-        if self.lastfm_network is None:
-            if self.last_fm_only_connect() is False:
-                return False, "", ""
-
-        try:
-            if artist != "":
-                l_artist = pylast.Artist(
-                    artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
-                    self.lastfm_network)
-                bio = l_artist.get_bio_content()
-                # cover_link = l_artist.get_cover_image()
-                mbid = l_artist.get_mbid()
-                url = l_artist.get_url()
-
-                return True, bio, "", mbid, url
-        except Exception:
-            logging.exception("last.fm get artist info failed")
-
-        return False, "", "", "", ""
-
-    def artist_mbid(self, artist):
-
-        if self.lastfm_network is None:
-            if self.last_fm_only_connect() is False:
-                return ""
-
-        try:
-            if artist != "":
-                l_artist = pylast.Artist(
-                    artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
-                    self.lastfm_network)
-                mbid = l_artist.get_mbid()
-                return mbid
-        except Exception:
-            logging.exception("last.fm get artist mbid info failed")
-
-        return ""
-
-    def sync_pull_love(self, track_object):
-        if not prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
-            return
-        if not last_fm_enable:
-            return
-        if prefs.auto_lfm:
-            self.connect(False)
-        if not self.connected:
-            return
-
-        try:
-            track = self.network.get_track(track_object.artist, track_object.title)
-            if not track:
-                logging.error("Get love: track not found")
-                return
-            track.username = prefs.last_fm_username
-
-            remote_loved = track.get_userloved()
-
-            if track_object.title != track.get_correction() or track_object.artist != track.get_artist().get_correction():
-                logging.warning(f"Pylast/lastfm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
-                return
-
-            if remote_loved is None:
-                logging.error("Error getting loved status")
-                return
-
-            local_loved = love(set=False, track_id=track_object.index, notify=False, sync=False)
-
-            if remote_loved != local_loved:
-                love(set=True, track_id=track_object.index, notify=False, sync=False)
-        except Exception:
-            logging.exception("Failed to pull love")
-
-    def scrobble(self, track_object, timestamp=None):
-        if not last_fm_enable:
-            return True
-        if prefs.scrobble_hold:
-            return True
-        if prefs.auto_lfm:
-            self.connect(False)
-
-        if timestamp is None:
-            timestamp = int(time.time())
-
-        # lastfm_user = self.network.get_user(self.username)
-
-        title = track_object.title
-        album = track_object.album
-        artist = get_artist_strip_feat(track_object)
-        album_artist = track_object.album_artist
-
-        logging.info("Submitting scrobble...")
-
-        # Act
-        try:
-            if title != "" and artist != "":
-                if album != "":
-                    if album_artist and album_artist != artist:
-                        self.network.scrobble(artist=artist, title=title, album=album, album_artist=album_artist,
-                                              timestamp=timestamp)
-                    else:
-                        self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
-                else:
-                    self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-                # logging.info('Scrobbled')
-
-                # Pull loved status
-
-                self.sync_pull_love(track_object)
-
-
-            else:
-                logging.warning("Not sent, incomplete metadata")
-
-        except Exception as e:
-            logging.exception("Failed to Scrobble!")
-            if "retry" in str(e):
-                logging.warning("Retrying in a couple seconds...")
-                time.sleep(7)
-
-                try:
-                    self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-                    # logging.info('Scrobbled')
-                    return True
-                except Exception:
-                    logging.exception("Failed to retry!")
-
-            # show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
-            console.print("Error connecting to last.fm", level=5)
-            console.print("-- " + str(e), level=5)
-            scrobble_warning_timer.set()
-            gui.update += 1
-            gui.delay_frame(5)
-
-            return False
-        return True
-
-    def get_bio(self, artist):
-
-        if self.lastfm_network is None:
-            if self.last_fm_only_connect() is False:
-                return ""
-
-        artist_object = pylast.Artist(artist, self.lastfm_network)
-        bio = artist_object.get_bio_summary(language="en")
-        # logging.info(artist_object.get_cover_image())
-        # logging.info("\n\n")
-        # logging.info(bio)
-        # logging.info("\n\n")
-        # logging.info(artist_object.get_bio_content())
-        return bio
-        # else:
-        #    return ""
-
-    def love(self, artist, title):
-
-        if not self.connected and prefs.auto_lfm:
-            self.connect(False)
-            prefs.scrobble_hold = True
-        if self.connected and artist != "" and title != "":
-            track = self.network.get_track(artist, title)
-            track.love()
-
-    def unlove(self, artist, title):
-        if not last_fm_enable:
-            return
-        if not self.connected and prefs.auto_lfm:
-            self.connect(False)
-            prefs.scrobble_hold = True
-        if self.connected and artist != "" and title != "":
-            track = self.network.get_track(artist, title)
-            track.love()
-            track.unlove()
-
-    def clear_friends_love(self):
-
-        count = 0
-        for index, tr in pctl.master_library.items():
-            count += len(tr.lfm_friend_likes)
-            tr.lfm_friend_likes.clear()
-
-        show_message(_("Removed {N} loves.").format(N=count))
-
-    def get_friends_love(self):
-        if not last_fm_enable:
-            return
-        self.scanning_friends = True
-
-        try:
-            username = prefs.last_fm_username
-            logging.info(f"Username is {username}")
-
-            if not username:
-                self.scanning_friends = False
-                show_message(_("There was an error, try re-log in"))
-                return
-
-            if self.network is None:
-                self.no_user_connect()
-
-            self.network.enable_rate_limit()
-            lastfm_user = self.network.get_user(username)
-            friends = lastfm_user.get_friends(limit=None)
-            show_message(_("Getting friend data..."), _("This may take a very long time."), mode="info")
-            for friend in friends:
-                self.scanning_username = friend.name
-                logging.info("Getting friend loves: " + friend.name)
-
-                try:
-                    loves = friend.get_loved_tracks(limit=None)
-                except Exception:
-                    logging.exception("Failed to get_loved_tracks!")
-
-                for track in loves:
-                    title = track.track.title.casefold()
-                    artist = track.track.artist.name.casefold()
-                    for index, tr in pctl.master_library.items():
-
-                        if tr.title.casefold() == title and tr.artist.casefold() == artist:
-                            tr.lfm_friend_likes.add(friend.name)
-                            logging.info("MATCH")
-                            logging.info("     " + artist + " - " + title)
-                            logging.info("      ----- " + friend.name)
-
-        except Exception:
-            logging.exception("There was an error getting friends loves")
-            show_message(_("There was an error getting friends loves"), "", mode="warning")
-
-        self.scanning_friends = False
-
-    def dl_love(self):
-        if not last_fm_enable:
-            return
-        username = prefs.last_fm_username
-        show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
-        self.scanning_username = username
-
-        if not username:
-            show_message(_("No username found"), mode="error")
-            return
-
-        if len(username) > 25:
-            logging.error("Aborted due to long username")
-            return
-
-        self.scanning_loves = True
-
-        logging.info("Connect for friend scan")
-
-        try:
-            if self.network is None:
-                self.no_user_connect()
-
-            self.network.enable_rate_limit()
-            logging.info("Get user...")
-            lastfm_user = self.network.get_user(username)
-            tracks = lastfm_user.get_loved_tracks(limit=None)
-
-            matches = 0
-            updated = 0
-
-            for track in tracks:
-                title = track.track.title.casefold()
-                artist = track.track.artist.name.casefold()
-
-                for index, tr in pctl.master_library.items():
-                    if tr.title.casefold() == title and tr.artist.casefold() == artist:
-                        matches += 1
-                        logging.info("MATCH:")
-                        logging.info("     " + artist + " - " + title)
-                        star = star_store.full_get(index)
-                        if star is None:
-                            star = star_store.new_object()
-                        if "L" not in star[1]:
-                            updated += 1
-                            logging.info("     NEW LOVE")
-                            star[1] += "L"
-
-                        star_store.insert(index, star)
-
-            self.scanning_loves = False
-            if len(tracks) == 0:
-                show_message(_("User has no loved tracks."))
-                return
-            if matches > 0 and updated == 0:
-                show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
-                return
-            if matches > 0 and updated > 0:
-                show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
-                return
-            else:
-                show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
-                return
-        except Exception:
-            logging.exception("This doesn't seem to be working :(")
-            show_message(_("This doesn't seem to be working :("), mode="error")
-        self.scanning_loves = False
-
-    def update(self, track_object):
-        if not last_fm_enable:
-            return
-        if prefs.scrobble_hold:
-            return 0
-        if prefs.auto_lfm:
-            if self.connect(False) is False:
-                prefs.auto_lfm = False
-        else:
-            return 0
-
-        # logging.info('Updating Now Playing')
-
-        title = track_object.title
-        album = track_object.album
-        artist = get_artist_strip_feat(track_object)
-
-        try:
-            if title != "" and artist != "":
-                self.network.update_now_playing(
-                    artist=artist, title=title, album=album)
-                return 0
-            else:
-                logging.error("Not sent, incomplete metadata")
-                return 0
-        except Exception as e:
-            logging.exception("Error connecting to last.fm.")
-            console.print("Error connecting to last.fm.", level=3)
-            console.print("-- " + str(e), level=3)
-            if "retry" in str(e):
-                return 2
-                # show_message(_("Could not update Last.fm. ", str(e), mode='warning')
-            pctl.b_time -= 5000
-            return 1
+	def get_network(self):
+		if prefs.use_libre_fm:
+			return pylast.LibreFMNetwork
+		else:
+			return pylast.LastFMNetwork
+
+	def auth1(self):
+		if not last_fm_enable:
+			show_message(_("Optional module python-pylast not installed"), mode="warning")
+			return
+		# This is step one where the user clicks "login"
+
+		if self.network is None:
+			self.no_user_connect()
+
+		self.sg = pylast.SessionKeyGenerator(self.network)
+		self.url = self.sg.get_web_auth_url()
+		show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
+		webbrowser.open(self.url, new=2, autoraise=True)
+
+	def auth2(self):
+
+		# This is step 2 where the user clicks "Done"
+
+		if self.sg is None:
+			show_message(_("You need to log in first"))
+			return
+
+		try:
+			# session_key = self.sg.get_web_auth_session_key(self.url)
+			session_key, username = self.sg.get_web_auth_session_key_username(self.url)
+			prefs.last_fm_token = session_key
+			self.network = self.get_network()(api_key=self.API_KEY, api_secret=
+			self.API_SECRET, session_key=prefs.last_fm_token)
+			# user = self.network.get_authenticated_user()
+			# username = user.get_name()
+			prefs.last_fm_username = username
+
+		except Exception as e:
+			if "Unauthorized Token" in str(e):
+				logging.exception("Not authorized")
+				show_message(_("Error - Not authorized"), mode="error")
+			else:
+				logging.exception("Unknown error")
+				show_message(_("Error"), _("Unknown error."), mode="error")
+
+		if not toggle_lfm_auto(mode=1):
+			toggle_lfm_auto()
+
+	def auth3(self):
+
+		# This is used for "logout"
+
+		prefs.last_fm_token = None
+		prefs.last_fm_username = ""
+		show_message(_("Logout will complete on app restart."))
+
+	def connect(self, m_notify=True):
+
+		if not last_fm_enable:
+			return False
+
+		if self.connected is True:
+			if m_notify:
+				show_message(_("Already connected to Last.fm"))
+			return True
+
+		if prefs.last_fm_token is None:
+			show_message(_("No Last.Fm account registered"), _("Authorise an account in settings"), mode="info")
+			return
+
+		logging.info("Attempting to connect to Last.fm network")
+
+		try:
+
+			self.network = self.get_network()(api_key=self.API_KEY, api_secret=
+			self.API_SECRET, session_key=prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
+
+			self.connected = True
+			if m_notify:
+				show_message(_("Connection to Last.fm was successful."), mode="done")
+
+			logging.info("Connection to lastfm appears successful")
+			return True
+
+		except Exception as e:
+			logging.exception("Error connecting to Last.fm network")
+			show_message(_("Error connecting to Last.fm network"), str(e), mode="warning")
+			return False
+
+	def toggle(self):
+		prefs.scrobble_hold ^= True
+
+	def details_ready(self):
+		if prefs.last_fm_token:
+			return True
+		else:
+			return False
+
+	def last_fm_only_connect(self):
+		if not last_fm_enable:
+			return False
+		try:
+			self.lastfm_network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
+			logging.info("Connection appears successful")
+			return True
+
+		except Exception as e:
+			logging.exception("Error communicating with Last.fm network")
+			show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
+			return False
+
+	def no_user_connect(self):
+		if not last_fm_enable:
+			return False
+		try:
+			self.network = self.get_network()(api_key=self.API_KEY, api_secret=self.API_SECRET)
+			logging.info("Connection appears successful")
+			return True
+
+		except Exception as e:
+			logging.exception("Error communicating with Last.fm network")
+			show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
+			return False
+
+	def get_all_scrobbles_estimate_time(self):
+
+		if not self.connected:
+			self.connect(False)
+		if not self.connected or not prefs.last_fm_username:
+			return
+
+		user = pylast.User(prefs.last_fm_username, self.network)
+		total = user.get_playcount()
+
+		if total:
+			return 0.04364 * total
+		return 0
+
+	def get_all_scrobbles(self):
+
+		if not self.connected:
+			self.connect(False)
+		if not self.connected or not prefs.last_fm_username:
+			return
+
+		try:
+			self.scanning_scrobbles = True
+			self.network.enable_rate_limit()
+			user = pylast.User(prefs.last_fm_username, self.network)
+			# username = user.get_name()
+			perf_timer.set()
+			tracks = user.get_recent_tracks(None)
+
+			counts = {}
+
+			# Count up the unique pairs
+			for track in tracks:
+				key = (str(track.track.artist), str(track.track.title))
+				c = counts.get(key, 0)
+				counts[key] = c + 1
+
+			touched = []
+
+			# Add counts to matching tracks
+			for key, value in counts.items():
+				artist, title = key
+				artist = artist.lower()
+				title = title.lower()
+
+				for track in pctl.master_library.values():
+					t_artist = track.artist.lower()
+					artists = [x.lower() for x in get_split_artists(track)]
+					if t_artist == artist or artist in artists or (
+							track.album_artist and track.album_artist.lower() == artist):
+						if track.title.lower() == title:
+							if track.index in touched:
+								track.lfm_scrobbles += value
+							else:
+								track.lfm_scrobbles = value
+								touched.append(track.index)
+		except Exception:
+			logging.exception("Scanning failed. Try again?")
+			gui.pl_update += 1
+			self.scanning_scrobbles = False
+			show_message(_("Scanning failed. Try again?"), mode="error")
+			return
+
+		logging.info(perf_timer.get())
+		gui.pl_update += 1
+		self.scanning_scrobbles = False
+		tauon.bg_save()
+		show_message(_("Scanning scrobbles complete"), mode="done")
+
+	def artist_info(self, artist):
+
+		if self.lastfm_network is None:
+			if self.last_fm_only_connect() is False:
+				return False, "", ""
+
+		try:
+			if artist != "":
+				l_artist = pylast.Artist(
+					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
+					self.lastfm_network)
+				bio = l_artist.get_bio_content()
+				# cover_link = l_artist.get_cover_image()
+				mbid = l_artist.get_mbid()
+				url = l_artist.get_url()
+
+				return True, bio, "", mbid, url
+		except Exception:
+			logging.exception("last.fm get artist info failed")
+
+		return False, "", "", "", ""
+
+	def artist_mbid(self, artist):
+
+		if self.lastfm_network is None:
+			if self.last_fm_only_connect() is False:
+				return ""
+
+		try:
+			if artist != "":
+				l_artist = pylast.Artist(
+					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
+					self.lastfm_network)
+				mbid = l_artist.get_mbid()
+				return mbid
+		except Exception:
+			logging.exception("last.fm get artist mbid info failed")
+
+		return ""
+
+	def sync_pull_love(self, track_object):
+		if not prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
+			return
+		if not last_fm_enable:
+			return
+		if prefs.auto_lfm:
+			self.connect(False)
+		if not self.connected:
+			return
+
+		try:
+			track = self.network.get_track(track_object.artist, track_object.title)
+			if not track:
+				logging.error("Get love: track not found")
+				return
+			track.username = prefs.last_fm_username
+
+			remote_loved = track.get_userloved()
+
+			if track_object.title != track.get_correction() or track_object.artist != track.get_artist().get_correction():
+				logging.warning(f"Pylast/lastfm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
+				return
+
+			if remote_loved is None:
+				logging.error("Error getting loved status")
+				return
+
+			local_loved = love(set=False, track_id=track_object.index, notify=False, sync=False)
+
+			if remote_loved != local_loved:
+				love(set=True, track_id=track_object.index, notify=False, sync=False)
+		except Exception:
+			logging.exception("Failed to pull love")
+
+	def scrobble(self, track_object, timestamp=None):
+		if not last_fm_enable:
+			return True
+		if prefs.scrobble_hold:
+			return True
+		if prefs.auto_lfm:
+			self.connect(False)
+
+		if timestamp is None:
+			timestamp = int(time.time())
+
+		# lastfm_user = self.network.get_user(self.username)
+
+		title = track_object.title
+		album = track_object.album
+		artist = get_artist_strip_feat(track_object)
+		album_artist = track_object.album_artist
+
+		logging.info("Submitting scrobble...")
+
+		# Act
+		try:
+			if title != "" and artist != "":
+				if album != "":
+					if album_artist and album_artist != artist:
+						self.network.scrobble(
+							artist=artist, title=title, album=album, album_artist=album_artist, timestamp=timestamp)
+					else:
+						self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
+				else:
+					self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
+				# logging.info('Scrobbled')
+
+				# Pull loved status
+
+				self.sync_pull_love(track_object)
+
+
+			else:
+				logging.warning("Not sent, incomplete metadata")
+
+		except Exception as e:
+			logging.exception("Failed to Scrobble!")
+			if "retry" in str(e):
+				logging.warning("Retrying in a couple seconds...")
+				time.sleep(7)
+
+				try:
+					self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
+					# logging.info('Scrobbled')
+					return True
+				except Exception:
+					logging.exception("Failed to retry!")
+
+			# show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
+			console.print("Error connecting to last.fm", level=5)
+			console.print("-- " + str(e), level=5)
+			scrobble_warning_timer.set()
+			gui.update += 1
+			gui.delay_frame(5)
+
+			return False
+		return True
+
+	def get_bio(self, artist):
+
+		if self.lastfm_network is None:
+			if self.last_fm_only_connect() is False:
+				return ""
+
+		artist_object = pylast.Artist(artist, self.lastfm_network)
+		bio = artist_object.get_bio_summary(language="en")
+		# logging.info(artist_object.get_cover_image())
+		# logging.info("\n\n")
+		# logging.info(bio)
+		# logging.info("\n\n")
+		# logging.info(artist_object.get_bio_content())
+		return bio
+		# else:
+		#	return ""
+
+	def love(self, artist, title):
+
+		if not self.connected and prefs.auto_lfm:
+			self.connect(False)
+			prefs.scrobble_hold = True
+		if self.connected and artist != "" and title != "":
+			track = self.network.get_track(artist, title)
+			track.love()
+
+	def unlove(self, artist, title):
+		if not last_fm_enable:
+			return
+		if not self.connected and prefs.auto_lfm:
+			self.connect(False)
+			prefs.scrobble_hold = True
+		if self.connected and artist != "" and title != "":
+			track = self.network.get_track(artist, title)
+			track.love()
+			track.unlove()
+
+	def clear_friends_love(self):
+
+		count = 0
+		for index, tr in pctl.master_library.items():
+			count += len(tr.lfm_friend_likes)
+			tr.lfm_friend_likes.clear()
+
+		show_message(_("Removed {N} loves.").format(N=count))
+
+	def get_friends_love(self):
+		if not last_fm_enable:
+			return
+		self.scanning_friends = True
+
+		try:
+			username = prefs.last_fm_username
+			logging.info(f"Username is {username}")
+
+			if not username:
+				self.scanning_friends = False
+				show_message(_("There was an error, try re-log in"))
+				return
+
+			if self.network is None:
+				self.no_user_connect()
+
+			self.network.enable_rate_limit()
+			lastfm_user = self.network.get_user(username)
+			friends = lastfm_user.get_friends(limit=None)
+			show_message(_("Getting friend data..."), _("This may take a very long time."), mode="info")
+			for friend in friends:
+				self.scanning_username = friend.name
+				logging.info("Getting friend loves: " + friend.name)
+
+				try:
+					loves = friend.get_loved_tracks(limit=None)
+				except Exception:
+					logging.exception("Failed to get_loved_tracks!")
+
+				for track in loves:
+					title = track.track.title.casefold()
+					artist = track.track.artist.name.casefold()
+					for index, tr in pctl.master_library.items():
+
+						if tr.title.casefold() == title and tr.artist.casefold() == artist:
+							tr.lfm_friend_likes.add(friend.name)
+							logging.info("MATCH")
+							logging.info("     " + artist + " - " + title)
+							logging.info("      ----- " + friend.name)
+
+		except Exception:
+			logging.exception("There was an error getting friends loves")
+			show_message(_("There was an error getting friends loves"), "", mode="warning")
+
+		self.scanning_friends = False
+
+	def dl_love(self):
+		if not last_fm_enable:
+			return
+		username = prefs.last_fm_username
+		show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
+		self.scanning_username = username
+
+		if not username:
+			show_message(_("No username found"), mode="error")
+			return
+
+		if len(username) > 25:
+			logging.error("Aborted due to long username")
+			return
+
+		self.scanning_loves = True
+
+		logging.info("Connect for friend scan")
+
+		try:
+			if self.network is None:
+				self.no_user_connect()
+
+			self.network.enable_rate_limit()
+			logging.info("Get user...")
+			lastfm_user = self.network.get_user(username)
+			tracks = lastfm_user.get_loved_tracks(limit=None)
+
+			matches = 0
+			updated = 0
+
+			for track in tracks:
+				title = track.track.title.casefold()
+				artist = track.track.artist.name.casefold()
+
+				for index, tr in pctl.master_library.items():
+					if tr.title.casefold() == title and tr.artist.casefold() == artist:
+						matches += 1
+						logging.info("MATCH:")
+						logging.info("     " + artist + " - " + title)
+						star = star_store.full_get(index)
+						if star is None:
+							star = star_store.new_object()
+						if "L" not in star[1]:
+							updated += 1
+							logging.info("     NEW LOVE")
+							star[1] += "L"
+
+						star_store.insert(index, star)
+
+			self.scanning_loves = False
+			if len(tracks) == 0:
+				show_message(_("User has no loved tracks."))
+				return
+			if matches > 0 and updated == 0:
+				show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
+				return
+			if matches > 0 and updated > 0:
+				show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
+				return
+			else:
+				show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
+				return
+		except Exception:
+			logging.exception("This doesn't seem to be working :(")
+			show_message(_("This doesn't seem to be working :("), mode="error")
+		self.scanning_loves = False
+
+	def update(self, track_object):
+		if not last_fm_enable:
+			return
+		if prefs.scrobble_hold:
+			return 0
+		if prefs.auto_lfm:
+			if self.connect(False) is False:
+				prefs.auto_lfm = False
+		else:
+			return 0
+
+		# logging.info('Updating Now Playing')
+
+		title = track_object.title
+		album = track_object.album
+		artist = get_artist_strip_feat(track_object)
+
+		try:
+			if title != "" and artist != "":
+				self.network.update_now_playing(
+					artist=artist, title=title, album=album)
+				return 0
+			else:
+				logging.error("Not sent, incomplete metadata")
+				return 0
+		except Exception as e:
+			logging.exception("Error connecting to last.fm.")
+			console.print("Error connecting to last.fm.", level=3)
+			console.print("-- " + str(e), level=3)
+			if "retry" in str(e):
+				return 2
+				# show_message(_("Could not update Last.fm. ", str(e), mode='warning')
+			pctl.b_time -= 5000
+			return 1
 
 
 def get_backend_time(path):
-    pctl.time_to_get = path
+	pctl.time_to_get = path
 
-    pctl.playerCommand = "time"
-    pctl.playerCommandReady = True
+	pctl.playerCommand = "time"
+	pctl.playerCommandReady = True
 
-    while pctl.playerCommand != "done":
-        time.sleep(0.005)
+	while pctl.playerCommand != "done":
+		time.sleep(0.005)
 
-    return pctl.time_to_get
+	return pctl.time_to_get
 
 
 lastfm = LastFMapi()
@@ -7627,500 +7627,501 @@ lastfm = LastFMapi()
 
 class ListenBrainz:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.enable = prefs.enable_lb
-        # self.url = "https://api.listenbrainz.org/1/submit-listens"
+		self.enable = prefs.enable_lb
+		# self.url = "https://api.listenbrainz.org/1/submit-listens"
 
-    def url(self):
-        url = prefs.listenbrainz_url
-        if not url:
-            url = "https://api.listenbrainz.org/"
-        if not url.endswith("/"):
-            url += "/"
-        return url + "1/submit-listens"
+	def url(self):
+		url = prefs.listenbrainz_url
+		if not url:
+			url = "https://api.listenbrainz.org/"
+		if not url.endswith("/"):
+			url += "/"
+		return url + "1/submit-listens"
 
-    def listen_full(self, track_object, time):
+	def listen_full(self, track_object, time):
 
-        if self.enable is False:
-            return True
-        if prefs.scrobble_hold is True:
-            return True
-        if prefs.lb_token is None:
-            show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
+		if self.enable is False:
+			return True
+		if prefs.scrobble_hold is True:
+			return True
+		if prefs.lb_token is None:
+			show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
 
-        title = track_object.title
-        album = track_object.album
-        artist = get_artist_strip_feat(track_object)
+		title = track_object.title
+		album = track_object.album
+		artist = get_artist_strip_feat(track_object)
 
-        if title == "" or artist == "":
-            return True
+		if title == "" or artist == "":
+			return True
 
-        data = {"listen_type": "single", "payload": []}
-        metadata = {"track_name": title, "artist_name": artist}
+		data = {"listen_type": "single", "payload": []}
+		metadata = {"track_name": title, "artist_name": artist}
 
-        additional = {}
+		additional = {}
 
-        # MusicBrainz Artist IDs
-        if "musicbrainz_artistids" in track_object.misc:
-            additional["artist_mbids"] = track_object.misc["musicbrainz_artistids"]
+		# MusicBrainz Artist IDs
+		if "musicbrainz_artistids" in track_object.misc:
+			additional["artist_mbids"] = track_object.misc["musicbrainz_artistids"]
 
-        # MusicBrainz Release ID
-        if "musicbrainz_albumid" in track_object.misc:
-            additional["release_mbid"] = track_object.misc["musicbrainz_albumid"]
+		# MusicBrainz Release ID
+		if "musicbrainz_albumid" in track_object.misc:
+			additional["release_mbid"] = track_object.misc["musicbrainz_albumid"]
 
-        # MusicBrainz Recording ID
-        if "musicbrainz_recordingid" in track_object.misc:
-            additional["recording_mbid"] = track_object.misc["musicbrainz_recordingid"]
+		# MusicBrainz Recording ID
+		if "musicbrainz_recordingid" in track_object.misc:
+			additional["recording_mbid"] = track_object.misc["musicbrainz_recordingid"]
 
-        # MusicBrainz Track ID
-        if "musicbrainz_trackid" in track_object.misc:
-            additional["track_mbid"] = track_object.misc["musicbrainz_trackid"]
+		# MusicBrainz Track ID
+		if "musicbrainz_trackid" in track_object.misc:
+			additional["track_mbid"] = track_object.misc["musicbrainz_trackid"]
 
-        if additional:
-            metadata["additional_info"] = additional
+		if additional:
+			metadata["additional_info"] = additional
 
-        # logging.info(additional)
-        data["payload"].append({"track_metadata": metadata})
-        data["payload"][0]["listened_at"] = time
+		# logging.info(additional)
+		data["payload"].append({"track_metadata": metadata})
+		data["payload"][0]["listened_at"] = time
 
-        r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
-        if r.status_code != 200:
-            show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
-            return False
-        return True
+		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+		if r.status_code != 200:
+			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+			return False
+		return True
 
-    def listen_playing(self, track_object):
-        if self.enable is False:
-            return
-        if prefs.scrobble_hold is True:
-            return
-        if prefs.lb_token is None:
-            show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
-        title = track_object.title
-        album = track_object.album
-        artist = get_artist_strip_feat(track_object)
+	def listen_playing(self, track_object):
+		if self.enable is False:
+			return
+		if prefs.scrobble_hold is True:
+			return
+		if prefs.lb_token is None:
+			show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
+		title = track_object.title
+		album = track_object.album
+		artist = get_artist_strip_feat(track_object)
 
-        if title == "" or artist == "":
-            return
+		if title == "" or artist == "":
+			return
 
-        data = {"listen_type": "playing_now", "payload": []}
-        metadata = {"track_name": title, "artist_name": artist}
+		data = {"listen_type": "playing_now", "payload": []}
+		metadata = {"track_name": title, "artist_name": artist}
 
-        additional = {}
+		additional = {}
 
-        # MusicBrainz Artist IDs
-        if "musicbrainz_artistids" in track_object.misc:
-            additional["artist_mbids"] = track_object.misc["musicbrainz_artistids"]
+		# MusicBrainz Artist IDs
+		if "musicbrainz_artistids" in track_object.misc:
+			additional["artist_mbids"] = track_object.misc["musicbrainz_artistids"]
 
-        # MusicBrainz Release ID
-        if "musicbrainz_albumid" in track_object.misc:
-            additional["release_mbid"] = track_object.misc["musicbrainz_albumid"]
+		# MusicBrainz Release ID
+		if "musicbrainz_albumid" in track_object.misc:
+			additional["release_mbid"] = track_object.misc["musicbrainz_albumid"]
 
-        # MusicBrainz Recording ID
-        if "musicbrainz_recordingid" in track_object.misc:
-            additional["recording_mbid"] = track_object.misc["musicbrainz_recordingid"]
+		# MusicBrainz Recording ID
+		if "musicbrainz_recordingid" in track_object.misc:
+			additional["recording_mbid"] = track_object.misc["musicbrainz_recordingid"]
 
-        # MusicBrainz Track ID
-        if "musicbrainz_trackid" in track_object.misc:
-            additional["track_mbid"] = track_object.misc["musicbrainz_trackid"]
+		# MusicBrainz Track ID
+		if "musicbrainz_trackid" in track_object.misc:
+			additional["track_mbid"] = track_object.misc["musicbrainz_trackid"]
 
-        if track_object.track_number:
-            try:
-                additional = str(int(track_object.track_number))
-            except Exception:
-                logging.exception("Error trying to get track_number")
+		if track_object.track_number:
+			try:
+				additional = str(int(track_object.track_number))
+			except Exception:
+				logging.exception("Error trying to get track_number")
 
-        if track_object.length:
-            additional["duration"] = str(track_object.length)
+		if track_object.length:
+			additional["duration"] = str(track_object.length)
 
-        additional["media_player"] = t_title
-        additional["submission_client"] = t_title
-        additional["media_player_version"] = str(n_version)
+		additional["media_player"] = t_title
+		additional["submission_client"] = t_title
+		additional["media_player_version"] = str(n_version)
 
-        metadata["additional_info"] = additional
-        data["payload"].append({"track_metadata": metadata})
-        # data["payload"][0]["listened_at"] = int(time.time())
+		metadata["additional_info"] = additional
+		data["payload"].append({"track_metadata": metadata})
+		# data["payload"][0]["listened_at"] = int(time.time())
 
-        r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
-        if r.status_code != 200:
-            show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
-            logging.error("There was an error submitting data to ListenBrainz")
-            logging.error(r.status_code)
-            logging.error(r.json())
+		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+		if r.status_code != 200:
+			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+			logging.error("There was an error submitting data to ListenBrainz")
+			logging.error(r.status_code)
+			logging.error(r.json())
 
-    def paste_key(self):
+	def paste_key(self):
 
-        text = copy_from_clipboard()
-        if text == "":
-            show_message(_("There is no text in the clipboard"), mode="error")
-            return
+		text = copy_from_clipboard()
+		if text == "":
+			show_message(_("There is no text in the clipboard"), mode="error")
+			return
 
-        if prefs.listenbrainz_url:
-            prefs.lb_token = text
-            return
+		if prefs.listenbrainz_url:
+			prefs.lb_token = text
+			return
 
-        if len(text) == 36 and text[8] == "-":
-            prefs.lb_token = text
-        else:
-            show_message(_("That is not a valid token."), mode="error")
+		if len(text) == 36 and text[8] == "-":
+			prefs.lb_token = text
+		else:
+			show_message(_("That is not a valid token."), mode="error")
 
-    def clear_key(self):
+	def clear_key(self):
 
-        prefs.lb_token = ""
-        save_prefs()
-        self.enable = False
+		prefs.lb_token = ""
+		save_prefs()
+		self.enable = False
 
 
 lb = ListenBrainz()
 
 
 def get_love(track_object):
-    star = star_store.full_get(track_object.index)
-    if star is None:
-        return False
+	star = star_store.full_get(track_object.index)
+	if star is None:
+		return False
 
-    if "L" in star[1]:
-        return True
-    else:
-        return False
+	if "L" in star[1]:
+		return True
+	else:
+		return False
 
 
 def get_love_index(index):
-    star = star_store.full_get(index)
-    if star is None:
-        return False
+	star = star_store.full_get(index)
+	if star is None:
+		return False
 
-    if "L" in star[1]:
-        return True
-    else:
-        return False
+	if "L" in star[1]:
+		return True
+	else:
+		return False
 
 def get_love_timestamp_index(index):
-    star = star_store.full_get(index)
-    if star is None:
-        return 0
-    return star[3]
+	star = star_store.full_get(index)
+	if star is None:
+		return 0
+	return star[3]
 
 def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
-    if len(pctl.track_queue) < 1:
-        return False
+	if len(pctl.track_queue) < 1:
+		return False
 
-    if track_id is not None and track_id < 0:
-        return False
+	if track_id is not None and track_id < 0:
+		return False
 
-    if track_id is None:
-        track_id = pctl.track_queue[pctl.queue_step]
+	if track_id is None:
+		track_id = pctl.track_queue[pctl.queue_step]
 
-    loved = False
-    star = star_store.full_get(track_id)
+	loved = False
+	star = star_store.full_get(track_id)
 
-    if star is not None:
-        if "L" in star[1]:
-            loved = True
+	if star is not None:
+		if "L" in star[1]:
+			loved = True
 
-    if set is False:
-        return loved
+	if set is False:
+		return loved
 
-    # global lfm_username
-    # if len(lfm_username) > 0 and not lastfm.connected and not prefs.auto_lfm:
-    #     show_message("You have a last.fm account ready but it is not enabled.", 'info',
-    #                  'Either connect, enable auto connect, or remove the account.')
-    #     return
+	# global lfm_username
+	# if len(lfm_username) > 0 and not lastfm.connected and not prefs.auto_lfm:
+	#	 show_message("You have a last.fm account ready but it is not enabled.", 'info',
+	#				  'Either connect, enable auto connect, or remove the account.')
+	#	 return
 
-    if star is None:
-        star = star_store.new_object()
+	if star is None:
+		star = star_store.new_object()
 
-    loved ^= True
+	loved ^= True
 
-    if notify:
-        gui.toast_love_object = pctl.g(track_id)
-        gui.toast_love_added = loved
-        toast_love_timer.set()
-        gui.delay_frame(1.81)
+	if notify:
+		gui.toast_love_object = pctl.g(track_id)
+		gui.toast_love_added = loved
+		toast_love_timer.set()
+		gui.delay_frame(1.81)
 
-    delay = 0.3
-    if no_delay or not sync or not lastfm.details_ready():
-        delay = 0
+	delay = 0.3
+	if no_delay or not sync or not lastfm.details_ready():
+		delay = 0
 
-    star[3] = time.time()
+	star[3] = time.time()
 
-    if loved:
-        time.sleep(delay)
-        gui.update += 1
-        gui.pl_update += 1
-        star[1] = star[1] + "L" # = [star[0], star[1] + "L", star[2]]
-        star_store.insert(track_id, star)
-        if sync:
-            if prefs.last_fm_token:
-                try:
-                    lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
-                except Exception:
-                    logging.exception("Failed updating last.fm love status")
-                    show_message(_("Failed updating last.fm love status"), mode="warning")
-                    star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
-                    star_store.insert(track_id, star)
-                    show_message(_("Error updating love to last.fm!"),
-                                 _("Maybe check your internet connection and try again?"), mode="error")
+	if loved:
+		time.sleep(delay)
+		gui.update += 1
+		gui.pl_update += 1
+		star[1] = star[1] + "L" # = [star[0], star[1] + "L", star[2]]
+		star_store.insert(track_id, star)
+		if sync:
+			if prefs.last_fm_token:
+				try:
+					lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
+				except Exception:
+					logging.exception("Failed updating last.fm love status")
+					show_message(_("Failed updating last.fm love status"), mode="warning")
+					star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
+					star_store.insert(track_id, star)
+					show_message(
+						_("Error updating love to last.fm!"),
+						_("Maybe check your internet connection and try again?"), mode="error")
 
-            if pctl.master_library[track_id].file_ext == "JELY":
-                jellyfin.favorite(pctl.master_library[track_id])
+			if pctl.master_library[track_id].file_ext == "JELY":
+				jellyfin.favorite(pctl.master_library[track_id])
 
-    else:
-        time.sleep(delay)
-        gui.update += 1
-        gui.pl_update += 1
-        star[1] = star[1].replace("L", "")
-        star_store.insert(track_id, star)
-        if sync:
-            if prefs.last_fm_token:
-                try:
-                    lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
-                except Exception:
-                    logging.exception("Failed updating last.fm love status")
-                    show_message(_("Failed updating last.fm love status"), mode="warning")
-                    star[1] = star[1] + "L"
-                    star_store.insert(track_id, star)
-            if pctl.master_library[track_id].file_ext == "JELY":
-                jellyfin.favorite(pctl.master_library[track_id], un=True)
+	else:
+		time.sleep(delay)
+		gui.update += 1
+		gui.pl_update += 1
+		star[1] = star[1].replace("L", "")
+		star_store.insert(track_id, star)
+		if sync:
+			if prefs.last_fm_token:
+				try:
+					lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
+				except Exception:
+					logging.exception("Failed updating last.fm love status")
+					show_message(_("Failed updating last.fm love status"), mode="warning")
+					star[1] = star[1] + "L"
+					star_store.insert(track_id, star)
+			if pctl.master_library[track_id].file_ext == "JELY":
+				jellyfin.favorite(pctl.master_library[track_id], un=True)
 
-    gui.pl_update = 2
-    gui.update += 1
-    if sync and pctl.mpris is not None:
-        pctl.mpris.update(force=True)
+	gui.pl_update = 2
+	gui.update += 1
+	if sync and pctl.mpris is not None:
+		pctl.mpris.update(force=True)
 
 
 def maloja_get_scrobble_counts():
-    if lastfm.scanning_scrobbles is True or not prefs.maloja_url:
-        return
+	if lastfm.scanning_scrobbles is True or not prefs.maloja_url:
+		return
 
-    url = prefs.maloja_url
-    if not url.endswith("/"):
-        url += "/"
-    url += "apis/mlj_1/scrobbles"
-    lastfm.scanning_scrobbles = True
-    try:
-        r = requests.get(url)
+	url = prefs.maloja_url
+	if not url.endswith("/"):
+		url += "/"
+	url += "apis/mlj_1/scrobbles"
+	lastfm.scanning_scrobbles = True
+	try:
+		r = requests.get(url)
 
-        if r.status_code != 200:
-            show_message(_("There was an error with the Maloja server"), r.text, mode="warning")
-            lastfm.scanning_scrobbles = False
-            return
-    except Exception:
-        logging.exception("There was an error reaching the Maloja server")
-        show_message(_("There was an error reaching the Maloja server"), mode="warning")
-        lastfm.scanning_scrobbles = False
-        return
+		if r.status_code != 200:
+			show_message(_("There was an error with the Maloja server"), r.text, mode="warning")
+			lastfm.scanning_scrobbles = False
+			return
+	except Exception:
+		logging.exception("There was an error reaching the Maloja server")
+		show_message(_("There was an error reaching the Maloja server"), mode="warning")
+		lastfm.scanning_scrobbles = False
+		return
 
-    try:
-        data = json.loads(r.text)
-        l = data["list"]
+	try:
+		data = json.loads(r.text)
+		l = data["list"]
 
-        counts = {}
+		counts = {}
 
-        for item in l:
-            artists = item.get("artists")
-            title = item.get("title")
-            if title and artists:
-                key = (title, tuple(artists))
-                c = counts.get(key, 0)
-                counts[key] = c + 1
+		for item in l:
+			artists = item.get("artists")
+			title = item.get("title")
+			if title and artists:
+				key = (title, tuple(artists))
+				c = counts.get(key, 0)
+				counts[key] = c + 1
 
-        touched = []
+		touched = []
 
-        for key, value in counts.items():
-            title, artists = key
-            artists = [x.lower() for x in artists]
-            title = title.lower()
-            for track in pctl.master_library.values():
-                if track.artist.lower() in artists and track.title.lower() == title:
-                    if track.index in touched:
-                        track.lfm_scrobbles += value
-                    else:
-                        track.lfm_scrobbles = value
-                        touched.append(track.index)
-        show_message(_("Scanning scrobbles complete"), mode="done")
+		for key, value in counts.items():
+			title, artists = key
+			artists = [x.lower() for x in artists]
+			title = title.lower()
+			for track in pctl.master_library.values():
+				if track.artist.lower() in artists and track.title.lower() == title:
+					if track.index in touched:
+						track.lfm_scrobbles += value
+					else:
+						track.lfm_scrobbles = value
+						touched.append(track.index)
+		show_message(_("Scanning scrobbles complete"), mode="done")
 
-    except Exception:
-        logging.exception("There was an error parsing the data")
-        show_message(_("There was an error parsing the data"), mode="warning")
+	except Exception:
+		logging.exception("There was an error parsing the data")
+		show_message(_("There was an error parsing the data"), mode="warning")
 
-    gui.pl_update += 1
-    lastfm.scanning_scrobbles = False
-    tauon.bg_save()
+	gui.pl_update += 1
+	lastfm.scanning_scrobbles = False
+	tauon.bg_save()
 
 
 def maloja_scrobble(track):
-    url = prefs.maloja_url
+	url = prefs.maloja_url
 
-    if not track.artist or not track.title:
-        return
+	if not track.artist or not track.title:
+		return
 
-    if not url.endswith("/newscrobble"):
-        if not url.endswith("/"):
-            url += "/"
-        url += "apis/mlj_1/newscrobble"
+	if not url.endswith("/newscrobble"):
+		if not url.endswith("/"):
+			url += "/"
+		url += "apis/mlj_1/newscrobble"
 
-    d = {}
-    d["artist"] = track.artist
-    d["title"] = track.title
-    d["key"] = prefs.maloja_key
+	d = {}
+	d["artist"] = track.artist
+	d["title"] = track.title
+	d["key"] = prefs.maloja_key
 
-    try:
-        r = requests.post(url, data=d)
-        if r.status_code != 200:
-            show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
-            return False
-    except Exception:
-        logging.exception("There was an error submitting data to Maloja server")
-        show_message(_("There was an error submitting data to Maloja server"), mode="warning")
-        return False
-    return True
+	try:
+		r = requests.post(url, data=d)
+		if r.status_code != 200:
+			show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
+			return False
+	except Exception:
+		logging.exception("There was an error submitting data to Maloja server")
+		show_message(_("There was an error submitting data to Maloja server"), mode="warning")
+		return False
+	return True
 
 
 class LastScrob:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.a_index = -1
-        self.a_sc = False
-        self.a_pt = False
-        self.queue = []
-        self.running = False
+		self.a_index = -1
+		self.a_sc = False
+		self.a_pt = False
+		self.queue = []
+		self.running = False
 
-    def start_queue(self):
+	def start_queue(self):
 
-        self.running = True
-        mini_t = threading.Thread(target=self.process_queue)
-        mini_t.daemon = True
-        mini_t.start()
+		self.running = True
+		mini_t = threading.Thread(target=self.process_queue)
+		mini_t.daemon = True
+		mini_t.start()
 
-    def process_queue(self):
+	def process_queue(self):
 
-        time.sleep(0.4)
+		time.sleep(0.4)
 
-        while self.queue:
+		while self.queue:
 
-            try:
-                tr = self.queue.pop()
+			try:
+				tr = self.queue.pop()
 
-                gui.pl_update = 1
-                logging.info("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
+				gui.pl_update = 1
+				logging.info("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
 
-                success = True
+				success = True
 
-                if tr[2] == "lfm" and prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-                    success = lastfm.scrobble(tr[0], tr[1])
-                elif tr[2] == "lb" and lb.enable:
-                    success = lb.listen_full(tr[0], tr[1])
-                elif tr[2] == "maloja":
-                    success = maloja_scrobble(tr[0])
-                elif tr[2] == "air":
-                    success = subsonic.listen(tr[0], submit=True)
-                elif tr[2] == "koel":
-                    success = koel.listen(tr[0], submit=True)
+				if tr[2] == "lfm" and prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+					success = lastfm.scrobble(tr[0], tr[1])
+				elif tr[2] == "lb" and lb.enable:
+					success = lb.listen_full(tr[0], tr[1])
+				elif tr[2] == "maloja":
+					success = maloja_scrobble(tr[0])
+				elif tr[2] == "air":
+					success = subsonic.listen(tr[0], submit=True)
+				elif tr[2] == "koel":
+					success = koel.listen(tr[0], submit=True)
 
-                if not success:
-                    logging.info("Re-queue scrobble")
-                    self.queue.append(tr)
-                    time.sleep(10)
-                    break
+				if not success:
+					logging.info("Re-queue scrobble")
+					self.queue.append(tr)
+					time.sleep(10)
+					break
 
-            except Exception:
-                logging.exception("SCROBBLE QUEUE ERROR")
+			except Exception:
+				logging.exception("SCROBBLE QUEUE ERROR")
 
-        if not self.queue:
-            scrobble_warning_timer.force_set(1000)
+		if not self.queue:
+			scrobble_warning_timer.force_set(1000)
 
-        self.running = False
+		self.running = False
 
-    def update(self, add_time):
+	def update(self, add_time):
 
-        if pctl.queue_step > len(pctl.track_queue) - 1:
-            logging.info("Queue step error 1")
-            return
+		if pctl.queue_step > len(pctl.track_queue) - 1:
+			logging.info("Queue step error 1")
+			return
 
-        if self.a_index != pctl.track_queue[pctl.queue_step]:
-            pctl.a_time = 0
-            pctl.b_time = 0
-            self.a_index = pctl.track_queue[pctl.queue_step]
-            self.a_pt = False
-            self.a_sc = False
-        if pctl.playing_time == 0 and self.a_sc is True:
-            logging.info("Reset scrobble timer")
-            pctl.a_time = 0
-            pctl.b_time = 0
-            self.a_pt = False
-            self.a_sc = False
+		if self.a_index != pctl.track_queue[pctl.queue_step]:
+			pctl.a_time = 0
+			pctl.b_time = 0
+			self.a_index = pctl.track_queue[pctl.queue_step]
+			self.a_pt = False
+			self.a_sc = False
+		if pctl.playing_time == 0 and self.a_sc is True:
+			logging.info("Reset scrobble timer")
+			pctl.a_time = 0
+			pctl.b_time = 0
+			self.a_pt = False
+			self.a_sc = False
 
-        if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
-            self.a_pt = True
-            self.listen_track(pctl.master_library[self.a_index])
-            # if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not prefs.scrobble_hold:
-            #     mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
-            #     mini_t.daemon = True
-            #     mini_t.start()
-            #
-            # if lb.enable and not prefs.scrobble_hold:
-            #     mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
-            #     mini_t.daemon = True
-            #     mini_t.start()
+		if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
+			self.a_pt = True
+			self.listen_track(pctl.master_library[self.a_index])
+			# if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not prefs.scrobble_hold:
+			#	 mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
+			#	 mini_t.daemon = True
+			#	 mini_t.start()
+			#
+			# if lb.enable and not prefs.scrobble_hold:
+			#	 mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
+			#	 mini_t.daemon = True
+			#	 mini_t.start()
 
-        if pctl.a_time > 6 and self.a_pt:
-            pctl.b_time += add_time
-            if pctl.b_time > 20:
-                pctl.b_time = 0
-                self.listen_track(pctl.master_library[self.a_index])
+		if pctl.a_time > 6 and self.a_pt:
+			pctl.b_time += add_time
+			if pctl.b_time > 20:
+				pctl.b_time = 0
+				self.listen_track(pctl.master_library[self.a_index])
 
-        send_full = False
-        if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
-                * 0.50 and self.a_sc is False:
-            self.a_sc = True
-            send_full = True
+		send_full = False
+		if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
+				* 0.50 and self.a_sc is False:
+			self.a_sc = True
+			send_full = True
 
-        if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
-            self.a_sc = True
-            send_full = True
+		if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
+			self.a_sc = True
+			send_full = True
 
-        if send_full:
-            self.scrob_full_track(pctl.master_library[self.a_index])
+		if send_full:
+			self.scrob_full_track(pctl.master_library[self.a_index])
 
-    def listen_track(self, track_object):
-        # logging.info("LISTEN")
+	def listen_track(self, track_object):
+		# logging.info("LISTEN")
 
-        if track_object.is_network:
-            if track_object.file_ext == "SUB":
-                subsonic.listen(track_object, submit=False)
+		if track_object.is_network:
+			if track_object.file_ext == "SUB":
+				subsonic.listen(track_object, submit=False)
 
-        if not prefs.scrobble_hold:
-            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-                mini_t = threading.Thread(target=lastfm.update, args=([track_object]))
-                mini_t.daemon = True
-                mini_t.start()
+		if not prefs.scrobble_hold:
+			if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+				mini_t = threading.Thread(target=lastfm.update, args=([track_object]))
+				mini_t.daemon = True
+				mini_t.start()
 
-            if lb.enable:
-                mini_t = threading.Thread(target=lb.listen_playing, args=([track_object]))
-                mini_t.daemon = True
-                mini_t.start()
+			if lb.enable:
+				mini_t = threading.Thread(target=lb.listen_playing, args=([track_object]))
+				mini_t.daemon = True
+				mini_t.start()
 
-    def scrob_full_track(self, track_object):
-        # logging.info("SCROBBLE")
-        track_object.lfm_scrobbles += 1
-        gui.pl_update += 1
+	def scrob_full_track(self, track_object):
+		# logging.info("SCROBBLE")
+		track_object.lfm_scrobbles += 1
+		gui.pl_update += 1
 
-        if track_object.is_network:
-            if track_object.file_ext == "SUB":
-                self.queue.append((track_object, int(time.time()), "air"))
-            if track_object.file_ext == "KOEL":
-                self.queue.append((track_object, int(time.time()), "koel"))
+		if track_object.is_network:
+			if track_object.file_ext == "SUB":
+				self.queue.append((track_object, int(time.time()), "air"))
+			if track_object.file_ext == "KOEL":
+				self.queue.append((track_object, int(time.time()), "koel"))
 
-        if not prefs.scrobble_hold:
-            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-                self.queue.append((track_object, int(time.time()), "lfm"))
-            if lb.enable:
-                self.queue.append((track_object, int(time.time()), "lb"))
-            if prefs.maloja_url and prefs.maloja_enable:
-                self.queue.append((track_object, int(time.time()), "maloja"))
+		if not prefs.scrobble_hold:
+			if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+				self.queue.append((track_object, int(time.time()), "lfm"))
+			if lb.enable:
+				self.queue.append((track_object, int(time.time()), "lb"))
+			if prefs.maloja_url and prefs.maloja_enable:
+				self.queue.append((track_object, int(time.time()), "maloja"))
 
 
 lfm_scrobbler = LastScrob()
@@ -8130,35 +8131,35 @@ QuickThumbnail.renderer = renderer
 
 class Strings:
 
-    def __init__(self):
-        self.spotify_likes = _("Spotify Likes")
-        self.spotify_albums = _("Spotify Albums")
-        self.spotify_un_liked = _("Track removed from liked tracks")
-        self.spotify_already_un_liked = _("Track was already un-liked")
-        self.spotify_already_liked = _("Track is already liked")
-        self.spotify_like_added = _("Track added to liked tracks")
-        self.spotify_account_connected = _("Spotify account connected")
-        self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
-        self.spotify_error_starting = _("Error starting Spotify")
-        self.spotify_request_auth = _("Please authorise Spotify in settings!")
-        self.spotify_need_enable = _("Please authorise and click the enable toggle first!")
-        self.spotify_import_complete = _("Spotify import complete")
+	def __init__(self):
+		self.spotify_likes = _("Spotify Likes")
+		self.spotify_albums = _("Spotify Albums")
+		self.spotify_un_liked = _("Track removed from liked tracks")
+		self.spotify_already_un_liked = _("Track was already un-liked")
+		self.spotify_already_liked = _("Track is already liked")
+		self.spotify_like_added = _("Track added to liked tracks")
+		self.spotify_account_connected = _("Spotify account connected")
+		self.spotify_not_playing = _("This Spotify account isn't currently playing anything")
+		self.spotify_error_starting = _("Error starting Spotify")
+		self.spotify_request_auth = _("Please authorise Spotify in settings!")
+		self.spotify_need_enable = _("Please authorise and click the enable toggle first!")
+		self.spotify_import_complete = _("Spotify import complete")
 
-        self.day = _("day")
-        self.days = _("days")
+		self.day = _("day")
+		self.days = _("days")
 
-        self.scan_chrome = _("Scanning for Chromecasts...")
-        self.cast_to = _("Cast to: %s")
-        self.no_chromecasts = _("No Chromecast devices found")
-        self.stop_cast = _("End Cast")
+		self.scan_chrome = _("Scanning for Chromecasts...")
+		self.cast_to = _("Cast to: %s")
+		self.no_chromecasts = _("No Chromecast devices found")
+		self.stop_cast = _("End Cast")
 
-        self.web_server_stopped = _("Web server stopped.")
+		self.web_server_stopped = _("Web server stopped.")
 
-        self.menu_open_tauon = _("Open Tauon Music Box")
-        self.menu_play_pause = _("Play/Pause")
-        self.menu_next = _("Next Track")
-        self.menu_previous = _("Previous Track")
-        self.menu_quit = _("Quit")
+		self.menu_open_tauon = _("Open Tauon Music Box")
+		self.menu_play_pause = _("Play/Pause")
+		self.menu_next = _("Next Track")
+		self.menu_previous = _("Previous Track")
+		self.menu_quit = _("Quit")
 
 
 
@@ -8166,319 +8167,321 @@ strings = Strings()
 
 
 def id_to_pl(id):
-    for i, item in enumerate(pctl.multi_playlist):
-        if item[6] == id:
-            return i
-    return None
+	for i, item in enumerate(pctl.multi_playlist):
+		if item[6] == id:
+			return i
+	return None
 
 
 def pl_to_id(pl):
-    return pctl.multi_playlist[pl][6]
+	return pctl.multi_playlist[pl][6]
 
 
 class Chunker:
 
-    def __init__(self):
-        self.master_count = 0
-        self.chunks = {}
-        self.header = None
-        self.headers = []
-        self.h2 = None
+	def __init__(self):
+		self.master_count = 0
+		self.chunks = {}
+		self.header = None
+		self.headers = []
+		self.h2 = None
 
-        self.clients = {}
+		self.clients = {}
 
 class MenuIcon:
 
-    def __init__(self, asset):
-        self.asset = asset
-        self.colour = [170, 170, 170, 255]
-        self.base_asset = None
-        self.base_asset_mod = None
-        self.colour_callback = None
-        self.mode_callback = None
-        self.xoff = 0
-        self.yoff = 0
+	def __init__(self, asset):
+		self.asset = asset
+		self.colour = [170, 170, 170, 255]
+		self.base_asset = None
+		self.base_asset_mod = None
+		self.colour_callback = None
+		self.mode_callback = None
+		self.xoff = 0
+		self.yoff = 0
 
 class MenuItem:
-    __slots__ = [
-        "title",           # 0
-        "is_sub_menu",     # 1
-        "func",            # 2
-        "render_func",     # 3
-        "no_exit",         # 4
-        "pass_ref",        # 5
-        "hint",            # 6
-        "icon",            # 7
-        "show_test",       # 8
-        "pass_ref_deco",   # 9
-        "disable_test",    # 10
-        "set_ref",         # 11
-        "args",            # 12
-        "sub_menu_number", # 13
-        "sub_menu_width",  # 14
-    ]
-    def __init__(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
-            pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0):
-        self.title = title
-        self.is_sub_menu = is_sub_menu
-        self.func = func
-        self.render_func = render_func
-        self.no_exit = no_exit
-        self.pass_ref = pass_ref
-        self.hint = hint
-        self.icon = icon
-        self.show_test = show_test
-        self.pass_ref_deco = pass_ref_deco
-        self.disable_test = disable_test
-        self.set_ref = set_ref
-        self.args = args
-        self.sub_menu_number = sub_menu_number
-        self.sub_menu_width = sub_menu_width
+	__slots__ = [
+		"title",           # 0
+		"is_sub_menu",     # 1
+		"func",            # 2
+		"render_func",     # 3
+		"no_exit",         # 4
+		"pass_ref",        # 5
+		"hint",            # 6
+		"icon",            # 7
+		"show_test",       # 8
+		"pass_ref_deco",   # 9
+		"disable_test",    # 10
+		"set_ref",         # 11
+		"args",            # 12
+		"sub_menu_number", # 13
+		"sub_menu_width",  # 14
+	]
+	def __init__(
+		self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
+		pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0
+	):
+		self.title = title
+		self.is_sub_menu = is_sub_menu
+		self.func = func
+		self.render_func = render_func
+		self.no_exit = no_exit
+		self.pass_ref = pass_ref
+		self.hint = hint
+		self.icon = icon
+		self.show_test = show_test
+		self.pass_ref_deco = pass_ref_deco
+		self.disable_test = disable_test
+		self.set_ref = set_ref
+		self.args = args
+		self.sub_menu_number = sub_menu_number
+		self.sub_menu_width = sub_menu_width
 
 
 def encode_track_name(t):
-    if t.is_cue or not t.filename:
-        out_line = str(t.track_number) + ". "
-        out_line += t.artist + " - " + t.title
-        return filename_safe(out_line)
-    else:
-        return os.path.splitext(t.filename)[0]
+	if t.is_cue or not t.filename:
+		out_line = str(t.track_number) + ". "
+		out_line += t.artist + " - " + t.title
+		return filename_safe(out_line)
+	else:
+		return os.path.splitext(t.filename)[0]
 
 
 def encode_folder_name(track_object: TrackClass) -> str:
-    folder_name = track_object.artist + " - " + track_object.album
+	folder_name = track_object.artist + " - " + track_object.album
 
-    if folder_name == " - ":
-        folder_name = track_object.parent_folder_name
+	if folder_name == " - ":
+		folder_name = track_object.parent_folder_name
 
-    folder_name = filename_safe(folder_name).strip()
+	folder_name = filename_safe(folder_name).strip()
 
-    if not folder_name:
-        folder_name = str(track_object.index)
+	if not folder_name:
+		folder_name = str(track_object.index)
 
-    if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
-        if track_object.disc_total not in ("", "0", 0, "1", 1) or (
-                str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
-            folder_name += " CD" + str(track_object.disc_number)
+	if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
+		if track_object.disc_total not in ("", "0", 0, "1", 1) or (
+				str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
+			folder_name += " CD" + str(track_object.disc_number)
 
-    return folder_name
+	return folder_name
 
 class Tauon:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.t_title = t_title
-        self.t_version = t_version
-        self.t_agent = t_agent
-        self.t_id = t_id
-        self.desktop = desktop
-        self.device = socket.gethostname()
+		self.t_title = t_title
+		self.t_version = t_version
+		self.t_agent = t_agent
+		self.t_id = t_id
+		self.desktop = desktop
+		self.device = socket.gethostname()
 
-        self.cachement: Cachement | None = None
-        self.dummy_event = SDL_Event()
-        self.translate = _
-        self.strings = strings
-        self.pctl = pctl
-        self.lfm_scrobbler = lfm_scrobbler
-        self.star_store = star_store
-        self.gui = gui
-        self.prefs = prefs
-        self.cache_directory = cache_directory
-        self.temp_audio = os.path.join(cache_directory, "stream-audio")
-        self.user_directory = user_directory
-        self.music_directory = music_directory
-        self.worker_save_state = False
-        self.launch_prefix = launch_prefix
-        self.whicher = whicher
-        self.load_orders = load_orders
-        self.switch_playlist = None
-        self.open_uri = open_uri
-        self.love = love
-        self.snap_mode = snap_mode
-        self.console = console
-        self.msys = msys
-        self.TrackClass = TrackClass
-        self.pl_gen = pl_gen
-        self.QuickThumbnail = QuickThumbnail
-        self.pl_to_id = pl_to_id
-        self.id_to_pl = id_to_pl
-        self.chunker = Chunker()
-        self.stream_proxy = None
-        self.stream_proxy = StreamEnc(self)
-        self.level_train = []
-        self.radio_server = None
-        self.mod_formats = MOD_Formats
-        self.listen_alongers = {}
-        self.encode_folder_name = encode_folder_name
-        self.encode_track_name = encode_track_name
+		self.cachement: Cachement | None = None
+		self.dummy_event = SDL_Event()
+		self.translate = _
+		self.strings = strings
+		self.pctl = pctl
+		self.lfm_scrobbler = lfm_scrobbler
+		self.star_store = star_store
+		self.gui = gui
+		self.prefs = prefs
+		self.cache_directory = cache_directory
+		self.temp_audio = os.path.join(cache_directory, "stream-audio")
+		self.user_directory = user_directory
+		self.music_directory = music_directory
+		self.worker_save_state = False
+		self.launch_prefix = launch_prefix
+		self.whicher = whicher
+		self.load_orders = load_orders
+		self.switch_playlist = None
+		self.open_uri = open_uri
+		self.love = love
+		self.snap_mode = snap_mode
+		self.console = console
+		self.msys = msys
+		self.TrackClass = TrackClass
+		self.pl_gen = pl_gen
+		self.QuickThumbnail = QuickThumbnail
+		self.pl_to_id = pl_to_id
+		self.id_to_pl = id_to_pl
+		self.chunker = Chunker()
+		self.stream_proxy = None
+		self.stream_proxy = StreamEnc(self)
+		self.level_train = []
+		self.radio_server = None
+		self.mod_formats = MOD_Formats
+		self.listen_alongers = {}
+		self.encode_folder_name = encode_folder_name
+		self.encode_track_name = encode_track_name
 
-        self.tray_lock = threading.Lock()
-        self.tray_releases = 0
+		self.tray_lock = threading.Lock()
+		self.tray_releases = 0
 
-        self.play_lock = None
-        self.update_play_lock = None
-        self.sleep_lock = None
-        self.shutdown_lock = None
-        self.quick_close = False
+		self.play_lock = None
+		self.update_play_lock = None
+		self.sleep_lock = None
+		self.shutdown_lock = None
+		self.quick_close = False
 
-        self.copied_track = None
-        self.macos = macos
-        self.aud: CDLL | None = None
+		self.copied_track = None
+		self.macos = macos
+		self.aud: CDLL | None = None
 
-        self.recorded_songs = []
-        self.ca = None
-        if pyinstaller_mode:
-            self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
+		self.recorded_songs = []
+		self.ca = None
+		if pyinstaller_mode:
+			self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
 
-        self.chrome_mode = False
-        self.web_running = False
-        self.web_thread = None
-        self.remote_limited = True
-        self.enable_librespot = shutil.which("librespot")
+		self.chrome_mode = False
+		self.web_running = False
+		self.web_thread = None
+		self.remote_limited = True
+		self.enable_librespot = shutil.which("librespot")
 
-        self.spotc: LibreSpot | None = None
-        self.librespot_p = None
-        self.MenuItem = MenuItem
-        self.tag_scan = tag_scan
+		self.spotc: LibreSpot | None = None
+		self.librespot_p = None
+		self.MenuItem = MenuItem
+		self.tag_scan = tag_scan
 
-        self.gme_formats = GME_Formats
+		self.gme_formats = GME_Formats
 
-        self.spot_ctl: SpotCtl | None = None
-        self.chrome: Chrome | None = None
+		self.spot_ctl: SpotCtl | None = None
+		self.chrome: Chrome | None = None
 
-    def start_remote(self):
+	def start_remote(self):
 
-        if not self.web_running:
-            self.web_thread = threading.Thread(target=webserve2,
-                                          args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
-            self.web_thread.daemon = True
-            self.web_thread.start()
-            self.web_running = True
+		if not self.web_running:
+			self.web_thread = threading.Thread(
+				target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+			self.web_thread.daemon = True
+			self.web_thread.start()
+			self.web_running = True
 
-    def download_ffmpeg(self, x):
-        def go():
-            url = "https://github.com/GyanD/codexffmpeg/releases/download/5.0.1/ffmpeg-5.0.1-essentials_build.zip"
-            sha = "9e00da9100ae1bba22b1385705837392e8abcdfd2efc5768d447890d101451b5"
-            show_message(_("Starting download..."))
-            try:
-                f = io.BytesIO()
-                r = requests.get(url, stream=True)
+	def download_ffmpeg(self, x):
+		def go():
+			url = "https://github.com/GyanD/codexffmpeg/releases/download/5.0.1/ffmpeg-5.0.1-essentials_build.zip"
+			sha = "9e00da9100ae1bba22b1385705837392e8abcdfd2efc5768d447890d101451b5"
+			show_message(_("Starting download..."))
+			try:
+				f = io.BytesIO()
+				r = requests.get(url, stream=True)
 
-                dl = 0
-                for data in r.iter_content(chunk_size=4096):
-                    dl += len(data)
-                    f.write(data)
-                    mb = round(dl / 1000 / 1000)
-                    if mb > 90:
-                        break
-                    if mb % 5 == 0:
-                        show_message(_("Downloading... {N}/80MB").format(N=mb))
+				dl = 0
+				for data in r.iter_content(chunk_size=4096):
+					dl += len(data)
+					f.write(data)
+					mb = round(dl / 1000 / 1000)
+					if mb > 90:
+						break
+					if mb % 5 == 0:
+						show_message(_("Downloading... {N}/80MB").format(N=mb))
 
-            except Exception as e:
-                logging.exception("Download failed")
-                show_message(_("Download failed"), str(e), mode="error")
+			except Exception as e:
+				logging.exception("Download failed")
+				show_message(_("Download failed"), str(e), mode="error")
 
-            f.seek(0)
-            if not hashlib.sha256(f.read()).hexdigest() == sha:
-                show_message(_("Download completed but checksum failed"), mode="error")
-                return
-            show_message(_("Download completed.. extracting"))
-            f.seek(0)
-            z = zipfile.ZipFile(f, mode="r")
-            exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
-            ff = open(os.path.join(user_directory, "ffmpeg.exe"), "wb")
-            ff.write(exe.read())
-            ff.close()
+			f.seek(0)
+			if not hashlib.sha256(f.read()).hexdigest() == sha:
+				show_message(_("Download completed but checksum failed"), mode="error")
+				return
+			show_message(_("Download completed.. extracting"))
+			f.seek(0)
+			z = zipfile.ZipFile(f, mode="r")
+			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
+			ff = open(os.path.join(user_directory, "ffmpeg.exe"), "wb")
+			ff.write(exe.read())
+			ff.close()
 
-            exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
-            ff = open(os.path.join(user_directory, "ffprobe.exe"), "wb")
-            ff.write(exe.read())
-            ff.close()
+			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
+			ff = open(os.path.join(user_directory, "ffprobe.exe"), "wb")
+			ff.write(exe.read())
+			ff.close()
 
-            exe.close()
-            show_message(_("FFMPEG fetch complete"), mode="done")
+			exe.close()
+			show_message(_("FFMPEG fetch complete"), mode="done")
 
-        shooter(go)
+		shooter(go)
 
-    def set_tray_icons(self, force=False):
+	def set_tray_icons(self, force=False):
 
-        indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
-        indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
-        indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+		indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
+		indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
+		indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default.svg")
 
-        if prefs.tray_theme == "gray":
-            indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play-g1.svg")
-            indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
-            indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
+		if prefs.tray_theme == "gray":
+			indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play-g1.svg")
+			indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
+			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
 
-        user_icon_dir = os.path.join(self.cache_directory, "icon-export")
-        def install_tray_icon(src, name):
-            alt = os.path.join(user_icon_dir, f"{name}.svg")
-            if not os.path.isfile(alt) or force:
-                shutil.copy(src, alt)
+		user_icon_dir = os.path.join(self.cache_directory, "icon-export")
+		def install_tray_icon(src, name):
+			alt = os.path.join(user_icon_dir, f"{name}.svg")
+			if not os.path.isfile(alt) or force:
+				shutil.copy(src, alt)
 
-        if not os.path.isdir(user_icon_dir):
-            os.makedirs(user_icon_dir)
+		if not os.path.isdir(user_icon_dir):
+			os.makedirs(user_icon_dir)
 
-        install_tray_icon(indicator_icon_play, "tray-indicator-play")
-        install_tray_icon(indicator_icon_pause, "tray-indicator-pause")
-        install_tray_icon(indicator_icon_default, "tray-indicator-default")
+		install_tray_icon(indicator_icon_play, "tray-indicator-play")
+		install_tray_icon(indicator_icon_pause, "tray-indicator-pause")
+		install_tray_icon(indicator_icon_default, "tray-indicator-default")
 
-    def get_tray_icon(self, name):
-        return os.path.join(self.cache_directory, f"icon-export/{name}.svg")
+	def get_tray_icon(self, name):
+		return os.path.join(self.cache_directory, f"icon-export/{name}.svg")
 
-    def test_ffmpeg(self):
-        if self.get_ffmpeg():
-            return True
-        if msys:
-            show_message(_("This feature requires FFMPEG. Shall I can download that for you? (80MB)"), mode="confirm")
-            gui.message_box_confirm_callback = self.download_ffmpeg
-            gui.message_box_confirm_reference = (None,)
-        else:
-            show_message(_("FFMPEG could not be found"))
+	def test_ffmpeg(self):
+		if self.get_ffmpeg():
+			return True
+		if msys:
+			show_message(_("This feature requires FFMPEG. Shall I can download that for you? (80MB)"), mode="confirm")
+			gui.message_box_confirm_callback = self.download_ffmpeg
+			gui.message_box_confirm_reference = (None,)
+		else:
+			show_message(_("FFMPEG could not be found"))
 
-    def get_ffmpeg(self):
-        p = shutil.which("ffmpeg")
-        if p: return p
-        p = os.path.join(user_directory, "ffmpeg.exe")
-        if msys and os.path.isfile(p): return p
-        return None
+	def get_ffmpeg(self):
+		p = shutil.which("ffmpeg")
+		if p: return p
+		p = os.path.join(user_directory, "ffmpeg.exe")
+		if msys and os.path.isfile(p): return p
+		return None
 
-    def get_ffprobe(self):
-        p = shutil.which("ffprobe")
-        if p: return p
-        p = os.path.join(user_directory, "ffprobe.exe")
-        if msys and os.path.isfile(p): return p
-        return None
+	def get_ffprobe(self):
+		p = shutil.which("ffprobe")
+		if p: return p
+		p = os.path.join(user_directory, "ffprobe.exe")
+		if msys and os.path.isfile(p): return p
+		return None
 
-    def bg_save(self):
-        self.worker_save_state = True
-        tm.ready("worker")
+	def bg_save(self):
+		self.worker_save_state = True
+		tm.ready("worker")
 
-    def exit(self, reason):
-        logging.info("Shutting down. Reason: " + reason)
-        pctl.running = False
-        self.wake()
+	def exit(self, reason):
+		logging.info("Shutting down. Reason: " + reason)
+		pctl.running = False
+		self.wake()
 
-    def min_to_tray(self):
-        SDL_HideWindow(t_window)
-        gui.mouse_unknown = True
+	def min_to_tray(self):
+		SDL_HideWindow(t_window)
+		gui.mouse_unknown = True
 
-    def raise_window(self):
-        SDL_ShowWindow(t_window)
-        SDL_RaiseWindow(t_window)
-        SDL_RestoreWindow(t_window)
-        gui.lowered = False
-        gui.update += 1
+	def raise_window(self):
+		SDL_ShowWindow(t_window)
+		SDL_RaiseWindow(t_window)
+		SDL_RestoreWindow(t_window)
+		gui.lowered = False
+		gui.update += 1
 
-    def focus_window(self):
-        SDL_RaiseWindow(t_window)
+	def focus_window(self):
+		SDL_RaiseWindow(t_window)
 
-    def get_playing_playlist_id(self):
-        return pl_to_id(pctl.active_playlist_playing)
+	def get_playing_playlist_id(self):
+		return pl_to_id(pctl.active_playlist_playing)
 
-    def wake(self):
-        SDL_PushEvent(ctypes.byref(self.dummy_event))
+	def wake(self):
+		SDL_PushEvent(ctypes.byref(self.dummy_event))
 
 
 tauon = Tauon()
@@ -8488,7 +8491,7 @@ deco.get_themes = get_themes
 deco.renderer = renderer
 
 if prefs.backend != 4:
-    prefs.backend = 4
+	prefs.backend = 4
 
 chrome = None
 
@@ -8505,150 +8508,151 @@ tauon.chrome = chrome
 
 class PlexService:
 
-    def __init__(self):
-        self.connected = False
-        self.resource = None
-        self.scanning = False
+	def __init__(self):
+		self.connected = False
+		self.resource = None
+		self.scanning = False
 
-    def connect(self):
+	def connect(self):
 
-        if not prefs.plex_username or not prefs.plex_password or not prefs.plex_servername:
-            show_message(_("Missing username, password and/or server name"), mode="warning")
-            self.scanning = False
-            return
+		if not prefs.plex_username or not prefs.plex_password or not prefs.plex_servername:
+			show_message(_("Missing username, password and/or server name"), mode="warning")
+			self.scanning = False
+			return
 
-        try:
-            from plexapi.myplex import MyPlexAccount
-        except ModuleNotFoundError:
-            logging.warning("Unable to import python-plexapi, plex support will be disabled.")
-        except Exception:
-            logging.exception("Unknown error to import python-plexapi, plex support will be disabled.")
-            show_message(_("Error importing python-plexapi"), mode="error")
-            self.scanning = False
-            return
+		try:
+			from plexapi.myplex import MyPlexAccount
+		except ModuleNotFoundError:
+			logging.warning("Unable to import python-plexapi, plex support will be disabled.")
+		except Exception:
+			logging.exception("Unknown error to import python-plexapi, plex support will be disabled.")
+			show_message(_("Error importing python-plexapi"), mode="error")
+			self.scanning = False
+			return
 
-        try:
-            account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
-            self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
-        except Exception:
-            logging.exception("Error connecting to PLEX server, check login credentials and server accessibility.")
-            show_message(_("Error connecting to PLEX server"),
-                         _("Try checking login credentials and that the server is accessible."), mode="error")
-            self.scanning = False
-            return
+		try:
+			account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
+			self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
+		except Exception:
+			logging.exception("Error connecting to PLEX server, check login credentials and server accessibility.")
+			show_message(
+				_("Error connecting to PLEX server"),
+				_("Try checking login credentials and that the server is accessible."), mode="error")
+			self.scanning = False
+			return
 
-        # from plexapi.server import PlexServer
-        # baseurl = 'http://localhost:32400'
-        # token = ''
+		# from plexapi.server import PlexServer
+		# baseurl = 'http://localhost:32400'
+		# token = ''
 
-        # self.resource = PlexServer(baseurl, token)
+		# self.resource = PlexServer(baseurl, token)
 
-        self.connected = True
+		self.connected = True
 
-    def resolve_stream(self, location):
-        logging.info("Get plex stream")
-        if not self.connected:
-            self.connect()
+	def resolve_stream(self, location):
+		logging.info("Get plex stream")
+		if not self.connected:
+			self.connect()
 
-        # return self.resource.url(location, True)
-        return self.resource.library.fetchItem(location).getStreamURL()
+		# return self.resource.url(location, True)
+		return self.resource.library.fetchItem(location).getStreamURL()
 
-    def resolve_thumbnail(self, location):
+	def resolve_thumbnail(self, location):
 
-        if not self.connected:
-            self.connect()
-        if self.connected:
-            return self.resource.url(location, True)
-        return None
+		if not self.connected:
+			self.connect()
+		if self.connected:
+			return self.resource.url(location, True)
+		return None
 
-    def get_albums(self, return_list=False):
+	def get_albums(self, return_list=False):
 
-        gui.update += 1
-        self.scanning = True
+		gui.update += 1
+		self.scanning = True
 
-        if not self.connected:
-            self.connect()
+		if not self.connected:
+			self.connect()
 
-        if not self.connected:
-            self.scanning = False
-            return []
+		if not self.connected:
+			self.scanning = False
+			return []
 
-        playlist = []
+		playlist = []
 
-        existing = {}
-        for track_id, track in pctl.master_library.items():
-            if track.is_network and track.file_ext == "PLEX":
-                existing[track.url_key] = track_id
+		existing = {}
+		for track_id, track in pctl.master_library.items():
+			if track.is_network and track.file_ext == "PLEX":
+				existing[track.url_key] = track_id
 
-        albums = self.resource.library.section("Music").albums()
-        gui.to_got = 0
+		albums = self.resource.library.section("Music").albums()
+		gui.to_got = 0
 
-        for album in albums:
-            year = album.year
-            album_artist = album.parentTitle
-            album_title = album.title
+		for album in albums:
+			year = album.year
+			album_artist = album.parentTitle
+			album_title = album.title
 
-            parent = (album_artist + " - " + album_title).strip("- ")
+			parent = (album_artist + " - " + album_title).strip("- ")
 
-            for track in album.tracks():
+			for track in album.tracks():
 
-                if not track.duration:
-                    logging.warning("Skipping track with invalid duration - " + track.title + " - " + track.grandparentTitle)
-                    continue
+				if not track.duration:
+					logging.warning("Skipping track with invalid duration - " + track.title + " - " + track.grandparentTitle)
+					continue
 
-                id = pctl.master_count
-                replace_existing = False
+				id = pctl.master_count
+				replace_existing = False
 
-                e = existing.get(track.key)
-                if e is not None:
-                    id = e
-                    replace_existing = True
+				e = existing.get(track.key)
+				if e is not None:
+					id = e
+					replace_existing = True
 
-                title = track.title
-                track_artist = track.grandparentTitle
-                duration = track.duration / 1000
+				title = track.title
+				track_artist = track.grandparentTitle
+				duration = track.duration / 1000
 
-                nt = TrackClass()
-                nt.index = id
-                nt.track_number = track.index
-                nt.file_ext = "PLEX"
-                nt.parent_folder_path = parent
-                nt.parent_folder_name = parent
-                nt.album_artist = album_artist
-                nt.artist = track_artist
-                nt.title = title
-                nt.album = album_title
-                nt.length = duration
-                if hasattr(track, "locations") and track.locations:
-                    nt.fullpath = track.locations[0]
+				nt = TrackClass()
+				nt.index = id
+				nt.track_number = track.index
+				nt.file_ext = "PLEX"
+				nt.parent_folder_path = parent
+				nt.parent_folder_name = parent
+				nt.album_artist = album_artist
+				nt.artist = track_artist
+				nt.title = title
+				nt.album = album_title
+				nt.length = duration
+				if hasattr(track, "locations") and track.locations:
+					nt.fullpath = track.locations[0]
 
-                nt.is_network = True
+				nt.is_network = True
 
-                if track.thumb:
-                    nt.art_url_key = track.thumb
+				if track.thumb:
+					nt.art_url_key = track.thumb
 
-                nt.url_key = track.key
-                nt.date = str(year)
+				nt.url_key = track.key
+				nt.date = str(year)
 
-                pctl.master_library[id] = nt
+				pctl.master_library[id] = nt
 
-                if not replace_existing:
-                    pctl.master_count += 1
+				if not replace_existing:
+					pctl.master_count += 1
 
-                playlist.append(nt.index)
+				playlist.append(nt.index)
 
-            gui.to_got += 1
-            gui.update += 1
-            gui.pl_update += 1
+			gui.to_got += 1
+			gui.update += 1
+			gui.pl_update += 1
 
-        self.scanning = False
+		self.scanning = False
 
-        if return_list:
-            return playlist
+		if return_list:
+			return playlist
 
-        pctl.multi_playlist.append(pl_gen(title=_("PLEX Collection"), playlist=playlist))
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex path"
-        switch_playlist(len(pctl.multi_playlist) - 1)
+		pctl.multi_playlist.append(pl_gen(title=_("PLEX Collection"), playlist=playlist))
+		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex path"
+		switch_playlist(len(pctl.multi_playlist) - 1)
 
 
 plex = PlexService()
@@ -8660,365 +8664,365 @@ tauon.jellyfin = jellyfin
 
 class SubsonicService:
 
-    def __init__(self):
-        self.scanning = False
-        self.playlists = prefs.subsonic_playlists
+	def __init__(self):
+		self.scanning = False
+		self.playlists = prefs.subsonic_playlists
 
-    def r(self, point, p=None, binary=False, get_url=False):
-        salt = secrets.token_hex(8)
-        server = prefs.subsonic_server.rstrip("/") + "/"
+	def r(self, point, p=None, binary=False, get_url=False):
+		salt = secrets.token_hex(8)
+		server = prefs.subsonic_server.rstrip("/") + "/"
 
-        params = {
-            "u": prefs.subsonic_user,
-            "v": "1.13.0",
-            "c": t_title,
-            "f": "json"
-        }
+		params = {
+			"u": prefs.subsonic_user,
+			"v": "1.13.0",
+			"c": t_title,
+			"f": "json"
+		}
 
-        if prefs.subsonic_password_plain:
-            params["p"] = prefs.subsonic_password
-        else:
-            params["t"] = hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest()
-            params["s"] = salt
+		if prefs.subsonic_password_plain:
+			params["p"] = prefs.subsonic_password
+		else:
+			params["t"] = hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest()
+			params["s"] = salt
 
-        if p:
-            params.update(p)
+		if p:
+			params.update(p)
 
-        point = "rest/" + point
+		point = "rest/" + point
 
-        url = server + point
+		url = server + point
 
-        if get_url:
-            return url, params
+		if get_url:
+			return url, params
 
-        response = requests.get(url, params=params)
+		response = requests.get(url, params=params)
 
-        if binary:
-            return response.content
+		if binary:
+			return response.content
 
-        d = json.loads(response.text)
-        # logging.info(d)
+		d = json.loads(response.text)
+		# logging.info(d)
 
-        if d["subsonic-response"]["status"] != "ok":
-            show_message(_("Subsonic Error: ") + response.text, mode="warning")
-            logging.error("Subsonic Error: " + response.text)
+		if d["subsonic-response"]["status"] != "ok":
+			show_message(_("Subsonic Error: ") + response.text, mode="warning")
+			logging.error("Subsonic Error: " + response.text)
 
-        return d
+		return d
 
-    def get_cover(self, track_object):
-        response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
-        return io.BytesIO(response)
+	def get_cover(self, track_object):
+		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
+		return io.BytesIO(response)
 
-    def resolve_stream(self, key):
+	def resolve_stream(self, key):
 
-        p = {"id": key}
-        if prefs.network_stream_bitrate > 0:
-            p["maxBitRate"] = prefs.network_stream_bitrate
+		p = {"id": key}
+		if prefs.network_stream_bitrate > 0:
+			p["maxBitRate"] = prefs.network_stream_bitrate
 
-        return self.r("stream", p={"id": key}, get_url=True)
-        # logging.info(response.content)
+		return self.r("stream", p={"id": key}, get_url=True)
+		# logging.info(response.content)
 
-    def listen(self, track_object, submit=False):
+	def listen(self, track_object, submit=False):
 
-        try:
-            a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
-        except Exception:
-            logging.exception("Error connecting for scrobble on airsonic")
-        return True
+		try:
+			a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
+		except Exception:
+			logging.exception("Error connecting for scrobble on airsonic")
+		return True
 
-    def set_rating(self, track_object, rating):
+	def set_rating(self, track_object, rating):
 
-        try:
-            a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
-        except Exception:
-            logging.exception("Error connect for set rating on airsonic")
-        return True
+		try:
+			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
+		except Exception:
+			logging.exception("Error connect for set rating on airsonic")
+		return True
 
-    def set_album_rating(self, track_object, rating):
-        id = track_object.misc.get("subsonic-folder-id")
-        if id is not None:
-            try:
-                a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
-            except Exception:
-                logging.exception("Error connect for set rating on airsonic")
-        return True
+	def set_album_rating(self, track_object, rating):
+		id = track_object.misc.get("subsonic-folder-id")
+		if id is not None:
+			try:
+				a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
+			except Exception:
+				logging.exception("Error connect for set rating on airsonic")
+		return True
 
-    def get_music3(self, return_list=False):
+	def get_music3(self, return_list=False):
 
-        self.scanning = True
-        gui.to_got = 0
+		self.scanning = True
+		gui.to_got = 0
 
-        existing = {}
+		existing = {}
 
-        for track_id, track in pctl.master_library.items():
-            if track.is_network and track.file_ext == "SUB":
-                existing[track.url_key] = track_id
+		for track_id, track in pctl.master_library.items():
+			if track.is_network and track.file_ext == "SUB":
+				existing[track.url_key] = track_id
 
-        try:
-            a = self.r("getIndexes")
-        except Exception:
-            logging.exception("Error connecting to Airsonic server")
-            show_message(_("Error connecting to Airsonic server"), mode="error")
-            self.scanning = False
-            return []
+		try:
+			a = self.r("getIndexes")
+		except Exception:
+			logging.exception("Error connecting to Airsonic server")
+			show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.scanning = False
+			return []
 
-        b = a["subsonic-response"]["indexes"]["index"]
+		b = a["subsonic-response"]["indexes"]["index"]
 
-        folders = []
+		folders = []
 
-        for letter in b:
-            artists = letter["artist"]
-            for artist in artists:
-                folders.append((
-                    artist["id"],
-                    artist["name"]
-                ))
+		for letter in b:
+			artists = letter["artist"]
+			for artist in artists:
+				folders.append((
+					artist["id"],
+					artist["name"]
+				))
 
-        playlist = []
+		playlist = []
 
-        songsets = []
-        for i in range(len(folders)):
-            songsets.append([])
-        statuses = [0] * len(folders)
-        dupes = []
+		songsets = []
+		for i in range(len(folders)):
+			songsets.append([])
+		statuses = [0] * len(folders)
+		dupes = []
 
-        def getsongs(index, folder_id, name, inner=False, parent=None):
+		def getsongs(index, folder_id, name, inner=False, parent=None):
 
-            try:
-                d = self.r("getMusicDirectory", p={"id": folder_id})
-                if "child" not in d["subsonic-response"]["directory"]:
-                    if not inner:
-                        statuses[index] = 2
-                    return
+			try:
+				d = self.r("getMusicDirectory", p={"id": folder_id})
+				if "child" not in d["subsonic-response"]["directory"]:
+					if not inner:
+						statuses[index] = 2
+					return
 
-            except json.decoder.JSONDecodeError:
-                logging.exception("Error reading Airsonic directory")
-                if not inner:
-                    statuses[index] = 2
-                show_message(_("Error reading Airsonic directory!"), mode="warning")
-                return
-            except Exception:
-                logging.exception("Unknown Error reading Airsonic directory")
+			except json.decoder.JSONDecodeError:
+				logging.exception("Error reading Airsonic directory")
+				if not inner:
+					statuses[index] = 2
+				show_message(_("Error reading Airsonic directory!"), mode="warning")
+				return
+			except Exception:
+				logging.exception("Unknown Error reading Airsonic directory")
 
-            items = d["subsonic-response"]["directory"]["child"]
+			items = d["subsonic-response"]["directory"]["child"]
 
-            gui.update = 2
+			gui.update = 2
 
-            for item in items:
+			for item in items:
 
-                if item["isDir"]:
+				if item["isDir"]:
 
-                    if "userRating" in item and "artist" in item:
-                        rating = item["userRating"]
-                        if album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
-                            pass
-                        else:
-                            album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
+					if "userRating" in item and "artist" in item:
+						rating = item["userRating"]
+						if album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
+							pass
+						else:
+							album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
 
-                    getsongs(index, item["id"], item["title"], inner=True, parent=item)
-                    continue
+					getsongs(index, item["id"], item["title"], inner=True, parent=item)
+					continue
 
-                gui.to_got += 1
-                song = item
-                nt = TrackClass()
+				gui.to_got += 1
+				song = item
+				nt = TrackClass()
 
-                if parent and "artist" in parent:
-                    nt.album_artist = parent["artist"]
+				if parent and "artist" in parent:
+					nt.album_artist = parent["artist"]
 
-                if "title" in song:
-                    nt.title = song["title"]
-                if "artist" in song:
-                    nt.artist = song["artist"]
-                if "album" in song:
-                    nt.album = song["album"]
-                if "track" in song:
-                    nt.track_number = song["track"]
-                if "year" in song:
-                    nt.date = str(song["year"])
-                if "duration" in song:
-                    nt.length = song["duration"]
+				if "title" in song:
+					nt.title = song["title"]
+				if "artist" in song:
+					nt.artist = song["artist"]
+				if "album" in song:
+					nt.album = song["album"]
+				if "track" in song:
+					nt.track_number = song["track"]
+				if "year" in song:
+					nt.date = str(song["year"])
+				if "duration" in song:
+					nt.length = song["duration"]
 
-                nt.file_ext = "SUB"
-                nt.parent_folder_name = name
-                if "path" in song:
-                    nt.fullpath = song["path"]
-                    nt.parent_folder_path = os.path.dirname(song["path"])
-                if "coverArt" in song:
-                    nt.art_url_key = song["id"]
-                nt.url_key = song["id"]
-                nt.misc["subsonic-folder-id"] = folder_id
-                nt.is_network = True
+				nt.file_ext = "SUB"
+				nt.parent_folder_name = name
+				if "path" in song:
+					nt.fullpath = song["path"]
+					nt.parent_folder_path = os.path.dirname(song["path"])
+				if "coverArt" in song:
+					nt.art_url_key = song["id"]
+				nt.url_key = song["id"]
+				nt.misc["subsonic-folder-id"] = folder_id
+				nt.is_network = True
 
-                rating = 0
-                if "userRating" in song:
-                    rating = int(song["userRating"])
+				rating = 0
+				if "userRating" in song:
+					rating = int(song["userRating"])
 
-                songsets[index].append((nt, name, song["id"], rating))
+				songsets[index].append((nt, name, song["id"], rating))
 
-            if inner:
-                return
-            statuses[index] = 2
+			if inner:
+				return
+			statuses[index] = 2
 
-        i = -1
-        for id, name in folders:
-            i += 1
-            while statuses.count(1) > 3:
-                time.sleep(0.1)
+		i = -1
+		for id, name in folders:
+			i += 1
+			while statuses.count(1) > 3:
+				time.sleep(0.1)
 
-            statuses[i] = 1
-            t = threading.Thread(target=getsongs, args=([i, id, name]))
-            t.daemon = True
-            t.start()
+			statuses[i] = 1
+			t = threading.Thread(target=getsongs, args=([i, id, name]))
+			t.daemon = True
+			t.start()
 
-        while statuses.count(2) != len(statuses):
-            time.sleep(0.1)
+		while statuses.count(2) != len(statuses):
+			time.sleep(0.1)
 
-        for sset in songsets:
-            for nt, name, song_id, rating in sset:
+		for sset in songsets:
+			for nt, name, song_id, rating in sset:
 
-                id = pctl.master_count
+				id = pctl.master_count
 
-                replace_existing = False
-                ex = existing.get(song_id)
-                if ex is not None:
-                    id = ex
-                    replace_existing = True
+				replace_existing = False
+				ex = existing.get(song_id)
+				if ex is not None:
+					id = ex
+					replace_existing = True
 
-                nt.index = id
-                pctl.master_library[id] = nt
-                if not replace_existing:
-                    pctl.master_count += 1
+				nt.index = id
+				pctl.master_library[id] = nt
+				if not replace_existing:
+					pctl.master_count += 1
 
-                playlist.append(nt.index)
+				playlist.append(nt.index)
 
-                if star_store.get_rating(nt.index) == 0 and rating == 0:
-                    pass
-                else:
-                    star_store.set_rating(nt.index, rating * 2)
+				if star_store.get_rating(nt.index) == 0 and rating == 0:
+					pass
+				else:
+					star_store.set_rating(nt.index, rating * 2)
 
-        self.scanning = False
-        if return_list:
-            return playlist
+		self.scanning = False
+		if return_list:
+			return playlist
 
-        pctl.multi_playlist.append(pl_gen(title=_("Airsonic Collection"), playlist=playlist))
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
-        switch_playlist(len(pctl.multi_playlist) - 1)
+		pctl.multi_playlist.append(pl_gen(title=_("Airsonic Collection"), playlist=playlist))
+		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
+		switch_playlist(len(pctl.multi_playlist) - 1)
 
-    # def get_music2(self, return_list=False):
-    #
-    #     self.scanning = True
-    #     gui.to_got = 0
-    #
-    #     existing = {}
-    #
-    #     for track_id, track in pctl.master_library.items():
-    #         if track.is_network and track.file_ext == "SUB":
-    #             existing[track.url_key] = track_id
-    #
-    #     try:
-    #         a = self.r("getIndexes")
-    #     except Exception:
-    #         show_message(_("Error connecting to Airsonic server"), mode="error")
-    #         self.scanning = False
-    #         return []
-    #
-    #     b = a["subsonic-response"]["indexes"]["index"]
-    #
-    #     folders = []
-    #
-    #     for letter in b:
-    #         artists = letter["artist"]
-    #         for artist in artists:
-    #             folders.append((
-    #                 artist["id"],
-    #                 artist["name"]
-    #             ))
-    #
-    #     playlist = []
-    #
-    #     def get(folder_id, name):
-    #
-    #         try:
-    #             d = self.r("getMusicDirectory", p={"id": folder_id})
-    #             if "child" not in d["subsonic-response"]["directory"]:
-    #                 return
-    #
-    #         except json.decoder.JSONDecodeError:
-    #             logging.error("Error reading Airsonic directory")
-    #             show_message(_("Error reading Airsonic directory!)", mode="warning")
-    #             return
-    #
-    #         items = d["subsonic-response"]["directory"]["child"]
-    #
-    #         gui.update = 1
-    #
-    #         for item in items:
-    #
-    #             gui.to_got += 1
-    #
-    #             if item["isDir"]:
-    #                 get(item["id"], item["title"])
-    #                 continue
-    #
-    #             song = item
-    #             id = pctl.master_count
-    #
-    #             replace_existing = False
-    #             ex = existing.get(song["id"])
-    #             if ex is not None:
-    #                 id = ex
-    #                 replace_existing = True
-    #
-    #             nt = TrackClass()
-    #
-    #             if "title" in song:
-    #                 nt.title = song["title"]
-    #             if "artist" in song:
-    #                 nt.artist = song["artist"]
-    #             if "album" in song:
-    #                 nt.album = song["album"]
-    #             if "track" in song:
-    #                 nt.track_number = song["track"]
-    #             if "year" in song:
-    #                 nt.date = str(song["year"])
-    #             if "duration" in song:
-    #                 nt.length = song["duration"]
-    #
-    #             # if "bitRate" in song:
-    #             #     nt.bitrate = song["bitRate"]
-    #
-    #             nt.file_ext = "SUB"
-    #
-    #             nt.index = id
-    #
-    #             nt.parent_folder_name = name
-    #             if "path" in song:
-    #                 nt.fullpath = song["path"]
-    #                 nt.parent_folder_path = os.path.dirname(song["path"])
-    #
-    #             if "coverArt" in song:
-    #                 nt.art_url_key = song["id"]
-    #
-    #             nt.url_key = song["id"]
-    #             nt.is_network = True
-    #
-    #             pctl.master_library[id] = nt
-    #
-    #             if not replace_existing:
-    #                 pctl.master_count += 1
-    #
-    #             playlist.append(nt.index)
-    #
-    #     for id, name in folders:
-    #         get(id, name)
-    #
-    #     self.scanning = False
-    #     if return_list:
-    #         return playlist
-    #
-    #     pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
-    #     pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
-    #     switch_playlist(len(pctl.multi_playlist) - 1)
+	# def get_music2(self, return_list=False):
+	#
+	#	 self.scanning = True
+	#	 gui.to_got = 0
+	#
+	#	 existing = {}
+	#
+	#	 for track_id, track in pctl.master_library.items():
+	#		 if track.is_network and track.file_ext == "SUB":
+	#			 existing[track.url_key] = track_id
+	#
+	#	 try:
+	#		 a = self.r("getIndexes")
+	#	 except Exception:
+	#		 show_message(_("Error connecting to Airsonic server"), mode="error")
+	#		 self.scanning = False
+	#		 return []
+	#
+	#	 b = a["subsonic-response"]["indexes"]["index"]
+	#
+	#	 folders = []
+	#
+	#	 for letter in b:
+	#		 artists = letter["artist"]
+	#		 for artist in artists:
+	#			 folders.append((
+	#				 artist["id"],
+	#				 artist["name"]
+	#			 ))
+	#
+	#	 playlist = []
+	#
+	#	 def get(folder_id, name):
+	#
+	#		 try:
+	#			 d = self.r("getMusicDirectory", p={"id": folder_id})
+	#			 if "child" not in d["subsonic-response"]["directory"]:
+	#				 return
+	#
+	#		 except json.decoder.JSONDecodeError:
+	#			 logging.error("Error reading Airsonic directory")
+	#			 show_message(_("Error reading Airsonic directory!)", mode="warning")
+	#			 return
+	#
+	#		 items = d["subsonic-response"]["directory"]["child"]
+	#
+	#		 gui.update = 1
+	#
+	#		 for item in items:
+	#
+	#			 gui.to_got += 1
+	#
+	#			 if item["isDir"]:
+	#				 get(item["id"], item["title"])
+	#				 continue
+	#
+	#			 song = item
+	#			 id = pctl.master_count
+	#
+	#			 replace_existing = False
+	#			 ex = existing.get(song["id"])
+	#			 if ex is not None:
+	#				 id = ex
+	#				 replace_existing = True
+	#
+	#			 nt = TrackClass()
+	#
+	#			 if "title" in song:
+	#				 nt.title = song["title"]
+	#			 if "artist" in song:
+	#				 nt.artist = song["artist"]
+	#			 if "album" in song:
+	#				 nt.album = song["album"]
+	#			 if "track" in song:
+	#				 nt.track_number = song["track"]
+	#			 if "year" in song:
+	#				 nt.date = str(song["year"])
+	#			 if "duration" in song:
+	#				 nt.length = song["duration"]
+	#
+	#			 # if "bitRate" in song:
+	#			 #	 nt.bitrate = song["bitRate"]
+	#
+	#			 nt.file_ext = "SUB"
+	#
+	#			 nt.index = id
+	#
+	#			 nt.parent_folder_name = name
+	#			 if "path" in song:
+	#				 nt.fullpath = song["path"]
+	#				 nt.parent_folder_path = os.path.dirname(song["path"])
+	#
+	#			 if "coverArt" in song:
+	#				 nt.art_url_key = song["id"]
+	#
+	#			 nt.url_key = song["id"]
+	#			 nt.is_network = True
+	#
+	#			 pctl.master_library[id] = nt
+	#
+	#			 if not replace_existing:
+	#				 pctl.master_count += 1
+	#
+	#			 playlist.append(nt.index)
+	#
+	#	 for id, name in folders:
+	#		 get(id, name)
+	#
+	#	 self.scanning = False
+	#	 if return_list:
+	#		 return playlist
+	#
+	#	 pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist=playlist))
+	#	 pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
+	#	 switch_playlist(len(pctl.multi_playlist) - 1)
 
 
 subsonic = SubsonicService()
@@ -9026,207 +9030,207 @@ subsonic = SubsonicService()
 
 class KoelService:
 
-    def __init__(self):
-        self.connected = False
-        self.resource = None
-        self.scanning = False
-        self.server = ""
+	def __init__(self):
+		self.connected = False
+		self.resource = None
+		self.scanning = False
+		self.server = ""
 
-        self.token = ""
+		self.token = ""
 
-    def connect(self):
+	def connect(self):
 
-        logging.info("Connect to koel...")
-        if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
-            show_message(_("Missing username, password and/or server URL"), mode="warning")
-            self.scanning = False
-            return
+		logging.info("Connect to koel...")
+		if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
+			show_message(_("Missing username, password and/or server URL"), mode="warning")
+			self.scanning = False
+			return
 
-        if self.token:
-            self.connected = True
-            logging.info("Already authorised")
-            return
+		if self.token:
+			self.connected = True
+			logging.info("Already authorised")
+			return
 
-        password = prefs.koel_password
-        username = prefs.koel_username
-        server = prefs.koel_server_url
-        self.server = server
+		password = prefs.koel_password
+		username = prefs.koel_username
+		server = prefs.koel_server_url
+		self.server = server
 
-        target = server + "/api/me"
+		target = server + "/api/me"
 
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
-        body = {
-            "email": username,
-            "password": password,
-        }
+		headers = {
+			"Accept": "application/json",
+			"Content-Type": "application/json",
+		}
+		body = {
+			"email": username,
+			"password": password,
+		}
 
-        try:
-            r = requests.post(target, json=body, headers=headers)
-        except Exception:
-            logging.exception("Could not establish connection")
-            gui.show_message(_("Could not establish connection"), mode="error")
-            return
+		try:
+			r = requests.post(target, json=body, headers=headers)
+		except Exception:
+			logging.exception("Could not establish connection")
+			gui.show_message(_("Could not establish connection"), mode="error")
+			return
 
-        if r.status_code == 200:
-            # logging.info(r.json())
-            self.token = r.json()["token"]
-            if self.token:
-                logging.info("GOT KOEL TOKEN")
-                self.connected = True
+		if r.status_code == 200:
+			# logging.info(r.json())
+			self.token = r.json()["token"]
+			if self.token:
+				logging.info("GOT KOEL TOKEN")
+				self.connected = True
 
-            else:
-                logging.info("AUTH ERROR")
+			else:
+				logging.info("AUTH ERROR")
 
-        else:
-            error = ""
-            j = r.json()
-            if "message" in j:
-                error = j["message"]
+		else:
+			error = ""
+			j = r.json()
+			if "message" in j:
+				error = j["message"]
 
-            gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
+			gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
 
 
-    def resolve_stream(self, id):
+	def resolve_stream(self, id):
 
-        if not self.connected:
-            self.connect()
+		if not self.connected:
+			self.connect()
 
-        if prefs.network_stream_bitrate > 0:
-            target = f"{self.server}/api/{id}/play/1/{prefs.network_stream_bitrate}"
-        else:
-            target = f"{self.server}/api/{id}/play/0/0"
-        params = {"jwt-token": self.token, }
+		if prefs.network_stream_bitrate > 0:
+			target = f"{self.server}/api/{id}/play/1/{prefs.network_stream_bitrate}"
+		else:
+			target = f"{self.server}/api/{id}/play/0/0"
+		params = {"jwt-token": self.token, }
 
-        # if prefs.network_stream_bitrate > 0:
-        #     target = f"{self.server}/api/play/{id}/1/{prefs.network_stream_bitrate}"
-        # else:
-        #target = f"{self.server}/api/play/{id}/0/0"
-        #target = f"{self.server}/api/{id}/play"
+		# if prefs.network_stream_bitrate > 0:
+		#	 target = f"{self.server}/api/play/{id}/1/{prefs.network_stream_bitrate}"
+		# else:
+		#target = f"{self.server}/api/play/{id}/0/0"
+		#target = f"{self.server}/api/{id}/play"
 
-        #params = {"token": self.token, }
+		#params = {"token": self.token, }
 
-        #target = f"{self.server}/api/download/songs"
-        #params["songs"] = [id,]
-        logging.info(target)
-        logging.info(urllib.parse.urlencode(params))
+		#target = f"{self.server}/api/download/songs"
+		#params["songs"] = [id,]
+		logging.info(target)
+		logging.info(urllib.parse.urlencode(params))
 
-        return target, params
+		return target, params
 
-    def listen(self, track_object, submit=False):
-        if submit:
-            try:
-                target = self.server + "/api/interaction/play"
-                headers = {
-                    "Authorization": "Bearer " + self.token,
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                }
+	def listen(self, track_object, submit=False):
+		if submit:
+			try:
+				target = self.server + "/api/interaction/play"
+				headers = {
+					"Authorization": "Bearer " + self.token,
+					"Accept": "application/json",
+					"Content-Type": "application/json",
+				}
 
-                r = requests.post(target, headers=headers, json={"song": track_object.url_key})
-                # logging.info(r.status_code)
-                # logging.info(r.text)
-            except Exception:
-                logging.exception("error submitting listen to koel")
+				r = requests.post(target, headers=headers, json={"song": track_object.url_key})
+				# logging.info(r.status_code)
+				# logging.info(r.text)
+			except Exception:
+				logging.exception("error submitting listen to koel")
 
-    def get_albums(self, return_list=False):
+	def get_albums(self, return_list=False):
 
-        gui.update += 1
-        self.scanning = True
+		gui.update += 1
+		self.scanning = True
 
-        if not self.connected:
-            self.connect()
+		if not self.connected:
+			self.connect()
 
-        if not self.connected:
-            self.scanning = False
-            return []
+		if not self.connected:
+			self.scanning = False
+			return []
 
-        playlist = []
+		playlist = []
 
-        target = self.server + "/api/data"
-        headers = {
-            "Authorization": "Bearer " + self.token,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
+		target = self.server + "/api/data"
+		headers = {
+			"Authorization": "Bearer " + self.token,
+			"Accept": "application/json",
+			"Content-Type": "application/json",
+		}
 
-        r = requests.get(target, headers=headers)
-        data = r.json()
+		r = requests.get(target, headers=headers)
+		data = r.json()
 
-        artists = data["artists"]
-        albums = data["albums"]
-        songs = data["songs"]
+		artists = data["artists"]
+		albums = data["albums"]
+		songs = data["songs"]
 
-        artist_ids = {}
-        for artist in artists:
-            id = artist["id"]
-            if id not in artist_ids:
-                artist_ids[id] = artist["name"]
+		artist_ids = {}
+		for artist in artists:
+			id = artist["id"]
+			if id not in artist_ids:
+				artist_ids[id] = artist["name"]
 
-        album_ids = {}
-        covers = {}
-        for album in albums:
-            id = album["id"]
-            if id not in album_ids:
-                album_ids[id] = album["name"]
-                if "cover" in album:
-                    covers[id] = album["cover"]
+		album_ids = {}
+		covers = {}
+		for album in albums:
+			id = album["id"]
+			if id not in album_ids:
+				album_ids[id] = album["name"]
+				if "cover" in album:
+					covers[id] = album["cover"]
 
-        existing = {}
+		existing = {}
 
-        for track_id, track in pctl.master_library.items():
-            if track.is_network and track.file_ext == "KOEL":
-                existing[track.url_key] = track_id
+		for track_id, track in pctl.master_library.items():
+			if track.is_network and track.file_ext == "KOEL":
+				existing[track.url_key] = track_id
 
-        for song in songs:
+		for song in songs:
 
-            id = pctl.master_count
-            replace_existing = False
+			id = pctl.master_count
+			replace_existing = False
 
-            e = existing.get(song["id"])
-            if e is not None:
-                id = e
-                replace_existing = True
+			e = existing.get(song["id"])
+			if e is not None:
+				id = e
+				replace_existing = True
 
-            nt = TrackClass()
+			nt = TrackClass()
 
-            nt.title = song["title"]
-            nt.index = id
-            if "track" in song and song["track"] is not None:
-                nt.track_number = song["track"]
-            if "disc" in song and song["disc"] is not None:
-                nt.disc = song["disc"]
-            nt.length = float(song["length"])
+			nt.title = song["title"]
+			nt.index = id
+			if "track" in song and song["track"] is not None:
+				nt.track_number = song["track"]
+			if "disc" in song and song["disc"] is not None:
+				nt.disc = song["disc"]
+			nt.length = float(song["length"])
 
-            nt.artist = artist_ids.get(song["artist_id"], "")
-            nt.album = album_ids.get(song["album_id"], "")
-            nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
-            nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
+			nt.artist = artist_ids.get(song["artist_id"], "")
+			nt.album = album_ids.get(song["album_id"], "")
+			nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
+			nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
 
-            nt.art_url_key = covers.get(song["album_id"], "")
-            nt.url_key = song["id"]
+			nt.art_url_key = covers.get(song["album_id"], "")
+			nt.url_key = song["id"]
 
-            nt.is_network = True
-            nt.file_ext = "KOEL"
+			nt.is_network = True
+			nt.file_ext = "KOEL"
 
-            pctl.master_library[id] = nt
+			pctl.master_library[id] = nt
 
-            if not replace_existing:
-                pctl.master_count += 1
+			if not replace_existing:
+				pctl.master_count += 1
 
-            playlist.append(nt.index)
+			playlist.append(nt.index)
 
-        self.scanning = False
+		self.scanning = False
 
-        if return_list:
-            return playlist
+		if return_list:
+			return playlist
 
-        pctl.multi_playlist.append(pl_gen(title=_("Koel Collection"), playlist=playlist))
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "koel path tn"
-        standard_sort(len(pctl.multi_playlist) - 1)
-        switch_playlist(len(pctl.multi_playlist) - 1)
+		pctl.multi_playlist.append(pl_gen(title=_("Koel Collection"), playlist=playlist))
+		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "koel path tn"
+		standard_sort(len(pctl.multi_playlist) - 1)
+		switch_playlist(len(pctl.multi_playlist) - 1)
 
 
 koel = KoelService()
@@ -9234,108 +9238,108 @@ tauon.koel = koel
 
 
 class TauService:
-    def __init__(self):
-        self.processing = False
+	def __init__(self):
+		self.processing = False
 
-    def resolve_stream(self, key):
-        return "http://" + prefs.sat_url + ":7814/api1/file/" + key
+	def resolve_stream(self, key):
+		return "http://" + prefs.sat_url + ":7814/api1/file/" + key
 
-    def resolve_picture(self, key):
-        return "http://" + prefs.sat_url + ":7814/api1/pic/medium/" + key
+	def resolve_picture(self, key):
+		return "http://" + prefs.sat_url + ":7814/api1/pic/medium/" + key
 
-    def get(self, point):
-        url = "http://" + prefs.sat_url + ":7814/api1/"
-        data = None
-        try:
-            r = requests.get(url + point)
-            data = r.json()
-        except Exception as e:
-            logging.exception("Network error")
-            show_message(_("Network error"), str(e), mode="error")
-        return data
+	def get(self, point):
+		url = "http://" + prefs.sat_url + ":7814/api1/"
+		data = None
+		try:
+			r = requests.get(url + point)
+			data = r.json()
+		except Exception as e:
+			logging.exception("Network error")
+			show_message(_("Network error"), str(e), mode="error")
+		return data
 
-    def get_playlist(self, playlist_name=None, return_list=False):
+	def get_playlist(self, playlist_name=None, return_list=False):
 
-        p = self.get("playlists")
+		p = self.get("playlists")
 
-        if not p or not p["playlists"]:
-            self.processing = False
-            return []
+		if not p or not p["playlists"]:
+			self.processing = False
+			return []
 
-        if playlist_name is None:
-            playlist_name = text_sat_playlist.text.strip()
-        if not playlist_name:
-            show_message(_("No playlist name"))
-            return []
+		if playlist_name is None:
+			playlist_name = text_sat_playlist.text.strip()
+		if not playlist_name:
+			show_message(_("No playlist name"))
+			return []
 
-        id = None
-        name = ""
-        for pp in p["playlists"]:
-            if pp["name"].lower() == playlist_name.lower():
-                id = pp["id"]
-                name = pp["name"]
+		id = None
+		name = ""
+		for pp in p["playlists"]:
+			if pp["name"].lower() == playlist_name.lower():
+				id = pp["id"]
+				name = pp["name"]
 
-        if id is None:
-            show_message(_("Playlist not found on target"), mode="error")
-            self.processing = False
-            return []
+		if id is None:
+			show_message(_("Playlist not found on target"), mode="error")
+			self.processing = False
+			return []
 
-        try:
-            t = self.get("tracklist/" + id)
-        except Exception:
-            logging.exception("error getting tracklist")
-            return []
-        at = t["tracks"]
+		try:
+			t = self.get("tracklist/" + id)
+		except Exception:
+			logging.exception("error getting tracklist")
+			return []
+		at = t["tracks"]
 
-        exist = {}
-        for k, v in pctl.master_library.items():
-            if v.is_network and v.file_ext == "TAU":
-                exist[v.url_key] = k
+		exist = {}
+		for k, v in pctl.master_library.items():
+			if v.is_network and v.file_ext == "TAU":
+				exist[v.url_key] = k
 
-        playlist = []
-        for item in at:
-            replace_existing = True
+		playlist = []
+		for item in at:
+			replace_existing = True
 
-            tid = item["id"]
-            id = exist.get(str(tid))
-            if id is None:
-                id = pctl.master_count
-                replace_existing = False
+			tid = item["id"]
+			id = exist.get(str(tid))
+			if id is None:
+				id = pctl.master_count
+				replace_existing = False
 
-            nt = TrackClass()
-            nt.index = id
-            nt.title = item.get("title", "")
-            nt.artist = item.get("artist", "")
-            nt.album = item.get("album", "")
-            nt.album_artist = item.get("album_artist", "")
-            nt.length = int(item.get("duration", 0) / 1000)
-            nt.track_number = item.get("track_number", 0)
+			nt = TrackClass()
+			nt.index = id
+			nt.title = item.get("title", "")
+			nt.artist = item.get("artist", "")
+			nt.album = item.get("album", "")
+			nt.album_artist = item.get("album_artist", "")
+			nt.length = int(item.get("duration", 0) / 1000)
+			nt.track_number = item.get("track_number", 0)
 
-            nt.fullpath = item.get("path", "")
-            nt.filename = os.path.basename(nt.fullpath)
-            nt.parent_folder_name = os.path.basename(os.path.dirname(nt.fullpath))
-            nt.parent_folder_path = os.path.dirname(nt.fullpath)
+			nt.fullpath = item.get("path", "")
+			nt.filename = os.path.basename(nt.fullpath)
+			nt.parent_folder_name = os.path.basename(os.path.dirname(nt.fullpath))
+			nt.parent_folder_path = os.path.dirname(nt.fullpath)
 
-            nt.url_key = str(tid)
-            nt.art_url_key = str(tid)
+			nt.url_key = str(tid)
+			nt.art_url_key = str(tid)
 
-            nt.is_network = True
-            nt.file_ext = "TAU"
-            pctl.master_library[id] = nt
+			nt.is_network = True
+			nt.file_ext = "TAU"
+			pctl.master_library[id] = nt
 
-            if not replace_existing:
-                pctl.master_count += 1
-            playlist.append(nt.index)
+			if not replace_existing:
+				pctl.master_count += 1
+			playlist.append(nt.index)
 
-        if return_list:
-            self.processing = False
-            return playlist
+		if return_list:
+			self.processing = False
+			return playlist
 
-        pctl.multi_playlist.append(pl_gen(title=name, playlist=playlist))
-        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "tau path tn"
-        standard_sort(len(pctl.multi_playlist) - 1)
-        switch_playlist(len(pctl.multi_playlist) - 1)
-        self.processing = False
+		pctl.multi_playlist.append(pl_gen(title=name, playlist=playlist))
+		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "tau path tn"
+		standard_sort(len(pctl.multi_playlist) - 1)
+		switch_playlist(len(pctl.multi_playlist) - 1)
+		self.processing = False
 
 
 tau = TauService()
@@ -9343,623 +9347,624 @@ tauon.tau = tau
 
 
 def get_network_thumbnail_url(track_object):
-    if track_object.file_ext == "TIDAL":
-        return track_object.art_url_key
-    if track_object.file_ext == "SPTY":
-        return track_object.art_url_key
-    if track_object.file_ext == "PLEX":
-        url = plex.resolve_thumbnail(track_object.art_url_key)
-        assert url is not None
-        return url
-    if track_object.file_ext == "JELY":
-        url = jellyfin.resolve_thumbnail(track_object.art_url_key)
-        assert url is not None
-        assert url != ""
-        return url
-    if track_object.file_ext == "KOEL":
-        url = track_object.art_url_key
-        assert url
-        return url
-    if track_object.file_ext == "TAU":
-        url = tau.resolve_picture(track_object.art_url_key)
-        assert url
-        return url
+	if track_object.file_ext == "TIDAL":
+		return track_object.art_url_key
+	if track_object.file_ext == "SPTY":
+		return track_object.art_url_key
+	if track_object.file_ext == "PLEX":
+		url = plex.resolve_thumbnail(track_object.art_url_key)
+		assert url is not None
+		return url
+	if track_object.file_ext == "JELY":
+		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+		assert url is not None
+		assert url != ""
+		return url
+	if track_object.file_ext == "KOEL":
+		url = track_object.art_url_key
+		assert url
+		return url
+	if track_object.file_ext == "TAU":
+		url = tau.resolve_picture(track_object.art_url_key)
+		assert url
+		return url
 
-    return None
+	return None
 
 
 def jellyfin_get_playlists_thread():
-    if jellyfin.scanning:
-        inp.mouse_click = False
-        show_message(_("Job already in progress!"))
-        return
-    jellyfin.scanning = True
-    shoot_dl = threading.Thread(target=jellyfin.get_playlists)
-    shoot_dl.daemon = True
-    shoot_dl.start()
+	if jellyfin.scanning:
+		inp.mouse_click = False
+		show_message(_("Job already in progress!"))
+		return
+	jellyfin.scanning = True
+	shoot_dl = threading.Thread(target=jellyfin.get_playlists)
+	shoot_dl.daemon = True
+	shoot_dl.start()
 
 def jellyfin_get_library_thread():
-    pref_box.close()
-    save_prefs()
-    if jellyfin.scanning:
-        inp.mouse_click = False
-        show_message(_("Job already in progress!"))
-        return
+	pref_box.close()
+	save_prefs()
+	if jellyfin.scanning:
+		inp.mouse_click = False
+		show_message(_("Job already in progress!"))
+		return
 
-    jellyfin.scanning = True
-    shoot_dl = threading.Thread(target=jellyfin.ingest_library)
-    shoot_dl.daemon = True
-    shoot_dl.start()
+	jellyfin.scanning = True
+	shoot_dl = threading.Thread(target=jellyfin.ingest_library)
+	shoot_dl.daemon = True
+	shoot_dl.start()
 
 
 def plex_get_album_thread():
-    pref_box.close()
-    save_prefs()
-    if plex.scanning:
-        inp.mouse_click = False
-        show_message(_("Already scanning!"))
-        return
-    plex.scanning = True
+	pref_box.close()
+	save_prefs()
+	if plex.scanning:
+		inp.mouse_click = False
+		show_message(_("Already scanning!"))
+		return
+	plex.scanning = True
 
-    shoot_dl = threading.Thread(target=plex.get_albums)
-    shoot_dl.daemon = True
-    shoot_dl.start()
+	shoot_dl = threading.Thread(target=plex.get_albums)
+	shoot_dl.daemon = True
+	shoot_dl.start()
 
 
 def sub_get_album_thread():
-    # if prefs.backend != 1:
-    #     show_message("This feature is currently only available with the BASS backend")
-    #     return
+	# if prefs.backend != 1:
+	#	 show_message("This feature is currently only available with the BASS backend")
+	#	 return
 
-    pref_box.close()
-    save_prefs()
-    if subsonic.scanning:
-        inp.mouse_click = False
-        show_message(_("Already scanning!"))
-        return
-    subsonic.scanning = True
+	pref_box.close()
+	save_prefs()
+	if subsonic.scanning:
+		inp.mouse_click = False
+		show_message(_("Already scanning!"))
+		return
+	subsonic.scanning = True
 
-    shoot_dl = threading.Thread(target=subsonic.get_music3)
-    shoot_dl.daemon = True
-    shoot_dl.start()
+	shoot_dl = threading.Thread(target=subsonic.get_music3)
+	shoot_dl.daemon = True
+	shoot_dl.start()
 
 
 def koel_get_album_thread():
-    # if prefs.backend != 1:
-    #     show_message("This feature is currently only available with the BASS backend")
-    #     return
+	# if prefs.backend != 1:
+	#	 show_message("This feature is currently only available with the BASS backend")
+	#	 return
 
-    pref_box.close()
-    save_prefs()
-    if koel.scanning:
-        inp.mouse_click = False
-        show_message(_("Already scanning!"))
-        return
-    koel.scanning = True
+	pref_box.close()
+	save_prefs()
+	if koel.scanning:
+		inp.mouse_click = False
+		show_message(_("Already scanning!"))
+		return
+	koel.scanning = True
 
-    shoot_dl = threading.Thread(target=koel.get_albums)
-    shoot_dl.daemon = True
-    shoot_dl.start()
+	shoot_dl = threading.Thread(target=koel.get_albums)
+	shoot_dl.daemon = True
+	shoot_dl.start()
 
 
 if system == "windows" or msys:
-    from infi.systray import SysTrayIcon
+	from infi.systray import SysTrayIcon
 
 
 class STray:
 
-    def __init__(self):
-        self.active = False
+	def __init__(self):
+		self.active = False
 
-    def up(self, systray):
-        SDL_ShowWindow(t_window)
-        SDL_RaiseWindow(t_window)
-        SDL_RestoreWindow(t_window)
-        gui.lowered = False
+	def up(self, systray):
+		SDL_ShowWindow(t_window)
+		SDL_RaiseWindow(t_window)
+		SDL_RestoreWindow(t_window)
+		gui.lowered = False
 
-    def down(self):
-        if self.active:
-            SDL_HideWindow(t_window)
+	def down(self):
+		if self.active:
+			SDL_HideWindow(t_window)
 
-    def advance(self, systray):
-        pctl.advance()
+	def advance(self, systray):
+		pctl.advance()
 
-    def back(self, systray):
-        pctl.back()
+	def back(self, systray):
+		pctl.back()
 
-    def pause(self, systray):
-        pctl.play_pause()
+	def pause(self, systray):
+		pctl.play_pause()
 
-    def track_stop(self, systray):
-        pctl.stop()
+	def track_stop(self, systray):
+		pctl.stop()
 
-    def on_quit_callback(self, systray):
-        tauon.exit("Exit called from tray.")
+	def on_quit_callback(self, systray):
+		tauon.exit("Exit called from tray.")
 
-    def start(self):
-        menu_options = (("Show", None, self.up),
-                        ("Play/Pause", None, self.pause),
-                        ("Stop", None, self.track_stop),
-                        ("Forward", None, self.advance),
-                        ("Back", None, self.back))
-        self.systray = SysTrayIcon(install_directory + "\\assets\\" + "icon.ico", "Tauon Music Box", menu_options,
-                                   on_quit=self.on_quit_callback)
-        self.systray.start()
-        self.active = True
-        gui.tray_active = True
+	def start(self):
+		menu_options = (("Show", None, self.up),
+						("Play/Pause", None, self.pause),
+						("Stop", None, self.track_stop),
+						("Forward", None, self.advance),
+						("Back", None, self.back))
+		self.systray = SysTrayIcon(
+			install_directory + "\\assets\\" + "icon.ico", "Tauon Music Box",
+			menu_options, on_quit=self.on_quit_callback)
+		self.systray.start()
+		self.active = True
+		gui.tray_active = True
 
-    def stop(self):
-        self.systray.shutdown()
-        self.active = False
+	def stop(self):
+		self.systray.shutdown()
+		self.active = False
 
 
 tray = STray()
 
 if system == "linux" and not macos and not msys:
 
-    gnome = Gnome(tauon)
+	gnome = Gnome(tauon)
 
-    try:
-        gnomeThread = threading.Thread(target=gnome.main)
-        gnomeThread.daemon = True
-        gnomeThread.start()
-    except Exception:
-        logging.exception("Could not start Dbus thread")
+	try:
+		gnomeThread = threading.Thread(target=gnome.main)
+		gnomeThread.daemon = True
+		gnomeThread.start()
+	except Exception:
+		logging.exception("Could not start Dbus thread")
 
 if (system == "windows" or msys):
 
-    tray.start()
+	tray.start()
 
-    if win_ver < 10:
-        import keyboard
+	if win_ver < 10:
+		import keyboard
 
-        def key_callback(event):
+		def key_callback(event):
 
-            if event.event_type == "down":
-                if event.scan_code == -179:
-                    inp.media_key = "Play"
-                elif event.scan_code == -178:
-                    inp.media_key = "Stop"
-                elif event.scan_code == -177:
-                    inp.media_key = "Previous"
-                elif event.scan_code == -176:
-                    inp.media_key = "Next"
-                gui.update += 1
-                tauon.wake()
+			if event.event_type == "down":
+				if event.scan_code == -179:
+					inp.media_key = "Play"
+				elif event.scan_code == -178:
+					inp.media_key = "Stop"
+				elif event.scan_code == -177:
+					inp.media_key = "Previous"
+				elif event.scan_code == -176:
+					inp.media_key = "Next"
+				gui.update += 1
+				tauon.wake()
 
-        keyboard.hook_key(-179, key_callback)
-        keyboard.hook_key(-178, key_callback)
-        keyboard.hook_key(-177, key_callback)
-        keyboard.hook_key(-176, key_callback)
+		keyboard.hook_key(-179, key_callback)
+		keyboard.hook_key(-178, key_callback)
+		keyboard.hook_key(-177, key_callback)
+		keyboard.hook_key(-176, key_callback)
 
 
 class GStats:
-    def __init__(self):
+	def __init__(self):
 
-        self.last_db = 0
-        self.last_pl = 0
-        self.artist_list = []
-        self.album_list = []
-        self.genre_list = []
-        self.genre_dict = {}
+		self.last_db = 0
+		self.last_pl = 0
+		self.artist_list = []
+		self.album_list = []
+		self.genre_list = []
+		self.genre_dict = {}
 
-    def update(self, playlist):
+	def update(self, playlist):
 
-        pt = 0
+		pt = 0
 
-        if pctl.master_count != self.last_db or self.last_pl != playlist:
-            self.last_db = pctl.master_count
-            self.last_pl = playlist
+		if pctl.master_count != self.last_db or self.last_pl != playlist:
+			self.last_db = pctl.master_count
+			self.last_pl = playlist
 
-            artists = {}
+			artists = {}
 
-            for index in pctl.multi_playlist[playlist][2]:
-                artist = pctl.master_library[index].artist
+			for index in pctl.multi_playlist[playlist][2]:
+				artist = pctl.master_library[index].artist
 
-                if artist == "":
-                    artist = "<Artist Unspecified>"
+				if artist == "":
+					artist = "<Artist Unspecified>"
 
-                pt = int(star_store.get(index))
-                if pt < 30:
-                    continue
+				pt = int(star_store.get(index))
+				if pt < 30:
+					continue
 
-                if artist in artists:
-                    artists[artist] += pt
-                else:
-                    artists[artist] = pt
+				if artist in artists:
+					artists[artist] += pt
+				else:
+					artists[artist] = pt
 
-            art_list = artists.items()
+			art_list = artists.items()
 
-            sorted_list = sorted(art_list, key=lambda x: x[1], reverse=True)
+			sorted_list = sorted(art_list, key=lambda x: x[1], reverse=True)
 
-            self.artist_list = copy.deepcopy(sorted_list)
+			self.artist_list = copy.deepcopy(sorted_list)
 
-            genres = {}
-            genre_dict = {}
+			genres = {}
+			genre_dict = {}
 
-            for index in pctl.multi_playlist[playlist][2]:
-                genre_r = pctl.master_library[index].genre
+			for index in pctl.multi_playlist[playlist][2]:
+				genre_r = pctl.master_library[index].genre
 
-                pt = int(star_store.get(index))
+				pt = int(star_store.get(index))
 
-                gn = []
-                if "," in genre_r:
-                    for g in genre_r.split(","):
-                        g = g.rstrip(" ").lstrip(" ")
-                        if len(g) > 0:
-                            gn.append(g)
-                elif ";" in genre_r:
-                    for g in genre_r.split(";"):
-                        g = g.rstrip(" ").lstrip(" ")
-                        if len(g) > 0:
-                            gn.append(g)
-                elif "/" in genre_r:
-                    for g in genre_r.split("/"):
-                        g = g.rstrip(" ").lstrip(" ")
-                        if len(g) > 0:
-                            gn.append(g)
-                elif " & " in genre_r:
-                    for g in genre_r.split(" & "):
-                        g = g.rstrip(" ").lstrip(" ")
-                        if len(g) > 0:
-                            gn.append(g)
-                else:
-                    gn = [genre_r]
+				gn = []
+				if "," in genre_r:
+					for g in genre_r.split(","):
+						g = g.rstrip(" ").lstrip(" ")
+						if len(g) > 0:
+							gn.append(g)
+				elif ";" in genre_r:
+					for g in genre_r.split(";"):
+						g = g.rstrip(" ").lstrip(" ")
+						if len(g) > 0:
+							gn.append(g)
+				elif "/" in genre_r:
+					for g in genre_r.split("/"):
+						g = g.rstrip(" ").lstrip(" ")
+						if len(g) > 0:
+							gn.append(g)
+				elif " & " in genre_r:
+					for g in genre_r.split(" & "):
+						g = g.rstrip(" ").lstrip(" ")
+						if len(g) > 0:
+							gn.append(g)
+				else:
+					gn = [genre_r]
 
-                pt = int(pt / len(gn))
+				pt = int(pt / len(gn))
 
-                for genre in gn:
+				for genre in gn:
 
-                    if genre.lower() in {"", "other", "unknown", "misc"}:
-                        genre = "<Genre Unspecified>"
-                    if genre.lower() in {"jpop", "japanese pop"}:
-                        genre = "J-Pop"
-                    if genre.lower() in {"jrock", "japanese rock"}:
-                        genre = "J-Rock"
-                    if genre.lower() in {"alternative music", "alt-rock", "alternative", "alternrock", "alt"}:
-                        genre = "Alternative Rock"
-                    if genre.lower() in {"jpunk", "japanese punk"}:
-                        genre = "J-Punk"
-                    if genre.lower() in {"post rock", "post-rock"}:
-                        genre = "Post-Rock"
-                    if genre.lower() in {"video game", "game", "game music", "video game music", "game ost"}:
-                        genre = "Video Game Soundtrack"
-                    if genre.lower() in {"general soundtrack", "ost", "Soundtracks"}:
-                        genre = "Soundtrack"
-                    if genre.lower() in ("anime", "アニメ", "anime ost"):
-                        genre = "Anime Soundtrack"
-                    if genre.lower() in {"同人"}:
-                        genre = "Doujin"
-                    if genre.lower() in {"chill, chill out", "chill-out"}:
-                        genre = "Chillout"
+					if genre.lower() in {"", "other", "unknown", "misc"}:
+						genre = "<Genre Unspecified>"
+					if genre.lower() in {"jpop", "japanese pop"}:
+						genre = "J-Pop"
+					if genre.lower() in {"jrock", "japanese rock"}:
+						genre = "J-Rock"
+					if genre.lower() in {"alternative music", "alt-rock", "alternative", "alternrock", "alt"}:
+						genre = "Alternative Rock"
+					if genre.lower() in {"jpunk", "japanese punk"}:
+						genre = "J-Punk"
+					if genre.lower() in {"post rock", "post-rock"}:
+						genre = "Post-Rock"
+					if genre.lower() in {"video game", "game", "game music", "video game music", "game ost"}:
+						genre = "Video Game Soundtrack"
+					if genre.lower() in {"general soundtrack", "ost", "Soundtracks"}:
+						genre = "Soundtrack"
+					if genre.lower() in ("anime", "アニメ", "anime ost"):
+						genre = "Anime Soundtrack"
+					if genre.lower() in {"同人"}:
+						genre = "Doujin"
+					if genre.lower() in {"chill, chill out", "chill-out"}:
+						genre = "Chillout"
 
-                    genre = genre.title()
+					genre = genre.title()
 
-                    if len(genre) == 3 and genre[2] == "m":
-                        genre = genre.upper()
+					if len(genre) == 3 and genre[2] == "m":
+						genre = genre.upper()
 
-                    if genre in genres:
+					if genre in genres:
 
-                        genres[genre] += pt
-                    else:
-                        genres[genre] = pt
+						genres[genre] += pt
+					else:
+						genres[genre] = pt
 
-                    if genre in genre_dict:
-                        genre_dict[genre].append(index)
-                    else:
-                        genre_dict[genre] = [index]
+					if genre in genre_dict:
+						genre_dict[genre].append(index)
+					else:
+						genre_dict[genre] = [index]
 
-            art_list = genres.items()
-            sorted_list = sorted(art_list, key=lambda x: x[1], reverse=True)
+			art_list = genres.items()
+			sorted_list = sorted(art_list, key=lambda x: x[1], reverse=True)
 
-            self.genre_list = copy.deepcopy(sorted_list)
-            self.genre_dict = genre_dict
+			self.genre_list = copy.deepcopy(sorted_list)
+			self.genre_dict = genre_dict
 
-            # logging.info('\n-----------------------\n')
+			# logging.info('\n-----------------------\n')
 
-            g_albums = {}
+			g_albums = {}
 
-            for index in pctl.multi_playlist[playlist][2]:
-                album = pctl.master_library[index].album
+			for index in pctl.multi_playlist[playlist][2]:
+				album = pctl.master_library[index].album
 
-                if album == "":
-                    album = "<Album Unspecified>"
+				if album == "":
+					album = "<Album Unspecified>"
 
-                pt = int(star_store.get(index))
+				pt = int(star_store.get(index))
 
-                if pt < 30:
-                    continue
+				if pt < 30:
+					continue
 
-                if album in g_albums:
-                    g_albums[album] += pt
-                else:
-                    g_albums[album] = pt
+				if album in g_albums:
+					g_albums[album] += pt
+				else:
+					g_albums[album] = pt
 
-            art_list = g_albums.items()
+			art_list = g_albums.items()
 
-            sorted_list = sorted(art_list, key=lambda x: x[1], reverse=True)
+			sorted_list = sorted(art_list, key=lambda x: x[1], reverse=True)
 
-            self.album_list = copy.deepcopy(sorted_list)
+			self.album_list = copy.deepcopy(sorted_list)
 
 
 stats_gen = GStats()
 
 
 def do_exit_button():
-    if mouse_up or ab_click:
-        if gui.tray_active and prefs.min_to_tray:
-            if key_shift_down:
-                tauon.exit("User clicked X button with shift key")
-                return
-            tauon.min_to_tray()
-        elif gui.sync_progress and not gui.stop_sync:
-            show_message(_("Stop the sync before exiting!"))
-        else:
-            tauon.exit("User clicked X button")
+	if mouse_up or ab_click:
+		if gui.tray_active and prefs.min_to_tray:
+			if key_shift_down:
+				tauon.exit("User clicked X button with shift key")
+				return
+			tauon.min_to_tray()
+		elif gui.sync_progress and not gui.stop_sync:
+			show_message(_("Stop the sync before exiting!"))
+		else:
+			tauon.exit("User clicked X button")
 
 
 def do_maximize_button():
-    global mouse_down
-    global drag_mode
-    if gui.fullscreen:
-        gui.fullscreen = False
-        SDL_SetWindowFullscreen(t_window, 0)
-    elif gui.maximized:
-        gui.maximized = False
-        SDL_RestoreWindow(t_window)
-    else:
-        gui.maximized = True
-        SDL_MaximizeWindow(t_window)
+	global mouse_down
+	global drag_mode
+	if gui.fullscreen:
+		gui.fullscreen = False
+		SDL_SetWindowFullscreen(t_window, 0)
+	elif gui.maximized:
+		gui.maximized = False
+		SDL_RestoreWindow(t_window)
+	else:
+		gui.maximized = True
+		SDL_MaximizeWindow(t_window)
 
-    mouse_down = False
-    inp.mouse_click = False
-    drag_mode = False
+	mouse_down = False
+	inp.mouse_click = False
+	drag_mode = False
 
 
 def do_minimize_button():
 
-    global mouse_down
-    global drag_mode
-    if macos:
-        # hack
-        SDL_SetWindowBordered(t_window, True)
-        SDL_MinimizeWindow(t_window)
-        SDL_SetWindowBordered(t_window, False)
-    else:
-        SDL_MinimizeWindow(t_window)
+	global mouse_down
+	global drag_mode
+	if macos:
+		# hack
+		SDL_SetWindowBordered(t_window, True)
+		SDL_MinimizeWindow(t_window)
+		SDL_SetWindowBordered(t_window, False)
+	else:
+		SDL_MinimizeWindow(t_window)
 
-    mouse_down = False
-    inp.mouse_click = False
-    drag_mode = False
+	mouse_down = False
+	inp.mouse_click = False
+	drag_mode = False
 
 
 mac_circle = asset_loader("macstyle.png", True)
 
 
 def draw_window_tools():
-    global mouse_down
-    global drag_mode
+	global mouse_down
+	global drag_mode
 
-    # rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
-    # fields.add(rect)
-    # prefs.left_window_control = not key_shift_down
-    macstyle = gui.macstyle
+	# rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
+	# fields.add(rect)
+	# prefs.left_window_control = not key_shift_down
+	macstyle = gui.macstyle
 
-    bg_off = colours.window_buttons_bg
-    bg_on = colours.window_buttons_bg_over
-    fg_off = colours.window_button_icon_off
-    fg_on = colours.window_buttons_icon_over
-    x_on = colours.window_button_x_on
-    x_off = colours.window_button_x_off
+	bg_off = colours.window_buttons_bg
+	bg_on = colours.window_buttons_bg_over
+	fg_off = colours.window_button_icon_off
+	fg_on = colours.window_buttons_icon_over
+	x_on = colours.window_button_x_on
+	x_off = colours.window_button_x_off
 
-    h = round(28 * gui.scale)
-    y = round(1 * gui.scale)
-    if macstyle:
-        y = round(9 * gui.scale)
+	h = round(28 * gui.scale)
+	y = round(1 * gui.scale)
+	if macstyle:
+		y = round(9 * gui.scale)
 
-    x_width = round(26 * gui.scale)
-    ma_width = round(33 * gui.scale)
-    mi_width = round(35 * gui.scale)
-    re_width = round(30 * gui.scale)
-    last_width = 0
+	x_width = round(26 * gui.scale)
+	ma_width = round(33 * gui.scale)
+	mi_width = round(35 * gui.scale)
+	re_width = round(30 * gui.scale)
+	last_width = 0
 
-    xx = 0
-    l = prefs.left_window_control
-    r = not l
-    focused = window_is_focused()
+	xx = 0
+	l = prefs.left_window_control
+	r = not l
+	focused = window_is_focused()
 
-    # Close
-    if r:
-        xx = window_size[0] - x_width
-        xx -= round(2 * gui.scale)
+	# Close
+	if r:
+		xx = window_size[0] - x_width
+		xx -= round(2 * gui.scale)
 
-    if macstyle:
-        xx = window_size[0] - 27 * gui.scale
-        if l:
-            xx = round(4 * gui.scale)
-        rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
-        fields.add(rect)
-        colour = mac_close
-        if not focused:
-            colour = (86, 85, 86, 255)
-        mac_circle.render(xx + 6 * gui.scale, y, colour)
-        if coll(rect) and not gui.mouse_unknown:
-            if coll_point(last_click_location, rect):
-                do_exit_button()
-    else:
-        rect = (xx, y, x_width, h)
-        last_width = x_width
-        ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_off)
-        fields.add(rect)
-        if coll(rect) and not gui.mouse_unknown:
-            ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_on)
-            top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
-            if coll_point(last_click_location, rect):
-                do_exit_button()
-        else:
-            top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
+	if macstyle:
+		xx = window_size[0] - 27 * gui.scale
+		if l:
+			xx = round(4 * gui.scale)
+		rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
+		fields.add(rect)
+		colour = mac_close
+		if not focused:
+			colour = (86, 85, 86, 255)
+		mac_circle.render(xx + 6 * gui.scale, y, colour)
+		if coll(rect) and not gui.mouse_unknown:
+			if coll_point(last_click_location, rect):
+				do_exit_button()
+	else:
+		rect = (xx, y, x_width, h)
+		last_width = x_width
+		ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_off)
+		fields.add(rect)
+		if coll(rect) and not gui.mouse_unknown:
+			ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_on)
+			top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
+			if coll_point(last_click_location, rect):
+				do_exit_button()
+		else:
+			top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
 
-    # Macstyle restore
-    if gui.mode == 3:
-        if macstyle:
-            if r:
-                xx -= round(20 * gui.scale)
-            if l:
-                xx += round(20 * gui.scale)
-            rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
+	# Macstyle restore
+	if gui.mode == 3:
+		if macstyle:
+			if r:
+				xx -= round(20 * gui.scale)
+			if l:
+				xx += round(20 * gui.scale)
+			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
-            fields.add(rect)
-            colour = (160, 55, 225, 255)
-            if not focused:
-                colour = (86, 85, 86, 255)
-            mac_circle.render(xx + 6 * gui.scale, y, colour)
-            if coll(rect) and not gui.mouse_unknown:
-                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    restore_full_mode()
-                    gui.update += 2
+			fields.add(rect)
+			colour = (160, 55, 225, 255)
+			if not focused:
+				colour = (86, 85, 86, 255)
+			mac_circle.render(xx + 6 * gui.scale, y, colour)
+			if coll(rect) and not gui.mouse_unknown:
+				if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+					restore_full_mode()
+					gui.update += 2
 
-    # maximize
+	# maximize
 
-    if draw_max_button and not gui.mode == 3:
-        if macstyle:
-            if r:
-                xx -= round(20 * gui.scale)
-            if l:
-                xx += round(20 * gui.scale)
-            rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
+	if draw_max_button and not gui.mode == 3:
+		if macstyle:
+			if r:
+				xx -= round(20 * gui.scale)
+			if l:
+				xx += round(20 * gui.scale)
+			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
-            fields.add(rect)
-            colour = mac_maximize
-            if not focused:
-                colour = (86, 85, 86, 255)
-            mac_circle.render(xx + 6 * gui.scale, y, colour)
-            if coll(rect) and not gui.mouse_unknown:
-                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_minimize_button()
+			fields.add(rect)
+			colour = mac_maximize
+			if not focused:
+				colour = (86, 85, 86, 255)
+			mac_circle.render(xx + 6 * gui.scale, y, colour)
+			if coll(rect) and not gui.mouse_unknown:
+				if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+					do_minimize_button()
 
-        else:
-            if r:
-                xx -= ma_width
-            if l:
-                xx += last_width
-            rect = (xx, y, ma_width, h)
-            last_width = ma_width
-            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
-            fields.add(rect)
-            if coll(rect):
-                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
-                top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
-                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_maximize_button()
-            else:
-                top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
+		else:
+			if r:
+				xx -= ma_width
+			if l:
+				xx += last_width
+			rect = (xx, y, ma_width, h)
+			last_width = ma_width
+			ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+			fields.add(rect)
+			if coll(rect):
+				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+				top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
+				if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+					do_maximize_button()
+			else:
+				top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
 
-    # minimize
+	# minimize
 
-    if draw_min_button:
+	if draw_min_button:
 
-        # x = window_size[0] - round(65 * gui.scale)
-        # if draw_max_button and not gui.mode == 3:
-        #     x -= round(34 * gui.scale)
-        if macstyle:
-            if r:
-                xx -= round(20 * gui.scale)
-            if l:
-                xx += round(20 * gui.scale)
-            rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
+		# x = window_size[0] - round(65 * gui.scale)
+		# if draw_max_button and not gui.mode == 3:
+		#	 x -= round(34 * gui.scale)
+		if macstyle:
+			if r:
+				xx -= round(20 * gui.scale)
+			if l:
+				xx += round(20 * gui.scale)
+			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
-            fields.add(rect)
-            colour = mac_minimize
-            if not focused:
-                colour = (86, 85, 86, 255)
-            mac_circle.render(xx + 6 * gui.scale, y, colour)
-            if coll(rect) and not gui.mouse_unknown:
-                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_maximize_button()
+			fields.add(rect)
+			colour = mac_minimize
+			if not focused:
+				colour = (86, 85, 86, 255)
+			mac_circle.render(xx + 6 * gui.scale, y, colour)
+			if coll(rect) and not gui.mouse_unknown:
+				if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+					do_maximize_button()
 
-        else:
-            if r:
-                xx -= mi_width
-            if l:
-                xx += last_width
+		else:
+			if r:
+				xx -= mi_width
+			if l:
+				xx += last_width
 
-            rect = (xx, y, mi_width, h)
-            last_width = mi_width
-            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
-            fields.add(rect)
-            if coll(rect):
-                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
-                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_on)
-                if (mouse_up or ab_click) and coll_point(last_click_location, rect):
-                    do_minimize_button()
-            else:
-                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                           fg_off)
+			rect = (xx, y, mi_width, h)
+			last_width = mi_width
+			ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+			fields.add(rect)
+			if coll(rect):
+				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+				ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_on)
+				if (mouse_up or ab_click) and coll_point(last_click_location, rect):
+					do_minimize_button()
+			else:
+				ddt.rect_a(
+					(rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_off)
 
-    # restore
+	# restore
 
-    if gui.mode == 3:
+	if gui.mode == 3:
 
-        # bg_off = [0, 0, 0, 50]
-        # bg_on = [255, 255, 255, 10]
-        # fg_off =(255, 255, 255, 40)
-        # fg_on = (255, 255, 255, 60)
-        if macstyle:
-            pass
-        else:
-            if r:
-                xx -= re_width
-            if l:
-                xx += last_width
+		# bg_off = [0, 0, 0, 50]
+		# bg_on = [255, 255, 255, 10]
+		# fg_off =(255, 255, 255, 40)
+		# fg_on = (255, 255, 255, 60)
+		if macstyle:
+			pass
+		else:
+			if r:
+				xx -= re_width
+			if l:
+				xx += last_width
 
-            rect = (xx, y, re_width, h)
-            ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
-            fields.add(rect)
-            if coll(rect):
-                ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
-                top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
-                if (inp.mouse_click or ab_click) and coll_point(click_location, rect):
-                    restore_full_mode()
-                    gui.update += 2
-            else:
-                top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
+			rect = (xx, y, re_width, h)
+			ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+			fields.add(rect)
+			if coll(rect):
+				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+				top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
+				if (inp.mouse_click or ab_click) and coll_point(click_location, rect):
+					restore_full_mode()
+					gui.update += 2
+			else:
+				top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
 
 def draw_window_border():
-    corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
+	corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
-    corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
-    fields.add(corner_rect)
+	corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
+	fields.add(corner_rect)
 
-    right_rect = (window_size[0] - 3 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
-    fields.add(right_rect)
+	right_rect = (window_size[0] - 3 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
+	fields.add(right_rect)
 
-    # top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 2 * gui.scale)
-    # fields.add(top_rect)
+	# top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 2 * gui.scale)
+	# fields.add(top_rect)
 
-    left_rect = (0, 10 * gui.scale, 4 * gui.scale, window_size[1] - 50 * gui.scale)
-    fields.add(left_rect)
+	left_rect = (0, 10 * gui.scale, 4 * gui.scale, window_size[1] - 50 * gui.scale)
+	fields.add(left_rect)
 
-    bottom_rect = (20 * gui.scale, window_size[1] - 4, window_size[0] - 40 * gui.scale, 7 * gui.scale)
-    fields.add(bottom_rect)
+	bottom_rect = (20 * gui.scale, window_size[1] - 4, window_size[0] - 40 * gui.scale, 7 * gui.scale)
+	fields.add(bottom_rect)
 
-    if coll(corner_rect):
-        gui.cursor_want = 4
-    elif coll(right_rect):
-        gui.cursor_want = 8
-    # elif coll(top_rect):
-    #     gui.cursor_want = 9
-    elif coll(left_rect):
-        gui.cursor_want = 10
-    elif coll(bottom_rect):
-        gui.cursor_want = 11
+	if coll(corner_rect):
+		gui.cursor_want = 4
+	elif coll(right_rect):
+		gui.cursor_want = 8
+	# elif coll(top_rect):
+	#	 gui.cursor_want = 9
+	elif coll(left_rect):
+		gui.cursor_want = 10
+	elif coll(bottom_rect):
+		gui.cursor_want = 11
 
-    colour = colours.window_frame
+	colour = colours.window_frame
 
-    ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour)
-    ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
-    ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
-    ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
+	ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour)
+	ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
+	ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
+	ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
 
 
 # -------------------------------------------------------------------------------------------
@@ -10269,202 +10274,202 @@ draw = Drawing()
 
 
 def prime_fonts():
-    standard_font = prefs.linux_font
-    # if msys:
-    #     standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
-    ddt.prime_font(standard_font, 8, 9)
-    ddt.prime_font(standard_font, 8, 10)
-    ddt.prime_font(standard_font, 8.5, 11)
-    ddt.prime_font(standard_font, 8.7, 11.5)
-    ddt.prime_font(standard_font, 9, 12)
-    ddt.prime_font(standard_font, 10, 13)
-    ddt.prime_font(standard_font, 10, 14)
-    ddt.prime_font(standard_font, 10.2, 14.5)
-    ddt.prime_font(standard_font, 11, 15)
-    ddt.prime_font(standard_font, 12, 16)
-    ddt.prime_font(standard_font, 12, 17)
-    ddt.prime_font(standard_font, 12, 18)
-    ddt.prime_font(standard_font, 13, 19)
-    ddt.prime_font(standard_font, 14, 20)
-    ddt.prime_font(standard_font, 24, 30)
+	standard_font = prefs.linux_font
+	# if msys:
+	#	 standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
+	ddt.prime_font(standard_font, 8, 9)
+	ddt.prime_font(standard_font, 8, 10)
+	ddt.prime_font(standard_font, 8.5, 11)
+	ddt.prime_font(standard_font, 8.7, 11.5)
+	ddt.prime_font(standard_font, 9, 12)
+	ddt.prime_font(standard_font, 10, 13)
+	ddt.prime_font(standard_font, 10, 14)
+	ddt.prime_font(standard_font, 10.2, 14.5)
+	ddt.prime_font(standard_font, 11, 15)
+	ddt.prime_font(standard_font, 12, 16)
+	ddt.prime_font(standard_font, 12, 17)
+	ddt.prime_font(standard_font, 12, 18)
+	ddt.prime_font(standard_font, 13, 19)
+	ddt.prime_font(standard_font, 14, 20)
+	ddt.prime_font(standard_font, 24, 30)
 
-    ddt.prime_font(standard_font, 9, 412)
-    ddt.prime_font(standard_font, 10, 413)
+	ddt.prime_font(standard_font, 9, 412)
+	ddt.prime_font(standard_font, 10, 413)
 
-    standard_font = prefs.linux_font_semibold
-    # if msys:
-    #     standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
+	standard_font = prefs.linux_font_semibold
+	# if msys:
+	#	 standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
 
-    ddt.prime_font(standard_font, 8, 309)
-    ddt.prime_font(standard_font, 8, 310)
-    ddt.prime_font(standard_font, 8.5, 311)
-    ddt.prime_font(standard_font, 9, 312)
-    ddt.prime_font(standard_font, 10, 313)
-    ddt.prime_font(standard_font, 10.5, 314)
-    ddt.prime_font(standard_font, 11, 315)
-    ddt.prime_font(standard_font, 12, 316)
-    ddt.prime_font(standard_font, 12, 317)
-    ddt.prime_font(standard_font, 12, 318)
-    ddt.prime_font(standard_font, 13, 319)
-    ddt.prime_font(standard_font, 24, 330)
+	ddt.prime_font(standard_font, 8, 309)
+	ddt.prime_font(standard_font, 8, 310)
+	ddt.prime_font(standard_font, 8.5, 311)
+	ddt.prime_font(standard_font, 9, 312)
+	ddt.prime_font(standard_font, 10, 313)
+	ddt.prime_font(standard_font, 10.5, 314)
+	ddt.prime_font(standard_font, 11, 315)
+	ddt.prime_font(standard_font, 12, 316)
+	ddt.prime_font(standard_font, 12, 317)
+	ddt.prime_font(standard_font, 12, 318)
+	ddt.prime_font(standard_font, 13, 319)
+	ddt.prime_font(standard_font, 24, 330)
 
-    standard_font = prefs.linux_font_bold
-    # if msys:
-    #     standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
+	standard_font = prefs.linux_font_bold
+	# if msys:
+	#	 standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
 
-    ddt.prime_font(standard_font, 6, 209)
-    ddt.prime_font(standard_font, 7, 210)
-    ddt.prime_font(standard_font, 8, 211)
-    ddt.prime_font(standard_font, 9, 212)
-    ddt.prime_font(standard_font, 10, 213)
-    ddt.prime_font(standard_font, 11, 214)
-    ddt.prime_font(standard_font, 12, 215)
-    ddt.prime_font(standard_font, 13, 216)
-    ddt.prime_font(standard_font, 14, 217)
-    ddt.prime_font(standard_font, 17, 218)
-    ddt.prime_font(standard_font, 19, 219)
-    ddt.prime_font(standard_font, 20, 220)
-    ddt.prime_font(standard_font, 25, 228)
+	ddt.prime_font(standard_font, 6, 209)
+	ddt.prime_font(standard_font, 7, 210)
+	ddt.prime_font(standard_font, 8, 211)
+	ddt.prime_font(standard_font, 9, 212)
+	ddt.prime_font(standard_font, 10, 213)
+	ddt.prime_font(standard_font, 11, 214)
+	ddt.prime_font(standard_font, 12, 215)
+	ddt.prime_font(standard_font, 13, 216)
+	ddt.prime_font(standard_font, 14, 217)
+	ddt.prime_font(standard_font, 17, 218)
+	ddt.prime_font(standard_font, 19, 219)
+	ddt.prime_font(standard_font, 20, 220)
+	ddt.prime_font(standard_font, 25, 228)
 
-    standard_font = prefs.linux_font_condensed
-    # if msys:
-    #     standard_font = "Noto Sans ExtCond, Sans"
-    ddt.prime_font(standard_font, 10, 413)
-    ddt.prime_font(standard_font, 11, 414)
-    ddt.prime_font(standard_font, 12, 415)
-    ddt.prime_font(standard_font, 13, 416)
+	standard_font = prefs.linux_font_condensed
+	# if msys:
+	#	 standard_font = "Noto Sans ExtCond, Sans"
+	ddt.prime_font(standard_font, 10, 413)
+	ddt.prime_font(standard_font, 11, 414)
+	ddt.prime_font(standard_font, 12, 415)
+	ddt.prime_font(standard_font, 13, 416)
 
-    standard_font = prefs.linux_font_condensed_bold  # "Noto Sans, ExtraCondensed Bold"
-    # if msys:
-    #     standard_font = "Noto Sans ExtCond, Sans Bold"
-    # ddt.prime_font(standard_font, 9, 512)
-    ddt.prime_font(standard_font, 10, 513)
-    ddt.prime_font(standard_font, 11, 514)
-    ddt.prime_font(standard_font, 12, 515)
-    ddt.prime_font(standard_font, 13, 516)
+	standard_font = prefs.linux_font_condensed_bold  # "Noto Sans, ExtraCondensed Bold"
+	# if msys:
+	#	 standard_font = "Noto Sans ExtCond, Sans Bold"
+	# ddt.prime_font(standard_font, 9, 512)
+	ddt.prime_font(standard_font, 10, 513)
+	ddt.prime_font(standard_font, 11, 514)
+	ddt.prime_font(standard_font, 12, 515)
+	ddt.prime_font(standard_font, 13, 516)
 
 
 if system == "linux":
-    prime_fonts()
+	prime_fonts()
 
 else:
-    # standard_font = "Meiryo"
-    standard_font = "Arial"
-    # semibold_font = "Meiryo Semibold"
-    semibold_font = "Arial Bold"
-    standard_weight = 500
-    bold_weight = 600
-    ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
-    ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 11.5, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
-    ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
-    ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
-    ddt.win_prime_font(standard_font, 20, 17, weight=standard_weight, y_offset=-1)
+	# standard_font = "Meiryo"
+	standard_font = "Arial"
+	# semibold_font = "Meiryo Semibold"
+	semibold_font = "Arial Bold"
+	standard_weight = 500
+	bold_weight = 600
+	ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
+	ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 11.5, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
+	ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
+	ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
+	ddt.win_prime_font(standard_font, 20, 17, weight=standard_weight, y_offset=-1)
 
-    ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
-    ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font("Arial", 10 + 4, 210, weight=600, y_offset=2)
-    ddt.win_prime_font("Arial", 11 + 3, 211, weight=600, y_offset=2)
-    ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
-    ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 17 + 2, 218, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 18 + 2, 218, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
+	ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font("Arial", 10 + 4, 210, weight=600, y_offset=2)
+	ddt.win_prime_font("Arial", 11 + 3, 211, weight=600, y_offset=2)
+	ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
+	ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 17 + 2, 218, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 18 + 2, 218, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
-    standard_weight = 550
-    ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 311, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 16, 312, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 17, 313, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 18, 314, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
+	standard_weight = 550
+	ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 311, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 312, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 313, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 18, 314, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
 
-    standard_font = "Arial Narrow"
-    standard_weight = 500
+	standard_font = "Arial Narrow"
+	standard_weight = 500
 
-    ddt.win_prime_font(standard_font, 14, 410, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 411, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 16, 412, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 17, 413, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 18, 414, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 19, 415, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 20, 416, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 21, 417, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 14, 410, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 411, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 412, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 413, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 18, 414, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 19, 415, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 20, 416, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 21, 417, weight=standard_weight, y_offset=1)
 
-    standard_weight = 600
+	standard_weight = 600
 
-    ddt.win_prime_font(standard_font, 14, 510, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 511, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 16, 512, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 17, 513, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 18, 514, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 14, 510, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 511, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 512, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 513, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 18, 514, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
 
 
 class DropShadow:
 
-    def __init__(self):
-        self.readys = {}
-        self.underscan = int(15 * gui.scale)
-        self.radius = 4
-        self.grow = 2 * gui.scale
-        self.opacity = 90
+	def __init__(self):
+		self.readys = {}
+		self.underscan = int(15 * gui.scale)
+		self.radius = 4
+		self.grow = 2 * gui.scale
+		self.opacity = 90
 
-    def prepare(self, w, h):
-        fh = h + self.underscan
-        fw = w + self.underscan
+	def prepare(self, w, h):
+		fh = h + self.underscan
+		fw = w + self.underscan
 
-        im = Image.new("RGBA", (round(fw), round(fh)), 0x00000000)
-        draw = ImageDraw.Draw(im)
-        draw.rectangle(((self.underscan, self.underscan), (w + 2, h + 2)), fill="black")
+		im = Image.new("RGBA", (round(fw), round(fh)), 0x00000000)
+		draw = ImageDraw.Draw(im)
+		draw.rectangle(((self.underscan, self.underscan), (w + 2, h + 2)), fill="black")
 
-        im = im.filter(ImageFilter.GaussianBlur(self.radius))
+		im = im.filter(ImageFilter.GaussianBlur(self.radius))
 
-        g = io.BytesIO()
-        g.seek(0)
-        im.save(g, "PNG")
-        g.seek(0)
+		g = io.BytesIO()
+		g.seek(0)
+		im.save(g, "PNG")
+		g.seek(0)
 
-        wop = rw_from_object(g)
-        s_image = IMG_Load_RW(wop, 0)
-        c = SDL_CreateTextureFromSurface(renderer, s_image)
-        SDL_SetTextureAlphaMod(c, self.opacity)
+		wop = rw_from_object(g)
+		s_image = IMG_Load_RW(wop, 0)
+		c = SDL_CreateTextureFromSurface(renderer, s_image)
+		SDL_SetTextureAlphaMod(c, self.opacity)
 
-        tex_w = pointer(c_int(0))
-        tex_h = pointer(c_int(0))
-        SDL_QueryTexture(c, None, None, tex_w, tex_h)
+		tex_w = pointer(c_int(0))
+		tex_h = pointer(c_int(0))
+		SDL_QueryTexture(c, None, None, tex_w, tex_h)
 
-        dst = SDL_Rect(0, 0)
-        dst.w = int(tex_w.contents.value)
-        dst.h = int(tex_h.contents.value)
+		dst = SDL_Rect(0, 0)
+		dst.w = int(tex_w.contents.value)
+		dst.h = int(tex_h.contents.value)
 
-        SDL_FreeSurface(s_image)
-        g.close()
-        im.close()
+		SDL_FreeSurface(s_image)
+		g.close()
+		im.close()
 
-        unit = (dst, c)
-        self.readys[(w, h)] = unit
+		unit = (dst, c)
+		self.readys[(w, h)] = unit
 
-    def render(self, x, y, w, h):
-        if (w, h) not in self.readys:
-            self.prepare(w, h)
+	def render(self, x, y, w, h):
+		if (w, h) not in self.readys:
+			self.prepare(w, h)
 
-        unit = self.readys[(w, h)]
-        unit[0].x = round(x) - round(self.underscan)
-        unit[0].y = round(y) - round(self.underscan)
-        SDL_RenderCopy(renderer, unit[1], None, unit[0])
+		unit = self.readys[(w, h)]
+		unit[0].x = round(x) - round(self.underscan)
+		unit[0].y = round(y) - round(self.underscan)
+		SDL_RenderCopy(renderer, unit[1], None, unit[0])
 
 
 drop_shadow = DropShadow()
@@ -10472,30 +10477,30 @@ drop_shadow = DropShadow()
 
 class LyricsRenMini:
 
-    def __init__(self):
-        self.index = -1
-        self.text = ""
+	def __init__(self):
+		self.index = -1
+		self.text = ""
 
-        self.lyrics_position = 0
+		self.lyrics_position = 0
 
-    def generate(self, index, w):
-        self.text = pctl.master_library[index].lyrics
-        self.lyrics_position = 0
+	def generate(self, index, w):
+		self.text = pctl.master_library[index].lyrics
+		self.lyrics_position = 0
 
-    def render(self, index, x, y, w, h, p):
-        if index != self.index or self.text != pctl.master_library[index].lyrics:
-            self.index = index
-            self.generate(index, w)
+	def render(self, index, x, y, w, h, p):
+		if index != self.index or self.text != pctl.master_library[index].lyrics:
+			self.index = index
+			self.generate(index, w)
 
-        colour = colours.side_bar_line1
+		colour = colours.side_bar_line1
 
-        # if key_ctrl_down:
-        #     if mouse_wheel < 0:
-        #         prefs.lyrics_font_size += 1
-        #     if mouse_wheel > 0:
-        #         prefs.lyrics_font_size -= 1
+		# if key_ctrl_down:
+		#	 if mouse_wheel < 0:
+		#		 prefs.lyrics_font_size += 1
+		#	 if mouse_wheel > 0:
+		#		 prefs.lyrics_font_size -= 1
 
-        ddt.text((x, y, 4, w), self.text, colour, prefs.lyrics_font_size, w - (w % 2), colours.side_panel_background)
+		ddt.text((x, y, 4, w), self.text, colour, prefs.lyrics_font_size, w - (w % 2), colours.side_panel_background)
 
 
 lyrics_ren_mini = LyricsRenMini()
@@ -10503,1164 +10508,1159 @@ lyrics_ren_mini = LyricsRenMini()
 
 class LyricsRen:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.index = -1
-        self.text = ""
+		self.index = -1
+		self.text = ""
 
-        self.lyrics_position = 0
+		self.lyrics_position = 0
 
-    def test_update(self, track_object):
+	def test_update(self, track_object):
 
-        if track_object.index != self.index or self.text != track_object.lyrics:
-            self.index = track_object.index
-            self.text = track_object.lyrics
-            self.lyrics_position = 0
+		if track_object.index != self.index or self.text != track_object.lyrics:
+			self.index = track_object.index
+			self.text = track_object.lyrics
+			self.lyrics_position = 0
 
-    def render(self, x, y, w, h, p):
+	def render(self, x, y, w, h, p):
 
-        colour = colours.lyrics
-        if test_lumi(colours.gallery_background) < 0.5:
-            colour = colours.grey(40)
+		colour = colours.lyrics
+		if test_lumi(colours.gallery_background) < 0.5:
+			colour = colours.grey(40)
 
-        ddt.text((x, y, 4, w), self.text, colour, 17, w, colours.playlist_panel_background)
+		ddt.text((x, y, 4, w), self.text, colour, 17, w, colours.playlist_panel_background)
 
 
 lyrics_ren = LyricsRen()
 
 
 def find_synced_lyric_data(track):
-    if track.is_network:
-        return None
+	if track.is_network:
+		return None
 
-    direc = track.parent_folder_path
-    name = os.path.splitext(track.filename)[0] + ".lrc"
+	direc = track.parent_folder_path
+	name = os.path.splitext(track.filename)[0] + ".lrc"
 
-    if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
-        return track.lyrics.splitlines()
+	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
+		return track.lyrics.splitlines()
 
-    try:
-        if os.path.isfile(os.path.join(direc, name)):
-            with open(os.path.join(direc, name), "r", encoding="utf-8") as f:
-                data = f.readlines()
-        else:
-            return None
-    except Exception:
-        logging.exception("Read lyrics file error")
-        return None
+	try:
+		if os.path.isfile(os.path.join(direc, name)):
+			with open(os.path.join(direc, name), "r", encoding="utf-8") as f:
+				data = f.readlines()
+		else:
+			return None
+	except Exception:
+		logging.exception("Read lyrics file error")
+		return None
 
-    return data
+	return data
 
 
 class TimedLyricsToStatic:
 
-    def __init__(self):
-        self.cache_key = None
-        self.cache_lyrics = ""
+	def __init__(self):
+		self.cache_key = None
+		self.cache_lyrics = ""
 
-    def get(self, track):
-        if track.lyrics:
-            return track.lyrics
-        if track.is_network:
-            return ""
-        if track == self.cache_key:
-            return self.cache_lyrics
-        else:
-            data = find_synced_lyric_data(track)
+	def get(self, track):
+		if track.lyrics:
+			return track.lyrics
+		if track.is_network:
+			return ""
+		if track == self.cache_key:
+			return self.cache_lyrics
+		else:
+			data = find_synced_lyric_data(track)
 
-            if data is None:
-                self.cache_lyrics = ""
-                self.cache_key = track
-                return ""
-            text = ""
+			if data is None:
+				self.cache_lyrics = ""
+				self.cache_key = track
+				return ""
+			text = ""
 
-            for line in data:
-                if len(line) < 10:
-                    continue
+			for line in data:
+				if len(line) < 10:
+					continue
 
-                if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
-                    continue
+				if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+					continue
 
-                text += line.split("]")[-1].rstrip("\n") + "\n"
+				text += line.split("]")[-1].rstrip("\n") + "\n"
 
-            self.cache_lyrics = text
-            self.cache_key = track
-            return text
+			self.cache_lyrics = text
+			self.cache_key = track
+			return text
 
 
 tauon.synced_to_static_lyrics = TimedLyricsToStatic()
 
 
 def get_real_time():
-    offset = pctl.decode_time - (prefs.sync_lyrics_time_offset / 1000)
-    if prefs.backend == 4:
-        offset -= (prefs.device_buffer - 120) / 1000
-    elif prefs.backend == 2:
-        offset += 0.1
-    return max(0, offset)
+	offset = pctl.decode_time - (prefs.sync_lyrics_time_offset / 1000)
+	if prefs.backend == 4:
+		offset -= (prefs.device_buffer - 120) / 1000
+	elif prefs.backend == 2:
+		offset += 0.1
+	return max(0, offset)
 
 
 class TimedLyricsRen:
 
-    def __init__(self):
+	def __init__(self):
 
-        self.index = -1
+		self.index = -1
 
-        self.scanned = {}
-        self.ready = False
-        self.data = []
+		self.scanned = {}
+		self.ready = False
+		self.data = []
 
-        self.scroll_position = 0
+		self.scroll_position = 0
 
-    def generate(self, track):
+	def generate(self, track):
 
-        if self.index == track.index:
-            return self.ready
+		if self.index == track.index:
+			return self.ready
 
-        self.ready = False
-        self.index = track.index
-        self.scroll_position = 0
-        self.data.clear()
+		self.ready = False
+		self.index = track.index
+		self.scroll_position = 0
+		self.data.clear()
 
-        data = find_synced_lyric_data(track)
-        if data is None:
-            return
+		data = find_synced_lyric_data(track)
+		if data is None:
+			return
 
-        for line in data:
-            if len(line) < 10:
-                continue
+		for line in data:
+			if len(line) < 10:
+				continue
 
-            if line[0] != "[" or "]" not in line or ":" not in line or "." not in line:
-                continue
+			if line[0] != "[" or "]" not in line or ":" not in line or "." not in line:
+				continue
 
-            try:
+			try:
 
-                text = line.split("]")[-1].rstrip("\n")
-                t = line
+				text = line.split("]")[-1].rstrip("\n")
+				t = line
 
-                while t[0] == "[" and t[9] == "]" and ":" in t and "." in t:
+				while t[0] == "[" and t[9] == "]" and ":" in t and "." in t:
 
-                    a = t.lstrip("[")
-                    t = t.split("]")[1] + "]"
+					a = t.lstrip("[")
+					t = t.split("]")[1] + "]"
 
-                    a = a.split("]")[0]
-                    mm, b = a.split(":")
-                    ss, ms = b.split(".")
+					a = a.split("]")[0]
+					mm, b = a.split(":")
+					ss, ms = b.split(".")
 
-                    s = int(mm) * 60 + int(ss)
-                    if len(ms) == 2:
-                        s += int(ms) / 100
-                    elif len(ms) == 3:
-                        s += int(ms) / 1000
+					s = int(mm) * 60 + int(ss)
+					if len(ms) == 2:
+						s += int(ms) / 100
+					elif len(ms) == 3:
+						s += int(ms) / 1000
 
-                    self.data.append((s, text))
+					self.data.append((s, text))
 
-                    if len(t) < 10:
-                        break
-            except Exception:
-                logging.exception("Failed generating timed lyrics")
-                continue
+					if len(t) < 10:
+						break
+			except Exception:
+				logging.exception("Failed generating timed lyrics")
+				continue
 
-        self.data = sorted(self.data, key=lambda x: x[0])
-        # logging.info(self.data)
+		self.data = sorted(self.data, key=lambda x: x[0])
+		# logging.info(self.data)
 
-        self.ready = True
-        return True
+		self.ready = True
+		return True
 
-    def render(self, index, x, y, side_panel=False, w=0, h=0):
+	def render(self, index, x, y, side_panel=False, w=0, h=0):
 
-        if index != self.index:
-            self.ready = False
-            self.generate(pctl.master_library[index])
+		if index != self.index:
+			self.ready = False
+			self.generate(pctl.master_library[index])
 
-        if right_click and x and y and coll((x, y, w, h)):
-            showcase_menu.activate(pctl.master_library[index])
+		if right_click and x and y and coll((x, y, w, h)):
+			showcase_menu.activate(pctl.master_library[index])
 
-        if not self.ready:
-            return False
+		if not self.ready:
+			return False
 
-        if mouse_wheel and (pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index):
-            if side_panel:
-                if coll((x, y, w, h)):
-                    self.scroll_position += int(mouse_wheel * 30 * gui.scale)
-            else:
-                self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+		if mouse_wheel and (pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index):
+			if side_panel:
+				if coll((x, y, w, h)):
+					self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+			else:
+				self.scroll_position += int(mouse_wheel * 30 * gui.scale)
 
-        line_active = -1
-        last = -1
+		line_active = -1
+		last = -1
 
-        highlight = True
+		highlight = True
 
-        if side_panel:
-            bg = colours.top_panel_background
-            font_size = 15
-            spacing = round(17 * gui.scale)
-        else:
-            bg = colours.playlist_panel_background
-            font_size = 17
-            spacing = round(23 * gui.scale)
+		if side_panel:
+			bg = colours.top_panel_background
+			font_size = 15
+			spacing = round(17 * gui.scale)
+		else:
+			bg = colours.playlist_panel_background
+			font_size = 17
+			spacing = round(23 * gui.scale)
 
-        test_time = get_real_time()
+		test_time = get_real_time()
 
-        if pctl.track_queue[pctl.queue_step] == index:
+		if pctl.track_queue[pctl.queue_step] == index:
 
-            for i, line in enumerate(self.data):
-                if line[0] < test_time:
-                    last = i
+			for i, line in enumerate(self.data):
+				if line[0] < test_time:
+					last = i
 
-                if line[0] > test_time:
-                    pctl.wake_past_time = line[0]
-                    line_active = last
-                    break
-            else:
-                line_active = len(self.data) - 1
+				if line[0] > test_time:
+					pctl.wake_past_time = line[0]
+					line_active = last
+					break
+			else:
+				line_active = len(self.data) - 1
 
-            if pctl.playing_state == 1:
-                self.scroll_position = (max(0, line_active)) * spacing * -1
+			if pctl.playing_state == 1:
+				self.scroll_position = (max(0, line_active)) * spacing * -1
 
-        yy = y + self.scroll_position
+		yy = y + self.scroll_position
 
-        for i, line in enumerate(self.data):
+		for i, line in enumerate(self.data):
 
-            if 0 < yy < window_size[1]:
+			if 0 < yy < window_size[1]:
 
-                colour = colours.lyrics
-                if test_lumi(colours.gallery_background) < 0.5:
-                    colour = colours.grey(40)
+				colour = colours.lyrics
+				if test_lumi(colours.gallery_background) < 0.5:
+					colour = colours.grey(40)
 
-                if i == line_active and highlight:
-                    colour = [255, 210, 50, 255]
-                    if colours.lm:
-                        colour = [180, 130, 210, 255]
+				if i == line_active and highlight:
+					colour = [255, 210, 50, 255]
+					if colours.lm:
+						colour = [180, 130, 210, 255]
 
-                h = ddt.text((x, yy, 4, w - 20 * gui.scale), line[1], colour, font_size, w - 20 * gui.scale, bg)
-                yy += max(h - round(6 * gui.scale), spacing)
-            else:
-                yy += spacing
+				h = ddt.text((x, yy, 4, w - 20 * gui.scale), line[1], colour, font_size, w - 20 * gui.scale, bg)
+				yy += max(h - round(6 * gui.scale), spacing)
+			else:
+				yy += spacing
 
 
 timed_lyrics_ren = TimedLyricsRen()
 
 
 def draw_internel_link(x, y, text, colour, font):
-    tweak = font
-    while tweak > 100:
-        tweak -= 100
+	tweak = font
+	while tweak > 100:
+		tweak -= 100
 
-    if gui.scale == 2:
-        tweak *= 2
-        tweak += 4
-    if gui.scale == 1.25:
-        tweak = round(tweak * 1.25)
-        tweak += 1
+	if gui.scale == 2:
+		tweak *= 2
+		tweak += 4
+	if gui.scale == 1.25:
+		tweak = round(tweak * 1.25)
+		tweak += 1
 
-    sp = ddt.text((x, y), text, colour, font)
+	sp = ddt.text((x, y), text, colour, font)
 
-    rect = [x - 5 * gui.scale, y - 2 * gui.scale, sp + 11 * gui.scale, 23 * gui.scale]
-    fields.add(rect)
+	rect = [x - 5 * gui.scale, y - 2 * gui.scale, sp + 11 * gui.scale, 23 * gui.scale]
+	fields.add(rect)
 
-    if coll(rect):
-        if not inp.mouse_click:
-            gui.cursor_want = 3
-        ddt.line(x, y + tweak + 2, x + sp, y + tweak + 2, alpha_mod(colour, 180))
-        if inp.mouse_click:
-            return True
-    return False
+	if coll(rect):
+		if not inp.mouse_click:
+			gui.cursor_want = 3
+		ddt.line(x, y + tweak + 2, x + sp, y + tweak + 2, alpha_mod(colour, 180))
+		if inp.mouse_click:
+			return True
+	return False
 
 
 # No hit detect
 def draw_linked_text(location, text, colour, font, force=False, replace=""):
-    base = ""
-    link_text = ""
-    rest = ""
-    on_base = True
+	base = ""
+	link_text = ""
+	rest = ""
+	on_base = True
 
-    if force:
-        on_base = False
-        base = ""
-        link_text = text
-        rest = ""
-    else:
-        for i in range(len(text)):
-            if text[i:i + 7] == "http://" or text[i:i + 4] == "www." or text[i:i + 8] == "https://":
-                on_base = False
-            if on_base:
-                base += text[i]
-            else:
-                if i == len(text) or text[i] in '\\) "\'':
-                    rest = text[i:]
-                    break
-                else:
-                    link_text += text[i]
+	if force:
+		on_base = False
+		base = ""
+		link_text = text
+		rest = ""
+	else:
+		for i in range(len(text)):
+			if text[i:i + 7] == "http://" or text[i:i + 4] == "www." or text[i:i + 8] == "https://":
+				on_base = False
+			if on_base:
+				base += text[i]
+			else:
+				if i == len(text) or text[i] in '\\) "\'':
+					rest = text[i:]
+					break
+				else:
+					link_text += text[i]
 
-    target_link = link_text
-    if replace:
-        link_text = replace
+	target_link = link_text
+	if replace:
+		link_text = replace
 
-    left = ddt.get_text_w(base, font)
-    right = ddt.get_text_w(base + link_text, font)
+	left = ddt.get_text_w(base, font)
+	right = ddt.get_text_w(base + link_text, font)
 
-    x = location[0]
-    y = location[1]
+	x = location[0]
+	y = location[1]
 
-    ddt.text((x, y), base, colour, font)
-    ddt.text((x + left, y), link_text, colours.link_text, font)
-    ddt.text((x + right, y), rest, colour, font)
+	ddt.text((x, y), base, colour, font)
+	ddt.text((x + left, y), link_text, colours.link_text, font)
+	ddt.text((x + right, y), rest, colour, font)
 
-    tweak = font
-    while tweak > 100:
-        tweak -= 100
+	tweak = font
+	while tweak > 100:
+		tweak -= 100
 
-    if gui.scale == 2:
-        tweak *= 2
-        tweak += 4
-    elif gui.scale != 1:
-        tweak = round(tweak * gui.scale)
-        tweak += 2
+	if gui.scale == 2:
+		tweak *= 2
+		tweak += 4
+	elif gui.scale != 1:
+		tweak = round(tweak * gui.scale)
+		tweak += 2
 
-    if system == "windows":
-        tweak += 1
+	if system == "windows":
+		tweak += 1
 
-    # ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
-    ddt.rect((x + left, y + tweak + 2, right - left, round(1 * gui.scale)), alpha_mod(colours.link_text, 120))
+	# ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
+	ddt.rect((x + left, y + tweak + 2, right - left, round(1 * gui.scale)), alpha_mod(colours.link_text, 120))
 
-    return left, right - left, target_link
+	return left, right - left, target_link
 
 
 def draw_linked_text2(x, y, text, colour, font, click=False, replace=""):
-    link_pa = draw_linked_text((x, y), text,
-                               colour, font, replace=replace)
-    link_rect = [x + link_pa[0], y, link_pa[1], 18 * gui.scale]
-    if coll(link_rect):
-        if not click:
-            gui.cursor_want = 3
-        if click:
-            webbrowser.open(link_pa[2], new=2, autoraise=True)
-    fields.add(link_rect)
+	link_pa = draw_linked_text(
+		(x, y), text, colour, font, replace=replace)
+	link_rect = [x + link_pa[0], y, link_pa[1], 18 * gui.scale]
+	if coll(link_rect):
+		if not click:
+			gui.cursor_want = 3
+		if click:
+			webbrowser.open(link_pa[2], new=2, autoraise=True)
+	fields.add(link_rect)
 
 
 def link_activate(x, y, link_pa, click=None):
-    link_rect = [x + link_pa[0], y - 2 * gui.scale, link_pa[1], 20 * gui.scale]
+	link_rect = [x + link_pa[0], y - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
-    if click is None:
-        click = inp.mouse_click
+	if click is None:
+		click = inp.mouse_click
 
-    fields.add(link_rect)
-    if coll(link_rect):
-        if not click:
-            gui.cursor_want = 3
-        if click:
-            webbrowser.open(link_pa[2], new=2, autoraise=True)
-            track_box = True
+	fields.add(link_rect)
+	if coll(link_rect):
+		if not click:
+			gui.cursor_want = 3
+		if click:
+			webbrowser.open(link_pa[2], new=2, autoraise=True)
+			track_box = True
 
 
 text_box_canvas_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 text_box_canvas_hide_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-text_box_canvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
-                                    text_box_canvas_rect.w, text_box_canvas_rect.h)
+text_box_canvas = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, text_box_canvas_rect.w, text_box_canvas_rect.h)
 SDL_SetTextureBlendMode(text_box_canvas, SDL_BLENDMODE_BLEND)
 
 
 def pixel_to_logical(x):
-    return round((x / window_size[0]) * logical_size[0])
+	return round((x / window_size[0]) * logical_size[0])
 
 class TextBox2:
-    cursor = True
-
-    def __init__(self):
-
-        self.text = ""
-        self.cursor_position = 0
-        self.selection = 0
-        self.offset = 0
-        self.down_lock = False
-        self.paste_text = ""
-
-    def paste(self):
+	cursor = True
+
+	def __init__(self):
 
-        if SDL_HasClipboardText():
-            clip = SDL_GetClipboardText().decode("utf-8")
-            self.paste_text = clip
-
-    def copy(self):
-
-        text = self.get_selection()
-        if not text:
-            text = self.text
-        if text != "":
-            SDL_SetClipboardText(text.encode("utf-8"))
-
-    def set_text(self, text):
-
-        self.text = text
-        if self.cursor_position > len(text):
-            self.cursor_position = 0
-            self.selection = 0
-        else:
-            self.selection = self.cursor_position
-
-    def clear(self):
-        self.text = ""
-        #self.cursor_position = 0
-        self.selection = self.cursor_position
-
-    def highlight_all(self):
-
-        self.selection = len(self.text)
-        self.cursor_position = 0
-
-    def eliminate_selection(self):
-        if self.selection != self.cursor_position:
-            if self.selection > self.cursor_position:
-                self.text = self.text[0: len(self.text) - self.selection] + self.text[
-                                                                            len(self.text) - self.cursor_position:]
-                self.selection = self.cursor_position
-            else:
-                self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[
-                                                                                  len(self.text) - self.selection:]
-                self.cursor_position = self.selection
-
-    def get_selection(self, p=1):
-        if self.selection != self.cursor_position:
-            if p == 1:
-                if self.selection > self.cursor_position:
-                    return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
-
-                else:
-                    return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
-            if p == 0:
-                return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
-            if p == 2:
-                return self.text[len(self.text) - min(self.cursor_position, self.selection):]
-
-        else:
-            return ""
-
-    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18,
-             big=False):
-
-        # A little bit messy.
-        # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
-        # otherwise it is fixed to end
-
-        SDL_SetRenderTarget(renderer, text_box_canvas)
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-
-        text_box_canvas_rect.x = 0
-        text_box_canvas_rect.y = 0
-        SDL_RenderFillRect(renderer, text_box_canvas_rect)
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-
-        selection_height *= gui.scale
-
-        if click is False:
-            click = inp.mouse_click
-        if mouse_down:
-            gui.update = 2  # todo, more elegant fix
-
-        rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
-        select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
-
-        fields.add(rect)
-
-        # Activate Menu
-        if coll(rect):
-            if right_click or level_2_right_click:
-                field_menu.activate(self)
-
-        if width > 0 and active:
-
-            if click and field_menu.active:
-                # field_menu.click()
-                click = False
-
-            # Add text from input
-            if input_text != "":
-                self.eliminate_selection()
-                self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(
-                    self.text) - self.cursor_position:]
-
-            def g():
-                if len(self.text) == 0 or self.cursor_position == len(self.text):
-                    return None
-                return self.text[len(self.text) - self.cursor_position - 1]
-
-            def g2():
-                if len(self.text) == 0 or self.cursor_position == 0:
-                    return None
-                return self.text[len(self.text) - self.cursor_position]
-
-            def d():
-                self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
-                                                                                      len(self.text) - self.cursor_position:]
-                self.selection = self.cursor_position
-
-            # Ctrl + Backspace to delete word
-            if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
-                    self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
-                self.text):
-                while g() == " ":
-                    d()
-                while g() != " " and g() != None:
-                    d()
-
-            # Ctrl + left to move cursor back a word
-            elif (key_ctrl_down or key_rctrl_down) and key_left_press:
-                while g() == " ":
-                    self.cursor_position += 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-                    self.cursor_position += 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                    if g() == " ":
-                        self.cursor_position -= 1
-                        if not key_shift_down:
-                            self.selection = self.cursor_position
-                        break
-
-            # Ctrl + right to move cursor forward a word
-            elif (key_ctrl_down or key_rctrl_down) and key_right_press:
-                while g2() == " ":
-                    self.cursor_position -= 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-                    self.cursor_position -= 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                    if g2() == " ":
-                        self.cursor_position += 1
-                        if not key_shift_down:
-                            self.selection = self.cursor_position
-                        break
-
-            # Handle normal backspace
-            elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                    if self.selection != self.cursor_position:
-                        self.eliminate_selection()
-                    else:
-                        self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
-                            self.text) - self.cursor_position:]
-                    inp.backspace_press -= 1
-            elif inp.backspace_press and len(self.get_selection()) > 0:
-                self.eliminate_selection()
-
-            # Left and right arrow keys to move cursor
-            if key_right_press:
-                if self.cursor_position > 0:
-                    self.cursor_position -= 1
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-
-            if key_left_press:
-                if self.cursor_position < len(self.text):
-                    self.cursor_position += 1
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-
-            if self.paste_text:
-                if "http://" in self.text and "http://" in self.paste_text:
-                    self.text = ""
-
-                self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
-                self.paste_text = self.paste_text.replace("\n", " ").replace("\r", "")
-
-                self.eliminate_selection()
-                self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
-                    self.text) - self.cursor_position:]
-                self.paste_text = ""
-
-            # Paste via ctrl-v
-            if key_ctrl_down and key_v_press:
-                clip = SDL_GetClipboardText().decode("utf-8")
-                self.eliminate_selection()
-                self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
-                    self.text) - self.cursor_position:]
-
-            if key_ctrl_down and key_c_press:
-                self.copy()
-
-            if key_ctrl_down and key_x_press:
-                if len(self.get_selection()) > 0:
-                    text = self.get_selection()
-                    if text != "":
-                        SDL_SetClipboardText(text.encode("utf-8"))
-                    self.eliminate_selection()
-
-            if key_ctrl_down and key_a_press:
-                self.cursor_position = 0
-                self.selection = len(self.text)
-
-            # ddt.rect(rect, [255, 50, 50, 80], True)
-            if coll(rect) and not field_menu.active:
-                gui.cursor_want = 2
-
-            # Delete key to remove text in front of cursor
-            if key_del:
-                if self.selection != self.cursor_position:
-                    self.eliminate_selection()
-                else:
-                    self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
-                        self.text) - self.cursor_position + 1:]
-                    if self.cursor_position > 0:
-                        self.cursor_position -= 1
-                    self.selection = self.cursor_position
-
-            if key_home_press:
-                self.cursor_position = len(self.text)
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-            if key_end_press:
-                self.cursor_position = 0
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-
-            width -= round(15 * gui.scale)
-            t_len = ddt.get_text_w(self.text, font)
-            if active and editline and editline != input_text:
-                t_len += ddt.get_text_w(editline, font)
-            if not click and not self.down_lock:
-                cursor_x = ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
-                if self.cursor_position == 0 or cursor_x < self.offset + round(
-                        15 * gui.scale) or cursor_x > self.offset + width:
-                    if t_len > width:
-                        self.offset = t_len - width
-
-                        if cursor_x < self.offset:
-                            self.offset = cursor_x - round(15 * gui.scale)
-
-                            if self.offset < 0:
-                                self.offset = 0
-                    else:
-                        self.offset = 0
-
-            x -= self.offset
-
-            if coll(select_rect):  # coll((x - 15, y, width + 16, selection_height + 1)):
-                # ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
-                if click:
-                    pre = 0
-                    post = 0
-                    if mouse_position[0] < x + 1:
-                        self.cursor_position = len(self.text)
-                    else:
-                        for i in range(len(self.text)):
-                            post = ddt.get_text_w(self.text[0:i + 1], font)
-                            # pre_half = int((post - pre) / 2)
-
-                            if x + pre - 0 <= mouse_position[0] <= x + post + 0:
-                                diff = post - pre
-                                if mouse_position[0] >= x + pre + int(diff / 2):
-                                    self.cursor_position = len(self.text) - i - 1
-                                else:
-                                    self.cursor_position = len(self.text) - i
-                                break
-                            pre = post
-                        else:
-                            self.cursor_position = 0
-                    self.selection = 0
-                    self.down_lock = True
-
-            if mouse_up:
-                self.down_lock = False
-            if self.down_lock:
-                pre = 0
-                post = 0
-                text = self.text
-                if secret:
-                    text = "●" * len(self.text)
-                if mouse_position[0] < x + 1:
-                    self.selection = len(text)
-                else:
-
-                    for i in range(len(text)):
-                        post = ddt.get_text_w(text[0:i + 1], font)
-                        # pre_half = int((post - pre) / 2)
-
-                        if x + pre - 0 <= mouse_position[0] <= x + post + 0:
-                            diff = post - pre
-
-                            if mouse_position[0] >= x + pre + int(diff / 2):
-                                self.selection = len(text) - i - 1
-
-                            else:
-                                self.selection = len(text) - i
-
-                            break
-                        pre = post
-
-                    else:
-                        self.selection = 0
-
-            text = self.text[0: len(self.text) - self.cursor_position]
-            if secret:
-                text = "●" * len(text)
-            a = ddt.get_text_w(text, font)
-
-            text = self.text[0: len(self.text) - self.selection]
-            if secret:
-                text = "●" * len(text)
-            b = ddt.get_text_w(text, font)
-
-            top = y
-            if big:
-                top -= 12 * gui.scale
-
-            ddt.rect([a, 0, b - a, selection_height], [40, 120, 180, 255])
-
-            if self.selection != self.cursor_position:
-                inf_comp = 0
-                text = self.get_selection(0)
-                if secret:
-                    text = "●" * len(text)
-                space = ddt.text((0, 0), text, colour, font)
-                text = self.get_selection(1)
-                if secret:
-                    text = "●" * len(text)
-                space += ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font,
-                                  bg=[40, 120, 180, 255], )
-                text = self.get_selection(2)
-                if secret:
-                    text = "●" * len(text)
-                ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
-            else:
-                text = self.text
-                if secret:
-                    text = "●" * len(text)
-                ddt.text((0, 0), text, colour, font)
-
-            text = self.text[0: len(self.text) - self.cursor_position]
-            if secret:
-                text = "●" * len(text)
-            space = ddt.get_text_w(text, font)
-
-            if TextBox.cursor and self.selection == self.cursor_position:
-                # ddt.line(x + space, y + 2, x + space, y + 15, colour)
-
-                ddt.rect((0 + space, 0 + 2, 1 * gui.scale, 14 * gui.scale), colour)
-
-            if click:
-                self.selection = self.cursor_position
-
-        else:
-            width -= round(15 * gui.scale)
-            text = self.text
-            if secret:
-                text = "●" * len(text)
-            t_len = ddt.get_text_w(text, font)
-            ddt.text((0, 0), text, colour, font)
-            self.offset = 0
-            if coll(rect) and not field_menu.active:
-                gui.cursor_want = 2
-
-        if active and editline != "" and editline != input_text:
-            ex = ddt.text((space + round(4 * gui.scale), 0), editline, [240, 230, 230, 255], font)
-            tw, th = ddt.get_text_wh(editline, font, max_x=2000)
-            ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)),
-                     [245, 245, 245, 255])
-
-            rect = SDL_Rect(pixel_to_logical(x + space + tw + (5 * gui.scale)), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
-            SDL_SetTextInputRect(rect)
-
-        animate_monitor_timer.set()
-
-        text_box_canvas_hide_rect.x = 0
-        text_box_canvas_hide_rect.y = 0
-
-        # if self.offset:
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
-
-        text_box_canvas_hide_rect.w = round(self.offset)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-        SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
-
-        text_box_canvas_hide_rect.w = round(t_len)
-        text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * gui.scale))
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-        SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-        SDL_SetRenderTarget(renderer, gui.main_texture)
-
-        text_box_canvas_rect.x = round(x)
-        text_box_canvas_rect.y = round(y)
-        SDL_RenderCopy(renderer, text_box_canvas, None, text_box_canvas_rect)
+		self.text = ""
+		self.cursor_position = 0
+		self.selection = 0
+		self.offset = 0
+		self.down_lock = False
+		self.paste_text = ""
+
+	def paste(self):
+
+		if SDL_HasClipboardText():
+			clip = SDL_GetClipboardText().decode("utf-8")
+			self.paste_text = clip
+
+	def copy(self):
+
+		text = self.get_selection()
+		if not text:
+			text = self.text
+		if text != "":
+			SDL_SetClipboardText(text.encode("utf-8"))
+
+	def set_text(self, text):
+
+		self.text = text
+		if self.cursor_position > len(text):
+			self.cursor_position = 0
+			self.selection = 0
+		else:
+			self.selection = self.cursor_position
+
+	def clear(self):
+		self.text = ""
+		#self.cursor_position = 0
+		self.selection = self.cursor_position
+
+	def highlight_all(self):
+
+		self.selection = len(self.text)
+		self.cursor_position = 0
+
+	def eliminate_selection(self):
+		if self.selection != self.cursor_position:
+			if self.selection > self.cursor_position:
+				self.text = self.text[0: len(self.text) - self.selection] + self.text[len(self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+			else:
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
+				self.cursor_position = self.selection
+
+	def get_selection(self, p=1):
+		if self.selection != self.cursor_position:
+			if p == 1:
+				if self.selection > self.cursor_position:
+					return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
+
+				else:
+					return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
+			if p == 0:
+				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
+			if p == 2:
+				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
+
+		else:
+			return ""
+
+	def draw(
+			self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False):
+
+		# A little bit messy.
+		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
+		# otherwise it is fixed to end
+
+		SDL_SetRenderTarget(renderer, text_box_canvas)
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+
+		text_box_canvas_rect.x = 0
+		text_box_canvas_rect.y = 0
+		SDL_RenderFillRect(renderer, text_box_canvas_rect)
+
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+
+		selection_height *= gui.scale
+
+		if click is False:
+			click = inp.mouse_click
+		if mouse_down:
+			gui.update = 2  # todo, more elegant fix
+
+		rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
+		select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
+
+		fields.add(rect)
+
+		# Activate Menu
+		if coll(rect):
+			if right_click or level_2_right_click:
+				field_menu.activate(self)
+
+		if width > 0 and active:
+
+			if click and field_menu.active:
+				# field_menu.click()
+				click = False
+
+			# Add text from input
+			if input_text != "":
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(
+					self.text) - self.cursor_position:]
+
+			def g():
+				if len(self.text) == 0 or self.cursor_position == len(self.text):
+					return None
+				return self.text[len(self.text) - self.cursor_position - 1]
+
+			def g2():
+				if len(self.text) == 0 or self.cursor_position == 0:
+					return None
+				return self.text[len(self.text) - self.cursor_position]
+
+			def d():
+				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
+					self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+
+			# Ctrl + Backspace to delete word
+			if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
+					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
+				self.text):
+				while g() == " ":
+					d()
+				while g() != " " and g() != None:
+					d()
+
+			# Ctrl + left to move cursor back a word
+			elif (key_ctrl_down or key_rctrl_down) and key_left_press:
+				while g() == " ":
+					self.cursor_position += 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+				while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position += 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+					if g() == " ":
+						self.cursor_position -= 1
+						if not key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Ctrl + right to move cursor forward a word
+			elif (key_ctrl_down or key_rctrl_down) and key_right_press:
+				while g2() == " ":
+					self.cursor_position -= 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+				while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position -= 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+					if g2() == " ":
+						self.cursor_position += 1
+						if not key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Handle normal backspace
+			elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+				while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+					if self.selection != self.cursor_position:
+						self.eliminate_selection()
+					else:
+						self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
+							self.text) - self.cursor_position:]
+					inp.backspace_press -= 1
+			elif inp.backspace_press and len(self.get_selection()) > 0:
+				self.eliminate_selection()
+
+			# Left and right arrow keys to move cursor
+			if key_right_press:
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if key_left_press:
+				if self.cursor_position < len(self.text):
+					self.cursor_position += 1
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.paste_text:
+				if "http://" in self.text and "http://" in self.paste_text:
+					self.text = ""
+
+				self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
+				self.paste_text = self.paste_text.replace("\n", " ").replace("\r", "")
+
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
+					self.text) - self.cursor_position:]
+				self.paste_text = ""
+
+			# Paste via ctrl-v
+			if key_ctrl_down and key_v_press:
+				clip = SDL_GetClipboardText().decode("utf-8")
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+					self.text) - self.cursor_position:]
+
+			if key_ctrl_down and key_c_press:
+				self.copy()
+
+			if key_ctrl_down and key_x_press:
+				if len(self.get_selection()) > 0:
+					text = self.get_selection()
+					if text != "":
+						SDL_SetClipboardText(text.encode("utf-8"))
+					self.eliminate_selection()
+
+			if key_ctrl_down and key_a_press:
+				self.cursor_position = 0
+				self.selection = len(self.text)
+
+			# ddt.rect(rect, [255, 50, 50, 80], True)
+			if coll(rect) and not field_menu.active:
+				gui.cursor_want = 2
+
+			# Delete key to remove text in front of cursor
+			if key_del:
+				if self.selection != self.cursor_position:
+					self.eliminate_selection()
+				else:
+					self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+						self.text) - self.cursor_position + 1:]
+					if self.cursor_position > 0:
+						self.cursor_position -= 1
+					self.selection = self.cursor_position
+
+			if key_home_press:
+				self.cursor_position = len(self.text)
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+			if key_end_press:
+				self.cursor_position = 0
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+
+			width -= round(15 * gui.scale)
+			t_len = ddt.get_text_w(self.text, font)
+			if active and editline and editline != input_text:
+				t_len += ddt.get_text_w(editline, font)
+			if not click and not self.down_lock:
+				cursor_x = ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
+				if self.cursor_position == 0 or cursor_x < self.offset + round(
+						15 * gui.scale) or cursor_x > self.offset + width:
+					if t_len > width:
+						self.offset = t_len - width
+
+						if cursor_x < self.offset:
+							self.offset = cursor_x - round(15 * gui.scale)
+
+							if self.offset < 0:
+								self.offset = 0
+					else:
+						self.offset = 0
+
+			x -= self.offset
+
+			if coll(select_rect):  # coll((x - 15, y, width + 16, selection_height + 1)):
+				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
+				if click:
+					pre = 0
+					post = 0
+					if mouse_position[0] < x + 1:
+						self.cursor_position = len(self.text)
+					else:
+						for i in range(len(self.text)):
+							post = ddt.get_text_w(self.text[0:i + 1], font)
+							# pre_half = int((post - pre) / 2)
+
+							if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+								diff = post - pre
+								if mouse_position[0] >= x + pre + int(diff / 2):
+									self.cursor_position = len(self.text) - i - 1
+								else:
+									self.cursor_position = len(self.text) - i
+								break
+							pre = post
+						else:
+							self.cursor_position = 0
+					self.selection = 0
+					self.down_lock = True
+
+			if mouse_up:
+				self.down_lock = False
+			if self.down_lock:
+				pre = 0
+				post = 0
+				text = self.text
+				if secret:
+					text = "●" * len(self.text)
+				if mouse_position[0] < x + 1:
+					self.selection = len(text)
+				else:
+
+					for i in range(len(text)):
+						post = ddt.get_text_w(text[0:i + 1], font)
+						# pre_half = int((post - pre) / 2)
+
+						if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+							diff = post - pre
+
+							if mouse_position[0] >= x + pre + int(diff / 2):
+								self.selection = len(text) - i - 1
+
+							else:
+								self.selection = len(text) - i
+
+							break
+						pre = post
+
+					else:
+						self.selection = 0
+
+			text = self.text[0: len(self.text) - self.cursor_position]
+			if secret:
+				text = "●" * len(text)
+			a = ddt.get_text_w(text, font)
+
+			text = self.text[0: len(self.text) - self.selection]
+			if secret:
+				text = "●" * len(text)
+			b = ddt.get_text_w(text, font)
+
+			top = y
+			if big:
+				top -= 12 * gui.scale
+
+			ddt.rect([a, 0, b - a, selection_height], [40, 120, 180, 255])
+
+			if self.selection != self.cursor_position:
+				inf_comp = 0
+				text = self.get_selection(0)
+				if secret:
+					text = "●" * len(text)
+				space = ddt.text((0, 0), text, colour, font)
+				text = self.get_selection(1)
+				if secret:
+					text = "●" * len(text)
+				space += ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font, bg=[40, 120, 180, 255])
+				text = self.get_selection(2)
+				if secret:
+					text = "●" * len(text)
+				ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
+			else:
+				text = self.text
+				if secret:
+					text = "●" * len(text)
+				ddt.text((0, 0), text, colour, font)
+
+			text = self.text[0: len(self.text) - self.cursor_position]
+			if secret:
+				text = "●" * len(text)
+			space = ddt.get_text_w(text, font)
+
+			if TextBox.cursor and self.selection == self.cursor_position:
+				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
+
+				ddt.rect((0 + space, 0 + 2, 1 * gui.scale, 14 * gui.scale), colour)
+
+			if click:
+				self.selection = self.cursor_position
+
+		else:
+			width -= round(15 * gui.scale)
+			text = self.text
+			if secret:
+				text = "●" * len(text)
+			t_len = ddt.get_text_w(text, font)
+			ddt.text((0, 0), text, colour, font)
+			self.offset = 0
+			if coll(rect) and not field_menu.active:
+				gui.cursor_want = 2
+
+		if active and editline != "" and editline != input_text:
+			ex = ddt.text((space + round(4 * gui.scale), 0), editline, [240, 230, 230, 255], font)
+			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
+			ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255])
+
+			rect = SDL_Rect(pixel_to_logical(x + space + tw + (5 * gui.scale)), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
+			SDL_SetTextInputRect(rect)
+
+		animate_monitor_timer.set()
+
+		text_box_canvas_hide_rect.x = 0
+		text_box_canvas_hide_rect.y = 0
+
+		# if self.offset:
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
+
+		text_box_canvas_hide_rect.w = round(self.offset)
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
+
+		text_box_canvas_hide_rect.w = round(t_len)
+		text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * gui.scale))
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
+
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+		SDL_SetRenderTarget(renderer, gui.main_texture)
+
+		text_box_canvas_rect.x = round(x)
+		text_box_canvas_rect.y = round(y)
+		SDL_RenderCopy(renderer, text_box_canvas, None, text_box_canvas_rect)
 
 
 class TextBox:
-    cursor = True
+	cursor = True
 
-    def __init__(self):
+	def __init__(self):
 
-        self.text = ""
-        self.cursor_position = 0
-        self.selection = 0
-        self.down_lock = False
+		self.text = ""
+		self.cursor_position = 0
+		self.selection = 0
+		self.down_lock = False
 
-    def paste(self):
+	def paste(self):
 
-        if SDL_HasClipboardText():
-            clip = SDL_GetClipboardText().decode("utf-8")
+		if SDL_HasClipboardText():
+			clip = SDL_GetClipboardText().decode("utf-8")
 
-            if "http://" in self.text and "http://" in clip:
-                self.text = ""
+			if "http://" in self.text and "http://" in clip:
+				self.text = ""
 
-            clip = clip.rstrip(" ").lstrip(" ")
-            clip = clip.replace("\n", " ").replace("\r", "")
+			clip = clip.rstrip(" ").lstrip(" ")
+			clip = clip.replace("\n", " ").replace("\r", "")
 
-            self.eliminate_selection()
-            self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
-                self.text) - self.cursor_position:]
+			self.eliminate_selection()
+			self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+				self.text) - self.cursor_position:]
 
-    def copy(self):
-
-        text = self.get_selection()
-        if not text:
-            text = self.text
-        if text != "":
-            SDL_SetClipboardText(text.encode("utf-8"))
-
-    def set_text(self, text):
-
-        self.text = text
-        self.cursor_position = 0
-        self.selection = 0
-
-    def clear(self):
-        self.text = ""
-
-    def highlight_all(self):
-
-        self.selection = len(self.text)
-        self.cursor_position = 0
-
-    def highlight_none(self):
-        self.selection = 0
-        self.cursor_position = 0
-
-    def eliminate_selection(self):
-        if self.selection != self.cursor_position:
-            if self.selection > self.cursor_position:
-                self.text = self.text[0: len(self.text) - self.selection] + self.text[
-                                                                            len(self.text) - self.cursor_position:]
-                self.selection = self.cursor_position
-            else:
-                self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[
-                                                                                  len(self.text) - self.selection:]
-                self.cursor_position = self.selection
-
-    def get_selection(self, p=1):
-        if self.selection != self.cursor_position:
-            if p == 1:
-                if self.selection > self.cursor_position:
-                    return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
-
-                else:
-                    return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
-            if p == 0:
-                return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
-            if p == 2:
-                return self.text[len(self.text) - min(self.cursor_position, self.selection):]
-
-        else:
-            return ""
-
-    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18,
-             big=False):
-
-        # A little bit messy.
-        # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
-        # otherwise it is fixed to end
-
-        selection_height *= gui.scale
-
-        if click is False:
-            click = inp.mouse_click
-
-        if width > 0 and active:
-
-            rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
-            select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
-            if big:
-                rect = (x - 3, y - 15 * gui.scale, width - 3, 35 * gui.scale)
-                select_rect = (x - 50 * gui.scale, y - 15 * gui.scale, width + 50 * gui.scale, 35 * gui.scale)
-
-            # Activate Menu
-            if coll(rect):
-                if right_click or level_2_right_click:
-                    field_menu.activate(self)
-
-            if click and field_menu.active:
-                # field_menu.click()
-                click = False
-
-            # Add text from input
-            if input_text != "":
-                self.eliminate_selection()
-                self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[
-                                                                                               len(self.text) - self.cursor_position:]
-
-            def g():
-                if len(self.text) == 0 or self.cursor_position == len(self.text):
-                    return None
-                return self.text[len(self.text) - self.cursor_position - 1]
-
-            def g2():
-                if len(self.text) == 0 or self.cursor_position == 0:
-                    return None
-                return self.text[len(self.text) - self.cursor_position]
-
-            def d():
-                self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
-                                                                                      len(self.text) - self.cursor_position:]
-                self.selection = self.cursor_position
-
-            # Ctrl + Backspace to delete word
-            if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
-                    self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
-                self.text):
-                while g() == " ":
-                    d()
-                while g() != " " and g() != None:
-                    d()
-
-            # Ctrl + left to move cursor back a word
-            elif (key_ctrl_down or key_rctrl_down) and key_left_press:
-                while g() == " ":
-                    self.cursor_position += 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-                    self.cursor_position += 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                    if g() == " ":
-                        self.cursor_position -= 1
-                        if not key_shift_down:
-                            self.selection = self.cursor_position
-                        break
-
-            # Ctrl + right to move cursor forward a word
-            elif (key_ctrl_down or key_rctrl_down) and key_right_press:
-                while g2() == " ":
-                    self.cursor_position -= 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-                    self.cursor_position -= 1
-                    if not key_shift_down:
-                        self.selection = self.cursor_position
-                    if g2() == " ":
-                        self.cursor_position += 1
-                        if not key_shift_down:
-                            self.selection = self.cursor_position
-                        break
-
-            # Handle normal backspace
-            elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                    if self.selection != self.cursor_position:
-                        self.eliminate_selection()
-                    else:
-                        self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[
-                                                                                             len(self.text) - self.cursor_position:]
-                    inp.backspace_press -= 1
-            elif inp.backspace_press and len(self.get_selection()) > 0:
-                self.eliminate_selection()
-
-            # Left and right arrow keys to move cursor
-            if key_right_press:
-                if self.cursor_position > 0:
-                    self.cursor_position -= 1
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-
-            if key_left_press:
-                if self.cursor_position < len(self.text):
-                    self.cursor_position += 1
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-
-            # Paste via ctrl-v
-            if key_ctrl_down and key_v_press:
-                clip = SDL_GetClipboardText().decode("utf-8")
-                self.eliminate_selection()
-                self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
-                    self.text) - self.cursor_position:]
-
-            if key_ctrl_down and key_c_press:
-                self.copy()
-
-            if key_ctrl_down and key_x_press:
-                if len(self.get_selection()) > 0:
-                    text = self.get_selection()
-                    if text != "":
-                        SDL_SetClipboardText(text.encode("utf-8"))
-                    self.eliminate_selection()
-
-            if key_ctrl_down and key_a_press:
-                self.cursor_position = 0
-                self.selection = len(self.text)
-
-            # ddt.rect_r(rect, [255, 50, 50, 80], True)
-            if coll(rect) and not field_menu.active:
-                gui.cursor_want = 2
-
-            fields.add(rect)
-
-            # Delete key to remove text in front of cursor
-            if key_del:
-                if self.selection != self.cursor_position:
-                    self.eliminate_selection()
-                else:
-                    self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
-                        self.text) - self.cursor_position + 1:]
-                    if self.cursor_position > 0:
-                        self.cursor_position -= 1
-                    self.selection = self.cursor_position
-
-            if key_home_press:
-                self.cursor_position = len(self.text)
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-            if key_end_press:
-                self.cursor_position = 0
-                if not key_shift_down and not key_shiftr_down:
-                    self.selection = self.cursor_position
-
-            if coll(select_rect):
-                # ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
-                if click:
-                    pre = 0
-                    post = 0
-                    if mouse_position[0] < x + 1:
-                        self.cursor_position = len(self.text)
-                    else:
-                        for i in range(len(self.text)):
-                            post = ddt.get_text_w(self.text[0:i + 1], font)
-                            # pre_half = int((post - pre) / 2)
-
-                            if x + pre - 0 <= mouse_position[0] <= x + post + 0:
-                                diff = post - pre
-                                if mouse_position[0] >= x + pre + int(diff / 2):
-                                    self.cursor_position = len(self.text) - i - 1
-                                else:
-                                    self.cursor_position = len(self.text) - i
-                                break
-                            pre = post
-                        else:
-                            self.cursor_position = 0
-                    self.selection = 0
-                    self.down_lock = True
-
-            if mouse_up:
-                self.down_lock = False
-            if self.down_lock:
-                pre = 0
-                post = 0
-                if mouse_position[0] < x + 1:
-
-                    self.selection = len(self.text)
-                else:
-
-                    for i in range(len(self.text)):
-                        post = ddt.get_text_w(self.text[0:i + 1], font)
-                        # pre_half = int((post - pre) / 2)
-
-                        if x + pre - 0 <= mouse_position[0] <= x + post + 0:
-                            diff = post - pre
-
-                            if mouse_position[0] >= x + pre + int(diff / 2):
-                                self.selection = len(self.text) - i - 1
-
-                            else:
-                                self.selection = len(self.text) - i
-
-                            break
-                        pre = post
-
-                    else:
-                        self.selection = 0
-
-            a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
-            # logging.info("")
-            # logging.info(self.selection)
-            # logging.info(self.cursor_position)
-
-            b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
-
-            # rint((a, b))
-
-            top = y
-            if big:
-                top -= 12 * gui.scale
-
-            ddt.rect([x + a, top, b - a, selection_height], [40, 120, 180, 255])
-
-            if self.selection != self.cursor_position:
-                inf_comp = 0
-                space = ddt.text((x, y), self.get_selection(0), colour, font)
-                space += ddt.text((x + space - inf_comp, y), self.get_selection(1), [240, 240, 240, 255], font,
-                                  bg=[40, 120, 180, 255], )
-                ddt.text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
-            else:
-                ddt.text((x, y), self.text, colour, font)
-
-            space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
-
-            if TextBox.cursor and self.selection == self.cursor_position:
-                # ddt.line(x + space, y + 2, x + space, y + 15, colour)
-
-                if big:
-                    # ddt.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
-                    ddt.rect((x + space, y - 15 * gui.scale + 2, 1 * gui.scale, 30 * gui.scale), colour)
-                else:
-                    ddt.rect((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour)
-
-            if click:
-                self.selection = self.cursor_position
-
-        else:
-            if active:
-                self.text += input_text
-                if input_text != "":
-                    self.cursor = True
-
-                while inp.backspace_press and len(self.text) > 0:
-                    self.text = self.text[:-1]
-                    inp.backspace_press -= 1
-
-                if key_ctrl_down and key_v_press:
-                    self.paste()
-
-            if secret:
-                space = ddt.text((x, y), "●" * len(self.text), colour, font)
-            else:
-                space = ddt.text((x, y), self.text, colour, font)
-
-            if active and TextBox.cursor:
-                xx = x + space + 1
-                yy = y + 3
-                if big:
-                    ddt.rect((xx + 1, yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour)
-                else:
-                    ddt.rect((xx, yy, 1 * gui.scale, 14 * gui.scale), colour)
-
-        if active and editline != "" and editline != input_text:
-            ex = ddt.text((x + space + round(4 * gui.scale), y), editline, [240, 230, 230, 255], font)
-            tw, th = ddt.get_text_wh(editline, font, max_x=2000)
-            ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
-                     [245, 245, 245, 255])
-
-            rect = SDL_Rect(pixel_to_logical(x + space + tw + 5 * gui.scale), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
-            SDL_SetTextInputRect(rect)
-
-        animate_monitor_timer.set()
+	def copy(self):
+
+		text = self.get_selection()
+		if not text:
+			text = self.text
+		if text != "":
+			SDL_SetClipboardText(text.encode("utf-8"))
+
+	def set_text(self, text):
+
+		self.text = text
+		self.cursor_position = 0
+		self.selection = 0
+
+	def clear(self):
+		self.text = ""
+
+	def highlight_all(self):
+
+		self.selection = len(self.text)
+		self.cursor_position = 0
+
+	def highlight_none(self):
+		self.selection = 0
+		self.cursor_position = 0
+
+	def eliminate_selection(self):
+		if self.selection != self.cursor_position:
+			if self.selection > self.cursor_position:
+				self.text = self.text[0: len(self.text) - self.selection] + self.text[
+					len(self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+			else:
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[
+					len(self.text) - self.selection:]
+				self.cursor_position = self.selection
+
+	def get_selection(self, p=1):
+		if self.selection != self.cursor_position:
+			if p == 1:
+				if self.selection > self.cursor_position:
+					return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
+
+				else:
+					return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
+			if p == 0:
+				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
+			if p == 2:
+				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
+
+		else:
+			return ""
+
+	def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False):
+
+		# A little bit messy.
+		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
+		# otherwise it is fixed to end
+
+		selection_height *= gui.scale
+
+		if click is False:
+			click = inp.mouse_click
+
+		if width > 0 and active:
+
+			rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
+			select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
+			if big:
+				rect = (x - 3, y - 15 * gui.scale, width - 3, 35 * gui.scale)
+				select_rect = (x - 50 * gui.scale, y - 15 * gui.scale, width + 50 * gui.scale, 35 * gui.scale)
+
+			# Activate Menu
+			if coll(rect):
+				if right_click or level_2_right_click:
+					field_menu.activate(self)
+
+			if click and field_menu.active:
+				# field_menu.click()
+				click = False
+
+			# Add text from input
+			if input_text != "":
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[
+					len(self.text) - self.cursor_position:]
+
+			def g():
+				if len(self.text) == 0 or self.cursor_position == len(self.text):
+					return None
+				return self.text[len(self.text) - self.cursor_position - 1]
+
+			def g2():
+				if len(self.text) == 0 or self.cursor_position == 0:
+					return None
+				return self.text[len(self.text) - self.cursor_position]
+
+			def d():
+				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
+					len(self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+
+			# Ctrl + Backspace to delete word
+			if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
+					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
+				self.text):
+				while g() == " ":
+					d()
+				while g() != " " and g() != None:
+					d()
+
+			# Ctrl + left to move cursor back a word
+			elif (key_ctrl_down or key_rctrl_down) and key_left_press:
+				while g() == " ":
+					self.cursor_position += 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+				while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position += 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+					if g() == " ":
+						self.cursor_position -= 1
+						if not key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Ctrl + right to move cursor forward a word
+			elif (key_ctrl_down or key_rctrl_down) and key_right_press:
+				while g2() == " ":
+					self.cursor_position -= 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+				while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position -= 1
+					if not key_shift_down:
+						self.selection = self.cursor_position
+					if g2() == " ":
+						self.cursor_position += 1
+						if not key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Handle normal backspace
+			elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+				while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+					if self.selection != self.cursor_position:
+						self.eliminate_selection()
+					else:
+						self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[
+							len(self.text) - self.cursor_position:]
+					inp.backspace_press -= 1
+			elif inp.backspace_press and len(self.get_selection()) > 0:
+				self.eliminate_selection()
+
+			# Left and right arrow keys to move cursor
+			if key_right_press:
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if key_left_press:
+				if self.cursor_position < len(self.text):
+					self.cursor_position += 1
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+
+			# Paste via ctrl-v
+			if key_ctrl_down and key_v_press:
+				clip = SDL_GetClipboardText().decode("utf-8")
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+					self.text) - self.cursor_position:]
+
+			if key_ctrl_down and key_c_press:
+				self.copy()
+
+			if key_ctrl_down and key_x_press:
+				if len(self.get_selection()) > 0:
+					text = self.get_selection()
+					if text != "":
+						SDL_SetClipboardText(text.encode("utf-8"))
+					self.eliminate_selection()
+
+			if key_ctrl_down and key_a_press:
+				self.cursor_position = 0
+				self.selection = len(self.text)
+
+			# ddt.rect_r(rect, [255, 50, 50, 80], True)
+			if coll(rect) and not field_menu.active:
+				gui.cursor_want = 2
+
+			fields.add(rect)
+
+			# Delete key to remove text in front of cursor
+			if key_del:
+				if self.selection != self.cursor_position:
+					self.eliminate_selection()
+				else:
+					self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+						self.text) - self.cursor_position + 1:]
+					if self.cursor_position > 0:
+						self.cursor_position -= 1
+					self.selection = self.cursor_position
+
+			if key_home_press:
+				self.cursor_position = len(self.text)
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+			if key_end_press:
+				self.cursor_position = 0
+				if not key_shift_down and not key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if coll(select_rect):
+				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
+				if click:
+					pre = 0
+					post = 0
+					if mouse_position[0] < x + 1:
+						self.cursor_position = len(self.text)
+					else:
+						for i in range(len(self.text)):
+							post = ddt.get_text_w(self.text[0:i + 1], font)
+							# pre_half = int((post - pre) / 2)
+
+							if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+								diff = post - pre
+								if mouse_position[0] >= x + pre + int(diff / 2):
+									self.cursor_position = len(self.text) - i - 1
+								else:
+									self.cursor_position = len(self.text) - i
+								break
+							pre = post
+						else:
+							self.cursor_position = 0
+					self.selection = 0
+					self.down_lock = True
+
+			if mouse_up:
+				self.down_lock = False
+			if self.down_lock:
+				pre = 0
+				post = 0
+				if mouse_position[0] < x + 1:
+
+					self.selection = len(self.text)
+				else:
+
+					for i in range(len(self.text)):
+						post = ddt.get_text_w(self.text[0:i + 1], font)
+						# pre_half = int((post - pre) / 2)
+
+						if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+							diff = post - pre
+
+							if mouse_position[0] >= x + pre + int(diff / 2):
+								self.selection = len(self.text) - i - 1
+
+							else:
+								self.selection = len(self.text) - i
+
+							break
+						pre = post
+
+					else:
+						self.selection = 0
+
+			a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+			# logging.info("")
+			# logging.info(self.selection)
+			# logging.info(self.cursor_position)
+
+			b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
+
+			# rint((a, b))
+
+			top = y
+			if big:
+				top -= 12 * gui.scale
+
+			ddt.rect([x + a, top, b - a, selection_height], [40, 120, 180, 255])
+
+			if self.selection != self.cursor_position:
+				inf_comp = 0
+				space = ddt.text((x, y), self.get_selection(0), colour, font)
+				space += ddt.text((x + space - inf_comp, y), self.get_selection(1), [240, 240, 240, 255], font,
+					bg=[40, 120, 180, 255], )
+				ddt.text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
+			else:
+				ddt.text((x, y), self.text, colour, font)
+
+			space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+
+			if TextBox.cursor and self.selection == self.cursor_position:
+				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
+
+				if big:
+					# ddt.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
+					ddt.rect((x + space, y - 15 * gui.scale + 2, 1 * gui.scale, 30 * gui.scale), colour)
+				else:
+					ddt.rect((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour)
+
+			if click:
+				self.selection = self.cursor_position
+
+		else:
+			if active:
+				self.text += input_text
+				if input_text != "":
+					self.cursor = True
+
+				while inp.backspace_press and len(self.text) > 0:
+					self.text = self.text[:-1]
+					inp.backspace_press -= 1
+
+				if key_ctrl_down and key_v_press:
+					self.paste()
+
+			if secret:
+				space = ddt.text((x, y), "●" * len(self.text), colour, font)
+			else:
+				space = ddt.text((x, y), self.text, colour, font)
+
+			if active and TextBox.cursor:
+				xx = x + space + 1
+				yy = y + 3
+				if big:
+					ddt.rect((xx + 1, yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour)
+				else:
+					ddt.rect((xx, yy, 1 * gui.scale, 14 * gui.scale), colour)
+
+		if active and editline != "" and editline != input_text:
+			ex = ddt.text((x + space + round(4 * gui.scale), y), editline, [240, 230, 230, 255], font)
+			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
+			ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
+				[245, 245, 245, 255])
+
+			rect = SDL_Rect(pixel_to_logical(x + space + tw + 5 * gui.scale), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
+			SDL_SetTextInputRect(rect)
+
+		animate_monitor_timer.set()
 
 
 rename_text_area = TextBox()
@@ -11678,7 +11678,7 @@ edit_album_artist = TextBox2()
 
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
-    rename_files.text = rename_files_previous
+	rename_files.text = rename_files_previous
 
 text_plex_usr = TextBox2()
 text_plex_pas = TextBox2()
@@ -11710,7 +11710,7 @@ text_sat_playlist = TextBox2()
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
-    rename_folder.text = rename_folder_previous
+	rename_folder.text = rename_folder_previous
 
 temp_dest = SDL_Rect(0, 0)
 
