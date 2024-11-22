@@ -488,7 +488,7 @@ if install_directory.startswith("/usr/"):
 
 # Set data folders (portable mode)
 user_directory = install_directory
-config_directory = user_directory
+config_directory = Path(user_directory)
 cache_directory = Path(user_directory) / "cache"
 home_directory = os.path.join(os.path.expanduser("~"))
 
@@ -537,13 +537,13 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 if (install_mode and system == "Linux") or macos or msys:
 
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
-	user_directory   = Path(GLib.get_user_data_dir())  / "TauonMusicBox"
-	config_directory = Path(GLib.get_user_data_dir())  / "TauonMusicBox"
+	user_directory   = str(Path(GLib.get_user_data_dir()) / "TauonMusicBox")
+	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 
-	if not Path(user_directory).is_dir():
+	if not user_directory.is_dir():
 		os.makedirs(user_directory)
 
-	if not Path(config_directory).is_dir():
+	if not config_directory.is_dir():
 		os.makedirs(config_directory)
 
 	if snap_mode:
@@ -576,7 +576,7 @@ else:
 	logging.info("Running in portable mode")
 
 	user_directory = str(Path(install_directory) / "user-data")
-	config_directory = user_directory
+	config_directory = Path(user_directory)
 
 	if not Path(user_directory).is_dir():
 		os.makedirs(user_directory)
@@ -591,7 +591,7 @@ e_cache_dir = str(cache_directory / "export")
 g_cache_dir = str(cache_directory / "gallery")
 a_cache_dir = str(cache_directory / "artist")
 r_cache_dir = str(cache_directory / "radio-thumbs")
-b_cache_dir = str(Path(user_directory)  / "artist-backgrounds")
+b_cache_dir = str(Path(user_directory) / "artist-backgrounds")
 
 if not os.path.isdir(n_cache_dir):
 	os.makedirs(n_cache_dir)
@@ -847,7 +847,7 @@ if maximized:
 # loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 # SDL_RenderPresent(renderer)
 
-if install_directory != config_directory and not Path(Path(config_directory) / "input.txt").is_file():
+if install_directory != config_directory and not Path(config_directory / "input.txt").is_file():
 	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
 	#logging.warning(install_directory)
 	#logging.warning(config_directory)
@@ -1390,8 +1390,8 @@ class Prefs:
 		self.show_side_art = True
 		self.always_pin_playlists = True
 
-		self.user_directory = user_directory
-		self.cache_directory = cache_directory
+		self.user_directory:   str = user_directory
+		self.cache_directory: Path = cache_directory
 
 		self.window_opacity = window_opacity
 		self.gallery_single_click = True
@@ -2406,8 +2406,8 @@ class KeyMap:
 
 	def load(self):
 
-		path = os.path.join(config_directory, "input.txt")
-		with open(path, encoding="utf_8") as f:
+		path = config_directory / "input.txt"
+		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
 			for p in content:
 				if len(p) == 0 or len(p) > 100:
@@ -3712,15 +3712,15 @@ def save_prefs():
 	cf.update_value("chart-font", prefs.chart_font)
 	cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
 
-	if os.path.isdir(config_directory):
-		cf.dump(os.path.join(config_directory, "tauon.conf"))
+	if config_directory.is_dir():
+		cf.dump(str(config_directory / "tauon.conf"))
 	else:
 		logging.error("Missing config directory")
 
 
 def load_prefs():
 	cf.reset()
-	cf.load(os.path.join(config_directory, "tauon.conf"))
+	cf.load(str(config_directory / "tauon.conf"))
 
 	cf.add_comment("Tauon Music Box configuration file")
 	cf.br()
@@ -19917,7 +19917,7 @@ def reload_config_file():
 
 def open_config_file():
     save_prefs()
-    target = os.path.join(config_directory, "tauon.conf")
+    target = str(config_directory / "tauon.conf")
     if system == "Windows" or msys:
         os.startfile(target)
     elif macos:
@@ -19931,7 +19931,7 @@ def open_config_file():
 
 
 def open_keymap_file():
-    target = os.path.join(config_directory, "input.txt")
+    target = str(config_directory / "input.txt")
 
     if not os.path.isfile(target):
         show_message(_("Input file missing"))
