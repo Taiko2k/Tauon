@@ -891,9 +891,8 @@ elif not msys and not macos:
 
 
 
-
-def no_padding(info):
-	# this will remove all padding
+def no_padding() -> int:
+	"""This will remove all padding"""
 	return 0
 
 wayland = True
