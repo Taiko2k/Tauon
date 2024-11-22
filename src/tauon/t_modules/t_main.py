@@ -8295,7 +8295,6 @@ class Tauon:
 		self.gui = gui
 		self.prefs = prefs
 		self.cache_directory = cache_directory
-		self.temp_audio = os.path.join(cache_directory, "stream-audio")
 		self.user_directory = user_directory
 		self.music_directory = music_directory
 		self.worker_save_state = False
