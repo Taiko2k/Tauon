@@ -261,9 +261,9 @@ h = 600
 if phone:
 	w = 720
 	h = 1800
-window_default_size: tuple[int, int] = [w, h]
-window_size = [w, h]
-logical_size = [w, h]
+window_default_size: tuple[int, int] = (w, h)
+window_size:         list[int] = [w, h]
+logical_size:        list[int] = [w, h]
 window_opacity = 1
 scale = 1
 if sys.platform == "darwin":

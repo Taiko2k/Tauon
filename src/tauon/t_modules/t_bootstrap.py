@@ -15,8 +15,8 @@ class Holder:
 
 	t_window:               Any                     # SDL_CreateWindow() return type (???)
 	renderer:               Any                     # SDL_CreateRenderer() return type (???)
-	logical_size:           tuple [int, int]        # X Y res
-	window_size:            tuple [int, int]        # X Y res
+	logical_size:           list[int]               # X Y res
+	window_size:            list[int]               # X Y res
 	maximized:              bool
 	scale:                  float
 	window_opacity:         float
