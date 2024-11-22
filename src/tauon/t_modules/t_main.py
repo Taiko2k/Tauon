@@ -349,20 +349,30 @@ else:
 windows_native = False
 macos = False
 msys = False
-system = None
+system = "Linux"
+arch = platform.machine()
+platform_release = platform.release()
+platform_system = platform.system()
+win_ver = 0
+if platform_system == "Windows":
+	try:
+		win_ver = int(platform_release)
+	except Exception:
+		logging.exception("Failed getting Windows version from platform.release()")
+
 if sys.platform == "win32":
-	# system = 'windows'
+	# system = 'Windows'
 	# windows_native = False
-	system = "linux"
+	system = "Linux"
 	msys = True
 else:
-	system = "linux"
+	system = "Linux"
 	import fcntl
 
 if sys.platform == "darwin":
 	macos = True
 
-if system == "windows":
+if system == "Windows":
 	import win32con
 	import win32api
 	import win32gui
@@ -370,10 +380,10 @@ if system == "windows":
 	import comtypes
 	import atexit
 
-if system == "linux":
+if system == "Linux":
 	from tauon.t_modules import t_topchart
 
-if system == "linux" and not macos and not msys:
+if system == "Linux" and not macos and not msys:
 	from tauon.t_modules.t_dbus import Gnome
 
 h = t_bootstrap.holder
@@ -468,7 +478,7 @@ try:
 except Exception:
 	logging.exception("Error accessing GTK settings")
 
-# if system == "windows" or msys:
+# if system == "Windows" or msys:
 #	 os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 
 # Assume that it's a classic Linux install, use standard paths
@@ -527,7 +537,7 @@ if install_directory.startswith("/opt/") \
 		flatpak_mode = True
 
 # If we're installed, use home data locations
-if (install_mode and system == "linux") or macos or msys:
+if (install_mode and system == "Linux") or macos or msys:
 
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
 	user_directory   = Path(GLib.get_user_data_dir())  / "TauonMusicBox"
@@ -552,7 +562,7 @@ if (install_mode and system == "linux") or macos or msys:
 		os.makedirs(Path(user_directory) / "encoder")
 
 
-# elif (system == 'windows' or msys) and (
+# elif (system == 'Windows' or msys) and (
 # 	'Program Files' in install_directory or
 # 	os.path.isfile(install_directory + '\\unins000.exe')):
 #
@@ -854,17 +864,6 @@ if snap_mode:
 
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
 
-arch = platform.machine()
-platform_release = platform.release()
-platform_system = platform.system()
-win_ver = 0
-if platform.system() == "Windows":
-	try:
-		win_ver = int(platform_release)
-	except Exception:
-		logging.exception("Failed getting Windows version from platform.release()")
-
-
 # logging.info(arch)
 # -----------------------------------------------------------
 # Detect locale for translations
@@ -880,7 +879,7 @@ except Exception:
 
 # ------------------------------------------------
 
-if system == "windows":
+if system == "Windows":
 	os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 elif not msys and not macos:
 	try:
@@ -1829,7 +1828,7 @@ class GuiVar:  # Use to hold any variables for use in relation to UI
 		self.universal_y_text_offset = 0
 
 		self.star_text_y_offset = 0
-		if system == "windows":
+		if system == "Windows":
 			self.star_text_y_offset = -2
 
 		self.set_bar = True
@@ -2358,7 +2357,7 @@ class Fonts:  # Used to hold font sizes (I forget to use this)
 
 		self.bottom_panel_time = 212
 
-		# if system == 'windows':
+		# if system == 'Windows':
 		#	 self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
 
 
@@ -3813,7 +3812,7 @@ def load_prefs():
 
 	cf.br()
 	cf.add_text("[tag-editor]")
-	if system == "windows" or msys:
+	if system == "Windows" or msys:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target",
@@ -4583,7 +4582,7 @@ def use_id3(tags, nt):
 
 def scan_ffprobe(nt):
 	startupinfo = None
-	if system == "windows" or msys:
+	if system == "Windows" or msys:
 		startupinfo = subprocess.STARTUPINFO()
 		startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 	try:
@@ -4897,7 +4896,7 @@ def tag_scan(nt):
 				if not nt.length:
 					try:
 						startupinfo = None
-						if system == "windows" or msys:
+						if system == "Windows" or msys:
 							startupinfo = subprocess.STARTUPINFO()
 							startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 						result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo)
@@ -6960,7 +6959,7 @@ def update_title_do():
 
 
 def open_encode_out():
-	if system == "windows" or msys:
+	if system == "Windows" or msys:
 		line = r"explorer " + prefs.encoder_output.replace("/", "\\")
 		subprocess.Popen(line)
 	else:
@@ -6978,12 +6977,13 @@ def g_open_encode_out(a, b, c):
 
 #
 
-if system == "linux" and not macos and not msys:
+if system == "Linux" and not macos and not msys:
 
 	try:
 		Notify.init("Tauon Music Box")
-		g_tc_notify = Notify.Notification.new("Tauon Music Box",
-											  "Transcoding has finished.")
+		g_tc_notify = Notify.Notification.new(
+			"Tauon Music Box",
+			"Transcoding has finished.")
 		value = GLib.Variant("s", t_id)
 		g_tc_notify.set_hint("desktop-entry", value)
 
@@ -9451,7 +9451,7 @@ def koel_get_album_thread():
 	shoot_dl.start()
 
 
-if system == "windows" or msys:
+if system == "Windows" or msys:
 	from infi.systray import SysTrayIcon
 
 
@@ -9505,7 +9505,7 @@ class STray:
 
 tray = STray()
 
-if system == "linux" and not macos and not msys:
+if system == "Linux" and not macos and not msys:
 
 	gnome = Gnome(tauon)
 
@@ -9516,7 +9516,7 @@ if system == "linux" and not macos and not msys:
 	except Exception:
 		logging.exception("Could not start Dbus thread")
 
-if (system == "windows" or msys):
+if (system == "Windows" or msys):
 
 	tray.start()
 
@@ -9992,7 +9992,7 @@ if msys:
 	cursor_left_side = cursor_shift
 	cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
 	cursor_bottom_side = cursor_top_side
-elif not msys and system == "linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
+elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 	try:
 		class XcursorImage(ctypes.Structure):
 			_fields_ = [
@@ -10057,7 +10057,7 @@ if not maximized and gui.maximized:
 
 # logging.error(SDL_GetError())
 
-if system == "windows" or msys:
+if system == "Windows" or msys:
 	gui.window_id = sss.info.win.window
 
 
@@ -10149,7 +10149,7 @@ def bass_player_thread(player):
 		raise
 
 
-if (system == "windows" or msys) and taskbar_progress:
+if (system == "Windows" or msys) and taskbar_progress:
 
 	class WinTask:
 
@@ -10354,7 +10354,7 @@ def prime_fonts():
 	ddt.prime_font(standard_font, 13, 516)
 
 
-if system == "linux":
+if system == "Linux":
 	prime_fonts()
 
 else:
@@ -10828,7 +10828,7 @@ def draw_linked_text(location, text, colour, font, force=False, replace=""):
 		tweak = round(tweak * gui.scale)
 		tweak += 2
 
-	if system == "windows":
+	if system == "Windows":
 		tweak += 1
 
 	# ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
@@ -12350,7 +12350,7 @@ class AlbumArt():
         else:
             target = source[offset][1]
 
-        if system == "windows" or msys:
+        if system == "Windows" or msys:
             os.startfile(target)
         elif macos:
             subprocess.call(["open", target])
@@ -15517,7 +15517,7 @@ power_bar_icon = asset_loader("power.png", True)
 
 
 def open_folder_stem(path):
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         line = r'explorer /select,"%s"' % (
             path.replace("/", "\\"))
         subprocess.Popen(line)
@@ -15540,7 +15540,7 @@ def open_folder(index):
         show_message(_("Can't open folder of a network track."))
         return
 
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         line = r'explorer /select,"%s"' % (
             track.fullpath.replace("/", "\\"))
         subprocess.Popen(line)
@@ -17048,7 +17048,7 @@ def export_m3u(pl, direc=None, relative=False, show=True):
     if show:
         line = direc
         line += "/"
-        if system == "windows" or msys:
+        if system == "Windows" or msys:
             os.startfile(line)
         elif macos:
             subprocess.Popen(["open", line])
@@ -17098,7 +17098,7 @@ def export_xspf(pl, direc=None, relative=False, show=True):
     if show:
         line = direc
         line += "/"
-        if system == "windows" or msys:
+        if system == "Windows" or msys:
             os.startfile(line)
         elif macos:
             subprocess.Popen(["open", line])
@@ -17749,7 +17749,7 @@ def export_stats(pl):
     xport.write(line)
     xport.close()
     target = os.path.join(user_directory, "stats.txt")
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         os.startfile(target)
     elif macos:
         subprocess.call(["open", target])
@@ -19916,7 +19916,7 @@ def reload_config_file():
 def open_config_file():
     save_prefs()
     target = os.path.join(config_directory, "tauon.conf")
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         os.startfile(target)
     elif macos:
         subprocess.call(["open", "-t", target])
@@ -19935,7 +19935,7 @@ def open_keymap_file():
         show_message(_("Input file missing"))
         return
 
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         os.startfile(target)
     elif macos:
         subprocess.call(["open", target])
@@ -19948,7 +19948,7 @@ def open_file(target):
         show_message(_("Input file missing"))
         return
 
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         os.startfile(target)
     elif macos:
         subprocess.call(["open", target])
@@ -19958,7 +19958,7 @@ def open_file(target):
 
 def open_data_directory():
     target = user_directory
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         os.startfile(target)
     elif macos:
         subprocess.call(["open", target])
@@ -20718,7 +20718,7 @@ def delete_track(track_ref):
     tr = pctl.g(track_ref)
     fullpath = tr.fullpath
 
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         fullpath = fullpath.replace("/", "\\")
 
     if tr.is_network:
@@ -20818,7 +20818,7 @@ def delete_folder(index, force=False):
         if force:
             shutil.rmtree(old)
         else:
-            if system == "windows" or msys:
+            if system == "Windows" or msys:
                 send2trash(old.replace("/", "\\"))
             else:
                 send2trash(old)
@@ -21226,13 +21226,13 @@ def editor(index):
         file_line += pctl.master_library[track].fullpath
         file_line += '"'
 
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         file_line = file_line.replace("/", "\\")
 
     prefix = ""
     app = prefs.tag_editor_target
 
-    if (system == "windows" or msys) and app:
+    if (system == "Windows" or msys) and app:
         if app[0] != '"':
             app = '"' + app
         if app[-1] != '"':
@@ -21244,7 +21244,7 @@ def editor(index):
 
     prefix = launch_prefix
 
-    if system == "linux":
+    if system == "Linux":
         ok = whicher(prefs.tag_editor_target)
     else:
 
@@ -24445,7 +24445,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     # logging.info(shlex.split(command))
     startupinfo = None
-    if system == "windows" or msys:
+    if system == "Windows" or msys:
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
@@ -26893,7 +26893,7 @@ def worker1():
                     if not gui.sync_progress:
                         if not gui.message_box:
                             show_message(_("Encoding complete."), line, mode="done")
-                        if system == "linux" and de_notify_support:
+                        if system == "Linux" and de_notify_support:
                             g_tc_notify.show()
 
         if to_scan:
@@ -28247,7 +28247,7 @@ class Over:
 
         colour = colours.box_sub_text
 
-        # if system == "linux":
+        # if system == "Linux":
         if not phazor_exists(tauon.pctl):
             x += round(20 * gui.scale)
             ddt.text((x, y - 25 * gui.scale), _("PHAzOR DLL not found!"), colour, 213)
@@ -29813,7 +29813,7 @@ class Over:
 
         # ddt.text((x, y), _("Window"),colours.box_text_label, 12)
 
-        if system == "linux":
+        if system == "Linux":
             self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 25 * gui.scale
@@ -30376,7 +30376,7 @@ class Over:
             return
 
         ww = ddt.get_text_w(_("Chart generator..."), 211) + 30 * gui.scale
-        if system == "linux" and self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
+        if system == "Linux" and self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
             self.chart_view = 1
 
         ddt.text_background_colour = colours.box_background
@@ -32418,7 +32418,7 @@ class BottomBarType1:
 
             offset1 = 10 * gui.scale
 
-            if system == "windows":
+            if system == "Windows":
                 offset1 += 2 * gui.scale
 
             offset2 = offset1 + 7 * gui.scale
@@ -32462,7 +32462,7 @@ class BottomBarType1:
                      fonts.bottom_panel_time)
 
             offset1 = 10 * gui.scale
-            if system == "windows":
+            if system == "Windows":
                 offset1 += 2 * gui.scale
             offset2 = offset1 + 7 * gui.scale
 
@@ -33016,7 +33016,7 @@ class BottomBarType_ao1:
 
             offset1 = 10 * gui.scale
 
-            if system == "windows":
+            if system == "Windows":
                 offset1 += 2 * gui.scale
 
             offset2 = offset1 + 7 * gui.scale
@@ -33060,7 +33060,7 @@ class BottomBarType_ao1:
                      fonts.bottom_panel_time)
 
             offset1 = 10 * gui.scale
-            if system == "windows":
+            if system == "Windows":
                 offset1 += 2 * gui.scale
             offset2 = offset1 + 7 * gui.scale
 
@@ -34023,7 +34023,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
     # In windows (arial?) draws numbers too high (hack fix)
     num_y_offset = 0
-    # if system == 'windows':
+    # if system == 'Windows':
     #    num_y_offset = 1
 
     if True or style == 1:
@@ -42207,10 +42207,10 @@ def hit_callback(win, point, data):
                 return SDL_HITTEST_NORMAL
 
             if prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (
-                    macos or system == "windows" or msys):
+                    macos or system == "Windows" or msys):
                 return SDL_HITTEST_NORMAL
             elif not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (
-                    macos or system == "windows" or msys):
+                    macos or system == "Windows" or msys):
                 return SDL_HITTEST_NORMAL
 
             return SDL_HITTEST_DRAGGABLE
@@ -43905,7 +43905,7 @@ while pctl.running:
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
                 #logging.info("SDL_WINDOWEVENT_FOCUS_GAINED")
 
-                if system == "linux" and not macos and not msys:
+                if system == "Linux" and not macos and not msys:
                     gnome.focus()
                 k_input = True
 
@@ -48482,7 +48482,7 @@ if tauon.radio_server is not None:
 	except Exception:
 		logging.exception("Failed to close radio server")
 
-if system == "windows" or msys:
+if system == "Windows" or msys:
     tray.stop()
     if smtc:
         sm.unload()

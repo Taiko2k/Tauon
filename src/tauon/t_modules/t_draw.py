@@ -70,13 +70,13 @@ except Exception:
 
 _ = lambda m: m
 
-system = "linux"
+system = "Linux"
 if sys.platform == "win32":
-	system = "linux" #"windows"
+	system = "Linux" #"windows"
 	import os
 	os.environ["PANGOCAIRO_BACKEND"] = "fc"
 
-if system == "linux":
+if system == "Linux":
 	import struct
 
 	import cairo
@@ -160,8 +160,8 @@ class QuickThumbnail:
 
 		return True
 
-if system == "windows":
-
+# Martin: This block never executes?
+if system == "Windows":
 	class RECT(ctypes.Structure):
 		_fields_ = [
 			("left", ctypes.c_long),
@@ -345,7 +345,7 @@ class TDraw:
 		self.dest_rect = SDL_Rect(0, 0, 0, 0)
 
 
-		if system == "linux":
+		if system == "Linux":
 			self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
 			self.context = cairo.Context(self.surf)
 			self.layout = PangoCairo.create_layout(self.context)
@@ -455,7 +455,7 @@ class TDraw:
 
 	def get_text_wh(self, text: str, font: str, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
 
-		if system == "linux":
+		if system == "Linux":
 			self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 			self.layout.set_ellipsize(Pango.EllipsizeMode.END)
 			self.layout.set_width(max_x * 1000)
@@ -883,7 +883,7 @@ class TDraw:
 				if len(location) > 4:
 					max_h = location[4]
 
-				if system == "linux":
+				if system == "Linux":
 					return self.__draw_text_cairo(
 						location, text, colour, font, location[3], bg, max_y=max_h, wrap=True,
 						range_top=range_top, range_height=range_height,
@@ -893,6 +893,6 @@ class TDraw:
 					range_top=range_top, range_height=range_height,
 				)
 
-		if system == "linux":
+		if system == "Linux":
 			return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
 		return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)
