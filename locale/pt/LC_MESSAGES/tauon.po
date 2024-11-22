@@ -3092,15 +3092,6 @@ msgstr "Desgostar da faixa"
 #~ msgid "Broadcast This"
 #~ msgstr "Transmitir Isto"
 
-#~ msgid "There are no tracks in this playlist to broadcast."
-#~ msgstr "Não há faixas nesta playlist para transmitir."
-
-#~ msgid "You need to start the broadcast web server in settings."
-#~ msgstr "É preciso iniciar o servidor de transmissão nas configurações."
-
-#~ msgid "Start Broadcast"
-#~ msgstr "Começar Transmissão"
-
 #~ msgid "Ready broadcaster"
 #~ msgstr "Preparar Transmissor"
 
@@ -3222,9 +3213,6 @@ msgstr "Desgostar da faixa"
 
 #~ msgid "Enable/Disable main MENU functions:"
 #~ msgstr "Activar/Desactivar as principais funções do MENU:"
-
-#~ msgid "Client Secret"
-#~ msgstr "Segredo do Cliente"
 
 #~ msgid "Mark Missing as Found"
 #~ msgstr "Marcar Em Falta como Encontradas"
