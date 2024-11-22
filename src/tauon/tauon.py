@@ -446,12 +446,18 @@ del img_path
 if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 	from tauon.t_modules import t_main
 else:
-	# Using the above import method breaks previous pickles. Could be fixed
-	# but yet to decide what best method is.
+	# Using the above import method breaks previous pickles.
+	# Could be fixed, but yet to decide what best method is.
 	big_boy_path = Path(install_directory) / "t_modules/t_main.py"
-	f = open(big_boy_path, "rb")
-	main = compile(f.read(), big_boy_path, "exec")
+	f = big_boy_path.open("rb")
+	main_func = compile(f.read(), big_boy_path, "exec")
 	f.close()
 	del big_boy_path
 	del f
-	exec(main)
+
+#	main = main_func
+#	exec(main)
+
+	def main() -> None:
+		"""Execute the compiled code and return"""
+		exec(main_func, {})
