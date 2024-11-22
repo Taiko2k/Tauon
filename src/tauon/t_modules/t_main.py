@@ -499,7 +499,7 @@ music_directory = os.path.join(os.path.expanduser("~"), "Music")
 if not Path(music_directory).is_dir():
 	music_directory = os.path.join(os.path.expanduser("~"), "music")
 
-download_directory = os.path.join(os.path.expanduser("~"), "Downloads")
+download_directory = Path("~").expanduser() / "Downloads"
 
 # Detect if we are installed or running portable
 install_mode = False
@@ -586,7 +586,7 @@ else:
 
 if not Path(Path(user_directory) / "state.p").is_file() and cache_directory.is_dir():
 	logging.info("Clearing old cache directory")
-	logging.info(str(cache_directory))
+	logging.info(cache_directory)
 	shutil.rmtree(str(cache_directory))
 
 n_cache_dir = str(cache_directory / "network")
@@ -629,7 +629,7 @@ if platform_system == "Linux":
 				if line.startswith("XDG_DOWNLOAD_DIR="):
 					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
 					if Path(target).is_dir():
-						download_directory = str(target)
+						download_directory = target
 					logging.info(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
 
 
@@ -638,15 +638,15 @@ if os.getenv("XDG_MUSIC_DIR"):
 	logging.info("Override music to: " + music_directory)
 
 if os.getenv("XDG_DOWNLOAD_DIR"):
-	download_directory = os.getenv("XDG_DOWNLOAD_DIR")
+	download_directory = Path(os.getenv("XDG_DOWNLOAD_DIR"))
 	logging.info("Override downloads to: " + download_directory)
 
 if music_directory:
 	music_directory = os.path.expandvars(music_directory)
 if download_directory:
-	download_directory = os.path.expandvars(download_directory)
+	download_directory = Path(os.path.expandvars(download_directory))
 
-if not os.path.isdir(music_directory):
+if not Path(music_directory).is_dir():
 	music_directory = None
 
 logging.info(f"Install directory:      {install_directory}")
@@ -3544,8 +3544,8 @@ shoot.start()
 
 download_directories = []
 
-if os.path.isdir(download_directory):
-	download_directories.append(download_directory)
+if download_directory.is_dir():
+	download_directories.append(str(download_directory))
 
 if music_directory is not None and os.path.isdir(music_directory):
 	download_directories.append(music_directory)
@@ -8419,13 +8419,13 @@ class Tauon:
 			indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
 			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
 
-		user_icon_dir = str(self.cache_directory / "icon-export")
+		user_icon_dir = self.cache_directory / "icon-export"
 		def install_tray_icon(src, name):
-			alt = os.path.join(user_icon_dir, f"{name}.svg")
-			if not os.path.isfile(alt) or force:
-				shutil.copy(src, alt)
+			alt = user_icon_dir / f"{name}.svg"
+			if not alt.is_file() or force:
+				shutil.copy(src, str(alt))
 
-		if not os.path.isdir(user_icon_dir):
+		if not user_icon_dir.is_dir():
 			os.makedirs(user_icon_dir)
 
 		install_tray_icon(indicator_icon_play, "tray-indicator-play")
