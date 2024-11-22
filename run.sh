@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 
 export PYTHONPATH=".":"${PYTHONPATH-}"
 
-rm -rf .venv build dist tauon_music_box.egg-info ./src/phazor/kissfft ./src/phazor/miniaudio
+rm -rf .venv build dist tauon_music_box.egg-info src/phazor/kissfft src/phazor/miniaudio
 mkdir -p src/phazor/kissfft src/phazor/miniaudio
 
 _kissfftver=131.1.0
