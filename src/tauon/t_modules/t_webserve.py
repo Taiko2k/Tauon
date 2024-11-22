@@ -223,7 +223,7 @@ def webserve(pctl: PlayerCtl, prefs: dict, gui: GuiVar, album_art_gen: AlbumArt,
 		httpd.serve_forever()
 		httpd.server_close()
 	except OSError:
-		logging.exception("Not starting radio page server, already running?")
+		logging.exception("Not starting radio page server, another Tauon instance already running?")
 	except Exception:
 		logging.exception("Failed starting radio page server!")
 
