@@ -3261,10 +3261,6 @@ msgstr "Faixa \"gostada\""
 msgid "Un-Loved track"
 msgstr "Desgostar da faixa"
 
-#: t_modules/t_main.py:21570
-msgid "Broadcast This"
-msgstr "Transmitir Isto"
-
 #: t_modules/t_main.py:22705
 msgid "There are no tracks in this playlist to broadcast."
 msgstr "Não há faixas nesta lista de reprodução para transmitir."

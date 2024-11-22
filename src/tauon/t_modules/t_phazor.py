@@ -191,8 +191,8 @@ def player4(tauon: Tauon) -> None:
 					logging.error("SPP: Missing auth data")
 					return 1
 
-				cache = os.path.join(tauon.cache_directory, "lsspot")
-				if not os.path.exists(cache):
+				cache = str(tauon.cache_directory / "lsspot")
+				if not Path(cache).exists():
 					os.makedirs(cache)
 
 				cmd = ["librespot", "--username", username, "--password", prefs.spot_password, "--backend", "pipe", "-n", "Tauon Music Box", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
@@ -352,8 +352,8 @@ def player4(tauon: Tauon) -> None:
 		pctl.active_replaygain = g
 		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
-	audio_cache = tauon.cache_directory + "/network-audio1"
-	audio_cache2 = tauon.cache_directory + "/audio-cache"
+	audio_cache  = str(tauon.cache_directory / "network-audio1")
+	audio_cache2 = str(tauon.cache_directory / "audio-cache")
 
 	class Cachement:
 		def __init__(self) -> None:
