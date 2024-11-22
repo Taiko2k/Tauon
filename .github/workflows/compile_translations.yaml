@@ -21,7 +21,7 @@ jobs:
           python-version: '3.13'
       # Install dependencies
 #      - run: pip install whatever
-      - run: apt-get update && apt-get install -y gettext
+      - run: sudo apt-get update && sudo apt-get install -y gettext
       # Build
 #      - run: python setup.py build
       # Test
