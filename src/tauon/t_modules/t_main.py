@@ -505,11 +505,7 @@ download_directory = Path("~").expanduser() / "Downloads"
 install_mode = False
 flatpak_mode = False
 snap_mode = False
-if install_directory.startswith("/opt/") \
-		or install_directory.startswith("/usr/") \
-		or install_directory.startswith("/app/") \
-		or install_directory.startswith("/snap/"):
-
+if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 	install_mode = True
 	if install_directory[:6] == "/snap/":
 		snap_mode = True
@@ -747,7 +743,7 @@ SDL_RenderClear(renderer)
 class LoadImageAsset:
 	assets = []
 
-	def __init__(self, path, is_full_path=False, reload=False, scale_name=""):
+	def __init__(self, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
 			self.assets.append(self)
 
@@ -769,13 +765,13 @@ class LoadImageAsset:
 		self.w = p_w.contents.value
 		self.h = p_h.contents.value
 
-	def reload(self):
+	def reload(self) -> None:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = os.path.join(scaled_asset_directory, self.scale_name)
 		self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x, y, colour=None):
+	def render(self, x: int, y: int, colour=None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
 		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
@@ -784,7 +780,7 @@ class LoadImageAsset:
 class WhiteModImageAsset:
 	assets = []
 
-	def __init__(self, path, reload=False, scale_name=""):
+	def __init__(self, path: str, reload: bool = False, scale_name: str = ""):
 		if not reload:
 			self.assets.append(self)
 		self.path = path
@@ -800,13 +796,13 @@ class WhiteModImageAsset:
 		self.w = p_w.contents.value
 		self.h = p_h.contents.value
 
-	def reload(self):
+	def reload(self) -> None:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = os.path.join(scaled_asset_directory, self.scale_name)
 		self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x, y, colour):
+	def render(self, x: int, y: int, colour) -> None:
 		if colour != self.colour:
 			SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
 			SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
@@ -868,7 +864,7 @@ musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Tai
 # -----------------------------------------------------------
 # Detect locale for translations
 
-def _(message):
+def _(message: str) -> str:
 	return message
 
 
@@ -951,11 +947,11 @@ vis_update = False
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
 class DConsole:
-	def __init__(self):
-		self.messages = []
-		self.show = False
+	def __init__(self) -> None:
+		self.messages: list[str] = []
+		self.show:     bool      = False
 
-	def print(self, message: str, level: int = 0):
+	def print(self, message: str, level: int = 0) -> None:
 
 		if len(self.messages) > 50:
 			del self.messages[0]
@@ -1202,7 +1198,7 @@ def pl_gen(
 multi_playlist = [pl_gen()]
 
 
-def queue_item_gen(trackid, position, pl_id, type=0, album_stage=0):
+def queue_item_gen(trackid, position, pl_id, type: int = 0, album_stage: int = 0):
 	# type; 0 is track, 1 is album
 	auto_stop = False
 
@@ -1248,126 +1244,127 @@ albums = []
 album_position = 0
 
 
-class Prefs:  # Used to hold any kind of settings
+class Prefs:
+	"""Used to hold any kind of settings"""
 
-	def __init__(self):
-		self.colour_from_image = False
-		self.dim_art = False
-		self.prefer_side = True  # Saves whether side panel is shown or not
-		self.pause_fade_time = 400
-		self.change_volume_fade_time = 400
-		self.cross_fade_time = 700  # 700
-		self.volume_wheel_increment = 2
-		self.encoder_output = user_directory + "/encoder/"
+	def __init__(self) -> None:
+		self.colour_from_image:       bool = False
+		self.dim_art:                 bool = False
+		self.prefer_side:             bool = True  # Saves whether side panel is shown or not
+		self.pause_fade_time:         int  = 400
+		self.change_volume_fade_time: int  = 400
+		self.cross_fade_time:         int  = 700
+		self.volume_wheel_increment:  int  = 2
+		self.encoder_output:          str  = user_directory + "/encoder/"
 		if music_directory is not None:
-			self.encoder_output = str(music_directory / "encode-output")
-		self.rename_folder_template = "<albumartist> - <album>"
-		self.rename_tracks_template = "<tn>. <artist> - <title>.<ext>"
+			self.encoder_output:        str = str(music_directory / "encode-output")
+		self.rename_folder_template:  str = "<albumartist> - <album>"
+		self.rename_tracks_template:  str = "<tn>. <artist> - <title>.<ext>"
 
-		self.enable_web = False
-		self.allow_remote = False
-		self.expose_web = True
+		self.enable_web:   bool = False
+		self.allow_remote: bool = False
+		self.expose_web:   bool = True
 
-		self.enable_transcode = True
-		self.show_rym = False
-		self.show_band = False
-		self.show_wiki = False
-		self.show_transfer = True
-		self.show_queue = True
-		self.prefer_bottom_title = True
-		self.append_date = True
+		self.enable_transcode:    bool = True
+		self.show_rym:            bool = False
+		self.show_band:           bool = False
+		self.show_wiki:           bool = False
+		self.show_transfer:       bool = True
+		self.show_queue:          bool = True
+		self.prefer_bottom_title: bool = True
+		self.append_date:         bool = True
 
-		self.transcode_codec = "opus"
-		self.transcode_mode = "single"
-		self.transcode_bitrate = 64
+		self.transcode_codec:   str = "opus"
+		self.transcode_mode:    str = "single"
+		self.transcode_bitrate: int = 64
 
-		# self.line_style = 1
-		self.device = 1
-		self.device_name = ""
+		# self.line_style: int = 1
+		self.device:      int = 1
+		self.device_name: str = ""
 
-		self.cache_gallery = True
-		self.gallery_row_scroll = True
-		self.gallery_scroll_wheel_px = 90
+		self.cache_gallery:           bool = True
+		self.gallery_row_scroll:      bool = True
+		self.gallery_scroll_wheel_px: int = 90
 
-		self.playlist_font_size = 15
-		self.playlist_row_height = 27
+		self.playlist_font_size:  int = 15
+		self.playlist_row_height: int = 27
 
-		self.tag_editor_name = ""
-		self.tag_editor_target = ""
-		self.tag_editor_path = ""
+		self.tag_editor_name:   str = ""
+		self.tag_editor_target: str = ""
+		self.tag_editor_path:   str = ""
 
-		self.use_title = False
-		self.auto_extract = False
-		self.auto_del_zip = False
-		self.pl_thumb = False
+		self.use_title:    bool = False
+		self.auto_extract: bool = False
+		self.auto_del_zip: bool = False
+		self.pl_thumb:     bool = False
 
-		self.use_custom_fonts = False
-		self.linux_font = "Noto Sans, Noto Sans CJK JP, Arial,"
-		self.linux_font_semibold = "Noto Sans, Noto Sans CJK JP, Arial, Medium"
-		self.linux_font_bold = "Noto Sans, Noto Sans CJK JP, Bold"
-		self.linux_font_condensed = "Noto Sans, Extra-Condensed"
-		self.linux_font_condensed_bold = "Noto Sans, Extra-Condensed Bold"
+		self.use_custom_fonts:          bool = False
+		self.linux_font:                str = "Noto Sans, Noto Sans CJK JP, Arial,"
+		self.linux_font_semibold:       str = "Noto Sans, Noto Sans CJK JP, Arial, Medium"
+		self.linux_font_bold:           str = "Noto Sans, Noto Sans CJK JP, Bold"
+		self.linux_font_condensed:      str = "Noto Sans, Extra-Condensed"
+		self.linux_font_condensed_bold: str = "Noto Sans, Extra-Condensed Bold"
 
-		self.spec2_scroll = True
+		self.spec2_scroll: bool = True
 
-		self.spec2_p_base = [10, 10, 100]
-		self.spec2_p_multiply = [0.5, 1, 1]
+		self.spec2_p_base:     list[float] = [10, 10, 100]
+		self.spec2_p_multiply: list[float] = [0.5, 1, 1]
 
-		self.spec2_base = [10, 10, 100]
-		self.spec2_multiply = [0.5, 1, 1]
-		self.spec2_colour_setting = "custom"
+		self.spec2_base:           list[float] = [10, 10, 100]
+		self.spec2_multiply:       list[float] = [0.5, 1, 1]
+		self.spec2_colour_setting: str = "custom"
 
-		self.auto_lfm = False
-		self.scrobble_mark = False
-		self.enable_mpris = True
+		self.auto_lfm:      bool = False
+		self.scrobble_mark: bool = False
+		self.enable_mpris:  bool = True
 
-		self.replay_gain = 0  # 0=off 1=track 2=album
-		self.replay_preamp = 0  # db
-		self.radio_page_lyrics = True
+		self.replay_gain:       int  = 0  # 0=off 1=track 2=album
+		self.replay_preamp:     int  = 0  # db
+		self.radio_page_lyrics: bool = True
 
-		self.show_gimage = False
-		self.end_setting = "stop"
-		self.show_gen = False
-		self.show_lyrics_side = True
+		self.show_gimage:      bool = False
+		self.end_setting:      str  = "stop"
+		self.show_gen:         bool = False
+		self.show_lyrics_side: bool = True
 
-		self.log_vol = False
+		self.log_vol: bool = False
 
 		self.ui_scale: float = scale
 
 		# if flatpak_mode:
 
-		self.transcode_opus_as = False
+		self.transcode_opus_as: bool = False
 
-		self.discord_active = False
-		self.discord_ready = False
-		self.disconnect_discord = False
+		self.discord_active:     bool = False
+		self.discord_ready:      bool = False
+		self.disconnect_discord: bool = False
 
-		self.monitor_downloads = True
-		self.extract_to_music = False
+		self.monitor_downloads: bool = True
+		self.extract_to_music:  bool = False
 
-		self.enable_lb = False
-		self.lb_token = ""
+		self.enable_lb: bool = False
+		self.lb_token:  str  = ""
 
-		self.use_jump_crossfade = True
-		self.use_transition_crossfade = False
-		self.use_pause_fade = True
+		self.use_jump_crossfade:       bool = True
+		self.use_transition_crossfade: bool = False
+		self.use_pause_fade:           bool = True
 
-		self.show_notifications = True
+		self.show_notifications: bool = True
 
-		self.true_shuffle = True
-		self.append_total_time = False
-		self.backend = 4  # 2 gstreamer, 4 phazor
+		self.true_shuffle:      bool = True
+		self.append_total_time: bool = False
+		self.backend:           int  = 4  # 2 gstreamer, 4 phazor
 
-		self.album_repeat_mode = False  # passed to pctl
-		self.album_shuffle_mode = False  # passed to pctl
+		self.album_repeat_mode:  bool = False  # passed to pctl
+		self.album_shuffle_mode: bool = False  # passed to pctl
 
-		self.finish_current = False  # Finish current album when adding to queue
+		self.finish_current: bool = False  # Finish current album when adding to queue
 
-		self.reload_play_state = False  # Resume playback on app restart
-		self.resume_play_wake = False  # Resume playback on wake
-		self.reload_state = None
+		self.reload_play_state: bool = False  # Resume playback on app restart
+		self.resume_play_wake:  bool = False  # Resume playback on wake
+		self.reload_state: tuple[int, float] | None = None
 
-		self.mono = False
+		self.mono: bool = False
 
 		self.last_fm_token = None
 		self.last_fm_username = ""
@@ -5085,14 +5082,14 @@ class PlayerCtl:
 	# C-PC
 	def __init__(self):
 
-		self.running = True
-		self.system = system
-		self.macos = macos
-		self.windows_native = windows_native
-		self.install_directory = install_directory
-		self.user_directory = user_directory
-		self.config_directory = config_directory
-		self.prefs = prefs
+		self.running:           bool = True
+		self.system:            str  = system
+		self.macos:             bool = macos
+		self.windows_native:    bool = windows_native
+		self.install_directory: str  = install_directory
+		self.user_directory:    str  = user_directory
+		self.config_directory:  Path = config_directory
+		self.prefs:             Prefs = prefs
 
 		# Database
 
@@ -5115,9 +5112,9 @@ class PlayerCtl:
 
 		# Misc player control
 
-		self.url = ""
+		self.url: str = ""
 		# self.save_urls = url_saves
-		self.tag_meta = ""
+		self.tag_meta: str = ""
 		self.found_tags = {}
 		self.encoder_pause = 0
 
@@ -5138,8 +5135,8 @@ class PlayerCtl:
 		self.playerCommand = ""
 		self.playerSubCommand = ""
 		self.playerCommandReady = False
-		self.playing_state = 0
-		self.playing_length = 0
+		self.playing_state:    int = 0
+		self.playing_length: float = 0
 		self.jump_time = 0
 		self.random_mode = prefs.random_mode
 		self.repeat_mode = prefs.repeat_mode
@@ -8291,11 +8288,11 @@ class Tauon:
 		self.star_store = star_store
 		self.gui = gui
 		self.prefs = prefs
-		self.cache_directory = cache_directory
-		self.user_directory = user_directory
+		self.cache_directory:   Path | None = cache_directory
+		self.user_directory:     str | None = user_directory
 		self.music_directory:   Path | None = music_directory
-		self.worker_save_state = False
-		self.launch_prefix = launch_prefix
+		self.worker_save_state:        bool = False
+		self.launch_prefix:             str = launch_prefix
 		self.whicher = whicher
 		self.load_orders = load_orders
 		self.switch_playlist = None
@@ -8419,7 +8416,7 @@ class Tauon:
 			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
 
 		user_icon_dir = self.cache_directory / "icon-export"
-		def install_tray_icon(src, name):
+		def install_tray_icon(src, name: str) -> None:
 			alt = user_icon_dir / f"{name}.svg"
 			if not alt.is_file() or force:
 				shutil.copy(src, str(alt))
@@ -8434,7 +8431,7 @@ class Tauon:
 	def get_tray_icon(self, name: str) -> str:
 		return str(self.cache_directory / "icon-export" / f"{name}.svg")
 
-	def test_ffmpeg(self):
+	def test_ffmpeg(self) -> bool:
 		if self.get_ffmpeg():
 			return True
 		if msys:
@@ -8443,22 +8440,27 @@ class Tauon:
 			gui.message_box_confirm_reference = (None,)
 		else:
 			show_message(_("FFMPEG could not be found"))
+		return False
 
-	def get_ffmpeg(self):
+	def get_ffmpeg(self) -> str | None:
 		p = shutil.which("ffmpeg")
-		if p: return p
+		if p:
+			return p
 		p = os.path.join(user_directory, "ffmpeg.exe")
-		if msys and os.path.isfile(p): return p
+		if msys and os.path.isfile(p):
+			return p
 		return None
 
-	def get_ffprobe(self):
+	def get_ffprobe(self) -> str | None:
 		p = shutil.which("ffprobe")
-		if p: return p
+		if p:
+			return p
 		p = os.path.join(user_directory, "ffprobe.exe")
-		if msys and os.path.isfile(p): return p
+		if msys and os.path.isfile(p):
+			return p
 		return None
 
-	def bg_save(self):
+	def bg_save(self) -> None:
 		self.worker_save_state = True
 		tm.ready("worker")
 
@@ -12108,7 +12110,7 @@ def clear_track_image_cache(track):
     album_art_gen.clear_cache()
 
 
-class ImageObject():
+class ImageObject:
     def __init__(self):
         self.index = 0
         self.texture = None
@@ -12122,7 +12124,7 @@ class ImageObject():
         self.format = ""
 
 
-class AlbumArt():
+class AlbumArt:
     def __init__(self):
         self.image_types = {"jpg", "JPG", "jpeg", "JPEG", "PNG", "png", "BMP", "bmp", "GIF", "gif", "jxl", "JXL"}
         self.art_folder_names = {"art", "scans", "scan", "booklet", "images", "image", "cover",
@@ -35524,7 +35526,7 @@ class ArtBox:
 art_box = ArtBox()
 
 
-class ScrollBox():
+class ScrollBox:
 
     def __init__(self):
 
