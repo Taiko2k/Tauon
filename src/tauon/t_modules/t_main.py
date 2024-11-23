@@ -36101,7 +36101,7 @@ class RadioBox:
 
                 radio = {}
                 radio["title"] = "Gensokyo Radio"
-                radio["stream_url_unresolved"] = " 	https://stream.gensokyoradio.net/GensokyoRadio-enhanced.m3u"
+                radio["stream_url_unresolved"] = " https://stream.gensokyoradio.net/GensokyoRadio-enhanced.m3u"
                 radio["stream_url"] = "https://stream.gensokyoradio.net/1"
                 radio["website_url"] = "https://gensokyoradio.net/"
                 radio["icon"] = "https://gensokyoradio.net/favicon.ico"
