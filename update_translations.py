@@ -14,7 +14,16 @@ def main() -> None:
 	pot_path = Path(locale_folder) / "messages.pot"
 
 	print("Generate template")
-	subprocess.run(["python", "pygettext.py", "t_modules/t_dbus.py", "t_modules/t_extra.py", "t_modules/t_jellyfin.py", "t_modules/t_main.py", "t_modules/t_phazor.py", "t_modules/t_spot.py", "t_modules/t_stream.py", "t_modules/t_tidal.py", "t_modules/t_webserve.py"])
+
+	root_dir = "src"
+	# Collect all .py file paths
+	py_files = []
+	for dirpath, _, filenames in os.walk(root_dir):
+		py_files.extend(os.path.join(dirpath, file) for file in filenames if file.endswith(".py"))
+	# Run pygettext.py with all .py files as arguments
+	if py_files:
+		subprocess.run(["python", "pygettext.py", *py_files], check=True)
+
 	print("Copy template")
 	subprocess.run(["cp", "messages.pot", pot_path])
 	subprocess.run(["rm", "messages.pot"])
