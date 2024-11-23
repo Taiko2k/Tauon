@@ -540,7 +540,7 @@ if (install_mode and system == "Linux") or macos or msys:
 	user_directory   = str(Path(GLib.get_user_data_dir()) / "TauonMusicBox")
 	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 
-	if not user_directory.is_dir():
+	if not Path(user_directory).is_dir():
 		os.makedirs(user_directory)
 
 	if not config_directory.is_dir():
