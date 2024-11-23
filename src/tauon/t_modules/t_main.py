@@ -1123,7 +1123,7 @@ transcode_list = []
 transcode_state = ""
 
 taskbar_progress = True
-QUE = []
+track_queue = []
 
 playing_in_queue = 0
 draw_sep_hl = False
@@ -3132,7 +3132,7 @@ for t in range(2):
 		playlist_view_position = save[4]
 		multi_playlist = save[5]
 		volume = save[6]
-		QUE = save[7]
+		track_queue = save[7]
 		playing_in_queue = save[8]
 		default_playlist = save[9]
 		# playlist_playing = save[10]
@@ -3563,8 +3563,8 @@ if db_version > 0 and db_version < latest_db_version:
 	except Exception:
 		logging.exception("Unknown error running database migration!")
 
-if playing_in_queue > len(QUE) - 1:
-	playing_in_queue = len(QUE) - 1
+if playing_in_queue > len(track_queue) - 1:
+	playing_in_queue = len(track_queue) - 1
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -5154,7 +5154,7 @@ class PlayerCtl:
 
 		# Playback
 
-		self.track_queue = QUE
+		self.track_queue = track_queue
 		self.queue_step = playing_in_queue
 		self.playing_time = 0
 		self.playlist_playing_position = playlist_playing  # track in playlist that is playing
