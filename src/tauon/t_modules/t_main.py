@@ -479,13 +479,6 @@ try:
 except Exception:
 	logging.exception("Error accessing GTK settings")
 
-# if system == "Windows" or msys:
-#	 os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
-
-# Assume that it's a classic Linux install, use standard paths
-if install_directory.startswith("/usr/"):
-	install_directory = "/usr/share/TauonMusicBox"
-
 # Set data folders (portable mode)
 user_directory = install_directory
 config_directory = Path(user_directory)
