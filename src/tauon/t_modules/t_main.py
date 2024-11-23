@@ -1141,12 +1141,52 @@ dl_use = 0
 random_mode = False
 repeat_mode = False
 
+@dataclass
+class TauonQueueItem:
+	"""TauonQueueItem is [trackid, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+
+	type:
+		0 is a track
+		1 is an album
+
+Old queue[6] style numbering help table, remove after refactor:
+  0 track_id (int)
+  1 position (int)
+  2 playlist_id (int)
+  3 type (int)
+  4 uuid_int (int)
+  5 selected (int)
+  6 uuid_int (int)
+  7 album_stage (int)
+  8 auto_stop (bool)
+"""
+	track_id: int
+	position: int
+	playlist_id: int
+	type: int
+	uuid_int: int
+	album_stage: int
+	auto_stop: bool
 
 # Functions to generate empty playlist
 @dataclass
 class TauonPlaylist:
-	"""Playlist is [Name, playing, playlist, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]"""
+	"""Playlist is [Name, playing, playlist, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
 
+Old pl[6] style numbering help table, remove after refactor:
+  0 title (string)
+  1 playing (int)
+  2 playlist (list of int)
+  3 position (int)
+  4 hide_title on playlist folders (bool)
+  5 selected (int)
+  6 uuid_int (int)
+  7 last_folder import path (string)
+  8 hidden (bool)
+  9 locked (bool)
+  10 parent_playlist_id <- Filter (string)
+  11 persist_time_positioning
+"""
 	title: str
 	playing: int
 	playlist: list[int] | None
@@ -1192,7 +1232,7 @@ def pl_gen(
 multi_playlist = [pl_gen()]
 
 
-def queue_item_gen(trackid, position, pl_id, type: int = 0, album_stage: int = 0):
+def queue_item_gen(trackid: int, position: int, pl_id: int, type: int = 0, album_stage: int = 0) -> TauonQueueItem:
 	# type; 0 is track, 1 is album
 	auto_stop = False
 
