@@ -17423,13 +17423,10 @@ def append_playlist(index):
     reload()
 
 
-def tryint(s):
-    try:
-        return int(s)
-    except Exception:
-        logging.exception("Failed to parse as int")
-        return s
-
+def tryint(s: str) -> int | str:
+	if isinstance(s, (int, float)):
+		return int(s)
+	return s
 
 def index_key(index):
     tr = pctl.master_library[index]
