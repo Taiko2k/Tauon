@@ -5110,19 +5110,13 @@ def get_radio_art():
 
 	gui.clear_image_cache_next += 1
 
-
 class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
+
 	# C-PC
 	def __init__(self):
 
 		self.running:           bool = True
-		self.system:            str  = system
-		self.macos:             bool = macos
-		self.windows_native:    bool = windows_native
-		self.install_directory: str  = install_directory
-		self.user_directory:    str  = user_directory
-		self.config_directory:  Path = config_directory
 		self.prefs:             Prefs = prefs
 
 		# Database
