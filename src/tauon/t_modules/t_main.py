@@ -3017,7 +3017,7 @@ if star_size1 == 0 and star_size2 == 0:
 	logging.warning("Star database file is missing, first run? Will create one anew!")
 else:
 	try:
-		star_store.db = pickle.load(open(to_load, "rb"))
+		star_store.db = pickle.load(to_load.open("rb"))
 	except Exception:
 		logging.exception("Unknown error loading star.p file")
 
@@ -3025,7 +3025,7 @@ else:
 album_star_path = Path(user_directory) / "album-star.p"
 if album_star_path.is_file():
 	try:
-		album_star_store.db = pickle.load(open(album_star_path, "rb"))
+		album_star_store.db = pickle.load(album_star_path.open("rb"))
 	except Exception:
 		logging.exception("Unknown error loading album-star.p file")
 else:
