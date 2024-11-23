@@ -5451,21 +5451,21 @@ class PlayerCtl:
 
 		return 0
 
-	def g(self, id):
-		"""Get track object by id"""
-		return self.master_library[id]
+	def get_track(self, track_index: int) -> TrackClass:
+		"""Get track object by track_index"""
+		return self.master_library[track_index]
 
-	def sg(self, i, pl):
-		"""Get track object by playlist and index"""
-		if pl == -1:
-			pl = self.active_playlist_viewing
+	def get_track_in_playlist(self, track_index: int, playlist_index: int) -> TrackClass:
+		"""Get track object by playlist_index and track_index"""
+		if playlist_index == -1:
+			playlist_index = self.active_playlist_viewing
 		try:
-			playlist = self.multi_playlist[pl][2]
-			return self.g(playlist[i])
+			playlist = self.multi_playlist[playlist_index].playlist
+			return self.get_track(playlist[track_index])
 		except IndexError:
-			logging.exception("Failed getting track object by playlist and index!")
+			logging.exception("Failed getting track object by playlist_index and track_index!")
 		except Exception:
-			logging.exception("Unknown error getting track object by playlist and index!")
+			logging.exception("Unknown error getting track object by playlist_index and track_index!")
 		return None
 
 	def show_object(self):
@@ -38088,7 +38088,7 @@ class ArtistList:
                     # Goto next artist section in playlist
                     c = pctl.selected_in_playlist
                     next = False
-                    track = pctl.sg(c, -1)
+                    track = pctl.get_track_in_playlist(c, -1)
                     if track is None:
                         logging.error("Index out of range!")
                         pctl.selected_in_playlist = 0
