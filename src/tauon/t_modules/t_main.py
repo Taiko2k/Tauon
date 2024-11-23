@@ -280,6 +280,7 @@ from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webs
 if TYPE_CHECKING:
 	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 	from ctypes import CDLL
+	from pylast import LibreFMNetwork
 
 # Log to debug as we don't care at all when user does not have this
 try:
@@ -1216,7 +1217,8 @@ def pl_gen(
 	hide_title: int = 0,
 	selected:   int = 0,
 	parent:     str = "",
-	hidden:     bool = False) -> TauonPlaylist:
+	hidden:     bool = False
+) -> TauonPlaylist:
 	"""Generate a playlist
 
 	Create a default playlist when called without parameters"""
@@ -1252,7 +1254,7 @@ r_menu_index = 0
 r_menu_position = 0
 
 # Library and loader Variables--------------------------------------------------------
-master_library = {}
+master_library: dict[int, TrackClass] = {}
 
 cue_list = []
 
@@ -2237,7 +2239,7 @@ class StarStore:
 			self.db[key] = self.new_object()
 		self.db[key][2] = value
 
-		tr = pctl.g(index)
+		tr = pctl.get_track(index)
 		if tr.file_ext == "SUB":
 			self.db[key][2] = math.ceil(value / 2) * 2
 			shooter(subsonic.set_rating, (tr, value))
@@ -2958,10 +2960,11 @@ def set_path(nt, path):
 
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
+
 	def __init__(self) -> None:
 		self.target:            str = ""
 		self.playlist:          int = 0  # Playlist UID
-		self.tracks:            dict = []
+		self.tracks:            list[TrackClass] = []
 		self.stage:             int = 0
 		self.playlist_position: int | None = None
 		self.replace_stem:      bool = False
@@ -2969,11 +2972,10 @@ class LoadClass:
 		self.play:              bool = False
 		self.force_scan:        bool = False
 
-
 # url_saves = []
 rename_files_previous = ""
 rename_folder_previous = ""
-p_force_queue = []
+p_force_queue: list[TauonQueueItem] = []
 
 reload_state = None
 
@@ -5152,7 +5154,7 @@ class PlayerCtl:
 		self.queue_step = playing_in_queue
 		self.playing_time = 0
 		self.playlist_playing_position = playlist_playing  # track in playlist that is playing
-		if self.playlist_playing_position == None:
+		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
 		self.playlist_view_position = playlist_view_position
 		self.selected_in_playlist = selected_in_playlist
@@ -5176,8 +5178,8 @@ class PlayerCtl:
 		self.multi_playlist = multi_playlist
 		self.active_playlist_viewing = playlist_active  # the playlist index that is being viewed
 		self.active_playlist_playing = playlist_active  # the playlist index that is playing from
-		self.force_queue = p_force_queue  # []
-		self.pause_queue = False
+		self.force_queue: list[TauonQueueItem] = p_force_queue
+		self.pause_queue: bool = False
 		self.left_time = 0
 		self.left_index = 0
 		self.player_volume = volume
@@ -5235,16 +5237,16 @@ class PlayerCtl:
 		self.radio_playlist_viewing = radio_playlist_viewing
 		self.tag_history = {}
 
-		self.commit = None
+		self.commit: int | None = None
 		self.spot_playing = False
 
 		self.buffering_percent = 0
 
-	def notify_change(self):
+	def notify_change(self) -> None:
 		self.db_inc += 1
 		tauon.bg_save()
 
-	def update_tag_history(self):
+	def update_tag_history(self) -> None:
 		if prefs.auto_rec:
 			self.tag_history[radiobox.song_key] = {
 				"title": radiobox.dummy_track.title,
@@ -5253,16 +5255,15 @@ class PlayerCtl:
 				# "image": pctl.radio_image_bin
 			}
 
-	def radio_progress(self):
+	def radio_progress(self) -> None:
 		if radiobox.loaded_url and "radio.plaza.one" in radiobox.loaded_url and self.radio_poll_timer.get() > 0:
 			self.radio_poll_timer.force_set(-10)
-			response = requests.get("https://api.plaza.one/status")
+			response = requests.get("https://api.plaza.one/status", timeout=10)
 
 			if response.status_code == 200:
 				d = json.loads(response.text)
-				if "song" in d:
-					if "artist" in d["song"] and "title" in d["song"]:
-						self.tag_meta = d["song"]["artist"] + " - " + d["song"]["title"]
+				if "song" in d and "artist" in d["song"] and "title" in d["song"]:
+					self.tag_meta = d["song"]["artist"] + " - " + d["song"]["title"]
 
 		if self.tag_meta:
 			if self.radio_rate_timer.get() > 7 and self.radio_meta_on != self.tag_meta:
@@ -5289,7 +5290,7 @@ class PlayerCtl:
 						radiobox.dummy_track.album = tags["album"]
 
 				elif self.tag_meta.count(
-						"-") == 1 and not ":" in self.tag_meta and not "advert" in self.tag_meta.lower():
+						"-") == 1 and ":" not in self.tag_meta and "advert" not in self.tag_meta.lower():
 					artist, title = self.tag_meta.split("-")
 					radiobox.dummy_track.title = title.strip()
 					radiobox.dummy_track.artist = artist.strip()
@@ -5320,14 +5321,13 @@ class PlayerCtl:
 				self.radio_scrobble_trip = True
 				lfm_scrobbler.scrob_full_track(copy.deepcopy(radiobox.dummy_track))
 
-	def update_shuffle_pool(self, pl_id):
-
+	def update_shuffle_pool(self, pl_id: int) -> None:
 		new_pool = copy.deepcopy(self.multi_playlist[id_to_pl(pl_id)][2])
 		random.shuffle(new_pool)
 		self.shuffle_pools[pl_id] = new_pool
-		console.print("Refill shuffle pool")
+		logging.info("Refill shuffle pool")
 
-	def notify_update_fire(self):
+	def notify_update_fire(self) -> None:
 		if self.mpris is not None:
 			self.mpris.update()
 		if tauon.update_play_lock is not None:
@@ -5336,7 +5336,7 @@ class PlayerCtl:
 		#	 self.tray_update()
 		self.notify_in_progress = False
 
-	def notify_update(self, mpris=True):
+	def notify_update(self, mpris: bool = True) -> None:
 		tauon.tray_releases += 1
 		try:
 			tauon.tray_lock.release()
@@ -5378,8 +5378,7 @@ class PlayerCtl:
 		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
 			tm.ready("style")
 
-	def get_url(self, track_object):
-
+	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
 			return tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
@@ -5399,23 +5398,21 @@ class PlayerCtl:
 
 		return None, None
 
-	def playing_playlist(self):
+	def playing_playlist(self) -> list[int] | None:
 		return self.multi_playlist[self.active_playlist_playing][2]
 
-	def playing_ready(self):
+	def playing_ready(self) -> bool:
 		return len(self.track_queue) > 0
 
-	def selected_ready(self):
+	def selected_ready(self) -> bool:
 		return default_playlist and pctl.selected_in_playlist < len(default_playlist)
 
-	def render_playlist(self):
-
+	def render_playlist(self) -> None:
 		if taskbar_progress and msys and self.windows_progress:
 			self.windows_progress.update(True)
 		gui.pl_update = 1
 
-	def show_selected(self):
-
+	def show_selected(self) -> int:
 		if gui.playlist_view_length < 1:
 			return 0
 
@@ -5425,20 +5422,15 @@ class PlayerCtl:
 
 			if i == pctl.selected_in_playlist:
 
-				if i < pctl.playlist_view_position:
-					pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
-						gui.playlist_view_length / 6))
-					console.print("DEBUG: Position changed show selected (a)")
-				elif abs(pctl.playlist_view_position - i) > gui.playlist_view_length:
-					pctl.playlist_view_position = i
-					console.print("DEBUG: Position changed show selected (b)")
+					logging.debug("Position changed show selected (a)")
+					logging.debug("Position changed show selected (b)")
 					if i > 6:
 						pctl.playlist_view_position -= 5
-						console.print("DEBUG: Position changed show selected (c)")
+						logging.debug("Position changed show selected (c)")
 					if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
 							self.multi_playlist[self.active_playlist_viewing][2]) and i > 10:
 						pctl.playlist_view_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
-						console.print("DEBUG: Position changed show selected (d)")
+						logging.debug("Position changed show selected (d)")
 					break
 
 		self.render_playlist()
@@ -5462,9 +5454,8 @@ class PlayerCtl:
 			logging.exception("Unknown error getting track object by playlist_index and track_index!")
 		return None
 
-	def show_object(self):
+	def show_object(self) -> None:
 		"""The track to show in the metadata side panel"""
-
 		target_track = None
 
 		if self.playing_state == 3:
@@ -5475,14 +5466,14 @@ class PlayerCtl:
 
 		elif self.playing_state == 0 and prefs.meta_shows_selected:
 			if -1 < pctl.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing][2]):
-				target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][pctl.selected_in_playlist])
+				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing][2][pctl.selected_in_playlist])
 
 		elif self.playing_state == 0 and prefs.meta_persists_stop:
 			target_track = self.master_library[self.track_queue[self.queue_step]]
 
 		if prefs.meta_shows_selected_always:
 			if -1 < pctl.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing][2]):
-				target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][pctl.selected_in_playlist])
+				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing][2][pctl.selected_in_playlist])
 
 		return target_track
 
@@ -5493,11 +5484,9 @@ class PlayerCtl:
 
 		if len(self.track_queue) > 0:
 			return self.master_library[self.track_queue[self.queue_step]]
-		else:
-			return None
+		return None
 
-	def title_text(self):
-
+	def title_text(self) -> str:
 		line = ""
 		track = pctl.playing_object()
 		if track:
@@ -5519,16 +5508,17 @@ class PlayerCtl:
 
 		return line
 
-	def show(self):
-
+	def show(self) -> int | None:
 		global shift_selection
 
 		if not self.track_queue:
 			return 0
+		return None
 
 	def show_current(
-		self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None,
-		no_switch=False, folder_list=True):
+		self, select: bool = True, playing: bool = True, quiet: bool = False, this_only: bool = False, highlight: bool = False,
+		index: int | None = None, no_switch: bool = False, folder_list: bool = True,
+	) -> int | None:
 
 		# logging.info("show------")
 		# logging.info(select)
@@ -5537,7 +5527,7 @@ class PlayerCtl:
 		# logging.info(this_only)
 		# logging.info(highlight)
 		# logging.info("--------")
-		console.print("DEBUG: Position set by show playing")
+		logging.debug("Position set by show playing")
 
 		global shift_selection
 
@@ -5546,14 +5536,14 @@ class PlayerCtl:
 			if sptr:
 
 				for p in default_playlist:
-					tr = pctl.g(p)
+					tr = pctl.get_track(p)
 					if tr.misc.get("spotify-track-url") == sptr:
 						index = tr.index
 						break
 				else:
 					for i, pl in enumerate(pctl.multi_playlist):
 						for p in pl[2]:
-							tr = pctl.g(p)
+							tr = pctl.get_track(p)
 							if tr.misc.get("spotify-track-url") == sptr:
 								index = tr.index
 								switch_playlist(i)
@@ -5562,7 +5552,7 @@ class PlayerCtl:
 							continue
 						break
 					else:
-						return
+						return None
 
 		if not self.track_queue:
 			return 0
@@ -5674,7 +5664,7 @@ class PlayerCtl:
 
 		return 0
 
-	def toggle_mute(self):
+	def toggle_mute(self) -> None:
 		global volume_store
 		if pctl.player_volume > 0:
 			volume_store = pctl.player_volume
@@ -5684,7 +5674,7 @@ class PlayerCtl:
 
 		pctl.set_volume()
 
-	def set_volume(self, notify=True):
+	def set_volume(self, notify: bool = True) -> None:
 
 		if (spot_ctl.coasting or spot_ctl.playing) and not spot_ctl.local and mouse_down:
 			# Rate limit network volume change
@@ -5698,7 +5688,7 @@ class PlayerCtl:
 		if notify:
 			self.notify_update()
 
-	def revert(self):
+	def revert(self) -> None:
 
 		if self.queue_step == 0:
 			return
@@ -5737,7 +5727,7 @@ class PlayerCtl:
 		self.show_current()
 		self.render_playlist()
 
-	def deduct_shuffle(self, track_id):
+	def deduct_shuffle(self, track_id: int) -> None:
 		if pctl.multi_playlist and self.random_mode:
 			pl = pctl.multi_playlist[pctl.active_playlist_playing]
 			id = pl[6]
@@ -5755,7 +5745,7 @@ class PlayerCtl:
 				pool.remove(track_id)
 
 
-	def play_target_rr(self):
+	def play_target_rr(self) -> None:
 		tm.ready_playback()
 		self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
 
@@ -5786,7 +5776,7 @@ class PlayerCtl:
 
 		self.deduct_shuffle(self.target_object.index)
 
-	def play_target(self, gapless=False, jump=False):
+	def play_target(self, gapless: bool = False, jump: bool = False) -> None:
 
 		tm.ready_playback()
 
@@ -5823,7 +5813,7 @@ class PlayerCtl:
 		self.update_change()
 		self.deduct_shuffle(target.index)
 
-	def update_change(self):
+	def update_change(self) -> None:
 		if update_title:
 			update_title_do()
 		self.notify_update()
@@ -5843,14 +5833,13 @@ class PlayerCtl:
 
 			album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
 
-	def jump(self, index, pl_position=None, jump=True):
-
+	def jump(self, index: int, pl_position: int = None, jump: bool = True) -> None:
 		lfm_scrobbler.start_queue()
 		pctl.auto_stop = False
 
 		if self.force_queue and not pctl.pause_queue:
 			if self.force_queue[0][4] == 1:
-				if pctl.g(self.force_queue[0][0]).parent_folder_path != pctl.g(index).parent_folder_path:
+				if pctl.get_track(self.force_queue[0][0]).parent_folder_path != pctl.get_track(index).parent_folder_path:
 					del self.force_queue[0]
 
 		if len(self.track_queue) > 0:
@@ -5873,9 +5862,8 @@ class PlayerCtl:
 
 		gui.pl_update = 1
 
-	def back(self):
-
-		if self.playing_state < 3 and prefs.back_restarts and pctl.playing_time > 6:
+	def back(self) -> None:
+		if self.playing_state < 3 and prefs.back_restarts and self.playing_time > 6:
 			self.seek_time(0)
 			self.render_playlist()
 			return
@@ -5933,7 +5921,7 @@ class PlayerCtl:
 		lfm_scrobbler.start_queue()
 		gui.pl_update += 1
 
-	def stop(self, block=False, run=False):
+	def stop(self, block: bool = False, run : bool = False) -> None:
 
 		self.playerCommand = "stop"
 		if run:
@@ -5981,7 +5969,7 @@ class PlayerCtl:
 		lfm_scrobbler.start_queue()
 		return previous_state
 
-	def pause(self):
+	def pause(self) -> None:
 
 		if tauon.spotc and tauon.spotc.running and spot_ctl.playing:
 			if self.playing_state == 1:
@@ -6022,7 +6010,7 @@ class PlayerCtl:
 		self.render_playlist()
 		self.notify_update()
 
-	def pause_only(self):
+	def pause_only(self) -> None:
 		if self.playing_state == 1:
 			self.playerCommand = "pauseon"
 			self.playing_state = 2
@@ -6031,7 +6019,7 @@ class PlayerCtl:
 			self.render_playlist()
 			self.notify_update()
 
-	def play_pause(self):
+	def play_pause(self) -> None:
 		if self.playing_state == 3:
 			self.stop()
 		elif self.playing_state > 0:
@@ -6039,10 +6027,10 @@ class PlayerCtl:
 		else:
 			self.play()
 
-	def seek_decimal(self, decimal):
+	def seek_decimal(self, decimal: int) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and spot_ctl.coasting):
 			if decimal > 1:
 				decimal = 1
 			elif decimal < 0:
@@ -6059,10 +6047,10 @@ class PlayerCtl:
 			if self.mpris is not None:
 				self.mpris.seek_do(self.playing_time)
 
-	def seek_time(self, new):
+	def seek_time(self, new: float) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state == 1 or self.playing_state == 2 or (self.playing_state == 3 and spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and spot_ctl.coasting):
 
 			if new > self.playing_length - 0.5:
 				self.advance()
@@ -6080,7 +6068,7 @@ class PlayerCtl:
 			if self.mpris is not None:
 				self.mpris.seek_do(self.playing_time)
 
-	def play(self):
+	def play(self) -> None:
 
 		if spot_ctl.playing:
 			if self.playing_state == 2:
@@ -6116,9 +6104,8 @@ class PlayerCtl:
 
 		self.render_playlist()
 
-	def spot_test_progress(self):
-
-		if (self.playing_state == 1 or self.playing_state == 2) and spot_ctl.playing:
+	def spot_test_progress(self) -> None:
+		if self.playing_state in (1, 2) and spot_ctl.playing:
 			th = 5  # the rate to poll the spotify API
 			if self.playing_time > self.playing_length:
 				th = 1
@@ -6155,7 +6142,8 @@ class PlayerCtl:
 				tauon.spot_ctl.update_timer.set()
 				tauon.spot_ctl.update()
 
-	def purge_track(self, track_id, fast=False):  # Remove a track from the database
+	def purge_track(self, track_id: int, fast: bool = False) -> None:
+		"""Remove a track from the database"""
 		# Remove from all playlists
 		if not fast:
 			for playlist in self.multi_playlist:
@@ -6175,8 +6163,7 @@ class PlayerCtl:
 				del self.force_queue[i]
 		del self.master_library[track_id]
 
-	def test_progress(self):
-
+	def test_progress(self) -> None:
 		# Fuzzy reload lastfm for rescrobble
 		if lfm_scrobbler.a_sc and self.playing_time < 1:
 			lfm_scrobbler.a_sc = False
@@ -6233,8 +6220,7 @@ class PlayerCtl:
 				if id is not None:
 					self.start_commit(id)
 					return
-				else:
-					self.advance(end=True, quiet=True)
+				self.advance(end=True, quiet=True)
 
 
 
@@ -6245,13 +6231,13 @@ class PlayerCtl:
 					if self.playlist_playing_position > len(pp) - 1:
 						self.playlist_playing_position = 0  # Hack fix, race condition bug?
 
-					ti = self.g(pp[self.playlist_playing_position])
+					ti = self.get_track(pp[self.playlist_playing_position])
 
 					i = self.playlist_playing_position
 
 					# Test if next track is in same folder
 					if i + 1 < len(pp):
-						nt = self.g(pp[i + 1])
+						nt = self.get_track(pp[i + 1])
 						if ti.parent_folder_path == nt.parent_folder_path:
 							# The next track is in the same folder
 							# so advance normally
@@ -6261,7 +6247,7 @@ class PlayerCtl:
 					# We need to backtrack to see where the folder begins
 					i -= 1
 					while i >= 0:
-						nt = self.g(pp[i])
+						nt = self.get_track(pp[i])
 						if ti.parent_folder_path != nt.parent_folder_path:
 							i += 1
 							break
@@ -6295,7 +6281,7 @@ class PlayerCtl:
 				else:
 					id = self.track_queue[self.queue_step]
 					self.commit = id
-					target = self.g(id)
+					target = self.get_track(id)
 					self.target_open = target.fullpath
 					self.target_object = target
 					self.start_time = target.start_time
@@ -6356,9 +6342,9 @@ class PlayerCtl:
 				self.playing_time = 0
 				self.decode_time = 0
 
-	def start_commit(self, id, repeat=False):
-		self.commit = id
-		target = self.g(id)
+	def start_commit(self, commit_id: int, repeat: bool = False) -> None:
+		self.commit = commit_id
+		target = self.get_track(commit_id)
 		self.target_open = target.fullpath
 		self.target_object = target
 		self.start_time = target.start_time
@@ -6368,16 +6354,17 @@ class PlayerCtl:
 			self.playerSubCommand = "repeat"
 		self.playerCommandReady = True
 
-	def advance(self, rr=False, quiet=False, inplace=False, end=False, force=False, play=True, dry=False):
-
+	def advance(
+		self, rr: bool = False, quiet: bool = False, inplace: bool = False, end: bool = False,
+		force: bool = False, play: bool = True, dry: bool = False,
+	) -> int | None:
 		# Spotify remote control mode
-		if not dry:
-			if spot_ctl.coasting:
-				spot_ctl.control("next")
-				spot_ctl.update_timer.set()
-				self.playing_time = -2
-				self.decode_time = -2
-				return
+		if not dry and spot_ctl.coasting:
+			spot_ctl.control("next")
+			spot_ctl.update_timer.set()
+			self.playing_time = -2
+			self.decode_time = -2
+			return None
 
 		# Temporary Workaround for UI block causing unwanted dragging
 		if not dry:
@@ -6392,16 +6379,14 @@ class PlayerCtl:
 			del self.track_queue[0]
 
 		# Save info about the track we are leaving
-		if not dry:
-			if len(self.track_queue) > 0:
-				self.left_time = self.playing_time
-				self.left_index = self.track_queue[self.queue_step]
+		if not dry and len(self.track_queue) > 0:
+			self.left_time = self.playing_time
+			self.left_index = self.track_queue[self.queue_step]
 
 		# Test to register skip (not currently used for anything)
-		if not dry:
-			if self.playing_state == 1 and 1 < self.left_time < 45:
-				pctl.master_library[self.left_index].skips += 1
-				#logging.info('skip registered')
+		if not dry and self.playing_state == 1 and 1 < self.left_time < 45:
+			pctl.master_library[self.left_index].skips += 1
+			#logging.info('skip registered')
 
 		if not dry:
 			pctl.playing_time = 0
@@ -6435,7 +6420,7 @@ class PlayerCtl:
 						if target_index not in self.playing_playlist():
 							del self.force_queue[0]
 							self.advance()
-							return
+							return None
 
 					if dry:
 						return target_index
@@ -6459,10 +6444,8 @@ class PlayerCtl:
 						ok_continue = False
 
 					# Check next song is in album
-					if ok_continue:
-						if self.g(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.g(
-								target_index).parent_folder_path:
-							ok_continue = False
+					if ok_continue and self.get_track(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.get_track(target_index).parent_folder_path:
+						ok_continue = False
 
 					# -----------
 
@@ -6473,7 +6456,7 @@ class PlayerCtl:
 					# Check to see if we still are:
 					ok_continue = True
 
-					if pctl.g(target_index).parent_folder_path != pctl.playing_object().parent_folder_path:
+					if pctl.get_track(target_index).parent_folder_path != pctl.playing_object().parent_folder_path:
 						# Remember to set jumper check this too (leave album if we jump to some other track, i.e. double click))
 						ok_continue = False
 
@@ -6485,7 +6468,7 @@ class PlayerCtl:
 						# Check if we are at end of playlist, or already at end of album
 						if self.playlist_playing_position >= len(pl) - 1 or self.playlist_playing_position < len(
 								pl) - 1 and \
-								self.g(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.g(
+								self.get_track(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.get_track(
 							target_index).parent_folder_path:
 
 							if dry:
@@ -6493,12 +6476,12 @@ class PlayerCtl:
 
 							del self.force_queue[0]
 							self.advance()
-							return
+							return None
 
 
 						# Check if 2 songs down is in album, remove entry in queue if not
-						elif self.playlist_playing_position < len(pl) - 2 and \
-								self.g(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.g(
+						if self.playlist_playing_position < len(pl) - 2 and \
+								self.get_track(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.get_track(
 							target_index).parent_folder_path:
 							ok_continue = False
 
@@ -6513,7 +6496,7 @@ class PlayerCtl:
 						logging.info("END OF PLAYLIST!")
 						del self.force_queue[0]
 						self.advance()
-						return
+						return None
 
 					if dry:
 						return pl[self.playlist_playing_position + 1]
@@ -6546,16 +6529,15 @@ class PlayerCtl:
 			else:
 				# This is track type
 				pl = id_to_pl(q[2])
-				if not dry:
-					if pl is not None:
-						self.active_playlist_playing = pl
+				if not dry and pl is not None:
+					self.active_playlist_playing = pl
 
 				if target_index not in self.playing_playlist():
 					if dry:
 						return None
 					del self.force_queue[0]
 					self.advance()
-					return
+					return None
 
 				if dry:
 					return target_index
@@ -6610,7 +6592,7 @@ class PlayerCtl:
 					# Album shuffle mode
 					pp = self.playing_playlist()
 					k = self.playlist_playing_position
-					# ti = self.g(pp[k])
+					# ti = self.get_track(pp[k])
 					ti = self.master_library[self.track_queue[self.queue_step]]
 
 					if ti.index not in pp:
@@ -6622,7 +6604,7 @@ class PlayerCtl:
 					matches = []
 					for i, p in enumerate(pp):
 
-						if self.g(p).parent_folder_path == ti.parent_folder_path:
+						if self.get_track(p).parent_folder_path == ti.parent_folder_path:
 							matches.append((i, p))
 
 					if matches:
@@ -6722,9 +6704,8 @@ class PlayerCtl:
 				if dry:
 					return None
 				self.play_target_rr()
-			else:
-				if play:
-					self.play_target(jump=not end)
+			elif play:
+				self.play_target(jump=not end)
 
 
 		# If not random mode, Step down 1 on the playlist
@@ -6740,11 +6721,11 @@ class PlayerCtl:
 					self.playerCommandReady = True
 					end_of_playlist = True
 
-				elif prefs.end_setting == "advance" or prefs.end_setting == "cycle":
+				elif prefs.end_setting in ("advance", "cycle"):
 
 					# If at end playlist and not cycle mode, stop playback
 					if pctl.active_playlist_playing == len(
-							pctl.multi_playlist) - 1 and not prefs.end_setting == "cycle":
+							pctl.multi_playlist) - 1 and prefs.end_setting != "cycle":
 						self.playing_state = 0
 						self.playerCommand = "runstop"
 						self.playerCommandReady = True
@@ -6776,12 +6757,12 @@ class PlayerCtl:
 							pctl.playlist_playing_position = -1
 							pctl.advance(end=end, force=True, play=play)
 
-						return
+						return None
 
 				elif prefs.end_setting == "repeat":
 					pctl.playlist_playing_position = -1
 					pctl.advance(end=end, force=True, play=play)
-					return
+					return None
 
 				gui.update += 3
 
@@ -6803,7 +6784,7 @@ class PlayerCtl:
 						logging.exception("Failed to set playlist_playing_position")
 
 				if len(self.playing_playlist()) == self.playlist_playing_position + 1:
-					return
+					return None
 
 				if dry:
 					return self.playing_playlist()[self.playlist_playing_position + 1]
@@ -6837,7 +6818,7 @@ class PlayerCtl:
 					if len(self.playing_playlist()) == self.playlist_playing_position + 1:
 						redraw = True
 					# If the next track is a new album, go to a new album
-					elif po.parent_folder_path != pctl.g(
+					elif po.parent_folder_path != pctl.get_track(
 							self.playing_playlist()[self.playlist_playing_position + 1]).parent_folder_path:
 						redraw = True
 					# Always redraw on press in album shuffle lockdown
@@ -6871,24 +6852,7 @@ class PlayerCtl:
 
 						random.shuffle(albums)
 
-						for a in albums:
-
-							if self.g(self.playing_playlist()[a]).parent_folder_path != self.playing_object().parent_folder_path:
-								self.playlist_playing_position = a
-								self.track_queue.append(self.playing_playlist()[a])
-								self.queue_step = len(self.track_queue) - 1
-								# self.queue_target = len(self.track_queue) - 1
-								if play:
-									self.play_target(jump=not end)
-								break
-							a = 0
-							self.playlist_playing_position = a
-							self.track_queue.append(self.playing_playlist()[a])
-							self.queue_step = len(self.track_queue) - 1
-							if play:
-								self.play_target(jump=not end)
-							# logging.info("THERE IS ONLY ONE ALBUM IN THE PLAYLIST")
-							# self.stop()
+							if self.get_track(self.playing_playlist()[a]).parent_folder_path != self.playing_object().parent_folder_path:
 
 			else:
 				logging.error("ADVANCE ERROR - NO CASE!")
@@ -6913,12 +6877,12 @@ class PlayerCtl:
 		lfm_scrobbler.start_queue()
 		if play:
 			notify_song(end_of_playlist, delay=1.3)
+		return None
 
-	def reset_missing_flags(self):
+	def reset_missing_flags(self) -> None:
 		for value in self.master_library.values():
 			value.found = True
 		gui.pl_update += 1
-
 
 pctl = PlayerCtl()
 
@@ -6936,7 +6900,7 @@ def auto_name_pl(target_pl):
 	track = None
 
 	for index in pctl.multi_playlist[target_pl][2]:
-		track = pctl.g(index)
+		track = pctl.get_track(index)
 		albums.append(track.album)
 		if track.album_artist:
 			artists.append(track.album_artist)
@@ -7040,7 +7004,7 @@ def notify_song_fire(notification, delay, id):
 		notification.close()
 
 
-def notify_song(notify_of_end=False, delay=0.0):
+def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 	if not de_notify_support:
 		return
 
@@ -7111,11 +7075,10 @@ class LastFMapi:
 		self.sg = None
 		self.url = None
 
-	def get_network(self):
+	def get_network(self) -> LibreFMNetwork:
 		if prefs.use_libre_fm:
 			return pylast.LibreFMNetwork
-		else:
-			return pylast.LastFMNetwork
+		return pylast.LastFMNetwork
 
 	def auth1(self):
 		if not last_fm_enable:
@@ -7345,7 +7308,7 @@ class LastFMapi:
 
 		return ""
 
-	def sync_pull_love(self, track_object):
+	def sync_pull_love(self, track_object: TrackClass):
 		if not prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
 			return
 		if not last_fm_enable:
@@ -7864,7 +7827,7 @@ def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
 	loved ^= True
 
 	if notify:
-		gui.toast_love_object = pctl.g(track_id)
+		gui.toast_love_object = pctl.get_track(track_id)
 		gui.toast_love_added = loved
 		toast_love_timer.set()
 		gui.delay_frame(1.81)
@@ -8274,8 +8237,7 @@ def encode_track_name(t):
 		out_line = str(t.track_number) + ". "
 		out_line += t.artist + " - " + t.title
 		return filename_safe(out_line)
-	else:
-		return os.path.splitext(t.filename)[0]
+	return os.path.splitext(t.filename)[0]
 
 
 def encode_folder_name(track_object: TrackClass) -> str:
@@ -8322,7 +8284,7 @@ class Tauon:
 		self.worker_save_state:        bool = False
 		self.launch_prefix:             str = launch_prefix
 		self.whicher = whicher
-		self.load_orders = load_orders
+		self.load_orders: list[LoadClass] = load_orders
 		self.switch_playlist = None
 		self.open_uri = open_uri
 		self.love = love
@@ -14934,10 +14896,10 @@ class TransEditBox:
         if not select and pctl.selected_ready():
             select = [pctl.selected_in_playlist]
 
-        titles = [pctl.g(default_playlist[s]).title for s in select]
-        artists = [pctl.g(default_playlist[s]).artist for s in select]
-        albums = [pctl.g(default_playlist[s]).album for s in select]
-        album_artists = [pctl.g(default_playlist[s]).album_artist for s in select]
+        titles = [pctl.get_track(default_playlist[s]).title for s in select]
+        artists = [pctl.get_track(default_playlist[s]).artist for s in select]
+        albums = [pctl.get_track(default_playlist[s]).album for s in select]
+        album_artists = [pctl.get_track(default_playlist[s]).album_artist for s in select]
 
         #logging.info(select)
         if select != self.selected or pctl.active_playlist_viewing != self.playlist:
@@ -14952,7 +14914,7 @@ class TransEditBox:
             if len(select) == 0:
                 return
 
-            tr = pctl.g(default_playlist[select[0]])
+            tr = pctl.get_track(default_playlist[select[0]])
             edit_title.set_text(tr.title)
 
             if check_equal(artists):
@@ -15028,7 +14990,7 @@ class TransEditBox:
 
         y += round(40 * gui.scale)
         for s in select:
-            tr = pctl.g(default_playlist[s])
+            tr = pctl.get_track(default_playlist[s])
             if tr.is_network:
                 ddt.text((x, y), _("Editing network tracks is not recommended!"), [245, 90, 90, 255], 312)
 
@@ -15037,7 +14999,7 @@ class TransEditBox:
             gui.pl_update += 1
             if self.active_field == 0 and len(select) == 1:
                 for s in select:
-                    tr = pctl.g(default_playlist[s])
+                    tr = pctl.get_track(default_playlist[s])
                     star = star_store.full_get(tr.index)
                     star_store.remove(tr.index)
                     tr.title = edit_title.text
@@ -15045,18 +15007,18 @@ class TransEditBox:
 
             if self.active_field == 1:
                 for s in select:
-                    tr = pctl.g(default_playlist[s])
+                    tr = pctl.get_track(default_playlist[s])
                     tr.album = edit_album.text
             if self.active_field == 2:
                 for s in select:
-                    tr = pctl.g(default_playlist[s])
+                    tr = pctl.get_track(default_playlist[s])
                     star = star_store.full_get(tr.index)
                     star_store.remove(tr.index)
                     tr.artist = edit_artist.text
                     star_store.merge(tr.index, star)
             if self.active_field == 3:
                 for s in select:
-                    tr = pctl.g(default_playlist[s])
+                    tr = pctl.get_track(default_playlist[s])
                     tr.album_artist = edit_album_artist.text
             tauon.bg_save()
 
@@ -15077,7 +15039,7 @@ class TransEditBox:
 
 
                 for s in select:
-                    tr = pctl.g(default_playlist[s])
+                    tr = pctl.get_track(default_playlist[s])
 
                     if tr.is_network:
                         show_message(_("Writing to a network track is not applicable!"), mode="error")
@@ -15588,7 +15550,7 @@ def tag_to_new_playlist(tag_item):
 
 
 def folder_to_new_playlist_by_track_id(track_id):
-    track = pctl.g(track_id)
+    track = pctl.get_track(track_id)
     path_stem_to_playlist(track.parent_folder_path, track.parent_folder_name)
 
 
@@ -15678,7 +15640,7 @@ def move_playing_folder_to_stem(path, pl_id=None):
     # Remove all tracks with the old paths
     for pl in pctl.multi_playlist:
         for i in reversed(range(len(pl[2]))):
-            if pctl.g(pl[2][i]).parent_folder_path == track.parent_folder_path:
+            if pctl.get_track(pl[2][i]).parent_folder_path == track.parent_folder_path:
                 del pl[2][i]
 
     # Find insert location
@@ -15688,11 +15650,11 @@ def move_playing_folder_to_stem(path, pl_id=None):
     insert = 0
 
     for i, item in enumerate(pl):
-        if pctl.g(item).fullpath.startswith(target_base):
+        if pctl.get_track(item).fullpath.startswith(target_base):
             insert = i
 
     for i, item in enumerate(pl):
-        if pctl.g(item).fullpath.startswith(artist_folder):
+        if pctl.get_track(item).fullpath.startswith(artist_folder):
             insert = i
 
     logging.info("The folder to be moved is: " + move_folder)
@@ -15725,17 +15687,17 @@ def re_import4(id):
         load_order.playlist_position = p
 
     load_order.replace_stem = True
-    load_order.target = pctl.g(id).parent_folder_path
+    load_order.target = pctl.get_track(id).parent_folder_path
     load_order.notify = True
     load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
     load_orders.append(copy.deepcopy(load_order))
-    show_message(_("Rescanning folder..."), pctl.g(id).parent_folder_path, mode="info")
+    show_message(_("Rescanning folder..."), pctl.get_track(id).parent_folder_path, mode="info")
 
 
 def re_import3(stem):
     p = None
     for i, id in enumerate(default_playlist):
-        if pctl.g(id).fullpath.startswith(stem + "/"):
+        if pctl.get_track(id).fullpath.startswith(stem + "/"):
             p = i
             break
 
@@ -15823,7 +15785,7 @@ def add_album_to_queue(ref, position=None, playlist_id=None):
     partway = 0
     playing_object = pctl.playing_object()
     if not pctl.force_queue and playing_object is not None:
-        if pctl.g(ref).parent_folder_path == playing_object.parent_folder_path:
+        if pctl.get_track(ref).parent_folder_path == playing_object.parent_folder_path:
             partway = 1
 
     queue_object = queue_item_gen(ref, position, playlist_id, 1, partway)
@@ -15853,7 +15815,7 @@ def add_album_to_queue_fc(ref):
         pctl.force_queue.insert(1, queue_item)
     else:
 
-        p = pctl.g(ref).parent_folder_path
+        p = pctl.get_track(ref).parent_folder_path
         p = ""
         if pctl.playing_ready():
             p = pctl.playing_object().parent_folder_path
@@ -15862,7 +15824,7 @@ def add_album_to_queue_fc(ref):
 
         for i, item in enumerate(pctl.force_queue):
 
-            if p != pctl.g(item[0]).parent_folder_path:
+            if p != pctl.get_track(item[0]).parent_folder_path:
                 queue_item = queue_item_gen(ref,
                                             pctl.playlist_playing_position,
                                             pl_to_id(pctl.active_playlist_playing), 1, 0, )
@@ -16412,7 +16374,7 @@ def download_art1(tr):
 
     for pl in pctl.multi_playlist:
         for ti in pl[2]:
-            tr = pctl.g(ti)
+            tr = pctl.get_track(ti)
             if tr.parent_folder_path == parent:
                 siblings.append(tr)
 
@@ -16503,8 +16465,8 @@ def download_art1(tr):
                     show_message(_("Cover art downloaded from fanart.tv"), mode="done")
                     # clear_img_cache()
                     for track_id in default_playlist:
-                        if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
-                            clear_track_image_cache(pctl.g(track_id))
+                        if tr.parent_folder_path == pctl.get_track(track_id).parent_folder_path:
+                            clear_track_image_cache(pctl.get_track(track_id))
                     return
             except Exception:
                 logging.exception("Failed to get from fanart.tv")
@@ -16526,8 +16488,8 @@ def download_art1(tr):
             clear_track_image_cache(tr)
 
             for track_id in default_playlist:
-                if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
-                    clear_track_image_cache(pctl.g(track_id))
+                if tr.parent_folder_path == pctl.get_track(track_id).parent_folder_path:
+                    clear_track_image_cache(pctl.get_track(track_id))
 
             return
 
@@ -16561,7 +16523,7 @@ def remove_embed_picture(track_object, dry=True):
         tracks = []
         original_parent_folder = track_object.parent_folder_name
         for k in default_playlist:
-            tr = pctl.g(k)
+            tr = pctl.get_track(k)
             if original_parent_folder == tr.parent_folder_name:
                 tracks.append(k)
 
@@ -16571,7 +16533,7 @@ def remove_embed_picture(track_object, dry=True):
     try:
         for item in tracks:
 
-            tr = pctl.g(item)
+            tr = pctl.get_track(item)
 
             if tr.is_cue:
                 continue
@@ -17627,7 +17589,7 @@ def export_stats(pl):
     are_cue = 0
 
     for index in pctl.multi_playlist[pl][2]:
-        track = pctl.g(index)
+        track = pctl.get_track(index)
 
         playlist_time += int(track.length)
         play_time += star_store.get(index)
@@ -17789,7 +17751,7 @@ def imported_sort(pl):
         return
 
     og = pctl.multi_playlist[pl][2]
-    og.sort(key=lambda x: pctl.g(x).index)
+    og.sort(key=lambda x: pctl.get_track(x).index)
 
     reload_albums()
     tree_view_box.clear_target_pl(pl)
@@ -17800,15 +17762,15 @@ def imported_sort_folders(pl):
         return
 
     og = pctl.multi_playlist[pl][2]
-    og.sort(key=lambda x: pctl.g(x).index)
+    og.sort(key=lambda x: pctl.get_track(x).index)
 
     first_occurrences = {}
     for i, x in enumerate(og):
-        b = pctl.g(x).parent_folder_path
+        b = pctl.get_track(x).parent_folder_path
         if b not in first_occurrences:
             first_occurrences[b] = i
 
-    og.sort(key=lambda x: first_occurrences[pctl.g(x).parent_folder_path])
+    og.sort(key=lambda x: first_occurrences[pctl.get_track(x).parent_folder_path])
 
     reload_albums()
     tree_view_box.clear_target_pl(pl)
@@ -18083,7 +18045,7 @@ def upload_spotify_playlist(pl):
 
     warn = False
     for track_id in playlist:
-        tr = pctl.g(track_id)
+        tr = pctl.get_track(track_id)
         url = tr.misc.get("spotify-track-url")
         if not url:
             warn = True
@@ -18249,7 +18211,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "cue":
 
             for i in reversed(range(len(playlist))):
-                tr = pctl.g(playlist[i])
+                tr = pctl.get_track(playlist[i])
                 if not tr.is_cue:
                     del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
@@ -18257,14 +18219,14 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "today":
             d = datetime.date.today()
             for i in reversed(range(len(playlist))):
-                tr = pctl.g(playlist[i])
+                tr = pctl.get_track(playlist[i])
                 if not tr.date[5:7] == f"{d:%m}" or not tr.date[8:10] == f"{d:%d}":
                     del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm.startswith("com\""):
             for i in reversed(range(len(playlist))):
-                tr = pctl.g(playlist[i])
+                tr = pctl.get_track(playlist[i])
                 if quote not in tr.comment:
                     del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
@@ -18279,7 +18241,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 temp = []
                 for selection in selections:
                     for track in selection:
-                        tr = pctl.g(track)
+                        tr = pctl.get_track(track)
                         if tr.file_ext == value:
                             temp.append(track)
 
@@ -18378,7 +18340,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm == "rat":
             temp = []
             for item in playlist:
-                # tr = pctl.g(item)
+                # tr = pctl.get_track(item)
                 if star_store.get_rating(item) > 0:
                     temp.append(item)
             playlist = temp
@@ -18402,7 +18364,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if value and value.isdigit():
                 value = int(value)
                 for i in reversed(range(len(playlist))):
-                    tr = pctl.g(playlist[i])
+                    tr = pctl.get_track(playlist[i])
                     if not value > tr.length:
                         del playlist[i]
 
@@ -18411,7 +18373,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             if value and value.isdigit():
                 value = int(value)
                 for i in reversed(range(len(playlist))):
-                    tr = pctl.g(playlist[i])
+                    tr = pctl.get_track(playlist[i])
                     if not value < tr.length:
                         del playlist[i]
 
@@ -18456,7 +18418,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 value = int(value)
                 for i in reversed(range(len(playlist))):
                     t_time = star_store.get(playlist[i])
-                    tr = pctl.g(playlist[i])
+                    tr = pctl.get_track(playlist[i])
                     if tr.length > 0:
                         if not value < t_time / tr.length:
                             del playlist[i]
@@ -18467,7 +18429,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
                 value = int(value)
                 for i in reversed(range(len(playlist))):
                     t_time = star_store.get(playlist[i])
-                    tr = pctl.g(playlist[i])
+                    tr = pctl.get_track(playlist[i])
                     if tr.length > 0:
                         if not value > t_time / tr.length:
                             del playlist[i]
@@ -18657,7 +18619,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm.startswith("ff\""):
 
             for i in reversed(range(len(playlist))):
-                tr = pctl.g(playlist[i])
+                tr = pctl.get_track(playlist[i])
                 line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
 
                 if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
@@ -18671,7 +18633,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
         elif cm.startswith("fx\""):
 
             for i in reversed(range(len(playlist))):
-                tr = pctl.g(playlist[i])
+                tr = pctl.get_track(playlist[i])
                 line = " ".join(
                     [tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
                 if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
@@ -18694,7 +18656,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
             for selection in selections:
                 for track_id in selection:
                     if track_id not in dones:
-                        tr = pctl.g(track_id)
+                        tr = pctl.get_track(track_id)
 
                         if cm.startswith("fs\""):
                             line = "|".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
@@ -18917,10 +18879,10 @@ def auto_sync_thread(pl):
 
     # Find the folder names the transcode function would name them
     for folder in folders:
-        name = encode_folder_name(pctl.g(folder[0]))
+        name = encode_folder_name(pctl.get_track(folder[0]))
         for item in folder:
-            if pctl.g(item).album != pctl.g(folder[0]).album:
-                name = os.path.basename(pctl.g(folder[0]).parent_folder_path)
+            if pctl.get_track(item).album != pctl.get_track(folder[0]).album:
+                name = os.path.basename(pctl.get_track(folder[0]).parent_folder_path)
                 break
         folder_names.append(name)
         folder_dict[name] = folder
@@ -18960,10 +18922,10 @@ def auto_sync_thread(pl):
             show_message(_("Sync aborted! Low disk space on target device"), mode="warning")
             break
 
-        if prefs.bypass_transcode or (prefs.smart_bypass and 0 < pctl.g(folder_dict[item][0]).bitrate <= 128):
+        if prefs.bypass_transcode or (prefs.smart_bypass and 0 < pctl.get_track(folder_dict[item][0]).bitrate <= 128):
             logging.info("Smart bypass...")
 
-            source_parent = pctl.g(folder_dict[item][0]).parent_folder_path
+            source_parent = pctl.get_track(folder_dict[item][0]).parent_folder_path
             if os.path.exists(source_parent):
                 if os.path.exists(os.path.join(path, item)):
                     show_message(_("Sync warning"), _("One or more folders to sync has the same name. Skipping."),
@@ -19092,7 +19054,7 @@ def export_playlist_albums(pl):
     playtimes = {}
     last_folder = None
     for i, id in enumerate(playlist):
-        track = pctl.g(id)
+        track = pctl.get_track(id)
         if last_folder != track.parent_folder_path:
             last_folder = track.parent_folder_path
             if id not in albums:
@@ -19106,7 +19068,7 @@ def export_playlist_albums(pl):
     xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
 
     for id in albums:
-        track = pctl.g(id)
+        track = pctl.get_track(id)
         artist = track.album_artist
         if not artist:
             artist = track.artist
@@ -19159,13 +19121,13 @@ def key_rating(index):
     return star_store.get_rating(index)
 
 def key_scrobbles(index):
-    return pctl.g(index).lfm_scrobbles
+    return pctl.get_track(index).lfm_scrobbles
 
 def key_disc(index):
-    return pctl.g(index).disc_number
+    return pctl.get_track(index).disc_number
 
 def key_cue(index):
-    return pctl.g(index).is_cue
+    return pctl.get_track(index).is_cue
 
 def key_playcount(index):
     # key = pctl.master_library[index].title + pctl.master_library[index].filename
@@ -19230,7 +19192,7 @@ def gen_folder_top(pl, get_sets=False, custom_list=None):
 
     sets = []
     se = []
-    tr = pctl.g(source[0])
+    tr = pctl.get_track(source[0])
     last = tr.parent_folder_path
     last_al = tr.album
     for track in source:
@@ -19295,7 +19257,7 @@ def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
 
     sets = []
     se = []
-    tr = pctl.g(source[0])
+    tr = pctl.get_track(source[0])
     last = tr.parent_folder_path
     last_al = tr.album
     for track in source:
@@ -19308,7 +19270,7 @@ def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
     sets.append(copy.deepcopy(se))
 
     def best(folder):
-        return album_star_store.get_rating((pctl.g(folder[0])))
+        return album_star_store.get_rating((pctl.get_track(folder[0])))
 
     if get_sets:
         r = []
@@ -19372,7 +19334,7 @@ def gen_incomplete(pl, custom_list=None):
     albums = {}
     nums = {}
     for id in source:
-        track = pctl.g(id)
+        track = pctl.get_track(id)
         if track.album and track.track_number:
 
             if type(track.track_number) is str and not track.track_number.isdigit():
@@ -20012,7 +19974,7 @@ def convert_folder(index):
 
     folder = []
     if key_shift_down or key_shiftr_down:
-        track_object = pctl.g(index)
+        track_object = pctl.get_track(index)
         if track_object.is_network:
             show_message(_("Transcoding tracks from network locations is not supported"))
             return
@@ -20032,7 +19994,7 @@ def convert_folder(index):
         for item in default_playlist:
             if r_folder == pctl.master_library[item].parent_folder_path:
 
-                track_object = pctl.g(item)
+                track_object = pctl.get_track(item)
                 if track_object.file_ext == "SPOT":  # track_object.is_network:
                     show_message(_("Transcoding spotify tracks not possible"))
                     return
@@ -20171,16 +20133,16 @@ def lightning_paste():
     # if not key_shift_down:
     #     move = False
 
-    move_track = pctl.g(cargo[0])
+    move_track = pctl.get_track(cargo[0])
     move_path = move_track.parent_folder_path
 
     for item in cargo:
-        if move_path != pctl.g(item).parent_folder_path:
+        if move_path != pctl.get_track(item).parent_folder_path:
             show_message(_("More than one folder is in the clipboard"),
                          _("This function can only move one folder at a time."), mode="info")
             return
 
-    match_track = pctl.g(default_playlist[shift_selection[0]])
+    match_track = pctl.get_track(default_playlist[shift_selection[0]])
     match_path = match_track.parent_folder_path
 
     if pctl.playing_state > 0 and move:
@@ -20196,7 +20158,7 @@ def lightning_paste():
     to_move = []
     for pl in pctl.multi_playlist:
         for i in reversed(range(len(pl[2]))):
-            if pctl.g(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
+            if pctl.get_track(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
                 to_move.append(pl[2][i])
 
     to_move = list(set(to_move))
@@ -20286,7 +20248,7 @@ def lightning_paste():
             # Remove all tracks with the old paths
             for pl in pctl.multi_playlist:
                 for i in reversed(range(len(pl[2]))):
-                    if pctl.g(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
+                    if pctl.get_track(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
                         del pl[2][i]
 
             break
@@ -20481,7 +20443,7 @@ def del_selected(force_delete=False):
     if force_delete:
         for item in li:
 
-            tr = pctl.g(item[1])
+            tr = pctl.get_track(item[1])
             if not tr.is_network:
                 try:
                     send2trash(tr.fullpath)
@@ -20600,17 +20562,17 @@ def love_index():
 track_menu.add(MenuItem("Love", love_index, love_decox, icon=heartx_icon))
 
 def toggle_spotify_like_ref():
-    tr = pctl.g(r_menu_index)
+    tr = pctl.get_track(r_menu_index)
     if tr:
         shoot_dl = threading.Thread(target=toggle_spotify_like_active2, args=([tr]))
         shoot_dl.daemon = True
         shoot_dl.start()
 
 def toggle_spotify_like3():
-    toggle_spotify_like_active2(pctl.g(r_menu_index))
+    toggle_spotify_like_active2(pctl.get_track(r_menu_index))
 
 def toggle_spotify_like_row_deco():
-    tr = pctl.g(r_menu_index)
+    tr = pctl.get_track(r_menu_index)
     text = _("Spotify Like Track")
 
     # if pctl.playing_state == 0 or not tr or not "spotify-track-url" in tr.misc:
@@ -20622,10 +20584,10 @@ def toggle_spotify_like_row_deco():
 
 def spot_like_show_test(x):
 
-    return spotify_show_test and pctl.g(r_menu_index).file_ext == "SPTY"
+    return spotify_show_test and pctl.get_track(r_menu_index).file_ext == "SPTY"
 
 def spot_heart_menu_colour():
-    tr = pctl.g(r_menu_index)
+    tr = pctl.get_track(r_menu_index)
     if tr and "spotify-liked" in tr.misc:
         return [30, 215, 96, 255]
     else:
@@ -20692,10 +20654,10 @@ def split_queue_album(id):
 
     i = pctl.playlist_playing_position + 1
     parts = []
-    album_parent_path = pctl.g(item[0]).parent_folder_path
+    album_parent_path = pctl.get_track(item[0]).parent_folder_path
 
     while i < len(playlist):
-        if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
+        if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
             break
 
         parts.append((playlist[i], i))
@@ -20741,7 +20703,7 @@ track_menu.add(MenuItem(_("Paste"), menu_paste, paste_deco, pass_ref=True))
 
 
 def delete_track(track_ref):
-    tr = pctl.g(track_ref)
+    tr = pctl.get_track(track_ref)
     fullpath = tr.fullpath
 
     if system == "Windows" or msys:
@@ -20977,7 +20939,7 @@ def rename_parent(index, template):
 
 
 def rename_folders_disable_test(index):
-    return pctl.g(index).is_network
+    return pctl.get_track(index).is_network
 
 def rename_folders(index):
     global track_box
@@ -21107,8 +21069,8 @@ def clean_folder(index, do=False):
             # clear_img_cache()
 
             for track_id in default_playlist:
-                if pctl.g(track_id).parent_folder_path == folder:
-                    clear_track_image_cache(pctl.g(track_id))
+                if pctl.get_track(track_id).parent_folder_path == folder:
+                    clear_track_image_cache(pctl.get_track(track_id))
 
     except Exception:
         logging.exception("Error deleting files, may not have permission or file may be set to read-only")
@@ -21133,7 +21095,7 @@ def vacuum_playtimes(index):
 
     for track in todo:
 
-        tr = pctl.g(track)
+        tr = pctl.get_track(track)
 
         total_playtime = 0
         flags = ""
@@ -21241,7 +21203,7 @@ def editor(index):
     old_stars = []
     for track in todo:
         item = []
-        item.append(pctl.g(track))
+        item.append(pctl.get_track(track))
         item.append(star_store.key(track))
         item.append(star_store.full_get(track))
         old_stars.append(item)
@@ -21370,7 +21332,7 @@ def launch_editor(index):
 
 def launch_editor_selection_disable_test(index):
     for position in shift_selection:
-        if pctl.g(default_playlist[position]).is_network:
+        if pctl.get_track(default_playlist[position]).is_network:
             return True
     return False
 
@@ -21408,7 +21370,7 @@ def edit_deco(index):
         return [colours.menu_text, colours.menu_background, _("Edit with ") + prefs.tag_editor_name]
 
 def launch_editor_disable_test(index):
-    return pctl.g(index).is_network
+    return pctl.get_track(index).is_network
 
 track_menu.add_to_sub(0, MenuItem(_("Edit with"), launch_editor, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_disable_test))
 
@@ -21654,7 +21616,7 @@ folder_menu.add(MenuItem(_('Copy "Artist - Album"'), clip_title, pass_ref=True))
 
 
 def get_album_spot_url(track_id):
-    track_object = pctl.g(track_id)
+    track_object = pctl.get_track(track_id)
     url = spot_ctl.get_album_url_from_local(track_object)
     if url:
         copy_to_clipboard(url)
@@ -21664,7 +21626,7 @@ def get_album_spot_url(track_id):
 
 
 def get_album_spot_url_deco(track_id):
-    track_object = pctl.g(track_id)
+    track_object = pctl.get_track(track_id)
     if "spotify-album-url" in track_object.misc:
         text = _("Copy Spotify Album URL")
     else:
@@ -21677,7 +21639,7 @@ folder_menu.add(MenuItem("Lookup Spotify Album URL", get_album_spot_url, get_alb
 
 
 def add_to_spotify_library_deco(track_id):
-    track_object = pctl.g(track_id)
+    track_object = pctl.get_track(track_id)
     text = _("Save Album to Spotify")
     if track_object.file_ext != "SPTY":
         return (colours.menu_text_disabled, colours.menu_background, text)
@@ -21703,7 +21665,7 @@ def add_to_spotify_library2(album_url):
 
 
 def add_to_spotify_library(track_id):
-    track_object = pctl.g(track_id)
+    track_object = pctl.get_track(track_id)
     album_url = track_object.misc.get("spotify-album-url")
     if track_object.file_ext != "SPTY" or not album_url:
         return
@@ -21723,7 +21685,7 @@ folder_menu.add(MenuItem("Add to Spotify Library", add_to_spotify_library, add_t
 def selection_queue_deco():
     total = 0
     for item in shift_selection:
-        total += pctl.g(default_playlist[item]).length
+        total += pctl.get_track(default_playlist[item]).length
 
     total = get_hms_time(total)
 
@@ -21803,7 +21765,7 @@ def ser_band_done(result):
 
 
 def ser_band(track_id):
-    tr = pctl.g(track_id)
+    tr = pctl.get_track(track_id)
     if tr.artist:
         shoot_dl = threading.Thread(target=bandcamp_search, args=([tr.artist, ser_band_done]))
         shoot_dl.daemon = True
@@ -21924,13 +21886,13 @@ def is_tidal_track(_):
 track_menu.add(MenuItem(_('Copy TIDAL Album URL'), tidal_copy_album, show_test=is_tidal_track, pass_ref=True))
 
 # def get_track_spot_url_show_test(_):
-#     if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+#     if pctl.get_track(r_menu_index).misc.get("spotify-track-url"):
 #         return True
 #     return False
 
 
 def get_track_spot_url(track_id):
-    track_object = pctl.g(track_id)
+    track_object = pctl.get_track(track_id)
     url = track_object.misc.get("spotify-track-url")
     if url:
         copy_to_clipboard(url)
@@ -21939,7 +21901,7 @@ def get_track_spot_url(track_id):
         show_message(_("No results found"))
 
 def get_track_spot_url_deco():
-    if pctl.g(r_menu_index).misc.get("spotify-track-url"):
+    if pctl.get_track(r_menu_index).misc.get("spotify-track-url"):
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -21949,7 +21911,7 @@ def get_track_spot_url_deco():
 track_menu.add_sub(_("Spotify…"), 190, show_test=spotify_show_test)
 
 def get_spot_artist_track(index):
-    get_artist_spot(pctl.g(index))
+    get_artist_spot(pctl.get_track(index))
 
 track_menu.add_to_sub(1, MenuItem(_("Show Full Artist"), get_spot_artist_track, pass_ref=True, icon=spot_icon))
 
@@ -21966,7 +21928,7 @@ def get_album_spot_active(tr=None):
     if len(l) < 2:
         show_message(_("Looks like that's the only track in the album"))
         return
-    pctl.multi_playlist.append(pl_gen(title=f"{pctl.g(l[0]).artist} - {pctl.g(l[0]).album}",
+    pctl.multi_playlist.append(pl_gen(title=f"{pctl.get_track(l[0]).artist} - {pctl.get_track(l[0]).album}",
                                       playlist=l,
                                       hide_title=0,
                                       ))
@@ -21974,7 +21936,7 @@ def get_album_spot_active(tr=None):
 
 
 def get_spot_album_track(index):
-    get_album_spot_active(pctl.g(index))
+    get_album_spot_active(pctl.get_track(index))
 
 track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), get_spot_album_track, pass_ref=True, icon=spot_icon))
 
@@ -21998,7 +21960,7 @@ def get_spot_recs(tr=None):
     shooter(spot_ctl.rec_playlist, (url, track_url))
 
 def get_spot_recs_track(index):
-    get_spot_recs(pctl.g(index))
+    get_spot_recs(pctl.get_track(index))
 
 track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), get_spot_recs_track, pass_ref=True,
                icon=spot_icon))
@@ -22009,13 +21971,13 @@ def drop_tracks_to_new_playlist(track_list, hidden=False):
     albums = []
     artists = []
     for item in track_list:
-        albums.append(pctl.g(default_playlist[item]).album)
-        artists.append(pctl.g(default_playlist[item]).artist)
+        albums.append(pctl.get_track(default_playlist[item]).album)
+        artists.append(pctl.get_track(default_playlist[item]).artist)
         pctl.multi_playlist[pl][2].append(default_playlist[item])
 
     if len(track_list) > 1:
         if len(albums) > 0 and albums.count(albums[0]) == len(albums):
-            track = pctl.g(default_playlist[track_list[0]])
+            track = pctl.get_track(default_playlist[track_list[0]])
             artist = track.artist
             if track.album_artist != "":
                 artist = track.album_artist
@@ -23148,7 +23110,7 @@ def import_fmps():
     unique = set()
     for playlist in pctl.multi_playlist:
         for id in playlist[2]:
-            tr = pctl.g(id)
+            tr = pctl.get_track(id)
             if "FMPS_Rating" in tr.misc:
                 rating = round(tr.misc["FMPS_Rating"] * 10)
                 star_store.set_rating(tr.index, rating)
@@ -23166,7 +23128,7 @@ def import_popm():
     skipped = set()
     for playlist in pctl.multi_playlist:
         for id in playlist[2]:
-            tr = pctl.g(id)
+            tr = pctl.get_track(id)
             if "POPM" in tr.misc:
                 rating = tr.misc["POPM"]
                 t_rating = 0
@@ -23338,7 +23300,7 @@ def random_album():
     playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
     if playlist:
         for i, id in enumerate(playlist):
-            track = pctl.g(id)
+            track = pctl.get_track(id)
             if track.parent_folder_path not in folders:
                 folders[track.parent_folder_path] = (id, i)
 
@@ -23555,7 +23517,7 @@ def locate_artist():
     block_starts = []
     current = False
     for i in range(len(default_playlist)):
-        track = pctl.g(default_playlist[i])
+        track = pctl.get_track(default_playlist[i])
         if current is False:
             if track.artist == artist or track.album_artist == artist or (
                     "artists" in track.misc and artist in track.misc["artists"]):
@@ -23586,7 +23548,7 @@ def locate_artist():
             pctl.playlist_view_position = block_starts[0]
             shift_selection.clear()
 
-        tree_view_box.show_track(pctl.g(default_playlist[pctl.selected_in_playlist]))
+        tree_view_box.show_track(pctl.get_track(default_playlist[pctl.selected_in_playlist]))
     else:
         show_message(_("No exact matching artist could be found in this playlist"))
 
@@ -24715,12 +24677,12 @@ def get_album_from_first_track(track_position, track_id=None, pl_number=None, pl
         return []
 
     tracks = []
-    album_parent_path = pctl.g(track_id).parent_folder_path
+    album_parent_path = pctl.get_track(track_id).parent_folder_path
 
     i = track_position
 
     while i < len(playlist):
-        if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
+        if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
             break
 
         tracks.append(playlist[i])
@@ -25224,13 +25186,13 @@ class SearchOverlay:
                 if n in (1, 2):
                     thl = thumbnail_rx - album_art_size
                     ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
-                    gall_ren.render(pctl.g(item[2]), (thl, yy + pad), album_art_size)
+                    gall_ren.render(pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
                     if fade != 1:
                         ddt.rect((thl, yy + pad, album_art_size, album_art_size), [0, 0, 0, 70])
                 if n in (11,):
                     thl = thumbnail_rx - album_art_size
                     ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
-                    # gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
+                    # gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
                     if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
                         try:
                             gall_ren.lock.release()
@@ -26265,7 +26227,7 @@ def worker1():
 
                 # Remove target track if already imported
                 for i in reversed(range(len(added))):
-                    if pctl.g(added[i]).fullpath == end_track.fullpath:
+                    if pctl.get_track(added[i]).fullpath == end_track.fullpath:
                         del added[i]
 
                 # Update with proper length
@@ -26890,7 +26852,7 @@ def worker1():
                         logging.exception("Encode folder not removed")
                     reload_metadata(folder_items[0])
                 else:
-                    album_art_gen.save_thumb(pctl.g(folder_items[0]), (1080, 1080), output_dir + "cover")
+                    album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), output_dir + "cover")
 
                 #logging.info(transcode_list[0])
 
@@ -27125,7 +27087,7 @@ def gen_power2():
     for position in album_dex:
 
         index = default_playlist[position]
-        track = pctl.g(index)
+        track = pctl.get_track(index)
 
         crumbs = track.parent_folder_path.split("/")
 
@@ -27860,7 +27822,7 @@ def gen_chart():
             dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
         for item in dex:
-            tracks.append(pctl.g(source_tracks[item]))
+            tracks.append(pctl.get_track(source_tracks[item]))
 
         cascade = False
         if prefs.chart_cascade:
@@ -30429,7 +30391,7 @@ class Over:
             count = 0
 
             for track_id in default_playlist:
-                tr = pctl.g(track_id)
+                tr = pctl.get_track(track_id)
 
                 if not tr.album:
                     if tr.parent_folder_path not in folder_names:
@@ -30466,7 +30428,7 @@ class Over:
 
             for pl in pctl.multi_playlist:
                 for track_id in pl[2]:
-                    tr = pctl.g(track_id)
+                    tr = pctl.get_track(track_id)
 
                     if not tr.album:
                         if tr.parent_folder_path not in folder_names:
@@ -34488,7 +34450,7 @@ class StandardPlaylist:
             if len(default_playlist) <= track_position or number > gui.playlist_view_length:
                 break
 
-            track_object = pctl.g(default_playlist[track_position])
+            track_object = pctl.get_track(default_playlist[track_position])
             track_id = track_object.index
             move_on_title = False
 
@@ -34502,7 +34464,7 @@ class StandardPlaylist:
             # Are folder titles enabled?
             if pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
                 # Is this track from a different folder than the last?
-                if track_position == 0 or track_object.parent_folder_path != pctl.g(
+                if track_position == 0 or track_object.parent_folder_path != pctl.get_track(
                         default_playlist[track_position - 1]).parent_folder_path:
                     # Make folder title
 
@@ -34532,8 +34494,8 @@ class StandardPlaylist:
                         if middle_click and is_level_zero():
                             if key_ctrl_down:  # Add as ungrouped tracks
                                 i = track_position
-                                parent = pctl.g(default_playlist[i]).parent_folder_path
-                                while i < len(default_playlist) and parent == pctl.g(
+                                parent = pctl.get_track(default_playlist[i]).parent_folder_path
+                                while i < len(default_playlist) and parent == pctl.get_track(
                                         default_playlist[i]).parent_folder_path:
                                     pctl.force_queue.append(queue_item_gen(default_playlist[i], i, pl_to_id(
                                         pctl.active_playlist_viewing)))
@@ -34853,9 +34815,9 @@ class StandardPlaylist:
                 line = tr.parent_folder_name
 
                 # Use folder name if mixed/singles?
-                if len(default_playlist) > track_position + 1 and pctl.g(
+                if len(default_playlist) > track_position + 1 and pctl.get_track(
                         default_playlist[track_position + 1]).album != tr.album and \
-                        pctl.g(default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
+                        pctl.get_track(default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
                     line = tr.parent_folder_name
                 else:
 
@@ -34912,10 +34874,10 @@ class StandardPlaylist:
                 total_time = 0
                 while q < len(default_playlist):
 
-                    if pctl.g(default_playlist[q]).parent_folder_path != tr.parent_folder_path:
+                    if pctl.get_track(default_playlist[q]).parent_folder_path != tr.parent_folder_path:
                         break
 
-                    total_time += pctl.g(default_playlist[q]).length
+                    total_time += pctl.get_track(default_playlist[q]).length
 
                     q += 1
                     qq += 1
@@ -35075,8 +35037,8 @@ class StandardPlaylist:
 
                 ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
 
-            if track_position > 0 and track_position < len(default_playlist) and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.g(default_playlist[track_position - 1]).disc_number \
-                    and tr.album == pctl.g(default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.g(default_playlist[track_position - 1]).parent_folder_path:
+            if track_position > 0 and track_position < len(default_playlist) and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.get_track(default_playlist[track_position - 1]).disc_number \
+                    and tr.album == pctl.get_track(default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.get_track(default_playlist[track_position - 1]).parent_folder_path:
                 # Draw disc change line
                 ddt.rect((left + highlight_left, line_y + 0 * gui.scale, highlight_width,
                           1 * gui.scale), colours.folder_line)
@@ -36177,8 +36139,6 @@ class RadioBox:
 
                 for station in primary_stations:
                     self.temp_list.append(station)
-    #
-    # def import_defau
 
     def search_radio_browser(self, param):
         if self.searching:
@@ -37287,7 +37247,7 @@ def create_artist_pl(artist, replace=False):
     playlist = []
 
     for item in pctl.multi_playlist[source_pl][2]:
-        track = pctl.g(item)
+        track = pctl.get_track(item)
         if track.artist == artist or track.album_artist == artist:
             playlist.append(item)
 
@@ -37641,7 +37601,7 @@ class ArtistList:
                 if b % 100 == 0:
                     time.sleep(0.001)
 
-                track = pctl.g(item)
+                track = pctl.get_track(item)
 
                 if "artists" in track.misc:
                     artists = track.misc["artists"]
@@ -37954,7 +37914,7 @@ class ArtistList:
         if not thin_mode:
 
             if coll(area) and is_level_zero(
-                    True):  # or pctl.g(default_playlist[pctl.playlist_view_position]).artist == artist:
+                    True):  # or pctl.get_track(default_playlist[pctl.playlist_view_position]).artist == artist:
                 ddt.rect(area, [50, 50, 50, 50])
                 bg = alpha_blend([50, 50, 50, 50], colours.side_panel_background)
             else:
@@ -38005,7 +37965,7 @@ class ArtistList:
                 on = 0
 
                 for i in range(len(default_playlist)):
-                    track = pctl.g(default_playlist[i])
+                    track = pctl.get_track(default_playlist[i])
                     if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
                             "artists" in track.misc and artist in track.misc["artists"]):
                         # Matchin artist
@@ -38034,7 +37994,7 @@ class ArtistList:
                 # block_starts = []
                 # current = False
                 # for i in range(len(default_playlist)):
-                #     track = pctl.g(default_playlist[i])
+                #     track = pctl.get_track(default_playlist[i])
                 #     if current is False:
                 #         if track.artist == artist or track.album_artist == artist or (
                 #                 'artists' in track.misc and artist in track.misc['artists']):
@@ -38564,7 +38524,7 @@ class TreeView:
             # Hold highlight while dragging folder
             if quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
                 if shift_selection:
-                    if pctl.g(pctl.multi_playlist[id_to_pl(pl_id)][2][shift_selection[0]]).fullpath.startswith(
+                    if pctl.get_track(pctl.multi_playlist[id_to_pl(pl_id)][2][shift_selection[0]]).fullpath.startswith(
                             full_folder_path + "/") and self.dragging_name and item[0].endswith(self.dragging_name):
                         text_colour = (255, 255, 255, 230)
                         if semilight_mode:
@@ -38599,12 +38559,12 @@ class TreeView:
 
                         for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
                             if msys:
-                                if pctl.g(id).fullpath.startswith(target.lstrip("/")):
+                                if pctl.get_track(id).fullpath.startswith(target.lstrip("/")):
                                     folder_tree_menu.activate(in_reference=id)
                                     self.menu_selected = full_folder_path
                                     break
                             else:
-                                if pctl.g(id).fullpath.startswith(target):
+                                if pctl.get_track(id).fullpath.startswith(target):
                                     folder_tree_menu.activate(in_reference=id)
                                     self.menu_selected = full_folder_path
                                     break
@@ -38639,16 +38599,16 @@ class TreeView:
                         track_id = None
                         for p, id in enumerate(default_playlist):
                             if msys:
-                                if pctl.g(id).fullpath.startswith(target.lstrip("/")):
+                                if pctl.get_track(id).fullpath.startswith(target.lstrip("/")):
                                     track_id = id
                                     break
                             else:
-                                if pctl.g(id).fullpath.startswith(target):
+                                if pctl.get_track(id).fullpath.startswith(target):
                                     track_id = id
                                     break
                         else:  # Fallback to folder name if full-path not found (hack for networked items)
                             for p, id in enumerate(default_playlist):
-                                if pctl.g(id).parent_folder_name == item[0]:
+                                if pctl.get_track(id).parent_folder_name == item[0]:
                                     track_id = id
                                     break
 
@@ -38762,11 +38722,11 @@ class TreeView:
             set_drag_source()
             for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
                 if msys:
-                    if pctl.g(id).fullpath.startswith(
+                    if pctl.get_track(id).fullpath.startswith(
                             self.click_drag_source[1].lstrip("/") + "/" + self.click_drag_source[0] + "/"):
                         shift_selection.append(p)
                 else:
-                    if pctl.g(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
+                    if pctl.get_track(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
                         shift_selection.append(p)
             self.click_drag_source = None
 
@@ -38836,7 +38796,7 @@ class TreeView:
             if z > 1000:
                 time.sleep(0.01)  # Throttle thread
                 z = 0
-            track = pctl.g(p)
+            track = pctl.get_track(p)
             path = track.parent_folder_path
             if path not in paths:
                 paths.append(path)
@@ -38947,10 +38907,10 @@ class QueueBox:
                     i = item[1]  # = pctl.playlist_playing_position + 1
 
                     parts = []
-                    album_parent_path = pctl.g(item[0]).parent_folder_path
+                    album_parent_path = pctl.get_track(item[0]).parent_folder_path
 
                     while i < len(pp):
-                        if pctl.g(pp[i]).parent_folder_path != album_parent_path:
+                        if pctl.get_track(pp[i]).parent_folder_path != album_parent_path:
                             break
 
                         parts.append((pp[i], i))
@@ -38985,7 +38945,7 @@ class QueueBox:
 
             # if shift selection contains only same folder
             for position in shift_selection:
-                if pctl.g(default_playlist[position]).parent_folder_path != pctl.g(
+                if pctl.get_track(default_playlist[position]).parent_folder_path != pctl.get_track(
                         main_track_id).parent_folder_path or key_ctrl_down:
                     break
             else:
@@ -39311,7 +39271,7 @@ class QueueBox:
             if i > len(fq) - 1:
                 break
 
-            track = pctl.g(fq[i][0])
+            track = pctl.get_track(fq[i][0])
 
             rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
@@ -39418,7 +39378,7 @@ class QueueBox:
 
         for item in fq:
             if item[3] == 0:
-                duration += pctl.g(item[0]).length
+                duration += pctl.get_track(item[0]).length
                 tracks += 1
             else:
                 pl = id_to_pl(item[2])
@@ -39426,7 +39386,7 @@ class QueueBox:
                     playlist = pctl.multi_playlist[pl][2]
                     i = item[1]
 
-                    album_parent_path = pctl.g(item[0]).parent_folder_path
+                    album_parent_path = pctl.get_track(item[0]).parent_folder_path
 
                     playing_track = pctl.playing_object()
 
@@ -39442,10 +39402,10 @@ class QueueBox:
                         i = playlist.index(item[0])
 
                     while i < len(playlist):
-                        if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
+                        if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
                             break
 
-                        duration += pctl.g(playlist[i]).length
+                        duration += pctl.get_track(playlist[i]).length
                         tracks += 1
                         i += 1
 
@@ -39474,7 +39434,7 @@ class QueueBox:
                 yyy = self.drag_start_top + (mouse_position[1] - self.drag_start_y)
                 if yyy < list_top:
                     yyy = list_top
-                track = pctl.g(fqo[0])
+                track = pctl.get_track(fqo[0])
                 self.draw_card(x, y, w, h, yyy, track, fqo, draw_back=True)
 
         # Drag and drop tracks from main playlist into queue
@@ -39752,11 +39712,11 @@ class MetaBox:
             if pctl.playing_state == 0 and prefs.meta_shows_selected:
 
                 if -1 < pctl.selected_in_playlist < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.selected_in_playlist])
+                    tr = pctl.get_track(pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.selected_in_playlist])
 
             if prefs.meta_shows_selected_always and not pctl.playing_state == 3:
                 if -1 < pctl.selected_in_playlist < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                    tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.selected_in_playlist])
+                    tr = pctl.get_track(pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.selected_in_playlist])
 
             if tr is None:
                 tr = pctl.playing_object()
@@ -44418,8 +44378,8 @@ while pctl.running:
             if keymaps.test("transfer-playtime-to"):
                 if len(cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
                         default_playlist):
-                    fr = pctl.g(tauon.copied_track)
-                    to = pctl.g(default_playlist[pctl.selected_in_playlist])
+                    fr = pctl.get_track(tauon.copied_track)
+                    to = pctl.get_track(default_playlist[pctl.selected_in_playlist])
 
                     fr_s = star_store.full_get(fr.index)
                     to_s = star_store.full_get(to.index)
@@ -44620,12 +44580,12 @@ while pctl.running:
 
             if keymaps.test("info-playing"):
                 if pctl.selected_in_playlist < len(default_playlist):
-                    r_menu_index = pctl.g(default_playlist[pctl.selected_in_playlist]).index
+                    r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
                     track_box = True
 
             if keymaps.test("info-show"):
                 if pctl.selected_in_playlist < len(default_playlist):
-                    r_menu_index = pctl.g(default_playlist[pctl.selected_in_playlist]).index
+                    r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
                     track_box = True
 
             # These need to be disabled when text fields are active
@@ -44748,7 +44708,7 @@ while pctl.running:
 
                 if keymaps.test("search-lyrics-selected"):
                     if pctl.selected_ready():
-                        track = pctl.g(default_playlist[pctl.selected_in_playlist])
+                        track = pctl.get_track(default_playlist[pctl.selected_in_playlist])
                         if track.lyrics:
                             show_message(_("Track already has lyrics"))
                         else:
@@ -44756,7 +44716,7 @@ while pctl.running:
 
                 if keymaps.test("substitute-search-selected"):
                     if pctl.selected_ready():
-                        show_sub_search(pctl.g(default_playlist[pctl.selected_in_playlist]))
+                        show_sub_search(pctl.get_track(default_playlist[pctl.selected_in_playlist]))
 
                 if keymaps.test("global-search"):
                     activate_search_overlay()
@@ -45457,19 +45417,19 @@ while pctl.running:
 
                                                 pl = id_to_pl(pctl.quick_add_target)
                                                 if pl is not None:
-                                                    parent = pctl.g(
+                                                    parent = pctl.get_track(
                                                         default_playlist[album_dex[album_on]]).parent_folder_path
                                                     # remove from target pl
                                                     if default_playlist[album_dex[album_on]] in pctl.multi_playlist[pl][
                                                         2]:
                                                         for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
-                                                            if pctl.g(pctl.multi_playlist[pl][2][
+                                                            if pctl.get_track(pctl.multi_playlist[pl][2][
                                                                           i]).parent_folder_path == parent:
                                                                 del pctl.multi_playlist[pl][2][i]
                                                     else:
                                                         # add
                                                         for i in range(len(default_playlist)):
-                                                            if pctl.g(default_playlist[i]).parent_folder_path == parent:
+                                                            if pctl.get_track(default_playlist[i]).parent_folder_path == parent:
                                                                 pctl.multi_playlist[pl][2].append(default_playlist[i])
 
                                                 reload_albums(True)
@@ -45594,7 +45554,7 @@ while pctl.running:
                                         tr = True
                                     else:
                                         for folder in transcode_list:
-                                            if pctl.g(folder[0]).parent_folder_path == track.parent_folder_path:
+                                            if pctl.get_track(folder[0]).parent_folder_path == track.parent_folder_path:
                                                 tr = True
                                                 break
                                     if tr:
@@ -45657,7 +45617,7 @@ while pctl.running:
                                 s = 0
                                 ones = 0
                                 for id in album:
-                                    tr = pctl.g(default_playlist[id])
+                                    tr = pctl.get_track(default_playlist[id])
                                     if tr.album != last_album:
                                         if last_album:
                                             s += 1
@@ -45695,7 +45655,7 @@ while pctl.running:
                                         xx = pp / math.sqrt(2)
 
                                         xx -= size / 2
-                                        drawn_art = gall_ren.render(pctl.g(default_playlist[p]), (x + xx, y + xx),
+                                        drawn_art = gall_ren.render(pctl.get_track(default_playlist[p]), (x + xx, y + xx),
                                                                     size=size, force_offset=0)
                                         if not drawn_art:
                                             g = 50 + round(100 / albs) * i
@@ -45993,7 +45953,7 @@ while pctl.running:
 
                         if order.replace_stem:
                             for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
-                                pfp = pctl.g(id).parent_folder_path
+                                pfp = pctl.get_track(id).parent_folder_path
                                 if pfp.startswith(order.target.replace("\\", "/")):
                                     if pfp.rstrip("/\\") == order.target.rstrip("/\\") or \
                                             (len(pfp) > len(order.target) and pfp[
@@ -47576,7 +47536,7 @@ while pctl.running:
                         else:
                             search_terms = search_text.text.lower().split()
                             for item in default_playlist:
-                                tr = pctl.g(item)
+                                tr = pctl.get_track(item)
                                 line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
                                                  tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
 
@@ -47614,7 +47574,7 @@ while pctl.running:
                                 search_index = 0
 
                             search_terms = search_text.text.lower().split()
-                            tr = pctl.g(default_playlist[search_index])
+                            tr = pctl.get_track(default_playlist[search_index])
                             line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
                                              tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
 
@@ -47824,7 +47784,7 @@ while pctl.running:
 
         t = queue_add_timer.get()
         if t < 2.5 and gui.toast_queue_object:
-            track = pctl.g(gui.toast_queue_object[0])
+            track = pctl.get_track(gui.toast_queue_object[0])
 
             ww = 0
             if gui.lsp:
