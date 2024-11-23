@@ -5120,6 +5120,7 @@ class PlayerCtl:
 
 		self.running:           bool = True
 		self.prefs:             Prefs = prefs
+		self.install_directory: str  = install_directory
 
 		# Database
 
