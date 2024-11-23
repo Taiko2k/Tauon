@@ -25,8 +25,8 @@ def main() -> None:
 		subprocess.run(["python", "pygettext.py", *py_files], check=True)
 
 	print("Copy template")
-	subprocess.run(["cp", "messages.pot", pot_path])
-	subprocess.run(["rm", "messages.pot"])
+	subprocess.run(["cp", "messages.pot", pot_path], check=True)
+	subprocess.run(["rm", "messages.pot"], check=True)
 
 	languages = os.listdir(locale_folder)
 
@@ -37,7 +37,7 @@ def main() -> None:
 		po_path = Path(locale_folder) / lang_file / "LC_MESSAGES" / "tauon.po"
 
 		if Path(po_path).exists():
-			subprocess.run(["msgmerge", "-U", po_path, pot_path])
+			subprocess.run(["msgmerge", "-U", po_path, pot_path], check=True)
 
 			print(f"Updated: {lang_file}")
 
