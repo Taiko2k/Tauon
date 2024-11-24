@@ -43504,7 +43504,7 @@ def menu_is_open():
 	return False
 
 
-def is_level_zero(include_menus=True):
+def is_level_zero(include_menus: bool = True) -> bool:
 	if include_menus:
 		for menu in Menu.instances:
 			if menu.active:
