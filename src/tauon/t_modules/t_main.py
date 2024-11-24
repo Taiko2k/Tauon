@@ -17780,17 +17780,17 @@ def export_stats(pl):
 	#	 line = line.rstrip("; ")
 	#	 line += "\n\n"
 
-	line += "\n" + f"-------------- {_("Top Artists")} --------------------" + "\n\n"
+	line += "\n" + f"-------------- {_('Top Artists')} --------------------" + "\n\n"
 
 	ls = stats_gen.artist_list
 	for i, item in enumerate(ls[:50]):
 		line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
 
-	line += "\n\n" + f"-------------- {_("Top Albums")} --------------------" + "\n\n"
+	line += "\n\n" + f"-------------- {_('Top Albums')} --------------------" + "\n\n"
 	ls = stats_gen.album_list
 	for i, item in enumerate(ls[:50]):
 		line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
-	line += "\n\n" + f"-------------- {_("Top Genres")} --------------------" + "\n\n"
+	line += "\n\n" + f"-------------- {_('Top Genres')} --------------------" + "\n\n"
 	ls = stats_gen.genre_list
 	for i, item in enumerate(ls[:50]):
 		line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
