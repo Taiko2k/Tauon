@@ -11996,9 +11996,13 @@ class GallClass:
 				self.queue.append(key)
 				try:
 					self.lock.release()
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked lock")
+					else:
+						logging.error("Unknown RuntimeError trying to release lock: {e}")
 				except Exception:
-					logging.exception("Failed to release lock")
-					pass
+					logging.exception("Unknown error trying to release lock")
 
 		return False
 
@@ -18564,8 +18568,13 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 			search_over.search_text.text = search
 			try:
 				worker2_lock.release()
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+				else:
+					logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
 			except Exception:
-				logging.exception("Failed to release worker2 lock")
+				logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
 				time.sleep(0.01)
 
@@ -18599,8 +18608,13 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 			search_over.search_text.text = search
 			try:
 				worker2_lock.release()
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+				else:
+					logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
 			except Exception:
-				logging.exception("Failed to release worker2 lock")
+				logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
 				time.sleep(0.01)
 
@@ -18643,8 +18657,13 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 			search_over.search_text.text = "artist " + search
 			try:
 				worker2_lock.release()
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+				else:
+					logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
 			except Exception:
-				logging.exception("Failed to release worker2 lock")
+				logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
 				time.sleep(0.01)
 
@@ -25098,8 +25117,13 @@ class SearchOverlay:
 				search_over.searched_text = search_over.search_text.text
 				try:
 					worker2_lock.release()
-				except Exception:
-					logging.exception("Failed to release worker2 lock")
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+				else:
+					logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
+			except Exception:
+				logging.exception("Unknown error trying to release worker2_lock")
 
 			if input_text or key_backspace_press:
 				self.input_timer.set()
@@ -25112,8 +25136,13 @@ class SearchOverlay:
 					try:
 						self.sip = True
 						worker2_lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+						else:
+							logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
 					except Exception:
-						logging.exception("Failed to release worker2 lock")
+						logging.exception("Unknown error trying to release worker2_lock")
 
 			if self.input_timer.get() < 10:
 				gui.frame_callback_list.append(TestTimer(0.1))
@@ -25277,8 +25306,13 @@ class SearchOverlay:
 					if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
 						try:
 							gall_ren.lock.release()
+						except RuntimeError as e:
+							if str(e) == "release unlocked lock":
+								logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
+							else:
+								logging.error("Unknown RuntimeError trying to release gall_ren_lock: {e}")
 						except Exception:
-							logging.exception("Failed to release gall_ren lock")
+							logging.exception("Unknown error trying to release gall_ren_lock")
 
 				# Result text
 				if n in (0, 5, 6, 7, 8, 10):  # Bold
@@ -27877,8 +27911,13 @@ def reload_backend():
 			break
 	try:
 		tm.player_lock.release()
+	except RuntimeError as e:
+		if str(e) == "release unlocked lock":
+			logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+		else:
+			logging.error("Unknown RuntimeError trying to release player_lock: {e}")
 	except Exception:
-		logging.exception("Failed to release player_lock")
+		logging.exception("Unknown error trying to release player_lock")
 
 	pctl.playerCommand = "unload"
 	pctl.playerCommandReady = True
