@@ -6705,10 +6705,10 @@ class PlayerCtl:
 								# ref = random.choice(pool)
 								# pool.remove(ref)
 
-								if ref not in pl[2]:  # Check track still in the live playlist
+								if ref not in pl.playlist_ids:  # Check track still in the live playlist
 									continue
 
-								random_jump = pl[2].index(ref)  # Find position of reference in playlist
+								random_jump = pl.playlist_ids.index(ref)  # Find position of reference in playlist
 								break
 
 							# Refill the pool
@@ -15698,12 +15698,12 @@ def move_playing_folder_to_stem(path, pl_id=None):
 
 	# Remove all tracks with the old paths
 	for pl in pctl.multi_playlist:
-		for i in reversed(range(len(pl[2]))):
-			if pctl.get_track(pl[2][i]).parent_folder_path == track.parent_folder_path:
-				del pl[2][i]
+		for i in reversed(range(len(pl.playlist_ids))):
+			if pctl.get_track(pl.playlist_ids[i]).parent_folder_path == track.parent_folder_path:
+				del pl.playlist_ids[i]
 
 	# Find insert location
-	pl = pctl.multi_playlist[id_to_pl(pl_id)][2]
+	pl = pctl.multi_playlist[id_to_pl(pl_id)].playlist_ids
 
 	matches = []
 	insert = 0
@@ -16435,7 +16435,7 @@ def download_art1(tr):
 	parent = tr.parent_folder_path
 
 	for pl in pctl.multi_playlist:
-		for ti in pl[2]:
+		for ti in pl.playlist_ids:
 			tr = pctl.get_track(ti)
 			if tr.parent_folder_path == parent:
 				siblings.append(tr)
@@ -19465,7 +19465,7 @@ def gen_codec_pl(codec):
 	playlist = []
 
 	for pl in pctl.multi_playlist:
-		for item in pl[2]:
+		for item in pl.playlist_ids:
 			if pctl.master_library[item].file_ext == codec and item not in playlist:
 				playlist.append(item)
 
@@ -20259,9 +20259,9 @@ def lightning_paste():
 
 	to_move = []
 	for pl in pctl.multi_playlist:
-		for i in reversed(range(len(pl[2]))):
-			if pctl.get_track(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
-				to_move.append(pl[2][i])
+		for i in reversed(range(len(pl.playlist_ids))):
+			if pctl.get_track(pl.playlist_ids[i]).parent_folder_path == move_track.parent_folder_path:
+				to_move.append(pl.playlist_ids[i])
 
 	to_move = list(set(to_move))
 
@@ -20350,9 +20350,9 @@ def lightning_paste():
 			tm.ready("worker")
 			# Remove all tracks with the old paths
 			for pl in pctl.multi_playlist:
-				for i in reversed(range(len(pl[2]))):
-					if pctl.get_track(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
-						del pl[2][i]
+				for i in reversed(range(len(pl.playlist_ids))):
+					if pctl.get_track(pl.playlist_ids[i]).parent_folder_path == move_track.parent_folder_path:
+						del pl.playlist_ids[i]
 
 			break
 	else:
@@ -23038,7 +23038,7 @@ def clean_db_show_test(_):
 def clean_db_fast():
 	keys = set(pctl.master_library.keys())
 	for pl in pctl.multi_playlist:
-		keys -= set(pl[2])
+		keys -= set(pl.playlist_ids)
 	for item in keys:
 		pctl.purge_track(item, fast=True)
 	gui.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
@@ -24832,7 +24832,7 @@ class SearchOverlay:
 		if search_lists is None:
 			search_lists = []
 			for pl in pctl.multi_playlist:
-				search_lists.append(pl[2])
+				search_lists.append(pl.playlist_ids)
 
 		for pl in search_lists:
 			for item in pl:
@@ -24863,7 +24863,7 @@ class SearchOverlay:
 
 		playlist = []
 		for pl in pctl.multi_playlist:
-			for item in pl[2]:
+			for item in pl.playlist_ids:
 				if name in pctl.master_library[item].date:
 					if item not in playlist:
 						playlist.append(item)
@@ -24887,7 +24887,7 @@ class SearchOverlay:
 
 		playlist = []
 		for pl in pctl.multi_playlist:
-			for item in pl[2]:
+			for item in pl.playlist_ids:
 				if pctl.master_library[item].composer.lower() == name.lower():
 					if item not in playlist:
 						playlist.append(item)
@@ -24912,7 +24912,7 @@ class SearchOverlay:
 		if search_lists is None:
 			search_lists = []
 			for pl in pctl.multi_playlist:
-				search_lists.append(pl[2])
+				search_lists.append(pl.playlist_ids)
 
 		playlist = []
 		for pl in search_lists:
@@ -24945,7 +24945,7 @@ class SearchOverlay:
 		if search_lists is None:
 			search_lists = []
 			for pl in pctl.multi_playlist:
-				search_lists.append(pl[2])
+				search_lists.append(pl.playlist_ids)
 
 		include_multi = False
 		if name.endswith("+") or not prefs.sep_genre_multi:
@@ -25422,9 +25422,9 @@ class SearchOverlay:
 							default_playlist.extend(self.click_artist(item[1], get_list=True))
 						case 1:
 							for k, pl in enumerate(pctl.multi_playlist):
-								if item[2] in pl[2]:
+								if item[2] in pl.playlist_ids:
 									default_playlist.extend(
-										get_album_from_first_track(pl[2].index(item[2]), item[2], k))
+										get_album_from_first_track(pl.playlist_ids.index(item[2]), item[2], k))
 									break
 						case 2:
 							default_playlist.append(item[2])
@@ -30625,7 +30625,7 @@ class Over:
 			count = 0
 
 			for pl in pctl.multi_playlist:
-				for track_id in pl[2]:
+				for track_id in pl.playlist_ids:
 					tr = pctl.get_track(track_id)
 
 					if not tr.album:
@@ -31936,7 +31936,7 @@ class TopPanel:
 										break
 							else:
 								for i, pl in enumerate(pctl.multi_playlist):
-									if pl[0].lower() == "downloads":
+									if pl.title.lower() == "downloads":
 										load_order.playlist = pl.uuid_int
 										pln = i
 										break
@@ -37304,7 +37304,7 @@ class PlaylistBox:
 
 			tab_on += 1
 
-			name = pl[0]
+			name = pl.title
 			hidden = pl.hidden
 
 			# Background is insivible by default (for hightlighting if selected)
@@ -37392,7 +37392,7 @@ class PlaylistBox:
 
 			elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
 				for item in shift_selection:
-					if len(default_playlist) > item and default_playlist[item] in pl[2]:
+					if len(default_playlist) > item and default_playlist[item] in pl.playlist_ids:
 						ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [190, 170, 20, 255])
 						break
 			# Drag red line highlight if playlist is generator playlist
@@ -37831,7 +37831,7 @@ class ArtistList:
 
 		try:
 
-			for item in current_pl[2]:
+			for item in current_pl.playlist_ids:
 				b += 1
 				if b % 100 == 0:
 					time.sleep(0.001)
@@ -37873,7 +37873,7 @@ class ArtistList:
 						if artist not in all:
 							if counts[artist] > prefs.artist_list_threshold:
 								all.append(artist)
-							elif len(current_pl[2]) < 1000:
+							elif len(current_pl.playlist_ids) < 1000:
 								all.append(artist)
 							else:
 								filtered += 1
@@ -37898,7 +37898,7 @@ class ArtistList:
 			return
 
 		# Artist-list, album-counts, scroll-position, playlist-length, number ignored
-		save = [all, current_album_counts, 0, len(current_pl[2]), counts, filtered]
+		save = [all, current_album_counts, 0, len(current_pl.playlist_ids), counts, filtered]
 
 		# Scroll to playing artist
 		scroll = 0
@@ -42110,7 +42110,7 @@ class DLMon:
 								# Check if folder not already imported
 								imported = False
 								for pl in pctl.multi_playlist:
-									for i in pl[2]:
+									for i in pl.playlist_ids:
 										if path.replace("\\", "/") == pctl.master_library[i].fullpath[:len(path)]:
 											imported = True
 										if imported:
