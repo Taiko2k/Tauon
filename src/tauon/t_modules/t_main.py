@@ -653,7 +653,7 @@ logging.info(f"Asset directory:        {asset_directory}")
 old_backend = 2
 
 # Things for detecting and launching programs outside of flatpak sandbox
-def whicher(target) -> bool | str:
+def whicher(target: str) -> bool | str:
 	try:
 		if flatpak_mode:
 			complete = subprocess.run(
@@ -1591,7 +1591,7 @@ class Prefs:
 
 		self.sync_target = ""
 		self.sync_deletes = False
-		self.sync_playlist = None
+		self.sync_playlist: int | None = None
 		self.download_playlist: int | None = None
 
 		self.sep_genre_multi = False
@@ -1721,7 +1721,7 @@ class GuiVar:
 		global update_layout
 		update_layout = True
 
-	def show_message(self, line1, line2="", line3="", mode="info"):
+	def show_message(self, line1: str, line2: str = "", line3: str = "", mode: str = "info"):
 		show_message(line1, line2, line3, mode=mode)
 
 	def delay_frame(self, t):
@@ -2142,7 +2142,7 @@ class GuiVar:
 gui = GuiVar()
 
 
-def toast(text):
+def toast(text: str) -> None:
 	gui.mode_toast_text = text
 	toast_mode_timer.set()
 	gui.frame_callback_list.append(TestTimer(1.5))
@@ -2191,12 +2191,12 @@ class StarStore:
 
 		self.db = {}
 
-	def key(self, track_id):
+	def key(self, track_id: int):
 
 		track_object = pctl.master_library[track_id]
 		return track_object.artist, track_object.title, track_object.filename
 
-	def object_key(self, track):
+	def object_key(self, track: TrackClass) -> tuple[str, str, str]:
 
 		return track.artist, track.title, track.filename
 
@@ -2219,13 +2219,13 @@ class StarStore:
 			self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
 
 	# Returns the track play time
-	def get(self, index):
+	def get(self, index: int):
 		if index < 0:
 			return 0
 		return self.db.get(self.key(index), (0,))[0]
 
 	# Returns the track user rating
-	def get_rating(self, index):
+	def get_rating(self, index: int):
 		key = self.key(index)
 		if key in self.db:
 			# self.db[key]
@@ -2353,16 +2353,16 @@ class AlbumStarStore:
 	def __init__(self):
 		self.db = {}
 
-	def get_key(self, track_object):
+	def get_key(self, track_object: TrackClass):
 		artist = track_object.album_artist
 		if not artist:
 			artist = track_object.artist
 		return artist + ":" + track_object.album
 
-	def get_rating(self, track_object):
+	def get_rating(self, track_object: TrackClass):
 		return self.db.get(self.get_key(track_object), 0)
 
-	def set_rating(self, track_object, rating):
+	def set_rating(self, track_object: TrackClass, rating):
 		self.db[self.get_key(track_object)] = rating
 		if track_object.file_ext == "SUB":
 			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
@@ -2861,14 +2861,14 @@ def set_colour(colour):
 	SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
 
 
-def get_themes(deco=False):
+def get_themes(deco: bool = False):
 	themes = []  # full, name
 	decos = {}
 	direcs = [install_directory + "/theme"]
 	if user_directory != install_directory:
 		direcs.append(user_directory + "/theme")
 
-	def scan_folders(folders):
+	def scan_folders(folders: list[str]) -> None:
 		for folder in folders:
 			if not os.path.isdir(folder):
 				continue
@@ -2955,7 +2955,8 @@ def get_end_folder(direc):
 			direc = direc[-w:]
 			return direc
 	return None
-def set_path(nt, path):
+
+def set_path(nt: TrackClass, path: str) -> None:
 	nt.fullpath = path.replace("\\", "/")
 	nt.filename = os.path.basename(path)
 	nt.parent_folder_path = os.path.dirname(path.replace("\\", "/"))
@@ -3532,7 +3533,7 @@ def get_theme_number(name):
 	return 0
 
 
-def get_theme_name(number):
+def get_theme_name(number: int):
 	if number == 0:
 		return "Mindaro"
 	number -= 1
@@ -7371,7 +7372,7 @@ class LastFMapi:
 		except Exception:
 			logging.exception("Failed to pull love")
 
-	def scrobble(self, track_object, timestamp=None):
+	def scrobble(self, track_object: TrackClass, timestamp=None):
 		if not last_fm_enable:
 			return True
 		if prefs.scrobble_hold:
@@ -7596,7 +7597,7 @@ class LastFMapi:
 			show_message(_("This doesn't seem to be working :("), mode="error")
 		self.scanning_loves = False
 
-	def update(self, track_object):
+	def update(self, track_object: TrackClass):
 		if not last_fm_enable:
 			return
 		if prefs.scrobble_hold:
@@ -7662,7 +7663,7 @@ class ListenBrainz:
 			url += "/"
 		return url + "1/submit-listens"
 
-	def listen_full(self, track_object, time):
+	def listen_full(self, track_object: TrackClass, time):
 
 		if self.enable is False:
 			return True
@@ -7712,7 +7713,7 @@ class ListenBrainz:
 			return False
 		return True
 
-	def listen_playing(self, track_object):
+	def listen_playing(self, track_object: TrackClass):
 		if self.enable is False:
 			return
 		if prefs.scrobble_hold is True:
@@ -7797,7 +7798,7 @@ class ListenBrainz:
 lb = ListenBrainz()
 
 
-def get_love(track_object):
+def get_love(track_object: TrackClass):
 	star = star_store.full_get(track_object.index)
 	if star is None:
 		return False
@@ -8108,7 +8109,7 @@ class LastScrob:
 		if send_full:
 			self.scrob_full_track(pctl.master_library[self.a_index])
 
-	def listen_track(self, track_object):
+	def listen_track(self, track_object: TrackClass):
 		# logging.info("LISTEN")
 
 		if track_object.is_network:
@@ -8126,7 +8127,7 @@ class LastScrob:
 				mini_t.daemon = True
 				mini_t.start()
 
-	def scrob_full_track(self, track_object):
+	def scrob_full_track(self, track_object: TrackClass):
 		# logging.info("SCROBBLE")
 		track_object.lfm_scrobbles += 1
 		gui.pl_update += 1
@@ -8734,7 +8735,7 @@ class SubsonicService:
 
 		return d
 
-	def get_cover(self, track_object):
+	def get_cover(self, track_object: TrackClass):
 		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
 		return io.BytesIO(response)
 
@@ -8747,7 +8748,7 @@ class SubsonicService:
 		return self.r("stream", p={"id": key}, get_url=True)
 		# logging.info(response.content)
 
-	def listen(self, track_object, submit=False):
+	def listen(self, track_object: TrackClass, submit: bool = False):
 
 		try:
 			a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
@@ -8755,7 +8756,7 @@ class SubsonicService:
 			logging.exception("Error connecting for scrobble on airsonic")
 		return True
 
-	def set_rating(self, track_object, rating):
+	def set_rating(self, track_object: TrackClass, rating):
 
 		try:
 			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
@@ -8763,7 +8764,7 @@ class SubsonicService:
 			logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def set_album_rating(self, track_object, rating):
+	def set_album_rating(self, track_object: TrackClass, rating):
 		id = track_object.misc.get("subsonic-folder-id")
 		if id is not None:
 			try:
@@ -8772,7 +8773,7 @@ class SubsonicService:
 				logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def get_music3(self, return_list=False):
+	def get_music3(self, return_list: bool = False):
 
 		self.scanning = True
 		gui.to_got = 0
@@ -9144,7 +9145,7 @@ class KoelService:
 
 		return target, params
 
-	def listen(self, track_object, submit=False):
+	def listen(self, track_object: TrackClass, submit: bool = False):
 		if submit:
 			try:
 				target = self.server + "/api/interaction/play"
@@ -9160,7 +9161,7 @@ class KoelService:
 			except Exception:
 				logging.exception("error submitting listen to koel")
 
-	def get_albums(self, return_list=False):
+	def get_albums(self, return_list: bool = False):
 
 		gui.update += 1
 		self.scanning = True
@@ -9371,7 +9372,7 @@ tau = TauService()
 tauon.tau = tau
 
 
-def get_network_thumbnail_url(track_object):
+def get_network_thumbnail_url(track_object: TrackClass):
 	if track_object.file_ext == "TIDAL":
 		return track_object.art_url_key
 	if track_object.file_ext == "SPTY":
@@ -10540,7 +10541,7 @@ class LyricsRen:
 
 		self.lyrics_position = 0
 
-	def test_update(self, track_object):
+	def test_update(self, track_object: TrackClass):
 
 		if track_object.index != self.index or self.text != track_object.lyrics:
 			self.index = track_object.index
@@ -11752,7 +11753,7 @@ class GallClass:
 		self.lock = threading.Lock()
 		self.limit = 60
 
-	def get_file_source(self, track_object):
+	def get_file_source(self, track_object: TrackClass):
 
 		global album_art_gen
 
@@ -12181,7 +12182,7 @@ class AlbumArt:
 		self.download_in_progress = False
 		gui.update += 1
 
-	def get_info(self, track_object):
+	def get_info(self, track_object: TrackClass):
 
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
@@ -12339,7 +12340,7 @@ class AlbumArt:
 
 		return 0
 
-	def open_external(self, track_object):
+	def open_external(self, track_object: TrackClass):
 
 		index = track_object.index
 
@@ -12386,7 +12387,7 @@ class AlbumArt:
 
 		return 0
 
-	def cycle_offset(self, track_object, reverse=False):
+	def cycle_offset(self, track_object: TrackClass, reverse: bool = False):
 
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
@@ -12404,7 +12405,7 @@ class AlbumArt:
 			folder_image_offsets[parent_folder] %= len(sources)
 		return 0
 
-	def cycle_offset_reverse(self, track_object):
+	def cycle_offset_reverse(self, track_object: TrackClass) -> None:
 		self.cycle_offset(track_object, True)
 
 	def get_offset(self, filepath, source):
@@ -12734,7 +12735,7 @@ class AlbumArt:
 
 		return g
 
-	def save_thumb(self, track_object, size, save_path, png=False, zoom=False):
+	def save_thumb(self, track_object: TrackClass, size, save_path, png=False, zoom=False):
 
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
@@ -15945,7 +15946,7 @@ def toggle_lyrics_panel_position():
 	prefs.lyric_metadata_panel_top ^= True
 
 
-def lyrics_in_side_show(track_object):
+def lyrics_in_side_show(track_object: TrackClass):
 	if gui.combo_mode or not prefs.show_lyrics_side:
 		return False
 	return True
@@ -15955,7 +15956,7 @@ def toggle_side_art():
 	prefs.show_side_lyrics_art_panel ^= True
 
 
-def toggle_lyrics_deco(track_object):
+def toggle_lyrics_deco(track_object: TrackClass):
 	colour = colours.menu_text
 
 	if gui.combo_mode:
@@ -15986,7 +15987,7 @@ def toggle_lyrics_deco(track_object):
 	return [colour, colours.menu_background, line]
 
 
-def toggle_lyrics(track_object):
+def toggle_lyrics(track_object: TrackClass):
 	if not track_object:
 		return
 
@@ -16011,7 +16012,7 @@ def toggle_lyrics(track_object):
 		#	 show_message("No lyrics for this track")
 
 
-def get_lyric_fire(track_object, silent=False):
+def get_lyric_fire(track_object: TrackClass, silent: bool = False):
 	lyrics_ren.lyrics_position = 0
 
 	if not prefs.lyrics_enables:
@@ -16087,7 +16088,7 @@ def get_lyric_fire(track_object, silent=False):
 		pctl.notify_change()
 
 
-def get_lyric_wiki(track_object):
+def get_lyric_wiki(track_object: TrackClass):
 	if track_object.artist == "" or track_object.title == "":
 		show_message(_("Insufficient metadata to get lyrics"), mode="warning")
 		return
@@ -16099,7 +16100,7 @@ def get_lyric_wiki(track_object):
 	logging.info("..Done")
 
 
-def get_lyric_wiki_silent(track_object):
+def get_lyric_wiki_silent(track_object: TrackClass):
 	logging.info("Searching for lyrics...")
 
 	if track_object.artist == "" or track_object.title == "":
@@ -16112,7 +16113,7 @@ def get_lyric_wiki_silent(track_object):
 	logging.info("..Done")
 
 
-def test_auto_lyrics(track_object):
+def test_auto_lyrics(track_object: TrackClass):
 	if not track_object:
 		return
 
@@ -16126,12 +16127,12 @@ def test_auto_lyrics(track_object):
 				prefs.auto_lyrics_checked.append(track_object.index)
 
 
-def get_bio(track_object):
+def get_bio(track_object: TrackClass):
 	if track_object.artist != "":
 		lastfm.get_bio(track_object.artist)
 
 
-def search_lyrics_deco(track_object):
+def search_lyrics_deco(track_object: TrackClass):
 	if not track_object.lyrics:
 		line_colour = colours.menu_text
 	else:
@@ -16165,7 +16166,7 @@ def toggle_synced_lyrics_deco(track):
 showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 
-def search_guitarparty(track_object):
+def search_guitarparty(track_object: TrackClass):
 	if not track_object.title:
 		show_message(_("Insufitent metadata to search"))
 	gc.fetch(track_object)
@@ -16187,7 +16188,7 @@ def paste_lyrics_deco():
 	return [line_colour, colours.menu_background, None]
 
 
-def paste_lyrics(track_object):
+def paste_lyrics(track_object: TrackClass):
 	if SDL_HasClipboardText():
 		clip = SDL_GetClipboardText()
 		#logging.info(clip)
@@ -16197,7 +16198,7 @@ def paste_lyrics(track_object):
 		logging.warning("NO TEXT TO PASTE")
 
 
-def paste_chord_lyrics(track_object):
+def paste_chord_lyrics(track_object: TrackClass):
 	if track_object.title:
 		gc.save_format_b(track_object)
 
@@ -16206,7 +16207,7 @@ def chord_lyrics_paste_show_test(_):
 	return gui.combo_mode and prefs.guitar_chords
 
 
-def clear_chord_lyrics(track_object):
+def clear_chord_lyrics(track_object: TrackClass):
 	if track_object.title:
 		gc.clear(track_object)
 
@@ -16215,7 +16216,7 @@ showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), paste_chord_lyrics, pass_ref
 showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
 
-def copy_lyrics_deco(track_object):
+def copy_lyrics_deco(track_object: TrackClass):
 	if track_object.lyrics:
 		line_colour = colours.menu_text
 	else:
@@ -16224,15 +16225,15 @@ def copy_lyrics_deco(track_object):
 	return [line_colour, colours.menu_background, None]
 
 
-def copy_lyrics(track_object):
+def copy_lyrics(track_object: TrackClass):
 	copy_to_clipboard(track_object.lyrics)
 
 
-def clear_lyrics(track_object):
+def clear_lyrics(track_object: TrackClass):
 	track_object.lyrics = ""
 
 
-def clear_lyrics_deco(track_object):
+def clear_lyrics_deco(track_object: TrackClass):
 	if track_object.lyrics:
 		line_colour = colours.menu_text
 	else:
@@ -16241,14 +16242,14 @@ def clear_lyrics_deco(track_object):
 	return [line_colour, colours.menu_background, None]
 
 
-def split_lyrics(track_object):
+def split_lyrics(track_object: TrackClass):
 	if track_object.lyrics != "":
 		track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
 	else:
 		pass
 
 
-def show_sub_search(track_object):
+def show_sub_search(track_object: TrackClass):
 	sub_lyrics_box.activate(track_object)
 
 
@@ -16273,12 +16274,12 @@ center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), toggle_side_art, 
 center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 	toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show))
 
-def save_embed_img_disable_test(track_object):
+def save_embed_img_disable_test(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	return track_object.is_network
 
-def save_embed_img(track_object):
+def save_embed_img(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	filepath = track_object.fullpath
@@ -16321,7 +16322,7 @@ def save_embed_img(track_object):
 picture_menu = Menu(175)
 
 
-def open_image_deco(track_object):
+def open_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	info = album_art_gen.get_info(track_object)
@@ -16334,18 +16335,18 @@ def open_image_deco(track_object):
 	return [line_colour, colours.menu_background, None]
 
 
-def open_image_disable_test(track_object):
+def open_image_disable_test(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	return track_object.is_network
 
-def open_image(track_object):
+def open_image(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	album_art_gen.open_external(track_object)
 
 
-def extract_image_deco(track_object):
+def extract_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	info = album_art_gen.get_info(track_object)
@@ -16364,7 +16365,7 @@ def extract_image_deco(track_object):
 picture_menu.add(MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
 
 
-def cycle_image_deco(track_object):
+def cycle_image_deco(track_object: TrackClass):
 	info = album_art_gen.get_info(track_object)
 
 	if pctl.playing_state != 0 and (info is not None and info[1] > 1):
@@ -16374,7 +16375,7 @@ def cycle_image_deco(track_object):
 
 	return [line_colour, colours.menu_background, None]
 
-def cycle_image_gal_deco(track_object):
+def cycle_image_gal_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	info = album_art_gen.get_info(track_object)
@@ -16386,13 +16387,13 @@ def cycle_image_gal_deco(track_object):
 
 	return [line_colour, colours.menu_background, None]
 
-def cycle_offset(track_object):
+def cycle_offset(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	album_art_gen.cycle_offset(track_object)
 
 
-def cycle_offset_back(track_object):
+def cycle_offset_back(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	album_art_gen.cycle_offset_reverse(track_object)
@@ -16406,7 +16407,7 @@ picture_menu.add(MenuItem(_("Next Image"), cycle_offset, cycle_image_deco, pass_
 picture_menu.add(MenuItem(_("Extract Image"), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
 
 
-def dl_art_deco(track_object):
+def dl_art_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	if not track_object.album or not track_object.artist:
@@ -16549,12 +16550,12 @@ def download_art1(tr):
 		show_message(_("Matching cover art or ID could not be found."))
 
 
-def download_art1_fire_disable_test(track_object):
+def download_art1_fire_disable_test(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	return track_object.is_network
 
-def download_art1_fire(track_object):
+def download_art1_fire(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	shoot_dl = threading.Thread(target=download_art1, args=[track_object])
@@ -16562,7 +16563,7 @@ def download_art1_fire(track_object):
 	shoot_dl.start()
 
 
-def remove_embed_picture(track_object, dry=True):
+def remove_embed_picture(track_object: TrackClass, dry: bool = True):
 	index = track_object.index
 
 	if key_shift_down or key_shiftr_down:
@@ -16657,7 +16658,7 @@ del_icon = asset_loader("del.png", True)
 delete_icon = MenuIcon(del_icon)
 
 
-def delete_file_image(track_object):
+def delete_file_image(track_object: TrackClass):
 	try:
 		showc = album_art_gen.get_info(track_object)
 		if showc is not None and showc[0] == 0:
@@ -16671,7 +16672,7 @@ def delete_file_image(track_object):
 		show_message(_("Something went wrong"), mode="error")
 
 
-def delete_track_image_deco(track_object):
+def delete_track_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	info = album_art_gen.get_info(track_object)
@@ -16698,7 +16699,7 @@ def delete_track_image_deco(track_object):
 	return [line_colour, colours.menu_background, text]
 
 
-def delete_track_image(track_object):
+def delete_track_image(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	if track_object.is_network:
@@ -16727,7 +16728,7 @@ def toggle_gimage(mode=0):
 	prefs.show_gimage ^= True
 
 
-def search_image_deco(track_object):
+def search_image_deco(track_object: TrackClass):
 	if track_object.artist and track_object.album:
 		line_colour = colours.menu_text
 	else:
@@ -16736,7 +16737,7 @@ def search_image_deco(track_object):
 	return [line_colour, colours.menu_background, None]
 
 
-def ser_gimage(track_object):
+def ser_gimage(track_object: TrackClass):
 	if track_object.artist and track_object.album:
 		line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(
 			track_object.artist + " " + track_object.album)
@@ -16860,7 +16861,7 @@ def re_template_word(word, tr):
 	return ""
 
 
-def parse_template2(string, track_object, strict=False):
+def parse_template2(string: str, track_object: TrackClass, strict: bool = False):
 	temp = ""
 	out = ""
 
@@ -16897,7 +16898,7 @@ def parse_template2(string, track_object, strict=False):
 	return parse_template(out, track_object, strict=strict)
 
 
-def parse_template(string, track_object, up_ext=False, strict=False):
+def parse_template(string, track_object: TrackClass, up_ext: bool = False, strict: bool = False):
 	set = 0
 	underscore = False
 	output = ""
@@ -17191,7 +17192,7 @@ def clear_playlist(index):
 	gui.pl_update = 1
 
 
-def convert_playlist(pl, get_list=False):
+def convert_playlist(pl: TauonPlaylist, get_list: bool = False):
 	global transcode_list
 
 	if not tauon.test_ffmpeg():
@@ -19067,7 +19068,7 @@ def auto_sync(pl):
 	shoot_dl.start()
 
 
-def set_sync_playlist(pl):
+def set_sync_playlist(pl: TauonPlaylist) -> None:
 	id = pl_to_id(pl)
 	if prefs.sync_playlist == id:
 		prefs.sync_playlist = None
@@ -19075,7 +19076,7 @@ def set_sync_playlist(pl):
 		prefs.sync_playlist = pl_to_id(pl)
 
 
-def sync_playlist_deco(pl):
+def sync_playlist_deco(pl: TauonPlaylist):
 	text = _("Set as Sync Playlist")
 	id = pl_to_id(pl)
 	if id == prefs.sync_playlist:
@@ -28898,7 +28899,7 @@ class Over:
 			ddt.text(text_position, text, colours.box_button_text, 211, bg=real_bg)
 		return hit
 
-	def toggle_square(self, x, y, function, text, click=False, subtitle=""):
+	def toggle_square(self, x, y, function, text: str , click: bool = False, subtitle: str = "") -> bool:
 
 		x = round(x)
 		y = round(y)
