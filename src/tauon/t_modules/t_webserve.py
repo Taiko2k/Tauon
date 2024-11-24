@@ -727,8 +727,11 @@ def controller(tauon: Tauon) -> None:
 		httpd = HTTPServer(("127.0.0.1", 7813), Server)
 		httpd.serve_forever()
 		httpd.server_close()
-	except OSError:
-		logging.exception("Not starting controller server, already running?")
+	except OSError as e:
+		if str(e) == "[Errno 98] Address already in use":
+			logging.error("Not starting controller webserver, is another Tauon instance already running?")
+		else:
+			logging.exception("Unknown OSError starting radio page server!")
 	except Exception:
 		logging.exception("Failed starting radio page server!")
 
