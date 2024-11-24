@@ -25117,13 +25117,13 @@ class SearchOverlay:
 				search_over.searched_text = search_over.search_text.text
 				try:
 					worker2_lock.release()
-			except RuntimeError as e:
-				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
-				else:
-					logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
-			except Exception:
-				logging.exception("Unknown error trying to release worker2_lock")
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+					else:
+						logging.error("Unknown RuntimeError trying to release worker2_lock: {e}")
+				except Exception:
+					logging.exception("Unknown error trying to release worker2_lock")
 
 			if input_text or key_backspace_press:
 				self.input_timer.set()
