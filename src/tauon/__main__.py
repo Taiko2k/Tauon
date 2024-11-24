@@ -62,6 +62,9 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load
 
+install_directory: Path = Path(__file__).resolve().parent
+sys.path.append(str(install_directory.parent))
+
 from tauon.t_modules import t_bootstrap
 
 
@@ -167,7 +170,7 @@ def transfer_args_and_exit() -> None:
 if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
-install_directory: Path = Path(__file__).resolve().parent
+
 
 pyinstaller_mode = False
 if hasattr(sys, "_MEIPASS"):
