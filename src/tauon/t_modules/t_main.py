@@ -1124,7 +1124,7 @@ transcode_list = []
 transcode_state = ""
 
 taskbar_progress = True
-track_queue = []
+track_queue: list[TauonQueueItem] = []
 
 playing_in_queue = 0
 draw_sep_hl = False
@@ -3108,12 +3108,12 @@ for t in range(2):
 		if t == 0:
 			if not state_path1.is_file():
 				continue
-			state_file = open(state_path1, "rb")
+			state_file = state_path1.open("rb")
 		if t == 1:
 			if not state_path2.is_file():
 				logging.warning("State database file is missing, first run? Will create one anew!")
 				break
-			state_file = open(state_path2, "rb")
+			state_file = state_path2.open("rb")
 
 		# def tt():
 		#	 while True:
@@ -3137,9 +3137,19 @@ for t in range(2):
 		playlist_playing = save[2]
 		playlist_active = save[3]
 		playlist_view_position = save[4]
-		multi_playlist = save[5]
+		if save[5] is not None:
+			tauonplaylist_jar = save[5]
+			for d in tauonplaylist_jar:
+				nt = TauonPlaylist()
+				nt.__dict__.update(d)
+				multi_playlist[d["index"]] = nt
 		volume = save[6]
-		track_queue = save[7]
+		if save[7] is not None:
+			tauonqueueitem_jar = save[7]
+			for d in tauonqueueitem_jar:
+				nt = TauonQueueItem()
+				nt.__dict__.update(d)
+				track_queue[d["index"]] = nt
 		playing_in_queue = save[8]
 		default_playlist = save[9]
 		# playlist_playing = save[10]
@@ -3433,8 +3443,8 @@ for t in range(2):
 		if save[161] is not None:
 			prefs.artist_list_style = save[161]
 		if save[162] is not None:
-			ds = save[162]
-			for d in ds:
+			trackclass_jar = save[162]
+			for d in trackclass_jar:
 				nt = TrackClass()
 				nt.__dict__.update(d)
 				master_library[d["index"]] = nt
@@ -43216,9 +43226,17 @@ def save_state():
 	# view_prefs['dd-index'] = dd_index
 	view_prefs["append-date"] = prefs.append_date
 
-	ds = []
+	tauonplaylist_jar = []
+	for v in pctl.multi_playlist:
+		tauonplaylist_jar.append(v.__dict__)
+
+	tauonqueueitem_jar = []
+	for v in pctl.track_queue:
+		tauonqueueitem_jar.append(v.__dict__)
+
+	trackclass_jar = []
 	for v in pctl.master_library.values():
-		ds.append(v.__dict__)
+		trackclass_jar.append(v.__dict__)
 
 	save = [
 		None,
@@ -43226,9 +43244,9 @@ def save_state():
 		pctl.playlist_playing_position,
 		pctl.active_playlist_viewing,
 		pctl.playlist_view_position,
-		pctl.multi_playlist,
+		tauonplaylist_jar, # pctl.multi_playlist, # list[TauonPlaylist]
 		pctl.player_volume,
-		pctl.track_queue,
+		tauonqueueitem_jar, # pctl.track_queue, # list[TauonQueueItem]
 		pctl.queue_step,
 		default_playlist,
 		None,  # pctl.playlist_playing_position,
@@ -43383,7 +43401,7 @@ def save_state():
 		prefs.bg_flips,
 		prefs.tray_show_title,
 		prefs.artist_list_style,
-		ds,
+		trackclass_jar,
 		prefs.premium,
 		gui.radio_view,
 		pctl.radio_playlists,
