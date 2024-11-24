@@ -260,9 +260,9 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 		def get_track(self, track_position: int, playlist_index: int | None = None, track: TrackClass | None = None, album_id: int = -1) -> None:
 			if track is None:
 				if playlist_index is None:
-					playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
+					playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
 				else:
-					playlist = pctl.multi_playlist[playlist_index][2]
+					playlist = pctl.multi_playlist[playlist_index].playlist_ids
 				track_id = playlist[track_position]
 				track = pctl.g(track_id)
 
@@ -417,7 +417,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 						playlist = int(playlist)
 						pl = tauon.id_to_pl(int(playlist))
 						if pl is not None and pl < len(pctl.multi_playlist):
-							playlist = pctl.multi_playlist[pl][2]
+							playlist = pctl.multi_playlist[pl].playlist_ids
 							if position < len(playlist):
 								tauon.switch_playlist(pl, cycle=False, quiet=True)
 								pctl.jump(playlist[position], position)
@@ -494,7 +494,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 
 						data = self.get_track(int(levels[4]), pl)
 
-						playlist = pctl.multi_playlist[pl][2]
+						playlist = pctl.multi_playlist[pl].playlist_ids
 						p = int(levels[4])
 						if p < len(playlist):
 							track = pctl.g(playlist[p])
@@ -581,7 +581,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				if key.isdigit():
 					pl = tauon.id_to_pl(int(key))
 					if pl is not None and pl < len(pctl.multi_playlist):
-						playlist = pctl.multi_playlist[pl][2]
+						playlist = pctl.multi_playlist[pl].playlist_ids
 						parent = ""
 						album_id = 0
 						for i, id in enumerate(playlist):
@@ -627,13 +627,13 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				data = {
 					"status": "stopped",
 					"inc": pctl.db_inc,
-					"shuffle": pctl.random_mode == True,
-					"repeat": pctl.repeat_mode == True,
+					"shuffle": pctl.random_mode is True,
+					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
-					"auto_stop": tauon.pctl.auto_stop == True,
+					"auto_stop": tauon.pctl.auto_stop is True,
 					"volume": pctl.player_volume,
 					"playlist": str(tauon.get_playing_playlist_id()),
-					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2]),
+					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
 				}
 				if pctl.playing_state == 1:
 					data["status"] = "playing"

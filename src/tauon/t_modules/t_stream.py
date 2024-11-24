@@ -329,14 +329,14 @@ class StreamEnc:
 
 				target_pl = None
 				for i, pl in enumerate(self.tauon.pctl.multi_playlist):
-					if pl[0] == "Saved Radio Tracks":
+					if pl.title == "Saved Radio Tracks":
 						target_pl = i
 				if target_pl is None:
 					self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Saved Radio Tracks"))
 					target_pl = len(self.tauon.pctl.multi_playlist) - 1
 
 				load_order = self.tauon.pctl.LoadClass()
-				load_order.playlist = self.tauon.pctl.multi_playlist[target_pl][6]
+				load_order.playlist = self.tauon.pctl.multi_playlist[target_pl].uuid_int
 				load_order.target = save_file
 				self.tauon.load_orders.append(copy.deepcopy(load_order))
 				self.tauon.gui.update += 1

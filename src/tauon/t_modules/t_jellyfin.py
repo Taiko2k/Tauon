@@ -189,10 +189,10 @@ class Jellyfin:
 		if not self.connected:
 			return
 
-		codes = self.pctl.gen_codes.get(self.pctl.multi_playlist[pl][6], "")
+		codes = self.pctl.gen_codes.get(self.pctl.multi_playlist[pl].uuid_int, "")
 
 		ids = []
-		for t in self.pctl.multi_playlist[pl][2]:
+		for t in self.pctl.multi_playlist[pl].playlist_ids:
 			track = self.pctl.g(t)
 			if track.url_key not in ids and track.file_ext == "JELY":
 				ids.append(track.url_key)
@@ -210,7 +210,7 @@ class Jellyfin:
 				},
 				params={
 					"UserId": self.userId,
-					"Name": self.pctl.multi_playlist[pl][0],
+					"Name": self.pctl.multi_playlist[pl].title,
 					"Ids": ",".join(ids),
 					"MediaType": "Music",
 				},
@@ -218,7 +218,7 @@ class Jellyfin:
 			)
 
 			playlist_id = response.json()["Id"]
-			self.pctl.gen_codes[self.pctl.multi_playlist[pl][6]] = f"jelly\"{playlist_id}\""
+			self.pctl.gen_codes[self.pctl.multi_playlist[pl].uuid_int] = f"jelly\"{playlist_id}\""
 			logging.info("New jellyfin playlist created")
 
 		else:

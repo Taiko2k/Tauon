@@ -401,7 +401,7 @@ class SpotCtl:
 	def prime_device(self) -> bool | int | None:
 		self.connect()
 		if not self.spotify:
-			return
+			return None
 
 		logging.info("Get devices...")
 		devices = self.spotify.playback_devices()
@@ -459,7 +459,8 @@ class SpotCtl:
 		self.connect()
 		if not self.spotify:
 			self.preparing_spotify = False
-			self.tauon.gui.show_message(_("Error. You may need to click Authorise in Settings > Accounts > Spotify."), mode="warning")
+			self.tauon.gui.show_message(
+				_("Error. You may need to click Authorise in Settings > Accounts > Spotify."), mode="warning")
 			return
 
 		logging.info("Want play spotify target " + str(id))
@@ -734,7 +735,7 @@ class SpotCtl:
 		track = self.spotify.track(id, market=self.country)
 		tr = self.load_track(track)
 		self.tauon.pctl.master_library[tr.index] = tr
-		self.tauon.pctl.multi_playlist[playlist_number][2].append(tr.index)
+		self.tauon.pctl.multi_playlist[playlist_number].playlist_ids.append(tr.index)
 		self.tauon.gui.pl_update += 1
 
 	def append_album(self, url: str, playlist_number: int | None = None, return_list: bool = False) -> list | None:
@@ -760,7 +761,7 @@ class SpotCtl:
 		if playlist_number is None:
 			playlist_number = self.tauon.pctl.active_playlist_viewing
 
-		self.tauon.pctl.multi_playlist[playlist_number][2].extend(playlist)
+		self.tauon.pctl.multi_playlist[playlist_number].playlist_ids.extend(playlist)
 		self.tauon.gui.pl_update += 1
 		return None
 
@@ -801,7 +802,7 @@ class SpotCtl:
 
 		title = p.name + " by " + p.owner.display_name
 		if p.name == "Discover Weekly" or p.name == "Release Radar":
-			#self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1][4] = 1
+			#self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1].hide_title = True
 			title = p.name
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist=playlist))
 
@@ -1072,12 +1073,13 @@ class SpotCtl:
 			return playlist
 
 		for p in self.tauon.pctl.multi_playlist:
-			if p[0] == self.tauon.strings.spotify_likes:
-				p[2][:] = playlist[:]
+			if p.title == self.tauon.strings.spotify_likes:
+				p.playlist_ids[:] = playlist[:]
 				self.spotify_com = False
 				return None
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(
+			self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "slt"
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 		self.spotify_com = False
