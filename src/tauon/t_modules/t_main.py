@@ -3058,7 +3058,7 @@ station = {
 	"stream_url": "http://ice3.somafm.com/poptron-128-mp3",
 	"country": "USA",
 	"website_url": "http://somafm.com/poptron/",
-	"icon": "https://somafm.com/logos/120/poptron120.jpg"
+	"icon": "https://somafm.com/logos/120/poptron120.jpg",
 }
 primary_stations.append(station)
 station = {
@@ -3066,7 +3066,7 @@ station = {
 	"stream_url": "http://ice4.somafm.com/vaporwaves-128-mp3",
 	"country": "USA",
 	"website_url": "https://somafm.com/vaporwaves",
-	"icon": "https://somafm.com/img3/vaporwaves400.png"
+	"icon": "https://somafm.com/img3/vaporwaves400.png",
 }
 primary_stations.append(station)
 
@@ -3075,7 +3075,7 @@ station = {
 	"stream_url": "https://kathy.torontocast.com:2005/stream",
 	"country": "Canada",
 	"website_url": "https://decayfm.com",
-	"icon": "https://cdn-profiles.tunein.com/s193842/images/logod.png"
+	"icon": "https://cdn-profiles.tunein.com/s193842/images/logod.png",
 }
 primary_stations.append(station)
 
@@ -7008,7 +7008,7 @@ if system == "Linux" and not macos and not msys:
 			"action_click",
 			"Open Output Folder",
 			g_open_encode_out,
-			None
+			None,
 		)
 
 		de_notify_support = True
@@ -8242,7 +8242,7 @@ class MenuItem:
 	]
 	def __init__(
 		self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
-		pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0
+		pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0,
 	):
 		self.title = title
 		self.is_sub_menu = is_sub_menu
@@ -8701,7 +8701,7 @@ class SubsonicService:
 			"u": prefs.subsonic_user,
 			"v": "1.13.0",
 			"c": t_title,
-			"f": "json"
+			"f": "json",
 		}
 
 		if prefs.subsonic_password_plain:
@@ -8800,7 +8800,7 @@ class SubsonicService:
 			for artist in artists:
 				folders.append((
 					artist["id"],
-					artist["name"]
+					artist["name"],
 				))
 
 		playlist = []
@@ -10023,7 +10023,7 @@ elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURS
 					("xhot", c_uint32),
 					("yhot", c_uint32),
 					("delay", c_uint32),
-					("pixels", c_void_p)
+					("pixels", c_void_p),
 				]
 
 		try:
@@ -18047,7 +18047,7 @@ column_names = (
 	"S",
 	"Filename",
 	"Disc",
-	"CUE"
+	"CUE",
 )
 
 
@@ -25262,7 +25262,7 @@ class SearchOverlay:
 					8: [100, 210, 250, 255],  # Playlist
 					10: [145, 245, 78, 255],  # Spotify Artist
 					11: [130, 237, 69, 255],  # Spotify Album
-					12: [200, 255, 150, 255]  # Spotify Track
+					12: [200, 255, 150, 255], # Spotify Track
 				}
 				if n not in names:
 					name = "NYI"
@@ -28035,7 +28035,7 @@ class Over:
 			[_("Lyrics"), self.lyrics],
 			[_("Accounts"), self.last_fm_box],
 			[_("Stats"), self.stats],
-			[_("About"), self.about]
+			[_("About"), self.about],
 		]
 
 		self.stats_timer = Timer()
@@ -40330,7 +40330,7 @@ class ArtistInfoBox:
 			os.path.join(a_cache_dir, f_artist + "-lfm.png"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.jpg"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.webp"),
-			os.path.join(a_cache_dir, f_artist + "-dcg.jpg")
+			os.path.join(a_cache_dir, f_artist + "-dcg.jpg"),
 		]
 
 		if get_img_path:
