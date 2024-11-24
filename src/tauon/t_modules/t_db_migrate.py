@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TauonPlaylist
+	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TauonPlaylist, TauonQueueItem, TrackClass
 
 
 def database_migrate(
 	*,
 	db_version: float,
-	master_library: dict,
+	master_library: dict[int, TrackClass],
 	install_mode: bool,
 	multi_playlist: list[TauonPlaylist],
 	star_store: StarStore,
@@ -24,12 +24,21 @@ def database_migrate(
 	install_directory: str,
 	user_directory: str,
 	gui: GuiVar,
-	gen_codes: dict,
+	gen_codes: dict[int, str],
 	prefs: Prefs,
 	radio_playlists: list[TauonPlaylist],
-	p_force_queue: list,
+	p_force_queue: list[TauonQueueItem],
 	theme: int,
-) -> tuple[dict, list[TauonPlaylist], StarStore, list, int, Prefs, GuiVar, dict, list[TauonPlaylist]]:
+) -> tuple[
+	dict[int, TrackClass],
+	list[TauonPlaylist],
+	StarStore,
+	list[TauonQueueItem],
+	int,
+	Prefs,
+	GuiVar,
+	dict[int, str],
+	list[TauonPlaylist]]:
 	"""Migrate database to a newer version if we're behind
 
 	Returns all the objects that could've been possibly changed:

@@ -1029,7 +1029,7 @@ selected_in_playlist = -1
 
 shift_selection = []
 
-gen_codes = {}
+gen_codes: dict[int, str] = {}
 # Control Variables--------------------------------------------------------------------------
 
 mouse_down = False
