@@ -289,7 +289,7 @@ try:
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
 except Exception:
-	logging.exception("Unkown error trying to import colored_traceback, tracebacks will be dull.")
+	logging.exception("Unknown error trying to import colored_traceback, tracebacks will be dull.")
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -298,14 +298,14 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
 except Exception:
-	logging.exception("Unkown error trying to import jxlpy, JPEG XL support will be disabled.")
+	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
 
 try:
 	import setproctitle
 except ModuleNotFoundError:
 	logging.warning("Unable to import setproctitle, won't be setting process title.")
 except Exception:
-	logging.exception("Unkown error trying to import setproctitle, JPEG XL support will be disabled.")
+	logging.exception("Unknown error trying to import setproctitle, JPEG XL support will be disabled.")
 else:
 	setproctitle.setproctitle("tauonmb")
 
@@ -320,7 +320,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
 except Exception:
-	logging.exception("Unkown error trying to import pypresence, Discord Rich Presence will be disabled.")
+	logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
 else:
 	import asyncio
 	discord_allow = True
@@ -331,7 +331,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
 except Exception:
-	logging.exception("Unkown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
 else:
 	s2t = opencc.OpenCC("s2t")
 	t2s = opencc.OpenCC("t2s")
@@ -8527,7 +8527,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
-	logging.exception("Unkown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 
 tauon.chrome = chrome
 
@@ -14775,8 +14775,8 @@ class RenameTrackBox:
 		rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.box_input_text, width=300)
 		NRN = rename_files.text
 
-		ddt.rect_s((x + 8 * gui.scale, y + 36 * gui.scale, 300 * gui.scale, 22 * gui.scale), colours.box_text_border,
-				   1 * gui.scale)
+		ddt.rect_s(
+			(x + 8 * gui.scale, y + 36 * gui.scale, 300 * gui.scale, 22 * gui.scale), colours.box_text_border, 1 * gui.scale)
 
 		afterline = ""
 		warn = False
@@ -15201,8 +15201,9 @@ class SubLyricsBox:
 			self.active_field = 1
 			inp.key_tab_press = False
 
-		sub_lyrics_a.draw(xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 1,
-						  width=rect1[2] - 8 * gui.scale)
+		sub_lyrics_a.draw(
+			xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 1,
+			width=rect1[2] - 8 * gui.scale)
 
 		y += round(28 * gui.scale)
 
@@ -25285,8 +25286,9 @@ class SearchOverlay:
 				if n in (3,):  # Genre
 					xx = ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], b_font)
 					if item[1].endswith("+"):
-						ddt.text((xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
-								 [255, 255, 255, int(255 * fade) // 2], 313)
+						ddt.text(
+							(xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
+							[255, 255, 255, int(255 * fade) // 2], 313)
 				if n == 11:  # Spotify Album
 					xx = ddt.text((text_lx, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], s_b_font)
 					artist = item[1][1]
@@ -28364,8 +28366,9 @@ class Over:
 			ddt.text((x + round(22 * gui.scale), y), _("Cache size"), colours.box_text, 312)
 			y += round(18 * gui.scale)
 			prefs.cache_limit = int(
-				self.slide_control(x + round(22 * gui.scale), y, None, _(" GB"), prefs.cache_limit / 1000, 0.5,
-								   1000, 0.5) * 1000)
+				self.slide_control(
+					x + round(22 * gui.scale), y, None, _(" GB"), prefs.cache_limit / 1000, 0.5,
+					1000, 0.5) * 1000)
 
 			y += round(30 * gui.scale)
 			# prefs.device_buffer = self.slide_control(x + round(270 * gui.scale), y, _("Output buffer"), 'ms',
@@ -28714,9 +28717,10 @@ class Over:
 			y += 37 * gui.scale
 
 			if prefs.enable_remote and prefs.enable_remote != old:
-				show_message(_("Notice: This API is not security hardened."),
-							 _("Only enable in a trusted LAN and do not expose port (7814) to the internet"),
-							 mode="warning")
+				show_message(
+					_("Notice: This API is not security hardened."),
+					_("Only enable in a trusted LAN and do not expose port (7814) to the internet"),
+					mode="warning")
 
 			old = prefs.block_suspend
 			prefs.block_suspend = self.toggle_square(
@@ -29031,8 +29035,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_sat_url.text = prefs.sat_url
-			text_sat_url.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-							  width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_sat_url.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.sat_url = text_sat_url.text.strip()
 
 			y += round(25 * gui.scale)
@@ -29047,8 +29052,9 @@ class Over:
 			if coll(rect1) and (self.click or level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			text_sat_playlist.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-								   width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_sat_playlist.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 
 			y += round(25 * gui.scale)
 
@@ -29084,8 +29090,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_maloja_url.text = prefs.maloja_url
-			text_maloja_url.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-								 width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_maloja_url.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.maloja_url = text_maloja_url.text.strip()
 
 			y += round(23 * gui.scale)
@@ -29099,8 +29106,9 @@ class Over:
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_maloja_key.text = prefs.maloja_key
-			text_maloja_key.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-								 width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_maloja_key.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.maloja_key = text_maloja_key.text.strip()
 
 			y += round(35 * gui.scale)
@@ -29161,8 +29169,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_spot_client.text = prefs.spot_client
-			text_spot_client.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-								  width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_spot_client.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.spot_client = text_spot_client.text.strip()
 
 			y += round(19 * gui.scale)
@@ -29176,8 +29185,9 @@ class Over:
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_spot_secret.text = prefs.spot_secret
-			text_spot_secret.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-							  width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_spot_secret.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.spot_secret = text_spot_secret.text.strip()
 
 			y += round(27 * gui.scale)
@@ -29245,8 +29255,9 @@ class Over:
 					self.account_text_field = 3
 				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 				text_spot_password.text = prefs.spot_password
-				text_spot_password.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 3, secret=True,
-									  width=rect1[2] - 8 * gui.scale, click=self.click)
+				text_spot_password.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 3, secret=True,
+					width=rect1[2] - 8 * gui.scale, click=self.click)
 				prefs.spot_password = text_spot_password.text.strip()
 
 		if self.account_view == 7:
@@ -29269,8 +29280,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_air_usr.text = prefs.subsonic_user
-			text_air_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-							  width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_air_usr.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.subsonic_user = text_air_usr.text
 
 			y += round(23 * gui.scale)
@@ -29282,8 +29294,9 @@ class Over:
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_air_pas.text = prefs.subsonic_password
-			text_air_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-							  width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+			text_air_pas.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
 			prefs.subsonic_password = text_air_pas.text
 
 			y += round(23 * gui.scale)
@@ -29295,8 +29308,9 @@ class Over:
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_air_ser.text = prefs.subsonic_server
-			text_air_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
-							  width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_air_ser.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.subsonic_server = text_air_ser.text
 
 			y += round(40 * gui.scale)
@@ -29328,8 +29342,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_jelly_usr.text = prefs.jelly_username
-			text_jelly_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-								width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_jelly_usr.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.jelly_username = text_jelly_usr.text
 
 			y += round(23 * gui.scale)
@@ -29341,8 +29356,9 @@ class Over:
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_jelly_pas.text = prefs.jelly_password
-			text_jelly_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-								width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+			text_jelly_pas.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
 			prefs.jelly_password = text_jelly_pas.text
 
 			y += round(23 * gui.scale)
@@ -29354,8 +29370,9 @@ class Over:
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_jelly_ser.text = prefs.jelly_server_url
-			text_jelly_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
-								width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_jelly_ser.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.jelly_server_url = text_jelly_ser.text
 
 			y += round(30 * gui.scale)
@@ -29398,8 +29415,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_koel_usr.text = prefs.koel_username
-			text_koel_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-							   width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_koel_usr.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.koel_username = text_koel_usr.text
 
 			y += round(23 * gui.scale)
@@ -29411,8 +29429,9 @@ class Over:
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_koel_pas.text = prefs.koel_password
-			text_koel_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-							   width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+			text_koel_pas.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
 			prefs.koel_password = text_koel_pas.text
 
 			y += round(23 * gui.scale)
@@ -29453,8 +29472,9 @@ class Over:
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_plex_usr.text = prefs.plex_username
-			text_plex_usr.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-							   width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_plex_usr.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.plex_username = text_plex_usr.text
 
 			y += round(23 * gui.scale)
@@ -29466,8 +29486,9 @@ class Over:
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_plex_pas.text = prefs.plex_password
-			text_plex_pas.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-							   width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+			text_plex_pas.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+				width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
 			prefs.plex_password = text_plex_pas.text
 
 			y += round(23 * gui.scale)
@@ -29479,8 +29500,9 @@ class Over:
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_plex_ser.text = prefs.plex_servername
-			text_plex_ser.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
-							   width=rect1[2] - 8 * gui.scale, click=self.click)
+			text_plex_ser.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.plex_servername = text_plex_ser.text
 
 			y += round(40 * gui.scale)
@@ -29499,9 +29521,10 @@ class Over:
 
 			y += 22 * gui.scale
 			# . Limited space available. Limit 55 chars
-			link_pa2 = draw_linked_text((x + 0 * gui.scale, y),
-										_("They encourage you to contribute at {link}").format(link="https://fanart.tv"),
-										colours.box_text_label, 11)
+			link_pa2 = draw_linked_text(
+				(x + 0 * gui.scale, y),
+				_("They encourage you to contribute at {link}").format(link="https://fanart.tv"),
+				colours.box_text_label, 11)
 			link_activate(x, y, link_pa2)
 
 			y += 35 * gui.scale
@@ -29785,8 +29808,7 @@ class Over:
 			y += 5 * gui.scale
 			if prefs.sync_playlist:
 				ww = ddt.text((x, y), _("Selected playlist:") + "    ", colours.box_text_label, 11)
-				ddt.text((x + ww, y), pctl.multi_playlist[pl].title, colours.box_sub_text, 12,
-						 400 * gui.scale)
+				ddt.text((x + ww, y), pctl.multi_playlist[pl].title, colours.box_sub_text, 12, 400 * gui.scale)
 			else:
 				ddt.text((x, y), _("No sync playlist selected!"), colours.box_text_label, 11)
 
@@ -29797,8 +29819,9 @@ class Over:
 			rect1 = (x + 0 * gui.scale, y, round(450 * gui.scale), round(17 * gui.scale))
 			fields.add(rect1)
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			sync_target.draw(x + round(4 * gui.scale), y, colours.box_input_text, not gui.sync_progress,
-							 width=rect1[2] - 8 * gui.scale, click=self.click)
+			sync_target.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, not gui.sync_progress,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
 
 			rect = [x + rect1[2] + 11 * gui.scale, y - 2 * gui.scale, 15 * gui.scale, 19 * gui.scale]
 			fields.add(rect)
@@ -30354,8 +30377,9 @@ class Over:
 
 		y += 25 * gui.scale
 		ww = ddt.text((x, y), _("Target playlist:   "), colours.box_sub_text, 312)
-		ddt.text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing].title, colours.box_text_label, 12,
-				 400 * gui.scale)
+		ddt.text(
+			(x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing].title, colours.box_text_label, 12,
+			400 * gui.scale)
 		# x -= 210 * gui.scale
 
 		y += 30 * gui.scale
@@ -31504,8 +31528,8 @@ class TopPanel:
 				if not gui.radio_view:
 					# Double click to play
 					if mouse_up and pl_to_id(i) == self.tab_d_click_ref == pl_to_id(pctl.active_playlist_viewing) and \
-							self.tab_d_click_timer.get() < 0.25 and point_distance(last_click_location,
-															                       mouse_up_position) < 5 * gui.scale:
+							self.tab_d_click_timer.get() < 0.25 and point_distance(
+								last_click_location, mouse_up_position) < 5 * gui.scale:
 
 						if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
 							pctl.play()
@@ -33409,15 +33433,12 @@ class MiniMode:
 			if w != h or mouse_in_area:
 
 				if not line1 and not line2:
-					ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
-							 window_size[0] - 30 * gui.scale)
+					ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214, window_size[0] - 30 * gui.scale)
 				else:
 
-					ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, line2c, 514,
-							 window_size[0] - 30 * gui.scale)
+					ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, line2c, 514, window_size[0] - 30 * gui.scale)
 
-					ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 414,
-							 window_size[0] - 30 * gui.scale)
+					ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 414, window_size[0] - 30 * gui.scale)
 
 				# Test click to seek
 				if mouse_up and coll(seek_r_hit):
@@ -33625,8 +33646,9 @@ class MiniMode2:
 
 			if not line1 and not line2:
 
-				ddt.text((x1 + 15 * gui.scale, 44 * gui.scale), track.filename, colours.grey(150), 315,
-						 window_size[0] - x1 - 30 * gui.scale)
+				ddt.text(
+					(x1 + 15 * gui.scale, 44 * gui.scale), track.filename, colours.grey(150), 315,
+					window_size[0] - x1 - 30 * gui.scale)
 			else:
 
 				# if ddt.get_text_w(line2, 215) > window_size[0] - x1 - 30 * gui.scale:
@@ -33637,11 +33659,13 @@ class MiniMode2:
 				#              window_size[0] - x1 - 35 * gui.scale)
 				# else:
 
-				ddt.text((x1 + 15 * gui.scale, 18 * gui.scale), line2, colours.grey(249), 514,
-						 window_size[0] - x1 - 30 * gui.scale)
+				ddt.text(
+					(x1 + 15 * gui.scale, 18 * gui.scale), line2, colours.grey(249), 514,
+					window_size[0] - x1 - 30 * gui.scale)
 
-				ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 514,
-						 window_size[0] - x1 - 30 * gui.scale)
+				ddt.text(
+					(x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 514,
+					window_size[0] - x1 - 30 * gui.scale)
 
 		# Show exit/min buttons when mosue over
 		tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
@@ -33670,8 +33694,9 @@ class MiniMode2:
 					pctl.seek_decimal(p)
 
 			if pctl.playing_length:
-				seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)),
-							 round(5 * gui.scale))
+				seek_rect = (
+					h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)),
+					round(5 * gui.scale))
 				colour = colours.artist_text
 				if gui.theme_name == "Carbon":
 					colour = colours.bottom_panel_colour
@@ -33793,18 +33818,21 @@ class MiniMode3:
 			if not line1 and not line2:
 				if not ddt.alpha_bg:
 					key = (track.filename, 214, style_overlay.current_track_id)
-				ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
-						 window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
+				ddt.text(
+					(w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214,
+					window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
 			else:
 
 				if not ddt.alpha_bg:
 					key = (line1, 515, style_overlay.current_track_id)
-				ddt.text((w // 2, y1 + 5 * gui.scale, 2), line1, line2c, 515,
-						 window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
+				ddt.text(
+					(w // 2, y1 + 5 * gui.scale, 2), line1, line2c, 515,
+					window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
 				if not ddt.alpha_bg:
 					key = (line2, 415, style_overlay.current_track_id)
-				ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
-						 window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
+				ddt.text(
+					(w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 415,
+					window_size[0] - 30 * gui.scale, real_bg=not transit, key=key)
 
 			y1 += round(10 * gui.scale)
 
@@ -36592,16 +36620,19 @@ class RadioBox:
 			boxx = round(32 * gui.scale)
 			toff = boxx + round(10 * gui.scale)
 			if item["title"]:
-				ddt.text((xx + toff, yy + round(3 * gui.scale)), item["title"], text_colour, 212, bg=bg,
-						 max_w=rect[2] - (15 * gui.scale + toff))
+				ddt.text(
+					(xx + toff, yy + round(3 * gui.scale)), item["title"], text_colour, 212, bg=bg,
+					max_w=rect[2] - (15 * gui.scale + toff))
 			else:
-				ddt.text((xx + toff, yy + round(3 * gui.scale)), item["stream_url"], text_colour, 212, bg=bg,
-						 max_w=rect[2] - (15 * gui.scale + toff))
+				ddt.text(
+					(xx + toff, yy + round(3 * gui.scale)), item["stream_url"], text_colour, 212, bg=bg,
+					max_w=rect[2] - (15 * gui.scale + toff))
 
 			country = item.get("country")
 			if country:
-				ddt.text((xx + toff, yy + round(18 * gui.scale)), country, text_colour, 11, bg=bg,
-						 max_w=rect[2] - (15 * gui.scale + toff))
+				ddt.text(
+					(xx + toff, yy + round(18 * gui.scale)), country, text_colour, 11, bg=bg,
+					max_w=rect[2] - (15 * gui.scale + toff))
 
 			b_rect = (xx + round(4 * gui.scale), yy + round(4 * gui.scale), boxx, boxx)
 			ddt.rect(b_rect, colours.box_thumb_background)
@@ -36792,8 +36823,9 @@ class RenamePlaylistBox:
 		ddt.rect(rect, bg)
 
 		# Draw text entry
-		rename_text_area.draw(rect[0] + 10 * gui.scale, rect[1] + 8 * gui.scale, colours.alpha_grey(250),
-							  width=350 * gui.scale, font=315)
+		rename_text_area.draw(
+			rect[0] + 10 * gui.scale, rect[1] + 8 * gui.scale, colours.alpha_grey(250),
+			width=350 * gui.scale, font=315)
 
 		# Draw accent
 		rect2 = [self.x, self.y + rect[3] - 4 * gui.scale, min_w, 4 * gui.scale]
@@ -37295,8 +37327,8 @@ class PlaylistBox:
 					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [80, 200, 180, 255])
 
 				# Draw indicators for moving tab
-				if self.drag and i != self.drag_on and not point_proximity_test(gui.drag_source_position,
-															                    mouse_position, 10 * gui.scale):
+				if self.drag and i != self.drag_on and not point_proximity_test(
+					gui.drag_source_position, mouse_position, 10 * gui.scale):
 					if key_shift_down:
 						ddt.rect(
 							(tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h),
@@ -37332,8 +37364,9 @@ class PlaylistBox:
 								"+" + str(self.adds[k][1]), colours.pluse_colour, 212, bg=real_bg)
 							gui.update += 1
 
-							ddt.rect((tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w),
-									 [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1])
+							ddt.rect(
+								(tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w),
+								[244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1])
 
 			yy += self.tab_h + self.gap
 
@@ -37896,8 +37929,9 @@ class ArtistList:
 		artist_font = 313
 		count_font = 312
 		extra_text_space = 0
-		ddt.text((x_text, y + round(2 * gui.scale)), artist, line1_colour, artist_font,
-				 extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
+		ddt.text(
+			(x_text, y + round(2 * gui.scale)), artist, line1_colour, artist_font,
+			extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
 		# ddt.text((x_text, y + self.tab_h // 2 - 2 * gui.scale), text, line2_colour, count_font,
 		#          extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
@@ -38033,10 +38067,12 @@ class ArtistList:
 				# . Max 20 chars. Alt: Downloading image, Loading image
 				text = _("Downloading data...")
 
-			ddt.text((x_text, y + self.tab_h // 2 - 19 * gui.scale), artist, line1_colour, artist_font,
-					 extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
-			ddt.text((x_text, y + self.tab_h // 2 - 2 * gui.scale), text, line2_colour, count_font,
-					 extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
+			ddt.text(
+				(x_text, y + self.tab_h // 2 - 19 * gui.scale), artist, line1_colour, artist_font,
+				extra_text_space + w - x_text - 30 * gui.scale, bg=bg)
+			ddt.text(
+				(x_text, y + self.tab_h // 2 - 2 * gui.scale), text, line2_colour, count_font,
+				extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
 	def draw_card(self, artist, x, y, w):
 
@@ -38370,8 +38406,9 @@ class ArtistList:
 				if loading_in_progress or transcode_list or after_scan:
 					text = _("Busy...")
 
-			ddt.text((x + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212,
-					 max_w=w - 17 * gui.scale)
+			ddt.text(
+				(x + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212,
+				max_w=w - 17 * gui.scale)
 
 		yy = y + 12 * gui.scale
 
@@ -38579,8 +38616,9 @@ class TreeView:
 		ddt.text_background_colour = colours.side_panel_background
 
 		if self.background_processing and self.rows_id != pl_id:
-			ddt.text((x + w // 2, y + (h // 7), 2), _("Loading Folder Tree..."), alpha_mod(colours.side_bar_line2, 100),
-					 212, max_w=w - 17 * gui.scale)
+			ddt.text(
+				(x + w // 2, y + (h // 7), 2), _("Loading Folder Tree..."), alpha_mod(colours.side_bar_line2, 100),
+				212, max_w=w - 17 * gui.scale)
 			return
 
 		# if not tree or not self.rows:
@@ -38588,8 +38626,9 @@ class TreeView:
 		#              212, max_w=w - 17 * gui.scale)
 		#     return
 		if not tree:
-			ddt.text((x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
-					 212, max_w=w - 17 * gui.scale)
+			ddt.text(
+				(x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
+				212, max_w=w - 17 * gui.scale)
 			return
 
 		if self.rows_id != pl_id:
@@ -38604,8 +38643,9 @@ class TreeView:
 				return
 
 		if not self.rows:
-			ddt.text((x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
-					 212, max_w=w - 17 * gui.scale)
+			ddt.text(
+				(x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
+				212, max_w=w - 17 * gui.scale)
 			return
 
 		yy = y + round(11 * gui.scale)
@@ -38628,9 +38668,10 @@ class TreeView:
 
 		# Draw scroll bar
 		if mouse_in or tree_view_scroll.held:
-			scroll_position = tree_view_scroll.draw(x + w - round(12 * gui.scale), y + 1, round(11 * gui.scale), h,
-													scroll_position,
-													max_scroll, r_click=right_click, jump_distance=40)
+			scroll_position = tree_view_scroll.draw(
+				x + w - round(12 * gui.scale), y + 1, round(11 * gui.scale), h,
+				scroll_position,
+				max_scroll, r_click=right_click, jump_distance=40)
 
 		self.scroll_positions[pl_id] = scroll_position
 
@@ -39241,11 +39282,13 @@ class QueueBox:
 		if fqo[3] == 0 and not artist_line:
 			line2y -= 7 * gui.scale
 
-		ddt.text((rect[0] + (40 * gui.scale), yy - 1 * gui.scale), artist_line, text_colour1, 210,
-				 max_w=rect[2] - 60 * gui.scale, bg=bg)
+		ddt.text(
+			(rect[0] + (40 * gui.scale), yy - 1 * gui.scale), artist_line, text_colour1, 210,
+			max_w=rect[2] - 60 * gui.scale, bg=bg)
 
-		ddt.text((rect[0] + (40 * gui.scale), line2y), line, text_colour2, 211,
-				 max_w=rect[2] - 60 * gui.scale, bg=bg)
+		ddt.text(
+			(rect[0] + (40 * gui.scale), line2y), line, text_colour2, 211,
+			max_w=rect[2] - 60 * gui.scale, bg=bg)
 
 		if draw_album_indicator:
 			if fqo[3] == 1:
@@ -39779,9 +39822,10 @@ class MetaBox:
 		if gui.maximized:
 			scroll_w = 17 * gui.scale
 
-		lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, scroll_w, h,
-															      lyrics_ren_mini.lyrics_position * -1, th,
-															      jump_distance=160 * gui.scale) * -1
+		lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(
+			x + w - 17 * gui.scale, y, scroll_w, h,
+			lyrics_ren_mini.lyrics_position * -1, th,
+			jump_distance=160 * gui.scale) * -1
 
 		margin = 10 * gui.scale
 		if colours.lm:
@@ -41021,15 +41065,18 @@ class RadioView:
 
 			toff = h + round(2 * gui.scale)
 			yyy += round(9 * gui.scale)
-			ddt.text((x + toff, yyy), radio["title"], l1_colour, 212,
-					 max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
+			ddt.text(
+				(x + toff, yyy), radio["title"], l1_colour, 212,
+				max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
 			yyy += round(19 * gui.scale)
-			ddt.text((x + toff, yyy), radio.get("country", ""), l2_colour, 312,
-					 max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
+			ddt.text(
+				(x + toff, yyy), radio.get("country", ""), l2_colour, 312,
+				max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
 
 			hit = False
-			start_rect = (x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
-						  round(42 * gui.scale))
+			start_rect = (
+				x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
+				round(42 * gui.scale))
 			# ddt.rect(hit_rect, [255, 255, 255, 3])
 			fields.add(start_rect)
 			colour = rgb_add_hls(tbg, l=0.05)
@@ -41041,8 +41088,9 @@ class RadioView:
 
 			bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
 
-			extra_rect = (x + (w - round(82 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
-						  round(35 * gui.scale))
+			extra_rect = (
+				x + (w - round(82 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
+				round(35 * gui.scale))
 			# ddt.rect(extra_rect, [255, 255, 255, 2])
 			fields.add(extra_rect)
 			colour = rgb_add_hls(tbg, l=0.05)
@@ -41256,8 +41304,9 @@ class Showcase:
 
 				# Draw frame around art box
 				# drop_shadow.render(x + 5 * gui.scale, y + 5 * gui.scale, box + 10 * gui.scale, box + 10 * gui.scale)
-				ddt.rect((x - round(2 * gui.scale), y - round(2 * gui.scale), box + round(4 * gui.scale),
-						  box + round(4 * gui.scale)), [60, 60, 60, 135])
+				ddt.rect(
+					(x - round(2 * gui.scale), y - round(2 * gui.scale), box + round(4 * gui.scale),
+					box + round(4 * gui.scale)), [60, 60, 60, 135])
 				ddt.rect((x, y, box, box), colours.playlist_panel_background)
 				rect = SDL_Rect(round(x), round(y), round(box), round(box))
 				style_overlay.hole_punches.append(rect)
@@ -42000,7 +42049,7 @@ class DLMon:
 							del self.watching[path]
 						continue
 					except Exception:
-						logging.exception("Unkown error getting folder size")
+						logging.exception("Unknown error getting folder size")
 					if path in self.watching:
 						# Check if size is stable, then scan for audio files
 						if size == self.watching[path]:
@@ -43359,7 +43408,7 @@ def save_state():
 		logging.exception("Permission error encountered while writing database")
 		show_message(_("Permission error encountered while writing database"), "error")
 	except Exception:
-		logging.exception("Unkown error encountered while writing database")
+		logging.exception("Unknown error encountered while writing database")
 
 
 SDL_StartTextInput()
@@ -46067,8 +46116,8 @@ while pctl.running:
 								i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
 								fields.add(i_rect)
 
-								if (coll(i_rect) or (lightning_menu.active and lightning_menu.reference
-													 == item)) and item.peak_x == 9 * gui.scale:
+								if (coll(i_rect) or (
+									lightning_menu.active and lightning_menu.reference == item)) and item.peak_x == 9 * gui.scale:
 
 									if not lightning_menu.active or lightning_menu.reference == item or right_click:
 
@@ -46487,8 +46536,9 @@ while pctl.running:
 						if line == "❤":
 							heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, colours.column_bar_text)
 						else:
-							ddt.text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, colours.column_bar_text, 312,
-									 bg=bg, max_w=box[2] - 25 * gui.scale)
+							ddt.text(
+								(box[0] + 10 * gui.scale, top + 4 * gui.scale), line, colours.column_bar_text, 312,
+								bg=bg, max_w=box[2] - 25 * gui.scale)
 
 						run += box[2]
 
@@ -47199,8 +47249,9 @@ while pctl.running:
 					else:
 						ddt.text((x1, y1), _("Title"), key_colour_off, 212)
 						#
-					q = ddt.text((x2, y1 - int(2 * gui.scale)), tc.title
-								 , value_colour, 314, max_w=w - 170 * gui.scale)
+					q = ddt.text(
+						(x2, y1 - int(2 * gui.scale)), tc.title,
+						value_colour, 314, max_w=w - 170 * gui.scale)
 
 					if coll(rect):
 						ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.title, 314)
@@ -47218,8 +47269,9 @@ while pctl.running:
 					else:
 						ddt.text((x1, y1), _("Artist"), key_colour_off, 212)
 
-					q = ddt.text((x2, y1 - (1 * gui.scale)), tc.artist,
-								 value_colour, value_font_a, max_w=390 * gui.scale)
+					q = ddt.text(
+						(x2, y1 - (1 * gui.scale)), tc.artist,
+						value_colour, value_font_a, max_w=390 * gui.scale)
 
 					if coll(rect):
 						ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.artist, value_font_a)
@@ -47261,8 +47313,9 @@ while pctl.running:
 					else:
 						ddt.text((x1, y1), _("Path"), key_colour_off, 212)
 
-					q = ddt.text((x2, y1 - int(3 * gui.scale)), clean_string(path),
-								 path_colour, 210, max_w=425 * gui.scale)
+					q = ddt.text(
+						(x2, y1 - int(3 * gui.scale)), clean_string(path),
+						path_colour, 210, max_w=425 * gui.scale)
 
 					if coll(rect):
 						gui.frame_callback_list.append(TestTimer(0.71))
@@ -47308,8 +47361,9 @@ while pctl.running:
 						else:
 							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_off, 212)
 
-						q = ddt.text((x + (8 + 88) * gui.scale, y1), tc.album_artist,
-									 value_colour, value_font, max_w=120 * gui.scale)
+						q = ddt.text(
+							(x + (8 + 88) * gui.scale, y1), tc.album_artist,
+							value_colour, value_font, max_w=120 * gui.scale)
 						if coll(rect):
 							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album_artist, value_font)
 
@@ -47372,8 +47426,9 @@ while pctl.running:
 							inp.mouse_click = False
 					else:
 						ddt.text((x1, y1), _("Genre"), key_colour_off, 212)
-					ddt.text((x2, y1), tc.genre, value_colour,
-							 value_font, max_w=290 * gui.scale)
+					ddt.text(
+						(x2, y1), tc.genre, value_colour,
+						value_font, max_w=290 * gui.scale)
 
 					y1 += int(15 * gui.scale)
 
@@ -47401,8 +47456,9 @@ while pctl.running:
 								inp.mouse_click = False
 						else:
 							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_off, 212)
-						q = ddt.text((x + (8 + 88) * gui.scale, y1), tc.composer,
-									 value_colour, value_font, max_w=120 * gui.scale)
+						q = ddt.text(
+							(x + (8 + 88) * gui.scale, y1), tc.composer,
+							value_colour, value_font, max_w=120 * gui.scale)
 						if coll(rect):
 							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.composer, value_font_a)
 
@@ -47462,8 +47518,7 @@ while pctl.running:
 								tc.comment, 12) < 335 * gui.scale:
 
 							link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 12)
-							link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1],
-										 20 * gui.scale]
+							link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
 							fields.add(link_rect)
 							if coll(link_rect):
@@ -47568,8 +47623,9 @@ while pctl.running:
 
 				to_clean = clean_folder(rename_index)
 				if to_clean > 0:
-					if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
-								   80 * gui.scale, tooltip=_("Deletes some unnecessary files from folder")):
+					if draw.button(
+						"Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
+						80 * gui.scale, tooltip=_("Deletes some unnecessary files from folder")):
 						clean_folder(rename_index, True)
 						inp.mouse_click = False
 
@@ -48077,8 +48133,9 @@ while pctl.running:
 				if level == -1:
 					time_colour = [0,0,0,0]
 
-				w = ddt.text((rect[0] + 10 * gui.scale, yy), item[2].strftime("%H:%M:%S"), time_colour, 311,
-							 rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+				w = ddt.text(
+					(rect[0] + 10 * gui.scale, yy), item[2].strftime("%H:%M:%S"), time_colour, 311,
+					rect[2] - 60 * gui.scale, bg=[5,5,5,255])
 
 				ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
 				yy -= 14 * gui.scale
