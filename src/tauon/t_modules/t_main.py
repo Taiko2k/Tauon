@@ -13912,7 +13912,7 @@ def load_xspf(path):
 			if "title" in track:
 				nt.title = track["title"]
 			if "duration" in track:
-				nt.length = int(float((track["duration"])) / 1000)
+				nt.length = int(float(track["duration"]) / 1000)
 			if "album" in track:
 				nt.album = track["album"]
 			nt.is_cue = False
@@ -19338,7 +19338,7 @@ def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
 	sets.append(copy.deepcopy(se))
 
 	def best(folder):
-		return album_star_store.get_rating((pctl.get_track(folder[0])))
+		return album_star_store.get_rating(pctl.get_track(folder[0]))
 
 	if get_sets:
 		r = []
@@ -25085,7 +25085,7 @@ class SearchOverlay:
 
 				for item in range(4):
 					a = 100
-					if round((t * 14)) % 4 == item:
+					if round(t * 14) % 4 == item:
 						a = 255
 					if self.spotify_mode:
 						colour = (145, 245, 78, a)
@@ -34250,7 +34250,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 				line += n_track.title
 		else:
 			line = \
-				os.path.splitext((n_track.filename))[
+				os.path.splitext(n_track.filename)[
 					0]
 
 		if p_track >= len(default_playlist):
@@ -34332,7 +34332,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 					star_x += round(13 * gui.scale)
 				else:
 					if playtime_stars > 3:
-						dd = round(((13 - (playtime_stars - 3)) * gui.scale))
+						dd = round((13 - (playtime_stars - 3)) * gui.scale)
 						sx -= dd
 						star_x += dd
 					else:
@@ -46843,7 +46843,7 @@ while pctl.running:
 					pctl.multi_playlist)) + 13 * gui.scale
 
 				full = (window_size[1] - (gui.panelY + gui.panelBY))
-				half = int(round((full / 2)))
+				half = int(round(full / 2))
 
 				pl_box_h = full
 
@@ -46882,7 +46882,7 @@ while pctl.running:
 							pl_box_h = half
 
 						if preview_queue:
-							pl_box_h = int(round((full * 5 / 6)))
+							pl_box_h = int(round(full * 5 / 6))
 
 					if not prefs.left_panel_mode == "queue":
 
@@ -47064,18 +47064,18 @@ while pctl.running:
 				if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
 					ddt.rect(
 						(0 + gui.lspw - 6 * gui.scale, gui.panelY, 6 * gui.scale,
-						int(round((window_size[1] - gui.panelY - gui.panelBY)))), colours.grey(200))
+						int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
 					ddt.rect(
 						(0 + gui.lspw - 5 * gui.scale, gui.panelY - 1, 4 * gui.scale,
-						int(round((window_size[1] - gui.panelY - gui.panelBY))) + 1), colours.grey(245))
+						int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
 				if gui.rsp and gui.show_playlist:
 					w = window_size[0] - gui.rspw
 					ddt.rect(
 						(w - round(3 * gui.scale), gui.panelY, 6 * gui.scale,
-						int(round((window_size[1] - gui.panelY - gui.panelBY)))), colours.grey(200))
+						int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
 					ddt.rect(
 						(w - round(2 * gui.scale), gui.panelY - 1, 4 * gui.scale,
-						int(round((window_size[1] - gui.panelY - gui.panelBY))) + 1), colours.grey(245))
+						int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
 				if gui.queue_frame_draw is not None:
 					if gui.lsp:
 						ddt.rect((0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200))
