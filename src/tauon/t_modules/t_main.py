@@ -9127,7 +9127,7 @@ class KoelService:
 			target = f"{self.server}/api/{id}/play/1/{prefs.network_stream_bitrate}"
 		else:
 			target = f"{self.server}/api/{id}/play/0/0"
-		params = {"jwt-token": self.token, }
+		params = {"jwt-token": self.token }
 
 		# if prefs.network_stream_bitrate > 0:
 		#	 target = f"{self.server}/api/play/{id}/1/{prefs.network_stream_bitrate}"
@@ -10173,7 +10173,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 
 	class WinTask:
 
-		def __init__(self, ):
+		def __init__(self):
 			self.start = time.time()
 			self.updated_state = 0
 			self.window_id = gui.window_id
@@ -11630,8 +11630,9 @@ class TextBox:
 			if self.selection != self.cursor_position:
 				inf_comp = 0
 				space = ddt.text((x, y), self.get_selection(0), colour, font)
-				space += ddt.text((x + space - inf_comp, y), self.get_selection(1), [240, 240, 240, 255], font,
-					bg=[40, 120, 180, 255], )
+				space += ddt.text(
+					(x + space - inf_comp, y), self.get_selection(1), [240, 240, 240, 255], font,
+					bg=[40, 120, 180, 255])
 				ddt.text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
 			else:
 				ddt.text((x, y), self.text, colour, font)
@@ -14768,7 +14769,7 @@ class RenameTrackBox:
 		else:
 			r_todo = [self.target_track_id]
 
-		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Track Renaming"), colours.grey(230), 213)
+		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Track Renaming"), colours.grey(230), 213)
 
 		# if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
 		if rename_files.text != prefs.rename_tracks_template and draw.button(
@@ -14805,19 +14806,19 @@ class RenameTrackBox:
 		if (len(NRN) > 3 and len(pctl.master_library[self.target_track_id].filename) > 3 and afterline[-3:].lower() !=
 			pctl.master_library[self.target_track_id].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
 			ddt.text(
-				(x + 10 * gui.scale, y + 108 * gui.scale,), _("Warning: This may change the file extension"),
+				(x + 10 * gui.scale, y + 108 * gui.scale), _("Warning: This may change the file extension"),
 				[245, 90, 90, 255],
 				13)
 
 		colour_warn = [143, 186, 65, 255]
 		if not unique_template(NRN):
 			ddt.text(
-				(x + 10 * gui.scale, y + 123 * gui.scale,), _("Warning: The filename might not be unique"),
+				(x + 10 * gui.scale, y + 123 * gui.scale), _("Warning: The filename might not be unique"),
 				[245, 90, 90, 255],
 				13)
 		if warn:
 			ddt.text(
-				(x + 10 * gui.scale, y + 135 * gui.scale,), _("Warning: A track has incomplete metadata"),
+				(x + 10 * gui.scale, y + 135 * gui.scale), _("Warning: A track has incomplete metadata"),
 				[245, 90, 90, 255],
 				13)
 			colour_warn = [180, 60, 60, 255]
@@ -15183,7 +15184,7 @@ class SubLyricsBox:
 				if self.target_track.title in prefs.lyrics_subs:
 					del prefs.lyrics_subs[self.target_track.title]
 
-		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Substitute Lyric Search"), colours.grey(230), 213)
+		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Substitute Lyric Search"), colours.grey(230), 213)
 
 		y += round(35 * gui.scale)
 		x += round(23 * gui.scale)
@@ -15285,12 +15286,12 @@ class ExportPlaylistBox:
 		if not current:
 			current = copy.copy(self.default)
 
-		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Export Playlist"), colours.grey(230), 213)
+		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Export Playlist"), colours.grey(230), 213)
 
 		x += round(15 * gui.scale)
 		y += round(25 * gui.scale)
 
-		ddt.text((x, y + 8 * gui.scale,), _("Save directory"), colours.grey(230), 11)
+		ddt.text((x, y + 8 * gui.scale), _("Save directory"), colours.grey(230), 11)
 		y += round(30 * gui.scale)
 
 		rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
@@ -15876,13 +15877,13 @@ def add_album_to_queue_fc(ref):
 				queue_item = queue_item_gen(
 					ref,
 					pctl.playlist_playing_position,
-					pl_to_id(pctl.active_playlist_playing), 1, 0, )
+					pl_to_id(pctl.active_playlist_playing), 1, 0)
 				pctl.force_queue.insert(i, queue_item)
 				break
 
 		else:
 			queue_item = queue_item_gen(
-				ref, pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, )
+				ref, pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0)
 			pctl.force_queue.insert(len(pctl.force_queue), queue_item)
 	if queue_item:
 		queue_timer_set(queue_object=queue_item)
@@ -18897,7 +18898,7 @@ def start_quick_add(pl):
 def auto_get_sync_targets():
 	search_paths = [
 		"/run/user/*/gvfs/*/*/[Mm]usic",
-		"/run/media/*/*/[Mm]usic", ]
+		"/run/media/*/*/[Mm]usic"]
 	result_paths = []
 	for item in search_paths:
 		result_paths.extend(glob.glob(item))
@@ -21505,7 +21506,7 @@ def intel_moji(index):
 	if track.artist not in track.parent_folder_path:
 		for enc in encodings:
 			try:
-				q_artist = l_artist.decode(enc, )
+				q_artist = l_artist.decode(enc)
 				if q_artist.strip(" ") in track.parent_folder_path.strip(" "):
 					detect = enc
 					break
@@ -21516,7 +21517,7 @@ def intel_moji(index):
 	if detect is None and track.album not in track.parent_folder_path:
 		for enc in encodings:
 			try:
-				q_album = l_album.decode(enc, )
+				q_album = l_album.decode(enc)
 				if q_album in track.parent_folder_path:
 					detect = enc
 					break
@@ -24271,14 +24272,14 @@ def discord_loop():
 					details=title,
 					start=int(start_time),
 					large_image=large_image,
-					small_image=small_image,)
+					small_image=small_image)
 
 			else:
 				#logging.info("Discord RPC - Stop")
 				RPC.update(
 					pid=pid,
 					state="Idle",
-					large_image="tauon-standard", )
+					large_image="tauon-standard")
 
 			time.sleep(5)
 
@@ -24325,7 +24326,7 @@ def show_stop_quick_add(_):
 	return pctl.quick_add_target is not None
 
 
-x_menu.add(MenuItem(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add, ))
+x_menu.add(MenuItem(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add))
 
 
 def view_tracks():
@@ -31223,7 +31224,7 @@ class TopPanel:
 		if gui.top_bar_mode2:
 			tr = pctl.playing_object()
 			if tr:
-				album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY), )
+				album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY))
 				if loading_in_progress or \
 						to_scan or \
 						cm_clean_db or \
@@ -36443,9 +36444,9 @@ class RadioBox:
 				self.active = False
 
 			if self.add_mode:
-				ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Add Station"), colours.box_title_text, 213)
+				ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale), _("Add Station"), colours.box_title_text, 213)
 			else:
-				ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Edit Station"), colours.box_title_text, 213)
+				ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale), _("Edit Station"), colours.box_title_text, 213)
 
 			self.saved()
 			return
@@ -36470,7 +36471,7 @@ class RadioBox:
 		if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
 			self.active = False
 
-		ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale,), _("Station Browser"), colours.box_title_text, 213)
+		ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale), _("Station Browser"), colours.box_title_text, 213)
 
 		# ---
 		if self.load_connecting:
@@ -40854,7 +40855,7 @@ class RadioThumbGen:
 						raise Exception("Error get radio thumb")
 				except Exception:
 					logging.exception("error get radio thumb")
-					self.cache[key] = [0, ]
+					self.cache[key] = [0]
 					if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
 						prefs.radio_thumb_bans.append(station.get("icon"))
 					continue
@@ -40866,7 +40867,7 @@ class RadioThumbGen:
 					if length > 2000000:
 						scr = None
 				if src is None:
-					self.cache[key] = [0, ]
+					self.cache[key] = [0]
 					if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
 						prefs.radio_thumb_bans.append(station.get("icon"))
 					continue
@@ -40877,7 +40878,7 @@ class RadioThumbGen:
 				src.seek(0)
 			else:
 				# logging.info("no icon")
-				self.cache[key] = [0, ]
+				self.cache[key] = [0]
 				continue
 
 			try:
@@ -40886,7 +40887,7 @@ class RadioThumbGen:
 					im = im.convert("RGBA")
 			except Exception:
 				logging.exception("malform get radio thumb")
-				self.cache[key] = [0, ]
+				self.cache[key] = [0]
 				if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
 					prefs.radio_thumb_bans.append(station.get("icon"))
 				continue
@@ -43429,7 +43430,7 @@ def save_state():
 		spot_ctl.save_token()
 
 		with open(user_directory + "/lyrics_substitutions.json", "w") as f:
-			json.dump(prefs.lyrics_subs, f, )
+			json.dump(prefs.lyrics_subs, f)
 
 		save_prefs()
 
@@ -47615,7 +47616,7 @@ while pctl.running:
 					gui.rename_folder_box = False
 
 				p = ddt.text(
-					(x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.box_title_text, 213)
+					(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), colours.box_title_text, 213)
 
 				if rename_folder.text != prefs.rename_folder_template and draw.button(
 					_("Default"),
@@ -47668,12 +47669,12 @@ while pctl.running:
 						clean_folder(rename_index, True)
 						inp.mouse_click = False
 
-				ddt.text((x + 10 * gui.scale, y + 65 * gui.scale,), _("PATH"), colours.box_text_label, 212)
+				ddt.text((x + 10 * gui.scale, y + 65 * gui.scale), _("PATH"), colours.box_text_label, 212)
 				line = os.path.dirname(
 					pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\","/") + "/"
 				line = right_trunc(line, 12, 420 * gui.scale)
 				line = clean_string(line)
-				ddt.text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(220), 211)
+				ddt.text((x + 60 * gui.scale, y + 65 * gui.scale), line, colours.grey(220), 211)
 
 				ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("OLD"), colours.box_text_label, 212)
 				line = pctl.master_library[rename_index].parent_folder_name
