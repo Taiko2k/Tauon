@@ -13,6 +13,8 @@ try:
 	import tidalapi
 	from tidalapi import Quality, Session
 	allow_tidal = True
+except ModuleNotFoundError:
+	logging.warning("Unable to import tidalapi, Tidal support will be disabled.")
 except Exception:
 	logging.exception("Tidalapi not found")
 
