@@ -262,7 +262,7 @@ from unidecode import unidecode
 
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
-from tauon.t_modules.t_extra import FunctionStore, Timer, rgb_add_hls, alpha_blend, alpha_mod, colour_value, test_lumi, shooter, ColourGenCache, year_search, get_display_time, point_proximity_test, is_light, clean_string, mac_styles, tmp_cache_dir, TestTimer, filename_to_metadata, get_artist_strip_feat, get_split_artists, get_artist_safe, filename_safe, sleep_timeout, fit_box, contrast_ratio, rgb_to_hls, process_odat, commonprefix, check_equal, search_magic, search_magic_any, get_hms_time, hms_to_seconds, is_grey, hls_to_rgb, get_filesize_string, get_filesize_string_rounded, uri_parse, reduce_paths, j_chars, star_count, star_count3, genre_correct, hsl_to_rgb, grow_rect, point_distance, seconds_to_day_hms, d_date_display, d_date_display2, colour_slide, archive_file_scan, subtract_rect, folder_file_scan, get_folder_size, get_year_from_string
+from tauon.t_modules.t_extra import FunctionStore, Timer, rgb_add_hls, alpha_blend, alpha_mod, colour_value, test_lumi, shooter, ColourGenCache, year_search, get_display_time, point_proximity_test, is_light, clean_string, mac_styles, tmp_cache_dir, TestTimer, filename_to_metadata, get_artist_strip_feat, get_split_artists, get_artist_safe, filename_safe, sleep_timeout, fit_box, contrast_ratio, rgb_to_hls, process_odat, commonprefix, check_equal, search_magic, search_magic_any, get_hms_time, hms_to_seconds, is_grey, hls_to_rgb, get_filesize_string, get_filesize_string_rounded, uri_parse, reduce_paths, j_chars, star_count, star_count3, genre_correct, hsl_to_rgb, grow_rect, point_distance, seconds_to_day_hms, d_date_display, d_date_display2, colour_slide, archive_file_scan, subtract_rect, folder_file_scan, get_folder_size, get_year_from_string, tryint
 from tauon.t_modules.t_db_migrate import database_migrate
 from tauon.t_modules.t_draw import TDraw, QuickThumbnail
 from tauon.t_modules.t_jellyfin import Jellyfin
@@ -17480,12 +17480,6 @@ def append_playlist(index):
 
 	gui.pl_update = 1
 	reload()
-
-
-def tryint(s: str) -> int | str:
-	if isinstance(s, (int, float)):
-		return int(s)
-	return s
 
 def index_key(index):
 	tr = pctl.master_library[index]

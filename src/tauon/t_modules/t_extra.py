@@ -1003,3 +1003,12 @@ def sleep_timeout(condition_function: Callable[[], bool], time_limit: int = 2) -
 		time.sleep(0.01)
 		if timer.get() > time_limit:
 			break
+
+def tryint(string: str) -> int | str:
+	try:
+		return int(string)
+	except ValueError:
+		return string
+	except Exception:
+		logging.exception("Unknown error trying to convert string to int!")
+		return string
