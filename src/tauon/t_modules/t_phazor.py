@@ -60,14 +60,18 @@ def find_library(libname: str) -> Path | None:
 	so_extensions = importlib.machinery.EXTENSION_SUFFIXES
 	site_packages_path = sysconfig.get_path("purelib")
 
+	# Used to be lib but Slackware uses that for 32-bit,
+	# all other distros seem to symlink lib64 to lib, so just use lib64
+	libdir="lib64"
+
 	# Try looking in site-packages of the current environment, pwd and ../pwd
 	for extension in so_extensions:
 		search_paths += [
-			(Path(site_packages_path)                       / (libname + extension)).resolve(),
-			(Path(base_path)          / ".."                / (libname + extension)).resolve(),
-			(Path(base_path)          / ".." / ".."         / (libname + extension)).resolve(),
+			(Path(site_packages_path)                        / (libname + extension)).resolve(),
+			(Path(base_path)          / ".."                 / (libname + extension)).resolve(),
+			(Path(base_path)          / ".." / ".."          / (libname + extension)).resolve(),
 			# Compat with old way to store .so files
-			(Path(base_path)          / ".." / ".." / "lib" / (libname + ".so")).resolve(),
+			(Path(base_path)          / ".." / ".." / libdir / (libname + ".so")).resolve(),
 		]
 
 	for path in search_paths:
@@ -79,14 +83,17 @@ def find_library(libname: str) -> Path | None:
 	return None
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
+	# See note for the earlier definition
+	libdir="lib64"
+
 	if pctl.prefs.pipewire:
-		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.so")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.so")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dll")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dll")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dylib")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dylib")
 		if os.path.isfile(n):
 			return n
 		n = find_library("phazor-pw")
@@ -94,13 +101,13 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 			return n
 
 	else:
-		n = os.path.join(pctl.install_directory, "lib", "libphazor.so")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor.so")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor.dll")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor.dll")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor.dylib")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor.dylib")
 		if os.path.isfile(n):
 			return n
 		n = find_library("phazor")
