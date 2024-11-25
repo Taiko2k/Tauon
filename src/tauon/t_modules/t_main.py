@@ -3141,16 +3141,14 @@ for t in range(2):
 		if save[5] is not None:
 			tauonplaylist_jar = save[5]
 			for d in tauonplaylist_jar:
-				nt = TauonPlaylist()
-				nt.__dict__.update(d)
-				multi_playlist[d["index"]] = nt
+				nt = TauonPlaylist(**d)
+				multi_playlist.append(nt)
 		volume = save[6]
 		if save[7] is not None:
 			tauonqueueitem_jar = save[7]
 			for d in tauonqueueitem_jar:
-				nt = TauonQueueItem()
-				nt.__dict__.update(d)
-				track_queue[d["index"]] = nt
+				nt = TauonQueueItem(**d)
+				track_queue.append(nt)
 		playing_in_queue = save[8]
 		default_playlist = save[9]
 		# playlist_playing = save[10]
@@ -3917,8 +3915,9 @@ def load_prefs():
 	macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
 	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
 	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
-	prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90,
-												"Only has effect if scroll-gallery-by-row is false.")
+	prefs.gallery_scroll_wheel_px = cf.sync_add(
+		"int", "scroll-gallery-distance", 90,
+		"Only has effect if scroll-gallery-by-row is false.")
 	prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
 	prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
 	if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
