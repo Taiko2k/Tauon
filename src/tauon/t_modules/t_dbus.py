@@ -95,7 +95,8 @@ class Gnome:
 		tauon = self.tauon
 
 		import gi
-		gi.require_version("Gtk", "4.0")
+		# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
+		gi.require_version("Gtk", "3.0")
 		from gi.repository import Gtk
 
 		try:
