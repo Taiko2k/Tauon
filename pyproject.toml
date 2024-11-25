@@ -65,7 +65,7 @@
 	dependencies = {file = "requirements.txt"}
 
 [tool.setuptools.package-data]
-"tauon" = ["assets/*", "templates/*", "theme/*"]
+"tauon" = ["assets/*", "assets/svg/*", "templates/*", "theme/*"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
