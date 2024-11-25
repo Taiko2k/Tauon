@@ -26,7 +26,8 @@ from typing import TYPE_CHECKING
 
 import gi
 
-gi.require_version("Gdk", "4.0")
+# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
+gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib
 
 from tauon.t_modules.t_extra import filename_to_metadata, star_count2

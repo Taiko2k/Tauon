@@ -306,7 +306,8 @@ else:
 if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
 	try:
 		import gi.repository
-		gi.require_version("Gtk", "4.0")
+		# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
+		gi.require_version("Gtk", "3.0")
 		from gi.repository import Gtk
 
 		gtk_settings = Gtk.Settings().get_default()
