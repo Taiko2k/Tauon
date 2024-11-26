@@ -1184,7 +1184,7 @@ def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, albu
 	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
 
 
-default_playlist = multi_playlist[0].playlist_ids
+default_playlist: list[int] = multi_playlist[0].playlist_ids
 playlist_active: int = 0
 
 quick_search_mode = False
@@ -3091,7 +3091,7 @@ for t in range(2):
 					nt = TauonPlaylist(**d)
 					multi_playlist.append(nt)
 			else:
-				multi_playlist = [5]
+				multi_playlist = save[5]
 		volume = save[6]
 		if save[7] is not None:
 			if db_version > 68:
@@ -3455,7 +3455,10 @@ logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 perf_timer.set()
 keys = set(master_library.keys())
 for pl in multi_playlist:
-	keys -= set(pl.playlist_ids)
+	if db_version > 68:
+		keys -= set(pl.playlist_ids)
+	else:
+		keys -= set(pl[2])
 if len(keys) > 5000:
 	gui.suggest_clean_db = True
 # logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
@@ -18195,7 +18198,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				for plist in pctl.multi_playlist:
 					code = pctl.gen_codes.get(plist.uuid_int)
 					if is_source_type(code):
-						selections.append(plist[2])
+						selections.append(plist.playlist_ids)
 
 			temp = []
 			for selection in selections:
@@ -18232,7 +18235,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			if value:
 				if not selections:
 					for plist in pctl.multi_playlist:
-						selections.append(plist[2])
+						selections.append(plist.playlist_ids)
 
 				temp = []
 				for selection in selections:
@@ -18505,7 +18508,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				for plist in pctl.multi_playlist:
 					code = pctl.gen_codes.get(plist.uuid_int)
 					if is_source_type(code):
-						selections.append(plist[2])
+						selections.append(plist.playlist_ids)
 
 			search = quote
 			search_over.all_folders = True
@@ -18544,7 +18547,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				for plist in pctl.multi_playlist:
 					code = pctl.gen_codes.get(plist.uuid_int)
 					if is_source_type(code):
-						selections.append(plist[2])
+						selections.append(plist.playlist_ids)
 
 			g_search = quote.lower().replace("-", "")  # .replace(" ", "")
 
@@ -18595,7 +18598,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				for plist in pctl.multi_playlist:
 					code = pctl.gen_codes.get(plist.uuid_int)
 					if is_source_type(code):
-						selections.append(plist[2])
+						selections.append(plist.playlist_ids)
 
 			search = quote
 			search_over.sip = True
@@ -18660,7 +18663,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				for plist in pctl.multi_playlist:
 					code = pctl.gen_codes.get(plist.uuid_int)
 					if is_source_type(code):
-						selections.append(plist[2])
+						selections.append(plist.playlist_ids)
 
 			cooldown = 0
 			dones = {}
@@ -18697,15 +18700,15 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			pl_name = quote
 			target = None
 			for p in pctl.multi_playlist:
-				if p[0].lower() == pl_name.lower():
-					target = p[2]
+				if p.title.lower() == pl_name.lower():
+					target = p.playlist_ids
 					break
 			else:
 				for p in pctl.multi_playlist:
 					#logging.info(p[0].lower())
 					#logging.info(pl_name.lower())
-					if p[0].lower().startswith(pl_name.lower()):
-						target = p[2]
+					if p.title.lower().startswith(pl_name.lower()):
+						target = p.playlist_ids
 						break
 			if target is None:
 				logging.warning(f"not found: {pl_name}")
@@ -26709,7 +26712,7 @@ def worker1():
 					try:
 						if check_auto_update_okay(code, pl=i):
 							if not pl_is_locked(i):
-								logging.info("Reloading smart playlist: " + plist[0])
+								logging.info("Reloading smart playlist: " + plist.title)
 								regenerate_playlist(i, silent=True)
 								time.sleep(0.02)
 					except Exception:
@@ -27011,7 +27014,7 @@ perfs = []
 album_info_cache_key = (-1, -1)
 
 
-def get_album_info(position, pl=None):
+def get_album_info(position, pl: int | None = None):
 
 	playlist = default_playlist
 	if pl is not None:
