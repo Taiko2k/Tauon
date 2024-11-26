@@ -2937,7 +2937,7 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 	gui.message_subtext = line2
 	gui.message_subtext2 = line3
 	message_box_min_timer.set()
-	console.print("Message: " + line1)
+	logging.info("Message: " + line1)
 	gui.update = 1
 
 
@@ -5042,7 +5042,7 @@ def get_radio_art():
 
 	elif "radio.plaza.one" in radiobox.loaded_url:
 		time.sleep(3)
-		console.print("Fetching plaza art")
+		logging.info("Fetching plaza art")
 		response = requests.get("https://api.plaza.one/status")
 		if response.status_code == 200:
 			d = json.loads(response.text)
@@ -7299,7 +7299,7 @@ class LastFMapi:
 
 		return ""
 
-	def sync_pull_love(self, track_object: TrackClass):
+	def sync_pull_love(self, track_object: TrackClass) -> None:
 		if not prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
 			return
 		if not last_fm_enable:
@@ -7333,7 +7333,7 @@ class LastFMapi:
 		except Exception:
 			logging.exception("Failed to pull love")
 
-	def scrobble(self, track_object: TrackClass, timestamp=None):
+	def scrobble(self, track_object: TrackClass, timestamp=None) -> bool:
 		if not last_fm_enable:
 			return True
 		if prefs.scrobble_hold:
@@ -7388,8 +7388,7 @@ class LastFMapi:
 					logging.exception("Failed to retry!")
 
 			# show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
-			console.print("Error connecting to last.fm", level=5)
-			console.print("-- " + str(e), level=5)
+			logging.error("Error connecting to last.fm")
 			scrobble_warning_timer.set()
 			gui.update += 1
 			gui.delay_frame(5)
@@ -7490,7 +7489,7 @@ class LastFMapi:
 
 		self.scanning_friends = False
 
-	def dl_love(self):
+	def dl_love(self) -> None:
 		if not last_fm_enable:
 			return
 		username = prefs.last_fm_username
@@ -7558,9 +7557,9 @@ class LastFMapi:
 			show_message(_("This doesn't seem to be working :("), mode="error")
 		self.scanning_loves = False
 
-	def update(self, track_object: TrackClass):
+	def update(self, track_object: TrackClass) -> int | None:
 		if not last_fm_enable:
-			return
+			return None
 		if prefs.scrobble_hold:
 			return 0
 		if prefs.auto_lfm:
@@ -7585,8 +7584,6 @@ class LastFMapi:
 				return 0
 		except Exception as e:
 			logging.exception("Error connecting to last.fm.")
-			console.print("Error connecting to last.fm.", level=3)
-			console.print("-- " + str(e), level=3)
 			if "retry" in str(e):
 				return 2
 				# show_message(_("Could not update Last.fm. ", str(e), mode='warning')
@@ -11853,8 +11850,6 @@ class GallClass:
 
 			except Exception:
 				logging.exception("Image load failed on track: " + key[0].fullpath)
-				console.print("ERROR: Image load failed on track: ")
-				console.print("- " + key[0].fullpath)
 				order = [0, None, None, None]
 				self.gall[key] = order
 				gui.update += 1
@@ -12742,7 +12737,7 @@ class AlbumArt:
 		else:
 			im.save(save_path + ".jpg", "JPEG")
 
-	def display(self, track, location, box, fast=False, theme_only=False):
+	def display(self, track, location, box, fast=False, theme_only=False) -> int | None:
 
 		index = track.index
 		filepath = track.fullpath
@@ -12816,7 +12811,7 @@ class AlbumArt:
 									break
 
 							if self.downloaded_track != track:
-								return
+								return None
 
 							assert self.downloaded_image
 							source_image = self.downloaded_image
@@ -12847,7 +12842,7 @@ class AlbumArt:
 			except Exception:
 				logging.exception("Failed to convert image")
 				if theme_only:
-					return
+					return None
 				im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
 				o_size = im.size
 
@@ -12883,7 +12878,7 @@ class AlbumArt:
 					im.thumbnail((50, 50), Image.Resampling.LANCZOS)
 				except Exception:
 					logging.exception("theme gen error")
-					return
+					return None
 				pixels = im.getcolors(maxcolors=2500)
 				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
 				colour = pixels[0][1]
@@ -13029,7 +13024,7 @@ class AlbumArt:
 				gui.theme_temp_current = track.album
 
 			if theme_only:
-				return
+				return None
 
 			wop = rw_from_object(g)
 			s_image = IMG_Load_RW(wop, 0)
@@ -13080,11 +13075,9 @@ class AlbumArt:
 			move_on_title = False
 			playlist_hold = False
 
-		except Exception as error:
-			logging.exception("Image processing error")
-			console.print("Image load error")
-			console.print("-- Associated track: " + track.fullpath)
-			console.print("-- Exception: " + str(error))
+		except Exception:
+			logging.exception("Image load error")
+			logging.error("-- Associated track: " + track.fullpath)
 
 			self.current_wu = None
 			try:
@@ -13096,7 +13089,7 @@ class AlbumArt:
 
 		return 0
 
-	def render(self, unit, location):
+	def render(self, unit, location) -> None:
 
 		rect = unit.rect
 
@@ -13111,7 +13104,7 @@ class AlbumArt:
 
 		gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
-	def clear_cache(self):
+	def clear_cache(self) -> None:
 
 		for unit in self.image_cache:
 			SDL_DestroyTexture(unit.texture)
@@ -13131,8 +13124,6 @@ class AlbumArt:
 		gui.theme_temp_current = -1
 		colours.last_album = ""
 
-
-# from tauon.t_modules.t_art_render import AlbumArt
 
 album_art_gen = AlbumArt()
 
@@ -13719,7 +13710,7 @@ def load_xspf(path):
 
 	name = os.path.basename(path)[:-5]
 	# tauon.log("Importing XSPF playlist: " + path, title=True)
-	console.print("Importing XSPF playlist: " + path)
+	logging.info("Importing XSPF playlist: " + path)
 
 	try:
 		parser = ET.XMLParser(encoding="utf-8")
@@ -13767,8 +13758,6 @@ def load_xspf(path):
 	except Exception:
 		logging.exception("Error importing/parsing XSPF playlist")
 		show_message(_("Error importing XSPF playlist."), _("Sorry about that."), mode="warning")
-		# tauon.log("-- Error parsing XSPF file")
-		console.print("-- Error parsing XSPF file")
 		return
 
 	# Extract internet streams first
@@ -13888,15 +13877,15 @@ def load_xspf(path):
 				continue
 
 		missing += 1
-		console.print("-- Failed to locate track", level=2)
+		logging.error("-- Failed to locate track")
 		if "location" in track:
-			console.print("-- -- Expected path: " + track["location"], level=2)
+			logging.error("-- -- Expected path: " + track["location"])
 		if "title" in track:
-			console.print("-- -- Title: " + track["title"], level=2)
+			logging.error("-- -- Title: " + track["title"])
 		if "artist" in track:
-			console.print("-- -- Artist: " + track["artist"], level=2)
+			logging.error("-- -- Artist: " + track["artist"])
 		if "album" in track:
-			console.print("-- -- Album: " + track["album"], level=2)
+			logging.error("-- -- Album: " + track["album"])
 
 	if missing > 0:
 		show_message(
@@ -15497,7 +15486,7 @@ def show_in_playlist():
 		toggle_album_mode()
 
 	pctl.playlist_view_position = pctl.selected_in_playlist
-	console.print("DEBUG: Position changed by show in playlist")
+	logging.debug("Position changed by show in playlist")
 	shift_selection.clear()
 	shift_selection.append(pctl.selected_in_playlist)
 	pctl.render_playlist()
@@ -16015,7 +16004,7 @@ def get_lyric_fire(track_object: TrackClass, silent: bool = False):
 	if s_title in prefs.lyrics_subs:
 		s_title = prefs.lyrics_subs[s_title]
 
-	console.print(f"Searching for lyrics: {s_artist} - {s_title}", level=1)
+	logging.info(f"Searching for lyrics: {s_artist} - {s_title}")
 
 	found = False
 	for name in prefs.lyrics_enables:
@@ -16026,16 +16015,15 @@ def get_lyric_fire(track_object: TrackClass, silent: bool = False):
 			try:
 				lyrics = func(s_artist, s_title)
 				if lyrics:
-					console.print(f"Found lyrics from {name}", level=1)
+					logging.info(f"Found lyrics from {name}")
 					track_object.lyrics = lyrics
 					found = True
 					break
-			except Exception as e:
+			except Exception:
 				logging.exception("Failed to find lyrics")
-				console.print(str(e))
 
 			if not found:
-				console.print(f"Could not find lyrics from source {name}", level=1)
+				logging.error(f"Could not find lyrics from source {name}")
 
 	if not found:
 		if not silent:
@@ -17315,7 +17303,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 	if old_view_id != pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int:
 		default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 		pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing].position
-		console.print("DEBUG: Position reset by playlist delete")
+		logging.debug("Position reset by playlist delete")
 		pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].selected
 		shift_selection = [pctl.selected_in_playlist]
 
@@ -18887,9 +18875,9 @@ def auto_sync_thread(pl: int) -> None:
 	prefs.sync_target = path
 
 	# Get list of folder names on device
-	console.print("Getting folder list from device...")
+	logging.info("Getting folder list from device...")
 	d_folder_names = os.listdir(path)
-	console.print("Got list")
+	logging.info("Got list")
 
 	# Get list of folders we want
 	folders = convert_playlist(pl, get_list=True)
@@ -18920,7 +18908,7 @@ def auto_sync_thread(pl: int) -> None:
 			if d_folder not in folder_names:
 				gui.sync_progress = _("Deleting folders...")
 				gui.update += 1
-				console.print(f"DELETING: {d_folder}")
+				logging.warning(f"DELETING: {d_folder}")
 				shutil.rmtree(os.path.join(path, d_folder))
 
 	# -------
@@ -18929,9 +18917,9 @@ def auto_sync_thread(pl: int) -> None:
 	for folder in folder_names:
 		if folder not in d_folder_names:
 			todos.append(folder)
-			console.print(f"Want to add: {folder}")
+			logging.info(f"Want to add: {folder}")
 		else:
-			console.print(f"Already exists: {folder}")
+			logging.error(f"Already exists: {folder}")
 
 	gui.update += 1
 	# -----
@@ -18966,7 +18954,7 @@ def auto_sync_thread(pl: int) -> None:
 
 			encode_done = os.path.join(prefs.encoder_output, item)
 			if not os.path.exists(encode_done):
-				console.print("Need to transcode")
+				logging.info("Need to transcode")
 				remain = len(todos) - i
 				if remain > 1:
 					gui.sync_progress = _("{N} Folders Remaining").format(N=str(remain))
@@ -18979,7 +18967,7 @@ def auto_sync_thread(pl: int) -> None:
 				if gui.stop_sync:
 					break
 			else:
-				console.print("A transcode is already done")
+				logging.warning("A transcode is already done")
 
 			if os.path.exists(encode_done):
 
@@ -18992,7 +18980,7 @@ def auto_sync_thread(pl: int) -> None:
 
 		for file in os.listdir(encode_done):
 
-			console.print("Copy file...")
+			logging.info("Copy file...")
 			# gui.sync_progress += "."
 			gui.update += 1
 
@@ -19008,7 +18996,7 @@ def auto_sync_thread(pl: int) -> None:
 				if gui.stop_sync:
 					gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(gui.sync_speed) + "/s"
 
-		console.print("Finished copying folder")
+		logging.info("Finished copying folder")
 
 	gui.sync_speed = 0
 	gui.sync_progress = ""
@@ -22407,7 +22395,7 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 			default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 
 			pctl.playlist_view_position = 0
-			console.print("DEBUG: Position changed by sort")
+			logging.debug("Position changed by sort")
 			gui.pl_update = 1
 
 	elif custom_list is not None:
@@ -22660,7 +22648,7 @@ def path_stem_to_playlist(path, title):  # Used with gallery power bar
 
 
 def goto_album(playlist_no, down:bool = False, force: bool = False):
-	console.print("DEBUG: Postion set by album locate")
+	logging.debug("Postion set by album locate")
 
 	if core_timer.get() < 0.5:
 		return
@@ -22869,7 +22857,7 @@ def switch_playlist(number, cycle=False, quiet=False):
 	default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 	pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing].position
 	pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].selected
-	console.print("DEBUG: Position changed by playlist change")
+	logging.debug("Position changed by playlist change")
 	shift_selection = [pctl.selected_in_playlist]
 
 	id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
@@ -23600,7 +23588,7 @@ def locate_artist():
 	else:
 		show_message(_("No exact matching artist could be found in this playlist"))
 
-	console.print("DEBUG: Position changed by artist locate")
+	logging.debug("Position changed by artist locate")
 
 	gui.pl_update += 1
 
@@ -26088,20 +26076,20 @@ def worker1():
 		global added
 
 		if not msys:  # Windows terminal doesn't like unicode
-			console.print("Reading CUE file: " + path)
+			logging.info("Reading CUE file: " + path)
 
 		try:
 
 			try:
 				with open(path, encoding="utf_8") as f:
 					content = f.readlines()
-					console.print("-- Reading as UTF-8")
+					logging.info("-- Reading as UTF-8")
 			except Exception:
 				logging.exception("Failed opening file as UTF-8")
 				try:
 					with open(path, encoding="utf_16") as f:
 						content = f.readlines()
-						console.print("-- Reading as UTF-16")
+						logging.info("-- Reading as UTF-16")
 				except Exception:
 					logging.exception("Failed opening file as UTF-16")
 					try:
@@ -26113,18 +26101,17 @@ def worker1():
 									for c in j_chars:
 										if c in line:
 											j = True
-											console.print("-- Reading as SHIFT-JIS")
+											logging.info("-- Reading as SHIFT-JIS")
 											break
 						except Exception:
 							logging.exception("Failed opening file as shiftjis")
 						if not j:
 							with open(path, encoding="windows-1251") as f:
 								content = f.readlines()
-							console.print("-- Fallback encoding read as windows-1251")
+							logging.info("-- Fallback encoding read as windows-1251")
 
 					except Exception:
 						logging.exception("Abort: Can't detect encoding of CUE file")
-						console.print("-- Abort: Can't detect encoding of CUE file")
 						return 1
 
 			f.close()
@@ -26217,19 +26204,19 @@ def worker1():
 
 					if not os.path.isfile(file_path):
 						if files == 1:
-							console.print("-- The referenced source file wasn't found. Searching for matching file name...")
+							logging.info("-- The referenced source file wasn't found. Searching for matching file name...")
 							for item in os.listdir(os.path.dirname(path)):
 								if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
 									if ".cue" not in item.lower() and item.split(".")[-1].lower() in DA_Formats:
 										file_name = item
 										file_path = os.path.join(os.path.dirname(path), file_name)
-										console.print("-- Source found at: " + file_path)
+										logging.info("-- Source found at: " + file_path)
 										break
 							else:
-								console.print("-- Abort: Source file not found")
+								logging.error("-- Abort: Source file not found")
 								return 1
 						else:
-							console.print("-- Abort: Source file not found")
+							logging.error("-- Abort: Source file not found")
 							return 1
 
 				if line.startswith("TRACK "):
@@ -26356,11 +26343,8 @@ def worker1():
 					loaded_pathes_cache[track.fullpath] = track.index
 					added.append(track.index)
 
-		except Exception as e:
+		except Exception:
 			logging.exception("Internal error processing CUE file")
-			console.print("-- Internal error in processing CUE file:")
-			console.print(str(e))
-			console.print(traceback.format_exc())
 
 	def add_file(path, force_scan=False):
 		# bm.get("add file start")
@@ -31891,7 +31875,7 @@ class TopPanel:
 							switch_playlist(pln)
 
 							pctl.playlist_view_position = len(default_playlist)
-							console.print("DEBUG: Position changed by track import")
+							logging.debug("Position changed by track import")
 							gui.update += 1
 				else:
 					colour = colours.corner_button  # [60, 60, 60, 255]
@@ -34517,11 +34501,11 @@ class StandardPlaylist:
 				pctl.playlist_view_position -= mouse_wheel
 
 			#if mouse_wheel:
-				#console.print("DEBUG: Position changed by mouse wheel scroll: " + str(mouse_wheel))
+				#logging.debug("Position changed by mouse wheel scroll: " + str(mouse_wheel))
 
 			if pctl.playlist_view_position > len(default_playlist):
 				pctl.playlist_view_position = len(default_playlist)
-				#console.print("DEBUG: Position changed by range bound")
+				#logging.debug("Position changed by range bound")
 			if pctl.playlist_view_position < 1:
 				pctl.playlist_view_position = 0
 				if default_playlist:
@@ -42574,7 +42558,7 @@ class Undo:
 
 				if not pctl.playlist_view_position < i < pctl.playlist_view_position + gui.playlist_view_length:
 					pctl.playlist_view_position = i
-					console.print("DEBUG: Position changed by undo")
+					logging.debug("Position changed by undo")
 		elif job[0] == "ptt":
 			j, fr, fr_s, fr_scr, so, to_s, to_scr = job
 			star_store.insert(fr.index, fr_s)
@@ -43753,10 +43737,9 @@ while pctl.running:
 			if SDL_IsGameController(event.cdevice.which):
 				SDL_GameControllerOpen(event.cdevice.which)
 				try:
-					console.print(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
+					logging.info(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
 				except Exception:
-					logging.exception("Error get game controller")
-					console.print("Error get game controller")
+					logging.exception("Error getting game controller")
 
 		if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
 			if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
@@ -44232,7 +44215,7 @@ while pctl.running:
 	# This section of code controls the internal processing speed or 'frame-rate'
 	# It's pretty messy
 	# if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
-	#     console.print("WARNING: The playlist failed to render at the latest position!!!!")
+	#     logging.warning("The playlist failed to render at the latest position!!!!")
 
 	power += 1
 
@@ -44537,7 +44520,7 @@ while pctl.running:
 
 			if keymaps.test("goto-top"):
 				pctl.playlist_view_position = 0
-				console.print("DEBUG: Position changed by key")
+				logging.debug("Position changed by key")
 				pctl.selected_in_playlist = 0
 				gui.pl_update = 1
 
@@ -44546,7 +44529,7 @@ while pctl.running:
 				if n < 0:
 					n = 0
 				pctl.playlist_view_position = n
-				console.print("DEBUG: Position changed by key")
+				logging.debug("Position changed by key")
 				pctl.selected_in_playlist = len(default_playlist) - 1
 				gui.pl_update = 1
 
@@ -44791,7 +44774,7 @@ while pctl.running:
 					pctl.playlist_view_position = len(default_playlist) - 2
 				gui.pl_update = 1
 				pctl.selected_in_playlist = pctl.playlist_view_position
-				console.print("DEBUG: Position changed by page key")
+				logging.debug("Position changed by page key")
 				shift_selection.clear()
 		if keymaps.test("pageup"):
 			if len(default_playlist) > 0:
@@ -44800,7 +44783,7 @@ while pctl.running:
 					pctl.playlist_view_position = 0
 				gui.pl_update = 1
 				pctl.selected_in_playlist = pctl.playlist_view_position
-				console.print("DEBUG: Position changed by page key")
+				logging.debug("Position changed by page key")
 				shift_selection.clear()
 
 		if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
@@ -45321,28 +45304,28 @@ while pctl.running:
 						gal_jump_select(False, 1)
 						goto_album(pctl.selected_in_playlist)
 						pctl.playlist_view_position = pctl.selected_in_playlist
-						console.print("DEBUG: Position changed by gallery key press")
+						logging.debug("Position changed by gallery key press")
 						gui.pl_update = 1
 					if gal_down:
 						gal_down = False
 						gal_jump_select(False, row_len)
 						goto_album(pctl.selected_in_playlist, down=True)
 						pctl.playlist_view_position = pctl.selected_in_playlist
-						console.print("DEBUG: Position changed by gallery key press")
+						logging.debug("Position changed by gallery key press")
 						gui.pl_update = 1
 					if gal_left:
 						gal_left = False
 						gal_jump_select(True, 1)
 						goto_album(pctl.selected_in_playlist)
 						pctl.playlist_view_position = pctl.selected_in_playlist
-						console.print("DEBUG: Position changed by gallery key press")
+						logging.debug("Position changed by gallery key press")
 						gui.pl_update = 1
 					if gal_up:
 						gal_up = False
 						gal_jump_select(True, row_len)
 						goto_album(pctl.selected_in_playlist)
 						pctl.playlist_view_position = pctl.selected_in_playlist
-						console.print("DEBUG: Position changed by gallery key press")
+						logging.debug("Position changed by gallery key press")
 						gui.pl_update = 1
 
 					w = gui.rspw
@@ -45574,10 +45557,10 @@ while pctl.running:
 														pctl.play()
 													elif info[0] == 1 and pctl.playing_state > 0:
 														pctl.playlist_view_position = album_dex[album_on]
-														console.print("DEBUG: Position changed by gallery click")
+														logging.debug("Position changed by gallery click")
 													else:
 														pctl.playlist_view_position = album_dex[album_on]
-														console.print("DEBUG: Position changed by gallery click")
+														logging.debug("Position changed by gallery click")
 														pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
 
 													pctl.show_current()
@@ -45607,10 +45590,10 @@ while pctl.running:
 														pctl.play()
 													elif info[0] == 1 and pctl.playing_state > 0:
 														pctl.playlist_view_position = album_dex[album_on]
-														console.print("DEBUG: Position changed by gallery click")
+														logging.debug("Position changed by gallery click")
 													else:
 														pctl.playlist_view_position = album_dex[album_on]
-														console.print("DEBUG: Position changed by gallery click")
+														logging.debug("Position changed by gallery click")
 														pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
 
 												else:
@@ -45618,7 +45601,7 @@ while pctl.running:
 													d_click_timer.set()
 
 												pctl.playlist_view_position = album_dex[album_on]
-												console.print("DEBUG: Position changed by gallery click")
+												logging.debug("Position changed by gallery click")
 												pctl.selected_in_playlist = album_dex[album_on]
 												gui.pl_update += 1
 
@@ -46934,7 +46917,7 @@ while pctl.running:
 								sbp = top
 							per = (sbp - top) / (ey - top - sbl)
 							pctl.playlist_view_position = int(len(default_playlist) * per)
-							console.print("DEBUG: Position set by scroll bar (right click)")
+							logging.debug("Position set by scroll bar (right click)")
 							if pctl.playlist_view_position < 0:
 								pctl.playlist_view_position = 0
 
@@ -46966,7 +46949,7 @@ while pctl.running:
 							if sbp < mouse_position[1] < sbp + sbl:
 								gui.scroll_direction = 0
 							pctl.playlist_view_position += gui.scroll_direction * 2
-							console.print("DEBUG: Position set by scroll bar (slide)")
+							logging.debug("Position set by scroll bar (slide)")
 							if pctl.playlist_view_position < 0:
 								pctl.playlist_view_position = 0
 							if pctl.playlist_view_position > len(default_playlist):
@@ -46994,7 +46977,7 @@ while pctl.running:
 							sbp = top
 						per = (sbp - top) / (ey - top - sbl)
 						pctl.playlist_view_position = int(len(default_playlist) * per)
-						console.print("DEBUG: Position set by scroll bar (drag)")
+						logging.debug("Position set by scroll bar (drag)")
 
 
 					else:
@@ -47837,7 +47820,7 @@ while pctl.running:
 								pctl.selected_in_playlist = search_index
 								if len(default_playlist) > 10 and search_index > 10:
 									pctl.playlist_view_position = search_index - 7
-									console.print("DEBUG: Position changed by search")
+									logging.debug("Position changed by search")
 								else:
 									pctl.playlist_view_position = 0
 
@@ -47886,7 +47869,7 @@ while pctl.running:
 							pctl.selected_in_playlist = search_index
 							if len(default_playlist) > 10 and search_index > 10:
 								pctl.playlist_view_position = search_index - 7
-								console.print("DEBUG: Position changed by search")
+								logging.debug("Position changed by search")
 							else:
 								pctl.playlist_view_position = 0
 							if gui.combo_mode:
@@ -47927,7 +47910,7 @@ while pctl.running:
 
 					if pctl.playlist_view_position > 0 and pctl.selected_in_playlist < pctl.playlist_view_position + 2:
 						pctl.playlist_view_position -= 1
-						console.print("DEBUG: Position changed by key up")
+						logging.debug("Position changed by key up")
 
 						scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
@@ -47957,7 +47940,7 @@ while pctl.running:
 					if pctl.playlist_view_position < len(
 							default_playlist) and pctl.selected_in_playlist > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
 						pctl.playlist_view_position += 1
-						console.print("DEBUG: Position changed by key down")
+						logging.debug("Position changed by key down")
 
 						scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
@@ -48655,10 +48638,10 @@ while pctl.running:
 	if pctl.total_playtime - time_last_save > 600:
 		try:
 			if should_save_state:
-				console.print("Auto save playtime")
+				logging.info("Auto save playtime")
 				pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
 			else:
-				console.print("Dev mode, skip auto saving playtime")
+				logging.info("Dev mode, skip auto saving playtime")
 		except PermissionError:
 			logging.exception("Permission error encountered while writing database")
 			show_message(_("Permission error encountered while writing database"), "error")
