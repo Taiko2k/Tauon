@@ -222,8 +222,11 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 		tauon.radio_server = httpd
 		httpd.serve_forever()
 		httpd.server_close()
-	except OSError:
-		logging.exception("Not starting radio page server, another Tauon instance already running?")
+	except OSError as e:
+		if str(e) == "[Errno 98] Address already in use":
+			logging.error("Not starting radio page server, is another Tauon instance already running?")
+		else:
+			logging.exception("Unknown OSError starting radio page server!")
 	except Exception:
 		logging.exception("Failed starting radio page server!")
 
@@ -677,10 +680,13 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 		httpd = ThreadedHTTPServer(("0.0.0.0", 7814), Server)
 		httpd.serve_forever()
 		httpd.server_close()
-	except OSError:
-		logging.exception("Not starting web api server, already running?")
+	except OSError as e:
+		if str(e) == "[Errno 98] Address already in use":
+			logging.error("Not starting web api server, is another Tauon instance already running?")
+		else:
+			logging.exception("Unknown OSError starting web api server!")
 	except Exception:
-		logging.exception("Failed starting radio page server!")
+		logging.exception("Failed starting web api server!")
 
 
 def controller(tauon: Tauon) -> None:
@@ -731,9 +737,9 @@ def controller(tauon: Tauon) -> None:
 		if str(e) == "[Errno 98] Address already in use":
 			logging.error("Not starting controller webserver, is another Tauon instance already running?")
 		else:
-			logging.exception("Unknown OSError starting radio page server!")
+			logging.exception("Unknown OSError starting controller server!")
 	except Exception:
-		logging.exception("Failed starting radio page server!")
+		logging.exception("Failed starting controller server!")
 
 
 def authserve(tauon: Tauon) -> None:
