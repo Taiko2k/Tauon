@@ -161,7 +161,7 @@ class QuickThumbnail:
 
 		return True
 
-# Martin: This block never executes?
+# TODO(Martin): This block never executes? https://github.com/Taiko2k/Tauon/issues/1318
 if system == "Windows":
 	class RECT(ctypes.Structure):
 		_fields_ = [

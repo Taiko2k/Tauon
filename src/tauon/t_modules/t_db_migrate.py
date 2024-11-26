@@ -513,8 +513,8 @@ def database_migrate(
 
 	if db_version <= 68:
 		logging.info("Updating database to version 69")
-		new_multi_playlist = []
-		new_queue = []
+		new_multi_playlist: list[TauonPlaylist] = []
+		new_queue: list[TauonQueueItem] = []
 		for playlist in multi_playlist:
 			new_multi_playlist.append(
 				TauonPlaylist(
