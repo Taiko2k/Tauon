@@ -1124,7 +1124,7 @@ transcode_list = []
 transcode_state = ""
 
 taskbar_progress = True
-track_queue: list[TauonQueueItem] = []
+track_queue: list[int] = []
 
 playing_in_queue = 0
 draw_sep_hl = False
@@ -3072,7 +3072,8 @@ for t in range(2):
 			logging.warning("Loading backup state.p!")
 
 		db_version = save[17]
-		logging.warning(f"DB version: {db_version}")
+		if db_version != latest_db_version:
+			logging.warning(f"Loaded older DB version: {db_version}")
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
 			# prefs.ui_scale = 1.3
@@ -3093,14 +3094,7 @@ for t in range(2):
 			else:
 				multi_playlist = save[5]
 		volume = save[6]
-		if save[7] is not None:
-			if db_version > 68:
-				tauonqueueitem_jar = save[7]
-				for d in tauonqueueitem_jar:
-					nt = TauonQueueItem(**d)
-					track_queue.append(nt)
-			else:
-				track_queue = save[7]
+		track_queue = save[7]
 		playing_in_queue = save[8]
 		default_playlist = save[9]
 		# playlist_playing = save[10]
@@ -3249,7 +3243,13 @@ for t in range(2):
 		# if save[89] is not None:
 		#	 prefs.show_transfer = save[89]
 		if save[90] is not None:
-			p_force_queue = save[90]
+			if db_version > 68:
+				tauonqueueitem_jar = save[90]
+				for d in tauonqueueitem_jar:
+					nt = TauonQueueItem(**d)
+					p_force_queue.append(nt)
+			else:
+				p_force_queue = save[90]
 		if save[91] is not None:
 			prefs.use_pause_fade = save[91]
 		if save[92] is not None:
@@ -3455,7 +3455,7 @@ logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 perf_timer.set()
 keys = set(master_library.keys())
 for pl in multi_playlist:
-	if db_version > 68:
+	if db_version > 68 or db_version == 0:
 		keys -= set(pl.playlist_ids)
 	else:
 		keys -= set(pl[2])
@@ -5818,7 +5818,7 @@ class PlayerCtl:
 
 		if self.force_queue and not self.pause_queue:
 			if self.force_queue[0].uuid_int == 1: # TODO(Martin): How can the UUID be 1 when we're doing a random on 1-1m except for massive chance? Is that the point?
-				if self.get_track(self.force_queue[0][0]).parent_folder_path != self.get_track(index).parent_folder_path:
+				if self.get_track(self.force_queue[0].track_id).parent_folder_path != self.get_track(index).parent_folder_path:
 					del self.force_queue[0]
 
 		if len(self.track_queue) > 0:
@@ -6143,7 +6143,7 @@ class PlayerCtl:
 			self.queue_step -= 1
 		# Remove track from force queue
 		for i in reversed(range(len(self.force_queue))):
-			if self.force_queue[i][0] == track_id:
+			if self.force_queue[i].track_id == track_id:
 				del self.force_queue[i]
 		del self.master_library[track_id]
 
@@ -23040,12 +23040,12 @@ settings_icon.colour = [232, 200, 96, 255]  # [230, 152, 118, 255]#[173, 255, 47
 x_menu.add(MenuItem(_("Settings"), activate_info_box, icon=settings_icon))
 x_menu.add_sub(_("Database…"), 190)
 if dev_mode:
-	def dev_mode_enable_save_state():
+	def dev_mode_enable_save_state() -> None:
 		global should_save_state
 		should_save_state = True
 		show_message(_("Enabled saving state"))
 
-	def dev_mode_disable_save_state():
+	def dev_mode_disable_save_state() -> None:
 		global should_save_state
 		should_save_state = False
 		show_message(_("Disabled saving state"))
@@ -43158,8 +43158,10 @@ def save_state() -> None:
 	tauonqueueitem_jar = []
 #	if db_version > 68:
 	for v in pctl.multi_playlist:
+#		logging.warning(f"Playlist: {v}")
 		tauonplaylist_jar.append(v.__dict__)
-	for v in pctl.track_queue:
+	for v in pctl.force_queue:
+#		logging.warning(f"Queue: {v}")
 		tauonqueueitem_jar.append(v.__dict__)
 #	else:
 #		tauonplaylist_jar = pctl.multi_playlist
@@ -43177,7 +43179,7 @@ def save_state() -> None:
 		pctl.playlist_view_position,
 		tauonplaylist_jar, # pctl.multi_playlist, # list[TauonPlaylist]
 		pctl.player_volume,
-		tauonqueueitem_jar, # pctl.track_queue, # list[TauonQueueItem]
+		pctl.track_queue,
 		pctl.queue_step,
 		default_playlist,
 		None,  # pctl.playlist_playing_position,
@@ -43260,7 +43262,7 @@ def save_state() -> None:
 		gui.set_mode,
 		None,  # prefs.show_queue, # 88
 		None,  # prefs.show_transfer,
-		pctl.force_queue,  # 90
+		tauonqueueitem_jar, # pctl.force_queue, # 90
 		prefs.use_pause_fade,  # 91
 		prefs.append_total_time,  # 92
 		None,  # prefs.backend,
@@ -48049,7 +48051,7 @@ while pctl.running:
 				if gui.queue_toast_plural:
 					top_text = "Album"
 					fqo[3] = 1
-				if pctl.force_queue[-1][3] == 1:
+				if pctl.force_queue[-1].type == 1:
 					top_text = "Album"
 
 				queue_box.draw_card(
