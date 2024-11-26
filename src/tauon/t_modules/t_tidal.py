@@ -21,7 +21,8 @@ except Exception:
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 class Tidal:
 

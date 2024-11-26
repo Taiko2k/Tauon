@@ -36,7 +36,9 @@ from tauon.t_modules.t_extra import Timer
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Tauon, TrackClass
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
+
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False
 	start = 0

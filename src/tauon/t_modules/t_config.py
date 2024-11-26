@@ -24,9 +24,12 @@ from __future__ import annotations
 
 import logging
 import os
+
 from tauon.t_modules.t_extra import tryint
 
-_ = lambda m: m
+
+def _(m: str) -> str:
+	return m
 
 class Config:
 

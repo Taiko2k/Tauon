@@ -103,7 +103,8 @@ class TauonPlaylist:
 	parent_playlist_id: str        # Filter parent playlist id (string)
 	persist_time_positioning: bool # Persist time positioning
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 def tmp_cache_dir() -> str:
 	tmp_dir = GLib.get_tmp_dir()
