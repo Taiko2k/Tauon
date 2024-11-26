@@ -32,6 +32,7 @@ import threading
 import time
 import urllib.parse
 import zipfile
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import gi
@@ -41,6 +42,66 @@ if TYPE_CHECKING:
 	from collections.abc import Callable
 
 	from tauon.t_modules.t_main import TrackClass
+
+
+@dataclass
+class TauonQueueItem:
+	"""TauonQueueItem is [trackid, position, playlist_id, type, album_stage, uid_gen(), auto_stop]
+
+	type:
+		0 is a track
+		1 is an album
+
+	Old pre-migration queue[6]-style numbering help table:
+		0 track_id    (int)
+		1 position    (int)
+		2 playlist_id (int)
+		3 type        (int)
+		4 album_stage (int)
+		5 uuid_int    (int)
+		6 auto_stop   (bool)
+	"""
+
+	track_id: int
+	position: int
+	playlist_id: int
+	type: int
+	album_stage: int
+	uuid_int: int
+	auto_stop: bool
+
+# Functions to generate empty playlist
+@dataclass
+class TauonPlaylist:
+	"""Playlist is [Name, playing, playlist_ids, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
+
+	Old pre-migration pl[6]-style numbering help table:
+		0 title (string)
+		1 playing (int)
+		2 playlist_ids (list of int)
+		3 position (int)
+		4 hide_title on playlist folders (bool)
+		5 selected (int)
+		6 uuid_int (int)
+		7 last_folder import path (string)
+		8 hidden (bool)
+		9 locked (bool)
+		10 parent_playlist_id <- Filter (string)
+		11 persist_time_positioning
+	"""
+
+	title: str
+	playing: int
+	playlist_ids: list[int] | None
+	position: int                  # View Position
+	hide_title: bool               # hide playlist folder titles (bool)
+	selected: int
+	uuid_int: int
+	last_folder: list[str]               # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
+	hidden: bool
+	locked: bool
+	parent_playlist_id: str        # Filter parent playlist id (string)
+	persist_time_positioning: bool # Persist time positioning
 
 _ = lambda m: m
 

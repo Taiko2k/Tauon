@@ -7,8 +7,10 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_extra import TauonPlaylist, TauonQueueItem
+
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TauonPlaylist, TauonQueueItem, TrackClass
+	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TrackClass
 
 
 def database_migrate(
@@ -16,7 +18,7 @@ def database_migrate(
 	db_version: float,
 	master_library: dict[int, TrackClass],
 	install_mode: bool,
-	multi_playlist: list[TauonPlaylist],
+	multi_playlist: list | list[TauonPlaylist],
 	star_store: StarStore,
 	a_cache_dir: str,
 	cache_directory: Path,
@@ -27,7 +29,7 @@ def database_migrate(
 	gen_codes: dict[int, str],
 	prefs: Prefs,
 	radio_playlists: list[TauonPlaylist],
-	p_force_queue: list[TauonQueueItem],
+	p_force_queue: list | list[TauonQueueItem],
 	theme: int,
 ) -> tuple[
 	dict[int, TrackClass],
@@ -509,5 +511,36 @@ def database_migrate(
 			if len(p) == 11:
 				p.append(False)
 
+	if db_version <= 68:
+		logging.info("Updating database to version 69")
+		new_multi_playlist = []
+		new_queue = []
+		for playlist in multi_playlist:
+			new_multi_playlist.append(
+				TauonPlaylist(
+					title=playlist[0],
+					playing=playlist[1],
+					playlist_ids=playlist[2],
+					position=playlist[3],
+					hide_title=playlist[4],
+					selected=playlist[5],
+					uuid_int=playlist[6],
+					last_folder=playlist[7],
+					hidden=playlist[8],
+					locked=playlist[9],
+					parent_playlist_id=playlist[10],
+					persist_time_positioning=playlist[11]))
+		for queue in p_force_queue:
+				new_queue.append(
+					TauonQueueItem(
+						track_id=queue[0],
+						position=queue[1],
+						playlist_id=queue[2],
+						type=queue[3],
+						album_stage=queue[4],
+						uuid_int=queue[5],
+						auto_stop=queue[6]))
+		multi_playlist = new_multi_playlist
+		p_force_queue = new_queue
 
 	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

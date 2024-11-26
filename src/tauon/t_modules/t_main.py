@@ -64,7 +64,6 @@ import zipfile
 from collections import OrderedDict
 from collections.abc import Callable
 from ctypes import byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer, Structure
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 from xml.sax.saxutils import escape, unescape
@@ -262,7 +261,7 @@ from unidecode import unidecode
 
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
-from tauon.t_modules.t_extra import FunctionStore, Timer, rgb_add_hls, alpha_blend, alpha_mod, colour_value, test_lumi, shooter, ColourGenCache, year_search, get_display_time, point_proximity_test, is_light, clean_string, mac_styles, tmp_cache_dir, TestTimer, filename_to_metadata, get_artist_strip_feat, get_split_artists, get_artist_safe, filename_safe, sleep_timeout, fit_box, contrast_ratio, rgb_to_hls, process_odat, commonprefix, check_equal, search_magic, search_magic_any, get_hms_time, hms_to_seconds, is_grey, hls_to_rgb, get_filesize_string, get_filesize_string_rounded, uri_parse, reduce_paths, j_chars, star_count, star_count3, genre_correct, hsl_to_rgb, grow_rect, point_distance, seconds_to_day_hms, d_date_display, d_date_display2, colour_slide, archive_file_scan, subtract_rect, folder_file_scan, get_folder_size, get_year_from_string, tryint
+from tauon.t_modules.t_extra import TauonQueueItem, TauonPlaylist, FunctionStore, Timer, rgb_add_hls, alpha_blend, alpha_mod, colour_value, test_lumi, shooter, ColourGenCache, year_search, get_display_time, point_proximity_test, is_light, clean_string, mac_styles, tmp_cache_dir, TestTimer, filename_to_metadata, get_artist_strip_feat, get_split_artists, get_artist_safe, filename_safe, sleep_timeout, fit_box, contrast_ratio, rgb_to_hls, process_odat, commonprefix, check_equal, search_magic, search_magic_any, get_hms_time, hms_to_seconds, is_grey, hls_to_rgb, get_filesize_string, get_filesize_string_rounded, uri_parse, reduce_paths, j_chars, star_count, star_count3, genre_correct, hsl_to_rgb, grow_rect, point_distance, seconds_to_day_hms, d_date_display, d_date_display2, colour_slide, archive_file_scan, subtract_rect, folder_file_scan, get_folder_size, get_year_from_string, tryint
 from tauon.t_modules.t_db_migrate import database_migrate
 from tauon.t_modules.t_draw import TDraw, QuickThumbnail
 from tauon.t_modules.t_jellyfin import Jellyfin
@@ -1143,62 +1142,7 @@ dl_use = 0
 random_mode = False
 repeat_mode = False
 
-@dataclass
-class TauonQueueItem:
-	"""TauonQueueItem is [trackid, position, playlist_id, type, album_stage, uid_gen(), auto_stop]
 
-	type:
-		0 is a track
-		1 is an album
-
-Old queue[6] style numbering help table, remove after refactor:
-  0 track_id    (int)
-  1 position    (int)
-  2 playlist_id (int)
-  3 type        (int)
-  4 album_stage (int)
-  5 uuid_int    (int)
-  6 auto_stop   (bool)
-"""
-	track_id: int
-	position: int
-	playlist_id: int
-	type: int
-	album_stage: int
-	uuid_int: int
-	auto_stop: bool
-
-# Functions to generate empty playlist
-@dataclass
-class TauonPlaylist:
-	"""Playlist is [Name, playing, playlist_ids, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
-
-Old pl[6] style numbering help table, remove after refactor:
-  0 title (string)
-  1 playing (int)
-  2 playlist_ids (list of int)
-  3 position (int)
-  4 hide_title on playlist folders (bool)
-  5 selected (int)
-  6 uuid_int (int)
-  7 last_folder import path (string)
-  8 hidden (bool)
-  9 locked (bool)
-  10 parent_playlist_id <- Filter (string)
-  11 persist_time_positioning
-"""
-	title: str
-	playing: int
-	playlist_ids: list[int] | None
-	position: int                  # View Position
-	hide_title: bool               # hide playlist folder titles (bool)
-	selected: int
-	uuid_int: int
-	last_folder: list[str]               # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
-	hidden: bool
-	locked: bool
-	parent_playlist_id: str        # Filter parent playlist id (string)
-	persist_time_positioning: bool # Persist time positioning
 
 
 def uid_gen() -> int:
@@ -1273,7 +1217,7 @@ volume = 75
 
 folder_image_offsets = {}
 db_version: float = 0.0
-latest_db_version: float = 68
+latest_db_version: float = 69
 
 albums = []
 album_position = 0
@@ -3127,6 +3071,8 @@ for t in range(2):
 		if t == 1:
 			logging.warning("Loading backup state.p!")
 
+		db_version = save[17]
+		logging.warning(f"DB version: {db_version}")
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
 			# prefs.ui_scale = 1.3
@@ -3139,16 +3085,22 @@ for t in range(2):
 		playlist_active = save[3]
 		playlist_view_position = save[4]
 		if save[5] is not None:
-			tauonplaylist_jar = save[5]
-			for d in tauonplaylist_jar:
-				nt = TauonPlaylist(**d)
-				multi_playlist.append(nt)
+			if db_version > 68:
+				tauonplaylist_jar = save[5]
+				for d in tauonplaylist_jar:
+					nt = TauonPlaylist(**d)
+					multi_playlist.append(nt)
+			else:
+				multi_playlist = [5]
 		volume = save[6]
 		if save[7] is not None:
-			tauonqueueitem_jar = save[7]
-			for d in tauonqueueitem_jar:
-				nt = TauonQueueItem(**d)
-				track_queue.append(nt)
+			if db_version > 68:
+				tauonqueueitem_jar = save[7]
+				for d in tauonqueueitem_jar:
+					nt = TauonQueueItem(**d)
+					track_queue.append(nt)
+			else:
+				track_queue = save[7]
 		playing_in_queue = save[8]
 		default_playlist = save[9]
 		# playlist_playing = save[10]
@@ -3158,7 +3110,6 @@ for t in range(2):
 		folder_image_offsets = save[14]
 		# lfm_username = save[15]
 		# lfm_hash = save[16]
-		db_version = save[17]
 		view_prefs = save[18]
 		# window_size = save[19]
 		gui.save_size = copy.copy(save[19])
@@ -7204,16 +7155,16 @@ class LastFMapi:
 			show_message(_("Error connecting to Last.fm network"), str(e), mode="warning")
 			return False
 
-	def toggle(self):
+	def toggle(self) -> None:
 		prefs.scrobble_hold ^= True
 
-	def details_ready(self):
+	def details_ready(self) -> bool:
 		if prefs.last_fm_token:
 			return True
 		else:
 			return False
 
-	def last_fm_only_connect(self):
+	def last_fm_only_connect(self) -> bool:
 		if not last_fm_enable:
 			return False
 		try:
@@ -7226,7 +7177,7 @@ class LastFMapi:
 			show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
 			return False
 
-	def no_user_connect(self):
+	def no_user_connect(self) -> bool:
 		if not last_fm_enable:
 			return False
 		try:
@@ -7239,7 +7190,7 @@ class LastFMapi:
 			show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
 			return False
 
-	def get_all_scrobbles_estimate_time(self):
+	def get_all_scrobbles_estimate_time(self) -> float | None:
 
 		if not self.connected:
 			self.connect(False)
@@ -8206,7 +8157,7 @@ def id_to_pl(id: int):
 	return None
 
 
-def pl_to_id(pl: TauonPlaylist) -> int:
+def pl_to_id(pl: int) -> int:
 	return pctl.multi_playlist[pl].uuid_int
 
 
@@ -8272,12 +8223,12 @@ class MenuItem:
 		self.sub_menu_width = sub_menu_width
 
 
-def encode_track_name(t):
-	if t.is_cue or not t.filename:
-		out_line = str(t.track_number) + ". "
-		out_line += t.artist + " - " + t.title
+def encode_track_name(track_object: TrackClass) -> str:
+	if track_object.is_cue or not track_object.filename:
+		out_line = str(track_object.track_number) + ". "
+		out_line += track_object.artist + " - " + track_object.title
 		return filename_safe(out_line)
-	return os.path.splitext(t.filename)[0]
+	return os.path.splitext(track_object.filename)[0]
 
 
 def encode_folder_name(track_object: TrackClass) -> str:
@@ -8318,7 +8269,7 @@ class Tauon:
 		self.star_store = star_store
 		self.gui = gui
 		self.prefs = prefs
-		self.cache_directory:   Path | None = cache_directory
+		self.cache_directory:          Path = cache_directory
 		self.user_directory:     str | None = user_directory
 		self.music_directory:   Path | None = music_directory
 		self.worker_save_state:        bool = False
@@ -8434,7 +8385,7 @@ class Tauon:
 
 		shooter(go)
 
-	def set_tray_icons(self, force=False):
+	def set_tray_icons(self, force: bool = False):
 
 		indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
 		indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
@@ -17008,11 +16959,11 @@ tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"
 radio_tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
 
-def pin_playlist_toggle(pl):
+def pin_playlist_toggle(pl: int) -> None:
 	pctl.multi_playlist[pl].hidden ^= True
 
 
-def pl_pin_deco(pl):
+def pl_pin_deco(pl: int):
 	# if pctl.multi_playlist[pl].hidden == True and tab_menu.pos[1] >
 
 	if pctl.multi_playlist[pl].hidden == True:
@@ -17024,24 +16975,24 @@ def pl_pin_deco(pl):
 tab_menu.add(MenuItem("Pin", pin_playlist_toggle, pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
 
-def pl_lock_deco(pl):
+def pl_lock_deco(pl: int):
 	if pctl.multi_playlist[pl].locked == True:
 		return [colours.menu_text, colours.menu_background, _("Unlock")]
 	else:
 		return [colours.menu_text, colours.menu_background, _("Lock")]
 
 
-def view_pl_is_locked(_):
+def view_pl_is_locked(_) -> bool:
 	return pctl.multi_playlist[pctl.active_playlist_viewing].locked
 
 
-def pl_is_locked(pl):
+def pl_is_locked(pl: int) -> bool:
 	if not pctl.multi_playlist:
 		return False
 	return pctl.multi_playlist[pl].locked
 
 
-def lock_playlist_toggle(pl):
+def lock_playlist_toggle(pl: int) -> None:
 	pctl.multi_playlist[pl].locked ^= True
 
 
@@ -17202,7 +17153,7 @@ def clear_playlist(index):
 	gui.pl_update = 1
 
 
-def convert_playlist(pl: TauonPlaylist, get_list: bool = False):
+def convert_playlist(pl: int, get_list: bool = False):
 	global transcode_list
 
 	if not tauon.test_ffmpeg():
@@ -17234,7 +17185,7 @@ def convert_playlist(pl: TauonPlaylist, get_list: bool = False):
 	transcode_list.extend(folders)
 
 
-def get_folder_tracks_local(pl_in):
+def get_folder_tracks_local(pl_in: int) -> list[int]:
 	selection = []
 	parent = os.path.normpath(pctl.master_library[default_playlist[pl_in]].parent_folder_path)
 	while pl_in < len(default_playlist) and parent == os.path.normpath(
@@ -17244,7 +17195,7 @@ def get_folder_tracks_local(pl_in):
 	return selection
 
 
-def test_pl_tab_locked(pl):
+def test_pl_tab_locked(pl: int) -> bool:
 	if gui.radio_view:
 		return False
 	return pctl.multi_playlist[pl].locked
@@ -17287,7 +17238,7 @@ def move_playlist(source, dest):
 		logging.exception("Playlist move error")
 
 
-def delete_playlist(index, force=False, check_lock=False):
+def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -> None:
 	if gui.radio_view:
 		del pctl.radio_playlists[index]
 		if not pctl.radio_playlists:
@@ -17403,15 +17354,15 @@ def delete_playlist(index, force=False, check_lock=False):
 to_scan = []
 
 
-def delete_playlist_force(index):
+def delete_playlist_force(index: int):
 	delete_playlist(index, force=True, check_lock=True)
 
 
-def delete_playlist_by_id(id, force=False, check_lock=False):
+def delete_playlist_by_id(id: int, force: bool = False, check_lock: bool = False) -> None:
 	delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
 
 
-def delete_playlist_ask(index):
+def delete_playlist_ask(index: int):
 	if gui.radio_view:
 		delete_playlist_force(index)
 		return
@@ -17425,14 +17376,14 @@ def delete_playlist_ask(index):
 	show_message(_("Are you sure you want to delete playlist: {name}?").format(name=pctl.multi_playlist[index].title), mode="confirm")
 
 
-def rescan_tags(pl):
+def rescan_tags(pl: int) -> None:
 	for track in pctl.multi_playlist[pl].playlist_ids:
 		if pctl.master_library[track].is_cue is False:
 			to_scan.append(track)
 	tm.ready("worker")
 
 
-# def re_import(pl):
+# def re_import(pl: int) -> None:
 #
 #	 path = pctl.multi_playlist[pl].last_folder
 #	 if path == "":
@@ -17448,7 +17399,7 @@ def rescan_tags(pl):
 #	 load_orders.append(copy.deepcopy(load_order))
 
 
-def re_import2(pl):
+def re_import2(pl: int) -> None:
 	paths = pctl.multi_playlist[pl].last_folder
 
 	reduce_paths(paths)
@@ -17630,7 +17581,7 @@ def append_current_playing(index):
 		gui.pl_update = 1
 
 
-def export_stats(pl):
+def export_stats(pl: int) -> None:
 	playlist_time = 0
 	play_time = 0
 	total_size = 0
@@ -17802,7 +17753,7 @@ def export_stats(pl):
 		subprocess.call(["xdg-open", target])
 
 
-def imported_sort(pl):
+def imported_sort(pl: int) -> None:
 	if pl_is_locked(pl):
 		show_message(_("Playlist is locked"))
 		return
@@ -17813,7 +17764,7 @@ def imported_sort(pl):
 	reload_albums()
 	tree_view_box.clear_target_pl(pl)
 
-def imported_sort_folders(pl):
+def imported_sort_folders(pl: int) -> None:
 	if pl_is_locked(pl):
 		show_message(_("Playlist is locked"))
 		return
@@ -17832,7 +17783,7 @@ def imported_sort_folders(pl):
 	reload_albums()
 	tree_view_box.clear_target_pl(pl)
 
-def standard_sort(pl):
+def standard_sort(pl: int) -> None:
 	if pl_is_locked(pl):
 		show_message(_("Playlist is locked"))
 		return
@@ -17852,7 +17803,7 @@ def year_s(plt):
 	return temp
 
 
-def year_sort(pl, custom_list=None):
+def year_sort(pl: int, custom_list=None):
 	if custom_list:
 		playlist = custom_list
 	else:
@@ -18010,7 +17961,7 @@ def append_deco():
 	return [line_colour, colours.menu_background, text]
 
 
-def rescan_deco(pl):
+def rescan_deco(pl: int):
 	if pctl.multi_playlist[pl].last_folder:
 		line_colour = colours.menu_text
 	else:
@@ -18021,7 +17972,7 @@ def rescan_deco(pl):
 	return [line_colour, colours.menu_background, None]
 
 
-def regenerate_deco(pl):
+def regenerate_deco(pl: int):
 	id = pl_to_id(pl)
 	value = pctl.gen_codes.get(id)
 
@@ -18057,7 +18008,7 @@ column_names = (
 )
 
 
-def parse_generator(string):
+def parse_generator(string: str):
 	cmds = []
 	quotes = []
 	current = ""
@@ -18086,7 +18037,7 @@ def parse_generator(string):
 	return cmds, quotes, inquote
 
 
-def upload_spotify_playlist(pl):
+def upload_spotify_playlist(pl: int):
 	p_id = pl_to_id(pl)
 	string = pctl.gen_codes.get(p_id)
 	id = None
@@ -18129,7 +18080,7 @@ def upload_spotify_playlist(pl):
 	spot_ctl.upload_playlist(id, urls)
 
 
-def regenerate_playlist(pl=-1, silent=False, id=None):
+def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = None) -> None:
 	if id is None and pl == -1:
 		return
 
@@ -18803,7 +18754,7 @@ def regenerate_playlist(pl=-1, silent=False, id=None):
 	#logging.info(cmds)
 
 
-def make_auto_sorting(pl):
+def make_auto_sorting(pl: int) -> None:
 	pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypa auto"
 	show_message(
 		_("OK. This playlist will automatically sort on import from now on"),
@@ -18873,11 +18824,11 @@ tab_menu.add(MenuItem(_("Export…"), export_playlist_box.activate, pass_ref=Tru
 tab_menu.add_sub(_("Misc…"), 175)
 
 
-def forget_pl_import_folder(pl):
+def forget_pl_import_folder(pl: int) -> None:
 	pctl.multi_playlist[pl].last_folder = []
 
 
-def remove_duplicates(pl):
+def remove_duplicates(pl: int) -> None:
 	playlist = []
 
 	for item in pctl.multi_playlist[pl].playlist_ids:
@@ -18893,7 +18844,7 @@ def remove_duplicates(pl):
 	pctl.multi_playlist[pl].playlist_ids[:] = playlist[:]
 
 
-def start_quick_add(pl):
+def start_quick_add(pl: int) -> None:
 	pctl.quick_add_target = pl_to_id(pl)
 	show_message(
 		_("You can now add/remove albums to this playlist by right clicking in gallery of any playlist"),
@@ -18910,7 +18861,7 @@ def auto_get_sync_targets():
 	return result_paths
 
 
-def auto_sync_thread(pl):
+def auto_sync_thread(pl: int) -> None:
 	if prefs.transcode_inplace:
 		show_message(_("Cannot sync when in transcode inplace mode"))
 		return
@@ -19066,13 +19017,13 @@ def auto_sync_thread(pl):
 	show_message(_("Sync completed"), mode="done")
 
 
-def auto_sync(pl):
+def auto_sync(pl: int) -> None:
 	shoot_dl = threading.Thread(target=auto_sync_thread, args=([pl]))
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
 
-def set_sync_playlist(pl: TauonPlaylist) -> None:
+def set_sync_playlist(pl: int) -> None:
 	id = pl_to_id(pl)
 	if prefs.sync_playlist == id:
 		prefs.sync_playlist = None
@@ -19080,7 +19031,7 @@ def set_sync_playlist(pl: TauonPlaylist) -> None:
 		prefs.sync_playlist = pl_to_id(pl)
 
 
-def sync_playlist_deco(pl: TauonPlaylist):
+def sync_playlist_deco(pl: int):
 	text = _("Set as Sync Playlist")
 	id = pl_to_id(pl)
 	if id == prefs.sync_playlist:
@@ -19088,24 +19039,24 @@ def sync_playlist_deco(pl: TauonPlaylist):
 	return [colours.menu_text, colours.menu_background, text]
 
 
-def set_download_playlist(pl: TauonPlaylist) -> None:
+def set_download_playlist(pl: int) -> None:
 	id = pl_to_id(pl)
 	if prefs.download_playlist == id:
 		prefs.download_playlist = None
 	else:
 		prefs.download_playlist = pl_to_id(pl)
 
-def set_podcast_playlist(pl):
+def set_podcast_playlist(pl: int) -> None:
 	pctl.multi_playlist[pl].persist_time_positioning ^= True
 
 
-def set_download_deco(pl):
+def set_download_deco(pl: int):
 	text = _("Set as Downloads Playlist")
 	if id == prefs.download_playlist:
 		text = _("Un-set as Downloads Playlist")
 	return [colours.menu_text, colours.menu_background, text]
 
-def set_podcast_deco(pl):
+def set_podcast_deco(pl: int):
 	text = _("Set Use Persistent Time")
 	if pctl.multi_playlist[pl].persist_time_positioning:
 		text = _("Un-set Use Persistent Time")
@@ -19118,7 +19069,7 @@ def csv_string(item):
 	return f"\"{item}\""
 
 
-def export_playlist_albums(pl):
+def export_playlist_albums(pl: int):
 	p = pctl.multi_playlist[pl]
 	name = p[0]
 	playlist = p[2]
@@ -19564,7 +19515,7 @@ def gen_love(pl, custom_list=None):
 		show_message(_("No loved tracks were found."))
 
 
-def gen_comment(pl):
+def gen_comment(pl: int) -> None:
 	playlist = []
 
 	for item in pctl.multi_playlist[pl].playlist_ids:
@@ -19595,7 +19546,7 @@ def gen_comment(pl):
 		show_message(_("Nothing of interest was found."))
 
 
-def gen_replay(pl):
+def gen_replay(pl: int) -> None:
 	playlist = []
 
 	for item in pctl.multi_playlist[pl].playlist_ids:
@@ -23183,14 +23134,14 @@ x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), clear_img_cache))
 cm_clean_db = False
 
 
-def clean_db():
+def clean_db() -> None:
 	global cm_clean_db
 	prefs.remove_network_tracks = False
 	cm_clean_db = True
 	tm.ready("worker")
 
 
-def clean_db2():
+def clean_db2() -> None:
 	global cm_clean_db
 	prefs.remove_network_tracks = True
 	cm_clean_db = True
@@ -23202,10 +23153,10 @@ x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), clean_db))
 
 
 
-def import_fmps():
+def import_fmps() -> None:
 	unique = set()
 	for playlist in pctl.multi_playlist:
-		for id in playlist[2]:
+		for id in playlist.playlist_ids:
 			tr = pctl.get_track(id)
 			if "FMPS_Rating" in tr.misc:
 				rating = round(tr.misc["FMPS_Rating"] * 10)
@@ -23223,7 +23174,7 @@ def import_popm():
 	unique = set()
 	skipped = set()
 	for playlist in pctl.multi_playlist:
-		for id in playlist[2]:
+		for id in playlist.playlist_ids:
 			tr = pctl.get_track(id)
 			if "POPM" in tr.misc:
 				rating = tr.misc["POPM"]
@@ -25788,11 +25739,11 @@ def worker2():
 
 				for playlist in pctl.multi_playlist:
 
-					# if "<" in playlist[0]:
-					#     #logging.info("Skipping search on derivative playlist: " + playlist[0])
+					# if "<" in playlist.title:
+					#     #logging.info("Skipping search on derivative playlist: " + playlist.title)
 					#     continue
 
-					for track in playlist[2]:
+					for track in playlist.playlist_ids:
 
 						if track in searched:
 							continue
@@ -26858,7 +26809,7 @@ def worker1():
 				if not prefs.remove_network_tracks and track.file_ext == "SPTY":
 
 					for playlist in pctl.multi_playlist:
-						if index in playlist[2]:
+						if index in playlist.playlist_ids:
 							break
 					else:
 						pctl.purge_track(index)
@@ -31114,17 +31065,17 @@ corner_icon = asset_loader("corner.png", True)
 
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
-def pl_is_mut(pl):
+def pl_is_mut(pl: int) -> bool:
 	id = pl_to_id(pl)
 	if id is None:
 		return False
 	return not (pctl.gen_codes.get(id) and "self" not in pctl.gen_codes[id])
 
-def clear_gen(id):
+def clear_gen(id: int) -> None:
 	del pctl.gen_codes[id]
 	show_message(_("Okay, it's a normal playlist now."), mode="done")
 
-def clear_gen_ask(id):
+def clear_gen_ask(id: int) -> None:
 	if "jelly\"" in pctl.gen_codes.get(id, ""):
 		return
 	if "spl\"" in pctl.gen_codes.get(id, ""):
@@ -42607,7 +42558,7 @@ class Undo:
 
 			for i, playlist in enumerate(pctl.multi_playlist):
 				if playlist.uuid_int == uid:
-					pl = playlist[2]
+					pl = playlist.playlist_ids
 					switch_playlist(i)
 					break
 			else:
@@ -43191,13 +43142,14 @@ gal_right = False
 get_sdl_input = GetSDLInput()
 
 
-def window_is_focused():  # thread safe?
+def window_is_focused() -> bool:
+	"""thread safe?"""
 	if SDL_GetWindowFlags(t_window) & SDL_WINDOW_INPUT_FOCUS:
 		return True
 	return False
 
 
-def save_state():
+def save_state() -> None:
 	if should_save_state:
 		logging.info("Writing database to disk... ")
 	else:
@@ -43216,12 +43168,15 @@ def save_state():
 	view_prefs["append-date"] = prefs.append_date
 
 	tauonplaylist_jar = []
+	tauonqueueitem_jar = []
+#	if db_version > 68:
 	for v in pctl.multi_playlist:
 		tauonplaylist_jar.append(v.__dict__)
-
-	tauonqueueitem_jar = []
 	for v in pctl.track_queue:
 		tauonqueueitem_jar.append(v.__dict__)
+#	else:
+#		tauonplaylist_jar = pctl.multi_playlist
+#		tauonqueueitem_jar = pctl.track_queue
 
 	trackclass_jar = []
 	for v in pctl.master_library.values():

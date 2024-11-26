@@ -35,7 +35,8 @@ from tauon.t_modules.t_extra import Timer
 if TYPE_CHECKING:
 	from io import BytesIO
 
-	from tauon.t_modules.t_main import Tauon, TauonPlaylist, TrackClass
+	from tauon.t_modules.t_extra import TauonPlaylist
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
 _ = lambda m: m
 
