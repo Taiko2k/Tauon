@@ -3091,6 +3091,7 @@ for t in range(2):
 		playlist_view_position = save[4]
 		if save[5] is not None:
 			if db_version > 68:
+				multi_playlist = []
 				tauonplaylist_jar = save[5]
 				for d in tauonplaylist_jar:
 					nt = TauonPlaylist(**d)
