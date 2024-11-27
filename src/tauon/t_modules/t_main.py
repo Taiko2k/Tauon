@@ -7145,8 +7145,8 @@ class LastFMapi:
 
 		try:
 
-			self.network = self.get_network()(api_key=self.API_KEY, api_secret=
-			self.API_SECRET, session_key=prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
+			self.network = self.get_network()(
+				api_key=self.API_KEY, api_secret=self.API_SECRET, session_key=prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
 
 			self.connected = True
 			if m_notify:
@@ -7166,8 +7166,7 @@ class LastFMapi:
 	def details_ready(self) -> bool:
 		if prefs.last_fm_token:
 			return True
-		else:
-			return False
+		return False
 
 	def last_fm_only_connect(self) -> bool:
 		if not last_fm_enable:
@@ -7200,7 +7199,7 @@ class LastFMapi:
 		if not self.connected:
 			self.connect(False)
 		if not self.connected or not prefs.last_fm_username:
-			return
+			return None
 
 		user = pylast.User(prefs.last_fm_username, self.network)
 		total = user.get_playcount()
@@ -11869,7 +11868,7 @@ class GallClass:
 		else:
 			return False
 
-	def render(self, track, location, size=None, force_offset=None):
+	def render(self, track: TrackClass, location, size=None, force_offset=None):
 
 		if gallery_load_delay.get() < 0.5:
 			return
@@ -12136,7 +12135,7 @@ class AlbumArt:
 
 		self.embed_cached = (None, None)
 
-	def async_download_image(self, track, subsource):
+	def async_download_image(self, track: TrackClass, subsource):
 
 		self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=subsource)
 		self.downloaded_track = track
@@ -12170,7 +12169,7 @@ class AlbumArt:
 
 		return [sources[offset][0], len(sources), offset, o_size, format]
 
-	def get_sources(self, tr):
+	def get_sources(self, tr: TrackClass):
 
 		filepath = tr.fullpath
 		ext = tr.file_ext
@@ -12443,7 +12442,7 @@ class AlbumArt:
 		# self.embed_cached = (track, pic)
 		return pic
 
-	def get_source_raw(self, offset, sources, track, subsource=None):
+	def get_source_raw(self, offset, sources, track: TrackClass, subsource=None):
 
 		source_image = None
 
@@ -12487,7 +12486,7 @@ class AlbumArt:
 
 		return source_image
 
-	def get_base64(self, track, size):
+	def get_base64(self, track: TrackClass, size):
 
 		# Wait if an identical track is already being processed
 		if self.processing64on == track:
@@ -12534,7 +12533,7 @@ class AlbumArt:
 		self.processing64on = None
 		return sss
 
-	def get_background(self, track):
+	def get_background(self, track: TrackClass):
 		#logging.info("Find background...")
 		# Determine artist name to use
 		artist = get_artist_safe(track)
@@ -12547,12 +12546,11 @@ class AlbumArt:
 			logging.info("Load cached background")
 			return open(path, "rb")
 
-		else:
-			# Try last.fm background
-			path = artist_info_box.get_data(artist, get_img_path=True)
-			if os.path.isfile(path):
-				logging.info("Load cached background lfm")
-				return open(path, "rb")
+		# Try last.fm background
+		path = artist_info_box.get_data(artist, get_img_path=True)
+		if os.path.isfile(path):
+			logging.info("Load cached background lfm")
+			return open(path, "rb")
 
 		# Check we've not already attempted a search for this artist
 		if artist in prefs.failed_background_artists:
@@ -12610,7 +12608,7 @@ class AlbumArt:
 			prefs.failed_background_artists.append(artist)
 			return None
 
-	def get_blur_im(self, track):
+	def get_blur_im(self, track: TrackClass):
 
 		source_image = None
 		self.loaded_bg_type = 0
@@ -12742,7 +12740,7 @@ class AlbumArt:
 		else:
 			im.save(save_path + ".jpg", "JPEG")
 
-	def display(self, track, location, box, fast=False, theme_only=False) -> int | None:
+	def display(self, track: TrackClass, location, box, fast=False, theme_only=False) -> int | None:
 
 		index = track.index
 		filepath = track.fullpath
@@ -15053,7 +15051,7 @@ class TransEditBox:
 
 					muta = mutagen.File(tr.fullpath, easy=True)
 
-					def write_tag(track, muta, field_name_tauon, field_name_muta):
+					def write_tag(track: TrackClass, muta, field_name_tauon, field_name_muta):
 						item = muta.get(field_name_muta)
 						if item and len(item) > 1:
 							show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
@@ -20525,7 +20523,7 @@ def test_show(dummy):
 	return album_mode
 
 
-def show_in_gal(track, silent=False):
+def show_in_gal(track: TrackClass, silent: bool = False):
 	# goto_album(pctl.playlist_selected)
 	gui.gallery_animate_highlight_on = goto_album(pctl.selected_in_playlist)
 	if not silent:
@@ -22003,8 +22001,7 @@ def get_spot_recs(tr: TrackClass | None = None) -> None:
 def get_spot_recs_track(index):
 	get_spot_recs(pctl.get_track(index))
 
-track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), get_spot_recs_track, pass_ref=True,
-	icon=spot_icon))
+track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), get_spot_recs_track, pass_ref=True, icon=spot_icon))
 
 
 def drop_tracks_to_new_playlist(track_list: list[int], hidden: bool = False) -> None:
@@ -23401,7 +23398,7 @@ star_row_icon = asset_loader("star.png", True)
 star_half_row_icon = asset_loader("star-half.png", True)
 
 
-def draw_rating_widget(x, y, n_track, album=False):
+def draw_rating_widget(x: int, y: int, n_track: TrackClass, album: bool = False):
 	if album:
 		rat = album_star_store.get_rating(n_track)
 	else:
@@ -34125,7 +34122,7 @@ def restore_full_mode():
 		tm.ready("style")
 
 
-def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None):
+def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, album_fade, start_x, width, style=1, ry=None):
 	timec = colours.bar_time
 	titlec = colours.title_text
 	indexc = colours.index_text
