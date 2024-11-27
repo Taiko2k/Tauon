@@ -277,6 +277,7 @@ from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
 
 if TYPE_CHECKING:
+	# TODO(Martin): These two classes are within player4(), rip them out and put them as a top level?
 	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 	from ctypes import CDLL
 	from pylast import Artist, LibreFMNetwork
@@ -8396,7 +8397,7 @@ class Tauon:
 			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
 
 		user_icon_dir = self.cache_directory / "icon-export"
-		def install_tray_icon(src, name: str) -> None:
+		def install_tray_icon(src: str, name: str) -> None:
 			alt = user_icon_dir / f"{name}.svg"
 			if not alt.is_file() or force:
 				shutil.copy(src, str(alt))
