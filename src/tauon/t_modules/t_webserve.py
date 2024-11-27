@@ -631,7 +631,6 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				self.end_headers()
 				data = {
 					"status": "stopped",
-					"inc": pctl.db_inc,
 					"shuffle": pctl.random_mode is True,
 					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
