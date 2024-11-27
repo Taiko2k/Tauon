@@ -16675,10 +16675,11 @@ picture_menu.add(
 picture_menu.add(MenuItem(_("Quick-Fetch Cover Art"), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
 
 
-def toggle_gimage(mode=0):
+def toggle_gimage(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_gimage
 	prefs.show_gimage ^= True
+	return None
 
 
 def search_image_deco(track_object: TrackClass):
@@ -20717,7 +20718,7 @@ def add_to_queue_next(ref):
 	pctl.force_queue.insert(0, queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 
 
-# def toggle_queue(mode=0):
+# def toggle_queue(mode: int = 0) -> bool:
 #	 if mode == 1:
 #		 return prefs.show_queue
 #	 prefs.show_queue ^= True
@@ -21601,19 +21602,21 @@ def lightning_copy():
 
 # selection_menu.br()
 
-def toggle_transcode(mode=0):
+def toggle_transcode(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.enable_transcode
 	prefs.enable_transcode ^= True
+	return None
 
 
-def toggle_chromecast(mode=0):
+def toggle_chromecast(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_chromecast
 	prefs.show_chromecast ^= True
+	return None
 
 
-def toggle_transfer(mode=0):
+def toggle_transfer(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_transfer
 	prefs.show_transfer ^= True
@@ -21623,6 +21626,7 @@ def toggle_transfer(mode=0):
 			_("Warning! Using this function moves physical folders."),
 			_("This menu entry appears after selecting 'copy'. See manual (github wiki) for more info."),
 			mode="info")
+	return None
 
 
 transcode_icon.colour = [239, 74, 157, 255]
@@ -21764,38 +21768,42 @@ folder_menu.add(MenuItem(_("Remove"), del_selected))
 gallery_menu.add(MenuItem(_("Remove"), del_selected))
 
 
-def toggle_rym(mode=0):
+def toggle_rym(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_rym
 	prefs.show_rym ^= True
+	return None
 
 
-def toggle_band(mode=0):
+def toggle_band(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_band
 	prefs.show_band ^= True
+	return None
 
 
-def toggle_wiki(mode=0):
+def toggle_wiki(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_wiki
 	prefs.show_wiki ^= True
+	return None
 
 
-# def toggle_show_discord(mode=0):
+# def toggle_show_discord(mode: int = 0) -> bool:
 #     if mode == 1:
 #         return prefs.discord_show
 #     if prefs.discord_show is False and discord_allow is False:
 #         show_message(_("Warning: pypresence package not installed"))
 #     prefs.discord_show ^= True
 
-def toggle_gen(mode=0):
+def toggle_gen(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_gen
 	prefs.show_gen ^= True
+	return None
 
 
-def ser_band_done(result):
+def ser_band_done(result: str) -> None:
 	if result:
 		webbrowser.open(result, new=2, autoraise=True)
 		gui.message_box = False
@@ -21804,7 +21812,7 @@ def ser_band_done(result):
 		show_message(_("No matching artist result found"))
 
 
-def ser_band(track_id):
+def ser_band(track_id: int) -> None:
 	tr = pctl.get_track(track_id)
 	if tr.artist:
 		shoot_dl = threading.Thread(target=bandcamp_search, args=([tr.artist, ser_band_done]))
@@ -22469,7 +22477,7 @@ def bass_features_deco():
 	return [line_colour, colours.menu_background, None]
 
 
-def toggle_dim_albums(mode=0):
+def toggle_dim_albums(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.dim_art
 
@@ -22478,20 +22486,20 @@ def toggle_dim_albums(mode=0):
 	gui.update += 1
 
 
-def toggle_gallery_combine(mode=0):
+def toggle_gallery_combine(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.gallery_combine_disc
 
 	prefs.gallery_combine_disc ^= True
 	reload_albums()
-def toggle_gallery_click(mode=0):
+def toggle_gallery_click(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.gallery_single_click
 
 	prefs.gallery_single_click ^= True
 
 
-def toggle_gallery_thin(mode=0):
+def toggle_gallery_thin(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.thin_gallery_borders
 
@@ -22500,7 +22508,7 @@ def toggle_gallery_thin(mode=0):
 	update_layout_do()
 
 
-def toggle_gallery_row_space(mode=0):
+def toggle_gallery_row_space(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.increase_gallery_row_spacing
 
@@ -22509,7 +22517,7 @@ def toggle_gallery_row_space(mode=0):
 	update_layout_do()
 
 
-def toggle_galler_text(mode=0):
+def toggle_galler_text(mode: int = 0) -> bool:
 	if mode == 1:
 		return gui.gallery_show_text
 
@@ -22524,7 +22532,7 @@ def toggle_galler_text(mode=0):
 			goto_album(gui.first_in_grid, force=True)
 
 
-def toggle_card_style(mode=0):
+def toggle_card_style(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.use_card_style
 
@@ -22532,7 +22540,7 @@ def toggle_card_style(mode=0):
 	gui.update += 1
 
 
-def toggle_side_panel(mode=0):
+def toggle_side_panel(mode: int = 0) -> bool:
 	global update_layout
 	global album_mode
 
@@ -23823,6 +23831,7 @@ def toggle_auto_bg_strong1(mode: int = 0) -> bool | None:
 		return prefs.art_bg_stronger == 1
 	prefs.art_bg_stronger = 1
 	gui.update_layout()
+	return None
 
 
 def toggle_auto_bg_strong2(mode: int = 0) -> bool | None:
@@ -23832,6 +23841,7 @@ def toggle_auto_bg_strong2(mode: int = 0) -> bool | None:
 	gui.update_layout()
 	if prefs.art_bg:
 		gui.update = 60
+	return None
 
 
 def toggle_auto_bg_strong3(mode: int = 0) -> bool | None:
@@ -23841,6 +23851,7 @@ def toggle_auto_bg_strong3(mode: int = 0) -> bool | None:
 	gui.update_layout()
 	if prefs.art_bg:
 		gui.update = 60
+	return None
 
 
 def toggle_auto_bg_blur(mode: int = 0) -> bool | None:
@@ -23849,6 +23860,7 @@ def toggle_auto_bg_blur(mode: int = 0) -> bool | None:
 	prefs.art_bg_always_blur ^= True
 	style_overlay.flush()
 	tm.ready("style")
+	return None
 
 
 def toggle_auto_bg_showcase(mode: int = 0) -> bool | None:
@@ -23856,6 +23868,7 @@ def toggle_auto_bg_showcase(mode: int = 0) -> bool | None:
 		return prefs.bg_showcase_only
 	prefs.bg_showcase_only ^= True
 	gui.update_layout()
+	return None
 
 
 def toggle_notifications(mode: int = 0) -> bool | None:
@@ -23867,22 +23880,23 @@ def toggle_notifications(mode: int = 0) -> bool | None:
 	if prefs.show_notifications:
 		if not de_notify_support:
 			show_message(_("Notifications for this DE not supported"), "", mode="warning")
+	return None
 
 
-# def toggle_al_pref_album_artist(mode=0):
+# def toggle_al_pref_album_artist(mode: int = 0) -> bool:
 #
 #     if mode == 1:
 #         return prefs.artist_list_prefer_album_artist
 #
 #     prefs.artist_list_prefer_album_artist ^= True
 #     artist_list_box.saves.clear()
-
+#     return None
 
 def toggle_mini_lyrics(mode: int = 0) -> bool | None:
 	if mode == 1:
 		return prefs.show_lyrics_side
-
 	prefs.show_lyrics_side ^= True
+	return None
 
 
 def toggle_showcase_vis(mode: int = 0) -> bool | None:
@@ -23891,6 +23905,7 @@ def toggle_showcase_vis(mode: int = 0) -> bool | None:
 
 	prefs.showcase_vis ^= True
 	gui.update_layout()
+	return None
 
 
 def toggle_level_meter(mode: int = 0) -> bool | None:
@@ -23903,6 +23918,7 @@ def toggle_level_meter(mode: int = 0) -> bool | None:
 		gui.vis_want = 0
 
 	gui.update_layout()
+	return None
 
 
 # def toggle_force_subpixel(mode: int = 0) -> bool | None:
@@ -27303,7 +27319,7 @@ if prefs.enable_remote:
 
 # --------------------------------------------------------------
 
-def star_line_toggle(mode=0):
+def star_line_toggle(mode: int= 0) -> bool | None:
 	if mode == 1:
 		return gui.star_mode == "line"
 
@@ -27316,9 +27332,10 @@ def star_line_toggle(mode=0):
 
 	gui.update += 1
 	gui.pl_update = 1
+	return None
 
 
-def star_toggle(mode=0):
+def star_toggle(mode: int = 0) -> bool:
 	if gui.show_ratings:
 		if mode == 1:
 			return prefs.rating_playtime_stars
@@ -27336,9 +27353,9 @@ def star_toggle(mode=0):
 	# gui.show_ratings = False
 	gui.update += 1
 	gui.pl_update = 1
+	return None
 
-
-def heart_toggle(mode=0):
+def heart_toggle(mode: int = 0) -> bool:
 	if mode == 1:
 		return gui.show_hearts
 
@@ -27347,9 +27364,10 @@ def heart_toggle(mode=0):
 
 	gui.update += 1
 	gui.pl_update = 1
+	return None
 
 
-def album_rating_toggle(mode=0):
+def album_rating_toggle(mode: int = 0) -> bool:
 	if mode == 1:
 		return gui.show_album_ratings
 
@@ -27357,9 +27375,10 @@ def album_rating_toggle(mode=0):
 
 	gui.update += 1
 	gui.pl_update = 1
+	return None
 
 
-def rating_toggle(mode=0):
+def rating_toggle(mode: int = 0) -> bool:
 	if mode == 1:
 		return gui.show_ratings
 
@@ -27374,9 +27393,10 @@ def rating_toggle(mode=0):
 
 	gui.update += 1
 	gui.pl_update = 1
+	return None
 
 
-def toggle_titlebar_line(mode=0):
+def toggle_titlebar_line(mode: int = 0) -> bool:
 	global update_title
 	if mode == 1:
 		return update_title
@@ -27386,15 +27406,17 @@ def toggle_titlebar_line(mode=0):
 	update_title ^= True
 	if update_title:
 		update_title_do()
+	return None
 
 
-def toggle_meta_persists_stop(mode=0):
+def toggle_meta_persists_stop(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.meta_persists_stop
 	prefs.meta_persists_stop ^= True
+	return None
 
 
-def toggle_side_panel_layout(mode=0):
+def toggle_side_panel_layout(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.side_panel_layout == 1
 
@@ -27402,15 +27424,17 @@ def toggle_side_panel_layout(mode=0):
 		prefs.side_panel_layout = 0
 	else:
 		prefs.side_panel_layout = 1
+	return None
 
 
-def toggle_meta_shows_selected(mode=0):
+def toggle_meta_shows_selected(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.meta_shows_selected_always
 	prefs.meta_shows_selected_always ^= True
+	return None
 
 
-def scale1(mode=0):
+def scale1(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.ui_scale == 1:
 			return True
@@ -27422,23 +27446,26 @@ def scale1(mode=0):
 
 	if prefs.ui_scale != gui.scale:
 		show_message(_("Change will be applied on restart."))
+	return None
 
 
-def scale125(mode=0):
+def scale125(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.ui_scale == 1.25:
 			return True
 		else:
 			return False
+	return None
 
 	prefs.ui_scale = 1.25
 	pref_box.large_preset()
 
 	if prefs.ui_scale != gui.scale:
 		show_message(_("Change will be applied on restart."))
+	return None
 
 
-def toggle_use_tray(mode=0):
+def toggle_use_tray(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.use_tray
 	prefs.use_tray ^= True
@@ -27447,22 +27474,25 @@ def toggle_use_tray(mode=0):
 		gnome.hide_indicator()
 	else:
 		gnome.show_indicator()
+	return None
 
 
-def toggle_text_tray(mode=0):
+def toggle_text_tray(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.tray_show_title
 	prefs.tray_show_title ^= True
 	pctl.notify_update()
+	return None
 
 
-def toggle_min_tray(mode=0):
+def toggle_min_tray(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.min_to_tray
 	prefs.min_to_tray ^= True
+	return None
 
 
-def scale2(mode=0):
+def scale2(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.ui_scale == 2:
 			return True
@@ -27474,9 +27504,10 @@ def scale2(mode=0):
 
 	if prefs.ui_scale != gui.scale:
 		show_message(_("Change will be applied on restart."))
+	return None
 
 
-def toggle_borderless(mode=0):
+def toggle_borderless(mode: int = 0) -> bool:
 	global draw_border
 	global update_layout
 
@@ -27490,18 +27521,20 @@ def toggle_borderless(mode=0):
 		SDL_SetWindowBordered(t_window, False)
 	else:
 		SDL_SetWindowBordered(t_window, True)
+	return None
 
 
-def toggle_break(mode=0):
+def toggle_break(mode: int = 0) -> bool:
 	global break_enable
 	if mode == 1:
 		return break_enable ^ True
 	else:
 		break_enable ^= True
 		gui.pl_update = 1
+	return None
 
 
-def toggle_scroll(mode=0):
+def toggle_scroll(mode: int = 0) -> bool:
 	global scroll_enable
 	global update_layout
 
@@ -27515,48 +27548,54 @@ def toggle_scroll(mode=0):
 		scroll_enable ^= True
 		gui.pl_update = 1
 		update_layout = True
+	return None
 
 
-def toggle_hide_bar(mode=0):
+def toggle_hide_bar(mode: int = 0) -> bool:
 	if mode == 1:
 		return gui.set_bar ^ True
 	gui.update_layout()
 	gui.set_bar ^= True
 	show_message(_("Tip: You can also toggle this from a right-click context menu"))
+	return None
 
 
-def toggle_append_total_time(mode=0):
+def toggle_append_total_time(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.append_total_time
 	prefs.append_total_time ^= True
 	gui.pl_update = 1
 	gui.update += 1
+	return None
 
 
-def toggle_append_date(mode=0):
+def toggle_append_date(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.append_date
 	prefs.append_date ^= True
 	gui.pl_update = 1
 	gui.update += 1
+	return None
 
 
-def toggle_true_shuffle(mode=0):
+def toggle_true_shuffle(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.true_shuffle
 	prefs.true_shuffle ^= True
+	return None
 
 
-def toggle_auto_artist_dl(mode=0):
+def toggle_auto_artist_dl(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.auto_dl_artist_data
 	prefs.auto_dl_artist_data ^= True
 	for artist, value in list(artist_list_box.thumb_cache.items()):
 		if value is None:
 			del artist_list_box.thumb_cache[artist]
+	return None
 
 
-def toggle_enable_web(mode=0):
+def toggle_enable_web(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.enable_web
 
@@ -27575,15 +27614,17 @@ def toggle_enable_web(mode=0):
 			gui.web_running = False
 
 		time.sleep(0.25)
+	return None
 
 
-def toggle_scrobble_mark(mode=0):
+def toggle_scrobble_mark(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.scrobble_mark
 	prefs.scrobble_mark ^= True
+	return None
 
 
-def toggle_lfm_auto(mode=0):
+def toggle_lfm_auto(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.auto_lfm
 	prefs.auto_lfm ^= True
@@ -27594,120 +27635,132 @@ def toggle_lfm_auto(mode=0):
 	#     lastfm.hold = False
 	# else:
 	#     lastfm.hold = True
+	return None
 
 
-def toggle_lb(mode=0):
+def toggle_lb(mode: int = 0) -> bool:
 	if mode == 1:
 		return lb.enable
 	if not lb.enable and not prefs.lb_token:
 		show_message(_("Can't enable this if there's no token."), mode="warning")
 		return
 	lb.enable ^= True
+	return None
 
 
-def toggle_maloja(mode=0):
+def toggle_maloja(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.maloja_enable
 	if not prefs.maloja_url or not prefs.maloja_key:
 		show_message(_("One or more fields is missing."), mode="warning")
 		return
 	prefs.maloja_enable ^= True
+	return None
 
 
-def toggle_ex_del(mode=0):
+def toggle_ex_del(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.auto_del_zip
 	prefs.auto_del_zip ^= True
 	# if prefs.auto_del_zip is True:
 	#     show_message("Caution! This function deletes things!", mode='info', "This could result in data loss if the process were to malfunction.")
+	return None
 
 
-def toggle_dl_mon(mode=0):
+def toggle_dl_mon(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.monitor_downloads
-
 	prefs.monitor_downloads ^= True
+	return None
 
 
-def toggle_music_ex(mode=0):
+def toggle_music_ex(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.extract_to_music
-
 	prefs.extract_to_music ^= True
+	return None
 
 
-def toggle_extract(mode=0):
+def toggle_extract(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.auto_extract
 	prefs.auto_extract ^= True
 	if prefs.auto_extract is False:
 		prefs.auto_del_zip = False
+	return None
 
 
-def toggle_top_tabs(mode=0):
+def toggle_top_tabs(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.tabs_on_top
 	prefs.tabs_on_top ^= True
+	return None
 
 
-def toggle_guitar_chords(mode=0):
+def toggle_guitar_chords(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.guitar_chords
 	prefs.guitar_chords ^= True
+	return None
 
 
-# def toggle_auto_lyrics(mode=0):
+# def toggle_auto_lyrics(mode: int = 0) -> bool:
 #     if mode == 1:
 #         return prefs.auto_lyrics
 #     prefs.auto_lyrics ^= True
 
 
-def switch_single(mode=0):
+def switch_single(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_mode == "single":
 			return True
 		else:
 			return False
 	prefs.transcode_mode = "single"
+	return None
 
 
-def switch_mp3(mode=0):
+def switch_mp3(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_codec == "mp3":
 			return True
 		else:
 			return False
 	prefs.transcode_codec = "mp3"
+	return None
 
 
-def switch_ogg(mode=0):
+def switch_ogg(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_codec == "ogg":
 			return True
 		else:
 			return False
 	prefs.transcode_codec = "ogg"
+	return None
 
 
-def switch_opus(mode=0):
+def switch_opus(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_codec == "opus":
 			return True
 		else:
 			return False
 	prefs.transcode_codec = "opus"
+	return None
 
 
-def switch_opus_ogg(mode=0):
+def switch_opus_ogg(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_opus_as:
 			return True
 		else:
 			return False
 	prefs.transcode_opus_as ^= True
+	return None
 
 
-def toggle_transcode_output(mode=0):
+def toggle_transcode_output(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_inplace:
 			return False
@@ -27722,9 +27775,10 @@ def toggle_transcode_output(mode=0):
 			mode="warning")
 	else:
 		transcode_icon.colour = [239, 74, 157, 255]
+	return None
 
 
-def toggle_transcode_inplace(mode=0):
+def toggle_transcode_inplace(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_inplace:
 			return True
@@ -27744,91 +27798,105 @@ def toggle_transcode_inplace(mode=0):
 			mode="warning")
 	else:
 		transcode_icon.colour = [239, 74, 157, 255]
+	return None
 
 
-def switch_flac(mode=0):
+def switch_flac(mode: int = 0) -> bool:
 	if mode == 1:
 		if prefs.transcode_codec == "flac":
 			return True
 		else:
 			return False
 	prefs.transcode_codec = "flac"
+	return None
 
 
-def toggle_sbt(mode=0):
+def toggle_sbt(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.prefer_bottom_title
 	prefs.prefer_bottom_title ^= True
+	return None
 
 
-def toggle_bba(mode=0):
+def toggle_bba(mode: int = 0) -> bool:
 	if mode == 1:
 		return gui.bb_show_art
 	gui.bb_show_art ^= True
 	gui.update_layout()
+	return None
 
 
-def toggle_use_title(mode=0):
+def toggle_use_title(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.use_title
 	prefs.use_title ^= True
+	return None
 
 
-def switch_rg_off(mode=0):
+def switch_rg_off(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.replay_gain == 0 else False
 	prefs.replay_gain = 0
+	return None
 
 
-def switch_rg_track(mode=0):
+def switch_rg_track(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.replay_gain == 1 else False
 	prefs.replay_gain = 0 if prefs.replay_gain == 1 else 1
 	# prefs.replay_gain = 1
+	return None
 
 
-def switch_rg_album(mode=0):
+def switch_rg_album(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.replay_gain == 2 else False
 	prefs.replay_gain = 0 if prefs.replay_gain == 2 else 2
+	return None
 
 
-def switch_rg_auto(mode=0):
+def switch_rg_auto(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.replay_gain == 3 else False
 	prefs.replay_gain = 0 if prefs.replay_gain == 3 else 3
+	return None
 
 
-def toggle_jump_crossfade(mode=0):
+def toggle_jump_crossfade(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.use_jump_crossfade else False
 	prefs.use_jump_crossfade ^= True
+	return None
 
 
-def toggle_pause_fade(mode=0):
+def toggle_pause_fade(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.use_pause_fade else False
 	prefs.use_pause_fade ^= True
+	return None
 
 
-def toggle_transition_crossfade(mode=0):
+def toggle_transition_crossfade(mode: int = 0) -> bool:
 	if mode == 1:
 		return True if prefs.use_transition_crossfade else False
 	prefs.use_transition_crossfade ^= True
+	return None
 
 
-def toggle_transition_gapless(mode=0):
+def toggle_transition_gapless(mode: int = 0) -> bool:
 	if mode == 1:
 		return False if prefs.use_transition_crossfade else True
 	prefs.use_transition_crossfade ^= True
+	return None
 
 
-def toggle_eq(mode=0):
+def toggle_eq(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.use_eq
 	prefs.use_eq ^= True
 	pctl.playerCommand = "seteq"
 	pctl.playerCommandReady = True
+	return None
 
 
 key_shiftr_down = False
