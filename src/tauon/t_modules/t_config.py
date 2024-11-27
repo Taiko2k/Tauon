@@ -173,10 +173,11 @@ class Config:
 			# return default_value
 
 		if var_type == "int":
-			parsed_old_value = tryint(old_value)
-			if got_old and isinstance(parsed_old_value, int):
-				self.live.append(["int", key, parsed_old_value, comment])
-				return parsed_old_value
+			if got_old:
+				parsed_old_value = tryint(old_value)
+				if isinstance(parsed_old_value, int):
+					self.live.append(["int", key, parsed_old_value, comment])
+					return parsed_old_value
 
 			self.live.append(["int", key, default_value, comment])
 			return default_value
