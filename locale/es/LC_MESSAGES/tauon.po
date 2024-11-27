@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2024-09-22 13:45+0000\n"
-"Last-Translator: gallegonovato <fran-carro@hotmail.es>\n"
+"PO-Revision-Date: 2024-11-27 20:00+0000\n"
+"Last-Translator: Patricio Carrau <duckycb@proton.me>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
 "Language: es\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.9-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -34,7 +34,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_db_migrate.py:142
 msgid "Updated to v2.6.3"
-msgstr ""
+msgstr "Actualizado a la versión 2.6.3"
 
 #: src/tauon/t_modules/t_db_migrate.py:194
 msgid ""
@@ -111,15 +111,15 @@ msgstr "No se puede establecer conexión"
 
 #: src/tauon/t_modules/t_jellyfin.py:97
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Conexión y autorización exitosa"
 
 #: src/tauon/t_modules/t_jellyfin.py:99
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Falló la autenticación"
 
 #: src/tauon/t_modules/t_jellyfin.py:99
 msgid "Check username and password."
-msgstr ""
+msgstr "Compruebe el nombre de usuario y la contraseña."
 
 #: src/tauon/t_modules/t_jellyfin.py:101
 msgid "Jellyfin auth error"
@@ -166,7 +166,7 @@ msgstr "Fin de la lista de reproducción"
 
 #: src/tauon/t_modules/t_main.py:7095 src/tauon/t_modules/t_main.py:27538
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Módulo opcional python-pylast no instalado"
 
 #: src/tauon/t_modules/t_main.py:7104
 msgid "Once authorised click the 'done' button."
@@ -182,15 +182,15 @@ msgstr "Primero debes iniciar sesión"
 
 #: src/tauon/t_modules/t_main.py:7128
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Error - No autorizado"
 
 #: src/tauon/t_modules/t_main.py:7131
 msgid "Unknown error."
-msgstr ""
+msgstr "Error desconocido."
 
 #: src/tauon/t_modules/t_main.py:7131 src/tauon/t_modules/t_phazor.py:579
 msgid "Error"
-msgstr ""
+msgstr "Error"
 
 #: src/tauon/t_modules/t_main.py:7142
 #, fuzzy
@@ -208,11 +208,11 @@ msgstr "¡Favor autoriza Spotify en las configuraciones!"
 
 #: src/tauon/t_modules/t_main.py:7155
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "No hay cuenta registrada de Last.Fm"
 
 #: src/tauon/t_modules/t_main.py:7167
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Conexión con Last.fm exitosa."
 
 #: src/tauon/t_modules/t_main.py:7174
 #, fuzzy
@@ -282,7 +282,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:7577
 msgid "This doesn't seem to be working :("
-msgstr ""
+msgstr "Esto no parece estar funcionando :("
 
 #: src/tauon/t_modules/t_main.py:7653 src/tauon/t_modules/t_main.py:7702
 msgid "How did this even happen."
@@ -290,7 +290,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:7653 src/tauon/t_modules/t_main.py:7702
 msgid "ListenBrains is enabled but there is no token."
-msgstr ""
+msgstr "ListenBrains está habilitado pero no hay token."
 
 #: src/tauon/t_modules/t_main.py:7692 src/tauon/t_modules/t_main.py:7750
 #, fuzzy
@@ -436,7 +436,7 @@ msgstr "Abandonar"
 
 #: src/tauon/t_modules/t_main.py:8367
 msgid "Starting download..."
-msgstr ""
+msgstr "Iniciando descarga..."
 
 #: src/tauon/t_modules/t_main.py:8380
 #, fuzzy
@@ -474,7 +474,7 @@ msgstr "Falta nombre de usuario, contraseña y/o nombre de servidor"
 
 #: src/tauon/t_modules/t_main.py:8536
 msgid "Error importing python-plexapi"
-msgstr ""
+msgstr "Error al importar python-plexapi"
 
 #: src/tauon/t_modules/t_main.py:8546
 msgid "Error connecting to PLEX server"
@@ -489,7 +489,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8660
 msgid "PLEX Collection"
-msgstr ""
+msgstr "Colección PLEX"
 
 #: src/tauon/t_modules/t_main.py:8714
 msgid "Subsonic Error: "
@@ -506,7 +506,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8914
 msgid "Airsonic Collection"
-msgstr ""
+msgstr "Colección Airsonic"
 
 #: src/tauon/t_modules/t_main.py:9052
 msgid "Missing username, password and/or server URL"
@@ -526,7 +526,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:9265
 msgid "Network error"
-msgstr ""
+msgstr "Error de red"
 
 #: src/tauon/t_modules/t_main.py:9279
 #, fuzzy
