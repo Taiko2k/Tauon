@@ -5153,6 +5153,8 @@ class PlayerCtl:
 		self.master_count = master_count
 		self.total_playtime: float = 0
 		self.master_library = master_library
+		# Lets clients know when to invalidate cache
+		self.db_inc = random.randint(0, 10000)
 		# self.star_library = star_library
 		self.LoadClass = LoadClass
 
@@ -5269,6 +5271,7 @@ class PlayerCtl:
 		self.buffering_percent = 0
 
 	def notify_change(self) -> None:
+		self.db_inc += 1
 		tauon.bg_save()
 
 	def update_tag_history(self) -> None:
@@ -17361,6 +17364,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 		if key not in ids:
 			del pctl.gen_codes[key]
 
+	pctl.db_inc += 1
 
 to_scan = []
 
