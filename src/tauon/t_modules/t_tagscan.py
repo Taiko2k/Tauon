@@ -27,41 +27,44 @@ import logging
 import os
 import struct
 import wave
+from typing import TYPE_CHECKING
 
 from tauon.t_modules.t_extra import process_odat
 
+if TYPE_CHECKING:
+	from io import BufferedReader, BytesIO
 
 def _(m: str) -> str:
 	return m
 
-def parse_mbids_from_vorbis(object, key, value):
+def parse_mbids_from_vorbis(obj: Ape | Flac | Opus, key: str, value: str | bytes) -> bool:
 
 	if key == "musicbrainz_artistid":
-		if "musicbrainz_artistids" not in object.misc:
-			object.misc["musicbrainz_artistids"] = []
-		object.misc["musicbrainz_artistids"].append(value)
+		if "musicbrainz_artistids" not in obj.misc:
+			obj.misc["musicbrainz_artistids"] = []
+		obj.misc["musicbrainz_artistids"].append(value)
 		return True
 
 	if key == "musicbrainz_trackid":
-		object.misc["musicbrainz_recordingid"] = value
+		obj.misc["musicbrainz_recordingid"] = value
 		return True
 
 	if key == "musicbrainz_releasetrackid":
-		object.misc["musicbrainz_trackid"] = value
+		obj.misc["musicbrainz_trackid"] = value
 		return True
 
 	if key == "musicbrainz_albumid":
-		object.misc["musicbrainz_albumid"] = value
+		obj.misc["musicbrainz_albumid"] = value
 		return True
 
 	if key == "musicbrainz_releasegroupid":
-		object.misc["musicbrainz_releasegroupid"] = value
+		obj.misc["musicbrainz_releasegroupid"] = value
 		return True
 
 	return False
 
 
-def parse_picture_block(f):
+def parse_picture_block(f: BufferedReader) -> bytes:
 	a = f.read(4)
 	a = int.from_bytes(a, byteorder="big")
 	# logging.info("Picture type: " + str(a))
@@ -105,7 +108,7 @@ def parse_picture_block(f):
 
 class Flac:
 
-	def __init__(self, file):
+	def __init__(self, file: str) -> None:
 
 		self.filepath = file
 		self.has_picture = False
@@ -138,7 +141,7 @@ class Flac:
 		self.album_gain = None
 
 
-	def read_vorbis(self, f):
+	def read_vorbis(self, f: BufferedReader) -> None:
 
 		block_position = 0
 
@@ -201,23 +204,23 @@ class Flac:
 						self.title = b.decode("utf-8")
 					elif a == "tracknumber":
 						self.track_number = b.decode("utf-8")
-					elif a == "tracktotal" or a == "totaltracks":
+					elif a in ("tracktotal", "totaltracks"):
 						self.track_total = b.decode("utf-8")
 					elif a == "encoder":
 						self.encoder = b.decode("utf-8")
-					elif a == "albumartist" or a == "album artist":
+					elif a in ("albumartist", "album artist"):
 						self.album_artist = b.decode("utf-8")
 					elif a == "artist":
 						#self.artist = b.decode("utf-8")
 						artists.append(b.decode())
-					elif a == "disctotal" or a == "totaldiscs":
+					elif a in ("disctotal", "totaldiscs"):
 						self.disc_total = b.decode("utf-8")
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
 					elif a == "metadata_block_picture":
 						logging.info("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
 						logging.info("      In file: " + self.filepath)
-					elif a == "lyrics" or a == "unsyncedlyrics":
+					elif a in ("lyrics", "unsyncedlyrics"):
 						self.lyrics = b.decode("utf-8")
 					elif a == "replaygain_track_gain":
 						self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db").replace(",", "."))
@@ -251,7 +254,7 @@ class Flac:
 				self.misc["genres"] = genres
 		process_odat(self, odat)
 
-	def read_seek_table(self, f):
+	def read_seek_table(self, f: BufferedReader) -> None:
 
 		f.read(10)
 		buffer = f.read(8)
@@ -268,7 +271,7 @@ class Flac:
 		self.length = samples / self.sample_rate
 		f.seek(-18, 1)
 
-	def read(self, get_picture=False):
+	def read(self, get_picture: bool = False) -> None:
 
 		# Very helpful: https://xiph.org/flac/format.html
 		size = os.path.getsize(self.filepath) / 8
@@ -327,7 +330,7 @@ class Flac:
 
 		f.close()
 
-	def read_block(self, f):
+	def read_block(self, f: BufferedReader) -> tuple[int, int, int]:
 
 		q = f.read(1)
 		a = (int.from_bytes(q, byteorder="big"))
@@ -340,7 +343,7 @@ class Flac:
 
 		return flag, block_type, length
 
-	def get(self):
+	def get(self) -> None:
 		pass
 
 
@@ -352,7 +355,7 @@ class Flac:
 
 class Opus:
 
-	def __init__(self, file):
+	def __init__(self, file: str) -> None:
 
 		self.filepath = file
 		self.has_picture = False
@@ -380,7 +383,7 @@ class Opus:
 		self.bit_rate = 0
 		self.length = 0
 
-	def get_more(self, f, v):
+	def get_more(self, f: BufferedReader, v: BytesIO) -> int:
 
 		header = struct.unpack("<4sBBqIIiB", f.read(27))
 
@@ -394,7 +397,7 @@ class Opus:
 
 		return l
 
-	def read(self):
+	def read(self) -> None:
 
 		f = open(self.filepath, "rb")
 
@@ -503,11 +506,11 @@ class Opus:
 						self.title = b.decode("utf-8")
 					elif a == "tracknumber":
 						self.track_number = b.decode("utf-8")
-					elif a == "tracktotal" or a == "totaltracks":
+					elif a in ("tracktotal", "totaltracks"):
 						self.track_total = b.decode("utf-8")
 					elif a == "encoder":
 						self.encoder = b.decode("utf-8")
-					elif a == "albumartist" or a == "album artist":
+					elif a in ("albumartist", "album artist"):
 						self.album_artist = b.decode("utf-8")
 					elif a == "artist":
 						#self.artist = b.decode("utf-8")
@@ -530,9 +533,9 @@ class Opus:
 						self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
-					elif a == "disctotal" or a == "totaldiscs":
+					elif a in ("disctotal", "totaldiscs"):
 						self.disc_total = b.decode("utf-8")
-					elif a == "lyrics" or a == "unsyncedlyrics":
+					elif a in ("lyrics", "unsyncedlyrics"):
 						self.lyrics = b.decode("utf-8")
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
@@ -588,7 +591,7 @@ class Opus:
 
 class Ape:
 
-	def __init__(self, file):
+	def __init__(self, file: str) -> None:
 
 		self.filepath = file
 		self.has_picture = False
@@ -620,7 +623,7 @@ class Ape:
 		self.bit_depth = 0
 		self.length = 0
 
-	def read(self):
+	def read(self) -> None:
 
 		a = open(self.filepath, "rb")
 
@@ -736,7 +739,7 @@ class Ape:
 					self.artist = value
 				elif key == "composer":
 					self.composer = value
-				elif key == "album artist" or key == "albumartist":
+				elif key in ("album artist", "albumartist"):
 					self.album_artist = value
 				elif key == "label":
 					self.label = value
@@ -845,7 +848,7 @@ class Ape:
 
 class Wav:
 
-	def __init__(self, file):
+	def __init__(self, file: str) -> None:
 
 		self.filepath = file
 		self.sample_rate = 48000
@@ -857,7 +860,7 @@ class Wav:
 		self.genre = ""
 		self.track_number = ""
 
-	def read(self):
+	def read(self) -> None:
 
 		with open(self.filepath, "rb") as f:
 			f.read(12)
@@ -1057,7 +1060,7 @@ genre_dict = {
 
 class M4a:
 
-	def __init__(self, file):
+	def __init__(self, file: str) -> None:
 		self.filepath = file
 		self.has_picture = False
 
@@ -1084,7 +1087,7 @@ class M4a:
 		self.bit_rate = 0
 		self.length = 0
 
-	def read(self, get_picture=False):
+	def read(self, get_picture: bool = False) -> None:
 
 		f = open(self.filepath, "rb")
 
@@ -1103,18 +1106,18 @@ class M4a:
 			b"esds",
 		]
 
-		s_name = b""
+#		s_name = b""
 
-		def meta_get(f, size):
+		def meta_get(f: BufferedReader, size: int) -> bytes:
 			start = f.tell()
 			f.seek(16, 1)
 			data = f.read(size - 8 - 16)
 			f.seek(start)
 			return data
 
-		def atom(f, tail=b"", name=""):
+		def atom(f: BufferedReader, tail: bytes = b"", name: str | bytes = "") -> bool:
 
-			global s_name
+#			global s_name
 
 			start = f.tell()
 			b_size = f.read(4)
@@ -1225,10 +1228,7 @@ class M4a:
 
 			f.seek(start)
 			f.seek(size, 1)
-			if size == 0:
-				return False
-
-			return True
+			return size != 0
 
 		while atom(f):
 			pass
