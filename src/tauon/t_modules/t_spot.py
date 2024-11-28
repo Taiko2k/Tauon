@@ -575,7 +575,7 @@ class SpotCtl:
 					time.sleep(3)
 				else:
 					self.launching_spotify = True
-					subprocess.run(["xdg-open", "spotify:track"], check=False)
+					subprocess.run(["xdg-open", "spotify:track"], check=True)
 					time.sleep(3)
 					logging.info("Launched spotify app via URI")
 

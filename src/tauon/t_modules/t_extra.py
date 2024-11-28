@@ -494,7 +494,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			matches = 0
 			count = 0
 			line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
-			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=False)
+			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=True)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			#logging.info(file_list)
 			for fi in file_list:
@@ -525,7 +525,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			matches = 0
 			count = 0
 			line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
-			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=False)
+			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=True)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			#logging.info(file_list)
 

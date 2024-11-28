@@ -712,7 +712,7 @@ def whicher(target: str) -> bool | str:
 		if flatpak_mode:
 			complete = subprocess.run(
 				shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
-					stderr=subprocess.PIPE, check=False)
+					stderr=subprocess.PIPE, check=True)
 			r = complete.stdout.decode()
 			return "bin/" + target in r
 		return shutil.which(target)
@@ -4647,42 +4647,42 @@ def scan_ffprobe(nt):
 	try:
 		result = subprocess.run(
 			[tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of",
-			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 		nt.length = float(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a duration")
 	try:
 		result = subprocess.run(
 			[tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
-			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 		nt.title = str(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a title")
 	try:
 		result = subprocess.run(
 			[tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
-			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 		nt.artist = str(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a artist")
 	try:
 		result = subprocess.run(
 			[tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
-			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 		nt.album = str(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a album")
 	try:
 		result = subprocess.run(
 			[tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
-			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 		nt.date = str(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a date")
 	try:
 		result = subprocess.run(
 			[tauon.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
-			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+			"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 		nt.track_number = str(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a track")
@@ -4958,7 +4958,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 						if system == "Windows" or msys:
 							startupinfo = subprocess.STARTUPINFO()
 							startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-						result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=False)
+						result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 						nt.length = float(result.stdout.decode())
 					except Exception:
 						logging.exception("FFPROBE couldn't supply a duration")
@@ -21303,7 +21303,7 @@ def editor(index: int | None) -> None:
 		prefs.tag_editor_name + " launched.", "Fields will be updated once application is closed.", mode="arrow")
 	gui.update = 1
 
-	complete = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+	complete = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
 
 	if "picard" in prefs.tag_editor_target:
 		r = complete.stderr.decode()
@@ -26417,7 +26417,7 @@ def worker1():
 								gui.update += 1
 								line = launch_prefix + "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(
 									target_dir) + os.sep
-								result = subprocess.run(shlex.split(line), check=False)
+								result = subprocess.run(shlex.split(line), check=True)
 								logging.info(result)
 							except Exception:
 								logging.exception("Failed to extract rar archive.")
@@ -26433,7 +26433,7 @@ def worker1():
 								gui.update += 1
 								line = launch_prefix + "7z x -y " + shlex.quote(path) + " -o" + shlex.quote(
 									target_dir) + os.sep
-								result = subprocess.run(shlex.split(line), check=False)
+								result = subprocess.run(shlex.split(line), check=True)
 								logging.info(result)
 							except Exception:
 								logging.exception("Failed to extract 7z archive.")
