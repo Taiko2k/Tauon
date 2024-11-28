@@ -376,26 +376,26 @@ def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
 
 
-def random_colour(saturation: int, luminance: int) -> list[int]:
+def random_colour(saturation: float, luminance: float) -> list[int]:
 
 	h = round(random.random(), 2)
 	colour = colorsys.hls_to_rgb(h, luminance, saturation)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
 
-def hsl_to_rgb(h: int, s: int, l: int) -> list[int]:
+def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def hls_to_rgb(h: int, l: int, s: int) -> list[int]:
+def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
 	"""Duplicate HSL function so it works for the less common alt name too"""
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def rgb_to_hls(r: int, g: int, b: int) -> tuple[float, float, float]:
+def rgb_to_hls(r: float, g: float, b: float) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def rgb_add_hls(source: list[int], h: int=0, l: int=0, s: int=0) -> list[int]:
+def rgb_add_hls(source: list[int], h: float = 0, l: float = 0, s: float = 0) -> list[int]:
 	c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
@@ -406,7 +406,7 @@ def is_light(colour: list[int]) -> bool:
 
 class ColourGenCache:
 
-	def __init__(self, saturation: int, luminance: int) -> None:
+	def __init__(self, saturation: float, luminance: float) -> None:
 
 		self.saturation = saturation
 		self.luminance = luminance
