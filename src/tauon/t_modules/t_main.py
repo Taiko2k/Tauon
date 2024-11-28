@@ -3802,10 +3802,8 @@ def load_prefs():
 		"In s. Interval to seek when using keyboard shortcut. Default is 15.")
 	# prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
-	if prefs.pause_fade_time < 100:
-		prefs.pause_fade_time = 100
-	if prefs.pause_fade_time > 5000:
-		prefs.pause_fade_time = 5000
+	prefs.pause_fade_time = max(prefs.pause_fade_time, 100)
+	prefs.pause_fade_time = min(prefs.pause_fade_time, 5000)
 
 	prefs.cross_fade_time = cf.sync_add(
 		"int", "cross-fade-time", prefs.cross_fade_time,
