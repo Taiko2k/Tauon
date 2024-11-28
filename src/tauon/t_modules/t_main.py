@@ -333,8 +333,9 @@ if TYPE_CHECKING:
 	# TODO(Martin): These two classes are within player4(), rip them out and put them as a top level?
 	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 	from ctypes import CDLL
-	from io import BytesIO
+	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
+	from PIL.ImageFile import ImageFile
 
 # Log to debug as we don't care at all when user does not have this
 try:
@@ -708,7 +709,7 @@ logging.info(f"Asset directory:        {asset_directory}")
 old_backend = 2
 
 # Things for detecting and launching programs outside of flatpak sandbox
-def whicher(target: str) -> bool | str:
+def whicher(target: str) -> bool | str | None:
 	try:
 		if flatpak_mode:
 			complete = subprocess.run(
@@ -12015,7 +12016,7 @@ class ThumbTracks:
 	def __init__(self):
 		pass
 
-	def path(self, track):
+	def path(self, track: TrackClass) -> str:
 
 		source, offset = gall_ren.get_file_source(track)
 
@@ -12046,7 +12047,7 @@ thumb_tracks = ThumbTracks()
 tauon.thumb_tracks = thumb_tracks
 
 
-def img_slide_update_gall(value, pause=True):
+def img_slide_update_gall(value, pause: bool = True) -> None:
 	global album_mode_art_size
 	gui.halt_image_rendering = True
 
@@ -12065,7 +12066,7 @@ def img_slide_update_gall(value, pause=True):
 		prefs.thin_gallery_borders = False
 
 
-def clear_img_cache(delete_disk=True):
+def clear_img_cache(delete_disk: bool = True) -> None:
 	global album_art_gen
 	album_art_gen.clear_cache()
 	prefs.failed_artists.clear()
@@ -12099,7 +12100,7 @@ def clear_img_cache(delete_disk=True):
 	gui.update += 1
 
 
-def clear_track_image_cache(track):
+def clear_track_image_cache(track: TrackClass):
 	gui.halt_image_rendering = True
 	if gall_ren.queue:
 		time.sleep(0.05)
@@ -12132,7 +12133,7 @@ def clear_track_image_cache(track):
 
 
 class ImageObject:
-	def __init__(self):
+	def __init__(self) -> None:
 		self.index = 0
 		self.texture = None
 		self.rect = None
@@ -12271,7 +12272,7 @@ class AlbumArt:
 
 		return source_list
 
-	def get_error_img(self, size):
+	def get_error_img(self, size: float) -> ImageFile:
 		im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
@@ -12566,7 +12567,7 @@ class AlbumArt:
 		self.processing64on = None
 		return sss
 
-	def get_background(self, track: TrackClass):
+	def get_background(self, track: TrackClass) -> BytesIO | BufferedReader | None:
 		#logging.info("Find background...")
 		# Determine artist name to use
 		artist = get_artist_safe(track)
@@ -40199,7 +40200,7 @@ class ArtistInfoBox:
 		else:
 			ddt.text((x + w // 2, y + h // 2 - 7 * gui.scale, 2), self.status, [255, 255, 255, 60], 313, bg=background)
 
-	def get_data(self, artist, get_img_path: bool = False, force_dl: bool = False) -> str | None:
+	def get_data(self, artist: str, get_img_path: bool = False, force_dl: bool = False) -> str | None:
 
 		if not get_img_path:
 			logging.info("Load Bio Data")

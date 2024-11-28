@@ -844,7 +844,7 @@ class SpotCtl:
 		id = url.strip("/").split("/")[-1]
 		artist = self.spotify.artist(id)
 		artist_albums = self.spotify.artist_albums(id, limit=50, include_groups=["album"])
-		playlist = []
+		playlist: list[int] = []
 		self.update_existing_import_list()
 
 		for a in artist_albums.items:
@@ -856,7 +856,7 @@ class SpotCtl:
 		self.tauon.gui.message_box = False
 
 		artist_albums = self.spotify.artist_albums(id, limit=50, include_groups=["single"])
-		playlist = []
+		playlist: list[int] = []
 		self.update_existing_import_list()
 
 		for a in artist_albums.items:
