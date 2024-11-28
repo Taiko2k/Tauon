@@ -702,7 +702,7 @@ def player4(tauon: Tauon) -> None:
 		add_time = player_timer.hit()
 		if add_time > 2:
 			add_time = 2
-		if add_time < 0:
+		elif add_time < 0:
 			add_time = 0
 
 		pctl.total_playtime += add_time
@@ -842,8 +842,7 @@ def player4(tauon: Tauon) -> None:
 					chrome_update = 0
 
 				add_time = player_timer.hit()
-				if add_time > 2:
-					add_time = 2
+				add_time = min(add_time, 2)
 				chrome_update += add_time
 				pctl.a_time += add_time
 				tauon.lfm_scrobbler.update(add_time)
@@ -1069,7 +1068,7 @@ def player4(tauon: Tauon) -> None:
 					tauon.console.print(loaded_track.title + " -> " + target_object.title)
 					tauon.console.print(" --- length: " + str(length))
 					tauon.console.print(" --- position: " + str(position))
-					tauon.console.print(f" --- We are {str(remain)} from end")
+					tauon.console.print(f" --- We are {remain!s} from end")
 
 					if loaded_track.is_network or length == 0:
 						tauon.console.print("Phazor did not respond with a duration")

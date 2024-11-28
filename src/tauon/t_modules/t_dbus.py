@@ -225,8 +225,7 @@ class Gnome:
 	def scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
 		if direction == Gdk.ScrollDirection.UP:
 			self.tauon.pctl.player_volume += 4
-			if self.tauon.pctl.player_volume > 100:
-				self.tauon.pctl.player_volume = 100
+			self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
 			self.tauon.pctl.set_volume()
 		if direction == Gdk.ScrollDirection.DOWN:
 			if self.tauon.pctl.player_volume > 4:
@@ -239,8 +238,8 @@ class Gnome:
 	def main(self) -> None:
 
 		import dbus
-		import dbus.service
 		import dbus.mainloop.glib
+		import dbus.service
 
 		prefs = self.tauon.prefs
 		gui = self.tauon.gui
@@ -408,7 +407,7 @@ class Gnome:
 								"tauon:loved": tauon.love(False, track.index),
 								# added by msmafra
 								"xesam:comment": dbus.Array([track.comment]),
-								"xesam:genre": dbus.Array([track.genre])
+								"xesam:genre": dbus.Array([track.genre]),
 
 							}
 							if not track.title:
@@ -485,7 +484,7 @@ class Gnome:
 																			dbus.String("audio/flac"),
 																			dbus.String("audio/ogg"),
 																			dbus.String("audio/m4a"),
-																		])
+																		]),
 						}
 
 						self.player_properties = {
@@ -503,7 +502,7 @@ class Gnome:
 							"CanPause": True,
 							"CanSeek": True,
 							"CanControl": True,
-							"Metadata": dbus.Dictionary({}, signature="sv")
+							"Metadata": dbus.Dictionary({}, signature="sv"),
 						}
 
 					def get_loop_status(self) -> str:

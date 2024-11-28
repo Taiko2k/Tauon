@@ -175,7 +175,7 @@ class StreamEnc:
 			fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 		raw_audio = None
-		max_read = int(10000)
+		max_read = 10000
 		vb.reset()
 		vb.tauon = self.tauon
 
@@ -282,7 +282,7 @@ class StreamEnc:
 			def save_track():
 				#self.tauon.recorded_songs.append(song)
 
-				save_file = "{:%Y-%m-%d %H-%M-%S} - ".format(datetime.datetime.now())
+				save_file = f"{datetime.datetime.now():%Y-%m-%d %H-%M-%S} - "
 				save_file += filename_safe(old_metadata)
 				save_file = save_file.strip() + ext
 				save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
@@ -370,9 +370,7 @@ class StreamEnc:
 					return
 
 				if old_metadata != self.tauon.radiobox.song_key:
-					if self.c < 400 and not old_metadata:
-						old_metadata = self.tauon.radiobox.song_key
-					elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
+					if (self.c < 400 and not old_metadata) or not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
 						old_metadata = self.tauon.radiobox.song_key
 					else:
 						logging.info("Split and save file")

@@ -494,7 +494,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			matches = 0
 			count = 0
 			line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
-			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=False)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			#logging.info(file_list)
 			for fi in file_list:
@@ -525,7 +525,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			matches = 0
 			count = 0
 			line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
-			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=False)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			#logging.info(file_list)
 
@@ -1007,8 +1007,8 @@ def seconds_to_day_hms(seconds: float, s_day: float, s_days: float) -> str:
 	minutes, seconds = divmod(seconds, 60)
 
 	if days == 1:
-		return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minutes))}:{str(int(seconds))}"
-	return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
+		return f"{int(days)!s} {s_day}, {int(hours)!s}:{int(minutes)!s}:{int(seconds)!s}"
+	return f"{int(days)!s} {s_days}, {int(hours)!s}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
 
 
 def shooter(func: Callable[..., None], args: tuple = ()) -> None:

@@ -109,7 +109,7 @@ class Chrome:
 			"artist": tr.artist,
 			"trackNumber": n,
 			"images": [{"url": f"http://{self.ip}:7814/api1/pic/medium/{track_id}"}],
-			"releaseDate": tr.date
+			"releaseDate": tr.date,
 		}
 		m = {
 			"duration": round(float(tr.length), 1),

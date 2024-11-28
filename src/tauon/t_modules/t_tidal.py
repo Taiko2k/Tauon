@@ -67,7 +67,7 @@ class Tidal:
 			self.tauon.show_message(_("Tidalapi package not loaded"))
 			return
 		if not self.session and os.path.isfile(self.save_path):
-			with open(self.save_path, "r") as f:
+			with open(self.save_path) as f:
 				session_data = json.load(f)
 			session = tidalapi.Session()
 
@@ -83,7 +83,7 @@ class Tidal:
 				session_data["access_token"],
 				session_data["refresh_token"],
 				expiry_time,
-				session_data["is_pkce"]
+				session_data["is_pkce"],
 			)
 			if success:
 				self.session = session
@@ -102,7 +102,7 @@ class Tidal:
 				"access_token": session.access_token,
 				"refresh_token": session.refresh_token,
 				"expiry_time": session.expiry_time.isoformat() if session.expiry_time else None,
-				"is_pkce": session.is_pkce
+				"is_pkce": session.is_pkce,
 			}
 			with open(self.save_path, "w") as f:
 				json.dump(session_data, f)
@@ -146,19 +146,14 @@ class Tidal:
 	def resolve_stream2(self, tr: TrackClass) -> list[str] | None:
 		track_id = tr.url_key
 		track = self.session.track(track_id)
-		logging.info("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+		logging.info(f"{track.id}: '{track.name}' by '{track.artist.name}'")
 		stream = track.get_stream()
-		logging.info("MimeType:{}".format(stream.manifest_mime_type))
+		logging.info(f"MimeType:{stream.manifest_mime_type}")
 
 		manifest = stream.get_stream_manifest()
 		audio_resolution = stream.get_audio_resolution()
 
-		logging.info("track:{}, (quality:{}, codec:{}, {}bit/{}Hz)".format(
-			track.id,
-			stream.audio_quality,
-			manifest.get_codecs(),
-			audio_resolution[0],
-			audio_resolution[1]))
+		logging.info(f"track:{track.id}, (quality:{stream.audio_quality}, codec:{manifest.get_codecs()}, {audio_resolution[0]}bit/{audio_resolution[1]}Hz)")
 		tr.misc["container"] = manifest.get_codecs().upper()
 		tr.samplerate = str(audio_resolution[1])
 		tr.bit_depth = audio_resolution[0]
@@ -246,7 +241,7 @@ class Tidal:
 			return playlist
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Albums", playlist=playlist))
-		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tfa"
+		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tfa"
 		self.tauon.gui.show_message("Playlist load complete", mode="done")
 
 	def fav_tracks(self, return_list: bool = False) -> list[TrackClass] | None:
@@ -271,7 +266,7 @@ class Tidal:
 			return playlist
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Tracks", playlist=playlist))
-		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tft"
+		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tft"
 		self.tauon.gui.show_message("Playlist load complete", mode="done")
 
 	def playlist(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
@@ -360,7 +355,7 @@ class Tidal:
 		tracks = album.tracks()
 
 		for track in tracks:
-			logging.info("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+			logging.info(f"{track.id}: '{track.name}' by '{track.artist.name}'")
 
 			nt = self.new_track(track)
 			self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing].playlist_ids.append(nt.index)

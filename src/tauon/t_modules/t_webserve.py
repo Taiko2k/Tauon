@@ -819,7 +819,7 @@ class VorbisMonitor:
 		b.seek(0, io.SEEK_SET)
 		ogg = b.read(4)
 
-		if not ogg == b"OggS":
+		if ogg != b"OggS":
 			f = data.find(b"Oggs")
 			self.reset(self.tries)
 			if f > -1:

@@ -63,7 +63,7 @@ class SpotCtl:
 		self.token = None
 		self.cred = None
 		self.started_once = False
-		self.redirect_uri = f"http://localhost:7811/spotredir"
+		self.redirect_uri = "http://localhost:7811/spotredir"
 		self.current_imports = {}
 		self.spotify_com = False
 		self.sender = None
@@ -131,7 +131,7 @@ class SpotCtl:
 
 	def load_token(self) -> None:
 		if os.path.isfile(self.token_path):
-			f = open(self.token_path, "r")
+			f = open(self.token_path)
 			self.tauon.prefs.spotify_token = f.read().replace("\n", "").strip()
 			f.close()
 
@@ -575,7 +575,7 @@ class SpotCtl:
 					time.sleep(3)
 				else:
 					self.launching_spotify = True
-					subprocess.run(["xdg-open", "spotify:track"])
+					subprocess.run(["xdg-open", "spotify:track"], check=False)
 					time.sleep(3)
 					logging.info("Launched spotify app via URI")
 
