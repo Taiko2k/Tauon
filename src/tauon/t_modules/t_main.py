@@ -18726,7 +18726,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 					break
 			else:
 				for p in pctl.multi_playlist:
-					#logging.info(p[0].lower())
+					#logging.info(p.title.lower())
 					#logging.info(pl_name.lower())
 					if p.title.lower().startswith(pl_name.lower()):
 						target = p.playlist_ids
@@ -19081,10 +19081,10 @@ def csv_string(item):
 	return f"\"{item}\""
 
 
-def export_playlist_albums(pl: int):
+def export_playlist_albums(pl: int) -> None:
 	p = pctl.multi_playlist[pl]
-	name = p[0]
-	playlist = p[2]
+	name = p.title
+	playlist = p.playlist_ids
 
 	albums = []
 	playtimes = {}
