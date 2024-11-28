@@ -24372,7 +24372,7 @@ def break_deco():
 	if not break_enable:
 		tex = colours.menu_text_disabled
 
-	if pctl.multi_playlist[pctl.active_playlist_viewing].hide_title == 0:
+	if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
 		return [tex, colours.menu_background, _("Disable Title Breaks")]
 	return [tex, colours.menu_background, _("Enable Title Breaks")]
 
@@ -34149,7 +34149,7 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 
 			indexLine = line
 
-			if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing].hide_title == 1:
+			if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
 				indexLine = str(p_track)
 				if len(indexLine) > 3:
 					indexLine += "  "
@@ -34581,7 +34581,7 @@ class StandardPlaylist:
 			input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
 
 			# Are folder titles enabled?
-			if pctl.multi_playlist[pctl.active_playlist_viewing].hide_title == 0 and break_enable:
+			if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title and break_enable:
 				# Is this track from a different folder than the last?
 				if track_position == 0 or track_object.parent_folder_path != pctl.get_track(
 						default_playlist[track_position - 1]).parent_folder_path:
