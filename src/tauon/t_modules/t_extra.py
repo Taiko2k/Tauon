@@ -35,7 +35,6 @@ import zipfile
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import gi
 from gi.repository import GLib
 
 if TYPE_CHECKING:
