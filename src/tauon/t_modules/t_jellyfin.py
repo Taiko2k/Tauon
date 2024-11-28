@@ -311,7 +311,7 @@ class Jellyfin:
 			if track.is_network and track.file_ext == "JELY":
 				existing[track.url_key] = track_id
 
-		playlist = []
+		playlist: list[int] = []
 		for item in response.json()["Items"]:
 			track_id = existing.get(item["Id"])
 			if track_id is not None:
@@ -321,7 +321,7 @@ class Jellyfin:
 			return playlist
 
 		self.scanning = False
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist=playlist))
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{playlist_id}\""
 		return None
 
@@ -359,14 +359,14 @@ class Jellyfin:
 				if track.is_network and track.file_ext == "JELY":
 					existing[track.url_key] = track_id
 
-			playlist = []
+			playlist: list[int] = []
 			for item in response.json()["Items"]:
 				track_id = existing.get(item["Id"])
 				if track_id is not None:
 					playlist.append(track_id)
 
 			self.scanning = False
-			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist=playlist))
+			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
 			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
 	def ingest_library(self, return_list: bool = False) -> list | None:
@@ -545,7 +545,7 @@ class Jellyfin:
 			self.scanning = False
 			return playlist
 
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Jellyfin Collection"), playlist=playlist))
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Jellyfin Collection"), playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
 		self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
@@ -557,7 +557,7 @@ class Jellyfin:
 		self.tauon.wake()
 		return None
 
-	def session_item(self, track: TrackClass) -> dict:
+	def session_item(self, track: TrackClass) -> dict[str, list[str] | bool | int | str]:
 		return {
 			"QueueableMediaTypes": ["Audio"],
 			"CanSeek": True,

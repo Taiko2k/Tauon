@@ -33,6 +33,9 @@ import requests
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
+	from tekore import Spotify
+	from tekore.model import FullAlbum
+
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
 tekore_imported = False
@@ -55,7 +58,7 @@ class SpotCtl:
 		self.strings = tauon.strings
 		self.start_timer = Timer()
 		self.status = 0
-		self.spotify = None
+		self.spotify: Spotify | None = None
 		self.loaded_art = ""
 		self.playing = False
 		self.coasting = False
@@ -714,7 +717,7 @@ class SpotCtl:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.strings.spotify_albums, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.strings.spotify_albums, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "sal"
 		self.spotify_com = False
 
@@ -752,7 +755,7 @@ class SpotCtl:
 			id = url.strip("/").split("/")[-1]
 
 		album = self.spotify.album(id)
-		playlist = []
+		playlist: list[int] = []
 		self.update_existing_import_list()
 		self.load_album(album, playlist)
 
@@ -766,7 +769,7 @@ class SpotCtl:
 		self.tauon.gui.pl_update += 1
 		return None
 
-	def playlist(self, url: str, return_list: bool = False, silent: bool = False) -> list | None:
+	def playlist(self, url: str, return_list: bool = False, silent: bool = False) -> list[int] | None:
 
 		self.connect()
 		if not self.spotify:
@@ -788,7 +791,7 @@ class SpotCtl:
 			return None
 
 		p = self.spotify.playlist(id, market=self.country)
-		playlist = []
+		playlist: list[int] = []
 		self.update_existing_import_list()
 		pages = self.spotify.all_pages(p.tracks)
 		for page in pages:
@@ -802,10 +805,10 @@ class SpotCtl:
 			return playlist
 
 		title = p.name + " by " + p.owner.display_name
-		if p.name == "Discover Weekly" or p.name == "Release Radar":
+		if p.name in ("Discover Weekly", "Release Radar"):
 			#self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1].hide_title = True
 			title = p.name
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist_ids=playlist))
 
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
 		if not silent:
@@ -830,7 +833,7 @@ class SpotCtl:
 			self.tauon.pctl.master_library[nt.index] = nt
 			playlist.append(nt.index)
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Recs", playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Recs", playlist_ids=playlist))
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 		self.tauon.gui.message_box = False
 
@@ -848,7 +851,7 @@ class SpotCtl:
 			full_album = self.spotify.album(a.id)
 			self.load_album(full_album, playlist)
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name, playlist_ids=playlist))
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 		self.tauon.gui.message_box = False
 
@@ -860,7 +863,7 @@ class SpotCtl:
 			full_album = self.spotify.album(a.id)
 			self.load_album(full_album, playlist)
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Singles", playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Singles", playlist_ids=playlist))
 		self.tauon.gui.message_box = False
 
 	def album_playlist(self, url: str) -> None:
@@ -868,7 +871,7 @@ class SpotCtl:
 		self.tauon.pctl.multi_playlist.append(
 			self.tauon.pl_gen(
 				title=f"{self.tauon.pctl.g(l[0]).artist} - {self.tauon.pctl.g(l[0]).album}",
-				playlist=l,
+				playlist_ids=l,
 				hide_title=False),
 		)
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
@@ -911,7 +914,7 @@ class SpotCtl:
 			logging.exception("Spotify upload error!")
 			self.tauon.gui.show_message(_("Spotify upload error!"), mode="error")
 
-	def load_album(self, album: str, playlist: list[int] | None):
+	def load_album(self, album: FullAlbum, playlist: list[int] | None):
 		#a = item
 		album_url = album.external_urls["spotify"]
 		art_url = album.images[0].url
@@ -1081,7 +1084,7 @@ class SpotCtl:
 				return None
 
 		self.tauon.pctl.multi_playlist.append(
-			self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist=playlist))
+			self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "slt"
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 		self.spotify_com = False

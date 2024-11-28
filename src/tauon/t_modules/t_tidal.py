@@ -240,7 +240,7 @@ class Tidal:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Albums", playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Albums", playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tfa"
 		self.tauon.gui.show_message("Playlist load complete", mode="done")
 
@@ -265,7 +265,7 @@ class Tidal:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Tracks", playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Tracks", playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tft"
 		self.tauon.gui.show_message("Playlist load complete", mode="done")
 
@@ -290,7 +290,7 @@ class Tidal:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.name, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.name, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tpl\"{id}\""
 
 	def mix(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
@@ -315,7 +315,7 @@ class Tidal:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.title, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.title, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tmix\"{id}\""
 
 	def artist(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
@@ -341,7 +341,7 @@ class Tidal:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=a.name, playlist=playlist))
+		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=a.name, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tar\"{id}\""
 
 	def append_album(self, id: int) -> None:
