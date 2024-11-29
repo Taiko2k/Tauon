@@ -45,7 +45,8 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import Tauon
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 class StreamEnc:
 
@@ -174,7 +175,7 @@ class StreamEnc:
 			fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 		raw_audio = None
-		max_read = int(10000)
+		max_read = 10000
 		vb.reset()
 		vb.tauon = self.tauon
 
@@ -281,7 +282,7 @@ class StreamEnc:
 			def save_track():
 				#self.tauon.recorded_songs.append(song)
 
-				save_file = "{:%Y-%m-%d %H-%M-%S} - ".format(datetime.datetime.now())
+				save_file = f"{datetime.datetime.now():%Y-%m-%d %H-%M-%S} - "
 				save_file += filename_safe(old_metadata)
 				save_file = save_file.strip() + ext
 				save_file = os.path.join(self.tauon.prefs.encoder_output, save_file)
@@ -329,14 +330,14 @@ class StreamEnc:
 
 				target_pl = None
 				for i, pl in enumerate(self.tauon.pctl.multi_playlist):
-					if pl[0] == "Saved Radio Tracks":
+					if pl.title == "Saved Radio Tracks":
 						target_pl = i
 				if target_pl is None:
 					self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="Saved Radio Tracks"))
 					target_pl = len(self.tauon.pctl.multi_playlist) - 1
 
 				load_order = self.tauon.pctl.LoadClass()
-				load_order.playlist = self.tauon.pctl.multi_playlist[target_pl][6]
+				load_order.playlist = self.tauon.pctl.multi_playlist[target_pl].uuid_int
 				load_order.target = save_file
 				self.tauon.load_orders.append(copy.deepcopy(load_order))
 				self.tauon.gui.update += 1
@@ -369,9 +370,7 @@ class StreamEnc:
 					return
 
 				if old_metadata != self.tauon.radiobox.song_key:
-					if self.c < 400 and not old_metadata:
-						old_metadata = self.tauon.radiobox.song_key
-					elif not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
+					if (self.c < 400 and not old_metadata) or not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
 						old_metadata = self.tauon.radiobox.song_key
 					else:
 						logging.info("Split and save file")

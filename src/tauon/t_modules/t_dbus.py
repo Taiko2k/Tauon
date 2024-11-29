@@ -26,7 +26,8 @@ from typing import TYPE_CHECKING
 
 import gi
 
-gi.require_version("Gdk", "4.0")
+# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
+gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib
 
 from tauon.t_modules.t_extra import filename_to_metadata, star_count2
@@ -36,7 +37,8 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import Tauon
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 class Gnome:
 
@@ -95,6 +97,8 @@ class Gnome:
 		tauon = self.tauon
 
 		import gi
+		# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
+		gi.require_version("Gtk", "3.0")
 		from gi.repository import Gtk
 
 		try:
@@ -221,8 +225,7 @@ class Gnome:
 	def scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
 		if direction == Gdk.ScrollDirection.UP:
 			self.tauon.pctl.player_volume += 4
-			if self.tauon.pctl.player_volume > 100:
-				self.tauon.pctl.player_volume = 100
+			self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
 			self.tauon.pctl.set_volume()
 		if direction == Gdk.ScrollDirection.DOWN:
 			if self.tauon.pctl.player_volume > 4:
@@ -235,8 +238,8 @@ class Gnome:
 	def main(self) -> None:
 
 		import dbus
-		import dbus.service
 		import dbus.mainloop.glib
+		import dbus.service
 
 		prefs = self.tauon.prefs
 		gui = self.tauon.gui
@@ -404,7 +407,7 @@ class Gnome:
 								"tauon:loved": tauon.love(False, track.index),
 								# added by msmafra
 								"xesam:comment": dbus.Array([track.comment]),
-								"xesam:genre": dbus.Array([track.genre])
+								"xesam:genre": dbus.Array([track.genre]),
 
 							}
 							if not track.title:
@@ -481,7 +484,7 @@ class Gnome:
 																			dbus.String("audio/flac"),
 																			dbus.String("audio/ogg"),
 																			dbus.String("audio/m4a"),
-																		])
+																		]),
 						}
 
 						self.player_properties = {
@@ -499,7 +502,7 @@ class Gnome:
 							"CanPause": True,
 							"CanSeek": True,
 							"CanControl": True,
-							"Metadata": dbus.Dictionary({}, signature="sv")
+							"Metadata": dbus.Dictionary({}, signature="sv"),
 						}
 
 					def get_loop_status(self) -> str:

@@ -65,7 +65,7 @@
 	dependencies = {file = "requirements.txt"}
 
 [tool.setuptools.package-data]
-"tauon" = ["assets/*", "templates/*", "theme/*"]
+"tauon" = ["assets/*", "assets/svg/*", "templates/*", "theme/*"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
@@ -144,6 +144,7 @@
 [tool.ruff.lint]
 select = ['ALL']
 	ignore = [
+		'Q003',   # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
 		'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
 		'D206',   # indent-with-spaces                        - ^
 		'D100',   # undocumented-public-module                - TODO(Martin): We currently don't even have typing fully implemented, let's maybe care about undocumented functions/classes later

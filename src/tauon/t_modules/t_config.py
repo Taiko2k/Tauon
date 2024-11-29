@@ -25,7 +25,11 @@ from __future__ import annotations
 import logging
 import os
 
-_ = lambda m: m
+from tauon.t_modules.t_extra import tryint
+
+
+def _(m: str) -> str:
+	return m
 
 class Config:
 
@@ -169,10 +173,11 @@ class Config:
 			# return default_value
 
 		if var_type == "int":
-			if got_old and old_value.isdigit():
-				old_value = int(old_value)
-				self.live.append(["int", key, old_value, comment])
-				return old_value
+			if got_old:
+				parsed_old_value = tryint(old_value)
+				if isinstance(parsed_old_value, int):
+					self.live.append(["int", key, parsed_old_value, comment])
+					return parsed_old_value
 
 			self.live.append(["int", key, default_value, comment])
 			return default_value
@@ -182,9 +187,10 @@ class Config:
 				try:
 					old_value = float(old_value)
 					self.live.append(["float", key, old_value, comment])
-					return old_value
 				except Exception:
 					logging.exception("Warning: Config file contains invalid float")
+				else:
+					return old_value
 			self.live.append(["float", key, default_value, comment])
 			return default_value
 

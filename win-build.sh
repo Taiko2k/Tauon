@@ -3,6 +3,7 @@ set -euo pipefail
 
 rm -rf dist/tauon
 
+# TODO(Martin): pkg_resources is deprecated, does it still need to be there? https://setuptools.pypa.io/en/latest/pkg_resources.html
 pyinstaller \
 	--additional-hooks-dir='extra\pyinstaller-hooks' \
 	--hidden-import 'infi.systray' \

@@ -20,22 +20,22 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import gi
+from PIL import Image
 
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
-
-from typing import TYPE_CHECKING
-
 import cairo
 from gi.repository import Pango, PangoCairo
-from PIL import Image
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumArt, Tauon, TrackClass
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
+
 class TopChart:
 
 	def __init__(self, tauon: Tauon, album_art_gen: AlbumArt) -> None:

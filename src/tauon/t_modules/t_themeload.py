@@ -43,9 +43,10 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_draw import TDraw
 	from tauon.t_modules.t_main import GuiVar, Tauon
 
-_ = lambda m: m
-def get_colour_from_line(cline: str) -> list[int]:
+def _(m: str) -> str:
+	return m
 
+def get_colour_from_line(cline: str) -> list[int]:
 	colour     = [-1, -1, -1, -1]
 	colour_str = ["", "", "", ""]
 	mode = 0
