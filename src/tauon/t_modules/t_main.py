@@ -2371,10 +2371,10 @@ class AlbumStarStore:
 			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
 			subsonic.set_album_rating(track_object, rating)
 
-	def set_rating_artist_title(self, artist, album, rating):
+	def set_rating_artist_title(self, artist: str, album: str, rating):
 		self.db[artist + ":" + album] = rating
 
-	def get_rating_artist_title(self, artist, album):
+	def get_rating_artist_title(self, artist: str, album: str):
 		return self.db.get(artist + ":" + album, 0)
 
 
@@ -4302,7 +4302,7 @@ if msys and win_ver >= 10:
 	except Exception:
 		logging.exception("Failed to load TauonSMTC.dll")
 
-def auto_scale():
+def auto_scale() -> None:
 
 	old = prefs.scale_want
 
@@ -7450,7 +7450,7 @@ class LastFMapi:
 			return False
 		return True
 
-	def get_bio(self, artist):
+	def get_bio(self, artist: str) -> str:
 
 		if self.lastfm_network is None:
 			if self.last_fm_only_connect() is False:
@@ -7467,7 +7467,7 @@ class LastFMapi:
 		# else:
 		#	return ""
 
-	def love(self, artist, title):
+	def love(self, artist: str, title: str):
 
 		if not self.connected and prefs.auto_lfm:
 			self.connect(False)
@@ -7476,7 +7476,7 @@ class LastFMapi:
 			track = self.network.get_track(artist, title)
 			track.love()
 
-	def unlove(self, artist, title):
+	def unlove(self, artist: str, title: str):
 		if not last_fm_enable:
 			return
 		if not self.connected and prefs.auto_lfm:
@@ -7487,7 +7487,7 @@ class LastFMapi:
 			track.love()
 			track.unlove()
 
-	def clear_friends_love(self):
+	def clear_friends_love(self) -> None:
 
 		count = 0
 		for index, tr in pctl.master_library.items():
@@ -7673,7 +7673,7 @@ class ListenBrainz:
 			url += "/"
 		return url + "1/submit-listens"
 
-	def listen_full(self, track_object: TrackClass, time):
+	def listen_full(self, track_object: TrackClass, time) -> bool:
 
 		if self.enable is False:
 			return True
@@ -7723,7 +7723,7 @@ class ListenBrainz:
 			return False
 		return True
 
-	def listen_playing(self, track_object: TrackClass):
+	def listen_playing(self, track_object: TrackClass) -> None:
 		if self.enable is False:
 			return
 		if prefs.scrobble_hold is True:
@@ -7827,7 +7827,7 @@ def get_love_index(index: int) -> bool:
 		return True
 	return False
 
-def get_love_timestamp_index(index):
+def get_love_timestamp_index(index: int):
 	star = star_store.full_get(index)
 	if star is None:
 		return 0
@@ -21854,7 +21854,7 @@ def ser_rym(index):
 	webbrowser.open(line, new=2, autoraise=True)
 
 
-def copy_to_clipboard(text):
+def copy_to_clipboard(text: str) -> None:
 	SDL_SetClipboardText(text.encode(errors="surrogateescape"))
 
 
@@ -21960,7 +21960,7 @@ track_menu.add(MenuItem(_("Copy TIDAL Album URL"), tidal_copy_album, show_test=i
 #     return False
 
 
-def get_track_spot_url(track_id):
+def get_track_spot_url(track_id: int) -> None:
 	track_object = pctl.get_track(track_id)
 	url = track_object.misc.get("spotify-track-url")
 	if url:
@@ -23968,7 +23968,7 @@ def last_fm_menu_deco():
 	return [colours.menu_text, bg, line]
 
 
-def lastfm_colour():
+def lastfm_colour() -> list[int] | None:
 	if not prefs.scrobble_hold:
 		return [250, 50, 50, 255]
 	return None
