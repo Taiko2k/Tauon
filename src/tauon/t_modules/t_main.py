@@ -3533,21 +3533,21 @@ if window_size is None:
 	gui.rspw = 200
 
 
-def track_number_process(line):
+def track_number_process(line: str) -> str:
 	line = str(line).split("/", 1)[0].lstrip("0")
 	if prefs.dd_index and len(line) == 1:
 		return "0" + line
 	return line
 
 
-def advance_theme():
+def advance_theme() -> None:
 	global theme
 
 	theme += 1
 	gui.reload_theme = True
 
 
-def get_theme_number(name):
+def get_theme_number(name: str) -> int:
 	if name == "Mindaro":
 		return 0
 	themes = get_themes()
@@ -3557,7 +3557,7 @@ def get_theme_number(name):
 	return 0
 
 
-def get_theme_name(number: int):
+def get_theme_name(number: int) -> str:
 	if number == 0:
 		return "Mindaro"
 	number -= 1
@@ -10597,7 +10597,7 @@ class TimedLyricsToStatic:
 		self.cache_key = None
 		self.cache_lyrics = ""
 
-	def get(self, track):
+	def get(self, track: TrackClass):
 		if track.lyrics:
 			return track.lyrics
 		if track.is_network:
@@ -12420,7 +12420,7 @@ class AlbumArt:
 
 		return folder_image_offsets[parent_folder]
 
-	def get_embed(self, track):
+	def get_embed(self, track: TrackClass):
 
 		# cached = self.embed_cached
 		# if cached[0] == track:
@@ -15122,7 +15122,7 @@ class SubLyricsBox:
 		self.target_track = None
 		self.active_field = 1
 
-	def activate(self, track):
+	def activate(self, track: TrackClass):
 
 		self.active = True
 		gui.box_over = True
@@ -20818,7 +20818,7 @@ track_menu.add(MenuItem(_("Delete Track File"), delete_track, pass_ref=True, ico
 track_menu.br()
 
 
-def rename_tracks_deco(track_id):
+def rename_tracks_deco(track_id: int):
 	if key_shift_down or key_shiftr_down:
 		return [colours.menu_text, colours.menu_background, _("Rename (Single track)")]
 	return [colours.menu_text, colours.menu_background, _("Rename Tracks…")]
@@ -20911,7 +20911,7 @@ def delete_folder(index, force=False):
 	pctl.notify_change()
 
 
-def rename_parent(index, template):
+def rename_parent(index: int, template: str) -> None:
 	# template = prefs.rename_folder_template
 	template = template.strip("/\\")
 	track = pctl.master_library[index]
@@ -21006,7 +21006,7 @@ def rename_parent(index, template):
 	pctl.notify_change()
 
 
-def rename_folders_disable_test(index):
+def rename_folders_disable_test(index: int) -> bool:
 	return pctl.get_track(index).is_network
 
 def rename_folders(index):
@@ -21148,14 +21148,14 @@ def clean_folder(index: int, do: bool = False) -> int | None:
 	return found
 
 
-def reset_play_count(index):
+def reset_play_count(index: int):
 	star_store.remove(index)
 
 
 # track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
 
 
-def vacuum_playtimes(index):
+def vacuum_playtimes(index: int):
 	todo = []
 	for k in default_playlist:
 		if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
@@ -21190,7 +21190,7 @@ def vacuum_playtimes(index):
 			logging.error("ERROR KEY ALREADY HERE?")
 
 
-def reload_metadata(input, keep_star=True):
+def reload_metadata(input, keep_star: bool = True) -> None:
 	global todo
 
 	# vacuum_playtimes(index)
@@ -21234,7 +21234,7 @@ def reload_metadata(input, keep_star=True):
 	tm.ready("worker")
 
 
-def reload_metadata_selection():
+def reload_metadata_selection() -> None:
 	cargo = []
 	for item in shift_selection:
 		cargo.append(default_playlist[item])
@@ -37853,7 +37853,7 @@ class ArtistList:
 		if viewing_pl_id in self.saves:
 			self.saves[viewing_pl_id][2] = self.scroll_position
 
-	def locate_artist(self, track):
+	def locate_artist(self, track: TrackClass):
 
 		for i, item in enumerate(self.current_artists):
 			if item == track.artist or item == track.album_artist or (
@@ -38480,7 +38480,7 @@ class TreeView:
 		elif pl_id in self.trees:
 			del self.trees[pl_id]
 
-	def show_track(self, track):
+	def show_track(self, track: TrackClass) -> None:
 
 		if track is None:
 			return
@@ -39725,7 +39725,7 @@ class MetaBox:
 
 			gui.showed_title = True
 
-	def lyrics(self, x, y, w, h, track):
+	def lyrics(self, x, y, w, h, track: TrackClass):
 
 		ddt.rect((x, y, w, h), colours.side_panel_background)
 		ddt.text_background_colour = colours.side_panel_background
@@ -42156,7 +42156,7 @@ lyric_side_top_pulse = EdgePulse2()
 lyric_side_bottom_pulse = EdgePulse2()
 
 
-def download_img(link, target_folder, track):
+def download_img(link, target_folder, track: TrackClass):
 	try:
 		response = urllib.request.urlopen(link, cafile=tauon.ca)
 		info = response.info()
@@ -42379,7 +42379,7 @@ class ThreadManager:
 			shoot.start()
 			self.d[type][2] = shoot
 
-	def ready_playback(self):
+	def ready_playback(self) -> None:
 		if self.playback is None or not self.playback.is_alive():
 			if prefs.backend == 4:
 				self.playback = threading.Thread(target=player4, args=[tauon])
@@ -42389,7 +42389,7 @@ class ThreadManager:
 			self.playback.daemon = True
 			self.playback.start()
 
-	def check_playback_running(self):
+	def check_playback_running(self) -> bool:
 		if self.playback is None:
 			return False
 		return self.playback.is_alive()
@@ -42515,16 +42515,16 @@ class Undo:
 
 		gui.pl_update = 1
 
-	def bk_playlist(self, pl_index):
+	def bk_playlist(self, pl_index: int) -> None:
 
 		self.e.append(("playlist", pctl.multi_playlist[pl_index]))
 
-	def bk_tracks(self, pl_index, indis):
+	def bk_tracks(self, pl_index: int, indis) -> None:
 
 		uid = pctl.multi_playlist[pl_index].uuid_int
 		self.e.append(("tracks", uid, indis))
 
-	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr):
+	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
 
