@@ -36,7 +36,9 @@ from tauon.t_modules.t_extra import Timer
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Tauon, TrackClass
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
+
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False
 	start = 0
@@ -222,8 +224,11 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 		tauon.radio_server = httpd
 		httpd.serve_forever()
 		httpd.server_close()
-	except OSError:
-		logging.exception("Not starting radio page server, another Tauon instance already running?")
+	except OSError as e:
+		if str(e) == "[Errno 98] Address already in use":
+			logging.error("Not starting radio page server, is another Tauon instance already running?")
+		else:
+			logging.exception("Unknown OSError starting radio page server!")
 	except Exception:
 		logging.exception("Failed starting radio page server!")
 
@@ -260,9 +265,9 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 		def get_track(self, track_position: int, playlist_index: int | None = None, track: TrackClass | None = None, album_id: int = -1) -> None:
 			if track is None:
 				if playlist_index is None:
-					playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
+					playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
 				else:
-					playlist = pctl.multi_playlist[playlist_index][2]
+					playlist = pctl.multi_playlist[playlist_index].playlist_ids
 				track_id = playlist[track_position]
 				track = pctl.g(track_id)
 
@@ -417,7 +422,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 						playlist = int(playlist)
 						pl = tauon.id_to_pl(int(playlist))
 						if pl is not None and pl < len(pctl.multi_playlist):
-							playlist = pctl.multi_playlist[pl][2]
+							playlist = pctl.multi_playlist[pl].playlist_ids
 							if position < len(playlist):
 								tauon.switch_playlist(pl, cycle=False, quiet=True)
 								pctl.jump(playlist[position], position)
@@ -494,7 +499,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 
 						data = self.get_track(int(levels[4]), pl)
 
-						playlist = pctl.multi_playlist[pl][2]
+						playlist = pctl.multi_playlist[pl].playlist_ids
 						p = int(levels[4])
 						if p < len(playlist):
 							track = pctl.g(playlist[p])
@@ -581,7 +586,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				if key.isdigit():
 					pl = tauon.id_to_pl(int(key))
 					if pl is not None and pl < len(pctl.multi_playlist):
-						playlist = pctl.multi_playlist[pl][2]
+						playlist = pctl.multi_playlist[pl].playlist_ids
 						parent = ""
 						album_id = 0
 						for i, id in enumerate(playlist):
@@ -627,13 +632,13 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				data = {
 					"status": "stopped",
 					"inc": pctl.db_inc,
-					"shuffle": pctl.random_mode == True,
-					"repeat": pctl.repeat_mode == True,
+					"shuffle": pctl.random_mode is True,
+					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
-					"auto_stop": tauon.pctl.auto_stop == True,
+					"auto_stop": tauon.pctl.auto_stop is True,
 					"volume": pctl.player_volume,
 					"playlist": str(tauon.get_playing_playlist_id()),
-					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing][2]),
+					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
 				}
 				if pctl.playing_state == 1:
 					data["status"] = "playing"
@@ -677,10 +682,13 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 		httpd = ThreadedHTTPServer(("0.0.0.0", 7814), Server)
 		httpd.serve_forever()
 		httpd.server_close()
-	except OSError:
-		logging.exception("Not starting web api server, already running?")
+	except OSError as e:
+		if str(e) == "[Errno 98] Address already in use":
+			logging.error("Not starting web api server, is another Tauon instance already running?")
+		else:
+			logging.exception("Unknown OSError starting web api server!")
 	except Exception:
-		logging.exception("Failed starting radio page server!")
+		logging.exception("Failed starting web api server!")
 
 
 def controller(tauon: Tauon) -> None:
@@ -727,10 +735,13 @@ def controller(tauon: Tauon) -> None:
 		httpd = HTTPServer(("127.0.0.1", 7813), Server)
 		httpd.serve_forever()
 		httpd.server_close()
-	except OSError:
-		logging.exception("Not starting controller server, already running?")
+	except OSError as e:
+		if str(e) == "[Errno 98] Address already in use":
+			logging.error("Not starting controller webserver, is another Tauon instance already running?")
+		else:
+			logging.exception("Unknown OSError starting controller server!")
 	except Exception:
-		logging.exception("Failed starting radio page server!")
+		logging.exception("Failed starting controller server!")
 
 
 def authserve(tauon: Tauon) -> None:
@@ -809,7 +820,7 @@ class VorbisMonitor:
 		b.seek(0, io.SEEK_SET)
 		ogg = b.read(4)
 
-		if not ogg == b"OggS":
+		if ogg != b"OggS":
 			f = data.find(b"Oggs")
 			self.reset(self.tries)
 			if f > -1:

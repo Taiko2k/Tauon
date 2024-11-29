@@ -33,7 +33,9 @@ import requests
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 
-_ = lambda m: m
+
+def _(m: str) -> str:
+	return m
 
 # def lyricwiki(artist: str, title: str) -> str:
 #

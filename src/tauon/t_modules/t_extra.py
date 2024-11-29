@@ -32,9 +32,9 @@ import threading
 import time
 import urllib.parse
 import zipfile
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import gi
 from gi.repository import GLib
 
 if TYPE_CHECKING:
@@ -42,7 +42,68 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import TrackClass
 
-_ = lambda m: m
+
+@dataclass
+class TauonQueueItem:
+	"""TauonQueueItem is [trackid, position, playlist_id, type, album_stage, uid_gen(), auto_stop]
+
+	type:
+		0 is a track
+		1 is an album
+
+	Old pre-migration queue[6]-style numbering help table:
+		0 track_id    (int)
+		1 position    (int)
+		2 playlist_id (int)
+		3 type        (int)
+		4 album_stage (int)
+		5 uuid_int    (int)
+		6 auto_stop   (bool)
+	"""
+
+	track_id: int
+	position: int
+	playlist_id: int
+	type: int
+	album_stage: int
+	uuid_int: int
+	auto_stop: bool
+
+# Functions to generate empty playlist
+@dataclass
+class TauonPlaylist:
+	"""Playlist is [Name, playing, playlist_ids, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
+
+	Old pre-migration pl[6]-style numbering help table:
+		0 title (string)
+		1 playing (int)
+		2 playlist_ids (list of int)
+		3 position (int)
+		4 hide_title on playlist folders (bool)
+		5 selected (int)
+		6 uuid_int (int)
+		7 last_folder import path (string)
+		8 hidden (bool)
+		9 locked (bool)
+		10 parent_playlist_id <- Filter (string)
+		11 persist_time_positioning
+	"""
+
+	title: str
+	playing: int
+	playlist_ids: list[int] | None
+	position: int                  # View Position
+	hide_title: bool               # hide playlist folder titles (bool)
+	selected: int
+	uuid_int: int
+	last_folder: list[str]               # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
+	hidden: bool
+	locked: bool
+	parent_playlist_id: str        # Filter parent playlist id (string)
+	persist_time_positioning: bool # Persist time positioning
+
+def _(m: str) -> str:
+	return m
 
 def tmp_cache_dir() -> str:
 	tmp_dir = GLib.get_tmp_dir()
@@ -315,26 +376,26 @@ def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
 
 
-def random_colour(saturation: int, luminance: int) -> list[int]:
+def random_colour(saturation: float, luminance: float) -> list[int]:
 
 	h = round(random.random(), 2)
 	colour = colorsys.hls_to_rgb(h, luminance, saturation)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
 
-def hsl_to_rgb(h: int, s: int, l: int) -> list[int]:
+def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def hls_to_rgb(h: int, l: int, s: int) -> list[int]:
+def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
 	"""Duplicate HSL function so it works for the less common alt name too"""
 	colour = colorsys.hls_to_rgb(h, l, s)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-def rgb_to_hls(r: int, g: int, b: int) -> tuple[float, float, float]:
+def rgb_to_hls(r: float, g: float, b: float) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def rgb_add_hls(source: list[int], h: int=0, l: int=0, s: int=0) -> list[int]:
+def rgb_add_hls(source: list[int], h: float = 0, l: float = 0, s: float = 0) -> list[int]:
 	c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
@@ -345,7 +406,7 @@ def is_light(colour: list[int]) -> bool:
 
 class ColourGenCache:
 
-	def __init__(self, saturation: int, luminance: int) -> None:
+	def __init__(self, saturation: float, luminance: float) -> None:
 
 		self.saturation = saturation
 		self.luminance = luminance
@@ -432,7 +493,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			matches = 0
 			count = 0
 			line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
-			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=True)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			#logging.info(file_list)
 			for fi in file_list:
@@ -463,7 +524,7 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 			matches = 0
 			count = 0
 			line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
-			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+			result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, check=True)
 			file_list = result.stdout.decode("utf-8", "ignore").split("\n")
 			#logging.info(file_list)
 
@@ -945,8 +1006,8 @@ def seconds_to_day_hms(seconds: float, s_day: float, s_days: float) -> str:
 	minutes, seconds = divmod(seconds, 60)
 
 	if days == 1:
-		return f"{str(int(days))} {s_day}, {str(int(hours))}:{str(int(minutes))}:{str(int(seconds))}"
-	return f"{str(int(days))} {s_days}, {str(int(hours))}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
+		return f"{int(days)!s} {s_day}, {int(hours)!s}:{int(minutes)!s}:{int(seconds)!s}"
+	return f"{int(days)!s} {s_days}, {int(hours)!s}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
 
 
 def shooter(func: Callable[..., None], args: tuple = ()) -> None:
@@ -1003,3 +1064,12 @@ def sleep_timeout(condition_function: Callable[[], bool], time_limit: int = 2) -
 		time.sleep(0.01)
 		if timer.get() > time_limit:
 			break
+
+def tryint(string: str) -> int | str:
+	try:
+		return int(string)
+	except ValueError:
+		return string
+	except Exception:
+		logging.exception("Unknown error trying to convert string to int!")
+		return string

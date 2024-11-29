@@ -47,7 +47,8 @@ from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import PlayerCtl, Tauon, TrackClass
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 def find_library(libname: str) -> Path | None:
 	"""Search for 'libname.so'.
@@ -60,14 +61,18 @@ def find_library(libname: str) -> Path | None:
 	so_extensions = importlib.machinery.EXTENSION_SUFFIXES
 	site_packages_path = sysconfig.get_path("purelib")
 
+	# Used to be lib but Slackware uses that for 32-bit,
+	# all other distros seem to symlink lib64 to lib, so just use lib64
+	libdir="lib64"
+
 	# Try looking in site-packages of the current environment, pwd and ../pwd
 	for extension in so_extensions:
 		search_paths += [
-			(Path(site_packages_path)                       / (libname + extension)).resolve(),
-			(Path(base_path)          / ".."                / (libname + extension)).resolve(),
-			(Path(base_path)          / ".." / ".."         / (libname + extension)).resolve(),
+			(Path(site_packages_path)                        / (libname + extension)).resolve(),
+			(Path(base_path)          / ".."                 / (libname + extension)).resolve(),
+			(Path(base_path)          / ".." / ".."          / (libname + extension)).resolve(),
 			# Compat with old way to store .so files
-			(Path(base_path)          / ".." / ".." / "lib" / (libname + ".so")).resolve(),
+			(Path(base_path)          / ".." / ".." / libdir / (libname + ".so")).resolve(),
 		]
 
 	for path in search_paths:
@@ -79,14 +84,17 @@ def find_library(libname: str) -> Path | None:
 	return None
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
+	# See note for the earlier definition
+	libdir="lib64"
+
 	if pctl.prefs.pipewire:
-		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.so")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.so")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dll")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dll")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor-pw.dylib")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dylib")
 		if os.path.isfile(n):
 			return n
 		n = find_library("phazor-pw")
@@ -94,13 +102,13 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 			return n
 
 	else:
-		n = os.path.join(pctl.install_directory, "lib", "libphazor.so")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor.so")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor.dll")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor.dll")
 		if os.path.isfile(n):
 			return n
-		n = os.path.join(pctl.install_directory, "lib", "libphazor.dylib")
+		n = os.path.join(pctl.install_directory, libdir, "libphazor.dylib")
 		if os.path.isfile(n):
 			return n
 		n = find_library("phazor")
@@ -694,7 +702,7 @@ def player4(tauon: Tauon) -> None:
 		add_time = player_timer.hit()
 		if add_time > 2:
 			add_time = 2
-		if add_time < 0:
+		elif add_time < 0:
 			add_time = 0
 
 		pctl.total_playtime += add_time
@@ -834,8 +842,7 @@ def player4(tauon: Tauon) -> None:
 					chrome_update = 0
 
 				add_time = player_timer.hit()
-				if add_time > 2:
-					add_time = 2
+				add_time = min(add_time, 2)
 				chrome_update += add_time
 				pctl.a_time += add_time
 				tauon.lfm_scrobbler.update(add_time)
@@ -1061,7 +1068,7 @@ def player4(tauon: Tauon) -> None:
 					tauon.console.print(loaded_track.title + " -> " + target_object.title)
 					tauon.console.print(" --- length: " + str(length))
 					tauon.console.print(" --- position: " + str(position))
-					tauon.console.print(f" --- We are {str(remain)} from end")
+					tauon.console.print(f" --- We are {remain!s} from end")
 
 					if loaded_track.is_network or length == 0:
 						tauon.console.print("Phazor did not respond with a duration")

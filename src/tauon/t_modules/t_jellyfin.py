@@ -35,9 +35,11 @@ from tauon.t_modules.t_extra import Timer
 if TYPE_CHECKING:
 	from io import BytesIO
 
-	from tauon.t_modules.t_main import Tauon, TauonPlaylist, TrackClass
+	from tauon.t_modules.t_extra import TauonPlaylist
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 class Jellyfin:
 
@@ -189,10 +191,10 @@ class Jellyfin:
 		if not self.connected:
 			return
 
-		codes = self.pctl.gen_codes.get(self.pctl.multi_playlist[pl][6], "")
+		codes = self.pctl.gen_codes.get(self.pctl.multi_playlist[pl].uuid_int, "")
 
 		ids = []
-		for t in self.pctl.multi_playlist[pl][2]:
+		for t in self.pctl.multi_playlist[pl].playlist_ids:
 			track = self.pctl.g(t)
 			if track.url_key not in ids and track.file_ext == "JELY":
 				ids.append(track.url_key)
@@ -210,7 +212,7 @@ class Jellyfin:
 				},
 				params={
 					"UserId": self.userId,
-					"Name": self.pctl.multi_playlist[pl][0],
+					"Name": self.pctl.multi_playlist[pl].title,
 					"Ids": ",".join(ids),
 					"MediaType": "Music",
 				},
@@ -218,7 +220,7 @@ class Jellyfin:
 			)
 
 			playlist_id = response.json()["Id"]
-			self.pctl.gen_codes[self.pctl.multi_playlist[pl][6]] = f"jelly\"{playlist_id}\""
+			self.pctl.gen_codes[self.pctl.multi_playlist[pl].uuid_int] = f"jelly\"{playlist_id}\""
 			logging.info("New jellyfin playlist created")
 
 		else:
@@ -309,7 +311,7 @@ class Jellyfin:
 			if track.is_network and track.file_ext == "JELY":
 				existing[track.url_key] = track_id
 
-		playlist = []
+		playlist: list[int] = []
 		for item in response.json()["Items"]:
 			track_id = existing.get(item["Id"])
 			if track_id is not None:
@@ -319,7 +321,7 @@ class Jellyfin:
 			return playlist
 
 		self.scanning = False
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist=playlist))
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{playlist_id}\""
 		return None
 
@@ -357,14 +359,14 @@ class Jellyfin:
 				if track.is_network and track.file_ext == "JELY":
 					existing[track.url_key] = track_id
 
-			playlist = []
+			playlist: list[int] = []
 			for item in response.json()["Items"]:
 				track_id = existing.get(item["Id"])
 				if track_id is not None:
 					playlist.append(track_id)
 
 			self.scanning = False
-			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist=playlist))
+			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
 			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
 	def ingest_library(self, return_list: bool = False) -> list | None:
@@ -543,7 +545,7 @@ class Jellyfin:
 			self.scanning = False
 			return playlist
 
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Jellyfin Collection"), playlist=playlist))
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Jellyfin Collection"), playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
 		self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
@@ -555,7 +557,7 @@ class Jellyfin:
 		self.tauon.wake()
 		return None
 
-	def session_item(self, track: TrackClass) -> dict:
+	def session_item(self, track: TrackClass) -> dict[str, list[str] | bool | int | str]:
 		return {
 			"QueueableMediaTypes": ["Audio"],
 			"CanSeek": True,

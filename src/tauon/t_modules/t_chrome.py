@@ -11,7 +11,8 @@ from tauon.t_modules.t_extra import shooter
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
 
-_ = lambda m: m
+def _(m: str) -> str:
+	return m
 
 def get_ip() -> str:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -108,7 +109,7 @@ class Chrome:
 			"artist": tr.artist,
 			"trackNumber": n,
 			"images": [{"url": f"http://{self.ip}:7814/api1/pic/medium/{track_id}"}],
-			"releaseDate": tr.date
+			"releaseDate": tr.date,
 		}
 		m = {
 			"duration": round(float(tr.length), 1),
