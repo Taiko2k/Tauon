@@ -330,7 +330,7 @@ if err and "GLX" in err.decode():
 	SDL_ShowSimpleMessageBox(
 		SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
 		b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
-	sys.exit()
+	sys.exit(1)
 
 window_title = t_title
 window_title = window_title.encode("utf-8")
@@ -364,14 +364,24 @@ t_window = SDL_CreateWindow(
 	logical_size[0], logical_size[1],
 	flags) # | SDL_WINDOW_FULLSCREEN)
 
+if not t_window:
+	logging.error("ERROR CREATING WINDOW!")
+	logging.error(f"Title: {window_title}")
+	logging.error(f"X: {o_x}")
+	logging.error(f"Y: {o_y}")
+	logging.error(f"Size 0: {logical_size[0]}")
+	logging.error(f"Size 1: {logical_size[1]}")
+	logging.error(f"Flags: {flags}")
+	sys.exit(1)
 
 if maximized:
 	SDL_MaximizeWindow(t_window)
 
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
-if not renderer or not t_window:
-	logging.error("ERROR CREATING WINDOW!")
+if not renderer:
+	logging.error("ERROR CREATING RENDERER!")
+	sys.exit(1)
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 SDL_SetWindowOpacity(t_window, window_opacity)
