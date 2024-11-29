@@ -1044,9 +1044,9 @@ def player4(tauon: Tauon) -> None:
 					pctl.reset_missing_flags()
 
 				spotc.running = False
-				length = 0
-				remain = 0
-				position = 0
+				length: float = 0
+				remain: float = 0
+				position: float = 0
 
 				if target_path and target_object and target_object.length == 0 and not target_object.is_cue:
 					logging.info("Track has duration of 0, scanning file")
