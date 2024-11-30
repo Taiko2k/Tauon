@@ -1135,7 +1135,7 @@ def player4(tauon: Tauon) -> None:
 					pctl.playing_time = pctl.jump_time
 
 				else:
-					if pctl.commit:
+					if pctl.commit and subcommand != "repeat":
 						pctl.advance(quiet=True, end=True)
 						pctl.commit = None
 						continue
