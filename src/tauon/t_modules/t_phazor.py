@@ -978,7 +978,7 @@ def player4(tauon: Tauon) -> None:
 					while True:
 						status, path = cachement.get_file(target_object)
 
-						if status == 0 or status == 2:
+						if status in (0, 2):
 							break
 						if timer.get() > 0.25 and gui.buffering is False:
 							gui.buffering_text = ""
@@ -1009,7 +1009,7 @@ def player4(tauon: Tauon) -> None:
 					timer.set()
 					while True:
 						status, path = cachement.get_file(target_object)
-						if status == 0 or status == 2:
+						if status in (0, 2):
 							break
 						if timer.get() > 0.25 and gui.buffering is False:
 							gui.buffering_text = ""
@@ -1075,8 +1075,15 @@ def player4(tauon: Tauon) -> None:
 
 				fade = 0
 				error = False
-				if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
-						loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
+				if state == 1 \
+				and length \
+				and position \
+				and not pctl.start_time_target \
+				and not pctl.jump_time \
+				and loaded_track \
+				and 0 < remain < 5.5 \
+				and not loaded_track.is_cue \
+				and subcommand != "now":
 
 					logging.info("Transition gapless")
 
