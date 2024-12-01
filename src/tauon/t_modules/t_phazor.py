@@ -315,7 +315,7 @@ def player4(tauon: Tauon) -> None:
 	device_unavailable_callback = FUNCTYPE(c_void_p)(pause_when_device_unavailable)
 	aud.set_callbacks(start_callback, read_callback, close_callback, device_unavailable_callback)
 
-	def calc_rg(track: TrackClass) -> float:
+	def calc_rg(track: TrackClass | None) -> float:
 
 		if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
 			pctl.active_replaygain = 0
