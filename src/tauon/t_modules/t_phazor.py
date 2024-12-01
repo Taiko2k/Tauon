@@ -88,28 +88,28 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	libdir="lib64"
 
 	if pctl.prefs.pipewire:
-		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.so")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor-pw.so"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dll")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor-pw.dll"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dylib")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor-pw.dylib"
+		if n.is_file():
 			return n
 		n = find_library("phazor-pw")
 		if n:
 			return n
 
 	else:
-		n = os.path.join(pctl.install_directory, libdir, "libphazor.so")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor.so"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor.dll")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor.dll"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor.dylib")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor.dylib"
+		if n.is_file():
 			return n
 		n = find_library("phazor")
 		if n:
