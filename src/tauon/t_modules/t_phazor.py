@@ -920,7 +920,7 @@ def player4(tauon: Tauon) -> None:
 
 				logging.info(f"Open - requested start was {int(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
 				try:
-					logging.info(f"Extension: {target_path.split(".")[-1]}")
+					logging.info(f"Extension: {target_path.split('.')[-1]}")
 				except Exception:
 					logging.exception("Failed to get extension - maybe file name does not have any dots?")
 
