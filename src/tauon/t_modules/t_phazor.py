@@ -76,7 +76,7 @@ def find_library(libname: str) -> Path | None:
 		]
 
 	for path in search_paths:
-		if path.exists:
+		if path.exists():
 			logging.debug(f"Lib {libname} found in {path!s}")
 			return path
 
