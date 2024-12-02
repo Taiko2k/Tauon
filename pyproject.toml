@@ -7,7 +7,8 @@
 	# Change the version for the tools below too when bumping up
 	requires-python = ">=3.10"
 	classifiers = [
-		"Programming Language :: Python :: 3"
+		"Programming Language :: Python :: 3",
+		"Typing :: Typed",
 	]
 	dynamic = ["dependencies"]
 
@@ -65,7 +66,7 @@
 	dependencies = {file = "requirements.txt"}
 
 [tool.setuptools.package-data]
-"tauon" = ["assets/*", "assets/svg/*", "templates/*", "theme/*"]
+"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
@@ -104,6 +105,9 @@
 	reportUnnecessaryComparison         = "error"
 	reportUnnecessaryContains           = "error"
 	reportUnnecessaryIsInstance         = "error"
+	reportUninitializedInstanceVariable = "warning"
+	reportUnnecessaryTypeIgnoreComment  = "warning"
+#	reportUnusedCallResult              = "warning"
 	reportUnusedClass                   = "error"
 	reportUnusedImport                  = "error"
 	reportUnusedFunction                = "error"
@@ -119,9 +123,6 @@
 	reportMissingSuperCall              = "warning"
 	reportPropertyTypeMismatch          = "warning"
 	reportShadowedImports               = "warning"
-	reportUninitializedInstanceVariable = "warning"
-	reportUnnecessaryTypeIgnoreComment  = "warning"
-	reportUnusedCallResult              = "warning"
 
 # https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
@@ -152,7 +153,7 @@ select = ['ALL']
 		'D102',   # public-method                             - ^
 		'D103',   # undocumented-public-function              - ^
 		'D104',   # undocumented-public-package               - ^
-		#'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
+#		'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
 		'D106',   # undocumented-public-nested-class          - ^
 		'D107',   # undocumented-public-init                  - ^
 		'D400',   # ends-in-period                            - We do not care if docstrings end with a period

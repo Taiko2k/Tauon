@@ -76,7 +76,7 @@ def find_library(libname: str) -> Path | None:
 		]
 
 	for path in search_paths:
-		if path.exists:
+		if path.exists():
 			logging.debug(f"Lib {libname} found in {path!s}")
 			return path
 
@@ -88,28 +88,28 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	libdir="lib64"
 
 	if pctl.prefs.pipewire:
-		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.so")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor-pw.so"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dll")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor-pw.dll"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor-pw.dylib")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor-pw.dylib"
+		if n.is_file():
 			return n
 		n = find_library("phazor-pw")
 		if n:
 			return n
 
 	else:
-		n = os.path.join(pctl.install_directory, libdir, "libphazor.so")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor.so"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor.dll")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor.dll"
+		if n.is_file():
 			return n
-		n = os.path.join(pctl.install_directory, libdir, "libphazor.dylib")
-		if os.path.isfile(n):
+		n = Path(pctl.install_directory) / libdir / "libphazor.dylib"
+		if n.is_file():
 			return n
 		n = find_library("phazor")
 		if n:
@@ -315,7 +315,7 @@ def player4(tauon: Tauon) -> None:
 	device_unavailable_callback = FUNCTYPE(c_void_p)(pause_when_device_unavailable)
 	aud.set_callbacks(start_callback, read_callback, close_callback, device_unavailable_callback)
 
-	def calc_rg(track: TrackClass) -> float:
+	def calc_rg(track: TrackClass | None) -> float:
 
 		if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
 			pctl.active_replaygain = 0
@@ -403,23 +403,22 @@ def player4(tauon: Tauon) -> None:
 			if self.running and self.get_now == track:
 				return 1, path
 
-			if key in self.files:
-				if os.path.isfile(path):
-					tauon.console.print("got cached file")
-					self.files.remove(key)
-					self.files.append(key)  # bump to top of list
-					self.get_now = None
-					if not self.running:
-						shoot_dl = threading.Thread(target=self.run)
-						shoot_dl.daemon = True
-						shoot_dl.start()
-					return 0, path
+			if key in self.files and os.path.isfile(path):
+				logging.info("Got cached file")
+				self.files.remove(key)
+				self.files.append(key)  # bump to top of list
+				self.get_now = None
+				if not self.running:
+					shoot_dl = threading.Thread(target=self.run)
+					shoot_dl.daemon = True
+					shoot_dl.start()
+				return 0, path
 
 			# disable me for debugging
 			for codec in (".opus", ".ogg", ".flac", ".mp3"):
 				idea = os.path.join(prefs.encoder_output, tauon.encode_folder_name(track), tauon.encode_track_name(track)) + codec
 				if os.path.isfile(idea):
-					tauon.console.print("Found transcode")
+					logging.info("Found transcode")
 					return 0, idea
 
 			self.get_now = track
@@ -449,7 +448,7 @@ def player4(tauon: Tauon) -> None:
 					if self.get_now is not None:
 						self.running = False
 						return
-				tauon.console.print("Precache next track")
+				logging.info("Precache next track")
 				next_track = pctl.advance(dry=True)
 				if next_track is not None:
 					self.dl_file(pctl.g(next_track))
@@ -501,7 +500,7 @@ def player4(tauon: Tauon) -> None:
 					self.running = False
 					return 1
 
-				tauon.console.print("start transfer")
+				logging.info("Start transfer")
 				timer = Timer()
 				target = open(path, "wb")
 				source = open(track.fullpath, "rb")
@@ -512,7 +511,7 @@ def player4(tauon: Tauon) -> None:
 						logging.exception("Transfer failed.")
 						break
 					if len(data) > 0:
-						tauon.console.print(f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps")
+						logging.info(f"Caching file @ {int(len(data) / timer.hit() / 1000)} kbps")
 					else:
 						break
 					target.write(data)
@@ -524,7 +523,7 @@ def player4(tauon: Tauon) -> None:
 				return 0
 
 			try:
-				tauon.console.print("Download file")
+				logging.info("Download file")
 
 				network_url, params = pctl.get_url(track)
 				if not network_url:
@@ -559,14 +558,14 @@ def player4(tauon: Tauon) -> None:
 						pctl.buffering_percent = math.floor(i / len(network_url) * 100)
 						gui.buffering_text = str(pctl.buffering_percent) + "%"
 						if self.get_now is not None and self.get_now != track:
-							tauon.console.print("ABORT")
+							logging.info("ABORT")
 							return None
 
 					logging.info("done")
 					p.stdin.close()
 					p.wait()
 
-					tauon.console.print("DONE")
+					logging.info("DONE")
 					self.files.append(key)
 					self.list.append(key)
 					return None
@@ -606,7 +605,7 @@ def player4(tauon: Tauon) -> None:
 								self.ready = track
 							if a % 32 == 0:
 								#time.sleep(0.03)
-								#tauon.console.print(f"Downloading file @ {round(32 / timer.hit())} kbps")
+								#logging.info(f"Downloading file @ {round(32 / timer.hit())} kbps")
 								if length:
 									gui.update += 1
 									pctl.buffering_percent = round(a * 1000 / length * 100)
@@ -614,7 +613,7 @@ def player4(tauon: Tauon) -> None:
 
 
 							if self.get_now is not None and self.get_now != track:
-								tauon.console.print("ABORT")
+								logging.warning("ABORT")
 								return None
 
 							# if self.cancel is True:
@@ -624,7 +623,7 @@ def player4(tauon: Tauon) -> None:
 							#	 return
 
 							f.write(chunk)
-				tauon.console.print("DONE")
+				logging.info("DONE")
 				self.files.append(key)
 				self.list.append(key)
 			except Exception:
@@ -919,11 +918,11 @@ def player4(tauon: Tauon) -> None:
 				subtrack = target_object.subtrack
 				aud.set_subtrack(subtrack)
 
-				tauon.console.print(f"open - requested start was {int(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
+				logging.info(f"Open - requested start was {int(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
 				try:
-					tauon.console.print(target_path.split(".")[1])
+					logging.info(f"Extension: {target_path.split('.')[-1]}")
 				except Exception:
-					logging.exception("Failed to print message!")
+					logging.exception("Failed to get extension - maybe file name does not have any dots?")
 
 				if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and target_object.file_ext != "SPTY":
 					tauon.spot_ctl.control("stop")
@@ -979,7 +978,7 @@ def player4(tauon: Tauon) -> None:
 					while True:
 						status, path = cachement.get_file(target_object)
 
-						if status == 0 or status == 2:
+						if status in (0, 2):
 							break
 						if timer.get() > 0.25 and gui.buffering is False:
 							gui.buffering_text = ""
@@ -997,7 +996,7 @@ def player4(tauon: Tauon) -> None:
 					tauon.wake()
 
 					if status == 2:
-						tauon.console.print("Could not locate resource")
+						logging.info("Could not locate resource")
 						target_object.found = False
 						pctl.playing_state = 0
 						pctl.jump_time = 0
@@ -1010,7 +1009,7 @@ def player4(tauon: Tauon) -> None:
 					timer.set()
 					while True:
 						status, path = cachement.get_file(target_object)
-						if status == 0 or status == 2:
+						if status in (0, 2):
 							break
 						if timer.get() > 0.25 and gui.buffering is False:
 							gui.buffering_text = ""
@@ -1044,9 +1043,9 @@ def player4(tauon: Tauon) -> None:
 					pctl.reset_missing_flags()
 
 				spotc.running = False
-				length = 0
-				remain = 0
-				position = 0
+				length: float = 0
+				remain: float = 0
+				position: float = 0
 
 				if target_path and target_object and target_object.length == 0 and not target_object.is_cue:
 					logging.info("Track has duration of 0, scanning file")
@@ -1058,29 +1057,35 @@ def player4(tauon: Tauon) -> None:
 						pctl.playing_length = target_object.length
 					del temp
 
-				if state == 1 and not pctl.start_time_target and not pctl.jump_time and \
-						loaded_track:
+				if state == 1 and not pctl.start_time_target and not pctl.jump_time and loaded_track:
 
 					length = aud.get_length_ms() / 1000
 					position = aud.get_position_ms() / 1000
 					remain = length - position
 
-					tauon.console.print(loaded_track.title + " -> " + target_object.title)
-					tauon.console.print(" --- length: " + str(length))
-					tauon.console.print(" --- position: " + str(position))
-					tauon.console.print(f" --- We are {remain!s} from end")
+					logging.info(loaded_track.title + " -> " + target_object.title)
+					logging.info(" --- length: " + str(length))
+					logging.info(" --- position: " + str(position))
+					logging.info(f" --- We are {remain!s} from end")
 
 					if loaded_track.is_network or length == 0:
-						tauon.console.print("Phazor did not respond with a duration")
+						logging.warning("Phazor did not respond with a duration")
 						length = loaded_track.length
 						remain = length - position
 
 				fade = 0
 				error = False
-				if state == 1 and length and position and not pctl.start_time_target and not pctl.jump_time and \
-						loaded_track and 0 < remain < 5.5 and not loaded_track.is_cue and subcommand != "now":
+				if state == 1 \
+				and length \
+				and position \
+				and not pctl.start_time_target \
+				and not pctl.jump_time \
+				and loaded_track \
+				and 0 < remain < 5.5 \
+				and not loaded_track.is_cue \
+				and subcommand != "now":
 
-					tauon.console.print("Transition gapless")
+					logging.info("Transition gapless")
 
 					r_timer = Timer()
 					r_timer.set()
@@ -1137,7 +1142,7 @@ def player4(tauon: Tauon) -> None:
 					pctl.playing_time = pctl.jump_time
 
 				else:
-					if pctl.commit:
+					if pctl.commit and subcommand != "repeat":
 						pctl.advance(quiet=True, end=True)
 						pctl.commit = None
 						continue
@@ -1145,7 +1150,7 @@ def player4(tauon: Tauon) -> None:
 					if state == 1 and prefs.use_jump_crossfade:
 						fade = 1
 
-					tauon.console.print("Transition jump")
+					logging.info("Transition jump")
 					aud.start(target_path.encode(errors="surrogateescape"), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
 					loaded_track = target_object
 					pctl.playing_time = pctl.jump_time

@@ -38,8 +38,8 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_extra import TauonPlaylist
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
-def _(m: str) -> str:
-	return m
+def _(message: str) -> str:
+	return message
 
 class Jellyfin:
 
@@ -86,7 +86,7 @@ class Jellyfin:
 				data=json.dumps({ "username": username, "Pw": password }), timeout=(5, 10),
 			)
 		except Exception:
-			logging.exception("Could not establish connection to server. Check server is running and URL is correct.")
+			logging.exception(f"{_('Could not establish connection to server.')} {_('Check server is running and URL is correct.')}")
 			self.gui.show_message(_("Could not establish connection to server."), _("Check server is running and URL is correct."), mode="error")
 			return
 

@@ -81,6 +81,7 @@ class CustomLoggingFormatter(logging.Formatter):
 	format         = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s"
 	format_verbose = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s (%(filename)s:%(lineno)d)"
 
+	# TODO(Martin): Add some way in which devel mode uses everything verbose
 	FORMATS = {
 		logging.DEBUG:    grey_bold   + format_verbose + reset,
 		logging.INFO:     yellow      + format         + reset,
