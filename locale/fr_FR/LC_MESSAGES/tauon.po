@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2024-12-02 12:00+0000\n"
+"PO-Revision-Date: 2024-12-04 00:00+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -117,11 +117,11 @@ msgstr "Vérifiez si le serveur tourne et que le lien est correct."
 
 #: src/tauon/t_modules/t_jellyfin.py:88
 msgid "Could not establish connection to server."
-msgstr "Impossible d'établir une connection au serveur."
+msgstr "Impossible d'établir une connexion au serveur."
 
 #: src/tauon/t_modules/t_jellyfin.py:97
 msgid "Connection and authorisation successful"
-msgstr "Connection et autorisation réussie"
+msgstr "Connexion et autorisation réussie"
 
 #: src/tauon/t_modules/t_jellyfin.py:99
 msgid "401 Authentication failed"
@@ -201,7 +201,7 @@ msgstr "Erreur"
 
 #: src/tauon/t_modules/t_main.py:7142
 msgid "Logout will complete on app restart."
-msgstr "La déconnection sera effective une fois Tauon relancé."
+msgstr "La déconnexion sera effective une fois Tauon relancé."
 
 #: src/tauon/t_modules/t_main.py:7151
 msgid "Already connected to Last.fm"
@@ -217,7 +217,7 @@ msgstr "Aucun compte Last.fm enregistré"
 
 #: src/tauon/t_modules/t_main.py:7167
 msgid "Connection to Last.fm was successful."
-msgstr "Connection à Last.fm réussie."
+msgstr "Connexion à Last.fm réussie."
 
 #: src/tauon/t_modules/t_main.py:7174
 msgid "Error connecting to Last.fm network"
@@ -491,7 +491,7 @@ msgstr "Erreur Subsonic: "
 
 #: src/tauon/t_modules/t_main.py:8772
 msgid "Error connecting to Airsonic server"
-msgstr "Erreur de connection au serveur Airsonic"
+msgstr "Erreur de connexion au serveur Airsonic"
 
 #: src/tauon/t_modules/t_main.py:8809
 msgid "Error reading Airsonic directory!"
@@ -3404,7 +3404,7 @@ msgstr "Afficher le marqueur de seuil"
 
 #: src/tauon/t_modules/t_main.py:28892
 msgid "Logout"
-msgstr "Déconnection"
+msgstr "Déconnexion"
 
 #: src/tauon/t_modules/t_main.py:28896 src/tauon/t_modules/t_main.py:29515
 #: src/tauon/t_modules/t_main.py:29517
@@ -3474,15 +3474,15 @@ msgstr "Clé API"
 
 #: src/tauon/t_modules/t_main.py:29012 src/tauon/t_modules/t_main.py:29281
 msgid "Test connectivity"
-msgstr "Tester la connection"
+msgstr "Tester la connexion"
 
 #: src/tauon/t_modules/t_main.py:29027
 msgid "Connection appeared successful but the API key was invalid"
-msgstr "La connection a réussie mais la clé API est invalide"
+msgstr "La connexion a réussie mais la clé API est invalide"
 
 #: src/tauon/t_modules/t_main.py:29029
 msgid "Connection to Maloja server was successful."
-msgstr "Connection au serveur Majola réussie."
+msgstr "Connexion au serveur Majola réussie."
 
 #: src/tauon/t_modules/t_main.py:29031
 msgid "The Maloja server returned an error"
@@ -3650,7 +3650,7 @@ msgid ""
 "Click login to open the last.fm web authorisation page and follow prompt. "
 "Then return here and click \"Done\"."
 msgstr ""
-"Cliquez sur « Se connecter » pour ouvrir la page de connection à last.fm, "
+"Cliquez sur « Se connecter » pour ouvrir la page de connexion à last.fm, "
 "suivez les instructions, puis revenez ici et appuyez sur « Valider »."
 
 #: src/tauon/t_modules/t_main.py:29530
