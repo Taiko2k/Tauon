@@ -13,7 +13,7 @@
 	dynamic = ["dependencies"]
 
 [project.gui-scripts]
-	tauonmb = "tauon.__main__:main"
+	tauonmb = "tauon.__main__"
 
 [project.entry-points."distutils.commands"]
 	compile_translations = "compile_translations:main"
