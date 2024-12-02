@@ -1,6 +1,5 @@
 """Compile language files from ./locale"""
 import logging
-import os
 import subprocess
 from pathlib import Path
 
@@ -51,7 +50,8 @@ logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 def main() -> None:
 	compile_failure = False
-	locale_folder = Path("locale").absolute()
+	script_dir = Path(__file__).parent
+	locale_folder = script_dir / "locale"
 	languages = locale_folder.iterdir()
 
 	for lang_file in languages:
@@ -59,18 +59,23 @@ def main() -> None:
 		if lang_file.name == "messages.pot":
 			continue
 
-		po_path = locale_folder / lang_file / "LC_MESSAGES" / "tauon.po"
-		mo_path = locale_folder / lang_file / "LC_MESSAGES" / "tauon.mo"
+		po_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.po"
+#		mo_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.mo"
+		mo_dirpath = script_dir / "src" / "tauon" / "locale" / lang_file.name / "LC_MESSAGES"
+		mo_path = mo_dirpath / "tauon.mo"
+
+		if not mo_path.exists():
+			(mo_dirpath).mkdir(parents=True)
 
 		if po_path.exists():
 			try:
-				subprocess.run(["msgfmt", "-o", mo_path, po_path], check=True)
+				subprocess.run(["/usr/bin/msgfmt", "-o", mo_path, po_path], check=True)
 			except Exception:
 				# Don't log the exception to make the build log clear
-				logging.error(f"Failed to compile translations for {lang_file}")
+				logging.error(f"Failed to compile translations for {lang_file.name}")
 				compile_failure = True
 			else:
-				logging.info(f"Compiled: {lang_file}")
+				logging.info(f"Compiled: {lang_file.name}")
 
 		else:
 			logging.critical(f"Missing po file: {po_path}")
