@@ -458,21 +458,23 @@ del rect
 del flags
 del img_path
 
-if pyinstaller_mode or sys.platform == "darwin" or install_mode:
-	from tauon.t_modules import t_main
-else:
-	# Using the above import method breaks previous pickles.
-	# Could be fixed, but yet to decide what best method is.
-	big_boy_path = install_directory / "t_modules/t_main.py"
-	f = big_boy_path.open("rb")
-	main_func = compile(f.read(), big_boy_path, "exec")
-	f.close()
-	del big_boy_path
-	del f
+from tauon.t_modules import t_main
 
-#	main = main_func
-#	exec(main)
-
-	def main() -> None:
-		"""Execute the compiled code and return"""
-		exec(main_func, {})
+# if pyinstaller_mode or sys.platform == "darwin" or install_mode:
+# 	from tauon.t_modules import t_main
+# else:
+# 	# Using the above import method breaks previous pickles.
+# 	# Could be fixed, but yet to decide what best method is.
+# 	big_boy_path = install_directory / "t_modules/t_main.py"
+# 	f = big_boy_path.open("rb")
+# 	main_func = compile(f.read(), big_boy_path, "exec")
+# 	f.close()
+# 	del big_boy_path
+# 	del f
+#
+# #	main = main_func
+# #	exec(main)
+#
+# 	def main() -> None:
+# 		"""Execute the compiled code and return"""
+# 		exec(main_func, {})
