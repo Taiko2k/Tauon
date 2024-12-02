@@ -1551,7 +1551,7 @@ class Prefs:
 		self.always_art_header = False
 
 		# self.center_bg = True
-		self.ui_lang = "auto"
+		self.ui_lang: str = "auto"
 		self.side_panel_layout = 0
 		self.use_absolute_track_index = False
 
@@ -4237,33 +4237,21 @@ if 0 < db_version <= 53:
 	prefs.linux_font_bold = "Noto Sans Bold"
 	save_prefs()
 
-lang: list[str] = []
+# Auto detect lang
+lang: list[str] | None = None
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
 	# Force set lang
 	lang = [prefs.ui_lang]
-	f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
 
-	if f:
-		translation = gettext.translation("tauon", localedir=str(locale_directory), languages=lang)
-		translation.install()
-		_ = translation.gettext
+f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
+if f:
+	translation = gettext.translation("tauon", localedir=str(locale_directory), languages=lang)
+	translation.install()
+	_ = translation.gettext
 
-		logging.info(f"Translation file for '{lang}' loaded")
-	else:
-		logging.error(f"No translation file available for '{lang}'")
-
-else:
-	# Auto detect lang
-	f = gettext.find("tauon", localedir=str(locale_directory))
-
-	if f:
-		translation = gettext.translation("tauon", localedir=str(locale_directory))
-		translation.install()
-		_ = translation.gettext
-
-		logging.info(f"Translation file for '{translation}' loaded")
-	# else:
-	#	 logging.info("No translation file available")
+	logging.info(f"Translation file for '{lang}' loaded")
+elif lang:
+	logging.error(f"No translation file available for '{lang}'")
 
 # ----
 
@@ -8318,6 +8306,7 @@ class Tauon:
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:     str | None = user_directory
 		self.music_directory:   Path | None = music_directory
+		self.locale_directory:         Path = locale_directory
 		self.worker_save_state:        bool = False
 		self.launch_prefix:             str = launch_prefix
 		self.whicher = whicher
@@ -8491,29 +8480,29 @@ class Tauon:
 		self.worker_save_state = True
 		tm.ready("worker")
 
-	def exit(self, reason):
+	def exit(self, reason: str) -> None:
 		logging.info("Shutting down. Reason: " + reason)
 		pctl.running = False
 		self.wake()
 
-	def min_to_tray(self):
+	def min_to_tray(self) -> None:
 		SDL_HideWindow(t_window)
 		gui.mouse_unknown = True
 
-	def raise_window(self):
+	def raise_window(self) -> None:
 		SDL_ShowWindow(t_window)
 		SDL_RaiseWindow(t_window)
 		SDL_RestoreWindow(t_window)
 		gui.lowered = False
 		gui.update += 1
 
-	def focus_window(self):
+	def focus_window(self) -> None:
 		SDL_RaiseWindow(t_window)
 
-	def get_playing_playlist_id(self):
+	def get_playing_playlist_id(self) -> int:
 		return pl_to_id(pctl.active_playlist_playing)
 
-	def wake(self):
+	def wake(self) -> None:
 		SDL_PushEvent(ctypes.byref(self.dummy_event))
 
 
