@@ -12445,7 +12445,7 @@ class AlbumArt:
 			except Exception:
 				logging.exception("Failed to get tags")
 
-			if len(pic) < 30:
+			if pic is not None and len(pic) < 30:
 				pic = None
 
 		elif track.file_ext == "FLAC":
