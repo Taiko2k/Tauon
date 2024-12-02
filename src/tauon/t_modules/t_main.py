@@ -696,23 +696,25 @@ if download_directory:
 if not music_directory.is_dir():
 	music_directory = None
 
-locale_directory = os.path.join(install_directory, "locale")
-
+locale_directory = Path(install_directory) / "locale"
 if flatpak_mode:
-	locale_directory = "/app/share/locale"
+	locale_directory = Path("/app/share/locale")
 elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
-	locale_directory = "/usr/share/locale"
+	locale_directory = Path("/usr/share/locale")
 
-logging.info(f"Install directory:      {install_directory}")
-logging.info(f"Locale directory:       {locale_directory}")
-logging.info(f"Config directory:       {config_directory}")
-logging.info(f"Cache directory:        {cache_directory}")
-logging.info(f"Home directory:         {home_directory}")
-logging.info(f"Music directory:        {music_directory}")
-logging.info(f"Download directory:     {download_directory}")
-logging.info(f"Asset directory:        {asset_directory}")
-#logging.info(f"SVG directory:          {svg_directory}")
-#logging.info(f"Scaled Asset Directory: {scaled_asset_directory}")
+logging.info(f"Install directory:         {install_directory}")
+logging.info(f"Config directory:          {config_directory}")
+logging.info(f"Cache directory:           {cache_directory}")
+logging.info(f"Home directory:            {home_directory}")
+logging.info(f"Music directory:           {music_directory}")
+logging.info(f"Download directory:        {download_directory}")
+logging.info(f"Asset directory:           {asset_directory}")
+if locale_directory.exists():
+	logging.info(f"Locale directory:          {locale_directory}")
+else:
+	logging.error(f"Locale directory MISSING: {locale_directory}")
+#logging.info(f"SVG directory:             {svg_directory}")
+#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
 
 old_backend = 2
 
@@ -1549,7 +1551,7 @@ class Prefs:
 		self.always_art_header = False
 
 		# self.center_bg = True
-		self.ui_lang = "auto"
+		self.ui_lang: str = "auto"
 		self.side_panel_layout = 0
 		self.use_absolute_track_index = False
 
@@ -4235,38 +4237,21 @@ if 0 < db_version <= 53:
 	prefs.linux_font_bold = "Noto Sans Bold"
 	save_prefs()
 
-lang = ""
-
-
-lang = []
+# Auto detect lang
+lang: list[str] | None = None
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
+	# Force set lang
 	lang = [prefs.ui_lang]
 
-if lang:
-	# Force set lang
-	f = gettext.find("tauon", localedir=locale_directory, languages=lang)
+f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
+if f:
+	translation = gettext.translation("tauon", localedir=str(locale_directory), languages=lang)
+	translation.install()
+	_ = translation.gettext
 
-	if f:
-		translation = gettext.translation("tauon", localedir=locale_directory, languages=lang)
-		translation.install()
-		_ = translation.gettext
-
-		logging.info("Translation file loaded")
-	else:
-		logging.info("No translation file available")
-
-else:
-	# Auto detect lang
-	f = gettext.find("tauon", localedir=locale_directory)
-
-	if f:
-		translation = gettext.translation("tauon", localedir=locale_directory)
-		translation.install()
-		_ = translation.gettext
-
-		logging.info("Translation file loaded")
-	# else:
-	#	 logging.info("No translation file available")
+	logging.info(f"Translation file for '{lang}' loaded")
+elif lang:
+	logging.error(f"No translation file available for '{lang}'")
 
 # ----
 
@@ -4284,7 +4269,7 @@ if msys and win_ver >= 10:
 	try:
 		sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
 
-		def SMTC_button_callback(button):
+		def SMTC_button_callback(button: int) -> None:
 
 			if button == 1:
 				inp.media_key = "Play"
@@ -8321,6 +8306,7 @@ class Tauon:
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:     str | None = user_directory
 		self.music_directory:   Path | None = music_directory
+		self.locale_directory:         Path = locale_directory
 		self.worker_save_state:        bool = False
 		self.launch_prefix:             str = launch_prefix
 		self.whicher = whicher
@@ -8494,29 +8480,29 @@ class Tauon:
 		self.worker_save_state = True
 		tm.ready("worker")
 
-	def exit(self, reason):
+	def exit(self, reason: str) -> None:
 		logging.info("Shutting down. Reason: " + reason)
 		pctl.running = False
 		self.wake()
 
-	def min_to_tray(self):
+	def min_to_tray(self) -> None:
 		SDL_HideWindow(t_window)
 		gui.mouse_unknown = True
 
-	def raise_window(self):
+	def raise_window(self) -> None:
 		SDL_ShowWindow(t_window)
 		SDL_RaiseWindow(t_window)
 		SDL_RestoreWindow(t_window)
 		gui.lowered = False
 		gui.update += 1
 
-	def focus_window(self):
+	def focus_window(self) -> None:
 		SDL_RaiseWindow(t_window)
 
-	def get_playing_playlist_id(self):
+	def get_playing_playlist_id(self) -> int:
 		return pl_to_id(pctl.active_playlist_playing)
 
-	def wake(self):
+	def wake(self) -> None:
 		SDL_PushEvent(ctypes.byref(self.dummy_event))
 
 
@@ -15554,11 +15540,11 @@ def open_folder_stem(path):
 			subprocess.Popen(["xdg-open", line])
 
 
-def open_folder_disable_test(index):
+def open_folder_disable_test(index: int):
 	track = pctl.master_library[index]
 	return track.is_network and not os.path.isdir(track.parent_folder_path)
 
-def open_folder(index):
+def open_folder(index: int):
 	track = pctl.master_library[index]
 	if open_folder_disable_test(index):
 		show_message(_("Can't open folder of a network track."))
@@ -16971,7 +16957,7 @@ def rename_playlist(index, generator=False):
 		rename_playlist_box.toggle_edit_gen()
 
 
-def edit_generator_box(index):
+def edit_generator_box(index: int):
 	rename_playlist(index, generator=True)
 
 
@@ -17138,7 +17124,7 @@ def reload():
 	#	 combo_pl_render.prep()
 
 
-def clear_playlist(index):
+def clear_playlist(index: int):
 	global default_playlist
 
 	if pl_is_locked(index):
@@ -17438,18 +17424,18 @@ def rescan_all_folders():
 	for i, p in enumerate(pctl.multi_playlist):
 		re_import2(i)
 
-def s_append(index):
+def s_append(index: int):
 	paste(playlist_no=index)
 
 
-def append_playlist(index):
+def append_playlist(index: int):
 	global cargo
 	pctl.multi_playlist[index].playlist_ids += cargo
 
 	gui.pl_update = 1
 	reload()
 
-def index_key(index):
+def index_key(index: int):
 	tr = pctl.master_library[index]
 	s = str(tr.track_number)
 	d = str(tr.disc_number)
@@ -17558,16 +17544,16 @@ def sort_track_2(pl, custom_list=None):
 tauon.sort_track_2 = sort_track_2
 
 
-def key_filepath(index):
+def key_filepath(index: int):
 	track = pctl.master_library[index]
 	return track.parent_folder_path.lower(), track.filename
 
 
-def key_fullpath(index):
+def key_fullpath(index: int):
 	return pctl.master_library[index].fullpath
 
 
-def key_filename(index):
+def key_filename(index: int):
 	track = pctl.master_library[index]
 	return track.filename
 
@@ -17584,7 +17570,7 @@ def sort_path_pl(pl, custom_list=None):
 		target.sort(key=key_filepath)
 
 
-def append_current_playing(index):
+def append_current_playing(index: int):
 	if spot_ctl.coasting:
 		spot_ctl.append_playing(index)
 		gui.pl_update = 1
@@ -19145,26 +19131,26 @@ tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), remove_duplicates, pass_
 
 # tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
-def best(index):
+def best(index: int):
 	# key = pctl.master_library[index].title + pctl.master_library[index].filename
 	if pctl.master_library[index].length < 1:
 		return 0
 	return int(star_store.get(index))
 
 
-def key_rating(index):
+def key_rating(index: int):
 	return star_store.get_rating(index)
 
-def key_scrobbles(index):
+def key_scrobbles(index: int):
 	return pctl.get_track(index).lfm_scrobbles
 
-def key_disc(index):
+def key_disc(index: int):
 	return pctl.get_track(index).disc_number
 
-def key_cue(index):
+def key_cue(index: int):
 	return pctl.get_track(index).is_cue
 
-def key_playcount(index):
+def key_playcount(index: int):
 	# key = pctl.master_library[index].title + pctl.master_library[index].filename
 	if pctl.master_library[index].length < 1:
 		return 0
@@ -19449,7 +19435,7 @@ def gen_last_imported_folders(index, custom_list=None, reverse=True):
 
 	a_cache = {}
 
-	def key_import(index):
+	def key_import(index: int):
 
 		track = pctl.master_library[index]
 		cached = a_cache.get((track.album, track.parent_folder_name))
@@ -19475,7 +19461,7 @@ def gen_last_modified(index, custom_list=None, reverse=True):
 
 	a_cache = {}
 
-	def key_modified(index):
+	def key_modified(index: int):
 
 		track = pctl.master_library[index]
 		cached = a_cache.get((track.album, track.parent_folder_name))
@@ -19667,7 +19653,7 @@ extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), gen_folder_duration, 
 
 
 def gen_sort_date(index, rev=False, custom_list=None):
-	def g_date(index):
+	def g_date(index: int):
 
 		if pctl.master_library[index].date != "":
 			return str(pctl.master_library[index].date)
@@ -19725,7 +19711,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Year by Oldest"), gen_sort_date, pass_ref=Tru
 extra_tab_menu.add_to_sub(0, MenuItem(_("Year by Oldest"), gen_sort_date, pass_ref=True))
 
 
-def gen_sort_date_new(index):
+def gen_sort_date_new(index: int):
 	gen_sort_date(index, True)
 
 
@@ -19736,7 +19722,7 @@ extra_tab_menu.add_to_sub(0, MenuItem(_("Year by Latest"), gen_sort_date_new, pa
 # tab_menu.add_to_sub(_("Year by Artist"), 0, year_sort, pass_ref=True)
 # extra_tab_menu.add_to_sub(_("Year by Artist"), 0, year_sort, pass_ref=True)
 
-def gen_500_random(index):
+def gen_500_random(index: int):
 	playlist = copy.deepcopy(pctl.multi_playlist[index].playlist_ids)
 
 	random.shuffle(playlist)
@@ -19792,7 +19778,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), gen_folder_shuffle, pass_r
 extra_tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), gen_folder_shuffle, pass_ref=True))
 
 
-def gen_best_random(index):
+def gen_best_random(index: int):
 	playlist = []
 
 	for p in pctl.multi_playlist[index].playlist_ids:
@@ -20029,7 +20015,7 @@ def open_data_directory():
 		subprocess.call(["xdg-open", target])
 
 
-def remove_folder(index):
+def remove_folder(index: int):
 	global default_playlist
 
 	for b in range(len(default_playlist) - 1, -1, -1):
@@ -20040,7 +20026,7 @@ def remove_folder(index):
 	reload()
 
 
-def convert_folder(index):
+def convert_folder(index: int):
 	global default_playlist
 	global transcode_list
 
@@ -20159,7 +20145,7 @@ def temp_copy_folder(ref):
 	transfer(ref, args=[1, 2])
 
 
-def activate_track_box(index):
+def activate_track_box(index: int):
 	global track_box
 	global r_menu_index
 	r_menu_index = index
@@ -21011,7 +20997,7 @@ def rename_parent(index: int, template: str) -> None:
 def rename_folders_disable_test(index: int) -> bool:
 	return pctl.get_track(index).is_network
 
-def rename_folders(index):
+def rename_folders(index: int):
 	global track_box
 	global rename_index
 	global input_text
@@ -21387,7 +21373,7 @@ def editor(index: int | None) -> None:
 	pctl.notify_change()
 
 
-def launch_editor(index):
+def launch_editor(index: int):
 	if snap_mode:
 		show_message(_("Sorry, this feature isn't (yet) available with Snap."))
 		return
@@ -21400,13 +21386,13 @@ def launch_editor(index):
 	mini_t.daemon = True
 	mini_t.start()
 
-def launch_editor_selection_disable_test(index):
+def launch_editor_selection_disable_test(index: int):
 	for position in shift_selection:
 		if pctl.get_track(default_playlist[position]).is_network:
 			return True
 	return False
 
-def launch_editor_selection(index):
+def launch_editor_selection(index: int):
 	if launch_editor_selection_disable_test(index):
 		show_message(_("Cannot edit tags of a network track."))
 		return
@@ -21433,18 +21419,18 @@ if prefs.tag_editor_name == "Picard":
 	edit_icon = mbp_icon
 
 
-def edit_deco(index):
+def edit_deco(index: int):
 	if key_shift_down or key_shiftr_down:
 		return [colours.menu_text, colours.menu_background, prefs.tag_editor_name + " (Single track)"]
 	return [colours.menu_text, colours.menu_background, _("Edit with ") + prefs.tag_editor_name]
 
-def launch_editor_disable_test(index):
+def launch_editor_disable_test(index: int):
 	return pctl.get_track(index).is_network
 
 track_menu.add_to_sub(0, MenuItem(_("Edit with"), launch_editor, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=edit_deco, disable_test=launch_editor_disable_test))
 
 
-def show_lyrics_menu(index):
+def show_lyrics_menu(index: int):
 	global track_box
 	track_box = False
 	enter_showcase_view(track_id=r_menu_index)
@@ -21458,7 +21444,7 @@ def recode(text, enc):
 	return text.encode("Latin-1", "ignore").decode(enc, "ignore")
 
 
-def intel_moji(index):
+def intel_moji(index: int):
 	gui.pl_update += 1
 	gui.update += 1
 
@@ -21570,12 +21556,12 @@ def cut_selection():
 	del_selected()
 
 
-def clip_ar_al(index):
+def clip_ar_al(index: int):
 	line = pctl.master_library[index].artist + " - " + pctl.master_library[index].album
 	SDL_SetClipboardText(line.encode("utf-8"))
 
 
-def clip_ar(index):
+def clip_ar(index: int):
 	if pctl.master_library[index].album_artist != "":
 		line = pctl.master_library[index].album_artist
 	else:
@@ -21583,7 +21569,7 @@ def clip_ar(index):
 	SDL_SetClipboardText(line.encode("utf-8"))
 
 
-def clip_title(index):
+def clip_title(index: int):
 	n_track = pctl.master_library[index]
 
 	if not prefs.use_title and n_track.album_artist != "" and n_track.album != "":
@@ -21848,7 +21834,7 @@ def ser_band(track_id: int) -> None:
 		show_message(_("Searching..."))
 
 
-def ser_rym(index):
+def ser_rym(index: int):
 	if len(pctl.master_library[index].artist) < 2:
 		return
 	line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(
@@ -21864,7 +21850,7 @@ def copy_from_clipboard():
 	return SDL_GetClipboardText().decode()
 
 
-def clip_aar_al(index):
+def clip_aar_al(index: int):
 	if pctl.master_library[index].album_artist == "":
 		line = pctl.master_library[index].artist + " - " + pctl.master_library[index].album
 	else:
@@ -21906,7 +21892,7 @@ def ser_gen(track_id, get_lyrics=False):
 	shoot.start()
 
 
-def ser_wiki(index):
+def ser_wiki(index: int):
 	if len(pctl.master_library[index].artist) < 2:
 		return
 	line = "http://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(pctl.master_library[index].artist)
@@ -21931,7 +21917,7 @@ band_icon.colour = [96, 147, 158, 255]
 track_menu.add(MenuItem(_("Search Artist on Bandcamp"), ser_band, pass_ref=True, icon=band_icon, show_test=toggle_band))
 
 
-def clip_ar_tr(index):
+def clip_ar_tr(index: int):
 	line = pctl.master_library[index].artist + " - " + pctl.master_library[index].title
 
 	SDL_SetClipboardText(line.encode("utf-8"))
@@ -21942,7 +21928,7 @@ def clip_ar_tr(index):
 # Copy metadata to clipboard
 track_menu.add(MenuItem(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True))
 
-def tidal_copy_album(index):
+def tidal_copy_album(index: int):
 	t = pctl.master_library.get(index)
 	if t and t.file_ext == "TIDAL":
 		id = t.misc.get("tidal_album")
@@ -22007,7 +21993,7 @@ def get_album_spot_active(tr: TrackClass | None = None) -> None:
 	switch_playlist(len(pctl.multi_playlist) - 1)
 
 
-def get_spot_album_track(index):
+def get_spot_album_track(index: int):
 	get_album_spot_active(pctl.get_track(index))
 
 track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), get_spot_album_track, pass_ref=True, icon=spot_icon))
@@ -22031,7 +22017,7 @@ def get_spot_recs(tr: TrackClass | None = None) -> None:
 	show_message(_("Fetching..."))
 	shooter(spot_ctl.rec_playlist, (url, track_url))
 
-def get_spot_recs_track(index):
+def get_spot_recs_track(index: int):
 	get_spot_recs(pctl.get_track(index))
 
 track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), get_spot_recs_track, pass_ref=True, icon=spot_icon))
@@ -22288,60 +22274,60 @@ def sa_love() -> None:
 	gui.update_layout()
 
 
-def key_love(index):
+def key_love(index: int):
 	return get_love_index(index)
 
 
-def key_artist(index):
+def key_artist(index: int):
 	return pctl.master_library[index].artist.lower()
 
 
-def key_album_artist(index):
+def key_album_artist(index: int):
 	return pctl.master_library[index].album_artist.lower()
 
 
-def key_composer(index):
+def key_composer(index: int):
 	return pctl.master_library[index].composer.lower()
 
 
-def key_comment(index):
+def key_comment(index: int):
 	return pctl.master_library[index].comment
 
 
-def key_title(index):
+def key_title(index: int):
 	return pctl.master_library[index].title.lower()
 
 
-def key_album(index):
+def key_album(index: int):
 	return pctl.master_library[index].album.lower()
 
 
-def key_duration(index):
+def key_duration(index: int):
 	return pctl.master_library[index].length
 
 
-def key_date(index):
+def key_date(index: int):
 	return pctl.master_library[index].date
 
 
-def key_genre(index):
+def key_genre(index: int):
 	return pctl.master_library[index].genre.lower()
 
 
-def key_t(index):
+def key_t(index: int):
 	# return str(pctl.master_library[index].track_number)
 	return index_key(index)
 
 
-def key_codec(index):
+def key_codec(index: int):
 	return pctl.master_library[index].file_ext
 
 
-def key_bitrate(index):
+def key_bitrate(index: int):
 	return pctl.master_library[index].bitrate
 
 
-def key_p(index):
+def key_p(index: int):
 	return pctl.master_library[index].bitrate
 
 
@@ -27076,7 +27062,7 @@ def get_album_info(position, pl: int | None = None):
 tauon.get_album_info = get_album_info
 
 
-def get_folder_list(index):
+def get_folder_list(index: int):
 	playlist = []
 
 	for item in default_playlist:
