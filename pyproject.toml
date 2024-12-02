@@ -7,7 +7,8 @@
 	# Change the version for the tools below too when bumping up
 	requires-python = ">=3.10"
 	classifiers = [
-		"Programming Language :: Python :: 3"
+		"Programming Language :: Python :: 3",
+		"Typing :: Typed",
 	]
 	dynamic = ["dependencies"]
 
@@ -104,6 +105,9 @@
 	reportUnnecessaryComparison         = "error"
 	reportUnnecessaryContains           = "error"
 	reportUnnecessaryIsInstance         = "error"
+	reportUninitializedInstanceVariable = "warning"
+	reportUnnecessaryTypeIgnoreComment  = "warning"
+#	reportUnusedCallResult              = "warning"
 	reportUnusedClass                   = "error"
 	reportUnusedImport                  = "error"
 	reportUnusedFunction                = "error"
@@ -119,9 +123,6 @@
 	reportMissingSuperCall              = "warning"
 	reportPropertyTypeMismatch          = "warning"
 	reportShadowedImports               = "warning"
-	reportUninitializedInstanceVariable = "warning"
-	reportUnnecessaryTypeIgnoreComment  = "warning"
-	reportUnusedCallResult              = "warning"
 
 # https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
