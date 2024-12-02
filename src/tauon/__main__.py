@@ -357,7 +357,6 @@ else:
 if "--tray" in sys.argv:
 	flags |= SDL_WINDOW_HIDDEN
 
-error = False
 
 t_window = SDL_CreateWindow(
 	window_title,
@@ -373,6 +372,7 @@ if not t_window:
 	logging.error(f"Size 0: {logical_size[0]}")
 	logging.error(f"Size 1: {logical_size[1]}")
 	logging.error(f"Flags: {flags}")
+	logging.error(f"SDL Error: {SDL_GetError()}")
 	sys.exit(1)
 
 if maximized:
