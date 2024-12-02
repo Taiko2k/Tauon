@@ -696,7 +696,15 @@ if download_directory:
 if not music_directory.is_dir():
 	music_directory = None
 
+locale_directory = os.path.join(install_directory, "locale")
+
+if flatpak_mode:
+	locale_directory = "/app/share/locale"
+elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
+	locale_directory = "/usr/share/locale"
+
 logging.info(f"Install directory:      {install_directory}")
+logging.info(f"Locale directory:       {locale_directory}")
 logging.info(f"Config directory:       {config_directory}")
 logging.info(f"Cache directory:        {cache_directory}")
 logging.info(f"Home directory:         {home_directory}")
@@ -4229,12 +4237,6 @@ if 0 < db_version <= 53:
 
 lang = ""
 
-locale_dir = os.path.join(install_directory, "locale")
-
-if flatpak_mode:
-	locale_dir = "/app/share/locale"
-elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
-	locale_dir = "/usr/share/locale"
 
 lang = []
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
@@ -4242,10 +4244,10 @@ if prefs.ui_lang != "auto" or prefs.ui_lang == "":
 
 if lang:
 	# Force set lang
-	f = gettext.find("tauon", localedir=locale_dir, languages=lang)
+	f = gettext.find("tauon", localedir=locale_directory, languages=lang)
 
 	if f:
-		translation = gettext.translation("tauon", localedir=locale_dir, languages=lang)
+		translation = gettext.translation("tauon", localedir=locale_directory, languages=lang)
 		translation.install()
 		_ = translation.gettext
 
@@ -4255,10 +4257,10 @@ if lang:
 
 else:
 	# Auto detect lang
-	f = gettext.find("tauon", localedir=locale_dir)
+	f = gettext.find("tauon", localedir=locale_directory)
 
 	if f:
-		translation = gettext.translation("tauon", localedir=locale_dir)
+		translation = gettext.translation("tauon", localedir=locale_directory)
 		translation.install()
 		_ = translation.gettext
 
