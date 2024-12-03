@@ -71,12 +71,13 @@ from tauon.t_modules import t_bootstrap
 class CustomLoggingFormatter(logging.Formatter):
 	"""Nicely format logging.loglevel logs"""
 
-	grey        = "\x1b[38;20m"
-	grey_bold   = "\x1b[38;1m"
+	grey        = "\x1b[0;20m"
+	grey_bold   = "\x1b[0;1m"
 	yellow      = "\x1b[33;20m"
 	yellow_bold = "\x1b[33;1m"
 	red         = "\x1b[31;20m"
 	bold_red    = "\x1b[31;1m"
+	purple      = "\x1b[0;35m"
 	reset       = "\x1b[0m"
 	format         = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s"
 	format_verbose = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s (%(filename)s:%(lineno)d)"
@@ -84,9 +85,9 @@ class CustomLoggingFormatter(logging.Formatter):
 	# TODO(Martin): Add some way in which devel mode uses everything verbose
 	FORMATS = {
 		logging.DEBUG:    grey_bold   + format_verbose + reset,
-		logging.INFO:     yellow      + format         + reset,
-		logging.WARNING:  yellow_bold + format         + reset,
-		logging.ERROR:    red         + format         + reset,
+		logging.INFO:     grey        + format         + reset,
+		logging.WARNING:  purple      + format_verbose + reset,
+		logging.ERROR:    red         + format_verbose + reset,
 		logging.CRITICAL: bold_red    + format_verbose + reset,
 	}
 
@@ -109,7 +110,7 @@ logging.basicConfig(
 	],
 )
 # INFO+ to std_err
-logging.getLogger().handlers[0].setLevel(logging.INFO)
+logging.getLogger().handlers[0].setLevel(logging.DEBUG)
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 if sys.platform != "win32":

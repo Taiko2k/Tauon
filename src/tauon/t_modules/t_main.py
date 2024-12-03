@@ -11988,7 +11988,7 @@ class GallClass:
 					self.lock.release()
 				except RuntimeError as e:
 					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked lock")
+						logging.debug("RuntimeError: Attempted to release already unlocked lock")
 					else:
 						logging.exception("Unknown RuntimeError trying to release lock: {e}")
 				except Exception:
@@ -12429,7 +12429,8 @@ class AlbumArt:
 			try:
 				tag = mutagen.id3.ID3(filepath)
 				frame = tag.getall("APIC")
-				pic = frame[0].data
+				if frame:
+				    pic = frame[0].data
 			except Exception:
 				logging.exception("Failed to get tags")
 
@@ -44139,7 +44140,7 @@ while pctl.running:
 			tm.player_lock.release()
 		except RuntimeError as e:
 			if str(e) == "release unlocked lock":
-				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+				logging.debug("RuntimeError: Attempted to release already unlocked player_lock")
 			else:
 				logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
 		except Exception:
