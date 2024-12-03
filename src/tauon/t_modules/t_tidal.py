@@ -20,10 +20,6 @@ except Exception:
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
-
-def _(m: str) -> str:
-	return m
-
 class Tidal:
 
 	def __init__(self, tauon: Tauon) -> None:

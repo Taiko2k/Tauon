@@ -45,9 +45,6 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import Tauon
 
-def _(m: str) -> str:
-	return m
-
 class StreamEnc:
 
 	def __init__(self, tauon: Tauon) -> None:

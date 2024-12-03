@@ -47,8 +47,6 @@ from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import PlayerCtl, Tauon, TrackClass
 
-def _(m: str) -> str:
-	return m
 
 def find_library(libname: str) -> Path | None:
 	"""Search for 'libname.so'.

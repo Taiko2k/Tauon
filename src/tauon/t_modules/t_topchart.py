@@ -33,8 +33,6 @@ from gi.repository import Pango, PangoCairo
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumArt, Tauon, TrackClass
 
-def _(m: str) -> str:
-	return m
 
 class TopChart:
 
