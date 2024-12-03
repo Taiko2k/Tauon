@@ -28,9 +28,6 @@ import os
 from tauon.t_modules.t_extra import tryint
 
 
-def _(m: str) -> str:
-	return m
-
 class Config:
 
 	def __init__(self) -> None:

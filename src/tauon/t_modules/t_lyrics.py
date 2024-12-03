@@ -34,9 +34,6 @@ from bs4 import BeautifulSoup
 from unidecode import unidecode
 
 
-def _(m: str) -> str:
-	return m
-
 # def lyricwiki(artist: str, title: str) -> str:
 #
 # 	lyrics = PyLyrics.getLyrics(artist, title)

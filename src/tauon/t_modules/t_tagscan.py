@@ -33,10 +33,6 @@ from tauon.t_modules.t_extra import process_odat
 
 if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
-
-def _(m: str) -> str:
-	return m
-
 def parse_mbids_from_vorbis(obj: Ape | Flac | Opus, key: str, value: str | bytes) -> bool:
 
 	if key == "musicbrainz_artistid":

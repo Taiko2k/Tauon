@@ -38,8 +38,6 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_extra import TauonPlaylist
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
-def _(message: str) -> str:
-	return message
 
 class Jellyfin:
 

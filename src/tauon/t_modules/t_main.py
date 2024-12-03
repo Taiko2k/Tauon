@@ -26,6 +26,7 @@ I would highly recommend not using this project as an example on how to code cle
 from __future__ import annotations
 
 import base64
+import builtins
 import colorsys
 import copy
 import ctypes
@@ -252,6 +253,8 @@ from sdl2 import (
 from sdl2.sdlimage import IMG_Load, IMG_Load_RW, IMG_Quit
 from send2trash import send2trash
 from unidecode import unidecode
+
+builtins._ = lambda x: x
 
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
@@ -925,10 +928,6 @@ musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Tai
 # logging.info(arch)
 # -----------------------------------------------------------
 # Detect locale for translations
-
-def _(message: str) -> str:
-	return message
-
 
 try:
 	py_locale.setlocale(py_locale.LC_ALL, "")
@@ -4229,7 +4228,7 @@ f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
 if f:
 	translation = gettext.translation("tauon", localedir=str(locale_directory), languages=lang)
 	translation.install()
-	_ = translation.gettext
+	builtins._ = translation.gettext
 
 	logging.info(f"Translation file for '{lang}' loaded")
 elif lang:

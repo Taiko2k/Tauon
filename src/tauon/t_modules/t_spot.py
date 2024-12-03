@@ -48,9 +48,6 @@ except Exception:
 else:
 	tekore_imported = True
 
-def _(m: str) -> str:
-	return m
-
 class SpotCtl:
 
 	def __init__(self, tauon: Tauon) -> None:
