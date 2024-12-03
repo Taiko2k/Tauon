@@ -83,39 +83,40 @@ def find_library(libname: str) -> Path | None:
 #	raise OSError(f"Can't find {libname}.so. Searched at:\n" + "\n".join(str(p) for p in search_paths))
 	return None
 
+
 def get_phazor_path(pctl: PlayerCtl) -> Path:
-	# See note for the earlier definition
-	libdir="lib64"
+	"""
+    Locate the PHaZOR library in the specified priority order.
+    Tries .so, .dll, .dynlib in that order and finally uses find_library as a fallback.
 
+    :param pctl: PlayerCtl object containing installation details
+    :return: Path to the library file
+    :raises Exception: If no library is found
+    """
+
+	# This is where compile-phazor.sh scrips place the dll
+	base_path = Path(pctl.install_directory).parent.parent / "build"
+
+	# Define the library name and extensions in priority order
 	if pctl.prefs.pipewire:
-		n = Path(pctl.install_directory) / libdir / "libphazor-pw.so"
-		if n.is_file():
-			return n
-		n = Path(pctl.install_directory) / libdir / "libphazor-pw.dll"
-		if n.is_file():
-			return n
-		n = Path(pctl.install_directory) / libdir / "libphazor-pw.dylib"
-		if n.is_file():
-			return n
-		n = find_library("phazor-pw")
-		if n:
-			return n
-
+		lib_name = "phazor-pw"
 	else:
-		n = Path(pctl.install_directory) / libdir / "libphazor.so"
-		if n.is_file():
-			return n
-		n = Path(pctl.install_directory) / libdir / "libphazor.dll"
-		if n.is_file():
-			return n
-		n = Path(pctl.install_directory) / libdir / "libphazor.dylib"
-		if n.is_file():
-			return n
-		n = find_library("phazor")
-		if n:
-			return n
+		lib_name = "phazor"
 
-	raise Exception("Failed to load PHaZOR")
+	extensions = [".so", ".dll", ".dynlib"]
+
+	# Check explicitly for each file
+	for ext in extensions:
+		lib_path = base_path / f"lib{lib_name}{ext}"
+		if lib_path.is_file():
+			return lib_path
+
+	# Fallback to find_library. Used if built using setuptools
+	lib_path = find_library(lib_name)
+	if lib_path:
+		return Path(lib_path)
+
+	raise Exception(f"Failed to load PHaZOR library ({lib_name})")
 
 def phazor_exists(pctl: PlayerCtl) -> bool:
 	"""Check for the existence of the PHaZOR library on the FS"""
