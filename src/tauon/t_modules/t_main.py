@@ -11984,15 +11984,16 @@ class GallClass:
 
 			if key not in self.queue:
 				self.queue.append(key)
-				try:
-					self.lock.release()
-				except RuntimeError as e:
-					if str(e) == "release unlocked lock":
-						logging.debug("RuntimeError: Attempted to release already unlocked lock")
-					else:
-						logging.exception("Unknown RuntimeError trying to release lock: {e}")
-				except Exception:
-					logging.exception("Unknown error trying to release lock")
+				if self.lock.locked():
+					try:
+						self.lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked lock")
+						else:
+							logging.exception("Unknown RuntimeError trying to release lock: {e}")
+					except Exception:
+						logging.exception("Unknown error trying to release lock")
 
 		return False
 
@@ -12432,7 +12433,7 @@ class AlbumArt:
 				if frame:
 				    pic = frame[0].data
 			except Exception:
-				logging.exception("Failed to get tags")
+				logging.debug(f"Failed to get tags on file: {filepath}")
 
 			if pic is not None and len(pic) < 30:
 				pic = None
@@ -25255,15 +25256,16 @@ class SearchOverlay:
 					ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
 					# gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
 					if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
-						try:
-							gall_ren.lock.release()
-						except RuntimeError as e:
-							if str(e) == "release unlocked lock":
-								logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
-							else:
-								logging.exception("Unknown RuntimeError trying to release gall_ren_lock: {e}")
-						except Exception:
-							logging.exception("Unknown error trying to release gall_ren_lock")
+						if gall_ren.lock.locked():
+							try:
+								gall_ren.lock.release()
+							except RuntimeError as e:
+								if str(e) == "release unlocked lock":
+									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
+								else:
+									logging.exception("Unknown RuntimeError trying to release gall_ren_lock: {e}")
+							except Exception:
+								logging.exception("Unknown error trying to release gall_ren_lock")
 
 				# Result text
 				if n in (0, 5, 6, 7, 8, 10):  # Bold
@@ -44136,15 +44138,16 @@ while pctl.running:
 	power += 1
 
 	if pctl.playerCommandReady:
-		try:
-			tm.player_lock.release()
-		except RuntimeError as e:
-			if str(e) == "release unlocked lock":
-				logging.debug("RuntimeError: Attempted to release already unlocked player_lock")
-			else:
-				logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
-		except Exception:
-			logging.exception("Unknown exception trying to release player_lock")
+		if tm.player_lock.locked():
+			try:
+				tm.player_lock.release()
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+				else:
+					logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+			except Exception:
+				logging.exception("Unknown exception trying to release player_lock")
 
 	if gui.frame_callback_list:
 		i = len(gui.frame_callback_list) - 1
