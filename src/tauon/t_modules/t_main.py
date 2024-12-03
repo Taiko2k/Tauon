@@ -467,7 +467,7 @@ t_id                   = holder.t_id
 t_agent                = holder.t_agent
 dev_mode               = holder.dev_mode
 instance_lock          = holder.instance_lock
-log						= holder.log
+log                    = holder.log
 logging.info(f"Window size: {window_size}")
 
 should_save_state = True
@@ -9035,15 +9035,15 @@ subsonic = SubsonicService()
 
 class KoelService:
 
-	def __init__(self):
-		self.connected = False
+	def __init__(self) -> None:
+		self.connected: bool = False
 		self.resource = None
-		self.scanning = False
-		self.server = ""
+		self.scanning:  bool = False
+		self.server:     str = ""
 
-		self.token = ""
+		self.token:      str = ""
 
-	def connect(self):
+	def connect(self) -> None:
 
 		logging.info("Connect to koel...")
 		if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
@@ -9098,7 +9098,7 @@ class KoelService:
 			gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
 
 
-	def resolve_stream(self, id):
+	def resolve_stream(self, id: str) -> tuple[str, dict[str, str]]:
 
 		if not self.connected:
 			self.connect()
@@ -9124,7 +9124,7 @@ class KoelService:
 
 		return target, params
 
-	def listen(self, track_object: TrackClass, submit: bool = False):
+	def listen(self, track_object: TrackClass, submit: bool = False) -> None:
 		if submit:
 			try:
 				target = self.server + "/api/interaction/play"
@@ -9140,7 +9140,7 @@ class KoelService:
 			except Exception:
 				logging.exception("error submitting listen to koel")
 
-	def get_albums(self, return_list: bool = False):
+	def get_albums(self, return_list: bool = False) -> list[int] | None:
 
 		gui.update += 1
 		self.scanning = True
@@ -9243,16 +9243,16 @@ tauon.koel = koel
 
 
 class TauService:
-	def __init__(self):
+	def __init__(self) -> None:
 		self.processing = False
 
-	def resolve_stream(self, key):
+	def resolve_stream(self, key: str) -> str:
 		return "http://" + prefs.sat_url + ":7814/api1/file/" + key
 
-	def resolve_picture(self, key):
+	def resolve_picture(self, key: str) -> str:
 		return "http://" + prefs.sat_url + ":7814/api1/pic/medium/" + key
 
-	def get(self, point):
+	def get(self, point: str):
 		url = "http://" + prefs.sat_url + ":7814/api1/"
 		data = None
 		try:
@@ -9263,7 +9263,7 @@ class TauService:
 			show_message(_("Network error"), str(e), mode="error")
 		return data
 
-	def get_playlist(self, playlist_name=None, return_list=False):
+	def get_playlist(self, playlist_name: str | None = None, return_list: bool = False) -> list[int] | None:
 
 		p = self.get("playlists")
 
@@ -9377,7 +9377,7 @@ def get_network_thumbnail_url(track_object: TrackClass):
 	return None
 
 
-def jellyfin_get_playlists_thread():
+def jellyfin_get_playlists_thread() -> None:
 	if jellyfin.scanning:
 		inp.mouse_click = False
 		show_message(_("Job already in progress!"))
@@ -9387,7 +9387,7 @@ def jellyfin_get_playlists_thread():
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-def jellyfin_get_library_thread():
+def jellyfin_get_library_thread() -> None:
 	pref_box.close()
 	save_prefs()
 	if jellyfin.scanning:
@@ -9401,7 +9401,7 @@ def jellyfin_get_library_thread():
 	shoot_dl.start()
 
 
-def plex_get_album_thread():
+def plex_get_album_thread() -> None:
 	pref_box.close()
 	save_prefs()
 	if plex.scanning:
@@ -9415,7 +9415,7 @@ def plex_get_album_thread():
 	shoot_dl.start()
 
 
-def sub_get_album_thread():
+def sub_get_album_thread() -> None:
 	# if prefs.backend != 1:
 	#	 show_message("This feature is currently only available with the BASS backend")
 	#	 return
@@ -9433,7 +9433,7 @@ def sub_get_album_thread():
 	shoot_dl.start()
 
 
-def koel_get_album_thread():
+def koel_get_album_thread() -> None:
 	# if prefs.backend != 1:
 	#	 show_message("This feature is currently only available with the BASS backend")
 	#	 return
