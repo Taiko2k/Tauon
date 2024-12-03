@@ -5354,7 +5354,8 @@ class PlayerCtl:
 	def notify_update(self, mpris: bool = True) -> None:
 		tauon.tray_releases += 1
 		try:
-			tauon.tray_lock.release()
+			if tauon.tray_lock.locked():
+				tauon.tray_lock.release()
 		except RuntimeError as e:
 			if str(e) == "release unlocked lock":
 				logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
@@ -48595,7 +48596,8 @@ if tauon.stream_proxy and tauon.stream_proxy.download_running:
 	time.sleep(2)
 
 try:
-	tm.player_lock.release()
+	if tm.player_lock.locked():
+		tm.player_lock.release()
 except RuntimeError as e:
 	if str(e) == "release unlocked lock":
 		logging.error("RuntimeError: Attempted to release already unlocked player_lock")
