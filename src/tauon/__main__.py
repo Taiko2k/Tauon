@@ -101,11 +101,26 @@ class CustomLoggingFormatter(logging.Formatter):
 		record.module = f"{record.module:^10}"
 		return formatter.format(record)
 
+class LogHistoryHandler(logging.Handler):
+	def __init__(self):
+		super().__init__()
+		self.log_history = []  # List to store log messages
+
+	def emit(self, record):
+		self.log_history.append(record)  # Append to the log history
+		if len(self.log_history) > 50:
+			del self.log_history[0]
+
+log = LogHistoryHandler()
+formatter = logging.Formatter('[%(levelname)s] %(message)s')
+log.setFormatter(formatter)
+
 # DEBUG+ to file and std_err
 logging.basicConfig(
 	level=logging.DEBUG,
 	handlers=[
 		logging.StreamHandler(),
+		log,
 #		logging.FileHandler('/tmp/tauon.log'),
 	],
 )
@@ -450,6 +465,7 @@ holder.t_id                   = t_id
 holder.t_agent                = t_agent
 holder.dev_mode               = dev_mode
 holder.instance_lock          = fp
+holder.log					  = log
 
 del raw_image
 del sdl_texture

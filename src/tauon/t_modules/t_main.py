@@ -467,6 +467,7 @@ t_id                   = holder.t_id
 t_agent                = holder.t_agent
 dev_mode               = holder.dev_mode
 instance_lock          = holder.instance_lock
+log						= holder.log
 logging.info(f"Window size: {window_size}")
 
 should_save_state = True
@@ -1009,26 +1010,7 @@ vis_update = False
 
 class DConsole:
 	def __init__(self) -> None:
-		self.messages: list[str] = []
 		self.show:     bool      = False
-
-	def print(self, message: str, level: int = 0) -> None:
-
-		if len(self.messages) > 50:
-			del self.messages[0]
-
-		dtime = datetime.datetime.now()
-
-		first = True
-		for line in message.split("\n"):
-			if first:
-				first = False
-			else:
-				level = -1
-			self.messages.append((line, level, dtime, Timer()))
-
-		logging.info(message)
-
 
 console = DConsole()
 
@@ -47989,33 +47971,41 @@ while pctl.running:
 		tool_tip2.render()
 
 		if console.show:
-			rect = (20 * gui.scale, 40 * gui.scale, 475 * gui.scale, 170 * gui.scale)
+			rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 			ddt.rect(rect, [0, 0, 0, 245])
 
 			yy = rect[3] + 15 * gui.scale
 			u = False
-			for item in reversed(console.messages):
-				message = item[0]
-				level = item[1]
+			for record in reversed(log.log_history):
+
 				if yy < rect[1] + 5 * gui.scale:
 					break
 
-				fade = 255
-				if item[3].get() > 2:
-					fade = 200
-				else:
-					u = True
+				text_colour = [60, 255, 60, 255]
+				message = log.format(record)
 
-				text_colour = [60, 255, 80, fade]
-				if item[1] == 5:
-					text_colour = [255, 40, 90, fade]
+				t = record.created
+				d = time.time() - t
+				dt = time.localtime(t)
+
+				fade = 255
+				if d > 2:
+					fade = 200
+
+				text_colour = [120, 120, 120, fade]
+				if record.levelno == 10:
+					text_colour = [80, 80, 80, fade]
+				if record.levelno == 30:
+					text_colour = [230, 190, 90, fade]
+				if record.levelno == 40:
+					text_colour = [255, 120, 90, fade]
+				if record.levelno == 50:
+					text_colour = [255, 90, 90, fade]
 
 				time_colour = [255, 80, 160, fade]
-				if level == -1:
-					time_colour = [0,0,0,0]
 
 				w = ddt.text(
-					(rect[0] + 10 * gui.scale, yy), item[2].strftime("%H:%M:%S"), time_colour, 311,
+					(rect[0] + 10 * gui.scale, yy), time.strftime("%H:%M:%S", dt), time_colour, 311,
 					rect[2] - 60 * gui.scale, bg=[5,5,5,255])
 
 				ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
@@ -48026,8 +48016,10 @@ while pctl.running:
 			if draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
 
 				text = ""
-				for item in console.messages[-50:]:
-					text += item[2].strftime("%H:%M:%S") + " " + item[0] + "\n"
+				for record in log.log_history[-50:]:
+					t = record.created
+					dt = time.localtime(t)
+					text += time.strftime("%H:%M:%S", dt) + " " + log.format(record) + "\n"
 				copy_to_clipboard(text)
 				show_message(_("Lines copied to clipboard"), mode="done")
 
