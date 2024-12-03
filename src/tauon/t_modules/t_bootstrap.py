@@ -36,5 +36,6 @@ class Holder:
 	t_agent:                str                     # "TauonMusicBox/7.9.0"
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
+	log:					Any
 
 holder = Holder()
