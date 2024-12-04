@@ -106,7 +106,7 @@ class LogHistoryHandler(logging.Handler):
 		super().__init__()
 		self.log_history = []  # List to store log messages
 
-	def emit(self, record):
+	def emit(self, record: dict):
 		self.log_history.append(record)  # Append to the log history
 		if len(self.log_history) > 50:
 			del self.log_history[0]
@@ -465,7 +465,7 @@ holder.t_id                   = t_id
 holder.t_agent                = t_agent
 holder.dev_mode               = dev_mode
 holder.instance_lock          = fp
-holder.log					  = log
+holder.log                    = log
 
 del raw_image
 del sdl_texture

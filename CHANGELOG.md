@@ -16,6 +16,7 @@ Changelog
 - **Fixed** playlist being able to skip to next song even when current song was looped due to a race condition
 - **Fixed** infinite timeouts in requests (except for main module, for now), this should fix random rare freezes of various functionality
 - **Fixed** not checking for errors when using subprocess, this allowed various things to fail and continue going on as if nothing happened
+- **Fixed** saving files with forbidden characters from one FS to another that is FAT32, they are now replaced by an underscore on failure detection
 - **Improved** missing assets or locales now throw an error instead of silently (or not so silently) failing
 - **Improved** creating SDL window and renderer, making Tauon crash immediately on a fatal failure rather on nonsense errors later on
 - **Improved** build system

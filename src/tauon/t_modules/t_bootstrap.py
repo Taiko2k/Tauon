@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 	from pathlib import Path
 	from typing import Any
 
+	from tauon.__main__ import LogHistoryHandler
+
 #@dataclass
 class Holder:
 	"""Class that holds variables for forwarding them from tauon.py to t_main.py"""
@@ -36,6 +38,6 @@ class Holder:
 	t_agent:                str                     # "TauonMusicBox/7.9.0"
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
-	log:					Any
+	log:                    LogHistoryHandler
 
 holder = Holder()
