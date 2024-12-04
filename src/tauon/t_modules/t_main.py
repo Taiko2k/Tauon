@@ -1168,7 +1168,7 @@ encodings = ["cp932", "utf-8", "big5hkscs", "gbk"]  # These seem to be the most 
 
 track_box = False
 
-transcode_list = []
+transcode_list: list[list[int]] = []
 transcode_state = ""
 
 taskbar_progress = True
@@ -1279,15 +1279,15 @@ class Prefs:
 		self.colour_from_image:       bool = False
 		self.dim_art:                 bool = False
 		self.prefer_side:             bool = True  # Saves whether side panel is shown or not
-		self.pause_fade_time:         int  = 400
-		self.change_volume_fade_time: int  = 400
-		self.cross_fade_time:         int  = 700
-		self.volume_wheel_increment:  int  = 2
-		self.encoder_output:          str  = user_directory + "/encoder/"
+		self.pause_fade_time:          int = 400
+		self.change_volume_fade_time:  int = 400
+		self.cross_fade_time:          int = 700
+		self.volume_wheel_increment:   int = 2
+		self.encoder_output:          Path = Path(user_directory) / "encoder"
 		if music_directory is not None:
-			self.encoder_output:        str = str(music_directory / "encode-output")
-		self.rename_folder_template:  str = "<albumartist> - <album>"
-		self.rename_tracks_template:  str = "<tn>. <artist> - <title>.<ext>"
+			self.encoder_output:        Path = music_directory / "encode-output"
+		self.rename_folder_template:   str = "<albumartist> - <album>"
+		self.rename_tracks_template:   str = "<tn>. <artist> - <title>.<ext>"
 
 		self.enable_web:   bool = False
 		self.allow_remote: bool = False
@@ -6966,16 +6966,16 @@ def update_title_do() -> None:
 
 
 def open_encode_out() -> None:
+	if not prefs.encoder_output.exists():
+		prefs.encoder_output.mkdir()
 	if system == "Windows" or msys:
 		line = r"explorer " + prefs.encoder_output.replace("/", "\\")
 		subprocess.Popen(line)
 	else:
-		line = prefs.encoder_output
-		line += "/"
 		if macos:
-			subprocess.Popen(["open", line])
+			subprocess.Popen(["open", prefs.encoder_output])
 		else:
-			subprocess.Popen(["xdg-open", line])
+			subprocess.Popen(["xdg-open", prefs.encoder_output])
 
 
 def g_open_encode_out(a, b, c) -> None:
@@ -11974,7 +11974,7 @@ class GallClass:
 						if str(e) == "release unlocked lock":
 							logging.error("RuntimeError: Attempted to release already unlocked lock")
 						else:
-							logging.exception("Unknown RuntimeError trying to release lock: {e}")
+							logging.exception("Unknown RuntimeError trying to release lock")
 					except Exception:
 						logging.exception("Unknown error trying to release lock")
 
@@ -12704,7 +12704,7 @@ class AlbumArt:
 
 		return g
 
-	def save_thumb(self, track_object: TrackClass, size, save_path, png=False, zoom=False):
+	def save_thumb(self, track_object: TrackClass, size: tuple[int, int], save_path: str, png=False, zoom=False):
 
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
@@ -12794,9 +12794,9 @@ class AlbumArt:
 				source_image = self.get_source_raw(0, 0, track, source[offset])
 
 			elif source[offset][0] == 2:
-				idea = os.path.join(prefs.encoder_output, encode_folder_name(track), "cover.jpg")
-				if os.path.isfile(idea):
-					source_image = open(idea, "rb")
+				idea = prefs.encoder_output / encode_folder_name(track) / "cover.jpg"
+				if idea.is_file():
+					source_image = idea.open("rb")
 				else:
 					try:
 						close = False
@@ -17147,15 +17147,15 @@ def convert_playlist(pl: int, get_list: bool = False) -> list[list[int]]| None:
 	if not tauon.test_ffmpeg():
 		return None
 
-	paths = []
-	folders = []
+	paths: list[str] = []
+	folders: list[list[int]] = []
 
 	for track in pctl.multi_playlist[pl].playlist_ids:
 		if pctl.master_library[track].parent_folder_path not in paths:
 			paths.append(pctl.master_library[track].parent_folder_path)
 
 	for path in paths:
-		folder = []
+		folder: list[int] = []
 		for track in pctl.multi_playlist[pl].playlist_ids:
 			if pctl.master_library[track].parent_folder_path == path:
 				folder.append(track)
@@ -18514,7 +18514,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release worker2_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release worker2_lock")
 			except Exception:
 				logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
@@ -18554,7 +18554,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release worker2_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release worker2_lock")
 			except Exception:
 				logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
@@ -18603,7 +18603,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release worker2_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release worker2_lock")
 			except Exception:
 				logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
@@ -18855,30 +18855,31 @@ def auto_sync_thread(pl: int) -> None:
 	gui.sync_progress = "Starting Sync..."
 	gui.update += 1
 
-	path = sync_target.text.strip().rstrip("/").rstrip("\\").replace("\n", "").replace("\r", "")
+	path = Path(sync_target.text.strip().rstrip("/").rstrip("\\").replace("\n", "").replace("\r", ""))
+	logging.debug(f"sync_path: {path}")
 	if not path:
 		show_message(_("No target folder selected"))
 		gui.sync_progress = ""
 		gui.stop_sync = False
 		gui.update += 1
 		return
-	if not os.path.isdir(path):
+	if not path.is_dir():
 		show_message(_("Target folder could not be found"))
 		gui.sync_progress = ""
 		gui.stop_sync = False
 		gui.update += 1
 		return
 
-	prefs.sync_target = path
+	prefs.sync_target = str(path)
 
 	# Get list of folder names on device
 	logging.info("Getting folder list from device...")
-	d_folder_names = os.listdir(path)
+	d_folder_names = path.iterdir()
 	logging.info("Got list")
 
 	# Get list of folders we want
 	folders = convert_playlist(pl, get_list=True)
-	folder_names = []
+	folder_names: list[str] = []
 	folder_dict = {}
 
 	if gui.stop_sync:
@@ -18900,17 +18901,18 @@ def auto_sync_thread(pl: int) -> None:
 	# Find deletes
 	if prefs.sync_deletes:
 		for d_folder in d_folder_names:
+			d_folder = d_folder.name
 			if gui.stop_sync:
 				break
 			if d_folder not in folder_names:
 				gui.sync_progress = _("Deleting folders...")
 				gui.update += 1
 				logging.warning(f"DELETING: {d_folder}")
-				shutil.rmtree(os.path.join(path, d_folder))
+				shutil.rmtree(path / d_folder)
 
 	# -------
 	# Find todos
-	todos = []
+	todos: list[str] = []
 	for folder in folder_names:
 		if folder not in d_folder_names:
 			todos.append(folder)
@@ -18934,14 +18936,14 @@ def auto_sync_thread(pl: int) -> None:
 		if prefs.bypass_transcode or (prefs.smart_bypass and 0 < pctl.get_track(folder_dict[item][0]).bitrate <= 128):
 			logging.info("Smart bypass...")
 
-			source_parent = pctl.get_track(folder_dict[item][0]).parent_folder_path
-			if os.path.exists(source_parent):
-				if os.path.exists(os.path.join(path, item)):
+			source_parent = Path(pctl.get_track(folder_dict[item][0]).parent_folder_path)
+			if source_parent.exists():
+				if (path / item).exists():
 					show_message(
 						_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
 					continue
 
-				os.mkdir(os.path.join(path, item))
+				(path / item).mkdir()
 				encode_done = source_parent
 			else:
 				show_message(_("One or more folders is missing"))
@@ -18949,8 +18951,9 @@ def auto_sync_thread(pl: int) -> None:
 
 		else:
 
-			encode_done = os.path.join(prefs.encoder_output, item)
-			if not os.path.exists(encode_done):
+			encode_done = prefs.encoder_output / item
+			# TODO(Martin): We should make sure that the length of the source and target matches or is greater, not just that the dir exists and is not empty!
+			if not encode_done.exists() or not any(encode_done.iterdir()):
 				logging.info("Need to transcode")
 				remain = len(todos) - i
 				if remain > 1:
@@ -18966,25 +18969,39 @@ def auto_sync_thread(pl: int) -> None:
 			else:
 				logging.warning("A transcode is already done")
 
-			if os.path.exists(encode_done):
+			if encode_done.exists():
 
-				if os.path.exists(os.path.join(path, item)):
+				if (path / item).exists():
 					show_message(
 						_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
 					continue
 
-				os.mkdir(os.path.join(path, item))
+				(path / item).mkdir()
 
-		for file in os.listdir(encode_done):
-
-			logging.info("Copy file...")
+		for file in encode_done.iterdir():
+			file = file.name
+			logging.info(f"Copy file {file} to {path / item}…")
 			# gui.sync_progress += "."
 			gui.update += 1
 
-			if os.path.isfile(os.path.join(encode_done, file)):
-				size = os.path.getsize(os.path.join(encode_done, file))
+			if (encode_done / file).is_file():
+				size = os.path.getsize(encode_done / file)
 				sync_file_timer.set()
-				shutil.copyfile(os.path.join(encode_done, file), os.path.join(os.path.join(path, item), file))
+				try:
+					shutil.copyfile(encode_done / file, path / item / file)
+				except OSError as e:
+					if str(e).startswith("[Errno 22] Invalid argument: "):
+						sanitized_file = re.sub(r'[<>:"/\\|?*]', '_', file)
+						if sanitized_file == file:
+							logging.exception("Unknown OSError trying to copy file, maybe FS does not support the name?")
+						else:
+							shutil.copyfile(encode_done / file, path / item / sanitized_file)
+							logging.warn(f"Had to rename {file} to {sanitized_file} on the output! Probably a FS limitation!")
+					else:
+						logging.exception("Unknown OSError trying to copy file")
+				except Exception:
+					logging.exception("Unknown error trying to copy file")
+
 			if gui.sync_speed == 0 or (sync_file_update_timer.get() > 1 and not file.endswith(".jpg")):
 				sync_file_update_timer.set()
 				gui.sync_speed = size / sync_file_timer.get()
@@ -24387,20 +24404,20 @@ def toggle_playlist_break() -> None:
 # ---------------------------------------------------------------------------------------
 
 
-def transcode_single(item, manual_directroy=None, manual_name=None):
+def transcode_single(item: list[tuple[int, str]], manual_directory: str | None = None, manual_name: str | None = None):
 	global core_use
 	global dl_use
 
-	if manual_directroy != None:
+	if manual_directory != None:
 		codec = "opus"
-		output = manual_directroy
+		output = manual_directory
 		track = item
 		core_use += 1
 		bitrate = 48
 	else:
 		track = item[0]
 		codec = prefs.transcode_codec
-		output = prefs.encoder_output + item[1] + "/"
+		output = prefs.encoder_output / item[1]
 		bitrate = prefs.transcode_bitrate
 
 	t = pctl.master_library[track]
@@ -24434,7 +24451,9 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
 	out_line = encode_track_name(t)
 
-	target_out = output + _("output") + str(track) + "." + codec
+	if not (output / _("output")).exists():
+		(output / _("output")).mkdir()
+	target_out = str(output / _("output") / (str(track) + "." + codec))
 
 	command = tauon.get_ffmpeg() + " "
 
@@ -24475,8 +24494,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 	if not msys:
 		command = shlex.split(command)
 
-	subprocess.call(command, stdout=subprocess.PIPE, shell=False,
-					startupinfo=startupinfo)
+	subprocess.call(command, stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
 
 	logging.info("FFmpeg finished")
 	if codec == "opus" and prefs.transcode_opus_as:
@@ -24485,11 +24503,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 	# logging.info(target_out)
 
 	if manual_name is None:
-		final_out = output + out_line + "." + codec
+		final_out = output / (out_line + "." + codec)
 		final_name = out_line + "." + codec
 		os.rename(target_out, final_out)
 	else:
-		final_out = output + manual_name + "." + codec
+		final_out = output / (manual_name + "." + codec)
 		final_name = manual_name + "." + codec
 		os.rename(target_out, final_out)
 
@@ -24546,7 +24564,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 added = []
 
 
-def cue_scan(content, tn):
+def cue_scan(content: str, tn: TrackClass) -> int | None:
 	# Get length from backend
 
 	lasttime = tn.length
@@ -24645,7 +24663,7 @@ def cue_scan(content, tn):
 			if PERFORMER == "":
 				PERFORMER = MAIN_PERFORMER
 
-			nt = copy.deepcopy(tn)  # TrackClass()
+			nt = copy.deepcopy(tn)
 
 			nt.cue_sheet = ""
 			nt.is_embed_cue = True
@@ -25061,7 +25079,7 @@ class SearchOverlay:
 					if str(e) == "release unlocked lock":
 						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
 					else:
-						logging.exception("Unknown RuntimeError trying to release worker2_lock: {e}")
+						logging.exception("Unknown RuntimeError trying to release worker2_lock")
 				except Exception:
 					logging.exception("Unknown error trying to release worker2_lock")
 
@@ -25079,7 +25097,7 @@ class SearchOverlay:
 					if str(e) == "release unlocked lock":
 						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
 					else:
-						logging.exception("Unknown RuntimeError trying to release worker2_lock: {e}")
+						logging.exception("Unknown RuntimeError trying to release worker2_lock")
 				except Exception:
 					logging.exception("Unknown error trying to release worker2_lock")
 
@@ -25246,7 +25264,7 @@ class SearchOverlay:
 								if str(e) == "release unlocked lock":
 									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
 								else:
-									logging.exception("Unknown RuntimeError trying to release gall_ren_lock: {e}")
+									logging.exception("Unknown RuntimeError trying to release gall_ren_lock")
 							except Exception:
 								logging.exception("Unknown error trying to release gall_ren_lock")
 
@@ -26844,18 +26862,18 @@ def worker1():
 				logging.info("Transcoding folder: " + folder_name)
 
 				# Remove any existing matching folder
-				if os.path.isdir(prefs.encoder_output + folder_name):
-					shutil.rmtree(prefs.encoder_output + folder_name)
+				if (prefs.encoder_output / folder_name).is_dir():
+					shutil.rmtree(prefs.encoder_output / folder_name)
 
 				# Create new empty folder to output tracks to
-				os.makedirs(prefs.encoder_output + folder_name)
+				(prefs.encoder_output / folder_name).mkdir(parents=True)
 
-				full_wav_out_p = prefs.encoder_output + "output.wav"
-				full_target_out_p = prefs.encoder_output + "output." + prefs.transcode_codec
-				if os.path.isfile(full_wav_out_p):
-					os.remove(full_wav_out_p)
-				if os.path.isfile(full_target_out_p):
-					os.remove(full_target_out_p)
+				full_wav_out_p = prefs.encoder_output / "output.wav"
+				full_target_out_p = prefs.encoder_output / ("output." + prefs.transcode_codec)
+				if full_wav_out_p.is_file():
+					full_wav_out_p.unlink()
+				if full_target_out_p.is_file():
+					full_target_out_p.unlink()
 
 				cache_dir = tmp_cache_dir()
 				if not os.path.isdir(cache_dir):
@@ -26895,16 +26913,15 @@ def worker1():
 				else:
 					logging.error("Codec error")
 
-				output_dir = prefs.encoder_output + folder_name + "/"
+				output_dir = prefs.encoder_output / folder_name
 				if prefs.transcode_inplace:
-					remove_target = output_dir.rstrip("/")
 					try:
-						os.remove(remove_target)
+						output_dir.unlink()
 					except Exception:
 						logging.exception("Encode folder not removed")
 					reload_metadata(folder_items[0])
 				else:
-					album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), output_dir + "cover")
+					album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
 
 				#logging.info(transcode_list[0])
 
@@ -41945,8 +41962,10 @@ class DLMon:
 						self.watching[path] = size
 						#logging.info("add.")
 
-				elif min_age < 60 and os.path.isdir(
-						path) and path not in quick_import_done and "encode-output" not in path:
+				elif min_age < 60 \
+				and os.path.isdir(path) \
+				and path not in quick_import_done \
+				and "encode-output" not in path:
 					try:
 						size = get_folder_size(path)
 					except FileNotFoundError:
