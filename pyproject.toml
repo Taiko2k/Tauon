@@ -18,6 +18,9 @@
 [project.entry-points."distutils.commands"]
 	compile_translations = "compile_translations:main"
 
+	#hard_fix = "hard_fix:main"
+	## Note that if above goes to main, it should get done before phazor compiler.
+
 [project.urls]
 	homepage = "https://tauonmusicbox.rocks/"
 
