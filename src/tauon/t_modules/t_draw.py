@@ -27,33 +27,7 @@ from ctypes import c_int, pointer
 from typing import TYPE_CHECKING
 
 from PIL import Image
-from sdl2 import (
-	SDL_BLENDFACTOR_ONE,
-	SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-	SDL_BLENDOPERATION_ADD,
-	SDL_FLIP_VERTICAL,
-	SDL_PIXELFORMAT_ARGB8888,
-	SDL_PIXELFORMAT_BGR24,
-	SDL_PIXELFORMAT_RGB888,
-	SDL_ComposeCustomBlendMode,
-	SDL_CreateRGBSurfaceWithFormatFrom,
-	SDL_CreateTextureFromSurface,
-	SDL_DestroyTexture,
-	SDL_FreeSurface,
-	SDL_MapRGB,
-	SDL_QueryTexture,
-	SDL_Rect,
-	SDL_RenderCopy,
-	SDL_RenderCopyEx,
-	SDL_RenderDrawLine,
-	SDL_RenderFillRect,
-	SDL_RenderReadPixels,
-	SDL_SetColorKey,
-	SDL_SetRenderDrawColor,
-	SDL_SetTextureBlendMode,
-	rw_from_object,
-)
-from sdl2.sdlimage import IMG_Load_RW
+import sdl3
 
 from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
 
