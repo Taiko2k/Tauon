@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2024-12-06 09:24+0000\n"
+"PO-Revision-Date: 2024-12-07 15:00+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -253,11 +253,11 @@ msgstr "Cela peut prendre un très long moment."
 
 #: src/tauon/t_modules/t_main.py:7508
 msgid "There was an error getting friends loves"
-msgstr "Une erreur s’est produite lors de la récupération des 'Loved' amis"
+msgstr "Une erreur s’est produite lors de la récupération des « Loved » amis"
 
 #: src/tauon/t_modules/t_main.py:7516
 msgid "Scanning loved tracks for: {username}"
-msgstr "Analyse des pistes 'Loved' pour : {username}"
+msgstr "Analyse des pistes « Loved » pour : {username}"
 
 #: src/tauon/t_modules/t_main.py:7520
 msgid "No username found"
@@ -265,7 +265,7 @@ msgstr "Nom d'utilisateur introuvable"
 
 #: src/tauon/t_modules/t_main.py:7564
 msgid "User has no loved tracks."
-msgstr "L'utilisateur n'a pas de pistes 'Loved'."
+msgstr "L'utilisateur n'a pas de pistes « Loved »."
 
 #: src/tauon/t_modules/t_main.py:7567
 msgid "{N} matched tracks are up to date."
@@ -278,7 +278,7 @@ msgstr "{N} pistes trouvée.s. {T} ont été.s mises à jour."
 #: src/tauon/t_modules/t_main.py:7573
 msgid "Of {N} loved tracks, no matches were found in local db"
 msgstr ""
-"Sur {N} pistes 'Loved', aucune correspondance n'a été trouvé dans la base "
+"Sur {N} pistes « Loved », aucune correspondance n'a été trouvé dans la base "
 "locale"
 
 #: src/tauon/t_modules/t_main.py:7577
@@ -307,11 +307,11 @@ msgstr "Cette clé n'est pas valide."
 
 #: src/tauon/t_modules/t_main.py:7863 src/tauon/t_modules/t_main.py:7885
 msgid "Failed updating last.fm love status"
-msgstr "Échec de la mis à jour du statut 'Loved' sur Last.fm"
+msgstr "Échec de la mis à jour du statut « Loved » sur Last.fm"
 
 #: src/tauon/t_modules/t_main.py:7867
 msgid "Error updating love to last.fm!"
-msgstr "Échec de la mise à jour des 'Loved' sur last.fm !"
+msgstr "Échec de la mise à jour des « Loved » sur last.fm !"
 
 #: src/tauon/t_modules/t_main.py:7868
 msgid "Maybe check your internet connection and try again?"
@@ -487,7 +487,7 @@ msgstr "Collection PLEX"
 
 #: src/tauon/t_modules/t_main.py:8714
 msgid "Subsonic Error: "
-msgstr "Erreur Subsonic: "
+msgstr "Erreur Subsonic : "
 
 #: src/tauon/t_modules/t_main.py:8772
 msgid "Error connecting to Airsonic server"
@@ -627,15 +627,15 @@ msgstr "APRÈS"
 
 #: src/tauon/t_modules/t_main.py:14784
 msgid "Warning: This may change the file extension"
-msgstr "Attention : Cela risque de changer l'extension du fichier"
+msgstr "Attention : cela risque de changer l'extension du fichier"
 
 #: src/tauon/t_modules/t_main.py:14790
 msgid "Warning: The filename might not be unique"
-msgstr "Attention : Le nom du fichier existe peut-être déjà"
+msgstr "Attention : le nom du fichier existe peut-être déjà"
 
 #: src/tauon/t_modules/t_main.py:14794
 msgid "Warning: A track has incomplete metadata"
-msgstr "Attention : Il manque des métadonnées sur une piste"
+msgstr "Attention : il manque des métadonnées sur, au moins, une piste"
 
 #: src/tauon/t_modules/t_main.py:14798
 msgid "Write"
@@ -1351,7 +1351,7 @@ msgstr "Une re-génération est déjà en cours..."
 
 #: src/tauon/t_modules/t_main.py:18789
 msgid "Regenerate"
-msgstr "Générer de nouveau"
+msgstr "Re-générer"
 
 #: src/tauon/t_modules/t_main.py:18790
 msgid "Generate…"
@@ -1602,7 +1602,7 @@ msgstr "Favori"
 
 #: src/tauon/t_modules/t_main.py:19499
 msgid "No loved tracks were found."
-msgstr "Aucune piste 'Loved' trouvée."
+msgstr "Aucune piste « Loved » trouvée."
 
 #: src/tauon/t_modules/t_main.py:19525
 msgid "Interesting Comments"
@@ -1819,7 +1819,7 @@ msgstr "Ajouter à la file d'attente"
 
 #: src/tauon/t_modules/t_main.py:20703
 msgid "↳ After Current Track"
-msgstr "↳ Après la piste courante"
+msgstr "↳ ...après la piste courante"
 
 #: src/tauon/t_modules/t_main.py:20705
 msgid "Show in Gallery"
@@ -2357,7 +2357,7 @@ msgstr "Musique"
 
 #: src/tauon/t_modules/t_main.py:23009
 msgid "Import Music Folder"
-msgstr "Importer le dossier Musique"
+msgstr "Importer le dossier « Musique »"
 
 #: src/tauon/t_modules/t_main.py:23017
 msgid "Settings"
@@ -2425,7 +2425,7 @@ msgstr "Importer les évaluations FMPS"
 
 #: src/tauon/t_modules/t_main.py:23174
 msgid "Import POPM Ratings"
-msgstr "Importer des évaluations POPM"
+msgstr "Importer les évaluations POPM"
 
 #: src/tauon/t_modules/t_main.py:23179
 msgid "This will delete all track and album ratings from the local database!"
@@ -2640,7 +2640,7 @@ msgstr "Activer les séparateurs"
 
 #: src/tauon/t_modules/t_main.py:24410
 msgid "Encoding warning: Missing one or more files"
-msgstr "Avertissement : Un ou plusieurs fichiers manquants"
+msgstr "Avertissement sur l'encodage : un ou plusieurs fichiers manquants"
 
 #: src/tauon/t_modules/t_main.py:24416
 msgid "output"
@@ -2874,8 +2874,8 @@ msgstr "Sera appliqué au redémarrage de Tauon"
 #: src/tauon/t_modules/t_main.py:27472
 msgid "Tip: You can also toggle this from a right-click context menu"
 msgstr ""
-"Conseil : vous pouvez également activer cette option à partir d’un menu "
-"contextuel accessible par clic droit"
+"Conseil : vous pouvez permuter cette option depuis un menu contextuel "
+"accessible par clic droit"
 
 #: src/tauon/t_modules/t_main.py:27517
 msgid "External connections will be accepted."
@@ -2887,7 +2887,7 @@ msgstr "Démarrage du serveur Web"
 
 #: src/tauon/t_modules/t_main.py:27550
 msgid "Can't enable this if there's no token."
-msgstr "Impossible d'activer cet option sans clé."
+msgstr "Impossible d'activer cette option sans clé."
 
 #: src/tauon/t_modules/t_main.py:27559 src/tauon/t_modules/t_main.py:29015
 msgid "One or more fields is missing."
@@ -2991,7 +2991,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:27976
 msgid "You can toggle this back off under Settings > Function"
-msgstr "Vous pouvez permuter ceci dans « Options > Fonctions »"
+msgstr "Vous pouvez permuter ceci dans « Options > Fonction »"
 
 #: src/tauon/t_modules/t_main.py:27979
 msgid "Stronger"
@@ -3201,7 +3201,7 @@ msgstr "Télécharger les données à l'affichage des infos. sur l'artiste"
 
 #: src/tauon/t_modules/t_main.py:28514
 msgid "Auto regenerate playlists"
-msgstr "Régénérer automatiquement les playlists"
+msgstr "Re-générer automatiquement les playlists"
 
 #: src/tauon/t_modules/t_main.py:28515
 msgid "Generated playlists reload when re-entering"
@@ -3293,7 +3293,7 @@ msgstr "Supprimer les archives après extration"
 
 #: src/tauon/t_modules/t_main.py:28588
 msgid "Always extract to Music folder"
-msgstr "Toujours extraire dans le dossier Musique"
+msgstr "Toujours extraire dans le dossier « Musique »"
 
 #: src/tauon/t_modules/t_main.py:28592
 msgid "Show icon in system tray"
@@ -3344,7 +3344,7 @@ msgstr "Bloquer la mise en veille"
 
 #: src/tauon/t_modules/t_main.py:28634
 msgid "Prevent system suspend during playback"
-msgstr "Bloquer la suspension pendant la lecture"
+msgstr "Empêcher la suspension durant la lecture"
 
 #: src/tauon/t_modules/t_main.py:28637
 msgid "Resume from suspend"
@@ -3352,7 +3352,7 @@ msgstr "Reprendre lors du réveil"
 
 #: src/tauon/t_modules/t_main.py:28638
 msgid "Continue playback when waking from sleep"
-msgstr "Reprendre la lecteur à la sortie de veille"
+msgstr "Continuer la lecture à la sortie de veille"
 
 #: src/tauon/t_modules/t_main.py:28642
 msgid "Record Radio"
@@ -3360,7 +3360,7 @@ msgstr "Enregistrer la radio"
 
 #: src/tauon/t_modules/t_main.py:28643
 msgid "Record and split songs when playing internet radio"
-msgstr "Enregistrer et découper les musiques lors de la lecture d'une webradio"
+msgstr "Enregistrer et découper les musiques pendant la lecture d'une webradio"
 
 #: src/tauon/t_modules/t_main.py:28645
 msgid ""
@@ -3564,11 +3564,11 @@ msgstr "Mot de passe"
 #: src/tauon/t_modules/t_main.py:29204 src/tauon/t_modules/t_main.py:29266
 #: src/tauon/t_modules/t_main.py:29339 src/tauon/t_modules/t_main.py:29395
 msgid "Import music to playlist"
-msgstr "Importer la musique dans une playlist"
+msgstr "Importer les musiques vers une playlist"
 
 #: src/tauon/t_modules/t_main.py:29208
 msgid "Use plain text authentication"
-msgstr "Utiliser l'authentification en texte clair"
+msgstr "Utiliser l'authentification en texte brut"
 
 #: src/tauon/t_modules/t_main.py:29209
 msgid "Needed for Nextcloud Music"
@@ -3584,7 +3584,7 @@ msgstr "Nom d’utilisateur"
 
 #: src/tauon/t_modules/t_main.py:29269
 msgid "Import playlists"
-msgstr "Importer des playlists"
+msgstr "Importer les playlists"
 
 #: src/tauon/t_modules/t_main.py:29276
 msgid "Run music import first"
@@ -3610,7 +3610,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:29410 src/tauon/t_modules/t_main.py:37439
 msgid "They encourage you to contribute at {link}"
-msgstr "Fanart.tv vous encourage à contribuer sur {link}"
+msgstr "Contributions bienvenues sur {link}"
 
 #: src/tauon/t_modules/t_main.py:29416
 msgid "Cover art (Manual only)"
@@ -3626,7 +3626,7 @@ msgstr "Retourner l'actuel"
 
 #: src/tauon/t_modules/t_main.py:29428
 msgid "Reset flips"
-msgstr "Restaurer la position"
+msgstr "Position réinitialisée"
 
 #: src/tauon/t_modules/t_main.py:29438 src/tauon/t_modules/t_main.py:36843
 msgid "OK"
@@ -3662,7 +3662,7 @@ msgstr "Charger les favoris de l’utilisateur"
 
 #: src/tauon/t_modules/t_main.py:29538
 msgid "Clear local loves"
-msgstr "Charger les favoris locaux"
+msgstr "Vider les favoris locaux"
 
 #: src/tauon/t_modules/t_main.py:29539 src/tauon/t_modules/t_main.py:29553
 msgid "Get friend loves"
@@ -3670,15 +3670,15 @@ msgstr "Charger les favoris des ami⋅e⋅s"
 
 #: src/tauon/t_modules/t_main.py:29565
 msgid "Pull love on scrobble/rescan"
-msgstr "Récupérer 'Loved' au scrobble / re-scan"
+msgstr "Récupérer « Loved » au scrobble / re-scan"
 
 #: src/tauon/t_modules/t_main.py:29567
 msgid ""
 "Note that this will overwrite the local loved status if different to last.fm "
 "status"
 msgstr ""
-"Notez que le statut 'Loved' sur Tauon sera écrasé s'il diffère de celui sur "
-"last.fm"
+"Notez que l'état des favoris sur Tauon sera écrasé s'il diffère des « Loved »"
+" sur last.fm"
 
 #: src/tauon/t_modules/t_main.py:29579 src/tauon/t_modules/t_main.py:29581
 msgid "Paste Token"
@@ -3738,11 +3738,11 @@ msgstr "Aucune playlist de synchronisation sélectionnée !"
 
 #: src/tauon/t_modules/t_main.py:29692
 msgid "Path to device music folder:   "
-msgstr "Chemin d’accès au dossier de musique de l’appareil :   "
+msgstr "Chemin d’accès au dossier « Musique » de l’appareil :   "
 
 #: src/tauon/t_modules/t_main.py:29710
 msgid "A mounted music folder was found!"
-msgstr "Un dossier de musique monté a été trouvé !"
+msgstr "Un dossier « Musique » monté a été trouvé !"
 
 #: src/tauon/t_modules/t_main.py:29712
 msgid "Could not auto-detect mounted device path."
@@ -3754,7 +3754,7 @@ msgstr "Vérifiez que l'appareil soit monté et son chemin, accessible."
 
 #: src/tauon/t_modules/t_main.py:29718
 msgid "Delete all other folders in target"
-msgstr "Supprimer tous les autres dossiers de la cible"
+msgstr "Supprimer tous les autres dossiers dans la cible"
 
 #: src/tauon/t_modules/t_main.py:29721
 msgid "Transcode files"
@@ -3792,7 +3792,7 @@ msgstr "Arrêt"
 
 #: src/tauon/t_modules/t_main.py:29753
 msgid "See here for detailed instructions"
-msgstr "Cliquez ici pour plus d'instructions (en anglais)"
+msgstr "Cliquez ici pour voir plus d'instructions (en anglais)"
 
 #: src/tauon/t_modules/t_main.py:29760
 msgid "Output codec setting:"
@@ -3966,7 +3966,7 @@ msgstr "Génération en cours..."
 
 #: src/tauon/t_modules/t_main.py:30356
 msgid "Album chart"
-msgstr "Classement de l'album"
+msgstr "albums sur la planche"
 
 #: src/tauon/t_modules/t_main.py:30361
 msgid "Not enough albums in the playlist!"
@@ -4202,7 +4202,7 @@ msgstr "Pause"
 
 #: src/tauon/t_modules/t_main.py:32568
 msgid "Stop, RC: Toggle auto-stop"
-msgstr "Pause, RC : Permuter l'arrêt auto."
+msgstr "Pause, RC : permuter l'arrêt auto."
 
 #: src/tauon/t_modules/t_main.py:32591 src/tauon/t_modules/t_main.py:33171
 msgid "Shuffle On"
@@ -4222,7 +4222,7 @@ msgstr "Boucle désactivée"
 
 #: src/tauon/t_modules/t_main.py:32635
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr "Retour, RC : Permuter le bouclage, MC : Rétablir"
+msgstr "Retour, RC : permuter le bouclage, MC : rétablir"
 
 #: src/tauon/t_modules/t_main.py:32652
 msgid "Playback menu"
@@ -4327,7 +4327,8 @@ msgstr "Entrez un lien de flux"
 #: src/tauon/t_modules/t_main.py:36363
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
-"Impossible de valider le lien. Il doit commencer par https:// ou http://"
+"Impossible de valider le lien. Il doit commencer par « https:// » ou « "
+"http:// »"
 
 #: src/tauon/t_modules/t_main.py:36524 src/tauon/t_modules/t_main.py:36530
 #: src/tauon/t_modules/t_main.py:36536
@@ -4349,7 +4350,7 @@ msgstr "Les pistes seront désormais enregistrées."
 
 #: src/tauon/t_modules/t_main.py:36540
 msgid "Tip: You can press F9 to view the output folder."
-msgstr "Astuce : Appuyez sur F9 pour voir le dossier de sortie."
+msgstr "Conseil : appuyez sur F9 pour voir le dossier de sortie."
 
 #: src/tauon/t_modules/t_main.py:36543
 msgid "Browse"
@@ -4371,7 +4372,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:36699
 msgid "Select sources: (default: all playlists)"
-msgstr "Sélectionner une source : (par défaut : toutes les playlists)"
+msgstr "Sélectionner les sources : (par défaut : toutes les playlists)"
 
 #: src/tauon/t_modules/t_main.py:36702
 msgid "Select source playlist by name"
@@ -4559,7 +4560,7 @@ msgstr "Permuter les filtres"
 
 #: src/tauon/t_modules/t_main.py:37438
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr "Info : L'image de l'artiste sera téléchargée depuis fanart.tv"
+msgstr "Info : l'image de l'artiste sera téléchargée depuis fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:37746 src/tauon/t_modules/t_main.py:37752
 #: src/tauon/t_modules/t_main.py:37884 src/tauon/t_modules/t_main.py:37890
@@ -4645,7 +4646,7 @@ msgstr "Lire maintenant"
 
 #: src/tauon/t_modules/t_main.py:38898
 msgid "↳ Except for This"
-msgstr "↳ Sauf pour celle-ci"
+msgstr "↳ ...sauf pour ceci"
 
 #: src/tauon/t_modules/t_main.py:38900
 msgid "Queue to New Playlist"
@@ -4781,7 +4782,7 @@ msgstr "Liké sur Spotify..."
 
 #: src/tauon/t_modules/t_main.py:42346
 msgid "ERROR: No backend found"
-msgstr "ERREUR : Backend introuvable"
+msgstr "ERREUR : backend introuvable"
 
 #: src/tauon/t_modules/t_main.py:42358
 msgid "There are no more steps to undo."
@@ -5045,7 +5046,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_webserve.py:761
 msgid "You can close this now and return to Tauon Music Box"
-msgstr "Vous pouvez maintenant fermer cet onglet et retourner à Tauon Music Box"
+msgstr "Vous pouvez maintenant fermer cet onglet et revenir sur Tauon Music Box"
 
 #~ msgid "Queue %d"
 #~ msgstr "File d’attente %d"
