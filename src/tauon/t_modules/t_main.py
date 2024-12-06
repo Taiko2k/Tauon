@@ -2029,7 +2029,7 @@ class GuiVar:
 		self.queue_toast_plural = False
 		self.reload_theme = False
 		self.theme_number = 0
-		self.toast_queue_object = None
+		self.toast_queue_object: TauonQueueItem | None = None
 		self.toast_love_object = None
 		self.toast_love_added = True
 
@@ -20693,7 +20693,7 @@ def add_selected_to_queue_multi():
 			pl_to_id(pctl.active_playlist_viewing)))
 
 
-def queue_timer_set(plural=False, queue_object=None):
+def queue_timer_set(plural: bool = False, queue_object: TauonQueueItem | None = None) -> None:
 	queue_add_timer.set()
 	gui.frame_callback_list.append(TestTimer(2.51))
 	gui.queue_toast_plural = plural
@@ -47923,7 +47923,7 @@ while pctl.running:
 
 		t = queue_add_timer.get()
 		if t < 2.5 and gui.toast_queue_object:
-			track = pctl.get_track(gui.toast_queue_object[0])
+			track = pctl.get_track(gui.toast_queue_object.track_id)
 
 			ww = 0
 			if gui.lsp:
