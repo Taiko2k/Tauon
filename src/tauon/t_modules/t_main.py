@@ -39201,7 +39201,7 @@ class QueueBox:
 		ddt.rect((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6])
 
 		line = track.album
-		if fqo[3] == 0:
+		if fqo.type == 0:
 			line = track.title
 
 		if not line:
@@ -39210,10 +39210,10 @@ class QueueBox:
 		line2y = yy + 14 * gui.scale
 
 		artist_line = track.artist
-		if fqo[3] == 1 and track.album_artist:
+		if fqo.type == 1 and track.album_artist:
 			artist_line = track.album_artist
 
-		if fqo[3] == 0 and not artist_line:
+		if fqo.type == 0 and not artist_line:
 			line2y -= 7 * gui.scale
 
 		ddt.text(
@@ -39225,15 +39225,15 @@ class QueueBox:
 			max_w=rect[2] - 60 * gui.scale, bg=bg)
 
 		if draw_album_indicator:
-			if fqo[3] == 1:
-				if fqo[4] == 0:
+			if fqo.type == 1:
+				if fqo.album_stage == 0:
 					ddt.rect((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255])
 				else:
 					ddt.rect((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [140, 220, 20, 255])
 
-			if fqo[6]:
+			if fqo.auto_stop:
 				xx = rect[0] + rect[2] - 9 * gui.scale
-				if fqo[3] == 1:
+				if fqo.type == 1:
 					xx -= 11 * gui.scale
 				ddt.rect((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255])
 
@@ -39560,7 +39560,7 @@ class QueueBox:
 			if self.dragging:
 				yyy = self.drag_start_top + (mouse_position[1] - self.drag_start_y)
 				yyy = max(yyy, list_top)
-				track = pctl.get_track(fqo[0])
+				track = pctl.get_track(fqo.track_id)
 				self.draw_card(x, y, w, h, yyy, track, fqo, draw_back=True)
 
 		# Drag and drop tracks from main playlist into queue
@@ -47940,7 +47940,7 @@ while pctl.running:
 				top_text = _("Track")
 				if gui.queue_toast_plural:
 					top_text = "Album"
-					fqo[3] = 1
+					fqo.type = 1
 				if pctl.force_queue[-1].type == 1:
 					top_text = "Album"
 
