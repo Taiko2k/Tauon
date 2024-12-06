@@ -2585,16 +2585,16 @@ class ColoursClass:
 	These are changed for themes
 	"""
 
-	def grey(self, value):
+	def grey(self, value: int) -> list[int]:
 		return [value, value, value, 255]
 
-	def alpha_grey(self, value):
+	def alpha_grey(self, value: int) -> list[int]:
 		return [255, 255, 255, value]
 
-	def grey_blend_bg(self, value):
+	def grey_blend_bg(self, value: int) -> list[int]:
 		return alpha_blend((255, 255, 255, value), self.box_background)
 
-	def __init__(self):
+	def __init__(self) -> None:
 
 		self.deco = None
 		self.column_colours = {}
@@ -2712,7 +2712,7 @@ class ColoursClass:
 
 		self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
-		self.playlist_box_background = self.side_panel_background
+		self.playlist_box_background: list[int] = self.side_panel_background
 
 		self.bar_title_text = None
 
@@ -2726,7 +2726,7 @@ class ColoursClass:
 
 		self.window_frame = [30, 30, 30, 255]
 
-		self.box_background = [16, 16, 16, 255]
+		self.box_background: list[int] = [16, 16, 16, 255]
 		self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
 		self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
 		self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
@@ -17004,7 +17004,7 @@ tab_menu.add(MenuItem(_("Lock"), lock_playlist_toggle, pl_lock_deco,
 	pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=test_shift))
 
 
-def export_m3u(pl, direc=None, relative=False, show=True):
+def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
 		show_message(_("There are no tracks in this playlist. Nothing to export"))
 		return 1
@@ -17047,7 +17047,7 @@ def export_m3u(pl, direc=None, relative=False, show=True):
 	return target
 
 
-def export_xspf(pl, direc=None, relative=False, show=True):
+def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
 		show_message(_("There are no tracks in this playlist. Nothing to export"))
 		return 1
@@ -17463,7 +17463,7 @@ def index_key(index: int):
 		return "a"
 
 
-def sort_tracK_numbers_album_only(pl, custom_list=None):
+def sort_tracK_numbers_album_only(pl: int, custom_list=None):
 	current_folder = ""
 	albums = []
 	if custom_list is None:
@@ -17489,7 +17489,7 @@ def sort_tracK_numbers_album_only(pl, custom_list=None):
 	gui.pl_update += 1
 
 
-def sort_track_2(pl, custom_list=None):
+def sort_track_2(pl: int, custom_list=None):
 	current_folder = ""
 	current_album = ""
 	current_date = ""
@@ -17542,7 +17542,7 @@ def key_filename(index: int):
 	return track.filename
 
 
-def sort_path_pl(pl, custom_list=None):
+def sort_path_pl(pl: int, custom_list=None):
 	if custom_list is not None:
 		target = custom_list
 	else:
@@ -18760,7 +18760,7 @@ def jellyfin_show_test(_):
 tab_menu.add(MenuItem(_("Upload"),
 	upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=spotify_show_test))
 
-def upload_jellyfin_playlist(pl):
+def upload_jellyfin_playlist(pl: TauonPlaylist) -> None:
 	if jellyfin.scanning:
 		return
 	shooter(jellyfin.upload_playlist, [pl])
@@ -18769,7 +18769,7 @@ tab_menu.add(MenuItem(_("Upload"),
 	upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=jellyfin_show_test))
 
 
-def regen_playlist_async(pl):
+def regen_playlist_async(pl: int) -> None:
 	if pctl.regen_in_progress:
 		show_message(_("A regen is already in progress..."))
 		return
@@ -19208,7 +19208,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), gen_top_100, pass_ref=Tr
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), gen_top_100, pass_ref=True))
 
 
-def gen_folder_top(pl, get_sets=False, custom_list=None):
+def gen_folder_top(pl: int, get_sets: bool = False, custom_list=None):
 	source = custom_list
 	if source is None:
 		source = pctl.multi_playlist[pl].playlist_ids
@@ -19275,7 +19275,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), gen_top_rating, pass_ref=
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), gen_top_rating, pass_ref=True))
 
 
-def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
+def gen_folder_top_rating(pl: int, get_sets: bool = False, custom_list=None):
 	source = custom_list
 	if source is None:
 		source = pctl.multi_playlist[pl].playlist_ids
@@ -19325,7 +19325,7 @@ def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
 	pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl].title + "\" a rata>"
 
 
-def gen_lyrics(pl, custom_list=None):
+def gen_lyrics(plpl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19356,7 +19356,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), gen_folder_top_rating, pa
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), gen_folder_top_rating, pass_ref=True))
 
 
-def gen_incomplete(pl, custom_list=None):
+def gen_incomplete(plpl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19497,7 +19497,7 @@ extra_tab_menu.add_to_sub(0, MenuItem(_("File Modified"), gen_last_modified, pas
 # extra_tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
 
 
-def gen_love(pl, custom_list=None):
+def gen_love(pl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19607,7 +19607,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), gen_sort_len, pass_ref=True
 extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), gen_sort_len, pass_ref=True))
 
 
-def gen_folder_duration(pl, get_sets=False):
+def gen_folder_duration(pl: int, get_sets: bool = False):
 	if len(pctl.multi_playlist[pl].playlist_ids) < 3:
 		return None
 
@@ -19653,7 +19653,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), gen_folder_duration, pass_r
 extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), gen_folder_duration, pass_ref=True))
 
 
-def gen_sort_date(index, rev=False, custom_list=None):
+def gen_sort_date(index: int, rev: bool = False, custom_list=None):
 	def g_date(index: int):
 
 		if pctl.master_library[index].date != "":
@@ -39177,7 +39177,14 @@ class QueueBox:
 
 		pctl.pause_queue ^= True
 
-	def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False, draw_album_indicator=True):
+	def draw_card(
+		self,
+		x: int, y: int,
+		w: int, h: int,
+		yy: int,
+		track: TrackClass, fqo: TauonQueueItem,
+		draw_back: bool = False, draw_album_indicator: bool = True,
+	) -> None:
 
 		# text_colour = [230, 230, 230, 255]
 		bg = colours.queue_background
@@ -39237,7 +39244,7 @@ class QueueBox:
 					xx -= 11 * gui.scale
 				ddt.rect((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255])
 
-	def draw(self, x, y, w, h):
+	def draw(self, x: int, y: int, w: int, h: int):
 
 		yy = y
 
