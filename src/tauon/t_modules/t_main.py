@@ -20706,7 +20706,7 @@ def queue_timer_set(plural: bool = False, queue_object: TauonQueueItem | None = 
 def split_queue_album(id: int) -> int | None:
 	item = pctl.force_queue[0]
 
-	pl = id_to_pl(item[2])
+	pl = id_to_pl(item.playlist_id)
 	if pl is None:
 		return None
 
@@ -20714,7 +20714,7 @@ def split_queue_album(id: int) -> int | None:
 
 	i = pctl.playlist_playing_position + 1
 	parts = []
-	album_parent_path = pctl.get_track(item[0]).parent_folder_path
+	album_parent_path = pctl.get_track(item.track_id).parent_folder_path
 
 	while i < len(playlist):
 		if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
@@ -20726,7 +20726,7 @@ def split_queue_album(id: int) -> int | None:
 	del pctl.force_queue[0]
 
 	for part in reversed(parts):
-		pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item[3]))
+		pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item.type))
 	return (len(parts))
 
 
@@ -25174,7 +25174,7 @@ class SearchOverlay:
 				if p > len(self.results) - 1:
 					break
 
-				item = self.results[p]
+				item: list[int] = self.results[p]
 
 				fade = 1
 				selected = self.on
@@ -33915,8 +33915,8 @@ class MiniMode3:
 		if coll(right_area):
 			hint = 240
 		if hint:
-			self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 10 * gui.scale,
-									[255, 255, 255, hint])
+			self.right_slide.render(
+				window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 10 * gui.scale, [255, 255, 255, hint])
 
 		# Shuffle
 		shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
@@ -39017,21 +39017,21 @@ class QueueBox:
 			playlist = []
 			for item in pctl.force_queue:
 
-				if item[3] == 0:
-					playlist.append(item[0])
+				if item.type == 0:
+					playlist.append(item.track_id)
 				else:
 
-					pl = id_to_pl(item[2])
+					pl = id_to_pl(item.playlist_id)
 					if pl is None:
 						logging.info("Lost the target playlist")
 						continue
 
 					pp = pctl.multi_playlist[pl].playlist_ids
 
-					i = item[1]  # = pctl.playlist_playing_position + 1
+					i = item.position  # = pctl.playlist_playing_position + 1
 
 					parts = []
-					album_parent_path = pctl.get_track(item[0]).parent_folder_path
+					album_parent_path = pctl.get_track(item.track_id).parent_folder_path
 
 					while i < len(pp):
 						if pctl.get_track(pp[i]).parent_folder_path != album_parent_path:
@@ -39511,29 +39511,30 @@ class QueueBox:
 		tracks = 0
 
 		for item in fq:
-			if item[3] == 0:
-				duration += pctl.get_track(item[0]).length
+			if item.type == 0:
+				duration += pctl.get_track(item.track_id).length
 				tracks += 1
 			else:
-				pl = id_to_pl(item[2])
+				pl = id_to_pl(item.playlist_id)
 				if pl is not None:
 					playlist = pctl.multi_playlist[pl].playlist_ids
-					i = item[1]
+					i = item.position
 
-					album_parent_path = pctl.get_track(item[0]).parent_folder_path
+					album_parent_path = pctl.get_track(item.track_id).parent_folder_path
 
 					playing_track = pctl.playing_object()
 
-					if pl == pctl.active_playlist_playing and item[
-						4] and playing_track and playing_track.parent_folder_path == album_parent_path:
+					if pl == pctl.active_playlist_playing \
+					and item.album_stage \
+					and playing_track and playing_track.parent_folder_path == album_parent_path:
 						i = pctl.playlist_playing_position + 1
 
-					if item[0] not in playlist:
+					if item.track_id not in playlist:
 						continue
 					if i > len(playlist) - 1:
 						continue
-					if playlist[i] != item[0]:
-						i = playlist.index(item[0])
+					if playlist[i] != item.track_id:
+						i = playlist.index(item.track_id)
 
 					while i < len(playlist):
 						if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
@@ -39558,7 +39559,7 @@ class QueueBox:
 
 			fqo = None
 			for item in fq:
-				if item[5] == self.dragging:
+				if item.uuid_int == self.dragging:
 					fqo = item
 					break
 			else:
