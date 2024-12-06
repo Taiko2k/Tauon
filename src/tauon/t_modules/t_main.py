@@ -15827,7 +15827,7 @@ def add_album_to_queue_fc(ref):
 
 		for i, item in enumerate(pctl.force_queue):
 
-			if p != pctl.get_track(item[0]).parent_folder_path:
+			if p != pctl.get_track(item.track_id).parent_folder_path:
 				queue_item = queue_item_gen(
 					ref,
 					pctl.playlist_playing_position,
@@ -20730,7 +20730,7 @@ def split_queue_album(id: int) -> int | None:
 	return (len(parts))
 
 
-def add_to_queue_next(ref):
+def add_to_queue_next(ref: int) -> None:
 	if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
 		split_queue_album(None)
 
@@ -39092,7 +39092,7 @@ class QueueBox:
 
 		save = False
 		for item in pctl.force_queue:
-			if item[5] == self.right_click_id:
+			if item.uuid_int == self.right_click_id:
 				save = item
 				break
 
@@ -39134,7 +39134,7 @@ class QueueBox:
 			queue_item.album_stage = 1  # set as partway playing
 			pctl.force_queue.insert(0, queue_item)
 
-	def toggle_auto_stop(self):
+	def toggle_auto_stop(self) -> None:
 
 		for item in pctl.force_queue:
 			if item.uuid_int == self.right_click_id:
@@ -39154,13 +39154,13 @@ class QueueBox:
 			return [colours.menu_text, colours.menu_background, _("Cancel Auto-Stop")]
 		return [colours.menu_text, colours.menu_background, _("Auto-Stop")]
 
-	def queue_remove_show(self, id):
+	def queue_remove_show(self, id: int) -> bool:
 
 		if self.right_click_id is not None:
 			return True
 		return False
 
-	def right_remove_item(self):
+	def right_remove_item(self) -> None:
 
 		if self.right_click_id is None:
 			show_message(_("Eh?"))
@@ -39173,7 +39173,7 @@ class QueueBox:
 		else:
 			show_message(_("Looks like it's gone now anyway"))
 
-	def toggle_pause(self):
+	def toggle_pause(self) -> None:
 
 		pctl.pause_queue ^= True
 
