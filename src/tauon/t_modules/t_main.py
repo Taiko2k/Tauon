@@ -34352,7 +34352,7 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 			for i, item in enumerate(pctl.force_queue):
 				if item.track_id == n_track.index and item.position == p_track and item.playlist_id == pl_to_id(
 						pctl.active_playlist_viewing):
-					if item[3] == 0:  # Only show mark if track type
+					if item.type == 0:  # Only show mark if track type
 						marks.append(i)
 					# else:
 					#     album_type = True
