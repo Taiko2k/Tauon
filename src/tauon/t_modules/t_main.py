@@ -22343,11 +22343,6 @@ def key_codec(index: int) -> str:
 def key_bitrate(index: int) -> int:
 	return pctl.master_library[index].bitrate
 
-
-def key_p(index: int) -> int:
-	return pctl.master_library[index].bitrate
-
-
 def key_hl(index: int) -> int:
 	if len(pctl.master_library[index].lyrics) > 5:
 		return 0
