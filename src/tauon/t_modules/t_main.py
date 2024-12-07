@@ -30493,7 +30493,7 @@ class Over:
 			if prefs.chart_cascade:
 				count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
 
-			line = str(count) + " " + _("Album chart")
+			line = _("{N} Album chart").format(N=str(count))
 
 			ww = ddt.text((x, y + round(1 * gui.scale)), line, colours.box_text_label, 12)
 
