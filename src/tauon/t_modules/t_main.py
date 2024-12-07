@@ -806,7 +806,7 @@ SDL_RenderClear(renderer)
 
 
 class LoadImageAsset:
-	assets = []
+	assets: list[LoadImageAsset] = []
 
 	def __init__(self, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
@@ -843,7 +843,7 @@ class LoadImageAsset:
 
 
 class WhiteModImageAsset:
-	assets = []
+	assets: list[WhiteModImageAsset] = []
 
 	def __init__(self, path: str, reload: bool = False, scale_name: str = ""):
 		if not reload:
@@ -1872,11 +1872,11 @@ class GuiVar:
 		for item in self.pl_st:
 			item[1] = item[1] * self.scale
 
-		self.offset_extra = 0
+		self.offset_extra: int = 0
 
-		self.playlist_row_height = 16
-		self.playlist_text_offset = 0
-		self.row_font_size = 13
+		self.playlist_row_height: int = 16
+		self.playlist_text_offset: int = 0
+		self.row_font_size: int = 13
 		self.compact_bar = False
 		self.tracklist_texture_rect = tracklist_texture_rect
 		self.tracklist_texture = tracklist_texture
@@ -9704,7 +9704,7 @@ class GStats:
 stats_gen = GStats()
 
 
-def do_exit_button():
+def do_exit_button() -> None:
 	if mouse_up or ab_click:
 		if gui.tray_active and prefs.min_to_tray:
 			if key_shift_down:
@@ -9717,7 +9717,7 @@ def do_exit_button():
 			tauon.exit("User clicked X button")
 
 
-def do_maximize_button():
+def do_maximize_button() -> None:
 	global mouse_down
 	global drag_mode
 	if gui.fullscreen:
@@ -14109,7 +14109,7 @@ tool_tip_instant = ToolTip3()
 class Menu:
 	switch = 0
 	count = switch + 1
-	instances = []
+	instances: list[Menu] = []
 	active = False
 
 	def rescale(self):
@@ -22176,7 +22176,7 @@ def spec2_def() -> None:
 
 # vis_menu.add(_("Spectrogram"), spec2_def)
 
-def sa_remove(h) -> None:
+def sa_remove(h: int) -> None:
 	if len(gui.pl_st) > 1:
 		del gui.pl_st[h]
 		gui.update_layout()
@@ -22291,43 +22291,43 @@ def sa_love() -> None:
 	gui.update_layout()
 
 
-def key_love(index: int):
+def key_love(index: int) -> bool:
 	return get_love_index(index)
 
 
-def key_artist(index: int):
+def key_artist(index: int) -> str:
 	return pctl.master_library[index].artist.lower()
 
 
-def key_album_artist(index: int):
+def key_album_artist(index: int) -> str:
 	return pctl.master_library[index].album_artist.lower()
 
 
-def key_composer(index: int):
+def key_composer(index: int) -> str:
 	return pctl.master_library[index].composer.lower()
 
 
-def key_comment(index: int):
+def key_comment(index: int) -> str:
 	return pctl.master_library[index].comment
 
 
-def key_title(index: int):
+def key_title(index: int) -> str:
 	return pctl.master_library[index].title.lower()
 
 
-def key_album(index: int):
+def key_album(index: int) -> str:
 	return pctl.master_library[index].album.lower()
 
 
-def key_duration(index: int):
+def key_duration(index: int) -> int:
 	return pctl.master_library[index].length
 
 
-def key_date(index: int):
+def key_date(index: int) -> str:
 	return pctl.master_library[index].date
 
 
-def key_genre(index: int):
+def key_genre(index: int) -> str:
 	return pctl.master_library[index].genre.lower()
 
 
@@ -22336,15 +22336,15 @@ def key_t(index: int):
 	return index_key(index)
 
 
-def key_codec(index: int):
+def key_codec(index: int) -> str:
 	return pctl.master_library[index].file_ext
 
 
-def key_bitrate(index: int):
+def key_bitrate(index: int) -> int:
 	return pctl.master_library[index].bitrate
 
 
-def key_p(index: int):
+def key_p(index: int) -> int:
 	return pctl.master_library[index].bitrate
 
 
