@@ -17070,23 +17070,17 @@ def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int |
 
 		xspf_track_tag = ET.SubElement(xspf_tracklist_tag, "track")
 		if track.title != "":
-			xspf_title_tag = ET.SubElement(xspf_track_tag, "title")
-			xspf_title_tag.text = track.title
+			ET.SubElement(xspf_track_tag, "title").text = track.title
 		if track.is_cue is False and track.fullpath != "":
-			xspf_location_tag = ET.SubElement(xspf_track_tag, "location")
-			xspf_location_tag.text = urllib.parse.quote(path)
+			ET.SubElement(xspf_track_tag, "location").text = urllib.parse.quote(path)
 		if track.artist != "":
-			xspf_creator_tag = ET.SubElement(xspf_track_tag, "creator")
-			xspf_creator_tag.text = track.artist
+			ET.SubElement(xspf_track_tag, "creator").text = track.artist
 		if track.album != "":
-			xspf_album_tag = ET.SubElement(xspf_track_tag, "album")
-			xspf_album_tag.text = track.album
+			ET.SubElement(xspf_track_tag, "album").text = track.album
 		if track.track_number != "":
-			xspf_tracknum_tag = ET.SubElement(xspf_track_tag, "trackNum")
-			xspf_tracknum_tag.text = str(track.track_number)
+			ET.SubElement(xspf_track_tag, "trackNum").text = str(track.track_number)
 
-		xspf_duration_tag = ET.SubElement(xspf_track_tag, "duration")
-		xspf_duration_tag.text = str(int(track.length * 1000))
+		ET.SubElement(xspf_track_tag, "duration").text = str(int(track.length * 1000))
 
 	xspf_tree = ET.ElementTree(xspf_root)
 	ET.indent(xspf_tree, space='  ', level=0)
