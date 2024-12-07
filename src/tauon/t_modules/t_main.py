@@ -2029,7 +2029,7 @@ class GuiVar:
 		self.queue_toast_plural = False
 		self.reload_theme = False
 		self.theme_number = 0
-		self.toast_queue_object = None
+		self.toast_queue_object: TauonQueueItem | None = None
 		self.toast_love_object = None
 		self.toast_love_added = True
 
@@ -2585,16 +2585,16 @@ class ColoursClass:
 	These are changed for themes
 	"""
 
-	def grey(self, value):
+	def grey(self, value: int) -> list[int]:
 		return [value, value, value, 255]
 
-	def alpha_grey(self, value):
+	def alpha_grey(self, value: int) -> list[int]:
 		return [255, 255, 255, value]
 
-	def grey_blend_bg(self, value):
+	def grey_blend_bg(self, value: int) -> list[int]:
 		return alpha_blend((255, 255, 255, value), self.box_background)
 
-	def __init__(self):
+	def __init__(self) -> None:
 
 		self.deco = None
 		self.column_colours = {}
@@ -2712,7 +2712,7 @@ class ColoursClass:
 
 		self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
-		self.playlist_box_background = self.side_panel_background
+		self.playlist_box_background: list[int] = self.side_panel_background
 
 		self.bar_title_text = None
 
@@ -2726,7 +2726,7 @@ class ColoursClass:
 
 		self.window_frame = [30, 30, 30, 255]
 
-		self.box_background = [16, 16, 16, 255]
+		self.box_background: list[int] = [16, 16, 16, 255]
 		self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
 		self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
 		self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
@@ -15827,7 +15827,7 @@ def add_album_to_queue_fc(ref):
 
 		for i, item in enumerate(pctl.force_queue):
 
-			if p != pctl.get_track(item[0]).parent_folder_path:
+			if p != pctl.get_track(item.track_id).parent_folder_path:
 				queue_item = queue_item_gen(
 					ref,
 					pctl.playlist_playing_position,
@@ -17004,7 +17004,7 @@ tab_menu.add(MenuItem(_("Lock"), lock_playlist_toggle, pl_lock_deco,
 	pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=test_shift))
 
 
-def export_m3u(pl, direc=None, relative=False, show=True):
+def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
 		show_message(_("There are no tracks in this playlist. Nothing to export"))
 		return 1
@@ -17047,7 +17047,7 @@ def export_m3u(pl, direc=None, relative=False, show=True):
 	return target
 
 
-def export_xspf(pl, direc=None, relative=False, show=True):
+def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
 		show_message(_("There are no tracks in this playlist. Nothing to export"))
 		return 1
@@ -17463,7 +17463,7 @@ def index_key(index: int):
 		return "a"
 
 
-def sort_tracK_numbers_album_only(pl, custom_list=None):
+def sort_tracK_numbers_album_only(pl: int, custom_list=None):
 	current_folder = ""
 	albums = []
 	if custom_list is None:
@@ -17489,7 +17489,7 @@ def sort_tracK_numbers_album_only(pl, custom_list=None):
 	gui.pl_update += 1
 
 
-def sort_track_2(pl, custom_list=None):
+def sort_track_2(pl: int, custom_list=None):
 	current_folder = ""
 	current_album = ""
 	current_date = ""
@@ -17542,7 +17542,7 @@ def key_filename(index: int):
 	return track.filename
 
 
-def sort_path_pl(pl, custom_list=None):
+def sort_path_pl(pl: int, custom_list=None):
 	if custom_list is not None:
 		target = custom_list
 	else:
@@ -18760,7 +18760,7 @@ def jellyfin_show_test(_):
 tab_menu.add(MenuItem(_("Upload"),
 	upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=spotify_show_test))
 
-def upload_jellyfin_playlist(pl):
+def upload_jellyfin_playlist(pl: TauonPlaylist) -> None:
 	if jellyfin.scanning:
 		return
 	shooter(jellyfin.upload_playlist, [pl])
@@ -18769,7 +18769,7 @@ tab_menu.add(MenuItem(_("Upload"),
 	upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=jellyfin_show_test))
 
 
-def regen_playlist_async(pl):
+def regen_playlist_async(pl: int) -> None:
 	if pctl.regen_in_progress:
 		show_message(_("A regen is already in progress..."))
 		return
@@ -19208,7 +19208,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), gen_top_100, pass_ref=Tr
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), gen_top_100, pass_ref=True))
 
 
-def gen_folder_top(pl, get_sets=False, custom_list=None):
+def gen_folder_top(pl: int, get_sets: bool = False, custom_list=None):
 	source = custom_list
 	if source is None:
 		source = pctl.multi_playlist[pl].playlist_ids
@@ -19275,7 +19275,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), gen_top_rating, pass_ref=
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), gen_top_rating, pass_ref=True))
 
 
-def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
+def gen_folder_top_rating(pl: int, get_sets: bool = False, custom_list=None):
 	source = custom_list
 	if source is None:
 		source = pctl.multi_playlist[pl].playlist_ids
@@ -19325,7 +19325,7 @@ def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
 	pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl].title + "\" a rata>"
 
 
-def gen_lyrics(pl, custom_list=None):
+def gen_lyrics(plpl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19356,7 +19356,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), gen_folder_top_rating, pa
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), gen_folder_top_rating, pass_ref=True))
 
 
-def gen_incomplete(pl, custom_list=None):
+def gen_incomplete(plpl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19497,7 +19497,7 @@ extra_tab_menu.add_to_sub(0, MenuItem(_("File Modified"), gen_last_modified, pas
 # extra_tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
 
 
-def gen_love(pl, custom_list=None):
+def gen_love(pl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19607,7 +19607,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), gen_sort_len, pass_ref=True
 extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), gen_sort_len, pass_ref=True))
 
 
-def gen_folder_duration(pl, get_sets=False):
+def gen_folder_duration(pl: int, get_sets: bool = False):
 	if len(pctl.multi_playlist[pl].playlist_ids) < 3:
 		return None
 
@@ -19653,7 +19653,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), gen_folder_duration, pass_r
 extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), gen_folder_duration, pass_ref=True))
 
 
-def gen_sort_date(index, rev=False, custom_list=None):
+def gen_sort_date(index: int, rev: bool = False, custom_list=None):
 	def g_date(index: int):
 
 		if pctl.master_library[index].date != "":
@@ -20693,7 +20693,7 @@ def add_selected_to_queue_multi():
 			pl_to_id(pctl.active_playlist_viewing)))
 
 
-def queue_timer_set(plural=False, queue_object=None):
+def queue_timer_set(plural: bool = False, queue_object: TauonQueueItem | None = None) -> None:
 	queue_add_timer.set()
 	gui.frame_callback_list.append(TestTimer(2.51))
 	gui.queue_toast_plural = plural
@@ -20706,7 +20706,7 @@ def queue_timer_set(plural=False, queue_object=None):
 def split_queue_album(id: int) -> int | None:
 	item = pctl.force_queue[0]
 
-	pl = id_to_pl(item[2])
+	pl = id_to_pl(item.playlist_id)
 	if pl is None:
 		return None
 
@@ -20714,7 +20714,7 @@ def split_queue_album(id: int) -> int | None:
 
 	i = pctl.playlist_playing_position + 1
 	parts = []
-	album_parent_path = pctl.get_track(item[0]).parent_folder_path
+	album_parent_path = pctl.get_track(item.track_id).parent_folder_path
 
 	while i < len(playlist):
 		if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
@@ -20726,11 +20726,11 @@ def split_queue_album(id: int) -> int | None:
 	del pctl.force_queue[0]
 
 	for part in reversed(parts):
-		pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item[3]))
+		pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item.type))
 	return (len(parts))
 
 
-def add_to_queue_next(ref):
+def add_to_queue_next(ref: int) -> None:
 	if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
 		split_queue_album(None)
 
@@ -25174,7 +25174,7 @@ class SearchOverlay:
 				if p > len(self.results) - 1:
 					break
 
-				item = self.results[p]
+				item: list[int] = self.results[p]
 
 				fade = 1
 				selected = self.on
@@ -33915,8 +33915,8 @@ class MiniMode3:
 		if coll(right_area):
 			hint = 240
 		if hint:
-			self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 10 * gui.scale,
-									[255, 255, 255, hint])
+			self.right_slide.render(
+				window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 10 * gui.scale, [255, 255, 255, hint])
 
 		# Shuffle
 		shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
@@ -34352,7 +34352,7 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 			for i, item in enumerate(pctl.force_queue):
 				if item.track_id == n_track.index and item.position == p_track and item.playlist_id == pl_to_id(
 						pctl.active_playlist_viewing):
-					if item[3] == 0:  # Only show mark if track type
+					if item.type == 0:  # Only show mark if track type
 						marks.append(i)
 					# else:
 					#     album_type = True
@@ -39017,21 +39017,21 @@ class QueueBox:
 			playlist = []
 			for item in pctl.force_queue:
 
-				if item[3] == 0:
-					playlist.append(item[0])
+				if item.type == 0:
+					playlist.append(item.track_id)
 				else:
 
-					pl = id_to_pl(item[2])
+					pl = id_to_pl(item.playlist_id)
 					if pl is None:
 						logging.info("Lost the target playlist")
 						continue
 
 					pp = pctl.multi_playlist[pl].playlist_ids
 
-					i = item[1]  # = pctl.playlist_playing_position + 1
+					i = item.position  # = pctl.playlist_playing_position + 1
 
 					parts = []
-					album_parent_path = pctl.get_track(item[0]).parent_folder_path
+					album_parent_path = pctl.get_track(item.track_id).parent_folder_path
 
 					while i < len(pp):
 						if pctl.get_track(pp[i]).parent_folder_path != album_parent_path:
@@ -39092,7 +39092,7 @@ class QueueBox:
 
 		save = False
 		for item in pctl.force_queue:
-			if item[5] == self.right_click_id:
+			if item.uuid_int == self.right_click_id:
 				save = item
 				break
 
@@ -39134,7 +39134,7 @@ class QueueBox:
 			queue_item.album_stage = 1  # set as partway playing
 			pctl.force_queue.insert(0, queue_item)
 
-	def toggle_auto_stop(self):
+	def toggle_auto_stop(self) -> None:
 
 		for item in pctl.force_queue:
 			if item.uuid_int == self.right_click_id:
@@ -39154,13 +39154,13 @@ class QueueBox:
 			return [colours.menu_text, colours.menu_background, _("Cancel Auto-Stop")]
 		return [colours.menu_text, colours.menu_background, _("Auto-Stop")]
 
-	def queue_remove_show(self, id):
+	def queue_remove_show(self, id: int) -> bool:
 
 		if self.right_click_id is not None:
 			return True
 		return False
 
-	def right_remove_item(self):
+	def right_remove_item(self) -> None:
 
 		if self.right_click_id is None:
 			show_message(_("Eh?"))
@@ -39173,11 +39173,18 @@ class QueueBox:
 		else:
 			show_message(_("Looks like it's gone now anyway"))
 
-	def toggle_pause(self):
+	def toggle_pause(self) -> None:
 
 		pctl.pause_queue ^= True
 
-	def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False, draw_album_indicator=True):
+	def draw_card(
+		self,
+		x: int, y: int,
+		w: int, h: int,
+		yy: int,
+		track: TrackClass, fqo: TauonQueueItem,
+		draw_back: bool = False, draw_album_indicator: bool = True,
+	) -> None:
 
 		# text_colour = [230, 230, 230, 255]
 		bg = colours.queue_background
@@ -39201,7 +39208,7 @@ class QueueBox:
 		ddt.rect((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6])
 
 		line = track.album
-		if fqo[3] == 0:
+		if fqo.type == 0:
 			line = track.title
 
 		if not line:
@@ -39210,10 +39217,10 @@ class QueueBox:
 		line2y = yy + 14 * gui.scale
 
 		artist_line = track.artist
-		if fqo[3] == 1 and track.album_artist:
+		if fqo.type == 1 and track.album_artist:
 			artist_line = track.album_artist
 
-		if fqo[3] == 0 and not artist_line:
+		if fqo.type == 0 and not artist_line:
 			line2y -= 7 * gui.scale
 
 		ddt.text(
@@ -39225,19 +39232,19 @@ class QueueBox:
 			max_w=rect[2] - 60 * gui.scale, bg=bg)
 
 		if draw_album_indicator:
-			if fqo[3] == 1:
-				if fqo[4] == 0:
+			if fqo.type == 1:
+				if fqo.album_stage == 0:
 					ddt.rect((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255])
 				else:
 					ddt.rect((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [140, 220, 20, 255])
 
-			if fqo[6]:
+			if fqo.auto_stop:
 				xx = rect[0] + rect[2] - 9 * gui.scale
-				if fqo[3] == 1:
+				if fqo.type == 1:
 					xx -= 11 * gui.scale
 				ddt.rect((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255])
 
-	def draw(self, x, y, w, h):
+	def draw(self, x: int, y: int, w: int, h: int):
 
 		yy = y
 
@@ -39504,29 +39511,30 @@ class QueueBox:
 		tracks = 0
 
 		for item in fq:
-			if item[3] == 0:
-				duration += pctl.get_track(item[0]).length
+			if item.type == 0:
+				duration += pctl.get_track(item.track_id).length
 				tracks += 1
 			else:
-				pl = id_to_pl(item[2])
+				pl = id_to_pl(item.playlist_id)
 				if pl is not None:
 					playlist = pctl.multi_playlist[pl].playlist_ids
-					i = item[1]
+					i = item.position
 
-					album_parent_path = pctl.get_track(item[0]).parent_folder_path
+					album_parent_path = pctl.get_track(item.track_id).parent_folder_path
 
 					playing_track = pctl.playing_object()
 
-					if pl == pctl.active_playlist_playing and item[
-						4] and playing_track and playing_track.parent_folder_path == album_parent_path:
+					if pl == pctl.active_playlist_playing \
+					and item.album_stage \
+					and playing_track and playing_track.parent_folder_path == album_parent_path:
 						i = pctl.playlist_playing_position + 1
 
-					if item[0] not in playlist:
+					if item.track_id not in playlist:
 						continue
 					if i > len(playlist) - 1:
 						continue
-					if playlist[i] != item[0]:
-						i = playlist.index(item[0])
+					if playlist[i] != item.track_id:
+						i = playlist.index(item.track_id)
 
 					while i < len(playlist):
 						if pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
@@ -39551,7 +39559,7 @@ class QueueBox:
 
 			fqo = None
 			for item in fq:
-				if item[5] == self.dragging:
+				if item.uuid_int == self.dragging:
 					fqo = item
 					break
 			else:
@@ -39560,7 +39568,7 @@ class QueueBox:
 			if self.dragging:
 				yyy = self.drag_start_top + (mouse_position[1] - self.drag_start_y)
 				yyy = max(yyy, list_top)
-				track = pctl.get_track(fqo[0])
+				track = pctl.get_track(fqo.track_id)
 				self.draw_card(x, y, w, h, yyy, track, fqo, draw_back=True)
 
 		# Drag and drop tracks from main playlist into queue
@@ -47916,7 +47924,7 @@ while pctl.running:
 
 		t = queue_add_timer.get()
 		if t < 2.5 and gui.toast_queue_object:
-			track = pctl.get_track(gui.toast_queue_object[0])
+			track = pctl.get_track(gui.toast_queue_object.track_id)
 
 			ww = 0
 			if gui.lsp:
@@ -47940,7 +47948,7 @@ while pctl.running:
 				top_text = _("Track")
 				if gui.queue_toast_plural:
 					top_text = "Album"
-					fqo[3] = 1
+					fqo.type = 1
 				if pctl.force_queue[-1].type == 1:
 					top_text = "Album"
 

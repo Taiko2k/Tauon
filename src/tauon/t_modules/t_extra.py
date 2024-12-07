@@ -1,4 +1,7 @@
-"""Tauon Music Box - Misc Functions Module"""
+"""Tauon Music Box - Misc Functions Module
+
+TODO(Martin): Rewrite all tuple[int, int, int, int] things into actual ColorWhatever objects and pass the objects around instead of list[int]s
+"""
 
 # Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
 
