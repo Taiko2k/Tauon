@@ -17059,10 +17059,8 @@ def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int |
 
 	target = os.path.join(direc, pctl.multi_playlist[pl].title + ".xspf")
 
-	xport = open(target, "w", encoding="utf-8")
-	xport.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-	xport.write('<playlist version="1" xmlns="http://xspf.org/ns/0/">\n')
-	xport.write("  <trackList>\n")
+	xspf_root = ET.Element("playlist", version="1", xmlns="http://xspf.org/ns/0/")
+	xspf_tracklist_tag = ET.SubElement(xspf_root, "trackList")
 
 	for number in pctl.multi_playlist[pl].playlist_ids:
 		track = pctl.master_library[number]
@@ -17070,20 +17068,23 @@ def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int |
 		if relative:
 			path = os.path.relpath(path, start=direc)
 
-		xport.write("	<track>\n")
+		xspf_track_tag = ET.SubElement(xspf_tracklist_tag, "track")
 		if track.title != "":
-			xport.write("      <title>" + urllib.parse.quote(track.title) + "</title>\n")
+			ET.SubElement(xspf_track_tag, "title").text = track.title
 		if track.is_cue is False and track.fullpath != "":
-			xport.write("      <location>" + urllib.parse.quote(path) + "</location>\n")
+			ET.SubElement(xspf_track_tag, "location").text = urllib.parse.quote(path)
 		if track.artist != "":
-			xport.write("      <creator>" + urllib.parse.quote(track.artist) + "</creator>\n")
+			ET.SubElement(xspf_track_tag, "creator").text = track.artist
 		if track.album != "":
-			xport.write("      <album>" + urllib.parse.quote(track.album) + "</album>\n")
-		xport.write("      <duration>" + str(int(track.length * 1000)) + "</duration>\n")
-		xport.write("    </track>\n")
-	xport.write("  </trackList>\n")
-	xport.write("</playlist>\n\n")
-	xport.close()
+			ET.SubElement(xspf_track_tag, "album").text = track.album
+		if track.track_number != "":
+			ET.SubElement(xspf_track_tag, "trackNum").text = str(track.track_number)
+
+		ET.SubElement(xspf_track_tag, "duration").text = str(int(track.length * 1000))
+
+	xspf_tree = ET.ElementTree(xspf_root)
+	ET.indent(xspf_tree, space='  ', level=0)
+	xspf_tree.write(target, encoding='UTF-8', xml_declaration=True)
 
 	if show:
 		line = direc
