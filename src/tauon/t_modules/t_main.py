@@ -806,7 +806,7 @@ SDL_RenderClear(renderer)
 
 
 class LoadImageAsset:
-	assets = []
+	assets: list[LoadImageAsset] = []
 
 	def __init__(self, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
@@ -843,7 +843,7 @@ class LoadImageAsset:
 
 
 class WhiteModImageAsset:
-	assets = []
+	assets: list[WhiteModImageAsset] = []
 
 	def __init__(self, path: str, reload: bool = False, scale_name: str = ""):
 		if not reload:
@@ -1263,7 +1263,7 @@ load_orders = []
 
 volume = 75
 
-folder_image_offsets = {}
+folder_image_offsets: dict[str, int] = {}
 db_version: float = 0.0
 latest_db_version: float = 69
 
@@ -1715,7 +1715,7 @@ class GuiVar:
 		global update_layout
 		update_layout = True
 
-	def show_message(self, line1: str, line2: str = "", line3: str = "", mode: str = "info"):
+	def show_message(self, line1: str, line2: str = "", line3: str = "", mode: str = "info") -> None:
 		show_message(line1, line2, line3, mode=mode)
 
 	def delay_frame(self, t):
@@ -1872,11 +1872,11 @@ class GuiVar:
 		for item in self.pl_st:
 			item[1] = item[1] * self.scale
 
-		self.offset_extra = 0
+		self.offset_extra: int = 0
 
-		self.playlist_row_height = 16
-		self.playlist_text_offset = 0
-		self.row_font_size = 13
+		self.playlist_row_height: int = 16
+		self.playlist_text_offset: int = 0
+		self.row_font_size: int = 13
 		self.compact_bar = False
 		self.tracklist_texture_rect = tracklist_texture_rect
 		self.tracklist_texture = tracklist_texture
@@ -2988,7 +2988,17 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 	gui.message_subtext = line2
 	gui.message_subtext2 = line3
 	message_box_min_timer.set()
-	logging.info("Message: " + line1)
+	match mode:
+		case "done" | "confirm":
+			logging.debug("Message: " + line1 + line2 + line3)
+		case "info":
+			logging.info("Message: " + line1 + line2 + line3)
+		case "warning":
+			logging.warning("Message: " + line1 + line2 + line3)
+		case "error":
+			logging.error("Message: " + line1 + line2 + line3)
+		case _:
+			logging.error(f"Unknown mode '{mode}' for message: " + line1 + line2 + line3)
 	gui.update = 1
 
 
@@ -9694,7 +9704,7 @@ class GStats:
 stats_gen = GStats()
 
 
-def do_exit_button():
+def do_exit_button() -> None:
 	if mouse_up or ab_click:
 		if gui.tray_active and prefs.min_to_tray:
 			if key_shift_down:
@@ -9707,7 +9717,7 @@ def do_exit_button():
 			tauon.exit("User clicked X button")
 
 
-def do_maximize_button():
+def do_maximize_button() -> None:
 	global mouse_down
 	global drag_mode
 	if gui.fullscreen:
@@ -10874,7 +10884,7 @@ def pixel_to_logical(x):
 class TextBox2:
 	cursor = True
 
-	def __init__(self):
+	def __init__(self) -> None:
 
 		self.text = ""
 		self.cursor_position = 0
@@ -10883,13 +10893,13 @@ class TextBox2:
 		self.down_lock = False
 		self.paste_text = ""
 
-	def paste(self):
+	def paste(self) -> None:
 
 		if SDL_HasClipboardText():
 			clip = SDL_GetClipboardText().decode("utf-8")
 			self.paste_text = clip
 
-	def copy(self):
+	def copy(self) -> None:
 
 		text = self.get_selection()
 		if not text:
@@ -10897,7 +10907,7 @@ class TextBox2:
 		if text != "":
 			SDL_SetClipboardText(text.encode("utf-8"))
 
-	def set_text(self, text):
+	def set_text(self, text: str) -> None:
 
 		self.text = text
 		if self.cursor_position > len(text):
@@ -10906,12 +10916,12 @@ class TextBox2:
 		else:
 			self.selection = self.cursor_position
 
-	def clear(self):
+	def clear(self) -> None:
 		self.text = ""
 		#self.cursor_position = 0
 		self.selection = self.cursor_position
 
-	def highlight_all(self):
+	def highlight_all(self) -> None:
 
 		self.selection = len(self.text)
 		self.cursor_position = 0
@@ -11296,14 +11306,14 @@ class TextBox2:
 class TextBox:
 	cursor = True
 
-	def __init__(self):
+	def __init__(self) -> None:
 
 		self.text = ""
 		self.cursor_position = 0
 		self.selection = 0
 		self.down_lock = False
 
-	def paste(self):
+	def paste(self) -> None:
 
 		if SDL_HasClipboardText():
 			clip = SDL_GetClipboardText().decode("utf-8")
@@ -11318,7 +11328,7 @@ class TextBox:
 			self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 				self.text) - self.cursor_position:]
 
-	def copy(self):
+	def copy(self) -> None:
 
 		text = self.get_selection()
 		if not text:
@@ -11332,19 +11342,19 @@ class TextBox:
 		self.cursor_position = 0
 		self.selection = 0
 
-	def clear(self):
+	def clear(self) -> None:
 		self.text = ""
 
-	def highlight_all(self):
+	def highlight_all(self) -> None:
 
 		self.selection = len(self.text)
 		self.cursor_position = 0
 
-	def highlight_none(self):
+	def highlight_none(self) -> None:
 		self.selection = 0
 		self.cursor_position = 0
 
-	def eliminate_selection(self):
+	def eliminate_selection(self) -> None:
 		if self.selection != self.cursor_position:
 			if self.selection > self.cursor_position:
 				self.text = self.text[0: len(self.text) - self.selection] + self.text[
@@ -11355,7 +11365,7 @@ class TextBox:
 					len(self.text) - self.selection:]
 				self.cursor_position = self.selection
 
-	def get_selection(self, p=1):
+	def get_selection(self, p: int = 1):
 		if self.selection != self.cursor_position:
 			if p == 1:
 				if self.selection > self.cursor_position:
@@ -11370,7 +11380,9 @@ class TextBox:
 		else:
 			return ""
 
-	def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False):
+	def draw(
+		self, x: int, y: int, colour: list[int], active: bool = True, secret: bool = False,
+		font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False):
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
@@ -12127,8 +12139,8 @@ class AlbumArt:
 			"art", "scans", "scan", "booklet", "images", "image", "cover",
 			"covers", "coverart", "albumart", "gallery", "jacket", "artwork",
 			"bonus", "bk", "cover artwork", "cover art"}
-		self.source_cache = {}
-		self.image_cache = []
+		self.source_cache: dict[int, list[tuple[int, str]]] = {}
+		self.image_cache: list[ImageObject] = []
 		self.current_wu = None
 
 		self.blur_texture = None
@@ -12146,14 +12158,14 @@ class AlbumArt:
 
 		self.embed_cached = (None, None)
 
-	def async_download_image(self, track: TrackClass, subsource):
+	def async_download_image(self, track: TrackClass, subsource: list[tuple[int, str]]) -> None:
 
 		self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=subsource)
 		self.downloaded_track = track
 		self.download_in_progress = False
 		gui.update += 1
 
-	def get_info(self, track_object: TrackClass):
+	def get_info(self, track_object: TrackClass) -> list[tuple[str, int, int, int, str]]:
 
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
@@ -12180,7 +12192,7 @@ class AlbumArt:
 
 		return [sources[offset][0], len(sources), offset, o_size, format]
 
-	def get_sources(self, tr: TrackClass):
+	def get_sources(self, tr: TrackClass) -> list[tuple[int, str]]:
 
 		filepath = tr.fullpath
 		ext = tr.file_ext
@@ -12189,7 +12201,7 @@ class AlbumArt:
 		if tr.index in self.source_cache:
 			return self.source_cache[tr.index]
 
-		source_list = []  # istag,
+		source_list: list[tuple[int, str]] = []  # istag,
 
 		# Source type the is first element in list
 		# 0 = File
@@ -12202,11 +12214,15 @@ class AlbumArt:
 				source_list.append([2, tr.art_url_key])
 		else:
 			# Check for local image files
+			direc = os.path.dirname(filepath)
 			try:
-				direc = os.path.dirname(filepath)
 				items_in_dir = os.listdir(direc)
+			except FileNotFoundError:
+				show_message(f"Failed to find directory: {direc}", "Maybe you removed it, but kept the playlist that used it?", mode="warning")
+				logging.error(f"Failed to find directory: {direc}")
+				return []
 			except Exception:
-				logging.exception(f"Error loading directory: {direc}")
+				logging.exception(f"Unknown error loading directory: {direc}")
 				return []
 
 		# Check for embedded image
@@ -12251,7 +12267,7 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index, location, box, source, offset):
+	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset):
 
 		# Renders cached image only by given size for faster performance
 
@@ -12355,7 +12371,7 @@ class AlbumArt:
 
 		return 0
 
-	def cycle_offset(self, track_object: TrackClass, reverse: bool = False):
+	def cycle_offset(self, track_object: TrackClass, reverse: bool = False) -> int:
 
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
@@ -12376,7 +12392,7 @@ class AlbumArt:
 	def cycle_offset_reverse(self, track_object: TrackClass) -> None:
 		self.cycle_offset(track_object, True)
 
-	def get_offset(self, filepath, source):
+	def get_offset(self, filepath: str, source: list[tuple[int, str]]) -> int:
 
 		# Check if folder offset already exsts, if not, make it
 		parent_folder = os.path.dirname(filepath)
@@ -12413,7 +12429,7 @@ class AlbumArt:
 				tag = mutagen.id3.ID3(filepath)
 				frame = tag.getall("APIC")
 				if frame:
-				    pic = frame[0].data
+					pic = frame[0].data
 			except Exception:
 				logging.debug(f"Failed to get tags on file: {filepath}")
 
@@ -12451,7 +12467,7 @@ class AlbumArt:
 		# self.embed_cached = (track, pic)
 		return pic
 
-	def get_source_raw(self, offset, sources, track: TrackClass, subsource=None):
+	def get_source_raw(self, offset: int, sources: list[tuple[int, str]] | int, track: TrackClass, subsource: list[tuple[int, str]] | None = None):
 
 		source_image = None
 
@@ -12749,7 +12765,7 @@ class AlbumArt:
 		else:
 			im.save(save_path + ".jpg", "JPEG")
 
-	def display(self, track: TrackClass, location, box, fast=False, theme_only=False) -> int | None:
+	def display(self, track: TrackClass, location, box, fast: bool = False, theme_only: bool = False) -> int | None:
 
 		index = track.index
 		filepath = track.fullpath
@@ -13232,7 +13248,7 @@ class StyleOverlay:
 		gui.delay_frame(0.25)
 		gui.update += 1
 
-	def display(self):
+	def display(self) -> None:
 
 		if self.min_on_timer.get() < 0:
 			return
@@ -13655,7 +13671,7 @@ def load_m3u(path: str) -> None:
 	gui.update = 1
 
 
-def read_pls(lines, path, followed=False):
+def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 	ids = []
 	urls = {}
 	titles = {}
@@ -13706,7 +13722,7 @@ def read_pls(lines, path, followed=False):
 		add_stations(stations, os.path.basename(path))
 
 
-def load_pls(path):
+def load_pls(path: str) -> None:
 	if os.path.isfile(path):
 		f = open(path)
 		lines = f.readlines()
@@ -13714,7 +13730,7 @@ def load_pls(path):
 		f.close()
 
 
-def load_xspf(path):
+def load_xspf(path: str) -> None:
 	global to_got
 
 	name = os.path.basename(path)[:-5]
@@ -13936,7 +13952,7 @@ message_download_icon = asset_loader("ddl.png")
 
 class ToolTip:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.text = ""
 		self.h = 24 * gui.scale
 		self.w = 62 * gui.scale
@@ -13966,7 +13982,7 @@ class ToolTip:
 			gui.frame_callback_list.append(TestTimer(self.trigger))
 		self.a = True
 
-	def render(self):
+	def render(self) -> None:
 
 		if self.called is True:
 
@@ -14013,7 +14029,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
 
 class ToolTip3:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.x = 0
 		self.y = 0
 		self.text = ""
@@ -14093,7 +14109,7 @@ tool_tip_instant = ToolTip3()
 class Menu:
 	switch = 0
 	count = switch + 1
-	instances = []
+	instances: list[Menu] = []
 	active = False
 
 	def rescale(self):
@@ -18996,7 +19012,7 @@ def auto_sync_thread(pl: int) -> None:
 							logging.exception("Unknown OSError trying to copy file, maybe FS does not support the name?")
 						else:
 							shutil.copyfile(encode_done / file, path / item / sanitized_file)
-							logging.warn(f"Had to rename {file} to {sanitized_file} on the output! Probably a FS limitation!")
+							logging.warning(f"Had to rename {file} to {sanitized_file} on the output! Probably a FS limitation!")
 					else:
 						logging.exception("Unknown OSError trying to copy file")
 				except Exception:
@@ -22161,7 +22177,7 @@ def spec2_def() -> None:
 
 # vis_menu.add(_("Spectrogram"), spec2_def)
 
-def sa_remove(h) -> None:
+def sa_remove(h: int) -> None:
 	if len(gui.pl_st) > 1:
 		del gui.pl_st[h]
 		gui.update_layout()
@@ -22276,43 +22292,43 @@ def sa_love() -> None:
 	gui.update_layout()
 
 
-def key_love(index: int):
+def key_love(index: int) -> bool:
 	return get_love_index(index)
 
 
-def key_artist(index: int):
+def key_artist(index: int) -> str:
 	return pctl.master_library[index].artist.lower()
 
 
-def key_album_artist(index: int):
+def key_album_artist(index: int) -> str:
 	return pctl.master_library[index].album_artist.lower()
 
 
-def key_composer(index: int):
+def key_composer(index: int) -> str:
 	return pctl.master_library[index].composer.lower()
 
 
-def key_comment(index: int):
+def key_comment(index: int) -> str:
 	return pctl.master_library[index].comment
 
 
-def key_title(index: int):
+def key_title(index: int) -> str:
 	return pctl.master_library[index].title.lower()
 
 
-def key_album(index: int):
+def key_album(index: int) -> str:
 	return pctl.master_library[index].album.lower()
 
 
-def key_duration(index: int):
+def key_duration(index: int) -> int:
 	return pctl.master_library[index].length
 
 
-def key_date(index: int):
+def key_date(index: int) -> str:
 	return pctl.master_library[index].date
 
 
-def key_genre(index: int):
+def key_genre(index: int) -> str:
 	return pctl.master_library[index].genre.lower()
 
 
@@ -22321,17 +22337,12 @@ def key_t(index: int):
 	return index_key(index)
 
 
-def key_codec(index: int):
+def key_codec(index: int) -> str:
 	return pctl.master_library[index].file_ext
 
 
-def key_bitrate(index: int):
+def key_bitrate(index: int) -> int:
 	return pctl.master_library[index].bitrate
-
-
-def key_p(index: int):
-	return pctl.master_library[index].bitrate
-
 
 def key_hl(index: int) -> int:
 	if len(pctl.master_library[index].lyrics) > 5:
@@ -42157,7 +42168,7 @@ lyric_side_top_pulse = EdgePulse2()
 lyric_side_bottom_pulse = EdgePulse2()
 
 
-def download_img(link, target_folder, track: TrackClass):
+def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 	try:
 		response = urllib.request.urlopen(link, cafile=tauon.ca)
 		info = response.info()
@@ -42189,7 +42200,7 @@ def download_img(link, target_folder, track: TrackClass):
 		gui.image_downloading = False
 
 
-def display_you_heart(x, yy, just=0):
+def display_you_heart(x: int, yy: int, just: int = 0) -> None:
 	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
 	gui.heart_fields.append(rect)
 	fields.add(rect, update_playlist_call)
@@ -42214,7 +42225,7 @@ def display_you_heart(x, yy, just=0):
 
 	heart_row_icon.render(x, yy, [244, 100, 100, 255])
 
-def display_spot_heart(x, yy, just=0):
+def display_spot_heart(x: int, yy: int, just: int = 0) -> None:
 	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
 	gui.heart_fields.append(rect)
 	fields.add(rect, update_playlist_call)
@@ -42239,7 +42250,7 @@ def display_spot_heart(x, yy, just=0):
 
 	heart_row_icon.render(x, yy, [100, 244, 100, 255])
 
-def display_friend_heart(x, yy, name, just=0):
+def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
 	heart_row_icon.render(x, yy, heart_colours.get(name))
 
 	rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
