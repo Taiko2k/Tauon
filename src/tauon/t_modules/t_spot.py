@@ -329,18 +329,21 @@ class SpotCtl:
 			return
 		self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
 
-	def get_playlist_list(self) -> None:
+	def get_playlist_list(self) -> list[tuple[str, str]] | None:
 		self.connect()
 		if not self.spotify:
 			self.tauon.gui.show_message(self.strings.spotify_need_enable)
 			return None
 
-		playlists = []
+		playlists: list[tuple[str, str]] = []
 		results = self.spotify.playlists(self.spotify.current_user().id)
 		pages = self.spotify.all_pages(results)
 		for page in pages:
 			items = page.items
 			for item in items:
+#				if item is None:
+#					logging.debug("Playlist item is None?")
+#					continue
 				name = item.name
 				url = item.external_urls["spotify"]
 				playlists.append((name, url))
