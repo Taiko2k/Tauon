@@ -5035,13 +5035,13 @@ def get_radio_art():
 	if "ggdrasil" in radiobox.playing_title:
 		time.sleep(3)
 		url = "https://yggdrasilradio.net/data.php?"
-		response = requests.get(url)
+		response = requests.get(url, timeout=10)
 		if response.status_code == 200:
 			lines = response.content.decode().split("|")
 			if len(lines) > 11 and lines[11]:
 				art_id = lines[11].strip().strip("*")
 				art_url = "https://yggdrasilradio.net/images/albumart/" + art_id
-				art_response = requests.get(art_url)
+				art_response = requests.get(art_url, timeout=10)
 				if art_response.status_code == 200:
 					if pctl.radio_image_bin:
 						pctl.radio_image_bin.close()
@@ -5053,7 +5053,7 @@ def get_radio_art():
 
 	elif "gensokyoradio.net" in radiobox.loaded_url:
 
-		response = requests.get("https://gensokyoradio.net/api/station/playing/")
+		response = requests.get("https://gensokyoradio.net/api/station/playing/", timeout=10)
 
 		if response.status_code == 200:
 			d = json.loads(response.text)
@@ -5068,7 +5068,7 @@ def get_radio_art():
 				art = misc.get("ALBUMART")
 				if art:
 					art_url = "https://gensokyoradio.net/images/albums/500/" + art
-					art_response = requests.get(art_url)
+					art_response = requests.get(art_url, timeout=10)
 					if art_response.status_code == 200:
 						if pctl.radio_image_bin:
 							pctl.radio_image_bin.close()
@@ -5081,7 +5081,7 @@ def get_radio_art():
 	elif "radio.plaza.one" in radiobox.loaded_url:
 		time.sleep(3)
 		logging.info("Fetching plaza art")
-		response = requests.get("https://api.plaza.one/status")
+		response = requests.get("https://api.plaza.one/status", timeout=10)
 		if response.status_code == 200:
 			d = json.loads(response.text)
 			if "song" in d:
@@ -5098,7 +5098,7 @@ def get_radio_art():
 					radiobox.dummy_track.album = d["song"]["album"]
 				if "artwork_src" in d["song"]:
 					art_url = d["song"]["artwork_src"]
-					art_response = requests.get(art_url)
+					art_response = requests.get(art_url, timeout=10)
 					if art_response.status_code == 200:
 						if pctl.radio_image_bin:
 							pctl.radio_image_bin.close()
@@ -7696,7 +7696,7 @@ class ListenBrainz:
 		data["payload"].append({"track_metadata": metadata})
 		data["payload"][0]["listened_at"] = time
 
-		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
 			return False
@@ -7754,7 +7754,7 @@ class ListenBrainz:
 		data["payload"].append({"track_metadata": metadata})
 		# data["payload"][0]["listened_at"] = int(time.time())
 
-		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
 			logging.error("There was an error submitting data to ListenBrainz")
@@ -7911,7 +7911,7 @@ def maloja_get_scrobble_counts():
 	url += "apis/mlj_1/scrobbles"
 	lastfm.scanning_scrobbles = True
 	try:
-		r = requests.get(url)
+		r = requests.get(url, timeout=10)
 
 		if r.status_code != 200:
 			show_message(_("There was an error with the Maloja server"), r.text, mode="warning")
@@ -7978,7 +7978,7 @@ def maloja_scrobble(track: TrackClass) -> bool | None:
 	d["key"] = prefs.maloja_key
 
 	try:
-		r = requests.post(url, data=d)
+		r = requests.post(url, data=d, timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
 			return False
@@ -8374,7 +8374,7 @@ class Tauon:
 			show_message(_("Starting download..."))
 			try:
 				f = io.BytesIO()
-				r = requests.get(url, stream=True)
+				r = requests.get(url, stream=True, timeout=1800) # ffmpeg is 77MB, give it half an hour in case someone is willing to suffer it on a slow connection
 
 				dl = 0
 				for data in r.iter_content(chunk_size=4096):
@@ -8709,7 +8709,7 @@ class SubsonicService:
 		if get_url:
 			return url, params
 
-		response = requests.get(url, params=params)
+		response = requests.get(url, params=params, timeout=10)
 
 		if binary:
 			return response.content
@@ -9082,7 +9082,7 @@ class KoelService:
 		}
 
 		try:
-			r = requests.post(target, json=body, headers=headers)
+			r = requests.post(target, json=body, headers=headers, timeout=10)
 		except Exception:
 			logging.exception("Could not establish connection")
 			gui.show_message(_("Could not establish connection"), mode="error")
@@ -9143,7 +9143,7 @@ class KoelService:
 					"Content-Type": "application/json",
 				}
 
-				r = requests.post(target, headers=headers, json={"song": track_object.url_key})
+				r = requests.post(target, headers=headers, json={"song": track_object.url_key}, timeout=10)
 				# logging.info(r.status_code)
 				# logging.info(r.text)
 			except Exception:
@@ -9170,7 +9170,7 @@ class KoelService:
 			"Content-Type": "application/json",
 		}
 
-		r = requests.get(target, headers=headers)
+		r = requests.get(target, headers=headers, timeout=10)
 		data = r.json()
 
 		artists = data["artists"]
@@ -9265,7 +9265,7 @@ class TauService:
 		url = "http://" + prefs.sat_url + ":7814/api1/"
 		data = None
 		try:
-			r = requests.get(url + point)
+			r = requests.get(url + point, timeout=10)
 			data = r.json()
 		except Exception as e:
 			logging.exception("Network error")
@@ -13708,7 +13708,7 @@ def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 				if not followed:
 					try:
 						logging.info("Download .pls")
-						response = requests.get(radio["stream_url"], stream=True)
+						response = requests.get(radio["stream_url"], stream=True, timeout=15)
 						if int(response.headers["Content-Length"]) < 2000:
 							read_pls(response.content.decode().splitlines(), path, followed=True)
 					except Exception:
@@ -21890,7 +21890,7 @@ def ser_gen_thread(tr):
 
 	line = genius(s_artist, s_title, return_url=True)
 
-	r = requests.head(line)
+	r = requests.head(line, timeout=10)
 
 	if r.status_code != 404:
 		webbrowser.open(line, new=2, autoraise=True)
@@ -24083,7 +24083,7 @@ def get_album_art_url(tr: TrackClass):
 
 		try:
 			#logging.info("lookup image url from release group")
-			response = requests.get(url)
+			response = requests.get(url, timeout=10)
 			response.raise_for_status()
 			image_data = response.json()
 			final_id = release_group_id
@@ -24103,7 +24103,7 @@ def get_album_art_url(tr: TrackClass):
 
 		try:
 			#logging.print("lookup image url from album id")
-			response = requests.get(url)
+			response = requests.get(url, timeout=10)
 			response.raise_for_status()
 			image_data = response.json()
 			final_id = release_id
@@ -24450,7 +24450,7 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: str | None =
 			if os.path.exists(path):
 				os.remove(path)
 			logging.info("Downloading file...")
-			with requests.get(url, params=params) as response, open(path, "wb") as out_file:
+			with requests.get(url, params=params, timeout=60) as response, open(path, "wb") as out_file:
 				out_file.write(response.content)
 			logging.info("Download complete")
 			cleanup = True
@@ -27897,7 +27897,7 @@ key_ralt = False
 key_lalt = False
 
 
-def reload_backend():
+def reload_backend() -> None:
 	gui.backend_reloading = True
 	logging.info("Reload backend...")
 	wait = 0
@@ -27937,7 +27937,7 @@ def reload_backend():
 
 
 
-def gen_chart():
+def gen_chart() -> None:
 	try:
 
 		topchart = t_topchart.TopChart(tauon, album_art_gen)
@@ -29159,7 +29159,7 @@ class Over:
 					url += "/test"
 
 					try:
-						r = requests.get(url, params={"key": prefs.maloja_key})
+						r = requests.get(url, params={"key": prefs.maloja_key}, timeout=10)
 						if r.status_code == 403:
 							show_message(_("Connection appeared successful but the API key was invalid"), mode="warning")
 						elif r.status_code == 200:
@@ -35945,7 +35945,7 @@ class RadioBox:
 		logging.info("Fetching M3U...")
 
 		try:
-			response = requests.get(url)
+			response = requests.get(url, timeout=10)
 			if response.status_code != 200:
 				logging.error(f"M3U Fetch error code: {response.status_code}")
 				return None
@@ -36117,7 +36117,7 @@ class RadioBox:
 						fulllink = "https://cdn.listen.moe/covers/" + filename
 
 						#logging.info(fulllink)
-						art_response = requests.get(fulllink)
+						art_response = requests.get(fulllink, timeout=10)
 						#logging.info(art_response.status_code)
 
 						if art_response.status_code == 200:
@@ -37507,12 +37507,12 @@ def save_discogs_artist_thumb(artist, filepath):
 
 	# Search for Discogs artist id
 	url = "https://api.discogs.com/database/search"
-	r = requests.get(url, params={"query": artist, "type": "artist", "token": prefs.discogs_pat}, headers={"User-Agent": t_agent})
+	r = requests.get(url, params={"query": artist, "type": "artist", "token": prefs.discogs_pat}, headers={"User-Agent": t_agent}, timeout=10)
 	id = r.json()["results"][0]["id"]
 
 	# Search artist info, get images
 	url = "https://api.discogs.com/artists/" + str(id)
-	r = requests.get(url, headers={"User-Agent": t_agent}, params={"token": prefs.discogs_pat})
+	r = requests.get(url, headers={"User-Agent": t_agent}, params={"token": prefs.discogs_pat}, timeout=10)
 	images = r.json()["images"]
 
 	# Respect rate limit
@@ -40331,12 +40331,12 @@ class ArtistInfoBox:
 						logging.exception("Failed to find image from discogs")
 			if not artist_picture_render.show and data[4]:
 				try:
-					r = requests.get(data[4])
+					r = requests.get(data[4], timeout=10)
 					html = BeautifulSoup(r.text, "html.parser")
 					tag = html.find("meta", property="og:image")
 					url = tag["content"]
 					if url:
-						r = requests.get(url)
+						r = requests.get(url, timeout=10)
 						assert len(r.content) > 1000
 						with open(standard_path, "wb") as f:
 							f.write(r.content)
@@ -40548,7 +40548,8 @@ class GuitarChords:
 
 			r = requests.get(
 				"http://api.guitarparty.com/v2/songs/?query=" + urllib.parse.quote(cache_title),
-				headers={"Guitarparty-Api-Key": "e9c0e543798c4249c24f698022ced5dd0c583ec7"})
+				headers={"Guitarparty-Api-Key": "e9c0e543798c4249c24f698022ced5dd0c583ec7"},
+				timeout=10)
 			d = r.json()["objects"][0]["body"]
 
 			self.prep_folders()
