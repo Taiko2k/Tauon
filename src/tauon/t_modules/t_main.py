@@ -16172,7 +16172,7 @@ showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_
 def search_guitarparty(track_object: TrackClass):
 	if not track_object.title:
 		show_message(_("Insufitent metadata to search"))
-	gc.fetch(track_object)
+	guitar_chords.fetch(track_object)
 
 
 def search_guitarparty_showtest(_):
@@ -16201,18 +16201,18 @@ def paste_lyrics(track_object: TrackClass):
 		logging.warning("NO TEXT TO PASTE")
 
 
-def paste_chord_lyrics(track_object: TrackClass):
+def paste_chord_lyrics(track_object: TrackClass) -> None:
 	if track_object.title:
-		gc.save_format_b(track_object)
+		guitar_chords.save_format_b(track_object)
 
 
-def chord_lyrics_paste_show_test(_):
+def chord_lyrics_paste_show_test(_) -> bool:
 	return gui.combo_mode and prefs.guitar_chords
 
 
-def clear_chord_lyrics(track_object: TrackClass):
+def clear_chord_lyrics(track_object: TrackClass) -> None:
 	if track_object.title:
-		gc.clear(track_object)
+		guitar_chords.clear(track_object)
 
 
 showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
@@ -40754,9 +40754,7 @@ class GuitarChords:
 			return True
 		return False
 
-
-# guitar chords def
-gc = GuitarChords()
+guitar_chords = GuitarChords()
 
 
 class RadioThumbGen:
@@ -41327,7 +41325,7 @@ class Showcase:
 
 			if timed_ready and track.lyrics:
 
-				# if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
+				# if not prefs.guitar_chords or guitar_chords.test_ready_status(track) != 1:
 				#
 				#     line = _("Prefer synced")
 				#     if prefs.prefer_synced_lyrics:
@@ -41339,14 +41337,14 @@ class Showcase:
 
 				timed_ready = prefs.prefer_synced_lyrics
 
-			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
+			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
 
-				if not gc.auto_scroll:
+				if not guitar_chords.auto_scroll:
 					if draw.button(
 						_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
 						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
 						background_highlight_colour=bfg):
-						gc.auto_scroll = True
+						guitar_chords.auto_scroll = True
 
 			elif True and prefs.show_lyrics_showcase and timed_ready:
 				w = window_size[0] - (x + box) - round(30 * gui.scale)
