@@ -40441,14 +40441,14 @@ artist_info_menu.add(MenuItem(_("Clear Bio"), flush_artist_bio, pass_ref=True, s
 class GuitarChords:
 
 	def __init__(self, user_directory: Path):
-		self.store_a:        Path = user_directory / "guitar-chords-a"  # inline format
-		self.store_b:        Path = user_directory / "guitar-chords-b"  # 2 lines format
-		self.data:           list = []
-		self.current:         str = ""
-		self.auto_scroll:    bool = True
-		self.scroll_position: int = 0
-		self.ready:          dict = {}
-		self.widespace:       str = "　"
+		self.store_a:         Path = user_directory / "guitar-chords-a"  # inline format
+		self.store_b:         Path = user_directory / "guitar-chords-b"  # 2 lines format
+		self.data:            list = []
+		self.current:          str = ""
+		self.auto_scroll:     bool = True
+		self.scroll_position:  int = 0
+		self.ready: dict[str, int] = {}
+		self.widespace:        str = "　"
 
 	def clear(self, track: TrackClass) -> None:
 
@@ -40622,19 +40622,17 @@ class GuitarChords:
 			w = list(line)
 
 			for i, c in enumerate(w):
-				if i > 0 and c == " ":
+				if i > 0 and c == " " and (w[i - 1] == " " or w[i - 1] == self.widespace):
+					w[i - 1] = self.widespace
+					w[i] = self.widespace
 
-					if w[i - 1] == " " or w[i - 1] == self.widespace:
-						w[i - 1] = self.widespace
-						w[i] = self.widespace
-
-			lyrics = []
-			chords = []
+			lyrics: list[str] = []
+			chords: list[tuple[str, int]] = []
 
 			on = 0
 			mode = 0
 
-			chord_part = []
+			chord_part: list[str] = []
 
 			while on < len(w):
 				if mode == 0:
