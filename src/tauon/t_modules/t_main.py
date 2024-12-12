@@ -331,6 +331,7 @@ from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_b
 from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
+#from tauon.t_modules.guitar_chords import GuitarChords
 
 if TYPE_CHECKING:
 	# TODO(Martin): These two classes are within player4(), rip them out and put them as a top level?
@@ -16168,20 +16169,6 @@ def toggle_synced_lyrics_deco(track):
 
 showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
-
-def search_guitarparty(track_object: TrackClass):
-	if not track_object.title:
-		show_message(_("Insufitent metadata to search"))
-	guitar_chords.fetch(track_object)
-
-
-def search_guitarparty_showtest(_):
-	return gui.combo_mode and prefs.guitar_chords
-
-
-showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=search_guitarparty_showtest))
-
-
 def paste_lyrics_deco():
 	if SDL_HasClipboardText():
 		line_colour = colours.menu_text
@@ -16190,33 +16177,21 @@ def paste_lyrics_deco():
 
 	return [line_colour, colours.menu_background, None]
 
-
 def paste_lyrics(track_object: TrackClass):
 	if SDL_HasClipboardText():
 		clip = SDL_GetClipboardText()
 		#logging.info(clip)
 		track_object.lyrics = clip.decode("utf-8")
-
 	else:
 		logging.warning("NO TEXT TO PASTE")
 
+#def chord_lyrics_paste_show_test(_) -> bool:
+#	return gui.combo_mode and prefs.guitar_chords
+# showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
-def paste_chord_lyrics(track_object: TrackClass) -> None:
-	if track_object.title:
-		guitar_chords.save_format_b(track_object)
-
-
-def chord_lyrics_paste_show_test(_) -> bool:
-	return gui.combo_mode and prefs.guitar_chords
-
-
-def clear_chord_lyrics(track_object: TrackClass) -> None:
-	if track_object.title:
-		guitar_chords.clear(track_object)
-
-
-showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
-showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+#guitar_chords = GuitarChords(user_directory=Path(user_directory))
+#showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+#showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
 
 def copy_lyrics_deco(track_object: TrackClass):
@@ -27724,11 +27699,11 @@ def toggle_top_tabs(mode: int = 0) -> bool | None:
 	return None
 
 
-def toggle_guitar_chords(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.guitar_chords
-	prefs.guitar_chords ^= True
-	return None
+#def toggle_guitar_chords(mode: int = 0) -> bool | None:
+#	if mode == 1:
+#		return prefs.guitar_chords
+#	prefs.guitar_chords ^= True
+#	return None
 
 
 # def toggle_auto_lyrics(mode: int = 0) -> bool | None:
@@ -28535,7 +28510,8 @@ class Over:
 				if self.button(x, y, _("Reset failed list")):
 					prefs.auto_lyrics_checked.clear()
 			y += 30 * gui.scale
-		self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
+
+#		self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
 		y += 40 * gui.scale
 		ddt.text((x, y), _("Sources:"), colours.box_text_label, 11)
@@ -40437,316 +40413,6 @@ def artist_dl_deco():
 artist_info_menu.add(MenuItem(_("Download Artist Data"), artist_info_box.manual_dl, artist_dl_deco, show_test=test_artist_dl))
 artist_info_menu.add(MenuItem(_("Clear Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift))
 
-
-class GuitarChords:
-
-	def __init__(self, user_directory: Path):
-		self.store_a:         Path = user_directory / "guitar-chords-a"  # inline format
-		self.store_b:         Path = user_directory / "guitar-chords-b"  # 2 lines format
-		self.data:            list = []
-		self.current:          str = ""
-		self.auto_scroll:     bool = True
-		self.scroll_position:  int = 0
-		self.ready: dict[str, int] = {}
-		self.widespace:        str = "　"
-
-	def clear(self, track: TrackClass) -> None:
-
-		cache_title = self.get_cache_title(track)
-		self.prep_folders()
-		self.current = ""
-		self.scroll_position = 0
-
-		self.ready[cache_title] = 0
-
-		for item in os.listdir(self.store_a):
-			if item == cache_title:
-				(self.store_a / cache_title).unlink()
-
-		for item in os.listdir(self.store_b):
-			if item == cache_title:
-				(self.store_b / cache_title).unlink()
-
-	def save_format_b(self, track: TrackClass) -> None:
-
-		t = copy_from_clipboard()
-		if not t:
-			show_message(_("Clipboard has no text"))
-			inp.mouse_click = False
-			return
-
-		cache_title = self.get_cache_title(track)
-
-		t = t.replace("\r", "")
-
-		f = (self.store_b / cache_title).open("w")
-		f.write(t)
-		f.close()
-
-	def parse_b(self, lines: list[str]):
-
-		final: list[tuple[str, list[tuple[str, int]]]] = []
-
-		last = ""
-
-		for line in lines:
-
-			if line in (" ", "", "\n"):
-				line = "                                          "
-
-			line = line.replace("\n", "")
-			line = line.replace("\r", "")
-
-			if not last and (len(line) < 6 or \
-				"    "   in line \
-				or "D "  in line \
-				or "Am " in line \
-				or "Fm"  in line \
-				or "Em " in line \
-				or "C "  in line \
-				or "G "  in line \
-				or "F "  in line \
-				or "Dm"  in line) and any(c.isalpha() for c in line):
-				last = line
-				continue
-
-			w = list(line)
-			for i, c in enumerate(w):
-				if i > 0 and c == " " and (w[i - 1] == " " or w[i - 1] == self.widespace):
-					w[i - 1] = self.widespace
-					w[i] = self.widespace
-			line = "".join(w)
-
-			if not last:
-				final.append((line, []))
-				continue
-
-			on = 0
-			mode = 0
-			distance = 0
-			chords: list[tuple[str, int]] = []
-
-			while on < len(last):
-
-				if mode == 0:
-					if last[on] == " ":
-						on += 1
-						continue
-					mode = 1
-					distance = ddt.get_text_w(line[:on], 16)
-
-				on2 = on
-				while on2 < len(last) and last[on2] != " ":
-					on2 += 1
-
-				grab = last[on:on2]
-
-				chords.append((grab, distance))
-				mode = 0
-				on = on2
-				on += 1
-
-			final.append((line, chords))
-			last = ""
-		self.data = final
-
-	def prep_folders(self) -> None:
-
-		if not self.store_a.exists():
-			os.makedirs(self.store_a)
-
-		if not self.store_b.exists():
-			os.makedirs(self.store_b)
-
-	def fetch(self, track: TrackClass) -> None:
-
-		if self.test_ready_status(track) != 0:
-			return
-
-		cache_title = self.get_cache_title(track)
-
-		try:
-
-			r = requests.get(
-				"http://api.guitarparty.com/v2/songs/?query=" + urllib.parse.quote(cache_title),
-				headers={"Guitarparty-Api-Key": "e9c0e543798c4249c24f698022ced5dd0c583ec7"},
-				timeout=10)
-			d = r.json()["objects"][0]["body"]
-
-			self.prep_folders()
-			f = (self.store_a / cache_title).open("w")
-			f.write(d)
-			f.close()
-
-			self.ready[cache_title] = 1
-
-		except Exception:
-			logging.exception("Could not find matching track on GuitarParty")
-			show_message(_("Could not find matching track on GuitarParty"))
-			inp.mouse_click = False
-			self.ready[cache_title] = 2
-
-	def test_ready_status(self, track: TrackClass) -> int:
-
-		# 0 not searched
-		# 1 ready
-		# 2 failed
-
-		cache_title = self.get_cache_title(track)
-
-		if cache_title in self.ready:
-			if self.ready[cache_title] == 1:
-				return 1
-			if self.ready[cache_title] == 2:
-				return 2
-			return 0
-
-		self.prep_folders()
-		if cache_title in os.listdir(self.store_a):
-			self.ready[cache_title] = 1
-			return 1
-		if cache_title in os.listdir(self.store_b):
-			self.ready[cache_title] = 1
-			return 1
-		self.ready[cache_title] = 0
-		return 0
-
-	def parse(self, lines: list[str]) -> None:
-
-		final = []
-
-		for line in lines:
-			line = line.rstrip()
-			# while "  " in line:
-			# line = line.replace("  ", "　　")
-			w = list(line)
-
-			for i, c in enumerate(w):
-				if i > 0 and c == " " and (w[i - 1] == " " or w[i - 1] == self.widespace):
-					w[i - 1] = self.widespace
-					w[i] = self.widespace
-
-			lyrics: list[str] = []
-			chords: list[tuple[str, int]] = []
-
-			on = 0
-			mode = 0
-
-			chord_part: list[str] = []
-
-			while on < len(w):
-				if mode == 0:
-					# If normal, add to lyric list
-					if w[on] != "[":
-						lyrics.append(w[on])
-						on += 1
-						continue
-
-					# Start of [, delete it
-					mode = 1
-					del w[on]
-					continue
-
-				if w[on] == "]":
-					del w[on]
-					mode = 0
-
-					distance = 0
-					if on > 0:
-						distance = ddt.get_text_w("".join(w[:on]), 16)
-
-					chords.append(("".join(chord_part), distance))
-					chord_part = []
-					continue
-
-				chord_part.append(w[on])
-				del w[on]
-
-			final.append(("".join(lyrics), chords))
-
-		logging.info(final)
-		self.data = final
-
-	def get_cache_title(self, track: TrackClass) -> str:
-
-		name = track.artist + " " + track.title
-		name = filename_safe(name, sub="_")
-		return name
-
-	def render(self, track: TrackClass, x: int, y: int) -> bool:
-
-		cache_title = self.get_cache_title(track)
-
-		if self.current == cache_title:
-			if not self.data:
-				return False
-		else:
-			self.prep_folders()
-			if cache_title in os.listdir(self.store_a):
-				f = (self.store_a / cache_title).open()
-				lines = f.readlines()
-				f.close()
-				self.parse(lines)
-				self.current = cache_title
-				self.scroll_position = 0
-
-			elif cache_title in os.listdir(self.store_b):
-				f = (self.store_b / cache_title).open()
-				lines = f.readlines()
-				f.close()
-				self.parse_b(lines)
-				self.current = cache_title
-				self.scroll_position = 0
-			else:
-				return False
-
-		if self.auto_scroll:
-
-			if pctl.playing_length > 20:
-				progress = max(0, pctl.playing_time - 12) / (pctl.playing_length - 3)
-				height = len(self.data) * (18 + 15) * gui.scale
-
-				self.scroll_position = height * progress
-				# gui.update += 1
-				gui.frame_callback_list.append(TestTimer(0.3))
-				# time.sleep(0.032)
-
-		if mouse_wheel and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-			self.scroll_position += int(mouse_wheel * 30 * gui.scale * -1)
-			self.auto_scroll = False
-		y -= self.scroll_position
-
-		if self.data:
-
-			self.ready[cache_title] = 1
-
-			for line in self.data:
-
-				if window_size[0] > y > 0:
-					min_space = 0
-					for ch in line[1]:
-						xx = max(x + ch[1], min_space)
-
-						if len(ch[0]) == 2 and ch[0][1].lower() == "x":
-							min_space = 1 + xx + ddt.text((xx, y), ch[0], [220, 120, 240, 255], 214)
-						else:
-							min_space = 1 + xx + ddt.text((xx, y), ch[0], [140, 120, 240, 255], 213)
-				y += 15 * gui.scale
-
-				if window_size[0] > y > 0:
-					colour = colours.lyrics
-					if colours.lm:
-						colour = [30, 30, 30, 255]
-					ddt.text((x, y), line[0], colour, 16)
-
-				y += 18 * gui.scale
-
-			return True
-		return False
-
-guitar_chords = GuitarChords(user_directory=Path(user_directory))
-
-
 class RadioThumbGen:
 	def __init__(self):
 		self.cache = {}
@@ -41138,7 +40804,6 @@ class RadioView:
 
 radio_view = RadioView()
 
-
 class Showcase:
 
 	def __init__(self):
@@ -41327,16 +40992,15 @@ class Showcase:
 
 				timed_ready = prefs.prefer_synced_lyrics
 
-			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
+#			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
+#				if not guitar_chords.auto_scroll:
+#					if draw.button(
+#						_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+#						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+#						background_highlight_colour=bfg):
+#						guitar_chords.auto_scroll = True
 
-				if not guitar_chords.auto_scroll:
-					if draw.button(
-						_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-						background_highlight_colour=bfg):
-						guitar_chords.auto_scroll = True
-
-			elif True and prefs.show_lyrics_showcase and timed_ready:
+			if True and prefs.show_lyrics_showcase and timed_ready:
 				w = window_size[0] - (x + box) - round(30 * gui.scale)
 				timed_lyrics_ren.render(track.index, gcx, y, w=w)
 
