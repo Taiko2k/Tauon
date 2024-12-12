@@ -564,7 +564,7 @@ class SpotCtl:
 				if self.tauon.prefs.launch_spotify_local:
 					self.preparing_spotify = True
 					logging.info("Queue start librespot...")
-					self.tauon.tm.ready_playback()
+					self.tauon.thread_manager.ready_playback()
 					self.tauon.pctl.playerCommand = "spotcon"
 					self.tauon.pctl.playerCommandReady = True
 					if start_callback:
@@ -696,7 +696,7 @@ class SpotCtl:
 		self.tauon.pctl.playing_time = 0
 		self.tauon.pctl.decode_time = 0
 		self.tauon.gui.pl_update += 1
-		self.tauon.tm.ready_playback()
+		self.tauon.thread_manager.ready_playback()
 
 
 	def get_library_albums(self, return_list: bool = False) -> list | None:
@@ -1157,13 +1157,13 @@ class SpotCtl:
 			return
 
 		result = self.spotify.playback_currently_playing()
-		self.tauon.tm.ready_playback()
+		self.tauon.thread_manager.ready_playback()
 
 		if self.playing or (not self.coasting and not start):
 			return
 
 		try:
-			self.tauon.tm.player_lock.release()
+			self.tauon.thread_manager.player_lock.release()
 		except Exception:
 			logging.exception("Failed to release lock")
 

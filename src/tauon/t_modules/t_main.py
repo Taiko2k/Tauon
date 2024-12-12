@@ -5387,7 +5387,7 @@ class PlayerCtl:
 			shoot.daemon = True
 			shoot.start()
 		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
-			tm.ready("style")
+			tauon.thread_manager.ready("style")
 
 	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
@@ -5759,7 +5759,7 @@ class PlayerCtl:
 
 
 	def play_target_rr(self) -> None:
-		tm.ready_playback()
+		tauon.thread_manager.ready_playback()
 		self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
 
 		if self.playing_length > 2:
@@ -5791,7 +5791,7 @@ class PlayerCtl:
 
 	def play_target(self, gapless: bool = False, jump: bool = False) -> None:
 
-		tm.ready_playback()
+		tauon.thread_manager.ready_playback()
 
 		#logging.info(self.track_queue)
 		self.playing_time = 0
@@ -5944,9 +5944,9 @@ class PlayerCtl:
 
 		self.playerCommandReady = True
 
-		if tm.player_lock.locked():
+		if tauon.thread_manager.player_lock.locked():
 			try:
-				tm.player_lock.release()
+				tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -8275,6 +8275,40 @@ def encode_folder_name(track_object: TrackClass) -> str:
 
 	return folder_name
 
+class ThreadManager:
+
+	def __init__(self):
+
+		self.worker1:  Thread | None = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
+		self.worker2:  Thread | None = None  # Art bg, search
+		self.worker3:  Thread | None = None  # Gallery rendering
+		self.playback: Thread | None = None
+		self.player_lock:       Lock = threading.Lock()
+
+		self.d: dict = {}
+
+	def ready(self, type):
+		if self.d[type][2] is None or not self.d[type][2].is_alive():
+			shoot = threading.Thread(target=self.d[type][0], args=self.d[type][1])
+			shoot.daemon = True
+			shoot.start()
+			self.d[type][2] = shoot
+
+	def ready_playback(self) -> None:
+		if self.playback is None or not self.playback.is_alive():
+			if prefs.backend == 4:
+				self.playback = threading.Thread(target=player4, args=[tauon])
+			# elif prefs.backend == 2:
+			#     from tauon.t_modules.t_gstreamer import player3
+			#     self.playback = threading.Thread(target=player3, args=[tauon])
+			self.playback.daemon = True
+			self.playback.start()
+
+	def check_playback_running(self) -> bool:
+		if self.playback is None:
+			return False
+		return self.playback.is_alive()
+
 class Tauon:
 
 	def __init__(self):
@@ -8315,6 +8349,7 @@ class Tauon:
 		self.pl_to_id = pl_to_id
 		self.id_to_pl = id_to_pl
 		self.chunker = Chunker()
+		self.thread_manager: ThreadManager = ThreadManager()
 		self.stream_proxy = None
 		self.stream_proxy = StreamEnc(self)
 		self.level_train = []
@@ -8470,7 +8505,7 @@ class Tauon:
 
 	def bg_save(self) -> None:
 		self.worker_save_state = True
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 
 	def exit(self, reason: str) -> None:
 		logging.info("Shutting down. Reason: " + reason)
@@ -13243,7 +13278,7 @@ class StyleOverlay:
 		self.min_on_timer.force_set(-0.2)
 		self.parent_path = "None"
 		self.stage = 0
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 		gui.style_worker_timer.set()
 		gui.delay_frame(0.25)
 		gui.update += 1
@@ -15688,7 +15723,7 @@ def move_playing_folder_to_stem(path: str, pl_id: int | None = None) -> None:
 	move_jobs.append(
 		(move_folder, os.path.join(artist_folder, track.parent_folder_name), True,
 		track.parent_folder_name, load_order))
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def move_playing_folder_to_tag(tag_item):
@@ -17384,7 +17419,7 @@ def rescan_tags(pl: int) -> None:
 	for track in pctl.multi_playlist[pl].playlist_ids:
 		if pctl.master_library[track].is_cue is False:
 			to_scan.append(track)
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 # def re_import(pl: int) -> None:
@@ -18974,7 +19009,7 @@ def auto_sync_thread(pl: int) -> None:
 				else:
 					gui.sync_progress = _("{N} Folder Remaining").format(N=str(remain))
 				transcode_list.append(folder_dict[item])
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 				while transcode_list:
 					time.sleep(1)
 				if gui.stop_sync:
@@ -20091,7 +20126,7 @@ def convert_folder(index: int):
 
 	#logging.info(folder)
 	transcode_list.append(folder)
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def transfer(index: int, args) -> None:
@@ -20324,7 +20359,7 @@ def lightning_paste():
 			move_jobs.append(
 				(move_path, os.path.join(artist_folder, move_track.parent_folder_name), move,
 				move_track.parent_folder_name, load_order))
-			tm.ready("worker")
+			tauon.thread_manager.ready("worker")
 			# Remove all tracks with the old paths
 			for pl in pctl.multi_playlist:
 				for i in reversed(range(len(pl.playlist_ids))):
@@ -21234,7 +21269,7 @@ def reload_metadata(input, keep_star: bool = True) -> None:
 			pctl.notify_change()
 
 	gui.pl_update += 1
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def reload_metadata_selection() -> None:
@@ -21245,7 +21280,7 @@ def reload_metadata_selection() -> None:
 	for k in cargo:
 		if pctl.master_library[k].is_cue == False:
 			to_scan.append(k)
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 
@@ -22893,7 +22928,7 @@ def switch_playlist(number, cycle=False, quiet=False):
 	code = pctl.gen_codes.get(id)
 	if code is not None and check_auto_update_okay(code, pctl.active_playlist_viewing):
 		gui.regen_single_id = id
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 
 	if album_mode:
 		reload_albums(True)
@@ -23153,14 +23188,14 @@ def clean_db() -> None:
 	global cm_clean_db
 	prefs.remove_network_tracks = False
 	cm_clean_db = True
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def clean_db2() -> None:
 	global cm_clean_db
 	prefs.remove_network_tracks = True
 	cm_clean_db = True
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), clean_db2))
@@ -23818,7 +23853,7 @@ def toggle_auto_bg(mode: int= 0) -> bool | None:
 		gui.update = 60
 
 	style_overlay.flush()
-	tm.ready("style")
+	tauon.thread_manager.ready("style")
 	# if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
 	#     toggle_auto_theme()
 	return None
@@ -23868,7 +23903,7 @@ def toggle_auto_bg_blur(mode: int = 0) -> bool | None:
 		return prefs.art_bg_always_blur
 	prefs.art_bg_always_blur ^= True
 	style_overlay.flush()
-	tm.ready("style")
+	tauon.thread_manager.ready("style")
 	return None
 
 
@@ -25636,8 +25671,8 @@ def worker3():
 	while True:
 		# time.sleep(0.04)
 
-		# if tm.exit_worker3:
-		#     tm.exit_worker3 = False
+		# if tauon.thread_manager.exit_worker3:
+		#     tauon.thread_manager.exit_worker3 = False
 		#     return
 		# time.sleep(1)
 
@@ -26540,7 +26575,7 @@ def worker1():
 				tag_scan(nt)
 			else:
 				after_scan.append(nt)
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 			pctl.master_count += 1
 
@@ -27902,9 +27937,9 @@ def reload_backend() -> None:
 		wait += 1
 		if wait > 20:
 			break
-	if tm.player_lock.locked():
+	if tauon.thread_manager.player_lock.locked():
 		try:
-			tm.player_lock.release()
+			tauon.thread_manager.player_lock.release()
 		except RuntimeError as e:
 			if str(e) == "release unlocked lock":
 				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -27923,7 +27958,7 @@ def reload_backend() -> None:
 		if wait > 200:
 			break
 
-	tm.ready_playback()
+	tauon.thread_manager.ready_playback()
 
 	if pre_state == 1:
 		pctl.revert()
@@ -31625,7 +31660,7 @@ class TopPanel:
 						pctl.notify_change()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tree_view_box.clear_target_pl(i)
-						tm.ready("worker")
+						tauon.thread_manager.ready("worker")
 
 				if mouse_up and radio_view.drag:
 					pctl.radio_playlists[i]["items"].append(radio_view.drag)
@@ -34048,7 +34083,7 @@ def set_mini_mode():
 	if prefs.mini_mode_mode == 5:
 		size = (350, 545)
 		style_overlay.flush()
-		tm.ready("style")
+		tauon.thread_manager.ready("style")
 
 	if logical_size == window_size:
 		size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
@@ -34129,7 +34164,7 @@ def restore_full_mode():
 
 	gui.update_layout()
 	if prefs.art_bg:
-		tm.ready("style")
+		tauon.thread_manager.ready("style")
 
 
 def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, album_fade, start_x, width, style=1, ry=None):
@@ -36052,7 +36087,7 @@ class RadioBox:
 		pctl.playing_time = 0
 		pctl.decode_time = 0
 		pctl.playing_length = 0
-		tm.ready_playback()
+		tauon.thread_manager.ready_playback()
 		hit_discord()
 
 		if tauon.update_play_lock is not None:
@@ -36771,7 +36806,7 @@ class RenamePlaylistBox:
 			rename_text_area.highlight_none()
 
 			gui.regen_single = rename_playlist_box.playlist_index
-			tm.ready("worker")
+			tauon.thread_manager.ready("worker")
 
 
 		else:
@@ -36816,7 +36851,7 @@ class RenamePlaylistBox:
 
 			if input_text or key_backspace_press:
 				gui.regen_single = rename_playlist_box.playlist_index
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 				# regenerate_playlist(rename_playlist_box.playlist_index)
 			# if gui.gen_code_errors:
@@ -37201,7 +37236,7 @@ class PlaylistBox:
 						modified = True
 					if modified:
 						pctl.after_import_flag = True
-						tm.ready("worker")
+						tauon.thread_manager.ready("worker")
 						pctl.notify_change()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tree_view_box.clear_target_pl(i)
@@ -37665,7 +37700,7 @@ class ArtistList:
 
 			if prefs.auto_dl_artist_data:
 				self.to_fetch = artist
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 			else:
 				self.thumb_cache[artist] = None
@@ -38313,7 +38348,7 @@ class ArtistList:
 				self.current_album_counts = []
 				self.current_artist_track_counts = {}
 				self.load = True
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 		area = (x, y, w, h)
 		area2 = (x + 1, y, w - 3, h)
@@ -40819,7 +40854,7 @@ class RadioThumbGen:
 		if r is None:
 			if len(self.requests) < 3:
 				self.requests.append((station, w))
-				tm.ready("radio-thumb")
+				tauon.thread_manager.ready("radio-thumb")
 			return 0
 		if r[0] == 2:
 			texture = SDL_CreateTextureFromSurface(renderer, r[3])
@@ -42373,63 +42408,27 @@ SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 # --------------------------------------------------------------------------------------------
 
-class ThreadManager:
-
-	def __init__(self):
-
-		self.worker1 = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
-		self.worker2 = None  # Art bg, search
-		self.worker3 = None  # Gallery rendering
-		self.playback = None
-		self.player_lock = threading.Lock()
-
-		self.d = {}
-
-	def ready(self, type):
-		if self.d[type][2] is None or not self.d[type][2].is_alive():
-			shoot = threading.Thread(target=self.d[type][0], args=self.d[type][1])
-			shoot.daemon = True
-			shoot.start()
-			self.d[type][2] = shoot
-
-	def ready_playback(self) -> None:
-		if self.playback is None or not self.playback.is_alive():
-			if prefs.backend == 4:
-				self.playback = threading.Thread(target=player4, args=[tauon])
-			# elif prefs.backend == 2:
-			#     from tauon.t_modules.t_gstreamer import player3
-			#     self.playback = threading.Thread(target=player3, args=[tauon])
-			self.playback.daemon = True
-			self.playback.start()
-
-	def check_playback_running(self) -> bool:
-		if self.playback is None:
-			return False
-		return self.playback.is_alive()
-
 
 # caster = threading.Thread(target=enc, args=[tauon])
 # caster.daemon = True
 # caster.start()
 
-tm = ThreadManager()
-tauon.tm = tm
-tm.ready_playback()
+tauon.thread_manager.ready_playback()
 
 try:
-	tm.d["caster"] = [lambda: x, [tauon], None]
+	tauon.thread_manager.d["caster"] = [lambda: x, [tauon], None]
 except Exception:
 	logging.exception("Failed to cast")
 
-tm.d["worker"] = [worker1, (), None]
-tm.d["search"] = [worker2, (), None]
-tm.d["gallery"] = [worker3, (), None]
-tm.d["style"] = [worker4, (), None]
-tm.d["radio-thumb"] = [radio_thumb_gen.loader, (), None]
+tauon.thread_manager.d["worker"] = [worker1, (), None]
+tauon.thread_manager.d["search"] = [worker2, (), None]
+tauon.thread_manager.d["gallery"] = [worker3, (), None]
+tauon.thread_manager.d["style"] = [worker4, (), None]
+tauon.thread_manager.d["radio-thumb"] = [radio_thumb_gen.loader, (), None]
 
-tm.ready("search")
-tm.ready("gallery")
-tm.ready("worker")
+tauon.thread_manager.ready("search")
+tauon.thread_manager.ready("gallery")
+tauon.thread_manager.ready("worker")
 
 # thread = threading.Thread(target=worker1)
 # thread.daemon = True
@@ -43023,7 +43022,7 @@ def update_layout_do():
 		update_set()
 
 	if prefs.art_bg:
-		tm.ready("style")
+		tauon.thread_manager.ready("style")
 
 # SDL_RenderClear(renderer)
 # SDL_RenderPresent(renderer)
@@ -44098,7 +44097,7 @@ while pctl.running:
 				gui.lowered = True
 				# if prefs.min_to_tray:
 				#     tray.down()
-				# tm.sleep()
+				# tauon.thread_manager.sleep()
 
 			elif event.window.event == SDL_WINDOWEVENT_RESTORED:
 
@@ -44146,9 +44145,9 @@ while pctl.running:
 		SDL_RaiseWindow(t_window)
 		gui.lowered = False
 
-	# if tm.sleeping:
+	# if tauon.thread_manager.sleeping:
 	#     if not gui.lowered:
-	#         tm.wake()
+	#         tauon.thread_manager.wake()
 	if gui.lowered:
 		gui.update = 0
 	# ----------------
@@ -44160,9 +44159,9 @@ while pctl.running:
 	power += 1
 
 	if pctl.playerCommandReady:
-		if tm.player_lock.locked():
+		if tauon.thread_manager.player_lock.locked():
 			try:
-				tm.player_lock.release()
+				tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -44923,7 +44922,7 @@ while pctl.running:
 	if len(load_orders) > 0:
 		loading_in_progress = True
 		pctl.after_import_flag = True
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 		if loaderCommand == LC_None:
 
 			# Fliter out files matching CUE filenames
@@ -44958,7 +44957,7 @@ while pctl.running:
 							to_got = 1
 							to_get = 1
 					loaderCommandReady = True
-					tm.ready("worker")
+					tauon.thread_manager.ready("worker")
 					break
 
 	elif loading_in_progress is True:
@@ -45099,7 +45098,7 @@ while pctl.running:
 			album_art_gen.clear_cache()
 			style_overlay.radio_meta = None
 			if prefs.art_bg:
-				tm.ready("style")
+				tauon.thread_manager.ready("style")
 
 		fields.clear()
 		gui.cursor_want = 0
@@ -48627,8 +48626,8 @@ if tauon.stream_proxy and tauon.stream_proxy.download_running:
 	time.sleep(2)
 
 try:
-	if tm.player_lock.locked():
-		tm.player_lock.release()
+	if tauon.thread_manager.player_lock.locked():
+		tauon.thread_manager.player_lock.release()
 except RuntimeError as e:
 	if str(e) == "release unlocked lock":
 		logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -48675,7 +48674,7 @@ if os.path.isdir(cache_dir):
 	shutil.rmtree(cache_dir)
 
 if not tauon.quick_close:
-	while tm.check_playback_running():
+	while tauon.thread_manager.check_playback_running():
 		time.sleep(0.2)
 		if exit_timer.get() > 2:
 			logging.warning("Phazor unload timeout")

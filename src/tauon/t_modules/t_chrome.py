@@ -80,7 +80,7 @@ class Chrome:
 		self.tauon.gui.update += 1
 		self.tauon.pctl.playerCommand = "startchrome"
 		self.tauon.pctl.playerCommandReady = True
-		self.tauon.tm.ready_playback()
+		self.tauon.thread_manager.ready_playback()
 
 
 	def update(self) -> tuple:
