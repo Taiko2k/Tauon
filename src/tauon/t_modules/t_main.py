@@ -40440,19 +40440,15 @@ artist_info_menu.add(MenuItem(_("Clear Bio"), flush_artist_bio, pass_ref=True, s
 
 class GuitarChords:
 
-	def __init__(self):
-		self.store_a = os.path.join(user_directory, "guitar-chords-a")  # inline format
-		self.store_b = os.path.join(user_directory, "guitar-chords-b")  # 2 lines format
-
-		self.data = []
-		self.current = ""
-		self.auto_scroll = True
-
-		self.scroll_position = 0
-
-		self.ready = {}
-
-		self.widespace = "　"
+	def __init__(self, user_directory: Path):
+		self.store_a:        Path = user_directory / "guitar-chords-a"  # inline format
+		self.store_b:        Path = user_directory / "guitar-chords-b"  # 2 lines format
+		self.data:           list = []
+		self.current:         str = ""
+		self.auto_scroll:    bool = True
+		self.scroll_position: int = 0
+		self.ready:          dict = {}
+		self.widespace:       str = "　"
 
 	def clear(self, track: TrackClass) -> None:
 
@@ -40465,11 +40461,11 @@ class GuitarChords:
 
 		for item in os.listdir(self.store_a):
 			if item == cache_title:
-				os.remove(os.path.join(self.store_a, cache_title))
+				(self.store_a / cache_title).unlink()
 
 		for item in os.listdir(self.store_b):
 			if item == cache_title:
-				os.remove(os.path.join(self.store_b, cache_title))
+				(self.store_b / cache_title).unlink()
 
 	def save_format_b(self, track: TrackClass) -> None:
 
@@ -40483,43 +40479,42 @@ class GuitarChords:
 
 		t = t.replace("\r", "")
 
-		f = open(os.path.join(self.store_b, cache_title), "w")
+		f = (self.store_b / cache_title).open("w")
 		f.write(t)
 		f.close()
 
-	def parse_b(self, lines):
+	def parse_b(self, lines: list[str]):
 
-		final = []
+		final: list[tuple[str, list[tuple[str, int]]]] = []
 
 		last = ""
 
 		for line in lines:
 
-			if line == " " or line == "" or line == "\n":
+			if line in (" ", "", "\n"):
 				line = "                                          "
 
 			line = line.replace("\n", "")
 			line = line.replace("\r", "")
 
 			if not last and (len(line) < 6 or \
-				"    " in line \
-				or "D " in line \
+				"    "   in line \
+				or "D "  in line \
 				or "Am " in line \
-				or "Fm" in line \
+				or "Fm"  in line \
 				or "Em " in line \
-				or "C " in line \
-				or "G " in line \
-				or "F " in line \
-				or "Dm" in line) and any(c.isalpha() for c in line):
+				or "C "  in line \
+				or "G "  in line \
+				or "F "  in line \
+				or "Dm"  in line) and any(c.isalpha() for c in line):
 				last = line
 				continue
 
 			w = list(line)
 			for i, c in enumerate(w):
-				if i > 0 and c == " ":
-					if w[i - 1] == " " or w[i - 1] == self.widespace:
-						w[i - 1] = self.widespace
-						w[i] = self.widespace
+				if i > 0 and c == " " and (w[i - 1] == " " or w[i - 1] == self.widespace):
+					w[i - 1] = self.widespace
+					w[i] = self.widespace
 			line = "".join(w)
 
 			if not last:
@@ -40529,7 +40524,7 @@ class GuitarChords:
 			on = 0
 			mode = 0
 			distance = 0
-			chords = []
+			chords: list[tuple[str, int]] = []
 
 			while on < len(last):
 
@@ -40555,18 +40550,15 @@ class GuitarChords:
 			last = ""
 		self.data = final
 
-	def prep_folders(self):
+	def prep_folders(self) -> None:
 
-		if not os.path.exists(self.store_a):
+		if not self.store_a.exists():
 			os.makedirs(self.store_a)
 
-		if not os.path.exists(self.store_b):
+		if not self.store_b.exists():
 			os.makedirs(self.store_b)
 
 	def fetch(self, track: TrackClass) -> None:
-
-		if track is None:
-			return
 
 		if self.test_ready_status(track) != 0:
 			return
@@ -40582,7 +40574,7 @@ class GuitarChords:
 			d = r.json()["objects"][0]["body"]
 
 			self.prep_folders()
-			f = open(os.path.join(self.store_a, cache_title), "w")
+			f = (self.store_a / cache_title).open("w")
 			f.write(d)
 			f.close()
 
@@ -40619,7 +40611,7 @@ class GuitarChords:
 		self.ready[cache_title] = 0
 		return 0
 
-	def parse(self, lines):
+	def parse(self, lines: list[str]) -> None:
 
 		final = []
 
@@ -40683,7 +40675,7 @@ class GuitarChords:
 		name = filename_safe(name, sub="_")
 		return name
 
-	def render(self, track: TrackClass, x, y) -> bool:
+	def render(self, track: TrackClass, x: int, y: int) -> bool:
 
 		cache_title = self.get_cache_title(track)
 
@@ -40693,7 +40685,7 @@ class GuitarChords:
 		else:
 			self.prep_folders()
 			if cache_title in os.listdir(self.store_a):
-				f = open(os.path.join(self.store_a, cache_title))
+				f = (self.store_a / cache_title).open()
 				lines = f.readlines()
 				f.close()
 				self.parse(lines)
@@ -40701,7 +40693,7 @@ class GuitarChords:
 				self.scroll_position = 0
 
 			elif cache_title in os.listdir(self.store_b):
-				f = open(os.path.join(self.store_b, cache_title))
+				f = (self.store_b / cache_title).open()
 				lines = f.readlines()
 				f.close()
 				self.parse_b(lines)
@@ -40754,7 +40746,7 @@ class GuitarChords:
 			return True
 		return False
 
-guitar_chords = GuitarChords()
+guitar_chords = GuitarChords(user_directory=Path(user_directory))
 
 
 class RadioThumbGen:
