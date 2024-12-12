@@ -186,35 +186,43 @@ class SpotCtl:
 			url = self.cred.user_authorisation_url(scope=self.scope)
 		webbrowser.open(url, new=2, autoraise=True)
 
-	def control(self, command: str, param: int | None = None) -> None:
+	def control(self, command: str, param: str | int | None = None) -> None:
+		if not self.spotify:
+			return
 
 		try:
 			if command == "pause" and (self.playing or self.coasting) and not self.paused:
 				self.spotify.playback_pause()
 				self.paused = True
 				self.start_timer.set()
-			if command == "stop" and (self.playing or self.coasting):
+			elif command == "stop" and (self.playing or self.coasting):
 				self.paused = False
 				self.playing = False
 				self.coasting = False
 				self.spotify.playback_pause()
 				self.start_timer.set()
-			if command == "resume" and (self.coasting or self.playing) and self.paused:
+			elif command == "resume" and (self.coasting or self.playing) and self.paused:
 				self.spotify.playback_resume()
 				self.paused = False
 				self.progress_timer.set()
 				self.start_timer.set()
-			if command == "volume":
+			elif param is None:
+				logging.error(f"Passed a command {command} requiring a parameter but did not pass the parameter!")
+				return
+			elif command == "volume" and type(param) is int:
 				self.spotify.playback_volume(param)
-			if command == "seek":
+			elif command == "seek" and type(param) is int:
 				self.spotify.playback_seek(param)
 				self.start_timer.set()
-			if command == "next":
+			elif command == "next" and type(param) is str:
 				self.spotify.playback_next(param)
 				#self.start_timer.set()
-			if command == "previous":
+			elif command == "previous" and type(param) is str:
 				self.spotify.playback_previous(param)
 				#self.start_timer.set()
+			else:
+				logging.error(f"Passed an invalid command {command}!")
+				return
 
 		except Exception as e:
 			logging.exception("Control failure")
