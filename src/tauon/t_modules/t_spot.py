@@ -82,14 +82,14 @@ class SpotCtl:
 
 		self.coast_context = ""
 
-	def prep_cred(self) -> None:
+	def prep_cred(self) -> RefreshingCredentials:
 		if not tekore_imported:
 			self.tauon.gui.show_message(_("Dependency Tekore not found"), mode="warning")
 		rc = tk.RefreshingCredentials
 		secret = self.tauon.prefs.spot_secret
 		if not secret or len(self.tauon.prefs.spot_secret) != 32:
 			secret = None
-		self.cred = rc(client_id=self.tauon.prefs.spot_client, client_secret=secret, redirect_uri=self.redirect_uri)
+		return rc(client_id=self.tauon.prefs.spot_client, client_secret=secret, redirect_uri=self.redirect_uri)
 
 	def connect(self) -> None:
 		if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
@@ -97,7 +97,7 @@ class SpotCtl:
 		if len(self.tauon.prefs.spot_client) != 32:
 			return
 		if self.cred is None:
-			self.prep_cred()
+			self.cred = self.prep_cred()
 		if self.spotify is None:
 			if self.token is None:
 				self.load_token()
@@ -109,10 +109,7 @@ class SpotCtl:
 
 	def paste_code(self, code: str) -> None:
 		if self.cred is None:
-			self.prep_cred()
-		if self.cred is None:
-			logging.error("Could not prep_cred() while running paste_code(), something is very wrong!")
-			return
+			self.cred = self.prep_cred()
 
 		if self.pkce_code:
 			self.token = self.cred.request_pkce_token(code.strip().strip("\n"), self.pkce_code)
@@ -174,7 +171,7 @@ class SpotCtl:
 			self.tauon.gui.show_message(_("Invalid client ID. See Spotify tab in settings."), mode="error")
 			return
 		if self.cred is None:
-			self.prep_cred()
+			self.cred = self.prep_cred()
 
 		secret = self.tauon.prefs.spot_secret
 		if not secret or len(self.tauon.prefs.spot_secret) != 32:
