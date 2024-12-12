@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 	from tekore._client.full import Spotify
 	from tekore._model.album.full import FullAlbum
 
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import Strings, Tauon, TrackClass
 
 tekore_imported = False
 try:
@@ -52,35 +52,35 @@ else:
 class SpotCtl:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
-		self.strings = tauon.strings
-		self.start_timer = Timer()
-		self.status = 0
+		self.tauon:            Tauon = tauon
+		self.strings:        Strings = tauon.strings
+		self.start_timer:      Timer = Timer()
+		self.status:             int = 0
 		self.spotify: Spotify | None = None
-		self.loaded_art = ""
-		self.playing = False
-		self.coasting = False
-		self.paused = False
+		self.loaded_art:         str = ""
+		self.playing:           bool = False
+		self.coasting:          bool = False
+		self.paused:            bool = False
 		self.token = None
 		self.cred: RefreshingCredentials | None = None
-		self.started_once = False
-		self.redirect_uri = "http://localhost:7811/spotredir"
-		self.current_imports = {}
-		self.spotify_com = False
+		self.started_once:                 bool = False
+		self.redirect_uri:                  str = "http://localhost:7811/spotredir"
+		self.current_imports:              dict = {}
+		self.spotify_com:                  bool = False
 		self.sender = None
-		self.cache_saved_albums = []
-		self.scope = "user-read-private user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
-		self.launching_spotify = False
-		self.preparing_spotify = False
-		self.progress_timer = Timer()
-		self.update_timer = Timer()
+		self.cache_saved_albums:      list[str] = []
+		self.scope:              str = "user-read-private user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
+		self.launching_spotify: bool = False
+		self.preparing_spotify: bool = False
+		self.progress_timer:   Timer = Timer()
+		self.update_timer:     Timer = Timer()
 
-		self.token_path = os.path.join(self.tauon.user_directory, "spot-token-pkce")
+		self.token_path: str = os.path.join(self.tauon.user_directory, "spot-token-pkce")
 		self.pkce_code = None
-		self.local = True
+		self.local: bool = True
 		self.country = None
 
-		self.coast_context = ""
+		self.coast_context: str = ""
 
 	def prep_cred(self) -> RefreshingCredentials:
 		if not tekore_imported:
