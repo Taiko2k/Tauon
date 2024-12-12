@@ -917,7 +917,6 @@ if install_directory != config_directory and not Path(config_directory / "input.
 	#logging.warning(config_directory)
 	shutil.copy(Path(install_directory) / "templates" / "input.txt", config_directory)
 
-last_fm_enable = False
 
 if snap_mode:
 	discord_allow = False
