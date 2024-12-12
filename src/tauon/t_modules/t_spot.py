@@ -461,12 +461,10 @@ class SpotCtl:
 			self.tauon.gui.show_message(_("Error - Tauon device not found"))
 
 		self.preparing_spotify = False
-	def play_target(self, id: int, force_new_device: bool = False, start_time: int = 0, start_callback=None):
 
-		if not start_time:
-			start_time = None
-		else:
-			start_time = int(start_time * 1000)
+	def play_target(self, id: int, force_new_device: bool = False, start_time: int | None = 0, start_callback=None):
+
+		start_time = None if not start_time else int(start_time * 1000)
 
 		self.coasting = False
 		self.connect()
