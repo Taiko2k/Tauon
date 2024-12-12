@@ -21,7 +21,7 @@ I would highly recommend not using this project as an example on how to code cle
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
@@ -3050,26 +3050,26 @@ perf_timer.set()
 
 radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 
-primary_stations = []
+primary_stations: list[dict[str, str]] = []
 station = {
 	"title": "SomaFM Groove Salad",
-	"stream_url": "http://ice3.somafm.com/groovesalad-128-mp3",
+	"stream_url": "https://ice3.somafm.com/groovesalad-128-mp3",
 	"country": "USA",
-	"website_url": "http://somafm.com/groovesalad",
+	"website_url": "https://somafm.com/groovesalad",
 	"icon": "https://somafm.com/logos/120/groovesalad120.png",
 }
 primary_stations.append(station)
 station = {
 	"title": "SomaFM PopTron",
-	"stream_url": "http://ice3.somafm.com/poptron-128-mp3",
+	"stream_url": "https://ice3.somafm.com/poptron-128-mp3",
 	"country": "USA",
-	"website_url": "http://somafm.com/poptron/",
+	"website_url": "https://somafm.com/poptron/",
 	"icon": "https://somafm.com/logos/120/poptron120.jpg",
 }
 primary_stations.append(station)
 station = {
 	"title": "SomaFM Vaporwaves",
-	"stream_url": "http://ice4.somafm.com/vaporwaves-128-mp3",
+	"stream_url": "https://ice4.somafm.com/vaporwaves-128-mp3",
 	"country": "USA",
 	"website_url": "https://somafm.com/vaporwaves",
 	"icon": "https://somafm.com/img3/vaporwaves400.png",
@@ -12594,7 +12594,7 @@ class AlbumArt:
 		try:
 
 			r = requests.get(
-				"http://webservice.fanart.tv/v3/music/" \
+				"https://webservice.fanart.tv/v3/music/" \
 				+ artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
 
 			artlink = r.json()["artistbackground"][0]["url"]
@@ -16452,7 +16452,7 @@ def download_art1(tr):
 			try:
 				show_message(_("Searching fanart.tv for cover art..."))
 
-				r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
+				r = requests.get("https://webservice.fanart.tv/v3/music/albums/" \
 					+ artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
 
 				artlink = r.json()["albums"][album_id]["albumcover"][0]["url"]
@@ -21849,10 +21849,10 @@ def ser_band(track_id: int) -> None:
 		show_message(_("Searching..."))
 
 
-def ser_rym(index: int):
+def ser_rym(index: int) -> None:
 	if len(pctl.master_library[index].artist) < 2:
 		return
-	line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(
+	line = "https://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(
 		pctl.master_library[index].artist)
 	webbrowser.open(line, new=2, autoraise=True)
 
@@ -21907,10 +21907,10 @@ def ser_gen(track_id, get_lyrics=False):
 	shoot.start()
 
 
-def ser_wiki(index: int):
+def ser_wiki(index: int) -> None:
 	if len(pctl.master_library[index].artist) < 2:
 		return
-	line = "http://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(pctl.master_library[index].artist)
+	line = "https://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(pctl.master_library[index].artist)
 	webbrowser.open(line, new=2, autoraise=True)
 
 
@@ -24072,7 +24072,7 @@ def get_album_art_url(tr: TrackClass):
 		if url:
 			return url
 
-		base_url = "http://coverartarchive.org/release-group/"
+		base_url = "https://coverartarchive.org/release-group/"
 		url = f"{base_url}{release_group_id}"
 
 		try:
@@ -24092,7 +24092,7 @@ def get_album_art_url(tr: TrackClass):
 		if url:
 			return url
 
-		base_url = "http://coverartarchive.org/release/"
+		base_url = "https://coverartarchive.org/release/"
 		url = f"{base_url}{release_id}"
 
 		try:
@@ -36251,8 +36251,8 @@ class RadioBox:
 
 				radio = {}
 				radio["title"] = "Nightwave Plaza"
-				radio["stream_url_unresolved"] = "http://radio.plaza.one/ogg"
-				radio["stream_url"] = "http://radio.plaza.one/ogg"
+				radio["stream_url_unresolved"] = "https://radio.plaza.one/ogg"
+				radio["stream_url"] = "https://radio.plaza.one/ogg"
 				radio["website_url"] = "https://plaza.one/"
 				radio["icon"] = "https://plaza.one/icons/apple-touch-icon.png"
 				radio["country"] = "Japan"
@@ -37549,7 +37549,7 @@ def save_discogs_artist_thumb(artist, filepath):
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
 	logging.info("Searching fanart.tv for image...")
 	#logging.info("mbid is " + mbid)
-	r = requests.get("http://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + prefs.fatvap, timeout=5)
+	r = requests.get("https://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + prefs.fatvap, timeout=5)
 	#logging.info(r.json())
 	thumblink = r.json()["artistthumb"][0]["url"]
 	if preview:
