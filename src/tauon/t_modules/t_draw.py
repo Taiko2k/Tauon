@@ -359,7 +359,7 @@ class TDraw:
 		self.real_bg:     bool = False
 		self.alpha_bg:    bool = False
 		self.force_gray:  bool = False
-		self.f_dict = {}
+		self.f_dict: dict[str, Win32Font | tuple[str, int, int]] = {}
 		self.ttc = {}
 		self.ttl = []
 
@@ -427,7 +427,7 @@ class TDraw:
 		SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 		SDL_RenderDrawLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
-	def get_text_w(self, text: str, font: str, height: bool = False) -> int:
+	def get_text_w(self, text: str, font: int, height: bool = False) -> int:
 
 		x, y = self.get_text_wh(text, font, 3000)
 		if height:
@@ -452,7 +452,7 @@ class TDraw:
 
 		self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale)
 
-	def get_text_wh(self, text: str, font: str, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
+	def get_text_wh(self, text: str, font: int, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
 
 		if system == "Linux":
 			self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
@@ -473,7 +473,7 @@ class TDraw:
 		#return self.__win_text_xy(text, font)
 		return self.__win_text_xy(text, font, max_x, wrap)
 
-	def get_y_offset(self, text: str, font: str, max_x: int, wrap: bool = False) -> int:
+	def get_y_offset(self, text: str, font: int, max_x: int, wrap: bool = False) -> int:
 		"""HACKY"""
 		self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -532,7 +532,7 @@ class TDraw:
 
 	def __draw_text_cairo(
 		self,
-		location: list[int], text: str, colour: list[int], font: str, max_x: int, bg: tuple[int, int, int, int],
+		location: list[int], text: str, colour: list[int], font: int, max_x: int, bg: tuple[int, int, int, int],
 		align: int = 0, max_y: int | None = None, wrap: bool = False, range_top: int = 0,
 		range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None,
 		) -> int:
@@ -745,7 +745,7 @@ class TDraw:
 
 	# WINDOWS --------------------------------------------------------
 
-	def __win_text_xy(self, text: str, font: str, max_x: int, wrap: bool) -> tuple[int, int] | None:
+	def __win_text_xy(self, text: str, font: int | None, max_x: int, wrap: bool) -> tuple[int, int] | None:
 
 		if font is None or font not in self.f_dict:
 
@@ -788,9 +788,11 @@ class TDraw:
 
 		SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
 
-	def __draw_text_windows(self, x: int, y: int, text: str, bg: list[int], fg: list[int], font: str | None = None,
+	def __draw_text_windows(
+		self, x: int, y: int, text: str, bg: list[int], fg: list[int], font: Win32Font | None = None,
 		align: int = 0, wrap: bool = False, max_x: int = 100, max_y: int | None = None,
-		range_top: int = 0, range_height: int | None = None) -> int:
+		range_top: int = 0, range_height: int | None = None,
+	) -> int:
 
 		y += self.y_offset_dict[font]
 
@@ -856,7 +858,8 @@ class TDraw:
 
 		return dst.w
 
-	def text(self, location: list[int], text: str, colour: list[int], font: str, max_w: int = 4000, bg: list[int] | None = None,
+	def text(
+		self, location: list[int], text: str, colour: list[int], font: int | Win32Font, max_w: int = 4000, bg: list[int] | None = None,
 		range_top: int = 0, range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None) -> int | None:
 
 		#logging.info((text, font))
