@@ -49,6 +49,10 @@ win_build() {
 
 
 clean_venv_run() {
+	if ! command -v python; then
+		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
+		exit 1
+	fi
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
 	export PYTHONPATH=".":"${PYTHONPATH-}"
