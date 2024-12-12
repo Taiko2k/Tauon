@@ -83,7 +83,7 @@ class Chrome:
 		self.tauon.tm.ready_playback()
 
 
-	def update(self) -> None:
+	def update(self) -> tuple:
 		self.cast.media_controller.update_status()
 		return self.cast.media_controller.status.current_time, \
 			self.cast.media_controller.status.media_custom_data.get("id"), \

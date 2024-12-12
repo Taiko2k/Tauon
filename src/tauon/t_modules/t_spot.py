@@ -33,8 +33,9 @@ import requests
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
-	from tekore import Spotify
-	from tekore.model import FullAlbum
+	from tekore._auth.refreshing import RefreshingCredentials
+	from tekore._client.full import Spotify
+	from tekore._model.album.full import FullAlbum
 
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
@@ -61,7 +62,7 @@ class SpotCtl:
 		self.coasting = False
 		self.paused = False
 		self.token = None
-		self.cred = None
+		self.cred: RefreshingCredentials | None = None
 		self.started_once = False
 		self.redirect_uri = "http://localhost:7811/spotredir"
 		self.current_imports = {}
@@ -109,6 +110,9 @@ class SpotCtl:
 	def paste_code(self, code: str) -> None:
 		if self.cred is None:
 			self.prep_cred()
+		if self.cred is None:
+			logging.error("Could not prep_cred() while running paste_code(), something is very wrong!")
+			return
 
 		if self.pkce_code:
 			self.token = self.cred.request_pkce_token(code.strip().strip("\n"), self.pkce_code)
@@ -320,7 +324,7 @@ class SpotCtl:
 			return
 		self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
 
-	def get_playlist_list(self):
+	def get_playlist_list(self) -> None:
 		self.connect()
 		if not self.spotify:
 			self.tauon.gui.show_message(self.strings.spotify_need_enable)
