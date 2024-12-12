@@ -16741,7 +16741,7 @@ def paste_deco():
 		active = True
 	elif SDL_HasClipboardText():
 		text = copy_from_clipboard()
-		if text.startswith("/") or "file://" in text or text.startswith("spotify"):
+		if text.startswith(("/", "spotify")) or "file://" in text:
 			active = True
 		elif prefs.spot_mode and text.startswith("https://open.spotify.com/album/"):  # or text.startswith("https://open.spotify.com/track/"):
 			active = True
@@ -18112,18 +18112,12 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 	errors = False
 	selections_searched = 0
 
-	def is_source_type(code):
-		return code is None or \
+	def is_source_type(code: str | None) -> bool:
+		return \
+			code is None or \
 			code == "" or \
-			code.startswith("self") or \
-			code.startswith("jelly") or \
-			code.startswith("plex") or \
-			code.startswith("koel") or \
-			code.startswith("tau") or \
-			code.startswith("air") or \
-			code.startswith("sal")
+			code.startswith(("self", "jelly", "plex", "koel", "tau", "air", "sal"))
 
-	#
 	#logging.info(cmds)
 	#logging.info(quotes)
 
@@ -18133,7 +18127,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 
 		quote = quotes[i]
 
-		if cm.startswith("\"") and (cm.endswith(">") or cm.endswith("<")):
+		if cm.startswith("\"") and (cm.endswith((">", "<"))):
 			cm_found = False
 
 			for col in column_names:
@@ -18552,7 +18546,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
 		# SEARCH GENRE
-		elif (cm.startswith("g\"") or cm.startswith("gm\"") or cm.startswith("g=\"")) and len(cm) > 3:
+		elif (cm.startswith(('g"', 'gm"', 'g="'))) and len(cm) > 3:
 
 			if not selections:
 				for plist in pctl.multi_playlist:
@@ -18670,7 +18664,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 					del playlist[i]
 
 
-		elif cm.startswith("find\"") or cm.startswith("f\"") or cm.startswith("fs\""):
+		elif cm.startswith(('find"', 'f"', 'fs"')):
 
 			if not selections:
 				for plist in pctl.multi_playlist:
@@ -18709,7 +18703,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			playlist = list(OrderedDict.fromkeys(playlist))
 
 
-		elif cm.startswith("s\"") or cm.startswith("px\""):
+		elif cm.startswith(('s"', 'px"')):
 			pl_name = quote
 			target = None
 			for p in pctl.multi_playlist:
@@ -20393,9 +20387,9 @@ def paste(playlist_no=None, track_id=None):
 		for link in clip.split("\n"):
 			logging.info(link)
 			link = link.strip()
-			if clip.startswith("https://open.spotify.com/track/") or clip.startswith("spotify:track:"):
+			if clip.startswith(("https://open.spotify.com/track/", "spotify:track:")):
 				spot_ctl.append_track(link)
-			elif clip.startswith("https://open.spotify.com/album/") or clip.startswith("spotify:album:"):
+			elif clip.startswith(("https://open.spotify.com/album/", "spotify:album:")):
 				l = spot_ctl.append_album(link, return_list=True)
 				if l:
 					cargo.extend(l)
@@ -20410,7 +20404,7 @@ def paste(playlist_no=None, track_id=None):
 	if clip:
 		clip = clip.split("\n")
 		for i, line in enumerate(clip):
-			if line.startswith("file://") or line.startswith("/"):
+			if line.startswith(("file://", "/")):
 				target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
 				load_order = LoadClass()
 				load_order.target = target
@@ -23023,7 +23017,7 @@ tauon.switch_playlist = switch_playlist
 def import_spotify_playlist():
 	clip = copy_from_clipboard()
 	for line in clip.split("\n"):
-		if line.startswith("https://open.spotify.com/playlist/") or line.startswith("spotify:playlist:"):
+		if line.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 			clip = clip.strip()
 			spot_ctl.playlist(line)
 
@@ -23034,7 +23028,7 @@ def import_spotify_playlist():
 
 def import_spotify_playlist_deco():
 	clip = copy_from_clipboard()
-	if clip.startswith("https://open.spotify.com/playlist/") or clip.startswith("spotify:playlist:"):
+	if clip.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
@@ -37847,7 +37841,7 @@ class ArtistList:
 		letter = text[0].lower()
 		letter_upper = letter.upper()
 		for i, item in enumerate(self.current_artists):
-			if item.startswith("the ") or item.startswith("The "):
+			if item.startswith(("the ", "The ")):
 				if len(item) > 4 and (item[4] == letter or item[4] == letter_upper):
 					self.scroll_position = i
 					break
