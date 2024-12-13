@@ -5188,7 +5188,7 @@ class PlayerCtl:
 		self.pause_queue: bool = False
 		self.left_time = 0
 		self.left_index = 0
-		self.player_volume = volume
+		self.player_volume: float = volume
 		self.new_time = 0
 		self.time_to_get = []
 		self.a_time = 0
@@ -10721,7 +10721,7 @@ class TimedLyricsRen:
 		self.ready = True
 		return True
 
-	def render(self, index, x, y, side_panel=False, w=0, h=0):
+	def render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
 
 		if index != self.index:
 			self.ready = False
@@ -10791,7 +10791,7 @@ class TimedLyricsRen:
 				yy += max(h - round(6 * gui.scale), spacing)
 			else:
 				yy += spacing
-
+		return None
 
 timed_lyrics_ren = TimedLyricsRen()
 
@@ -10922,7 +10922,7 @@ class TextBox2:
 
 	def __init__(self) -> None:
 
-		self.text = ""
+		self.text: str = ""
 		self.cursor_position = 0
 		self.selection = 0
 		self.offset = 0
@@ -10962,7 +10962,7 @@ class TextBox2:
 		self.selection = len(self.text)
 		self.cursor_position = 0
 
-	def eliminate_selection(self):
+	def eliminate_selection(self) -> None:
 		if self.selection != self.cursor_position:
 			if self.selection > self.cursor_position:
 				self.text = self.text[0: len(self.text) - self.selection] + self.text[len(self.text) - self.cursor_position:]
@@ -10971,7 +10971,7 @@ class TextBox2:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
 				self.cursor_position = self.selection
 
-	def get_selection(self, p: int = 1):
+	def get_selection(self, p: int = 1) -> str:
 		if self.selection != self.cursor_position:
 			if p == 1:
 				if self.selection > self.cursor_position:
@@ -14600,7 +14600,7 @@ def close_all_menus():
 	Menu.active = False
 
 
-def menu_standard_or_grey(bool):
+def menu_standard_or_grey(bool: bool):
 	if bool:
 		line_colour = colours.menu_text
 	else:
@@ -22099,7 +22099,7 @@ def gstreamer_test(_) -> bool:
 
 
 # Create top menu
-x_menu = Menu(190, show_icons=True)
+x_menu: Menu = Menu(190, show_icons=True)
 view_menu = Menu(170)
 set_menu = Menu(150)
 set_menu_hidden = Menu(100)
@@ -23232,7 +23232,7 @@ def import_popm():
 x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), import_popm))
 
 
-def clear_ratings():
+def clear_ratings() -> None:
 	if not key_shift_down:
 		show_message(
 			_("This will delete all track and album ratings from the local database!"),
@@ -23248,7 +23248,7 @@ def clear_ratings():
 x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), clear_ratings))
 
 
-def find_incomplete():
+def find_incomplete() -> None:
 	gen_incomplete(pctl.active_playlist_viewing)
 
 
@@ -23263,10 +23263,10 @@ def cast_deco():
 	return [line_colour, colours.menu_background, None]
 
 
-def cast_search2():
+def cast_search2() -> None:
 	chrome.rescan()
 
-def cast_search():
+def cast_search() -> None:
 
 	if tauon.chrome_mode:
 		pctl.stop()
@@ -23288,7 +23288,7 @@ tauon.chrome_menu = x_menu
 #x_menu.add(_("Cast…"), cast_search, cast_deco)
 
 
-def clear_queue():
+def clear_queue() -> None:
 	pctl.force_queue = []
 	gui.pl_update = 1
 	pctl.pause_queue = False
@@ -23297,31 +23297,31 @@ def clear_queue():
 mode_menu = Menu(175)
 
 
-def set_mini_mode_A1():
+def set_mini_mode_A1() -> None:
 	prefs.mini_mode_mode = 0
 	set_mini_mode()
 
 
-def set_mini_mode_B1():
+def set_mini_mode_B1() -> None:
 	prefs.mini_mode_mode = 1
 	set_mini_mode()
 
 
-def set_mini_mode_A2():
+def set_mini_mode_A2() -> None:
 	prefs.mini_mode_mode = 2
 	set_mini_mode()
 
 
-def set_mini_mode_C1():
+def set_mini_mode_C1() -> None:
 	prefs.mini_mode_mode = 5
 	set_mini_mode()
 
-def set_mini_mode_B2():
+def set_mini_mode_B2() -> None:
 	prefs.mini_mode_mode = 3
 	set_mini_mode()
 
 
-def set_mini_mode_D():
+def set_mini_mode_D() -> None:
 	prefs.mini_mode_mode = 4
 	set_mini_mode()
 
@@ -23334,7 +23334,7 @@ mode_menu.add(MenuItem(_("Square"), set_mini_mode_B1))
 mode_menu.add(MenuItem(_("Square Large"), set_mini_mode_B2))
 
 
-def copy_bb_metadata():
+def copy_bb_metadata() -> str | None:
 	tr = pctl.playing_object()
 	if not tr.title and not tr.artist and pctl.playing_state == 3:
 		return pctl.tag_meta
@@ -23343,6 +23343,7 @@ def copy_bb_metadata():
 		copy_to_clipboard(text)
 	else:
 		show_message(_("No metadata available to copy"))
+	return None
 
 
 mode_menu.br()
@@ -23351,11 +23352,11 @@ mode_menu.add(MenuItem(_("Copy Title to Clipboard"), copy_bb_metadata))
 extra_menu = Menu(175, show_icons=True)
 
 
-def stop():
+def stop() -> None:
 	pctl.stop()
 
 
-def random_track():
+def random_track() -> None:
 	playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
 	if playlist:
 		random_position = random.randrange(0, len(playlist))
@@ -23367,7 +23368,7 @@ def random_track():
 extra_menu.add(MenuItem(_("Random Track"), random_track, hint=";"))
 
 
-def random_album():
+def random_album() -> None:
 	folders = {}
 	playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
 	if playlist:
@@ -23382,7 +23383,7 @@ def random_album():
 		pctl.show_current()
 
 
-def radio_random():
+def radio_random() -> None:
 	pctl.advance(rr=True)
 
 
@@ -23406,7 +23407,7 @@ extra_menu.add(MenuItem(_("Revert"), pctl.revert, hint="Shift+/", icon=revert_ic
 extra_menu.add(MenuItem(_("Clear Queue"), clear_queue, queue_deco, hint="Alt+Shift+Q"))
 
 
-def heart_menu_colour():
+def heart_menu_colour() -> list[int] | None:
 	if not (pctl.playing_state == 1 or pctl.playing_state == 2):
 		if colours.lm:
 			return [255, 150, 180, 255]
