@@ -43252,7 +43252,7 @@ pref_box.themes.append((ColoursClass(), "Mindaro", 0))
 theme_files = get_themes()
 for i, theme in enumerate(theme_files):
 	c = ColoursClass()
-	load_theme(c, theme[0])
+	load_theme(c, Path(theme[0]))
 	pref_box.themes.append((c, theme[1], i + 1))
 
 pctl.total_playtime = star_store.get_total()
@@ -44660,7 +44660,7 @@ while pctl.running:
 				colours.lm = False
 				colours.__init__()
 
-				load_theme(colours, theme_item[0])
+				load_theme(colours, Path(theme_item[0]))
 				deco.load(colours.deco)
 				logging.info("Applying theme: " + gui.theme_name)
 
