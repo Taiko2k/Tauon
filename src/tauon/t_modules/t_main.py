@@ -8310,6 +8310,459 @@ class ThreadManager:
 			return False
 		return self.playback.is_alive()
 
+class Menu:
+	"""Right click context menu generator"""
+
+	switch = 0
+	count = switch + 1
+	instances: list[Menu] = []
+	active = False
+
+	def rescale(self):
+		self.vertical_size = round(self.base_v_size * gui.scale)
+		self.h = self.vertical_size
+		self.w = self.request_width * gui.scale
+		if gui.scale == 2:
+			self.w += 15
+
+	def __init__(self, width: int, show_icons: bool = False) -> None:
+
+		self.base_v_size = 22
+		self.active = False
+		self.request_width: int = width
+		self.close_next_frame = False
+		self.clicked = False
+		self.pos = [0, 0]
+		self.rescale()
+
+		self.reference = 0
+		self.items: list[MenuItem] = []
+		self.subs: list[list[MenuItem]] = []
+		self.selected = -1
+		self.up = False
+		self.down = False
+		self.font = 412
+		self.show_icons: bool = show_icons
+		self.sub_arrow = MenuIcon(asset_loader("sub.png", True))
+
+		self.id = Menu.count
+		self.break_height = round(4 * gui.scale)
+
+		Menu.count += 1
+
+		self.sub_number = 0
+		self.sub_active = -1
+		self.sub_y_postion = 0
+		Menu.instances.append(self)
+
+	@staticmethod
+	def deco(_=_):
+		return [colours.menu_text, colours.menu_background, None]
+
+	def click(self) -> None:
+		self.clicked = True
+		# cheap hack to prevent scroll bar from being activated when closing menu
+		global click_location
+		click_location = [0, 0]
+
+	def add(self, menu_item: MenuItem) -> None:
+		if menu_item.render_func is None:
+			menu_item.render_func = self.deco
+		self.items.append(menu_item)
+
+	def br(self) -> None:
+		self.items.append(None)
+
+	def add_sub(self, title: str, width: int, show_test=None) -> None:
+		self.items.append(MenuItem(title, self.deco, sub_menu_width=width, show_test=show_test, is_sub_menu=True, sub_menu_number=self.sub_number))
+		self.sub_number += 1
+		self.subs.append([])
+
+	def add_to_sub(self, sub_menu_index: int, menu_item: MenuItem) -> None:
+		if menu_item.render_func is None:
+			menu_item.render_func = self.deco
+		self.subs[sub_menu_index].append(menu_item)
+
+	def test_item_active(self, item):
+		if item.show_test is not None:
+			if item.show_test(1) is False:
+				return False
+		return True
+
+	def is_item_disabled(self, item):
+		if item.disable_test is not None:
+			if item.pass_ref_deco:
+				return item.disable_test(self.reference)
+			return item.disable_test()
+
+	def render_icon(self, x, y, icon, selected, fx):
+
+		if colours.lm:
+			selected = True
+
+		if icon is not None:
+
+			x += icon.xoff * gui.scale
+			y += icon.yoff * gui.scale
+
+			colour = None
+
+			if icon.base_asset is None:
+				# Colourise mode
+
+				if icon.colour_callback is not None:  # and icon.colour_callback() is not None:
+					colour = icon.colour_callback()
+
+				elif selected and fx[0] != colours.menu_text_disabled:
+					colour = icon.colour
+
+				if colour is None and icon.base_asset_mod:
+					colour = colours.menu_icons
+					# if colours.lm:
+					#	 colour = [160, 160, 160, 255]
+					icon.base_asset_mod.render(x, y, colour)
+					return
+
+				if colour is None:
+					# colour = [145, 145, 145, 70]
+					colour = colours.menu_icons  # [255, 255, 255, 35]
+					# colour = [50, 50, 50, 255]
+
+				icon.asset.render(x, y, colour)
+
+			else:
+				if not is_grey(colours.menu_background):
+					return  # Since these are currently pre-rendered greyscale, they are
+					# Incompatible with coloured backgrounds. Fix TODO
+				if selected and fx[0] == colours.menu_text_disabled:
+					icon.base_asset.render(x, y)
+					return
+
+				# Pre-rendered mode
+				if icon.mode_callback is not None:
+					if icon.mode_callback():
+						icon.asset.render(x, y)
+					else:
+						icon.base_asset.render(x, y)
+				elif selected:
+					icon.asset.render(x, y)
+				else:
+					icon.base_asset.render(x, y)
+
+	def render(self):
+		if self.active:
+
+			if Menu.switch != self.id:
+				self.active = False
+
+				for menu in Menu.instances:
+					if menu.active:
+						break
+				else:
+					Menu.active = False
+
+				return
+
+			# ytoff = 3
+			y_run = round(self.pos[1])
+			to_call = None
+
+			# if window_size[1] < 250 * gui.scale:
+			#	 self.h = round(14 * gui.scale)
+			#	 ytoff = -1 * gui.scale
+			# else:
+			self.h = self.vertical_size
+			ytoff = round(self.h * 0.71 - 13 * gui.scale)
+
+			x_run = self.pos[0]
+
+			for i in range(len(self.items)):
+				#logging.info(self.items[i])
+
+				# Draw menu break
+				if self.items[i] is None:
+
+					if is_light(colours.menu_background):
+						break_colour = rgb_add_hls(colours.menu_background, 0, -0.1, -0.1)
+					else:
+						break_colour = rgb_add_hls(colours.menu_background, 0, 0.06, 0)
+
+					rect = (x_run, y_run, self.w, self.break_height - 1)
+					if coll(rect):
+						self.clicked = False
+
+					ddt.rect_a((x_run, y_run), (self.w, self.break_height), colours.menu_background)
+
+					ddt.rect_a((x_run, y_run + 2 * gui.scale), (self.w, 2 * gui.scale), break_colour)
+
+					# Draw tab
+					ddt.rect_a((x_run, y_run), (4 * gui.scale, self.break_height), colours.menu_tab)
+					y_run += self.break_height
+
+					continue
+
+				if self.test_item_active(self.items[i]) is False:
+					continue
+				# if self.items[i][1] is False and self.items[i][8] is not None:
+				#	 if self.items[i][8](1) == False:
+				#		 continue
+
+				# Get properties for menu item
+				if self.items[i].render_func is not None:
+					if self.items[i].pass_ref_deco:
+						fx = self.items[i].render_func(self.reference)
+					else:
+						fx = self.items[i].render_func()
+				else:
+					fx = self.deco()
+
+				if fx[2] is not None:
+					label = fx[2]
+				else:
+					label = self.items[i].title
+
+				# Show text as disabled if disable_test() passes
+				if self.is_item_disabled(self.items[i]):
+					fx[0] = colours.menu_text_disabled
+
+				# Draw item background, black by default
+				ddt.rect_a((x_run, y_run), (self.w, self.h), fx[1])
+				bg = fx[1]
+
+				# Detect if mouse is over this item
+				selected = False
+				rect = (x_run, y_run, self.w, self.h - 1)
+				fields.add(rect)
+
+				if coll_point(mouse_position, (x_run, y_run, self.w, self.h - 1)):
+					ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
+					selected = True
+					bg = alpha_blend(colours.menu_highlight_background, bg)
+
+					# Call menu items callback if clicked
+					if self.clicked:
+
+						if self.items[i].is_sub_menu is False:
+							to_call = i
+							if self.items[i].set_ref is not None:
+								self.reference = self.items[i].set_ref
+							global mouse_down
+							mouse_down = False
+
+						else:
+							self.clicked = False
+							self.sub_active = self.items[i].sub_menu_number
+							self.sub_y_postion = y_run
+
+				# Draw tab
+				ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
+
+				# Draw Icon
+				x = 12 * gui.scale
+				if self.items[i].is_sub_menu is False and self.show_icons:
+					icon = self.items[i].icon
+					self.render_icon(x_run + x, y_run + 5 * gui.scale, icon, selected, fx)
+
+				if self.show_icons:
+					x += 25 * gui.scale
+
+				# Draw arrow icon for sub menu
+				if self.items[i].is_sub_menu is True:
+
+					if is_light(bg) or colours.lm:
+						colour = rgb_add_hls(bg, 0, -0.6, -0.1)
+					else:
+						colour = rgb_add_hls(bg, 0, 0.1, 0)
+
+					if self.sub_active == self.items[i].func:
+						if is_light(bg) or colours.lm:
+							colour = rgb_add_hls(bg, 0, -0.8, -0.1)
+						else:
+							colour = rgb_add_hls(bg, 0, 0.40, 0)
+
+					# colour = [50, 50, 50, 255]
+					# if selected:
+					#	 colour = [150, 150, 150, 255]
+					# if self.sub_active == self.items[i][2]:
+					#	 colour = [150, 150, 150, 255]
+					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
+
+				# Render the items label
+				ddt.text((x_run + x, y_run + ytoff), label, fx[0], self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
+
+				# Render the items hint
+				if self.items[i].hint != None:
+
+					if is_light(bg) or colours.lm:
+						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
+					else:
+						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
+
+					# colo = alpha_blend([255, 255, 255, 50], bg)
+					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), self.items[i].hint, hint_colour, self.font, bg=bg)
+
+				y_run += self.h
+
+				if y_run > window_size[1] - self.h:
+					direc = 1
+					if self.pos[0] > window_size[0] // 2:
+						direc = -1
+					x_run += self.w * direc
+					y_run = self.pos[1]
+
+				# Render sub menu if active
+				if self.sub_active > -1 and self.items[i].is_sub_menu and self.sub_active == self.items[i].sub_menu_number:
+
+					# sub_pos = [x_run + self.w, self.pos[1] + i * self.h]
+					sub_pos = [x_run + self.w, self.sub_y_postion]
+					sub_w = self.items[i].sub_menu_width * gui.scale
+
+					if sub_pos[0] + sub_w > window_size[0]:
+						sub_pos[0] = x_run - sub_w
+						if view_box.active:
+							sub_pos[0] -= view_box.w
+
+					fx = self.deco()
+
+					minY = window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
+					sub_pos[1] = min(sub_pos[1], minY)
+
+					xoff = 0
+					for i in self.subs[self.sub_active]:
+						if i.icon is not None:
+							xoff = 24 * gui.scale
+							break
+
+					for w in range(len(self.subs[self.sub_active])):
+
+						if self.subs[self.sub_active][w].show_test is not None:
+							if not self.subs[self.sub_active][w].show_test(self.reference):
+								continue
+
+						# Get item colours
+						if self.subs[self.sub_active][w].render_func is not None:
+							if self.subs[self.sub_active][w].pass_ref_deco:
+								fx = self.subs[self.sub_active][w].render_func(self.reference)
+							else:
+								fx = self.subs[self.sub_active][w].render_func()
+
+						# Item background
+						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1])
+
+						# Detect if mouse is over this item
+						rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
+						fields.add(rect)
+						this_select = False
+						bg = colours.menu_background
+						if coll_point(mouse_position, (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
+							ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), colours.menu_highlight_background)
+							bg = alpha_blend(colours.menu_highlight_background, bg)
+							this_select = True
+
+							# Call Callback
+							if self.clicked and not self.is_item_disabled(self.subs[self.sub_active][w]):
+
+								# If callback needs args
+								if self.subs[self.sub_active][w].args is not None:
+									self.subs[self.sub_active][w].func(self.reference, self.subs[self.sub_active][w].args)
+
+								# If callback just need ref
+								elif self.subs[self.sub_active][w].pass_ref:
+									self.subs[self.sub_active][w].func(self.reference)
+
+								else:
+									self.subs[self.sub_active][w].func()
+
+						if fx[2] is not None:
+							label = fx[2]
+						else:
+							label = self.subs[self.sub_active][w].title
+
+						# Show text as disabled if disable_test() passes
+						if self.is_item_disabled(self.subs[self.sub_active][w]):
+							fx[0] = colours.menu_text_disabled
+
+						# Render sub items icon
+						icon = self.subs[self.sub_active][w].icon
+						self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select, fx)
+
+						# Render the items label
+						ddt.text(
+							(sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0], self.font, bg=bg)
+
+						# Draw tab
+						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h), colours.menu_tab)
+
+						# Render the menu outline
+						# ddt.rect_a(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+
+			# Process Click Actions
+			if to_call is not None:
+
+				if not self.is_item_disabled(self.items[to_call]):
+					if self.items[to_call].pass_ref:
+						self.items[to_call].func(self.reference)
+					else:
+						self.items[to_call].func()
+
+			if self.clicked or key_esc_press or self.close_next_frame:
+				self.close_next_frame = False
+				self.active = False
+				self.clicked = False
+
+				last_click_location[0] = 0
+				last_click_location[1] = 0
+
+				for menu in Menu.instances:
+					if menu.active:
+						break
+				else:
+					Menu.active = False
+
+				# Render the menu outline
+				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+
+	def activate(self, in_reference=0, position=None):
+
+		Menu.active = True
+
+		if position != None:
+			self.pos = [position[0], position[1]]
+		else:
+			self.pos = [copy.deepcopy(mouse_position[0]), copy.deepcopy(mouse_position[1])]
+
+		self.reference = in_reference
+		Menu.switch = self.id
+		self.sub_active = -1
+
+		# Reposition the menu if it would otherwise intersect with far edge of window
+		if not position:
+			if self.pos[0] + self.w > window_size[0]:
+				self.pos[0] -= round(self.w + 3 * gui.scale)
+
+		# Get height size of menu
+		full_h = 0
+		shown_h = 0
+		for item in self.items:
+			if item is None:
+				full_h += self.break_height
+				shown_h += self.break_height
+			else:
+				full_h += self.h
+				if self.test_item_active(item) is True:
+					shown_h += self.h
+
+		# Flip menu up if would intersect with bottom of window
+		if self.pos[1] + full_h > window_size[1]:
+			self.pos[1] -= shown_h
+
+			# Prevent moving outside top of window
+			if self.pos[1] < gui.panelY:
+				self.pos[1] = gui.panelY
+				self.pos[0] += 5 * gui.scale
+
+		self.active = True
+
 class Tauon:
 
 	def __init__(self):
@@ -8393,6 +8846,7 @@ class Tauon:
 
 		self.spot_ctl: SpotCtl | None = None
 		self.chrome: Chrome | None = None
+		self.chrome_menu: Menu | None = None
 
 	def start_remote(self):
 
@@ -14136,463 +14590,6 @@ class ToolTip3:
 columns_tool_tip = ToolTip3()
 
 tool_tip_instant = ToolTip3()
-
-
-# Right click context menu generator
-
-
-
-class Menu:
-	switch = 0
-	count = switch + 1
-	instances: list[Menu] = []
-	active = False
-
-	def rescale(self):
-		self.vertical_size = round(self.base_v_size * gui.scale)
-		self.h = self.vertical_size
-		self.w = self.request_width * gui.scale
-		if gui.scale == 2:
-			self.w += 15
-
-	def __init__(self, width, show_icons=False):
-
-		self.base_v_size = 22
-		self.active = False
-		self.request_width = width
-		self.close_next_frame = False
-		self.clicked = False
-		self.pos = [0, 0]
-		self.rescale()
-
-		self.reference = 0
-		self.items = []
-		self.subs = []
-		self.selected = -1
-		self.up = False
-		self.down = False
-		self.font = 412
-		self.show_icons = show_icons
-		self.sub_arrow = MenuIcon(asset_loader("sub.png", True))
-
-		self.id = Menu.count
-		self.break_height = round(4 * gui.scale)
-
-		Menu.count += 1
-
-		self.sub_number = 0
-		self.sub_active = -1
-		self.sub_y_postion = 0
-		Menu.instances.append(self)
-
-	@staticmethod
-	def deco(_=_):
-		return [colours.menu_text, colours.menu_background, None]
-
-	def click(self):
-		self.clicked = True
-		# cheap hack to prevent scroll bar from being activated when closing menu
-		global click_location
-		click_location = [0, 0]
-
-	def add(self, menu_item):
-		if menu_item.render_func is None:
-			menu_item.render_func = self.deco
-		self.items.append(menu_item)
-
-	def br(self):
-		self.items.append(None)
-
-	def add_sub(self, title, width, show_test=None):
-		self.items.append(MenuItem(title, self.deco, sub_menu_width=width, show_test=show_test, is_sub_menu=True, sub_menu_number=self.sub_number))
-		self.sub_number += 1
-		self.subs.append([])
-
-	def add_to_sub(self, sub_menu_index, menu_item):
-		if menu_item.render_func is None:
-			menu_item.render_func = self.deco
-		self.subs[sub_menu_index].append(menu_item)
-
-	def test_item_active(self, item):
-		if item.show_test is not None:
-			if item.show_test(1) is False:
-				return False
-		return True
-
-	def is_item_disabled(self, item):
-		if item.disable_test is not None:
-			if item.pass_ref_deco:
-				return item.disable_test(self.reference)
-			return item.disable_test()
-
-	def render_icon(self, x, y, icon, selected, fx):
-
-		if colours.lm:
-			selected = True
-
-		if icon is not None:
-
-			x += icon.xoff * gui.scale
-			y += icon.yoff * gui.scale
-
-			colour = None
-
-			if icon.base_asset is None:
-				# Colourise mode
-
-				if icon.colour_callback is not None:  # and icon.colour_callback() is not None:
-					colour = icon.colour_callback()
-
-				elif selected and fx[0] != colours.menu_text_disabled:
-					colour = icon.colour
-
-				if colour is None and icon.base_asset_mod:
-					colour = colours.menu_icons
-					# if colours.lm:
-					#	 colour = [160, 160, 160, 255]
-					icon.base_asset_mod.render(x, y, colour)
-					return
-
-				if colour is None:
-					# colour = [145, 145, 145, 70]
-					colour = colours.menu_icons  # [255, 255, 255, 35]
-					# colour = [50, 50, 50, 255]
-
-				icon.asset.render(x, y, colour)
-
-			else:
-				if not is_grey(colours.menu_background):
-					return  # Since these are currently pre-rendered greyscale, they are
-					# Incompatible with coloured backgrounds. Fix TODO
-				if selected and fx[0] == colours.menu_text_disabled:
-					icon.base_asset.render(x, y)
-					return
-
-				# Pre-rendered mode
-				if icon.mode_callback is not None:
-					if icon.mode_callback():
-						icon.asset.render(x, y)
-					else:
-						icon.base_asset.render(x, y)
-				elif selected:
-					icon.asset.render(x, y)
-				else:
-					icon.base_asset.render(x, y)
-
-	def render(self):
-		if self.active:
-
-			if Menu.switch != self.id:
-				self.active = False
-
-				for menu in Menu.instances:
-					if menu.active:
-						break
-				else:
-					Menu.active = False
-
-				return
-
-			# ytoff = 3
-			y_run = round(self.pos[1])
-			to_call = None
-
-			# if window_size[1] < 250 * gui.scale:
-			#	 self.h = round(14 * gui.scale)
-			#	 ytoff = -1 * gui.scale
-			# else:
-			self.h = self.vertical_size
-			ytoff = round(self.h * 0.71 - 13 * gui.scale)
-
-			x_run = self.pos[0]
-
-			for i in range(len(self.items)):
-				#logging.info(self.items[i])
-
-				# Draw menu break
-				if self.items[i] is None:
-
-					if is_light(colours.menu_background):
-						break_colour = rgb_add_hls(colours.menu_background, 0, -0.1, -0.1)
-					else:
-						break_colour = rgb_add_hls(colours.menu_background, 0, 0.06, 0)
-
-					rect = (x_run, y_run, self.w, self.break_height - 1)
-					if coll(rect):
-						self.clicked = False
-
-					ddt.rect_a((x_run, y_run), (self.w, self.break_height), colours.menu_background)
-
-					ddt.rect_a((x_run, y_run + 2 * gui.scale), (self.w, 2 * gui.scale), break_colour)
-
-					# Draw tab
-					ddt.rect_a((x_run, y_run), (4 * gui.scale, self.break_height), colours.menu_tab)
-					y_run += self.break_height
-
-					continue
-
-				if self.test_item_active(self.items[i]) is False:
-					continue
-				# if self.items[i][1] is False and self.items[i][8] is not None:
-				#	 if self.items[i][8](1) == False:
-				#		 continue
-
-				# Get properties for menu item
-				if self.items[i].render_func is not None:
-					if self.items[i].pass_ref_deco:
-						fx = self.items[i].render_func(self.reference)
-					else:
-						fx = self.items[i].render_func()
-				else:
-					fx = self.deco()
-
-				if fx[2] is not None:
-					label = fx[2]
-				else:
-					label = self.items[i].title
-
-				# Show text as disabled if disable_test() passes
-				if self.is_item_disabled(self.items[i]):
-					fx[0] = colours.menu_text_disabled
-
-				# Draw item background, black by default
-				ddt.rect_a((x_run, y_run), (self.w, self.h), fx[1])
-				bg = fx[1]
-
-				# Detect if mouse is over this item
-				selected = False
-				rect = (x_run, y_run, self.w, self.h - 1)
-				fields.add(rect)
-
-				if coll_point(mouse_position, (x_run, y_run, self.w, self.h - 1)):
-					ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
-					selected = True
-					bg = alpha_blend(colours.menu_highlight_background, bg)
-
-					# Call menu items callback if clicked
-					if self.clicked:
-
-						if self.items[i].is_sub_menu is False:
-							to_call = i
-							if self.items[i].set_ref is not None:
-								self.reference = self.items[i].set_ref
-							global mouse_down
-							mouse_down = False
-
-						else:
-							self.clicked = False
-							self.sub_active = self.items[i].sub_menu_number
-							self.sub_y_postion = y_run
-
-				# Draw tab
-				ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
-
-				# Draw Icon
-				x = 12 * gui.scale
-				if self.items[i].is_sub_menu is False and self.show_icons:
-					icon = self.items[i].icon
-					self.render_icon(x_run + x, y_run + 5 * gui.scale, icon, selected, fx)
-
-				if self.show_icons:
-					x += 25 * gui.scale
-
-				# Draw arrow icon for sub menu
-				if self.items[i].is_sub_menu is True:
-
-					if is_light(bg) or colours.lm:
-						colour = rgb_add_hls(bg, 0, -0.6, -0.1)
-					else:
-						colour = rgb_add_hls(bg, 0, 0.1, 0)
-
-					if self.sub_active == self.items[i].func:
-						if is_light(bg) or colours.lm:
-							colour = rgb_add_hls(bg, 0, -0.8, -0.1)
-						else:
-							colour = rgb_add_hls(bg, 0, 0.40, 0)
-
-					# colour = [50, 50, 50, 255]
-					# if selected:
-					#	 colour = [150, 150, 150, 255]
-					# if self.sub_active == self.items[i][2]:
-					#	 colour = [150, 150, 150, 255]
-					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
-
-				# Render the items label
-				ddt.text((x_run + x, y_run + ytoff), label, fx[0], self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
-
-				# Render the items hint
-				if self.items[i].hint != None:
-
-					if is_light(bg) or colours.lm:
-						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
-					else:
-						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
-
-					# colo = alpha_blend([255, 255, 255, 50], bg)
-					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), self.items[i].hint, hint_colour, self.font, bg=bg)
-
-				y_run += self.h
-
-				if y_run > window_size[1] - self.h:
-					direc = 1
-					if self.pos[0] > window_size[0] // 2:
-						direc = -1
-					x_run += self.w * direc
-					y_run = self.pos[1]
-
-				# Render sub menu if active
-				if self.sub_active > -1 and self.items[i].is_sub_menu and self.sub_active == self.items[i].sub_menu_number:
-
-					# sub_pos = [x_run + self.w, self.pos[1] + i * self.h]
-					sub_pos = [x_run + self.w, self.sub_y_postion]
-					sub_w = self.items[i].sub_menu_width * gui.scale
-
-					if sub_pos[0] + sub_w > window_size[0]:
-						sub_pos[0] = x_run - sub_w
-						if view_box.active:
-							sub_pos[0] -= view_box.w
-
-					fx = self.deco()
-
-					minY = window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
-					sub_pos[1] = min(sub_pos[1], minY)
-
-					xoff = 0
-					for i in self.subs[self.sub_active]:
-						if i.icon is not None:
-							xoff = 24 * gui.scale
-							break
-
-					for w in range(len(self.subs[self.sub_active])):
-
-						if self.subs[self.sub_active][w].show_test is not None:
-							if not self.subs[self.sub_active][w].show_test(self.reference):
-								continue
-
-						# Get item colours
-						if self.subs[self.sub_active][w].render_func is not None:
-							if self.subs[self.sub_active][w].pass_ref_deco:
-								fx = self.subs[self.sub_active][w].render_func(self.reference)
-							else:
-								fx = self.subs[self.sub_active][w].render_func()
-
-						# Item background
-						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1])
-
-						# Detect if mouse is over this item
-						rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
-						fields.add(rect)
-						this_select = False
-						bg = colours.menu_background
-						if coll_point(mouse_position, (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
-							ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), colours.menu_highlight_background)
-							bg = alpha_blend(colours.menu_highlight_background, bg)
-							this_select = True
-
-							# Call Callback
-							if self.clicked and not self.is_item_disabled(self.subs[self.sub_active][w]):
-
-								# If callback needs args
-								if self.subs[self.sub_active][w].args is not None:
-									self.subs[self.sub_active][w].func(self.reference, self.subs[self.sub_active][w].args)
-
-								# If callback just need ref
-								elif self.subs[self.sub_active][w].pass_ref:
-									self.subs[self.sub_active][w].func(self.reference)
-
-								else:
-									self.subs[self.sub_active][w].func()
-
-						if fx[2] is not None:
-							label = fx[2]
-						else:
-							label = self.subs[self.sub_active][w].title
-
-						# Show text as disabled if disable_test() passes
-						if self.is_item_disabled(self.subs[self.sub_active][w]):
-							fx[0] = colours.menu_text_disabled
-
-						# Render sub items icon
-						icon = self.subs[self.sub_active][w].icon
-						self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select, fx)
-
-						# Render the items label
-						ddt.text(
-							(sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0], self.font, bg=bg)
-
-						# Draw tab
-						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h), colours.menu_tab)
-
-						# Render the menu outline
-						# ddt.rect_a(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
-
-			# Process Click Actions
-			if to_call is not None:
-
-				if not self.is_item_disabled(self.items[to_call]):
-					if self.items[to_call].pass_ref:
-						self.items[to_call].func(self.reference)
-					else:
-						self.items[to_call].func()
-
-			if self.clicked or key_esc_press or self.close_next_frame:
-				self.close_next_frame = False
-				self.active = False
-				self.clicked = False
-
-				last_click_location[0] = 0
-				last_click_location[1] = 0
-
-				for menu in Menu.instances:
-					if menu.active:
-						break
-				else:
-					Menu.active = False
-
-				# Render the menu outline
-				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
-
-	def activate(self, in_reference=0, position=None):
-
-		Menu.active = True
-
-		if position != None:
-			self.pos = [position[0], position[1]]
-		else:
-			self.pos = [copy.deepcopy(mouse_position[0]), copy.deepcopy(mouse_position[1])]
-
-		self.reference = in_reference
-		Menu.switch = self.id
-		self.sub_active = -1
-
-		# Reposition the menu if it would otherwise intersect with far edge of window
-		if not position:
-			if self.pos[0] + self.w > window_size[0]:
-				self.pos[0] -= round(self.w + 3 * gui.scale)
-
-		# Get height size of menu
-		full_h = 0
-		shown_h = 0
-		for item in self.items:
-			if item is None:
-				full_h += self.break_height
-				shown_h += self.break_height
-			else:
-				full_h += self.h
-				if self.test_item_active(item) is True:
-					shown_h += self.h
-
-		# Flip menu up if would intersect with bottom of window
-		if self.pos[1] + full_h > window_size[1]:
-			self.pos[1] -= shown_h
-
-			# Prevent moving outside top of window
-			if self.pos[1] < gui.panelY:
-				self.pos[1] = gui.panelY
-				self.pos[0] += 5 * gui.scale
-
-		self.active = True
-
 
 def close_all_menus():
 	for menu in Menu.instances:
