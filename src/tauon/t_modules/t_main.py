@@ -21,7 +21,7 @@ I would highly recommend not using this project as an example on how to code cle
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
@@ -331,6 +331,7 @@ from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_b
 from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
+#from tauon.t_modules.guitar_chords import GuitarChords
 
 if TYPE_CHECKING:
 	# TODO(Martin): These two classes are within player4(), rip them out and put them as a top level?
@@ -703,7 +704,7 @@ if not music_directory.is_dir():
 locale_directory = Path(install_directory) / "locale"
 if flatpak_mode:
 	locale_directory = Path("/app/share/locale")
-elif install_directory.startswith("/opt/") or install_directory.startswith("/usr/"):
+elif install_directory.startswith(("/opt/", "/usr/")):
 	locale_directory = Path("/usr/share/locale")
 
 logging.info(f"Install directory:         {install_directory}")
@@ -3050,26 +3051,26 @@ perf_timer.set()
 
 radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 
-primary_stations = []
+primary_stations: list[dict[str, str]] = []
 station = {
 	"title": "SomaFM Groove Salad",
-	"stream_url": "http://ice3.somafm.com/groovesalad-128-mp3",
+	"stream_url": "https://ice3.somafm.com/groovesalad-128-mp3",
 	"country": "USA",
-	"website_url": "http://somafm.com/groovesalad",
+	"website_url": "https://somafm.com/groovesalad",
 	"icon": "https://somafm.com/logos/120/groovesalad120.png",
 }
 primary_stations.append(station)
 station = {
 	"title": "SomaFM PopTron",
-	"stream_url": "http://ice3.somafm.com/poptron-128-mp3",
+	"stream_url": "https://ice3.somafm.com/poptron-128-mp3",
 	"country": "USA",
-	"website_url": "http://somafm.com/poptron/",
+	"website_url": "https://somafm.com/poptron/",
 	"icon": "https://somafm.com/logos/120/poptron120.jpg",
 }
 primary_stations.append(station)
 station = {
 	"title": "SomaFM Vaporwaves",
-	"stream_url": "http://ice4.somafm.com/vaporwaves-128-mp3",
+	"stream_url": "https://ice4.somafm.com/vaporwaves-128-mp3",
 	"country": "USA",
 	"website_url": "https://somafm.com/vaporwaves",
 	"icon": "https://somafm.com/img3/vaporwaves400.png",
@@ -5035,13 +5036,13 @@ def get_radio_art():
 	if "ggdrasil" in radiobox.playing_title:
 		time.sleep(3)
 		url = "https://yggdrasilradio.net/data.php?"
-		response = requests.get(url)
+		response = requests.get(url, timeout=10)
 		if response.status_code == 200:
 			lines = response.content.decode().split("|")
 			if len(lines) > 11 and lines[11]:
 				art_id = lines[11].strip().strip("*")
 				art_url = "https://yggdrasilradio.net/images/albumart/" + art_id
-				art_response = requests.get(art_url)
+				art_response = requests.get(art_url, timeout=10)
 				if art_response.status_code == 200:
 					if pctl.radio_image_bin:
 						pctl.radio_image_bin.close()
@@ -5053,7 +5054,7 @@ def get_radio_art():
 
 	elif "gensokyoradio.net" in radiobox.loaded_url:
 
-		response = requests.get("https://gensokyoradio.net/api/station/playing/")
+		response = requests.get("https://gensokyoradio.net/api/station/playing/", timeout=10)
 
 		if response.status_code == 200:
 			d = json.loads(response.text)
@@ -5068,7 +5069,7 @@ def get_radio_art():
 				art = misc.get("ALBUMART")
 				if art:
 					art_url = "https://gensokyoradio.net/images/albums/500/" + art
-					art_response = requests.get(art_url)
+					art_response = requests.get(art_url, timeout=10)
 					if art_response.status_code == 200:
 						if pctl.radio_image_bin:
 							pctl.radio_image_bin.close()
@@ -5081,7 +5082,7 @@ def get_radio_art():
 	elif "radio.plaza.one" in radiobox.loaded_url:
 		time.sleep(3)
 		logging.info("Fetching plaza art")
-		response = requests.get("https://api.plaza.one/status")
+		response = requests.get("https://api.plaza.one/status", timeout=10)
 		if response.status_code == 200:
 			d = json.loads(response.text)
 			if "song" in d:
@@ -5098,7 +5099,7 @@ def get_radio_art():
 					radiobox.dummy_track.album = d["song"]["album"]
 				if "artwork_src" in d["song"]:
 					art_url = d["song"]["artwork_src"]
-					art_response = requests.get(art_url)
+					art_response = requests.get(art_url, timeout=10)
 					if art_response.status_code == 200:
 						if pctl.radio_image_bin:
 							pctl.radio_image_bin.close()
@@ -5343,16 +5344,16 @@ class PlayerCtl:
 
 	def notify_update(self, mpris: bool = True) -> None:
 		tauon.tray_releases += 1
-		try:
-			if tauon.tray_lock.locked():
-				tauon.tray_lock.release()
-		except RuntimeError as e:
-			if str(e) == "release unlocked lock":
-				logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
-			else:
-				logging.exception("Unknown RuntimeError trying to release tray_lock: {e}")
-		except Exception:
-			logging.exception("Failed to release tray_lock")
+		if tauon.tray_lock.locked():
+			try:
+					tauon.tray_lock.release()
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
+				else:
+					logging.exception("Unknown RuntimeError trying to release tray_lock: {e}")
+			except Exception:
+				logging.exception("Failed to release tray_lock")
 
 		if mpris and smtc:
 			tr = self.playing_object()
@@ -5387,7 +5388,7 @@ class PlayerCtl:
 			shoot.daemon = True
 			shoot.start()
 		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
-			tm.ready("style")
+			tauon.thread_manager.ready("style")
 
 	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
@@ -5759,7 +5760,7 @@ class PlayerCtl:
 
 
 	def play_target_rr(self) -> None:
-		tm.ready_playback()
+		tauon.thread_manager.ready_playback()
 		self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
 
 		if self.playing_length > 2:
@@ -5791,7 +5792,7 @@ class PlayerCtl:
 
 	def play_target(self, gapless: bool = False, jump: bool = False) -> None:
 
-		tm.ready_playback()
+		tauon.thread_manager.ready_playback()
 
 		#logging.info(self.track_queue)
 		self.playing_time = 0
@@ -5944,15 +5945,16 @@ class PlayerCtl:
 
 		self.playerCommandReady = True
 
-		try:
-			tm.player_lock.release()
-		except RuntimeError as e:
-			if str(e) == "release unlocked lock":
-				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
-			else:
-				logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
-		except Exception:
-			logging.exception("Unknown exception trying to release player_lock")
+		if tauon.thread_manager.player_lock.locked():
+			try:
+				tauon.thread_manager.player_lock.release()
+			except RuntimeError as e:
+				if str(e) == "release unlocked lock":
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+				else:
+					logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+			except Exception:
+				logging.exception("Unknown exception trying to release player_lock")
 
 		self.record_stream = False
 		if len(self.track_queue) > 0:
@@ -7695,7 +7697,7 @@ class ListenBrainz:
 		data["payload"].append({"track_metadata": metadata})
 		data["payload"][0]["listened_at"] = time
 
-		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
 			return False
@@ -7753,7 +7755,7 @@ class ListenBrainz:
 		data["payload"].append({"track_metadata": metadata})
 		# data["payload"][0]["listened_at"] = int(time.time())
 
-		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
+		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
 			logging.error("There was an error submitting data to ListenBrainz")
@@ -7910,7 +7912,7 @@ def maloja_get_scrobble_counts():
 	url += "apis/mlj_1/scrobbles"
 	lastfm.scanning_scrobbles = True
 	try:
-		r = requests.get(url)
+		r = requests.get(url, timeout=10)
 
 		if r.status_code != 200:
 			show_message(_("There was an error with the Maloja server"), r.text, mode="warning")
@@ -7977,7 +7979,7 @@ def maloja_scrobble(track: TrackClass) -> bool | None:
 	d["key"] = prefs.maloja_key
 
 	try:
-		r = requests.post(url, data=d)
+		r = requests.post(url, data=d, timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
 			return False
@@ -8274,6 +8276,40 @@ def encode_folder_name(track_object: TrackClass) -> str:
 
 	return folder_name
 
+class ThreadManager:
+
+	def __init__(self):
+
+		self.worker1:  Thread | None = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
+		self.worker2:  Thread | None = None  # Art bg, search
+		self.worker3:  Thread | None = None  # Gallery rendering
+		self.playback: Thread | None = None
+		self.player_lock:       Lock = threading.Lock()
+
+		self.d: dict = {}
+
+	def ready(self, type):
+		if self.d[type][2] is None or not self.d[type][2].is_alive():
+			shoot = threading.Thread(target=self.d[type][0], args=self.d[type][1])
+			shoot.daemon = True
+			shoot.start()
+			self.d[type][2] = shoot
+
+	def ready_playback(self) -> None:
+		if self.playback is None or not self.playback.is_alive():
+			if prefs.backend == 4:
+				self.playback = threading.Thread(target=player4, args=[tauon])
+			# elif prefs.backend == 2:
+			#     from tauon.t_modules.t_gstreamer import player3
+			#     self.playback = threading.Thread(target=player3, args=[tauon])
+			self.playback.daemon = True
+			self.playback.start()
+
+	def check_playback_running(self) -> bool:
+		if self.playback is None:
+			return False
+		return self.playback.is_alive()
+
 class Tauon:
 
 	def __init__(self):
@@ -8314,6 +8350,7 @@ class Tauon:
 		self.pl_to_id = pl_to_id
 		self.id_to_pl = id_to_pl
 		self.chunker = Chunker()
+		self.thread_manager: ThreadManager = ThreadManager()
 		self.stream_proxy = None
 		self.stream_proxy = StreamEnc(self)
 		self.level_train = []
@@ -8373,7 +8410,7 @@ class Tauon:
 			show_message(_("Starting download..."))
 			try:
 				f = io.BytesIO()
-				r = requests.get(url, stream=True)
+				r = requests.get(url, stream=True, timeout=1800) # ffmpeg is 77MB, give it half an hour in case someone is willing to suffer it on a slow connection
 
 				dl = 0
 				for data in r.iter_content(chunk_size=4096):
@@ -8469,7 +8506,7 @@ class Tauon:
 
 	def bg_save(self) -> None:
 		self.worker_save_state = True
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 
 	def exit(self, reason: str) -> None:
 		logging.info("Shutting down. Reason: " + reason)
@@ -8708,7 +8745,7 @@ class SubsonicService:
 		if get_url:
 			return url, params
 
-		response = requests.get(url, params=params)
+		response = requests.get(url, params=params, timeout=10)
 
 		if binary:
 			return response.content
@@ -9081,7 +9118,7 @@ class KoelService:
 		}
 
 		try:
-			r = requests.post(target, json=body, headers=headers)
+			r = requests.post(target, json=body, headers=headers, timeout=10)
 		except Exception:
 			logging.exception("Could not establish connection")
 			gui.show_message(_("Could not establish connection"), mode="error")
@@ -9142,7 +9179,7 @@ class KoelService:
 					"Content-Type": "application/json",
 				}
 
-				r = requests.post(target, headers=headers, json={"song": track_object.url_key})
+				r = requests.post(target, headers=headers, json={"song": track_object.url_key}, timeout=10)
 				# logging.info(r.status_code)
 				# logging.info(r.text)
 			except Exception:
@@ -9169,7 +9206,7 @@ class KoelService:
 			"Content-Type": "application/json",
 		}
 
-		r = requests.get(target, headers=headers)
+		r = requests.get(target, headers=headers, timeout=10)
 		data = r.json()
 
 		artists = data["artists"]
@@ -9264,7 +9301,7 @@ class TauService:
 		url = "http://" + prefs.sat_url + ":7814/api1/"
 		data = None
 		try:
-			r = requests.get(url + point)
+			r = requests.get(url + point, timeout=10)
 			data = r.json()
 		except Exception as e:
 			logging.exception("Network error")
@@ -12593,7 +12630,7 @@ class AlbumArt:
 		try:
 
 			r = requests.get(
-				"http://webservice.fanart.tv/v3/music/" \
+				"https://webservice.fanart.tv/v3/music/" \
 				+ artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
 
 			artlink = r.json()["artistbackground"][0]["url"]
@@ -13242,7 +13279,7 @@ class StyleOverlay:
 		self.min_on_timer.force_set(-0.2)
 		self.parent_path = "None"
 		self.stage = 0
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 		gui.style_worker_timer.set()
 		gui.delay_frame(0.25)
 		gui.update += 1
@@ -13707,7 +13744,7 @@ def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 				if not followed:
 					try:
 						logging.info("Download .pls")
-						response = requests.get(radio["stream_url"], stream=True)
+						response = requests.get(radio["stream_url"], stream=True, timeout=15)
 						if int(response.headers["Content-Length"]) < 2000:
 							read_pls(response.content.decode().splitlines(), path, followed=True)
 					except Exception:
@@ -15687,7 +15724,7 @@ def move_playing_folder_to_stem(path: str, pl_id: int | None = None) -> None:
 	move_jobs.append(
 		(move_folder, os.path.join(artist_folder, track.parent_folder_name), True,
 		track.parent_folder_name, load_order))
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def move_playing_folder_to_tag(tag_item):
@@ -16132,20 +16169,6 @@ def toggle_synced_lyrics_deco(track):
 
 showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
-
-def search_guitarparty(track_object: TrackClass):
-	if not track_object.title:
-		show_message(_("Insufitent metadata to search"))
-	gc.fetch(track_object)
-
-
-def search_guitarparty_showtest(_):
-	return gui.combo_mode and prefs.guitar_chords
-
-
-showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=search_guitarparty_showtest))
-
-
 def paste_lyrics_deco():
 	if SDL_HasClipboardText():
 		line_colour = colours.menu_text
@@ -16154,33 +16177,21 @@ def paste_lyrics_deco():
 
 	return [line_colour, colours.menu_background, None]
 
-
 def paste_lyrics(track_object: TrackClass):
 	if SDL_HasClipboardText():
 		clip = SDL_GetClipboardText()
 		#logging.info(clip)
 		track_object.lyrics = clip.decode("utf-8")
-
 	else:
 		logging.warning("NO TEXT TO PASTE")
 
+#def chord_lyrics_paste_show_test(_) -> bool:
+#	return gui.combo_mode and prefs.guitar_chords
+# showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
-def paste_chord_lyrics(track_object: TrackClass):
-	if track_object.title:
-		gc.save_format_b(track_object)
-
-
-def chord_lyrics_paste_show_test(_):
-	return gui.combo_mode and prefs.guitar_chords
-
-
-def clear_chord_lyrics(track_object: TrackClass):
-	if track_object.title:
-		gc.clear(track_object)
-
-
-showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
-showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+#guitar_chords = GuitarChords(user_directory=Path(user_directory))
+#showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+#showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
 
 def copy_lyrics_deco(track_object: TrackClass):
@@ -16451,7 +16462,7 @@ def download_art1(tr):
 			try:
 				show_message(_("Searching fanart.tv for cover art..."))
 
-				r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
+				r = requests.get("https://webservice.fanart.tv/v3/music/albums/" \
 					+ artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
 
 				artlink = r.json()["albums"][album_id]["albumcover"][0]["url"]
@@ -16740,7 +16751,7 @@ def paste_deco():
 		active = True
 	elif SDL_HasClipboardText():
 		text = copy_from_clipboard()
-		if text.startswith("/") or "file://" in text or text.startswith("spotify"):
+		if text.startswith(("/", "spotify")) or "file://" in text:
 			active = True
 		elif prefs.spot_mode and text.startswith("https://open.spotify.com/album/"):  # or text.startswith("https://open.spotify.com/track/"):
 			active = True
@@ -17383,7 +17394,7 @@ def rescan_tags(pl: int) -> None:
 	for track in pctl.multi_playlist[pl].playlist_ids:
 		if pctl.master_library[track].is_cue is False:
 			to_scan.append(track)
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 # def re_import(pl: int) -> None:
@@ -18111,18 +18122,12 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 	errors = False
 	selections_searched = 0
 
-	def is_source_type(code):
-		return code is None or \
+	def is_source_type(code: str | None) -> bool:
+		return \
+			code is None or \
 			code == "" or \
-			code.startswith("self") or \
-			code.startswith("jelly") or \
-			code.startswith("plex") or \
-			code.startswith("koel") or \
-			code.startswith("tau") or \
-			code.startswith("air") or \
-			code.startswith("sal")
+			code.startswith(("self", "jelly", "plex", "koel", "tau", "air", "sal"))
 
-	#
 	#logging.info(cmds)
 	#logging.info(quotes)
 
@@ -18132,7 +18137,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 
 		quote = quotes[i]
 
-		if cm.startswith("\"") and (cm.endswith(">") or cm.endswith("<")):
+		if cm.startswith("\"") and (cm.endswith((">", "<"))):
 			cm_found = False
 
 			for col in column_names:
@@ -18523,15 +18528,16 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			search_over.all_folders = True
 			search_over.sip = True
 			search_over.search_text.text = search
-			try:
-				worker2_lock.release()
-			except RuntimeError as e:
-				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
-				else:
-					logging.exception("Unknown RuntimeError trying to release worker2_lock")
-			except Exception:
-				logging.exception("Unknown error trying to release worker2_lock")
+			if worker2_lock.locked():
+				try:
+					worker2_lock.release()
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+					else:
+						logging.exception("Unknown RuntimeError trying to release worker2_lock")
+				except Exception:
+					logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
 				time.sleep(0.01)
 
@@ -18550,7 +18556,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
 		# SEARCH GENRE
-		elif (cm.startswith("g\"") or cm.startswith("gm\"") or cm.startswith("g=\"")) and len(cm) > 3:
+		elif (cm.startswith(('g"', 'gm"', 'g="'))) and len(cm) > 3:
 
 			if not selections:
 				for plist in pctl.multi_playlist:
@@ -18563,15 +18569,16 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			search = g_search
 			search_over.sip = True
 			search_over.search_text.text = search
-			try:
-				worker2_lock.release()
-			except RuntimeError as e:
-				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
-				else:
-					logging.exception("Unknown RuntimeError trying to release worker2_lock")
-			except Exception:
-				logging.exception("Unknown error trying to release worker2_lock")
+			if worker2_lock.locked():
+				try:
+					worker2_lock.release()
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+					else:
+						logging.exception("Unknown RuntimeError trying to release worker2_lock")
+				except Exception:
+					logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
 				time.sleep(0.01)
 
@@ -18612,15 +18619,16 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			search = quote
 			search_over.sip = True
 			search_over.search_text.text = "artist " + search
-			try:
-				worker2_lock.release()
-			except RuntimeError as e:
-				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
-				else:
-					logging.exception("Unknown RuntimeError trying to release worker2_lock")
-			except Exception:
-				logging.exception("Unknown error trying to release worker2_lock")
+			if worker2_lock.locked():
+				try:
+					worker2_lock.release()
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+					else:
+						logging.exception("Unknown RuntimeError trying to release worker2_lock")
+				except Exception:
+					logging.exception("Unknown error trying to release worker2_lock")
 			while search_over.sip:
 				time.sleep(0.01)
 
@@ -18666,7 +18674,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 					del playlist[i]
 
 
-		elif cm.startswith("find\"") or cm.startswith("f\"") or cm.startswith("fs\""):
+		elif cm.startswith(('find"', 'f"', 'fs"')):
 
 			if not selections:
 				for plist in pctl.multi_playlist:
@@ -18705,7 +18713,7 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			playlist = list(OrderedDict.fromkeys(playlist))
 
 
-		elif cm.startswith("s\"") or cm.startswith("px\""):
+		elif cm.startswith(('s"', 'px"')):
 			pl_name = quote
 			target = None
 			for p in pctl.multi_playlist:
@@ -18976,7 +18984,7 @@ def auto_sync_thread(pl: int) -> None:
 				else:
 					gui.sync_progress = _("{N} Folder Remaining").format(N=str(remain))
 				transcode_list.append(folder_dict[item])
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 				while transcode_list:
 					time.sleep(1)
 				if gui.stop_sync:
@@ -20093,7 +20101,7 @@ def convert_folder(index: int):
 
 	#logging.info(folder)
 	transcode_list.append(folder)
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def transfer(index: int, args) -> None:
@@ -20326,7 +20334,7 @@ def lightning_paste():
 			move_jobs.append(
 				(move_path, os.path.join(artist_folder, move_track.parent_folder_name), move,
 				move_track.parent_folder_name, load_order))
-			tm.ready("worker")
+			tauon.thread_manager.ready("worker")
 			# Remove all tracks with the old paths
 			for pl in pctl.multi_playlist:
 				for i in reversed(range(len(pl.playlist_ids))):
@@ -20389,9 +20397,9 @@ def paste(playlist_no=None, track_id=None):
 		for link in clip.split("\n"):
 			logging.info(link)
 			link = link.strip()
-			if clip.startswith("https://open.spotify.com/track/") or clip.startswith("spotify:track:"):
+			if clip.startswith(("https://open.spotify.com/track/", "spotify:track:")):
 				spot_ctl.append_track(link)
-			elif clip.startswith("https://open.spotify.com/album/") or clip.startswith("spotify:album:"):
+			elif clip.startswith(("https://open.spotify.com/album/", "spotify:album:")):
 				l = spot_ctl.append_album(link, return_list=True)
 				if l:
 					cargo.extend(l)
@@ -20406,7 +20414,7 @@ def paste(playlist_no=None, track_id=None):
 	if clip:
 		clip = clip.split("\n")
 		for i, line in enumerate(clip):
-			if line.startswith("file://") or line.startswith("/"):
+			if line.startswith(("file://", "/")):
 				target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
 				load_order = LoadClass()
 				load_order.target = target
@@ -21236,7 +21244,7 @@ def reload_metadata(input, keep_star: bool = True) -> None:
 			pctl.notify_change()
 
 	gui.pl_update += 1
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def reload_metadata_selection() -> None:
@@ -21247,7 +21255,7 @@ def reload_metadata_selection() -> None:
 	for k in cargo:
 		if pctl.master_library[k].is_cue == False:
 			to_scan.append(k)
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 
@@ -21851,10 +21859,10 @@ def ser_band(track_id: int) -> None:
 		show_message(_("Searching..."))
 
 
-def ser_rym(index: int):
+def ser_rym(index: int) -> None:
 	if len(pctl.master_library[index].artist) < 2:
 		return
-	line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(
+	line = "https://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(
 		pctl.master_library[index].artist)
 	webbrowser.open(line, new=2, autoraise=True)
 
@@ -21886,7 +21894,7 @@ def ser_gen_thread(tr):
 
 	line = genius(s_artist, s_title, return_url=True)
 
-	r = requests.head(line)
+	r = requests.head(line, timeout=10)
 
 	if r.status_code != 404:
 		webbrowser.open(line, new=2, autoraise=True)
@@ -21909,10 +21917,10 @@ def ser_gen(track_id, get_lyrics=False):
 	shoot.start()
 
 
-def ser_wiki(index: int):
+def ser_wiki(index: int) -> None:
 	if len(pctl.master_library[index].artist) < 2:
 		return
-	line = "http://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(pctl.master_library[index].artist)
+	line = "https://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(pctl.master_library[index].artist)
 	webbrowser.open(line, new=2, autoraise=True)
 
 
@@ -22895,7 +22903,7 @@ def switch_playlist(number, cycle=False, quiet=False):
 	code = pctl.gen_codes.get(id)
 	if code is not None and check_auto_update_okay(code, pctl.active_playlist_viewing):
 		gui.regen_single_id = id
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 
 	if album_mode:
 		reload_albums(True)
@@ -23019,7 +23027,7 @@ tauon.switch_playlist = switch_playlist
 def import_spotify_playlist():
 	clip = copy_from_clipboard()
 	for line in clip.split("\n"):
-		if line.startswith("https://open.spotify.com/playlist/") or line.startswith("spotify:playlist:"):
+		if line.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 			clip = clip.strip()
 			spot_ctl.playlist(line)
 
@@ -23030,7 +23038,7 @@ def import_spotify_playlist():
 
 def import_spotify_playlist_deco():
 	clip = copy_from_clipboard()
-	if clip.startswith("https://open.spotify.com/playlist/") or clip.startswith("spotify:playlist:"):
+	if clip.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
@@ -23155,14 +23163,14 @@ def clean_db() -> None:
 	global cm_clean_db
 	prefs.remove_network_tracks = False
 	cm_clean_db = True
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 def clean_db2() -> None:
 	global cm_clean_db
 	prefs.remove_network_tracks = True
 	cm_clean_db = True
-	tm.ready("worker")
+	tauon.thread_manager.ready("worker")
 
 
 x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), clean_db2))
@@ -23820,7 +23828,7 @@ def toggle_auto_bg(mode: int= 0) -> bool | None:
 		gui.update = 60
 
 	style_overlay.flush()
-	tm.ready("style")
+	tauon.thread_manager.ready("style")
 	# if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
 	#     toggle_auto_theme()
 	return None
@@ -23870,7 +23878,7 @@ def toggle_auto_bg_blur(mode: int = 0) -> bool | None:
 		return prefs.art_bg_always_blur
 	prefs.art_bg_always_blur ^= True
 	style_overlay.flush()
-	tm.ready("style")
+	tauon.thread_manager.ready("style")
 	return None
 
 
@@ -24074,12 +24082,12 @@ def get_album_art_url(tr: TrackClass):
 		if url:
 			return url
 
-		base_url = "http://coverartarchive.org/release-group/"
+		base_url = "https://coverartarchive.org/release-group/"
 		url = f"{base_url}{release_group_id}"
 
 		try:
 			#logging.info("lookup image url from release group")
-			response = requests.get(url)
+			response = requests.get(url, timeout=10)
 			response.raise_for_status()
 			image_data = response.json()
 			final_id = release_group_id
@@ -24094,12 +24102,12 @@ def get_album_art_url(tr: TrackClass):
 		if url:
 			return url
 
-		base_url = "http://coverartarchive.org/release/"
+		base_url = "https://coverartarchive.org/release/"
 		url = f"{base_url}{release_id}"
 
 		try:
 			#logging.print("lookup image url from album id")
-			response = requests.get(url)
+			response = requests.get(url, timeout=10)
 			response.raise_for_status()
 			image_data = response.json()
 			final_id = release_id
@@ -24446,7 +24454,7 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: str | None =
 			if os.path.exists(path):
 				os.remove(path)
 			logging.info("Downloading file...")
-			with requests.get(url, params=params) as response, open(path, "wb") as out_file:
+			with requests.get(url, params=params, timeout=60) as response, open(path, "wb") as out_file:
 				out_file.write(response.content)
 			logging.info("Download complete")
 			cleanup = True
@@ -25083,15 +25091,16 @@ class SearchOverlay:
 				search_over.spotify_mode ^= True
 				self.sip = True
 				search_over.searched_text = search_over.search_text.text
-				try:
-					worker2_lock.release()
-				except RuntimeError as e:
-					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
-					else:
-						logging.exception("Unknown RuntimeError trying to release worker2_lock")
-				except Exception:
-					logging.exception("Unknown error trying to release worker2_lock")
+				if worker2_lock.locked():
+					try:
+						worker2_lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+						else:
+							logging.exception("Unknown RuntimeError trying to release worker2_lock")
+					except Exception:
+						logging.exception("Unknown error trying to release worker2_lock")
 
 			if input_text or key_backspace_press:
 				self.input_timer.set()
@@ -25100,16 +25109,17 @@ class SearchOverlay:
 			elif self.input_timer.get() >= 0.20 and \
 					(len(search_over.search_text.text) > 1 or (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text) > 128)) \
 					and search_over.search_text.text != search_over.searched_text:
-				try:
-					self.sip = True
-					worker2_lock.release()
-				except RuntimeError as e:
-					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
-					else:
-						logging.exception("Unknown RuntimeError trying to release worker2_lock")
-				except Exception:
-					logging.exception("Unknown error trying to release worker2_lock")
+				self.sip = True
+				if worker2_lock.locked():
+					try:
+						worker2_lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+						else:
+							logging.exception("Unknown RuntimeError trying to release worker2_lock")
+					except Exception:
+						logging.exception("Unknown error trying to release worker2_lock")
 
 			if self.input_timer.get() < 10:
 				gui.frame_callback_list.append(TestTimer(0.1))
@@ -25636,8 +25646,8 @@ def worker3():
 	while True:
 		# time.sleep(0.04)
 
-		# if tm.exit_worker3:
-		#     tm.exit_worker3 = False
+		# if tauon.thread_manager.exit_worker3:
+		#     tauon.thread_manager.exit_worker3 = False
 		#     return
 		# time.sleep(1)
 
@@ -26540,7 +26550,7 @@ def worker1():
 				tag_scan(nt)
 			else:
 				after_scan.append(nt)
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 			pctl.master_count += 1
 
@@ -27689,11 +27699,11 @@ def toggle_top_tabs(mode: int = 0) -> bool | None:
 	return None
 
 
-def toggle_guitar_chords(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.guitar_chords
-	prefs.guitar_chords ^= True
-	return None
+#def toggle_guitar_chords(mode: int = 0) -> bool | None:
+#	if mode == 1:
+#		return prefs.guitar_chords
+#	prefs.guitar_chords ^= True
+#	return None
 
 
 # def toggle_auto_lyrics(mode: int = 0) -> bool | None:
@@ -27891,7 +27901,7 @@ key_ralt = False
 key_lalt = False
 
 
-def reload_backend():
+def reload_backend() -> None:
 	gui.backend_reloading = True
 	logging.info("Reload backend...")
 	wait = 0
@@ -27902,15 +27912,16 @@ def reload_backend():
 		wait += 1
 		if wait > 20:
 			break
-	try:
-		tm.player_lock.release()
-	except RuntimeError as e:
-		if str(e) == "release unlocked lock":
-			logging.error("RuntimeError: Attempted to release already unlocked player_lock")
-		else:
-			logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
-	except Exception:
-		logging.exception("Unknown error trying to release player_lock")
+	if tauon.thread_manager.player_lock.locked():
+		try:
+			tauon.thread_manager.player_lock.release()
+		except RuntimeError as e:
+			if str(e) == "release unlocked lock":
+				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+			else:
+				logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+		except Exception:
+			logging.exception("Unknown error trying to release player_lock")
 
 	pctl.playerCommand = "unload"
 	pctl.playerCommandReady = True
@@ -27922,7 +27933,7 @@ def reload_backend():
 		if wait > 200:
 			break
 
-	tm.ready_playback()
+	tauon.thread_manager.ready_playback()
 
 	if pre_state == 1:
 		pctl.revert()
@@ -27930,7 +27941,7 @@ def reload_backend():
 
 
 
-def gen_chart():
+def gen_chart() -> None:
 	try:
 
 		topchart = t_topchart.TopChart(tauon, album_art_gen)
@@ -28499,7 +28510,8 @@ class Over:
 				if self.button(x, y, _("Reset failed list")):
 					prefs.auto_lyrics_checked.clear()
 			y += 30 * gui.scale
-		self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
+
+#		self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
 		y += 40 * gui.scale
 		ddt.text((x, y), _("Sources:"), colours.box_text_label, 11)
@@ -29152,7 +29164,7 @@ class Over:
 					url += "/test"
 
 					try:
-						r = requests.get(url, params={"key": prefs.maloja_key})
+						r = requests.get(url, params={"key": prefs.maloja_key}, timeout=10)
 						if r.status_code == 403:
 							show_message(_("Connection appeared successful but the API key was invalid"), mode="warning")
 						elif r.status_code == 200:
@@ -31624,7 +31636,7 @@ class TopPanel:
 						pctl.notify_change()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tree_view_box.clear_target_pl(i)
-						tm.ready("worker")
+						tauon.thread_manager.ready("worker")
 
 				if mouse_up and radio_view.drag:
 					pctl.radio_playlists[i]["items"].append(radio_view.drag)
@@ -34047,7 +34059,7 @@ def set_mini_mode():
 	if prefs.mini_mode_mode == 5:
 		size = (350, 545)
 		style_overlay.flush()
-		tm.ready("style")
+		tauon.thread_manager.ready("style")
 
 	if logical_size == window_size:
 		size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
@@ -34128,7 +34140,7 @@ def restore_full_mode():
 
 	gui.update_layout()
 	if prefs.art_bg:
-		tm.ready("style")
+		tauon.thread_manager.ready("style")
 
 
 def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, album_fade, start_x, width, style=1, ry=None):
@@ -35938,7 +35950,7 @@ class RadioBox:
 		logging.info("Fetching M3U...")
 
 		try:
-			response = requests.get(url)
+			response = requests.get(url, timeout=10)
 			if response.status_code != 200:
 				logging.error(f"M3U Fetch error code: {response.status_code}")
 				return None
@@ -36051,7 +36063,7 @@ class RadioBox:
 		pctl.playing_time = 0
 		pctl.decode_time = 0
 		pctl.playing_length = 0
-		tm.ready_playback()
+		tauon.thread_manager.ready_playback()
 		hit_discord()
 
 		if tauon.update_play_lock is not None:
@@ -36110,7 +36122,7 @@ class RadioBox:
 						fulllink = "https://cdn.listen.moe/covers/" + filename
 
 						#logging.info(fulllink)
-						art_response = requests.get(fulllink)
+						art_response = requests.get(fulllink, timeout=10)
 						#logging.info(art_response.status_code)
 
 						if art_response.status_code == 200:
@@ -36250,8 +36262,8 @@ class RadioBox:
 
 				radio = {}
 				radio["title"] = "Nightwave Plaza"
-				radio["stream_url_unresolved"] = "http://radio.plaza.one/ogg"
-				radio["stream_url"] = "http://radio.plaza.one/ogg"
+				radio["stream_url_unresolved"] = "https://radio.plaza.one/ogg"
+				radio["stream_url"] = "https://radio.plaza.one/ogg"
 				radio["website_url"] = "https://plaza.one/"
 				radio["icon"] = "https://plaza.one/icons/apple-touch-icon.png"
 				radio["country"] = "Japan"
@@ -36770,7 +36782,7 @@ class RenamePlaylistBox:
 			rename_text_area.highlight_none()
 
 			gui.regen_single = rename_playlist_box.playlist_index
-			tm.ready("worker")
+			tauon.thread_manager.ready("worker")
 
 
 		else:
@@ -36815,7 +36827,7 @@ class RenamePlaylistBox:
 
 			if input_text or key_backspace_press:
 				gui.regen_single = rename_playlist_box.playlist_index
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 				# regenerate_playlist(rename_playlist_box.playlist_index)
 			# if gui.gen_code_errors:
@@ -37200,7 +37212,7 @@ class PlaylistBox:
 						modified = True
 					if modified:
 						pctl.after_import_flag = True
-						tm.ready("worker")
+						tauon.thread_manager.ready("worker")
 						pctl.notify_change()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tree_view_box.clear_target_pl(i)
@@ -37500,12 +37512,12 @@ def save_discogs_artist_thumb(artist, filepath):
 
 	# Search for Discogs artist id
 	url = "https://api.discogs.com/database/search"
-	r = requests.get(url, params={"query": artist, "type": "artist", "token": prefs.discogs_pat}, headers={"User-Agent": t_agent})
+	r = requests.get(url, params={"query": artist, "type": "artist", "token": prefs.discogs_pat}, headers={"User-Agent": t_agent}, timeout=10)
 	id = r.json()["results"][0]["id"]
 
 	# Search artist info, get images
 	url = "https://api.discogs.com/artists/" + str(id)
-	r = requests.get(url, headers={"User-Agent": t_agent}, params={"token": prefs.discogs_pat})
+	r = requests.get(url, headers={"User-Agent": t_agent}, params={"token": prefs.discogs_pat}, timeout=10)
 	images = r.json()["images"]
 
 	# Respect rate limit
@@ -37548,7 +37560,7 @@ def save_discogs_artist_thumb(artist, filepath):
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
 	logging.info("Searching fanart.tv for image...")
 	#logging.info("mbid is " + mbid)
-	r = requests.get("http://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + prefs.fatvap, timeout=5)
+	r = requests.get("https://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + prefs.fatvap, timeout=5)
 	#logging.info(r.json())
 	thumblink = r.json()["artistthumb"][0]["url"]
 	if preview:
@@ -37664,7 +37676,7 @@ class ArtistList:
 
 			if prefs.auto_dl_artist_data:
 				self.to_fetch = artist
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 			else:
 				self.thumb_cache[artist] = None
@@ -37840,7 +37852,7 @@ class ArtistList:
 		letter = text[0].lower()
 		letter_upper = letter.upper()
 		for i, item in enumerate(self.current_artists):
-			if item.startswith("the ") or item.startswith("The "):
+			if item.startswith(("the ", "The ")):
 				if len(item) > 4 and (item[4] == letter or item[4] == letter_upper):
 					self.scroll_position = i
 					break
@@ -38312,7 +38324,7 @@ class ArtistList:
 				self.current_album_counts = []
 				self.current_artist_track_counts = {}
 				self.load = True
-				tm.ready("worker")
+				tauon.thread_manager.ready("worker")
 
 		area = (x, y, w, h)
 		area2 = (x + 1, y, w - 3, h)
@@ -40324,12 +40336,12 @@ class ArtistInfoBox:
 						logging.exception("Failed to find image from discogs")
 			if not artist_picture_render.show and data[4]:
 				try:
-					r = requests.get(data[4])
+					r = requests.get(data[4], timeout=10)
 					html = BeautifulSoup(r.text, "html.parser")
 					tag = html.find("meta", property="og:image")
 					url = tag["content"]
 					if url:
-						r = requests.get(url)
+						r = requests.get(url, timeout=10)
 						assert len(r.content) > 1000
 						with open(standard_path, "wb") as f:
 							f.write(r.content)
@@ -40400,327 +40412,6 @@ def artist_dl_deco():
 
 artist_info_menu.add(MenuItem(_("Download Artist Data"), artist_info_box.manual_dl, artist_dl_deco, show_test=test_artist_dl))
 artist_info_menu.add(MenuItem(_("Clear Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift))
-
-
-class GuitarChords:
-
-	def __init__(self):
-		self.store_a = os.path.join(user_directory, "guitar-chords-a")  # inline format
-		self.store_b = os.path.join(user_directory, "guitar-chords-b")  # 2 lines format
-
-		self.data = []
-		self.current = ""
-		self.auto_scroll = True
-
-		self.scroll_position = 0
-
-		self.ready = {}
-
-		self.widespace = "　"
-
-	def clear(self, track: TrackClass) -> None:
-
-		cache_title = self.get_cache_title(track)
-		self.prep_folders()
-		self.current = ""
-		self.scroll_position = 0
-
-		self.ready[cache_title] = 0
-
-		for item in os.listdir(self.store_a):
-			if item == cache_title:
-				os.remove(os.path.join(self.store_a, cache_title))
-
-		for item in os.listdir(self.store_b):
-			if item == cache_title:
-				os.remove(os.path.join(self.store_b, cache_title))
-
-	def save_format_b(self, track: TrackClass) -> None:
-
-		t = copy_from_clipboard()
-		if not t:
-			show_message(_("Clipboard has no text"))
-			inp.mouse_click = False
-			return
-
-		cache_title = self.get_cache_title(track)
-
-		t = t.replace("\r", "")
-
-		f = open(os.path.join(self.store_b, cache_title), "w")
-		f.write(t)
-		f.close()
-
-	def parse_b(self, lines):
-
-		final = []
-
-		last = ""
-
-		for line in lines:
-
-			if line == " " or line == "" or line == "\n":
-				line = "                                          "
-
-			line = line.replace("\n", "")
-			line = line.replace("\r", "")
-
-			if not last and (len(line) < 6 or \
-				"    " in line \
-				or "D " in line \
-				or "Am " in line \
-				or "Fm" in line \
-				or "Em " in line \
-				or "C " in line \
-				or "G " in line \
-				or "F " in line \
-				or "Dm" in line) and any(c.isalpha() for c in line):
-				last = line
-				continue
-
-			w = list(line)
-			for i, c in enumerate(w):
-				if i > 0 and c == " ":
-					if w[i - 1] == " " or w[i - 1] == self.widespace:
-						w[i - 1] = self.widespace
-						w[i] = self.widespace
-			line = "".join(w)
-
-			if not last:
-				final.append((line, []))
-				continue
-
-			on = 0
-			mode = 0
-			distance = 0
-			chords = []
-
-			while on < len(last):
-
-				if mode == 0:
-					if last[on] == " ":
-						on += 1
-						continue
-					mode = 1
-					distance = ddt.get_text_w(line[:on], 16)
-
-				on2 = on
-				while on2 < len(last) and last[on2] != " ":
-					on2 += 1
-
-				grab = last[on:on2]
-
-				chords.append((grab, distance))
-				mode = 0
-				on = on2
-				on += 1
-
-			final.append((line, chords))
-			last = ""
-		self.data = final
-
-	def prep_folders(self):
-
-		if not os.path.exists(self.store_a):
-			os.makedirs(self.store_a)
-
-		if not os.path.exists(self.store_b):
-			os.makedirs(self.store_b)
-
-	def fetch(self, track: TrackClass) -> None:
-
-		if track is None:
-			return
-
-		if self.test_ready_status(track) != 0:
-			return
-
-		cache_title = self.get_cache_title(track)
-
-		try:
-
-			r = requests.get(
-				"http://api.guitarparty.com/v2/songs/?query=" + urllib.parse.quote(cache_title),
-				headers={"Guitarparty-Api-Key": "e9c0e543798c4249c24f698022ced5dd0c583ec7"})
-			d = r.json()["objects"][0]["body"]
-
-			self.prep_folders()
-			f = open(os.path.join(self.store_a, cache_title), "w")
-			f.write(d)
-			f.close()
-
-			self.ready[cache_title] = 1
-
-		except Exception:
-			logging.exception("Could not find matching track on GuitarParty")
-			show_message(_("Could not find matching track on GuitarParty"))
-			inp.mouse_click = False
-			self.ready[cache_title] = 2
-
-	def test_ready_status(self, track: TrackClass) -> int:
-
-		# 0 not searched
-		# 1 ready
-		# 2 failed
-
-		cache_title = self.get_cache_title(track)
-
-		if cache_title in self.ready:
-			if self.ready[cache_title] == 1:
-				return 1
-			if self.ready[cache_title] == 2:
-				return 2
-			return 0
-
-		self.prep_folders()
-		if cache_title in os.listdir(self.store_a):
-			self.ready[cache_title] = 1
-			return 1
-		if cache_title in os.listdir(self.store_b):
-			self.ready[cache_title] = 1
-			return 1
-		self.ready[cache_title] = 0
-		return 0
-
-	def parse(self, lines):
-
-		final = []
-
-		for line in lines:
-			line = line.rstrip()
-			# while "  " in line:
-			# line = line.replace("  ", "　　")
-			w = list(line)
-
-			for i, c in enumerate(w):
-				if i > 0 and c == " ":
-
-					if w[i - 1] == " " or w[i - 1] == self.widespace:
-						w[i - 1] = self.widespace
-						w[i] = self.widespace
-
-			lyrics = []
-			chords = []
-
-			on = 0
-			mode = 0
-
-			chord_part = []
-
-			while on < len(w):
-				if mode == 0:
-					# If normal, add to lyric list
-					if w[on] != "[":
-						lyrics.append(w[on])
-						on += 1
-						continue
-
-					# Start of [, delete it
-					mode = 1
-					del w[on]
-					continue
-
-				if w[on] == "]":
-					del w[on]
-					mode = 0
-
-					distance = 0
-					if on > 0:
-						distance = ddt.get_text_w("".join(w[:on]), 16)
-
-					chords.append(("".join(chord_part), distance))
-					chord_part = []
-					continue
-
-				chord_part.append(w[on])
-				del w[on]
-
-			final.append(("".join(lyrics), chords))
-
-		logging.info(final)
-		self.data = final
-
-	def get_cache_title(self, track: TrackClass) -> str:
-
-		name = track.artist + " " + track.title
-		name = filename_safe(name, sub="_")
-		return name
-
-	def render(self, track: TrackClass, x, y) -> bool:
-
-		cache_title = self.get_cache_title(track)
-
-		if self.current == cache_title:
-			if not self.data:
-				return False
-		else:
-			self.prep_folders()
-			if cache_title in os.listdir(self.store_a):
-				f = open(os.path.join(self.store_a, cache_title))
-				lines = f.readlines()
-				f.close()
-				self.parse(lines)
-				self.current = cache_title
-				self.scroll_position = 0
-
-			elif cache_title in os.listdir(self.store_b):
-				f = open(os.path.join(self.store_b, cache_title))
-				lines = f.readlines()
-				f.close()
-				self.parse_b(lines)
-				self.current = cache_title
-				self.scroll_position = 0
-			else:
-				return False
-
-		if self.auto_scroll:
-
-			if pctl.playing_length > 20:
-				progress = max(0, pctl.playing_time - 12) / (pctl.playing_length - 3)
-				height = len(self.data) * (18 + 15) * gui.scale
-
-				self.scroll_position = height * progress
-				# gui.update += 1
-				gui.frame_callback_list.append(TestTimer(0.3))
-				# time.sleep(0.032)
-
-		if mouse_wheel and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-			self.scroll_position += int(mouse_wheel * 30 * gui.scale * -1)
-			self.auto_scroll = False
-		y -= self.scroll_position
-
-		if self.data:
-
-			self.ready[cache_title] = 1
-
-			for line in self.data:
-
-				if window_size[0] > y > 0:
-					min_space = 0
-					for ch in line[1]:
-						xx = max(x + ch[1], min_space)
-
-						if len(ch[0]) == 2 and ch[0][1].lower() == "x":
-							min_space = 1 + xx + ddt.text((xx, y), ch[0], [220, 120, 240, 255], 214)
-						else:
-							min_space = 1 + xx + ddt.text((xx, y), ch[0], [140, 120, 240, 255], 213)
-				y += 15 * gui.scale
-
-				if window_size[0] > y > 0:
-					colour = colours.lyrics
-					if colours.lm:
-						colour = [30, 30, 30, 255]
-					ddt.text((x, y), line[0], colour, 16)
-
-				y += 18 * gui.scale
-
-			return True
-		return False
-
-
-# guitar chords def
-gc = GuitarChords()
-
 
 class RadioThumbGen:
 	def __init__(self):
@@ -40817,7 +40508,7 @@ class RadioThumbGen:
 		if r is None:
 			if len(self.requests) < 3:
 				self.requests.append((station, w))
-				tm.ready("radio-thumb")
+				tauon.thread_manager.ready("radio-thumb")
 			return 0
 		if r[0] == 2:
 			texture = SDL_CreateTextureFromSurface(renderer, r[3])
@@ -41113,7 +40804,6 @@ class RadioView:
 
 radio_view = RadioView()
 
-
 class Showcase:
 
 	def __init__(self):
@@ -41290,7 +40980,7 @@ class Showcase:
 
 			if timed_ready and track.lyrics:
 
-				# if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
+				# if not prefs.guitar_chords or guitar_chords.test_ready_status(track) != 1:
 				#
 				#     line = _("Prefer synced")
 				#     if prefs.prefer_synced_lyrics:
@@ -41302,16 +40992,15 @@ class Showcase:
 
 				timed_ready = prefs.prefer_synced_lyrics
 
-			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
+#			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
+#				if not guitar_chords.auto_scroll:
+#					if draw.button(
+#						_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+#						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+#						background_highlight_colour=bfg):
+#						guitar_chords.auto_scroll = True
 
-				if not gc.auto_scroll:
-					if draw.button(
-						_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-						background_highlight_colour=bfg):
-						gc.auto_scroll = True
-
-			elif True and prefs.show_lyrics_showcase and timed_ready:
+			if True and prefs.show_lyrics_showcase and timed_ready:
 				w = window_size[0] - (x + box) - round(30 * gui.scale)
 				timed_lyrics_ren.render(track.index, gcx, y, w=w)
 
@@ -42371,63 +42060,27 @@ SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 # --------------------------------------------------------------------------------------------
 
-class ThreadManager:
-
-	def __init__(self):
-
-		self.worker1 = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
-		self.worker2 = None  # Art bg, search
-		self.worker3 = None  # Gallery rendering
-		self.playback = None
-		self.player_lock = threading.Lock()
-
-		self.d = {}
-
-	def ready(self, type):
-		if self.d[type][2] is None or not self.d[type][2].is_alive():
-			shoot = threading.Thread(target=self.d[type][0], args=self.d[type][1])
-			shoot.daemon = True
-			shoot.start()
-			self.d[type][2] = shoot
-
-	def ready_playback(self) -> None:
-		if self.playback is None or not self.playback.is_alive():
-			if prefs.backend == 4:
-				self.playback = threading.Thread(target=player4, args=[tauon])
-			# elif prefs.backend == 2:
-			#     from tauon.t_modules.t_gstreamer import player3
-			#     self.playback = threading.Thread(target=player3, args=[tauon])
-			self.playback.daemon = True
-			self.playback.start()
-
-	def check_playback_running(self) -> bool:
-		if self.playback is None:
-			return False
-		return self.playback.is_alive()
-
 
 # caster = threading.Thread(target=enc, args=[tauon])
 # caster.daemon = True
 # caster.start()
 
-tm = ThreadManager()
-tauon.tm = tm
-tm.ready_playback()
+tauon.thread_manager.ready_playback()
 
 try:
-	tm.d["caster"] = [lambda: x, [tauon], None]
+	tauon.thread_manager.d["caster"] = [lambda: x, [tauon], None]
 except Exception:
 	logging.exception("Failed to cast")
 
-tm.d["worker"] = [worker1, (), None]
-tm.d["search"] = [worker2, (), None]
-tm.d["gallery"] = [worker3, (), None]
-tm.d["style"] = [worker4, (), None]
-tm.d["radio-thumb"] = [radio_thumb_gen.loader, (), None]
+tauon.thread_manager.d["worker"] = [worker1, (), None]
+tauon.thread_manager.d["search"] = [worker2, (), None]
+tauon.thread_manager.d["gallery"] = [worker3, (), None]
+tauon.thread_manager.d["style"] = [worker4, (), None]
+tauon.thread_manager.d["radio-thumb"] = [radio_thumb_gen.loader, (), None]
 
-tm.ready("search")
-tm.ready("gallery")
-tm.ready("worker")
+tauon.thread_manager.ready("search")
+tauon.thread_manager.ready("gallery")
+tauon.thread_manager.ready("worker")
 
 # thread = threading.Thread(target=worker1)
 # thread.daemon = True
@@ -43021,7 +42674,7 @@ def update_layout_do():
 		update_set()
 
 	if prefs.art_bg:
-		tm.ready("style")
+		tauon.thread_manager.ready("style")
 
 # SDL_RenderClear(renderer)
 # SDL_RenderPresent(renderer)
@@ -44096,7 +43749,7 @@ while pctl.running:
 				gui.lowered = True
 				# if prefs.min_to_tray:
 				#     tray.down()
-				# tm.sleep()
+				# tauon.thread_manager.sleep()
 
 			elif event.window.event == SDL_WINDOWEVENT_RESTORED:
 
@@ -44144,9 +43797,9 @@ while pctl.running:
 		SDL_RaiseWindow(t_window)
 		gui.lowered = False
 
-	# if tm.sleeping:
+	# if tauon.thread_manager.sleeping:
 	#     if not gui.lowered:
-	#         tm.wake()
+	#         tauon.thread_manager.wake()
 	if gui.lowered:
 		gui.update = 0
 	# ----------------
@@ -44158,9 +43811,9 @@ while pctl.running:
 	power += 1
 
 	if pctl.playerCommandReady:
-		if tm.player_lock.locked():
+		if tauon.thread_manager.player_lock.locked():
 			try:
-				tm.player_lock.release()
+				tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -44921,7 +44574,7 @@ while pctl.running:
 	if len(load_orders) > 0:
 		loading_in_progress = True
 		pctl.after_import_flag = True
-		tm.ready("worker")
+		tauon.thread_manager.ready("worker")
 		if loaderCommand == LC_None:
 
 			# Fliter out files matching CUE filenames
@@ -44956,7 +44609,7 @@ while pctl.running:
 							to_got = 1
 							to_get = 1
 					loaderCommandReady = True
-					tm.ready("worker")
+					tauon.thread_manager.ready("worker")
 					break
 
 	elif loading_in_progress is True:
@@ -45097,7 +44750,7 @@ while pctl.running:
 			album_art_gen.clear_cache()
 			style_overlay.radio_meta = None
 			if prefs.art_bg:
-				tm.ready("style")
+				tauon.thread_manager.ready("style")
 
 		fields.clear()
 		gui.cursor_want = 0
@@ -48625,8 +48278,8 @@ if tauon.stream_proxy and tauon.stream_proxy.download_running:
 	time.sleep(2)
 
 try:
-	if tm.player_lock.locked():
-		tm.player_lock.release()
+	if tauon.thread_manager.player_lock.locked():
+		tauon.thread_manager.player_lock.release()
 except RuntimeError as e:
 	if str(e) == "release unlocked lock":
 		logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -48673,7 +48326,7 @@ if os.path.isdir(cache_dir):
 	shutil.rmtree(cache_dir)
 
 if not tauon.quick_close:
-	while tm.check_playback_running():
+	while tauon.thread_manager.check_playback_running():
 		time.sleep(0.2)
 		if exit_timer.get() > 2:
 			logging.warning("Phazor unload timeout")

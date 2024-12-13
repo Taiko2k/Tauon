@@ -97,8 +97,8 @@ else:
 class QuickThumbnail:
 
 	renderer: SDL_Renderer | None = None
-	items = []
-	queue = []
+	items: list[QuickThumbnail] = []
+	queue: list[QuickThumbnail] = []
 
 	def __init__(self) -> None:
 		self.rect = SDL_Rect(0, 0)
@@ -159,7 +159,7 @@ class QuickThumbnail:
 
 		return True
 
-# TODO(Martin): This block never executes? https://github.com/Taiko2k/Tauon/issues/1318
+# TODO(Martin): This block never executes - https://github.com/Taiko2k/Tauon/issues/1318
 if system == "Windows":
 	class RECT(ctypes.Structure):
 		_fields_ = [
