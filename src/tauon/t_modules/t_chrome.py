@@ -9,6 +9,9 @@ import pychromecast
 from tauon.t_modules.t_extra import shooter
 
 if TYPE_CHECKING:
+	from pychromecast import Chromecast
+	from pychromecast.models import CastInfo
+
 	from tauon.t_modules.t_main import Tauon
 
 def get_ip() -> str:
@@ -28,13 +31,11 @@ def get_ip() -> str:
 
 class Chrome:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
-		self.services = []
-		self.active = False
-		self.cast = None
-		self.target_playlist = None
-		self.target_id = None
-		self.save_vol = 100
+		self.tauon:             Tauon = tauon
+		self.services: list[CastInfo] = []
+		self.active:             bool = False
+		self.cast:  Chromecast | None = None
+		self.save_vol:          float = 100
 
 	def rescan(self) -> None:
 		logging.info("Scanning for chromecasts...")
