@@ -44,7 +44,7 @@ class Chrome:
 			try:
 				#self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
 				services, browser = pychromecast.discovery.discover_chromecasts()
-				pychromecast.discovery.stop_discovery(browser)
+				browser.stop_discovery()
 				menu = self.tauon.chrome_menu
 				if menu is None:
 					logging.critical("menu was None, this should not happen!")
