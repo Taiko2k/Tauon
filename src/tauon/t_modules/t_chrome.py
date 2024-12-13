@@ -149,11 +149,11 @@ class Chrome:
 			return
 		self.cast.media_controller.pause()
 
-	def seek(self, t: str) -> None:
+	def seek(self, position: float) -> None:
 		if self.cast is None:
 			logging.critical("self.cast was None, this should not happen!")
 			return
-		self.cast.media_controller.seek(t)
+		self.cast.media_controller.seek(position)
 
 	def volume(self, decimal: int) -> None:
 		if self.cast is None:
