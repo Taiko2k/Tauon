@@ -3024,7 +3024,8 @@ if star_size1 == 0 and star_size2 == 0:
 	logging.warning("Star database file is missing, first run? Will create one anew!")
 else:
 	try:
-		star_store.db = pickle.load(to_load.open("rb"))
+		with to_load.open("rb") as file:
+			star_store.db = pickle.load(file)
 	except Exception:
 		logging.exception("Unknown error loading star.p file")
 
@@ -3032,7 +3033,8 @@ else:
 album_star_path = Path(user_directory) / "album-star.p"
 if album_star_path.is_file():
 	try:
-		album_star_store.db = pickle.load(album_star_path.open("rb"))
+		with album_star_path.open("rb") as file:
+			album_star_store.db = pickle.load(file)
 	except Exception:
 		logging.exception("Unknown error loading album-star.p file")
 else:
@@ -3114,23 +3116,21 @@ for t in range(2):
 		if t == 0:
 			if not state_path1.is_file():
 				continue
-			state_file = state_path1.open("rb")
+			with state_path1.open("rb") as file:
+				save = pickle.load(file)
 		if t == 1:
 			if not state_path2.is_file():
 				logging.warning("State database file is missing, first run? Will create one anew!")
 				break
-			state_file = state_path2.open("rb")
+			logging.warning("Loading backup state.p!")
+			with state_path2.open("rb") as file:
+				save = pickle.load(file)
 
 		# def tt():
 		#	 while True:
 		#		 logging.info(state_file.tell())
 		#		 time.sleep(0.01)
 		# shooter(tt)
-
-		save = pickle.load(state_file)
-
-		if t == 1:
-			logging.warning("Loading backup state.p!")
 
 		db_version = save[17]
 		if db_version != latest_db_version:
@@ -3501,7 +3501,6 @@ for t in range(2):
 		if save[182] is not None:
 			prefs.gallery_combine_disc = save[182]
 
-		state_file.close()
 		del save
 		break
 
@@ -4742,9 +4741,8 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 				nt.title = "Track " + str(nt.subtrack + 1)
 
 		elif nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
-			f = open(nt.fullpath, "rb")
-			data = f.read()
-			f.close()
+			with Path(nt.fullpath).open("rb") as file:
+				data = file.read()
 			MOD1 = MOD.from_address(
 				mpt.openmpt_module_create_from_memory(
 					ctypes.c_char_p(data), ctypes.c_size_t(len(data)), None, None, None))
@@ -8888,14 +8886,12 @@ class Tauon:
 			f.seek(0)
 			z = zipfile.ZipFile(f, mode="r")
 			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
-			ff = open(os.path.join(user_directory, "ffmpeg.exe"), "wb")
-			ff.write(exe.read())
-			ff.close()
+			with (Path(user_directory) / "ffmpeg.exe").open("wb") as file:
+				file.write(exe.read())
 
 			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
-			ff = open(os.path.join(user_directory, "ffprobe.exe"), "wb")
-			ff.write(exe.read())
-			ff.close()
+			with (Path(user_directory) / "ffprobe.exe").open("wb") as file:
+				file.write(exe.read())
 
 			exe.close()
 			show_message(_("FFMPEG fetch complete"), mode="done")
@@ -12988,9 +12984,8 @@ class AlbumArt:
 						response = urllib.request.urlopen(get_network_thumbnail_url(track), cafile=tauon.ca)
 						source_image = io.BytesIO(response.read())
 					if source_image:
-						f = open(cached_path, "wb")
-						f.write(source_image.read())
-						f.close()
+						with Path(cached_path).open("wb") as file:
+							file.write(source_image.read())
 						source_image.seek(0)
 
 			except Exception:
@@ -14087,9 +14082,8 @@ def load_m3u(path: str) -> None:
 	if not os.path.isfile(path):
 		return
 
-	f = open(path, encoding="utf-8")
-	lines = f.readlines()
-	f.close()
+	with Path(path).open(encoding="utf-8") as file:
+		lines = file.readlines()
 
 	for i, line in enumerate(lines):
 		line = line.strip("\r\n").strip()
