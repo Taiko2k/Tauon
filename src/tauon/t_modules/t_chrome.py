@@ -102,7 +102,7 @@ class Chrome:
 			logging.critical("self.cast was None, this should not happen!")
 			return
 		self.cast.wait()
-		tr = self.tauon.pctl.g(track_id)
+		tr = self.tauon.pctl.get_track(track_id)
 		n = 0
 		try:
 			n = int(tr.track_number)

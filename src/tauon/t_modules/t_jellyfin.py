@@ -193,7 +193,7 @@ class Jellyfin:
 
 		ids = []
 		for t in self.pctl.multi_playlist[pl].playlist_ids:
-			track = self.pctl.g(t)
+			track = self.pctl.get_track(t)
 			if track.url_key not in ids and track.file_ext == "JELY":
 				ids.append(track.url_key)
 
@@ -444,7 +444,7 @@ class Jellyfin:
 				#logging.info(track.items())
 				if replace_existing:
 					track_id = existing_track
-					nt = self.pctl.g(track_id)
+					nt = self.pctl.get_track(track_id)
 				else:
 					nt = self.tauon.TrackClass()
 				nt.index = track_id  # this is tauons track id
