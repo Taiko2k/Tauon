@@ -17,7 +17,7 @@ Changelog
 - **Fixed** infinite timeouts in requests module, this should fix random rare freezes of various functionality related to networking
 - **Fixed** not checking for errors when using subprocess, this allowed various things to fail and continue going on as if nothing happened
 - **Fixed** saving files with forbidden characters from one FS to another that is FAT32, they are now replaced by an underscore on failure detection
-- **Fixed** leaking file handlers when handling themes and databases
+- **Fixed** leaking file handlers when handling themes and databases, this may fix potential memory leaks
 - **Updated** HTTP URLs to HTTPS where it was possible
 - ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead and this feature was unmaintained
 - **Improved** missing assets or locales now throw an error instead of silently (or not so silently) failing
