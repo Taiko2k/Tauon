@@ -131,6 +131,12 @@ logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 if sys.platform != "win32":
 	import fcntl
 
+# https://docs.python.org/3/library/warnings.html
+if not sys.warnoptions:
+	import warnings
+	warnings.simplefilter("default")
+	os.environ["PYTHONWARNINGS"] = "default" # Also affect subprocesses
+
 n_version = "7.9.0"
 t_version = "v" + n_version
 t_title = "Tauon"
