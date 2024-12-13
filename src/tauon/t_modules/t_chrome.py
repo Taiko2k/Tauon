@@ -46,6 +46,9 @@ class Chrome:
 				services, browser = pychromecast.discovery.discover_chromecasts()
 				pychromecast.discovery.stop_discovery(browser)
 				menu = self.tauon.chrome_menu
+				if menu is None:
+					logging.critical("menu was None, this should not happen!")
+					return
 				MenuItem = self.tauon.MenuItem
 
 				#menu.items.clear()
@@ -85,6 +88,9 @@ class Chrome:
 
 
 	def update(self) -> tuple:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return ()
 		self.cast.media_controller.update_status()
 		return self.cast.media_controller.status.current_time, \
 			self.cast.media_controller.status.media_custom_data.get("id"), \
@@ -92,6 +98,9 @@ class Chrome:
 			self.cast.media_controller.status.duration
 
 	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> None:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return
 		self.cast.wait()
 		tr = self.tauon.pctl.g(track_id)
 		n = 0
@@ -123,18 +132,33 @@ class Chrome:
 		self.cast.media_controller.play_media(url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue)
 
 	def stop(self) -> None:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return
 		self.cast.media_controller.stop()
 
 	def play(self) -> None:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return
 		self.cast.media_controller.play()
 
 	def pause(self) -> None:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return
 		self.cast.media_controller.pause()
 
 	def seek(self, t: str) -> None:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return
 		self.cast.media_controller.seek(t)
 
 	def volume(self, decimal: int) -> None:
+		if self.cast is None:
+			logging.critical("self.cast was None, this should not happen!")
+			return
 		self.cast.set_volume(decimal)
 
 	def end(self) -> None:
