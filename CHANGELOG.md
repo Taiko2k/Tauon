@@ -14,9 +14,11 @@ Changelog
 - **Fixed** not defining GTK and Gdk version causing autoloading of 4.0 which we cannot support at the moment, now hardcoded to 3.0
 - **Fixed** loading configuration with negative integers, this fixes setting a negative baseline offset persistently and possibly more
 - **Fixed** playlist being able to skip to next song even when current song was looped due to a race condition
-- **Fixed** infinite timeouts in requests (except for main module, for now), this should fix random rare freezes of various functionality
+- **Fixed** infinite timeouts in requests module, this should fix random rare freezes of various functionality related to networking
 - **Fixed** not checking for errors when using subprocess, this allowed various things to fail and continue going on as if nothing happened
 - **Fixed** saving files with forbidden characters from one FS to another that is FAT32, they are now replaced by an underscore on failure detection
+- **Updated** HTTP URLs to HTTPS where it was possible
+- ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead and this feature was unmaintained
 - **Improved** missing assets or locales now throw an error instead of silently (or not so silently) failing
 - **Improved** creating SDL window and renderer, making Tauon crash immediately on a fatal failure rather on nonsense errors later on
 - **Improved** build system
@@ -29,6 +31,7 @@ Changelog
   - **Added** Python typing system, partially for now, making development easier
   - **Added** TauonQueueItem and TauonPlaylist classes and refactored codebase for them, making the relevant code typed and much easier to read
   - **Fixed** referring to a hardcoded instance of PlayerCtl from PlayerCtl instead of using `self`, this did not cause any visible errors but was an issue nevertheless
+  - **Fixed** aggressively unlocking locks even when it wasn't needed
   - **Migrated** from spaces to tabs to allow contributors their preferred indent width
   - **Migrated** from os.sys to Path from pathlib for cleaner code, partially
   - **Improved** pickling - now uses latest available pickling version

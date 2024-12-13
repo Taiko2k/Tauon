@@ -33,10 +33,11 @@ import requests
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
-	from tekore import Spotify
-	from tekore.model import FullAlbum
+	from tekore._auth.refreshing import RefreshingCredentials
+	from tekore._client.full import Spotify
+	from tekore._model.album.full import FullAlbum
 
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import Strings, Tauon, TrackClass
 
 tekore_imported = False
 try:
@@ -51,44 +52,44 @@ else:
 class SpotCtl:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
-		self.strings = tauon.strings
-		self.start_timer = Timer()
-		self.status = 0
+		self.tauon:            Tauon = tauon
+		self.strings:        Strings = tauon.strings
+		self.start_timer:      Timer = Timer()
+		self.status:             int = 0
 		self.spotify: Spotify | None = None
-		self.loaded_art = ""
-		self.playing = False
-		self.coasting = False
-		self.paused = False
+		self.loaded_art:         str = ""
+		self.playing:           bool = False
+		self.coasting:          bool = False
+		self.paused:            bool = False
 		self.token = None
-		self.cred = None
-		self.started_once = False
-		self.redirect_uri = "http://localhost:7811/spotredir"
-		self.current_imports = {}
-		self.spotify_com = False
+		self.cred: RefreshingCredentials | None = None
+		self.started_once:                 bool = False
+		self.redirect_uri:                  str = "http://localhost:7811/spotredir"
+		self.current_imports:              dict = {}
+		self.spotify_com:                  bool = False
 		self.sender = None
-		self.cache_saved_albums = []
-		self.scope = "user-read-private user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
-		self.launching_spotify = False
-		self.preparing_spotify = False
-		self.progress_timer = Timer()
-		self.update_timer = Timer()
+		self.cache_saved_albums:      list[str] = []
+		self.scope:              str = "user-read-private user-read-playback-position streaming user-modify-playback-state user-library-modify user-library-read user-read-currently-playing user-read-playback-state playlist-read-private playlist-modify-private playlist-modify-public"
+		self.launching_spotify: bool = False
+		self.preparing_spotify: bool = False
+		self.progress_timer:   Timer = Timer()
+		self.update_timer:     Timer = Timer()
 
-		self.token_path = os.path.join(self.tauon.user_directory, "spot-token-pkce")
+		self.token_path: str = os.path.join(self.tauon.user_directory, "spot-token-pkce")
 		self.pkce_code = None
-		self.local = True
+		self.local: bool = True
 		self.country = None
 
-		self.coast_context = ""
+		self.coast_context: str = ""
 
-	def prep_cred(self) -> None:
+	def prep_cred(self) -> RefreshingCredentials:
 		if not tekore_imported:
 			self.tauon.gui.show_message(_("Dependency Tekore not found"), mode="warning")
 		rc = tk.RefreshingCredentials
 		secret = self.tauon.prefs.spot_secret
 		if not secret or len(self.tauon.prefs.spot_secret) != 32:
 			secret = None
-		self.cred = rc(client_id=self.tauon.prefs.spot_client, client_secret=secret, redirect_uri=self.redirect_uri)
+		return rc(client_id=self.tauon.prefs.spot_client, client_secret=secret, redirect_uri=self.redirect_uri)
 
 	def connect(self) -> None:
 		if not self.tauon.prefs.spotify_token or not self.tauon.prefs.spot_mode:
@@ -96,7 +97,7 @@ class SpotCtl:
 		if len(self.tauon.prefs.spot_client) != 32:
 			return
 		if self.cred is None:
-			self.prep_cred()
+			self.cred = self.prep_cred()
 		if self.spotify is None:
 			if self.token is None:
 				self.load_token()
@@ -108,7 +109,7 @@ class SpotCtl:
 
 	def paste_code(self, code: str) -> None:
 		if self.cred is None:
-			self.prep_cred()
+			self.cred = self.prep_cred()
 
 		if self.pkce_code:
 			self.token = self.cred.request_pkce_token(code.strip().strip("\n"), self.pkce_code)
@@ -170,7 +171,7 @@ class SpotCtl:
 			self.tauon.gui.show_message(_("Invalid client ID. See Spotify tab in settings."), mode="error")
 			return
 		if self.cred is None:
-			self.prep_cred()
+			self.cred = self.prep_cred()
 
 		secret = self.tauon.prefs.spot_secret
 		if not secret or len(self.tauon.prefs.spot_secret) != 32:
@@ -185,35 +186,43 @@ class SpotCtl:
 			url = self.cred.user_authorisation_url(scope=self.scope)
 		webbrowser.open(url, new=2, autoraise=True)
 
-	def control(self, command: str, param: int | None = None) -> None:
+	def control(self, command: str, param: str | int | None = None) -> None:
+		if not self.spotify:
+			return
 
 		try:
 			if command == "pause" and (self.playing or self.coasting) and not self.paused:
 				self.spotify.playback_pause()
 				self.paused = True
 				self.start_timer.set()
-			if command == "stop" and (self.playing or self.coasting):
+			elif command == "stop" and (self.playing or self.coasting):
 				self.paused = False
 				self.playing = False
 				self.coasting = False
 				self.spotify.playback_pause()
 				self.start_timer.set()
-			if command == "resume" and (self.coasting or self.playing) and self.paused:
+			elif command == "resume" and (self.coasting or self.playing) and self.paused:
 				self.spotify.playback_resume()
 				self.paused = False
 				self.progress_timer.set()
 				self.start_timer.set()
-			if command == "volume":
+			elif param is None:
+				logging.error(f"Passed a command {command} requiring a parameter but did not pass the parameter!")
+				return
+			elif command == "volume" and type(param) is int:
 				self.spotify.playback_volume(param)
-			if command == "seek":
+			elif command == "seek" and type(param) is int:
 				self.spotify.playback_seek(param)
 				self.start_timer.set()
-			if command == "next":
+			elif command == "next" and type(param) is str:
 				self.spotify.playback_next(param)
 				#self.start_timer.set()
-			if command == "previous":
+			elif command == "previous" and type(param) is str:
 				self.spotify.playback_previous(param)
 				#self.start_timer.set()
+			else:
+				logging.error(f"Passed an invalid command {command}!")
+				return
 
 		except Exception as e:
 			logging.exception("Control failure")
@@ -320,18 +329,21 @@ class SpotCtl:
 			return
 		self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
 
-	def get_playlist_list(self):
+	def get_playlist_list(self) -> list[tuple[str, str]] | None:
 		self.connect()
 		if not self.spotify:
 			self.tauon.gui.show_message(self.strings.spotify_need_enable)
 			return None
 
-		playlists = []
+		playlists: list[tuple[str, str]] = []
 		results = self.spotify.playlists(self.spotify.current_user().id)
 		pages = self.spotify.all_pages(results)
 		for page in pages:
 			items = page.items
 			for item in items:
+#				if item is None:
+#					logging.debug("Playlist item is None?")
+#					continue
 				name = item.name
 				url = item.external_urls["spotify"]
 				playlists.append((name, url))
@@ -449,12 +461,10 @@ class SpotCtl:
 			self.tauon.gui.show_message(_("Error - Tauon device not found"))
 
 		self.preparing_spotify = False
-	def play_target(self, id: int, force_new_device: bool = False, start_time: int = 0, start_callback=None):
 
-		if not start_time:
-			start_time = None
-		else:
-			start_time = int(start_time * 1000)
+	def play_target(self, id: int, force_new_device: bool = False, start_time: int | None = 0, start_callback=None):
+
+		start_time = None if not start_time else int(start_time * 1000)
 
 		self.coasting = False
 		self.connect()
@@ -554,7 +564,7 @@ class SpotCtl:
 				if self.tauon.prefs.launch_spotify_local:
 					self.preparing_spotify = True
 					logging.info("Queue start librespot...")
-					self.tauon.tm.ready_playback()
+					self.tauon.thread_manager.ready_playback()
 					self.tauon.pctl.playerCommand = "spotcon"
 					self.tauon.pctl.playerCommandReady = True
 					if start_callback:
@@ -686,7 +696,7 @@ class SpotCtl:
 		self.tauon.pctl.playing_time = 0
 		self.tauon.pctl.decode_time = 0
 		self.tauon.gui.pl_update += 1
-		self.tauon.tm.ready_playback()
+		self.tauon.thread_manager.ready_playback()
 
 
 	def get_library_albums(self, return_list: bool = False) -> list | None:
@@ -1147,13 +1157,13 @@ class SpotCtl:
 			return
 
 		result = self.spotify.playback_currently_playing()
-		self.tauon.tm.ready_playback()
+		self.tauon.thread_manager.ready_playback()
 
 		if self.playing or (not self.coasting and not start):
 			return
 
 		try:
-			self.tauon.tm.player_lock.release()
+			self.tauon.thread_manager.player_lock.release()
 		except Exception:
 			logging.exception("Failed to release lock")
 
