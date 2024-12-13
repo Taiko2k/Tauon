@@ -42961,10 +42961,11 @@ def save_state() -> None:
 	]
 
 	try:
-		pickle.dump(save, open(user_directory + "/state.p.backup", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+		with (Path(user_directory) / "state.p.backup").open("wb") as file:
+			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 		# if not pctl.running:
-
-		pickle.dump(save, open(user_directory + "/state.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+		with (Path(user_directory) / "state.p").open("wb") as file:
+			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		old_position = old_window_position
 		if not prefs.save_window_position:
@@ -42980,12 +42981,13 @@ def save_state() -> None:
 		]
 
 		if not fs_mode:
-			pickle.dump(save, open(user_directory + "/window.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+			with (Path(user_directory) / "window.p").open("wb") as file:
+				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		spot_ctl.save_token()
 
-		with open(user_directory + "/lyrics_substitutions.json", "w") as f:
-			json.dump(prefs.lyrics_subs, f)
+		with (Path(user_directory) / "lyrics_substitutions.json").open("w") as file:
+			json.dump(prefs.lyrics_subs, file)
 
 		save_prefs()
 
@@ -48209,7 +48211,8 @@ while pctl.running:
 		try:
 			if should_save_state:
 				logging.info("Auto save playtime")
-				pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+				with (Path(user_directory) / "star.p").open("wb") as file:
+					pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 			else:
 				logging.info("Dev mode, skip auto saving playtime")
 		except PermissionError:
@@ -48259,16 +48262,20 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
 	prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
 if should_save_state:
-	pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-	pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+	with (Path(user_directory) / "star.p").open("wb") as file:
+		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+	with (Path(user_directory) / "album-star.p").open("wb") as file:
+		pickle.dump(album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 save_state()
 
 date = datetime.date.today()
 if should_save_state:
-	pickle.dump(star_store.db, open(user_directory + "/star.p.backup", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-	pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+	with (Path(user_directory) / "star.p.backup").open("wb") as file:
+		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+	with (Path(user_directory) / f"star.p.backup{str(date.month)}").open("wb") as file:
+		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 if tauon.stream_proxy and tauon.stream_proxy.download_running:
 	logging.info("Stopping stream...")
