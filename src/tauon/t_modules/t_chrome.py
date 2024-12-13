@@ -20,13 +20,13 @@ def get_ip() -> str:
 	try:
 		# doesn't even have to be reachable
 		s.connect(("10.255.255.255", 1))
-		IP = s.getsockname()[0]
+		IPv4 = s.getsockname()[0]
 	except Exception:
 		logging.exception("Failed to get socket name.")
-		IP = "127.0.0.1"
+		IPv4 = "127.0.0.1"
 	finally:
 		s.close()
-	return IP
+	return IPv4
 
 
 class Chrome:
