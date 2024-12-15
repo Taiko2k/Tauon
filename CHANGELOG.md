@@ -9,6 +9,9 @@ Changelog
 - **Added** Ruff for a linter and support for Pyright (LSP) to make development easier
 - **Added** CI job to verify translations still compile, catches when people happen to submit broken translation PRs
 - **Fixed** always finding a tag even when one did not exist due to misusing a variable as both an integer and a boolean
+- **Fixed** crashes related to PipeWire [#1250](https://github.com/Taiko2k/Tauon/issues/1250)
+- **Fixed** audio cutting out on the PipeWire backend with specific custom quantum settings [#1245](https://github.com/Taiko2k/Tauon/issues/1245)
+- **Fixed** wrong encoding used for some tags in XSPF exports [#1331](https://github.com/Taiko2k/Tauon/issues/1331)
 - **Fixed** gensokyoradio.net radio fallback URL
 - **Fixed** mishandling SDL display change event, this fixes the "Grr" errors in the log
 - **Fixed** not defining GTK and Gdk version causing autoloading of 4.0 which we cannot support at the moment, now hardcoded to 3.0
@@ -19,7 +22,7 @@ Changelog
 - **Fixed** saving files with forbidden characters from one FS to another that is FAT32, they are now replaced by an underscore on failure detection
 - **Fixed** leaking file handlers when handling themes and databases, this may fix potential memory leaks
 - **Updated** HTTP URLs to HTTPS where it was possible
-- ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead and this feature was unmaintained
+- ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead, replaced by newer API that would need implementing, and the chords feature was unmaintained
 - **Improved** missing assets or locales now throw an error instead of silently (or not so silently) failing
 - **Improved** creating SDL window and renderer, making Tauon crash immediately on a fatal failure rather on nonsense errors later on
 - **Improved** build system
