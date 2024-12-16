@@ -8,6 +8,7 @@ Changelog
 - **Added** run.sh to set up Tauon in a clean venv (Linux only)
 - **Added** Ruff for a linter and support for Pyright (LSP) to make development easier
 - **Added** CI job to verify translations still compile, catches when people happen to submit broken translation PRs
+- **Fixed** Spotify local audio playback. User Spotify password entry no longer required.
 - **Fixed** always finding a tag even when one did not exist due to misusing a variable as both an integer and a boolean
 - **Fixed** gensokyoradio.net radio fallback URL
 - **Fixed** mishandling SDL display change event, this fixes the "Grr" errors in the log
