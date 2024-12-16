@@ -3484,8 +3484,8 @@ for t in range(2):
 			gui.was_radio = save[173]
 		if save[174] is not None:
 			prefs.spot_username = save[174]
-		if save[175] is not None:
-			prefs.spot_password = save[175]
+		# if save[175] is not None:
+		# 	prefs.spot_password = save[175]
 		if save[176] is not None:
 			prefs.artist_list_threshold = save[176]
 		if save[177] is not None:
@@ -29256,46 +29256,11 @@ class Over:
 			prefs.launch_spotify_local = self.toggle_square(
 				x, y, prefs.launch_spotify_local,
 				_("Enable local audio playback"))
-			if prefs.launch_spotify_local != old and prefs.launch_spotify_local:
-				show_message(
-					_("Due to Spotify authentication changes, local audio playback may be broken"),
-					_("It is highly recommended to disable this setting to avoid your account being locked."), mode="warning")
 
 			if prefs.launch_spotify_local and not tauon.enable_librespot:
 				show_message(_("Librespot not installed?"))
 				prefs.launch_spotify_local = False
-			x += round(22 * gui.scale)
-			y += round(16 * gui.scale)
-			field_width -= round(22 * gui.scale)
 
-			if prefs.launch_spotify_local:
-				# ddt.text((x + 0 * gui.scale, y), _("Spotify username"),
-				#          colours.box_text_label, 11)
-				# y += round(19 * gui.scale)
-				# rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-				# fields.add(rect1)
-				# if coll(rect1) and (self.click or level_2_right_click):
-				#     self.account_text_field = 2
-				# ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-				# text_spot_username.text = prefs.spot_username
-				# text_spot_username.draw(x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
-				#                       width=rect1[2] - 8 * gui.scale, click=self.click)
-				# prefs.spot_username = text_spot_username.text.strip()
-
-				ddt.text(
-					(x + 0 * gui.scale, y), _("Spofify password"),
-					colours.box_text_label, 11)
-				y += round(19 * gui.scale)
-				rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-				fields.add(rect1)
-				if coll(rect1) and (self.click or level_2_right_click):
-					self.account_text_field = 3
-				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-				text_spot_password.text = prefs.spot_password
-				text_spot_password.draw(
-					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 3, secret=True,
-					width=rect1[2] - 8 * gui.scale, click=self.click)
-				prefs.spot_password = text_spot_password.text.strip()
 
 		if self.account_view == 7:
 
@@ -42952,7 +42917,7 @@ def save_state() -> None:
 		prefs.album_shuffle_lock_mode,
 		gui.was_radio,
 		prefs.spot_username,
-		prefs.spot_password,
+		"", #prefs.spot_password,  # No longer used
 		prefs.artist_list_threshold,
 		prefs.tray_theme,
 		prefs.row_title_format,
@@ -43269,12 +43234,6 @@ c_xax_timer = Timer()
 c_xay = 0
 c_xay_timer = Timer()
 rt = 0
-
-
-if prefs.launch_spotify_local:
-	show_message(
-		_("Due to Spotify authentication changes, local Spotify audio playback may be broken"),
-		_("It is highly recommended to disable this setting to avoid your account being locked."), _("See MENU > SETTINGS > ACCOUNT > SPOTIFY > Enable local audio playback."), mode="warning")
 
 # MAIN LOOP
 
@@ -44158,8 +44117,7 @@ while pctl.running:
 			tauon.exit("Quit keyboard shortcut pressed")
 
 		if keymaps.test("testkey"):  # F7: test
-			pctl.playerCommand = "unload"
-			pctl.playerCommandReady = True
+			pass
 
 		if gui.mode < 3:
 			if keymaps.test("toggle-auto-theme"):
