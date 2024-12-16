@@ -5,50 +5,18 @@ Changelog
 ### v7.9.0
 
 - **Added** TIDAL support
-- **Added** run.sh to set up Tauon in a clean venv (Linux only)
-- **Added** Ruff for a linter and support for Pyright (LSP) to make development easier
-- **Added** CI job to verify translations still compile, catches when people happen to submit broken translation PRs
-- **Fixed** always finding a tag even when one did not exist due to misusing a variable as both an integer and a boolean
 - **Fixed** crashes related to PipeWire [#1250](https://github.com/Taiko2k/Tauon/issues/1250)
 - **Fixed** audio cutting out on the PipeWire backend with specific custom quantum settings [#1245](https://github.com/Taiko2k/Tauon/issues/1245)
 - **Fixed** wrong encoding used for some tags in XSPF exports [#1331](https://github.com/Taiko2k/Tauon/issues/1331)
+- **Fixed** Spotify local audio playback. User Spotify password entry no longer required
 - **Fixed** gensokyoradio.net radio fallback URL
-- **Fixed** mishandling SDL display change event, this fixes the "Grr" errors in the log
-- **Fixed** not defining GTK and Gdk version causing autoloading of 4.0 which we cannot support at the moment, now hardcoded to 3.0
-- **Fixed** loading configuration with negative integers, this fixes setting a negative baseline offset persistently and possibly more
+- **Fixed** mishandling display change event, this fixes the "Grr" errors in the log
+- **Fixed** loading configuration with negative integers, this fixes setting a negative baseline offset
 - **Fixed** playlist being able to skip to next song even when current song was looped due to a race condition
-- **Fixed** infinite timeouts in requests module, this should fix random rare freezes of various functionality related to networking
-- **Fixed** not checking for errors when using subprocess, this allowed various things to fail and continue going on as if nothing happened
-- **Fixed** saving files with forbidden characters from one FS to another that is FAT32, they are now replaced by an underscore on failure detection
 - **Fixed** leaking file handlers when handling themes and databases, this may fix potential memory leaks
-- **Updated** HTTP URLs to HTTPS where it was possible
 - ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead, replaced by newer API that would need implementing, and the chords feature was unmaintained
-- **Improved** missing assets or locales now throw an error instead of silently (or not so silently) failing
-- **Improved** creating SDL window and renderer, making Tauon crash immediately on a fatal failure rather on nonsense errors later on
-- **Improved** build system
-  - **Migrated** to pyproject.toml, allowing building using the native Python system (Linux only for now)
-  - **[Windows] Added** notes about building on MSVC and support for it in phazor.c - MSVC still does not work with these changes alone, only MINGW64 is supported by Tauon on Windows
-  - **Fixed** loading phazor only from hardcoded paths, now also allow standard Python paths for C extensions
-- **Improved** this changelog, now using markdown and nicer styling
-- **Improved** codebase
-  - **Added** logging module instead of print statements and custom functions using print statements, this, among many other benefits, enables some external libraries to inform about their deprecations
-  - **Added** Python typing system, partially for now, making development easier
-  - **Added** TauonQueueItem and TauonPlaylist classes and refactored codebase for them, making the relevant code typed and much easier to read
-  - **Fixed** referring to a hardcoded instance of PlayerCtl from PlayerCtl instead of using `self`, this did not cause any visible errors but was an issue nevertheless
-  - **Fixed** aggressively unlocking locks even when it wasn't needed
-  - **Migrated** from spaces to tabs to allow contributors their preferred indent width
-  - **Migrated** from os.sys to Path from pathlib for cleaner code, partially
-  - **Improved** pickling - now uses latest available pickling version
-  - **Improved** exceptions - stop hiding errors and catch all exceptions
-  - **Split** database migrations into a separate module
-  - **Unified** quote style, now using double quotes everywhere
-  - **Simplified** various code paths
-  - ***Removed*** all star imports, all code is now imported explicitly allowing for better behavior, also enabling proper typing
-  - ***Removed*** unused imports
-  - ***Removed*** various redundant, unused or duplicate codepaths, variables and arguments
-  - ***Renamed*** various functions and variables, for example `g()` to `get_track()`
-  - ***Renamed*** `compile-translations.py` to `compile_translations.py` and `update-translations.py` to `update_translations.py`, Python generally expects underscores
-  - ***Moved*** various files around and reworked file structures to be more standard
+- **Improved** Various changes to build system, Migrated to pyproject.toml
+- Many other bug fixes and code refactors [Special thanks to @C0rn3j for a lot of these]
 
 ### v7.8.3
 

@@ -202,7 +202,10 @@ def player4(tauon: Tauon) -> None:
 				if not Path(cache).exists():
 					os.makedirs(cache)
 
-				cmd = ["librespot", "--username", username, "--password", prefs.spot_password, "--backend", "pipe", "-n", "Tauon Music Box", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
+				access_token = str(tauon.spot_ctl.spotify.token.access_token)
+
+				cmd = ["librespot", "-k", access_token, "--backend", "pipe", "-n", "Tauon", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
+
 				#tauon.spot_ctl.preparing_spotify = True
 				gui.update += 1
 
