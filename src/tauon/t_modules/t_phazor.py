@@ -453,7 +453,7 @@ def player4(tauon: Tauon) -> None:
 				logging.info("Precache next track")
 				next_track = pctl.advance(dry=True)
 				if next_track is not None:
-					self.dl_file(pctl.g(next_track))
+					self.dl_file(pctl.get_track(next_track))
 
 			self.trim_cache()
 			self.running = False
@@ -728,8 +728,8 @@ def player4(tauon: Tauon) -> None:
 	chrome_cool_timer = Timer()
 	chrome_mode = False
 
-	def chrome_start(track: TrackClass, enqueue: bool = False, t: int = 0) -> None:
-		track = pctl.g(track)
+	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> None:
+		track = pctl.get_track(track_id)
 		# if track.is_cue:
 		#	 logging.error("CUE cast not supported")
 		#	 return
@@ -768,7 +768,7 @@ def player4(tauon: Tauon) -> None:
 			break
 
 		# Level meter
-		if (state == 1 or state == 3) and gui.vis == 1:
+		if (state in (1, 3)) and gui.vis == 1:
 			amp = aud.get_level_peak_l()
 			l = amp * 12
 			amp = aud.get_level_peak_r()

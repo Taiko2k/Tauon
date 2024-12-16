@@ -47,6 +47,17 @@ win_build() {
 	cp TaskbarLib.tlb dist/tauon/ || echo 'TLB is not present!'
 }
 
+dirty_venv_run() {
+	if ! command -v python; then
+		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
+		exit 1
+	fi
+	# Ensure correct cwd, for example: ~/Projects/Tauon
+	cd "$(dirname "${0}")"
+	export PYTHONPATH=".":"${PYTHONPATH-}"
+	source .venv/bin/activate
+	tauonmb # "${@}" # Passing args is broken atm
+}
 
 clean_venv_run() {
 	if ! command -v python; then
@@ -117,11 +128,13 @@ process_answer() {
 	case "${answer}" in
 		"Clean venv run,1" | "1" ) # TODO(Martin): restore ability to pass args if necessary
 			clean_venv_run; exit ;;
-		"Windows build,2" | "2" )
+		"Dirty venv run,2" | "2" )
+			dirty_venv_run; exit ;;
+		"Windows build,3" | "3" )
 			win_build; exit ;;
-		"Compile phazor,3" | "3" )
+		"Compile phazor,4" | "4" )
 			compile_phazor; exit ;;
-		"Compile phazor with PipeWire support,4" | "4" )
+		"Compile phazor with PipeWire support,5" | "5" )
 			compile_phazor_pipewire; exit ;;
 		* )
 			echo "Wrong option supplied! Options were: "
@@ -134,7 +147,13 @@ process_answer() {
 	esac
 }
 
-answer_options=("Clean venv run" "Windows build" "Compile phazor" "Compile phazor with PipeWire support")
+answer_options=(
+	"Clean venv run"
+	"Dirty venv run"
+	"Windows build"
+	"Compile phazor"
+	"Compile phazor with PipeWire support")
+
 if [[ ${#} -eq 0 ]]; then
 	show_menu
 else
