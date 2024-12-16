@@ -267,7 +267,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				else:
 					playlist = pctl.multi_playlist[playlist_index].playlist_ids
 				track_id = playlist[track_position]
-				track = pctl.g(track_id)
+				track = pctl.get_track(track_id)
 
 			data = {}
 			data["title"] = track.title
@@ -305,7 +305,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 			if path.startswith("/api1/pic/small/"):
 				value = path[16:]
 				if value.isalnum() and int(value) in pctl.master_library:
-					track = pctl.g(int(value))
+					track = pctl.get_track(int(value))
 					raw = album_art_gen.save_thumb(track, (75, 75), "")
 					if raw:
 						self.send_response(200)
@@ -326,7 +326,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				value = path[17:]
 				logging.info(value)
 				if value.isalnum() and int(value) in pctl.master_library:
-					track = pctl.g(int(value))
+					track = pctl.get_track(int(value))
 					raw = album_art_gen.save_thumb(track, (1000, 1000), "")
 					if raw:
 						self.send_response(200)
@@ -346,7 +346,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 			if path.startswith("/api1/lyrics/"):
 				value = path[13:]
 				if value.isalnum() and int(value) in pctl.master_library:
-					track = pctl.g(int(value))
+					track = pctl.get_track(int(value))
 					data = {}
 					data["track_id"] = track.index
 					data["lyrics_text"] = track.lyrics
@@ -500,9 +500,9 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 						playlist = pctl.multi_playlist[pl].playlist_ids
 						p = int(levels[4])
 						if p < len(playlist):
-							track = pctl.g(playlist[p])
+							track = pctl.get_track(playlist[p])
 							while True:
-								if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+								if p < 0 or pctl.get_track(playlist[p]).parent_folder_path != track.parent_folder_path:
 									p += 1
 									break
 								p -= 1
@@ -588,7 +588,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 						parent = ""
 						album_id = 0
 						for i, id in enumerate(playlist):
-							tr = pctl.g(id)
+							tr = pctl.get_track(id)
 							if i == 0:
 								parent = tr.parent_folder_path
 							elif parent != tr.parent_folder_path:
@@ -658,7 +658,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 
 				if p < len(playlist):
 					while True:
-						if p < 0 or pctl.g(playlist[p]).parent_folder_path != track.parent_folder_path:
+						if p < 0 or pctl.get_track(playlist[p]).parent_folder_path != track.parent_folder_path:
 							p += 1
 							break
 						p -= 1

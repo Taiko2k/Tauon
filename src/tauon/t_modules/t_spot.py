@@ -877,7 +877,7 @@ class SpotCtl:
 		l = self.append_album(url, return_list=True)
 		self.tauon.pctl.multi_playlist.append(
 			self.tauon.pl_gen(
-				title=f"{self.tauon.pctl.g(l[0]).artist} - {self.tauon.pctl.g(l[0]).album}",
+				title=f"{self.tauon.pctl.get_track(l[0]).artist} - {self.tauon.pctl.get_track(l[0]).album}",
 				playlist_ids=l,
 				hide_title=False),
 		)
