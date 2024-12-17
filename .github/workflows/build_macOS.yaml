@@ -38,10 +38,10 @@ jobs:
 
       - name: Build the project using python-build
         run: |
+          python -m compile_translations
           source .venv/bin/activate
           python -m build --wheel
           find .
-#          python -m compile_translations # TODO
         env:
           CFLAGS: "-I/opt/homebrew/include"
           LDFLAGS: "-L/opt/homebrew/lib"
