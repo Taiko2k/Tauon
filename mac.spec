@@ -21,8 +21,8 @@ a = Analysis(
 		*lib_paths,
 		(f"{prefix}/Cellar/ffmpeg@5", "."),
 	],
-#	datas=[
-#		("src/tauon/assets", "assets")],
+	datas=[
+		("src/tauon/assets", "assets")],
 	hiddenimports=["sdl2", "pylast"],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
