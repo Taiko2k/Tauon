@@ -27,6 +27,7 @@ a = Analysis(
 	],
 	datas=[
 		("src/tauon/assets", "assets"),
+		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 	],
