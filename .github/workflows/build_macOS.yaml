@@ -19,8 +19,10 @@ jobs:
         with:
           python-version: 3.13
 
-      - name: brew update
-        run: brew update
+      - name: brew update and upgrade
+        run: \
+          brew update \
+          brew upgrade
 
       - name: Install brew dependencies
         run: brew install gettext glib gobject-introspection gtk+3 pango sdl2 sdl2_image jpeg-xl ffmpeg@5 librsvg opusfile libopenmpt wavpack game-music-emu
@@ -41,28 +43,29 @@ jobs:
           source .venv/bin/activate
           python -m compile_translations
           python -m build --wheel
-          find .
-        env:
-          CFLAGS: "-I/opt/homebrew/include"
-          LDFLAGS: "-L/opt/homebrew/lib"
+#        env:
+#          CFLAGS: "-I/opt/homebrew/include"
+#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: Install the project into a venv
         run: |
           source .venv/bin/activate
           pip install --prefix ".venv" dist/*.whl
-          find .
-        env:
-          CFLAGS: "-I/opt/homebrew/include"
-          LDFLAGS: "-L/opt/homebrew/lib"
+#        env:
+#          CFLAGS: "-I/opt/homebrew/include"
+#          LDFLAGS: "-L/opt/homebrew/lib"
+
+      - name: "[DEBUG] List all files"
+        run: find .
 
       - name: Build macOS app with PyInstaller
         run: |
           source .venv/bin/activate
           pyinstaller mac.spec
         env:
-          CFLAGS: "-I/opt/homebrew/include"
-          LDFLAGS: "-L/opt/homebrew/lib"
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
+#          CFLAGS: "-I/opt/homebrew/include"
+#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: "[DEBUG] List all files in .app"
         run: find "dist/TauonMusicBox.app"
