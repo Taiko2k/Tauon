@@ -23,7 +23,9 @@ a = Analysis(
 	],
 	datas=[
 		("src/tauon/assets", "assets"),
-		("src/tauon/theme", "theme")],
+		("src/tauon/theme", "theme"),
+		("src/tauon/templates", "templates"),
+	],
 	hiddenimports=["sdl2", "pylast"],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
