@@ -23,7 +23,7 @@ jobs:
         run: brew update
 
       - name: Install brew dependencies
-        run: brew install glib gobject-introspection gtk+3 pango sdl2 sdl2_image jpeg-xl ffmpeg@5 librsvg opusfile libopenmpt wavpack game-music-emu
+        run: brew install gettext glib gobject-introspection gtk+3 pango sdl2 sdl2_image jpeg-xl ffmpeg@5 librsvg opusfile libopenmpt wavpack game-music-emu
 
       - name: Install Python dependencies and setup venv
         run: |
