@@ -14,11 +14,13 @@ libs = [
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
+phazor_path = f"build/lib.macosx-10.13-universal2-cpython-313/phazor.cpython-313-darwin.so"
 
 a = Analysis(
 	["src/tauon/__main__.py"],
 	binaries=[
 		*lib_paths,
+		(phazor_path, "."),
 		(f"{prefix}/Cellar/ffmpeg@5", "."),
 	],
 	datas=[
@@ -26,7 +28,7 @@ a = Analysis(
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 	],
-	hiddenimports=["sdl2", "pylast"],
+	hiddenimports=["sdl2", "phazor", "pylast"],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
 	runtime_hooks=[],
@@ -77,10 +79,9 @@ app = BUNDLE(
 		"LSEnvironment": {
 			"LANG": "en_US.UTF-8",
 			"LC_CTYPE": "en_US.UTF-8",
-			# Set DYLD_LIBRARY_PATH to ensure the app can locate dynamic libraries
-#			"DYLD_LIBRARY_PATH": f"{prefix}/lib",
 			}})
 
 for lib in lib_paths:
 	lib_name, _ = lib
 	os.system(f'install_name_tool -add_rpath "@executable_path/." "{lib_name}"')
+	os.system(f'install_name_tool -add_rpath "@executable_path/." "{phazor_path}"')
