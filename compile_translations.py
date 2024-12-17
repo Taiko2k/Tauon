@@ -38,7 +38,7 @@ def main() -> None:
 
 		if po_path.exists():
 			try:
-				subprocess.run(["/usr/bin/msgfmt", "-o", mo_path, po_path], check=True)
+				subprocess.run(["msgfmt", "-o", mo_path, po_path], check=True)
 			except Exception:
 				logging.exception(f"Failed to compile translations for {lang_file.name}")
 				compile_failure = True
