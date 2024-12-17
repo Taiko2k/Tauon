@@ -39,7 +39,7 @@ jobs:
       - name: Build the project using python-build
         run: |
           source .venv/bin/activate
-          python -m build
+          python -m build --wheel
           find .
 #          python -m compile_translations # TODO
         env:
