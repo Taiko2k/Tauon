@@ -3,7 +3,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-from src.tauon.t_modules.t_extra import CustomLoggingFormatter
+from src.tauon.t_modules.logging import CustomLoggingFormatter
 
 # DEBUG+ to file and std_err
 logging.basicConfig(

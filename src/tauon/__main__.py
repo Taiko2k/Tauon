@@ -62,7 +62,7 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load
 
-from tauon.t_modules.t_extra import CustomLoggingFormatter, LogHistoryHandler
+from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
 
 install_directory: Path = Path(__file__).resolve().parent
 sys.path.append(str(install_directory.parent))
