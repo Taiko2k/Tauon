@@ -25,7 +25,7 @@ def main() -> None:
 
 	for lang_file in languages:
 
-		if lang_file.name == "messages.pot":
+		if lang_file.name in ("messages.pot", " .DS_Store"):
 			continue
 
 		po_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.po"
