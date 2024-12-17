@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import TrackClass
 
+
 @dataclass
 class TauonQueueItem:
 	"""TauonQueueItem is [trackid, position, playlist_id, type, album_stage, uid_gen(), auto_stop]
