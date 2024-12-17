@@ -364,7 +364,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import setproctitle, won't be setting process title.")
 except Exception:
-	logging.exception("Unknown error trying to import setproctitle, JPEG XL support will be disabled.")
+	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
 else:
 	setproctitle.setproctitle("tauonmb")
 
