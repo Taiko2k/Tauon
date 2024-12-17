@@ -22,7 +22,8 @@ a = Analysis(
 		(f"{prefix}/Cellar/ffmpeg@5", "."),
 	],
 	datas=[
-		("src/tauon/assets", "assets")],
+		("src/tauon/assets", "assets"),
+		("src/tauon/theme", "theme")],
 	hiddenimports=["sdl2", "pylast"],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
