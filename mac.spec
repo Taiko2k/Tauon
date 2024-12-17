@@ -30,6 +30,8 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
+		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2.framework", "."),
+		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "."),
 	],
 	hiddenimports=["sdl2", "pysdl2-dll", "phazor", "pylast", "Rsvg-2.0"],
 	hookspath=["extra/pyinstaller-hooks"],
