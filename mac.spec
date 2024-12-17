@@ -11,6 +11,7 @@ libs = [
 	"libharfbuzz.0.dylib",
 	"libgobject-2.0.0.dylib",
 	"libgio-2.0.0.dylib",
+	"librsvg-2.2.dylib"
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
