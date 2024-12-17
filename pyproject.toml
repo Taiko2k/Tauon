@@ -45,7 +45,7 @@
 
 [project.optional-dependencies]
 	dev = [
-		"pygobject-stubs --config-settings=config=Gtk3,Gdk3",
+		"pygobject-stubs", # needs PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 env var when being installed
 	]
 	all = [
 		"opencc;                      sys_platform != 'win32'", # OPTDEP
