@@ -64,6 +64,9 @@ jobs:
           LDFLAGS: "-L/opt/homebrew/lib"
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
 
+      - name: "[DEBUG] List all files in .app"
+        run: find "dist/TauonMusicBox.app"
+
       - name: Create DMG
         run: |
           mkdir -p dist/dmg
