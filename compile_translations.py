@@ -40,8 +40,7 @@ def main() -> None:
 			try:
 				subprocess.run(["/usr/bin/msgfmt", "-o", mo_path, po_path], check=True)
 			except Exception:
-				# Don't log the exception to make the build log clear
-				logging.error(f"Failed to compile translations for {lang_file.name}")
+				logging.exception(f"Failed to compile translations for {lang_file.name}")
 				compile_failure = True
 			else:
 				logging.info(f"Compiled: {lang_file.name}")
