@@ -62,54 +62,12 @@ from sdl2 import (
 )
 from sdl2.sdlimage import IMG_Load
 
+from tauon.t_modules.t_extra import CustomLoggingFormatter, LogHistoryHandler
+
 install_directory: Path = Path(__file__).resolve().parent
 sys.path.append(str(install_directory.parent))
 
 from tauon.t_modules import t_bootstrap
-
-
-class CustomLoggingFormatter(logging.Formatter):
-	"""Nicely format logging.loglevel logs"""
-
-	grey        = "\x1b[0;20m"
-	grey_bold   = "\x1b[0;1m"
-	yellow      = "\x1b[33;20m"
-	yellow_bold = "\x1b[33;1m"
-	red         = "\x1b[31;20m"
-	bold_red    = "\x1b[31;1m"
-	purple      = "\x1b[0;35m"
-	reset       = "\x1b[0m"
-	format         = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s"
-	format_verbose = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s (%(filename)s:%(lineno)d)"
-
-	# TODO(Martin): Add some way in which devel mode uses everything verbose
-	FORMATS = {
-		logging.DEBUG:    grey_bold   + format_verbose + reset,
-		logging.INFO:     grey        + format         + reset,
-		logging.WARNING:  purple      + format_verbose + reset,
-		logging.ERROR:    red         + format_verbose + reset,
-		logging.CRITICAL: bold_red    + format_verbose + reset,
-	}
-
-	def format(self, record: dict) -> str:
-		log_fmt = self.FORMATS.get(record.levelno)
-		# Remove the miliseconds(%f) from the default string
-		date_fmt = "%Y-%m-%d %H:%M:%S"
-		formatter = logging.Formatter(log_fmt, date_fmt)
-		# Center align + min length things to prevent logs jumping around when switching between different values
-		record.levelname = f"{record.levelname:^7}"
-		record.module = f"{record.module:^10}"
-		return formatter.format(record)
-
-class LogHistoryHandler(logging.Handler):
-	def __init__(self):
-		super().__init__()
-		self.log_history = []  # List to store log messages
-
-	def emit(self, record: dict):
-		self.log_history.append(record)  # Append to the log history
-		if len(self.log_history) > 50:
-			del self.log_history[0]
 
 log = LogHistoryHandler()
 formatter = logging.Formatter('[%(levelname)s] %(message)s')
