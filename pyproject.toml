@@ -15,7 +15,7 @@
 		"beautifulsoup4",
 		"musicbrainzngs",
 		"mutagen",
-		"PlexAPI",
+		"PlexAPI", # OPTDEP
 		"PyGObject",
 		"pylast>=3.1.0",
 		"PySDL2",
@@ -41,6 +41,14 @@
 		"setproctitle", # OPTDEP
 		"tidalapi", # OPTDEP
 		"colored_traceback", # very opt
+	]
+
+[project.optional-dependencies]
+	dev = [
+		"pygobject-stubs --config-settings=config=Gtk3,Gdk3",
+	]
+	all = [
+		"opencc;                      sys_platform != 'win32'", # OPTDEP
 	]
 
 [project.gui-scripts]
