@@ -20,9 +20,7 @@ jobs:
           python-version: 3.13
 
       - name: brew update and upgrade
-        run: \
-          brew update \
-          brew upgrade
+        run: brew update && brew upgrade
 
       - name: Install brew dependencies
         run: brew install gettext glib gobject-introspection gtk+3 pango sdl2 sdl2_image jpeg-xl ffmpeg@5 librsvg opusfile libopenmpt wavpack game-music-emu
