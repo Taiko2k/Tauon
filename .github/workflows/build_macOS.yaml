@@ -38,8 +38,8 @@ jobs:
 
       - name: Build the project using python-build
         run: |
-          python -m compile_translations
           source .venv/bin/activate
+          python -m compile_translations
           python -m build --wheel
           find .
         env:
