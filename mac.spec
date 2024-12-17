@@ -28,7 +28,7 @@ a = Analysis(
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 	],
-	hiddenimports=["sdl2", "phazor", "pylast"],
+	hiddenimports=["sdl2", "pysdl2-dll", "phazor", "pylast", "Rsvg"],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
 	runtime_hooks=[],
