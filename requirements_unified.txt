@@ -16,7 +16,7 @@ keyboard;                    sys_platform == 'win32'
 Pillow;                      sys_platform != 'win32'
 opencc;                      sys_platform != 'win32' # OPTDEP
 opencc-python-reimplemented; sys_platform == 'win32' # OPTDEP
-pyinstaller;                 sys_platform != 'linux' # for macOS at least
+pyinstaller # ;                 sys_platform != 'linux' # for macOS at least
 pypresence # optdep
 tekore # optdep,
 natsort # optdep
