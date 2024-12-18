@@ -1,4 +1,4 @@
-name: Build macOS App
+name: Build macOS app
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.13
+          python-version: '3.13'
 
       - name: brew update and upgrade
         run: brew update && brew upgrade
@@ -31,8 +31,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install \
-            -r requirements_macos.txt \
-            -r requirements_optional.txt \
+            -r requirements_unified.txt \
             build \
             pyinstaller
 
