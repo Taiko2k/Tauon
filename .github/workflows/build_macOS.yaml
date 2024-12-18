@@ -23,7 +23,7 @@ jobs:
         run: brew update && brew upgrade
 
       - name: Install brew dependencies
-        run: /
+        run: |
           brew install \
             gobject-introspection \
             gtk+3 \
