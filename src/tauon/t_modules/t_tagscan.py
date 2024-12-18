@@ -1228,3 +1228,4 @@ class M4a:
 
 		while atom(f):
 			pass
+		f.close()

@@ -12247,9 +12247,12 @@ class GallClass:
 				response = urllib.request.urlopen(img.url, cafile=tauon.ca)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
+				source_image.close()
 				gui.update += 1
 
 		while len(self.queue) > 0:
+
+			source_image = None
 
 			if gui.halt_image_rendering:
 				self.queue.clear()
@@ -12357,6 +12360,9 @@ class GallClass:
 				self.gall[key] = order
 
 				gui.update += 1
+				if source_image:
+					source_image.close()
+					source_image = None
 				# del self.queue[0]
 
 				time.sleep(0.001)
@@ -12428,7 +12434,9 @@ class GallClass:
 				dst.w = int(tex_w.contents.value)
 				dst.h = int(tex_h.contents.value)
 
+
 				order[0] = 3
+				order[1].close()
 				order[1] = None
 				order[2] = c
 				order[3] = dst
