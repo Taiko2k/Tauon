@@ -363,6 +363,7 @@ renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDER
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")
+	logging.error(f"SDL Error: {SDL_GetError()}")
 	sys.exit(1)
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
