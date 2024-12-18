@@ -34207,6 +34207,7 @@ def discord_loop() -> None:
 					large_image = url
 					small_image = "tauon-standard"
 				RPC.update(
+					activity_type = ActivityType.LISTENING,
 					pid=pid,
 					state=album,
 					details=title,
@@ -34217,6 +34218,7 @@ def discord_loop() -> None:
 			else:
 				#logging.info("Discord RPC - Stop")
 				RPC.update(
+					activity_type = ActivityType.LISTENING,
 					pid=pid,
 					state="Idle",
 					large_image="tauon-standard")
@@ -38760,7 +38762,7 @@ else:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 discord_allow = False
 try:
-	from pypresence import Presence
+	from pypresence import Presence, ActivityType
 except ModuleNotFoundError:
 	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
 except Exception:
