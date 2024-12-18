@@ -12704,8 +12704,7 @@ class AlbumArt:
 			try:
 				items_in_dir = os.listdir(direc)
 			except FileNotFoundError:
-				show_message(f"Failed to find directory: {direc}", "Maybe you removed it, but kept the playlist that used it?", mode="warning")
-				logging.error(f"Failed to find directory: {direc}")
+				logging.warning(f"Failed to find directory: {direc}")
 				return []
 			except Exception:
 				logging.exception(f"Unknown error loading directory: {direc}")
