@@ -23,7 +23,8 @@ jobs:
             python3-gi-cairo \
             libcairo2-dev \
             libpipewire-0.3-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+            libjxl-dev
 
 
       - name: Install Python dependencies and setup venv
