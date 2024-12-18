@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: '3.13'
 
-      - run: sudo apt-get update && sudo apt-get install -y gettext gobject-introspection libgirepository1.0-dev python3-gi-cairo
+      - run: sudo apt-get update && sudo apt-get install -y gettext gobject-introspection libgirepository1.0-dev python3-gi-cairo libcairo2-dev
 
 
       - name: Install Python dependencies and setup venv
