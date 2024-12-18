@@ -12,7 +12,7 @@ a = Analysis(
 #		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2.framework", "."),
 #		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "."),
 	],
-	hiddenimports=["pylast"],
+	hiddenimports=["pylast", "zeroconf"],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
 	runtime_hooks=[],
