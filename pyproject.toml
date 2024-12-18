@@ -85,10 +85,11 @@
 #	ext-modules = [
 #		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
 
-	# Linux
+	# Linux + macOS
 	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
-		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },
+		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], optional = "True" },
+	]
 
 	# macOS
 #	ext-modules = [
