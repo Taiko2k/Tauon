@@ -22019,24 +22019,24 @@ track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), get_spot_album_track, pa
 track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), get_track_spot_url, get_track_spot_url_deco, pass_ref=True,
 	icon=spot_icon))
 
-def get_spot_recs(tr: TrackClass | None = None) -> None:
-	if not tr:
-		tr = pctl.playing_object()
-	if not tr:
-		return
-	url = spot_ctl.get_artist_url_from_local(tr)
-	if not url:
-		show_message(_("No results found"))
-		return
-	track_url = tr.misc.get("spotify-track-url")
-
-	show_message(_("Fetching..."))
-	shooter(spot_ctl.rec_playlist, (url, track_url))
-
-def get_spot_recs_track(index: int):
-	get_spot_recs(pctl.get_track(index))
-
-track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), get_spot_recs_track, pass_ref=True, icon=spot_icon))
+# def get_spot_recs(tr: TrackClass | None = None) -> None:
+# 	if not tr:
+# 		tr = pctl.playing_object()
+# 	if not tr:
+# 		return
+# 	url = spot_ctl.get_artist_url_from_local(tr)
+# 	if not url:
+# 		show_message(_("No results found"))
+# 		return
+# 	track_url = tr.misc.get("spotify-track-url")
+#
+# 	show_message(_("Fetching..."))
+# 	shooter(spot_ctl.rec_playlist, (url, track_url))
+#
+# def get_spot_recs_track(index: int):
+# 	get_spot_recs(pctl.get_track(index))
+#
+# track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), get_spot_recs_track, pass_ref=True, icon=spot_icon))
 
 
 def drop_tracks_to_new_playlist(track_list: list[int], hidden: bool = False) -> None:
