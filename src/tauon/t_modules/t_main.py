@@ -17261,14 +17261,6 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 			show_message(_("Playlist is locked to prevent accidental deletion"))
 			return
 
-		gen = pctl.gen_codes.get(pl_to_id(index), "")
-		if (gen == "" or gen.startswith("self ")) and pctl.multi_playlist[index].playlist_ids:
-			if not (key_shift_down or key_shiftr_down):
-				show_message(
-					_("Are you sure you want to delete this playlist?"),
-					_("Try again while holding shift to confirm"))
-				return
-
 	if gui.rename_playlist_box:
 		return
 
@@ -17368,6 +17360,7 @@ def delete_playlist_by_id(id: int, force: bool = False, check_lock: bool = False
 
 
 def delete_playlist_ask(index: int):
+	print("ark")
 	if gui.radio_view:
 		delete_playlist_force(index)
 		return
@@ -31549,7 +31542,7 @@ class TopPanel:
 
 							if key_shift_down:
 								pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[playlist_box.drag_on].playlist_ids
-								delete_playlist(playlist_box.drag_on, check_lock=True)
+								delete_playlist(playlist_box.drag_on, check_lock=True, force=True)
 							else:
 								move_playlist(playlist_box.drag_on, i)
 
@@ -37123,7 +37116,7 @@ class PlaylistBox:
 					if i != self.drag_on and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
 						if key_shift_down:
 							pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[self.drag_on].playlist_ids
-							delete_playlist(self.drag_on)
+							delete_playlist(self.drag_on, force=True)
 						else:
 							move_playlist(self.drag_on, i)
 
