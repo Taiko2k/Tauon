@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: '3.13'
 
-      - run: sudo apt-get update && sudo apt-get install -y gettext
+      - run: sudo apt-get update && sudo apt-get install -y gettext gobject-introspection
 
 
       - name: Install Python dependencies and setup venv
