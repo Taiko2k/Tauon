@@ -821,28 +821,28 @@ class SpotCtl:
 		if not silent:
 			self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
-	def rec_playlist(self, artist_url: str, track_url: str) -> None:
-
-		self.connect()
-		if not self.spotify:
-			return
-
-		id = artist_url.strip("/").split("/")[-1]
-		track_ids = None
-		if track_url:
-			track_ids = [track_url.strip("/").split("/")[-1]]
-		artist = self.spotify.artist(id)
-		recs = self.spotify.recommendations(artist_ids=[id], track_ids=track_ids, limit=25, market=self.country)
-		playlist = []
-		self.update_existing_import_list()
-		for t in recs.tracks:
-			nt = self.load_track(t, update_master_count=True, include_album_url=True)
-			self.tauon.pctl.master_library[nt.index] = nt
-			playlist.append(nt.index)
-
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Recs", playlist_ids=playlist))
-		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
-		self.tauon.gui.message_box = False
+	# def rec_playlist(self, artist_url: str, track_url: str) -> None:
+	#
+	# 	self.connect()
+	# 	if not self.spotify:
+	# 		return
+	#
+	# 	id = artist_url.strip("/").split("/")[-1]
+	# 	track_ids = None
+	# 	if track_url:
+	# 		track_ids = [track_url.strip("/").split("/")[-1]]
+	# 	artist = self.spotify.artist(id)
+	# 	recs = self.spotify.recommendations(artist_ids=[id], track_ids=track_ids, limit=25, market=self.country)
+	# 	playlist = []
+	# 	self.update_existing_import_list()
+	# 	for t in recs.tracks:
+	# 		nt = self.load_track(t, update_master_count=True, include_album_url=True)
+	# 		self.tauon.pctl.master_library[nt.index] = nt
+	# 		playlist.append(nt.index)
+	#
+	# 	self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=artist.name + " Recs", playlist_ids=playlist))
+	# 	self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+	# 	self.tauon.gui.message_box = False
 
 	def artist_playlist(self, url: str) -> None:
 		self.connect()
