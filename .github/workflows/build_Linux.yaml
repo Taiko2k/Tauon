@@ -13,8 +13,9 @@ jobs:
         with:
           python-version: '3.13'
 
-      - run: \
-          sudo apt-get update \
+      - name: Install deps
+      - run: /
+          sudo apt-get update
           sudo apt-get install -y \
             gettext \
             gobject-introspection \
