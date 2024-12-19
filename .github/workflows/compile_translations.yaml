@@ -1,4 +1,4 @@
-name: Tauon Linux CI
+name: Compile translations on Linux
 
 on:
   push:
