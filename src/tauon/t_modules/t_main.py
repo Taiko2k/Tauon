@@ -364,7 +364,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import setproctitle, won't be setting process title.")
 except Exception:
-	logging.exception("Unknown error trying to import setproctitle, JPEG XL support will be disabled.")
+	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
 else:
 	setproctitle.setproctitle("tauonmb")
 
@@ -8998,11 +8998,13 @@ chrome = None
 try:
 	from tauon.t_modules.t_chrome import Chrome
 	chrome = Chrome(tauon)
-	logging.debug("Found import Chrome(pychromecast) for chromecast support")
-except ModuleNotFoundError:
+except ModuleNotFoundError as e:
+	logging.debug("pychromecast import error: {e}")
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+finally:
+	logging.debug("Found import Chrome(pychromecast) for chromecast support")
 
 tauon.chrome = chrome
 
