@@ -107,7 +107,7 @@
 	]
 
 [tool.setuptools.dynamic]
-dependencies = {file = "requirements.txt"}
+	dependencies = {file = "requirements.txt"}
 #	# Windows
 ##	dependencies = {file = "requirements_windows.txt"}
 #	# Linux
@@ -116,7 +116,7 @@ dependencies = {file = "requirements.txt"}
 #	dependencies = {file = "requirements_macos.txt"}
 
 [tool.setuptools.package-data]
-"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
+	"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
@@ -193,28 +193,28 @@ dependencies = {file = "requirements.txt"}
 
 # https://docs.astral.sh/ruff/rules/
 [tool.ruff.lint]
-select = ['ALL']
-	ignore = [
-		'Q003',   # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
-		'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
-		'D206',   # indent-with-spaces                        - ^
-		'D100',   # undocumented-public-module                - TODO(Martin): We currently don't even have typing fully implemented, let's maybe care about undocumented functions/classes later
-		'D101',   # undocumented-public-class                 - ^
-		'D102',   # public-method                             - ^
-		'D103',   # undocumented-public-function              - ^
-		'D104',   # undocumented-public-package               - ^
-#		'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
-		'D106',   # undocumented-public-nested-class          - ^
-		'D107',   # undocumented-public-init                  - ^
-		'D400',   # ends-in-period                            - We do not care if docstrings end with a period
-		'D415',   # ends-in-punctuation                       - ^
-		'D401',   # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable
-		'EM101',  # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
-		'EM102',  # f-string-in-exception                     - ^
-		'EM103',  # dot-format-in-exception                   - ^
-		'ERA001', # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
-		'FBT001', # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
-		'FBT002', # boolean-default-value-positional-argument - ^
-		'FBT003', # boolean-positional-value-in-call          - ^
-		'TD003',  # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
-	]
+	select = ['ALL']
+		ignore = [
+			'Q003',   # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
+			'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
+			'D206',   # indent-with-spaces                        - ^
+			'D100',   # undocumented-public-module                - TODO(Martin): We currently don't even have typing fully implemented, let's maybe care about undocumented functions/classes later
+			'D101',   # undocumented-public-class                 - ^
+			'D102',   # public-method                             - ^
+			'D103',   # undocumented-public-function              - ^
+			'D104',   # undocumented-public-package               - ^
+#			'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
+			'D106',   # undocumented-public-nested-class          - ^
+			'D107',   # undocumented-public-init                  - ^
+			'D400',   # ends-in-period                            - We do not care if docstrings end with a period
+			'D415',   # ends-in-punctuation                       - ^
+			'D401',   # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable
+			'EM101',  # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
+			'EM102',  # f-string-in-exception                     - ^
+			'EM103',  # dot-format-in-exception                   - ^
+			'ERA001', # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
+			'FBT001', # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
+			'FBT002', # boolean-default-value-positional-argument - ^
+			'FBT003', # boolean-positional-value-in-call          - ^
+			'TD003',  # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
+		]
