@@ -463,11 +463,6 @@ del flags
 del img_path
 
 
-# todo temporary, remove me
-import time
-time.sleep(3)
-exit()
-
 from tauon.t_modules import t_main
 
 # if pyinstaller_mode or sys.platform == "darwin" or install_mode:
