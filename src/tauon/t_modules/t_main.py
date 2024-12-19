@@ -8997,13 +8997,13 @@ chrome = None
 
 try:
 	from tauon.t_modules.t_chrome import Chrome
+	chrome = Chrome(tauon)
 except ModuleNotFoundError as e:
 	logging.debug("pychromecast import error: {e}")
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 finally:
-	chrome = Chrome(tauon)
 	logging.debug("Found import Chrome(pychromecast) for chromecast support")
 
 tauon.chrome = chrome
