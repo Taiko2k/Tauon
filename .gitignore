@@ -32,3 +32,4 @@ dist/
 src/tauon_music_box.egg-info
 kissfft.tar.gz
 miniaudio.tar.gz
+debug

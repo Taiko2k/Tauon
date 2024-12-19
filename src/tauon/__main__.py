@@ -125,7 +125,7 @@ logging.basicConfig(
 	],
 )
 # INFO+ to std_err
-logging.getLogger().handlers[0].setLevel(logging.DEBUG)
+logging.getLogger().handlers[0].setLevel(logging.DEBUG if os.path.isfile(install_directory / "debug") else logging.INFO)
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 # https://docs.python.org/3/library/warnings.html
