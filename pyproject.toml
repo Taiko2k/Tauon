@@ -107,11 +107,11 @@
 	]
 
 [tool.setuptools.dynamic]
-dependencies = {file = "requirements_unified.txt"}
+dependencies = {file = "requirements.txt"}
 #	# Windows
 ##	dependencies = {file = "requirements_windows.txt"}
 #	# Linux
-#	dependencies = {file = "requirements.txt"}
+#	dependencies = {file = "requirements_linux.txt"}
 #	# macOS
 #	dependencies = {file = "requirements_macos.txt"}
 

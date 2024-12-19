@@ -44,7 +44,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install \
-            -r requirements_unified.txt \
+            -r requirements.txt \
             build \
             pyinstaller
 
