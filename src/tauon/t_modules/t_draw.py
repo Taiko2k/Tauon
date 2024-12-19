@@ -31,8 +31,6 @@ import sdl3
 
 from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
 
-if TYPE_CHECKING:
-	from sdl2 import SDL_Renderer
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -70,12 +68,12 @@ else:
 
 class QuickThumbnail:
 
-	renderer: SDL_Renderer | None = None
+	renderer: sdl3.SDL_Renderer | None = None
 	items: list[QuickThumbnail] = []
 	queue: list[QuickThumbnail] = []
 
 	def __init__(self) -> None:
-		self.rect = SDL_Rect(0, 0)
+		self.rect = sdl3.SDL_Rect(0, 0)
 		self.texture = None
 		self.surface = None
 		self.size = 50
@@ -84,10 +82,10 @@ class QuickThumbnail:
 
 	def destruct(self) -> None:
 		if self.surface:
-			SDL_FreeSurface(self.surface)
+			sdl3.SDL_FreeSurface(self.surface)
 			self.surface = None
 		if self.texture:
-			SDL_DestroyTexture(self.texture)
+			sdl3.SDL_DestroyTexture(self.texture)
 			self.texture = None
 		self.alive = False
 
@@ -106,12 +104,12 @@ class QuickThumbnail:
 
 	def prime(self) -> None:
 
-		texture = SDL_CreateTextureFromSurface(self.renderer, self.surface)
-		SDL_FreeSurface(self.surface)
+		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
+		sdl3.SDL_FreeSurface(self.surface)
 		self.surface = None
 		tex_w = pointer(c_int(0))
 		tex_h = pointer(c_int(0))
-		SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+		sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
 		self.rect.w = int(tex_w.contents.value)
 		self.rect.h = int(tex_h.contents.value)
 		self.texture = texture
@@ -129,7 +127,7 @@ class QuickThumbnail:
 			self.prime()
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		SDL_RenderCopy(self.renderer, self.texture, None, self.rect)
+		sdl3.SDL_RenderCopy(self.renderer, self.texture, None, self.rect)
 
 		return True
 
@@ -168,9 +166,9 @@ if system == "Windows":
 			raise OSError("native_bmp_to_pil failed: GetDIBits")
 
 		# TODO(Martin): Add the rest of the types in this function:
-		logging.debug(f"IF YOU SEE THIS MESSAGE, ADD THESE TYPES TO native_bmp_to_sdl(): HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24))}")
+		logging.debug(f"IF YOU SEE THIS MESSAGE, ADD THESE TYPES TO native_bmp_to_sdl(): HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , sdl3.SDL_PIXELFORMAT_BGR24))}")
 		# We need to keep c_bits pass else it may be garbage collected
-		return SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24), c_bits
+		return sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , sdl3.SDL_PIXELFORMAT_BGR24), c_bits
 
 
 	class Win32Font:
@@ -303,7 +301,7 @@ perf = Timer()
 
 class TDraw:
 
-	def __init__(self, renderer: SDL_Renderer | None = None) -> None:
+	def __init__(self, renderer: sdl3.SDL_Renderer | None = None) -> None:
 
 		# All
 		self.renderer = renderer
@@ -311,11 +309,11 @@ class TDraw:
 		self.force_subpixel_text = False
 
 		# Drawing
-		self.sdl_rect = SDL_Rect(10, 10, 10, 10)
+		self.sdlrect = sdl3.SDL_FRect(10., 10., 10., 10.)
 
 		# Text and Fonts
-		self.source_rect = SDL_Rect(0, 0, 0, 0)
-		self.dest_rect = SDL_Rect(0, 0, 0, 0)
+		self.source_rect = sdl3.SDL_FRect(0., 0., 0., 0.)
+		self.dest_rect = sdl3.SDL_FRect(0., 0., 0., 0.)
 
 
 		if system == "Linux":
@@ -340,66 +338,66 @@ class TDraw:
 		self.was_truncated = False
 
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
-		SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 		x, y, w, h = (round(x) for x in rectangle)
 		th = math.floor(thickness)
-		self.sdl_rect.x = x - th
-		self.sdl_rect.y = y - th
-		self.sdl_rect.w = th
-		self.sdl_rect.h = h + th
-		SDL_RenderFillRect(self.renderer, self.sdl_rect) # left
-		self.sdl_rect.x = x - th
-		self.sdl_rect.y = y + h
-		self.sdl_rect.w = w + th
-		self.sdl_rect.h = th
-		SDL_RenderFillRect(self.renderer, self.sdl_rect) # bottom
-		self.sdl_rect.x = x
-		self.sdl_rect.y = y - th
-		self.sdl_rect.w = w + th
-		self.sdl_rect.h = th
-		SDL_RenderFillRect(self.renderer, self.sdl_rect) # top
-		self.sdl_rect.x = x + w
-		self.sdl_rect.y = y
-		self.sdl_rect.w = th
-		self.sdl_rect.h = h + th
-		SDL_RenderFillRect(self.renderer, self.sdl_rect) # right
+		self.sdlrect.x = x - th
+		self.sdlrect.y = y - th
+		self.sdlrect.w = th
+		self.sdlrect.h = h + th
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # left
+		self.sdlrect.x = x - th
+		self.sdlrect.y = y + h
+		self.sdlrect.w = w + th
+		self.sdlrect.h = th
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # bottom
+		self.sdlrect.x = x
+		self.sdlrect.y = y - th
+		self.sdlrect.w = w + th
+		self.sdlrect.h = th
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # top
+		self.sdlrect.x = x + w
+		self.sdlrect.y = y
+		self.sdlrect.w = th
+		self.sdlrect.h = h + th
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # right
 
 	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: tuple[int, int, int, int]) -> None:
 		self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
 	def rect(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int]) -> None:
 
-		self.sdl_rect.x = round(rectangle[0])
-		self.sdl_rect.y = round(rectangle[1])
-		self.sdl_rect.w = round(rectangle[2])
-		self.sdl_rect.h = round(rectangle[3])
+		self.sdlrect.x = round(rectangle[0])
+		self.sdlrect.y = round(rectangle[1])
+		self.sdlrect.w = round(rectangle[2])
+		self.sdlrect.h = round(rectangle[3])
 
-		SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 
 		#if fill:
-		SDL_RenderFillRect(self.renderer, self.sdl_rect)
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 		# else:
-		#	 SDL_RenderDrawRect(self.renderer, self.sdl_rect)
+		#	 sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
 	def bordered_rect(self, rectangle: tuple[int, int, int, int], fill_colour: list[int], outer_colour: list[int], border_size: int) -> None:
 
-		self.sdl_rect.x = round(rectangle[0]) - border_size
-		self.sdl_rect.y = round(rectangle[1]) - border_size
-		self.sdl_rect.w = round(rectangle[2]) + border_size + border_size
-		self.sdl_rect.h = round(rectangle[3]) + border_size + border_size
-		SDL_SetRenderDrawColor(self.renderer, outer_colour[0], outer_colour[1], outer_colour[2], outer_colour[3])
-		SDL_RenderFillRect(self.renderer, self.sdl_rect)
-		self.sdl_rect.x = round(rectangle[0])
-		self.sdl_rect.y = round(rectangle[1])
-		self.sdl_rect.w = round(rectangle[2])
-		self.sdl_rect.h = round(rectangle[3])
-		SDL_SetRenderDrawColor(self.renderer, fill_colour[0], fill_colour[1], fill_colour[2], fill_colour[3])
-		SDL_RenderFillRect(self.renderer, self.sdl_rect)
+		self.sdlrect.x = round(rectangle[0]) - border_size
+		self.sdlrect.y = round(rectangle[1]) - border_size
+		self.sdlrect.w = round(rectangle[2]) + border_size + border_size
+		self.sdlrect.h = round(rectangle[3]) + border_size + border_size
+		sdl3.SDL_SetRenderDrawColor(self.renderer, outer_colour[0], outer_colour[1], outer_colour[2], outer_colour[3])
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		self.sdlrect.x = round(rectangle[0])
+		self.sdlrect.y = round(rectangle[1])
+		self.sdlrect.w = round(rectangle[2])
+		self.sdlrect.h = round(rectangle[3])
+		sdl3.SDL_SetRenderDrawColor(self.renderer, fill_colour[0], fill_colour[1], fill_colour[2], fill_colour[3])
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 
 	def line(self, x1: int, y1: int, x2: int, y2: int, colour: list[int]) -> None:
 
-		SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-		SDL_RenderDrawLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+		sdl3.SDL_RenderDrawLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
 	def get_text_w(self, text: str, font: int, height: bool = False) -> int:
 
@@ -412,7 +410,7 @@ class TDraw:
 
 		for key in self.ttl:
 			so = self.ttc[key]
-			SDL_DestroyTexture(so[1])
+			sdl3.SDL_DestroyTexture(so[1])
 
 		self.ttc.clear()
 		self.ttl.clear()
@@ -498,10 +496,10 @@ class TDraw:
 			self.dest_rect.w = sd[0].w
 			self.dest_rect.h = round(range_height)
 
-			SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
+			sdl3.SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
 			return
 
-		SDL_RenderCopy(self.renderer, sd[1], None, sd[0])
+		sdl3.SDL_RenderCopy(self.renderer, sd[1], None, sd[0])
 
 
 	def __draw_text_cairo(
@@ -590,7 +588,7 @@ class TDraw:
 		data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
 
 		if real_bg:
-			box = SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
+			box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
 			if align == 1:
 				box.x = x - box.w
@@ -598,7 +596,7 @@ class TDraw:
 			elif align == 2:
 				box.x -= int(box.w / 2)
 
-			SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
+			sdl3.SDL_RenderReadPixels(self.renderer, box, sdl3.SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
 
 		if alpha_bg:
 			surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
@@ -677,23 +675,23 @@ class TDraw:
 		self.was_truncated = layout.is_ellipsized()
 
 		if alpha_bg:
-			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, SDL_PIXELFORMAT_ARGB8888)
+			sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, sdl3.SDL_PIXELFORMAT_ARGB8888)
 		else:
-			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w * 4, SDL_PIXELFORMAT_RGB888)
+			sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w * 4, sdl3.SDL_PIXELFORMAT_RGB888)
 
 		# Here the background colour is keyed out allowing lines to overlap slightly
 		if not real_bg and not alpha_bg:
-			ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])
-			SDL_SetColorKey(sdl_surface, True, ke)
+			ke = sdl3.SDL_MapRGB(sdl3.SDL_surface.contents.format, bg[0], bg[1], bg[2])
+			sdl3.SDL_SetColorKey(sdl3.SDL_surface, True, ke)
 
-		c = SDL_CreateTextureFromSurface(self.renderer, sdl_surface)
-		SDL_FreeSurface(sdl_surface)
+		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, sdl3.SDL_surface)
+		sdl3.SDL_FreeSurface(sdl3.SDL_surface)
 
 		if alpha_bg:
-			blend_mode = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD)
-			SDL_SetTextureBlendMode(c, blend_mode)
+			blend_mode = sdl3.SDL_ComposeCustomBlendMode(sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD, sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD)
+			sdl3.SDL_SetTextureBlendMode(c, blend_mode)
 
-		dst = SDL_Rect(round(x), round(y))
+		dst = sdl3.SDL_Rect(round(x), round(y))
 		dst.w = round(w)
 		dst.h = round(h)
 		dst.y = round(y) - y_off
@@ -709,7 +707,7 @@ class TDraw:
 			if len(self.ttl) > 350:
 				key = self.ttl[0]
 				so = self.ttc[key]
-				SDL_DestroyTexture(so[1])
+				sdl3.SDL_DestroyTexture(so[1])
 				del self.ttc[key]
 				del self.ttl[0]
 		if wrap:
@@ -757,10 +755,10 @@ class TDraw:
 			self.dest_rect.w = sd[0].w
 			self.dest_rect.h = round(range_height)
 
-			SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, SDL_FLIP_VERTICAL)
+			sdl3.SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, sdl3.SDL_FLIP_VERTICAL)
 			return
 
-		SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
+		sdl3.SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, sdl3.SDL_FLIP_VERTICAL)
 
 	def __draw_text_windows(
 		self, x: int, y: int, text: str, bg: list[int], fg: list[int], font: Win32Font | None = None,
@@ -797,17 +795,17 @@ class TDraw:
 		im, c_bits = f.renderText(text, bg, fg, wrap, max_x, max_y)
 
 		s_image = im
-		ke = SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
-		SDL_SetColorKey(s_image, True, ke)
-		c = SDL_CreateTextureFromSurface(self.renderer, s_image)
+		ke = sdl3.SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
+		sdl3.SDL_SetColorKey(s_image, True, ke)
+		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 		tex_w = pointer(c_int(0))
 		tex_h = pointer(c_int(0))
-		SDL_QueryTexture(c, None, None, tex_w, tex_h)
-		dst = SDL_Rect(round(x), round(y))
+		sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
+		dst = sdl3.SDL_Rect(round(x), round(y))
 		dst.w = int(tex_w.contents.value)
 		dst.h = int(tex_h.contents.value)
 
-		SDL_FreeSurface(s_image)
+		sdl3.SDL_FreeSurface(s_image)
 		#im.close()
 
 		if align == 1:
@@ -816,8 +814,8 @@ class TDraw:
 		elif align == 2:
 			dst.x -= int(dst.w / 2)
 
-		#SDL_RenderCopy(renderer, c, None, dst)
-		#SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
+		#sdl3.SDL_RenderCopy(renderer, c, None, dst)
+		#sdl3.SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, sdl3.SDL_FLIP_VERTICAL)
 
 		#logging.info(perf_timer.get())
 		self.cache[key] = [dst, c]
@@ -826,7 +824,7 @@ class TDraw:
 		self.ca_li.append(key)
 
 		if len(self.ca_li) > 350:
-			SDL_DestroyTexture(self.cache[self.ca_li[0]][1])
+			sdl3.SDL_DestroyTexture(self.cache[self.ca_li[0]][1])
 			del self.cache[self.ca_li[0]]
 			del self.ca_li[0]
 
