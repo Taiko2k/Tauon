@@ -1,12 +1,11 @@
 beautifulsoup4
-#dbus-python # Linux dep
 musicbrainzngs
 mutagen
 Pillow
 PlexAPI
 PyGObject
 pylast>=3.1.0
-pysdl2-dll # Don't rely on system https://github.com/py-sdl/py-sdl2#requirements
+pysdl2-dll
 PySDL2
 requests
 Send2Trash
