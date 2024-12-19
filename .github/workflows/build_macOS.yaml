@@ -45,9 +45,11 @@ jobs:
           source .venv/bin/activate
           pip install \
             -r requirements.txt \
-            build \
-            pyinstaller
+            build
           pip install https://github.com/rokm/pyinstaller/archive/refs/heads/macos-nested-framework-bundles.zip
+#            \
+#            pyinstaller
+#          pip uninstall pyinstaller
 
       - name: Build the project using python-build
         run: |
