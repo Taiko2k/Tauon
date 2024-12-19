@@ -30,8 +30,16 @@ jobs:
             libcairo2-dev \
             libpipewire-0.3-dev \
             libdbus-1-dev \
-            libjxl-dev
+            libjxl-dev \
+            libwavpack-dev \
+            libopenmpt-dev \
+            libvorbis-dev \
+            libopusfile-dev \
+            libflac-dev \
+            libgme-dev \
+            libmpg123-dev
 
+#            libsamplerate0-dev \
 
       - name: Install Python dependencies and setup venv
         run: |
