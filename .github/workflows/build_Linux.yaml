@@ -31,15 +31,15 @@ jobs:
             libpipewire-0.3-dev \
             libdbus-1-dev \
             libjxl-dev \
-            libwavpack-dev \
-            libopenmpt-dev \
-            libvorbis-dev \
-            libopusfile-dev \
             libflac-dev \
             libgme-dev \
             libmpg123-dev
+            libopenmpt-dev \
+            libopusfile-dev \
+            libsamplerate0-dev \
+            libvorbis-dev \
+            libwavpack-dev \
 
-#            libsamplerate0-dev \
 
       - name: Install Python dependencies and setup venv
         run: |
