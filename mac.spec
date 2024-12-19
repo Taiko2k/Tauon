@@ -30,10 +30,10 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
-		# This should only have SDL2.framework and SDL2_image.framework but it copies it with a __dot__ instead
-		# So just copy the entire dll dir
+		# This could only have SDL2.framework and SDL2_image.framework to save space...
 		(".venv/lib/python3.13/site-packages/sdl2dll/dll", "sdl2dll/dll"),
-#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "."),
+#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2.framework", "sdl2dll/dll/SDL2.framework"),
+#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "sdl2dll/dll/SDL2_image.framework"),
 	],
 	hiddenimports=[
 		"sdl2",

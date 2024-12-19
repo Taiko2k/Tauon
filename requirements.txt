@@ -9,7 +9,7 @@ requests
 Send2Trash
 unidecode
 dbus-python;                 sys_platform == 'linux'
-pysdl2-dll;                  sys_platform == 'darwin' # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#requirements
+pysdl2-dll # ;                  sys_platform == 'darwin' # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#requirements
 comtypes;                    sys_platform == 'win32'
 infi.systray;                sys_platform == 'win32'
 keyboard;                    sys_platform == 'win32'
