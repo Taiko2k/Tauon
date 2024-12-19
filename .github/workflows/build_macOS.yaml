@@ -47,6 +47,7 @@ jobs:
             -r requirements.txt \
             build \
             pyinstaller
+          pip install https://github.com/rokm/pyinstaller/archive/refs/heads/macos-nested-framework-bundles.zip
 
       - name: Build the project using python-build
         run: |
