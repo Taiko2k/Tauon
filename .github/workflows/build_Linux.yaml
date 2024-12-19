@@ -33,13 +33,12 @@ jobs:
             libjxl-dev \
             libflac-dev \
             libgme-dev \
-            libmpg123-dev
+            libmpg123-dev \
             libopenmpt-dev \
             libopusfile-dev \
             libsamplerate0-dev \
             libvorbis-dev \
-            libwavpack-dev \
-
+            libwavpack-dev
 
       - name: Install Python dependencies and setup venv
         run: |
