@@ -28,3 +28,4 @@ PyChromecast # OPTDEP
 setproctitle # OPTDEP
 tidalapi # OPTDEP
 colored_traceback # very opt
+zeroconf # pychromecast dependency, TODO(Martin): This is a test, remove me
