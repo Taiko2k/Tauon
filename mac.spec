@@ -30,8 +30,10 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
-#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2.framework", "."),
-		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "."),
+		# This should only have SDL2.framework and SDL2_image.framework but it copies it with a __dot__ instead
+		# So just copy the entire dll dir
+		(".venv/lib/python3.13/site-packages/sdl2dll/dll", "."),
+#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "."),
 	],
 	hiddenimports=["sdl2", "phazor", "pylast", "zeroconf"],
 	hookspath=["extra/pyinstaller-hooks"],
