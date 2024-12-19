@@ -173,7 +173,7 @@ class Gnome:
 						self.indicator.set_title(tauon.t_title)
 					self.tray_text = text
 
-		item = Gtk.MenuItem(tauon.strings.menu_open_tauon)
+		item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
 		item.connect("activate", restore)
 		item.show()
 		self.menu.append(item)
@@ -182,17 +182,17 @@ class Gnome:
 		item.show()
 		self.menu.append(item)
 
-		item = Gtk.MenuItem(tauon.strings.menu_play_pause)
+		item = Gtk.MenuItem(label=tauon.strings.menu_play_pause)
 		item.connect("activate", play_pause)
 		item.show()
 		self.menu.append(item)
 
-		item = Gtk.MenuItem(tauon.strings.menu_next)
+		item = Gtk.MenuItem(label=tauon.strings.menu_next)
 		item.connect("activate", next)
 		item.show()
 		self.menu.append(item)
 
-		item = Gtk.MenuItem(tauon.strings.menu_previous)
+		item = Gtk.MenuItem(label=tauon.strings.menu_previous)
 		item.connect("activate", back)
 		item.show()
 		self.menu.append(item)
@@ -201,7 +201,7 @@ class Gnome:
 		item.show()
 		self.menu.append(item)
 
-		item = Gtk.MenuItem(tauon.strings.menu_quit)
+		item = Gtk.MenuItem(label=tauon.strings.menu_quit)
 		item.connect("activate", menu_quit)
 		item.show()
 		self.menu.append(item)
