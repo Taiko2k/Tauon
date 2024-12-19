@@ -11,6 +11,45 @@
 		"Typing :: Typed",
 	]
 	dynamic = ["dependencies"]
+#	dependencies = [
+#		"beautifulsoup4",
+#		"musicbrainzngs",
+#		"mutagen",
+#		"PlexAPI", # OPTDEP
+#		"PyGObject",
+#		"pylast>=3.1.0",
+#		"PySDL2",
+#		"requests",
+#		"Send2Trash",
+#		"unidecode",
+#		"dbus-python;                 sys_platform == 'linux'",
+#		"pysdl2-dll;                  sys_platform == 'darwin'", # Don't rely on system https://github.com/py-sdl/py-sdl2#requirements
+#		"comtypes;                    sys_platform == 'win32'",
+#		"infi.systray;                sys_platform == 'win32'",
+#		"keyboard;                    sys_platform == 'win32'",
+#		"Pillow;                      sys_platform != 'win32'",
+#		"opencc;                      sys_platform != 'win32'", # OPTDEP
+#		"opencc-python-reimplemented; sys_platform == 'win32'", # OPTDEP
+#		"pyinstaller;                 sys_platform != 'linux'", # for macOS at least
+#		"pypresence", # optdep
+#		"tekore", # optdep,
+#		"natsort", # optdep
+#		"jxlpy;                       sys_platform != 'darwin'", # macOS hates it - fails to find jxl/types.h - https://github.com/olokelo/jxlpy/issues/25#issuecomment-2547928563
+#		#librespot - https://github.com/kokarare1212/librespot-python/pull/286
+#		#picard - picard 2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
+#		"PyChromecast", # OPTDEP
+#		"setproctitle", # OPTDEP
+#		"tidalapi", # OPTDEP
+#		"colored_traceback", # very opt
+#	]
+
+#[project.optional-dependencies]
+#	dev = [
+#		"pygobject-stubs", # needs PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 env var when being installed
+#	]
+#	all = [
+#		"opencc;                      sys_platform != 'win32'", # OPTDEP
+#	]
 
 [project.gui-scripts]
 	tauonmb = "tauon.__main__:main"
@@ -46,10 +85,15 @@
 #	ext-modules = [
 #		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
 
-	# Linux
+	# Linux + macOS
 	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
-		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },
+		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], optional = true },
+	]
+
+	# macOS
+#	ext-modules = [
+#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/opt/homebrew/include/opus", "src/phazor/kissfft", "/opt/homebrew/include"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },]
 
 	package-dir = {"" = "src"}
 
@@ -63,10 +107,13 @@
 	]
 
 [tool.setuptools.dynamic]
-	# Windows
-#	dependencies = {file = "requirements_windows.txt"}
-	# Linux
-	dependencies = {file = "requirements.txt"}
+dependencies = {file = "requirements.txt"}
+#	# Windows
+##	dependencies = {file = "requirements_windows.txt"}
+#	# Linux
+#	dependencies = {file = "requirements_linux.txt"}
+#	# macOS
+#	dependencies = {file = "requirements_macos.txt"}
 
 [tool.setuptools.package-data]
 "tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
