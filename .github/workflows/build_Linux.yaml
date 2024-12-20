@@ -38,7 +38,10 @@ jobs:
             libopusfile-dev \
             libsamplerate0-dev \
             libvorbis-dev \
-            libwavpack-dev \
+            libwavpack-dev
+          # JPEG-XL hack since 24.04 is too old
+          sudo apt-get install -y \
+            libgif7 \
             wget
           wget http://mirrors.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
           wget http://mirrors.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
