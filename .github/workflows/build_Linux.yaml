@@ -45,7 +45,7 @@ jobs:
           wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
           wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
           wget http://mirrors.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
-          dpkg -i *.deb
+          sudo dpkg -i *.deb
 
       - name: Install Python dependencies and setup venv
         run: |
