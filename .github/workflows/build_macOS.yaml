@@ -31,7 +31,7 @@ jobs:
             sdl2 \
             sdl2_image \
             jpeg-xl \
-            ffmpeg@7 \
+            ffmpeg \
             librsvg \
             opusfile \
             libopenmpt \

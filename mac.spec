@@ -22,7 +22,7 @@ a = Analysis(
 	binaries=[
 		*lib_paths,
 		(phazor_path, "."),
-		(f"{prefix}/Cellar/ffmpeg@7", "."),
+		(f"{prefix}/Cellar/ffmpeg", "."),
 #		("/usr/lib/girepository-1.0/Rsvg-2.0.typelib", "."),
 	],
 	datas=[
