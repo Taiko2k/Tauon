@@ -1014,7 +1014,7 @@ class DConsole:
 
 	def toggle(self) -> None:
 		"""Toggle the GUI console with logs on and off"""
-		console.show ^= True
+		self.show ^= True
 
 console = DConsole()
 
