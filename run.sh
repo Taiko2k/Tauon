@@ -82,7 +82,7 @@ clean_venv_run() {
 
 	python -m venv .venv
 	source .venv/bin/activate
-	pip install -r requirements.txt -r requirements_optional.txt -r requirements_devel.txt build
+	pip install -r requirements.txt -r requirements_devel.txt build
 	python -m compile_translations
 	python -m build --wheel
 	pip install --prefix ".venv" dist/*.whl --force-reinstall
