@@ -1,0 +1,12 @@
+beautifulsoup4
+dbus-python
+musicbrainzngs
+mutagen
+Pillow
+PlexAPI
+PyGObject
+pylast>=3.1.0
+PySDL2
+requests
+Send2Trash
+unidecode

@@ -1,0 +1,95 @@
+name: Build macOS app
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: brew update and upgrade
+        run: brew update && brew upgrade
+
+      - name: Install brew dependencies
+        run: |
+          brew install \
+            gobject-introspection \
+            gtk+3 \
+            pango \
+            sdl2 \
+            sdl2_image \
+            jpeg-xl \
+            ffmpeg \
+            librsvg \
+            opusfile \
+            libopenmpt \
+            wavpack \
+            game-music-emu
+
+      - name: Install Python dependencies and setup venv
+        run: |
+          python -m pip install --upgrade pip
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install \
+            -r requirements.txt \
+            build
+          # Hack until https://github.com/pyinstaller/pyinstaller/issues/8936 is resolved
+          pip install https://github.com/rokm/pyinstaller/archive/refs/heads/macos-nested-framework-bundles.zip
+#            \
+#            pyinstaller
+#          pip uninstall pyinstaller
+#          CFLAGS: "-I/opt/homebrew/include"
+#          LDFLAGS: "-L/opt/homebrew/lib"
+
+      - name: Build the project using python-build
+        run: |
+          source .venv/bin/activate
+          python -m compile_translations
+          python -m build --wheel
+
+      - name: Install the project into a venv
+        run: |
+          source .venv/bin/activate
+          pip install --prefix ".venv" dist/*.whl
+
+      - name: "[DEBUG] List all files"
+        run: find .
+
+      - name: Build macOS app with PyInstaller
+        run: |
+          source .venv/bin/activate
+          pyinstaller --log-level=DEBUG mac.spec
+        env:
+          DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
+
+      - name: "[DEBUG] List all files in .app"
+        run: find "dist/TauonMusicBox.app"
+
+      - name: Create DMG
+        run: |
+          mkdir -p dist/dmg
+          APP_NAME="TauonMusicBox"
+          APP_PATH="dist/${APP_NAME}.app"
+          DMG_PATH="dist/dmg/${APP_NAME}.dmg"
+
+          # Create a .dmg package
+          hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauonMusicBox-dmg
+          path: dist/dmg/TauonMusicBox.dmg

@@ -1,0 +1,2 @@
+recursive-include src/phazor/kissfft *.h
+recursive-include src/phazor/miniaudio *.h

@@ -11,6 +11,45 @@
 		"Typing :: Typed",
 	]
 	dynamic = ["dependencies"]
+#	dependencies = [
+#		"beautifulsoup4",
+#		"musicbrainzngs",
+#		"mutagen",
+#		"PlexAPI", # OPTDEP
+#		"PyGObject",
+#		"pylast>=3.1.0",
+#		"PySDL2",
+#		"requests",
+#		"Send2Trash",
+#		"unidecode",
+#		"dbus-python;                 sys_platform == 'linux'",
+#		"pysdl2-dll;                  sys_platform == 'darwin'", # Don't rely on system https://github.com/py-sdl/py-sdl2#requirements
+#		"comtypes;                    sys_platform == 'win32'",
+#		"infi.systray;                sys_platform == 'win32'",
+#		"keyboard;                    sys_platform == 'win32'",
+#		"Pillow;                      sys_platform != 'win32'",
+#		"opencc;                      sys_platform != 'win32'", # OPTDEP
+#		"opencc-python-reimplemented; sys_platform == 'win32'", # OPTDEP
+#		"pyinstaller;                 sys_platform != 'linux'", # for macOS at least
+#		"pypresence", # optdep
+#		"tekore", # optdep,
+#		"natsort", # optdep
+#		"jxlpy;                       sys_platform != 'darwin'", # macOS hates it - fails to find jxl/types.h - https://github.com/olokelo/jxlpy/issues/25#issuecomment-2547928563
+#		#librespot - https://github.com/kokarare1212/librespot-python/pull/286
+#		#picard - picard 2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
+#		"PyChromecast", # OPTDEP
+#		"setproctitle", # OPTDEP
+#		"tidalapi", # OPTDEP
+#		"colored_traceback", # very opt
+#	]
+
+#[project.optional-dependencies]
+#	dev = [
+#		"pygobject-stubs", # needs PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 env var when being installed
+#	]
+#	all = [
+#		"opencc;                      sys_platform != 'win32'", # OPTDEP
+#	]
 
 [project.gui-scripts]
 	tauonmb = "tauon.__main__:main"
@@ -46,10 +85,17 @@
 #	ext-modules = [
 #		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
 
-	# Linux
+	# Linux + macOS
 	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"] },
-		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"] },]
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },
+		# Set as optional to allow soft-failure, it's expected not to build on Windows/macOS, but we don't want to fail the entire build on it
+		# I have not found a better way to solve this, ideally we would somehow tag this as Linux-exclusive
+		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], optional = true },
+	]
+
+	# macOS
+#	ext-modules = [
+#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/opt/homebrew/include/opus", "src/phazor/kissfft", "/opt/homebrew/include"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },]
 
 	package-dir = {"" = "src"}
 
@@ -63,13 +109,10 @@
 	]
 
 [tool.setuptools.dynamic]
-	# Windows
-#	dependencies = {file = "requirements_windows.txt"}
-	# Linux
 	dependencies = {file = "requirements.txt"}
 
 [tool.setuptools.package-data]
-"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
+	"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]
@@ -146,28 +189,28 @@
 
 # https://docs.astral.sh/ruff/rules/
 [tool.ruff.lint]
-select = ['ALL']
-	ignore = [
-		'Q003',   # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
-		'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
-		'D206',   # indent-with-spaces                        - ^
-		'D100',   # undocumented-public-module                - TODO(Martin): We currently don't even have typing fully implemented, let's maybe care about undocumented functions/classes later
-		'D101',   # undocumented-public-class                 - ^
-		'D102',   # public-method                             - ^
-		'D103',   # undocumented-public-function              - ^
-		'D104',   # undocumented-public-package               - ^
-#		'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
-		'D106',   # undocumented-public-nested-class          - ^
-		'D107',   # undocumented-public-init                  - ^
-		'D400',   # ends-in-period                            - We do not care if docstrings end with a period
-		'D415',   # ends-in-punctuation                       - ^
-		'D401',   # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable
-		'EM101',  # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
-		'EM102',  # f-string-in-exception                     - ^
-		'EM103',  # dot-format-in-exception                   - ^
-		'ERA001', # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
-		'FBT001', # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
-		'FBT002', # boolean-default-value-positional-argument - ^
-		'FBT003', # boolean-positional-value-in-call          - ^
-		'TD003',  # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
-	]
+	select = ['ALL']
+		ignore = [
+			'Q003',   # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
+			'W191',   # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
+			'D206',   # indent-with-spaces                        - ^
+			'D100',   # undocumented-public-module                - TODO(Martin): We currently don't even have typing fully implemented, let's maybe care about undocumented functions/classes later
+			'D101',   # undocumented-public-class                 - ^
+			'D102',   # public-method                             - ^
+			'D103',   # undocumented-public-function              - ^
+			'D104',   # undocumented-public-package               - ^
+#			'D105',   # undocumented-magic-method                 - ^ < This one is a bit more severe though
+			'D106',   # undocumented-public-nested-class          - ^
+			'D107',   # undocumented-public-init                  - ^
+			'D400',   # ends-in-period                            - We do not care if docstrings end with a period
+			'D415',   # ends-in-punctuation                       - ^
+			'D401',   # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable
+			'EM101',  # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
+			'EM102',  # f-string-in-exception                     - ^
+			'EM103',  # dot-format-in-exception                   - ^
+			'ERA001', # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
+			'FBT001', # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
+			'FBT002', # boolean-default-value-positional-argument - ^
+			'FBT003', # boolean-positional-value-in-call          - ^
+			'TD003',  # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
+		]

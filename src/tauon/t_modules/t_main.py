@@ -364,7 +364,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import setproctitle, won't be setting process title.")
 except Exception:
-	logging.exception("Unknown error trying to import setproctitle, JPEG XL support will be disabled.")
+	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
 else:
 	setproctitle.setproctitle("tauonmb")
 
@@ -608,7 +608,7 @@ if (install_mode and system == "Linux") or macos or msys:
 	else:
 		logging.info("Running from installed location")
 
-	logging.info("User files location: " + user_directory)
+	logging.info(f"      User files location: {user_directory}")
 
 	if not Path(Path(user_directory) / "encoder").is_dir():
 		os.makedirs(Path(user_directory) / "encoder")
@@ -1008,8 +1008,13 @@ vis_update = False
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
 
 class DConsole:
+	"""GUI console with logs"""
 	def __init__(self) -> None:
 		self.show:     bool      = False
+
+	def toggle(self) -> None:
+		"""Toggle the GUI console with logs on and off"""
+		self.show ^= True
 
 console = DConsole()
 
@@ -8937,6 +8942,7 @@ class Tauon:
 		return False
 
 	def get_ffmpeg(self) -> str | None:
+		logging.debug(f"Looking for ffmpeg in PATH: {os.environ.get('PATH')}")
 		p = shutil.which("ffmpeg")
 		if p:
 			return p
@@ -8998,11 +9004,13 @@ chrome = None
 try:
 	from tauon.t_modules.t_chrome import Chrome
 	chrome = Chrome(tauon)
-	logging.debug("Found import Chrome(pychromecast) for chromecast support")
-except ModuleNotFoundError:
+except ModuleNotFoundError as e:
+	logging.debug("pychromecast import error: {e}")
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+finally:
+	logging.debug("Found import Chrome(pychromecast) for chromecast support")
 
 tauon.chrome = chrome
 
@@ -16938,7 +16946,7 @@ tab_menu = Menu(160, show_icons=True)
 radio_tab_menu = Menu(160, show_icons=True)
 
 
-def rename_playlist(index, generator=False):
+def rename_playlist(index, generator: bool = False) -> None:
 	gui.rename_playlist_box = True
 	rename_playlist_box.edit_generator = False
 	rename_playlist_box.playlist_index = index
@@ -16965,7 +16973,7 @@ def rename_playlist(index, generator=False):
 		rename_playlist_box.toggle_edit_gen()
 
 
-def edit_generator_box(index: int):
+def edit_generator_box(index: int) -> None:
 	rename_playlist(index, generator=True)
 
 
@@ -19143,6 +19151,7 @@ tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), set_sync_playlist, sy
 tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), set_download_playlist, set_download_deco, pass_ref_deco=True, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), set_podcast_playlist, set_podcast_deco, pass_ref_deco=True, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), remove_duplicates, pass_ref=True))
+tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), console.toggle))
 
 
 # tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -39154,7 +39163,6 @@ class QueueBox:
 			show_message(_("Looks like it's gone now anyway"))
 
 	def toggle_pause(self) -> None:
-
 		pctl.pause_queue ^= True
 
 	def draw_card(
@@ -43972,7 +43980,7 @@ while pctl.running:
 					cycle_playlist_pinned(-1)
 
 			if keymaps.test("toggle-console"):
-				console.show ^= True
+				console.toggle()
 
 			if keymaps.test("toggle-fullscreen"):
 				if not gui.fullscreen and gui.mode != 3:
