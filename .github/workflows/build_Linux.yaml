@@ -18,7 +18,6 @@ jobs:
         with:
           python-version: '3.13'
 
-# JXL is too old(?) on 24.04 so see you 2026-05 to enable that if we don't switch to Arch first.
       - name: Install deps
         run: |
           sudo apt-get update
