@@ -46,27 +46,24 @@ jobs:
           pip install \
             -r requirements.txt \
             build
+          # Hack until https://github.com/pyinstaller/pyinstaller/issues/8936 is resolved
           pip install https://github.com/rokm/pyinstaller/archive/refs/heads/macos-nested-framework-bundles.zip
 #            \
 #            pyinstaller
 #          pip uninstall pyinstaller
+#          CFLAGS: "-I/opt/homebrew/include"
+#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: Build the project using python-build
         run: |
           source .venv/bin/activate
           python -m compile_translations
           python -m build --wheel
-#        env:
-#          CFLAGS: "-I/opt/homebrew/include"
-#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: Install the project into a venv
         run: |
           source .venv/bin/activate
           pip install --prefix ".venv" dist/*.whl
-#        env:
-#          CFLAGS: "-I/opt/homebrew/include"
-#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: "[DEBUG] List all files"
         run: find .
@@ -77,8 +74,6 @@ jobs:
           pyinstaller --log-level=DEBUG mac.spec
         env:
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
-#          CFLAGS: "-I/opt/homebrew/include"
-#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: "[DEBUG] List all files in .app"
         run: find "dist/TauonMusicBox.app"

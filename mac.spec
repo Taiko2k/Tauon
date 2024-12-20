@@ -23,7 +23,6 @@ a = Analysis(
 		*lib_paths,
 		(phazor_path, "."),
 		(f"{prefix}/Cellar/ffmpeg", "."),
-#		("/usr/lib/girepository-1.0/Rsvg-2.0.typelib", "."),
 	],
 	datas=[
 		("src/tauon/assets", "assets"),
@@ -39,9 +38,11 @@ a = Analysis(
 		"sdl2",
 		"phazor",
 		"pylast",
+		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840
 		"zeroconf._utils.ipaddress",
 		"zeroconf._handlers.answers",
 	],
+	# TODO(Martin): Rsvg hooks are a hack until pyinstaller releases something newer than 6.11.1 - https://github.com/pyinstaller/pyinstaller/releases
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
 	runtime_hooks=[],
