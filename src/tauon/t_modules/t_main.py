@@ -608,7 +608,7 @@ if (install_mode and system == "Linux") or macos or msys:
 	else:
 		logging.info("Running from installed location")
 
-	logging.info("User files location: " + user_directory)
+	logging.info(f"      User files location: {user_directory}")
 
 	if not Path(Path(user_directory) / "encoder").is_dir():
 		os.makedirs(Path(user_directory) / "encoder")
