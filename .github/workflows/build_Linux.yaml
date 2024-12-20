@@ -78,17 +78,17 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
 
-      - name: Create DMG
+      - name: Create ZIP
         run: |
-          mkdir -p dist/dmg
+          mkdir -p dist/zip
           APP_NAME="TauonMusicBox"
           APP_PATH="dist/${APP_NAME}"
-          ZIP_PATH="dist/dmg/${APP_NAME}.zip"
+          ZIP_PATH="dist/zip/${APP_NAME}.zip"
 
           zip -r "${ZIP_PATH}" "${APP_PATH}"
 
-      - name: Upload DMG artifact
+      - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-linux
-          path: dist/dmg/TauonMusicBox.zip
+          path: dist/zip/TauonMusicBox.zip
