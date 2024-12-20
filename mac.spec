@@ -24,7 +24,6 @@ a = Analysis(
 	binaries=[
 		*lib_paths,
 		(phazor_path, "."),
-#		(f"{prefix}/Cellar/ffmpeg", "."),
 		(f"{prefix}/bin/ffmpeg", "."),
 	],
 	datas=[
@@ -96,8 +95,6 @@ app = BUNDLE(
 		"LSEnvironment": {
 			"LANG": "en_US.UTF-8",
 			"LC_CTYPE": "en_US.UTF-8",
-			# Set DYLD_LIBRARY_PATH to ensure the app can locate dynamic libraries
-#			"DYLD_LIBRARY_PATH": f"{prefix}/lib",
 			}})
 
 for lib in lib_paths:
