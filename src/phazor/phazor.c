@@ -1376,7 +1376,7 @@ int get_audio(int max, float* buff) {
 
 int scan_devices() {
 	#ifdef MINI
-		if (initiate_ma_context() == -1) return -\1;
+		if (initiate_ma_context() == -1) return -1;
 		result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
 		if (result != MA_SUCCESS) {
 			printf("Failed to retrieve device information.\n");
