@@ -3,6 +3,8 @@ import subprocess
 
 block_cipher = None
 
+# default PATH=/usr/bin:/bin:/usr/sbin:/sbin:/Applications/TauonMusicBox.app/Contents/Frameworks
+
 # Should resolve as /opt/homebrew
 prefix = subprocess.run(["brew", "--prefix"], capture_output=True, text=True).stdout.strip()
 
@@ -22,7 +24,8 @@ a = Analysis(
 	binaries=[
 		*lib_paths,
 		(phazor_path, "."),
-		(f"{prefix}/Cellar/ffmpeg", "."),
+#		(f"{prefix}/Cellar/ffmpeg", "."),
+		(f"{prefix}/bin/ffmpeg", "."),
 	],
 	datas=[
 		("src/tauon/assets", "assets"),
