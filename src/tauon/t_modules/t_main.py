@@ -8942,6 +8942,7 @@ class Tauon:
 		return False
 
 	def get_ffmpeg(self) -> str | None:
+		logging.debug(f"Looking for ffmpeg in PATH: {os.environ.get('PATH')}")
 		p = shutil.which("ffmpeg")
 		if p:
 			return p
