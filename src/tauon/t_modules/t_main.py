@@ -41759,21 +41759,21 @@ while pctl.running:
 		# if event.type == sdl3.SDL_SYSWMEVENT:
 		#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
 
-		if event.type == sdl3.SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
-			if sdl3.SDL_IsGameController(event.cdevice.which):
-				sdl3.SDL_GameControllerOpen(event.cdevice.which)
+		if event.type == sdl3.SDL_EVENT_GAMEPAD_ADDED and prefs.use_gamepad:
+			if sdl3.SDL_IsGamepad(event.gdevice.which):
+				sdl3.SDL_OpenGamepad(event.gdevice.which)
 				try:
-					logging.info(f"Found game controller: {sdl3.SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
+					logging.info(f"Found game controller: {sdl3.SDL_GetGamepadNameForID(event.gdevice.which).decode()}")
 				except Exception:
 					logging.exception("Error getting game controller")
 
-		if event.type == sdl3.SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
-			if event.caxis.axis == sdl3.SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-				rt = event.caxis.value > 5000
-			if event.caxis.axis == sdl3.SDL_CONTROLLER_AXIS_LEFTY:
-				if event.caxis.value < -10000:
+		if event.type == sdl3.SDL_EVENT_GAMEPAD_AXIS_MOTION and prefs.use_gamepad:
+			if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+				rt = event.gaxis.value > 5000
+			if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
+				if event.gaxis.value < -10000:
 					new = -1
-				elif event.caxis.value > 10000:
+				elif event.gaxis.value > 10000:
 					new = 1
 				else:
 					new = 0
@@ -41782,10 +41782,10 @@ while pctl.running:
 				c_yax = new
 				power += 5
 				gui.update += 1
-			if event.caxis.axis == sdl3.SDL_CONTROLLER_AXIS_RIGHTX:
-				if event.caxis.value < -15000:
+			if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTX:
+				if event.gaxis.value < -15000:
 					new = -1
-				elif event.caxis.value > 15000:
+				elif event.gaxis.value > 15000:
 					new = 1
 				else:
 					new = 0
@@ -41794,10 +41794,10 @@ while pctl.running:
 				c_xax = new
 				power += 5
 				gui.update += 1
-			if event.caxis.axis == sdl3.SDL_CONTROLLER_AXIS_RIGHTY:
-				if event.caxis.value < -15000:
+			if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTY:
+				if event.gaxis.value < -15000:
 					new = -1
-				elif event.caxis.value > 15000:
+				elif event.gaxis.value > 15000:
 					new = 1
 				else:
 					new = 0
@@ -41807,21 +41807,21 @@ while pctl.running:
 				power += 5
 				gui.update += 1
 
-		if event.type == sdl3.SDL_CONTROLLERBUTTONDOWN and prefs.use_gamepad:
+		if event.type == sdl3.SDL_EVENT_GAMEPAD_BUTTON_DOWN and prefs.use_gamepad:
 			k_input = True
 			power += 5
 			gui.update += 2
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
 				if rt:
 					toggle_random()
 				else:
 					pctl.advance()
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
 				if rt:
 					toggle_repeat()
 				else:
 					pctl.back()
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_A:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
 				if rt:
 					pctl.show_current(highlight=True)
 				elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
@@ -41830,42 +41830,42 @@ while pctl.running:
 					pctl.play_pause()
 				else:
 					inp.key_return_press = True
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_X:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
 				if rt:
 					random_track()
 				else:
 					toggle_gallery_keycontrol(always_exit=True)
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_Y:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_NORTH:
 				if rt:
 					pctl.advance(rr=True)
 				else:
 					pctl.play_pause()
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_B:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_EAST:
 				if rt:
 					pctl.revert()
 				elif is_level_zero():
 					pctl.stop()
 				else:
 					key_esc_press = True
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_DPAD_UP:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
 				key_up_press = True
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 				key_down_press = True
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 				if gui.album_tab_mode:
 					key_left_press = True
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(1)
-			if event.cbutton.button == sdl3.SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 				if gui.album_tab_mode:
 					key_right_press = True
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(-1)
 
-		if event.type == sdl3.SDL_RENDER_TARGETS_RESET and not msys:
+		if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not msys:
 			reset_render = True
 
-		if event.type == sdl3.SDL_DROPTEXT:
+		if event.type == sdl3.SDL_EVENT_DROP_TEXT:
 
 			power += 5
 
@@ -41909,7 +41909,7 @@ while pctl.running:
 					target = str(urllib.parse.unquote(line)).replace("file:///", "/")
 					drop_file(target)
 
-		if event.type == sdl3.SDL_DROPFILE:
+		if event.type == sdl3.SDL_EVENT_DROP_FILE:
 
 			power += 5
 			dropped_file_sdl = event.drop.file
@@ -41924,7 +41924,7 @@ while pctl.running:
 			gui.pl_update = 1
 			gui.update += 2
 
-		elif event.type == sdl3.SDL_QUIT:
+		elif event.type == sdl3.SDL_EVENT_QUIT:
 			power += 5
 
 			if gui.tray_active and prefs.min_to_tray and not key_shift_down:
@@ -41932,7 +41932,7 @@ while pctl.running:
 			else:
 				tauon.exit("Window received exit signal")
 				break
-		elif event.type == sdl3.SDL_TEXTEDITING:
+		elif event.type == sdl3.SDL_EVENT_TEXT_EDITING:
 			power += 5
 			#logging.info("edit text")
 			editline = event.edit.text
@@ -41941,13 +41941,13 @@ while pctl.running:
 			k_input = True
 			gui.update += 1
 
-		elif event.type == sdl3.SDL_MOUSEMOTION:
+		elif event.type == sdl3.SDL_EVENT_MOUSE_MOTION:
 
 			mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
 			mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
 			mouse_moved = True
 			gui.mouse_unknown = False
-		elif event.type == sdl3.SDL_MOUSEBUTTONDOWN:
+		elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_DOWN:
 
 			k_input = True
 			focused = True
