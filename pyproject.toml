@@ -74,7 +74,7 @@
 	# Windows - MSVC - does not work as PyGobject, GTK, Cairo and et al won't build under MVSC
 	#   One option would be to test https://github.com/wingtk/gvsbuild + https://stackoverflow.com/a/72737752
 	# ./vcpkg.exe install libsndfile:x64-windows # TODO download the necessities instead of this bundle, libflac at minimum
-	# ./vcpkg.exe install mpg123:x64-windows # Hack 1.29.3 in first see https://sourceforge.net/p/mpg123/bugs/374/
+	# ./vcpkg.exe install mpg123:x64-windows
 	# ./vcpkg.exe install libsamplerate:x64-windows
 	# ./vcpkg.exe install libopenmpt:x64-windows
 	# ./vcpkg.exe install wavpack:x64-windows
