@@ -6,6 +6,7 @@ musicbrainzngs
 mutagen
 natsort # optdep
 opencc-python-reimplemented # Windows version of openCC optdep
+Pillow
 PlexAPI
 PyGObject
 pyinstaller

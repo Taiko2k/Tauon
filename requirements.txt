@@ -13,7 +13,7 @@ pysdl2-dll # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#require
 comtypes;                    sys_platform == 'win32'
 infi.systray;                sys_platform == 'win32'
 keyboard;                    sys_platform == 'win32'
-Pillow;                      sys_platform != 'win32'
+Pillow
 opencc;                      sys_platform != 'win32' # OPTDEP
 opencc-python-reimplemented; sys_platform == 'win32' # OPTDEP
 #pyinstaller # ;                 sys_platform != 'linux' # for macOS at least
