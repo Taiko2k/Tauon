@@ -115,113 +115,113 @@ PyMODINIT_FUNC PyInit_phazor(void) {
 
 
 #ifdef PIPE
-pthread_t pw_thread;
-pthread_mutex_t pipe_devices_mutex;
-struct pw_main_loop *loop;
-struct pw_context *context;
-struct pw_core *core;
-struct pw_registry *registry;
-struct spa_hook registry_listener;
-struct spa_hook core_listener;
-struct pw_stream *global_stream;
-int enum_done = 0;
-int pipe_set_samplerate = 48000;
-#define MAX_DEVICES 64
-#define POD_BUFFER_SIZE 2048
-struct device_info {
-	uint32_t id;
-	char name[256];
-	char description[256];
-};
-struct pipe_devices_struct {
-	struct device_info devices[MAX_DEVICES];
-	int device_count;
-};
+	pthread_t pw_thread;
+	pthread_mutex_t pipe_devices_mutex;
+	struct pw_main_loop *loop;
+	struct pw_context *context;
+	struct pw_core *core;
+	struct pw_registry *registry;
+	struct spa_hook registry_listener;
+	struct spa_hook core_listener;
+	struct pw_stream *global_stream;
+	int enum_done = 0;
+	int pipe_set_samplerate = 48000;
+	#define MAX_DEVICES 64
+	#define POD_BUFFER_SIZE 2048
+	struct device_info {
+		uint32_t id;
+		char name[256];
+		char description[256];
+	};
+	struct pipe_devices_struct {
+		struct device_info devices[MAX_DEVICES];
+		int device_count;
+	};
 
-struct pipe_devices_struct pipe_devices = {0};
+	struct pipe_devices_struct pipe_devices = {0};
 
-static void registry_event_remove_global(void *data, uint32_t id) {
-	pthread_mutex_lock(&pipe_devices_mutex);
-	for (size_t i = 0; i < pipe_devices.device_count; i++) {
-		if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
-			// Shift remaining devices to fill the gap
-			for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
-				pipe_devices.devices[j] = pipe_devices.devices[j + 1];
-			}
-			pipe_devices.device_count--;
-			printf("Removed device with ID: %u\n", id);
-			break;
-		}
-	}
-	pthread_mutex_unlock(&pipe_devices_mutex);
-}
-
-static void registry_event_global(void *data, uint32_t id,
-				uint32_t permissions, const char *type, uint32_t version,
-				const struct spa_dict *props)
-{
-
-	if (props == NULL || type == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
-		return;
-
-
-	//printf("object: id:%u type:%s/%d\n", id, type, version);
-	const char *media_class;
-
-	media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
-	if (media_class == NULL)
-		return;
-
-	if (spa_streq(media_class, "Audio/Sink")) {
-
+	static void registry_event_remove_global(void *data, uint32_t id) {
 		pthread_mutex_lock(&pipe_devices_mutex);
-		if (pipe_devices.device_count >= MAX_DEVICES) {
-			printf("Error: Max devices\n");
-			pthread_mutex_unlock(&pipe_devices_mutex);
-			return;
-		}
-		const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
-		const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
-		if (!name || !description) {
-			printf("Error: Missing name or description for device\n");
-			pthread_mutex_unlock(&pipe_devices_mutex);
-			return;
-		}
-
-		// Check if already added
 		for (size_t i = 0; i < pipe_devices.device_count; i++) {
-			if (pipe_devices.devices[i].id == id) {
+			if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
+				// Shift remaining devices to fill the gap
+				for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
+					pipe_devices.devices[j] = pipe_devices.devices[j + 1];
+				}
+				pipe_devices.device_count--;
+				printf("Removed device with ID: %u\n", id);
+				break;
+			}
+		}
+		pthread_mutex_unlock(&pipe_devices_mutex);
+	}
+
+	static void registry_event_global(
+		void *data, uint32_t id,
+		uint32_t permissions, const char *type, uint32_t version,
+		const struct spa_dict *props)
+	{
+
+		if (props == NULL || type == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
+			return;
+
+
+		//printf("object: id:%u type:%s/%d\n", id, type, version);
+		const char *media_class;
+
+		media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+		if (media_class == NULL)
+			return;
+
+		if (spa_streq(media_class, "Audio/Sink")) {
+
+			pthread_mutex_lock(&pipe_devices_mutex);
+			if (pipe_devices.device_count >= MAX_DEVICES) {
+				printf("Error: Max devices\n");
 				pthread_mutex_unlock(&pipe_devices_mutex);
 				return;
-				}
 			}
-		pipe_devices.devices[pipe_devices.device_count].id = id;
-		snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
-		snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
-		pipe_devices.device_count++;
-		printf("Found audio sink: %s (%s)\n", name, description);
-		pthread_mutex_unlock(&pipe_devices_mutex);
+			const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
+			const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
+			if (!name || !description) {
+				printf("Error: Missing name or description for device\n");
+				pthread_mutex_unlock(&pipe_devices_mutex);
+				return;
+			}
 
+			// Check if already added
+			for (size_t i = 0; i < pipe_devices.device_count; i++) {
+				if (pipe_devices.devices[i].id == id) {
+					pthread_mutex_unlock(&pipe_devices_mutex);
+					return;
+					}
+				}
+			pipe_devices.devices[pipe_devices.device_count].id = id;
+			snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
+			snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
+			pipe_devices.device_count++;
+			printf("Found audio sink: %s (%s)\n", name, description);
+			pthread_mutex_unlock(&pipe_devices_mutex);
+
+		}
 	}
-}
 
-static const struct pw_registry_events registry_events = {
-	PW_VERSION_REGISTRY_EVENTS,
-	.global = registry_event_global,
-	.global_remove = registry_event_remove_global,
-};
+	static const struct pw_registry_events registry_events = {
+		PW_VERSION_REGISTRY_EVENTS,
+		.global = registry_event_global,
+		.global_remove = registry_event_remove_global,
+	};
 
-static void on_core_done(void *userdata, uint32_t id, int seq) {
-	if (id == PW_ID_CORE) {
-		enum_done = 1;
+	static void on_core_done(void *userdata, uint32_t id, int seq) {
+		if (id == PW_ID_CORE) {
+			enum_done = 1;
+		}
 	}
-}
 
-static const struct pw_core_events core_events = {
-	PW_VERSION_CORE_EVENTS,
-	.done = on_core_done,
-};
-
+	static const struct pw_core_events core_events = {
+		PW_VERSION_CORE_EVENTS,
+		.done = on_core_done,
+	};
 #endif
 
 float bfl[BUFF_SIZE];
@@ -2212,12 +2212,12 @@ void pump_decode() {
 		printf("ph: Pump wrong samplerate\n");
 
 		#ifdef MINI
-		stop_out();
-		fade_fill = 0;
-		fade_position = 0;
-		reset_set_value = 0;
-		buff_reset();
-		reconnect = 1;
+			stop_out();
+			fade_fill = 0;
+			fade_position = 0;
+			reset_set_value = 0;
+			buff_reset();
+			reconnect = 1;
 		#endif
 
 		#ifdef PIPE
@@ -2425,19 +2425,17 @@ void *main_loop(void *thread_id) {
 
 	// PIPEWIRE -----------
 	#ifdef PIPE
-
-
-	printf("Start pipewire thread...\n");
-	enum_done = 0;
-	if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
-			fprintf(stderr, "Failed to create Pipewire main loop thread\n");
-			return thread_id;
-	}
-	printf("Done Pipewire prep, wait for ready event...\n");
-	while (enum_done != 1) {
-		usleep(10000);
-	}
-	printf("Pipewire load done.\n");
+		printf("Start pipewire thread...\n");
+		enum_done = 0;
+		if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+				fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+				return thread_id;
+		}
+		printf("Done Pipewire prep, wait for ready event...\n");
+		while (enum_done != 1) {
+			usleep(10000);
+		}
+		printf("Pipewire load done.\n");
 	#endif
 	//int test1 = 0;
 	// Main loop ---------------------------------------------------------------
@@ -2662,19 +2660,14 @@ void *main_loop(void *thread_id) {
 	stop_out();
 	disconnect_pulse();
 	#ifdef MINI
-	if (context_allocated == 1) {
-
-		ma_context_uninit(&context);
-
-		context_allocated = 0;
-	}
+		if (context_allocated == 1) {
+			ma_context_uninit(&context);
+			context_allocated = 0;
+		}
 	#endif
 
 	#ifdef PIPE
-
-	pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_exit, SPA_ID_INVALID, NULL, 0, true, NULL);
-
-
+		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_exit, SPA_ID_INVALID, NULL, 0, true, NULL);
 	#endif
 	command = NONE;
 	printf("Exit PHAzOR\n");
@@ -2895,10 +2888,10 @@ void set_callbacks(void *start, void *read, void *close, void *device_unavailabl
 
 char* get_device(int n) {
 	#ifdef MINI
-	return pPlaybackDeviceInfos[n].name;
+		return pPlaybackDeviceInfos[n].name;
 	#endif
 	#ifdef PIPE
-	return pipe_devices.devices[n].description;
+		return pipe_devices.devices[n].description;
 	#endif
 }
 
