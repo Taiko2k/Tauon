@@ -1,13 +1,11 @@
 beautifulsoup4
 comtypes # Windows dep
-# dbus-python # Linux dep
 infi.systray
 keyboard # Windows dep
 musicbrainzngs
 mutagen
 natsort # optdep
 opencc-python-reimplemented # Windows version of openCC optdep
-# Pillow # Linux dep
 PlexAPI
 PyGObject
 pyinstaller
