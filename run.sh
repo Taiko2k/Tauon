@@ -9,7 +9,8 @@ win_build() {
 	# TODO(Martin): pkg_resources is deprecated, does it still need to be there?
 	# https://setuptools.pypa.io/en/latest/pkg_resources.html
 	pyinstaller \
-		--name TauonMusicBox
+		--name TauonMusicBox \
+		--scriptname "Tauon Music Box" \
 		--noconfirm \
 		--additional-hooks-dir='extra\pyinstaller-hooks' \
 		--hidden-import 'infi.systray' \
@@ -45,12 +46,21 @@ win_build() {
 	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
 	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
 	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc
-	cp librespot.exe dist/TauonMusicBox/ || echo 'librespot.exe is not present!'
-	cp TaskbarLib.tlb dist/TauonMusicBox/ || echo 'TaskbarLib.tlb is not present!'
+	if [[ -e librespot.exe ]]; then
+		cp librespot.exe dist/TauonMusicBox/
+	else
+		echo 'librespot.exe is not present!'
+	fi
+	if [[ -e TaskbarLib.tlb ]]; then
+		cp TaskbarLib.tlb dist/TauonMusicBox/
+	else
+		echo 'TaskbarLib.tlb is not present!'
+	fi
+	echo -e "Packaged to dist/TauonMusicBox"
 }
 
 python_check() {
-if ! command -v python >/dev/null; then
+	if ! command -v python >/dev/null; then
 		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
 		exit 1
 	fi
