@@ -47,11 +47,15 @@ win_build() {
 	cp TaskbarLib.tlb dist/tauon/ || echo 'TLB is not present!'
 }
 
-dirty_venv_run() {
-	if ! command -v python; then
+python_check() {
+if ! command -v python >/dev/null; then
 		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
 		exit 1
 	fi
+}
+
+dirty_venv_run() {
+	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
 	export PYTHONPATH=".":"${PYTHONPATH-}"
@@ -60,10 +64,7 @@ dirty_venv_run() {
 }
 
 clean_venv_run() {
-	if ! command -v python; then
-		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
-		exit 1
-	fi
+	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
 	export PYTHONPATH=".":"${PYTHONPATH-}"
@@ -82,6 +83,7 @@ clean_venv_run() {
 
 	python -m venv .venv
 	source .venv/bin/activate
+#	python -m pip install -U pip
 	pip install -r requirements.txt -r requirements_devel.txt build
 	python -m compile_translations
 	python -m build --wheel
