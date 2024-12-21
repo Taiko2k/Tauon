@@ -41,10 +41,10 @@ win_build() {
 
 	cp -r src/tauon/{theme,assets,locale,templates} dist/tauon/
 	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/tauon/tcl/tzdata
-	cp -r fonts dist/tauon/ || echo 'Fonts are not present!'
+	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
 	cp -r /mingw64/etc/fonts dist/tauon/etc
-	cp librespot.exe dist/tauon/
-	cp TaskbarLib.tlb dist/tauon/ || echo 'TLB is not present!'
+	cp librespot.exe dist/tauon/ || echo 'librespot.exe is not present!'
+	cp TaskbarLib.tlb dist/tauon/ || echo 'TaskbarLib.tlb is not present!'
 }
 
 python_check() {
