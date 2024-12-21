@@ -4261,28 +4261,33 @@ smtc = False
 if msys and win_ver >= 10:
 
 	#logging.info(sss.info.win.window)
-	try:
-		sm = ctypes.cdll.LoadLibrary(os.path.join(install_directory, "lib", "TauonSMTC.dll"))
+	SMTC_path = Path(install_directory) / "lib" / "TauonSMTC.dll"
+	if SMTC_path.file_exists():
+		try:
+			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
 
-		def SMTC_button_callback(button: int) -> None:
+			def SMTC_button_callback(button: int) -> None:
 
-			if button == 1:
-				inp.media_key = "Play"
-			if button == 2:
-				inp.media_key = "Pause"
-			if button == 3:
-				inp.media_key = "Next"
-			if button == 4:
-				inp.media_key = "Previous"
-			if button == 5:
-				inp.media_key = "Stop"
-			gui.update += 1
-			tauon.wake()
+				if button == 1:
+					inp.media_key = "Play"
+				if button == 2:
+					inp.media_key = "Pause"
+				if button == 3:
+					inp.media_key = "Next"
+				if button == 4:
+					inp.media_key = "Previous"
+				if button == 5:
+					inp.media_key = "Stop"
+				gui.update += 1
+				tauon.wake()
 
-		close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
-		smtc = sm.init(close_callback) == 0
-	except Exception:
-		logging.exception("Failed to load TauonSMTC.dll")
+			close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
+			smtc = sm.init(close_callback) == 0
+		except Exception:
+			logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
+	else:
+		logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
+
 
 def auto_scale() -> None:
 
