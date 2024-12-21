@@ -1375,28 +1375,7 @@ int get_audio(int max, float* buff) {
 	}
 #endif
 
-int scan_devices() {
-	#ifdef MINI
-		if (initiate_ma_context() == -1) return -1;
-		result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
-		if (result != MA_SUCCESS) {
-			printf("Failed to retrieve device information.\n");
-			return -2;
-		}
-		return playbackDeviceCount;
-	#endif
-
-	#ifdef PIPE
-		while (enum_done != 1) {
-			usleep(10000);
-		}
-		return pipe_devices.device_count;
-	#endif
-}
-
-
 void decode_seek(int abs_ms, int sample_rate) {
-
 	switch (codec) {
 		case FLAC:
 			FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate * (abs_ms / 1000.0));
@@ -2677,6 +2656,25 @@ void *main_loop(void *thread_id) {
 
 // ---------------------------------------------------------------------------------------
 // Begin exported functions
+
+EXPORT int scan_devices() {
+	#ifdef MINI
+		if (initiate_ma_context() == -1) return -1;
+		result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
+		if (result != MA_SUCCESS) {
+			printf("Failed to retrieve device information.\n");
+			return -2;
+		}
+		return playbackDeviceCount;
+	#endif
+
+	#ifdef PIPE
+		while (enum_done != 1) {
+			usleep(10000);
+		}
+		return pipe_devices.device_count;
+	#endif
+}
 
 EXPORT int init() {
 	//printf("ph: PHAzOR starting up\n");
