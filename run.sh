@@ -4,6 +4,7 @@ set -euo pipefail
 
 win_build() {
 	rm -rf dist/tauon
+	# Had to do Windows Security -> Virus & thread protection*2 -> Manage settings -> Windows Real-time protection: off
 
 	# TODO(Martin): pkg_resources is deprecated, does it still need to be there?
 	# https://setuptools.pypa.io/en/latest/pkg_resources.html
@@ -38,7 +39,7 @@ win_build() {
 
 	#cp C:/msys64/mingw64/lib/python3.13/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
 
-	cp -r src/tauon/{theme,assets,locale,templates,lib} dist/tauon/
+	cp -r src/tauon/{theme,assets,locale,templates} dist/tauon/
 	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/tauon/tcl/tzdata
 	cp -r fonts dist/tauon/ || echo 'Fonts are not present!'
 	cp -r /mingw64/etc/fonts dist/tauon/etc
