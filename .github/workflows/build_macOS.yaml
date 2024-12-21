@@ -46,8 +46,8 @@ jobs:
           pip install \
             -r requirements.txt \
             build
-          # Hack until https://github.com/pyinstaller/pyinstaller/issues/8936 is resolved
-          pip install https://github.com/rokm/pyinstaller/archive/refs/heads/macos-nested-framework-bundles.zip
+          # Hack until pyinstaller has a release newer than 6.11.1 - https://github.com/pyinstaller/pyinstaller/releases
+          pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 #            \
 #            pyinstaller
 #          pip uninstall pyinstaller

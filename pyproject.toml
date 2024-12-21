@@ -71,10 +71,10 @@
 	# https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
 	# This is terribly formatted as in TOML 1.0 it all has to be inline, can only be changed when TOML 1.1 ships
 
-	# Windows - MSVC - does not work as PyGobject, GTK, Cairo and et al won't build under MVSC
+	# Windows (MSVC) - does not work as PyGobject, GTK, Cairo and et al won't build under MVSC
 	#   One option would be to test https://github.com/wingtk/gvsbuild + https://stackoverflow.com/a/72737752
 	# ./vcpkg.exe install libsndfile:x64-windows # TODO download the necessities instead of this bundle, libflac at minimum
-	# ./vcpkg.exe install mpg123:x64-windows # Hack 1.29.3 in first see https://sourceforge.net/p/mpg123/bugs/374/
+	# ./vcpkg.exe install mpg123:x64-windows
 	# ./vcpkg.exe install libsamplerate:x64-windows
 	# ./vcpkg.exe install libopenmpt:x64-windows
 	# ./vcpkg.exe install wavpack:x64-windows
@@ -85,17 +85,13 @@
 #	ext-modules = [
 #		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
 
-	# Linux + macOS
+	# Linux + macOS + Windows (MINGW64)
 	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include", "C:/msys64/mingw64/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },
 		# Set as optional to allow soft-failure, it's expected not to build on Windows/macOS, but we don't want to fail the entire build on it
 		# I have not found a better way to solve this, ideally we would somehow tag this as Linux-exclusive
 		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], optional = true },
 	]
-
-	# macOS
-#	ext-modules = [
-#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/opt/homebrew/include/opus", "src/phazor/kissfft", "/opt/homebrew/include"], libraries=["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },]
 
 	package-dir = {"" = "src"}
 

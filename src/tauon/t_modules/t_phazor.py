@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 
 
 def find_library(libname: str) -> Path | None:
-	"""Search for 'libname.so'.
+	"""Search for 'libname.extension' in various formats.
 
 	Return library Path loadable with ctypes.CDLL, otherwise return None
 	"""
@@ -78,20 +78,19 @@ def find_library(libname: str) -> Path | None:
 			logging.debug(f"Lib {libname} found in {path!s}")
 			return path
 
-#	raise OSError(f"Can't find {libname}.so. Searched at:\n" + "\n".join(str(p) for p in search_paths))
+#	raise OSError(f"Can't find library '{libname}'. Searched at:\n" + "\n".join(str(p) for p in search_paths))
 	return None
 
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
+	"""Locate the PHaZOR library in the specified priority order.
+
+	Tries .so, .dll, .pyd, .dynlib in that order and finally uses find_library as a fallback.
+
+	:param pctl: PlayerCtl object containing installation details
+	:return: Path to the library file
+	:raises Exception: If no library is found
 	"""
-    Locate the PHaZOR library in the specified priority order.
-    Tries .so, .dll, .dynlib in that order and finally uses find_library as a fallback.
-
-    :param pctl: PlayerCtl object containing installation details
-    :return: Path to the library file
-    :raises Exception: If no library is found
-    """
-
 	# This is where compile-phazor.sh scrips place the dll
 	base_path = Path(pctl.install_directory).parent.parent / "build"
 
@@ -101,7 +100,7 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	else:
 		lib_name = "phazor"
 
-	extensions = [".so", ".dll", ".dynlib"]
+	extensions = [".so", ".dll", ".pyd", ".dynlib"]
 
 	# Check explicitly for each file
 	for ext in extensions:
