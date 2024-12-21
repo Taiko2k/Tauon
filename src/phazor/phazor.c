@@ -95,6 +95,7 @@ static struct PyModuleDef phazor_module = {
 
 #ifdef WIN64
 	__declspec(dllexport)
+	#define EXPORT __declspec(dllexport)
 #else
 	#define EXPORT
 #endif
@@ -374,9 +375,9 @@ enum decoder_types {
 };
 
 enum result_status_enum {
-  WAITING,
-  SUCCESS,
-  FAILURE
+	WAITING,
+	SUCCESS,
+	FAILURE
 };
 
 int result_status = WAITING;
@@ -606,8 +607,8 @@ int wave_open(char *filename) {
 	//fread(&i, 4, 1, wave_file);
 	//printf("pa: abov: %d\n", i);
 	//if (i != 16) {
-	//    printf("pa: Unsupported WAVE file\n");
-	//    return 1;
+	//	printf("pa: Unsupported WAVE file\n");
+	//	return 1;
 	//}
 
 	fread(&i, 2, 1, wave_file);
@@ -655,7 +656,7 @@ int wave_open(char *filename) {
 			return 1;
 		}
 		// Is audio data?
-	  //printf("label %s\n", b);
+		//printf("label %s\n", b);
 		if (memcmp(b, "data", 4) == 0) {
 			wave_start = ftell(wave_file);
 			wave_size = i;
@@ -1081,9 +1082,9 @@ int get_audio(int max, float* buff) {
 		}
 
 
-//        if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
-//            //printf("pa: Buffer underrun\n");
-//        }
+//		if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
+//			//printf("pa: Buffer underrun\n");
+//		}
 
 		// Put fade buffer back
 		if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && fade_lockout == 0) {
@@ -1129,11 +1130,11 @@ int get_audio(int max, float* buff) {
 				// Truncate data if gate is closed anyway
 				if (mode == RAMP_DOWN && gate == 0) break;
 
-//                if (want_sample_rate > 0 && sample_change_byte == buff_base) {
-//                    //printf("pa: Set new sample rate\n");
-//                    connect_pulse();
-//                    break;
-//                }
+//				if (want_sample_rate > 0 && sample_change_byte == buff_base) {
+//					//printf("pa: Set new sample rate\n");
+//					connect_pulse();
+//					break;
+//				}
 
 				if (reset_set == 1 && reset_set_byte == low) {
 					//printf("pa: Reset position counter\n");
@@ -1724,10 +1725,10 @@ int load_next() {
 		codec = FEED;
 		load_target_seek = 0;
 		pthread_mutex_lock(&buffer_mutex);
-//        if (current_sample_rate != sample_rate_out) {
-//            sample_change_byte = high;
-//            want_sample_rate = config_feed_samplerate;
-//        }
+//		if (current_sample_rate != sample_rate_out) {
+//			sample_change_byte = high;
+//			want_sample_rate = config_feed_samplerate;
+//		}
 		sample_rate_src = config_feed_samplerate;
 		src_reset(src);
 		pthread_mutex_unlock(&buffer_mutex);
@@ -2296,11 +2297,11 @@ void pump_decode() {
 
 		unsigned int done;
 
-		if(src_channels == 1) {
+		if (src_channels == 1) {
 			done = op_read(opus_dec, opus_buffer, 4096, NULL);
 		}
-		else{
-		  done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
+		else {
+			done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
 		}
 
 		pthread_mutex_lock(&buffer_mutex);
@@ -2443,11 +2444,11 @@ void *main_loop(void *thread_id) {
 	// Main loop ---------------------------------------------------------------
 	while (1) {
 
-//        test1++;
-//        if (test1 > 650) {
-//        printf("pa: Status: mode %d, command %d, buffer %d, gate %f\n", mode, command, get_buff_fill(), gate);
-//        test1 = 0;
-//        }
+//		test1++;
+//		if (test1 > 650) {
+//			printf("pa: Status: mode %d, command %d, buffer %d, gate %f\n", mode, command, get_buff_fill(), gate);
+//			test1 = 0;
+//		}
 
 		// Detect when device was unplugged or became unavailble
 		if (device_stopped && !called_to_stop_device && !signaled_device_unavailable) {
@@ -2585,7 +2586,7 @@ void *main_loop(void *thread_id) {
 				reset_set = 0;
 
 				//if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
-				position_count  = current_sample_rate * (seek_request_ms / 1000.0);
+				position_count = current_sample_rate * (seek_request_ms / 1000.0);
 
 			} else if (mode == PAUSED) {
 
@@ -2680,7 +2681,7 @@ void *main_loop(void *thread_id) {
 // ---------------------------------------------------------------------------------------
 // Begin exported functions
 
-int init() {
+EXPORT int init() {
 	//printf("ph: PHAzOR starting up\n");
 	if (main_running == 0) {
 		main_running = 1;
@@ -2690,15 +2691,15 @@ int init() {
 	return 0;
 }
 
-int get_status() {
+EXPORT int get_status() {
 	return mode;
 }
 
-int get_result() {
-  return result_status;
+EXPORT int get_result() {
+	return result_status;
 }
 
-int start(char *filename, int start_ms, int fade, float rg) {
+EXPORT int start(char *filename, int start_ms, int fade, float rg) {
 
 	while (command != NONE) {
 		usleep(1000);
@@ -2720,8 +2721,7 @@ int start(char *filename, int start_ms, int fade, float rg) {
 	return 0;
 }
 
-
-int next(char *filename, int start_ms, float rg) {
+EXPORT int next(char *filename, int start_ms, float rg) {
 
 	while (command != NONE) {
 		usleep(1000);
@@ -2741,7 +2741,7 @@ int next(char *filename, int start_ms, float rg) {
 	return 0;
 }
 
-int pause() {
+EXPORT int pause() {
 	while (command != NONE) {
 		usleep(1000);
 	}
@@ -2754,7 +2754,7 @@ int pause() {
 	return 0;
 }
 
-int resume() {
+EXPORT int resume() {
 	while (command != NONE) {
 		usleep(1000);
 	}
@@ -2765,7 +2765,7 @@ int resume() {
 	return 0;
 }
 
-int stop() {
+EXPORT int stop() {
 	while (command != NONE) {
 		usleep(1000);
 	}
@@ -2773,13 +2773,13 @@ int stop() {
 	return 0;
 }
 
-void wait_for_command() {
+EXPORT void wait_for_command() {
 	while (command != NONE) {
 		usleep(1000);
 	}
 }
 
-int seek(int ms_absolute, int flag) {
+EXPORT int seek(int ms_absolute, int flag) {
 
 	while (command != NONE) {
 		usleep(1000);
@@ -2792,56 +2792,57 @@ int seek(int ms_absolute, int flag) {
 	return 0;
 }
 
-int set_volume(int percent) {
+EXPORT int set_volume(int percent) {
 	volume_want = percent / 100.0;
 	volume_on = percent / 100.0;
 
 	return 0;
 }
 
-int ramp_volume(int percent, int speed) {
+EXPORT int ramp_volume(int percent, int speed) {
 	volume_ramp_speed = speed;
 	volume_want = percent / 100.0;
 	return 0;
 }
 
-int get_position_ms() {
+EXPORT int get_position_ms() {
 	if (command != START && command != LOAD && reset_set == 0 && current_sample_rate > 0) {
 		return (int) ((position_count / (float) current_sample_rate) * 1000.0);
 	} else return 0;
 }
 
-void set_position_ms(int ms) {
+EXPORT void set_position_ms(int ms) {
 	position_count = ((float)(ms / 1000.0)) * current_sample_rate;
 }
 
-int get_length_ms() {
+EXPORT int get_length_ms() {
 	if (reset_set == 0 && sample_rate_src > 0 && current_length_count > 0) {
 
 		return (int) ((current_length_count / (float) sample_rate_src) * 1000.0);
 	} else return 0;
 }
 
-void config_set_dev_buffer(int ms) {
+EXPORT void config_set_dev_buffer(int ms) {
 	config_dev_buffer = ms;
 }
 
-void config_set_samplerate(int hz) {
+EXPORT void config_set_samplerate(int hz) {
 	sample_rate_out = hz;
 }
-void config_set_resample_quality(int n) {
+
+EXPORT void config_set_resample_quality(int n) {
 	config_resample_quality = n;
 }
 
-void config_set_resample(int n) {
+EXPORT void config_set_resample(int n) {
 	config_resample = n;
 }
 
-void config_set_always_ffmpeg(int n) {
+EXPORT void config_set_always_ffmpeg(int n) {
 	config_always_ffmpeg = n;
 }
 
-void config_set_fade_duration(int ms) {
+EXPORT void config_set_fade_duration(int ms) {
 	if (ms < 200) ms = 200;
 	if (ms > 2000) ms = 2000;
 	config_fade_duration = ms;
@@ -2855,32 +2856,31 @@ EXPORT void config_set_dev_name(char *device) {
 	}
 }
 
-void config_set_volume_power(int n) {
+EXPORT void config_set_volume_power(int n) {
 	config_volume_power = n;
 }
 
-void config_set_feed_samplerate(int n) {
+EXPORT void config_set_feed_samplerate(int n) {
 	config_feed_samplerate = n;
 }
 
-void config_set_min_buffer(int n) {
+EXPORT void config_set_min_buffer(int n) {
 	config_min_buffer = n;
 }
 
-float get_level_peak_l() {
-
+EXPORT float get_level_peak_l() {
 	float peak = peak_l;
 	peak_l = 0.0;
 	return peak;
 }
 
-float get_level_peak_r() {
+EXPORT float get_level_peak_r() {
 	float peak = peak_r;
 	peak_r = 0.0;
 	return peak;
 }
 
-void set_callbacks(void *start, void *read, void *close, void *device_unavailable) {
+EXPORT void set_callbacks(void *start, void *read, void *close, void *device_unavailable) {
 	ff_start = start;
 	ff_read = read;
 	ff_close = close;
@@ -2888,7 +2888,7 @@ void set_callbacks(void *start, void *read, void *close, void *device_unavailabl
 }
 
 
-char* get_device(int n) {
+EXPORT char* get_device(int n) {
 	#ifdef MINI
 		return pPlaybackDeviceInfos[n].name;
 	#endif
@@ -2897,8 +2897,7 @@ char* get_device(int n) {
 	#endif
 }
 
-int get_spectrum(int n_bins, float* bins) {
-
+EXPORT int get_spectrum(int n_bins, float* bins) {
 	int samples = 2048;
 	int base = low;
 
@@ -2933,39 +2932,37 @@ int get_spectrum(int n_bins, float* bins) {
 	}
 
 	return 0;
-
 }
 
-
-int is_buffering() {
+EXPORT int is_buffering() {
 	if (buffering == 0) return 0;
 	return (int) (get_buff_fill() / config_min_buffer * 100.0);
 }
-/* int get_latency() { */
-/*   return active_latency / 1000; */
+/* EXPORT int get_latency() { */
+/*	return active_latency / 1000; */
 /* } */
 
-int feed_ready(int request_size) {
+EXPORT int feed_ready(int request_size) {
 	if (mode != STOPPED && high_mark - get_buff_fill() > request_size && codec == FEED) return 1;
 	return 0;
 }
 
-void feed_raw(int len, char* data) {
+EXPORT void feed_raw(int len, char* data) {
 	if (feed_ready(len) == 0) return;
 	pthread_mutex_lock(&buffer_mutex);
 	read_to_buffer_char16(data, len);
 	pthread_mutex_unlock(&buffer_mutex);
 }
 
-void set_subtrack(int n) {
+EXPORT void set_subtrack(int n) {
 	subtrack = n;
 }
 
-void print_status() {
+EXPORT void print_status() {
 	printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
 }
 
-int phazor_shutdown() {
+EXPORT int phazor_shutdown() {
 	while (command != NONE) {
 		usleep(1000);
 	}
