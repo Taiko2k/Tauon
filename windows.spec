@@ -35,7 +35,14 @@ a = Analysis(
 		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL2_image.dll"),      "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libgme.dll"),          "."),
 	],
-	datas=[],
+	datas=[
+		("src/tauon/assets", "assets"),
+		("src/tauon/locale", "locale"),
+		("src/tauon/theme", "theme"),
+		("src/tauon/templates", "templates"),
+		# This could only have SDL2.framework and SDL2_image.framework to save space...
+		(".venv/lib/python3.12/site-packages/sdl2dll/dll", "sdl2dll/dll"),
+	]
 	hiddenimports=[
 		"infi.systray",
 		"pylast",
