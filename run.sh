@@ -4,16 +4,18 @@ set -euo pipefail
 
 win_build() {
 	rm -rf dist/tauon
+	# Had to do Windows Security -> Virus & thread protection*2 -> Manage settings -> Windows Real-time protection: off
 
 	# TODO(Martin): pkg_resources is deprecated, does it still need to be there?
 	# https://setuptools.pypa.io/en/latest/pkg_resources.html
 	pyinstaller \
+		--name TauonMusicBox \
+		--noconfirm \
 		--additional-hooks-dir='extra\pyinstaller-hooks' \
 		--hidden-import 'infi.systray' \
 		--hidden-import 'pylast' \
 		--hidden-import 'tekore' \
-		--add-binary 'C:\msys64\mingw64\lib\girepository-1.0\Rsvg-2.0.typelib;gi_typelibs' \
-		--add-binary 'lib/libphazor.so;lib' \
+		--hidden-import 'phazor' \
 		--add-binary 'C:\msys64\mingw64\bin\libFLAC.dll;.' \
 		--add-binary 'C:\msys64\mingw64\bin\libmpg123-0.dll;.' \
 		--add-binary 'C:\msys64\mingw64\bin\libogg-0.dll;.' \
@@ -31,27 +33,40 @@ win_build() {
 		--hidden-import 'packaging.requirements' \
 		--hidden-import 'pkg_resources.py2_warn' \
 		--hidden-import 'requests' \
-		src/tauon/tauon.py \
-		-w -i assets/icon.ico
+		src/tauon/__main__.py \
+		-w -i src/tauon/assets/icon.ico
 
-	mkdir -p dist/tauon/tekore
-	mkdir -p dist/tauon/etc
+	mkdir -p dist/TauonMusicBox/tekore
+	mkdir -p dist/TauonMusicBox/etc
 
 	#cp C:/msys64/mingw64/lib/python3.13/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
 
-	cp -r src/tauon/{theme,assets,locale,templates,lib} dist/tauon/
-	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/tauon/tcl/tzdata
-	cp -r fonts dist/tauon/ || echo 'Fonts are not present!'
-	cp -r /mingw64/etc/fonts dist/tauon/etc
-	cp librespot.exe dist/tauon/
-	cp TaskbarLib.tlb dist/tauon/ || echo 'TLB is not present!'
+	cp -r src/tauon/{theme,assets,locale,templates} dist/TauonMusicBox/
+	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
+	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
+	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc
+	if [[ -e librespot.exe ]]; then
+		cp librespot.exe dist/TauonMusicBox/
+	else
+		echo 'librespot.exe is not present!'
+	fi
+	if [[ -e TaskbarLib.tlb ]]; then
+		cp TaskbarLib.tlb dist/TauonMusicBox/
+	else
+		echo 'TaskbarLib.tlb is not present!'
+	fi
+	echo -e "Packaged to dist/TauonMusicBox"
 }
 
-dirty_venv_run() {
-	if ! command -v python; then
+python_check() {
+	if ! command -v python >/dev/null; then
 		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
 		exit 1
 	fi
+}
+
+dirty_venv_run() {
+	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
 	export PYTHONPATH=".":"${PYTHONPATH-}"
@@ -60,10 +75,7 @@ dirty_venv_run() {
 }
 
 clean_venv_run() {
-	if ! command -v python; then
-		echo -e "python executable not found? Is python installed? Debian(-based) distributions may need python-is-python3 installed via apt."
-		exit 1
-	fi
+	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
 	export PYTHONPATH=".":"${PYTHONPATH-}"
@@ -82,13 +94,16 @@ clean_venv_run() {
 
 	python -m venv .venv
 	source .venv/bin/activate
-	pip install -r requirements.txt -r requirements_optional.txt -r requirements_devel.txt build
+#	python -m pip install -U pip
+	# Necessary for Windows (MINGW64) if compiling things like Pillow
+	export CFLAGS="-I/mingw64/include"
+#	export LDFLAGS="-L/mingw64/lib"
+	pip install -r requirements.txt -r requirements_devel.txt build
 	python -m compile_translations
 	python -m build --wheel
 	pip install --prefix ".venv" dist/*.whl --force-reinstall
 	tauonmb # "${@}" # Passing args is broken atm
 }
-
 
 compile_phazor() {
 	outFile="build/libphazor.so"
@@ -100,7 +115,6 @@ compile_phazor() {
 	echo "Compiled as ${outFile}!"
 }
 
-
 compile_phazor_pipewire() {
 	outFile="build/libphazor-pw.so"
 	mkdir -p build
@@ -111,7 +125,6 @@ compile_phazor_pipewire() {
 	echo "Compiled as ${outFile}!"
 }
 
-# Display menu
 show_menu() {
 	PS3="Select a script to run: "
 	select yn in "${answer_options[@]}"; do

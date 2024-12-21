@@ -5,6 +5,9 @@ Changelog
 ### v7.9.0
 
 - **Added** TIDAL support
+- **Added** macOS (experimental) and Linux automated CI builds
+- **Changed** portable installations now save `cache` and `user-data` directiories in `src/tauon/`, move existing directories there if necessary
+- **Fixed** Windows support
 - **Fixed** crashes related to PipeWire [#1250](https://github.com/Taiko2k/Tauon/issues/1250)
 - **Fixed** audio cutting out on the PipeWire backend with specific custom quantum settings [#1245](https://github.com/Taiko2k/Tauon/issues/1245)
 - **Fixed** wrong encoding used for some tags in XSPF exports [#1331](https://github.com/Taiko2k/Tauon/issues/1331)
@@ -17,7 +20,6 @@ Changelog
 - **Improved** Various changes to build system, Migrated to pyproject.toml
 - ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead, replaced by newer API that would need implementing, and the chords feature was unmaintained
 - ***Removed*** Spotify recommendations feature (API deprecated by Spotify)
-
 - Many other bug fixes and code refactors [Special thanks to @C0rn3j for a lot of these]
 
 ### v7.8.3
