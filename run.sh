@@ -10,7 +10,6 @@ win_build() {
 	# https://setuptools.pypa.io/en/latest/pkg_resources.html
 	pyinstaller \
 		--name TauonMusicBox \
-		--scriptname "Tauon Music Box" \
 		--noconfirm \
 		--additional-hooks-dir='extra\pyinstaller-hooks' \
 		--hidden-import 'infi.systray' \
