@@ -105,7 +105,6 @@ clean_venv_run() {
 	tauonmb # "${@}" # Passing args is broken atm
 }
 
-
 compile_phazor() {
 	outFile="build/libphazor.so"
 	mkdir -p build
@@ -115,7 +114,6 @@ compile_phazor() {
 		-shared -o ${outFile} -fPIC -Wall -O3 -g
 	echo "Compiled as ${outFile}!"
 }
-
 
 compile_phazor_pipewire() {
 	outFile="build/libphazor-pw.so"
@@ -127,7 +125,6 @@ compile_phazor_pipewire() {
 	echo "Compiled as ${outFile}!"
 }
 
-# Display menu
 show_menu() {
 	PS3="Select a script to run: "
 	select yn in "${answer_options[@]}"; do
