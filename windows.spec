@@ -1,8 +1,8 @@
 def find_msys64_path():
 	"""Check common paths for MSYS2 installations"""
 	potential_paths = [
-		"C:\\msys64",
 		"D:\\a\\_temp\\msys64",
+		"C:\\msys64",
 	]
 	for path in potential_paths:
 		if os.path.exists(path):
