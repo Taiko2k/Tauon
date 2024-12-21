@@ -95,7 +95,10 @@ static struct PyModuleDef phazor_module = {
 
 #ifdef WIN64
 	__declspec(dllexport)
+#else
+	#define EXPORT
 #endif
+
 // Entry point for the module
 PyMODINIT_FUNC PyInit_phazor(void) {
 	return PyModule_Create(&phazor_module);
@@ -2844,7 +2847,7 @@ void config_set_fade_duration(int ms) {
 	config_fade_duration = ms;
 }
 
-void config_set_dev_name(char *device) {
+EXPORT void config_set_dev_name(char *device) {
 	if (device == NULL) {
 		strcpy(config_output_sink, "Default");
 	} else {
