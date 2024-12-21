@@ -12,7 +12,6 @@ win_build() {
 		--hidden-import 'infi.systray' \
 		--hidden-import 'pylast' \
 		--hidden-import 'tekore' \
-		--add-binary 'C:\msys64\mingw64\lib\girepository-1.0\Rsvg-2.0.typelib;gi_typelibs' \
 		--add-binary 'lib/libphazor.so;lib' \
 		--add-binary 'C:\msys64\mingw64\bin\libFLAC.dll;.' \
 		--add-binary 'C:\msys64\mingw64\bin\libmpg123-0.dll;.' \
@@ -31,7 +30,7 @@ win_build() {
 		--hidden-import 'packaging.requirements' \
 		--hidden-import 'pkg_resources.py2_warn' \
 		--hidden-import 'requests' \
-		src/tauon/tauon.py \
+		src/tauon/__main__.py \
 		-w -i assets/icon.ico
 
 	mkdir -p dist/tauon/tekore
