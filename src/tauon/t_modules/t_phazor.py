@@ -83,15 +83,14 @@ def find_library(libname: str) -> Path | None:
 
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
+	"""Locate the PHaZOR library in the specified priority order.
+
+	Tries .so, .dll, .dynlib in that order and finally uses find_library as a fallback.
+
+	:param pctl: PlayerCtl object containing installation details
+	:return: Path to the library file
+	:raises Exception: If no library is found
 	"""
-    Locate the PHaZOR library in the specified priority order.
-    Tries .so, .dll, .dynlib in that order and finally uses find_library as a fallback.
-
-    :param pctl: PlayerCtl object containing installation details
-    :return: Path to the library file
-    :raises Exception: If no library is found
-    """
-
 	# This is where compile-phazor.sh scrips place the dll
 	base_path = Path(pctl.install_directory).parent.parent / "build"
 
@@ -101,7 +100,7 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	else:
 		lib_name = "phazor"
 
-	extensions = [".so", ".dll", ".dynlib"]
+	extensions = [".so", ".dll", ".pyd", ".dynlib"]
 
 	# Check explicitly for each file
 	for ext in extensions:
