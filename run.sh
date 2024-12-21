@@ -9,6 +9,7 @@ win_build() {
 	# TODO(Martin): pkg_resources is deprecated, does it still need to be there?
 	# https://setuptools.pypa.io/en/latest/pkg_resources.html
 	pyinstaller \
+		--name TauonMusicBox
 		--noconfirm \
 		--additional-hooks-dir='extra\pyinstaller-hooks' \
 		--hidden-import 'infi.systray' \
@@ -35,17 +36,17 @@ win_build() {
 		src/tauon/__main__.py \
 		-w -i src/tauon/assets/icon.ico
 
-	mkdir -p dist/tauon/tekore
-	mkdir -p dist/tauon/etc
+	mkdir -p dist/TauonMusicBox/tekore
+	mkdir -p dist/TauonMusicBox/etc
 
 	#cp C:/msys64/mingw64/lib/python3.13/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
 
-	cp -r src/tauon/{theme,assets,locale,templates} dist/tauon/
-	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/tauon/tcl/tzdata
+	cp -r src/tauon/{theme,assets,locale,templates} dist/TauonMusicBox/
+	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
 	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
-	cp -r /mingw64/etc/fonts dist/tauon/etc
-	cp librespot.exe dist/tauon/ || echo 'librespot.exe is not present!'
-	cp TaskbarLib.tlb dist/tauon/ || echo 'TaskbarLib.tlb is not present!'
+	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc
+	cp librespot.exe dist/TauonMusicBox/ || echo 'librespot.exe is not present!'
+	cp TaskbarLib.tlb dist/TauonMusicBox/ || echo 'TaskbarLib.tlb is not present!'
 }
 
 python_check() {
