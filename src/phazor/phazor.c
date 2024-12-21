@@ -1454,7 +1454,7 @@ int disconnect_pulse() {
 }
 
 #ifdef PIPE
-	static int pipe_exit(struct spa_loop *loopo, bool async, uint32_t seq,const void *_data, size_t size, void *user_data) {
+	static int pipe_exit(struct spa_loop *loopo, bool async, uint32_t seq, const void *_data, size_t size, void *user_data) {
 		pw_main_loop_quit(loop);
 		return 0;
 	}
