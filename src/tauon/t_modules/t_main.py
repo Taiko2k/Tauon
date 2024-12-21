@@ -4262,7 +4262,7 @@ if msys and win_ver >= 10:
 
 	#logging.info(sss.info.win.window)
 	SMTC_path = Path(install_directory) / "lib" / "TauonSMTC.dll"
-	if SMTC_path.file_exists():
+	if SMTC_path.exists():
 		try:
 			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
 
