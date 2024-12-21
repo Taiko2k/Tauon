@@ -2,7 +2,6 @@ a = Analysis(
 	["src/tauon/__main__.py"],
 	pathex=[],
 	binaries=[
-		("lib/libphazor.so", "lib"),
 		("C:\\msys64\\mingw64\\bin\\libFLAC.dll", "."),
 		("C:\\msys64\\mingw64\\bin\\libmpg123-0.dll", "."),
 		("C:\\msys64\\mingw64\\bin\\libogg-0.dll", "."),
@@ -24,6 +23,7 @@ a = Analysis(
 		"tekore",
 		"pip",
 		"packaging.requirements",
+		"phazor",
 		"pkg_resources.py2_warn",
 		"requests",
 		],

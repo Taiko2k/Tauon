@@ -12,7 +12,7 @@ win_build() {
 		--hidden-import 'infi.systray' \
 		--hidden-import 'pylast' \
 		--hidden-import 'tekore' \
-		--add-binary 'lib/libphazor.so;lib' \
+		--hidden-import 'phazor' \
 		--add-binary 'C:\msys64\mingw64\bin\libFLAC.dll;.' \
 		--add-binary 'C:\msys64\mingw64\bin\libmpg123-0.dll;.' \
 		--add-binary 'C:\msys64\mingw64\bin\libogg-0.dll;.' \
