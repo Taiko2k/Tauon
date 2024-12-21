@@ -2381,7 +2381,6 @@ void pump_decode() {
 		if (b == 0) {
 			printf("pa: FFMPEG has finished\n");
 			decoder_eos();
-
 		}
 	}
 
@@ -2625,14 +2624,12 @@ void *main_loop(void *thread_id) {
 		if (mode == PLAYING && codec != FEED) {
 			while (get_buff_fill() < BUFF_SAFE && mode != ENDING) {
 				pump_decode();
-
 			}
 		}
 
 		if (mode == ENDING && get_buff_fill() == 0) {
 			//printf("pa: Buffer ran out at end of track\n");
 			end();
-
 		}
 		if (mode == ENDING && next_ready == 1) {
 			//printf("pa: Next registered while buffer was draining\n");
@@ -2887,7 +2884,6 @@ EXPORT void set_callbacks(void *start, void *read, void *close, void *device_una
 	on_device_unavailable = device_unavailable;
 }
 
-
 EXPORT char* get_device(int n) {
 	#ifdef MINI
 		return pPlaybackDeviceInfos[n].name;
@@ -2938,6 +2934,7 @@ EXPORT int is_buffering() {
 	if (buffering == 0) return 0;
 	return (int) (get_buff_fill() / config_min_buffer * 100.0);
 }
+
 /* EXPORT int get_latency() { */
 /*	return active_latency / 1000; */
 /* } */
