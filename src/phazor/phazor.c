@@ -18,10 +18,9 @@
 
 #define MINI
 
-#ifdef _WIN32
-	#define WIN
+#ifdef WIN64
 	#include <windows.h>
-	#ifndef __MINGW32__
+	#ifndef __MINGW64__
 		#define usleep(usec) Sleep((usec) / 1000)  // Convert microseconds to milliseconds
 	#endif
 #else
@@ -79,34 +78,28 @@
 #include "wavpack/wavpack.h"
 #include "gme/gme.h"
 
-#ifdef _WIN32
-	#ifndef __MINGW32__
-		#include <Python.h>
+#include <Python.h>
+// Module method definitions (if any)
+static PyMethodDef PhazorMethods[] = {
+	{NULL, NULL, 0, NULL} // Sentinel
+};
 
-		// Module method definitions (if any)
-		static PyMethodDef PhazorMethods[] = {
-			{NULL, NULL, 0, NULL} // Sentinel
-		};
+// Module definition
+static struct PyModuleDef phazor_module = {
+	PyModuleDef_HEAD_INIT,
+	"phazor",                  // Module name
+	NULL,                      // Module documentation (may be NULL)
+	-1,                        // Size of per-interpreter state of the module
+	PhazorMethods              // Methods table
+};
 
-		// Module definition
-		static struct PyModuleDef phazor_module = {
-			PyModuleDef_HEAD_INIT,
-			"phazor",                  // Module name
-			NULL,                      // Module documentation (may be NULL)
-			-1,                        // Size of per-interpreter state of the module
-			PhazorMethods              // Methods table
-		};
-
-		#ifdef _WIN32
-			__declspec(dllexport)
-		#endif
-		// Entry point for the module
-		PyMODINIT_FUNC PyInit_phazor(void) {
-			return PyModule_Create(&phazor_module);
-		}
-	#endif
+#ifdef WIN64
+	__declspec(dllexport)
 #endif
-
+// Entry point for the module
+PyMODINIT_FUNC PyInit_phazor(void) {
+	return PyModule_Create(&phazor_module);
+}
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
@@ -1685,7 +1678,7 @@ void connect_pulse() {
 }
 
 FILE *uni_fopen(char *ff) {
-	#ifdef WIN
+	#ifdef WIN64
 		wchar_t w_path[MAX_PATH];
 		MultiByteToWideChar(CP_UTF8, 0, ff, -1, w_path, MAX_PATH);
 		FILE *file = _wfopen(w_path, L"rb");
