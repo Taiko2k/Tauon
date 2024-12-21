@@ -23,6 +23,7 @@ jobs:
             ca-certificates
             cmake
             ninja
+            zip
             mingw-w64-x86_64-flac
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-gobject-introspection
