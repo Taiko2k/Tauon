@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 
 
 def find_library(libname: str) -> Path | None:
-	"""Search for 'libname.so'.
+	"""Search for 'libname.extension' in various formats.
 
 	Return library Path loadable with ctypes.CDLL, otherwise return None
 	"""
