@@ -78,7 +78,7 @@ def find_library(libname: str) -> Path | None:
 			logging.debug(f"Lib {libname} found in {path!s}")
 			return path
 
-#	raise OSError(f"Can't find {libname}.so. Searched at:\n" + "\n".join(str(p) for p in search_paths))
+#	raise OSError(f"Can't find library '{libname}'. Searched at:\n" + "\n".join(str(p) for p in search_paths))
 	return None
 
 
