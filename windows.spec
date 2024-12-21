@@ -4,7 +4,9 @@ from pathlib import Path
 def find_msys64_path() -> Path:
 	"""Check common paths for MSYS2 installations"""
 	potential_paths = [
+		# This is the path the GitHub CI msys action uses
 		Path("D:\\a\\_temp\\msys64"),
+		# This is default Windows path
 		Path("C:\\msys64"),
 	]
 	for path in potential_paths:

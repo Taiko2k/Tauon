@@ -100,5 +100,5 @@ jobs:
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TauonMusicBox-linux
+          name: TauonMusicBox-windows
           path: dist/zip/TauonMusicBox.zip
