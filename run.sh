@@ -31,7 +31,7 @@ win_build() {
 		--hidden-import 'pkg_resources.py2_warn' \
 		--hidden-import 'requests' \
 		src/tauon/__main__.py \
-		-w -i assets/icon.ico
+		-w -i src/tauon/assets/icon.ico
 
 	mkdir -p dist/tauon/tekore
 	mkdir -p dist/tauon/etc
