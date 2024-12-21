@@ -20,7 +20,6 @@ Changelog
 - **Improved** Various changes to build system, Migrated to pyproject.toml
 - ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead, replaced by newer API that would need implementing, and the chords feature was unmaintained
 - ***Removed*** Spotify recommendations feature (API deprecated by Spotify)
-
 - Many other bug fixes and code refactors [Special thanks to @C0rn3j for a lot of these]
 
 ### v7.8.3
