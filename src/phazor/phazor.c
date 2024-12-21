@@ -79,29 +79,33 @@
 #include "wavpack/wavpack.h"
 #include "gme/gme.h"
 
-#include <Python.h>
-
-// Module method definitions (if any)
-static PyMethodDef PhazorMethods[] = {
-	{NULL, NULL, 0, NULL} // Sentinel
-};
-
-// Module definition
-static struct PyModuleDef phazor_module = {
-	PyModuleDef_HEAD_INIT,
-	"phazor",                  // Module name
-	NULL,                      // Module documentation (may be NULL)
-	-1,                        // Size of per-interpreter state of the module
-	PhazorMethods              // Methods table
-};
-
 #ifdef _WIN32
-	__declspec(dllexport)
+	#ifndef __MINGW32__
+		#include <Python.h>
+
+		// Module method definitions (if any)
+		static PyMethodDef PhazorMethods[] = {
+			{NULL, NULL, 0, NULL} // Sentinel
+		};
+
+		// Module definition
+		static struct PyModuleDef phazor_module = {
+			PyModuleDef_HEAD_INIT,
+			"phazor",                  // Module name
+			NULL,                      // Module documentation (may be NULL)
+			-1,                        // Size of per-interpreter state of the module
+			PhazorMethods              // Methods table
+		};
+
+		#ifdef _WIN32
+			__declspec(dllexport)
+		#endif
+		// Entry point for the module
+		PyMODINIT_FUNC PyInit_phazor(void) {
+			return PyModule_Create(&phazor_module);
+		}
+	#endif
 #endif
-// Entry point for the module
-PyMODINIT_FUNC PyInit_phazor(void) {
-	return PyModule_Create(&phazor_module);
-}
 
 
 #define BUFF_SIZE 240000  // Decoded data buffer size
