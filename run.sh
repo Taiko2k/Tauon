@@ -83,7 +83,7 @@ clean_venv_run() {
 	python -m venv .venv
 	source .venv/bin/activate
 #	python -m pip install -U pip
-	# Necessary for Windows if compiling things like Pillow
+	# Necessary for Windows (MINGW64) if compiling things like Pillow
 	export CFLAGS="-I/mingw64/include"
 #	export LDFLAGS="-L/mingw64/lib"
 	pip install -r requirements.txt -r requirements_devel.txt build
