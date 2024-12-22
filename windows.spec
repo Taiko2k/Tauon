@@ -42,7 +42,7 @@ a = Analysis(
 		("src/tauon/templates", "templates"),
 		# This could only have SDL2.framework and SDL2_image.framework to save space...
 		(".venv/lib/python3.12/site-packages/sdl2dll/dll", "sdl2dll/dll"),
-	]
+	],
 	hiddenimports=[
 		"infi.systray",
 		"pylast",
