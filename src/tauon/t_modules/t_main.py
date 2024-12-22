@@ -480,7 +480,7 @@ try:
 	import pylast
 	last_fm_enable = True
 	if pyinstaller_mode:
-		pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
+		pylast.SSL_CONTEXT.load_verify_locations(str(Path(install_directory) / "certifi" / "cacert.pem"))
 except Exception:
 	logging.exception("PyLast module not found, last fm will be disabled.")
 	last_fm_enable = False
