@@ -12771,9 +12771,8 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset):
-
-		# Renders cached image only by given size for faster performance
+	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset) -> int:
+		"""Renders cached image only by given size for faster performance"""
 
 		found_unit = None
 		max_h = 0
@@ -12828,7 +12827,7 @@ class AlbumArt:
 
 		return 0
 
-	def open_external(self, track_object: TrackClass):
+	def open_external(self, track_object: TrackClass) -> int:
 
 		index = track_object.index
 
