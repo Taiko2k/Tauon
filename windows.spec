@@ -22,6 +22,7 @@ a = Analysis(
 	pathex=[],
 	binaries=[
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libFLAC.dll"),         "."),
+		(str(Path(msys64_path) / "mingw64" / "bin" / "libgme.dll"),          "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libmpg123-0.dll"),     "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libogg-0.dll"),        "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libopenmpt-0.dll"),    "."),
@@ -33,7 +34,6 @@ a = Analysis(
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libwavpack-1.dll"),    "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL2.dll"),            "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL2_image.dll"),      "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libgme.dll"),          "."),
 	],
 	datas=[
 		("src/tauon/assets", "assets"),
