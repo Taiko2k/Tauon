@@ -87,6 +87,7 @@ compile_phazor() {
 }
 
 compile_phazor_pipewire() {
+	compile_phazor
 	outFile="build/libphazor-pw.so"
 	mkdir -p build
 	gcc \
