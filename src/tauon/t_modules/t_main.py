@@ -9958,40 +9958,40 @@ def koel_get_album_thread() -> None:
 
 
 if system == "Windows" or msys:
-	from infi.systray import SysTrayIcon
+	from lynxtray import SysTrayIcon
 
 
 class STray:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.active = False
 
-	def up(self, systray):
+	def up(self, systray: SysTrayIcon):
 		SDL_ShowWindow(t_window)
 		SDL_RaiseWindow(t_window)
 		SDL_RestoreWindow(t_window)
 		gui.lowered = False
 
-	def down(self):
+	def down(self) -> None:
 		if self.active:
 			SDL_HideWindow(t_window)
 
-	def advance(self, systray):
+	def advance(self, systray: SysTrayIcon) -> None:
 		pctl.advance()
 
-	def back(self, systray):
+	def back(self, systray: SysTrayIcon) -> None:
 		pctl.back()
 
-	def pause(self, systray):
+	def pause(self, systray: SysTrayIcon) -> None:
 		pctl.play_pause()
 
-	def track_stop(self, systray):
+	def track_stop(self, systray: SysTrayIcon) -> None:
 		pctl.stop()
 
-	def on_quit_callback(self, systray):
+	def on_quit_callback(self, systray: SysTrayIcon) -> None:
 		tauon.exit("Exit called from tray.")
 
-	def start(self):
+	def start(self) -> None:
 		menu_options = (("Show", None, self.up),
 						("Play/Pause", None, self.pause),
 						("Stop", None, self.track_stop),
@@ -10004,7 +10004,7 @@ class STray:
 		self.active = True
 		gui.tray_active = True
 
-	def stop(self):
+	def stop(self) -> None:
 		self.systray.shutdown()
 		self.active = False
 
