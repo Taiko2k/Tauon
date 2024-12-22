@@ -44,6 +44,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           export CXXFLAGS="-I/opt/homebrew/include"
+          export LDFLAGS="-L/opt/homebrew/lib"
           pip install \
             -r requirements.txt \
             build
@@ -51,7 +52,6 @@ jobs:
           pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 #            pyinstaller
 #          CFLAGS: "-I/opt/homebrew/include"
-#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: Build the project using python-build
         run: |
