@@ -5359,7 +5359,7 @@ class PlayerCtl:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release tray_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release tray_lock")
 			except Exception:
 				logging.exception("Failed to release tray_lock")
 
@@ -5960,7 +5960,7 @@ class PlayerCtl:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
 				logging.exception("Unknown exception trying to release player_lock")
 
@@ -9010,7 +9010,7 @@ try:
 	from tauon.t_modules.t_chrome import Chrome
 	chrome = Chrome(tauon)
 except ModuleNotFoundError as e:
-	logging.debug("pychromecast import error: {e}")
+	logging.debug(f"pychromecast import error: {e}")
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
@@ -27925,7 +27925,7 @@ def reload_backend() -> None:
 			if str(e) == "release unlocked lock":
 				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 			else:
-				logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+				logging.exception("Unknown RuntimeError trying to release player_lock")
 		except Exception:
 			logging.exception("Unknown error trying to release player_lock")
 
@@ -43784,7 +43784,7 @@ while pctl.running:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
 				logging.exception("Unknown exception trying to release player_lock")
 
@@ -48254,7 +48254,7 @@ except RuntimeError as e:
 	if str(e) == "release unlocked lock":
 		logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 	else:
-		logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+		logging.exception("Unknown RuntimeError trying to release player_lock")
 except Exception:
 	logging.exception("Unknown error trying to release player_lock")
 
