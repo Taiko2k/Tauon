@@ -7,6 +7,7 @@ PlexAPI
 PyGObject
 pylast>=3.1.0
 PySDL2
+pysdl2-dll
 requests
 Send2Trash
 unidecode
