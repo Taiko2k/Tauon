@@ -12,7 +12,7 @@ Send2Trash
 unidecode
 comtypes;                    sys_platform == 'win32'
 dbus-python;                 sys_platform == 'linux'
-jxlpy;                       sys_platform != 'darwin' # macOS hates it - fails to find jxl/types.h - https://github.com/olokelo/jxlpy/issues/25#issuecomment-2547928563
+jxlpy
 keyboard;                    sys_platform == 'win32'
 lynxtray;                    sys_platform == 'win32'
 opencc;                      sys_platform != 'win32' # optional
