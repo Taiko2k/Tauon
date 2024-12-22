@@ -44,7 +44,6 @@ a = Analysis(
 		(".venv/lib/python3.12/site-packages/sdl2dll/dll", "sdl2dll/dll"),
 	],
 	hiddenimports=[
-		"lynxtray",
 		"pylast",
 		"tekore",
 		"phazor",
