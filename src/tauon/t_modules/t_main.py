@@ -590,7 +590,6 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 
 # If we're installed, use home data locations
 if (install_mode and system == "Linux") or macos or msys:
-
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
 	user_directory   = str(Path(GLib.get_user_data_dir()) / "TauonMusicBox")
 	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
@@ -625,7 +624,6 @@ if (install_mode and system == "Linux") or macos or msys:
 #	 install_mode = True
 #	 if not os.path.isdir(user_directory):
 #		 os.makedirs(user_directory)
-
 
 else:
 	logging.info("Running in portable mode")
@@ -9015,7 +9013,7 @@ except ModuleNotFoundError as e:
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 finally:
-	logging.debug("Found import Chrome(pychromecast) for chromecast support")
+	logging.debug("Found Chrome(pychromecast) for chromecast support")
 
 tauon.chrome = chrome
 
