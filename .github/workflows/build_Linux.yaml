@@ -24,6 +24,7 @@ jobs:
           sudo apt-get install -y \
             gettext \
             gobject-introspection \
+            gir1.2-rsvg-2.0 \
             libgirepository1.0-dev \
             python3-gi-cairo \
             libcairo2-dev \
