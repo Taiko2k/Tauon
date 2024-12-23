@@ -5,6 +5,8 @@ a = Analysis(
 	pathex=[],
 	binaries=[],
 	datas=[
+		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcolorreload-gtk-module.so", ".")
+		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libwindow-decorations-gtk-module.so", ".")
 		("src/tauon/assets", "assets"),
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
