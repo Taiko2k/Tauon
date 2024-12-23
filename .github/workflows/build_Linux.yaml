@@ -27,6 +27,7 @@ jobs:
             gir1.2-rsvg-2.0 \
             libgirepository1.0-dev \
             python3-gi-cairo \
+            libayatana-appindicator3-dev \
             libcairo2-dev \
             libpipewire-0.3-dev \
             libdbus-1-dev \
