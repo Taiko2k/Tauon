@@ -3137,6 +3137,9 @@ for t in range(2):
 
 		db_version = save[17]
 		if db_version != latest_db_version:
+			if db_version > latest_db_version:
+				logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!")
+				sys.exit(42)
 			logging.warning(f"Loaded older DB version: {db_version}")
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
