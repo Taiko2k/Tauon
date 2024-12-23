@@ -3138,7 +3138,7 @@ for t in range(2):
 		db_version = save[17]
 		if db_version != latest_db_version:
 			if db_version > latest_db_version:
-				logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!")
+				logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!\nAre you running an out of date Tauon version using Configuration directory from a newer one?")
 				sys.exit(42)
 			logging.warning(f"Loaded older DB version: {db_version}")
 		if save[63] is not None:
