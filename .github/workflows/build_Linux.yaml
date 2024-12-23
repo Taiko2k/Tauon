@@ -38,6 +38,7 @@ jobs:
             libopenmpt-dev \
             libopusfile-dev \
             libsamplerate0-dev \
+            libsdl2-image-dev \
             libvorbis-dev \
             libwavpack-dev
           # JPEG-XL hack since 24.04 is too old
