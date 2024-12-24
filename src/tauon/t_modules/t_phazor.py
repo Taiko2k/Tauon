@@ -120,7 +120,6 @@ def phazor_exists(pctl: PlayerCtl) -> bool:
 	return get_phazor_path(pctl).exists()
 
 def player4(tauon: Tauon) -> None:
-
 	pctl = tauon.pctl
 	gui = tauon.gui
 	prefs = tauon.prefs
@@ -168,9 +167,9 @@ def player4(tauon: Tauon) -> None:
 
 	class LibreSpot:
 		def __init__(self) -> None:
-
 			self.running = False
 			self.flush = False
+
 		def go(self, force: bool = False) -> int:
 			aud.config_set_feed_samplerate(44100)
 			aud.config_set_min_buffer(1000)
@@ -222,9 +221,11 @@ def player4(tauon: Tauon) -> None:
 					return 1
 
 			return 0
+
 		def soft_end(self) -> None:
 			self.running = False
 			pctl.spot_playing = False
+
 		def end(self) -> None:
 			self.running = False
 			pctl.spot_playing = False
@@ -378,7 +379,7 @@ def player4(tauon: Tauon) -> None:
 			self.direc = audio_cache2
 			if prefs.tmp_cache:
 				self.direc = os.path.join(tmp_cache_dir(), "audio-cache")
-			if not os.path.exists(self.direc):
+			if not Path(self.direc).exists():
 				os.makedirs(self.direc)
 			self.list: list[str] = prefs.cache_list
 			self.files = os.listdir(self.direc)
@@ -395,9 +396,9 @@ def player4(tauon: Tauon) -> None:
 		def get_file_cached_only(self, track: TrackClass) -> str | None:
 			key = self.get_key(track)
 			if key in self.files:
-				path = os.path.join(self.direc, key)
-				if os.path.isfile(path):
-					return path
+				path = Path(self.direc) / key
+				if path.is_file():
+					return str(path)
 			return None
 
 		def get_file(self, track: TrackClass) -> tuple[int, str | None]:
