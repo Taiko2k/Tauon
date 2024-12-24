@@ -49,6 +49,7 @@ import re
 import secrets
 import shlex
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -8997,6 +8998,12 @@ class Tauon:
 
 
 tauon = Tauon()
+
+def signal_handler(signum, frame):
+    signal.signal(signum, signal.SIG_IGN) # ignore additional signals
+    tauon.exit(reason="SIGINT recieved")
+
+signal.signal(signal.SIGINT, signal_handler)
 
 deco = Deco(tauon)
 deco.get_themes = get_themes
