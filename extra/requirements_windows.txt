@@ -1,19 +1,16 @@
 beautifulsoup4
-comtypes # Windows dep
-infi.systray
-keyboard # Windows dep
+comtypes
+lynxtray
+keyboard
 musicbrainzngs
 mutagen
-natsort # optdep
-opencc-python-reimplemented # Windows version of openCC optdep
 Pillow
 PlexAPI
 PyGObject
 pyinstaller
 pylast>=3.1.0
-pypresence # optdep
 PySDL2
+pysdl2-dll
 requests
 Send2Trash
-tekore # optdep
 unidecode

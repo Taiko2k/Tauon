@@ -1,5 +1,5 @@
 colored_traceback
-jxlpy;                       sys_platform != 'darwin' # macOS hates it - fails to find jxl/types.h - https://github.com/olokelo/jxlpy/issues/25#issuecomment-2547928563
+jxlpy
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
 natsort
 opencc;                      sys_platform != 'win32'

@@ -156,9 +156,9 @@ if "--no-start" in sys.argv:
 pyinstaller_mode = False
 if hasattr(sys, "_MEIPASS"):
 	pyinstaller_mode = True
-if str(install_directory).endswith("\\_internal"):
+if install_directory.name.endswith("_internal"):
 	pyinstaller_mode = True
-	install_directory = install_directory.parent
+#	install_directory = install_directory.parent
 
 if pyinstaller_mode:
 	os.environ["PATH"] += ":" + sys._MEIPASS

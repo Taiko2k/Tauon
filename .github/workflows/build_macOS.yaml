@@ -43,16 +43,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m venv .venv
           source .venv/bin/activate
+          export CXXFLAGS="-I/opt/homebrew/include"
+          export LDFLAGS="-L/opt/homebrew/lib"
           pip install \
             -r requirements.txt \
             build
           # Hack until pyinstaller has a release newer than 6.11.1 - https://github.com/pyinstaller/pyinstaller/releases
           pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-#            \
 #            pyinstaller
-#          pip uninstall pyinstaller
 #          CFLAGS: "-I/opt/homebrew/include"
-#          LDFLAGS: "-L/opt/homebrew/lib"
 
       - name: Build the project using python-build
         run: |

@@ -6,42 +6,13 @@ win_build() {
 	rm -rf dist/tauon
 	# Had to do Windows Security -> Virus & thread protection*2 -> Manage settings -> Windows Real-time protection: off
 
-	# TODO(Martin): pkg_resources is deprecated, does it still need to be there?
-	# https://setuptools.pypa.io/en/latest/pkg_resources.html
-	pyinstaller \
-		--name TauonMusicBox \
-		--noconfirm \
-		--additional-hooks-dir='extra\pyinstaller-hooks' \
-		--hidden-import 'infi.systray' \
-		--hidden-import 'pylast' \
-		--hidden-import 'tekore' \
-		--hidden-import 'phazor' \
-		--add-binary 'C:\msys64\mingw64\bin\libFLAC.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libmpg123-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libogg-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libopenmpt-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libopus-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libopusfile-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libsamplerate-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libvorbis-0.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libvorbisfile-3.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libwavpack-1.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\SDL2.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\SDL2_image.dll;.' \
-		--add-binary 'C:\msys64\mingw64\bin\libgme.dll;.' \
-		--hidden-import 'pip' \
-		--hidden-import 'packaging.requirements' \
-		--hidden-import 'pkg_resources.py2_warn' \
-		--hidden-import 'requests' \
-		src/tauon/__main__.py \
-		-w -i src/tauon/assets/icon.ico
+	pyinstaller --log-level=DEBUG windows.spec
 
 	mkdir -p dist/TauonMusicBox/tekore
 	mkdir -p dist/TauonMusicBox/etc
 
 	#cp C:/msys64/mingw64/lib/python3.13/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
 
-	cp -r src/tauon/{theme,assets,locale,templates} dist/TauonMusicBox/
 	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
 	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
 	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc
@@ -116,6 +87,7 @@ compile_phazor() {
 }
 
 compile_phazor_pipewire() {
+	compile_phazor
 	outFile="build/libphazor-pw.so"
 	mkdir -p build
 	gcc \
