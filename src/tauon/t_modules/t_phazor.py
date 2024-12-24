@@ -269,6 +269,16 @@ def player4(tauon: Tauon) -> None:
 		def close(self) -> None:
 			if self.decoder:
 				self.decoder.terminate()
+				if self.decoder.stdin:
+					logging.debug("Closing STDIN in FFrun")
+					self.decoder.stdin.close()
+				if self.decoder.stdout:
+					logging.debug("Closing STDOUT in FFrun")
+					self.decoder.stdout.close()
+				if self.decoder.stderr:
+					logging.debug("Closing STDERR in FFrun")
+					self.decoder.stderr.close()
+				self.decoder.wait()  # Ensure the process fully terminates
 			self.decoder = None
 
 		def start(self, uri: bytes, start_ms: int, samplerate: int) -> int:

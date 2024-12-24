@@ -1,30 +1,31 @@
 beautifulsoup4
 musicbrainzngs
 mutagen
+Pillow
 PlexAPI
 PyGObject
 pylast>=3.1.0
 PySDL2
+pysdl2-dll # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#requirements
 requests
 Send2Trash
 unidecode
-dbus-python;                 sys_platform == 'linux'
-pysdl2-dll # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#requirements
 comtypes;                    sys_platform == 'win32'
-infi.systray;                sys_platform == 'win32'
+dbus-python;                 sys_platform == 'linux'
+jxlpy
 keyboard;                    sys_platform == 'win32'
-Pillow
-opencc;                      sys_platform != 'win32' # OPTDEP
-opencc-python-reimplemented; sys_platform == 'win32' # OPTDEP
-#pyinstaller # ;                 sys_platform != 'linux' # for macOS at least
-pypresence # optdep
-tekore # optdep,
-natsort # optdep
-jxlpy;                       sys_platform != 'darwin' # macOS hates it - fails to find jxl/types.h - https://github.com/olokelo/jxlpy/issues/25#issuecomment-2547928563
+lynxtray;                    sys_platform == 'win32'
+opencc;                      sys_platform != 'win32' # optional
+opencc-python-reimplemented; sys_platform == 'win32' # optional
+pypresence # optional
+tekore # optional
+natsort # optional
+PyChromecast # optional
+setproctitle # optional
+tidalapi # optional
+colored_traceback # very optional
+#pyinstaller
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
-#picard - picard 2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
-PyChromecast # OPTDEP
-setproctitle # OPTDEP
-tidalapi # OPTDEP
-colored_traceback # very opt
-zeroconf # pychromecast dependency, TODO(Martin): This is a test, remove me
+#picard - Waiting for release newer than 2.12.3 which has a fix for this: picard
+#  2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
+#  https://github.com/metabrainz/picard/releases

@@ -480,7 +480,7 @@ try:
 	import pylast
 	last_fm_enable = True
 	if pyinstaller_mode:
-		pylast.SSL_CONTEXT.load_verify_locations(os.path.join(install_directory, "certifi", "cacert.pem"))
+		pylast.SSL_CONTEXT.load_verify_locations(str(Path(install_directory) / "certifi" / "cacert.pem"))
 except Exception:
 	logging.exception("PyLast module not found, last fm will be disabled.")
 	last_fm_enable = False
@@ -590,7 +590,6 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 
 # If we're installed, use home data locations
 if (install_mode and system == "Linux") or macos or msys:
-
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
 	user_directory   = str(Path(GLib.get_user_data_dir()) / "TauonMusicBox")
 	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
@@ -625,7 +624,6 @@ if (install_mode and system == "Linux") or macos or msys:
 #	 install_mode = True
 #	 if not os.path.isdir(user_directory):
 #		 os.makedirs(user_directory)
-
 
 else:
 	logging.info("Running in portable mode")
@@ -3139,6 +3137,9 @@ for t in range(2):
 
 		db_version = save[17]
 		if db_version != latest_db_version:
+			if db_version > latest_db_version:
+				logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!\nAre you running an out of date Tauon version using Configuration directory from a newer one?")
+				sys.exit(42)
 			logging.warning(f"Loaded older DB version: {db_version}")
 		if save[63] is not None:
 			prefs.ui_scale = save[63]
@@ -5359,7 +5360,7 @@ class PlayerCtl:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release tray_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release tray_lock")
 			except Exception:
 				logging.exception("Failed to release tray_lock")
 
@@ -5960,7 +5961,7 @@ class PlayerCtl:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
 				logging.exception("Unknown exception trying to release player_lock")
 
@@ -9010,12 +9011,12 @@ try:
 	from tauon.t_modules.t_chrome import Chrome
 	chrome = Chrome(tauon)
 except ModuleNotFoundError as e:
-	logging.debug("pychromecast import error: {e}")
+	logging.debug(f"pychromecast import error: {e}")
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 finally:
-	logging.debug("Found import Chrome(pychromecast) for chromecast support")
+	logging.debug("Found Chrome(pychromecast) for chromecast support")
 
 tauon.chrome = chrome
 
@@ -9960,40 +9961,40 @@ def koel_get_album_thread() -> None:
 
 
 if system == "Windows" or msys:
-	from infi.systray import SysTrayIcon
+	from lynxtray import SysTrayIcon
 
 
 class STray:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.active = False
 
-	def up(self, systray):
+	def up(self, systray: SysTrayIcon):
 		SDL_ShowWindow(t_window)
 		SDL_RaiseWindow(t_window)
 		SDL_RestoreWindow(t_window)
 		gui.lowered = False
 
-	def down(self):
+	def down(self) -> None:
 		if self.active:
 			SDL_HideWindow(t_window)
 
-	def advance(self, systray):
+	def advance(self, systray: SysTrayIcon) -> None:
 		pctl.advance()
 
-	def back(self, systray):
+	def back(self, systray: SysTrayIcon) -> None:
 		pctl.back()
 
-	def pause(self, systray):
+	def pause(self, systray: SysTrayIcon) -> None:
 		pctl.play_pause()
 
-	def track_stop(self, systray):
+	def track_stop(self, systray: SysTrayIcon) -> None:
 		pctl.stop()
 
-	def on_quit_callback(self, systray):
+	def on_quit_callback(self, systray: SysTrayIcon) -> None:
 		tauon.exit("Exit called from tray.")
 
-	def start(self):
+	def start(self) -> None:
 		menu_options = (("Show", None, self.up),
 						("Play/Pause", None, self.pause),
 						("Stop", None, self.track_stop),
@@ -10006,7 +10007,7 @@ class STray:
 		self.active = True
 		gui.tray_active = True
 
-	def stop(self):
+	def stop(self) -> None:
 		self.systray.shutdown()
 		self.active = False
 
@@ -12773,9 +12774,8 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset):
-
-		# Renders cached image only by given size for faster performance
+	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset) -> int:
+		"""Renders cached image only by given size for faster performance"""
 
 		found_unit = None
 		max_h = 0
@@ -12830,7 +12830,7 @@ class AlbumArt:
 
 		return 0
 
-	def open_external(self, track_object: TrackClass):
+	def open_external(self, track_object: TrackClass) -> int:
 
 		index = track_object.index
 
@@ -27925,7 +27925,7 @@ def reload_backend() -> None:
 			if str(e) == "release unlocked lock":
 				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 			else:
-				logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+				logging.exception("Unknown RuntimeError trying to release player_lock")
 		except Exception:
 			logging.exception("Unknown error trying to release player_lock")
 
@@ -43784,7 +43784,7 @@ while pctl.running:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 				else:
-					logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
 				logging.exception("Unknown exception trying to release player_lock")
 
@@ -48254,7 +48254,7 @@ except RuntimeError as e:
 	if str(e) == "release unlocked lock":
 		logging.error("RuntimeError: Attempted to release already unlocked player_lock")
 	else:
-		logging.exception("Unknown RuntimeError trying to release player_lock: {e}")
+		logging.exception("Unknown RuntimeError trying to release player_lock")
 except Exception:
 	logging.exception("Unknown error trying to release player_lock")
 

@@ -1,0 +1,104 @@
+name: Build Windows (MINGW64) app
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # TODO(Martin): This is duped from the file in extra, install from said file somehow instead
+      - name: Set up MSYS2 MinGW-W64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            base-devel
+            ca-certificates
+            cmake
+            ninja
+            zip
+            mingw-w64-x86_64-flac
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gobject-introspection
+            mingw-w64-x86_64-gtk3
+            mingw-w64-x86_64-libgme
+            mingw-w64-x86_64-libopenmpt
+            mingw-w64-x86_64-libsamplerate
+            mingw-w64-x86_64-opusfile
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-python3
+            mingw-w64-x86_64-python3-gobject
+            mingw-w64-x86_64-python3-pillow
+            mingw-w64-x86_64-python3-pip
+            mingw-w64-x86_64-python-websocket-client
+            mingw-w64-x86_64-python-zeroconf
+            mingw-w64-x86_64-rust
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-SDL2_image
+            mingw-w64-x86_64-wavpack
+            mingw-w64-x86_64-zlib
+
+      - name: Update CA trust and hack opusfile
+        shell: msys2 {0}
+        run: |
+          update-ca-trust
+          # https://github.com/xiph/opusfile/pull/47
+          sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /mingw64/include/opus/opusfile.h
+
+      - name: Install Python dependencies and setup venv
+        shell: msys2 {0}
+        run: |
+          python -m pip install --upgrade pip
+          python -m venv .venv
+          source .venv/bin/activate
+          export CFLAGS="-I/mingw64/include"
+          pip install \
+            -r requirements.txt \
+            build \
+            pyinstaller
+
+      - name: Build the project using python-build
+        shell: msys2 {0}
+        run: |
+          source .venv/bin/activate
+          python -m compile_translations
+          python -m build --wheel
+
+      - name: Install the project into a venv
+        shell: msys2 {0}
+        run: |
+          source .venv/bin/activate
+          pip install --prefix ".venv" dist/*.whl
+
+      - name: "[DEBUG] List all files"
+        shell: msys2 {0}
+        run: find .
+
+      - name: Build Windows App with PyInstaller
+        shell: msys2 {0}
+        run: |
+          source .venv/bin/activate
+          pyinstaller --log-level=DEBUG windows.spec
+
+      - name: Create ZIP
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist/zip
+          APP_NAME="TauonMusicBox"
+          APP_PATH="dist/${APP_NAME}"
+          ZIP_PATH="dist/zip/${APP_NAME}.zip"
+
+          zip -r "${ZIP_PATH}" "${APP_PATH}"
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauonMusicBox-windows
+          path: dist/zip/TauonMusicBox.zip
