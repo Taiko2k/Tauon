@@ -15289,8 +15289,7 @@ class ExportPlaylistBox:
 			if key not in ids:
 				del prefs.playlist_exports[key]
 
-	def render(self):
-
+	def render(self) -> None:
 		if not self.active:
 			return
 
@@ -15352,7 +15351,7 @@ class ExportPlaylistBox:
 		if draw.button(_("Export"), x, y, press=gui.level_2_click):
 			self.run_export(current, self.id, warnings=True)
 
-	def run_export(self, current, id, warnings=True):
+	def run_export(self, current, id, warnings=True) -> None:
 		logging.info("Export playlist")
 		path = current["path"]
 		if not os.path.isdir(path):
@@ -15372,7 +15371,7 @@ class ExportPlaylistBox:
 export_playlist_box = ExportPlaylistBox()
 
 
-def toggle_repeat():
+def toggle_repeat() -> None:
 	gui.update += 1
 	pctl.repeat_mode ^= True
 	if pctl.mpris is not None:
@@ -15382,21 +15381,21 @@ def toggle_repeat():
 tauon.toggle_repeat = toggle_repeat
 
 
-def menu_repeat_off():
+def menu_repeat_off() -> None:
 	pctl.repeat_mode = False
 	pctl.album_repeat_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
 
 
-def menu_set_repeat():
+def menu_set_repeat() -> None:
 	pctl.repeat_mode = True
 	pctl.album_repeat_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
 
 
-def menu_album_repeat():
+def menu_album_repeat() -> None:
 	pctl.repeat_mode = True
 	pctl.album_repeat_mode = True
 	if pctl.mpris is not None:
@@ -24151,11 +24150,12 @@ def get_album_art_url(tr: TrackClass):
 	return None
 
 
-def discord_loop():
+def discord_loop() -> None:
 	prefs.discord_active = True
 
 	try:
-		if not pctl.playing_ready(): return
+		if not pctl.playing_ready():
+			return
 		asyncio.set_event_loop(asyncio.new_event_loop())
 
 		# logging.info("Attempting to connect to Discord...")
