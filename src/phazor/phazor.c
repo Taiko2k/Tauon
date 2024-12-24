@@ -2427,7 +2427,6 @@ void *main_loop(void *thread_id) {
 //		}
 
 		// Detect when device was unplugged or became unavailable
-		printf("command is %d, mode is %d, gate is %d\n", device_stopped, called_to_stop_device, signaled_device_unavailable);
 		if (device_stopped && !called_to_stop_device && !signaled_device_unavailable) {
 			printf("Device was unplugged/became unavailable.\n");
 			on_device_unavailable();
