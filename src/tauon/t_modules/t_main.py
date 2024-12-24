@@ -262,7 +262,7 @@ builtins._ = lambda x: x
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
 from tauon.t_modules.t_db_migrate import database_migrate
-#from tauon.t_modules.t_dbus import MPRIS
+from tauon.t_modules.t_dbus import Gnome
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw
 from tauon.t_modules.t_extra import (
 	ColourGenCache,
@@ -338,8 +338,6 @@ from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webs
 #from tauon.t_modules.guitar_chords import GuitarChords
 
 if TYPE_CHECKING:
-	# TODO(Martin): These two classes are within player4(), rip them out and put them as a top level?
-	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
@@ -5244,9 +5242,8 @@ class PlayerCtl:
 		self.gst_devices = []  # Display names
 		self.gst_outputs = {}  # Display name : (sink, device)
 
-#		The way the class is defined in t_dbus makes it tricky to import
-#		self.mpris: MPRIS | None = None
-		self.mpris = None
+#		TODO(Martin) : Fix this by moving the class to root of the module
+		self.mpris: Gnome.main.MPRIS | None = None
 		self.tray_update = None
 		self.eq = [0] * 2  # not used
 		self.enable_eq = True  # not used
@@ -8812,7 +8809,8 @@ class Tauon:
 		self.desktop = desktop
 		self.device = socket.gethostname()
 
-		self.cachement: Cachement | None = None
+#		TODO(Martin) : Fix this by moving the class to root of the module
+		self.cachement: player4.Cachement | None = None
 		self.dummy_event = SDL_Event()
 		self.translate = _
 		self.strings = strings
@@ -8872,7 +8870,8 @@ class Tauon:
 		self.remote_limited = True
 		self.enable_librespot = shutil.which("librespot")
 
-		self.spotc: LibreSpot | None = None
+#		TODO(Martin) : Fix this by moving the class to root of the module
+		self.spotc: player4.LibreSpot | None = None
 		self.librespot_p = None
 		self.MenuItem = MenuItem
 		self.tag_scan = tag_scan
