@@ -1244,7 +1244,7 @@ def player4(tauon: Tauon) -> None:
 									break
 								if pctl.buffering_percent - per > 5:
 									break
-							if status == 0 or status == 2:
+							if status in (0, 2):
 								break
 							if timer.get() > 0.25 and gui.buffering is False:
 								gui.buffering_text = ""
