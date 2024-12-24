@@ -269,7 +269,7 @@ float re_in[BUFF_SIZE * 2];
 float re_out[BUFF_SIZE * 2];
 
 int fade_fill = 0;
-int fade_lockout = 0;
+bool fade_lockout = false;
 float fade_mini = 0.0;
 int fade_position = 0;
 int fade_2_flag = 0;
@@ -421,7 +421,7 @@ void fade_fx() {
 			fade_fill = 0;
 			fade_position = 0;
 		} else {
-			fade_lockout = 1;
+			fade_lockout = true;
 			float cross = fade_position / (float) fade_fill;
 			float cross_i = 1.0 - cross;
 
@@ -673,7 +673,7 @@ int wave_open(char *filename) {
 int wave_decode(int read_frames) {
 
 	int frames_read = 0;
-	int end = 0;
+	bool end = false;
 	int i = 0;
 	while (i < read_frames) {
 
@@ -689,7 +689,7 @@ int wave_decode(int read_frames) {
 		frames_read++;
 		if ((ftell(wave_file) - wave_start) > wave_size) {
 			printf("pa: End of WAVE file data\n");
-			end = 1;
+			end = true;
 			break;
 		}
 
@@ -714,7 +714,7 @@ int wave_decode(int read_frames) {
 		}
 		buff_cycle();
 	}
-	if (end == 1) return 1;
+	if (end) return 1;
 	return 0;
 
 }
@@ -1022,7 +1022,7 @@ FLAC__StreamDecoderInitStatus status;
 
 // -----------------------------------------------------------------------------------
 
-int pulse_connected = 0;
+bool pulse_connected = false;
 
 void stop_decoder() {
 
@@ -1087,7 +1087,7 @@ int get_audio(int max, float* buff) {
 //		}
 
 		// Put fade buffer back
-		if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && fade_lockout == 0) {
+		if (mode == PLAYING && fade_fill > 0 && get_buff_fill() < max && !fade_lockout) {
 			//pthread_mutex_lock(&buffer_mutex);
 			int i = 0;
 			while (fade_position < fade_fill) {
@@ -1418,7 +1418,7 @@ void decode_seek(int abs_ms, int sample_rate) {
 int disconnect_pulse() {
 	//printf("ph: Disconnect Device\n");
 
-	if (pulse_connected == 1) {
+	if (pulse_connected) {
 		#ifdef MINI
 			ma_device_uninit(&device);
 		#endif
@@ -1428,7 +1428,7 @@ int disconnect_pulse() {
 		#endif
 
 	}
-	pulse_connected = 0;
+	pulse_connected = false;
 	gate = 0.0;
 	return 0;
 }
@@ -1549,7 +1549,7 @@ int disconnect_pulse() {
 
 void connect_pulse() {
 
-	if (pulse_connected == 1) {
+	if (pulse_connected) {
 		//printf("pa: Reconnect\n");
 		disconnect_pulse();
 	}
@@ -1655,7 +1655,7 @@ void connect_pulse() {
 
 	current_sample_rate = sample_rate_out;
 
-	pulse_connected = 1;
+	pulse_connected = true;
 
 }
 
@@ -1913,7 +1913,7 @@ int load_next() {
 		if (load_target_seek > 0) {
 			// printf("pa: Start at position %d\n", load_target_seek);
 			openmpt_module_set_position_seconds(mod, load_target_seek / 1000.0);
-			reset_set_value =  48000 * (load_target_seek / 1000.0);
+			reset_set_value = 48000 * (load_target_seek / 1000.0);
 			samples_decoded = reset_set_value * 2;
 			reset_set = true;
 			reset_set_byte = high;
@@ -2165,7 +2165,7 @@ void stop_out() {
 }
 
 void start_out() {
-	if (pulse_connected == 0) connect_pulse();
+	if (!pulse_connected) connect_pulse();
 
 	if (!out_thread_running) {
 		called_to_stop_device = false;
@@ -2184,7 +2184,7 @@ void start_out() {
 void pump_decode() {
 	// Here we get data from the decoders to fill the main buffer
 
-	int reconnect = 0;
+	bool reconnect = false;
 	if (config_resample == 0 && sample_rate_out != sample_rate_src) {
 		if (get_buff_fill() > 0) {
 			return;
@@ -2197,7 +2197,7 @@ void pump_decode() {
 			fade_position = 0;
 			reset_set_value = 0;
 			buff_reset();
-			reconnect = 1;
+			reconnect = true;
 		#endif
 
 		#ifdef PIPE
@@ -2361,7 +2361,7 @@ void pump_decode() {
 		}
 	}
 
-	if (reconnect == 1 && sample_rate_src > 0) start_out();
+	if (reconnect && sample_rate_src > 0) start_out();
 }
 
 
@@ -2381,7 +2381,7 @@ void *main_loop(void *thread_id) {
 	int error = 0;
 
 	int load_result = 0;
-	int using_fade = 0;
+	bool using_fade = false;
 
 	// SRC ----------------------------
 
@@ -2477,7 +2477,7 @@ void *main_loop(void *thread_id) {
 				case LOAD:
 
 					// Prepare for a crossfade if enabled and suitable
-					using_fade = 0;
+					using_fade = false;
 					if (config_fade_jump == 1 && mode == PLAYING) {
 						pthread_mutex_lock(&buffer_mutex);
 						if (fade_fill > 0) {
@@ -2503,8 +2503,8 @@ void *main_loop(void *thread_id) {
 							//position_count = 0;
 							fade_fill = l;
 							high = low + reserve;
-							using_fade = 1;
-							fade_lockout = 0;
+							using_fade = true;
+							fade_lockout = false;
 							fade_mini = 0.0;
 
 							reset_set_byte = p;
@@ -2519,7 +2519,7 @@ void *main_loop(void *thread_id) {
 
 					load_result = load_next();
 
-					if (using_fade == 0) {
+					if (!using_fade) {
 						// Jump immediately
 						//printf("ph: Jump\n");
 						position_count = 0;
