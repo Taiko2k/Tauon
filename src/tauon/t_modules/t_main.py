@@ -262,6 +262,7 @@ builtins._ = lambda x: x
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
 from tauon.t_modules.t_db_migrate import database_migrate
+#from tauon.t_modules.t_dbus import MPRIS
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw
 from tauon.t_modules.t_extra import (
 	ColourGenCache,
@@ -5242,6 +5243,8 @@ class PlayerCtl:
 		self.gst_devices = []  # Display names
 		self.gst_outputs = {}  # Display name : (sink, device)
 
+#		The way the class is defined in t_dbus makes it tricky to import
+#		self.mpris: MPRIS | None = None
 		self.mpris = None
 		self.tray_update = None
 		self.eq = [0] * 2  # not used
@@ -5426,7 +5429,7 @@ class PlayerCtl:
 
 	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
-			return tidal.resolve_stream(track_object), None
+			return tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
 			return plex.resolve_stream(track_object.url_key), None
 
@@ -5581,7 +5584,7 @@ class PlayerCtl:
 
 		global shift_selection
 
-		if spot_ctl.coasting:
+		if tauon.spot_ctl.coasting:
 			sptr = tauon.dummy_track.misc.get("spotify-track-url")
 			if sptr:
 
@@ -5724,7 +5727,7 @@ class PlayerCtl:
 
 	def set_volume(self, notify: bool = True) -> None:
 
-		if (spot_ctl.coasting or spot_ctl.playing) and not spot_ctl.local and mouse_down:
+		if (tauon.spot_ctl.coasting or tauon.spot_ctl.playing) and not tauon.spot_ctl.local and mouse_down:
 			# Rate limit network volume change
 			t = self.volume_update_timer.get()
 			if t < 0.3:
@@ -5916,9 +5919,9 @@ class PlayerCtl:
 			self.render_playlist()
 			return
 
-		if spot_ctl.coasting:
-			spot_ctl.control("previous")
-			spot_ctl.update_timer.set()
+		if tauon.spot_ctl.coasting:
+			tauon.spot_ctl.control("previous")
+			tauon.spot_ctl.update_timer.set()
 			self.playing_time = -2
 			self.decode_time = -2
 			return
@@ -6015,9 +6018,9 @@ class PlayerCtl:
 			if tauon.stream_proxy.download_running:
 				sleep_timeout(lambda: tauon.stream_proxy.download_running, 2)
 
-		if spot_ctl.playing or spot_ctl.coasting:
+		if tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
 			logging.info("Spotify stop")
-			spot_ctl.control("stop")
+			tauon.spot_ctl.control("stop")
 
 		self.notify_update()
 		lfm_scrobbler.start_queue()
@@ -6025,7 +6028,7 @@ class PlayerCtl:
 
 	def pause(self) -> None:
 
-		if tauon.spotc and tauon.spotc.running and spot_ctl.playing:
+		if tauon.spotc and tauon.spotc.running and tauon.spot_ctl.playing:
 			if self.playing_state == 1:
 				self.playerCommand = "pauseon"
 				self.playerCommandReady = True
@@ -6034,19 +6037,19 @@ class PlayerCtl:
 				self.playerCommandReady = True
 
 		if self.playing_state == 3:
-			if spot_ctl.coasting:
-				if spot_ctl.paused:
-					spot_ctl.control("resume")
+			if tauon.spot_ctl.coasting:
+				if tauon.spot_ctl.paused:
+					tauon.spot_ctl.control("resume")
 				else:
-					spot_ctl.control("pause")
+					tauon.spot_ctl.control("pause")
 			return
 
-		if spot_ctl.playing:
+		if tauon.spot_ctl.playing:
 			if self.playing_state == 2:
-				spot_ctl.control("resume")
+				tauon.spot_ctl.control("resume")
 				self.playing_state = 1
 			elif self.playing_state == 1:
-				spot_ctl.control("pause")
+				tauon.spot_ctl.control("pause")
 				self.playing_state = 2
 			self.render_playlist()
 			return
@@ -6084,7 +6087,7 @@ class PlayerCtl:
 	def seek_decimal(self, decimal: int) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
 			if decimal > 1:
 				decimal = 1
 			elif decimal < 0:
@@ -6104,7 +6107,7 @@ class PlayerCtl:
 	def seek_time(self, new: float) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
 
 			if new > self.playing_length - 0.5:
 				self.advance()
@@ -6124,7 +6127,7 @@ class PlayerCtl:
 
 	def play(self) -> None:
 
-		if spot_ctl.playing:
+		if tauon.spot_ctl.playing:
 			if self.playing_state == 2:
 				self.play_pause()
 			return
@@ -6159,38 +6162,38 @@ class PlayerCtl:
 		self.render_playlist()
 
 	def spot_test_progress(self) -> None:
-		if self.playing_state in (1, 2) and spot_ctl.playing:
+		if self.playing_state in (1, 2) and tauon.spot_ctl.playing:
 			th = 5  # the rate to poll the spotify API
 			if self.playing_time > self.playing_length:
 				th = 1
-			if not spot_ctl.paused:
-				if spot_ctl.start_timer.get() < 0.5:
-					spot_ctl.progress_timer.set()
+			if not tauon.spot_ctl.paused:
+				if tauon.spot_ctl.start_timer.get() < 0.5:
+					tauon.spot_ctl.progress_timer.set()
 					return
-				add_time = spot_ctl.progress_timer.get()
+				add_time = tauon.spot_ctl.progress_timer.get()
 				if add_time > 5:
 					add_time = 0
 				self.playing_time += add_time
 				self.decode_time = self.playing_time
 				# self.test_progress()
-				spot_ctl.progress_timer.set()
+				tauon.spot_ctl.progress_timer.set()
 				if len(self.track_queue) > 0 and 2 > add_time > 0:
 					star_store.add(self.track_queue[self.queue_step], add_time)
-			if spot_ctl.update_timer.get() > th:
-				spot_ctl.update_timer.set()
-				shooter(spot_ctl.monitor)
+			if tauon.spot_ctl.update_timer.get() > th:
+				tauon.spot_ctl.update_timer.set()
+				shooter(tauon.spot_ctl.monitor)
 			else:
 				self.test_progress()
 
-		elif self.playing_state == 3 and spot_ctl.coasting:
+		elif self.playing_state == 3 and tauon.spot_ctl.coasting:
 			th = 7
 			if self.playing_time > self.playing_length or self.playing_time < 2.5:
 				th = 1
-			if spot_ctl.update_timer.get() < th:
-				if not spot_ctl.paused:
-					self.playing_time += spot_ctl.progress_timer.get()
+			if tauon.spot_ctl.update_timer.get() < th:
+				if not tauon.spot_ctl.paused:
+					self.playing_time += tauon.spot_ctl.progress_timer.get()
 					self.decode_time = self.playing_time
-				spot_ctl.progress_timer.set()
+				tauon.spot_ctl.progress_timer.set()
 
 			else:
 				tauon.spot_ctl.update_timer.set()
@@ -6232,7 +6235,7 @@ class PlayerCtl:
 
 		gap_extra = 2  # 2
 
-		if spot_ctl.playing or tauon.chrome_mode:
+		if tauon.spot_ctl.playing or tauon.chrome_mode:
 			gap_extra = 3
 
 		if msys and taskbar_progress and self.windows_progress:
@@ -6249,13 +6252,13 @@ class PlayerCtl:
 		if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
 			# Allow some time for spotify playing time to update?
-			if spot_ctl.playing and spot_ctl.start_timer.get() < 3:
+			if tauon.spot_ctl.playing and tauon.spot_ctl.start_timer.get() < 3:
 				return
 
 			# Allow some time for backend to provide a length
 			if self.playing_time < 6 and self.playing_length == 0:
 				return
-			if not spot_ctl.playing and self.a_time < 2:
+			if not tauon.spot_ctl.playing and self.a_time < 2:
 				return
 
 			self.decode_time = 0
@@ -6386,7 +6389,7 @@ class PlayerCtl:
 				# self.advance(quiet=True, end=True)
 
 				id = self.advance(quiet=True, end=True, dry=True)
-				if id is not None and not spot_ctl.playing:
+				if id is not None and not tauon.spot_ctl.playing:
 					#logging.info("Commit")
 					self.start_commit(id)
 					return
@@ -6412,9 +6415,9 @@ class PlayerCtl:
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
 		# Spotify remote control mode
-		if not dry and spot_ctl.coasting:
-			spot_ctl.control("next")
-			spot_ctl.update_timer.set()
+		if not dry and tauon.spot_ctl.coasting:
+			tauon.spot_ctl.control("next")
+			tauon.spot_ctl.update_timer.set()
 			self.playing_time = -2
 			self.decode_time = -2
 			return None
@@ -6933,8 +6936,8 @@ class PlayerCtl:
 
 		self.render_playlist()
 
-		if spot_ctl.playing and end_of_playlist:
-			spot_ctl.control("stop")
+		if tauon.spot_ctl.playing and end_of_playlist:
+			tauon.spot_ctl.control("stop")
 
 		self.notify_update()
 		lfm_scrobbler.start_queue()
@@ -8875,13 +8878,14 @@ class Tauon:
 
 		self.gme_formats = GME_Formats
 
-		self.spot_ctl: SpotCtl | None = None
+		self.spot_ctl: SpotCtl = SpotCtl(self)
+		self.tidal: Tidal = Tidal(self)
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
 		self.ssl_context = ssl_context
 
-	def start_remote(self):
+	def start_remote(self) -> None:
 
 		if not self.web_running:
 			self.web_thread = threading.Thread(
@@ -13828,7 +13832,7 @@ class StyleOverlay:
 		if self.stage == 2:
 			track = pctl.playing_object()
 
-			if pctl.playing_state == 3 and not spot_ctl.coasting:
+			if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
 				if self.radio_meta != pctl.tag_meta:
 					self.radio_meta = pctl.tag_meta
 					self.current_track_id = -1
@@ -17615,8 +17619,8 @@ def sort_path_pl(pl: int, custom_list=None):
 
 
 def append_current_playing(index: int):
-	if spot_ctl.coasting:
-		spot_ctl.append_playing(index)
+	if tauon.spot_ctl.coasting:
+		tauon.spot_ctl.append_playing(index)
 		gui.pl_update = 1
 		return
 
@@ -17999,7 +18003,7 @@ def append_deco():
 		line_colour = colours.menu_text_disabled
 
 	text = None
-	if spot_ctl.coasting:
+	if tauon.spot_ctl.coasting:
 		text = _("Add Spotify Album")
 
 	return [line_colour, colours.menu_background, text]
@@ -18112,7 +18116,7 @@ def upload_spotify_playlist(pl: int):
 	if id is None:
 		name = pctl.multi_playlist[pl].title.split(" by ")[0]
 		show_message(_("Created new Spotify playlist"), name, mode="done")
-		id = spot_ctl.create_playlist(name)
+		id = tauon.spot_ctl.create_playlist(name)
 		if id:
 			new = True
 			pctl.gen_codes[p_id] = "spl\"" + id + "\""
@@ -18121,7 +18125,7 @@ def upload_spotify_playlist(pl: int):
 		return
 	if not new:
 		show_message(_("Updated Spotify playlist"), mode="done")
-	spot_ctl.upload_playlist(id, urls)
+	tauon.spot_ctl.upload_playlist(id, urls)
 
 
 def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = None) -> None:
@@ -18193,28 +18197,28 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			pass
 
 		elif cm.startswith("spl\""):
-			playlist.extend(spot_ctl.playlist(quote, return_list=True))
+			playlist.extend(tauon.spot_ctl.playlist(quote, return_list=True))
 
 		elif cm.startswith("tpl\""):
-			playlist.extend(tidal.playlist(quote, return_list=True))
+			playlist.extend(tauon.tidal.playlist(quote, return_list=True))
 
 		elif cm == "tfa":
-			playlist.extend(tidal.fav_albums(return_list=True))
+			playlist.extend(tauon.tidal.fav_albums(return_list=True))
 
 		elif cm == "tft":
-			playlist.extend(tidal.fav_tracks(return_list=True))
+			playlist.extend(tauon.tidal.fav_tracks(return_list=True))
 
 		elif cm.startswith("tar\""):
-			playlist.extend(tidal.artist(quote, return_list=True))
+			playlist.extend(tauon.tidal.artist(quote, return_list=True))
 
 		elif cm.startswith("tmix\""):
-			playlist.extend(tidal.mix(quote, return_list=True))
+			playlist.extend(tauon.tidal.mix(quote, return_list=True))
 
 		elif cm == "sal":
-			playlist.extend(spot_ctl.get_library_albums(return_list=True))
+			playlist.extend(tauon.spot_ctl.get_library_albums(return_list=True))
 
 		elif cm == "slt":
-			playlist.extend(spot_ctl.get_library_likes(return_list=True))
+			playlist.extend(tauon.spot_ctl.get_library_likes(return_list=True))
 
 		elif cm == "plex":
 			if not plex.scanning:
@@ -20399,31 +20403,31 @@ def paste(playlist_no=None, track_id=None):
 		num = clip.split("/")[-1].split("?")[0]
 		if num and num.isnumeric():
 			logging.info(num)
-			tidal.append_album(num)
+			tauon.tidal.append_album(num)
 		clip = False
 
 	elif "tidal.com/playlist/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.playlist(num)
+		tauon.tidal.playlist(num)
 		clip = False
 
 	elif "tidal.com/mix/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.mix(num)
+		tauon.tidal.mix(num)
 		clip = False
 
 	elif "tidal.com/browse/track/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.track(num)
+		tauon.tidal.track(num)
 		clip = False
 
 	elif "tidal.com/browse/artist/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.artist(num)
+		tauon.tidal.artist(num)
 		clip = False
 
 	elif "spotify" in clip:
@@ -20432,13 +20436,13 @@ def paste(playlist_no=None, track_id=None):
 			logging.info(link)
 			link = link.strip()
 			if clip.startswith(("https://open.spotify.com/track/", "spotify:track:")):
-				spot_ctl.append_track(link)
+				tauon.spot_ctl.append_track(link)
 			elif clip.startswith(("https://open.spotify.com/album/", "spotify:album:")):
-				l = spot_ctl.append_album(link, return_list=True)
+				l = tauon.spot_ctl.append_album(link, return_list=True)
 				if l:
 					cargo.extend(l)
 			elif clip.startswith("https://open.spotify.com/playlist/"):
-				spot_ctl.playlist(link)
+				tauon.spot_ctl.playlist(link)
 		if album_mode:
 			reload_albums()
 		gui.pl_update += 1
@@ -20485,22 +20489,22 @@ playlist_menu.add(MenuItem("Paste", paste, paste_deco))
 
 def paste_playlist_coast_fire():
 	url = None
-	if spot_ctl.coasting and pctl.playing_state == 3:
-		url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+	if tauon.spot_ctl.coasting and pctl.playing_state == 3:
+		url = tauon.spot_ctl.get_album_url_from_local(pctl.playing_object())
 	elif pctl.playing_ready() and "spotify-album-url" in pctl.playing_object().misc:
 		url = pctl.playing_object().misc["spotify-album-url"]
 	if url:
-		default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+		default_playlist.extend(tauon.spot_ctl.append_album(url, return_list=True))
 	gui.pl_update += 1
 
 def paste_playlist_track_coast_fire():
 	url = None
-	# if spot_ctl.coasting and pctl.playing_state == 3:
-	#	 url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+	# if tauon.spot_ctl.coasting and pctl.playing_state == 3:
+	#	 url = tauon.spot_ctl.get_album_url_from_local(pctl.playing_object())
 	if pctl.playing_ready() and "spotify-track-url" in pctl.playing_object().misc:
 		url = pctl.playing_object().misc["spotify-track-url"]
 	if url:
-		spot_ctl.append_track(url)
+		tauon.spot_ctl.append_track(url)
 	gui.pl_update += 1
 
 
@@ -20514,7 +20518,7 @@ def paste_playlist_coast_track():
 	shoot_dl.start()
 
 def paste_playlist_coast_album_deco():
-	if spot_ctl.coasting or spot_ctl.playing:
+	if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
 		line_colour = colours.menu_text
 	else:
 		line_colour = colours.menu_text_disabled
@@ -21720,20 +21724,15 @@ gallery_menu.add(MenuItem(_("Transcode Folder"), convert_folder, transcode_deco,
 	show_test=toggle_transcode))
 folder_menu.br()
 
-spot_ctl = SpotCtl(tauon)
-tidal = Tidal(tauon)
-tauon.spot_ctl = spot_ctl
-tauon.tidal = tidal
-
-spot_ctl.cache_saved_albums = spot_cache_saved_albums
+tauon.spot_ctl.cache_saved_albums = spot_cache_saved_albums
 
 # Copy album title text to clipboard
 folder_menu.add(MenuItem(_('Copy "Artist - Album"'), clip_title, pass_ref=True))
 
 
-def get_album_spot_url(track_id):
+def get_album_spot_url(track_id: int):
 	track_object = pctl.get_track(track_id)
-	url = spot_ctl.get_album_url_from_local(track_object)
+	url = tauon.spot_ctl.get_album_url_from_local(track_object)
 	if url:
 		copy_to_clipboard(url)
 		show_message(_("URL copied to clipboard"), mode="done")
@@ -21741,7 +21740,7 @@ def get_album_spot_url(track_id):
 		show_message(_("No results found"))
 
 
-def get_album_spot_url_deco(track_id):
+def get_album_spot_url_deco(track_id: int):
 	track_object = pctl.get_track(track_id)
 	if "spotify-album-url" in track_object.misc:
 		text = _("Copy Spotify Album URL")
@@ -21754,24 +21753,24 @@ folder_menu.add(MenuItem("Lookup Spotify Album URL", get_album_spot_url, get_alb
 	pass_ref_deco=True, show_test=spotify_show_test, icon=spot_icon))
 
 
-def add_to_spotify_library_deco(track_id):
+def add_to_spotify_library_deco(track_id: int):
 	track_object = pctl.get_track(track_id)
 	text = _("Save Album to Spotify")
 	if track_object.file_ext != "SPTY":
 		return (colours.menu_text_disabled, colours.menu_background, text)
 
 	album_url = track_object.misc.get("spotify-album-url")
-	if album_url and album_url in spot_ctl.cache_saved_albums:
+	if album_url and album_url in tauon.spot_ctl.cache_saved_albums:
 		text = _("Un-save Spotify Album")
 
 	return (colours.menu_text, colours.menu_background, text)
 
 
-def add_to_spotify_library2(album_url):
-	if album_url in spot_ctl.cache_saved_albums:
-		spot_ctl.remove_album_from_library(album_url)
+def add_to_spotify_library2(album_url: str) -> None:
+	if album_url in tauon.spot_ctl.cache_saved_albums:
+		tauon.spot_ctl.remove_album_from_library(album_url)
 	else:
-		spot_ctl.add_album_to_library(album_url)
+		tauon.spot_ctl.add_album_to_library(album_url)
 
 	for i, p in enumerate(pctl.multi_playlist):
 		code = pctl.gen_codes.get(p.uuid_int)
@@ -21780,7 +21779,7 @@ def add_to_spotify_library2(album_url):
 			regenerate_playlist(i, silent=True)
 
 
-def add_to_spotify_library(track_id):
+def add_to_spotify_library(track_id: int) -> None:
 	track_object = pctl.get_track(track_id)
 	album_url = track_object.misc.get("spotify-album-url")
 	if track_object.file_ext != "SPTY" or not album_url:
@@ -21976,7 +21975,7 @@ band_icon.colour = [96, 147, 158, 255]
 track_menu.add(MenuItem(_("Search Artist on Bandcamp"), ser_band, pass_ref=True, icon=band_icon, show_test=toggle_band))
 
 
-def clip_ar_tr(index: int):
+def clip_ar_tr(index: int) -> None:
 	line = pctl.master_library[index].artist + " - " + pctl.master_library[index].title
 
 	SDL_SetClipboardText(line.encode("utf-8"))
@@ -21987,7 +21986,7 @@ def clip_ar_tr(index: int):
 # Copy metadata to clipboard
 track_menu.add(MenuItem(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True))
 
-def tidal_copy_album(index: int):
+def tidal_copy_album(index: int) -> None:
 	t = pctl.master_library.get(index)
 	if t and t.file_ext == "TIDAL":
 		id = t.misc.get("tidal_album")
@@ -21995,7 +21994,7 @@ def tidal_copy_album(index: int):
 			url = "https://listen.tidal.com/album/" + str(id)
 			copy_to_clipboard(url)
 
-def is_tidal_track(_):
+def is_tidal_track(_) -> bool:
 	return pctl.master_library[r_menu_index].file_ext == "TIDAL"
 
 
@@ -22036,11 +22035,11 @@ def get_album_spot_active(tr: TrackClass | None = None) -> None:
 		tr = pctl.playing_object()
 	if not tr:
 		return
-	url = spot_ctl.get_album_url_from_local(tr)
+	url = tauon.spot_ctl.get_album_url_from_local(tr)
 	if not url:
 		show_message(_("No results found"))
 		return
-	l = spot_ctl.append_album(url, return_list=True)
+	l = tauon.spot_ctl.append_album(url, return_list=True)
 	if len(l) < 2:
 		show_message(_("Looks like that's the only track in the album"))
 		return
@@ -22067,14 +22066,14 @@ track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), get_track_spot_url, get_t
 # 		tr = pctl.playing_object()
 # 	if not tr:
 # 		return
-# 	url = spot_ctl.get_artist_url_from_local(tr)
+# 	url = tauon.spot_ctl.get_artist_url_from_local(tr)
 # 	if not url:
 # 		show_message(_("No results found"))
 # 		return
 # 	track_url = tr.misc.get("spotify-track-url")
 #
 # 	show_message(_("Fetching..."))
-# 	shooter(spot_ctl.rec_playlist, (url, track_url))
+# 	shooter(tauon.spot_ctl.rec_playlist, (url, track_url))
 #
 # def get_spot_recs_track(index: int):
 # 	get_spot_recs(pctl.get_track(index))
@@ -23058,12 +23057,12 @@ x_menu.add(MenuItem(_("Clean Database!"), clean_db_fast, clean_db_deco, show_tes
 tauon.switch_playlist = switch_playlist
 
 
-def import_spotify_playlist():
+def import_spotify_playlist() -> None:
 	clip = copy_from_clipboard()
 	for line in clip.split("\n"):
 		if line.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 			clip = clip.strip()
-			spot_ctl.playlist(line)
+			tauon.spot_ctl.playlist(line)
 
 	if album_mode:
 		reload_albums()
@@ -23577,9 +23576,9 @@ extra_menu.add(MenuItem("Love", bar_love_notify, love_deco, icon=heart_icon))
 def toggle_spotify_like_active2(tr: TrackClass) -> None:
 	if "spotify-track-url" in tr.misc:
 		if "spotify-liked" in tr.misc:
-			spot_ctl.unlike_track(tr)
+			tauon.spot_ctl.unlike_track(tr)
 		else:
-			spot_ctl.like_track(tr)
+			tauon.spot_ctl.like_track(tr)
 	gui.pl_update += 1
 	for i, p in enumerate(pctl.multi_playlist):
 		code = pctl.gen_codes.get(p.uuid_int)
@@ -23676,7 +23675,7 @@ extra_menu.add(MenuItem(_("Global Search"), activate_search_overlay, hint="Ctrl+
 def get_album_spot_url_active() -> None:
 	tr = pctl.playing_object()
 	if tr:
-		url = spot_ctl.get_album_url_from_local(tr)
+		url = tauon.spot_ctl.get_album_url_from_local(tr)
 
 		if url:
 			copy_to_clipboard(url)
@@ -23706,30 +23705,30 @@ extra_menu.add(MenuItem(_("Locate Artist"), locate_artist))
 extra_menu.add(MenuItem(_("Go To Playing"), goto_playing_extra, hint="'"))
 
 def show_spot_playing_deco():
-	if not (spot_ctl.coasting or spot_ctl.playing):
+	if not (tauon.spot_ctl.coasting or tauon.spot_ctl.playing):
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
 def show_spot_coasting_deco():
-	if spot_ctl.coasting:
+	if tauon.spot_ctl.coasting:
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
 
 def show_spot_playing() -> None:
-	if pctl.playing_state != 0 and pctl.playing_state != 3 and not spot_ctl.coasting and not spot_ctl.playing:
+	if pctl.playing_state != 0 and pctl.playing_state != 3 and not tauon.spot_ctl.coasting and not tauon.spot_ctl.playing:
 		pctl.stop()
-	spot_ctl.update(start=True)
+	tauon.spot_ctl.update(start=True)
 
 
 def spot_transfer_playback_here() -> None:
 	tauon.spot_ctl.preparing_spotify = True
-	if not (spot_ctl.playing or spot_ctl.coasting):
-		spot_ctl.update(start=True)
+	if not (tauon.spot_ctl.playing or tauon.spot_ctl.coasting):
+		tauon.spot_ctl.update(start=True)
 	pctl.playerCommand = "spotcon"
 	pctl.playerCommandReady = True
 	pctl.playing_state = 3
-	shooter(spot_ctl.transfer_to_tauon)
+	shooter(tauon.spot_ctl.transfer_to_tauon)
 
 
 extra_menu.br()
@@ -23737,9 +23736,9 @@ extra_menu.add(MenuItem("Spotify Like Track", toggle_spotify_like_active, toggle
 	show_test=spotify_show_test, icon=spot_heartx_icon))
 
 def spot_import_albums() -> None:
-	if not spot_ctl.spotify_com:
-		spot_ctl.spotify_com = True
-		shoot = threading.Thread(target=spot_ctl.get_library_albums)
+	if not tauon.spot_ctl.spotify_com:
+		tauon.spot_ctl.spotify_com = True
+		shoot = threading.Thread(target=tauon.spot_ctl.get_library_albums)
 		shoot.daemon = True
 		shoot.start()
 	else:
@@ -23750,9 +23749,9 @@ extra_menu.add_sub(_("Import Spotify…"), 140, show_test=spotify_show_test)
 extra_menu.add_to_sub(0, MenuItem(_("Liked Albums"), spot_import_albums, show_test=spotify_show_test, icon=spot_icon))
 
 def spot_import_tracks() -> None:
-	if not spot_ctl.spotify_com:
-		spot_ctl.spotify_com = True
-		shoot = threading.Thread(target=spot_ctl.get_library_likes)
+	if not tauon.spot_ctl.spotify_com:
+		tauon.spot_ctl.spotify_com = True
+		shoot = threading.Thread(target=tauon.spot_ctl.get_library_likes)
 		shoot.daemon = True
 		shoot.start()
 	else:
@@ -23761,9 +23760,9 @@ def spot_import_tracks() -> None:
 extra_menu.add_to_sub(0, MenuItem(_("Liked Tracks"), spot_import_tracks, show_test=spotify_show_test, icon=spot_icon))
 
 def spot_import_playlists() -> None:
-	if not spot_ctl.spotify_com:
+	if not tauon.spot_ctl.spotify_com:
 		show_message(_("Importing Spotify playlists..."))
-		shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
+		shoot_dl = threading.Thread(target=tauon.spot_ctl.import_all_playlists)
 		shoot_dl.daemon = True
 		shoot_dl.start()
 	else:
@@ -23773,12 +23772,12 @@ def spot_import_playlists() -> None:
 #extra_menu.add_to_sub(_("Import All Playlists"), 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_playlist_menu() -> None:
-	if not spot_ctl.spotify_com:
-		playlists = spot_ctl.get_playlist_list()
+	if not tauon.spot_ctl.spotify_com:
+		playlists = tauon.spot_ctl.get_playlist_list()
 		spotify_playlist_menu.items.clear()
 		if playlists:
 			for item in playlists:
-				spotify_playlist_menu.add(MenuItem(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1]))
+				spotify_playlist_menu.add(MenuItem(item[0], tauon.spot_ctl.playlist, pass_ref=True, set_ref=item[1]))
 
 			spotify_playlist_menu.add(MenuItem(_("> Import All Playlists"), spot_import_playlists))
 			spotify_playlist_menu.activate(position=(extra_menu.pos[0], window_size[1] - gui.panelBY))
@@ -23789,7 +23788,7 @@ extra_menu.add_to_sub(0, MenuItem(_("Playlist…"), spot_import_playlist_menu, s
 
 
 def spot_import_context() -> None:
-	shooter(spot_ctl.import_context)
+	shooter(tauon.spot_ctl.import_context)
 
 extra_menu.add_to_sub(0, MenuItem(_("Current Context"), spot_import_context, show_spot_coasting_deco, show_test=spotify_show_test, icon=spot_icon))
 
@@ -23814,12 +23813,12 @@ def get_artist_spot(tr: TrackClass = None) -> None:
 		tr = pctl.playing_object()
 	if not tr:
 		return
-	url = spot_ctl.get_artist_url_from_local(tr)
+	url = tauon.spot_ctl.get_artist_url_from_local(tr)
 	if not url:
 		show_message(_("No results found"))
 		return
 	show_message(_("Fetching..."))
-	shooter(spot_ctl.artist_playlist, (url,))
+	shooter(tauon.spot_ctl.artist_playlist, (url,))
 
 extra_menu.add(MenuItem(_("Show Full Artist"), get_artist_spot,
 	show_test=spotify_show_test, icon=spot_icon))
@@ -23838,7 +23837,7 @@ extra_menu.add(MenuItem(_("Start Spotify Remote"), show_spot_playing, show_spot_
 #     return [colours.menu_text, colours.menu_background, text]
 
 
-extra_menu.add(MenuItem("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (spot_ctl.coasting or spot_ctl.playing),
+extra_menu.add(MenuItem("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (tauon.spot_ctl.coasting or tauon.spot_ctl.playing),
 	icon=spot_icon))
 
 def toggle_auto_theme(mode: int = 0) -> None:
@@ -24308,6 +24307,9 @@ def discord_loop() -> None:
 		prefs.disconnect_discord = False
 
 	finally:
+		loop = asyncio.get_event_loop()
+		if not loop.is_closed():
+			loop.close()
 		prefs.discord_active = False
 
 
@@ -25437,7 +25439,7 @@ class SearchOverlay:
 						case 8:
 							default_playlist.extend(pctl.multi_playlist[pl].playlist_ids)
 						case 12:
-							spot_ctl.append_track(item[2])
+							tauon.spot_ctl.append_track(item[2])
 							reload_albums()
 
 					gui.pl_update += 1
@@ -25458,7 +25460,7 @@ class SearchOverlay:
 							self.click_artist(item[1])
 						case 10:
 							show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
-							shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
+							shoot = threading.Thread(target=tauon.spot_ctl.artist_playlist, args=([item[2]]))
 							shoot.daemon = True
 							shoot.start()
 						case 1 | 2:
@@ -25478,10 +25480,10 @@ class SearchOverlay:
 							if pl:
 								switch_playlist(pl)
 						case 11:
-							spot_ctl.album_playlist(item[2])
+							tauon.spot_ctl.album_playlist(item[2])
 							reload_albums()
 						case 12:
-							spot_ctl.append_track(item[2])
+							tauon.spot_ctl.append_track(item[2])
 							reload_albums()
 
 				if n in (2,) and keymaps.test("add-to-queue") and fade == 1:
@@ -25720,7 +25722,7 @@ def worker2():
 					spot_search_rate_timer.set()
 				logging.info("Spotify search")
 				search_over.results.clear()
-				results = spot_ctl.search(search_over.search_text.text)
+				results = tauon.spot_ctl.search(search_over.search_text.text)
 				if results is not None:
 					search_over.results = results
 				else:
@@ -29063,16 +29065,16 @@ class Over:
 
 			y += round(30 * gui.scale)
 
-			if os.path.isfile(tidal.save_path):
+			if os.path.isfile(tauon.tidal.save_path):
 				if self.button2(x, y, _("Logout"), width=84 * gui.scale):
-					tidal.logout()
-			elif tidal.login_stage == 0:
+					tauon.tidal.logout()
+			elif tauon.tidal.login_stage == 0:
 				if self.button2(x, y, _("Login"), width=84 * gui.scale):
 					# webThread = threading.Thread(target=authserve, args=[tauon])
 					# webThread.daemon = True
 					# webThread.start()
 					# time.sleep(0.1)
-					tidal.login1()
+					tauon.tidal.login1()
 			else:
 				ddt.text(
 					(x + 0 * gui.scale, y), _("Copy the full URL of the resulting 'oops' page"), colours.box_text_label, 11)
@@ -29080,20 +29082,20 @@ class Over:
 				if self.button2(x, y, _("Paste Redirect URL"), width=84 * gui.scale):
 					text = copy_from_clipboard()
 					if text:
-						tidal.login2(text)
+						tauon.tidal.login2(text)
 
-			if os.path.isfile(tidal.save_path):
+			if os.path.isfile(tauon.tidal.save_path):
 				y += round(30 * gui.scale)
 				ddt.text((x + 0 * gui.scale, y), _("Paste TIDAL URL's into Tauon using ctrl+v"), colours.box_text_label, 11)
 				y += round(30 * gui.scale)
 				if self.button(x, y, _("Import Albums")):
 					show_message(_("Fetching playlist..."))
-					shooter(tidal.fav_albums)
+					shooter(tauon.tidal.fav_albums)
 
 				y += round(30 * gui.scale)
 				if self.button(x, y, _("Import Tracks")):
 					show_message(_("Fetching playlist..."))
-					shooter(tidal.fav_tracks)
+					shooter(tauon.tidal.fav_tracks)
 
 		if self.account_view == 11:
 			ddt.text((x, y), "Tauon Satellite", colours.box_sub_text, 213)
@@ -29268,8 +29270,8 @@ class Over:
 
 			if prefs.spotify_token:
 				if self.button(x, y, _("Forget Account")):
-					spot_ctl.delete_token()
-					spot_ctl.cache_saved_albums.clear()
+					tauon.spot_ctl.delete_token()
+					tauon.spot_ctl.cache_saved_albums.clear()
 					prefs.spot_username = ""
 					if not prefs.launch_spotify_local:
 						prefs.spot_password = ""
@@ -29279,7 +29281,7 @@ class Over:
 				webThread.start()
 				time.sleep(0.1)
 
-				spot_ctl.auth()
+				tauon.spot_ctl.auth()
 
 			y += round(31 * gui.scale)
 			prefs.launch_spotify_web = self.toggle_square(
@@ -31221,7 +31223,7 @@ class TopPanel:
 						after_scan or \
 						move_in_progress or \
 						plex.scanning or \
-						transcode_list or spot_ctl.launching_spotify or spot_ctl.spotify_com or subsonic.scanning or \
+						transcode_list or tauon.spot_ctl.launching_spotify or tauon.spot_ctl.spotify_com or subsonic.scanning or \
 						koel.scanning or gui.sync_progress or lastfm.scanning_scrobbles:
 					ddt.rect(
 						(window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2),
@@ -31981,13 +31983,13 @@ class TopPanel:
 			if gui.to_got:
 				text += f" {gui.to_got}"
 			bg = [229, 160, 13, 255]
-		elif spot_ctl.launching_spotify:
+		elif tauon.spot_ctl.launching_spotify:
 			text = _("Launching Spotify...")
 			bg = [30, 215, 96, 255]
-		elif spot_ctl.preparing_spotify:
+		elif tauon.spot_ctl.preparing_spotify:
 			text = _("Preparing Spotify Playback...")
 			bg = [30, 215, 96, 255]
-		elif spot_ctl.spotify_com:
+		elif tauon.spot_ctl.spotify_com:
 			text = _("Accessing Spotify library...")
 			bg = [30, 215, 96, 255]
 		elif subsonic.scanning:
@@ -32665,7 +32667,7 @@ class BottomBarType1:
 			if pctl.auto_stop:
 				stop_colour = colours.media_buttons_active
 
-			if pctl.playing_state == 2 or (spot_ctl.coasting and spot_ctl.paused):
+			if pctl.playing_state == 2 or (tauon.spot_ctl.coasting and tauon.spot_ctl.paused):
 				pause_colour = colours.media_buttons_active
 				play_colour = colours.media_buttons_active
 			elif pctl.playing_state == 3:
@@ -32683,7 +32685,7 @@ class BottomBarType1:
 					if inp.mouse_click:
 						if compact and pctl.playing_state == 1:
 							pctl.pause()
-						elif pctl.playing_state == 1 or spot_ctl.coasting:
+						elif pctl.playing_state == 1 or tauon.spot_ctl.coasting:
 							pctl.show_current(highlight=True)
 						else:
 							pctl.play()
@@ -32707,7 +32709,7 @@ class BottomBarType1:
 
 				rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
 				fields.add(rect)
-				if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
+				if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 					pause_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						pctl.pause()
@@ -32741,7 +32743,7 @@ class BottomBarType1:
 			rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
 			fields.add(rect)
-			if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
+			if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 				forward_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.advance()
@@ -32776,7 +32778,7 @@ class BottomBarType1:
 			rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
 			fields.add(rect)
-			if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
+			if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 				back_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.back()
@@ -35194,7 +35196,7 @@ class StandardPlaylist:
 				ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
 
 			if tr.file_ext == "SPTY":
-				# if not spot_ctl.started_once:
+				# if not tauon.spot_ctl.started_once:
 				#     ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20])
 				#     ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
 				ddt.rect((track_box[0] + track_box[2] - round(2 * gui.scale), track_box[1] + round(2 * gui.scale), round(2 * gui.scale), track_box[3] - round(3 * gui.scale)), [40, 190, 40, 230])
@@ -35987,8 +35989,8 @@ class RadioBox:
 		if self.load_connecting:
 			return
 
-		if spot_ctl.playing or spot_ctl.coasting:
-			spot_ctl.control("stop")
+		if tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
+			tauon.spot_ctl.control("stop")
 
 		try:
 			self.websocket.close()
@@ -41047,7 +41049,7 @@ class Showcase:
 				gui.spec4_rec.y = y + round(50 * gui.scale)
 
 				if prefs.showcase_vis and window_size[1] > 369 and not search_over.active and not (
-						spot_ctl.coasting or spot_ctl.playing):
+						tauon.spot_ctl.coasting or tauon.spot_ctl.playing):
 
 					if gui.message_box or not is_level_zero(include_menus=True):
 						self.render_vis()
@@ -42928,7 +42930,7 @@ def save_state() -> None:
 		prefs.spot_secret,
 		prefs.show_band,
 		prefs.download_playlist,
-		spot_ctl.cache_saved_albums,
+		tauon.spot_ctl.cache_saved_albums,
 		prefs.auto_rec,
 		prefs.spotify_token,
 		prefs.use_libre_fm,
@@ -42986,7 +42988,7 @@ def save_state() -> None:
 			with (Path(user_directory) / "window.p").open("wb") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-		spot_ctl.save_token()
+		tauon.spot_ctl.save_token()
 
 		with (Path(user_directory) / "lyrics_substitutions.json").open("w") as file:
 			json.dump(prefs.lyrics_subs, file)
@@ -48227,8 +48229,8 @@ while pctl.running:
 	if gui.lowered:
 		time.sleep(0.2)
 
-if spot_ctl.playing:
-	spot_ctl.control("stop")
+if tauon.spot_ctl.playing:
+	tauon.spot_ctl.control("stop")
 
 # Send scrobble if pending
 if lfm_scrobbler.queue and not lfm_scrobbler.running:
