@@ -15,6 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#if __STDC_VERSION__ < 201710L
+	#pragma message("Current __STDC_VERSION__ value: " TOSTRING(__STDC_VERSION__))
+	#error "Phazor requires C17 or later."
+#endif
+#if __STDC_VERSION__ < 202311L
+	#pragma message("Note: C23 not supported! Current __STDC_VERSION__ value: " TOSTRING(__STDC_VERSION__))
+//	#error "Phazor requires C23 or later."
+#endif
 
 #define MINI
 
@@ -41,6 +51,7 @@
 #endif
 
 #define _GNU_SOURCE
+// C23 has it by default
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2426,9 +2437,8 @@ void *main_loop(void *thread_id) {
 //			test1 = 0;
 //		}
 
-		// Detect when device was unplugged or became unavailable
 		if (device_stopped && !called_to_stop_device && !signaled_device_unavailable) {
-			printf("Device was unplugged/became unavailable.\n");
+			printf("Device was unplugged or became unavailable.\n");
 			on_device_unavailable();
 			signaled_device_unavailable = true;
 		}
