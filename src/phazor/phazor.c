@@ -1023,7 +1023,6 @@ FLAC__StreamDecoderInitStatus status;
 // -----------------------------------------------------------------------------------
 
 int pulse_connected = 0;
-int want_reconnect = 0;
 
 void stop_decoder() {
 
