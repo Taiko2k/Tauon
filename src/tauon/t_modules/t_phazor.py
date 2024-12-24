@@ -249,10 +249,9 @@ def player4(tauon: Tauon) -> None:
 					logging.info("SPP: Flushing some data...")
 					tauon.librespot_p.stdout.read(70000)  # rough
 					logging.info("SPP: Done flush")
-				if aud.feed_ready(1000) == 1:
-					if aud.get_buff_fill() < 2000:
-						data = tauon.librespot_p.stdout.read(1000)
-						aud.feed_raw(len(data), data)
+				if aud.feed_ready(1000) == 1 and aud.get_buff_fill() < 2000:
+					data = tauon.librespot_p.stdout.read(1000)
+					aud.feed_raw(len(data), data)
 
 				if state == 0:
 					tauon.librespot_p.stdout.read(50)
@@ -381,7 +380,7 @@ def player4(tauon: Tauon) -> None:
 				self.direc = os.path.join(tmp_cache_dir(), "audio-cache")
 			if not os.path.exists(self.direc):
 				os.makedirs(self.direc)
-			self.list = prefs.cache_list
+			self.list: list[str] = prefs.cache_list
 			self.files = os.listdir(self.direc)
 			self.get_now = None
 			self.running = False
@@ -498,23 +497,23 @@ def player4(tauon: Tauon) -> None:
 		def dl_file(self, track: TrackClass) -> int | None:
 			pctl.buffering_percent = 0
 			key = self.get_key(track)
-			path = os.path.join(self.direc, key)
-			if os.path.exists(path):
-				if not os.path.isfile(path):
+			path = Path(self.direc) / key
+			if path.exists():
+				if not path.is_file():
 					return 1
 				if key in self.list:
 					return 0
-				os.remove(path)
+				path.unlink()
 			if not track.is_network:
-				if not os.path.isfile(track.fullpath):
+				if not Path(track.fullpath).is_file():
 					self.error = track
 					self.running = False
 					return 1
 
 				logging.info("Start transfer")
 				timer = Timer()
-				target = open(path, "wb")
-				source = open(track.fullpath, "rb")
+				target = path.open("wb")
+				source = Path(track.fullpath).open("rb")
 				while True:
 					try:
 						data = source.read(128000)
@@ -681,7 +680,7 @@ def player4(tauon: Tauon) -> None:
 					bias += 0.04
 				gui.spec = p_spec
 				gui.level_update = True
-				if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
+				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
 					gui.update_spec = 1
 			elif gui.vis == 4:
 				p_spec = []
@@ -692,7 +691,7 @@ def player4(tauon: Tauon) -> None:
 					bias += 0.01
 				gui.spec4_array = p_spec
 				gui.level_update = True
-				if pctl.playing_time > 0.5 and (pctl.playing_state == 1 or pctl.playing_state == 3):
+				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
 					gui.update_spec = 1
 
 	stall_timer = Timer()
@@ -702,12 +701,11 @@ def player4(tauon: Tauon) -> None:
 
 		run_vis()
 
-		if end and loaded_track and loaded_track.is_network and pctl.playing_time < 7:
-			if aud.get_result() == 2:
-				logging.info("STALL, RETRY")
-				time.sleep(0.5)
-				pctl.playerCommandReady = True
-				pctl.playerCommand = "open"
+		if end and loaded_track and loaded_track.is_network and pctl.playing_time < 7 and aud.get_result() == 2:
+			logging.info("STALL, RETRY")
+			time.sleep(0.5)
+			pctl.playerCommandReady = True
+			pctl.playerCommand = "open"
 
 		add_time = player_timer.hit()
 		if add_time > 2:
@@ -764,7 +762,6 @@ def player4(tauon: Tauon) -> None:
 			shooter(spotc.worker)
 
 	while True:
-
 		time.sleep(0.016)
 		if state == 2:
 			time.sleep(0.05)
