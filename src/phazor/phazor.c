@@ -2444,7 +2444,6 @@ void *main_loop(void *thread_id) {
 		}
 
 		if (command != NONE) {
-
 			if (command == EXIT) {
 				break;
 			}
@@ -2541,13 +2540,10 @@ void *main_loop(void *thread_id) {
 					}
 
 					if (load_result == 0) {
-
 						mode = PLAYING;
 						result_status = SUCCESS;
 						start_out();
 						command = NONE;
-
-
 					} else {
 						printf("ph: Load file failed\n");
 						result_status = FAILURE;
@@ -2558,14 +2554,11 @@ void *main_loop(void *thread_id) {
 					break;
 
 			} // end switch
-
 		} // end if none
 
 
 		if (command == SEEK) {
-
 			if (mode == PLAYING) {
-
 				mode = RAMP_DOWN;
 
 				//if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
@@ -2606,7 +2599,6 @@ void *main_loop(void *thread_id) {
 
 			}
 		}
-
 
 		// Refill the buffer
 		if (mode == PLAYING && codec != FEED) {
