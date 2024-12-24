@@ -9000,8 +9000,8 @@ class Tauon:
 tauon = Tauon()
 
 def signal_handler(signum, frame):
-    signal.signal(signum, signal.SIG_IGN) # ignore additional signals
-    tauon.exit(reason="SIGINT recieved")
+	signal.signal(signum, signal.SIG_IGN) # ignore additional signals
+	tauon.exit(reason="SIGINT recieved")
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -43866,7 +43866,7 @@ while pctl.running:
 		else:
 			sleep_timer.set()
 		if sleep_timer.get() > 2:
-			SDL_WaitEventTimeout(None, 20000)
+			SDL_WaitEventTimeout(None, 1000)
 		continue
 
 	else:
