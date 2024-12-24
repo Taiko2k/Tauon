@@ -365,10 +365,9 @@ class Gnome:
 				class MPRIS(dbus.service.Object):
 
 					def update(self, force: bool = False) -> None:
-
 						changed = {}
 
-						if pctl.playing_state == 1 or pctl.playing_state == 3:
+						if pctl.playing_state in (1, 3):
 							if self.player_properties["PlaybackStatus"] != "Playing":
 								self.player_properties["PlaybackStatus"] = "Playing"
 								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
@@ -385,8 +384,8 @@ class Gnome:
 							self.player_properties["Volume"] = pctl.player_volume / 100
 							changed["Volume"] = self.player_properties["Volume"]
 
-						if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
-							track = pctl.playing_object()
+						track = pctl.playing_object()
+						if track is not None and (track.index != self.playing_index or force):
 							self.playing_index = track.index
 							id = f"/com/tauon/{track.index}/{abs(pctl.playlist_playing_position)}"
 							if pctl.playing_state == 3:
@@ -449,7 +448,8 @@ class Gnome:
 							except Exception:
 								logging.exception("Error updating MPRIS")
 								logging.debug(changed)
-								logging.debug(pctl.playing_object().fullpath)
+								if track is not None:
+									logging.debug(track.fullpath)
 
 					def update_progress(self) -> None:
 						self.player_properties["Position"] = dbus.Int64(int(pctl.playing_time * 1000000))
@@ -478,11 +478,11 @@ class Gnome:
 							"DesktopEntry": tauon.t_id,
 							"SupportedUriSchemes": dbus.Array([dbus.String("file")]),
 							"SupportedMimeTypes": dbus.Array([
-																			dbus.String("audio/mpeg"),
-																			dbus.String("audio/flac"),
-																			dbus.String("audio/ogg"),
-																			dbus.String("audio/m4a"),
-																		]),
+								dbus.String("audio/mpeg"),
+								dbus.String("audio/flac"),
+								dbus.String("audio/ogg"),
+								dbus.String("audio/m4a"),
+							]),
 						}
 
 						self.player_properties = {
