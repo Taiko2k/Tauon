@@ -1634,7 +1634,8 @@ class Prefs:
 		self.radio_record_codec = "OPUS"
 		self.pa_fast_seek = False
 		self.precache = False
-		self.cache_list = []
+		# TODO(Martin): cache_list isn't really used anywhere and will always be empty?
+		self.cache_list: list[str] = []
 		self.cache_limit = 2000  # in mb
 		self.save_window_position = True
 		self.spotify_token = ""
@@ -1850,7 +1851,7 @@ class GuiVar:
 
 		self.level_update = False
 		self.level_time = Timer()
-		self.level_peak = [0, 0]
+		self.level_peak: list[float] = [0, 0]
 		self.level = 0
 		self.time_passed = 0
 		self.level_meter_colour_mode = 3
@@ -8843,7 +8844,7 @@ class Tauon:
 		self.thread_manager: ThreadManager = ThreadManager()
 		self.stream_proxy = None
 		self.stream_proxy = StreamEnc(self)
-		self.level_train = []
+		self.level_train: list[list[float]] = []
 		self.radio_server = None
 		self.mod_formats = MOD_Formats
 		self.listen_alongers = {}
