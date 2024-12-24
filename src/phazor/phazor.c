@@ -41,6 +41,7 @@
 #endif
 
 #define _GNU_SOURCE
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -253,10 +254,10 @@ void buff_reset() {
 
 double t_start, t_end;
 
-int out_thread_running = 0; // bool
-int called_to_stop_device = 0; // bool
-int device_stopped = 0; // bool
-int signaled_device_unavailable = 0; // bool
+bool out_thread_running = false;
+bool called_to_stop_device = false;
+bool device_stopped = false;
+bool signaled_device_unavailable = false;
 
 float fadefl[BUFF_SIZE];
 float fadefr[BUFF_SIZE];
@@ -296,7 +297,7 @@ int current_sample_rate = 0;
 int want_sample_rate = 0;
 int sample_change_byte = 0;
 
-int reset_set = 0;
+bool reset_set = false;
 int reset_set_value = 0;
 int reset_set_byte = 0;
 
@@ -1136,9 +1137,9 @@ int get_audio(int max, float* buff) {
 //					break;
 //				}
 
-				if (reset_set == 1 && reset_set_byte == low) {
+				if (reset_set && reset_set_byte == low) {
 					//printf("pa: Reset position counter\n");
-					reset_set = 0;
+					reset_set = false;
 					position_count = reset_set_value;
 				}
 
@@ -1346,8 +1347,8 @@ int get_audio(int max, float* buff) {
 
 	void notification_callback(const ma_device_notification* pNotification) {
 		if (pNotification->type == ma_device_notification_type_stopped) {
-			device_stopped = 1;
-			signaled_device_unavailable = 0;
+			device_stopped = true;
+			signaled_device_unavailable = false;
 		}
 	}
 
@@ -1552,7 +1553,6 @@ void connect_pulse() {
 	if (pulse_connected == 1) {
 		//printf("pa: Reconnect\n");
 		disconnect_pulse();
-
 	}
 	printf("ph: Connect\n");
 
@@ -1647,7 +1647,7 @@ void connect_pulse() {
 
 		src_reset(src);
 		printf("ph: The samplerate changed, rewinding\n");
-		if (reset_set == 0) {
+		if (!reset_set) {
 			decode_seek(position_count / sample_rate_src * 1000, sample_rate_src);
 		}
 
@@ -1916,7 +1916,7 @@ int load_next() {
 			openmpt_module_set_position_seconds(mod, load_target_seek / 1000.0);
 			reset_set_value =  48000 * (load_target_seek / 1000.0);
 			samples_decoded = reset_set_value * 2;
-			reset_set = 1;
+			reset_set = true;
 			reset_set_byte = high;
 			load_target_seek = 0;
 		}
@@ -1945,7 +1945,7 @@ int load_next() {
 
 			if (load_target_seek > 0) {
 				reset_set_value = (int) wave_samplerate * (load_target_seek / 1000.0);
-				reset_set = 1;
+				reset_set = true;
 				reset_set_byte = high;
 				load_target_seek = 0;
 			}
@@ -1981,7 +1981,7 @@ int load_next() {
 					op_pcm_seek(opus_dec, (int) 48000 * (load_target_seek / 1000.0));
 					reset_set_value = op_raw_tell(opus_dec);
 					samples_decoded = reset_set_value * 2;
-					reset_set = 1;
+					reset_set = true;
 					reset_set_byte = high;
 					load_target_seek = 0;
 				}
@@ -2023,7 +2023,7 @@ int load_next() {
 					ov_pcm_seek(&vf, (ogg_int64_t) vi.rate * (load_target_seek / 1000.0));
 					reset_set_value = vi.rate * (load_target_seek / 1000.0); // op_pcm_tell(opus_dec); that segfaults?
 					//reset_set_value = 0;
-					reset_set = 1;
+					reset_set = true;
 					reset_set_byte = high;
 					load_target_seek = 0;
 				}
@@ -2104,7 +2104,7 @@ int load_next() {
 					//printf("pa: Start at position %d\n", load_target_seek);
 					mpg123_seek(mh, (int) rate * (load_target_seek / 1000.0), SEEK_SET);
 					reset_set_value = mpg123_tell(mh);
-					reset_set = 1;
+					reset_set = true;
 					reset_set_byte = high;
 					load_target_seek = 0;
 				}
@@ -2147,7 +2147,7 @@ void decoder_eos() {
 		pthread_mutex_lock(&buffer_mutex);
 		next_ready = 0;
 		reset_set_value = 0;
-		reset_set = 1;
+		reset_set = true;
 		reset_set_byte = high;
 		pthread_mutex_unlock(&buffer_mutex);
 
@@ -2155,13 +2155,12 @@ void decoder_eos() {
 }
 
 void stop_out() {
-
-	if (out_thread_running == 1) {
-		called_to_stop_device = 1;
+	if (out_thread_running) {
+		called_to_stop_device = true;
 		#ifdef MINI
 			ma_device_stop(&device);
 		#endif
-		out_thread_running = 0;
+		out_thread_running = false;
 	}
 	disconnect_pulse();
 }
@@ -2169,13 +2168,13 @@ void stop_out() {
 void start_out() {
 	if (pulse_connected == 0) connect_pulse();
 
-	if (out_thread_running == 0) {
-		called_to_stop_device = 0;
-		device_stopped = 0;
+	if (!out_thread_running) {
+		called_to_stop_device = false;
+		device_stopped = false;
 		#ifdef MINI
 			ma_device_start(&device);
 		#endif
-		out_thread_running = 1;
+		out_thread_running = true;
 
 		#ifdef PIPE
 
@@ -2266,7 +2265,7 @@ void pump_decode() {
 
 			FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
 			pthread_mutex_lock(&buffer_mutex);
-			reset_set = 1;
+			reset_set = true;
 			reset_set_byte = high;
 			load_target_seek = 0;
 			pthread_mutex_unlock(&buffer_mutex);
@@ -2428,10 +2427,12 @@ void *main_loop(void *thread_id) {
 //			test1 = 0;
 //		}
 
-		// Detect when device was unplugged or became unavailble
+		// Detect when device was unplugged or became unavailable
+		printf("command is %d, mode is %d, gate is %d\n", device_stopped, called_to_stop_device, signaled_device_unavailable);
 		if (device_stopped && !called_to_stop_device && !signaled_device_unavailable) {
+			printf("Device was unplugged/became unavailable.\n");
 			on_device_unavailable();
-			signaled_device_unavailable = 1;
+			signaled_device_unavailable = true;
 		}
 
 		if (command != NONE) {
@@ -2508,8 +2509,8 @@ void *main_loop(void *thread_id) {
 							fade_mini = 0.0;
 
 							reset_set_byte = p;
-							if (reset_set == 0) {
-								reset_set = 1;
+							if (!reset_set) {
+								reset_set = true;
 								reset_set_value = 0;
 							}
 
@@ -2526,7 +2527,7 @@ void *main_loop(void *thread_id) {
 						buff_reset();
 						gate = 0;
 						sample_change_byte = 0;
-						reset_set = 1;
+						reset_set = true;
 						reset_set_byte = 0;
 						reset_set_value = 0;
 					}
@@ -2561,7 +2562,7 @@ void *main_loop(void *thread_id) {
 
 				//if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
 				decode_seek(seek_request_ms, sample_rate_src);
-				reset_set = 0;
+				reset_set = false;
 
 				//if (want_sample_rate > 0) position_count = want_sample_rate * (seek_request_ms / 1000.0);
 				position_count = current_sample_rate * (seek_request_ms / 1000.0);
@@ -2801,7 +2802,7 @@ EXPORT int ramp_volume(int percent, int speed) {
 }
 
 EXPORT int get_position_ms() {
-	if (command != START && command != LOAD && reset_set == 0 && current_sample_rate > 0) {
+	if (command != START && command != LOAD && !reset_set && current_sample_rate > 0) {
 		return (int) ((position_count / (float) current_sample_rate) * 1000.0);
 	} else return 0;
 }
@@ -2811,8 +2812,7 @@ EXPORT void set_position_ms(int ms) {
 }
 
 EXPORT int get_length_ms() {
-	if (reset_set == 0 && sample_rate_src > 0 && current_length_count > 0) {
-
+	if (!reset_set && sample_rate_src > 0 && current_length_count > 0) {
 		return (int) ((current_length_count / (float) sample_rate_src) * 1000.0);
 	} else return 0;
 }
