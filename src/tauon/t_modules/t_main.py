@@ -699,21 +699,21 @@ if platform_system == "Linux":
 			for line in f:
 				if line.startswith("XDG_MUSIC_DIR="):
 					music_directory = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
-					logging.info(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
+					logging.debug(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
 				if line.startswith("XDG_DOWNLOAD_DIR="):
 					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
 					if Path(target).is_dir():
 						download_directory = target
-					logging.info(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
+					logging.debug(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
 
 
 if os.getenv("XDG_MUSIC_DIR"):
 	music_directory = Path(os.getenv("XDG_MUSIC_DIR"))
-	logging.info("Override music to: " + music_directory)
+	logging.debug("Override music to: " + music_directory)
 
 if os.getenv("XDG_DOWNLOAD_DIR"):
 	download_directory = Path(os.getenv("XDG_DOWNLOAD_DIR"))
-	logging.info("Override downloads to: " + download_directory)
+	logging.debug("Override downloads to: " + download_directory)
 
 if music_directory:
 	music_directory = Path(os.path.expandvars(music_directory))
@@ -734,7 +734,7 @@ logging.info(f"Config directory:          {config_directory}")
 logging.info(f"Cache directory:           {cache_directory}")
 logging.info(f"Home directory:            {home_directory}")
 logging.info(f"Music directory:           {music_directory}")
-logging.info(f"Download directory:        {download_directory}")
+logging.info(f"Downloads directory:        {download_directory}")
 logging.info(f"Asset directory:           {asset_directory}")
 if locale_directory.exists():
 	logging.info(f"Locale directory:          {locale_directory}")
