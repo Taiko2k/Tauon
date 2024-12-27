@@ -1,10 +1,11 @@
-
+import certifi
 
 a = Analysis(
 	["src/tauon/__main__.py"],
 	pathex=[],
 	binaries=[],
 	datas=[
+		(certifi.where(), "certifi"),
 		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcolorreload-gtk-module.so", "lib/gtk-3.0/modules"),
 		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libwindow-decorations-gtk-module.so", "lib/gtk-3.0/modules"),
 		("src/tauon/assets", "assets"),

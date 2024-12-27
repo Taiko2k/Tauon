@@ -154,15 +154,8 @@ if "--no-start" in sys.argv:
 
 
 pyinstaller_mode = False
-if hasattr(sys, "_MEIPASS"):
+if hasattr(sys, "_MEIPASS") or getattr(sys, 'frozen', False) or install_directory.name.endswith("_internal"):
 	pyinstaller_mode = True
-if install_directory.name.endswith("_internal"):
-	pyinstaller_mode = True
-#	install_directory = install_directory.parent
-
-if pyinstaller_mode:
-	os.environ["PATH"] += ":" + sys._MEIPASS
-	os.environ["SSL_CERT_FILE"] = str(install_directory / "certifi" / "cacert.pem")
 
 # If we're installed, use home data locations
 install_mode = False

@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import certifi
 
 def find_msys64_path() -> Path:
 	"""Check common paths for MSYS2 installations"""
@@ -36,6 +36,7 @@ a = Analysis(
 		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL2_image.dll"),      "."),
 	],
 	datas=[
+		(certifi.where(), "certifi"),
 		("src/tauon/assets", "assets"),
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
