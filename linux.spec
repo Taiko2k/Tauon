@@ -1,4 +1,8 @@
+import sys
+
 import certifi
+
+python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 
 a = Analysis(
 	["src/tauon/__main__.py"],
@@ -13,9 +17,9 @@ a = Analysis(
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 		# This could only have SDL2.framework and SDL2_image.framework to save space...
-		(".venv/lib/python3.13/site-packages/sdl2dll/dll", "sdl2dll/dll"),
-#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2.framework", "sdl2dll/dll/SDL2.framework"),
-#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "sdl2dll/dll/SDL2_image.framework"),
+		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll/SDL2.framework", "sdl2dll/dll/SDL2.framework"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll/SDL2_image.framework", "sdl2dll/dll/SDL2_image.framework"),
 	],
 	hiddenimports=[
 		"pylast",
