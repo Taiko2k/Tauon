@@ -83,6 +83,7 @@ logging.basicConfig(
 	],
 )
 # INFO+ to std_err
+# TODO(Martin): This hereabout section is wonk, setting INFO on streamhandler removes formatting for DEBUG
 logging.getLogger().handlers[0].setLevel(logging.DEBUG if (install_directory / "debug").is_file() else logging.INFO)
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
