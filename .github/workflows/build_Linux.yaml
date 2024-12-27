@@ -41,7 +41,8 @@ jobs:
             libsamplerate0-dev \
             libsdl2-image-dev \
             libvorbis-dev \
-            libwavpack-dev
+            libwavpack-dev \
+            p7zip
           # JPEG-XL hack since 24.04 is too old
           sudo apt-get install -y \
             libgif7 \
@@ -82,17 +83,17 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
 
-      - name: Create ZIP
+      - name: Create 7z
         run: |
           mkdir -p dist/zip
           APP_NAME="TauonMusicBox"
           APP_PATH="dist/${APP_NAME}"
-          ZIP_PATH="dist/zip/${APP_NAME}.zip"
+          ARCHIVE_PATH="dist/zip/${APP_NAME}.7z"
 
-          zip -r "${ZIP_PATH}" "${APP_PATH}"
+          7z a "${ARCHIVE_PATH}" "${APP_PATH}"
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-linux
-          path: dist/zip/TauonMusicBox.zip
+          path: dist/zip/TauonMusicBox.7z

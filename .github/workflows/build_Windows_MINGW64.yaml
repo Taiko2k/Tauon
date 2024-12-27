@@ -12,7 +12,7 @@ jobs:
         with:
           submodules: true
 
-      # TODO(Martin): This is duped from the file in extra, install from said file somehow instead
+      # TODO(Martin): This is partially duped from the file in extra, install from said file somehow instead
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
         with:
@@ -23,7 +23,7 @@ jobs:
             ca-certificates
             cmake
             ninja
-            zip
+            7zip
             mingw-w64-x86_64-flac
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-gobject-introspection
@@ -93,12 +93,12 @@ jobs:
           mkdir -p dist/zip
           APP_NAME="TauonMusicBox"
           APP_PATH="dist/${APP_NAME}"
-          ZIP_PATH="dist/zip/${APP_NAME}.zip"
+          ARCHIVE_PATH="dist/zip/${APP_NAME}.7z"
 
-          zip -r "${ZIP_PATH}" "${APP_PATH}"
+          7z a -r "${ARCHIVE_PATH}" "${APP_PATH}"
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-windows
-          path: dist/zip/TauonMusicBox.zip
+          path: dist/zip/TauonMusicBox.7z
