@@ -763,6 +763,7 @@ def player4(tauon: Tauon) -> None:
 			shooter(spotc.worker)
 
 	while True:
+#		logging.error(aud.print_status())
 		time.sleep(0.016)
 		if state == 2:
 			time.sleep(0.05)
@@ -1072,6 +1073,8 @@ def player4(tauon: Tauon) -> None:
 					position = aud.get_position_ms() / 1000
 					remain = length - position
 
+#					TODO(Martin): The GUI logger does not support multiline
+#					logging.info(f"{loaded_track.title} -> {target_object.title}\nlength: {length!s}\nposition: {position!s}\nWe are {remain!s} from end")
 					logging.info(loaded_track.title + " -> " + target_object.title)
 					logging.info(" --- length: " + str(length))
 					logging.info(" --- position: " + str(position))
