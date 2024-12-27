@@ -44,6 +44,9 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
+		("librespot.exe", "."),
+		("TaskbarLib.tlb", "."),
+		# TODO(Martin): And the third DLL thing
 		# This could only have SDL2.framework and SDL2_image.framework to save space...
 		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
 	],

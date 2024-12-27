@@ -78,6 +78,13 @@ jobs:
           source .venv/bin/activate
           pip install --prefix ".venv" dist/*.whl
 
+      - name: Download optionals from latest release
+        shell: msys2 {0}
+        run: |
+          curl -L -o librespot.exe https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe
+          curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TaskbarLib.tlb
+          # TODO(Martin): And the third DLL thing
+
       - name: "[DEBUG] List all files"
         shell: msys2 {0}
         run: find .
