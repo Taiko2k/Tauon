@@ -1,4 +1,4 @@
-colored_traceback
+colored_traceback;           sys_platform != 'win32' # Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 jxlpy
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
 natsort
