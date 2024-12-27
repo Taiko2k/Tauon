@@ -1,5 +1,6 @@
 import os
 import subprocess
+import certifi
 
 block_cipher = None
 
@@ -27,6 +28,7 @@ a = Analysis(
 		(f"{prefix}/bin/ffmpeg", "."),
 	],
 	datas=[
+		(certifi.where(), "certifi"),
 		("src/tauon/assets", "assets"),
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import base64
 import builtins
+import certifi
 import colorsys
 import copy
 import ctypes
@@ -50,6 +51,7 @@ import secrets
 import shlex
 import shutil
 import signal
+import ssl
 import socket
 import subprocess
 import sys
@@ -480,8 +482,6 @@ should_save_state = True
 try:
 	import pylast
 	last_fm_enable = True
-	if pyinstaller_mode:
-		pylast.SSL_CONTEXT.load_verify_locations(str(Path(install_directory) / "certifi" / "cacert.pem"))
 except Exception:
 	logging.exception("PyLast module not found, last fm will be disabled.")
 	last_fm_enable = False
@@ -501,6 +501,30 @@ if not windows_native:
 		config = ctypes.c_void_p()
 		config.contents = fc.FcConfigGetCurrent()
 		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
+
+# SSL setup (needed for frozen installs)
+def get_cert_path() -> str:
+	if pyinstaller_mode:
+		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
+	else:
+		# Running as script
+		return certifi.where()
+
+
+def setup_ssl() -> ssl.SSLContext:
+	# Set the SSL certificate path environment variable
+	cert_path = get_cert_path()
+	logging.debug(f"Found SSL cert file at: {cert_path}")
+	os.environ['SSL_CERT_FILE'] = cert_path
+	os.environ['REQUESTS_CA_BUNDLE'] = cert_path
+
+	# Create default SSL context
+	ssl_context = ssl.create_default_context(cafile=get_cert_path())
+	return ssl_context
+
+ssl_context = setup_ssl()
+
+
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get("XDG_CURRENT_DESKTOP")
@@ -8837,9 +8861,6 @@ class Tauon:
 		self.aud: CDLL | None = None
 
 		self.recorded_songs = []
-		self.ca = None
-		if pyinstaller_mode:
-			self.ca = os.path.join(install_directory, "certifi", "cacert.pem")
 
 		self.chrome_mode = False
 		self.web_running = False
@@ -8857,6 +8878,8 @@ class Tauon:
 		self.spot_ctl: SpotCtl | None = None
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
+
+		self.ssl_context = ssl_context
 
 	def start_remote(self):
 
@@ -12265,7 +12288,7 @@ class GallClass:
 		if search_over.active:
 			while QuickThumbnail.queue:
 				img = QuickThumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, cafile=tauon.ca)
+				response = urllib.request.urlopen(img.url, context=ssl_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
@@ -13008,7 +13031,7 @@ class AlbumArt:
 					elif track.file_ext == "JELY":
 						source_image = jellyfin.get_cover(track)
 					else:
-						response = urllib.request.urlopen(get_network_thumbnail_url(track), cafile=tauon.ca)
+						response = urllib.request.urlopen(get_network_thumbnail_url(track), context=ssl_context)
 						source_image = io.BytesIO(response.read())
 					if source_image:
 						with Path(cached_path).open("wb") as file:
@@ -13111,7 +13134,7 @@ class AlbumArt:
 
 			artlink = r.json()["artistbackground"][0]["url"]
 
-			response = urllib.request.urlopen(artlink, cafile=tauon.ca)
+			response = urllib.request.urlopen(artlink, context=ssl_context)
 			info = response.info()
 
 			assert info.get_content_maintype() == "image"
@@ -16486,7 +16509,7 @@ def download_art1(tr):
 				artlink = r.json()["albums"][album_id]["albumcover"][0]["url"]
 				id = r.json()["albums"][album_id]["albumcover"][0]["id"]
 
-				response = urllib.request.urlopen(artlink, cafile=tauon.ca)
+				response = urllib.request.urlopen(artlink, context=ssl_context)
 				info = response.info()
 
 				t = io.BytesIO()
@@ -36311,7 +36334,7 @@ class RadioBox:
 		req = urllib.request.Request(uri)
 		req.add_header("User-Agent", t_agent)
 		req.add_header("Content-Type", "application/json")
-		response = urllib.request.urlopen(req, cafile=tauon.ca)
+		response = urllib.request.urlopen(req, context=ssl_context)
 		data = response.read()
 		data = json.loads(data.decode())
 		self.parse_data(data)
@@ -37512,7 +37535,7 @@ def save_discogs_artist_thumb(artist, filepath):
 	else:
 		url = images[0]["uri"]
 
-	response = urllib.request.urlopen(url, cafile=tauon.ca)
+	response = urllib.request.urlopen(url, context=ssl_context)
 	im = Image.open(response)
 
 	width, height = im.size
@@ -37544,7 +37567,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
 	if preview:
 		thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
-	response = urllib.request.urlopen(thumblink, timeout=10, cafile=tauon.ca)
+	response = urllib.request.urlopen(thumblink, timeout=10, context=ssl_context)
 	info = response.info()
 
 	t = io.BytesIO()
@@ -41835,7 +41858,7 @@ lyric_side_bottom_pulse = EdgePulse2()
 
 def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 	try:
-		response = urllib.request.urlopen(link, cafile=tauon.ca)
+		response = urllib.request.urlopen(link, context=ssl_context)
 		info = response.info()
 		if info.get_content_maintype() == "image":
 			if info.get_content_subtype() == "jpeg":
