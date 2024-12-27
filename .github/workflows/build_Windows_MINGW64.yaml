@@ -13,6 +13,7 @@ jobs:
           submodules: true
 
       # TODO(Martin): This is partially duped from the file in extra, install from said file somehow instead
+      # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
         with:
@@ -23,7 +24,7 @@ jobs:
             ca-certificates
             cmake
             ninja
-            7zip
+            p7zip
             mingw-w64-x86_64-flac
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-gobject-introspection
