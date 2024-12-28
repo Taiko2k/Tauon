@@ -744,9 +744,6 @@ else:
 #logging.info(f"SVG directory:             {svg_directory}")
 #logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
 
-# Enable detecting of mime types from file contents
-mime = magic.Magic(mime=True)
-
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target: str) -> bool | str | None:
 	try:
