@@ -59,6 +59,7 @@ jobs:
           python -m pip install --break-system-packages --upgrade pip
           python -m venv .venv
           export CFLAGS="-I/mingw64/include"
+          export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
           .venv/bin/python -m pip install \
             -r requirements.txt \
             build \
