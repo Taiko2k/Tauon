@@ -2418,7 +2418,7 @@ fonts = Fonts()
 class Input:
 	"""Used to keep track of button states (or should be)"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.mouse_click = False
 		# self.right_click = False
 		self.level_2_enter = False
@@ -2428,23 +2428,23 @@ class Input:
 
 		self.media_key = ""
 
-	def m_key_play(self):
+	def m_key_play(self) -> None:
 		self.media_key = "Play"
 		gui.update += 1
 
-	def m_key_pause(self):
+	def m_key_pause(self) -> None:
 		self.media_key = "Pause"
 		gui.update += 1
 
-	def m_key_stop(self):
+	def m_key_stop(self) -> None:
 		self.media_key = "Stop"
 		gui.update += 1
 
-	def m_key_next(self):
+	def m_key_next(self) -> None:
 		self.media_key = "Next"
 		gui.update += 1
 
-	def m_key_previous(self):
+	def m_key_previous(self) -> None:
 		self.media_key = "Previous"
 		gui.update += 1
 
