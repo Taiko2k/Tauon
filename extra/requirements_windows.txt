@@ -11,6 +11,8 @@ pyinstaller
 pylast>=3.1.0
 PySDL2
 pysdl2-dll
+python-magic
+python-magic-bin
 requests
 Send2Trash
 unidecode

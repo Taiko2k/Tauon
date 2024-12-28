@@ -41,6 +41,7 @@ import io
 import json
 import locale as py_locale
 import logging
+import magic
 import math
 import os
 import pickle
@@ -743,7 +744,8 @@ else:
 #logging.info(f"SVG directory:             {svg_directory}")
 #logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
 
-old_backend = 2
+# Enable detecting of mime types from file contents
+mime = magic.Magic(mime=True)
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target: str) -> bool | str | None:
@@ -2255,7 +2257,7 @@ class StarStore:
 		return 0
 
 	# Sets the track user rating
-	def set_rating(self, index, value, write=False):
+	def set_rating(self, index: int, value: int, write: bool = False) -> None:
 		key = self.key(index)
 		if key not in self.db:
 			self.db[key] = self.new_object()
