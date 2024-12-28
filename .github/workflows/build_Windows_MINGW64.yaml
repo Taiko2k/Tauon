@@ -61,6 +61,7 @@ jobs:
           source .venv/bin/activate
           export CFLAGS="-I/mingw64/include"
           pip install \
+            --platform=win_amd64 \
             -r requirements.txt \
             build \
             pyinstaller
