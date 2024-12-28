@@ -491,6 +491,7 @@ if not windows_native:
 
 	font_folder = os.path.join(install_directory, "fonts")
 	if os.path.isdir(font_folder):
+		logging.info(f"Fonts directory:           {font_folder}")
 		import ctypes
 
 		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
@@ -505,9 +506,8 @@ if not windows_native:
 def get_cert_path() -> str:
 	if pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
-	else:
-		# Running as script
-		return certifi.where()
+	# Running as script
+	return certifi.where()
 
 
 def setup_ssl() -> ssl.SSLContext:
