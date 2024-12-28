@@ -155,7 +155,7 @@ if "--no-start" in sys.argv:
 
 
 pyinstaller_mode = False
-if hasattr(sys, "_MEIPASS") or getattr(sys, 'frozen', False) or install_directory.name.endswith("_internal"):
+if hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"):
 	pyinstaller_mode = True
 
 # If we're installed, use home data locations
@@ -177,7 +177,7 @@ if str(install_directory).startswith("/app/"):
 os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 
-if Path(install_directory / "portable").is_file():
+if (install_directory / "portable").is_file():
 	install_mode = False
 
 if install_mode:
@@ -186,7 +186,7 @@ if not user_directory.is_dir():
 	user_directory.mkdir(parents=True)
 
 fp = None
-dev_mode = Path(install_directory / ".dev").is_file()
+dev_mode = (install_directory / ".dev").is_file()
 if dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
