@@ -1162,19 +1162,16 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 }
 
 # These will be the extensions of files to be added when importing
-DA_Formats = {
-	"mp3", "wav", "opus", "flac", "ape", "aiff",
-	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
-}
-
 VID_Formats = {"mp4", "webm"}
 
 MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
 
 GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
 
-DA_Formats |= MOD_Formats
-DA_Formats |= GME_Formats
+DA_Formats = {
+	"mp3", "wav", "opus", "flac", "ape", "aiff",
+	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
+} | MOD_Formats | GME_Formats
 
 Archive_Formats = {"zip"}
 
@@ -5066,7 +5063,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 	return nt
 
 
-def get_radio_art():
+def get_radio_art() -> None:
 	if radiobox.loaded_url in radiobox.websocket_source_urls:
 		return
 	if "ggdrasil" in radiobox.playing_title:
