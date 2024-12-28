@@ -4787,161 +4787,157 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 			del MOD1
 
 		elif nt.file_ext == "FLAC":
-
-			audio = Flac(nt.fullpath)
-			audio.read() # TODO(Martin) Resource leak!
-
-			nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.composer = audio.composer
-			nt.date = audio.date
-			nt.samplerate = audio.sample_rate
-			nt.bit_depth = audio.bit_depth
-			nt.size = os.path.getsize(nt.fullpath)
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.disc_number = audio.disc_number
-			nt.lyrics = audio.lyrics
-			if nt.length:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.cue_sheet = audio.cue_sheet
-			nt.misc = audio.misc
-
-		elif nt.file_ext == "WAV":
-
-			try:
-				audio = Wav(nt.fullpath)
+			with Flac(nt.fullpath) as audio:
 				audio.read()
 
-				nt.samplerate = audio.sample_rate
 				nt.length = audio.length
 				nt.title = audio.title
 				nt.artist = audio.artist
 				nt.album = audio.album
-				nt.track_number = audio.track_number
-
-			except Exception:
-				logging.exception("Failed saving WAV file as a Track, will try again differently")
-				audio = mutagen.File(nt.fullpath)
-				nt.samplerate = audio.info.sample_rate
-				nt.bitrate = audio.info.bitrate // 1000
-				nt.length = audio.info.length
+				nt.composer = audio.composer
+				nt.date = audio.date
+				nt.samplerate = audio.sample_rate
+				nt.bit_depth = audio.bit_depth
 				nt.size = os.path.getsize(nt.fullpath)
-			audio = mutagen.File(nt.fullpath)
-			if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
-				use_id3(audio.tags, nt)
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.disc_number = audio.disc_number
+				nt.lyrics = audio.lyrics
+				if nt.length:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.cue_sheet = audio.cue_sheet
+				nt.misc = audio.misc
+
+		elif nt.file_ext == "WAV":
+			with Wav(nt.fullpath) as audio:
+				try:
+					audio.read()
+
+					nt.samplerate = audio.sample_rate
+					nt.length = audio.length
+					nt.title = audio.title
+					nt.artist = audio.artist
+					nt.album = audio.album
+					nt.track_number = audio.track_number
+
+				except Exception:
+					logging.exception("Failed saving WAV file as a Track, will try again differently")
+					audio = mutagen.File(nt.fullpath)
+					nt.samplerate = audio.info.sample_rate
+					nt.bitrate = audio.info.bitrate // 1000
+					nt.length = audio.info.length
+					nt.size = os.path.getsize(nt.fullpath)
+				audio = mutagen.File(nt.fullpath)
+				if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
+					use_id3(audio.tags, nt)
 
 		elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
 			#logging.info("get opus")
-			audio = Opus(nt.fullpath)
-			audio.read()
+			with Opus(nt.fullpath) as audio:
+				audio.read()
 
-			#logging.info(audio.title)
+				#logging.info(audio.title)
 
-			nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.composer = audio.composer
-			nt.date = audio.date
-			nt.samplerate = audio.sample_rate
-			nt.size = os.path.getsize(nt.fullpath)
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.bitrate = audio.bit_rate
-			nt.lyrics = audio.lyrics
-			nt.disc_number = audio.disc_number
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.misc = audio.misc
-			if nt.bitrate == 0 and nt.length > 0:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				nt.length = audio.length
+				nt.title = audio.title
+				nt.artist = audio.artist
+				nt.album = audio.album
+				nt.composer = audio.composer
+				nt.date = audio.date
+				nt.samplerate = audio.sample_rate
+				nt.size = os.path.getsize(nt.fullpath)
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.bitrate = audio.bit_rate
+				nt.lyrics = audio.lyrics
+				nt.disc_number = audio.disc_number
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.misc = audio.misc
+				if nt.bitrate == 0 and nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
 		elif nt.file_ext == "APE":
+			with mutagen.File(nt.fullpath) as audio:
+				nt.length = audio.info.length
+				nt.bit_depth = audio.info.bits_per_sample
+				nt.samplerate = audio.info.sample_rate
+				nt.size = os.path.getsize(nt.fullpath)
+				if nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
-			audio = mutagen.File(nt.fullpath)
-			nt.length = audio.info.length
-			nt.bit_depth = audio.info.bits_per_sample
-			nt.samplerate = audio.info.sample_rate
-			nt.size = os.path.getsize(nt.fullpath)
-			if nt.length > 0:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				# # def getter(audio, key, type):
+				# #	 if
+				# t = audio.tags
+				# logging.info(t.keys())
+				# nt.size = os.path.getsize(nt.fullpath)
+				# nt.title = str(t.get("title", ""))
+				# nt.album = str(t.get("album", ""))
+				# nt.date = str(t.get("year", ""))
+				# nt.disc_number = str(t.get("discnumber", ""))
+				# nt.comment = str(t.get("comment", ""))
+				# nt.artist = str(t.get("artist", ""))
+				# nt.composer = str(t.get("composer", ""))
+				# nt.composer = str(t.get("composer", ""))
 
-			# # def getter(audio, key, type):
-			# #	 if
-			# t = audio.tags
-			# logging.info(t.keys())
-			# nt.size = os.path.getsize(nt.fullpath)
-			# nt.title = str(t.get("title", ""))
-			# nt.album = str(t.get("album", ""))
-			# nt.date = str(t.get("year", ""))
-			# nt.disc_number = str(t.get("discnumber", ""))
-			# nt.comment = str(t.get("comment", ""))
-			# nt.artist = str(t.get("artist", ""))
-			# nt.composer = str(t.get("composer", ""))
-			# nt.composer = str(t.get("composer", ""))
+			with Ape(nt.fullpath) as audio:
+				audio.read()
 
-			audio = Ape(nt.fullpath)
-			audio.read()
+				# logging.info(audio.title)
 
-			# logging.info(audio.title)
-
-			# nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.date = audio.date
-			nt.composer = audio.composer
-			# nt.bit_depth = audio.bit_depth
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.disc_number = audio.disc_number
-			nt.lyrics = audio.lyrics
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.misc = audio.misc
+				# nt.length = audio.length
+				nt.title = audio.title
+				nt.artist = audio.artist
+				nt.album = audio.album
+				nt.date = audio.date
+				nt.composer = audio.composer
+				# nt.bit_depth = audio.bit_depth
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.disc_number = audio.disc_number
+				nt.lyrics = audio.lyrics
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.misc = audio.misc
 
 		elif nt.file_ext == "WV" or nt.file_ext == "TTA":
 
-			audio = Ape(nt.fullpath)
-			audio.read()
+			with Ape(nt.fullpath) as audio:
+				audio.read()
 
-			# logging.info(audio.title)
+				# logging.info(audio.title)
 
-			nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.date = audio.date
-			nt.composer = audio.composer
-			nt.samplerate = audio.sample_rate
-			nt.bit_depth = audio.bit_depth
-			nt.size = os.path.getsize(nt.fullpath)
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.disc_number = audio.disc_number
-			nt.lyrics = audio.lyrics
-			if nt.length > 0:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.misc = audio.misc
+				nt.length = audio.length
+				nt.title = audio.title
+				nt.artist = audio.artist
+				nt.album = audio.album
+				nt.date = audio.date
+				nt.composer = audio.composer
+				nt.samplerate = audio.sample_rate
+				nt.bit_depth = audio.bit_depth
+				nt.size = os.path.getsize(nt.fullpath)
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.disc_number = audio.disc_number
+				nt.lyrics = audio.lyrics
+				if nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.misc = audio.misc
 
 		else:
-
 			# Use MUTAGEN
 			try:
 				if nt.file_ext.lower() in VID_Formats:
@@ -40467,9 +40463,8 @@ class RadioThumbGen:
 						prefs.radio_thumb_bans.append(station.get("icon"))
 					continue
 				src.seek(0)
-				f = open(cache_path, "wb")
-				f.write(src.read())
-				f.close()
+				with open(cache_path, "wb") as f:
+					f.write(src.read())
 				src.seek(0)
 			else:
 				# logging.info("no icon")
@@ -41861,17 +41856,15 @@ def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 		if info.get_content_maintype() == "image":
 			if info.get_content_subtype() == "jpeg":
 				save_target = os.path.join(target_dir, "image.jpg")
-				f = open(save_target, "wb")
-				f.write(response.read())
-				f.close()
+				with open(save_target, "wb") as f:
+					f.write(response.read())
 				# clear_img_cache()
 				clear_track_image_cache(track)
 
 			elif info.get_content_subtype() == "png":
 				save_target = os.path.join(target_dir, "image.png")
-				f = open(save_target, "wb")
-				f.write(response.read())
-				f.close()
+				with open(save_target, "wb") as f:
+					f.write(response.read())
 				# clear_img_cache()
 				clear_track_image_cache(track)
 			else:
