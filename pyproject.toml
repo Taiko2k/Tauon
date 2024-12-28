@@ -162,7 +162,7 @@
 	reportImplicitOverride              = "warning"
 	reportImplicitStringConcatenation   = "warning"
 	reportImportCycles                  = "warning"
-	reportMissingSuperCall              = "warning"
+#	reportMissingSuperCall              = "warning" # Leave this one disabled by default, it's more useful for Python 2 compat
 	reportPropertyTypeMismatch          = "warning"
 	reportShadowedImports               = "warning"
 

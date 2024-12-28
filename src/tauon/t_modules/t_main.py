@@ -41,7 +41,7 @@ import io
 import json
 import locale as py_locale
 import logging
-import magic
+#import magic
 import math
 import os
 import pickle
@@ -12958,8 +12958,8 @@ class AlbumArt:
 
 		if track.file_ext == "MP3":
 			try:
-				tag = mutagen.id3.ID3(filepath)
-				frame = tag.getall("APIC")
+				with mutagen.id3.ID3(filepath) as tag:
+					frame = tag.getall("APIC")
 				if frame:
 					pic = frame[0].data
 			except Exception:
@@ -12969,32 +12969,31 @@ class AlbumArt:
 				pic = None
 
 		elif track.file_ext == "FLAC":
-			tag = Flac(filepath)
-			tag.read(True) # TODO(Martin): Leak
-			if tag.has_picture and len(tag.picture) > 30:
-				pic = tag.picture
+			with Flac(filepath) as tag:
+				tag.read(True)
+				if tag.has_picture and len(tag.picture) > 30:
+					pic = tag.picture
 
 		elif track.file_ext == "APE":
-			tag = Ape(filepath)
-			tag.read()
-			if tag.has_picture and len(tag.picture) > 30:
-				pic = tag.picture
+			with Ape(filepath) as tag:
+				tag.read()
+				if tag.has_picture and len(tag.picture) > 30:
+					pic = tag.picture
 
 		elif track.file_ext == "M4A":
-			tag = M4a(filepath)
-			tag.read(True) # TODO(Martin): Leak (guessing, since above leaks)
-			if tag.has_picture and len(tag.picture) > 30:
-				pic = tag.picture
+			with M4a(filepath) as tag:
+				tag.read(True)
+				if tag.has_picture and len(tag.picture) > 30:
+					pic = tag.picture
 
 		elif track.file_ext == "OPUS" or track.file_ext == "OGG" or track.file_ext == "OGA":
-			tag = Opus(filepath)
-			tag.read()
-			if tag.has_picture and len(tag.picture) > 30:
-				a = io.BytesIO(base64.b64decode(tag.picture))
-				a.seek(0)
-				image = parse_picture_block(a)
-				a.close()
-				pic = image
+			with Opus(filepath) as tag:
+				tag.read()
+				if tag.has_picture and len(tag.picture) > 30:
+					with io.BytesIO(base64.b64decode(tag.picture)) as a:
+						a.seek(0)
+						image = parse_picture_block(a)
+					pic = image
 
 		# self.embed_cached = (track, pic)
 		return pic
