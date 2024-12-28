@@ -78,12 +78,22 @@ jobs:
           source .venv/bin/activate
           pip install --prefix ".venv" dist/*.whl
 
-      - name: Download optionals from latest release
+      # https://github.com/Taiko2k/Tauon/pull/931#issuecomment-1464880133
+      - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o librespot.exe https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe
+          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe
           curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TaskbarLib.tlb
-          curl -L -o TauonSMTC.dll https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TauonSMTC.dll
+          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TauonSMTC.dll
+          mkdir fonts
+          curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf # 800KB
+          curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
+          curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf # 800KB
+          curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf # 800KB
+          curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf # 800KB
+          curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf # 16MB
+          curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf # 16MB
+          curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf # 16MB
 
       - name: "[DEBUG] List all files"
         shell: msys2 {0}
