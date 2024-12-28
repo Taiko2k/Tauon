@@ -60,7 +60,6 @@ jobs:
           python -m venv .venv
           export CFLAGS="-I/mingw64/include"
           .venv/bin/python -m pip install \
-            --platform=win_amd64 \
             -r requirements.txt \
             build \
             pyinstaller
