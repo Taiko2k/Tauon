@@ -726,10 +726,10 @@ if not music_directory.is_dir():
 	music_directory = None
 
 locale_directory = install_directory / "locale"
-if flatpak_mode:
-	locale_directory = Path("/app/share/locale")
-elif str(install_directory).startswith(("/opt/", "/usr/")):
-	locale_directory = Path("/usr/share/locale")
+#if flatpak_mode:
+#	locale_directory = Path("/app/share/locale")
+#elif str(install_directory).startswith(("/opt/", "/usr/")):
+#	locale_directory = Path("/usr/share/locale")
 
 logging.info(f"Install directory:         {install_directory}")
 #logging.info(f"SVG directory:             {svg_directory}")
