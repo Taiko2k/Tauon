@@ -6946,7 +6946,7 @@ pctl = PlayerCtl()
 notify_change = pctl.notify_change
 
 
-def auto_name_pl(target_pl):
+def auto_name_pl(target_pl: int) -> None:
 	if not pctl.multi_playlist[target_pl].playlist_ids:
 		return
 
