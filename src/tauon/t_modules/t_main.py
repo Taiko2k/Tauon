@@ -7079,7 +7079,7 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 		i_path = ""
 		try:
 			if not notify_of_end:
-				i_path = thumb_tracks.path(track) # TODO(Martin): Leak (guessing, same place leaks in dbus)
+				i_path = tauon.thumb_tracks.path(track) # TODO(Martin): Leak (guessing, same place leaks in dbus)
 		except Exception:
 			logging.exception(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
 			logging.error("Thumbnail error")
@@ -8791,8 +8791,304 @@ class Menu:
 
 		self.active = True
 
-class Tauon:
+class GallClass:
+	def __init__(self, size=250, save_out=True):
+		self.gall = {}
+		self.size = size
+		self.queue = []
+		self.key_list = []
+		self.save_out = save_out
+		self.i = 0
+		self.lock = threading.Lock()
+		self.limit = 60
 
+	def get_file_source(self, track_object: TrackClass):
+
+		global album_art_gen
+
+		sources = album_art_gen.get_sources(track_object)
+
+		if len(sources) == 0:
+			return False, 0
+
+		offset = album_art_gen.get_offset(track_object.fullpath, sources)
+		return sources[offset], offset
+
+	def worker_render(self):
+
+		self.lock.acquire()
+		# time.sleep(0.1)
+
+		if search_over.active:
+			while QuickThumbnail.queue:
+				img = QuickThumbnail.queue.pop(0)
+				response = urllib.request.urlopen(img.url, context=ssl_context)
+				source_image = io.BytesIO(response.read())
+				img.read_and_thumbnail(source_image, img.size, img.size)
+				source_image.close()
+				gui.update += 1
+
+		while len(self.queue) > 0:
+
+			source_image = None
+
+			if gui.halt_image_rendering:
+				self.queue.clear()
+				break
+
+			self.i += 1
+
+			try:
+				# key = self.queue[0]
+				key = self.queue.pop(0)
+			except Exception:
+				logging.exception("thumb queue empty")
+				break
+
+			if key not in self.gall:
+				order = [1, None, None, None]
+				self.gall[key] = order
+			else:
+				order = self.gall[key]
+
+			size = key[1]
+
+			slow_load = False
+			cache_load = False
+
+			try:
+
+				if True:
+					offset = 0
+					parent_folder = key[0].parent_folder_path
+					if parent_folder in folder_image_offsets:
+						offset = folder_image_offsets[parent_folder]
+					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
+					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
+						# logging.info('load from cache')
+						cache_load = True
+					else:
+						slow_load = True
+
+				if slow_load:
+
+					source, c_offset = self.get_file_source(key[0])
+
+					if source is False:
+						order[0] = 0
+						self.gall[key] = order
+						# del self.queue[0]
+						continue
+
+					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(c_offset)
+
+					# gall_render_last_timer.set()
+
+					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
+						logging.info("slow load image")
+						cache_load = True
+
+					# elif source[0] == 1:
+					#	 #logging.info('tag')
+					#	 source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+					#
+					# elif source[0] == 2:
+					#	 try:
+					#		 url = get_network_thumbnail_url(key[0])
+					#		 response = urllib.request.urlopen(url)
+					#		 source_image = response
+					#	 except Exception:
+					#		 logging.exception("IMAGE NETWORK LOAD ERROR")
+					# else:
+					#	 source_image = open(source[1], 'rb')
+					source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
+
+				g = io.BytesIO()
+				g.seek(0)
+
+				if cache_load:
+					g.write(source_image.read())
+
+				else:
+					error = False
+					try:
+						# Process image
+						im = Image.open(source_image)
+						if im.mode != "RGB":
+							im = im.convert("RGB")
+						im.thumbnail((size, size), Image.Resampling.LANCZOS)
+					except Exception:
+						logging.exception("Failed to work with thumbnail")
+						im = album_art_gen.get_error_img(size)
+						error = True
+
+					im.save(g, "BMP")
+
+					if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
+							os.path.join(g_cache_dir, img_name + ".jpg")):
+						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
+
+				g.seek(0)
+
+				# source_image.close()
+
+				order = [2, g, None, None]
+				self.gall[key] = order
+
+				gui.update += 1
+				if source_image:
+					source_image.close()
+					source_image = None
+				# del self.queue[0]
+
+				time.sleep(0.001)
+
+			except Exception:
+				logging.exception("Image load failed on track: " + key[0].fullpath)
+				order = [0, None, None, None]
+				self.gall[key] = order
+				gui.update += 1
+				# del self.queue[0]
+
+			if size < 150:
+				random.shuffle(self.queue)
+
+		if self.i > 0:
+			self.i = 0
+			return True
+		return False
+
+	def render(self, track: TrackClass, location, size=None, force_offset=None) -> bool | None:
+		if gallery_load_delay.get() < 0.5:
+			return None
+
+		x = round(location[0])
+		y = round(location[1])
+
+		# time.sleep(0.1)
+		if size is None:
+			size = self.size
+
+		size = round(size)
+
+		# offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
+		if track.parent_folder_path in folder_image_offsets:
+			offset = folder_image_offsets[track.parent_folder_path]
+		else:
+			offset = 0
+
+		if force_offset is not None:
+			offset = force_offset
+
+		key = (track, size, offset)
+
+		if key in self.gall:
+			#logging.info("old")
+
+			order = self.gall[key]
+
+			if order[0] == 0:
+				# broken
+				return False
+
+			if order[0] == 1:
+				# not done yet
+				return False
+
+			if order[0] == 2:
+				# finish processing
+
+				wop = rw_from_object(order[1])
+				s_image = IMG_Load_RW(wop, 0)
+				c = SDL_CreateTextureFromSurface(renderer, s_image)
+				SDL_FreeSurface(s_image)
+				tex_w = pointer(c_int(size))
+				tex_h = pointer(c_int(size))
+				SDL_QueryTexture(c, None, None, tex_w, tex_h)
+				dst = SDL_Rect(x, y)
+				dst.w = int(tex_w.contents.value)
+				dst.h = int(tex_h.contents.value)
+
+
+				order[0] = 3
+				order[1].close()
+				order[1] = None
+				order[2] = c
+				order[3] = dst
+				self.gall[(track, size, offset)] = order
+
+			if order[0] == 3:
+				# ready
+
+				order[3].x = x
+				order[3].y = y
+				order[3].x = int((size - order[3].w) / 2) + order[3].x
+				order[3].y = int((size - order[3].h) / 2) + order[3].y
+				SDL_RenderCopy(renderer, order[2], None, order[3])
+
+				if (track, size, offset) in self.key_list:
+					self.key_list.remove((track, size, offset))
+				self.key_list.append((track, size, offset))
+
+				# Remove old images to conserve RAM usage
+				if len(self.key_list) > self.limit:
+					gui.update += 1
+					key = self.key_list[0]
+					# while key in self.queue:
+					#	 self.queue.remove(key)
+					if self.gall[key][2] is not None:
+						SDL_DestroyTexture(self.gall[key][2])
+					del self.gall[key]
+					del self.key_list[0]
+
+				return True
+
+		else:
+			if key not in self.queue:
+				self.queue.append(key)
+				if self.lock.locked():
+					try:
+						self.lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked lock")
+						else:
+							logging.exception("Unknown RuntimeError trying to release lock")
+					except Exception:
+						logging.exception("Unknown error trying to release lock")
+		return False
+
+class ThumbTracks:
+	def __init__(self) -> None:
+		pass
+
+	def path(self, track: TrackClass) -> str:
+		source, offset = tauon.gall_ren.get_file_source(track)
+
+		if source is False:  # No art
+			return None
+
+		image_name = track.album + track.parent_folder_path + str(offset)
+		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
+
+		t_path = os.path.join(e_cache_dir, image_name + ".jpg")
+
+		if os.path.isfile(t_path):
+			return t_path
+
+		source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
+
+		with Image.open(source_image) as im:
+			if im.mode != "RGB":
+				im = im.convert("RGB")
+			im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
+			im.save(t_path, "JPEG")
+		return t_path
+
+class Tauon:
+	"""Root class for everything Tauon"""
 	def __init__(self):
 
 		self.t_title = t_title
@@ -8828,7 +9124,9 @@ class Tauon:
 		self.msys = msys
 		self.TrackClass = TrackClass
 		self.pl_gen = pl_gen
+		self.gall_ren = GallClass(album_mode_art_size)
 		self.QuickThumbnail = QuickThumbnail
+		self.thumb_tracks = ThumbTracks()
 		self.pl_to_id = pl_to_id
 		self.id_to_pl = id_to_pl
 		self.chunker = Chunker()
@@ -12254,321 +12552,6 @@ if rename_folder_previous:
 
 temp_dest = SDL_Rect(0, 0)
 
-
-class GallClass:
-	def __init__(self, size=250, save_out=True):
-		self.gall = {}
-		self.size = size
-		self.queue = []
-		self.key_list = []
-		self.save_out = save_out
-		self.i = 0
-		self.lock = threading.Lock()
-		self.limit = 60
-
-	def get_file_source(self, track_object: TrackClass):
-
-		global album_art_gen
-
-		sources = album_art_gen.get_sources(track_object)
-
-		if len(sources) == 0:
-			return False, 0
-
-		offset = album_art_gen.get_offset(track_object.fullpath, sources)
-		return sources[offset], offset
-
-	def worker_render(self):
-
-		self.lock.acquire()
-		# time.sleep(0.1)
-
-		if search_over.active:
-			while QuickThumbnail.queue:
-				img = QuickThumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, context=ssl_context)
-				source_image = io.BytesIO(response.read())
-				img.read_and_thumbnail(source_image, img.size, img.size)
-				source_image.close()
-				gui.update += 1
-
-		while len(self.queue) > 0:
-
-			source_image = None
-
-			if gui.halt_image_rendering:
-				self.queue.clear()
-				break
-
-			self.i += 1
-
-			try:
-				# key = self.queue[0]
-				key = self.queue.pop(0)
-			except Exception:
-				logging.exception("thumb queue empty")
-				break
-
-			if key not in self.gall:
-				order = [1, None, None, None]
-				self.gall[key] = order
-			else:
-				order = self.gall[key]
-
-			size = key[1]
-
-			slow_load = False
-			cache_load = False
-
-			try:
-
-				if True:
-					offset = 0
-					parent_folder = key[0].parent_folder_path
-					if parent_folder in folder_image_offsets:
-						offset = folder_image_offsets[parent_folder]
-					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
-						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
-						# logging.info('load from cache')
-						cache_load = True
-					else:
-						slow_load = True
-
-				if slow_load:
-
-					source, c_offset = self.get_file_source(key[0])
-
-					if source is False:
-						order[0] = 0
-						self.gall[key] = order
-						# del self.queue[0]
-						continue
-
-					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(c_offset)
-
-					# gall_render_last_timer.set()
-
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
-						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
-						logging.info("slow load image")
-						cache_load = True
-
-					# elif source[0] == 1:
-					#	 #logging.info('tag')
-					#	 source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
-					#
-					# elif source[0] == 2:
-					#	 try:
-					#		 url = get_network_thumbnail_url(key[0])
-					#		 response = urllib.request.urlopen(url)
-					#		 source_image = response
-					#	 except Exception:
-					#		 logging.exception("IMAGE NETWORK LOAD ERROR")
-					# else:
-					#	 source_image = open(source[1], 'rb')
-					source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
-
-				g = io.BytesIO()
-				g.seek(0)
-
-				if cache_load:
-					g.write(source_image.read())
-
-				else:
-					error = False
-					try:
-						# Process image
-						im = Image.open(source_image)
-						if im.mode != "RGB":
-							im = im.convert("RGB")
-						im.thumbnail((size, size), Image.Resampling.LANCZOS)
-					except Exception:
-						logging.exception("Failed to work with thumbnail")
-						im = album_art_gen.get_error_img(size)
-						error = True
-
-					im.save(g, "BMP")
-
-					if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
-							os.path.join(g_cache_dir, img_name + ".jpg")):
-						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
-
-				g.seek(0)
-
-				# source_image.close()
-
-				order = [2, g, None, None]
-				self.gall[key] = order
-
-				gui.update += 1
-				if source_image:
-					source_image.close()
-					source_image = None
-				# del self.queue[0]
-
-				time.sleep(0.001)
-
-			except Exception:
-				logging.exception("Image load failed on track: " + key[0].fullpath)
-				order = [0, None, None, None]
-				self.gall[key] = order
-				gui.update += 1
-				# del self.queue[0]
-
-			if size < 150:
-				random.shuffle(self.queue)
-
-		if self.i > 0:
-			self.i = 0
-			return True
-		return False
-
-	def render(self, track: TrackClass, location, size=None, force_offset=None) -> bool | None:
-
-		if gallery_load_delay.get() < 0.5:
-			return None
-
-		x = round(location[0])
-		y = round(location[1])
-
-		# time.sleep(0.1)
-		if size is None:
-			size = self.size
-
-		size = round(size)
-
-		# offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
-		if track.parent_folder_path in folder_image_offsets:
-			offset = folder_image_offsets[track.parent_folder_path]
-		else:
-			offset = 0
-
-		if force_offset is not None:
-			offset = force_offset
-
-		key = (track, size, offset)
-
-		if key in self.gall:
-			#logging.info("old")
-
-			order = self.gall[key]
-
-			if order[0] == 0:
-				# broken
-				return False
-
-			if order[0] == 1:
-				# not done yet
-				return False
-
-			if order[0] == 2:
-				# finish processing
-
-				wop = rw_from_object(order[1])
-				s_image = IMG_Load_RW(wop, 0)
-				c = SDL_CreateTextureFromSurface(renderer, s_image)
-				SDL_FreeSurface(s_image)
-				tex_w = pointer(c_int(size))
-				tex_h = pointer(c_int(size))
-				SDL_QueryTexture(c, None, None, tex_w, tex_h)
-				dst = SDL_Rect(x, y)
-				dst.w = int(tex_w.contents.value)
-				dst.h = int(tex_h.contents.value)
-
-
-				order[0] = 3
-				order[1].close()
-				order[1] = None
-				order[2] = c
-				order[3] = dst
-				self.gall[(track, size, offset)] = order
-
-			if order[0] == 3:
-				# ready
-
-				order[3].x = x
-				order[3].y = y
-				order[3].x = int((size - order[3].w) / 2) + order[3].x
-				order[3].y = int((size - order[3].h) / 2) + order[3].y
-				SDL_RenderCopy(renderer, order[2], None, order[3])
-
-				if (track, size, offset) in self.key_list:
-					self.key_list.remove((track, size, offset))
-				self.key_list.append((track, size, offset))
-
-				# Remove old images to conserve RAM usage
-				if len(self.key_list) > self.limit:
-					gui.update += 1
-					key = self.key_list[0]
-					# while key in self.queue:
-					#	 self.queue.remove(key)
-					if self.gall[key][2] is not None:
-						SDL_DestroyTexture(self.gall[key][2])
-					del self.gall[key]
-					del self.key_list[0]
-
-				return True
-
-		else:
-
-			if key not in self.queue:
-				self.queue.append(key)
-				if self.lock.locked():
-					try:
-						self.lock.release()
-					except RuntimeError as e:
-						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked lock")
-						else:
-							logging.exception("Unknown RuntimeError trying to release lock")
-					except Exception:
-						logging.exception("Unknown error trying to release lock")
-
-		return False
-
-
-gall_ren = GallClass(album_mode_art_size)
-tauon.gall_ren = gall_ren
-
-pl_thumbnail = GallClass(save_out=False)
-
-
-class ThumbTracks:
-	def __init__(self):
-		pass
-
-	def path(self, track: TrackClass) -> str:
-
-		source, offset = gall_ren.get_file_source(track)
-
-		if source is False:  # No art
-			return None
-
-		image_name = track.album + track.parent_folder_path + str(offset)
-		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
-
-		t_path = os.path.join(e_cache_dir, image_name + ".jpg")
-
-		if os.path.isfile(t_path):
-			return t_path
-
-		source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
-
-		im = Image.open(source_image)
-		if im.mode != "RGB":
-			im = im.convert("RGB")
-		im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-
-		im.save(t_path, "JPEG")
-
-		return t_path
-
-
-thumb_tracks = ThumbTracks()
-tauon.thumb_tracks = thumb_tracks
-
-
 def img_slide_update_gall(value, pause: bool = True) -> None:
 	global album_mode_art_size
 	gui.halt_image_rendering = True
@@ -12582,7 +12565,7 @@ def img_slide_update_gall(value, pause: bool = True) -> None:
 	gui.halt_image_rendering = False
 
 	# Update sizes
-	gall_ren.size = album_mode_art_size
+	tauon.gall_ren.size = album_mode_art_size
 
 	if album_mode_art_size > 150:
 		prefs.thin_gallery_borders = False
@@ -12593,18 +12576,18 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 	album_art_gen.clear_cache()
 	prefs.failed_artists.clear()
 	prefs.failed_background_artists.clear()
-	gall_ren.key_list = []
+	tauon.gall_ren.key_list = []
 
 	i = 0
-	while len(gall_ren.queue) > 0:
+	while len(tauon.gall_ren.queue) > 0:
 		time.sleep(0.01)
 		i += 1
 		if i > 5 / 0.01:
 			break
 
-	for key, value in gall_ren.gall.items():
+	for key, value in tauon.gall_ren.gall.items():
 		SDL_DestroyTexture(value[2])
-	gall_ren.gall = {}
+	tauon.gall_ren.gall = {}
 
 	if delete_disk:
 		dirs = [g_cache_dir, n_cache_dir, e_cache_dir]
@@ -12624,11 +12607,11 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 
 def clear_track_image_cache(track: TrackClass):
 	gui.halt_image_rendering = True
-	if gall_ren.queue:
+	if tauon.gall_ren.queue:
 		time.sleep(0.05)
-	if gall_ren.queue:
+	if tauon.gall_ren.queue:
 		time.sleep(0.2)
-	if gall_ren.queue:
+	if tauon.gall_ren.queue:
 		time.sleep(0.5)
 
 	direc = os.path.join(g_cache_dir)
@@ -12640,15 +12623,15 @@ def clear_track_image_cache(track: TrackClass):
 				logging.info("Cleared cache thumbnail: " + os.path.join(direc, item))
 
 	keys = set()
-	for key, value in gall_ren.gall.items():
+	for key, value in tauon.gall_ren.gall.items():
 		if key[0] == track:
 			SDL_DestroyTexture(value[2])
 			if key not in keys:
 				keys.add(key)
 	for key in keys:
-		del gall_ren.gall[key]
-		if key in gall_ren.key_list:
-			gall_ren.key_list.remove(key)
+		del tauon.gall_ren.gall[key]
+		if key in tauon.gall_ren.key_list:
+			tauon.gall_ren.key_list.remove(key)
 
 	gui.halt_image_rendering = False
 	album_art_gen.clear_cache()
@@ -13298,7 +13281,6 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 
 	def display(self, track: TrackClass, location, box, fast: bool = False, theme_only: bool = False) -> int | None:
-
 		index = track.index
 		filepath = track.fullpath
 
@@ -13402,6 +13384,8 @@ class AlbumArt:
 			except Exception:
 				logging.exception("Failed to convert image")
 				if theme_only:
+					source_image.close()
+					g.close()
 					return None
 				im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
 				o_size = im.size
@@ -13438,6 +13422,8 @@ class AlbumArt:
 					im.thumbnail((50, 50), Image.Resampling.LANCZOS)
 				except Exception:
 					logging.exception("theme gen error")
+					source_image.close()
+					g.close()
 					return None
 				pixels = im.getcolors(maxcolors=2500)
 				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
@@ -13584,6 +13570,8 @@ class AlbumArt:
 				gui.theme_temp_current = track.album
 
 			if theme_only:
+				source_image.close()
+				g.close()
 				return None
 
 			wop = rw_from_object(g)
@@ -13603,6 +13591,7 @@ class AlbumArt:
 
 			# Clean uo
 			SDL_FreeSurface(s_image)
+			source_image.close()
 			g.close()
 			# if close:
 			#	 source_image.close()
@@ -25300,17 +25289,17 @@ class SearchOverlay:
 				if n in (1, 2):
 					thl = thumbnail_rx - album_art_size
 					ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
-					gall_ren.render(pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
+					tauon.gall_ren.render(pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
 					if fade != 1:
 						ddt.rect((thl, yy + pad, album_art_size, album_art_size), [0, 0, 0, 70])
 				if n in (11,):
 					thl = thumbnail_rx - album_art_size
 					ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
-					# gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
+					# tauon.gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
 					if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
-						if gall_ren.lock.locked():
+						if tauon.gall_ren.lock.locked():
 							try:
-								gall_ren.lock.release()
+								tauon.gall_ren.lock.release()
 							except RuntimeError as e:
 								if str(e) == "release unlocked lock":
 									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
@@ -25682,7 +25671,7 @@ def worker3():
 		#     return
 		# time.sleep(1)
 
-		gall_ren.worker_render()
+		tauon.gall_ren.worker_render()
 
 
 def worker4():
@@ -35481,7 +35470,7 @@ class StandardPlaylist:
 
 							# if n_track.track_number == 1 or n_track.track_number == "1":
 							#     ss = wid - (wid % 15)
-							#     gall_ren.render(n_track, (run, y), ss)
+							#     tauon.gall_ren.render(n_track, (run, y), ss)
 
 
 						elif item[0] == "P":
@@ -38000,7 +37989,7 @@ class ArtistList:
 		if not drawn:
 			track = self.sample_tracks.get(artist)
 			if track:
-				gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
+				tauon.gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
 
 		if thin_mode:
 			text = artist[:2].title()
@@ -39221,7 +39210,7 @@ class QueueBox:
 			text_colour1 = [0, 0, 0, 130]
 			text_colour2 = [0, 0, 0, 230]
 
-		gall_ren.render(track, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
+		tauon.gall_ren.render(track, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
 
 		ddt.rect((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6])
 
@@ -43876,7 +43865,7 @@ while pctl.running:
 		time.sleep(0.03)
 
 		if (
-				pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
+				pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
 			pass
 		else:
 			sleep_timer.set()
@@ -44996,8 +44985,8 @@ while pctl.running:
 					if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
 
 						if gallery_scroll.held:
-							while len(gall_ren.queue) > 2:
-								gall_ren.queue.pop()
+							while len(tauon.gall_ren.queue) > 2:
+								tauon.gall_ren.queue.pop()
 
 						# Draw power bar button
 						if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
@@ -45426,7 +45415,7 @@ while pctl.running:
 										xx = pp / math.sqrt(2)
 
 										xx -= size / 2
-										drawn_art = gall_ren.render(
+										drawn_art = tauon.gall_ren.render(
 											pctl.get_track(default_playlist[p]), (x + xx, y + xx),
 											size=size, force_offset=0)
 										if not drawn_art:
@@ -45437,9 +45426,9 @@ while pctl.running:
 
 								else:
 									album_count += 1
-									if (album_count * 1.5) + 10 > gall_ren.limit:
-										gall_ren.limit = round((album_count * 1.5) + 30)
-									drawn_art = gall_ren.render(track, (x, y))
+									if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
+										tauon.gall_ren.limit = round((album_count * 1.5) + 30)
+									drawn_art = tauon.gall_ren.render(track, (x, y))
 
 								# Determine mouse collision
 								rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
