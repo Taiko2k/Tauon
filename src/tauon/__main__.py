@@ -104,7 +104,7 @@ t_id = "tauonmb"
 t_agent = "TauonMusicBox/" + n_version
 
 logging.info(f"{t_title} {t_version}")
-logging.info("Copyright 2015-2024 Taiko2k captain.gxj@gmail.com\n")
+logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
 
 # Early arg processing
 def transfer_args_and_exit() -> None:

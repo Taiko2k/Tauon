@@ -43,6 +43,7 @@ import locale as py_locale
 import logging
 #import magic
 import math
+#import mimetypes
 import os
 import pickle
 import platform
@@ -4289,7 +4290,7 @@ if msys and win_ver >= 10:
 			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
 
 			def SMTC_button_callback(button: int) -> None:
-
+				logging.debug(f"SMTC sent key ID: {button}")
 				if button == 1:
 					inp.media_key = "Play"
 				if button == 2:
@@ -10056,6 +10057,7 @@ if (system == "Windows" or msys):
 	tray.start()
 
 	if win_ver < 10:
+		logging.warning("Unsupported Windows version older than W10, hooking media keys the old way without SMTC!")
 		import keyboard
 
 		def key_callback(event):
