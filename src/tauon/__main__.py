@@ -434,7 +434,12 @@ del rect
 del flags
 del img_path
 
-from tauon.t_modules import t_main
+def main() -> None:
+	"""Launch Tauon by means of importing t_main.py"""
+	from tauon.t_modules import t_main
+
+if __name__ == "__main__":
+	main()
 
 # if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 # 	from tauon.t_modules import t_main
