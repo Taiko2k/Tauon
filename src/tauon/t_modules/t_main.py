@@ -9085,6 +9085,7 @@ class ThumbTracks:
 				im = im.convert("RGB")
 			im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
 			im.save(t_path, "JPEG")
+		source_image.close()
 		return t_path
 
 class Tauon:
