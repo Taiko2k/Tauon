@@ -462,7 +462,7 @@ window_opacity         = holder.window_opacity
 draw_border            = holder.draw_border
 transfer_args_and_exit = holder.transfer_args_and_exit
 old_window_position    = holder.old_window_position
-install_directory      = str(holder.install_directory) # TODO(Martin): Convert to Path proper
+install_directory      = holder.install_directory
 pyinstaller_mode       = holder.pyinstaller_mode
 phone                  = holder.phone
 window_default_size    = holder.window_default_size
@@ -491,7 +491,7 @@ if not windows_native:
 	import gi
 	from gi.repository import GLib
 
-	font_folder = os.path.join(install_directory, "fonts")
+	font_folder = str(install_directory / "fonts")
 	if os.path.isdir(font_folder):
 		logging.info(f"Fonts directory:           {font_folder}")
 		import ctypes
@@ -569,12 +569,12 @@ except Exception:
 
 # Set data folders (portable mode)
 user_directory = install_directory
-config_directory = Path(user_directory)
-cache_directory = Path(user_directory) / "cache"
+config_directory = user_directory
+cache_directory = user_directory / "cache"
 home_directory = os.path.join(os.path.expanduser("~"))
 
-asset_directory = os.path.join(install_directory, "assets")
-svg_directory = os.path.join(install_directory, "assets/svg")
+asset_directory = str(install_directory / "assets")
+svg_directory = str(install_directory / "assets" / "svg")
 scaled_asset_directory = asset_directory
 
 music_directory = Path("~").expanduser() / "Music"
@@ -587,11 +587,11 @@ download_directory = Path("~").expanduser() / "Downloads"
 install_mode = False
 flatpak_mode = False
 snap_mode = False
-if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
+if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 	install_mode = True
-	if install_directory[:6] == "/snap/":
+	if str(install_directory)[:6] == "/snap/":
 		snap_mode = True
-	if install_directory[:5] == "/app/":
+	if str(install_directory)[:5] == "/app/":
 		# Flatpak mode
 		logging.info("Detected running as Flatpak")
 
@@ -617,10 +617,10 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 # If we're installed, use home data locations
 if (install_mode and system == "Linux") or macos or msys:
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
-	user_directory   = str(Path(GLib.get_user_data_dir()) / "TauonMusicBox")
+	user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 
-	if not Path(user_directory).is_dir():
+	if not user_directory.is_dir():
 		os.makedirs(user_directory)
 
 	if not config_directory.is_dir():
@@ -635,8 +635,8 @@ if (install_mode and system == "Linux") or macos or msys:
 
 	logging.info(f"User files location:       {user_directory}")
 
-	if not Path(Path(user_directory) / "encoder").is_dir():
-		os.makedirs(Path(user_directory) / "encoder")
+	if not (user_directory / "encoder").is_dir():
+		os.makedirs(user_directory / "encoder")
 
 
 # elif (system == 'Windows' or msys) and (
@@ -654,13 +654,13 @@ if (install_mode and system == "Linux") or macos or msys:
 else:
 	logging.info("Running in portable mode")
 
-	user_directory = str(Path(install_directory) / "user-data")
-	config_directory = Path(user_directory)
+	user_directory = install_directory / "user-data"
+	config_directory = user_directory
 
-	if not Path(user_directory).is_dir():
+	if not user_directory.is_dir():
 		os.makedirs(user_directory)
 
-if not Path(Path(user_directory) / "state.p").is_file() and cache_directory.is_dir():
+if not (user_directory / "state.p").is_file() and cache_directory.is_dir():
 	logging.info("Clearing old cache directory")
 	logging.info(cache_directory)
 	shutil.rmtree(str(cache_directory))
@@ -670,7 +670,7 @@ e_cache_dir = str(cache_directory / "export")
 g_cache_dir = str(cache_directory / "gallery")
 a_cache_dir = str(cache_directory / "artist")
 r_cache_dir = str(cache_directory / "radio-thumbs")
-b_cache_dir = str(Path(user_directory) / "artist-backgrounds")
+b_cache_dir = str(user_directory / "artist-backgrounds")
 
 if not os.path.isdir(n_cache_dir):
 	os.makedirs(n_cache_dir)
@@ -685,11 +685,11 @@ if not os.path.isdir(b_cache_dir):
 if not os.path.isdir(r_cache_dir):
 	os.makedirs(r_cache_dir)
 
-if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
-	os.makedirs(os.path.join(user_directory, "artist-pictures"))
+if not (user_directory / "artist-pictures").is_dir():
+	os.makedirs(user_directory / "artist-pictures")
 
-if not os.path.isdir(os.path.join(user_directory, "theme")):
-	os.makedirs(os.path.join(user_directory, "theme"))
+if not (user_directory / "theme").is_dir():
+	os.makedirs(user_directory / "theme")
 
 
 if platform_system == "Linux":
@@ -725,10 +725,10 @@ if download_directory:
 if not music_directory.is_dir():
 	music_directory = None
 
-locale_directory = Path(install_directory) / "locale"
+locale_directory = install_directory / "locale"
 if flatpak_mode:
 	locale_directory = Path("/app/share/locale")
-elif install_directory.startswith(("/opt/", "/usr/")):
+elif str(install_directory).startswith(("/opt/", "/usr/")):
 	locale_directory = Path("/usr/share/locale")
 
 logging.info(f"Install directory:         {install_directory}")
@@ -736,7 +736,8 @@ logging.info(f"Config directory:          {config_directory}")
 logging.info(f"Cache directory:           {cache_directory}")
 logging.info(f"Home directory:            {home_directory}")
 logging.info(f"Music directory:           {music_directory}")
-logging.info(f"Downloads directory:        {download_directory}")
+logging.info(f"Downloads directory:       {download_directory}")
+logging.info(f"Userdata directory:        {user_directory}")
 logging.info(f"Asset directory:           {asset_directory}")
 if locale_directory.exists():
 	logging.info(f"Locale directory:          {locale_directory}")
@@ -938,7 +939,7 @@ if install_directory != config_directory and not Path(config_directory / "input.
 	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
 	#logging.warning(install_directory)
 	#logging.warning(config_directory)
-	shutil.copy(Path(install_directory) / "templates" / "input.txt", config_directory)
+	shutil.copy(install_directory / "templates" / "input.txt", config_directory)
 
 
 if snap_mode:
@@ -959,7 +960,7 @@ except Exception:
 # ------------------------------------------------
 
 if system == "Windows":
-	os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+	os.environ["PYSDL2_DLL_PATH"] = str(install_directory / "lib")
 elif not msys and not macos:
 	try:
 		gi.require_version("Notify", "0.7")
@@ -1306,7 +1307,7 @@ class Prefs:
 		self.change_volume_fade_time:  int = 400
 		self.cross_fade_time:          int = 700
 		self.volume_wheel_increment:   int = 2
-		self.encoder_output:          Path = Path(user_directory) / "encoder"
+		self.encoder_output:          Path = user_directory / "encoder"
 		if music_directory is not None:
 			self.encoder_output:        Path = music_directory / "encode-output"
 		self.rename_folder_template:   str = "<albumartist> - <album>"
@@ -1440,7 +1441,7 @@ class Prefs:
 		self.show_side_art = True
 		self.always_pin_playlists = True
 
-		self.user_directory:   str = user_directory
+		self.user_directory:  Path = user_directory
 		self.cache_directory: Path = cache_directory
 
 		self.window_opacity = window_opacity
@@ -2885,9 +2886,9 @@ def set_colour(colour):
 def get_themes(deco: bool = False):
 	themes = []  # full, name
 	decos = {}
-	direcs = [install_directory + "/theme"]
+	direcs = [str(install_directory / "theme")]
 	if user_directory != install_directory:
-		direcs.append(user_directory + "/theme")
+		direcs.append(str(user_directory / "theme"))
 
 	def scan_folders(folders: list[str]) -> None:
 		for folder in folders:
@@ -3033,8 +3034,8 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 gbc.disable()
 ggc = 2
 
-star_path1 = Path(user_directory) / "star.p"
-star_path2 = Path(user_directory) / "star.p.backup"
+star_path1 = user_directory / "star.p"
+star_path2 = user_directory / "star.p.backup"
 star_size1 = 0
 star_size2 = 0
 to_load = star_path1
@@ -3055,7 +3056,7 @@ else:
 		logging.exception("Unknown error loading star.p file")
 
 
-album_star_path = Path(user_directory) / "album-star.p"
+album_star_path = user_directory / "album-star.p"
 if album_star_path.is_file():
 	try:
 		with album_star_path.open("rb") as file:
@@ -3065,9 +3066,9 @@ if album_star_path.is_file():
 else:
 	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
-if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
+if (user_directory / "lyrics_substitutions.json").is_file():
 	try:
-		with open(user_directory + "/lyrics_substitutions.json") as f:
+		with (user_directory / "lyrics_substitutions.json").open() as f:
 			prefs.lyrics_subs = json.load(f)
 	except FileNotFoundError:
 		logging.error("No existing lyrics_substitutions.json file")
@@ -3133,10 +3134,10 @@ shoot_pump = threading.Thread(target=pumper)
 shoot_pump.daemon = True
 shoot_pump.start()
 
-state_path1 = Path(user_directory) / "state.p"
-state_path2 = Path(user_directory) / "state.p.backup"
+state_path1 = user_directory / "state.p"
+state_path2 = user_directory / "state.p.backup"
 for t in range(2):
-	#	 os.path.getsize(user_directory + "/state.p") < 100
+	#	 os.path.getsize(user_directory / "state.p") < 100
 	try:
 		if t == 0:
 			if not state_path1.is_file():
@@ -4284,7 +4285,7 @@ smtc = False
 if msys and win_ver >= 10:
 
 	#logging.info(sss.info.win.window)
-	SMTC_path = Path(install_directory) / "lib" / "TauonSMTC.dll"
+	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 	if SMTC_path.exists():
 		try:
 			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
@@ -4355,7 +4356,7 @@ auto_scale()
 def scale_assets(scale_want: int, force: bool = False) -> None:
 	global scaled_asset_directory
 	if scale_want != 1:
-		scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
+		scaled_asset_directory = str(user_directory / "scaled-icons")
 		if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
 				os.listdir(scaled_asset_directory)):
 			logging.info("Force rerender icons")
@@ -5151,7 +5152,7 @@ class PlayerCtl:
 
 		self.running:           bool = True
 		self.prefs:             Prefs = prefs
-		self.install_directory: str  = install_directory
+		self.install_directory: Path  = install_directory
 
 		# Database
 
@@ -9110,7 +9111,7 @@ class Tauon:
 		self.gui = gui
 		self.prefs = prefs
 		self.cache_directory:          Path = cache_directory
-		self.user_directory:     str | None = user_directory
+		self.user_directory:    Path | None = user_directory
 		self.music_directory:   Path | None = music_directory
 		self.locale_directory:         Path = locale_directory
 		self.worker_save_state:        bool = False
@@ -9181,7 +9182,7 @@ class Tauon:
 
 		if not self.web_running:
 			self.web_thread = threading.Thread(
-				target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+				target=webserve2, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
 			self.web_thread.daemon = True
 			self.web_thread.start()
 			self.web_running = True
@@ -9217,11 +9218,11 @@ class Tauon:
 			f.seek(0)
 			z = zipfile.ZipFile(f, mode="r")
 			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
-			with (Path(user_directory) / "ffmpeg.exe").open("wb") as file:
+			with (user_directory / "ffmpeg.exe").open("wb") as file:
 				file.write(exe.read())
 
 			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
-			with (Path(user_directory) / "ffprobe.exe").open("wb") as file:
+			with (user_directory / "ffprobe.exe").open("wb") as file:
 				file.write(exe.read())
 
 			exe.close()
@@ -9231,14 +9232,14 @@ class Tauon:
 
 	def set_tray_icons(self, force: bool = False):
 
-		indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
-		indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
-		indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+		indicator_icon_play =    str(pctl.install_directory / "assets/svg/tray-indicator-play.svg")
+		indicator_icon_pause =   str(pctl.install_directory / "assets/svg/tray-indicator-pause.svg")
+		indicator_icon_default = str(pctl.install_directory / "assets/svg/tray-indicator-default.svg")
 
 		if prefs.tray_theme == "gray":
-			indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play-g1.svg")
-			indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
-			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
+			indicator_icon_play =    str(pctl.install_directory / "assets/svg/tray-indicator-play-g1.svg")
+			indicator_icon_pause =   str(pctl.install_directory / "assets/svg/tray-indicator-pause-g1.svg")
+			indicator_icon_default = str(pctl.install_directory / "assets/svg/tray-indicator-default-g1.svg")
 
 		user_icon_dir = self.cache_directory / "icon-export"
 		def install_tray_icon(src: str, name: str) -> None:
@@ -9272,7 +9273,7 @@ class Tauon:
 		p = shutil.which("ffmpeg")
 		if p:
 			return p
-		p = os.path.join(user_directory, "ffmpeg.exe")
+		p = str(user_directory / "ffmpeg.exe")
 		if msys and os.path.isfile(p):
 			return p
 		return None
@@ -9281,7 +9282,7 @@ class Tauon:
 		p = shutil.which("ffprobe")
 		if p:
 			return p
-		p = os.path.join(user_directory, "ffprobe.exe")
+		p = str(user_directory / "ffprobe.exe")
 		if msys and os.path.isfile(p):
 			return p
 		return None
@@ -10327,7 +10328,7 @@ class STray:
 						("Forward", None, self.advance),
 						("Back", None, self.back))
 		self.systray = SysTrayIcon(
-			install_directory + "\\assets\\" + "icon.ico", "Tauon Music Box",
+			str(install_directory / "assets" / "icon.ico"), "Tauon Music Box",
 			menu_options, on_quit=self.on_quit_callback)
 		self.systray.start()
 		self.active = True
@@ -10994,7 +10995,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 			self.updated_state = 0
 			self.window_id = gui.window_id
 			import comtypes.client as cc
-			cc.GetModule(install_directory + "\\TaskbarLib.tlb")
+			cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
 			import comtypes.gen.TaskbarLib as tbl
 			self.taskbar = cc.CreateObject(
 				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
@@ -11033,7 +11034,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 					self.taskbar.SetProgressValue(self.window_id, 0, 100)
 
 
-	if os.path.isfile(install_directory + "/TaskbarLib.tlb"):
+	if (install_directory / "TaskbarLib.tlb").is_file():
 		logging.info("Taskbar progress enabled")
 		pctl.windows_progress = WinTask()
 
@@ -12782,7 +12783,7 @@ class AlbumArt:
 		return source_list
 
 	def get_error_img(self, size: float) -> ImageFile:
-		im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+		im = Image.open(str(install_directory / "assets" / "load-error.png"))
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
@@ -13388,7 +13389,7 @@ class AlbumArt:
 					source_image.close()
 					g.close()
 					return None
-				im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+				im = Image.open(str(install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
 
@@ -13400,7 +13401,7 @@ class AlbumArt:
 						im = im.resize(new_size, Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to resize image")
-						im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+						im = Image.open(str(install_directory / "assets" / "load-error.png"))
 						o_size = im.size
 						new_size = fit_box(o_size, box)
 						im = im.resize(new_size, Image.Resampling.LANCZOS)
@@ -13409,7 +13410,7 @@ class AlbumArt:
 						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to convert image to thumbnail")
-						im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+						im = Image.open(str(install_directory / "assets" / "load-error.png"))
 						o_size = im.size
 						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
 				im.save(g, "BMP")
@@ -15279,7 +15280,7 @@ class ExportPlaylistBox:
 		self.id = None
 		self.directory_text_box = TextBox2()
 		self.default = {
-			"path": str(music_directory) if music_directory else os.path.join(user_directory, "playlists"),
+			"path": str(music_directory) if music_directory else str(user_directory / "playlists"),
 			"type": "xspf",
 			"relative": False,
 			"auto": False,
@@ -16216,7 +16217,7 @@ def paste_lyrics(track_object: TrackClass):
 #	return gui.combo_mode and prefs.guitar_chords
 # showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
-#guitar_chords = GuitarChords(user_directory=Path(user_directory))
+#guitar_chords = GuitarChords(user_directory=user_directory)
 #showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 #showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
@@ -17063,7 +17064,7 @@ def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: 
 		return 1
 
 	if not direc:
-		direc = os.path.join(user_directory, "playlists")
+		direc = str(user_directory / "playlists")
 		if not os.path.exists(direc):
 			os.makedirs(direc)
 	target = os.path.join(direc, pctl.multi_playlist[pl].title + ".m3u")
@@ -17100,13 +17101,13 @@ def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: 
 	return target
 
 
-def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int | str:
+def export_xspf(pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
 		show_message(_("There are no tracks in this playlist. Nothing to export"))
 		return 1
 
 	if not direc:
-		direc = os.path.join(user_directory, "playlists")
+		direc = str(user_directory / "playlists")
 		if not os.path.exists(direc):
 			os.makedirs(direc)
 
@@ -17772,10 +17773,10 @@ def export_stats(pl: int) -> None:
 		line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
 
 	line = line.encode("utf-8")
-	xport = open(user_directory + "/stats.txt", "wb")
+	xport = (user_directory / "stats.txt").open("wb")
 	xport.write(line)
 	xport.close()
-	target = os.path.join(user_directory, "stats.txt")
+	target = str(user_directory / "stats.txt")
 	if system == "Windows" or msys:
 		os.startfile(target)
 	elif macos:
@@ -20052,7 +20053,7 @@ def open_file(target):
 
 
 def open_data_directory():
-	target = user_directory
+	target = str(user_directory)
 	if system == "Windows" or msys:
 		os.startfile(target)
 	elif macos:
@@ -23127,7 +23128,7 @@ def stt2(sec):
 
 
 def export_database():
-	path = user_directory + "/DatabaseExport.csv"
+	path = str(user_directory / "DatabaseExport.csv")
 	xport = open(path, "w")
 
 	xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
@@ -23971,7 +23972,7 @@ def level_meter_special_2():
 	gui.level_meter_colour_mode = 2
 
 
-theme_files = os.listdir(install_directory + "/theme")
+theme_files = os.listdir(str(install_directory / "theme"))
 theme_files.sort()
 
 
@@ -27333,7 +27334,7 @@ tauon.reload_albums = reload_albums
 # WEBSERVER
 if prefs.enable_web is True:
 	webThread = threading.Thread(
-		target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+		target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
 	webThread.daemon = True
 	webThread.start()
 
@@ -27626,7 +27627,7 @@ def toggle_enable_web(mode: int = 0) -> bool | None:
 
 	if prefs.enable_web and not gui.web_running:
 		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
 		webThread.daemon = True
 		webThread.start()
 		show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
@@ -30067,7 +30068,7 @@ class Over:
 
 		y += round(25 * gui.scale)
 		if not msys and not macos:
-			x11_path = os.path.join(user_directory, "x11")
+			x11_path = str(user_directory / "x11")
 			x11 = os.path.exists(x11_path)
 			old = x11
 			x11 = self.toggle_square(x, y, x11, _("Prefer x11 when running in Wayland"))
@@ -34431,8 +34432,8 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 
 
 pl_bg = None
-if os.path.exists(user_directory + "/bg.png"):
-	pl_bg = LoadImageAsset(user_directory + "/bg.png", True)
+if (user_directory / "bg.png").exists():
+	pl_bg = LoadImageAsset(str(user_directory / "bg.png"), True)
 
 
 class StandardPlaylist:
@@ -40230,9 +40231,9 @@ class ArtistInfoBox:
 
 		standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
 		image_paths = [
-			os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
-			os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
-			os.path.join(user_directory, "artist-pictures/" + f_artist + ".webp"),
+			str(user_directory / "artist-pictures" / f_artist + ".png"),
+			str(user_directory / "artist-pictures" / f_artist + ".jpg"),
+			str(user_directory / "artist-pictures" / f_artist + ".webp"),
 			os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.png"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.jpg"),
@@ -42945,10 +42946,10 @@ def save_state() -> None:
 	]
 
 	try:
-		with (Path(user_directory) / "state.p.backup").open("wb") as file:
+		with (user_directory / "state.p.backup").open("wb") as file:
 			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 		# if not pctl.running:
-		with (Path(user_directory) / "state.p").open("wb") as file:
+		with (user_directory / "state.p").open("wb") as file:
 			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		old_position = old_window_position
@@ -42965,12 +42966,12 @@ def save_state() -> None:
 		]
 
 		if not fs_mode:
-			with (Path(user_directory) / "window.p").open("wb") as file:
+			with (user_directory / "window.p").open("wb") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		tauon.spot_ctl.save_token()
 
-		with (Path(user_directory) / "lyrics_substitutions.json").open("w") as file:
+		with (user_directory / "lyrics_substitutions.json").open("w") as file:
 			json.dump(prefs.lyrics_subs, file)
 
 		save_prefs()
@@ -48188,7 +48189,7 @@ while pctl.running:
 		try:
 			if should_save_state:
 				logging.info("Auto save playtime")
-				with (Path(user_directory) / "star.p").open("wb") as file:
+				with (user_directory / "star.p").open("wb") as file:
 					pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 			else:
 				logging.info("Dev mode, skip auto saving playtime")
@@ -48239,9 +48240,9 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
 	prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
 if should_save_state:
-	with (Path(user_directory) / "star.p").open("wb") as file:
+	with (user_directory / "star.p").open("wb") as file:
 		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (Path(user_directory) / "album-star.p").open("wb") as file:
+	with (user_directory / "album-star.p").open("wb") as file:
 		pickle.dump(album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
@@ -48249,9 +48250,9 @@ save_state()
 
 date = datetime.date.today()
 if should_save_state:
-	with (Path(user_directory) / "star.p.backup").open("wb") as file:
+	with (user_directory / "star.p.backup").open("wb") as file:
 		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (Path(user_directory) / f"star.p.backup{str(date.month)}").open("wb") as file:
+	with (user_directory / f"star.p.backup{str(date.month)}").open("wb") as file:
 		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 if tauon.stream_proxy and tauon.stream_proxy.download_running:
