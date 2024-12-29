@@ -7079,7 +7079,7 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 		i_path = ""
 		try:
 			if not notify_of_end:
-				i_path = tauon.thumb_tracks.path(track) # TODO(Martin): Leak (guessing, same place leaks in dbus)
+				i_path = tauon.thumb_tracks.path(track)
 		except Exception:
 			logging.exception(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
 			logging.error("Thumbnail error")
@@ -46700,7 +46700,7 @@ while pctl.running:
 					else:
 						album_art_gen.display(
 							tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)),
-							(art_size, art_size)) # TODO(Martin): Leak - this function is in a couple places too
+							(art_size, art_size))
 
 					y -= int(24 * gui.scale)
 					y1 = int(y + (40 * gui.scale))
