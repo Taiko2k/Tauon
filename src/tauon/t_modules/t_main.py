@@ -935,7 +935,7 @@ if maximized:
 # loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 # SDL_RenderPresent(renderer)
 
-if install_directory != config_directory and not Path(config_directory / "input.txt").is_file():
+if install_directory != config_directory and not (config_directory / "input.txt").is_file():
 	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
 	#logging.warning(install_directory)
 	#logging.warning(config_directory)
