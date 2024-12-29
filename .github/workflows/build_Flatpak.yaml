@@ -1,0 +1,38 @@
+on:
+  push:
+#    branches: [main]
+  pull_request:
+name: CI
+jobs:
+  flatpak:
+    name: "Flatpak"
+    runs-on: ubuntu-24.04
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-24.08
+      options: --privileged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+      - name: Run rustup
+        run: |
+          rustup toolchain -y install stable
+#          apt-get update
+#          apt-get install -y flatpak-builder
+
+      - name: Clone Flatpak repo
+        run: |
+          git clone --recurse-submodules https://github.com/C0rn3j/com.github.taiko2k.tauonmb.git tauon-flatpak
+          cd tauon-flatpak; git checkout flatfix
+
+      # https://github.com/marketplace/actions/flatpak-builder
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: tauonmb.flatpak
+          manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
+          cache-key: flatpak-builder-${{ github.sha }}
