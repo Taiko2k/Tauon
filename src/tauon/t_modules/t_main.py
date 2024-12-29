@@ -732,19 +732,19 @@ elif str(install_directory).startswith(("/opt/", "/usr/")):
 	locale_directory = Path("/usr/share/locale")
 
 logging.info(f"Install directory:         {install_directory}")
+#logging.info(f"SVG directory:             {svg_directory}")
+logging.info(f"Asset directory:           {asset_directory}")
+#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
+if locale_directory.exists():
+	logging.info(f"Locale directory:          {locale_directory}")
+else:
+	logging.error(f"Locale directory MISSING: {locale_directory}")
+logging.info(f"Userdata directory:        {user_directory}")
 logging.info(f"Config directory:          {config_directory}")
 logging.info(f"Cache directory:           {cache_directory}")
 logging.info(f"Home directory:            {home_directory}")
 logging.info(f"Music directory:           {music_directory}")
 logging.info(f"Downloads directory:       {download_directory}")
-logging.info(f"Userdata directory:        {user_directory}")
-logging.info(f"Asset directory:           {asset_directory}")
-if locale_directory.exists():
-	logging.info(f"Locale directory:          {locale_directory}")
-else:
-	logging.error(f"Locale directory MISSING: {locale_directory}")
-#logging.info(f"SVG directory:             {svg_directory}")
-#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target: str) -> bool | str | None:
