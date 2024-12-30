@@ -48303,11 +48303,6 @@ SDL_Quit()
 exit_timer = Timer()
 exit_timer.set()
 
-cache_dir = tmp_cache_dir()
-if os.path.isdir(cache_dir):
-	logging.info("Clearing tmp cache")
-	shutil.rmtree(cache_dir)
-
 if not tauon.quick_close:
 	while tauon.thread_manager.check_playback_running():
 		time.sleep(0.2)
@@ -48334,5 +48329,14 @@ if tauon.librespot_p:
 	logging.info("Killing librespot")
 	tauon.librespot_p.kill()
 	#tauon.librespot_p.communicate()
+
+cache_dir = tmp_cache_dir()
+if os.path.isdir(cache_dir):
+	# This check can be Windows only, lazy deletes are fine on Linux/macOS
+	while cachement.running:
+		logging.warning("Waiting for caching to stop before deleting cache directory…")
+		time.sleep(0.2)
+	logging.info("Clearing tmp cache")
+	shutil.rmtree(cache_dir)
 
 logging.info("Bye!")
