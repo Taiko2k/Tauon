@@ -574,8 +574,8 @@ config_directory = user_directory
 cache_directory = user_directory / "cache"
 home_directory = os.path.join(os.path.expanduser("~"))
 
-asset_directory = str(install_directory / "assets")
-svg_directory = str(install_directory / "assets" / "svg")
+asset_directory = install_directory / "assets"
+svg_directory = install_directory / "assets" / "svg"
 scaled_asset_directory = asset_directory
 
 music_directory = Path("~").expanduser() / "Music"
@@ -769,9 +769,9 @@ if flatpak_mode:
 pid = os.getpid()
 
 if not macos:
-	icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+	icon = IMG_Load(str(asset_directory / "icon-64.png").encode())
 else:
-	icon = IMG_Load(os.path.join(asset_directory, "tau-mac.png").encode())
+	icon = IMG_Load(str(asset_directory / "tau-mac.png").encode())
 
 SDL_SetWindowIcon(t_window, icon)
 
@@ -858,7 +858,7 @@ class LoadImageAsset:
 	def reload(self) -> None:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
-			self.path = os.path.join(scaled_asset_directory, self.scale_name)
+			self.path = str(scaled_asset_directory / self.scale_name)
 		self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour=None) -> None:
@@ -889,7 +889,7 @@ class WhiteModImageAsset:
 	def reload(self) -> None:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
-			self.path = os.path.join(scaled_asset_directory, self.scale_name)
+			self.path = str(scaled_asset_directory / self.scale_name)
 		self.__init__(self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour) -> None:
@@ -909,7 +909,7 @@ def asset_loader(name: str, mod: bool = False) -> WhiteModImageAsset | LoadImage
 	if name in loaded_asset_dc:
 		return loaded_asset_dc[name]
 
-	target = os.path.join(scaled_asset_directory, name)
+	target = str(scaled_asset_directory / name)
 	if mod:
 		item = WhiteModImageAsset(target, scale_name=name)
 	else:
@@ -3959,9 +3959,9 @@ auto_scale()
 def scale_assets(scale_want: int, force: bool = False) -> None:
 	global scaled_asset_directory
 	if scale_want != 1:
-		scaled_asset_directory = str(user_directory / "scaled-icons")
-		if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
-				os.listdir(scaled_asset_directory)):
+		scaled_asset_directory = user_directory / "scaled-icons"
+		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
+				os.listdir(str(scaled_asset_directory))):
 			logging.info("Force rerender icons")
 			force = True
 	else:
@@ -3970,13 +3970,13 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 	if scale_want != prefs.ui_scale or force:
 
 		if scale_want != 1:
-			if os.path.isdir(scaled_asset_directory) and scaled_asset_directory != asset_directory:
-				shutil.rmtree(scaled_asset_directory)
+			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
+				shutil.rmtree(str(scaled_asset_directory))
 			from tauon.t_modules.t_svgout import render_icons
 
 			if scaled_asset_directory != asset_directory:
 				logging.info("Rendering icons...")
-				render_icons(svg_directory, scaled_asset_directory, scale_want)
+				render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
 
 		logging.info("Done rendering icons")
 
