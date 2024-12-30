@@ -2962,5 +2962,9 @@ EXPORT int phazor_shutdown() {
 		usleep(1000);
 	}
 	command = EXIT;
+	// Prevent race conditions on Windows, wait til everything is closed before returning
+	while (command != NONE) {
+		usleep(1000);
+	}
 	return 0;
 }
