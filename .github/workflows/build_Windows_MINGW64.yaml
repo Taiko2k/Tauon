@@ -29,7 +29,6 @@ jobs:
           install: ${{ env.packages }}
 #            ca-certificates
 #            p7zip
-#            mingw-w64-x86_64-gobject-introspection
 #            mingw-w64-x86_64-python-zeroconf
 #            mingw-w64-x86_64-zlib
 
