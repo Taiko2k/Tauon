@@ -16,7 +16,8 @@ jobs:
         id: read_packages
         run: |
           $packages = Get-Content extra/myspac.txt -Raw | Out-String
-          $packages = $packages -replace "`r`n", " " -replace "`n", " " -trim
+          $packages = $packages -replace "`r`n", " " -replace "`n", " "
+          $packages = $packages.Trim()
           echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       # TODO(Martin): This is partially duped from the file in extra, install from said file somehow instead
