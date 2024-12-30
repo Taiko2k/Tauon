@@ -20,7 +20,6 @@ jobs:
           $packages = $packages.Trim()
           echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
-      # TODO(Martin): This is partially duped from the file in extra, install from said file somehow instead
       # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
@@ -28,30 +27,10 @@ jobs:
           msystem: mingw64
           update: true
           install: ${{ env.packages }}
-#            base-devel
 #            ca-certificates
-#            cmake
-#            ninja
 #            p7zip
-#            mingw-w64-x86_64-flac
-#            mingw-w64-x86_64-gcc
 #            mingw-w64-x86_64-gobject-introspection
-#            mingw-w64-x86_64-gtk3
-#            mingw-w64-x86_64-libgme
-#            mingw-w64-x86_64-libopenmpt
-#            mingw-w64-x86_64-libsamplerate
-#            mingw-w64-x86_64-opusfile
-#            mingw-w64-x86_64-pkgconf
-#            mingw-w64-x86_64-python3
-#            mingw-w64-x86_64-python3-gobject
-#            mingw-w64-x86_64-python3-pillow
-#            mingw-w64-x86_64-python3-pip
-#            mingw-w64-x86_64-python-websocket-client
 #            mingw-w64-x86_64-python-zeroconf
-#            mingw-w64-x86_64-rust
-#            mingw-w64-x86_64-SDL2
-#            mingw-w64-x86_64-SDL2_image
-#            mingw-w64-x86_64-wavpack
 #            mingw-w64-x86_64-zlib
 
       - name: Update CA trust and hack opusfile

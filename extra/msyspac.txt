@@ -1,3 +1,4 @@
+base-devel
 cmake
 ninja
 mingw-w64-x86_64-flac
