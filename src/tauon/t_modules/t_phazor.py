@@ -608,7 +608,7 @@ def player4(tauon: Tauon) -> None:
 
 			timer = Timer()
 			try:
-				with open(path, "wb") as f:
+				with path.open("wb") as f:
 					for chunk in part.iter_content(chunk_size=1024):
 						if chunk:  # filter out keep-alive new chunks
 							a += 1
