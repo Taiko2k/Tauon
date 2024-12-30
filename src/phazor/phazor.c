@@ -588,7 +588,7 @@ int wave_open(char *filename) {
 		return 1;
 	}
 
-	while (1) {
+	while (true) {
 
 		// Read data block label
 		wave_error = fread(b, 4, 1, wave_file);
@@ -654,7 +654,7 @@ int wave_open(char *filename) {
 	wave_depth = i;
 	fseek(wave_file, wave_start + wave_size, SEEK_SET);
 
-	while (1) {
+	while (true) {
 		// Read data block label
 		wave_error = fread(b, 4, 1, wave_file);
 		if (wave_error != 1) {
@@ -2429,7 +2429,7 @@ void *main_loop(void *thread_id) {
 	#endif
 	//int test1 = 0;
 	// Main loop ---------------------------------------------------------------
-	while (1) {
+	while (true) {
 
 //		test1++;
 //		if (test1 > 650) {
