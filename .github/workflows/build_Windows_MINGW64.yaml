@@ -90,7 +90,7 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG windows.spec
 
-      - name: Create ZIP
+      - name: Create 7Z
         shell: msys2 {0}
         run: |
           mkdir -p dist/zip
@@ -100,7 +100,7 @@ jobs:
 
           7z a -r "${ARCHIVE_PATH}" "${APP_PATH}" -w"${APP_PATH}"
 
-      - name: Upload ZIP artifact
+      - name: Upload 7Z artifact
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-windows

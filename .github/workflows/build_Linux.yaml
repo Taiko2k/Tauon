@@ -83,7 +83,7 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
 
-      - name: Create 7z
+      - name: Create 7Z
         run: |
           mkdir -p dist/zip
           APP_NAME="TauonMusicBox"
@@ -92,7 +92,7 @@ jobs:
 
           7z a -r "${ARCHIVE_PATH}" "${APP_PATH}" -w"${APP_PATH}"
 
-      - name: Upload ZIP artifact
+      - name: Upload 7Z artifact
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-linux
