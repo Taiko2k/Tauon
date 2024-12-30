@@ -12,6 +12,7 @@ a = Analysis(
 		(certifi.where(), "certifi"),
 		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcolorreload-gtk-module.so", "lib/gtk-3.0/modules"),
 		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libwindow-decorations-gtk-module.so", "lib/gtk-3.0/modules"),
+		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcanberra-gtk-module.so", "lib/gtk-3.0/modules"),
 		("src/tauon/assets", "assets"),
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
