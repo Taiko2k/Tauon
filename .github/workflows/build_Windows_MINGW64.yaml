@@ -12,15 +12,15 @@ jobs:
         with:
           submodules: true
 
+      # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
       - name: Read Package List
         id: read_packages
         run: |
           $packages = Get-Content extra/msyspac.txt -Raw | Out-String
           $packages = $packages -replace "`r`n", " " -replace "`n", " "
-          $packages = $packages.Trim()
+          $packages = $packages.Trim() + " p7zip"
           echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
-      # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
         with:
@@ -28,7 +28,6 @@ jobs:
           update: true
           install: ${{ env.packages }}
 #            ca-certificates
-#            p7zip
 #            mingw-w64-x86_64-python-zeroconf
 #            mingw-w64-x86_64-zlib
 
