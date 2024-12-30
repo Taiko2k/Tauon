@@ -16217,7 +16217,7 @@ def paste_lyrics(track_object: TrackClass):
 #	return gui.combo_mode and prefs.guitar_chords
 # showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
-#guitar_chords = GuitarChords(user_directory=user_directory)
+#guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl)
 #showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 #showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
