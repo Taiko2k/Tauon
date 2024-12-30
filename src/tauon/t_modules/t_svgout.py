@@ -55,9 +55,13 @@ def render_icons(source_directory: str, output_directory: str, scale: int) -> No
 
 		svg_surface = cairo.SVGSurface(None, width, height)
 		svg_context = cairo.Context(svg_surface)
-		svg_context.save()
-		svg_context.scale(width/unscaled_width, height/unscaled_height)
-		svg.render_cairo(svg_context)
-		svg_context.restore()
+
+		viewport = Rsvg.Rectangle()
+		viewport.x = 0
+		viewport.y = 0
+		viewport.width = width
+		viewport.height = height
+
+		svg.render_document(svg_context, viewport)
 
 		svg_surface.write_to_png(out_path)
