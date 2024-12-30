@@ -9102,14 +9102,14 @@ class Tauon:
 
 #		TODO(Martin) : Fix this by moving the class to root of the module
 		self.cachement: player4.Cachement | None = None
-		self.dummy_event = SDL_Event()
+		self.dummy_event: SDL_Event = SDL_Event()
 		self.translate = _
-		self.strings = strings
-		self.pctl = pctl
-		self.lfm_scrobbler = lfm_scrobbler
-		self.star_store = star_store
-		self.gui = gui
-		self.prefs = prefs
+		self.strings: Strings = strings
+		self.pctl:  PlayerCtl = pctl
+		self.lfm_scrobbler: LastScrob = lfm_scrobbler
+		self.star_store:    StarStore = star_store
+		self.gui:  GuiVar = gui
+		self.prefs: Prefs = prefs
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:    Path | None = user_directory
 		self.music_directory:   Path | None = music_directory
