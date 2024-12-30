@@ -48333,9 +48333,10 @@ if tauon.librespot_p:
 cache_dir = tmp_cache_dir()
 if os.path.isdir(cache_dir):
 	# This check can be Windows only, lazy deletes are fine on Linux/macOS
-	while cachement.running:
-		logging.warning("Waiting for caching to stop before deleting cache directory…")
-		time.sleep(0.2)
+	if sys.platform == "win32":
+		while tauon.cachement.running:
+			logging.warning("Waiting for caching to stop before deleting cache directory…")
+			time.sleep(0.2)
 	logging.info("Clearing tmp cache")
 	shutil.rmtree(cache_dir)
 
