@@ -15,7 +15,7 @@ jobs:
       - name: Read Package List
         id: read_packages
         run: |
-          $packages = Get-Content extra/myspac.txt -Raw | Out-String
+          $packages = Get-Content extra/msyspac.txt -Raw | Out-String
           $packages = $packages -replace "`r`n", " " -replace "`n", " "
           $packages = $packages.Trim()
           echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
