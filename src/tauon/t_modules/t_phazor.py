@@ -569,14 +569,14 @@ def player4(tauon: Tauon) -> None:
 						pctl.buffering_percent = math.floor(i / len(network_url) * 100)
 						gui.buffering_text = str(pctl.buffering_percent) + "%"
 						if self.get_now is not None and self.get_now != track:
-							logging.info("ABORT")
+							logging.info("Aborted loading track!")
 							return None
 
-					logging.info("done")
+#					logging.info("done")
 					p.stdin.close()
 					p.wait()
 
-					logging.info("DONE")
+					logging.info("Done loading track")
 					self.files.append(key)
 					self.list.append(key)
 					return None
@@ -624,7 +624,7 @@ def player4(tauon: Tauon) -> None:
 
 
 							if self.get_now is not None and self.get_now != track:
-								logging.warning("ABORT")
+								logging.warning("Aborted loading track!")
 								return None
 
 							# if self.cancel is True:
@@ -634,7 +634,7 @@ def player4(tauon: Tauon) -> None:
 							#	 return
 
 							f.write(chunk)
-				logging.info("DONE")
+				logging.info("Done loading track")
 				self.files.append(key)
 				self.list.append(key)
 			except Exception:
