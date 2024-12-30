@@ -15,8 +15,9 @@ jobs:
       - name: Read Package List
         id: read_packages
         run: |
-          packages=$(cat extra/myspac.txt | xargs)
-          echo "packages=$packages" >> $GITHUB_ENV
+          $packages = Get-Content extra/myspac.txt -Raw | Out-String
+          $packages = $packages -replace "`r`n", " " -replace "`n", " " -trim
+          echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       # TODO(Martin): This is partially duped from the file in extra, install from said file somehow instead
       # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
