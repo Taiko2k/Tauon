@@ -12945,10 +12945,8 @@ class AlbumArt:
 
 		if track.file_ext == "MP3":
 			try:
-				# TODO(Martin): PR them context manager support for ID3
 				tag = mutagen.id3.ID3(filepath)
 				frame = tag.getall("APIC")
-				tag.close()
 				if frame:
 					pic = frame[0].data
 			except Exception:
