@@ -12945,12 +12945,14 @@ class AlbumArt:
 
 		if track.file_ext == "MP3":
 			try:
-				with mutagen.id3.ID3(filepath) as tag:
-					frame = tag.getall("APIC")
+				# TODO(Martin): PR them context manager support for ID3
+				tag = mutagen.id3.ID3(filepath)
+				frame = tag.getall("APIC")
+				tag.close()
 				if frame:
 					pic = frame[0].data
 			except Exception:
-				logging.debug(f"Failed to get tags on file: {filepath}")
+				logging.exception(f"Failed to get tags on file: {filepath}")
 
 			if pic is not None and len(pic) < 30:
 				pic = None
