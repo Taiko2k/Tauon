@@ -738,7 +738,7 @@ logging.info(f"Asset directory:           {asset_directory}")
 if locale_directory.exists():
 	logging.info(f"Locale directory:          {locale_directory}")
 else:
-	logging.error(f"Locale directory MISSING: {locale_directory}")
+	logging.error(f"Locale directory MISSING:  {locale_directory}")
 logging.info(f"Userdata directory:        {user_directory}")
 logging.info(f"Config directory:          {config_directory}")
 logging.info(f"Cache directory:           {cache_directory}")
