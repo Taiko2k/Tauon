@@ -32958,8 +32958,6 @@ class MiniMode:
 		if 'seek_r' not in locals():
 			seek_r = [0, 0, 0, 0]
 			seek_w = 0
-			volume_r = [0, 0, 0, 0]
-			volume_w = 0
 
 		w = window_size[0]
 		h = window_size[1]
