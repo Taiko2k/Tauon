@@ -40088,6 +40088,8 @@ class RadioThumbGen:
 				if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
 					prefs.radio_thumb_bans.append(station.get("icon"))
 				continue
+			if src is not None:
+				src.close()
 
 			im = im.resize((size, size), Image.Resampling.LANCZOS)
 			g = io.BytesIO()
