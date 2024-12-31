@@ -505,7 +505,7 @@ if not windows_native:
 		config.contents = fc.FcConfigGetCurrent()
 		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
 
-# SSL setup (needed for frozen installs)
+# TLS setup (needed for frozen installs)
 def get_cert_path() -> str:
 	if pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
@@ -516,11 +516,11 @@ def get_cert_path() -> str:
 def setup_ssl() -> ssl.SSLContext:
 	# Set the SSL certificate path environment variable
 	cert_path = get_cert_path()
-	logging.debug(f"Found SSL cert file at: {cert_path}")
+	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ['SSL_CERT_FILE'] = cert_path
 	os.environ['REQUESTS_CA_BUNDLE'] = cert_path
 
-	# Create default SSL context
+	# Create default TLS context
 	ssl_context = ssl.create_default_context(cafile=get_cert_path())
 	return ssl_context
 
