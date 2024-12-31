@@ -89,7 +89,6 @@ jobs:
 
       - name: Create 7Z
         run: |
-          mkdir archive
           APP_NAME="TauonMusicBox"
           cd "dist/${APP_NAME}"
 
@@ -101,4 +100,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-linux
-          path: archive/TauonMusicBox.7z
+          path: TauonMusicBox.7z
