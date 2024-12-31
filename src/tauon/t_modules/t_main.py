@@ -9804,11 +9804,11 @@ def get_network_thumbnail_url(track_object: TrackClass):
 		url = plex.resolve_thumbnail(track_object.art_url_key)
 		assert url is not None
 		return url
-	if track_object.file_ext == "JELY":
-		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
-		assert url is not None
-		assert url != ""
-		return url
+#	if track_object.file_ext == "JELY":
+#		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+#		assert url is not None
+#		assert url != ""
+#		return url
 	if track_object.file_ext == "KOEL":
 		url = track_object.art_url_key
 		assert url
