@@ -1814,13 +1814,10 @@ def set_drag_source():
 
 # Functions for reading and setting play counts
 class StarStore:
-
-	def __init__(self):
-
+	def __init__(self) -> None:
 		self.db = {}
 
-	def key(self, track_id: int):
-
+	def key(self, track_id: int) -> tuple[str, str, str]:
 		track_object = pctl.master_library[track_id]
 		return track_object.artist, track_object.title, track_object.filename
 
@@ -1829,8 +1826,7 @@ class StarStore:
 		return track.artist, track.title, track.filename
 
 	# Increments the play time
-	def add(self, index, value):
-
+	def add(self, index: int, value):
 		track_object = pctl.master_library[index]
 
 		if after_scan:
