@@ -464,6 +464,7 @@ draw_border            = holder.draw_border
 transfer_args_and_exit = holder.transfer_args_and_exit
 old_window_position    = holder.old_window_position
 install_directory      = holder.install_directory
+user_directory         = holder.user_directory
 pyinstaller_mode       = holder.pyinstaller_mode
 phone                  = holder.phone
 window_default_size    = holder.window_default_size
@@ -569,7 +570,6 @@ except Exception:
 	logging.exception("Error accessing GTK settings")
 
 # Set data folders (portable mode)
-user_directory = install_directory
 config_directory = user_directory
 cache_directory = user_directory / "cache"
 home_directory = os.path.join(os.path.expanduser("~"))
@@ -618,11 +618,11 @@ if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 # If we're installed, use home data locations
 if (install_mode and system == "Linux") or macos or msys:
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
-	user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
-	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+	#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+	config_directory = user_directory
 
-	if not user_directory.is_dir():
-		os.makedirs(user_directory)
+#	if not user_directory.is_dir():
+#		os.makedirs(user_directory)
 
 	if not config_directory.is_dir():
 		os.makedirs(config_directory)
@@ -633,8 +633,6 @@ if (install_mode and system == "Linux") or macos or msys:
 		logging.info("Installed as Flatpak")
 	else:
 		logging.info("Running from installed location")
-
-	logging.info(f"User files location:       {user_directory}")
 
 	if not (user_directory / "encoder").is_dir():
 		os.makedirs(user_directory / "encoder")
@@ -654,12 +652,7 @@ if (install_mode and system == "Linux") or macos or msys:
 
 else:
 	logging.info("Running in portable mode")
-
-	user_directory = install_directory / "user-data"
 	config_directory = user_directory
-
-	if not user_directory.is_dir():
-		os.makedirs(user_directory)
 
 if not (user_directory / "state.p").is_file() and cache_directory.is_dir():
 	logging.info("Clearing old cache directory")

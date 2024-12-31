@@ -167,10 +167,6 @@ if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")) or s
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
 	install_directory = Path("/usr/share/TauonMusicBox")
 
-user_directory = install_directory / "user-data"
-config_directory = user_directory
-asset_directory = install_directory / "assets"
-
 if str(install_directory).startswith("/app/"):
 	# Its Flatpak
 	t_id = "com.github.taiko2k.tauonmb"
@@ -180,8 +176,19 @@ os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 if (install_directory / "portable").is_file():
 	install_mode = False
 
+# Handle regular install, running from a directory and finally a portable install, usually a venv
 if install_mode:
+#	logging.info("Running in installed mode")
 	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+elif install_directory.parent.name == "src":
+#	logging.info("Running in portable mode from cloned dir")
+	user_directory = install_directory.parent.parent / "user-data"
+else:
+#	logging.info("Running in portable mode")
+	user_directory = install_directory / "user-data"
+
+asset_directory = install_directory / "assets"
+
 if not user_directory.is_dir():
 	user_directory.mkdir(parents=True)
 
@@ -413,6 +420,7 @@ holder.draw_border            = draw_border
 holder.window_opacity         = window_opacity
 holder.old_window_position    = old_window_position
 holder.install_directory      = install_directory
+holder.user_directory         = user_directory
 holder.pyinstaller_mode       = pyinstaller_mode
 holder.phone                  = phone
 holder.window_title           = window_title
