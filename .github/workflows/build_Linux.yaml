@@ -84,17 +84,21 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
 
+      - name: Remove libwayland*.so files due to https://github.com/pyinstaller/pyinstaller/issues/8963
+        run: rm ./dist/TauonMusicBox/_internal/libwayland*
+
       - name: Create 7Z
         run: |
-          mkdir -p dist/zip
+          mkdir archive
           APP_NAME="TauonMusicBox"
-          APP_PATH="dist/${APP_NAME}"
-          ARCHIVE_PATH="dist/zip/${APP_NAME}.7z"
+          cd "dist/${APP_NAME}"
 
-          7z a -r "${ARCHIVE_PATH}" "${APP_PATH}" -w"${APP_PATH}"
+          ARCHIVE_PATH="../../${APP_NAME}.7z"
+
+          7z a -r "${ARCHIVE_PATH}" "."
 
       - name: Upload 7Z artifact
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-linux
-          path: dist/zip/TauonMusicBox.7z
+          path: archive/TauonMusicBox.7z
