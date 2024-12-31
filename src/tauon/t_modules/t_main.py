@@ -32954,6 +32954,11 @@ class MiniMode:
 		self.repeat_fade_timer = Timer(100)
 
 	def render(self):
+		# We only set seek_r and seek_w if track is currently on, but use it anyway later, so make sure it exists
+		if 'seek_r' not in locals():
+			seek_r = [0, 0, 0, 0]
+			seek_w = 0
+
 		w = window_size[0]
 		h = window_size[1]
 
@@ -33325,6 +33330,10 @@ class MiniMode3:
 		self.repeat_fade_timer = Timer(100)
 
 	def render(self):
+		# We only set seek_r and seek_w if track is currently on, but use it anyway later, so make sure it exists
+		if 'seek_r' not in locals():
+			seek_r = [0, 0, 0, 0]
+			seek_w = 0
 
 		w = window_size[0]
 		h = window_size[1]
