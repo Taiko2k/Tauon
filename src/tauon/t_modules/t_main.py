@@ -17145,7 +17145,7 @@ def sort_tracK_numbers_album_only(pl: int, custom_list=None):
 	gui.pl_update += 1
 
 
-def sort_track_2(pl: int, custom_list=None):
+def sort_track_2(pl: int, custom_list: list[int] | None = None) -> None:
 	current_folder = ""
 	current_album = ""
 	current_date = ""
@@ -43992,7 +43992,7 @@ while pctl.running:
 
 				if key_a_press and key_ctrl_down:
 					gui.pl_update = 1
-					shift_selection = range(len(default_playlist))
+					shift_selection = range(len(default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
 
 				if keymaps.test("revert"):
 					pctl.revert()

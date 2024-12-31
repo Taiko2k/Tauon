@@ -367,7 +367,7 @@ class Jellyfin:
 			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
 			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
-	def ingest_library(self, return_list: bool = False) -> list | None:
+	def ingest_library(self, return_list: bool = False) -> list[int] | None:
 		self.gui.update += 1
 		self.scanning = True
 		self.gui.to_got = 0
@@ -383,7 +383,7 @@ class Jellyfin:
 				self.tauon.gui.show_message(_("Error connecting to Jellyfin"))
 			return []
 
-		playlist = []
+		playlist: list[int] = []
 
 		# This code is to identify if a track has already been imported
 		existing = {}
