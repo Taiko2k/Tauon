@@ -22956,6 +22956,8 @@ mode_menu.add(MenuItem(_("Square Large"), set_mini_mode_B2))
 
 def copy_bb_metadata() -> str | None:
 	tr = pctl.playing_object()
+	if tr is None:
+		return None
 	if not tr.title and not tr.artist and pctl.playing_state == 3:
 		return pctl.tag_meta
 	text = f"{tr.artist} - {tr.title}".strip(" -")
