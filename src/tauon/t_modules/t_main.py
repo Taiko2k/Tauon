@@ -860,7 +860,7 @@ class LoadImageAsset:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
-		self.__init__(self.path, reload=True, scale_name=self.scale_name)
+		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour=None) -> None:
 		self.rect.x = round(x)
@@ -893,7 +893,7 @@ class WhiteModImageAsset:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
-		self.__init__(self.path, reload=True, scale_name=self.scale_name)
+		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour) -> None:
 		if colour != self.colour:
@@ -1822,11 +1822,10 @@ class StarStore:
 		return track_object.artist, track_object.title, track_object.filename
 
 	def object_key(self, track: TrackClass) -> tuple[str, str, str]:
-
 		return track.artist, track.title, track.filename
 
-	# Increments the play time
 	def add(self, index: int, value):
+		"""Increments the play time"""
 		track_object = pctl.master_library[index]
 
 		if after_scan:
@@ -1842,22 +1841,22 @@ class StarStore:
 		else:
 			self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
 
-	# Returns the track play time
 	def get(self, index: int):
+		"""Returns the track play time"""
 		if index < 0:
 			return 0
 		return self.db.get(self.key(index), (0,))[0]
 
-	# Returns the track user rating
 	def get_rating(self, index: int):
+		"""Returns the track user rating"""
 		key = self.key(index)
 		if key in self.db:
 			# self.db[key]
 			return self.db[key][2]
 		return 0
 
-	# Sets the track user rating
 	def set_rating(self, index: int, value: int, write: bool = False) -> None:
+		"""Sets the track user rating"""
 		key = self.key(index)
 		if key not in self.db:
 			self.db[key] = self.new_object()
