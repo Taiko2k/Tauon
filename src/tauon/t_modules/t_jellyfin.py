@@ -466,8 +466,15 @@ class Jellyfin:
 
 				nt.is_network = True
 				nt.url_key = track.get("Id")
-				nt.art_url_key = (track.get("AlbumId")
-					if track.get("AlbumPrimaryImageTag", False) else None)
+				nt.art_url_key = None
+				if track.get("AlbumPrimaryImageTag", False):
+					nt.art_url_key = track.get("AlbumId")
+				else:
+					for source in track.get("MediaSources"):
+						if any(stream.get("Type") == "EmbeddedImage" for stream in source.get("MediaStreams", [])):
+							nt.art_url_key = nt.url_key
+#							logging.debug(f"Found EmbeddedImage in MediaStreams.")
+
 
 				artists = track.get("Artists", [])
 				nt.artist = "; ".join(artists)
